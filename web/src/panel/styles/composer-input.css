@@ -1,0 +1,230 @@
+/* 输入区：quick-start 空态、composer 主体与键盘焦点。
+   由 composer.css 按区块拆分而来（原行 2-217、540-551），选择器与媒体查询保持原样。 */
+.quick-start>.ui-field {
+  margin: 0 0 var(--space-9);
+  text-align: left;
+}
+.empty-actions {
+  display: flex;
+  max-width: 680px;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-8);
+}
+.quick-start {
+  width: 100%;
+  text-align: left;
+}
+.quick-start__surface {
+  overflow: hidden;
+  border: 1px solid var(--composer-border);
+  border-radius: var(--radius-20);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.quick-start .ui-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 84px;
+  padding: var(--space-16);
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: transparent;
+  color: var(--text-primary);
+}
+.quick-start__footer {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-6) var(--space-8) var(--space-6) var(--space-16);
+  border-top: 1px solid var(--divider);
+}
+.quick-start__footer>span {
+  min-width: 0;
+  flex: 1;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.quick-start__state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-9);
+  margin-top: var(--space-8);
+  padding: var(--space-9) var(--space-10);
+  border-radius: var(--radius-10);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.quick-start__state small {
+  min-width: 0;
+  flex: 1;
+}
+.quick-start__state--uncertain {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.quick-start__state--failed {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.empty-secondary-actions {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  gap: var(--space-6);
+}
+.composer-wrap {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--composer-max);
+  margin: 0 auto;
+  padding: 0 var(--space-20) var(--space-20);
+}
+.composer-surface {
+  overflow: hidden;
+  border: 1px solid var(--composer-border);
+  border-radius: var(--composer-radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  transition: box-shadow 140ms ease,border-color 140ms ease;
+}
+.composer-editor {
+  position: relative;
+}
+.composer-input {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: 58px;
+  min-height: 58px;
+  max-height: 180px;
+  padding: var(--space-17) var(--space-18) var(--space-7);
+  border: 0;
+  outline: 0;
+  resize: none;
+  overflow-y: auto;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 15px;
+  line-height: 24px;
+}
+.composer-input::placeholder {
+  color: var(--text-muted);
+}
+.composer-input:disabled {
+  background: transparent;
+  color: var(--text-secondary);
+}
+.composer-input:focus-visible {
+  outline: 0;
+}
+.composer-prediction {
+  position: absolute;
+  z-index: 0;
+  top: 17px;
+  right: 18px;
+  left: 18px;
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: 15px;
+  line-height: 24px;
+  pointer-events: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.composer-toolbar {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: var(--space-9);
+  padding: var(--space-2) var(--space-8) var(--space-7) var(--space-10);
+}
+.composer-prediction-action {
+  min-height: 30px;
+  padding: 0 var(--space-9);
+  border-color: var(--border-subtle);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.composer-prediction-action kbd {
+  margin-left: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-4);
+  background: var(--surface);
+  font-size: 9px;
+}
+.composer-skills {
+  min-height: 30px;
+  padding: 0 var(--space-9);
+  border-color: var(--border-subtle);
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 680;
+}
+.composer-skills span {
+  display: grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font: 10px/1 var(--font-mono);
+}
+.composer-runtime {
+  display: flex;
+  min-width: 0;
+  max-width: 35%;
+  align-items: center;
+  gap: var(--space-7);
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.composer-runtime>span {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--success);
+}
+.composer-usage {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.composer-shortcut {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+/* Keyboard focus uses a neutral, high-contrast double ring. Pointer focus keeps
+   the quiet border-only treatment, so the composer never regresses to the old
+   blue halo while keyboard users still receive a reliable focus landmark. */
+.quick-start__surface:focus-within,
+.composer-surface:focus-within {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-float);
+}
+.quick-start__surface:has(.ui-textarea:focus-visible),
+.composer-surface:has(.composer-input:focus-visible) {
+  box-shadow: var(--shadow-float), 0 0 0 2px var(--surface), 0 0 0 4px var(--focus-ring);
+}

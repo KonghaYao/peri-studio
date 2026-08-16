@@ -1,0 +1,341 @@
+// CSS 与 UI 视觉系统契约（node:test）：CSS 结构/token/媒体查询断言，
+// 以及特性组件对 UI 库的消费边界（barrel 出口、SVG 画布、按钮行为、色彩、
+// Badge/Tooltip/Drawer 视觉委托）。按主题从原 state-contracts 拆分而来，
+// 断言意图与原文件一致。
+
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { transform } from 'lightningcss';
+import postcss from 'postcss';
+
+// styles.css is the cascade entry now: it imports ui/base.css, ui/primitives.css
+// and the feature sheets under panel/styles/. Feature assertions run against the
+// concatenated source so the cascade contract stays covered per selector.
+const cssFiles = () => {
+  const source = join(import.meta.dirname, '..', 'src');
+  const entry = readFileSync(join(source, 'styles.css'), 'utf8');
+  return [...entry.matchAll(/@import\s+'([^']+)';/g)].map((match) => match[1].replace(/^\.\//, ''));
+};
+const featureCss = () => cssFiles().map((file) => readFileSync(join(import.meta.dirname, '..', 'src', file), 'utf8')).join('\n');
+
+test('source stylesheets are structurally valid and consume only declared design tokens', () => {
+  const source = join(import.meta.dirname, '..', 'src');
+  const files = ['styles.css', 'ui/base.css', 'ui/primitives.css', 'ui/tokens.css', ...cssFiles().filter((file) => file.startsWith('panel/styles/'))];
+  const stylesheets = files.filter((file) => file !== 'ui/tokens.css');
+  const roots = files.map((file) => {
+    const css = readFileSync(join(source, file), 'utf8');
+    const strict = transform({ filename: file, code: Buffer.from(css), errorRecovery: false });
+    assert.deepEqual(strict.warnings, [], `${file} has strict-parser warnings`);
+    return postcss.parse(css, { from: file });
+  });
+  for (const root of roots) {
+    root.walkAtRules('media', (media) => {
+      const directDeclarations = (media.nodes || []).filter((node) => node.type === 'decl');
+      assert.deepEqual(directDeclarations.map((decl) => `${decl.source?.start?.line}:${decl.prop}`), [], `${media.source?.input.file} has declarations outside a rule`);
+    });
+  }
+  const tokenSource = readFileSync(join(source, 'ui', 'tokens.css'), 'utf8');
+  const defined = new Set([...tokenSource.matchAll(/(--[\w-]+)\s*:/g)].map((match) => match[1]));
+  const used = new Set(stylesheets.flatMap((file) => [...readFileSync(join(source, file), 'utf8').matchAll(/var\((--[\w-]+)/g)].map((match) => match[1])));
+  assert.deepEqual([...used].filter((token) => !defined.has(token)).sort(), []);
+});
+
+test('Composer and quick start have one neutral keyboard-focus owner and no stale selectors', () => {
+  const css = featureCss();
+  const root = postcss.parse(css);
+  const focusRules = [];
+  root.walkRules((rule) => {
+    if (rule.selector.includes('.composer-surface:focus-within') || rule.selector.includes('.quick-start__surface:focus-within')) focusRules.push(rule.selector);
+  });
+  assert.equal(focusRules.length, 1);
+  assert.doesNotMatch(css, /--focus-neutral|--surface-border-focus|\.permission-actions\b/);
+  assert.match(css, /\.composer-surface:has\(\.composer-input:focus-visible\)/);
+});
+
+test('feature components consume the Solid UI library only through its public barrel', () => {
+  const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
+  const offenders = readdirSync(components)
+    .filter((file) => file.endsWith('.tsx'))
+    .filter((file) => /from\s+['"]\.\.\/\.\.\/ui\//.test(readFileSync(join(components, file), 'utf8')));
+  assert.deepEqual(offenders, []);
+});
+
+test('feature-owned SVG geometry always uses the shared finite icon canvas', () => {
+  const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
+  const offenders = readdirSync(components)
+    .filter((file) => file.endsWith('.tsx'))
+    .filter((file) => /<svg\b/.test(readFileSync(join(components, file), 'utf8')));
+  assert.deepEqual(offenders, []);
+  const icon = readFileSync(join(import.meta.dirname, '..', 'src', 'ui', 'Icon.tsx'), 'utf8');
+  assert.match(icon, /class={`ui-icon/);
+  assert.match(icon, /fill="none"/);
+  assert.match(icon, /stroke="currentColor"/);
+});
+
+test('high-frequency chat controls are owned by the Solid UI library', () => {
+  const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
+  for (const file of ['Composer.tsx', 'MessageList.tsx']) {
+    assert.doesNotMatch(readFileSync(join(components, file), 'utf8'), /<button\b/, file);
+  }
+});
+
+test('MessageList delegates entry semantics to one tested conversation component', () => {
+  const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
+  const list = readFileSync(join(components, 'MessageList.tsx'), 'utf8');
+  const message = readFileSync(join(components, 'ConversationMessage.tsx'), 'utf8');
+  assert.match(list, /<ConversationMessage entry=\{entry\}/);
+  assert.doesNotMatch(list, /function MessageBubble|<Markdown|<ToolCallCard/);
+  assert.match(message, /conversation-message--\$\{role\(\)\}/);
+  assert.match(message, /role="alert" aria-label="Message error"/);
+});
+
+test('the permission surface exposes a queue and never resolves an empty identity', () => {
+  const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
+  const messageList = readFileSync(join(components, 'MessageList.tsx'), 'utf8');
+  const queue = readFileSync(join(components, 'PermissionQueue.tsx'), 'utf8');
+  const card = readFileSync(join(components, 'PermissionRequestCard.tsx'), 'utf8');
+  assert.match(messageList, /<PermissionQueue/);
+  assert.doesNotMatch(messageList, /permissions\(\)\[0\]/);
+  assert.match(queue, /if \(id\) props\.onResolve\(id, decision\)/);
+  assert.match(card, /disabled=\{props\.readOnly \|\| locked\(\) \|\| !actionable\(\)\}/);
+});
+
+test('the shared Button defaults to non-submitting behavior', () => {
+  const button = readFileSync(join(import.meta.dirname, '..', 'src', 'ui', 'Button.tsx'), 'utf8');
+  assert.match(button, /type=\{button\.type \?\? 'button'\}/);
+});
+
+test('feature-owned native buttons always state their form behavior', () => {
+  const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
+  const offenders = readdirSync(components)
+    .filter((file) => file.endsWith('.tsx'))
+    .flatMap((file) => [...readFileSync(join(components, file), 'utf8').matchAll(/<button\b([^>]*)>/gs)]
+      .filter((match) => !/\btype\s*=/.test(match[1]))
+      .map(() => file));
+  assert.deepEqual(offenders, []);
+});
+
+test('feature components never introduce literal colors', () => {
+  const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
+  const offenders = readdirSync(components)
+    .filter((file) => file.endsWith('.tsx'))
+    .filter((file) => /#[0-9a-f]{3,8}\b|rgba?\(/i.test(readFileSync(join(components, file), 'utf8')));
+  assert.deepEqual(offenders, []);
+});
+
+test('responsive behavior has compact, medium and wide layout contracts', () => {
+  const root = join(import.meta.dirname, '..', 'src');
+  const shell = readFileSync(join(root, 'panel', 'components', 'AppShell.tsx'), 'utf8');
+  const messageList = readFileSync(join(root, 'panel', 'components', 'MessageList.tsx'), 'utf8');
+  const composer = readFileSync(join(root, 'panel', 'components', 'Composer.tsx'), 'utf8');
+  const theme = readFileSync(join(root, 'ui', 'theme.css'), 'utf8');
+  const breakpoints = readFileSync(join(root, 'ui', 'breakpoints.ts'), 'utf8');
+  assert.match(shell, /compactViewportQuery/);
+  assert.doesNotMatch(shell, /max-width:\s*\d+px/);
+  assert.match(breakpoints, /COMPACT_VIEWPORT_MAX\s*=\s*959/);
+  assert.match(breakpoints, /MEDIUM_VIEWPORT_MAX\s*=\s*1199/);
+  // Tailwind 断点映射：desk=960px（侧栏收窄 240px）/ wide=1200px（280px）
+  assert.match(theme, /--breakpoint-desk:\s*960px/);
+  assert.match(theme, /--breakpoint-wide:\s*1200px/);
+  assert.match(shell, /grid-cols-shell/);
+  assert.match(shell, /desk:grid-cols-shell-desk/);
+  assert.match(shell, /wide:grid-cols-shell-wide/);
+  assert.match(shell, /max-desk:fixed[^"]*max-desk:w-\(--container-drawer\)/);
+  // 中宽布局的内容宽度：chat 列表 760px、composer 800px
+  assert.match(messageList, /desk:max-wide:max-w-\(--container-chat-narrow\)/);
+  assert.match(composer, /desk:max-w-\(--container-composer\)/);
+  assert.doesNotMatch(shell, /project-drawer\s*\{[^}]*position\s*:\s*fixed/);
+});
+
+test('coarse pointers never depend on hover to discover sidebar actions', () => {
+  const styles = featureCss();
+  const primitives = readFileSync(join(import.meta.dirname, '..', 'src', 'ui', 'primitives.css'), 'utf8');
+  const coarseBlocks = [];
+  postcss.parse(styles).walkAtRules('media', (media) => {
+    if (/\(pointer:coarse\)/.test(media.params)) coarseBlocks.push(media.toString());
+  });
+  const coarse = coarseBlocks.join('\n');
+  assert.match(coarse, /\.session-menu\s*\{[^}]*opacity\s*:\s*1/);
+  assert.match(coarse, /\.project-heading>\s*\.ui-tooltip-anchor\s+\.ui-icon-button\s*\{[^}]*width\s*:\s*44px[^}]*min-height\s*:\s*44px[^}]*opacity\s*:\s*1/);
+  assert.match(coarse, /\.project-disclosure,\.archived-projects__toggle,\.archived-sessions__toggle,\.session-search-results button\s*\{[^}]*min-height\s*:\s*44px/);
+  assert.match(coarse, /\.archived-project-row \.ui-button,\.archived-session-row \.ui-button\s*\{[^}]*min-height\s*:\s*44px/);
+  const coarsePrimitives = [];
+  postcss.parse(primitives).walkAtRules('media', (media) => {
+    if (/\(pointer:coarse\)/.test(media.params)) coarsePrimitives.push(media.toString());
+  });
+  assert.match(coarsePrimitives.join('\n'), /\.ui-button,\.ui-menu__item\s*\{[^}]*min-height\s*:\s*44px[\s\S]*?\.ui-icon-button\s*\{[^}]*width\s*:\s*44px[^}]*min-height\s*:\s*44px[\s\S]*?\.ui-dialog__close\s*\{[^}]*width\s*:\s*44px[^}]*height\s*:\s*44px/);
+  assert.match(styles, /\.session-row\.is-selected \.session-menu/);
+});
+
+test('P0 interaction architecture cannot regress to hidden cancel or viewport-breaking overlays', () => {
+  const componentRoot = join(import.meta.dirname, '..', 'src', 'panel', 'components');
+  const composer = readFileSync(join(componentRoot, 'Composer.tsx'), 'utf8');
+  const sidebar = readFileSync(join(componentRoot, 'ProjectSidebar.tsx'), 'utf8');
+  const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'ui', 'Dialog.tsx'), 'utf8');
+  const styles = featureCss();
+  assert.match(composer, /cancelTurn/);
+  assert.match(composer, /Stop generation/);
+  assert.match(composer, /control\?\.phase === 'uncertain'[\s\S]*?retryPersistentAction\(control\.commandId\)/);
+  assert.match(composer, /Confirm stop with original request/);
+  assert.match(dialog, /<Portal>/);
+  assert.match(sidebar, /sidebar-footer/);
+  assert.doesNotMatch(styles, /logout-button[^}]*position\s*:\s*fixed/s);
+});
+
+test('composer keeps the writing surface quiet and keyboard behavior discoverable', () => {
+  const root = join(import.meta.dirname, '..', 'src');
+  const composer = readFileSync(join(root, 'panel', 'components', 'Composer.tsx'), 'utf8');
+  const styles = featureCss();
+  assert.match(composer, /Enter to send · Shift \+ Enter for newline/);
+  assert.match(composer, /runtimeSummary/);
+  assert.doesNotMatch(composer, />\s*effort：/);
+  assert.doesNotMatch(composer, />\s*上下文：/);
+  assert.match(styles, /\.composer-surface:focus-within\s*\{[^}]*border-color:\s*var\(--border-strong\)/);
+  assert.match(styles, /\.composer-surface:has\(\.composer-input:focus-visible\)\s*\{[^}]*var\(--focus-ring\)/);
+  assert.match(styles, /\.composer-toolbar>\s*\.ui-tooltip-anchor\s*\{[^}]*margin-left\s*:\s*auto;?[^}]*flex\s*:\s*0\s+0\s+auto/);
+  assert.doesNotMatch(styles, /\.composer-surface:focus-within\{[^}]*(?:blue|#[0-9a-f]*ff[0-9a-f]*)/i);
+});
+
+test('design tokens cannot directly reference themselves', () => {
+  const css = readFileSync(join(import.meta.dirname, '..', 'src', 'ui', 'tokens.css'), 'utf8');
+  const selfReferences = [...css.matchAll(/--([a-z0-9-]+)\s*:\s*var\(--\1\)/gi)].map((match) => match[1]);
+  assert.deepEqual(selfReferences, []);
+});
+
+test('reusable design tokens have one UI-library source', () => {
+  const root = join(import.meta.dirname, '..', 'src');
+  const styles = readFileSync(join(root, 'styles.css'), 'utf8');
+  const theme = readFileSync(join(root, 'ui', 'theme.css'), 'utf8');
+  const featureStyles = featureCss();
+  const primitives = readFileSync(join(root, 'ui', 'primitives.css'), 'utf8');
+  const tokens = readFileSync(join(root, 'ui', 'tokens.css'), 'utf8');
+  // Tailwind 采纳后入口链为 theme.css（含 @import 'tailwindcss'）→ base.css → primitives.css。
+  assert.match(styles, /^@import '\.\/ui\/theme\.css';\n@import '\.\/ui\/base\.css';\n@import '\.\/ui\/primitives\.css';/);
+  assert.doesNotMatch(styles, /@import '\.\/ui\/tokens\.css'/);
+  assert.match(primitives, /^@import '\.\/tokens\.css';/);
+  assert.doesNotMatch(styles, /:root\s*\{/);
+  assert.match(tokens, /:root\s*\{/);
+  assert.match(tokens, /--composer-border:/);
+  // theme.css 只是把 tokens 映射进 Tailwind 命名空间（@theme inline），
+  // 每个变量声明必须直接引用 tokens 变量（var(...) 开头），不得声明字面值。
+  // 例外：--breakpoint-* 断点 —— 媒体查询条件不能用 var()，必须字面量，
+  // 且断点是框架概念而非设计值（tokens.css 不定义）。
+  assert.match(theme, /@theme inline/);
+  assert.doesNotMatch(theme, /--(?!breakpoint-)[a-z0-9-]+\s*:(?!\s*var\()/);
+  assert.match(theme, /--breakpoint-desk:\s*960px/);
+  assert.match(theme, /--breakpoint-wide:\s*1200px/);
+  assert.doesNotMatch(tokens, /--breakpoint-/);
+  assert.doesNotMatch(featureStyles, /#[0-9a-f]{3,8}\b|rgba?\(/i);
+  const declared = new Set([...tokens.matchAll(/--([a-z0-9-]+)\s*:/gi)].map((match) => match[1]));
+  const sourceFiles = [featureStyles, theme, ...readdirSync(join(root, 'panel', 'components'))
+    .filter((file) => file.endsWith('.tsx'))
+    .map((file) => readFileSync(join(root, 'panel', 'components', file), 'utf8'))];
+  const referenced = new Set(sourceFiles.flatMap((source) => [...source.matchAll(/var\(--([a-z0-9-]+)/gi)].map((match) => match[1])));
+  assert.deepEqual([...referenced].filter((token) => !declared.has(token)), []);
+});
+
+// Tailwind 已全量采纳（2026-08-15 用户决策）：入口链经 @tailwindcss/vite 编译，
+// theme.css 的 @theme inline 只做 tokens→utility 映射。此测试改为守护：
+//   1) Tailwind 管线确实接线（manifest/vite/theme.css）；
+//   2) 浏览器基线仍由非 layer 的 base.css 拥有（非 layer 规则在级联中优先于
+//      Tailwind preflight 的 @layer base，这是 preflight 不覆盖产品基线的依据）；
+//   3) 迁移期间组件仍使用语义类名（视觉不变的守护，迁移完成后重写为编译产物断言）。
+
+test('product CSS owns its browser baseline and semantic layout', () => {
+  const root = join(import.meta.dirname, '..');
+  const source = join(root, 'src');
+  const styles = featureCss();
+  const base = readFileSync(join(source, 'ui', 'base.css'), 'utf8');
+  const theme = readFileSync(join(source, 'ui', 'theme.css'), 'utf8');
+  const chatView = readFileSync(join(source, 'panel', 'components', 'ChatView.tsx'), 'utf8');
+  const messageList = readFileSync(join(source, 'panel', 'components', 'MessageList.tsx'), 'utf8');
+  const manifest = readFileSync(join(root, 'package.json'), 'utf8');
+  const vite = readFileSync(join(root, 'vite.config.ts'), 'utf8');
+
+  assert.match(manifest, /"tailwindcss"/);
+  assert.match(manifest, /"@tailwindcss\/vite"/);
+  assert.match(vite, /tailwindcss\(\)/);
+  assert.match(theme, /@import 'tailwindcss';/);
+  assert.doesNotMatch(theme, /@theme[ \t]+(?!inline)/);
+  assert.match(base, /\*[^]*box model[^]*\*\//i);
+  assert.match(base, /box-sizing:\s*border-box/);
+  assert.match(base, /margin:\s*0/);
+  assert.match(base, /padding:\s*0/);
+  assert.match(base, /border:\s*0 solid/);
+  assert.match(base, /\[hidden\]:where\(:not\(\[hidden=until-found\]\)\)\s*\{\s*display:\s*none\s*!important/);
+  assert.match(base, /button,\s*input,\s*select,\s*optgroup,\s*textarea/);
+  assert.match(base, /background-color:\s*transparent/);
+  assert.match(base, /border-radius:\s*0/);
+  assert.match(base, /h1,\s*h2,\s*h3,\s*h4,\s*h5,\s*h6/);
+  assert.match(base, /code,\s*kbd,\s*samp,\s*pre\s*\{[^}]*font-family:\s*var\(--font-mono\)/s);
+  assert.match(base, /ol,\s*ul,\s*menu\s*\{\s*list-style:\s*none/);
+  assert.match(base, /img,\s*svg,\s*video,\s*canvas,\s*audio/);
+  assert.match(base, /summary\s*\{\s*display:\s*list-item/);
+
+  assert.match(chatView, /class="chat-view flex h-full min-h-0 flex-col"/);
+  assert.match(messageList, /class="ui-scrollbar message-list-scroll min-h-0 flex-1 overflow-y-auto"/);
+  assert.match(messageList, /class="message-list-content w-full max-w-\(--container-chat\) mx-auto py-24 px-16 /);
+  assert.doesNotMatch(styles, /\.message-list-shell>section>div/);
+});
+
+test('primitive visuals are standalone and do not leak into feature styles', () => {
+  const root = join(import.meta.dirname, '..', 'src');
+  const styles = cssFiles().filter((file) => file.startsWith('panel/styles/'))
+    .map((file) => readFileSync(join(root, file), 'utf8')).join('\n');
+  const primitives = readFileSync(join(root, 'ui', 'primitives.css'), 'utf8');
+  const drawer = readFileSync(join(root, 'ui', 'Drawer.tsx'), 'utf8');
+  const ownedSelectors = [
+    '.ui-icon', '.ui-button', '.ui-icon-button', '.ui-field', '.ui-dialog-backdrop',
+    '.ui-drawer-scrim', '.ui-menu', '.ui-tooltip', '.ui-status', '.ui-badge',
+    '.ui-toast', '.ui-empty', '.ui-spinner', '.ui-scrollbar',
+  ];
+  for (const selector of ownedSelectors) {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    assert.match(primitives, new RegExp(`${escaped}\\s*\\{`));
+    assert.doesNotMatch(
+      styles,
+      new RegExp(`(?:^|})\\s*${escaped}\\s*\\{`, 'm'),
+      `${selector} base styles must remain owned by primitives.css`,
+    );
+  }
+  assert.match(drawer, /class="ui-drawer-scrim"/);
+  assert.doesNotMatch(styles, /drawer-scrim/);
+});
+
+test('domain status inference delegates visual rendering to the shared Badge', () => {
+  const root = join(import.meta.dirname, '..', 'src');
+  const adapter = readFileSync(join(root, 'panel', 'components', 'Badge.tsx'), 'utf8');
+  const primitive = readFileSync(join(root, 'ui', 'Badge.tsx'), 'utf8');
+  assert.match(adapter, /Badge as UiBadge/);
+  assert.doesNotMatch(adapter, /bg-\[|text-\[/);
+  assert.match(primitive, /BadgeTone = 'neutral' \| 'ok' \| 'warn' \| 'err'/);
+});
+
+test('icon-only controls receive visible help from the shared Tooltip', () => {
+  const root = join(import.meta.dirname, '..', 'src', 'ui');
+  const button = readFileSync(join(root, 'Button.tsx'), 'utf8');
+  const tooltip = readFileSync(join(root, 'Tooltip.tsx'), 'utf8');
+  assert.match(button, /<Tooltip content=/);
+  assert.doesNotMatch(button, /title=\{/);
+  assert.match(tooltip, /role="tooltip"/);
+  assert.match(tooltip, /event\.key === 'Escape'/);
+  const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'components', 'ProjectSessionRow.tsx'), 'utf8');
+  assert.match(sessionRow, /<IconButton[^>]*[\s\S]*?class="session-menu(?:\s|")/);
+  assert.doesNotMatch(sessionRow, /<button[^>]*class="session-menu"/);
+});
+
+test('responsive navigation behavior belongs to the shared Drawer primitive', () => {
+  const root = join(import.meta.dirname, '..', 'src');
+  const shell = readFileSync(join(root, 'panel', 'components', 'AppShell.tsx'), 'utf8');
+  const drawer = readFileSync(join(root, 'ui', 'Drawer.tsx'), 'utf8');
+  assert.match(shell, /<Drawer\b/);
+  assert.match(shell, /if \(!query\.matches\) setOpen\(false\)/);
+  assert.doesNotMatch(shell, /document\.addEventListener\('keydown'/);
+  assert.doesNotMatch(shell, /\.inert\s*=/);
+  assert.match(drawer, /acquireOverlay/);
+  assert.match(drawer, /role=\{props\.modal && props\.open \? 'dialog'/);
+  assert.match(drawer, /aria-modal=/);
+});
+

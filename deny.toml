@@ -1,0 +1,40 @@
+# Repository-owned dependency policy for the independent peri-studio workspace.
+# CI installs exactly cargo-deny 0.20.2 and fails closed if advisory data
+# cannot be refreshed. Every exception must carry an exact id and reason.
+
+[graph]
+all-features = true
+exclude-dev = false
+
+[advisories]
+ignore = [
+  { id = "RUSTSEC-2026-0215", reason = "informational unmaintained warning for smallstr 0.3.1, transitively required by yrs 0.27.3; RustSec provides no safe upgrade, so keep visible here until yrs removes it" },
+]
+
+[licenses]
+confidence-threshold = 0.8
+allow = [
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-3-Clause",
+  "MIT",
+  "Unicode-3.0",
+  "Zlib",
+]
+
+[licenses.private]
+ignore = false
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+highlight = "simplest-path"
+workspace-default-features = "allow"
+external-default-features = "allow"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []
+

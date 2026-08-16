@@ -1,0 +1,290 @@
+/* 会话头与运行状态、连接与错误状态。
+   由 chat.css 按区块拆分而来（原行 21-108、884-1083），选择器与媒体查询保持原样。 */
+/* 会话头与运行状态 */
+.chat-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  height: 60px;
+  padding: 0 var(--space-20);
+  border-bottom: 1px solid var(--divider);
+  background: var(--surface-header);
+}
+.chat-title {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-3);
+}
+.chat-title strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  line-height: 1.15;
+}
+.chat-title .runtime-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.runtime-status i {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+.runtime-status--ready i {
+  background: var(--success);
+}
+.runtime-status--busy i {
+  background: var(--accent);
+  animation: runtime-pulse 1.6s ease-in-out infinite;
+}
+.chat-title .runtime-status--attention {
+  color: var(--warning);
+}
+.runtime-status--attention i {
+  background: var(--warning);
+}
+.chat-title .runtime-status--danger {
+  color: var(--danger);
+}
+.runtime-status--danger i {
+  background: var(--danger);
+}
+@keyframes runtime-pulse {
+  50% {
+    opacity: .35;
+  }
+}
+@keyframes message-loading-pulse {
+  0%,100% {
+    opacity: .25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.connection-pill .ui-status__dot {
+  width: 6px;
+  height: 6px;
+}
+.chat-actions {
+  position: relative;
+}
+.chat-actions .ui-menu {
+  right: 0;
+  top: 42px;
+  min-width: 190px;
+}
+/* 连接与错误状态 */
+.connection-problem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  margin: var(--space-12) var(--space-20) 0;
+  padding: var(--space-13) var(--space-14);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-14);
+  background: var(--danger-soft);
+}
+.connection-problem__mark {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--danger);
+  color: var(--surface);
+  font-weight: 700;
+}
+.connection-problem__body {
+  min-width: 0;
+  flex: 1;
+}
+.connection-problem__body strong {
+  font-size: 13px;
+}
+.connection-problem__body p {
+  margin: var(--space-3) 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.restore-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-9);
+  margin: var(--space-12) var(--space-20) 0;
+  padding: var(--space-10);
+  border-radius: var(--radius-12);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.error-center {
+  display: flex;
+  max-height: 180px;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin: var(--space-10) var(--space-20) 0;
+  overflow: auto;
+}
+.error-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-12);
+  padding: var(--space-11) var(--space-12);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-12);
+  background: var(--danger-soft);
+  font-size: 12px;
+}
+.error-card strong {
+  font-size: 13px;
+}
+.error-card p {
+  margin: var(--space-3) 0;
+  color: var(--text-secondary);
+}
+.error-card code {
+  padding: 0;
+  background: transparent;
+  font-size: 10px;
+}
+.error-card__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-4);
+}
+.error-card__actions button {
+  min-height: 32px;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.error-card__actions button:hover {
+  background: var(--surface-hover-translucent);
+}
+.message-actions {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+}
+.message-actions button {
+  min-height: 28px;
+  padding: 0 var(--space-8);
+  border: 0;
+  border-radius: var(--radius-7);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+}
+.message-actions button:hover {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+@media (min-width:960px) and (max-width:1199px) {
+  .chat-header {
+    height: 56px;
+    padding-inline: var(--space-16);
+  }
+  .message-list-content {
+    max-width: 760px;
+    padding-inline: var(--space-18);
+  }
+  .connection-problem,.error-center {
+    margin-inline: var(--space-16);
+  }
+}
+@media (max-width:959px) {
+  .chat-header {
+    height: 56px;
+    padding: 0 var(--space-12);
+  }
+  .connection-pill .ui-status__label {
+    display: none;
+  }
+  .connection-pill .ui-status__dot {
+    width: 8px;
+    height: 8px;
+  }
+  .message-list-content {
+    max-width: 760px;
+  }
+  .connection-problem,.error-center {
+    margin-inline: var(--space-12);
+  }
+}
+@media (max-width:480px) {
+  .connection-problem {
+    align-items: flex-start;
+    margin: var(--space-10);
+    flex-wrap: wrap;
+  }
+  .connection-problem .ui-button {
+    width: 100%;
+  }
+  .restore-banner {
+    margin: var(--space-10);
+  }
+}
+@media (max-width:480px) {
+  .agent-activity,.agent-plan {
+    width: calc(100% - 20px);
+    margin-top: var(--space-8);
+  }
+  .agent-activity__summary-copy,.agent-plan__summary-copy {
+    display: grid;
+    gap: var(--space-1);
+  }
+  .agent-activity__body {
+    max-height: 210px;
+  }
+  .agent-activity__item {
+    grid-template-columns: 10px minmax(0,1fr);
+  }
+  .agent-activity__item time {
+    grid-column: 2;
+  }
+  .agent-activity__copy dl {
+    display: none;
+  }
+  .agent-plan__item {
+    grid-template-columns: 12px minmax(0,1fr);
+  }
+  .agent-plan__label {
+    grid-column: 2;
+  }
+}
+@media (pointer:coarse) {
+  .jump-latest {
+    min-height: 44px;
+    padding-inline: var(--space-16);
+  }
+  .md-code-header {
+    min-height: 44px;
+  }
+}
+@media (pointer:coarse) {
+  .agent-activity>summary,.agent-plan>summary {
+    min-height: 44px;
+  }
+}

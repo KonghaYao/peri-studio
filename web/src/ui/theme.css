@@ -1,0 +1,296 @@
+/* Tailwind v4 CSS-first theme. Single source of truth stays in tokens.css;
+   this file only maps the runtime variables into Tailwind namespaces so
+   atomic utilities (bg-*, p-*, rounded-*, shadow-*, ...) resolve to the
+   exact pixel/color values the legacy rules used. */
+
+@import 'tailwindcss';
+
+/*
+ * `inline` mode: utilities resolve directly to the tokens' var() references
+ * (e.g. `rounded-2 { border-radius: var(--radius-2) }`), and Tailwind does NOT
+ * emit a :root duplicate. Plain (non-inline) theme blocks would emit a
+ * self-referential `:root` variable for every same-named mapping, which is
+ * guaranteed-invalid — so radius, shadow, and font utilities would silently
+ * break without inline mode.
+ */
+@theme inline {
+  /* Surfaces */
+  --color-app-bg: var(--app-bg);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-translucent: var(--surface-translucent);
+  --color-surface-header: var(--surface-header);
+  --color-surface-hover-translucent: var(--surface-hover-translucent);
+  --color-empty-mark-bg: var(--empty-mark-bg);
+  --color-empty-mark-fg: var(--empty-mark-fg);
+  --color-scrim: var(--scrim);
+
+  /* Borders */
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-divider: var(--divider);
+  --color-danger-border: var(--danger-border);
+  --color-warning-border: var(--warning-border);
+  --color-composer-border: var(--composer-border);
+
+  /* Text */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-link: var(--link);
+  --color-link-decoration: var(--link-decoration);
+
+  /* Interaction and feedback */
+  --color-accent: var(--accent);
+  --color-hover: var(--hover);
+  --color-selected: var(--selected);
+  --color-focus-ring: var(--focus-ring);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-activity-bg: var(--activity-bg);
+  --color-warning: var(--warning);
+  --color-warning-strong: var(--warning-strong);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-btn-primary: var(--btn-primary);
+  --color-btn-primary-hover: var(--btn-primary-hover);
+  --color-scrollbar-thumb: var(--scrollbar-thumb);
+
+  /* Elevation */
+  --shadow-popover: var(--shadow-popover);
+  --shadow-float: var(--shadow-float);
+  --shadow-form: var(--shadow-form);
+  --shadow-auth: var(--shadow-auth);
+  --shadow-recovery: var(--shadow-recovery);
+  --shadow-accent-ring: var(--shadow-accent-ring);
+  --shadow-success-ring: var(--shadow-success-ring);
+
+  /* Spacing scale: exact pixel values from tokens (p-16 = 16px, etc.). */
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-5: var(--space-5);
+  --spacing-6: var(--space-6);
+  --spacing-7: var(--space-7);
+  --spacing-8: var(--space-8);
+  --spacing-9: var(--space-9);
+  --spacing-10: var(--space-10);
+  --spacing-11: var(--space-11);
+  --spacing-12: var(--space-12);
+  --spacing-13: var(--space-13);
+  --spacing-14: var(--space-14);
+  --spacing-15: var(--space-15);
+  --spacing-16: var(--space-16);
+  --spacing-17: var(--space-17);
+  --spacing-18: var(--space-18);
+  --spacing-20: var(--space-20);
+  --spacing-21: var(--space-21);
+  --spacing-22: var(--space-22);
+  --spacing-24: var(--space-24);
+  --spacing-25: var(--space-25);
+  --spacing-26: var(--space-26);
+  --spacing-28: var(--space-28);
+  --spacing-30: var(--space-30);
+  --spacing-32: var(--space-32);
+  --spacing-34: var(--space-34);
+  --spacing-36: var(--space-36);
+  --spacing-38: var(--space-38);
+  --spacing-40: var(--space-40);
+  --spacing-42: var(--space-42);
+  --spacing-44: var(--space-44);
+  --spacing-46: var(--space-46);
+  --spacing-48: var(--space-48);
+  --spacing-50: var(--space-50);
+  --spacing-52: var(--space-52);
+  --spacing-54: var(--space-54);
+  --spacing-56: var(--space-56);
+  --spacing-58: var(--space-58);
+  --spacing-60: var(--space-60);
+  --spacing-64: var(--space-64);
+  --spacing-72: var(--space-72);
+  --spacing-82: var(--space-82);
+  --spacing-84: var(--space-84);
+  --spacing-180: var(--space-180);
+  --spacing-240: var(--space-240);
+  --spacing-260: var(--space-260);
+  --spacing-300: var(--space-300);
+  --spacing-390: var(--space-390);
+  --spacing-520: var(--space-520);
+  --spacing-760: var(--space-760);
+  --spacing-800: var(--space-800);
+  --spacing-820: var(--space-820);
+
+  /* Radius scale: exact pixel values from tokens. */
+  --radius-2: var(--radius-2);
+  --radius-3: var(--radius-3);
+  --radius-4: var(--radius-4);
+  --radius-5: var(--radius-5);
+  --radius-6: var(--radius-6);
+  --radius-7: var(--radius-7);
+  --radius-8: var(--radius-8);
+  --radius-9: var(--radius-9);
+  --radius-10: var(--radius-10);
+  --radius-11: var(--radius-11);
+  --radius-12: var(--radius-12);
+  --radius-13: var(--radius-13);
+  --radius-14: var(--radius-14);
+  --radius-16: var(--radius-16);
+  --radius-17: var(--radius-17);
+  --radius-18: var(--radius-18);
+  --radius-20: var(--radius-20);
+  --radius-24: var(--radius-24);
+  --radius-full: var(--radius-full);
+
+  /* Typography */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  /* Breakpoints (panel/app-shell semantics, not Tailwind defaults):
+     ≥960px 两栏布局（侧栏收窄到 240px）；≥1200px 标准侧栏 280px；
+     <480px / <520px 紧凑控件与面板。Media queries cannot use var(),
+     so these stay literal here (framework concepts, tokens.css does not
+     define them). */
+  --breakpoint-desk: 960px;
+  --breakpoint-wide: 1200px;
+  --breakpoint-narrow: 480px;
+  --breakpoint-tight: 520px;
+  --breakpoint-middle: 760px;
+
+  /* Font-size scale */
+  --text-0: var(--text-0);
+  --text-9: var(--text-9);
+  --text-10: var(--text-10);
+  --text-10p5: var(--text-10p5);
+  --text-11: var(--text-11);
+  --text-11p5: var(--text-11p5);
+  --text-12: var(--text-12);
+  --text-12p5: var(--text-12p5);
+  --text-13: var(--text-13);
+  --text-14: var(--text-14);
+  --text-15: var(--text-15);
+  --text-16: var(--text-16);
+  --text-17: var(--text-17);
+  --text-18: var(--text-18);
+  --text-28: var(--text-28);
+  --text-code: var(--text-code);
+
+  /* Line-height scale */
+  --leading-1: var(--leading-1);
+  --leading-12: var(--leading-12);
+  --leading-115: var(--leading-115);
+  --leading-13: var(--leading-13);
+  --leading-135: var(--leading-135);
+  --leading-14: var(--leading-14);
+  --leading-145: var(--leading-145);
+  --leading-15: var(--leading-15);
+  --leading-155: var(--leading-155);
+  --leading-16: var(--leading-16);
+  --leading-20: var(--leading-20);
+  --leading-24: var(--leading-24);
+  --leading-25: var(--leading-25);
+
+  /* Font-weight scale (non-standard weights) */
+  --font-weight-450: var(--font-weight-450);
+  --font-weight-550: var(--font-weight-550);
+  --font-weight-610: var(--font-weight-610);
+  --font-weight-650: var(--font-weight-650);
+  --font-weight-680: var(--font-weight-680);
+  --font-weight-750: var(--font-weight-750);
+
+  /* Letter-spacing scale */
+  --tracking-1: var(--tracking-1);
+  --tracking-5: var(--tracking-5);
+  --tracking-35: var(--tracking-35);
+  --tracking-6: var(--tracking-6);
+  --tracking-7: var(--tracking-7);
+  --tracking-8: var(--tracking-8);
+
+  /* Opacity scale */
+  --opacity-52: var(--opacity-52);
+
+  /* Motion and z-index */
+  --duration-180: var(--duration-180);
+  --z-1: var(--z-1);
+  --z-12: var(--z-12);
+  --z-35: var(--z-35);
+
+  /* Grid templates */
+  --grid-template-columns-shell: var(--grid-cols-shell);
+  --grid-template-columns-shell-desk: var(--grid-cols-shell-desk);
+  --grid-template-columns-shell-wide: var(--grid-cols-shell-wide);
+  --grid-template-columns-recovery: var(--grid-cols-recovery);
+  --grid-template-columns-recovery-item: var(--grid-cols-recovery-item);
+  --grid-template-columns-activity: var(--grid-cols-activity);
+  --grid-template-columns-plan: var(--grid-cols-plan);
+  --grid-template-columns-import: var(--grid-cols-import);
+  --grid-template-columns-permission: var(--grid-cols-permission);
+  --grid-template-columns-boundary: var(--grid-cols-boundary);
+  --grid-template-columns-settings-form: var(--grid-cols-settings-form);
+  --grid-template-columns-slash: var(--grid-cols-slash);
+  --grid-template-columns-config: var(--grid-cols-config);
+
+  /* Containers: max-w-/max-h-/w- utilities resolve to these */
+  --container-chat: var(--container-chat);
+  --container-chat-narrow: var(--container-chat-narrow);
+  --container-composer: var(--container-composer);
+  --container-auth-card: var(--container-auth-card);
+  --container-drawer: var(--container-drawer);
+  --container-recovery: var(--container-recovery);
+  --container-recovery-body: var(--container-recovery-body);
+  --container-settings: var(--container-settings);
+  --container-settings-tall: var(--container-settings-tall);
+  --container-rewind: var(--container-rewind);
+  --container-rewind-tall: var(--container-rewind-tall);
+  --container-config: var(--container-config);
+  --container-mcp: var(--container-mcp);
+  --container-search: var(--container-search);
+  --container-search-results: var(--container-search-results);
+  --container-slash: var(--container-slash);
+  --container-slash-tight: var(--container-slash-tight);
+  --container-activity: var(--container-activity);
+  --container-placeholder: var(--container-placeholder);
+  --container-placeholder-narrow: var(--container-placeholder-narrow);
+}
+
+/* Named utilities for values that have no Tailwind namespace
+   (percentage widths, per-side border styles, font shorthand). */
+@utility font-inherit {
+  font: inherit;
+}
+@utility border-solid-l {
+  border-left-style: solid;
+}
+@utility border-dashed-t {
+  border-top-style: dashed;
+}
+@utility max-w-35p {
+  max-width: 35%;
+}
+@utility max-w-40p {
+  max-width: 40%;
+}
+@utility max-w-42p {
+  max-width: 42%;
+}
+@utility max-w-70p {
+  max-width: 70%;
+}
+@utility max-w-72p {
+  max-width: 72%;
+}
+@utility bottom-full-8 {
+  bottom: calc(100% + 8px);
+}
+@utility wrap-anywhere {
+  overflow-wrap: anywhere;
+}
+@utility pb-safe {
+  padding-bottom: max(var(--space-10), env(safe-area-inset-bottom));
+}
+@utility outline-offset-neg-2 {
+  outline-offset: -2px;
+}

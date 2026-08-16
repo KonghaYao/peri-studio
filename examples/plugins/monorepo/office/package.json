@@ -1,0 +1,26 @@
+{
+  "name": "office",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "bun src/index.ts",
+    "start:stdio": "bun src/index.ts --stdio",
+    "demo": "bun test/demo-client.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^7"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/client": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "@peri/mcpp": "workspace:*",
+    "zod": "^4.4.3"
+  }
+}

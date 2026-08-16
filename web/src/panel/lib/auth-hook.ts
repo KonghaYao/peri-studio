@@ -1,0 +1,230 @@
+// 鉴权会话控制器（auth-hook）：网络 fetch + localStorage 持久化 + 状态机 +
+// requestEpoch 竞态令牌。
+//
+// 从 AuthGate 拆出（P4）：AuthGate 只保留渲染与 context 提供，全部行为
+// （status 检查 / token 提交 / 登出 / invalidation 恢复 / 记住的 token
+// 重放）收敛到这里。`useAuthActions` 作为公共契约也在此导出，消费方
+// （ProjectSidebar 等）不再直连 feature 组件 AuthGate。
+//
+// 设计：`createAuthController` 不依赖组件生命周期（可直接在测试中
+// 实例化）；`useAuth` 是组件适配层，负责挂载时 init 与 authInvalidation
+// 订阅。requestEpoch 保证并发请求中只有最后一次响应生效。store 的
+// resetAuthenticatedSession 经依赖注入传入（本 lib 不反向依赖 store）。
+
+import { createContext, createEffect, createSignal, onMount, useContext } from 'solid-js';
+import { connectWithCookie } from './connection';
+import { parsePrincipal } from './auth-role';
+import { authFeedback } from './auth-feedback.ts';
+import { authInvalidation, clearAuthInvalidation, installPrincipalRole } from './auth-state';
+import { parseAuthSetup, type AuthSetup } from './auth-setup';
+
+export type AuthState = 'checking' | 'signed-out' | 'signed-in';
+export type AuthProblem = ReturnType<typeof authFeedback>;
+export interface AuthActions {
+  logout: () => void;
+}
+
+export interface AuthControllerDeps {
+  /** 身份边界重置（store.resetAuthenticatedSession）：任何鉴权转换前清空旧身份状态。 */
+  resetSession: () => void;
+}
+
+export const AuthActionsContext = createContext<AuthActions>();
+export const useAuthActions = (): AuthActions | undefined => useContext(AuthActionsContext);
+
+/**
+ * 已记住的 full token（localStorage）。仅用于下次打开时自动重放
+ * `POST /api/auth/session`，server 会话本身仍是 HttpOnly cookie。
+ * 登出或 server 判定 token 失效时立即清除。
+ *
+ * 已知风险（记录于此处，见 docs/architecture.md 浏览器认证契约与 loopback
+ * 封闭协议章节）：full token 落 localStorage 扩大了 XSS 窃取面——任何能注入
+ * 脚本的漏洞都能直接读到该凭据并离线重放，而 HttpOnly cookie 无此暴露。
+ * 当前缓解：Web 面板无 HTML 注入面（框架默认转义）、下行 markdown 走白名单
+ * 渲染、认证 HTTP 面仅限同源 loopback。移除条件：server 端引入短期 session
+ * token 重放（如一次性/短 TTL 交换）或 remember-me cookie 方案后，此存储
+ * 应整体下线并迁移旧值。
+ */
+const TOKEN_KEY = 'peri_studio_token';
+
+function rememberToken(value: string) {
+  try {
+    localStorage.setItem(TOKEN_KEY, value);
+  } catch {
+    // 存储不可用（隐私模式/禁用）时静默降级为每次手动输入。
+  }
+}
+
+function rememberedToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function forgetToken() {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // 同上，忽略。
+  }
+}
+
+export function createAuthController(deps: AuthControllerDeps) {
+  const [state, setState] = createSignal<AuthState>('checking');
+  const [token, setToken] = createSignal('');
+  const [problem, setProblem] = createSignal<AuthProblem>(null);
+  const [submitting, setSubmitting] = createSignal(false);
+  const [setup, setSetup] = createSignal<AuthSetup | null>(null);
+  let requestEpoch = 0;
+
+  async function authPayload(res: Response): Promise<{ payload: unknown; setup: AuthSetup | null }> {
+    try {
+      const payload: unknown = await res.json();
+      return { payload, setup: parseAuthSetup(payload) };
+    } catch {
+      return { payload: null, setup: null };
+    }
+  }
+
+  async function status() {
+    const epoch = ++requestEpoch;
+    setProblem(null);
+    try {
+      const res = await fetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store' });
+      if (epoch !== requestEpoch) return;
+      const parsed = await authPayload(res);
+      if (epoch !== requestEpoch) return;
+      if (parsed.setup) setSetup(parsed.setup);
+      if (!res.ok) {
+        deps.resetSession();
+        setProblem(authFeedback(res.status, 'status'));
+        return setState('signed-out');
+      }
+      const role = parsePrincipal(parsed.payload);
+      if (!role) {
+        deps.resetSession();
+        setProblem({ kind: 'server', message: 'The server returned an unrecognized access role; access to the app is blocked.', retryable: true });
+        return setState('signed-out');
+      }
+      deps.resetSession();
+      installPrincipalRole(role);
+      clearAuthInvalidation();
+      setState('signed-in');
+      connectWithCookie();
+    } catch {
+      if (epoch === requestEpoch) {
+        deps.resetSession();
+        setProblem(authFeedback(0, 'status'));
+        setState('signed-out');
+      }
+    }
+  }
+
+  async function submitToken(raw: string) {
+    const epoch = ++requestEpoch;
+    setSubmitting(true);
+    setProblem(null);
+    try {
+      const res = await fetch('/api/auth/session', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: raw }),
+      });
+      if (epoch !== requestEpoch) return;
+      const parsed = await authPayload(res);
+      if (epoch !== requestEpoch) return;
+      if (parsed.setup) setSetup(parsed.setup);
+      if (!res.ok) {
+        deps.resetSession();
+        // 401 = 令牌被撤销/无效，记住的 token 不值得保留；其他错误码
+        // （网络/5xx）不清除，下次打开仍可重放。
+        if (res.status === 401) forgetToken();
+        setProblem(authFeedback(res.status, 'login'));
+        return setState('signed-out');
+      }
+      const role = parsePrincipal(parsed.payload);
+      if (!role) {
+        deps.resetSession();
+        setProblem({ kind: 'server', message: 'The server returned an unrecognized access role; sign-in is blocked.', retryable: true });
+        setState('signed-out');
+        return;
+      }
+      rememberToken(raw);
+      deps.resetSession();
+      installPrincipalRole(role);
+      clearAuthInvalidation();
+      setToken('');
+      setState('signed-in');
+      connectWithCookie();
+    } catch {
+      if (epoch === requestEpoch) {
+        deps.resetSession();
+        setProblem(authFeedback(0, 'login'));
+        setState('signed-out');
+      }
+    } finally {
+      if (epoch === requestEpoch) setSubmitting(false);
+    }
+  }
+
+  /** 挂载时：记住的 token 直接重放；否则检查 cookie 会话。 */
+  function init() {
+    const saved = rememberedToken();
+    if (saved && saved.trim()) {
+      void submitToken(saved.trim());
+    } else {
+      void status();
+    }
+  }
+
+  /** ws 4502 / 管理员撤销等 invalidation 事件的恢复逻辑。 */
+  function handleInvalidation(event: { reason: string }) {
+    requestEpoch += 1;
+    deps.resetSession();
+    setSubmitting(false);
+    // 不盲目清除记住的 token：4502 只是当前 cookie 失效（server 重启、
+    // 会话 TTL），localStorage 里的 full token 通常仍然有效。先自动重放；
+    // 重放被拒（401）时才由 submitToken 清除并退回手动输入。
+    const saved = rememberedToken();
+    if (saved && saved.trim()) {
+      setProblem(null);
+      void submitToken(saved.trim());
+    } else {
+      setProblem({ kind: 'credential', message: event.reason, retryable: false });
+      setState('signed-out');
+    }
+  }
+
+  async function logout() {
+    requestEpoch += 1;
+    forgetToken();
+    deps.resetSession();
+    clearAuthInvalidation();
+    installPrincipalRole(null);
+    setState('signed-out');
+    try {
+      await fetch('/api/auth/session', { method: 'DELETE', credentials: 'same-origin' });
+    } catch {
+      setProblem({ kind: 'network', message: 'Signed out locally, but the server did not confirm the logout. Re-check your sign-in state after the connection recovers.', retryable: true });
+    }
+  }
+
+  return { state, token, setToken, problem, submitting, setup, status, submitToken, logout, init, handleInvalidation };
+}
+
+export type AuthController = ReturnType<typeof createAuthController>;
+
+/** 组件适配层：挂载时自动检查/重放，并订阅 authInvalidation 事件。 */
+export function useAuth(deps: AuthControllerDeps): AuthController {
+  const controller = createAuthController(deps);
+  onMount(controller.init);
+  createEffect(() => {
+    const event = authInvalidation();
+    if (!event) return;
+    controller.handleInvalidation(event);
+  });
+  return controller;
+}

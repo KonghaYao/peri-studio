@@ -1,0 +1,24 @@
+{
+  "name": "monorepo",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun src/index.ts",
+    "start": "bun src/index.ts",
+    "demo": "bun test/smoke.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^7"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/client": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "@peri/mcpp": "workspace:*",
+    "office": "workspace:*",
+    "zod": "^4.4.3"
+  }
+}

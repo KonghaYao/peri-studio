@@ -1,0 +1,45 @@
+# Rust
+/target
+
+# Node / Vite
+node_modules/
+dist/
+*.tsbuildinfo
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Logs and runtime data
+*.log
+logs/
+pids
+*.pid
+*.pid.lock
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Test output
+coverage/
+*.lcov
+.nyc_output/
+test-results/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Tools and caches
+.tmp/
+.peri/
+.cache/
+.parcel-cache/
+
+# macOS / editors
+.DS_Store
+.idea/
+.vscode-test
+
+# Misc
+*.tgz
+*.db
+*.png
+.claude

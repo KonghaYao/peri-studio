@@ -1,0 +1,183 @@
+/* 对话框与表单：rewind 三步骤破坏性流程。
+   由 dialogs.css 按区块拆分而来（原行 335-515），选择器与媒体查询保持原样。 */
+/* Peri rewind is a deliberate three-step destructive flow. The target and
+   file impact remain readable before the danger action becomes available. */
+.rewind-dialog {
+  box-sizing: border-box;
+  width: min(640px,calc(100vw - 40px));
+  max-height: min(76dvh,700px);
+  overflow: auto;
+  padding: var(--space-4) var(--space-22) var(--space-22);
+}
+.rewind-dialog__intro {
+  padding: var(--space-8) 0 var(--space-16);
+}
+.rewind-dialog__intro strong,.rewind-dialog__result>strong,.rewind-dialog__loading>strong {
+  color: var(--text-primary);
+  font-size: 15px;
+}
+.rewind-dialog__intro p,.rewind-dialog__loading p,.rewind-dialog__result p {
+  margin: var(--space-5) 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.rewind-dialog__loading,.rewind-dialog__empty,.rewind-dialog__result {
+  display: grid;
+  min-height: 180px;
+  place-content: center;
+  justify-items: center;
+  padding: var(--space-24);
+  text-align: center;
+}
+.rewind-dialog__loading .ui-spinner {
+  width: 22px;
+  height: 22px;
+  margin-bottom: var(--space-12);
+}
+.rewind-candidates {
+  display: grid;
+  gap: var(--space-7);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rewind-candidates button {
+  display: grid;
+  width: 100%;
+  min-height: 58px;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: var(--space-18);
+  padding: var(--space-11) var(--space-13);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-12);
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.rewind-candidates button:hover {
+  border-color: var(--border-strong);
+  background: var(--selected);
+}
+.rewind-candidates button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.rewind-candidates span {
+  overflow: hidden;
+  display: -webkit-box;
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.rewind-candidates small {
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.rewind-target {
+  margin: 0;
+  padding: var(--space-13) var(--space-15);
+  border-left: 3px solid var(--text-primary);
+  border-radius: 0 var(--radius-10) var(--radius-10) 0;
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.rewind-impact {
+  margin-top: var(--space-18);
+}
+.rewind-impact h3 {
+  margin: 0 0 var(--space-8);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+.rewind-impact>p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.rewind-impact ul {
+  display: grid;
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rewind-impact li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  padding: var(--space-8) var(--space-10);
+  border-radius: var(--radius-9);
+  background: var(--surface-muted);
+}
+.rewind-impact code {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rewind-impact span {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.rewind-dialog__warning {
+  margin: var(--space-18) 0 0;
+  padding: var(--space-10) var(--space-12);
+  border-radius: var(--radius-10);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.rewind-dialog .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+  margin-top: var(--space-20);
+}
+.rewind-dialog__result--ok {
+  color: var(--success);
+}
+.rewind-dialog__result--unknown {
+  justify-items: start;
+  border-radius: var(--radius-12);
+  background: var(--warning-soft);
+  text-align: left;
+}
+.rewind-dialog__result>.ui-button {
+  margin-top: var(--space-18);
+}
+@media (max-width:640px) {
+  .rewind-dialog {
+    width: calc(100vw - 24px);
+    max-height: 82dvh;
+    padding: var(--space-2) var(--space-16) var(--space-17);
+  }
+  .rewind-candidates button {
+    min-height: 58px;
+  }
+  .rewind-dialog .form-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .rewind-dialog .form-actions .ui-button {
+    min-height: 44px;
+  }
+  .rewind-dialog .form-actions .ui-button:last-child {
+    grid-row: 1;
+  }
+  .rewind-dialog__result {
+    padding: var(--space-20) var(--space-8);
+  }
+}

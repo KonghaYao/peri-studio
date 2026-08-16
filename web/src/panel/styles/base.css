@@ -1,0 +1,55 @@
+/* 应用壳脚手架与全局基线（Tailwind 迁移后保留部分）。
+   .app-shell / .project-drawer / .conversation-pane / .mobile-nav-button 的
+   布局样式已迁移为组件 JSX 中的原子类（断点 desk=960px / wide=1200px 见
+   ui/theme.css）。以下为元素级基线、焦点环、减弱动态与状态规则 —— 这些
+   无法由原子类表达（元素选择器、媒体特性、状态类覆盖）。 */
+
+html,
+body,
+#app {
+  height: 100%;
+}
+body {
+  margin: 0;
+  overflow: hidden;
+  /* 固定视口应用壳：页面本身不滚动，导航与对话各自滚动 */
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: var(--app-bg);
+  -webkit-font-smoothing: antialiased;
+}
+/* 移动端抽屉开启态：位移与过渡在 JSX 原子类（max-desk:-translate-x-full，
+   v4 使用独立 translate 属性），状态类覆盖必须命中同一属性 —— 覆盖
+   transform 无法抵消 translate，抽屉会停留在视口外。 */
+.project-drawer.is-open {
+  translate: 0;
+}
+/* 等宽字体统一走系统 mono 栈；code 降低对比（去掉 slate 大背景感） */
+code,
+pre,
+kbd {
+  font-family: var(--font-mono);
+}
+code {
+  border-radius: var(--radius-6);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  padding: var(--space-1) var(--space-6);
+  font-size: 0.85em;
+}
+/* 统一键盘焦点环：不依赖浏览器默认 outline，hover-only 交互也要能聚焦 */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+/* 尊重系统减弱动态：取消位移与循环动画，只保留即时状态变化（§3.11） */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

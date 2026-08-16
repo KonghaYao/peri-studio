@@ -1,0 +1,237 @@
+/* 权限请求队列与消息投递警示（含 prompt 本地可见性说明）。
+   由 chat.css 按区块拆分而来（原行 1084-1318），选择器与媒体查询保持原样。 */
+/* 权限请求队列 */
+.permission-queue {
+  position: sticky;
+  top: 12px;
+  z-index: 10;
+  margin-bottom: var(--space-16);
+}
+.permission-queue__navigation {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  padding: var(--space-5) var(--space-7) var(--space-5) var(--space-12);
+  border: 1px solid var(--warning-border);
+  border-bottom: 0;
+  border-radius: var(--radius-14) var(--radius-14) 0 0;
+  background: var(--warning-soft);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 650;
+}
+.permission-queue__navigation>div {
+  display: flex;
+  gap: var(--space-4);
+}
+.permission-queue__navigation .ui-button {
+  min-height: 28px;
+  padding-inline: var(--space-9);
+}
+.permission-queue__navigation+.permission-request {
+  border-radius: 0 0 var(--radius-16) var(--radius-16);
+}
+.permission-request {
+  display: grid;
+  grid-template-columns: 28px minmax(0,1fr) auto;
+  gap: var(--space-12);
+  align-items: start;
+  margin: 0;
+  padding: var(--space-14);
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius-16);
+  background: var(--warning-soft);
+  box-shadow: var(--shadow-recovery);
+}
+.permission-request--uncertain {
+  border-color: var(--warning);
+  box-shadow: none;
+}
+.permission-request__mark {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--warning);
+  color: var(--surface);
+  font-size: 13px;
+  font-weight: 750;
+}
+.permission-request__body {
+  min-width: 0;
+}
+.permission-request__eyebrow {
+  display: block;
+  margin-bottom: var(--space-3);
+  color: var(--warning);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.permission-request__body>strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+.permission-request__body>p {
+  margin: var(--space-4) 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.permission-request__body>code {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin-top: var(--space-7);
+  overflow: hidden;
+  color: var(--text-secondary);
+  font: 10px/1.4 var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.permission-request__status {
+  margin-top: var(--space-8);
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.permission-request--uncertain .permission-request__status {
+  color: var(--warning);
+  font-weight: 600;
+}
+.permission-request__actions {
+  display: flex;
+  gap: var(--space-7);
+  align-self: center;
+}
+.permission-request__actions .ui-button {
+  min-width: 72px;
+}
+@media (max-width:640px) {
+  .permission-request {
+    grid-template-columns: 24px minmax(0,1fr);
+    padding: var(--space-12);
+  }
+  .permission-request__mark {
+    width: 24px;
+    height: 24px;
+  }
+  .permission-request__actions {
+    grid-column: 1/-1;
+    width: 100%;
+    padding-top: var(--space-2);
+  }
+  .permission-request__actions .ui-button {
+    flex: 1;
+    min-height: 44px;
+  }
+}
+@media (pointer:coarse) {
+  .permission-request__actions .ui-button {
+    min-height: 44px;
+  }
+}
+/* A prompt remains visibly local until its exact source_command_id appears in
+   the durable chat projection. It deliberately shares the user-message shape. */
+.message-outbox .conversation-message__surface {
+  border: 1px dashed var(--border-strong);
+  background: var(--surface-muted);
+}
+.message-outbox--uncertain .conversation-message__surface {
+  border-color: var(--warning-border);
+  background: var(--warning-soft);
+}
+.message-outbox--failed .conversation-message__surface {
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+}
+.message-outbox__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-7);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.message-outbox__status strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.message-outbox__indicator {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-full);
+  background: var(--text-muted);
+}
+.message-outbox--sending .message-outbox__indicator,
+.message-outbox--accepted .message-outbox__indicator,
+.message-outbox--committed .message-outbox__indicator {
+  animation: message-loading-pulse 1.5s ease-in-out infinite;
+}
+.message-outbox--uncertain .message-outbox__indicator {
+  background: var(--warning-strong);
+}
+.message-outbox--failed .message-outbox__indicator {
+  background: var(--danger);
+}
+.message-outbox__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-6);
+}
+@media (pointer: coarse) {
+  .message-outbox__actions button {
+    min-height: 44px;
+  }
+}
+/* 消息投递警示 */
+.message-delivery-warning {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-9) var(--space-11);
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius-10);
+  background: var(--warning-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.message-delivery-warning strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+/* Session provenance is a chapter boundary, not a badge repeated on every message. */
+.history-boundary {
+  display: grid;
+  grid-template-columns: minmax(24px,1fr) auto minmax(24px,1fr);
+  align-items: center;
+  gap: var(--space-10);
+  margin: var(--space-26) 0 var(--space-18);
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: .035em;
+  text-align: center;
+}
+.history-boundary::before,.history-boundary::after {
+  height: 1px;
+  background: var(--divider);
+  content: "";
+}
+.history-boundary span {
+  white-space: nowrap;
+}
+.history-boundary small {
+  grid-column: 1/-1;
+  margin-top: var(--space-neg-5);
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 0;
+}

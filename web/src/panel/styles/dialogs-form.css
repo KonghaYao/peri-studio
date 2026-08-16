@@ -1,0 +1,335 @@
+/* 对话框与表单：project-form、会话配置与会话导入。
+   由 dialogs.css 按区块拆分而来（原行 2-334），选择器与媒体查询保持原样。 */
+/* project-form renders inside the Dialog primitive in both current usages;
+   the dialog surface provides the chrome (border, shadow), so the form keeps
+   only the inset layout. */
+.project-form {
+  margin: 0;
+  padding: var(--space-18);
+  border: 0;
+  border-radius: var(--radius-12);
+  background: var(--surface);
+  box-shadow: none;
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-6);
+  margin-top: var(--space-10);
+}
+.form-note {
+  margin: var(--space-2) 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.runtime-dialog {
+  padding: var(--space-20);
+}
+.runtime-dialog h2 {
+  margin: 0;
+  font-size: 19px;
+  letter-spacing: -.02em;
+}
+.runtime-dialog p {
+  margin: var(--space-9) 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.runtime-dialog .form-actions {
+  margin-top: var(--space-20);
+}
+.runtime-dialog__warning {
+  padding: var(--space-9) var(--space-10);
+  border-radius: var(--radius-9);
+  background: var(--warning-soft);
+  color: var(--warning) !important;
+}
+/* 会话配置对话框 */
+.session-config {
+  display: flex;
+  max-height: min(680px,calc(100dvh - 110px));
+  flex-direction: column;
+  gap: var(--space-12);
+  overflow: auto;
+  padding: 0 var(--space-18) var(--space-18);
+}
+.session-config__intro,.session-config__empty {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.session-config__notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-10);
+  margin: 0;
+  padding: var(--space-10) var(--space-11);
+  border-radius: var(--radius-10);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.session-config__notice--uncertain {
+  border: 1px solid var(--warning-border);
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.session-config__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-14);
+}
+.session-config__group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.session-config__group legend {
+  padding: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 680;
+}
+.session-config__group>p {
+  margin: var(--space-3) 0 var(--space-8);
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.session-config__choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(140px,1fr));
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+}
+.session-config__choice {
+  display: flex;
+  min-height: 50px;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-9) var(--space-10);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-10);
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+.session-config__choice:hover {
+  background: var(--hover);
+}
+.session-config__choice.is-selected {
+  border-color: var(--border-strong);
+  background: var(--selected);
+}
+.session-config__choice span {
+  font-size: 12px;
+  font-weight: 620;
+}
+.session-config__choice small {
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.session-config__group:disabled .session-config__choice {
+  cursor: not-allowed;
+  opacity: .62;
+}
+.session-config__confirmation {
+  padding: var(--space-12);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-11);
+  background: var(--danger-soft);
+}
+.session-config__confirmation strong {
+  font-size: 13px;
+}
+.session-config__confirmation p {
+  margin: var(--space-5) 0 var(--space-11);
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.session-config__confirmation>div {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-6);
+}
+/* 会话导入对话框 */
+.import-dialog {
+  padding: var(--space-20);
+}
+.import-dialog__header h2 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -.02em;
+}
+.import-dialog__header p {
+  margin: var(--space-6) 0 var(--space-16);
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.import-session-list {
+  display: flex;
+  max-height: 300px;
+  flex-direction: column;
+  gap: var(--space-4);
+  overflow: auto;
+}
+.import-session-row {
+  display: grid;
+  grid-template-columns: 20px minmax(0,1fr) 18px;
+  align-items: center;
+  gap: var(--space-10);
+  width: 100%;
+  min-height: 54px;
+  padding: var(--space-9) var(--space-10);
+  border: 1px solid transparent;
+  border-radius: var(--radius-10);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.import-session-row:hover {
+  background: var(--hover);
+}
+.import-session-row.is-selected {
+  border-color: var(--border-strong);
+  background: var(--selected);
+}
+.import-session-row>svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+.import-session-row span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.import-session-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.import-session-row small {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.import-session-check {
+  display: grid !important;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: var(--btn-primary);
+  color: var(--surface);
+  font-size: 11px;
+}
+.import-empty {
+  padding: var(--space-28) var(--space-12);
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+.import-session-review {
+  margin-top: var(--space-12);
+  padding: var(--space-12);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-12);
+  background: var(--surface-muted);
+}
+.import-session-review header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.import-session-review header span {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.import-session-review header strong {
+  font-size: 14px;
+}
+.import-session-review dl {
+  display: grid;
+  gap: var(--space-6);
+  margin: var(--space-10) 0;
+}
+.import-session-review dl div {
+  display: grid;
+  grid-template-columns: 88px minmax(0,1fr);
+  gap: var(--space-8);
+}
+.import-session-review dt {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.import-session-review dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+  font-size: 11px;
+}
+.import-session-review code {
+  font: 11px/1.45 var(--font-mono);
+}
+.import-session-review p {
+  margin: var(--space-9) 0 0;
+  padding-top: var(--space-9);
+  border-top: 1px solid var(--divider);
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.import-session-status,.import-session-problem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin-top: var(--space-10);
+  padding: var(--space-9) var(--space-10);
+  border-radius: var(--radius-9);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.import-session-status {
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+}
+.import-session-status .ui-spinner {
+  width: 14px;
+  height: 14px;
+}
+.import-session-problem {
+  border: 1px solid var(--danger-border);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.dialog-eyebrow {
+  display: block;
+  margin-bottom: var(--space-5);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.import-dialog>.ui-field {
+  margin-bottom: var(--space-12);
+}

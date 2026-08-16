@@ -1,0 +1,6 @@
+{
+  "name": "peri-studio",
+  "private": true,
+  "description": "Peri Studio 仓库 workspace 根（Rust 核心 + TS 示例/SDK 共存）",
+  "workspaces": ["examples/plugins/monorepo", "examples/plugins/monorepo/office", "packages/mcpp"]
+}

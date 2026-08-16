@@ -1,0 +1,115 @@
+/* 项目侧边栏：品牌与新建/搜索入口。
+   由 sidebar.css 按区块拆分而来（原行 1-113），选择器与媒体查询保持原样。 */
+/* 项目侧边栏：品牌与新建/搜索入口、项目与会话列表、归档区、底部状态。 */
+.project-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 0 var(--space-12);
+}
+.brand-row {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-9);
+  padding: 0 var(--space-8);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -.01em;
+}
+.brand-glyph {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-8);
+  color: var(--surface);
+  background: var(--text-primary);
+  font-size: 12px;
+}
+.new-project-button {
+  justify-content: flex-start;
+  width: 100%;
+  margin-bottom: var(--space-14);
+}
+.session-search-button {
+  justify-content: flex-start;
+  width: 100%;
+  margin: var(--space-neg-8) 0 var(--space-12);
+  color: var(--text-muted);
+}
+.session-search-button kbd {
+  margin-left: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-5);
+  padding: var(--space-1) var(--space-5);
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 11px;
+}
+.session-search-dialog {
+  display: grid;
+  gap: var(--space-14);
+  min-width: min(520px, calc(100vw - 56px));
+  padding: 0 var(--space-18) var(--space-18);
+}
+.session-search-results {
+  display: grid;
+  gap: var(--space-4);
+  max-height: min(440px, 60vh);
+  overflow: auto;
+}
+.session-search-results button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-18);
+  width: 100%;
+  padding: var(--space-10) var(--space-12);
+  border: 0;
+  border-radius: var(--radius-9);
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.session-search-results button:hover,.session-search-results button:focus-visible {
+  background: var(--hover);
+}
+.session-search-results button:disabled {
+  cursor: not-allowed;
+  opacity: .52;
+}
+.session-search-results button span {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+}
+.session-search-results button strong,.session-search-results button small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.session-search-results button small,.session-search-results code,.session-search-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.session-search-results code {
+  flex: none;
+}
+.session-search-hint {
+  padding: var(--space-28) var(--space-12);
+  text-align: center;
+}
+.session-search-problem {
+  margin: 0;
+  padding: var(--space-9) var(--space-10);
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius-9);
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 12px;
+  line-height: 1.45;
+}
