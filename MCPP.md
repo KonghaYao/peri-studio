@@ -17,7 +17,8 @@ MCP（Model Context Protocol）解决了「如何在客户端与服务器之间�
 
 MCP Plus（以下简称 **MCPP**）是在 MCP 2026-07-28 之上的**协议扩展规范**，把上述 Agent 层决策标准化：
 
-- 定义 **Agent Plugin** 作为标准分发与部署形态：`plugin.json` 身份清单、`skills/` 打包技能、`mcp.json` 声明的 MCP server 作为运行时执行载体（第 3 章）；
+- 定义 **Agent Plugin** 作为标准分发与部署形态：`plugin.json` 身份清单、`skills/` 打包技能、`mcp.json` 声明的 MCP server 作为运行时执行载体（第 3 章），覆盖两种部署形态——monorepo server（3.7，中心化部署）与 registry 下发（第 4 章，端侧 stdio）；
+- 定义 **MCPP Registry** 作为端侧 stdio 下发的标准分发与发现渠道：插件以标准 npm 包发布，任何标准 npm registry 即 MCPP Registry（第 4 章）；
 - 定义 **Skill** 作为一等公民的承载格式、传递约定与编排规则（依赖声明、拓扑加载、工具绑定）；
 - 定义 Agent 层 **资源发现** 的统一策略（渠道、过滤、排序、缓存、新鲜度）；
 - 定义 Agent 层 **资源使用** 的统一方式（读取、订阅、嵌入、引用、输入需求、状态句柄）；
@@ -65,7 +66,7 @@ flowchart TB
     SERVER --> SR
 ```
 
-图与章节对应：**①** 生命周期见 2.2、渐进披露见 2.3、origin 见 2.4；**②** 插件形态见第 3 章；**③** 技能/工具/资源分别见第 4、5 章与第 6、7 章。
+图与章节对应：**①** 生命周期见 2.2、渐进披露见 2.3、origin 见 2.4；**②** 插件形态见第 3 章、分发渠道见第 4 章；**③** 技能/工具/资源分别见第 5、6 章与第 7、8 章。
 
 ### 1.2 范围与边界
 
@@ -73,12 +74,13 @@ flowchart TB
 
 - Skill 的结构、URI 约定、发现与加载流程，以及 MCPP 新增的编排字段；
 - Agent Plugin：插件清单 `plugin.json`、执行承载声明 `mcp.json`、`skills/` 打包技能与 MCP skill 双通道分发（第 3 章）、monorepo 多 server 聚合（HTTP 路径路由，3.7）；
-- Tools 目录的 Agent 消费约定：元数据质量、可追溯引用（2.5）、状态句柄、错误处理、懒加载与 Tool Search（5.6）；
+- MCPP Registry：插件经标准 npm registry 的分发与发现形态、单个 npm 包规范及其与 `mcp.json` 的关系（第 4 章）；
+- Tools 目录的 Agent 消费约定：元数据质量、可追溯引用（2.5）、状态句柄、错误处理、懒加载与 Tool Search（6.6）；
 - 资源发现：`resources/list`、`resources/templates/list`、目录读取、缓存与注释（annotations）的使用策略；
 - 资源使用：读取、订阅、嵌入、引用跟随、输入需求、状态句柄；
-- 超大载荷与私域数据的引用优先传递（7.6，stdio 同机 vs HTTP 跨机通道选择）；
+- 超大载荷与私域数据的引用优先传递（8.6，stdio 同机 vs HTTP 跨机通道选择）；
 - 扩展声明与安全信任边界；
-- 技能的命令化（slash command）用户触达模式（4.9）；
+- 技能的命令化（slash command）用户触达模式（5.9）；
 - 多 server 共存：冲突事实、注入治理抓手与协议底线（2.5）；
 - 一致性要求与检查清单。
 
@@ -88,15 +90,15 @@ flowchart TB
 - 无状态核心、每次请求的 `_meta`、`server/discover`、Multi-Round-Trip Requests 的传输语义；
 - JSON Schema 2020-12 的具体语法、分页与缓存的线级字段定义（`cursor` / `ttlMs` / `cacheScope` 的取值规则见 MCP 规范）；
 - OAuth / 授权 / 加密传输；
-- Agent Plugins 的 schema 机器校验细节，以及安装、分发、启停、更新等客户端管理机制（属 agent-plugins.org 规范）。
+- Agent Plugins 的 schema 机器校验细节，以及安装器实现、启停、更新、卸载等客户端管理机制（属 agent-plugins.org 规范与 npm 生态；MCPP 只标准化「分发渠道为 npm 包」这一形态，见第 4 章）。
 
 MCPP 文档凡涉及上述内容，只引用到 MCP 规范条目，不复述其动作细节。
 
 ### 1.3 读者
 
-- **Agent / Host 实现者**：本文档第 2、3、6、7、9、10.2 章为其规范性要求；
-- **MCP server / Skill 作者 / 插件作者**：第 3、4、5、8、10.1 章为其规范性要求；
-- **SDK 维护者**：第 8 章的协商与能力位定义。
+- **Agent / Host 实现者**：本文档第 2、3、7、8、10、11.2 章为其规范性要求；
+- **MCP server / Skill 作者 / 插件作者**：第 3、4、5、6、9、11.1 章为其规范性要求；
+- **SDK 维护者**：第 9 章的协商与能力位定义。
 
 ### 1.4 文档约定
 
@@ -116,6 +118,7 @@ MCPP 文档凡涉及上述内容，只引用到 MCP 规范条目，不复述其�
 | [Agent Plugins · Manifest](https://agent-plugins.org/plugin-authors/manifest) | 插件清单 plugin.json 的字段与约束 |
 | [Agent Plugins · MCP servers](https://agent-plugins.org/plugin-authors/mcp-servers) | mcp.json 承载声明与传输约定 |
 | [Agent Plugins · Skills](https://agent-plugins.org/plugin-authors/skills) | skills/ 目录布局与失败隔离 |
+| [npm registry 文档](https://docs.npmjs.com/cli/v10/using-npm/registry) | npm registry 协议：packument / tarball / SemVer / dist-tags（MCPP Registry 复用的语义，第 4 章） |
 | 本仓库 [`examples/plugins/monorepo`](examples/plugins/monorepo) | 参考实现（聚合出口 + skill:// 自动挂载 + CF 部署） |
 
 ### 1.6 分工边界：谁定义什么
@@ -125,8 +128,8 @@ MCPP 的价值在于把 **Agent 层交互的协议契约**标准化，而非替�
 | 层次 | 负责什么 | 本规范的处理 |
 | --- | --- | --- |
 | **MCP 2026-07-28** | 传输、JSON-RPC、无状态 / MRTR、认证、缓存字段（`ttlMs` / `cacheScope`）、工具 / 资源 / 提示词的线级格式 | 一律引用官方规范（1.2），不重述动作细节 |
-| **Agent Skills 规范** | `SKILL.md` 内容格式、frontmatter 字段、渐进式披露概念 | 格式委托（4.1）；披露概念引用 2.3 |
-| **Agent Plugins** | 插件打包布局、`plugin.json` / `mcp.json` schema、安装分发、schema 校验、失败隔离 | 第 3 章只定义「MCP server 承载执行」的**衔接契约**，schema 细节引用 agent-plugins.org |
+| **Agent Skills 规范** | `SKILL.md` 内容格式、frontmatter 字段、渐进式披露概念 | 格式委托（5.1）；披露概念引用 2.3 |
+| **Agent Plugins** | 插件打包布局、`plugin.json` / `mcp.json` schema、schema 校验、失败隔离 | 第 3 章只定义「MCP server 承载执行」的**衔接契约**与 npm 分发渠道（第 4 章），schema 细节引用 agent-plugins.org；安装/更新机制属宿主 |
 | **Agent 宿主（Host）** | 消歧策略、注入集选择、上下文预算算法、缓存管理算法、命令 UI 呈现、审计存储等**实现决策** | 指出问题存在与协议底线（如 2.5「不得不静默遮蔽」），**实现策略明确标注属 Agent 层**，不得作为 MUST 规定 |
 | **MCPP（本文档）** | Agent 层交互的协议级契约：能力身份（origin）、Skill 传递与编排字段、发现 / 使用策略的约束、扩展协商、安全底线、一致性要求 | 本文档 |
 
@@ -199,7 +202,7 @@ MCP 2026-07-28 是无会话协议，工具名、资源名的唯一性只限于�
 - 每个连接的 server 在 Agent 侧构成一个 **origin**（能力来源）；
 - Agent MUST 为每个 origin 分配**宿主命名的标识**（host-assigned label），MUST NOT 依赖 server 自报的 `serverInfo.name` 作为身份与去重依据（多 server 可同名）；
 - Skill 名称、Tool 名称、资源 URI 的冲突解析一律在 **per-origin 命名空间**内进行；
-- 跨 origin 的同名能力 MUST NOT 互相遮蔽、静默替换（见第 9 章）。
+- 跨 origin 的同名能力 MUST NOT 互相遮蔽、静默替换（见第 10 章）。
 
 MCPP 的编排与安全规则都建立在 origin 概念之上：依赖解析、资源读取、批准粒度都以 origin 为单位签发（插件作为一种 origin 形态，见 3.6）。
 
@@ -210,7 +213,7 @@ MCPP 的编排与安全规则都建立在 origin 概念之上：依赖解析、�
 MCPP 指出的三类问题：
 
 - **① 同名撞车**：两个 server 均可暴露 `get_weather`、`skill://convert/SKILL.md` 等同名能力。这是预期常态而非实现缺陷；
-- **② 注入失控**：server 数量越多，无差别注入导致的上下文占用、相互干扰与缓存串味越严重。缓解手段（注入集选择、按 origin 计量预算、缓存管理算法）属于 Agent 层，MCPP 不规定；协议侧抓手分别见 2.2（评估只依赖元数据）、6.2（annotations 过滤语义）、9.5（缓存条目携带来源）；
+- **② 注入失控**：server 数量越多，无差别注入导致的上下文占用、相互干扰与缓存串味越严重。缓解手段（注入集选择、按 origin 计量预算、缓存管理算法）属于 Agent 层，MCPP 不规定；协议侧抓手分别见 2.2（评估只依赖元数据）、7.2（annotations 过滤语义）、10.5（缓存条目携带来源）；
 - **③ 归属不清**：能力混在一起后，用户、批准、审计无法判断「这个工具 / 技能 / 资源是哪个来源」。
 
 **Agent 层的解法（示意，non-normative）**：宿主可能采用「以 host-assigned origin 标签作前缀」的策略——工具 `{origin}:{tool}`、命令 `/{origin}:{skill}`、资源 `{origin}:{uri}`，并对 registry 按 origin 分区存储。这只是一种可行形态：
@@ -242,11 +245,11 @@ flowchart LR
 
 ## 3. Agent Plugin：打包、发现与执行承载
 
-MCPP 的实现即是一个 **标准的 Agent Plugin**（[agent-plugins.org](https://agent-plugins.org) 规范 1.0.0）：`plugin.json` 声明身份与元数据、`skills/` 打包技能、`mcp.json` 声明 MCP server 作为**执行承载**。MCPP 以这一可移植形态作为标准部署单元，本章规定其布局、约束与 Agent 侧加载顺序，以及它们与第 4 章 skill 传递、第 5 章 tools 的衔接关系。
+MCPP 的实现即是一个 **标准的 Agent Plugin**（[agent-plugins.org](https://agent-plugins.org) 规范 1.0.0）：`plugin.json` 声明身份与元数据、`skills/` 打包技能、`mcp.json` 声明 MCP server 作为**执行承载**。MCPP 以这一可移植形态作为标准部署单元，本章规定其布局、约束与 Agent 侧加载顺序，以及它们与第 5 章 skill 传递、第 6 章 tools 的衔接关系。
 
 ### 3.1 插件形态
 
-一个 Agent Plugin 是自包含目录，组件位于固定位置：
+一个 Agent Plugin 是自包含目录，组件位于固定位置（**分发形态**——如何打包为 npm 包、如何经 MCPP Registry 发现与安装——见第 4 章）：
 
 ```
 {pluginRoot}/
@@ -329,6 +332,7 @@ flowchart LR
 
 - 传输类型：`stdio`（`type` + `command` 必填，可选 `args`/`env`/`cwd`）、`streamable-http`（`type` + `url` 必填，可选字面量 `headers`）、`sse`（已弃用，可选支持）；
 - `command` 是**单个可执行 token**（裸可执行名或 `./` 开头的插件相对路径），不是 shell 命令；占位符展开不适用于 `command`；
+- **stdio server 的标准分发形态是 npm 包**（见 4.2）：`command` 指向安装后 `node_modules/.bin` 的 bin 链接名（裸可执行名，满足上一条约束），或以 `npx` 为 `command` + 包名为 `args` 启动远端包；MCPP 不发明其他 stdio 分发载体；
 - 客户端提供 `PLUGIN_ROOT`（插件根）与 `PLUGIN_DATA`（跨更新持久化的可写数据目录）两个环境变量；`args`、`env` 值、`cwd` 中做 `${PLUGIN_ROOT}` / `${PLUGIN_DATA}` 文本展开（单趟、非递归）；插件不得覆盖这两个保留变量；
 - 远程 `url` 必须为绝对 HTTP(S) URL，无 userinfo 与 fragment；非 loopback 必须 HTTPS；
 - `headers` 是字面量、随包可见的数据，**MUST NOT** 含凭据或密钥；Agent Plugins 1.0.0 未定义便携 OAuth/凭证引用字段，认证由客户端管理；
@@ -336,8 +340,8 @@ flowchart LR
 
 MCPP 附加要求：
 
-- 插件内 MCP server SHOULD 声明 `io.modelcontextprotocol/skills` 扩展（协商见第 8 章），使插件打包技能在运行时也可经 `skill://` 通道发现（见 3.4）；
-- 承载 server 的工具、资源与技能元数据质量要求与第 4、5 章一致，不因「本地插件」降级。
+- 插件内 MCP server SHOULD 声明 `io.modelcontextprotocol/skills` 扩展（协商见第 9 章），使插件打包技能在运行时也可经 `skill://` 通道发现（见 3.4）；
+- 承载 server 的工具、资源与技能元数据质量要求与第 5、6 章一致，不因「本地插件」降级。
 
 ### 3.4 skills/ 与 MCP skill 双通道
 
@@ -346,7 +350,7 @@ MCPP 附加要求：
 | 通道 | 载体 | origin | 特性 |
 | --- | --- | --- | --- |
 | A 打包通道（静态） | `skills/` 直接子目录（每个含 `SKILL.md`） | 插件自身（filesystem） | 离线可用、随插件版本化、安装即发现 |
-| B 运行通道（动态） | MCP server 的 `skill://` 资源 / skills 扩展（第 4 章） | 承载 server | 动态更新、可编排、支持远程 server |
+| B 运行通道（动态） | MCP server 的 `skill://` 资源 / skills 扩展（第 5 章） | 承载 server | 动态更新、可编排、支持远程 server |
 
 ```mermaid
 flowchart TB
@@ -365,13 +369,13 @@ flowchart TB
     S -->|"skills/list · resources/read"| B
 ```
 
-[Skills 规范](https://agent-plugins.org/plugin-authors/skills)规定通道 A 的布局：客户端只扫描 `skills/` 的**直接子目录**，不递归更深处；格式委托 Agent Skills 规范（MCPP 第 4.1–4.2 节内容适用于两种通道）。
+[Skills 规范](https://agent-plugins.org/plugin-authors/skills)规定通道 A 的布局：客户端只扫描 `skills/` 的**直接子目录**，不递归更深处；格式委托 Agent Skills 规范（MCPP 第 5.1–5.2 节内容适用于两种通道）。
 
 MCPP 双通道规则：
 
 - **同源投影**：插件内 server 的 `skill://` 挂载 MUST 与 `skills/` 目录内容同源同版（推荐实现为目录投影——本仓库 `ResourceForSkills.ts` 即实时 `readdir` 挂载，一份源两个通道），MUST NOT 维护两份漂移内容；
 - **去重与遮蔽**：通道 A 与通道 B 属同一插件但 origin 不同（插件 vs server）。Agent 按 2.4 的 per-origin 命名空间处理：两通道同名校技能 MUST NOT 静默互相遮蔽；用户视角下应展示来源（本地打包 / server 承载）；
-- **何时用哪条**：A 用于「安装即得、离线可用、可审计的固定技能」；B 用于「随 server 动态更新、参与 `depends_on` 编排、跨 server 组合」的技能。同一技能两通道并存合法，Agent 任取其一即可满足（B 的加载仍需 4.6 的校验）。
+- **何时用哪条**：A 用于「安装即得、离线可用、可审计的固定技能」；B 用于「随 server 动态更新、参与 `depends_on` 编排、跨 server 组合」的技能。同一技能两通道并存合法，Agent 任取其一即可满足（B 的加载仍需 5.6 的校验）。
 
 ### 3.5 加载顺序与失败隔离
 
@@ -380,7 +384,7 @@ MCPP 双通道规则：
 1. 校验 `plugin.json`（失败 → 拒绝整个插件，不发现任何组件）；
 2. 扫描 `skills/` 直接子目录，逐个校验 `SKILL.md`（单个无效 → 跳过该技能、报告、继续）；
 3. 解析 `mcp.json`（顶层无效 → 禁用该插件全部 MCP；单条 server 无效/不可用 → 仅禁用该条，其他 server、技能与扩展继续加载）；
-4. 按 `mcp.json` 启动/连接承载 server，进入运行时发现（第 4、5 章）。
+4. 按 `mcp.json` 启动/连接承载 server，进入运行时发现（第 5、6 章）。
 
 ```mermaid
 flowchart LR
@@ -398,7 +402,7 @@ flowchart LR
 ### 3.6 与核心模型的衔接
 
 - **插件是一种 origin 形态**：插件（及其打包技能）与插件内承载 server 分别构成 origin；2.4 的 host-assigned 标签、命名空间与遮蔽规则同等适用；
-- **信任分层**：`skills/` 打包技能属于「本地可信任」类别（9.3 的默认允许策略适用）；但**经 `mcp.json` 启动的承载 server 所服务的任何内容（含 `skill://`），无论进程是否本地，一律按 MCP origin 的不可信规则对待**——与 9.5 缓存隔离精神一致，本地进程不自动获得本地信任；
+- **信任分层**：`skills/` 打包技能属于「本地可信任」类别（10.3 的默认允许策略适用）；但**经 `mcp.json` 启动的承载 server 所服务的任何内容（含 `skill://`），无论进程是否本地，一律按 MCP origin 的不可信规则对待**——与 10.5 缓存隔离精神一致，本地进程不自动获得本地信任；
 - 生命周期（2.2 三阶段）与渐进式披露（2.3）对两个通道同等生效。
 
 ### 3.7 monorepo 多 server 聚合（HTTP 路径路由）
@@ -423,24 +427,135 @@ flowchart TB
 
 **模式定义**：
 
-- 每个路径是一个**独立的 MCP endpoint**：拥有自有的能力集、协议协商、扩展声明（第 8 章）、skill 资源与插件技能挂载；**不**做端内能力转发或拼装（本设计不涉及「单端点聚合多 server 能力」的代理形态）；
+- 每个路径是一个**独立的 MCP endpoint**：拥有自有的能力集、协议协商、扩展声明（第 9 章）、skill 资源与插件技能挂载；**不**做端内能力转发或拼装（本设计不涉及「单端点聚合多 server 能力」的代理形态）；
 - 每个端点从客户端视角构成**一个 origin**——URL 即 origin 的天然标识（2.4 host-assigned 也通常是主机的 URL 路径标识）；端点间工具/技能的唯一性本就互不相扰，跨端点引用以 URL 可追溯（2.5 底线①自然满足）；
 - 挂载关系是**静态配置**（启动注册表：路径 ↔ 子 server 实例），客户端无需感知各端点内部实现；
 - 端点的暴露清单可经 host 侧注册表或运维配置声明，客户端按需连接（对应 `mcp.json` 中多条 `url` 条目，见 3.3）。
 
 **MCPP 约束**：
 
-- 各端点**独立边界**：独立授权与资源隔离（可共享 TLS 端口，但应用层按端点隔离），符合最小暴露原则（第 9 章安全边界按 origin / 端点生效）；
+- 各端点**独立边界**：独立授权与资源隔离（可共享 TLS 端口，但应用层按端点隔离），符合最小暴露原则（第 10 章安全边界按 origin / 端点生效）；
 - 端点路径分配 MUST 明确且可审计；端点间不得静默互访（一端点能力不得被伪装成另一端点的能力，A4 精神在 server 侧同成立）；
 - **stdio 不适用本形态**：stdio 是一对一进程管道，无 URL / 路径概念。需要多 server 时，stdio 形态只能是一进程一 server + 客户端多条 stdio 配置（3.3），不提供路径路由聚合。
+- **形态定位**：3.7 是插件能力的**形态一（monorepo server，中心化部署）**，符合企业中「server 部署与管理」需求；端点侧的 stdio 下发属**形态二（MCPP Registry，第 4 章）**。两形态正交、可并存，选择依据见第 4 章引言。
 
 ---
 
-## 4. Skills：跨协议传递与编排
+## 4. MCPP Registry：NPM 分发与发现
+
+MCPP 的插件能力覆盖两种**部署形态**，对应企业两类部署与管理需求：
+
+| | 形态一：monorepo server（3.7） | 形态二：MCPP Registry 下发（本章） |
+| --- | --- | --- |
+| 载体 | 单一 HTTP 出口，路径路由多个 server | 标准 npm 包（tarball） |
+| 运行位置 | 企业服务端（中心化） | 端点本地（stdio 子进程） |
+| 管理方式 | 进程、监控、日志、升级、安全策略集中治理，多用户共享 | npm 生态分发：SemVer、dist-tags、integrity 校验 |
+| 连接方式 | Agent 经 streamable-http 远程连接，URL 即 origin | Agent 本地启动 `command`（4.1：`bin` 入口即承载 server），包即 origin |
+| 适用需求 | 「server 部署与管理」 | 「把 stdio 形态的 MCP 服务下发到端点」 |
+
+两形态**正交、可并存**：同一企业可同时部署中心 server（形态一）与端点插件（形态二），互不排斥；streamable-http 承载的插件若经 registry 分发，其包仅是清单载体，服务本身仍属形态一的中心部署范畴。
+
+形态二复用第 3 章的静态形态与执行承载：插件 = 标准 npm 包，**包根即 `{pluginRoot}`**，`mcp.json` 随包原样分发（4.3），解包后按 3.5 加载。agent-plugins.org 1.0.0 只约束包内布局与 manifest 字段，不规定分发渠道——MCPP 以 npm 生态补上这一环：任何标准 npm registry 都是 MCPP Registry；MCPP 插件以**标准 npm 包**发布；MCPP 的 registry 工具集本身也以**标准 npm 包**形态分发（4.1）。
+
+### 4.1 模型：标准 npm registry 即 MCPP Registry
+
+- **不发明协议**：MCPP Registry **MUST NOT** 发明新协议、新端点或新元数据格式。packument（registry 元数据文档）、tarball 下载、SemVer、dist-tags、keywords 检索、integrity 校验等语义一律复用 npm registry；
+- **npm 包就是 stdio server 的标准分发方式**：MCP 生态中 stdio server 的事实标准即以 npm 包发布——`bin` 暴露可执行入口，客户端以 `npx -y <包名>` 或安装后的 `node_modules/.bin` 链接启动（3.3 的 `command`/`args` 即指向此）。MCPP 插件包是这一形态的**直接推广**：插件 = 一个 stdio server npm 包 + `plugin.json` + `skills/`（stdio 承载时 `bin` 入口即承载 server）。分发单元与 server 自身的分发单元合一，插件作者无需另造分发格式；registry、安装器、缓存、完整性校验全部复用既有 npm 设施；
+- **任何标准 npm registry 都是 MCPP Registry**：公有 npmjs.com 与私有兼容源（Verdaccio、Nexus、GitHub Packages 等）均构成标准 MCPP Registry；Agent 按 registry URL + 包名寻址，不区分「官方源 / 私有源」，也不存在 MCPP 专属的 registry 端点；
+- **工具形态**：MCPP 规范的 registry 工具集——检索、安装、发布、校验——以**标准 npm 包**形态分发（参考实现示意名 `@mcpp/registry`，经 `npx @mcpp/registry ...` 调用）。「Registry 是标准 npm 包」落在**工具层**；registry 本体（源）复用 npm 协议，不提供独立部署件。
+
+发现流程与 2.2 的三阶段衔接：
+
+- **Discover**：Agent 向 registry 发起 keywords 检索（检索标记见 4.2），只摄入 packument 元数据（名称、版本、描述、keywords、许可证），不下载 tarball；
+- **Evaluate**：依据元数据判定相关性；评估期 **MUST NOT** 下载或解包正文（2.2 的三阶段分离在分发面同样成立）；
+- **Consume**：选定后安装——下载 tarball → 校验 integrity → 解包 → 进入 3.5 的插件加载顺序。
+
+```mermaid
+flowchart LR
+    subgraph REG["MCPP Registry（任意标准 npm registry）"]
+        PACK["packument 元数据<br/>（检索面）"]
+        PKG["插件包 tarball<br/>package.json + plugin.json + mcp.json + skills/"]
+    end
+    subgraph AGT["Agent / Host"]
+        D["Discover<br/>keywords 检索 · 只读元数据"]
+        E["Evaluate<br/>相关性判定"]
+        C["Consume<br/>install → 校验 integrity → 解包"]
+    end
+    PACK --> D
+    PKG -->|"npm install"| C
+    D --> E --> C
+    C --> L["3.5 插件加载顺序"]
+```
+
+### 4.2 单个 NPM 包规范
+
+一个 MCPP 插件 = 一个标准 npm 包；**包根即 `{pluginRoot}`**——解包后 3.1 的布局原样成立：
+
+```
+{packageRoot}/                # 安装解包后 == {pluginRoot}
+├── package.json   # REQUIRED：npm 分发生命周期身份
+├── plugin.json    # REQUIRED：MCPP 插件身份清单（3.2，原样保留）
+├── mcp.json       # OPTIONAL：执行承载声明（3.3，原样保留）
+├── skills/        # OPTIONAL：打包技能（通道 A，3.4）
+└── ...            # server 可执行、资源文件等
+```
+
+`package.json` 字段约束：
+
+| 字段 | 必填 | 语义 |
+| --- | --- | --- |
+| `name` | 是 | npm 包名（可带 scope）；**去 scope 后的包名** MUST 与 `plugin.json.name` 一致（`plugin.json.name` 仍遵守 3.2 的 1–64 字符约束，不含 scope） |
+| `version` | 是 | SemVer；MUST 与 `plugin.json.version` 一致 |
+| `description` | 否 | 插件简介；存在时 MUST 与 `plugin.json.description` 一致 |
+| `keywords` | 否 | MUST 含检索标记 `mcpp-plugin`（可叠加功能词），否则 4.1 的发现面无法命中 |
+| `license` / `author` / `homepage` / `repository` | 否 | 与 `plugin.json` 对应字段一致（SPDX / 作者 / 文档 / 仓库） |
+| `files` | 否 | 发布白名单：MUST 含 `plugin.json`、`mcp.json`（若存在）、`skills/`（若存在）与 server 可执行；MUST NOT 含 `.git`、`node_modules`、凭据与运行数据 |
+| `bin` | 否 | stdio server 可执行入口的链接名（如 `"office": "./bin/office"`）；链接名即 3.3 `command` 可用的裸可执行 token（4.1：npm 包即 stdio 的标准分发方式） |
+
+约束（MCPP 重申为规范性要求）：
+
+- **识别**：一个 npm 包是否 MCPP 插件，以解包后根级 `plugin.json` 的存在与校验为准；`keywords` 只是检索面，MUST NOT 作为身份依据；
+- **一致性**：发布前 MUST 校验 `package.json` 与 `plugin.json` 的 `name` / `version` 一致（由 4.1 的发布工具校验）；不一致属致命违规，Agent 与 registry 均可拒绝；
+- **命名空间**：`@scope` 是 npm 生态的发布者命名空间（组织归属），不进入 `plugin.json.name`；Agent SHOULD 以完整包名（含 scope）作为 origin 标签（2.4）的组成部分，提升跨插件可追溯性；
+- **版本与更新**：版本号按 SemVer 演进，`dist-tags`（`latest` 等）语义复用 npm 约定；升级 = 发布新版本包，更新语义见 4.3。
+
+示例（说明性）：
+
+```json
+{
+  "name": "@acme/office",
+  "version": "1.2.0",
+  "description": "Office document processing plugin",
+  "keywords": ["mcpp-plugin", "office", "documents", "markdown"],
+  "license": "MIT",
+  "files": ["plugin.json", "mcp.json", "skills/", "bin/"],
+  "bin": { "office": "./bin/office" }
+}
+```
+
+### 4.3 与 mcp.json 的关系：分发外壳与执行承载
+
+**核心论断**：npm 包是**分发外壳**（distribution shell），`mcp.json` 是**执行承载声明**（execution carrier），二者职责正交——分发渠道解决「插件如何被找到、安装、更新」，`mcp.json` 解决「插件的动态能力由哪个 server、以何种传输方式承载」。MCPP 的分层关系：
+
+- **内容不变**：`mcp.json` 随包原样分发，3.3 的闭合字段集、承载约定与安全约束（`headers` 为字面量、MUST NOT 含凭据等）在包内逐字生效；解包后 3.5 的加载顺序（manifest → skills/ → mcp.json → 连接 server）不因来源是 registry 而改变；
+- **路径解析**：`./` 相对路径与 `${PLUGIN_ROOT}` / `${PLUGIN_DATA}` 展开基于解包后的真实目录——`{pluginRoot}` 即安装目录（如 `node_modules/@acme/office/` 或用户指定位置）；`command` 为 `bin` 链接名时，Agent 解析到安装环境实际的 `node_modules/.bin` 链接，`command` 为 `npx` 时经包名解析（两种形态均为 npm 分发，见 4.1）；
+- **配置映射**：Agent 把包内 `mcp.json` 映射到自身原生 MCP 配置（与附录 A `examples/plugins/.mcp.json` 的客户端级配置同构）。**便携面与实例化面必须分离**：包内 `mcp.json` 是便携声明（可移植、随包审计、无凭据）；认证、凭据引用、host 级覆盖等属客户端实例化配置，由 Agent 在映射时注入——凭据永远不进入包（3.3）；
+- **多包共存**：安装多个插件包 = 多个 `mcp.json` 并存 = 多 server 并存；2.4 的 per-origin 命名空间、2.5 的多 server 共存底线与第 10 章安全规则逐包适用；
+- **更新语义**：升级包 = 新的 `mcp.json` 快照。Agent 按 10.3 的 content-bound 批准规则复核变更（尤其 `command` / `url` / `env` 变化），MUST NOT 静默沿用旧批准；origin 标签 SHOULD 携带 registry 来源（如 `https://registry.npmjs.org/@acme/office`），使 10.2 的来源可见性在分发面成立。
+
+### 4.4 供应链与信任
+
+- 经 registry 安装的插件内容一律按**远端不可信内容**对待（10.1）：`plugin.json`、`mcp.json`、`skills/`、server 二进制均可能被恶意或受损发布者投毒；MCPP 的信任规则（10.2 origin 可见、10.3 批准内容绑定、10.4 无隐式执行）在分发面完整适用；
+- **完整性**：tarball 的 integrity 校验由 npm 安装流程提供，MCPP 引用不重述；digest 校验保证「下载内容即发布者所发」，不是可信凭证（与 10.3 对 digest 的定位一致）；
+- **发布者身份、包签名、来源审计**属 npm 生态能力与宿主实现决策（1.6 分工边界），MCPP 不规定。
+
+---
+
+## 5. Skills：跨协议传递与编排
 
 本章是 MCPP 的核心新增。Skill 的**内容格式**委托给 Agent Skills 规范，**传输绑定**以 SEP-2640 为基线，**编排语义**为 MCPP 自有扩展。
 
-### 4.1 Skill 承载格式
+### 5.1 Skill 承载格式
 
 一个 Skill **MUST** 是一个目录，目录结构满足：
 
@@ -467,7 +582,7 @@ description: 将各类文档转换为 Markdown，用于文档迁移与合并
 - `description` 是 Agent 在 Discovery 阶段唯一的判断依据，MUST 写清楚「何时使用、解决什么问题」，SHOULD 避免空泛描述；
 - frontmatter 中其他字段（`license`、`metadata`、未来 Agent Skills 扩展字段）为透传（pass-through）：Agent MUST 忽略不认识的字段，MUST NOT 因未知字段拒载。
 
-### 4.2 MCPP frontmatter 扩展
+### 5.2 MCPP frontmatter 扩展
 
 MCPP 在 frontmatter 的 `metadata` 对象内，以 `io.mcpp/` 反向域前缀定义编排字段。这些字段只对 MCPP 感知的 Agent 生效；不感知的 Agent 按 3.1 的透传规则忽略它们。
 
@@ -492,7 +607,7 @@ metadata:
 | 字段 | 类型 | 必填 | 语义 |
 | --- | --- | --- | --- |
 | `io.mcpp/version` | string | no | Skill 语义版本（SemVer）。Agent 用作缓存与升级依据 |
-| `io.mcpp/depends_on` | string[] 或 object[] | no | 前置 Skill 引用（见 4.7.1） |
+| `io.mcpp/depends_on` | string[] 或 object[] | no | 前置 Skill 引用（见 5.7.1） |
 | `io.mcpp/tools` | object | no | 本 Skill 运行所需的工具绑定：`required`/`optional` 数组 |
 | `io.mcpp/context_budget` | integer | no | 建议注入上下文的符号上限；Agent SHOULD 遵守 |
 | `io.mcpp/provider` | string | no | 提供方标识（公司/团队/作者），用于审计展示 |
@@ -501,9 +616,9 @@ metadata:
 
 - `io.mcpp/` 前缀为 MCPP 保留。Server / Skill 作者 MUST NOT 在此前缀下定义未在本表登记的字段；
 - 存量 Skill 的 `metadata` 中 MAY 以无前缀形式书写本表字段（Agent 按表保守推断），但**新写** Skill MUST 使用完整 `io.mcpp/` 前缀；
-- `depends_on` 与 `tools.required` 均为**声明**而非**权限**：Agent MUST NOT 因声明即授予执行或读取权限（见 9.4）。
+- `depends_on` 与 `tools.required` 均为**声明**而非**权限**：Agent MUST NOT 因声明即授予执行或读取权限（见 10.4）。
 
-### 4.3 URI 与资源映射（skill:// 约定）
+### 5.3 URI 与资源映射（skill:// 约定）
 
 MCPP 采用 SEP-2640 的 URI 约定。Skill 目录中的**每个文件**各暴露为一个 MCP resource：
 
@@ -532,9 +647,9 @@ skill://{org-prefix/}{skillName}/{相对路径}
 
 Agent **MUST NOT** 仅凭 URI scheme 判定某资源是 Skill（「以 scheme 断技能」是禁止的）；唯一权威来源是 `skills/list` 条目、`skills/get` 返回，或校验通过的显式引用。
 
-### 4.4 暴露方式（server 侧）
+### 5.4 暴露方式（server 侧）
 
-Server 声明 `io.modelcontextprotocol/skills` 扩展后（声明细则见第 8 章）**MUST** 实现：
+Server 声明 `io.modelcontextprotocol/skills` 扩展后（声明细则见第 9 章）**MUST** 实现：
 
 1. **`skills/list`** —— 枚举 Server 提供的 Skill 目录。条目含 `uri`（SKILL.md 的 URI）、`frontmatter`（SKILL.md frontmatter 逐字 JSON 化）与 `resources`（目录内全部文件 `{uri, digest}` 清单，digest 为 `sha256:{64hex}`）。支持分页与列表缓存（`ttlMs`/`cacheScope`，语义与 `tools/list` 相同）。
 2. **`skills/get`** —— 按 `uri` 返回单个 Skill 的条目（与 `skills/list` 条目同构），**无论该 Skill 是否出现在列表中**。未知 URI 返回 `-32602`。
@@ -551,9 +666,9 @@ Server 声明 `io.modelcontextprotocol/skills` 扩展后（声明细则见第 8 
 - 最小：资源模板挂载 + list 实时扫描（如 openspec 子 server）；
 - 基线：仅指令引用（URI 可直接读）。
 
-Agent 侧对应规则见 4.5。SEP-2640 明确「列表可为空/局部」，所以三类都有效，但 Agent 对**只靠基线**的 server 的 Skill 发现率受限，须容错。
+Agent 侧对应规则见 5.5。SEP-2640 明确「列表可为空/局部」，所以三类都有效，但 Agent 对**只靠基线**的 server 的 Skill 发现率受限，须容错。
 
-### 4.5 发现（Agent 视角）
+### 5.5 发现（Agent 视角）
 
 1. **建 registry**：启动与连接变更时，Agent 对每个 origin：
    - 若 server 声明 `io.modelcontextprotocol/skills` → 调用 `skills/list`（分页遍历），把条目以 `(origin, name, uri)` 为键并入 registry；
@@ -563,7 +678,7 @@ Agent 侧对应规则见 4.5。SEP-2640 明确「列表可为空/局部」，所
 3. **空/局部列表不得视为无 Skill**：MUST NOT 因枚举为空而断言 server 没有 Skill（生成型 / 大规模目录 server 可能不枚举）。
 4. **缓存**：列表按 `ttlMs` / `cacheScope` 缓存（SEP-2549）。`cacheScope: public` 的目录可跨 Agent 缓存。列表缓存是「新鲜度提示」，不是完整性或信任证据。
 
-### 4.6 加载与校验（Agent 视角）
+### 5.6 加载与校验（Agent 视角）
 
 Skill 的正式加载（进入模型上下文）为 **Activation 阶段**，触发条件：任务与 `description` 匹配，且用户批准（如适用）。
 
@@ -574,18 +689,18 @@ Skill 的正式加载（进入模型上下文）为 **Activation 阶段**，触�
 3. **校验 frontmatter 一致性**：读到的 `SKILL.md` frontmatter MUST 与条目 `frontmatter` 逐字段一致；不一致即校验失败，MUST NOT 加载；
 4. **原信任评估**：条目缺 `resources`（动态生成 Skill）时 MAY 拒绝加载；
 5. **以校验通过的版本进入上下文**：校验失败后，可调 `skills/get` 刷新该 Skill 当前条目再重试（内容漂移场景的恢复路径）；
-6. **加载正文**：将 `SKILL.md` 全文及其 origin 标记注入上下文（provenance 见 9.2）。
+6. **加载正文**：将 `SKILL.md` 全文及其 origin 标记注入上下文（provenance 见 10.2）。
 
 **嵌套 Skill** 规则（与 SEP-2640 一致）：
 
 - 嵌套 SKILL.md 在所属 Skill 视角下是**普通支持文件**，读取就是普通读取，Agent MUST NOT 对其 frontmatter 生效；
 - 将嵌套 Skill 作为独立 Skill 激活，需**重新、显式**的用户批准；批准外层 Skill 不代表批准内层。
 
-### 4.7 编排（MCPP 扩展）
+### 5.7 编排（MCPP 扩展）
 
 编排是 MCPP 区分于 SEP-2640 传输绑定、新增 Agent 层语义的部分。
 
-#### 4.7.1 依赖解析（depends_on）
+#### 5.7.1 依赖解析（depends_on）
 
 `metadata."io.mcpp/depends_on"` 声明「本 Skill 运行前应已激活的前置 Skill」：
 
@@ -593,9 +708,9 @@ Skill 的正式加载（进入模型上下文）为 **Activation 阶段**，触�
 - Agent 激活一个 Skill 前 **MUST** 先解析其 `depends_on`（含传递依赖），按**拓扑序**依次激活；
 - 依赖环：**MUST** 检测循环依赖；存在环时 MUST NOT 静默跳过，且在提示中报告环路径供人工处置；
 - 依赖不可用（URI 无法校验 / 目标 server 未连接 / 被用户拒绝）：MUST NOT 激活依赖方，并报告缺口；
-- 依赖 Skill 的激活同样走 4.6 的校验与 9.3 的批准流程（逐 Skill 批准）。
+- 依赖 Skill 的激活同样走 5.6 的校验与 10.3 的批准流程（逐 Skill 批准）。
 
-#### 4.7.2 工具绑定（io.mcpp/tools）
+#### 5.7.2 工具绑定（io.mcpp/tools）
 
 `metadata."io.mcpp/tools"` 将 Skill 与 Tools 显式绑定：
 
@@ -603,12 +718,12 @@ Skill 的正式加载（进入模型上下文）为 **Activation 阶段**，触�
 - `required` 全部就绪时：Agent 方可在执行阶段把 Skill 正文中的动作指引映射到对应工具调用；
 - 绑定是**提示**，Agent 仍可凭工具描述自行选择其他工具。
 
-#### 4.7.3 上下文预算
+#### 5.7.3 上下文预算
 
 - `io.mcpp/context_budget` 声明该 Skill 建议占用的上下文符号上限；Agent SHOULD 遵守，超限时 SHOULD 仅加载 `SKILL.md` 与最必要的 references；
-- references / scripts / assets MUST 按需懒加载（执行阶段遇到相对路径引用时再经 4.6 的读取规则加载），不得随 SKILL.md 一并注入。
+- references / scripts / assets MUST 按需懒加载（执行阶段遇到相对路径引用时再经 5.6 的读取规则加载），不得随 SKILL.md 一并注入。
 
-### 4.8 完整示例
+### 5.8 完整示例
 
 设 server `office` 提供 `convert-documents-to-markdown` 技能，其依赖 `pdf-processing`：
 
@@ -637,39 +752,39 @@ sequenceDiagram
 
 Agent 侧六步决策（省略 wire 细节）：**Discover** 枚举两个条目入 registry 不加载正文；**Evaluate** 命中 `convert-documents-to-markdown` 描述；**Resolve** 读 frontmatter 发现 `depends_on: [skill://pdf-processing/SKILL.md]`，确定拓扑序；**Consume** 按拓扑序读取两个 `SKILL.md` 并通过 digest / frontmatter 校验；**Bind** 确认 `io.mcpp/tools.required` 的 `anydoc` 工具就绪；**Execute** 跟随正文指引调用 `anydoc`，references 按需懒加载。
 
-### 4.9 Command 化：技能的用户触发入口（Agent 侧模式）
+### 5.9 Command 化：技能的用户触发入口（Agent 侧模式）
 
 > 非规范性模式：源自宿主 Agent 前端工程（原 perihelion）的 Command System 方案（`docs/design/mcp-commands.md`），MCPP 将其泛化为推荐的用户触达方式。宿主可不采用本模式；采用时须满足本节条款。
 
-发现完成后（4.5），Agent MAY 将 registry 中的技能注册为宿主命令系统的命令。命令名的具体格式由宿主呈现层决定，本节 `/{origin 标签}:{skill name}` 仅为参考形态——其中 origin 标签取自 2.4 的 host-assigned 标识，用它能天然规避跨 server 同名校技能冲突（A4）。命令仅是**用户触达入口**，不改变技能的加载模型：
+发现完成后（5.5），Agent MAY 将 registry 中的技能注册为宿主命令系统的命令。命令名的具体格式由宿主呈现层决定，本节 `/{origin 标签}:{skill name}` 仅为参考形态——其中 origin 标签取自 2.4 的 host-assigned 标识，用它能天然规避跨 server 同名校技能冲突（A4）。命令仅是**用户触达入口**，不改变技能的加载模型：
 
 ```mermaid
 flowchart LR
     U["用户"] -->|"触发 /{origin}:{skill}"| REG
     A["Agent"] -->|"宿主技能工具主动加载"| PRE
     subgraph HOST["Agent / Host"]
-        REG["registry（4.5）"] --> CMD["注册命令 /{origin}:{skill}"]
-        CMD --> PRE["Skill preload<br/>（Activation 4.6：读 SKILL.md · 校验）"]
-        PRE --> INJ["注入上下文<br/>+ origin 来源标记（9.2）"]
-        INJ --> TS["宿主工具搜索绑定（4.7.2）<br/>搜索 → 定义 → 执行"]
+        REG["registry（5.5）"] --> CMD["注册命令 /{origin}:{skill}"]
+        CMD --> PRE["Skill preload<br/>（Activation 5.6：读 SKILL.md · 校验）"]
+        PRE --> INJ["注入上下文<br/>+ origin 来源标记（10.2）"]
+        INJ --> TS["宿主工具搜索绑定（5.7.2）<br/>搜索 → 定义 → 执行"]
     end
     TS --> EX["执行正文动作"]
 ```
 
-- **触发 = Activation**：用户触发 `/{origin}:{skill}` 等价于对该技能显式激活（4.6），进入 preload——读取 SKILL.md、通过 digest / frontmatter 校验后注入上下文；
-- **注入标记**：注入时 MUST 随正文携带 origin 来源标记与「所需工具须经宿主工具搜索获取」的提示（9.2），不得无来源注入；
-- **双入口等价**：用户命令触发与 Agent 经宿主技能发现工具主动加载是**同一条路径的两段**，MUST 复用同一套加载 / 校验 / 批准规则（4.6 / 9.3）；
-- **执行绑定**：正文声明的 `io.mcpp/tools`（4.7.2）经宿主工具体系完成绑定（宿主侧的「搜索工具定义 → 执行工具」两个环节，对应工具形态由宿主定义，不在 MCPP 约定范围内），与 4.8 的完整示例一致。
+- **触发 = Activation**：用户触发 `/{origin}:{skill}` 等价于对该技能显式激活（5.6），进入 preload——读取 SKILL.md、通过 digest / frontmatter 校验后注入上下文；
+- **注入标记**：注入时 MUST 随正文携带 origin 来源标记与「所需工具须经宿主工具搜索获取」的提示（10.2），不得无来源注入；
+- **双入口等价**：用户命令触发与 Agent 经宿主技能发现工具主动加载是**同一条路径的两段**，MUST 复用同一套加载 / 校验 / 批准规则（5.6 / 10.3）；
+- **执行绑定**：正文声明的 `io.mcpp/tools`（5.7.2）经宿主工具体系完成绑定（宿主侧的「搜索工具定义 → 执行工具」两个环节，对应工具形态由宿主定义，不在 MCPP 约定范围内），与 5.8 的完整示例一致。
 
 ---
 
-## 5. Tools：Agent 侧使用约定
+## 6. Tools：Agent 侧使用约定
 
 本章不重述 `tools/list` / `tools/call` 的传输定义（见 MCP 规范），只规定 Agent 如何消费工具目录、以及 Skill 作者 / Server 如何提高工具的「可被 Agent 正确调用」程度。
 
-### 5.1 元数据质量
+### 6.1 元数据质量
 
-工具目录在 Agent 侧构成唯一的调用依据。MCPP 对 Server 提出如下元数据要求（Agent 侧规则见 10.2）：
+工具目录在 Agent 侧构成唯一的调用依据。MCPP 对 Server 提出如下元数据要求（Agent 侧规则见 11.2）：
 
 - `name`：1–128 字符，仅含 ASCII 字母、数字、`_`、`-`、`.`，server 内唯一；大小写敏感；
 - `title`：人类可读展示名，SHOULD 提供；
@@ -679,17 +794,17 @@ flowchart LR
 
 Agent 侧对应规则：
 
-- Agent MUST 将 `description` 视作不可信文本（可能含误导注入，见 9.1），但其作为选择依据的事实不变；
-- Agent SHOULD 将工具目录缓存在其 prompt cache 中（确定性顺序有助于提升缓存命中率，见 5.2）。
+- Agent MUST 将 `description` 视作不可信文本（可能含误导注入，见 10.1），但其作为选择依据的事实不变；
+- Agent SHOULD 将工具目录缓存在其 prompt cache 中（确定性顺序有助于提升缓存命中率，见 6.2）。
 
-### 5.2 命名与跨 server 消歧
+### 6.2 命名与跨 server 消歧
 
 - Server MUST 返回**确定性顺序**的工具列表（底层集合未变时顺序稳定），以利客户端缓存与 LLM prompt cache 命中；
 - 工具名唯一性限于单个 server。多 server 聚合时 Agent **MUST** 使引用可追溯（2.5 协议底线①），具体消歧策略属 Agent 层（见 2.5 / 1.6）——**MAY** 采用「以 host 分配的 origin 标签为前缀」等形态（例如 `office:anydoc`）；
 - Agent MUST NOT 依赖 `serverInfo.name` 消歧（不保证唯一）；
-- 两个 server 的同名工具：Agent MUST 处理两者并存，MUST NOT 静默丢弃其一（这同时也是安全规则，见 9.2）。
+- 两个 server 的同名工具：Agent MUST 处理两者并存，MUST NOT 静默丢弃其一（这同时也是安全规则，见 10.2）。
 
-### 5.3 无状态与显式状态句柄
+### 6.3 无状态与显式状态句柄
 
 MCP 2026-07-28 无 protocol 层会话。跨调用的状态由**显式句柄**承载：
 
@@ -697,9 +812,9 @@ MCP 2026-07-28 无 protocol 层会话。跨调用的状态由**显式句柄**承
 - Agent 在 prompt 编排中 **MUST** 负责把句柄从一次调用带到下一次（模型上下文中的线程化）；
 - 句柄是「名称」而非「能力凭证」：Server 每次调用 MUST 基于调用者身份重校验授权；
 - 未认证 server 的句柄按 bearer 处理：RECOMMENDED 高熵（UUIDv4 级）且有界生命周期；
-- 句柄过期/未知时，Server 应返回**工具执行错误**（`isError: true`）并说明恢复方式（重建句柄），让模型可自纠（见 5.4）。
+- 句柄过期/未知时，Server 应返回**工具执行错误**（`isError: true`）并说明恢复方式（重建句柄），让模型可自纠（见 6.4）。
 
-### 5.4 错误分类与重试
+### 6.4 错误分类与重试
 
 MCP 区分两类错误，MCPP 规定其 Agent 侧处置：
 
@@ -714,21 +829,21 @@ Agent **MUST** 实施：
 - 对协议错误与执行错误分别记账，避免耗尽配额；
 - 工具超时 / 取消时，将取消原因（progress / cancellation）如实并入上下文，不得吞错。
 
-### 5.5 与 Skills 的工具绑定
+### 6.5 与 Skills 的工具绑定
 
-- Skill 的 `metadata."io.mcpp/tools"`（见 4.7.2）是 Skill↔Tool 绑定的标准载体；Agent 在激活 skill 时应盘点并报告 required 工具缺口；
+- Skill 的 `metadata."io.mcpp/tools"`（见 5.7.2）是 Skill↔Tool 绑定的标准载体；Agent 在激活 skill 时应盘点并报告 required 工具缺口；
 - Skill 正文中的工具引用使用工具名，Agent 在 per-origin 命名空间内解析。跨 origin 引用用 `origin:toolName` 限定写法；
-- Agent **MUST NOT** 因 Skill 声明了 `allowed-tools` 之类的字段就放行——该字段对 MCP origin 的 Skill **必须忽略**（权限边界见 9.4，此处是 SEP-2640 的硬性要求）。
+- Agent **MUST NOT** 因 Skill 声明了 `allowed-tools` 之类的字段就放行——该字段对 MCP origin 的 Skill **必须忽略**（权限边界见 10.4，此处是 SEP-2640 的硬性要求）。
 
-### 5.6 Tool 懒加载与 Tool Search（Agent 层策略）
+### 6.6 Tool 懒加载与 Tool Search（Agent 层策略）
 
 **问题**：`tools/list` 可能返回成百上千个工具。若全部定义（`description` + `inputSchema`）注入上下文，会造成 token 预算爆炸与首包延迟（stdio 等场景下还会引发异步排队阻塞）。MCPP **推荐** Agent 层对工具实施**懒加载**，并由此派生 Agent 层 **Tool Search** 能力：
 
-- **目录即索引**：Agent SHOULD 将 `tools/list` 结果（分页 + 缓存，见 6.3）维护为**轻量索引**——只含元数据（`name` / `title` / `description` / `size` / `annotations`），**不注入 schema**；
+- **目录即索引**：Agent SHOULD 将 `tools/list` 结果（分页 + 缓存，见 7.3）维护为**轻量索引**——只含元数据（`name` / `title` / `description` / `size` / `annotations`），**不注入 schema**；
 - **Tool Search**：任务需要工具时，Agent 在索引上做检索式匹配（名称 / 描述关键词、与当前任务的语义相关性），得到**候选集**，对候选集按需拉取并注入定义（`description` + `inputSchema`）——检索在**元数据层**完成，定义按**命中**获取。MCP 2026-07-28 没有协议级的工具搜索方法，Tool Search 是 **Agent 层实现**（1.6 归属），搜索质量由宿主决定；
 - **阻塞规避**：懒加载把「全量定义注入」换成「模型显式需要的几个」，避免全量拉取带来的排队与解析延迟；2.2 的 Evaluate 阶段（只依赖元数据）对工具目录同样适用；
-- **候选排序**：复用以确定性顺序为底（6.2 `(audience, priority desc, 名称)`），稳定搜索输出以保 LLM prompt cache 收益；
-- 定义拉取失败或缓存过期时，按 6.3 重取该条目；零候选时向模型如实报告「无可用工具」，MUST NOT 杜撰工具。
+- **候选排序**：复用以确定性顺序为底（7.2 `(audience, priority desc, 名称)`），稳定搜索输出以保 LLM prompt cache 收益；
+- 定义拉取失败或缓存过期时，按 7.3 重取该条目；零候选时向模型如实报告「无可用工具」，MUST NOT 杜撰工具。
 
 ```mermaid
 flowchart LR
@@ -742,23 +857,23 @@ flowchart LR
 
 ---
 
-## 6. 资源发现（Agent 层）
+## 7. 资源发现（Agent 层）
 
 资源原语的定义与字段在 MCP 规范中；本章规范 Agent「如何发现并组织它们」。
 
-### 6.1 发现渠道
+### 7.1 发现渠道
 
 Agent 应综合利用以下渠道构建资源视角：
 
 1. **`resources/list`**：全局资源枚举（分页 + 缓存）。作为基线渠道；
-2. **`resources/templates/list`**：参数化资源（RFC 6570 模板）。`skill://{skillName}/SKILL.md` 模板对 Skill 场景尤其重要（见 4.4）；
+2. **`resources/templates/list`**：参数化资源（RFC 6570 模板）。`skill://{skillName}/SKILL.md` 模板对 Skill 场景尤其重要（见 5.4）；
 3. **`resources/directory/read`**（`directoryRead: true` 的 server）：目录资源的下钻导航（Skill 内 references/templates 的目录浏览）；
-4. **Skill 内的相对引用**：Skill 目录文件的相对路径解析规则（见 7.1 的「根解析」）；
-5. **工具返回的引用**：`resource_link` 与显式 URI（见 7.3）。
+4. **Skill 内的相对引用**：Skill 目录文件的相对路径解析规则（见 8.1 的「根解析」）；
+5. **工具返回的引用**：`resource_link` 与显式 URI（见 8.3）。
 
 Agent **SHOULD** 将这三类来源合成统一的资源导航视图，但**MUST** 保留来源标注（global list / template / directory / skill-relative），因为其完整性语义不同。
 
-### 6.2 过滤与优先级（annotations）
+### 7.2 过滤与优先级（annotations）
 
 资源及其内容块支持 annotations：
 
@@ -774,15 +889,15 @@ MCPP 规则：
 - Agent 的默认上下文纳入准则是 `audience: assistant` 且 `priority` 高于阈值；阈值由宿主策略决定；
 - 仅当资源标注缺失时，Agent 才退化为按名称/描述启发式。
 
-### 6.3 缓存与新鲜度
+### 7.3 缓存与新鲜度
 
 - `resources/list`、`resources/templates/list`、`resources/read` 的结果可携带 `ttlMs`（存活时间）与 `cacheScope`（`public`/`private`）；
 - Agent MUST 在 `ttlMs` 内复用缓存条目，`ttlMs` 过期后重取；`cacheScope: public` 的结果可跨 Agent 会话共享缓存；
-- 列表缓存是新鲜度提示而非完整性/信任证据：目录可能过期、局部、被篡改（见第 9 章）；
+- 列表缓存是新鲜度提示而非完整性/信任证据：目录可能过期、局部、被篡改（见第 10 章）；
 - **确定性顺序**在资源列表同样成立：Agent 的排序键 RECOMMENDED 为 `(audience, priority desc, lastModified desc, uri)`，稳定输出以保 LLM prompt cache 收益；
-- 订阅（listChanged / resources/updated）是缓存失效的推送通道，见 7.2。
+- 订阅（listChanged / resources/updated）是缓存失效的推送通道，见 8.2。
 
-### 6.4 分页与原子性
+### 7.4 分页与原子性
 
 - 所有 list 方法按 MCP 的 `cursor` / `nextCursor` 契约分页；
 - Skill 条目（`skills/list`）的 `resources` 集合**原子**：不得跨页拆分（SEP-2640 要求）；
@@ -790,9 +905,9 @@ MCPP 规则：
 
 ---
 
-## 7. 资源使用（Agent 层）
+## 8. 资源使用（Agent 层）
 
-### 7.1 读取
+### 8.1 读取
 
 - `resources/read` 以 URI 为参数；返回一个或多个 contents（text / blob 均可）：
   - text：`text/markdown` 类直接入上下文；
@@ -800,23 +915,23 @@ MCPP 规则：
 - Server 可在一个 read 中返回多个 content（如目录资源读多文件）；Agent **SHOULD** 支持该形态并逐一按 URI 记账。
 - **相对引用根解析**：Skill 正文内的相对路径 MUST 针对「包含 `SKILL.md` 的目录」（skill 根）解析，而非 scheme 根。`references/GUIDE.md` 在 `skill://acme/billing/refunds/SKILL.md` 中解析为 `skill://acme/billing/refunds/references/GUIDE.md`。嵌套 Skill 的相对引用解析到自己目录的根。
 - `https://` scheme 的资源：按 MCP 规定，若 Agent 可直接联网获取，则 MAY 直接 fetch（而不用经 server 中转）；其余场景 Agent SHOULD 走 `resources/read`。
-- 读取结果同样受 `ttlMs` / `cacheScope` 缓存（见 6.3）。
+- 读取结果同样受 `ttlMs` / `cacheScope` 缓存（见 7.3）。
 - 资源不存在时 server 返回 `-32602`（兼容 `-32002`）。Agent MUST NOT 将「存在但为空」与「不存在」混淆——server 不得以空 `contents` 数组代表不存在。
 
-### 7.2 订阅与更新
+### 8.2 订阅与更新
 
 - Server 声明 `resources.listChanged` 时，资源列表变化 SHOULD 推送 `notifications/resources/list_changed`；声明 subscribe 时，具体资源变化经 `subscriptions/listen`（`resourceSubscriptions` 过滤器）投递 `notifications/resources/updated`。
 - Agent 决策：**列表**级变化用 `ttlMs` 轮询 + listChanged 推送双通道；**单资源**级变化优先订阅（免轮询），订阅不可用时退化为按 `ttlMs` 重新 read；
 - Agent **MUST** 在 `resources/updated` 到达后主动重取该 URI 内容（通知本身不带新内容）；
 - 订阅上下文是宿主责任：Agent SHOULD 只对「模型或用户活跃引用中」的资源保持订阅，避免订阅过载。
 
-### 7.3 嵌入与引用
+### 8.3 嵌入与引用
 
 - **Embedded resource**（内嵌资源块）：资源全文直接在工具结果内返回，含其 annotations。Agent 无需再 read，直接作为事实入上下文；并按其 origin 记账与展示（嵌入内容不得伪造本地来源）。
-- **Resource link**（资源链接块）：工具返回 URI + 元数据，指向额外上下文。Agent **MUST NOT** 假定该 URI 出现在 `resources/list` 中；需要内容时按 6.1 直接 read（若 server 允许）；
+- **Resource link**（资源链接块）：工具返回 URI + 元数据，指向额外上下文。Agent **MUST NOT** 假定该 URI 出现在 `resources/list` 中；需要内容时按 7.1 直接 read（若 server 允许）；
 - 二者的 annotations（audience/priority）同样指导 Agent 决定「自动纳入」还是「按需跟随」。
 
-### 7.4 输入需求（MRTR）
+### 8.4 输入需求（MRTR）
 
 工具调用或资源读取中途，server 可返回 `resultType: "input_required"`，伴随 `inputRequests`（e.g., elicitation）与 `requestState`：
 
@@ -824,11 +939,11 @@ MCPP 规则：
 - Agent **MUST NOT** 替用户默认接受（action 恒由用户给出）；
 - 用户拒绝时，Agent MUST 将该结果并入上下文并停止该动作，不得绕过或伪造响应；接收方会对 `requestState` 做防篡改校验（server 生成）。
 
-### 7.5 状态句柄
+### 8.5 状态句柄
 
-无会话环境下跨调用状态一律走显式句柄（见 5.3）。对象包括但不限于：购物车、浏览器上下文、事务、任务 handle（Tasks 扩展）。规则同 4.3；Access token 类句柄 MUST 按 4.3 的 bearer 规则处置。
+无会话环境下跨调用状态一律走显式句柄（见 6.3）。对象包括但不限于：购物车、浏览器上下文、事务、任务 handle（Tasks 扩展）。规则同 5.3；Access token 类句柄 MUST 按 5.3 的 bearer 规则处置。
 
-### 7.6 超大载荷与私域数据传递（引用优先）
+### 8.6 超大载荷与私域数据传递（引用优先）
 
 **约束背景**：JSON-RPC 消息是内存数据结构——超大文件（MB 量级以上）或机密载荷内嵌进消息会带来体积失控、blob base64 膨胀（约 +33%）、不可流式、不可审计等问题。MCPP 对这类私域数据传递给出**引用优先**（reference-first）约定：
 
@@ -839,7 +954,7 @@ MCPP 规则：
 **stdio（同机）**——私域数据的**最低暴露面**：
 
 - stdio server 与宿主共享同一文件系统权限域：`file://` URI 或相对路径即可完成移交，**零拷贝、零网络暴露**，数据不出主机；
-- 传递受 7.1 的 `file://` 批准规则约束（Agent MUST 获用户显式批准后再读）；
+- 传递受 8.1 的 `file://` 批准规则约束（Agent MUST 获用户显式批准后再读）；
 - 超大文件 **MUST NOT** 走 stdin/stdout 管道（管道为小消息设计，存在缓冲 / 背压 / 阻塞问题）；应走共享文件系统或显式移交 fd。
 
 **HTTP（streamable-http）**——跨主机的唯一通道，也是真正的大文件通道：
@@ -849,7 +964,7 @@ MCPP 规则：
 
 **统一规则**：
 
-- 声明巨型输入的 Tool 参数 SHOULD 用 `uri`（string + `format: uri`）而非常规 `content` / `blob`（5.1 元数据质量）；
+- 声明巨型输入的 Tool 参数 SHOULD 用 `uri`（string + `format: uri`）而非常规 `content` / `blob`（6.1 元数据质量）；
 - 载荷内容 MUST NOT 以摘要 / 明文进入模型上下文与日志（仅引用可见）；引用不留日志，用完即废；
 - 清理责任：谁创建谁清理；临时区生命周期绑定请求 / 会话；审计记录传递事件（方向、大小、来源 origin、引用生命周期）。
 
@@ -863,18 +978,18 @@ flowchart TD
     S2 --> X
 ```
 
-## 8. MCPP 扩展声明与协商
+## 9. MCPP 扩展声明与协商
 
-### 8.1 扩展标识与版本
+### 9.1 扩展标识与版本
 
 MCPP 的能力需要 server 与 Agent 双向显式协商，遵循 MCP 扩展的协商机制（SEP-2133）。
 
 - **协议版本**：MCPP 版本以 `MCPP-Version: 1.0`（当前草案）声明。Agent MUST 在每请求 `_meta` 中携带其支持的 MCPP 版本；Server SHOULD 忽略高于其实现的 MCPP 版本字段，按既有版本处理。
-- **扩展命名空间**：MCPP 自身扩展的 capabilities 键使用保留前缀 `io.mcpp/`。Skill 传输能力**不新造 extension id**，直接复用官方 `io.modelcontextprotocol/skills`（其下新增的编排字段在 frontmatter `metadata."io.mcpp/*"` 中，见 4.2）。
+- **扩展命名空间**：MCPP 自身扩展的 capabilities 键使用保留前缀 `io.mcpp/`。Skill 传输能力**不新造 extension id**，直接复用官方 `io.modelcontextprotocol/skills`（其下新增的编排字段在 frontmatter `metadata."io.mcpp/*"` 中，见 5.2）。
 
 > 设计说明：MCPP 不引入并行的 skills 扩展，而是「官方扩展为体，MCPP 字段为用」，避免生态分裂。
 
-### 8.2 能力位
+### 9.2 能力位
 
 | 能力位 | 作用域 | 说明 |
 | --- | --- | --- |
@@ -895,7 +1010,7 @@ Server 的 skill 能力声明（示意，wire 细节属 MCP 层）：
 
 Agent（客户端）侧的 MCPP 编排能力属于宿主行为声明，主要用于 server 决定 instruction 措辞；Server 不得因 Agent 未声明编排能力而拒绝服务。
 
-### 8.3 最低实现面
+### 9.3 最低实现面
 
 - 宣称实现 `io.modelcontextprotocol/skills` 的 Server，**MUST** 至少实现 `skills/list` 与 `skills/get`（空/局部列表合法）；
 - 宣称 `directoryRead` 者，**MUST** 对其以独立文件服务的每个 skill 命名空间内目录支持该方法（方法本身通用，不限于 skill scheme）；
@@ -904,36 +1019,36 @@ Agent（客户端）侧的 MCPP 编排能力属于宿主行为声明，主要用
 
 ---
 
-## 9. 安全与信任（Agent 视角）
+## 10. 安全与信任（Agent 视角）
 
 MCPP 把安全规则写成 Agent 侧义务（与 SEP-2640 的安全模型一致），因为「能力如何被消费」最终发生在 Agent 层。
 
-### 9.1 内容不可信与提示注入
+### 10.1 内容不可信与提示注入
 
 - Agent **MUST** 将 MCP 下发的所有内容视为**不可信模型输入**：工具描述、资源注释、Skill 正文、指令字段，都可能被恶意或受损 server 用于注入。这包括 frontmatter 中的 description 被改为「要求执行敏感操作」的情形。
 - 防御基线：与任何 server 提供文本同级的注入防御（隔离执行上下文、敏感操作二次确认、输出审计）。一个 server 被连接，不等于其内容获得权威地位。
 
-### 9.2 origin 可见与原信任
+### 10.2 origin 可见与原信任
 
 - Skill 正文进入模型上下文时，Agent **MUST** 携带来源 server 的 **host-assigned 标签**显示（例如 `[来自服务器 office]`），MUST NOT 让远端 Skill 与本地文件系统 Skill 在上下文中不可区分；
 - 决定是否遵循 Skill 指令的决策权 MUST 保留给模型本身（开放推理），宿主只能帮助模型看到来源；
 - 跨 origin 资源读取是 confused-deputy 向量：由 skill A 触发的内容，Agent **MUST NOT** 顺带用它驱动对 server B 的 `resources/read`；任何跨 origin 读取 MUST 经显式、逐调用、点名双方的批准。
 - 命名空间冲突即冒充面：恶意 server 可发布同名 Skill 冒充热门/本地的同名技能。Agent MUST 在 per-origin 命名空间内解析名称、MUST NOT 让远端 Skill 静默遮蔽或拦截其他来源的同名调用，SHOULD 向用户展示冲突。
 
-### 9.3 批准与内容绑定
+### 10.3 批准与内容绑定
 
 - **Skill 激活逐 Skill 批准**：作为 3.6 加载规则的补充，远端 Skill 的激活属于用户知情范围内的能力启用；宿主设计上 MAY 对本地可信任来源采用默认允许，但远端 Skill 的激活 **MUST** 至少经一次显式用户同意，且该同意不可跨 Skill、跨来源静默续用。
 - **批准必须内容绑定（content-bound）**：持久化的批准 MUST 绑定批准时刻观察到的条目 `resources` 集合（每个 `{uri, digest}`）。此后条目若变化（文件旋转、增删）——无论来自 `skills/list` 还是 `skills/get` —— Agent **MUST** 视为原批准已撤销，重新征求同意后方可继续加载/执行。
 - digest 校验保证的是「列表与所取内容一致」（防篡改、防过期），**不是**可信凭证：digest 与正文同源，联动改写的中间人可同时伪造两者。Match 不构成安全边界。
-- 批准的 Skill 之外，不得因「同一文件空间内存在其他 SKILL.md」（嵌套）而使其生效（嵌套需自身激活，见 4.6）。
+- 批准的 Skill 之外，不得因「同一文件空间内存在其他 SKILL.md」（嵌套）而使其生效（嵌套需自身激活，见 5.6）。
 
-### 9.4 无隐式执行与权限授予
+### 10.4 无隐式执行与权限授予
 
 - Agent **MUST NOT** 因 MCP 下发的 Skill 内容（声明字段或正文指令）直接触发宿主机侧代码执行，除非该执行经逐 Skill 显式批准；
 - Agent Skills 的 `allowed-tools` 等扩权字段，在 **MCP origin 的 Skill 上必须忽略**，除非用户就该 Skill 显式批准该项授予。远端 server 填写 `allowed-tools` 是请求提升宿主权限，不是声明自身属性；
 - 上述批准与宿主自身的工具启用策略叠加；「Skill 该字段出现了」永不是权限依据。
 
-### 9.5 缓存隔离与持久化
+### 10.5 缓存隔离与持久化
 
 - Agent 若在本地磁盘缓存 MCP 下发的 Skill 内容，**MUST** 将缓存目录排除在所有文件系统 Skill 发现路径之外；自该位置加载 = 仍按「经 MCP 到达」对待，适用本节全部规则（含重启后、源 server 断开后）；
 - 用户移除某 server 时，Agent SHOULD 移除其缓存内容；
@@ -941,9 +1056,9 @@ MCPP 把安全规则写成 Agent 侧义务（与 SEP-2640 的安全模型一致�
 
 ---
 
-## 10. 一致性要求（Conformance）
+## 11. 一致性要求（Conformance）
 
-### 10.1 Server / Skill 作者
+### 11.1 Server / Skill 作者
 
 | # | 要求 |
 | --- | --- |
@@ -953,14 +1068,15 @@ MCPP 把安全规则写成 Agent 侧义务（与 SEP-2640 的安全模型一致�
 | S4 | 声明 skills 扩展者 MUST 实现 `skills/list`（空/局部列表合法）与 `skills/get`（未知 URI 返回 -32602） |
 | S5 | `skills/list` 与 `skills/get` 条目中：`frontmatter` MUST 与 SKILL.md 逐字一致；`resources` 存在时 MUST 完整、含 SKILL.md、逐文件 `sha256:{hex}` digest |
 | S6 | list 结果 MUST 确定性顺序；SHOULD 携带 `ttlMs`/`cacheScope` |
-| S7 | 工具名遵守第 5.1 字符规则；`description` 写清适用场景与约束 |
+| S7 | 工具名遵守第 6.1 字符规则；`description` 写清适用场景与约束 |
 | S8 | 状态型工具使用显式句柄，句柄过期错误以 `isError: true` 表述恢复方式 |
 | S9 | frontmatter 的 `io.mcpp/` 字段仅使用本文档登记项；未知字段不阻塞 |
 | S10 | 目录服务者的 skill 内相对路径 MUST 按 skill 根解析（含嵌套目录文件） |
 | S11 | 实现项目 MUST 按 Agent Plugin 1.0.0 布局组织（`plugin.json` + `skills/` + `mcp.json`）；`name` 遵守第 3.2 约束 |
 | S12 | 聚合 HTTP 出口（3.7）：各子端点为独立 MCP endpoint 与 origin，路径 MUST 明确可审计；端点间不得静默互访；stdio 不支持该形态 |
+| S13 | 以 npm 包分发者（若采用，第 4 章）：包根即插件根；`package.json` 与 `plugin.json` 的 `name`/`version` MUST 一致；`keywords` MUST 含 `mcpp-plugin`；`files` 白名单含全部 MCPP 组件、MUST NOT 含凭据与运行数据 |
 
-### 10.2 Agent / Host
+### 11.2 Agent / Host
 
 | # | 要求 |
 | --- | --- |
@@ -978,13 +1094,14 @@ MCPP 把安全规则写成 Agent 侧义务（与 SEP-2640 的安全模型一致�
 | A12 | 错误处置：执行错误回传模型自纠；协议错误有限重试；无界重试禁止 |
 | A13 | 缓存隔离：远端 Skill 缓存不进本地 skill 发现路径，断开后仍按 MCP 对待 |
 | A14 | 插件加载顺序按 3.5 REQUIRED：manifest → skills/ → mcp.json → 连接 server，失败按隔离规则处理 |
-| A15 | 技能命令化时（4.9，若采用）：命令名 MUST 可追溯到归属 origin（per-origin 前缀等为可用策略）；注入 MUST 携带 origin 来源标记 |
+| A15 | 技能命令化时（5.9，若采用）：命令名 MUST 可追溯到归属 origin（per-origin 前缀等为可用策略）；注入 MUST 携带 origin 来源标记 |
 | A16 | 多 server 共存（2.5 底线①）：跨 server 能力的呈现 MUST 可追溯到归属 origin；实现策略（分区、前缀、注入集）属 Agent 层 |
 | A17 | 2.5 底线②：Agent 消歧 MUST NOT 静默遮蔽 / 替换任何来源的能力，能力消失或冲突悬而未决时必须可观测（A4） |
-| A18 | 超大 / 机密载荷（7.6）：MUST 引用优先，不内嵌 JSON-RPC；载荷引用短期有效、不留日志、不入上下文摘要；谁创建谁清理 |
-| A19 | Tool 懒加载与 Tool Search（5.6）：目录元数据入索引，定义按命中注入；零候选时如实报告，MUST NOT 杜撰工具 |
+| A18 | 超大 / 机密载荷（8.6）：MUST 引用优先，不内嵌 JSON-RPC；载荷引用短期有效、不留日志、不入上下文摘要；谁创建谁清理 |
+| A19 | Tool 懒加载与 Tool Search（6.6）：目录元数据入索引，定义按命中注入；零候选时如实报告，MUST NOT 杜撰工具 |
+| A20 | registry 安装的插件（第 4 章）：按远端不可信内容对待（10.1）；origin 标签携带 registry 来源（4.3）；安装后仍按 3.5 顺序加载；升级时按 content-bound 复核批准（10.3），MUST NOT 静默沿用旧批准 |
 
-### 10.3 判定
+### 11.3 判定
 
 - 全部 MUST 项满足 —— conforming；
 - 任一 MUST 项不满足（约定职责内）—— non-conforming，互操作不保证；
@@ -1003,7 +1120,8 @@ MCPP 把安全规则写成 Agent 侧义务（与 SEP-2640 的安全模型一致�
 **待办标记**（通往完整 MCPP conforming）：
 
 - 为聚合上层补齐插件清单 `plugin.json`（对应 3.2）；
-- 实现 `skills/list` / `skills/get` / `directoryRead`（对应 S4/S5）与 `io.mcpp/*` 编排字段解析（对应 A7）。
+- 实现 `skills/list` / `skills/get` / `directoryRead`（对应 S4/S5）与 `io.mcpp/*` 编排字段解析（对应 A7）；
+- 为 `packages/mcpp` 补充 MCPP Registry 工具（第 4.1 的 `@mcpp/registry` 形态：search / install / publish / validate，对应 S13）。
 
 ## 附录 B：术语
 
@@ -1020,3 +1138,8 @@ MCPP 把安全规则写成 Agent 侧义务（与 SEP-2640 的安全模型一致�
 | content-bound 批准 | 批准绑定观察到的 `resources` 集合（{uri, digest}），集合变化即撤销 |
 | 编排（orchestration） | MCPP 新增：依赖拓扑加载、工具绑定、上下文预算的 Agent 层协作 |
 | registry | Agent 侧能力目录：每个能力只存元数据（name/description/origin/URI） |
+| MCPP Registry | 插件分发与发现渠道：任意标准 npm registry 均构成（4.1）；MCPP 的 registry 工具集以标准 npm 包形态分发 |
+| 部署形态（deployment form） | MCPP 插件能力的两类部署形态——monorepo server（形态一，中心化）与 MCPP Registry 下发（形态二，端侧 stdio）；正交、可并存，按企业部署与管理需求选择（第 4 章引言） |
+| monorepo server 形态（形态一） | 单一 HTTP 出口路径路由多个 server，企业服务端集中部署与管理，Agent 经 streamable-http 连接（3.7） |
+| MCPP Registry 下发形态（形态二） | 插件以标准 npm 包经 npm registry 下发，stdio server 在端点本地运行，分发/安装/更新复用 npm 生态（第 4 章） |
+| 分发外壳（distribution shell） | npm 包作为插件的分发载体：解决发现、安装、更新；与 `mcp.json`（执行承载声明）职责正交（4.3） |
