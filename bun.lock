@@ -11,23 +11,6 @@
         "@modelcontextprotocol/client": "^2.0.0",
         "@modelcontextprotocol/server": "^2.0.0",
         "@peri/mcpp": "workspace:*",
-        "office": "workspace:*",
-        "zod": "^4.4.3",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^7",
-      },
-    },
-    "examples/plugins/monorepo/office": {
-      "name": "office",
-      "dependencies": {
-        "@modelcontextprotocol/client": "^2.0.0",
-        "@modelcontextprotocol/server": "^2.0.0",
-        "@peri/mcpp": "workspace:*",
-        "zod": "^4.4.3",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -118,8 +101,6 @@
     "jose": ["jose@6.2.9", "", {}, "sha512-XrchZOFZUl/T3vTwRe8XK+cJrGtMF4th1ARnDfwbBXFKThGhlsxEE4Zu03AD/bjJSt/9jT/mxrOCkJWOg77aPA=="],
 
     "monorepo": ["monorepo@workspace:examples/plugins/monorepo"],
-
-    "office": ["office@workspace:examples/plugins/monorepo/office"],
 
     "path-key": ["path-key@3.1.1", "", {}, "sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q=="],
 

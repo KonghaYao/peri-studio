@@ -17,8 +17,6 @@
   "dependencies": {
     "@modelcontextprotocol/client": "^2.0.0",
     "@modelcontextprotocol/server": "^2.0.0",
-    "@peri/mcpp": "workspace:*",
-    "office": "workspace:*",
-    "zod": "^4.4.3"
+    "@peri/mcpp": "workspace:*"
   }
 }

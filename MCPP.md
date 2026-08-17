@@ -116,7 +116,7 @@ MCPP 文档凡涉及上述内容，只引用到 MCP 规范条目，不复述其�
 | [Agent Plugins · Manifest](https://agent-plugins.org/plugin-authors/manifest) | 插件清单 plugin.json 的字段与约束 |
 | [Agent Plugins · MCP servers](https://agent-plugins.org/plugin-authors/mcp-servers) | mcp.json 承载声明与传输约定 |
 | [Agent Plugins · Skills](https://agent-plugins.org/plugin-authors/skills) | skills/ 目录布局与失败隔离 |
-| 本仓库 [`examples/plugins/office`](examples/plugins/office) | 参考实现（agent plugin 形态 + skill:// 自动挂载） |
+| 本仓库 [`examples/plugins/monorepo`](examples/plugins/monorepo) | 参考实现（聚合出口 + skill:// 自动挂载 + CF 部署） |
 
 ### 1.6 分工边界：谁定义什么
 
@@ -548,7 +548,7 @@ Server 声明 `io.modelcontextprotocol/skills` 扩展后（声明细则见第 8 
 分级要求（满足其一即可让 Agent 发现一次的 Skill）：
 
 - 推荐：实现 `skills/list`（+ `directoryRead`）的完整枚举；
-- 最小：资源模板挂载 + list 实时扫描（如 office 插件）；
+- 最小：资源模板挂载 + list 实时扫描（如 openspec 子 server）；
 - 基线：仅指令引用（URI 可直接读）。
 
 Agent 侧对应规则见 4.5。SEP-2640 明确「列表可为空/局部」，所以三类都有效，但 Agent 对**只靠基线**的 server 的 Skill 发现率受限，须容错。
@@ -994,16 +994,15 @@ MCPP 把安全规则写成 Agent 侧义务（与 SEP-2640 的安全模型一致�
 
 ## 附录 A：本仓库参考实现
 
-本仓库 [`examples/plugins/office`](examples/plugins/office) 以一个标准 Agent Plugin 形态承载 MCPP 能力（即 1.1「项目身份」的落地示例）：
+本仓库以两层结构落地 MCPP（即 1.1「项目身份」的实现示例）：
 
-- **插件结构**：`skills/` 打包技能目录（通道 A，`convert-documents-to-markdown` 等）+ `src/` 承载 server（`bun src/index.ts` 或 `--stdio`）。
-- [`src/ResourceForSkills.ts`](examples/plugins/office/src/ResourceForSkills.ts)：第 3.4 双通道投影的参考实现——实时 `readdir` `skills/` 目录，挂载为 `skill://{skillName}/SKILL.md` 资源模板（S2/S3），list 回调按名称确定排序（S6）；新增技能目录无需重启 server。
-- [`src/useStandardMCPP.ts`](examples/plugins/office/src/useStandardMCPP.ts)：承载 server 的标准 MCPP 运行封装（stdio + streamable HTTP 双入口），即 `mcp.json` 中 `stdio`/`streamable-http` 两种承载的对应实现。
-- [`examples/plugins/.mcp.json`](examples/plugins/.mcp.json)：MCP 客户端级配置（`stdio` 指向 office server），与第 3.3 的插件级 `mcp.json` 同构——客户端把插件的便携 `mcp.json` 映射到自身原生 MCP 配置。
+- [`packages/mcpp`](packages/mcpp)：规范行为即代码的 SDK——skills 扫描/摘要/资源挂载（`ResourceForSkills`，第 3.4 双通道投影参考实现）、双模式启动（stdio + streamable HTTP）、`createGateway` 聚合（第 3.7）、`plugin.json`/`mcp.json` 校验。
+- [`examples/plugins/monorepo`](examples/plugins/monorepo)：聚合上层（monorepo 拓扑，第 3.7）——单一 HTTP 出口路径路由多个子 server（`/hello/mcp`、`/openspec/mcp`），并可经 `worker.ts` 部署到 Cloudflare Workers；`openspec/skills` 打包第三方 OpenSpec 技能集（通道 A 素材），由子 server 投影为 `skill://` 资源（通道 B）。
+- [`examples/plugins/.mcp.json`](examples/plugins/.mcp.json)：MCP 客户端级配置（`streamable-http` 指向聚合出口），与第 3.3 的插件级 `mcp.json` 同构——客户端把插件的便携 `mcp.json` 映射到自身原生 MCP 配置。
 
 **待办标记**（通往完整 MCPP conforming）：
 
-- 补齐插件清单 `plugin.json` 与承载声明 `mcp.json`（对应 3.2 / 3.3）；
+- 为聚合上层补齐插件清单 `plugin.json`（对应 3.2）；
 - 实现 `skills/list` / `skills/get` / `directoryRead`（对应 S4/S5）与 `io.mcpp/*` 编排字段解析（对应 A7）。
 
 ## 附录 B：术语

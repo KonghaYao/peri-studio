@@ -1,8 +1,6 @@
 /**
- * monorepo 聚合 server —— MCPP 3.7：单一 HTTP 出口，路径路由到多个子 server。
+ * monorepo 聚合 server —— MCPP 3.7：单一 HTTP 出口，路径路由到子 server。
  *
- *   /office/mcp   → office 子 server（子项目，skills / tools / resources 全量）
- *   /hello/mcp    → hello 子 server（最小 tool）
  *   /openspec/mcp → openspec 子 server（第三方 OpenSpec skills 集，openspec/skills）
  *
  * 形态要点：
@@ -10,16 +8,21 @@
  *   - 每个路径是独立的 MCP endpoint / origin：客户端按 URL 连接，各自独立协商
  *   - stdio 不适用该形态（stdio 无 URL/路径概念，3.7 约束）
  *
- * 项目结构：本目录是聚合上层，office/ 是其子项目（标准 Agent Plugin），
- * 通过 workspace 依赖 `office` 导入其 server 工厂。
- *
  * 运行：bun src/index.ts            → 监听 http://127.0.0.1:8787/
- *        bun test/smoke.ts          → 官方 client 分别连接两个端点验证
+ *        bun test/smoke.ts          → 官方 client 连接端点验证
  */
-import { createGateway, type GatewayHandle } from "@peri/mcpp";
-import { createOfficeServer } from "office";
-import { createHelloServer } from "./servers/hello.ts";
-import { createOpenspecServer } from "./servers/openspec.ts";
+import {
+    createGateway,
+    createGatewayRoutes,
+    type GatewayHandle,
+    type GatewayRoutesHandle,
+} from "@peri/mcpp";
+import { createOpenspecServer } from "../openspec/server.ts";
+
+/** 挂载表：/xxx/mcp → xxx 子 server（3.7：路径即路由，唯一 HTTP 出口）。 */
+export const MONOREPO_ROUTES = [
+    { path: "/openspec/mcp", createServer: createOpenspecServer },
+] as const;
 
 export interface MonorepoOptions {
     host?: string;
@@ -27,23 +30,23 @@ export interface MonorepoOptions {
 }
 
 /**
- * 聚合网关：挂载表即路由表（子 server 各自独立实例，monorepo 隔离）。
- * office 的 skills/ 目录通过 office 子 server 的 ResourceForSkills 投影，
- * 在 /office/mcp 端点下自动可见。
+ * 纯请求分发（无监听进程）：Cloudflare Workers / 边缘运行时部署用。
+ * 会话注册表驻留于句柄生命周期（单 isolate 内存态，见 wrangler 注释）。
+ */
+export function createMonorepoRoutes(): GatewayRoutesHandle {
+    return createGatewayRoutes([...MONOREPO_ROUTES]);
+}
+
+/**
+ * 聚合网关（本机形态）：挂载表即路由表（子 server 各自独立实例，monorepo 隔离）。
+ * openspec 的 skills/ 目录通过 openspec 子 server 的 ResourceForSkills 投影，
+ * 在 /openspec/mcp 端点下自动可见。
  */
 export function createMonorepoGateway(options: MonorepoOptions = {}): Promise<GatewayHandle> {
-    return createGateway(
-        [
-            // /xxx/mcp → xxx 子 server（3.7：路径即挂载表，唯一 HTTP 出口）
-            { path: "/office/mcp", createServer: createOfficeServer },
-            { path: "/hello/mcp", createServer: createHelloServer },
-            { path: "/openspec/mcp", createServer: createOpenspecServer },
-        ],
-        {
-            host: options.host ?? "127.0.0.1",
-            port: options.port ?? 8787,
-        },
-    );
+    return createGateway([...MONOREPO_ROUTES], {
+        host: options.host ?? "127.0.0.1",
+        port: options.port ?? 8787,
+    });
 }
 
 if (import.meta.main) {
