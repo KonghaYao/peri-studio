@@ -273,7 +273,12 @@ impl ElicitationResponse {
         let response = response_frame(&pending.request_id, &request.payload);
         match self
             .instance
-            .forward_rpc(&runtime.instance_id, &request.payload.chat_id, &response)
+            .forward_rpc_response(
+                &runtime.instance_id,
+                &request.payload.chat_id,
+                &command_id,
+                &response,
+            )
             .await
         {
             Ok(()) => {}

@@ -128,6 +128,18 @@ pub async fn forward_rpc(
     }
 }
 
+/// 使用 server 自有 ack identity 透传 ACP response。线帧保留 Agent 原始
+/// request id，`command_id` 则保持 server 内全局唯一。
+pub async fn forward_rpc_response(
+    &self,
+    instance_id: &str,
+    chat_id: &str,
+    command_id: &str,
+    msg: &serde_json::Value,
+) -> Result<(), InstanceError> {
+    self.forward_notification(instance_id, chat_id, command_id, msg).await
+}
+
 /// Notification passthrough (`session/cancel` has no JSON-RPC id or ACP
 /// response). The outer instance envelope still carries the stable Hub
 /// command id so `forward_ack` proves that the instance writer accepted

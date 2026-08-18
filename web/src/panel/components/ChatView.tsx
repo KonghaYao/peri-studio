@@ -13,7 +13,7 @@ import { ChatHeader } from './ChatHeader';
 import { Composer } from './Composer';
 import { MessageList } from './MessageList';
 import { createMemo, Show } from 'solid-js';
-import { chatHead, createProjectSession, creatingSessionProjectId, projects, selectedSessionId } from '../store';
+import { chatHead, createProjectSession, creatingSessionProjectId, elicitationResponses, elicitations, projects, respondElicitation, selectedSessionId } from '../store';
 import { readOnly } from '../lib/auth-state';
 import { EmptyState } from '../../ui';
 import { ConnectionProblem } from './ConnectionProblem';
@@ -23,6 +23,7 @@ import { Button } from '../../ui';
 import { QuickStartComposer } from './QuickStartComposer';
 import { AgentActivityRail } from './AgentActivityRail';
 import { AgentPlanPanel } from './AgentPlanPanel';
+import { ElicitationQueue } from './ElicitationQueue';
 
 type ChatViewProps = {
   onOpenNavigation?: () => void;
@@ -51,7 +52,15 @@ export function ChatView(props: ChatViewProps) {
         <AgentActivityRail activities={chatHead()?.agent?.activities ?? []} />
         <AgentPlanPanel entries={chatHead()?.agent?.plan ?? []} />
         <MessageList />
-        <Composer />
+        <div class="composer-stack flex-none">
+          <ElicitationQueue
+            elicitations={elicitations()}
+            responding={elicitationResponses()}
+            readOnly={readOnly()}
+            onRespond={respondElicitation}
+          />
+          <Composer />
+        </div>
       </Show>
     </section>
   );

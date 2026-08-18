@@ -77,31 +77,6 @@ describe('MessageList hydration', () => {
     expect(screen.getByText('Run command')).toBeInTheDocument();
   });
 
-  it('reveals a newly projected Peri question instead of leaving it above the scroll position', async () => {
-    setRuntimeDocsState({ chat: true, control: true });
-    const scrollIntoView = vi.fn();
-    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
-      configurable: true,
-      value: scrollIntoView,
-    });
-    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
-      callback(0);
-      return 1;
-    });
-    render(() => <MessageList />);
-    setElicitations([{
-      elicitationId: 'question-1',
-      message: 'How should Peri continue?',
-      status: 'pending',
-      responseAction: null,
-      createdAt: '2026-08-15T00:00:00Z',
-      fields: [{ id: 'detail', title: 'Detail', description: null, kind: 'text', required: true, options: [] }],
-    }]);
-
-    await waitFor(() => expect(scrollIntoView).toHaveBeenCalledWith({ block: 'start', behavior: 'auto' }));
-    expect(screen.getByRole('form', { name: 'How should Peri continue?' })).toBeInTheDocument();
-  });
-
   it('shows one provenance chapter boundary and one live-runtime transition', () => {
     setRuntimeDocsState({ chat: true, control: true });
     setChatEntries([

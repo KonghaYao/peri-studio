@@ -10,7 +10,7 @@
 // permission decision 值（allow/deny、按钮顺序）均不变。
 
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js';
-import { chatEntries, chatHead, elicitationResponses, elicitations, permissions, resolvePermission, respondElicitation, retryMessageSubmission, retryPersistentAction, runtimeDocsHydrated, selectedCid } from '../store';
+import { chatEntries, chatHead, permissions, resolvePermission, retryMessageSubmission, retryPersistentAction, runtimeDocsHydrated, selectedCid } from '../store';
 import { readOnly } from '../lib/auth-state';
 import { messageActivity, nextFollowState } from '../lib/message-follow.ts';
 import { messageTime } from '../lib/message-time.ts';
@@ -22,7 +22,6 @@ import { permissionDecisions } from '../lib/permission-delivery';
 import { dismissFailedMessageDelivery, messageSubmission } from '../lib/message-delivery';
 import { MessageOutbox } from './MessageOutbox';
 import { replayBoundaryAt, type ReplayBoundary } from '../lib/replay-boundary';
-import { ElicitationQueue } from './ElicitationQueue';
 
 
 // ── 权限条 ──────────────────────────────────────────────────────────────
@@ -71,7 +70,6 @@ export function MessageList() {
   const [hasNewContent, setHasNewContent] = createSignal(false);
   let areaRef: HTMLDivElement | undefined;
   let previousActivity = '';
-  let previousElicitationIds = '';
   const outboxForChat = () => {
     const submission = messageSubmission();
     return submission?.chatId === selectedCid() && !submission.projected ? submission : null;
@@ -106,24 +104,6 @@ export function MessageList() {
     previousActivity = follow.activity;
   });
 
-  // Agent-initiated questions are actionable control flow, not historical
-  // prose. When a new form appears (including after restoring a session),
-  // reveal it without stealing keyboard focus. The stable id snapshot prevents
-  // answer edits and unrelated Yjs updates from repeatedly moving the reader.
-  createEffect(() => {
-    const ids = elicitations().map((item) => item.elicitationId).join('\u0000');
-    if (!ids || ids === previousElicitationIds) {
-      previousElicitationIds = ids;
-      return;
-    }
-    previousElicitationIds = ids;
-    requestAnimationFrame(() => {
-      const first = areaRef?.querySelector<HTMLElement>('[data-elicitation-id]');
-      first?.scrollIntoView({ block: 'start', behavior: 'auto' });
-      setHasNewContent(false);
-    });
-  });
-
   const jumpToLatest = () => {
     if (!areaRef) return;
     scrollToBottom('smooth');
@@ -152,12 +132,6 @@ export function MessageList() {
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
       {/* 阅读列由 CSS 统一控制宽度与上下留白；Composer 保持在正常布局流中。 */}
       <div class="message-list-content w-full max-w-(--container-chat) mx-auto py-24 px-16 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 max-desk:max-w-(--container-chat-narrow)">
-        <ElicitationQueue
-          elicitations={elicitations()}
-          responding={elicitationResponses()}
-          readOnly={readOnly()}
-          onRespond={respondElicitation}
-        />
         <PermissionBar />
         <Show when={!runtimeDocsHydrated()}>
           <div class="conversation-placeholder flex min-h-(--container-placeholder-narrow) flex-col items-center justify-center text-text-secondary text-center" role="status">
