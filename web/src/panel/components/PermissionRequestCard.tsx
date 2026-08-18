@@ -1,7 +1,7 @@
 import { createUniqueId, Show } from 'solid-js';
 import type { PendingPermission } from '../lib/control-view';
 import type { PermissionDecisionState } from '../lib/permission-delivery';
-import { Button } from '../../ui';
+import { Button } from '../../components/ui';
 
 function shortId(id: string | null | undefined, length = 8): string {
   if (!id) return '';

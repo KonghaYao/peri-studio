@@ -1,7 +1,7 @@
 import { For, Show, createSignal } from 'solid-js';
 import type { PendingElicitation } from '../lib/control-view';
 import type { ElicitationAnswer } from '../lib/protocol';
-import { Button } from '../../ui';
+import { Button } from '../../components/ui';
 
 interface Props {
   elicitations: PendingElicitation[];

@@ -1,9 +1,10 @@
+import { primaryShortcut } from '../lib/keyboard';
 import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { archiveProject, archiveProjectSession, chatStatusSignal, createProject, createProjectSession, creatingSessionProjectId, discoverProjectSessions, discoveringSessionsProjectId, importableSessions, importProjectSession, navigateProjectSession, openingSessionId, permissions, projects, projectSessions, renameProject, renameProjectSession, restoreProject, restoreProjectSession, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '../store';
 import { isTerminal } from '../lib/action-state';
 import { connState } from '../lib/connection';
 import { readOnly } from '../lib/auth-state';
-import { Button, Dialog, Icon, IconButton, Menu, MenuItem, primaryShortcut, Status, TextField } from '../../ui';
+import { Button, Dialog, DialogContent, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Icon, IconButton, Status, TextField } from '../../components/ui';
 import { useAuthActions } from '../lib/auth-hook';
 import { SessionSearch } from './SessionSearch';
 import { SessionImportDialog } from './SessionImportDialog';
@@ -109,13 +110,13 @@ export function ProjectSidebar(props: { onNavigate?: () => void; onOpenSystem?: 
       <Button class="session-search-button w-full justify-start! -mt-8 mb-12 text-text-muted!" onClick={() => setSearchOpen(true)}><SearchIcon />Search sessions<kbd class="ml-auto rounded-5 border border-border-subtle bg-surface px-5 py-1 font-inherit text-11 text-text-muted">{primaryShortcut('K')}</kbd></Button>
       <SessionSearch open={searchOpen()} onClose={() => setSearchOpen(false)} onSelected={props.onNavigate} />
       <Show when={readOnly()}><div class="readonly-label -mt-8 mx-8 mb-12 text-11 font-semibold text-warning">Read-only mode</div></Show>
-      <Dialog open={creating()} title="New project" dismissible={!projectCreateSubmitting()} onClose={() => setCreating(false)}>
+      <Dialog open={creating()} onOpenChange={(open) => { if (!open && !projectCreateSubmitting()) setCreating(false); }}><DialogContent dismissible={!projectCreateSubmitting()}><DialogTitle class="sr-only">New project</DialogTitle>
         <form class="project-form" onSubmit={submitProject}>
           <TextField label="Project name" value={name()} onInput={(e) => setName(e.currentTarget.value)} placeholder="perihelion" autofocus />
           <TextField label="Working directory" value={cwd()} onInput={(e) => setCwd(e.currentTarget.value)} placeholder="/absolute/path" />
           <div class="form-actions"><Button type="button" disabled={projectCreateSubmitting()} onClick={() => setCreating(false)}>Cancel</Button><Button variant="primary" type="submit" busy={projectCreateSubmitting()} disabled={!cwd().trim()}>Create</Button></div>
         </form>
-      </Dialog>
+      </DialogContent></Dialog>
       <div class="project-scroll min-h-0 flex-1 overflow-auto pb-16">
         <Show when={projects().length} fallback={<p class="sidebar-empty mx-8 border-0 bg-transparent p-8 text-left text-12 text-text-muted">Create a project, then start a new session from the + on the right.</p>}>
           <For each={projects().filter((p) => !p.archivedAt)}>{(project) => {
@@ -123,17 +124,18 @@ export function ProjectSidebar(props: { onNavigate?: () => void; onOpenSystem?: 
             const archivedSessions = () => projectSessions().filter((s) => s.projectId === project.id && !!s.archivedAt);
             const collapsed = () => collapsedProjects().has(project.id);
             const projectMenuId = `project-menu-${project.id}`;
-            let projectMenuTrigger: HTMLButtonElement | undefined;
             return <section class="project-group relative mt-4 mb-18 desk:mb-14 wide:mb-18">
               <div class="project-heading relative flex min-h-42 items-center gap-2 pl-2 pointer-coarse:min-h-52">
                 <button type="button" class={`project-disclosure flex min-h-38 min-w-0 flex-1 cursor-pointer items-center gap-5 rounded-8 border-0 bg-transparent px-3 text-left text-text-primary hover:bg-surface-hover-translucent pointer-coarse:min-h-44 ${collapsed() ? '' : 'is-expanded'}`} aria-expanded={!collapsed()} aria-controls={`project-sessions-${project.id}`} onClick={() => toggleProject(project.id)}><ChevronIcon class={collapsed() ? '' : 'rotate-90'} /><span class="flex min-w-0 flex-col gap-1"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12p5 font-650 -tracking-5">{project.name}</strong><small class="text-10 font-450 text-text-muted">{sessions().length ? `${sessions().length} sessions` : 'No sessions yet'}</small></span></button>
                 <IconButton tooltipPlacement="end" label={`New session in ${project.name}`} busy={creatingSessionProjectId() === project.id} disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(project.id)}><PlusIcon /></IconButton>
-                <IconButton tooltipPlacement="end" ref={projectMenuTrigger} label={`${project.name} actions`} disabled={readOnly()} aria-haspopup="menu" aria-expanded={projectMenu() === project.id} aria-controls={projectMenu() === project.id ? projectMenuId : undefined} onClick={() => setProjectMenu((open) => open === project.id ? null : project.id)}><MoreIcon /></IconButton>
-                <Menu open={projectMenu() === project.id} id={projectMenuId} label={`${project.name} actions`} trigger={() => projectMenuTrigger} onClose={() => setProjectMenu(null)}>
-                  <MenuItem class="flex items-center gap-9" onClick={() => { setProjectMenu(null); setProjectNameDraft(project.name); setRenamingProject(project.id); }}>Rename project</MenuItem>
-                  <MenuItem class="flex items-center gap-9" onClick={() => { setProjectMenu(null); setImportingProject(project.id); }}><ImportIcon />Import existing session</MenuItem>
-                  <MenuItem class="flex items-center gap-9" tone="danger" disabled={projectHasRunningSession(project.id)} title={projectHasRunningSession(project.id) ? 'Close the running sessions in this project first' : undefined} onClick={() => { setProjectMenu(null); setArchiveCandidate(project.id); }}>Archive project</MenuItem>
-                </Menu>
+                <DropdownMenu open={projectMenu() === project.id} onOpenChange={(open) => setProjectMenu(open ? project.id : null)} placement="bottom-end">
+                  <DropdownMenuTrigger as={IconButton} tooltipPlacement="end" label={`${project.name} actions`} disabled={readOnly()}><MoreIcon /></DropdownMenuTrigger>
+                  <DropdownMenuContent id={projectMenuId} aria-label={`${project.name} actions`} class="ui-menu">
+                    <DropdownMenuItem class="flex items-center gap-9" onSelect={() => { setProjectNameDraft(project.name); setRenamingProject(project.id); }}>Rename project</DropdownMenuItem>
+                    <DropdownMenuItem class="flex items-center gap-9" onSelect={() => setImportingProject(project.id)}><ImportIcon />Import existing session</DropdownMenuItem>
+                    <DropdownMenuItem class="flex items-center gap-9 text-danger focus:text-danger" disabled={projectHasRunningSession(project.id)} title={projectHasRunningSession(project.id) ? 'Close the running sessions in this project first' : undefined} onSelect={() => setArchiveCandidate(project.id)}>Archive project</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               <div id={`project-sessions-${project.id}`} class="session-list flex flex-col gap-2" hidden={collapsed()}>
                 <For each={sessions()} fallback={<Button busy={creatingSessionProjectId() === project.id} disabled={readOnly() || !!creatingSessionProjectId()} class="session-empty mx-8 cursor-pointer rounded-8! border-0! bg-transparent p-8! text-left text-12! text-text-muted! hover:bg-hover hover:text-text-secondary!" onClick={() => createProjectSession(project.id)}>Start your first conversation</Button>}>
@@ -214,14 +216,14 @@ export function ProjectSidebar(props: { onNavigate?: () => void; onOpenSystem?: 
         onClose={() => setImportingProject(null)}
         onImport={importProjectSession}
       />
-      <Dialog open={!!renamingProject()} title="Rename project" dismissible={!projectRenameSubmitting()} onClose={() => setRenamingProject(null)}>
+      <Dialog open={!!renamingProject()} onOpenChange={(open) => { if (!open && !projectRenameSubmitting()) setRenamingProject(null); }}><DialogContent dismissible={!projectRenameSubmitting()}><DialogTitle class="sr-only">Rename project</DialogTitle>
         <form class="project-form" onSubmit={(event) => { event.preventDefault(); const id = renamingProject(); if (!id || !projectNameDraft().trim()) return; runConfirmedMutation(() => setProjectRenameSubmitting(true), () => setProjectRenameSubmitting(false), (committed, failed) => renameProject(id, projectNameDraft(), committed, failed), () => setRenamingProject(null)); }}>
           <TextField label="Project name" value={projectNameDraft()} onInput={(event) => setProjectNameDraft(event.currentTarget.value)} autofocus />
           <p class="form-note">Only renames the sidebar entry; the working directory and ACP session are unchanged.</p>
           <div class="form-actions"><Button disabled={projectRenameSubmitting()} onClick={() => setRenamingProject(null)}>Cancel</Button><Button variant="primary" type="submit" busy={projectRenameSubmitting()} disabled={!projectNameDraft().trim()}>Save</Button></div>
         </form>
-      </Dialog>
-      <Dialog open={!!archiveCandidate()} title="Archive project" dismissible={!archiveSubmitting()} onClose={() => setArchiveCandidate(null)}>
+      </DialogContent></Dialog>
+      <Dialog open={!!archiveCandidate()} onOpenChange={(open) => { if (!open && !archiveSubmitting()) setArchiveCandidate(null); }}><DialogContent dismissible={!archiveSubmitting()}><DialogTitle class="sr-only">Archive project</DialogTitle>
         {(() => {
           const project = () => projects().find((item) => item.id === archiveCandidate());
           const count = () => projectSessions().filter((session) => session.projectId === archiveCandidate()).length;
@@ -239,8 +241,8 @@ export function ProjectSidebar(props: { onNavigate?: () => void; onOpenSystem?: 
             onConfirm={() => { const id = archiveCandidate(); if (!id) return; runConfirmedMutation(() => setArchiveSubmitting(true), () => setArchiveSubmitting(false), (committed, failed) => archiveProject(id, committed, failed), () => setArchiveCandidate(null)); }}
           />;
         })()}
-      </Dialog>
-      <Dialog open={!!archiveSessionCandidate()} title="Archive session" dismissible={!sessionLifecycleBusy()} onClose={() => setArchiveSessionCandidate(null)}>
+      </DialogContent></Dialog>
+      <Dialog open={!!archiveSessionCandidate()} onOpenChange={(open) => { if (!open && !sessionLifecycleBusy()) setArchiveSessionCandidate(null); }}><DialogContent dismissible={!sessionLifecycleBusy()}><DialogTitle class="sr-only">Archive session</DialogTitle>
         {(() => {
           const session = () => projectSessions().find((item) => item.id === archiveSessionCandidate());
           const displayTitle = () => sessionDisplayTitle(session()?.title, session()?.acpSessionId || session()?.id);
@@ -258,7 +260,7 @@ export function ProjectSidebar(props: { onNavigate?: () => void; onOpenSystem?: 
             onConfirm={() => { const id = archiveSessionCandidate(); if (!id) return; runConfirmedMutation(() => setSessionLifecycleBusy(id), () => setSessionLifecycleBusy(null), (committed, failed) => archiveProjectSession(id, committed, failed), () => setArchiveSessionCandidate(null)); }}
           />;
         })()}
-      </Dialog>
+      </DialogContent></Dialog>
       <div class="sidebar-footer flex min-h-58 items-center gap-6 border-t border-divider text-12 text-text-muted">
         <Status tone={connState().kind || 'idle'} class="min-w-0 flex-1">{connState().text}</Status>
         <Button size="compact" class="min-h-36! cursor-pointer rounded-8! border-0! bg-transparent px-9! text-text-secondary! hover:bg-hover hover:text-text-primary! pointer-coarse:min-h-44!" onClick={props.onOpenSystem}>System</Button>

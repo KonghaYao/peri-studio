@@ -16,8 +16,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@kobalte/core": "^0.13.13",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "markdown-to-jsx": "^9.9.0",
     "solid-js": "^1",
+    "tailwind-merge": "^3.6.0",
     "yjs": "^13"
   },
   "devDependencies": {

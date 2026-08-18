@@ -1,6 +1,6 @@
 import { createMemo, Show } from 'solid-js';
 import type { ToolCallInfo } from '../lib/chat-view';
-import { CopyButton } from '../../ui';
+import { CopyButton } from '../../components/ui';
 import { CollapsibleSection } from './shared/CollapsibleSection';
 
 const STATUS: Record<string, { label: string; tone: string }> = {

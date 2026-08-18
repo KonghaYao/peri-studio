@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import { busy, connectionProblem, reconnect } from '../lib/connection';
-import { Button } from '../../ui';
+import { Button } from '../../components/ui';
 
 export function ConnectionProblem() {
   return <Show when={connectionProblem()}>{(problem) =>

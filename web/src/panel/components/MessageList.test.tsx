@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
+import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setChatEntries, setChatHead, setElicitations, setPermissions, setRuntimeDocsState } from '../store';
 import { MessageList } from './MessageList';

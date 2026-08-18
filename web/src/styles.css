@@ -1,11 +1,11 @@
-@import './ui/theme.css';
-@import './ui/base.css';
-@import './ui/primitives.css';
+@import './styles/theme.css';
+@import './styles/base.css';
+@import './styles/primitives.css';
 
 /* peri-studio panel layout and feature styling. This entry only wires the cascade:
-   ui/theme.css (Tailwind v4 theme + preflight) → ui/base.css →
-   ui/primitives.css (→ ui/tokens.css), then the feature stylesheets in
-   layout order. Reusable design values live in ui/tokens.css; each feature
+   styles/theme.css (Tailwind v4 theme + preflight) → styles/base.css →
+   styles/primitives.css (→ styles/tokens.css), then the feature stylesheets in
+   layout order. Reusable design values live in styles/tokens.css; each feature
    sheet owns its selectors and media queries. */
 @import './panel/styles/base.css';
 @import './panel/styles/sidebar-nav.css';

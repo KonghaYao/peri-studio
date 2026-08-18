@@ -15,7 +15,7 @@ import { readOnly } from '../lib/auth-state';
 import { messageActivity, nextFollowState } from '../lib/message-follow.ts';
 import { messageTime } from '../lib/message-time.ts';
 import type { ChatEntry } from '../lib/chat-view';
-import { Button } from '../../ui';
+import { Button } from '../../components/ui';
 import { PermissionQueue } from './PermissionQueue';
 import { ConversationMessage } from './ConversationMessage';
 import { permissionDecisions } from '../lib/permission-delivery';

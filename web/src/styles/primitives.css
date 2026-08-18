@@ -284,18 +284,26 @@
   position: fixed;
   inset: 0;
   z-index: 60;
-  display: grid;
-  place-items: center;
-  padding: var(--space-20);
   background: var(--scrim);
 }
 .ui-dialog {
-  width: min(400px,100%);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 61;
+  width: min(400px,calc(100vw - 2 * var(--space-20)));
+  max-height: calc(100dvh - 2 * var(--space-20));
+  overflow: auto;
+  transform: translate(-50%,-50%);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-16);
   background: var(--surface);
   box-shadow: var(--shadow-popover);
 }
+.ui-dialog--search { width: var(--container-search); }
+.ui-dialog--settings { width: var(--container-settings); max-height: var(--container-settings-tall); }
+.ui-dialog--mcp { width: var(--container-mcp); max-height: var(--container-settings-tall); }
+.ui-dialog--rewind { width: var(--container-rewind); max-height: var(--container-rewind-tall); }
 .ui-dialog__header {
   display: flex;
   min-height: 54px;

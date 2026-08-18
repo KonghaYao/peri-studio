@@ -43,7 +43,7 @@ describe('SessionModelMenu', () => {
     const trigger = document.createElement('button');
     document.body.append(trigger);
 
-    render(() => <SessionModelMenu open id="models" trigger={() => trigger} onClose={() => {}} />);
+    render(() => <SessionModelMenu open id="models" trigger={<button>Models</button>} onOpenChange={() => {}} />);
 
     expect(screen.getAllByRole('menuitem')).toHaveLength(4);
     expect(screen.getByRole('menuitem', { name: /Opus/ })).toHaveAttribute('aria-current', 'true');
@@ -59,7 +59,7 @@ describe('SessionModelMenu', () => {
     document.body.append(trigger);
     let closed = false;
 
-    render(() => <SessionModelMenu open id="models" trigger={() => trigger} onClose={() => { closed = true; }} />);
+    render(() => <SessionModelMenu open id="models" trigger={<button>Models</button>} onOpenChange={(open) => { if (!open) closed = true; }} />);
     fireEvent.click(screen.getByRole('menuitem', { name: /Sonnet/ }));
 
     await waitFor(() => expect(closed).toBe(true));
@@ -84,8 +84,8 @@ describe('SessionModelMenu', () => {
     const trigger = document.createElement('button');
     document.body.append(trigger);
 
-    render(() => <SessionModelMenu open id="models" trigger={() => trigger} onClose={() => {}} />);
-    expect(screen.getByRole('menuitem', { name: /Haiku/ })).toBeDisabled();
+    render(() => <SessionModelMenu open id="models" trigger={<button>Models</button>} onOpenChange={() => {}} />);
+    expect(screen.getByRole('menuitem', { name: /Haiku/ })).toHaveAttribute('aria-disabled', 'true');
     trigger.remove();
   });
 });

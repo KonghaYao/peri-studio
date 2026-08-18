@@ -5,7 +5,7 @@
 // 传入（feature CSS 保持），本组件只保证结构一致。
 
 import { Show, type JSX } from 'solid-js';
-import { Icon } from '../../../ui';
+import { Icon } from '../../../components/ui';
 
 export interface ArchivedSectionProps {
   /** toggle 按钮类名（archived-projects__toggle / archived-sessions__toggle）。 */

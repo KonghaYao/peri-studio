@@ -4,7 +4,7 @@ import { isTerminal } from '../lib/action-state';
 import { connState } from '../lib/connection';
 import { canRewindCurrentChat, openRewindFlow } from '../lib/rewind-assembly';
 import { readOnly } from '../lib/auth-state';
-import { Dialog, Icon, IconButton, Menu, MenuItem, Status } from '../../ui';
+import { Dialog, DialogContent, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Icon, IconButton, Status } from '../../components/ui';
 import { connectedRuntimeState } from '../lib/runtime-state.ts';
 import { sessionDisplayTitle } from '../lib/recovery-state.ts';
 import { runtimeControlFor } from '../lib/runtime-control';
@@ -19,7 +19,6 @@ export function ChatHeader(props: ChatHeaderProps) {
   const [confirmClose, setConfirmClose] = createSignal(false);
   const [mcpOpen, setMcpOpen] = createSignal(false);
   const [rewindOpen, setRewindOpen] = createSignal(false);
-  let menuTrigger: HTMLButtonElement | undefined;
   const logical = () => projectSessions().find((s) => s.id === selectedSessionId());
   const title = () => logical()
     ? sessionDisplayTitle(logical()!.title, logical()!.acpSessionId || logical()!.id)
@@ -55,28 +54,29 @@ export function ChatHeader(props: ChatHeaderProps) {
     </IconButton>
     <Show when={logical() && selectedCid()}>
       <div class="chat-actions relative">
-        <IconButton tooltipPlacement="end" ref={menuTrigger} label="Conversation actions" aria-haspopup="menu" aria-expanded={menuOpen()} aria-controls={menuOpen() ? menuId : undefined} onClick={() => setMenuOpen((value) => !value)}>
-          <Icon><circle cx="4" cy="10" r="1" /><circle cx="10" cy="10" r="1" /><circle cx="16" cy="10" r="1" /></Icon>
-        </IconButton>
-        <Menu open={menuOpen()} id={menuId} label="Conversation actions" trigger={() => menuTrigger} onClose={() => setMenuOpen(false)}>
-          <Show when={chatHead()?.agent?.extensions?.includes('peri.oauth')}>
-            <MenuItem onClick={() => { setMenuOpen(false); setMcpOpen(true); }}>MCP connections</MenuItem>
-          </Show>
-          <Show when={chatHead()?.agent?.extensions?.includes('peri.rewind') && !terminal()}>
-            <MenuItem disabled={!canRewindCurrentChat()} onClick={() => {
-              setMenuOpen(false);
-              if (openRewindFlow()) setRewindOpen(true);
-            }}>Rewind session…</MenuItem>
-          </Show>
-          <Show when={terminal()} fallback={
-            <MenuItem tone="danger" disabled={readOnly() || runtimeControlLocked()} onClick={() => { setMenuOpen(false); setConfirmClose(true); }}>Close running instance</MenuItem>
-          }>
-            <MenuItem disabled={readOnly() || !!openingSessionId()} onClick={() => { const id = logical()?.id; setMenuOpen(false); if (id) navigateProjectSession(id); }}>Reopen session</MenuItem>
-          </Show>
-        </Menu>
+        <DropdownMenu open={menuOpen()} onOpenChange={setMenuOpen} placement="bottom-end">
+          <DropdownMenuTrigger as={IconButton} tooltipPlacement="end" label="Conversation actions">
+            <Icon><circle cx="4" cy="10" r="1" /><circle cx="10" cy="10" r="1" /><circle cx="16" cy="10" r="1" /></Icon>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent id={menuId} aria-label="Conversation actions" class="ui-menu">
+            <Show when={chatHead()?.agent?.extensions?.includes('peri.oauth')}>
+              <DropdownMenuItem onSelect={() => setMcpOpen(true)}>MCP connections</DropdownMenuItem>
+            </Show>
+            <Show when={chatHead()?.agent?.extensions?.includes('peri.rewind') && !terminal()}>
+              <DropdownMenuItem disabled={!canRewindCurrentChat()} onSelect={() => {
+                if (openRewindFlow()) setRewindOpen(true);
+              }}>Rewind session…</DropdownMenuItem>
+            </Show>
+            <Show when={terminal()} fallback={
+              <DropdownMenuItem class="text-danger focus:text-danger" disabled={readOnly() || runtimeControlLocked()} onSelect={() => setConfirmClose(true)}>Close running instance</DropdownMenuItem>
+            }>
+              <DropdownMenuItem disabled={readOnly() || !!openingSessionId()} onSelect={() => { const id = logical()?.id; if (id) navigateProjectSession(id); }}>Reopen session</DropdownMenuItem>
+            </Show>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </Show>
-    <Dialog open={confirmClose()} title="Close current running instance" dismissible={!closeLocked()} onClose={() => setConfirmClose(false)}>
+    <Dialog open={confirmClose()} onOpenChange={(open) => { if (!open && !closeLocked()) setConfirmClose(false); }}><DialogContent dismissible={!closeLocked()}><DialogTitle class="sr-only">Close current running instance</DialogTitle>
       <ConfirmDialog
         title="Close the current running instance?"
         description="Sessions and history on the left are kept. Next time you open it, Peri Studio starts a new runtime instance and loads the same ACP session."
@@ -88,7 +88,7 @@ export function ChatHeader(props: ChatHeaderProps) {
         onCancel={() => setConfirmClose(false)}
         onConfirm={() => closeChat(() => setConfirmClose(false))}
       />
-    </Dialog>
+    </DialogContent></Dialog>
     <McpPanel open={mcpOpen()} onClose={() => setMcpOpen(false)} />
     <RewindDialog open={rewindOpen()} onClose={() => setRewindOpen(false)} />
   </header>;

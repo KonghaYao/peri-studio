@@ -1,6 +1,6 @@
 import { createEffect, createSignal, Show } from 'solid-js';
 import type { ProjectSessionInfo } from '../lib/registry-view';
-import { Button, Icon, IconButton, Menu, MenuItem, Popover, Spinner, TextField } from '../../ui';
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Icon, IconButton, Popover, PopoverContent, PopoverTrigger, Spinner, TextField } from '../../components/ui';
 import { formatRelativeTime, sessionDisplayTitle } from '../lib/recovery-state.ts';
 import { runConfirmedMutation } from '../lib/form-mutation';
 
@@ -97,41 +97,41 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
       </span>
       <Show when={props.opening || ['activating', 'pending'].includes(props.session.lifecycle)}><Spinner label="Opening…" /></Show>
     </button>
-    <IconButton
-      tooltipPlacement="end"
-      class="session-menu absolute right-0 top-6 grid! size-36! cursor-pointer place-items-center rounded-8! border-0! bg-transparent opacity-0 group-hover:opacity-100! group-[.is-selected]:opacity-100! focus-visible:opacity-100! pointer-coarse:-right-4 pointer-coarse:top-4 pointer-coarse:size-44! pointer-coarse:opacity-100"
-      ref={menuTrigger}
-      disabled={props.readOnly || submitting()}
-      label={`Session actions: ${displayTitle()}`}
-      aria-haspopup="menu"
-      aria-expanded={props.menuOpen}
-      aria-controls={props.menuOpen ? `${renameId()}-menu` : undefined}
-      onClick={() => props.onMenuOpenChange(!props.menuOpen)}
-    >
-      <MoreIcon />
-    </IconButton>
-    <Menu open={props.menuOpen} id={`${renameId()}-menu`} label={`Session actions: ${displayTitle()}`} trigger={() => menuTrigger} onClose={() => props.onMenuOpenChange(false)}>
-      <MenuItem onClick={() => { props.onMenuOpenChange(false); props.onRenameOpenChange(true); }}>Rename session</MenuItem>
-      <MenuItem tone="danger" disabled={props.runtimeActive} title={props.runtimeActive ? 'Close this session’s running instance first' : undefined} onClick={() => {
-        props.onMenuOpenChange(false);
-        props.onArchiveRequest(props.session.id);
-      }}>Archive session</MenuItem>
-    </Menu>
-    <Popover
-      open={props.renameOpen}
-      id={renameId()}
-      label={`Rename ${displayTitle()}`}
-      trigger={() => menuTrigger}
-      dismissible={!submitting()}
-      onClose={() => props.onRenameOpenChange(false)}
-    >
-      <form class="rename-popover w-240 rounded-12 border border-border-subtle bg-surface p-10 shadow-popover" onSubmit={submitRename}>
-        <TextField aria-label="Session name" value={draft()} error={!renameValid() ? 'Name cannot be empty' : undefined} onInput={(event) => setDraft(event.currentTarget.value)} autofocus />
-        <div class="form-actions">
-          <Button disabled={submitting()} onClick={() => props.onRenameOpenChange(false)}>Cancel</Button>
-          <Button variant="primary" type="submit" busy={submitting()} disabled={!renameValid()}>Save</Button>
-        </div>
-      </form>
+    <DropdownMenu open={props.menuOpen} onOpenChange={props.onMenuOpenChange} placement="bottom-end">
+      <DropdownMenuTrigger as={IconButton}
+        tooltipPlacement="end"
+        class="session-menu absolute right-0 top-6 grid! size-36! cursor-pointer place-items-center rounded-8! border-0! bg-transparent opacity-0 group-hover:opacity-100! group-[.is-selected]:opacity-100! focus-visible:opacity-100! pointer-coarse:-right-4 pointer-coarse:top-4 pointer-coarse:size-44! pointer-coarse:opacity-100"
+        ref={menuTrigger}
+        disabled={props.readOnly || submitting()}
+        label={`Session actions: ${displayTitle()}`}
+      >
+        <MoreIcon />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent id={`${renameId()}-menu`} aria-label={`Session actions: ${displayTitle()}`} class="ui-menu">
+        <DropdownMenuItem onSelect={() => props.onRenameOpenChange(true)}>Rename session</DropdownMenuItem>
+        <DropdownMenuItem class="text-danger focus:text-danger" disabled={props.runtimeActive} title={props.runtimeActive ? 'Close this session’s running instance first' : undefined} onClick={() => {
+          props.onMenuOpenChange(false);
+          props.onArchiveRequest(props.session.id);
+        }}>Archive session</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+    <Popover open={props.renameOpen} onOpenChange={(open) => props.onRenameOpenChange(open)} placement="bottom-end">
+      <PopoverTrigger as="span" class="sr-only" aria-label={`Rename ${displayTitle()}`} />
+      <PopoverContent
+        id={renameId()}
+        aria-label={`Rename ${displayTitle()}`}
+        class="ui-popover w-240 p-0"
+        onEscapeKeyDown={(event) => submitting() && event.preventDefault()}
+        onPointerDownOutside={(event) => submitting() && event.preventDefault()}
+      >
+        <form class="rename-popover w-240 rounded-12 border border-border-subtle bg-surface p-10 shadow-popover" onSubmit={submitRename}>
+          <TextField aria-label="Session name" value={draft()} error={!renameValid() ? 'Name cannot be empty' : undefined} onInput={(event) => setDraft(event.currentTarget.value)} autofocus />
+          <div class="form-actions">
+            <Button disabled={submitting()} onClick={() => props.onRenameOpenChange(false)}>Cancel</Button>
+            <Button variant="primary" type="submit" busy={submitting()} disabled={!renameValid()}>Save</Button>
+          </div>
+        </form>
+      </PopoverContent>
     </Popover>
     <Show when={props.session.lifecycle === 'failed'}>
       <div class="session-problem px-9 pb-7 pl-36 text-11 text-danger">Failed to open · <Button size="compact" class="cursor-pointer border-0! bg-transparent p-0! text-inherit underline" busy={props.replacementBusy} disabled={props.readOnly || props.replacementBusy} onClick={() => props.onCreateReplacement(props.session.title)}>Create replacement session</Button></div>

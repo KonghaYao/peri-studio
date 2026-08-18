@@ -1,7 +1,7 @@
 // 状态与行为契约（node:test，CI 快速门）：纯函数契约 + 状态机/模块行为契约。
 // 按主题从原单文件（801 行超限）拆分为四个契约文件：
 //   - 本文件：action-state/recovery-state/message-time/markdown/message-follow/
-//     overlay-state/auth-feedback/session-search/runtime-state 等纯函数契约，
+//     auth-feedback/session-search/runtime-state 等纯函数契约，
 //     以及 store/connection/protocol/组件 的行为契约（断言意图与原文件一致）；
 //   - auth-contracts.test.mjs：身份边界契约（invalidation 链路与
 //     resetAuthenticatedSession 完整复位）；
@@ -17,7 +17,6 @@ import { cleanSessionTitle, connectionProblemForClose, formatRelativeTime, retai
 import { messageTime } from '../src/panel/lib/message-time.ts';
 import { parseMarkdown, safeHref } from '../src/panel/lib/markdown.ts';
 import { messageActivity, nextFollowState } from '../src/panel/lib/message-follow.ts';
-import { acquireInert, activeOverlayCount } from '../src/ui/overlay-state.ts';
 import { authFeedback } from '../src/panel/lib/auth-feedback.ts';
 import { searchProjectSessions } from '../src/panel/lib/session-search.ts';
 import { connectedRuntimeState, runtimeState } from '../src/panel/lib/runtime-state.ts';
@@ -173,34 +172,6 @@ test('message follow pauses without losing the new-content signal', () => {
   assert.equal(nextFollowState({ stick: false, hasNewContent: false, previousActivity: before, activity: after }).hasNewContent, true);
   assert.equal(nextFollowState({ stick: false, hasNewContent: true, previousActivity: after, activity: after }).hasNewContent, true);
   assert.equal(nextFollowState({ stick: true, hasNewContent: true, previousActivity: before, activity: after }).hasNewContent, false);
-});
-
-test('nested overlays keep the application inert until the final release', () => {
-  const target = { inert: false };
-  const otherTarget = { inert: false };
-  const releaseFirst = acquireInert(target);
-  const releaseSecond = acquireInert(target);
-  const releaseOther = acquireInert(otherTarget);
-  assert.equal(target.inert, true);
-  assert.equal(otherTarget.inert, true);
-  assert.equal(activeOverlayCount(), 3);
-  releaseOther();
-  assert.equal(otherTarget.inert, false);
-  assert.equal(target.inert, true);
-  releaseFirst();
-  assert.equal(target.inert, true);
-  releaseSecond();
-  assert.equal(target.inert, false);
-  assert.equal(activeOverlayCount(), 0);
-});
-
-test('overlay leases restore rather than overwrite pre-existing inert state', () => {
-  const target = { inert: true };
-  const release = acquireInert(target);
-  assert.equal(target.inert, true);
-  release();
-  assert.equal(target.inert, true);
-  assert.equal(activeOverlayCount(), 0);
 });
 
 test('authentication feedback does not blame credentials for server failures', () => {

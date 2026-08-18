@@ -1,5 +1,5 @@
-import { Show, splitProps, type JSX } from 'solid-js';
-import { Tooltip } from './Tooltip';
+import { createUniqueId, Show, splitProps, type JSX } from 'solid-js';
+import { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip';
 
 type Props = JSX.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -25,5 +25,12 @@ export function Button(props: Props) {
 
 export function IconButton(props: Props & { label: string; tooltipPlacement?: 'start' | 'center' | 'end' }) {
   const [local, button] = splitProps(props, ['label', 'title', 'class', 'tooltipPlacement']);
-  return <Tooltip content={local.title ?? local.label} placement={local.tooltipPlacement}>{(tooltipId) => <Button {...button} aria-label={local.label} aria-describedby={local.title && local.title !== local.label ? tooltipId : undefined} class={`ui-icon-button ${local.class ?? ''}`} />}</Tooltip>;
+  const helpId = `icon-help-${createUniqueId()}`;
+  const customHelp = () => !!local.title && local.title !== local.label;
+  return <Tooltip placement={local.tooltipPlacement === 'start' ? 'bottom-start' : local.tooltipPlacement === 'end' ? 'bottom-end' : 'bottom'}>
+    <TooltipTrigger as="span" class="ui-tooltip-anchor">
+      <Button {...button} aria-label={local.label} aria-description={customHelp() ? local.title : undefined} aria-describedby={customHelp() ? helpId : undefined} class={`ui-icon-button ${local.class ?? ''}`} />
+    </TooltipTrigger>
+    <TooltipContent id={customHelp() ? helpId : undefined}>{local.title ?? local.label}</TooltipContent>
+  </Tooltip>;
 }

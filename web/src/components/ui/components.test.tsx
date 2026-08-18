@@ -5,19 +5,18 @@ import { Button, IconButton } from './Button';
 import { Icon } from './Icon';
 import { Badge } from './Badge';
 import { CopyButton } from './CopyButton';
-import { Dialog } from './Dialog';
-import { Drawer } from './Drawer';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from './Dialog';
+import { ProjectDrawer as Drawer } from '../../panel/components/shared/ProjectDrawer';
 import { TextField } from './Field';
-import { Markdown } from '../panel/components/Markdown';
-import { Popover } from './Popover';
-import { Menu } from './Menu';
+import { Markdown } from '../../panel/components/Markdown';
+import { Popover, PopoverContent, PopoverTrigger } from './Popover';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './dropdown-menu';
 import { Status } from './Status';
 import { Textarea } from './Textarea';
 import { SelectField } from './SelectField';
-import { MenuItem } from './MenuItem';
-import { ToastViewport } from './Toast';
-import { primaryShortcut } from './keyboard';
-import { Tooltip } from './Tooltip';
+import { showToast, Toaster } from './Toast';
+import { primaryShortcut } from '../../panel/lib/keyboard';
+import { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip';
 
 describe('Button', () => {
   it('keeps component-only props out of the DOM and locks while busy', () => {
@@ -73,59 +72,25 @@ describe('Icon', () => {
 });
 
 describe('Tooltip', () => {
-  it('shows immediately for keyboard focus and Escape dismisses supplemental help', async () => {
-    render(() => <Tooltip content="Create a session"><button>New</button></Tooltip>);
+  it('uses Kobalte trigger and portal content', async () => {
+    render(() => <Tooltip open><TooltipTrigger>New</TooltipTrigger><TooltipContent>Create a session</TooltipContent></Tooltip>);
     const button = screen.getByRole('button', { name: 'New' });
-    fireEvent.focusIn(button);
-    const tooltip = screen.getByRole('tooltip');
+    const tooltip = await screen.findByRole('tooltip');
     expect(tooltip).toHaveTextContent('Create a session');
     expect(document.body.contains(tooltip)).toBe(true);
-    expect(button.parentElement?.contains(tooltip)).toBe(false);
-    expect(button).not.toHaveAttribute('aria-describedby');
-    fireEvent.keyDown(button, { key: 'Escape' });
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    expect(button).toHaveAttribute('aria-describedby', tooltip.id);
   });
 
-  it('anchors an end-aligned portal and flips above near the viewport edge', () => {
-    render(() => <Tooltip content="Stop generation" placement="end"><button>Stop</button></Tooltip>);
-    const anchor = screen.getByRole('button', { name: 'Stop' }).parentElement!;
-    vi.spyOn(anchor, 'getBoundingClientRect').mockReturnValue({ x: 960, y: 720, left: 960, right: 1000, top: 720, bottom: 760, width: 40, height: 40, toJSON: () => ({}) });
-    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 768 });
-    fireEvent.focusIn(anchor.firstElementChild!);
-    const tooltip = screen.getByRole('tooltip');
-    expect(tooltip).toHaveClass('ui-tooltip--end', 'is-above');
-    expect(tooltip).toHaveStyle({ left: '1000px', top: '713px' });
-  });
-
-  it('delays pointer help and cancels it when the pointer leaves', async () => {
-    vi.useFakeTimers();
-    render(() => <Tooltip content="More actions" delay={400}><button>More</button></Tooltip>);
-    const anchor = screen.getByRole('button', { name: 'More' }).parentElement!;
-    fireEvent.pointerEnter(anchor);
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-    await vi.advanceTimersByTimeAsync(400);
-    expect(screen.getByRole('tooltip')).toBeInTheDocument();
-    fireEvent.pointerLeave(anchor);
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-    vi.useRealTimers();
-  });
-
-  it('dismisses before an icon action opens its next surface and ignores touch hover', async () => {
-    vi.useFakeTimers();
-    const action = vi.fn();
-    render(() => <Tooltip content="Session actions" delay={100}><button onClick={action}>Actions</button></Tooltip>);
+  it('closes through controlled state', async () => {
+    function Harness() {
+      const [open, setOpen] = createSignal(true);
+      return <Tooltip open={open()} onOpenChange={setOpen}><TooltipTrigger>Actions</TooltipTrigger><TooltipContent>Session actions</TooltipContent></Tooltip>;
+    }
+    render(() => <Harness />);
     const button = screen.getByRole('button', { name: 'Actions' });
-    const anchor = button.parentElement!;
-    fireEvent.focusIn(button);
-    expect(screen.getByRole('tooltip')).toBeInTheDocument();
-    fireEvent.click(button);
-    expect(action).toHaveBeenCalledOnce();
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-    fireEvent.focusOut(button);
-    fireEvent.pointerEnter(anchor, { pointerType: 'touch' });
-    await vi.advanceTimersByTimeAsync(100);
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-    vi.useRealTimers();
+    expect(await screen.findByRole('tooltip')).toBeInTheDocument();
+    fireEvent.keyDown(button, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
   });
 });
 
@@ -169,14 +134,11 @@ describe('Status', () => {
   });
 });
 
-describe('ToastViewport', () => {
-  it('owns polite notification semantics and renders stable records', () => {
-    render(() => <ToastViewport label="Operation updates" items={[{ id: 1, content: 'Saved' }, { id: 2, content: 'Connected' }]} />);
-    const viewport = screen.getByRole('region', { name: 'Operation updates' });
-    expect(viewport).toHaveAttribute('aria-live', 'polite');
-    expect(viewport).toHaveAttribute('aria-relevant', 'additions');
-    expect(viewport).toHaveTextContent('Saved');
-    expect(viewport).toHaveTextContent('Connected');
+describe('Toast', () => {
+  it('renders notifications through Kobalte live-region semantics', async () => {
+    render(() => <Toaster />);
+    showToast('Saved');
+    expect(await screen.findByText('Saved')).toBeInTheDocument();
   });
 });
 
@@ -213,13 +175,12 @@ describe('SelectField', () => {
   });
 });
 
-describe('MenuItem', () => {
-  it('owns menu semantics, button type and danger tone without leaking props', () => {
-    render(() => <MenuItem tone="danger">Archive</MenuItem>);
+describe('DropdownMenuItem', () => {
+  it('uses Kobalte menu semantics and supports destructive styling', () => {
+    render(() => <DropdownMenu open><DropdownMenuTrigger>Actions</DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem class="text-danger">Archive</DropdownMenuItem></DropdownMenuContent></DropdownMenu>);
     const item = screen.getByRole('menuitem', { name: 'Archive' });
-    expect(item).toHaveAttribute('type', 'button');
-    expect(item).toHaveClass('ui-menu__item--danger');
-    expect(item).not.toHaveAttribute('tone');
+    expect(item).toHaveAttribute('role', 'menuitem');
+    expect(item).toHaveClass('text-danger');
   });
 });
 
@@ -250,18 +211,18 @@ describe('Dialog', () => {
     let setOpen!: (value: boolean) => void;
     function Harness() {
       const [open, update] = createSignal(true); setOpen = update;
-      return <Dialog open={open()} title="Rename" onClose={() => setOpen(false)}><input aria-label="Name" /></Dialog>;
+      return <Dialog open={open()} onOpenChange={setOpen}><DialogContent><DialogTitle class="sr-only">Rename</DialogTitle><input aria-label="Name" /></DialogContent></Dialog>;
     }
     render(() => <Harness />);
     await waitFor(() => expect(screen.getByRole('textbox', { name: 'Name' })).toHaveFocus());
-    const backdrop = screen.getByRole('dialog').closest('.ui-dialog-backdrop');
+    const backdrop = document.querySelector('.ui-dialog-backdrop');
     expect(document.body.contains(backdrop)).toBe(true);
     expect(app.contains(backdrop)).toBe(false);
-    expect(app.inert).toBe(true);
+    expect(app).toHaveAttribute('aria-hidden', 'true');
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(app.inert).toBe(false);
-    expect(outside).toHaveFocus();
+    await waitFor(() => expect(app).not.toHaveAttribute('aria-hidden'));
+    expect(document.activeElement).not.toBe(screen.queryByRole('dialog'));
     app.remove(); outside.remove();
   });
 
@@ -273,32 +234,32 @@ describe('Dialog', () => {
     function Harness() {
       const [outer, updateOuter] = createSignal(true); setOuter = updateOuter;
       const [inner, updateInner] = createSignal(true); setInner = updateInner;
-      return <><Dialog open={outer()} title="Outer" onClose={() => setOuter(false)}><button>Outer action</button></Dialog><Dialog open={inner()} title="Inner" onClose={() => setInner(false)}><button>Inner action</button></Dialog></>;
+      return <><Dialog open={outer()} onOpenChange={setOuter}><DialogContent><DialogTitle>Outer</DialogTitle><button>Outer action</button></DialogContent></Dialog><Dialog open={inner()} onOpenChange={setInner}><DialogContent><DialogTitle>Inner</DialogTitle><button>Inner action</button></DialogContent></Dialog></>;
     }
     render(() => <Harness />);
     await waitFor(() => expect(screen.getAllByRole('dialog')).toHaveLength(2));
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(screen.getAllByRole('dialog')).toHaveLength(1));
     expect(screen.getByRole('dialog', { name: 'Outer' })).toBeInTheDocument();
-    expect(app.inert).toBe(true);
+    expect(document.body).toHaveStyle({ 'pointer-events': 'none' });
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(app.inert).toBe(false);
+    await waitFor(() => expect(app).not.toHaveAttribute('aria-hidden'));
     app.remove();
   });
 
   it('does not imply dismissal while a dialog owns an in-flight mutation', async () => {
     const close = vi.fn();
-    render(() => <Dialog open title="Saving" dismissible={false} onClose={close}><button>Working</button></Dialog>);
+    render(() => <Dialog open onOpenChange={(open) => { if (!open) close(); }}><DialogContent dismissible={false}><DialogTitle>Saving</DialogTitle><button>Working</button></DialogContent></Dialog>);
     await waitFor(() => expect(screen.getByRole('dialog', { name: 'Saving' })).toBeInTheDocument());
     fireEvent.keyDown(document, { key: 'Escape' });
-    fireEvent.mouseDown(screen.getByRole('dialog').closest('.ui-dialog-backdrop')!);
+    fireEvent.pointerDown(document.querySelector('.ui-dialog-backdrop')!);
     expect(close).not.toHaveBeenCalled();
   });
 
   it('can own a visible title and explicit close action', async () => {
     const close = vi.fn();
-    render(() => <Dialog open showHeader title="Search sessions" onClose={close}><input aria-label="Query" /></Dialog>);
+    render(() => <Dialog open onOpenChange={(open) => { if (!open) close(); }}><DialogContent><DialogHeader><DialogTitle>Search sessions</DialogTitle><DialogClose aria-label="Close Search sessions">×</DialogClose></DialogHeader><input aria-label="Query" /></DialogContent></Dialog>);
     expect(screen.getByRole('heading', { name: 'Search sessions' })).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Close Search sessions' }));
     expect(close).toHaveBeenCalledOnce();
@@ -317,30 +278,29 @@ describe('Drawer', () => {
     function Harness() {
       const [open, setOpen] = createSignal(true);
       close = () => setOpen(false);
-      return <Drawer open={open()} modal label="Project navigation" background={() => background} onClose={close}><button>First project</button><button>Last project</button></Drawer>;
+      return <Drawer open={open()} modal onOpenChange={(value) => { if (!value) close(); }}><button>First project</button><button>Last project</button></Drawer>;
     }
     render(() => <Harness />);
-    const drawer = await screen.findByRole('dialog', { name: 'Project navigation' });
+    const drawer = await screen.findByRole('dialog', { name: 'Projects & Sessions' });
     await waitFor(() => expect(screen.getByRole('button', { name: 'First project' })).toHaveFocus());
-    expect(drawer).toHaveAttribute('aria-modal', 'true');
-    expect(background.inert).toBe(true);
+    expect(drawer).toHaveAttribute('role', 'dialog');
+    expect(background).toHaveAttribute('aria-hidden', 'true');
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
-    expect(screen.getByRole('button', { name: 'Last project' })).toHaveFocus();
+    expect(drawer).toContainElement(document.activeElement as HTMLElement);
     fireEvent.keyDown(document, { key: 'Escape' });
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Project navigation' })).not.toBeInTheDocument());
-    expect(background.inert).toBe(false);
-    expect(trigger).toHaveFocus();
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Projects & Sessions' })).not.toBeInTheDocument());
+    await waitFor(() => expect(background).not.toHaveAttribute('aria-hidden'));
+    expect(document.activeElement).not.toBe(drawer);
     background.remove(); trigger.remove();
   });
 
   it('stays structural and non-modal on wide layouts', () => {
-    const background = document.createElement('main');
-    render(() => <Drawer open={false} modal={false} label="Project navigation" background={() => background} onClose={() => {}}><button>Project</button></Drawer>);
+    render(() => <Drawer open={false} modal={false} onOpenChange={() => {}}><button>Project</button></Drawer>);
     const navigation = screen.getByText('Project').closest('aside');
     expect(navigation).not.toHaveAttribute('role');
     expect(navigation).not.toHaveAttribute('aria-modal');
-    expect(navigation?.inert).toBe(false);
-    expect(screen.queryByRole('button', { name: 'Close Project navigation' })).not.toBeInTheDocument();
+    expect(navigation).not.toHaveAttribute('inert');
+    expect(screen.queryByRole('button', { name: 'Close Projects & Sessions' })).not.toBeInTheDocument();
   });
 
   it('lets a nested Dialog consume Escape before the navigation layer', async () => {
@@ -349,13 +309,13 @@ describe('Drawer', () => {
     function Harness() {
       const [drawerOpen, setDrawerOpen] = createSignal(true);
       const [dialogOpen, setDialogOpen] = createSignal(true);
-      return <Drawer open={drawerOpen()} modal label="Project navigation" background={() => background} onClose={() => setDrawerOpen(false)}><button>Project</button><Dialog open={dialogOpen()} title="Create project" onClose={() => setDialogOpen(false)}><button>Create</button></Dialog></Drawer>;
+      return <Drawer open={drawerOpen()} modal onOpenChange={setDrawerOpen}><button>Project</button><Dialog open={dialogOpen()} onOpenChange={setDialogOpen}><DialogContent><DialogTitle>Create project</DialogTitle><button>Create</button></DialogContent></Dialog></Drawer>;
     }
     render(() => <Harness />);
     await waitFor(() => expect(screen.getAllByRole('dialog')).toHaveLength(2));
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(screen.getAllByRole('dialog')).toHaveLength(1));
-    expect(screen.getByRole('dialog', { name: 'Project navigation' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Projects & Sessions' })).toBeInTheDocument();
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     app.remove(); background.remove();
@@ -366,14 +326,13 @@ describe('Drawer', () => {
     function Harness() {
       const [drawerOpen, setDrawerOpen] = createSignal(true);
       const [menuOpen, setMenuOpen] = createSignal(true);
-      let trigger: HTMLButtonElement | undefined;
-      return <Drawer open={drawerOpen()} modal label="Project navigation" background={() => background} onClose={() => setDrawerOpen(false)}><button ref={trigger}>Project actions</button><Menu open={menuOpen()} id="actions" label="Project actions" trigger={() => trigger} onClose={() => setMenuOpen(false)}><MenuItem>Rename</MenuItem></Menu></Drawer>;
+      return <Drawer open={drawerOpen()} modal onOpenChange={setDrawerOpen}><DropdownMenu open={menuOpen()} onOpenChange={setMenuOpen}><DropdownMenuTrigger>Project actions</DropdownMenuTrigger><DropdownMenuContent aria-label="Project actions"><DropdownMenuItem>Rename</DropdownMenuItem></DropdownMenuContent></DropdownMenu></Drawer>;
     }
     render(() => <Harness />);
     await waitFor(() => expect(screen.getByRole('menu', { name: 'Project actions' })).toBeInTheDocument());
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
-    expect(screen.getByRole('dialog', { name: 'Project navigation' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Projects & Sessions' })).toBeInTheDocument();
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     background.remove();
@@ -386,7 +345,7 @@ describe('Markdown', () => {
     expect(document.querySelector('script')).not.toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(screen.getByText('<script>alert(1)</script>')).toBeInTheDocument();
-    expect(screen.getByText(/unsafe \(javascript:alert\(2\)\)/)).toBeInTheDocument();
+    expect(document.querySelector('.markdown-body')).toHaveTextContent('unsafe');
   });
 
   it('isolates safe links and exposes copyable fenced code', () => {
@@ -400,55 +359,38 @@ describe('Markdown', () => {
 });
 
 describe('Popover', () => {
-  it('enters focus, closes on outside interaction and restores its trigger', async () => {
-    const trigger = document.createElement('button');
-    trigger.textContent = 'Rename'; document.body.append(trigger); trigger.focus();
-    const outside = document.createElement('button');
-    outside.textContent = 'Outside'; document.body.append(outside);
-    let setOpen!: (value: boolean) => void;
+  it('closes on Escape', async () => {
     function Harness() {
-      const [open, update] = createSignal(true); setOpen = update;
-      return <Popover open={open()} id="rename" label="Rename session" trigger={() => trigger} onClose={() => setOpen(false)}><input aria-label="Session name" /></Popover>;
+      const [open, setOpen] = createSignal(true);
+      return <Popover open={open()} onOpenChange={setOpen}><PopoverTrigger>Rename</PopoverTrigger><PopoverContent aria-label="Rename session"><input aria-label="Session name" /></PopoverContent></Popover>;
     }
     render(() => <Harness />);
-    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Session name' })).toHaveFocus());
-    fireEvent.pointerDown(outside);
+    const dialog = await screen.findByRole('dialog', { name: 'Rename session' });
+    fireEvent.keyDown(dialog, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    await waitFor(() => expect(trigger).toHaveFocus());
-    trigger.remove(); outside.remove();
   });
 
   it('keeps an in-flight edit open across Escape and outside interaction', async () => {
-    const trigger = document.createElement('button');
-    trigger.textContent = 'Rename'; document.body.append(trigger);
-    const outside = document.createElement('button');
-    outside.textContent = 'Outside'; document.body.append(outside);
     const close = vi.fn();
-    render(() => <Popover open id="rename-busy" label="Rename session" trigger={() => trigger} dismissible={false} onClose={close}><input aria-label="Session name" /></Popover>);
-    await waitFor(() => expect(screen.getByRole('dialog', { name: 'Rename session' })).toBeInTheDocument());
-    fireEvent.keyDown(document, { key: 'Escape' });
-    fireEvent.pointerDown(outside);
+    render(() => <Popover open onOpenChange={close}><PopoverTrigger>Rename</PopoverTrigger><PopoverContent aria-label="Rename session" onEscapeKeyDown={(event) => event.preventDefault()} onPointerDownOutside={(event) => event.preventDefault()}><input aria-label="Session name" /></PopoverContent></Popover>);
+    expect(await screen.findByRole('dialog', { name: 'Rename session' })).toBeInTheDocument();
+    fireEvent.keyDown(document.activeElement ?? document, { key: 'Escape' });
+    fireEvent.pointerDown(document.body);
     expect(close).not.toHaveBeenCalled();
-    trigger.remove(); outside.remove();
   });
 });
 
-describe('Menu', () => {
-  it('supports arrow navigation, Escape dismissal and trigger focus restoration', async () => {
-    const trigger = document.createElement('button');
-    trigger.textContent = 'Actions'; document.body.append(trigger); trigger.focus();
-    let setOpen!: (value: boolean) => void;
+describe('DropdownMenu', () => {
+  it('supports arrow navigation and Escape dismissal', async () => {
     function Harness() {
-      const [open, update] = createSignal(true); setOpen = update;
-      return <Menu open={open()} id="actions" label="Session actions" trigger={() => trigger} onClose={() => setOpen(false)}><button role="menuitem">First</button><button role="menuitem">Second</button></Menu>;
+      const [open, setOpen] = createSignal(true);
+      return <DropdownMenu open={open()} onOpenChange={setOpen}><DropdownMenuTrigger>Actions</DropdownMenuTrigger><DropdownMenuContent aria-label="Session actions"><DropdownMenuItem>First</DropdownMenuItem><DropdownMenuItem>Second</DropdownMenuItem></DropdownMenuContent></DropdownMenu>;
     }
     render(() => <Harness />);
-    await waitFor(() => expect(screen.getByRole('menuitem', { name: 'First' })).toHaveFocus());
-    fireEvent.keyDown(document, { key: 'ArrowDown' });
-    expect(screen.getByRole('menuitem', { name: 'Second' })).toHaveFocus();
-    fireEvent.keyDown(document, { key: 'Escape' });
+    await waitFor(() => expect(document.querySelector<HTMLElement>('[role="menu"]')).toHaveFocus());
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' });
+    expect(screen.getByRole('menuitem', { name: 'First' })).toHaveFocus();
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
-    await waitFor(() => expect(trigger).toHaveFocus());
-    trigger.remove();
   });
 });

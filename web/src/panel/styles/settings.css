@@ -2,9 +2,6 @@
    instance → chats 三级，数据来自 hub:registry 投影（store 信号），
    无任何写操作；token_id 为脱敏标识。 */
 .settings-dialog {
-  width: min(560px, calc(100vw - 40px));
-  max-height: min(76dvh, 680px);
-  overflow: auto;
   padding: 0 var(--space-22) var(--space-22);
 }
 .settings-tabs {

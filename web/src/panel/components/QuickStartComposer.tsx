@@ -1,5 +1,5 @@
 import { createEffect, createSignal, For, Show } from 'solid-js';
-import { Button, SelectField, Textarea } from '../../ui';
+import { Button, SelectField, Textarea } from '../../components/ui';
 import { createSessionWithFirstMessage, creatingSessionProjectId, retryQuickStart } from '../store';
 import { readOnly } from '../lib/auth-state';
 import { dismissFailedQuickStart, quickStartSubmission } from '../lib/quick-start-delivery';

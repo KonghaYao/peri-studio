@@ -1,5 +1,6 @@
+import { primaryShortcut } from '../lib/keyboard';
 import { createEffect, createSignal, For, Show } from 'solid-js';
-import { Dialog, primaryShortcut, Spinner, TextField } from '../../ui';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, Spinner, TextField } from '../../components/ui';
 import { navigateProjectSession, openingSessionId, projectSessions, projects, selectedSessionId } from '../store';
 import { readOnly } from '../lib/auth-state';
 import { formatRelativeTime, sessionDisplayTitle, shortSessionId } from '../lib/recovery-state.ts';
@@ -33,8 +34,8 @@ export function SessionSearch(props: { open: boolean; onClose: () => void; onSel
     const next = current < 0 ? (direction > 0 ? 0 : items.length - 1) : (current + direction + items.length) % items.length;
     items[next]?.focus();
   };
-  return <Dialog open={props.open} title="Search sessions" showHeader dismissible={!openingSessionId()} onClose={props.onClose}>
-    <div class="session-search-dialog grid gap-14 min-w-(--container-search) px-18 pb-18">
+  return <Dialog open={props.open} onOpenChange={(open) => { if (!open && !openingSessionId()) props.onClose(); }}><DialogContent size="search" dismissible={!openingSessionId()}><DialogHeader><DialogTitle>Search sessions</DialogTitle></DialogHeader>
+    <div class="session-search-dialog grid gap-14 px-18 pb-18">
       <TextField aria-label="Search sessions" value={query()} onInput={(event) => setQuery(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === 'ArrowDown') { event.preventDefault(); focusResult(1); } }} placeholder="Search title, project, directory or session ID" autofocus />
       <div ref={resultList} class="session-search-results grid max-h-(--container-search-results) gap-4 overflow-auto" role="listbox" aria-label="Search results" onKeyDown={(event) => { if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); focusResult(event.key === 'ArrowDown' ? 1 : -1); } }}>
         <Show when={query().trim()} fallback={<div class="session-search-hint px-12 py-28 text-center text-12 text-text-muted"><kbd>{primaryShortcut('K')}</kbd> opens search anytime. Start typing a project name or session title.</div>}>
@@ -48,5 +49,5 @@ export function SessionSearch(props: { open: boolean; onClose: () => void; onSel
       </div>
       <Show when={problem()}>{(message) => <p class="session-search-problem m-0 rounded-9 border border-warning-border bg-warning-soft px-10 py-9 text-12 leading-145 text-warning" role="alert">{message()}</p>}</Show>
     </div>
-  </Dialog>;
+  </DialogContent></Dialog>;
 }

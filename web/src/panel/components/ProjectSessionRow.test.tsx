@@ -104,7 +104,7 @@ describe('ProjectSessionRow', () => {
     });
     render(() => <ProjectSessionRow {...value} />);
 
-    expect(screen.getByRole('menuitem', { name: 'Archive session' })).toBeDisabled();
+    expect(screen.getByRole('menuitem', { name: 'Archive session' })).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByRole('menuitem', { name: 'Archive session' })).toHaveAttribute('title', 'Close this session’s running instance first');
   });
 });

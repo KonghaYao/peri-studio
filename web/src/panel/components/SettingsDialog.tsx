@@ -4,7 +4,7 @@
 // “System”语义，避免把诊断信息伪装成 Settings。
 
 import { createSignal, For, Show } from 'solid-js';
-import { Dialog } from '../../ui';
+import { Dialog, DialogContent, DialogTitle } from '../../components/ui';
 import { connState } from '../lib/connection';
 import { globalStatus, schemaVersion } from '../store';
 import { serverStatusLabel } from '../lib/topology-view';
@@ -20,8 +20,8 @@ const TABS: { id: SettingsTab; label: string }[] = [
 export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
   const [tab, setTab] = createSignal<SettingsTab>('topology');
   return (
-    <Dialog open={props.open} title="System" onClose={props.onClose}>
-      <div class="settings-dialog w-(--container-settings) max-h-(--container-settings-tall) overflow-auto px-22 pb-22">
+    <Dialog open={props.open} onOpenChange={(open) => { if (!open) props.onClose(); }}><DialogContent size="settings"><DialogTitle class="sr-only">System</DialogTitle>
+      <div class="settings-dialog px-22 pb-22">
         <div class="settings-tabs sticky top-0 z-1 flex gap-18 -mx-22 px-22 border-b border-divider bg-surface" role="tablist" aria-label="Settings categories">
           <For each={TABS}>{(item) => (
             <button
@@ -56,6 +56,6 @@ export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
           </Show>
         </div>
       </div>
-    </Dialog>
+    </DialogContent></Dialog>
   );
 }

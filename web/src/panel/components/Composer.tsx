@@ -23,7 +23,7 @@ import { runtimeControlFor } from '../lib/runtime-control';
 import { composerInputState } from '../lib/composer-placeholder';
 import { useComposerPrediction } from '../lib/composer-prediction';
 import { useComposerSlash } from '../lib/composer-slash';
-import { Button, Icon, IconButton, Textarea } from '../../ui';
+import { Button, Icon, IconButton, Textarea } from '../../components/ui';
 import { SlashMenu } from './SlashMenu';
 import { SessionModelMenu } from './SessionConfigDialog';
 
@@ -250,19 +250,16 @@ export function Composer() {
               disabled={inputDisabled()}
             >Skills <span class="grid min-w-18 h-18 place-items-center rounded-full bg-surface text-text-secondary font-mono text-10 leading-none max-tight:absolute max-tight:translate-x-12 max-tight:-translate-y-10">{skillCount()}</span></Button>
           </Show>
-          <Button
-            size="compact"
-            class="composer-runtime flex min-w-0 max-w-35p items-center gap-7 overflow-hidden text-text-secondary text-11 leading-none text-ellipsis whitespace-nowrap max-middle:max-w-40p max-tight:max-w-42p max-tight:mr-auto"
-            ref={modelTrigger}
-            title={runtimeSummary()}
-            aria-label={`${runtimeSummary()}, choose model`}
-            aria-haspopup="menu"
-            aria-expanded={modelMenuOpen()}
-            aria-controls={modelMenuOpen() ? modelMenuId : undefined}
-            onClick={() => setModelMenuOpen((open) => !open)}
-            disabled={!selectedCid() || !runtimeDocsHydrated()}
-          ><span aria-hidden="true" class="size-6 flex-none rounded-full bg-success" />{model()}</Button>
-          <SessionModelMenu open={modelMenuOpen()} id={modelMenuId} trigger={() => modelTrigger} onClose={() => setModelMenuOpen(false)} />
+          <SessionModelMenu open={modelMenuOpen()} id={modelMenuId} onOpenChange={setModelMenuOpen} trigger={
+            <Button
+              size="compact"
+              class="composer-runtime flex min-w-0 max-w-35p items-center gap-7 overflow-hidden text-text-secondary text-11 leading-none text-ellipsis whitespace-nowrap max-middle:max-w-40p max-tight:max-w-42p max-tight:mr-auto"
+              ref={modelTrigger}
+              title={runtimeSummary()}
+              aria-label={`${runtimeSummary()}, choose model`}
+              disabled={!selectedCid() || !runtimeDocsHydrated()}
+            ><span aria-hidden="true" class="size-6 flex-none rounded-full bg-success" />{model()}</Button>
+          } />
           <Show when={preciseUsage()}>{(usage) =>
             <span class="composer-usage min-w-0 overflow-hidden text-text-muted text-11 leading-none text-ellipsis whitespace-nowrap max-middle:ml-auto max-tight:hidden" title={`Latest model request: ${usage()}`}>{usage()}</span>
           }</Show>

@@ -1,7 +1,7 @@
 import { createMemo, For, Show } from 'solid-js';
 import type { ChatEntry } from '../lib/chat-view';
 import { messageTime } from '../lib/message-time.ts';
-import { CopyButton } from '../../ui';
+import { CopyButton } from '../../components/ui';
 import { Markdown } from './Markdown';
 import { ToolCallCard } from './ToolCallCard';
 

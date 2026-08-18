@@ -1,7 +1,7 @@
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 import type { PendingPermission } from '../lib/control-view';
 import type { PermissionDecisionState } from '../lib/permission-delivery';
-import { Button } from '../../ui';
+import { Button } from '../../components/ui';
 import { PermissionRequestCard } from './PermissionRequestCard';
 
 export interface PermissionQueueProps {

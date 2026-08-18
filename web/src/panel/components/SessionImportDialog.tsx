@@ -1,6 +1,6 @@
 import { createEffect, createMemo, createSignal, For, Show, untrack } from 'solid-js';
 import type { ProjectInfo, SessionSummaryInfo } from '../lib/registry-view';
-import { Button, Dialog, Icon, TextField } from '../../ui';
+import { Button, Dialog, DialogContent, DialogTitle, Icon, TextField } from '../../components/ui';
 import { importCandidates } from '../lib/session-import.ts';
 import { cleanSessionTitle, formatRelativeTime, shortSessionId } from '../lib/recovery-state.ts';
 
@@ -76,7 +76,7 @@ export function SessionImportDialog(props: SessionImportDialogProps) {
     }
   };
 
-  return <Dialog open={props.open} title="Import ACP session" dismissible={!submitting()} onClose={close}>
+  return <Dialog open={props.open} onOpenChange={(open) => { if (!open && !submitting()) close(); }}><DialogContent dismissible={!submitting()}><DialogTitle class="sr-only">Import ACP session</DialogTitle>
     <div class="import-dialog p-20">
       <div class="import-dialog__header">
         <span class="dialog-eyebrow block mb-5 text-text-muted text-10 font-bold tracking-8 uppercase">{props.project?.name}</span>
@@ -117,5 +117,5 @@ export function SessionImportDialog(props: SessionImportDialogProps) {
         <Button variant="primary" busy={submitting()} disabled={!selected() || props.discovering} onClick={submit}>Import selected session</Button>
       </div>
     </div>
-  </Dialog>;
+  </DialogContent></Dialog>;
 }

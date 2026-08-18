@@ -1,5 +1,5 @@
 import { createEffect, For, Show } from 'solid-js';
-import { Badge, Button, Dialog, EmptyState } from '../../ui';
+import { Badge, Button, Dialog, DialogContent, DialogTitle, EmptyState } from '../../components/ui';
 import { readOnly } from '../lib/auth-state';
 import {
   cancelMcpOAuth,
@@ -21,8 +21,8 @@ export function McpPanel(props: { open: boolean; onClose: () => void }) {
   const flowFor = (flowId?: string) => flowId ? mcpOAuthEvents()[flowId] : undefined;
   const connectionLabel = (status: string) => ({ connected: 'Connected', failed: 'Connection failed', disconnected: 'Disconnected', disabled: 'Disabled', uninitialized: 'Uninitialized' }[status] || status);
 
-  return <Dialog open={props.open} title="MCP connections" onClose={props.onClose}>
-    <section class="mcp-panel w-(--container-mcp) max-h-(--container-settings-tall) overflow-auto p-22" aria-labelledby="mcp-panel-title">
+  return <Dialog open={props.open} onOpenChange={(open) => { if (!open) props.onClose(); }}><DialogContent size="mcp"><DialogTitle class="sr-only">MCP connections</DialogTitle>
+    <section class="mcp-panel p-22" aria-labelledby="mcp-panel-title">
       <div class="mcp-panel__header flex items-start justify-between gap-20">
         <div><h2 id="mcp-panel-title">MCP connections</h2><p>View the MCP services of the current Peri runtime and complete authorization as needed.</p></div>
         <Button size="compact" busy={mcpLoading()} onClick={refreshMcpServers}>Refresh</Button>
@@ -62,5 +62,5 @@ export function McpPanel(props: { open: boolean; onClose: () => void }) {
       </Show>
       <Show when={readOnly()}><p class="mcp-panel__readonly mt-16 px-12 py-10 rounded-10 bg-surface-muted leading-15 text-text-secondary text-12">Read-only sign-in can view MCP status but cannot start, read or cancel authorizations.</p></Show>
     </section>
-  </Dialog>;
+  </DialogContent></Dialog>;
 }

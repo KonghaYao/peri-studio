@@ -7,7 +7,7 @@
 import { Show, type JSX } from 'solid-js';
 import { AuthActionsContext, useAuth } from '../lib/auth-hook';
 import { resetAuthenticatedSession } from '../store';
-import { Button, CopyButton, TextField } from '../../ui';
+import { Button, CopyButton, TextField } from '../../components/ui';
 
 export function AuthGate(props: { children: JSX.Element }) {
   const auth = useAuth({ resetSession: resetAuthenticatedSession });

@@ -1,10 +1,30 @@
 import MarkdownRenderer, { type SolidOptions } from 'markdown-to-jsx/solid';
+import type { JSX } from 'solid-js';
+import { safeHref } from '../lib/markdown';
+import { CopyButton } from '../../components/ui';
+
+function SafeLink(props: JSX.AnchorHTMLAttributes<HTMLAnchorElement>) {
+  const href = safeHref(props.href);
+  if (!href) return <span>{props.children} ({String(props.href || '')})</span>;
+  return <a {...props} href={href} target="_blank" rel="noopener noreferrer" />;
+}
+
+function Code(props: JSX.HTMLAttributes<HTMLElement>) {
+  return <code {...props} class="md-inline-code" />;
+}
+
+function Pre(props: JSX.HTMLAttributes<HTMLPreElement>) {
+  const text = String((props.children as { props?: { children?: unknown } })?.props?.children ?? props.children ?? '').replace(/\n$/, '');
+  return <div class="md-code-block"><CopyButton text={text} label="Copy code" /><pre {...props} /></div>;
+}
 
 const options: SolidOptions = {
   disableParsingRawHTML: true,
   enforceAtxHeadings: true,
   overrides: {
-    code: { props: { class: 'md-inline-code' } },
+    a: { component: SafeLink },
+    code: { component: Code },
+    pre: { component: Pre },
   },
   tagfilter: true,
   wrapper: null,

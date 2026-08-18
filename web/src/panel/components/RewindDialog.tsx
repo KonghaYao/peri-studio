@@ -1,5 +1,5 @@
 import { For, Match, Show, Switch } from 'solid-js';
-import { Button, Dialog, Spinner } from '../../ui';
+import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, Spinner } from '../../components/ui';
 import { closeRewindFlow, executeRewind, openRewindFlow, previewRewind, rewindFlow } from '../lib/rewind-assembly';
 
 export function RewindDialog(props: { open: boolean; onClose: () => void }) {
@@ -15,8 +15,8 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
     openRewindFlow();
   };
 
-  return <Dialog open={props.open} title="Rewind session" dismissible={!executing()} showHeader onClose={close}>
-    <section class="rewind-dialog box-border w-(--container-rewind) max-h-(--container-rewind-tall) overflow-auto px-22 pb-22 pt-4">
+  return <Dialog open={props.open} onOpenChange={(open) => { if (!open && !executing()) close(); }}><DialogContent size="rewind" dismissible={!executing()}><DialogHeader><DialogTitle>Rewind session</DialogTitle></DialogHeader>
+    <section class="rewind-dialog box-border px-22 pb-22 pt-4">
       <Switch>
         <Match when={state().kind === 'loading_candidates'}>
           <div class="rewind-dialog__loading grid min-h-180 place-content-center justify-items-center p-24 text-center"><Spinner label="Reading rewindable messages" /><p>Reading user messages from the Peri session history.</p></div>
@@ -70,5 +70,5 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
         }}</Match>
       </Switch>
     </section>
-  </Dialog>;
+  </DialogContent></Dialog>;
 }

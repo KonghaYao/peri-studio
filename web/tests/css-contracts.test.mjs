@@ -22,8 +22,8 @@ const featureCss = () => cssFiles().map((file) => readFileSync(join(import.meta.
 
 test('source stylesheets are structurally valid and consume only declared design tokens', () => {
   const source = join(import.meta.dirname, '..', 'src');
-  const files = ['styles.css', 'ui/base.css', 'ui/primitives.css', 'ui/tokens.css', ...cssFiles().filter((file) => file.startsWith('panel/styles/'))];
-  const stylesheets = files.filter((file) => file !== 'ui/tokens.css');
+  const files = ['styles.css', 'styles/base.css', 'styles/primitives.css', 'styles/tokens.css', ...cssFiles().filter((file) => file.startsWith('panel/styles/'))];
+  const stylesheets = files.filter((file) => file !== 'styles/tokens.css');
   const roots = files.map((file) => {
     const css = readFileSync(join(source, file), 'utf8');
     const strict = transform({ filename: file, code: Buffer.from(css), errorRecovery: false });
@@ -36,10 +36,42 @@ test('source stylesheets are structurally valid and consume only declared design
       assert.deepEqual(directDeclarations.map((decl) => `${decl.source?.start?.line}:${decl.prop}`), [], `${media.source?.input.file} has declarations outside a rule`);
     });
   }
-  const tokenSource = readFileSync(join(source, 'ui', 'tokens.css'), 'utf8');
+  const tokenSource = readFileSync(join(source, 'styles', 'tokens.css'), 'utf8');
   const defined = new Set([...tokenSource.matchAll(/(--[\w-]+)\s*:/g)].map((match) => match[1]));
   const used = new Set(stylesheets.flatMap((file) => [...readFileSync(join(source, file), 'utf8').matchAll(/var\((--[\w-]+)/g)].map((match) => match[1])));
   assert.deepEqual([...used].filter((token) => !defined.has(token)).sort(), []);
+});
+
+test('Kobalte dialog overlay and content are independently fixed in the shared portal', () => {
+  const primitives = readFileSync(join(import.meta.dirname, '..', 'src', 'styles', 'primitives.css'), 'utf8');
+  const root = postcss.parse(primitives);
+  const declarations = (selector) => {
+    const values = new Map();
+    root.walkRules(selector, (rule) => rule.walkDecls((decl) => values.set(decl.prop, decl.value)));
+    return values;
+  };
+  const overlay = declarations('.ui-dialog-backdrop');
+  const content = declarations('.ui-dialog');
+  assert.equal(overlay.get('position'), 'fixed');
+  assert.equal(content.get('position'), 'fixed');
+  assert.equal(content.get('top'), '50%');
+  assert.equal(content.get('left'), '50%');
+  assert.equal(content.get('transform'), 'translate(-50%,-50%)');
+  assert.ok(Number(content.get('z-index')) > Number(overlay.get('z-index')));
+});
+
+test('dialog size belongs to DialogContent rather than an overflowing child', () => {
+  const source = join(import.meta.dirname, '..', 'src');
+  const dialog = readFileSync(join(source, 'components', 'ui', 'Dialog.tsx'), 'utf8');
+  const components = join(source, 'panel', 'components');
+  const dialogConsumers = readdirSync(components)
+    .filter((file) => file.endsWith('.tsx'))
+    .map((file) => [file, readFileSync(join(components, file), 'utf8')])
+    .filter(([, code]) => code.includes('<DialogContent'));
+  assert.match(dialog, /type DialogSize = 'default' \| 'search' \| 'settings' \| 'mcp' \| 'rewind'/);
+  for (const [file, code] of dialogConsumers) {
+    assert.doesNotMatch(code, /<DialogContent[\s\S]{0,300}(?:w-|min-w-)\(--container-/, `${file} puts viewport width inside DialogContent`);
+  }
 });
 
 test('Composer and quick start have one neutral keyboard-focus owner and no stale selectors', () => {
@@ -68,7 +100,7 @@ test('feature-owned SVG geometry always uses the shared finite icon canvas', () 
     .filter((file) => file.endsWith('.tsx'))
     .filter((file) => /<svg\b/.test(readFileSync(join(components, file), 'utf8')));
   assert.deepEqual(offenders, []);
-  const icon = readFileSync(join(import.meta.dirname, '..', 'src', 'ui', 'Icon.tsx'), 'utf8');
+  const icon = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Icon.tsx'), 'utf8');
   assert.match(icon, /class={`ui-icon/);
   assert.match(icon, /fill="none"/);
   assert.match(icon, /stroke="currentColor"/);
@@ -103,14 +135,14 @@ test('the permission surface exposes a queue and never resolves an empty identit
 });
 
 test('the shared Button defaults to non-submitting behavior', () => {
-  const button = readFileSync(join(import.meta.dirname, '..', 'src', 'ui', 'Button.tsx'), 'utf8');
+  const button = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Button.tsx'), 'utf8');
   assert.match(button, /type=\{button\.type \?\? 'button'\}/);
 });
 
 test('feature-owned native buttons always state their form behavior', () => {
   const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
   const offenders = readdirSync(components)
-    .filter((file) => file.endsWith('.tsx'))
+    .filter((file) => file.endsWith('.tsx') && !file.endsWith('.test.tsx'))
     .flatMap((file) => [...readFileSync(join(components, file), 'utf8').matchAll(/<button\b([^>]*)>/gs)]
       .filter((match) => !/\btype\s*=/.test(match[1]))
       .map(() => file));
@@ -128,10 +160,11 @@ test('feature components never introduce literal colors', () => {
 test('responsive behavior has compact, medium and wide layout contracts', () => {
   const root = join(import.meta.dirname, '..', 'src');
   const shell = readFileSync(join(root, 'panel', 'components', 'AppShell.tsx'), 'utf8');
+  const drawer = readFileSync(join(root, 'panel', 'components', 'shared', 'ProjectDrawer.tsx'), 'utf8');
   const messageList = readFileSync(join(root, 'panel', 'components', 'MessageList.tsx'), 'utf8');
   const composer = readFileSync(join(root, 'panel', 'components', 'Composer.tsx'), 'utf8');
-  const theme = readFileSync(join(root, 'ui', 'theme.css'), 'utf8');
-  const breakpoints = readFileSync(join(root, 'ui', 'breakpoints.ts'), 'utf8');
+  const theme = readFileSync(join(root, 'styles', 'theme.css'), 'utf8');
+  const breakpoints = readFileSync(join(root, 'panel', 'lib', 'breakpoints.ts'), 'utf8');
   assert.match(shell, /compactViewportQuery/);
   assert.doesNotMatch(shell, /max-width:\s*\d+px/);
   assert.match(breakpoints, /COMPACT_VIEWPORT_MAX\s*=\s*959/);
@@ -142,16 +175,18 @@ test('responsive behavior has compact, medium and wide layout contracts', () => 
   assert.match(shell, /grid-cols-shell/);
   assert.match(shell, /desk:grid-cols-shell-desk/);
   assert.match(shell, /wide:grid-cols-shell-wide/);
-  assert.match(shell, /max-desk:fixed[^"]*max-desk:w-\(--container-drawer\)/);
+  assert.match(drawer, /<aside[^>]*class=\{drawerClass\}/);
+  assert.match(drawer, /<Dialog open=\{props\.open\}/);
+  assert.match(drawer, /max-desk:fixed[^']*max-desk:w-\(--container-drawer\)/);
   // 中宽布局的内容宽度：chat 列表 760px、composer 800px
   assert.match(messageList, /desk:max-wide:max-w-\(--container-chat-narrow\)/);
   assert.match(composer, /desk:max-w-\(--container-composer\)/);
-  assert.doesNotMatch(shell, /project-drawer\s*\{[^}]*position\s*:\s*fixed/);
+  assert.doesNotMatch(drawer, /project-drawer\s*\{[^}]*position\s*:\s*fixed/);
 });
 
 test('coarse pointers never depend on hover to discover sidebar actions', () => {
   const styles = featureCss();
-  const primitives = readFileSync(join(import.meta.dirname, '..', 'src', 'ui', 'primitives.css'), 'utf8');
+  const primitives = readFileSync(join(import.meta.dirname, '..', 'src', 'styles', 'primitives.css'), 'utf8');
   const coarseBlocks = [];
   postcss.parse(styles).walkAtRules('media', (media) => {
     if (/\(pointer:coarse\)/.test(media.params)) coarseBlocks.push(media.toString());
@@ -173,13 +208,13 @@ test('P0 interaction architecture cannot regress to hidden cancel or viewport-br
   const componentRoot = join(import.meta.dirname, '..', 'src', 'panel', 'components');
   const composer = readFileSync(join(componentRoot, 'Composer.tsx'), 'utf8');
   const sidebar = readFileSync(join(componentRoot, 'ProjectSidebar.tsx'), 'utf8');
-  const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'ui', 'Dialog.tsx'), 'utf8');
+  const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Dialog.tsx'), 'utf8');
   const styles = featureCss();
   assert.match(composer, /cancelTurn/);
   assert.match(composer, /Stop generation/);
   assert.match(composer, /control\?\.phase === 'uncertain'[\s\S]*?retryPersistentAction\(control\.commandId\)/);
   assert.match(composer, /Confirm stop with original request/);
-  assert.match(dialog, /<Portal>/);
+  assert.match(dialog, /DialogPrimitive\.Portal/);
   assert.match(sidebar, /sidebar-footer/);
   assert.doesNotMatch(styles, /logout-button[^}]*position\s*:\s*fixed/s);
 });
@@ -199,7 +234,7 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
 });
 
 test('design tokens cannot directly reference themselves', () => {
-  const css = readFileSync(join(import.meta.dirname, '..', 'src', 'ui', 'tokens.css'), 'utf8');
+  const css = readFileSync(join(import.meta.dirname, '..', 'src', 'styles', 'tokens.css'), 'utf8');
   const selfReferences = [...css.matchAll(/--([a-z0-9-]+)\s*:\s*var\(--\1\)/gi)].map((match) => match[1]);
   assert.deepEqual(selfReferences, []);
 });
@@ -207,13 +242,13 @@ test('design tokens cannot directly reference themselves', () => {
 test('reusable design tokens have one UI-library source', () => {
   const root = join(import.meta.dirname, '..', 'src');
   const styles = readFileSync(join(root, 'styles.css'), 'utf8');
-  const theme = readFileSync(join(root, 'ui', 'theme.css'), 'utf8');
+  const theme = readFileSync(join(root, 'styles', 'theme.css'), 'utf8');
   const featureStyles = featureCss();
-  const primitives = readFileSync(join(root, 'ui', 'primitives.css'), 'utf8');
-  const tokens = readFileSync(join(root, 'ui', 'tokens.css'), 'utf8');
+  const primitives = readFileSync(join(root, 'styles', 'primitives.css'), 'utf8');
+  const tokens = readFileSync(join(root, 'styles', 'tokens.css'), 'utf8');
   // Tailwind 采纳后入口链为 theme.css（含 @import 'tailwindcss'）→ base.css → primitives.css。
-  assert.match(styles, /^@import '\.\/ui\/theme\.css';\n@import '\.\/ui\/base\.css';\n@import '\.\/ui\/primitives\.css';/);
-  assert.doesNotMatch(styles, /@import '\.\/ui\/tokens\.css'/);
+  assert.match(styles, /^@import '\.\/styles\/theme\.css';\n@import '\.\/styles\/base\.css';\n@import '\.\/styles\/primitives\.css';/);
+  assert.doesNotMatch(styles, /@import '\.\/styles\/tokens\.css'/);
   assert.match(primitives, /^@import '\.\/tokens\.css';/);
   assert.doesNotMatch(styles, /:root\s*\{/);
   assert.match(tokens, /:root\s*\{/);
@@ -247,8 +282,8 @@ test('product CSS owns its browser baseline and semantic layout', () => {
   const root = join(import.meta.dirname, '..');
   const source = join(root, 'src');
   const styles = featureCss();
-  const base = readFileSync(join(source, 'ui', 'base.css'), 'utf8');
-  const theme = readFileSync(join(source, 'ui', 'theme.css'), 'utf8');
+  const base = readFileSync(join(source, 'styles', 'base.css'), 'utf8');
+  const theme = readFileSync(join(source, 'styles', 'theme.css'), 'utf8');
   const chatView = readFileSync(join(source, 'panel', 'components', 'ChatView.tsx'), 'utf8');
   const messageList = readFileSync(join(source, 'panel', 'components', 'MessageList.tsx'), 'utf8');
   const manifest = readFileSync(join(root, 'package.json'), 'utf8');
@@ -284,8 +319,8 @@ test('primitive visuals are standalone and do not leak into feature styles', () 
   const root = join(import.meta.dirname, '..', 'src');
   const styles = cssFiles().filter((file) => file.startsWith('panel/styles/'))
     .map((file) => readFileSync(join(root, file), 'utf8')).join('\n');
-  const primitives = readFileSync(join(root, 'ui', 'primitives.css'), 'utf8');
-  const drawer = readFileSync(join(root, 'ui', 'Drawer.tsx'), 'utf8');
+  const primitives = readFileSync(join(root, 'styles', 'primitives.css'), 'utf8');
+  const drawer = readFileSync(join(root, 'panel', 'components', 'shared', 'ProjectDrawer.tsx'), 'utf8');
   const ownedSelectors = [
     '.ui-icon', '.ui-button', '.ui-icon-button', '.ui-field', '.ui-dialog-backdrop',
     '.ui-drawer-scrim', '.ui-menu', '.ui-tooltip', '.ui-status', '.ui-badge',
@@ -300,42 +335,47 @@ test('primitive visuals are standalone and do not leak into feature styles', () 
       `${selector} base styles must remain owned by primitives.css`,
     );
   }
-  assert.match(drawer, /class="ui-drawer-scrim"/);
+  assert.match(drawer, /<Dialog open=\{props\.open\}/);
+  assert.match(drawer, /<DialogContent/);
   assert.doesNotMatch(styles, /drawer-scrim/);
 });
 
 test('domain status inference delegates visual rendering to the shared Badge', () => {
   const root = join(import.meta.dirname, '..', 'src');
   const adapter = readFileSync(join(root, 'panel', 'components', 'Badge.tsx'), 'utf8');
-  const primitive = readFileSync(join(root, 'ui', 'Badge.tsx'), 'utf8');
+  const primitive = readFileSync(join(root, 'components', 'ui', 'Badge.tsx'), 'utf8');
   assert.match(adapter, /Badge as UiBadge/);
   assert.doesNotMatch(adapter, /bg-\[|text-\[/);
   assert.match(primitive, /BadgeTone = 'neutral' \| 'ok' \| 'warn' \| 'err'/);
 });
 
 test('icon-only controls receive visible help from the shared Tooltip', () => {
-  const root = join(import.meta.dirname, '..', 'src', 'ui');
+  const root = join(import.meta.dirname, '..', 'src', 'components', 'ui');
   const button = readFileSync(join(root, 'Button.tsx'), 'utf8');
   const tooltip = readFileSync(join(root, 'Tooltip.tsx'), 'utf8');
-  assert.match(button, /<Tooltip content=/);
+  assert.match(button, /<Tooltip placement=/);
+  assert.match(button, /<TooltipTrigger/);
+  assert.match(button, /<TooltipContent\b/);
   assert.doesNotMatch(button, /title=\{/);
-  assert.match(tooltip, /role="tooltip"/);
-  assert.match(tooltip, /event\.key === 'Escape'/);
+  assert.match(tooltip, /@kobalte\/core\/tooltip/);
+  assert.match(tooltip, /TooltipPrimitive\.Content/);
   const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'components', 'ProjectSessionRow.tsx'), 'utf8');
-  assert.match(sessionRow, /<IconButton[^>]*[\s\S]*?class="session-menu(?:\s|")/);
+  assert.match(sessionRow, /<DropdownMenuTrigger as=\{IconButton\}[\s\S]*?class="session-menu(?:\s|[^"]*?")/);
   assert.doesNotMatch(sessionRow, /<button[^>]*class="session-menu"/);
 });
 
-test('responsive navigation behavior belongs to the shared Drawer primitive', () => {
+test('responsive navigation uses structural desktop layout and Kobalte modal behavior', () => {
   const root = join(import.meta.dirname, '..', 'src');
   const shell = readFileSync(join(root, 'panel', 'components', 'AppShell.tsx'), 'utf8');
-  const drawer = readFileSync(join(root, 'ui', 'Drawer.tsx'), 'utf8');
-  assert.match(shell, /<Drawer\b/);
+  const drawer = readFileSync(join(root, 'panel', 'components', 'shared', 'ProjectDrawer.tsx'), 'utf8');
+  assert.match(shell, /<ProjectDrawer\b/);
   assert.match(shell, /if \(!query\.matches\) setOpen\(false\)/);
   assert.doesNotMatch(shell, /document\.addEventListener\('keydown'/);
   assert.doesNotMatch(shell, /\.inert\s*=/);
-  assert.match(drawer, /acquireOverlay/);
-  assert.match(drawer, /role=\{props\.modal && props\.open \? 'dialog'/);
-  assert.match(drawer, /aria-modal=/);
+  assert.match(drawer, /<aside/);
+  assert.match(drawer, /<Dialog open=\{props\.open\}/);
+  assert.match(drawer, /<DialogContent/);
+  assert.match(drawer, /<DialogTitle class="sr-only">Projects &amp; Sessions<\/DialogTitle>/);
+  assert.doesNotMatch(drawer, /acquireOverlay|document\.addEventListener/);
 });
 

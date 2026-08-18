@@ -1,6 +1,6 @@
 import { For, Show } from 'solid-js';
 import { dismissPersistentError, persistentErrors, retryPersistentAction } from '../store';
-import { Button, CopyButton } from '../../ui';
+import { Button, CopyButton } from '../../components/ui';
 
 export function ErrorCenter() {
   return <Show when={persistentErrors().length}>
