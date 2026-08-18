@@ -421,7 +421,7 @@ impl Aggregator {
     /// 到回放 turn。
     fn resolve_entry_ids_from_snapshot(
         &self,
-        stream: &StreamState,
+        stream: &mut StreamState,
         snapshot: &ControlSnapshot,
         turn_id: &str,
         entry_id: &str,
@@ -435,20 +435,17 @@ impl Aggregator {
                 block_id.to_string(),
             );
         }
-        if let Some(rt) = stream.replay_turn.as_ref() {
-            return (
-                rt.clone(),
-                format!("{rt}:assistant"),
-                block_kind.to_string(),
-            );
-        }
-        match snapshot.active_turn.as_ref() {
-            Some(a) => (
-                a.turn_id.clone(),
-                format!("{}:assistant", a.turn_id),
-                block_kind.to_string(),
-            ),
-            None => (String::new(), String::new(), String::new()),
-        }
+        let resolved_turn = stream
+            .replay_turn
+            .clone()
+            .or_else(|| {
+                snapshot
+                    .active_turn
+                    .as_ref()
+                    .map(|active| active.turn_id.clone())
+            })
+            .unwrap_or_default();
+        let entry_id = Self::projection_segment_entry(stream, &resolved_turn, "agent");
+        (resolved_turn, entry_id, block_kind.to_string())
     }
 }

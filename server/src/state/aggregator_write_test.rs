@@ -5,7 +5,7 @@
 use super::util::*;
 
 use serde_json::json;
-use yrs::{GetString, Map, Transact};
+use yrs::{Array, GetString, Map, Transact};
 
 use crate::state::aggregator::Aggregator;
 use crate::state::chat_writer;
@@ -276,6 +276,77 @@ fn batch_merges_deltas_into_single_transaction() {
         .unwrap();
     assert_eq!(text.get_string(&txn), "xxxx");
     let _ = root;
+}
+
+#[test]
+fn idless_agent_output_is_split_by_tool_group_within_one_turn() {
+    let mut pair = pair();
+    seed_user_msg(&mut pair, "t1", "t1:user", "hi");
+    let events = vec![
+        ev("s1", 2, msg_delta("", "", "", "before ")),
+        ev("s1", 3, msg_delta("", "", "", "tool")),
+        ev("s1", 4, tool_started("", "tc1")),
+        ev("s1", 5, msg_delta("", "", "", "after ")),
+        ev("s1", 6, msg_delta("", "", "", "tool")),
+    ];
+
+    let results = Aggregator.apply_batch(&mut pair, &events);
+
+    assert!(results.iter().all(|result| result.applied));
+    let txn = pair.chat.transact();
+    let root = chat_writer::root_map_read(&txn).unwrap();
+    let order = root
+        .get(&txn, "entry_order")
+        .unwrap()
+        .cast::<yrs::ArrayRef>()
+        .unwrap();
+    let entry_ids = order
+        .iter(&txn)
+        .map(|value| value.cast::<String>().unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        entry_ids.len(),
+        4,
+        "user、AI、tools、AI 必须是四个独立 entry"
+    );
+
+    let entries = root
+        .get(&txn, "entries")
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap();
+    let read_text = |entry_id: &str| {
+        let entry = entries
+            .get(&txn, entry_id)
+            .unwrap()
+            .cast::<yrs::MapRef>()
+            .unwrap();
+        let blocks = entry
+            .get(&txn, "blocks")
+            .unwrap()
+            .cast::<yrs::MapRef>()
+            .unwrap();
+        blocks
+            .iter(&txn)
+            .find_map(|(_, value)| {
+                let block = value.cast::<yrs::MapRef>().ok()?;
+                (block.get(&txn, "kind")?.cast::<String>().ok()?.as_str() == "text").then(|| {
+                    block
+                        .get(&txn, "text")
+                        .unwrap()
+                        .cast::<yrs::TextRef>()
+                        .unwrap()
+                        .get_string(&txn)
+                })
+            })
+            .unwrap_or_default()
+    };
+    assert_eq!(read_text(&entry_ids[1]), "before tool");
+    assert_eq!(read_text(&entry_ids[3]), "after tool");
+    assert_ne!(
+        entry_ids[1], entry_ids[3],
+        "tool 前后的两个 AI 输出不得合并"
+    );
 }
 
 #[test]

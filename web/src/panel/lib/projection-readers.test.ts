@@ -23,6 +23,17 @@ describe('renderRegistry project session catalog', () => {
   });
 });
 
+describe('renderControl chat loading projection', () => {
+  it('reads the server-authoritative chat loading fact', () => {
+    const doc = new Y.Doc();
+    const session = new Y.Map<unknown>();
+    doc.getMap<unknown>('root').set('session', session);
+    session.set('loading', true);
+
+    expect(renderControl(doc).chat?.loading).toBe(true);
+  });
+});
+
 describe('renderChat tool projection', () => {
   it('reads exact prompt identity while keeping legacy entries compatible', () => {
     const doc = new Y.Doc();

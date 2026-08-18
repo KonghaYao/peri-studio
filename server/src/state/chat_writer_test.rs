@@ -2,12 +2,65 @@
 //! `source_command_tests` 移出，§6.5/§P1-6）：幂等创建/关联/冲突判定与
 //! 索引完备性（含缺失/陈旧索引回落扫描、写路径自愈回填）。
 
+use peri_studio_proto::schema::{ActiveTurnProjection, TurnStatus};
 use yrs::{Map, Transact, WriteTxn};
 
 use crate::state::chat_writer::{
-    create_user_entry, user_entry_for_turn, UserEntryRegistration, USER_ENTRY_INDEX,
+    create_user_entry, set_active_turn, set_active_turn_status_if, user_entry_for_turn,
+    UserEntryRegistration, USER_ENTRY_INDEX,
 };
 use crate::state::factory::ROOT;
+
+#[test]
+fn active_turn_projects_chat_loading_from_server_state() {
+    let doc = yrs::Doc::new();
+    let mut txn = doc.transact_mut();
+    let root = txn.get_or_insert_map(ROOT);
+    let active = ActiveTurnProjection {
+        turn_id: "t1".into(),
+        turn_status: TurnStatus::Accepting,
+        updated_at: "now".into(),
+    };
+
+    assert!(set_active_turn(&mut txn, &root, Some(&active)));
+    let session = root
+        .get(&txn, "session")
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap();
+    assert_eq!(
+        session.get(&txn, "loading").unwrap().cast::<bool>(),
+        Ok(true)
+    );
+
+    assert!(set_active_turn_status_if(
+        &mut txn,
+        &root,
+        "accepting",
+        "running"
+    ));
+    assert_eq!(
+        session.get(&txn, "loading").unwrap().cast::<bool>(),
+        Ok(true)
+    );
+
+    let terminal = ActiveTurnProjection {
+        turn_id: "t1".into(),
+        turn_status: TurnStatus::Completed,
+        updated_at: "later".into(),
+    };
+    assert!(set_active_turn(&mut txn, &root, Some(&terminal)));
+    assert_eq!(
+        session.get(&txn, "loading").unwrap().cast::<bool>(),
+        Ok(false)
+    );
+
+    assert!(set_active_turn(&mut txn, &root, None));
+    assert_eq!(
+        session.get(&txn, "loading").unwrap().cast::<bool>(),
+        Ok(false)
+    );
+}
 
     #[test]
     fn user_entry_source_command_backfill_is_exact_and_conflict_safe() {

@@ -92,12 +92,21 @@ impl Aggregator {
             } => Some(self.resolve_entry_ids(pair, turn_id, entry_id, block_id, "reasoning")),
             _ => None,
         };
-        let resolved_tool_turn = match &ev.body {
+        let resolved_tool = match &ev.body {
             EventBody::ToolCallStarted { turn_id, .. } if turn_id.is_empty() => {
-                self.resolve_entry_ids(pair, turn_id, "", "", "tool").0
+                let turn_id = pair
+                    .stream
+                    .replay_turn
+                    .clone()
+                    .or_else(|| self.read_active_turn(pair).map(|active| active.turn_id))
+                    .unwrap_or_default();
+                let entry_id = Self::projection_segment_entry(&mut pair.stream, &turn_id, "tools");
+                (turn_id, entry_id)
             }
-            EventBody::ToolCallStarted { turn_id, .. } => turn_id.clone(),
-            _ => String::new(),
+            EventBody::ToolCallStarted { turn_id, .. } => {
+                (turn_id.clone(), format!("{turn_id}:assistant"))
+            }
+            _ => (String::new(), String::new()),
         };
         // 预读：回放模式（§8.5）历史 user 消息的归位 turn（chat 事务前
         // 计算——事务借用与 stream 可变借用互斥，§7.4）。
@@ -227,7 +236,7 @@ impl Aggregator {
                     created_at,
                     ..
                 } => {
-                    let turn_id = &resolved_tool_turn;
+                    let (turn_id, entry_id) = &resolved_tool;
                     let tc = if let Some(mut existing) = pre_read.clone() {
                         existing.name = name.clone();
                         if arguments.is_some() {
@@ -255,11 +264,10 @@ impl Aggregator {
                         }
                     };
                     chat_writer::upsert_tool_call(&mut txn, &root, &tc);
-                    let entry_id = format!("{turn_id}:assistant");
                     chat_writer::ensure_entry_with_blocks(
                         &mut txn,
                         &root,
-                        &entry_id,
+                        entry_id,
                         EntryKind::Message,
                         EntryRole::Assistant,
                         Some(turn_id),
@@ -268,7 +276,7 @@ impl Aggregator {
                     chat_writer::append_block(
                         &mut txn,
                         &root,
-                        &entry_id,
+                        entry_id,
                         peri_studio_proto::schema::ContentBlock::ToolCall {
                             block_id: format!("tool:{tool_call_id}"),
                             tool_call_id: tool_call_id.clone(),
@@ -277,7 +285,7 @@ impl Aggregator {
                     chat_writer::record_entry_origin(
                         &mut txn,
                         &root,
-                        &entry_id,
+                        entry_id,
                         replay_active,
                         replay_producer_verified,
                     );

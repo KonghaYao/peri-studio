@@ -13,7 +13,7 @@
 
 use yrs::{Map, ReadTxn};
 
-use peri_studio_proto::schema::{ActiveTurnProjection, EntryStatus, PublicError};
+use peri_studio_proto::schema::{ActiveTurnProjection, EntryStatus, PublicError, TurnStatus};
 
 use crate::state::chat_writer::{entry_status_str, root_map_read};
 use crate::state::chat_writer_blocks::write_public_error;
@@ -59,6 +59,14 @@ pub fn set_active_turn(
     active: Option<&ActiveTurnProjection>,
 ) -> bool {
     let sm = root.get_or_init::<_, yrs::MapRef>(txn, "session");
+    let loading = active.is_some_and(|turn| turn_loading(turn.turn_status));
+    let loading_changed = sm
+        .get(txn, "loading")
+        .and_then(|value| value.cast::<bool>().ok())
+        != Some(loading);
+    if loading_changed {
+        sm.insert(txn, "loading", loading);
+    }
     match active {
         Some(a) => {
             let changed = sm
@@ -75,7 +83,7 @@ pub fn set_active_turn(
                 sm.insert(txn, "active_turn_status", turn_status_str(a.turn_status));
                 sm.insert(txn, "active_turn_updated_at", a.updated_at.clone());
             }
-            changed
+            changed || loading_changed
         }
         None => {
             let had = sm.get(txn, "active_turn_id").is_some()
@@ -83,7 +91,7 @@ pub fn set_active_turn(
             sm.remove(txn, "active_turn_id");
             sm.remove(txn, "active_turn_status");
             sm.remove(txn, "active_turn_updated_at");
-            had
+            had || loading_changed
         }
     }
 }
@@ -105,10 +113,28 @@ pub fn set_active_turn_status_if(
         .unwrap_or_default();
     if cur == expect {
         sm.insert(txn, "active_turn_status", new.to_string());
+        sm.insert(txn, "loading", loading_status(new));
         true
     } else {
         false
     }
+}
+
+fn turn_loading(status: TurnStatus) -> bool {
+    matches!(
+        status,
+        TurnStatus::Accepting
+            | TurnStatus::Running
+            | TurnStatus::AwaitingPermission
+            | TurnStatus::Cancelling
+    )
+}
+
+fn loading_status(status: &str) -> bool {
+    matches!(
+        status,
+        "accepting" | "running" | "awaitingPermission" | "cancelling"
+    )
 }
 
 /// turn 状态字符串（§7.2 值域；camelCase 存储）。

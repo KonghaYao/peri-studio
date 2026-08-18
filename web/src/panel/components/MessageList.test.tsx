@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { setChatEntries, setElicitations, setPermissions, setRuntimeDocsState } from '../store';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { setChatEntries, setChatHead, setElicitations, setPermissions, setRuntimeDocsState } from '../store';
 import { MessageList } from './MessageList';
 import type { ChatEntry } from '../lib/chat-view';
 
@@ -14,11 +14,20 @@ function message(id: string, origin: ChatEntry['origin'], replayVerified: boolea
 
 function resetStore() {
   setChatEntries([]);
+  setChatHead(null);
   setPermissions([]);
   setElicitations([]);
   setRuntimeDocsState({ chat: false, control: false });
   vi.unstubAllGlobals();
 }
+
+beforeEach(() => {
+  vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
+  Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
+    configurable: true,
+    value: vi.fn(),
+  });
+});
 
 afterEach(resetStore);
 
@@ -36,6 +45,22 @@ describe('MessageList hydration', () => {
     expect(screen.getByText('Start this conversation')).toBeInTheDocument();
     expect(screen.getByText(/Content is saved to this session/)).toBeInTheDocument();
     expect(screen.queryByText('Loading session')).not.toBeInTheDocument();
+  });
+
+  it('renders one chat-level loading indicator from the control projection', () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    setChatEntries([message('assistant-1', 'live', null)]);
+    setChatHead({
+      chat: { chatId: 'chat-1', title: null, status: 'active', activeTurnId: 'turn-1', loading: true, createdAt: null, updatedAt: null },
+      agent: null,
+      activeTurn: { turnId: 'turn-1', turnStatus: 'running', updatedAt: null },
+      pendingPermissions: [],
+    });
+
+    render(() => <MessageList />);
+
+    expect(screen.getByRole('status', { name: 'Assistant is working' })).toBeInTheDocument();
+    expect(document.querySelectorAll('.message-loading')).toHaveLength(1);
   });
 
   it('exposes every simultaneous permission request in one navigable queue', () => {

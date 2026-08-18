@@ -6,6 +6,7 @@ export interface ChatHeadInfo {
   title: string | null;
   status: string | null;
   activeTurnId: string | null;
+  loading?: boolean;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -133,6 +134,7 @@ export function renderControl(doc: Y.Doc): ControlView {
       title: getStr(session, 'title'),
       status: getStr(session, 'status'),
       activeTurnId: getStr(session, 'active_turn_id'),
+      loading: session.get('loading') === true,
       createdAt: getStr(session, 'created_at'),
       updatedAt: getStr(session, 'updated_at'),
     };

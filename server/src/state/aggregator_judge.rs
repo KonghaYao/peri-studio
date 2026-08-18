@@ -104,7 +104,7 @@ impl Aggregator {
         Ok(())
     }
 
-    fn read_active_turn(&self, pair: &DocPair) -> Option<ActiveTurnProjection> {
+    pub(crate) fn read_active_turn(&self, pair: &DocPair) -> Option<ActiveTurnProjection> {
         let txn = pair.session.transact();
         let root = chat_writer::root_map_read(&txn)?;
         let sm = root.get(&txn, "session")?.cast::<yrs::MapRef>().ok()?;
@@ -122,12 +122,11 @@ impl Aggregator {
 
     /// 增量帧 id 归位（§7.2 宿主驱动 turn 模型）：帧携带 turn_id（peri-studio
     /// 私有帧/test-child）原样使用；帧无 id（真实 peri agent_message_chunk /
-    /// agent_thought_chunk，无 turnId/entryId/blockId）按 active_turn 归位：
-    /// entry_id = `{active_turn}:assistant`（与 TurnTerminal 派生一致），
-    /// block_id = 内容块种类（text/reasoning，entry 内单块）。
+    /// agent_thought_chunk，无 turnId/entryId/blockId）按 active_turn 与当前展示段
+    /// 归位。展示段由写路径按 `agent ↔ tools` 类型切换推进。
     pub(crate) fn resolve_entry_ids(
         &self,
-        pair: &DocPair,
+        pair: &mut DocPair,
         turn_id: &str,
         entry_id: &str,
         block_id: &str,
@@ -140,22 +139,34 @@ impl Aggregator {
                 block_id.to_string(),
             );
         }
-        // 回放模式（§8.5）：优先归位到回放 turn。
-        if let Some(rt) = pair.stream.replay_turn.as_ref() {
-            return (
-                rt.clone(),
-                format!("{rt}:assistant"),
-                block_kind.to_string(),
-            );
+        let resolved_turn = pair
+            .stream
+            .replay_turn
+            .clone()
+            .or_else(|| self.read_active_turn(pair).map(|active| active.turn_id))
+            .unwrap_or_default();
+        let entry_id = Self::projection_segment_entry(&mut pair.stream, &resolved_turn, "agent");
+        (resolved_turn, entry_id, block_kind.to_string())
+    }
+
+    pub(crate) fn projection_segment_entry(
+        stream: &mut StreamState,
+        turn_id: &str,
+        segment_kind: &str,
+    ) -> String {
+        if stream.projection_segment_turn.as_deref() != Some(turn_id) {
+            stream.projection_segment_turn = Some(turn_id.to_string());
+            stream.projection_segment_kind = None;
+            stream.projection_segment_index = 0;
         }
-        let active = self.read_active_turn(pair);
-        match active {
-            Some(a) => (
-                a.turn_id.clone(),
-                format!("{}:assistant", a.turn_id),
-                block_kind.to_string(),
-            ),
-            None => (String::new(), String::new(), String::new()),
+        if stream.projection_segment_kind.as_deref() != Some(segment_kind) {
+            stream.projection_segment_kind = Some(segment_kind.to_string());
+            stream.projection_segment_index += 1;
+        }
+        if stream.projection_segment_index <= 1 {
+            format!("{turn_id}:assistant")
+        } else {
+            format!("{turn_id}:assistant:{}", stream.projection_segment_index)
         }
     }
 

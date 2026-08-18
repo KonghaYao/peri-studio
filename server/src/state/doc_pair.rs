@@ -66,4 +66,10 @@ pub struct StreamState {
     pub replay_turn: Option<String>,
     /// 本次回放建立的全部 turn id（按序；EndLoadReplay 消费）。
     pub replay_turns: Vec<String>,
+    /// 无 ID ACP 帧当前归属的展示段。ACP 只提供 chunk，不提供 message id；
+    /// 聚合器以 `agent ↔ tools` 类型切换建立 entry 边界，避免一个 turn 的
+    /// AI/tools/AI 全部塌缩到同一条 assistant entry。
+    pub projection_segment_turn: Option<String>,
+    pub projection_segment_kind: Option<String>,
+    pub projection_segment_index: u64,
 }
