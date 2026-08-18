@@ -1,109 +1,60 @@
-import { createEffect, createSignal, For, Show } from 'solid-js';
+import { For, Show } from 'solid-js';
+import type { SessionConfigOptionInfo } from '../lib/control-view';
 import { readOnly } from '../lib/auth-state';
-import type { SessionConfigChoiceInfo, SessionConfigOptionInfo } from '../lib/control-view';
+import { connState } from '../lib/connection';
 import {
   chatHead,
-  retrySessionConfigMutation,
   sessionConfigMutation,
   setSessionConfig,
   turnActive,
 } from '../store';
-import { connState } from '../lib/connection';
-import { Button, Dialog } from '../../ui';
+import { Menu, MenuItem } from '../../ui';
 
-export function SessionConfigDialog(props: { open: boolean; onClose: () => void }) {
-  let confirmationPanel: HTMLElement | undefined;
-  let confirmationReturn: HTMLButtonElement | undefined;
-  const [confirmation, setConfirmation] = createSignal<{
-    option: SessionConfigOptionInfo;
-    choice: SessionConfigChoiceInfo;
-  } | null>(null);
-  const options = () => chatHead()?.agent?.configOptions ?? [];
+export function SessionModelMenu(props: {
+  open: boolean;
+  id: string;
+  trigger: () => HTMLElement | undefined;
+  onClose: () => void;
+}) {
+  const option = (): SessionConfigOptionInfo | null =>
+    chatHead()?.agent?.configOptions?.find((item) => item.category === 'model') ?? null;
   const locked = () => readOnly() || turnActive() || connState().kind !== 'ok' || !!sessionConfigMutation();
-  const displayedValue = (option: SessionConfigOptionInfo) => {
+  const displayedValue = () => {
+    const model = option();
     const mutation = sessionConfigMutation();
-    return mutation?.configId === option.id ? mutation.previousValue : option.currentValue;
+    return model && mutation?.configId === model.id ? mutation.previousValue : model?.currentValue;
   };
-  createEffect(() => {
-    if (confirmation()) {
-      queueMicrotask(() => confirmationPanel?.querySelector<HTMLButtonElement>('.ui-button--danger')?.focus());
-    }
-  });
-  const close = () => {
-    setConfirmation(null);
+  const choose = (value: string) => {
+    const model = option();
+    if (!model || value === displayedValue() || locked()) return;
+    setSessionConfig(model.id, value);
     props.onClose();
   };
 
-  const choose = (option: SessionConfigOptionInfo, choice: SessionConfigChoiceInfo, trigger: HTMLButtonElement) => {
-    if (choice.value === displayedValue(option) || locked()) return;
-    if (isPermissionBypass(option, choice)) {
-      confirmationReturn = trigger;
-      setConfirmation({ option, choice });
-      return;
-    }
-    setSessionConfig(option.id, choice.value);
-  };
-
-  return (
-    <Dialog open={props.open} title="Agent session config" onClose={close} showHeader>
-      <div class="session-config flex max-h-(--container-config) flex-col gap-12 overflow-auto px-18 pb-18">
-        <p class="session-config__intro m-0 text-text-secondary text-12 leading-155">These options are provided live by the current Peri agent via ACP and apply only to this session.</p>
-        <Show when={turnActive()}>
-          <p class="session-config__notice flex items-center justify-between gap-10 m-0 px-11 py-10 rounded-10 bg-surface-muted text-text-secondary text-12 leading-145" role="status">Config cannot be changed while the agent is working. Stop it or wait for the current turn to finish before trying again.</p>
-        </Show>
-        <Show when={sessionConfigMutation()}>{(mutation) =>
-          <div class={`session-config__notice session-config__notice--${mutation().phase} flex items-center justify-between gap-10 m-0 px-11 py-10 rounded-10 bg-surface-muted text-text-secondary text-12 leading-145 ${mutation().phase === 'uncertain' ? 'border border-warning-border bg-warning-soft text-warning' : ''}`} role="status">
-            <Show when={mutation().phase === 'uncertain'} fallback={<span>Waiting for the agent to confirm the config…</span>}>
-              <span>The server cannot confirm whether this config took effect. Do not start a new request.</span>
-              <Button size="compact" onClick={retrySessionConfigMutation}>Re-check with the original request</Button>
-            </Show>
-          </div>
-        }</Show>
-        <Show when={options().length > 0} fallback={<p class="session-config__empty m-0 text-text-secondary text-12 leading-155">The current agent does not provide any configurable session options.</p>}>
-          <div class="session-config__options flex flex-col gap-14">
-            <For each={options()}>{(option) =>
-              <fieldset class="session-config__group min-w-0 m-0 p-0 border-0" disabled={locked()}>
-                <legend>{option.name}</legend>
-                <Show when={option.description}><p>{option.description}</p></Show>
-                <div class="session-config__choices grid grid-cols-config gap-6 mt-8">
-                  <For each={option.options}>{(choice) =>
-                    <button
-                      type="button"
-                      class={`session-config__choice ${choice.value === displayedValue(option) ? 'is-selected' : ''} flex min-h-50 flex-col justify-center gap-3 px-10 py-9 border border-border-subtle rounded-10 bg-surface text-text-primary cursor-pointer text-left hover:bg-hover`}
-                      aria-pressed={choice.value === displayedValue(option)}
-                      onClick={(event) => choose(option, choice, event.currentTarget)}
-                    >
-                      <span>{choice.name}</span>
-                      <Show when={choice.description}><small>{choice.description}</small></Show>
-                    </button>
-                  }</For>
-                </div>
-              </fieldset>
-            }</For>
-          </div>
-        </Show>
-        <Show when={confirmation()}>{(pending) =>
-          <section ref={confirmationPanel} class="session-config__confirmation p-12 border border-danger-border rounded-11 bg-danger-soft" role="alert" aria-label="Confirm permission bypass">
-            <strong>Switch to “{pending().choice.name}”?</strong>
-            <p>This mode may let the agent run tools without asking for each one. Only enable it when you trust the current project and instructions.</p>
-            <div>
-              <Button variant="secondary" onClick={() => {
-                setConfirmation(null);
-                queueMicrotask(() => confirmationReturn?.focus());
-              }}>Cancel</Button>
-              <Button variant="danger" onClick={() => {
-                const selection = pending();
-                setConfirmation(null);
-                setSessionConfig(selection.option.id, selection.choice.value);
-              }}>Enable</Button>
-            </div>
-          </section>
-        }</Show>
-      </div>
-    </Dialog>
-  );
-}
-
-function isPermissionBypass(option: SessionConfigOptionInfo, choice: SessionConfigChoiceInfo): boolean {
-  return option.category === 'mode' && choice.value === 'bypassPermissions';
+  return <Menu
+    open={props.open}
+    id={props.id}
+    label="Choose model"
+    trigger={props.trigger}
+    onClose={props.onClose}
+  >
+    <Show when={option()} fallback={<p class="model-menu__empty px-12 py-10 text-text-muted text-12">No model choices available</p>}>
+      {(model) => <>
+        <div class="model-menu__heading px-12 pt-10 pb-6 text-text-muted text-10 font-semibold uppercase tracking-8">Model</div>
+        <For each={model().options}>{(choice) => {
+          const selected = () => choice.value === displayedValue();
+          return <MenuItem
+            class="model-menu__item grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-14 gap-y-2"
+            aria-current={selected() ? 'true' : undefined}
+            disabled={locked()}
+            onClick={() => choose(choice.value)}
+          >
+            <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{choice.name}</span>
+            <Show when={selected()}><span class="text-accent" aria-label="Current model">✓</span></Show>
+            <Show when={choice.description}><small class="col-span-full text-text-muted text-10p5 leading-145">{choice.description}</small></Show>
+          </MenuItem>;
+        }}</For>
+      </>}
+    </Show>
+  </Menu>;
 }

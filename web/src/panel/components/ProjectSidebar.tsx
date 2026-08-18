@@ -20,7 +20,7 @@ function ChevronIcon(props: { class?: string }) { return <Icon size="small" clas
 function MoreIcon() { return <Icon><circle cx="4" cy="10" r="1" /><circle cx="10" cy="10" r="1" /><circle cx="16" cy="10" r="1" /></Icon>; }
 function SearchIcon() { return <Icon><circle cx="8.5" cy="8.5" r="5" /><path d="m12.2 12.2 4 4" /></Icon>; }
 
-export function ProjectSidebar(props: { onNavigate?: () => void; intent?: { kind: 'create-project' | 'import'; projectId?: string; nonce: number } | null }) {
+export function ProjectSidebar(props: { onNavigate?: () => void; onOpenSystem?: () => void; intent?: { kind: 'create-project' | 'import'; projectId?: string; nonce: number } | null }) {
   const [creating, setCreating] = createSignal(false);
   const [projectCreateSubmitting, setProjectCreateSubmitting] = createSignal(false);
   const [name, setName] = createSignal('');
@@ -76,6 +76,19 @@ export function ProjectSidebar(props: { onNavigate?: () => void; intent?: { kind
     };
     document.addEventListener('keydown', shortcut);
     onCleanup(() => document.removeEventListener('keydown', shortcut));
+  });
+
+  createEffect(() => {
+    const selectedId = selectedSessionId();
+    if (!selectedId) return;
+    const projectId = projectSessions().find((session) => session.id === selectedId)?.projectId;
+    if (!projectId || !collapsedProjects().has(projectId)) return;
+    setCollapsedProjects((current) => {
+      const next = new Set(current);
+      next.delete(projectId);
+      return next;
+    });
+    queueMicrotask(() => document.querySelector<HTMLElement>(`[data-session-id="${CSS.escape(selectedId)}"]`)?.scrollIntoView({ block: 'nearest' }));
   });
 
   const submitProject = (e: SubmitEvent) => {
@@ -246,7 +259,11 @@ export function ProjectSidebar(props: { onNavigate?: () => void; intent?: { kind
           />;
         })()}
       </Dialog>
-      <div class="sidebar-footer flex h-52 items-center gap-8 border-t border-divider text-12 text-text-muted"><Status tone={connState().kind || 'idle'} class="min-w-0 flex-1">{connState().text}</Status><Button size="compact" class="min-h-36! cursor-pointer rounded-8! border-0! bg-transparent text-text-secondary! hover:bg-hover hover:text-text-primary! max-narrow:min-w-72 max-narrow:min-h-44! pointer-coarse:min-h-44!" onClick={auth?.logout}>Log out</Button></div>
+      <div class="sidebar-footer flex min-h-58 items-center gap-6 border-t border-divider text-12 text-text-muted">
+        <Status tone={connState().kind || 'idle'} class="min-w-0 flex-1">{connState().text}</Status>
+        <Button size="compact" class="min-h-36! cursor-pointer rounded-8! border-0! bg-transparent px-9! text-text-secondary! hover:bg-hover hover:text-text-primary! pointer-coarse:min-h-44!" onClick={props.onOpenSystem}>System</Button>
+        <Button size="compact" class="min-h-36! cursor-pointer rounded-8! border-0! bg-transparent px-9! text-text-secondary! hover:bg-hover hover:text-text-primary! pointer-coarse:min-h-44!" onClick={auth?.logout}>Log out</Button>
+      </div>
     </nav>
   );
 }

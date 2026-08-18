@@ -16,6 +16,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "markdown-to-jsx": "^9.9.0",
     "solid-js": "^1",
     "yjs": "^13"
   },

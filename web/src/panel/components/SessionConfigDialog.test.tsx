@@ -4,7 +4,29 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { setPrincipalRole } from '../lib/auth-state';
 import { setConnState } from '../lib/connection';
 import { setChatHead, setSessionConfigMutation } from '../store';
-import { SessionConfigDialog } from './SessionConfigDialog';
+import { SessionModelMenu } from './SessionConfigDialog';
+
+function projectModels() {
+  setChatHead({
+    chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
+    agent: {
+      instanceId: 'local', sessionId: 'acp-1', status: 'ready', lastActivityAt: null,
+      availableCommands: [], commandCatalog: [], extensions: [], activities: [], inputPrediction: null,
+      latestUsage: null, model: 'opus', effort: 'high', contextWindow: null, contextUsed: null,
+      configOptions: [{
+        id: 'model', name: 'Model', description: null, category: 'model', currentValue: 'opus',
+        options: [
+          { value: 'haiku', name: 'Haiku', description: 'Fastest' },
+          { value: 'sonnet', name: 'Sonnet', description: 'Balanced' },
+          { value: 'opus', name: 'Opus', description: 'Strong reasoning' },
+          { value: 'fable', name: 'Fable', description: 'Flagship' },
+        ],
+      }],
+    },
+    activeTurn: null,
+    pendingPermissions: [],
+  });
+}
 
 afterEach(() => {
   setChatHead(null);
@@ -13,81 +35,57 @@ afterEach(() => {
   setConnState({ text: 'Disconnected', kind: 'idle' });
 });
 
-describe('SessionConfigDialog', () => {
-  it('renders only Agent-projected choices and confirms permission bypass', async () => {
+describe('SessionModelMenu', () => {
+  it('shows the four Agent-projected models and marks the current model', () => {
     setPrincipalRole('full');
     setConnState({ text: 'Connected', kind: 'ok' });
-    setChatHead({
-      chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
-      agent: {
-        instanceId: 'local', sessionId: 'acp-1', status: 'ready', lastActivityAt: null,
-        availableCommands: [], commandCatalog: [], extensions: [], activities: [], inputPrediction: null,
-        latestUsage: null, model: 'opus', effort: 'high', contextWindow: null, contextUsed: null,
-        configOptions: [{
-          id: 'mode', name: 'Mode', description: 'Execution mode', category: 'mode', currentValue: 'default',
-          options: [
-            { value: 'default', name: 'Default', description: null },
-            { value: 'bypassPermissions', name: 'Bypass permissions', description: 'Skip prompts' },
-          ],
-        }],
-      },
-      activeTurn: null, pendingPermissions: [],
-    });
+    projectModels();
+    const trigger = document.createElement('button');
+    document.body.append(trigger);
 
-    render(() => <SessionConfigDialog open onClose={() => {}} />);
-    expect(screen.getByRole('button', { name: /Default/ })).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(screen.getByRole('button', { name: /Bypass permissions/ }));
-    expect(screen.getByRole('alert', { name: 'Confirm permission bypass' })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Enable' })).toHaveFocus());
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /Bypass permissions/ })).toHaveFocus());
+    render(() => <SessionModelMenu open id="models" trigger={() => trigger} onClose={() => {}} />);
+
+    expect(screen.getAllByRole('menuitem')).toHaveLength(4);
+    expect(screen.getByRole('menuitem', { name: /Opus/ })).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByLabelText('Current model')).toBeInTheDocument();
+    trigger.remove();
   });
 
-  it('locks choices while the Agent is running', () => {
+  it('closes after choosing another model', async () => {
     setPrincipalRole('full');
     setConnState({ text: 'Connected', kind: 'ok' });
+    projectModels();
+    const trigger = document.createElement('button');
+    document.body.append(trigger);
+    let closed = false;
+
+    render(() => <SessionModelMenu open id="models" trigger={() => trigger} onClose={() => { closed = true; }} />);
+    fireEvent.click(screen.getByRole('menuitem', { name: /Sonnet/ }));
+
+    await waitFor(() => expect(closed).toBe(true));
+    trigger.remove();
+  });
+
+  it('locks model changes while the Agent is working', () => {
+    setPrincipalRole('full');
+    setConnState({ text: 'Connected', kind: 'ok' });
+    projectModels();
     setChatHead({
       chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: 'turn-1', createdAt: null, updatedAt: null },
       agent: {
         instanceId: 'local', sessionId: 'acp-1', status: 'ready', lastActivityAt: null,
         availableCommands: [], commandCatalog: [], extensions: [], activities: [], inputPrediction: null,
         latestUsage: null, model: 'opus', effort: 'high', contextWindow: null, contextUsed: null,
-        configOptions: [{
-          id: 'thinking_effort', name: 'Thinking effort', description: null, category: 'thought_level', currentValue: 'high',
-          options: [{ value: 'high', name: 'High', description: null }],
-        }],
+        configOptions: [{ id: 'model', name: 'Model', description: null, category: 'model', currentValue: 'opus', options: [{ value: 'haiku', name: 'Haiku', description: 'Fastest' }] }],
       },
-      activeTurn: { turnId: 'turn-1', turnStatus: 'running', updatedAt: null }, pendingPermissions: [],
+      activeTurn: { turnId: 'turn-1', turnStatus: 'running', updatedAt: null },
+      pendingPermissions: [],
     });
+    const trigger = document.createElement('button');
+    document.body.append(trigger);
 
-    render(() => <SessionConfigDialog open onClose={() => {}} />);
-    expect(screen.getByText(/Config cannot be changed while the agent is working/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'High' })).toBeDisabled();
-  });
-
-  it('keeps the previous selection visible until the matching command is terminal', () => {
-    setPrincipalRole('full');
-    setConnState({ text: 'Connected', kind: 'ok' });
-    setSessionConfigMutation({
-      commandId: 'command-1', chatId: 'chat-1', configId: 'model', value: 'fast',
-      previousValue: 'quality', phase: 'accepted',
-    });
-    setChatHead({
-      chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
-      agent: {
-        instanceId: 'local', sessionId: 'acp-1', status: 'ready', lastActivityAt: null,
-        availableCommands: [], commandCatalog: [], extensions: [], activities: [], inputPrediction: null,
-        latestUsage: null, model: 'fast', effort: 'high', contextWindow: null, contextUsed: null,
-        configOptions: [{
-          id: 'model', name: 'Model', description: null, category: 'model', currentValue: 'fast',
-          options: [{ value: 'quality', name: 'Quality', description: null }, { value: 'fast', name: 'Fast', description: null }],
-        }],
-      },
-      activeTurn: null, pendingPermissions: [],
-    });
-
-    render(() => <SessionConfigDialog open onClose={() => {}} />);
-    expect(screen.getByRole('button', { name: 'Quality' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'Fast' })).toHaveAttribute('aria-pressed', 'false');
+    render(() => <SessionModelMenu open id="models" trigger={() => trigger} onClose={() => {}} />);
+    expect(screen.getByRole('menuitem', { name: /Haiku/ })).toBeDisabled();
+    trigger.remove();
   });
 });

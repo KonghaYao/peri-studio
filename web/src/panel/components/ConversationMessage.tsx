@@ -3,14 +3,7 @@ import type { ChatEntry } from '../lib/chat-view';
 import { messageTime } from '../lib/message-time.ts';
 import { CopyButton } from '../../ui';
 import { Markdown } from './Markdown';
-import { MessageStatusBadge } from './Badge';
 import { ToolCallCard } from './ToolCallCard';
-
-function LoadingDots() {
-  return <span class="message-loading inline-flex items-center ml-2 text-text-muted" aria-hidden="true">
-    <For each={[0, 1, 2]}>{(index) => <span style={{ 'animation-delay': `${index * 0.15}s` }}>●</span>}</For>
-  </span>;
-}
 
 /** Owns the visual and semantic hierarchy of one server-projected entry. */
 export function ConversationMessage(props: { entry: ChatEntry }) {
@@ -19,22 +12,19 @@ export function ConversationMessage(props: { entry: ChatEntry }) {
   const timestamp = createMemo(() => entry().origin === 'session_replay' ? null : messageTime(entry().createdAt));
   const role = createMemo(() => entry().role === 'user' ? 'user' : entry().role === 'system' ? 'system' : 'assistant');
   const streaming = () => entry().status === 'streaming';
-  const empty = () => !entry().text && !entry().reasoning.length && !entry().toolCalls.length && !entry().error;
   const label = () => role() === 'user' ? 'Your message' : role() === 'system' ? 'System message' : 'Assistant message';
 
   return <article class={`conversation-message conversation-message--${role()} flex mb-12 group ${role() === 'user' ? 'justify-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
     <div class={`conversation-message__surface min-w-0 ${role() === 'user' ? 'max-w-72p p-12 px-16 rounded-16 bg-surface-muted' : role() === 'system' ? 'max-w-70p py-4 px-12 rounded-full bg-surface-muted text-text-secondary text-12' : ''} [&>*+*]:mt-10`}>
       <Show when={role() !== 'system'}>
-        <header class={`conversation-message__meta flex items-center gap-6 opacity-0 text-text-muted text-12 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 ${entry().status === 'error' ? 'conversation-message__meta--visible opacity-100' : ''}`}>
+        <header class="conversation-message__meta flex items-center gap-6 opacity-0 text-text-muted text-12 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
           <Show when={timestamp()}>{(time) => <time dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show>
-          <MessageStatusBadge status={entry().status} />
         </header>
       </Show>
       <For each={entry().reasoning}>{(reasoning) => <details class="message-reasoning text-text-secondary text-13"><summary class="cursor-pointer select-none">Thinking</summary><pre class="mt-5 ml-12 pl-12 border-l-2 border-l-divider whitespace-pre-wrap wrap-anywhere text-text-secondary font-mono text-12 leading-20">{reasoning.text}</pre></details>}</For>
       <Show when={entry().text}>
         <div class="conversation-message__text text-text-primary text-15 leading-25">
-          <Show when={role() === 'assistant' && !streaming()} fallback={<span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{entry().text}</span>}><Markdown source={entry().text} /></Show>
-          <Show when={streaming()}><LoadingDots /></Show>
+          <Show when={role() === 'assistant'} fallback={<span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{entry().text}</span>}><Markdown source={entry().text} streaming={streaming()} /></Show>
         </div>
       </Show>
       <For each={entry().toolCalls}>{(toolCall) => <ToolCallCard toolCall={toolCall} />}</For>
@@ -56,7 +46,6 @@ export function ConversationMessage(props: { entry: ChatEntry }) {
         </section>
       </Show>
       <Show when={role() === 'assistant' && entry().text && !streaming()}><div class="message-actions flex min-h-28 items-center"><CopyButton class="min-h-28 px-8 border-0 rounded-7 bg-transparent text-text-muted cursor-pointer text-11 hover:bg-hover hover:text-text-primary" text={entry().text} label="Copy answer" /></div></Show>
-      <Show when={empty()}><LoadingDots /><span class="sr-only">Generating answer</span></Show>
     </div>
   </article>;
 }

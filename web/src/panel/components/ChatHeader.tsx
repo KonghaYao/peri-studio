@@ -10,17 +10,15 @@ import { sessionDisplayTitle } from '../lib/recovery-state.ts';
 import { runtimeControlFor } from '../lib/runtime-control';
 import { McpPanel } from './McpPanel';
 import { RewindDialog } from './RewindDialog';
-import { SettingsDialog } from './SettingsDialog';
 import { ConfirmDialog } from './shared/ConfirmDialog';
 
-export type ChatHeaderProps = { onOpenNavigation?: () => void; onOpenStatus?: () => void };
+export type ChatHeaderProps = { onOpenNavigation?: () => void; onOpenSystem?: () => void };
 
 export function ChatHeader(props: ChatHeaderProps) {
   const [menuOpen, setMenuOpen] = createSignal(false);
   const [confirmClose, setConfirmClose] = createSignal(false);
   const [mcpOpen, setMcpOpen] = createSignal(false);
   const [rewindOpen, setRewindOpen] = createSignal(false);
-  const [settingsOpen, setSettingsOpen] = createSignal(false);
   let menuTrigger: HTMLButtonElement | undefined;
   const logical = () => projectSessions().find((s) => s.id === selectedSessionId());
   const title = () => logical()
@@ -52,7 +50,7 @@ export function ChatHeader(props: ChatHeaderProps) {
     </IconButton>
     <div class="chat-title min-w-0 flex-1 flex flex-col justify-center gap-3"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-15 leading-115">{title()}</strong><Show when={runtime().label}><span class={`runtime-status runtime-status--${runtime().tone} flex items-center gap-6 overflow-hidden text-muted text-11 leading-12 text-ellipsis whitespace-nowrap ${runtime().tone === 'attention' ? 'text-warning' : runtime().tone === 'danger' ? 'text-danger' : ''}`}><i aria-hidden="true" class={`w-6 h-6 shrink-0 rounded-full ${runtime().tone === 'ready' ? 'bg-success' : runtime().tone === 'busy' ? 'bg-accent' : runtime().tone === 'attention' ? 'bg-warning' : runtime().tone === 'danger' ? 'bg-danger' : 'bg-text-faint'}`} />{runtime().label}</span></Show></div>
     <Status live tone={connState().kind || 'idle'} class="connection-pill">{connState().text}</Status>
-    <IconButton tooltipPlacement="end" label="Settings" onClick={() => setSettingsOpen(true)}>
+    <IconButton tooltipPlacement="end" label="Open system information" onClick={props.onOpenSystem}>
       <Icon><circle cx="10" cy="10" r="2.6" /><path d="M10 3.4v2M10 14.6v2M3.4 10h2M14.6 10h2M5.3 5.3l1.4 1.4M13.3 13.3l1.4 1.4M14.7 5.3l-1.4 1.4M6.7 13.3l-1.4 1.4" /></Icon>
     </IconButton>
     <Show when={logical() && selectedCid()}>
@@ -93,6 +91,5 @@ export function ChatHeader(props: ChatHeaderProps) {
     </Dialog>
     <McpPanel open={mcpOpen()} onClose={() => setMcpOpen(false)} />
     <RewindDialog open={rewindOpen()} onClose={() => setRewindOpen(false)} />
-    <SettingsDialog open={settingsOpen()} onClose={() => setSettingsOpen(false)} />
   </header>;
 }

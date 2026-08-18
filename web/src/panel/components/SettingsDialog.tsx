@@ -1,9 +1,7 @@
-// peri-studio Web 面板 —— 设置弹窗（tab 容器）。
+// peri-studio Web 面板 —— 系统信息弹窗。
 //
-// 目前承载两个只读 tab：
-//   - 拓扑关系：server ↔ instance ↔ chats 三级拓扑（TopologyView）；
-//   - 关于：server 健康、schema 版本与 WebSocket 连接状态。
-// tab 结构为后续设置项预留；本弹窗不包含任何写操作。
+// 这里展示只读运行拓扑和版本信息，不承载可修改偏好，因此界面使用
+// “System”语义，避免把诊断信息伪装成 Settings。
 
 import { createSignal, For, Show } from 'solid-js';
 import { Dialog } from '../../ui';
@@ -22,7 +20,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
 export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
   const [tab, setTab] = createSignal<SettingsTab>('topology');
   return (
-    <Dialog open={props.open} title="Settings" onClose={props.onClose}>
+    <Dialog open={props.open} title="System" onClose={props.onClose}>
       <div class="settings-dialog w-(--container-settings) max-h-(--container-settings-tall) overflow-auto px-22 pb-22">
         <div class="settings-tabs sticky top-0 z-1 flex gap-18 -mx-22 px-22 border-b border-divider bg-surface" role="tablist" aria-label="Settings categories">
           <For each={TABS}>{(item) => (

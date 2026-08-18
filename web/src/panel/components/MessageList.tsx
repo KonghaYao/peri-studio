@@ -10,7 +10,7 @@
 // permission decision 值（allow/deny、按钮顺序）均不变。
 
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js';
-import { chatEntries, elicitationResponses, elicitations, permissions, resolvePermission, respondElicitation, retryMessageSubmission, retryPersistentAction, runtimeDocsHydrated, selectedCid } from '../store';
+import { chatEntries, chatHead, elicitationResponses, elicitations, permissions, resolvePermission, respondElicitation, retryMessageSubmission, retryPersistentAction, runtimeDocsHydrated, selectedCid } from '../store';
 import { readOnly } from '../lib/auth-state';
 import { messageActivity, nextFollowState } from '../lib/message-follow.ts';
 import { messageTime } from '../lib/message-time.ts';
@@ -55,6 +55,15 @@ function HistoryBoundary(props: { kind: Exclude<ReplayBoundary, null> }) {
   </div>;
 }
 
+function ChatLoading() {
+  return <div class="chat-loading flex items-center gap-8 py-8 text-text-muted text-12" role="status" aria-label="Assistant is working">
+    <span class="message-loading inline-flex items-center" aria-hidden="true">
+      <For each={[0, 1, 2]}>{(index) => <span style={{ 'animation-delay': `${index * 0.15}s` }}>●</span>}</For>
+    </span>
+    <span>Working…</span>
+  </div>;
+}
+
 // ── 消息滚动区 ──────────────────────────────────────────────────────────
 
 export function MessageList() {
@@ -77,6 +86,12 @@ export function MessageList() {
     return byId;
   });
 
+  const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
+    if (!areaRef) return;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    areaRef.scrollTo({ top: areaRef.scrollHeight, behavior: reducedMotion ? 'auto' : behavior });
+  };
+
   // 自动吸底（用户上滚时暂停）——算法与阈值（40px）保持不变
   createEffect(() => {
     const list = chatEntries();
@@ -85,7 +100,7 @@ export function MessageList() {
     const activity = `${messageActivity(list)}|${outboxActivity}`;
     const follow = nextFollowState({ stick: stick(), hasNewContent: hasNewContent(), previousActivity, activity });
     if (follow.stick && areaRef && (list.length || outbox)) {
-      areaRef.scrollTop = areaRef.scrollHeight;
+      scrollToBottom();
     }
     setHasNewContent(follow.hasNewContent);
     previousActivity = follow.activity;
@@ -111,7 +126,7 @@ export function MessageList() {
 
   const jumpToLatest = () => {
     if (!areaRef) return;
-    areaRef.scrollTo({ top: areaRef.scrollHeight, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    scrollToBottom('smooth');
     setStick(true);
     setHasNewContent(false);
   };
@@ -135,8 +150,7 @@ export function MessageList() {
       class="ui-scrollbar message-list-scroll min-h-0 flex-1 overflow-y-auto"
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
-      {/* 居中正文列：宽屏 max-w 820px 居中留白（§3.13 验收 8），窄屏 16px
-          padding；上 24px 按 §3.4，底部 156px 留白等 F7 Composer 悬浮 */}
+      {/* 阅读列由 CSS 统一控制宽度与上下留白；Composer 保持在正常布局流中。 */}
       <div class="message-list-content w-full max-w-(--container-chat) mx-auto py-24 px-16 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 max-desk:max-w-(--container-chat-narrow)">
         <ElicitationQueue
           elicitations={elicitations()}
@@ -176,6 +190,7 @@ export function MessageList() {
             </Show>
           )}
         </For>
+        <Show when={chatHead()?.chat?.loading}><ChatLoading /></Show>
         <Show when={outboxForChat()}>{(submission) =>
           <MessageOutbox submission={submission()} onRetry={retryMessageSubmission} onEdit={dismissFailedMessageDelivery} />
         }</Show>

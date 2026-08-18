@@ -169,11 +169,10 @@ describe('ChatHeader runtime truth', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it('opens the settings dialog from the header gear button', () => {
-    setInstances([]);
-    render(() => <ChatHeader />);
-    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    expect(screen.getByRole('dialog', { name: 'Settings' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Topology' })).toHaveAttribute('aria-selected', 'true');
+  it('delegates the system information entry to the application shell', () => {
+    const onOpenSystem = vi.fn();
+    render(() => <ChatHeader onOpenSystem={onOpenSystem} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open system information' }));
+    expect(onOpenSystem).toHaveBeenCalledOnce();
   });
 });

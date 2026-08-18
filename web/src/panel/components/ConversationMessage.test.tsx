@@ -34,11 +34,21 @@ describe('ConversationMessage', () => {
     expect(writeText).toHaveBeenCalledWith('## Result\n\n`cargo test` passed.');
   });
 
-  it('keeps streaming assistant text plain and exposes no copy action yet', () => {
-    render(() => <ConversationMessage entry={entry({ status: 'streaming', text: '**partial' })} />);
-    expect(screen.getByText('**partial')).toHaveClass('message-plain-text');
+  it('renders streaming assistant Markdown without exposing incomplete syntax', () => {
+    const view = render(() => <ConversationMessage entry={entry({ status: 'streaming', text: '**partial' })} />);
+    const message = screen.getByLabelText('Assistant message');
+    expect(message).not.toHaveTextContent('**partial');
+    expect(message.querySelector('.markdown-body')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Copy answer' })).not.toBeInTheDocument();
-    expect(document.querySelector('.message-loading')).toHaveAttribute('aria-hidden', 'true');
+    expect(document.querySelector('.message-loading')).toBeNull();
+    view.unmount();
+  });
+
+  it('keeps untrusted HTML inert in assistant Markdown', () => {
+    const view = render(() => <ConversationMessage entry={entry({ text: '<img src=x onerror="alert(1)"> safe' })} />);
+    expect(screen.getByLabelText('Assistant message')).toHaveTextContent('<img src=x onerror="alert(1)"> safe');
+    expect(document.querySelector('.markdown-body img')).toBeNull();
+    view.unmount();
   });
 
   it('presents reasoning, resources and errors as distinct evidence layers', () => {
@@ -55,10 +65,10 @@ describe('ConversationMessage', () => {
     expect(screen.getByRole('alert', { name: 'Message error' })).toHaveTextContent('TOOL_FAILED: exit 1');
   });
 
-  it('gives an empty projected assistant entry one quiet progress announcement', () => {
-    render(() => <ConversationMessage entry={entry({ status: 'pending' })} />);
-    expect(screen.getByText('Generating answer')).toHaveClass('sr-only');
-    expect(document.querySelectorAll('.message-loading')).toHaveLength(1);
+  it('does not render entry-level status or loading indicators', () => {
+    render(() => <ConversationMessage entry={entry({ status: 'streaming', text: 'partial' })} />);
+    expect(screen.queryByText('streaming')).not.toBeInTheDocument();
+    expect(document.querySelector('.message-loading')).toBeNull();
   });
 
   it('keeps a reloaded unknown user delivery visibly blocked from retry', () => {

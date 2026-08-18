@@ -26,7 +26,7 @@ import { AgentPlanPanel } from './AgentPlanPanel';
 
 type ChatViewProps = {
   onOpenNavigation?: () => void;
-  onOpenStatus?: () => void;
+  onOpenSystem?: () => void;
   onCreateProject?: () => void;
   onImport?: (projectId: string) => void;
 };
@@ -37,7 +37,7 @@ export function ChatView(props: ChatViewProps) {
     <section class="chat-view flex h-full min-h-0 flex-col">
       <ChatHeader
         onOpenNavigation={props.onOpenNavigation}
-        onOpenStatus={props.onOpenStatus}
+        onOpenSystem={props.onOpenSystem}
       />
       <ConnectionProblem />
       <ErrorCenter />

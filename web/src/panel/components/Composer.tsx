@@ -25,7 +25,7 @@ import { useComposerPrediction } from '../lib/composer-prediction';
 import { useComposerSlash } from '../lib/composer-slash';
 import { Button, Icon, IconButton, Textarea } from '../../ui';
 import { SlashMenu } from './SlashMenu';
-import { SessionConfigDialog } from './SessionConfigDialog';
+import { SessionModelMenu } from './SessionConfigDialog';
 
 /** tokens 数值 → "12k"/"200k" 缩写（>=1000 取 k；非法值 → null）。 */
 function fmtTokens(n: number | null): string | null {
@@ -36,8 +36,10 @@ function fmtTokens(n: number | null): string | null {
 
 export function Composer() {
   let taRef: HTMLTextAreaElement | undefined;
+  let modelTrigger: HTMLButtonElement | undefined;
   const slashMenuId = 'composer-slash-menu';
-  const [configOpen, setConfigOpen] = createSignal(false);
+  const modelMenuId = 'composer-model-menu';
+  const [modelMenuOpen, setModelMenuOpen] = createSignal(false);
   const submissionForSession = () => messageSubmission()?.sessionId === selectedSessionId() ? messageSubmission() : null;
   const submissionInAnotherSession = () => messageSubmission() && !submissionForSession() ? messageSubmission() : null;
   const pendingSessionTitle = () => {
@@ -251,11 +253,16 @@ export function Composer() {
           <Button
             size="compact"
             class="composer-runtime flex min-w-0 max-w-35p items-center gap-7 overflow-hidden text-text-secondary text-11 leading-none text-ellipsis whitespace-nowrap max-middle:max-w-40p max-tight:max-w-42p max-tight:mr-auto"
+            ref={modelTrigger}
             title={runtimeSummary()}
-            aria-label={`${runtimeSummary()}, open Agent session config`}
-            onClick={() => setConfigOpen(true)}
+            aria-label={`${runtimeSummary()}, choose model`}
+            aria-haspopup="menu"
+            aria-expanded={modelMenuOpen()}
+            aria-controls={modelMenuOpen() ? modelMenuId : undefined}
+            onClick={() => setModelMenuOpen((open) => !open)}
             disabled={!selectedCid() || !runtimeDocsHydrated()}
           ><span aria-hidden="true" class="size-6 flex-none rounded-full bg-success" />{model()}</Button>
+          <SessionModelMenu open={modelMenuOpen()} id={modelMenuId} trigger={() => modelTrigger} onClose={() => setModelMenuOpen(false)} />
           <Show when={preciseUsage()}>{(usage) =>
             <span class="composer-usage min-w-0 overflow-hidden text-text-muted text-11 leading-none text-ellipsis whitespace-nowrap max-middle:ml-auto max-tight:hidden" title={`Latest model request: ${usage()}`}>{usage()}</span>
           }</Show>
@@ -277,7 +284,6 @@ export function Composer() {
           <div class="submission-state__actions flex shrink-0 gap-4 max-narrow:w-full"><Button size="compact" class="min-h-32 border-0 rounded-8 bg-transparent text-text-secondary cursor-pointer max-narrow:first:flex-1" onClick={() => navigateProjectSession(submission().sessionId)}>Back to that session</Button></div>
         </section>
       }</Show>
-      <SessionConfigDialog open={configOpen()} onClose={() => setConfigOpen(false)} />
     </div>
   );
 }

@@ -19,7 +19,7 @@ describe('SettingsDialog', () => {
     setInstances([{ id: 'local', hostname: 'macbook.local', status: 'online', tokenId: 'token-1', registeredAt: null, lastHeartbeat: null, chatCount: 0 }]);
     render(() => <SettingsDialog open onClose={() => undefined} />);
 
-    expect(screen.getByRole('dialog', { name: 'Settings' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'System' })).toBeInTheDocument();
     const topologyTab = screen.getByRole('tab', { name: 'Topology' });
     expect(topologyTab).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('Peri Studio server')).toBeInTheDocument();
