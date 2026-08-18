@@ -1,5 +1,5 @@
 {
-  "name": "@peri/mcpp",
+  "name": "@peri-code/mcpp",
   "version": "0.1.0",
   "description": "MCPP (MCP Plus) 规范行为的参考实现 — Server 侧：Skills 挂载、双模式启动、聚合 HTTP 出口、插件清单校验",
   "type": "module",

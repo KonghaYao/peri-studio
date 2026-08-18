@@ -1,5 +1,5 @@
 /**
- * @peri/mcpp —— MCPP (MCP Plus) 规范行为的参考实现（Server 侧）。
+ * @peri-code/mcpp —— MCPP (MCP Plus) 规范行为的参考实现（Server 侧）。
  *
  * 对应 MCPP 规范（仓库根 MCPP.md）：
  *  - skills：resource 挂载、skill:// URI、frontmatter、digest（第 4 章，通道 B 投影）

@@ -602,9 +602,9 @@ authority，只公开 command/turn id、安全时间、稳定错误码和
 struct SessionDocRoot {
     schema_version: u32,            // 旧快照恢复时以版本判空幂等补结构
     projection_version: u32,
-    chat: ChatInfoProjection, // chat_id/title/status/active_turn_id/created_at/updated_at
+    chat: ChatInfoProjection, // chat_id/title/status/active_turn_id/loading/created_at/updated_at；loading 由 server 按 active turn 非终态统一投影，前端不得从 entry/tool 状态自行推断
     agent: AgentStatusProjection,   // instance/session/status/extensions/commands/usage + bounded safe activities + optional input prediction
-    active_turn: Option<ActiveTurnProjection>,  // turnId + turnStatus + updatedAt —— 权威，前端由 turnStatus 派生展示
+    active_turn: Option<ActiveTurnProjection>,  // turnId + turnStatus + updatedAt —— 权威；同时驱动 chat.loading
     pending_permissions: Map<String, PermissionProjection>,
     sessions: Map<String, SessionSummaryProjection>,  // agent 磁盘历史会话列表（10s 轮询全量同步，旧条目删除自愈）——与 Registry Doc chats 语义不同（§5.2）
 }

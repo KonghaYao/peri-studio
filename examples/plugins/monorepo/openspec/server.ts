@@ -11,7 +11,7 @@
  */
 import { resolve } from "node:path";
 import { McpServer } from "@modelcontextprotocol/server";
-import { ResourceForSkills } from "@peri/mcpp";
+import { ResourceForSkills } from "@peri-code/mcpp";
 
 /** 构造 openspec 子 server；skillsDir 指向与 server 同级的 skills/ 目录。 */
 export function createOpenspecServer(): McpServer {

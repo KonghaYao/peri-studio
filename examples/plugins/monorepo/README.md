@@ -15,13 +15,13 @@
 
 - 每个路径是**独立的 MCP endpoint / origin**：客户端按 URL 连接，独立协商（skills、tools、resources 互不混淆）。
 - **stdio 不适用该形态**：stdio 没有 URL/路径概念，无法表达多端点挂载（MCPP 3.7 边界）。
-- 聚合逻辑由 [`@peri/mcpp`](../../../packages/mcpp) 的 `createGateway` 承担：挂载表即路由表，每个子 server 独立实例、相互隔离。
+- 聚合逻辑由 [`@peri-code/mcpp`](../../../packages/mcpp) 的 `createGateway` 承担：挂载表即路由表，每个子 server 独立实例、相互隔离。
 
 ## 目录结构
 
 ```
 monorepo/
-├── package.json          # 聚合根：依赖 @peri/mcpp
+├── package.json          # 聚合根：依赖 @peri-code/mcpp
 ├── src/
 │   └── index.ts          # 聚合入口（createMonorepoGateway / createMonorepoRoutes）
 ├── test/smoke.ts         # 官方 client 连接端点 + 多会话 + 404 断言
@@ -56,7 +56,7 @@ bunx wrangler deploy    # 发布
 ## 相关
 
 - 规范：[`MCPP.md`](../../../MCPP.md)（第 3.7 节 monorepo 聚合、3.1 承载、3.4 skills 双通道）
-- 规范包：`@peri/mcpp`（`packages/mcpp`，`createGateway` 实现）
+- 规范包：`@peri-code/mcpp`（`packages/mcpp`，`createGateway` 实现）
 - 承载约定：[agent-plugins.org](https://agent-plugins.org/plugin-authors/manifest)（manifest 规范）
 
 [MCPP 3.7]: ../../../MCPP.md

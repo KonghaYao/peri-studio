@@ -16,7 +16,7 @@ import {
     createGatewayRoutes,
     type GatewayHandle,
     type GatewayRoutesHandle,
-} from "@peri/mcpp";
+} from "@peri-code/mcpp";
 import { createOpenspecServer } from "../openspec/server.ts";
 
 /** 挂载表：/xxx/mcp → xxx 子 server（3.7：路径即路由，唯一 HTTP 出口）。 */
