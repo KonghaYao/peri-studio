@@ -10,6 +10,7 @@ MCPP（MCP Plus）的 Server 侧 TypeScript 参考实现。该包基于 MCP SDK�
 - **Skills 元数据处理**：解析 frontmatter、提取 `io.mcpp/*` 编排字段、生成 SHA-256 digest。
 - **双模式 Server 启动**：默认使用 Streamable HTTP，也可通过 `--stdio` 或配置切换到 stdio。
 - **多 Server HTTP 网关**：在单个端口上按路径挂载多个 MCP endpoint，并隔离各 endpoint、各客户端会话。
+- **Server Catalog**：从静态挂载表派生只读目录，支持 Child MCP 的列表、查询和 content-bound 连接解析；不下发、安装、启动、provision 或代理能力。
 - **Serverless 路由**：提供标准 `fetch(Request): Promise<Response>` handler，可嵌入 Worker 或其他 Web Standard 运行时。
 - **插件清单校验**：使用 Zod 校验 Agent Plugin 的 `plugin.json` 与 `mcp.json`。
 
@@ -230,6 +231,9 @@ gateway.endpoints[0]?.subscriptions.toolsChanged();
 
 网关行为：
 
+- 可选 `catalog` 从 `routes[].catalog` 派生同 authority 的只读 `/catalog/mcp`；它仅提供 `mcpp/servers/list`、`mcpp/servers/get`、`mcpp/servers/resolve`，不会下载、安装、启动、provision 或代理 Child MCP。
+- 每个 Catalog entry 的 `endpointPath` 固定来自实际挂载路径；`resolve` 需要对 entryDigest 回显校验，避免依据变更后的条目静默连接。
+
 - 路径会被规范化，例如 `review/mcp/` 转为 `/review/mcp`。
 - 重复路径会在启动时抛出错误。
 - 未注册路径返回 `404`。
@@ -324,7 +328,8 @@ const result = validateMcpJson({
 | --- | --- |
 | `@peri-code/mcpp` | 全部公开 API |
 | `@peri-code/mcpp/skills` | Skills 扫描、frontmatter、URI、digest 与 Resource 挂载 |
-| `@peri-code/mcpp/server` | `startServer`、`main` 与启动类型 |
+| `@peri-code/mcpp/server` | 默认 HTTP 地址/端口、`startServer`、`main` 与启动类型 |
+| `@peri-code/mcpp/catalog` | 只读 Server Catalog 类型、扩展标识与实现 |
 | `@peri-code/mcpp/gateway` | HTTP gateway 与 serverless routes |
 | `@peri-code/mcpp/plugin` | `plugin.json`、`mcp.json` schema 与校验函数 |
 

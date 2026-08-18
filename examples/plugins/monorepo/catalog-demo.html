@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCPP Server Catalog</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-white text-slate-900 antialiased">
+  <main class="mx-auto max-w-6xl px-6 py-12">
+    <header class="flex flex-col gap-6 border-b border-slate-200 pb-8 md:flex-row md:items-end md:justify-between">
+      <div>
+        <p class="mb-3 text-sm font-semibold uppercase tracking-[0.22em] text-sky-700">MCPP mono server</p>
+        <h1 class="text-4xl font-semibold tracking-tight text-slate-950">Server Catalog</h1>
+        <p class="mt-3 max-w-2xl text-base leading-7 text-slate-600">
+          Discover mounted Child MCP endpoints, then inspect the Tools and Resources each Child endpoint exposes. The catalog only resolves a connection; it never installs, launches, provisions, or proxies a server.
+        </p>
+      </div>
+      <dl class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+        <div><dt class="text-slate-500">Catalog endpoint</dt><dd id="catalog-url" class="mt-1 max-w-56 truncate font-mono text-sky-700"></dd></div>
+        <div><dt class="text-slate-500">Scope</dt><dd class="mt-1 font-medium text-emerald-700">Read-only</dd></div>
+      </dl>
+    </header>
+
+    <section id="catalog-view" class="mt-8">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <label class="relative block max-w-xl flex-1">
+          <span class="sr-only">Search mounted MCP servers</span>
+          <input id="search" type="search" autocomplete="off" placeholder="Search mounted servers" class="w-full border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-600 focus:ring-2 focus:ring-sky-100">
+        </label>
+        <p id="catalog-status" class="text-sm text-slate-500" aria-live="polite">Loading catalog…</p>
+      </div>
+      <div id="catalog" class="mt-5 divide-y divide-slate-200 border-y border-slate-200" aria-live="polite"></div>
+    </section>
+
+    <section id="server-view" class="mt-8" hidden aria-labelledby="server-title">
+      <button id="back" type="button" class="inline-flex items-center gap-2 px-0 py-1 text-sm font-medium text-sky-700 transition hover:text-sky-900 focus:outline-none focus:ring-2 focus:ring-sky-500">
+        <span aria-hidden="true">←</span> Back to catalog
+      </button>
+
+      <div class="mt-5 border-y border-slate-200 py-6">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Child MCP endpoint</p>
+        <div class="mt-3 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h2 id="server-title" class="text-2xl font-semibold text-slate-950"></h2>
+            <p id="server-description" class="mt-2 max-w-3xl leading-6 text-slate-600"></p>
+          </div>
+          <span id="auth-state" class="w-fit border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600"></span>
+        </div>
+        <div class="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center">
+          <button id="copy-url" type="button" disabled class="border border-sky-700 px-3 py-2 text-sm font-medium text-sky-700 transition hover:bg-sky-50 disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400">
+            Copy endpoint URL
+          </button>
+          <button id="copy-mcp-json" type="button" disabled class="border border-sky-700 px-3 py-2 text-sm font-medium text-sky-700 transition hover:bg-sky-50 disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400">
+            Copy mcp.json
+          </button>
+          <p id="copy-feedback" class="text-sm text-slate-500" aria-live="polite"></p>
+        </div>
+        <dl class="mt-5 grid gap-4 border-t border-slate-200 pt-5 text-sm sm:grid-cols-2">
+          <div><dt class="text-slate-500">Resolved endpoint</dt><dd id="child-url" class="mt-1 break-all font-mono text-sky-700">Waiting for resolve…</dd></div>
+          <div><dt class="text-slate-500">Reviewed entry digest</dt><dd id="entry-digest" class="mt-1 break-all font-mono text-slate-600"></dd></div>
+          <div><dt class="text-slate-500">Child server</dt><dd id="child-server-info" class="mt-1 text-slate-700">Discovering…</dd></div>
+          <div><dt class="text-slate-500">Discovery result</dt><dd id="child-status" class="mt-1 text-slate-700" aria-live="polite">Resolving the selected entry…</dd></div>
+        </dl>
+      </div>
+
+      <div class="mt-8 grid gap-8">
+        <section aria-labelledby="tools-title">
+          <div class="flex items-baseline justify-between gap-4">
+            <h3 id="tools-title" class="text-xl font-semibold text-slate-950">Tools</h3>
+            <span id="tools-count" class="text-sm text-slate-500">Loading…</span>
+          </div>
+          <p class="mt-2 text-sm leading-6 text-slate-600">Listed from the Child MCP only. No Tool is called from this page.</p>
+          <div id="tools" class="mt-4 divide-y divide-slate-200 border-y border-slate-200" aria-live="polite"></div>
+        </section>
+
+        <section aria-labelledby="resources-title">
+          <div class="flex items-baseline justify-between gap-4">
+            <h3 id="resources-title" class="text-xl font-semibold text-slate-950">Resources</h3>
+            <span id="resources-count" class="text-sm text-slate-500">Loading…</span>
+          </div>
+          <p class="mt-2 text-sm leading-6 text-slate-600">Listed from the Child MCP only. Resource contents are not read from this page.</p>
+          <div id="resources" class="mt-4 overflow-x-auto border-y border-slate-200" aria-live="polite"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <template id="server-list-item-template">
+    <button type="button" class="w-full px-0 py-5 text-left transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-sky-500">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-950"></h2>
+          <p class="mt-1 text-sm text-slate-500"></p>
+        </div>
+        <span class="shrink-0 border border-slate-300 px-2.5 py-1 font-mono text-xs text-slate-600"></span>
+      </div>
+      <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-600"></p>
+      <div data-role="badges" class="mt-3 flex flex-wrap gap-2"></div>
+    </button>
+  </template>
+
+  <script>
+    const protocolVersion = "2026-07-28";
+    const catalogUrl = new URLSearchParams(location.search).get("catalog") || `${location.origin}/catalog/mcp`;
+    const state = { entries: [], selected: null, resolvedEndpoint: null, requestId: 0, detailRequestId: 0 };
+    const catalogView = document.querySelector("#catalog-view");
+    const serverView = document.querySelector("#server-view");
+    const catalogElement = document.querySelector("#catalog");
+    const catalogStatusElement = document.querySelector("#catalog-status");
+    const searchElement = document.querySelector("#search");
+    const serverTitleElement = document.querySelector("#server-title");
+    const serverDescriptionElement = document.querySelector("#server-description");
+    const authStateElement = document.querySelector("#auth-state");
+    const childUrlElement = document.querySelector("#child-url");
+    const entryDigestElement = document.querySelector("#entry-digest");
+    const childServerInfoElement = document.querySelector("#child-server-info");
+    const childStatusElement = document.querySelector("#child-status");
+    const copyUrlButton = document.querySelector("#copy-url");
+    const copyMcpJsonButton = document.querySelector("#copy-mcp-json");
+    const copyFeedbackElement = document.querySelector("#copy-feedback");
+    const toolsElement = document.querySelector("#tools");
+    const toolsCountElement = document.querySelector("#tools-count");
+    const resourcesElement = document.querySelector("#resources");
+    const resourcesCountElement = document.querySelector("#resources-count");
+
+    document.querySelector("#catalog-url").textContent = catalogUrl;
+
+    function errorMessage(error) {
+      return error instanceof Error ? error.message : "Unexpected request failure";
+    }
+
+    async function callMcp(endpoint, method, params = {}, extensions = {}) {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "MCP-Protocol-Version": protocolVersion,
+          "Mcp-Method": method,
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: ++state.requestId,
+          method,
+          params: {
+            ...params,
+            _meta: {
+              "io.modelcontextprotocol/protocolVersion": protocolVersion,
+              "io.modelcontextprotocol/clientInfo": { name: "mcpp-catalog-demo", version: "1.0.0" },
+              "io.modelcontextprotocol/clientCapabilities": { extensions },
+            },
+          },
+        }),
+      });
+      let payload;
+      try {
+        payload = await response.json();
+      } catch {
+        throw new Error(`MCP request returned a non-JSON response (${response.status})`);
+      }
+      if (!response.ok || payload.error) {
+        throw new Error(payload.error?.message || `MCP request failed (${response.status})`);
+      }
+      return payload.result;
+    }
+
+    function callCatalog(method, params) {
+      return callMcp(catalogUrl, method, params, { "io.mcpp/server-catalog": {} });
+    }
+
+    function capabilityBadge(value) {
+      const badge = document.createElement("span");
+      badge.className = "border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-medium text-sky-800";
+      badge.textContent = value;
+      return badge;
+    }
+
+    function emptyState(element, message) {
+      element.replaceChildren();
+      const empty = document.createElement("p");
+      empty.className = "border-y border-dashed border-slate-300 px-4 py-6 text-center text-sm leading-6 text-slate-500";
+      empty.textContent = message;
+      element.append(empty);
+    }
+
+    function formatSize(size) {
+      if (!Number.isFinite(size) || size < 0) return null;
+      if (size < 1024) return `${size} B`;
+      return `${(size / 1024).toFixed(size < 10240 ? 1 : 0)} KiB`;
+    }
+
+    function setCopyAvailability(endpoint) {
+      state.resolvedEndpoint = endpoint;
+      copyUrlButton.disabled = !endpoint;
+      copyMcpJsonButton.disabled = !endpoint;
+      copyFeedbackElement.textContent = "";
+    }
+
+    function mcpJsonForSelectedEndpoint() {
+      if (!state.selected || !state.resolvedEndpoint) {
+        throw new Error("Resolve a Child MCP endpoint before copying its configuration");
+      }
+      return JSON.stringify({
+        $schema: "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+        mcpServers: {
+          [state.selected.id]: {
+            type: "streamable-http",
+            url: state.resolvedEndpoint,
+          },
+        },
+      }, null, 2);
+    }
+
+    async function copyText(text, label) {
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.setAttribute("readonly", "");
+          textarea.className = "fixed -left-full top-0 opacity-0";
+          document.body.append(textarea);
+          textarea.select();
+          const copied = document.execCommand("copy");
+          textarea.remove();
+          if (!copied) throw new Error("Clipboard access was denied");
+        }
+        copyFeedbackElement.textContent = `${label} copied.`;
+      } catch (error) {
+        copyFeedbackElement.textContent = `Unable to copy: ${errorMessage(error)}`;
+      }
+    }
+
+    function renderCatalog() {
+      const filter = searchElement.value.trim().toLocaleLowerCase();
+      const visible = state.entries.filter((entry) =>
+        [entry.id, entry.title, entry.description, ...(entry.tags || [])].join(" ").toLocaleLowerCase().includes(filter),
+      );
+      catalogElement.replaceChildren();
+      if (!visible.length) {
+        emptyState(catalogElement, "No mounted server matches this search.");
+      }
+      for (const entry of visible) {
+        const fragment = document.querySelector("#server-list-item-template").content.cloneNode(true);
+        const item = fragment.querySelector("button");
+        const headings = fragment.querySelectorAll("h2, p, span");
+        headings[0].textContent = entry.title;
+        headings[1].textContent = entry.id;
+        headings[2].textContent = `v${entry.version}`;
+        headings[3].textContent = entry.description;
+        const badges = fragment.querySelector('[data-role="badges"]');
+        for (const capability of entry.capabilities || []) badges.append(capabilityBadge(capability));
+        for (const tag of entry.tags || []) badges.append(capabilityBadge(`#${tag}`));
+        item.addEventListener("click", () => openServer(entry));
+        catalogElement.append(fragment);
+      }
+      catalogStatusElement.textContent = `${visible.length} mounted server${visible.length === 1 ? "" : "s"}`;
+    }
+
+    function safeChildUrl(endpointPath) {
+      if (
+        typeof endpointPath !== "string" ||
+        !endpointPath.startsWith("/") ||
+        endpointPath.includes("?") ||
+        endpointPath.includes("#") ||
+        endpointPath.split("/").some((segment) => segment === "." || segment === "..")
+      ) {
+        throw new Error("Catalog returned an unsafe Child endpoint path");
+      }
+      const catalog = new URL(catalogUrl);
+      const child = new URL(endpointPath, catalog);
+      if (child.origin !== catalog.origin) {
+        throw new Error("Catalog attempted to resolve a cross-origin Child endpoint");
+      }
+      return child.toString();
+    }
+
+    async function listAllPages(endpoint, method, field) {
+      const items = [];
+      let cursor;
+      for (let page = 0; page < 20; page += 1) {
+        const result = await callMcp(endpoint, method, cursor ? { cursor } : {});
+        if (Array.isArray(result[field])) items.push(...result[field]);
+        if (!result.nextCursor) return items;
+        if (typeof result.nextCursor !== "string") throw new Error(`${method} returned an invalid nextCursor`);
+        cursor = result.nextCursor;
+      }
+      throw new Error(`${method} exceeded the demo pagination limit`);
+    }
+
+    function renderTools(tools, declared) {
+      toolsElement.replaceChildren();
+      if (!declared) {
+        toolsCountElement.textContent = "Not offered";
+        emptyState(toolsElement, "This Child MCP does not declare Tools.");
+        return;
+      }
+      toolsCountElement.textContent = `${tools.length} tool${tools.length === 1 ? "" : "s"}`;
+      if (!tools.length) {
+        emptyState(toolsElement, "This Child MCP currently exposes no Tools.");
+        return;
+      }
+      for (const tool of tools) {
+        const item = document.createElement("article");
+        item.className = "px-4 py-4 transition hover:bg-slate-50";
+        const heading = document.createElement("div");
+        heading.className = "flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between";
+        const title = document.createElement("h4");
+        title.className = "font-semibold text-slate-950";
+        title.textContent = tool.title || tool.name || "Unnamed tool";
+        const name = document.createElement("code");
+        name.className = "break-all text-xs text-sky-700";
+        name.textContent = tool.name || "No tool name supplied";
+        heading.append(title, name);
+        const description = document.createElement("p");
+        description.className = "mt-2 max-w-4xl text-sm leading-6 text-slate-600";
+        description.textContent = tool.description || "No description supplied.";
+        item.append(heading, description);
+        if (tool.inputSchema) {
+          const details = document.createElement("div");
+          details.className = "mt-3";
+          details.append(capabilityBadge("input schema"));
+          item.append(details);
+        }
+        toolsElement.append(item);
+      }
+    }
+
+    function renderResources(resources, declared) {
+      resourcesElement.replaceChildren();
+      if (!declared) {
+        resourcesCountElement.textContent = "Not offered";
+        emptyState(resourcesElement, "This Child MCP does not declare Resources.");
+        return;
+      }
+      resourcesCountElement.textContent = `${resources.length} resource${resources.length === 1 ? "" : "s"}`;
+      if (!resources.length) {
+        emptyState(resourcesElement, "This Child MCP currently exposes no Resources.");
+        return;
+      }
+
+      const table = document.createElement("table");
+      table.className = "w-full min-w-[58rem] border-collapse text-left text-sm";
+      const thead = document.createElement("thead");
+      thead.className = "bg-slate-50 text-xs uppercase tracking-wide text-slate-500";
+      const headerRow = document.createElement("tr");
+      for (const label of ["Name", "Description", "URI", "Type", "Size"]) {
+        const header = document.createElement("th");
+        header.className = "border-b border-slate-200 px-4 py-3 font-semibold";
+        header.scope = "col";
+        header.textContent = label;
+        headerRow.append(header);
+      }
+      thead.append(headerRow);
+      const tbody = document.createElement("tbody");
+      tbody.className = "divide-y divide-slate-200 bg-white text-slate-700";
+
+      for (const resource of resources) {
+        const row = document.createElement("tr");
+        row.className = "align-top transition hover:bg-slate-50";
+        const cells = [
+          resource.name || resource.title || resource.uri || "Unnamed resource",
+          resource.description || "No description supplied.",
+          resource.uri || "No URI supplied",
+          resource.mimeType || "—",
+          formatSize(resource.size) || "—",
+        ];
+        cells.forEach((value, index) => {
+          const cell = document.createElement("td");
+          cell.className = "px-4 py-3 leading-6";
+          if (index === 0) cell.classList.add("whitespace-nowrap", "font-medium", "text-slate-950");
+          if (index === 1) cell.classList.add("min-w-80", "text-slate-600");
+          if (index === 2) cell.classList.add("min-w-72", "font-mono", "text-xs", "text-sky-700");
+          if (index === 3 || index === 4) cell.classList.add("whitespace-nowrap", "text-slate-500");
+          cell.textContent = value;
+          row.append(cell);
+        });
+        tbody.append(row);
+      }
+      table.append(thead, tbody);
+      resourcesElement.append(table);
+    }
+
+    function showCatalog() {
+      state.detailRequestId += 1;
+      state.selected = null;
+      setCopyAvailability(null);
+      serverView.hidden = true;
+      catalogView.hidden = false;
+      searchElement.focus();
+    }
+
+    async function openServer(entry) {
+      const viewRequestId = ++state.detailRequestId;
+      state.selected = entry;
+      catalogView.hidden = true;
+      serverView.hidden = false;
+      serverTitleElement.textContent = entry.title;
+      serverDescriptionElement.textContent = entry.description;
+      authStateElement.textContent = entry.auth?.required ? "Authentication required" : "No authentication declared";
+      entryDigestElement.textContent = entry.entryDigest;
+      setCopyAvailability(null);
+      childUrlElement.textContent = "Resolving approved entry…";
+      childServerInfoElement.textContent = "Discovering…";
+      childStatusElement.textContent = "Resolving the selected Catalog entry…";
+      toolsCountElement.textContent = "Loading…";
+      resourcesCountElement.textContent = "Loading…";
+      emptyState(toolsElement, "Waiting for Child MCP discovery…");
+      emptyState(resourcesElement, "Waiting for Child MCP discovery…");
+
+      try {
+        // Entry selection is the user review step. resolve is pure and validates the reviewed digest.
+        const plan = await callCatalog("mcpp/servers/resolve", {
+          serverId: entry.id,
+          entryDigest: entry.entryDigest,
+        });
+        const endpoint = safeChildUrl(plan.endpoint?.endpointPath);
+        if (viewRequestId !== state.detailRequestId) return;
+        childUrlElement.textContent = endpoint;
+        setCopyAvailability(endpoint);
+        childStatusElement.textContent = "Resolving succeeded. Discovering Child MCP capabilities…";
+
+        const discovery = await callMcp(endpoint, "server/discover");
+        if (viewRequestId !== state.detailRequestId) return;
+        const serverInfo = discovery._meta?.["io.modelcontextprotocol/serverInfo"];
+        childServerInfoElement.textContent = serverInfo
+          ? `${serverInfo.name || "Unnamed server"} v${serverInfo.version || "unknown"}`
+          : "No server identity supplied";
+        const capabilities = discovery.capabilities || {};
+        const [tools, resources] = await Promise.all([
+          capabilities.tools ? listAllPages(endpoint, "tools/list", "tools") : Promise.resolve([]),
+          capabilities.resources ? listAllPages(endpoint, "resources/list", "resources") : Promise.resolve([]),
+        ]);
+        if (viewRequestId !== state.detailRequestId) return;
+        renderTools(tools, Boolean(capabilities.tools));
+        renderResources(resources, Boolean(capabilities.resources));
+        childStatusElement.textContent = `Loaded read-only metadata: ${tools.length} Tools and ${resources.length} Resources.`;
+      } catch (error) {
+        if (viewRequestId !== state.detailRequestId) return;
+        const message = errorMessage(error);
+        childStatusElement.textContent = `Unable to inspect this Child MCP: ${message}`;
+        childServerInfoElement.textContent = "Discovery failed";
+        toolsCountElement.textContent = "Unavailable";
+        resourcesCountElement.textContent = "Unavailable";
+        emptyState(toolsElement, "Tools could not be loaded. Check the endpoint and authorization.");
+        emptyState(resourcesElement, "Resources could not be loaded. Check the endpoint and authorization.");
+      }
+    }
+
+    document.querySelector("#back").addEventListener("click", showCatalog);
+    copyUrlButton.addEventListener("click", () => {
+      if (state.resolvedEndpoint) copyText(state.resolvedEndpoint, "Endpoint URL");
+    });
+    copyMcpJsonButton.addEventListener("click", () => {
+      try {
+        copyText(mcpJsonForSelectedEndpoint(), "mcp.json");
+      } catch (error) {
+        copyFeedbackElement.textContent = `Unable to copy: ${errorMessage(error)}`;
+      }
+    });
+    searchElement.addEventListener("input", renderCatalog);
+    callCatalog("mcpp/servers/list", {})
+      .then((result) => {
+        state.entries = result.servers || [];
+        renderCatalog();
+      })
+      .catch((error) => {
+        const message = errorMessage(error);
+        catalogStatusElement.textContent = `Catalog request failed: ${message}`;
+        emptyState(
+          catalogElement,
+          `Unable to load the Catalog: ${message}. Open this page through ${location.origin}/ rather than directly from a file.`,
+        );
+      });
+  </script>
+</body>
+</html>

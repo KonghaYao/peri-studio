@@ -10,5 +10,6 @@
 export * from "./types.ts";
 export * from "./skills/index.ts";
 export * from "./server/index.ts";
+export * from "./catalog.ts";
 export * from "./gateway.ts";
 export * from "./plugin/index.ts";

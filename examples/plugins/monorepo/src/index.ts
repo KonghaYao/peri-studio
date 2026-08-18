@@ -8,12 +8,15 @@
  *   - 每个路径是独立的 MCP endpoint / origin：客户端按 URL 连接，各自独立协商
  *   - stdio 不适用该形态（stdio 无 URL/路径概念，3.7 约束）
  *
- * 运行：bun src/index.ts            → 监听 http://127.0.0.1:8787/
+ * 运行：bun src/index.ts            → 监听 http://127.0.0.1:8457/
  *        bun test/smoke.ts          → 官方 client 连接端点验证
  */
+import { resolve } from "node:path";
 import {
     createGateway,
     createGatewayRoutes,
+    DEFAULT_MCPP_HTTP_HOST,
+    DEFAULT_MCPP_HTTP_PORT,
     type GatewayHandle,
     type GatewayRoutesHandle,
 } from "@peri-code/mcpp";
@@ -21,8 +24,33 @@ import { createOpenspecServer } from "../openspec/server.ts";
 
 /** 挂载表：/xxx/mcp → xxx 子 server（3.7：路径即路由，唯一 HTTP 出口）。 */
 export const MONOREPO_ROUTES = [
-    { path: "/openspec/mcp", createServer: createOpenspecServer },
+    {
+        path: "/openspec/mcp",
+        createServer: createOpenspecServer,
+        catalog: {
+            id: "openspec",
+            title: "OpenSpec Recipes",
+            description: "Workflow skills for proposing, applying, and verifying OpenSpec changes.",
+            version: "1.0.0",
+            tags: ["specification", "workflow"],
+            capabilities: ["resources", "skills"],
+            auth: { required: false },
+        },
+    },
 ] as const;
+
+async function serveDemo(request: Request): Promise<Response> {
+    const path = new URL(request.url).pathname;
+    if (request.method === "GET" && (path === "/" || path === "/catalog-demo.html")) {
+        return new Response(Bun.file(resolve(import.meta.dir, "../catalog-demo.html")), {
+            headers: {
+                "content-type": "text/html; charset=utf-8",
+                "cache-control": "no-store",
+            },
+        });
+    }
+    return new Response("MCPP monorepo demo: route not found", { status: 404 });
+}
 
 export interface MonorepoOptions {
     host?: string;
@@ -34,7 +62,13 @@ export interface MonorepoOptions {
  * 每个路由使用独立的 MCP 2026-07-28 handler 与 subscription 总线。
  */
 export function createMonorepoRoutes(): GatewayRoutesHandle {
-    return createGatewayRoutes([...MONOREPO_ROUTES]);
+    return createGatewayRoutes([...MONOREPO_ROUTES], {
+        catalog: {
+            path: "/catalog/mcp",
+            name: "mcpp-monorepo-catalog",
+            version: "1.0.0",
+        },
+    });
 }
 
 /**
@@ -44,13 +78,20 @@ export function createMonorepoRoutes(): GatewayRoutesHandle {
  */
 export function createMonorepoGateway(options: MonorepoOptions = {}): Promise<GatewayHandle> {
     return createGateway([...MONOREPO_ROUTES], {
-        host: options.host ?? "127.0.0.1",
-        port: options.port ?? 8787,
+        host: options.host ?? DEFAULT_MCPP_HTTP_HOST,
+        port: options.port ?? DEFAULT_MCPP_HTTP_PORT,
+        catalog: {
+            path: "/catalog/mcp",
+            name: "mcpp-monorepo-catalog",
+            version: "1.0.0",
+        },
+        fallback: serveDemo,
     });
 }
 
 if (import.meta.main) {
     const gw = await createMonorepoGateway();
-    console.log(`monorepo gateway listening: ${gw.url}`); // → http://127.0.0.1:8787/
-    console.log(`routes: ${gw.routes.map((r) => r.path).join(", ")}`);
+    console.log(`monorepo gateway listening: ${gw.url}`);
+    console.log(`routes: ${gw.endpoints.map((endpoint) => endpoint.path).join(", ")}`);
+    console.log(`catalog demo: ${gw.url}/`);
 }

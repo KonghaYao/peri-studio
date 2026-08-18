@@ -16,6 +16,7 @@ import {
     type StdioServerHandle,
     type StdioServerTransport,
 } from "@modelcontextprotocol/server/stdio";
+import { DEFAULT_MCPP_HTTP_HOST, DEFAULT_MCPP_HTTP_PORT } from "./defaults.ts";
 
 export type StartMode = "http" | "stdio";
 
@@ -61,8 +62,8 @@ async function runHttp(
     factory: McpServerFactory,
     options: StartServerOptions,
 ): Promise<StartedServer> {
-    const host = options.host ?? process.env.HOST ?? "127.0.0.1";
-    const port = Number(options.port ?? process.env.PORT ?? 8457);
+    const host = options.host ?? process.env.HOST ?? DEFAULT_MCPP_HTTP_HOST;
+    const port = Number(options.port ?? process.env.PORT ?? DEFAULT_MCPP_HTTP_PORT);
     const handler = createStrictHttpHandler(factory, options);
     const bunServer = Bun.serve({
         hostname: host,

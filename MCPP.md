@@ -430,7 +430,7 @@ flowchart TB
 - 每个路径是一个**独立的 MCP endpoint**：拥有自有的能力集、协议协商、扩展声明（第 9 章）、skill 资源与插件技能挂载；**不**做端内能力转发或拼装（本设计不涉及「单端点聚合多 server 能力」的代理形态）；
 - 每个端点从客户端视角构成**一个 origin**——URL 即 origin 的天然标识（2.4 host-assigned 也通常是主机的 URL 路径标识）；端点间工具/技能的唯一性本就互不相扰，跨端点引用以 URL 可追溯（2.5 底线①自然满足）；
 - 挂载关系是**静态配置**（启动注册表：路径 ↔ 子 server 实例），客户端无需感知各端点内部实现；
-- 端点的暴露清单可经 host 侧注册表或运维配置声明，客户端按需连接（对应 `mcp.json` 中多条 `url` 条目，见 3.3）。
+- 端点的暴露清单可由**只读 Server Catalog endpoint**公开（3.7.1）；也可经 host 侧注册表或运维配置声明。无论发现途径为何，客户端均按需连接（对应 `mcp.json` 中多条 `url` 条目，见 3.3）。
 
 **MCPP 约束**：
 
@@ -438,6 +438,32 @@ flowchart TB
 - 端点路径分配 MUST 明确且可审计；端点间不得静默互访（一端点能力不得被伪装成另一端点的能力，A4 精神在 server 侧同成立）；
 - **stdio 不适用本形态**：stdio 是一对一进程管道，无 URL / 路径概念。需要多 server 时，stdio 形态只能是一进程一 server + 客户端多条 stdio 配置（3.3），不提供路径路由聚合。
 - **形态定位**：3.7 是插件能力的**形态一（monorepo server，中心化部署）**，符合企业中「server 部署与管理」需求；端点侧的 stdio 下发属**形态二（MCPP Registry，第 4 章）**。两形态正交、可并存，选择依据见第 4 章引言。
+
+### 3.7.1 Server Catalog：已挂载端点的发现与连接解析
+
+monorepo MAY 在同一 authority 下额外挂载一个 **Catalog endpoint**（推荐路径 `/catalog/mcp`）。Catalog 本身是独立 MCP endpoint / origin，声明 `io.mcpp/server-catalog`（第 9 章），仅用于发现、查询与解析本进程中已静态挂载的 Child MCP；它**不是**能力聚合代理，也不改变 3.7 的 Child endpoint 隔离边界。
+
+```mermaid
+flowchart LR
+    A["Agent"] -->|"mcpp/servers/list · get · resolve"| C["/catalog/mcp\nCatalog origin"]
+    C -->|"仅返回同 authority endpointPath"| A
+    A -->|"独立 initialize"| O["/office/mcp\nChild origin"]
+    A -->|"独立 initialize"| F["/finance/mcp\nChild origin"]
+```
+
+**静态条目与方法**：一个 Catalog entry 至少包含稳定 `id`、`title`、`description`、`version`、可选 `tags` / 能力摘要 / `auth.required` 与 content-bound 的 `entryDigest`。其仅描述可连接服务，不是 Tool、Resource 或 Skill 的权威事实；完整能力必须在连接 Child endpoint 后通过标准 MCP 方法重新发现。
+
+| 方法 | 输入 | 输出与副作用 |
+| --- | --- | --- |
+| `mcpp/servers/list` | 可选 `cursor`、`query`、`tags`、`capabilities` | 轻量 Catalog entry 分页；只读、无副作用 |
+| `mcpp/servers/get` | `serverId` | 单个 Catalog entry；未知 ID 返回 `-32602` |
+| `mcpp/servers/resolve` | `serverId`、用户已审阅的 `entryDigest` | `{ transport: "streamable-http", endpointPath }` 与授权前置条件；摘要变化 MUST 拒绝，要求刷新与重新批准；只读、无副作用 |
+
+**endpoint 解析与 Agent 装配**：Catalog MUST 仅返回以 `/` 开头的 `endpointPath`，不得含 scheme、authority、userinfo、query、fragment、`.` 或 `..` 段。Agent MUST 将它解析到 Catalog 的同一 scheme / host / port，MUST NOT 因 Catalog 条目自动跨 origin 重定向或携带凭据。用户明确选择条目后，Agent 以 `entryDigest` 调 `resolve`，验证路径，再创建本地 connection binding 并独立 initialize Child endpoint；后者构成新 origin，适用第 2.4、5–10 章的全部发现、缓存、批准与隔离规则。
+
+**目录授权与路径生命周期**：Catalog MUST 先按调用者当前权限过滤条目，MUST NOT 以目录泄露不可连接服务的名称、用途或存在性。`id ↔ endpointPath` 绑定 MUST 稳定、唯一且可审计；Child endpoint 移除时，其路径 MUST NOT 静默改指向其他服务，旧 binding 失败后 Agent MUST NOT 自动连到同名、相似或替代服务。
+
+**绝对禁止的动作**：Catalog **MUST NOT** 下发 npm 包、tarball、`command`、`args`、shell 指令或本地凭据；MUST NOT 安装、更新、卸载、启动本地进程、创建 runtime、按租户 provision 或代理拼装 Child MCP 能力。任何此类行为分别属于 npm Registry / Agent Plugin 生命周期或独立的受审计控制面，超出本节。`resolve` 永远是纯查询，不能以“连接装配”之名制造副作用。
 
 ---
 
@@ -676,7 +702,7 @@ Agent 侧对应规则见 5.5。SEP-2640 明确「列表可为空/局部」，所
    - `resources/list` 结果按需标注为「列表来源」以与 `skills/list` 的权威条目区分。
 2. **registry 只存元数据**：`name` + `description`（来自条目 `frontmatter`）+ origin + URI + 可选 digest 集合。**不读正文**。
 3. **空/局部列表不得视为无 Skill**：MUST NOT 因枚举为空而断言 server 没有 Skill（生成型 / 大规模目录 server 可能不枚举）。
-4. **缓存**：列表按 `ttlMs` / `cacheScope` 缓存（SEP-2549）。`cacheScope: public` 的目录可跨 Agent 缓存。列表缓存是「新鲜度提示」，不是完整性或信任证据。
+4. **缓存**：`skills/list` 的缓存字段由 Skills 扩展定义；当它携带 `ttlMs` / `cacheScope` 时，Agent SHOULD 按该扩展规定消费。`cacheScope: public` 的列表可在**同一 origin**内跨 Agent 会话与授权上下文复用；`private` 条目 MUST 按授权上下文隔离。列表缓存是「新鲜度提示」，不是完整性或信任证据。Skill 正文及目录文件的标准 MCP Caching 适用规则见 5.6.1 与 7.3。
 
 ### 5.6 加载与校验（Agent 视角）
 
@@ -689,7 +715,13 @@ Skill 的正式加载（进入模型上下文）为 **Activation 阶段**，触�
 3. **校验 frontmatter 一致性**：读到的 `SKILL.md` frontmatter MUST 与条目 `frontmatter` 逐字段一致；不一致即校验失败，MUST NOT 加载；
 4. **原信任评估**：条目缺 `resources`（动态生成 Skill）时 MAY 拒绝加载；
 5. **以校验通过的版本进入上下文**：校验失败后，可调 `skills/get` 刷新该 Skill 当前条目再重试（内容漂移场景的恢复路径）；
-6. **加载正文**：将 `SKILL.md` 全文及其 origin 标记注入上下文（provenance 见 10.2）。
+6. **加载正文**：将 `SKILL.md` 全文及其 origin 标记注入上下文（provenance 见 10.2）。运行通道资源的读取与缓存适用 5.6.1；
+
+#### 5.6.1 Skill 资源缓存
+
+运行通道中，`SKILL.md`、references、assets 与其他 Skill 目录文件均为 MCP resource。Agent SHOULD 对它们的 `resources/read` 响应按 MCP Caching 规范与 7.3 消费 `ttlMs`、`cacheScope` 和失效通知；缓存命中不豁免本节的 digest、frontmatter 一致性、origin 标记或 10.3 的批准要求。
+
+当 `skills/list` / `skills/get` 条目刷新后，若 `frontmatter` 或任一 `{uri, digest}` 变化，Agent MUST 将该 Skill 及其目录文件的已缓存读取结果视为 stale；下一次激活或按需读取 MUST 重新取得并校验。
 
 **嵌套 Skill** 规则（与 SEP-2640 一致）：
 
@@ -891,8 +923,14 @@ MCPP 规则：
 
 ### 7.3 缓存与新鲜度
 
-- `resources/list`、`resources/templates/list`、`resources/read` 的结果可携带 `ttlMs`（存活时间）与 `cacheScope`（`public`/`private`）；
-- Agent MUST 在 `ttlMs` 内复用缓存条目，`ttlMs` 过期后重取；`cacheScope: public` 的结果可跨 Agent 会话共享缓存；
+Agent SHOULD 按 MCP Caching 规范消费 `resources/list`、`resources/templates/list` 与 `resources/read` 完整结果携带的 `ttlMs`、`cacheScope` 及相关失效通知。MCPP 不规定缓存介质、是否持久化、淘汰算法或预取策略。
+
+缓存键 MUST 至少隔离 origin、MCP method 与所有影响结果的请求参数；分页列表的 `cursor` 是该键的一部分。`cacheScope: private` 的结果 MUST 按 authorization context 隔离，MUST NOT 跨身份复用；`cacheScope: public` 的结果可跨授权上下文复用，但也 MUST NOT 跨 origin 复用。
+
+`ttlMs` 是新鲜度提示而非内容不变保证。Agent MAY 在 TTL 内复用响应；条目过期后 SHOULD 在下次需要时重取，MUST NOT 将 TTL 当作后台轮询周期。收到 `notifications/resources/list_changed` 时，Agent MUST 将该 origin 的 `resources/list` 与 `resources/templates/list` 缓存视为 stale；收到 `notifications/resources/updated` 时，Agent MUST 将对应 URI 的 `resources/read` 缓存视为 stale。一次读取若返回多个 `contents[]` URI，Agent SHOULD 使所有受影响的聚合缓存同时 stale；无法精确定位时 MUST 保守地使该 origin 的相关 read 缓存 stale。
+
+重取失败时，Agent MAY 向用户展示 stale 内容，但 MUST 标注 origin、最后接收时间与过期状态；MUST NOT 将 stale 内容静默用于自动上下文注入、Skill 激活、工具执行、授权或安全决策。缓存副本 MUST 保留原始 origin，MUST NOT 伪装成 `file://` 或本地可信资源。
+
 - 列表缓存是新鲜度提示而非完整性/信任证据：目录可能过期、局部、被篡改（见第 10 章）；
 - **确定性顺序**在资源列表同样成立：Agent 的排序键 RECOMMENDED 为 `(audience, priority desc, lastModified desc, uri)`，稳定输出以保 LLM prompt cache 收益；
 - 订阅（listChanged / resources/updated）是缓存失效的推送通道，见 8.2。
@@ -921,8 +959,8 @@ MCPP 规则：
 ### 8.2 订阅与更新
 
 - Server 声明 `resources.listChanged` 时，资源列表变化 SHOULD 推送 `notifications/resources/list_changed`；声明 subscribe 时，具体资源变化经 `subscriptions/listen`（`resourceSubscriptions` 过滤器）投递 `notifications/resources/updated`。
-- Agent 决策：**列表**级变化用 `ttlMs` 轮询 + listChanged 推送双通道；**单资源**级变化优先订阅（免轮询），订阅不可用时退化为按 `ttlMs` 重新 read；
-- Agent **MUST** 在 `resources/updated` 到达后主动重取该 URI 内容（通知本身不带新内容）；
+- Agent 决策：**列表**级变化以 `ttlMs` 的按需重取与 listChanged 推送构成双通道；**单资源**级变化优先订阅（免轮询），订阅不可用时退化为按 `ttlMs` 重新 read；
+- Agent **MUST** 在 `resources/updated` 到达后将对应读取缓存视为 stale。若该资源正被用户查看或属于当前任务的活跃引用，Agent SHOULD 主动重取；其余场景在下次使用时重取。通知本身不携带新内容；
 - 订阅上下文是宿主责任：Agent SHOULD 只对「模型或用户活跃引用中」的资源保持订阅，避免订阅过载。
 
 ### 8.3 嵌入与引用
@@ -995,6 +1033,7 @@ MCPP 的能力需要 server 与 Agent 双向显式协商，遵循 MCP 扩展的�
 | --- | --- | --- |
 | `io.modelcontextprotocol/skills`（extension） | server declarations | 承诺实现 `skills/list` 与 `skills/get` |
 | `io.modelcontextprotocol/skills.directoryRead` | extension setting | 承诺实现 `resources/directory/read` |
+| `io.mcpp/server-catalog` | server declarations | Catalog endpoint 实现只读 `mcpp/servers/list` / `get` / `resolve`（3.7.1）；不声明即不得调用 |
 | `io.mcpp/skill-orchestration` | agent-side（host 声明） | Agent 支持 `io.mcpp/depends_on` / `io.mcpp/tools` 编排字段的解析与拓扑加载 |
 | `io.mcpp/context-budget` | agent-side | Agent 支持 `io.mcpp/context_budget` 预算约束 |
 
@@ -1015,6 +1054,7 @@ Agent（客户端）侧的 MCPP 编排能力属于宿主行为声明，主要用
 - 宣称实现 `io.modelcontextprotocol/skills` 的 Server，**MUST** 至少实现 `skills/list` 与 `skills/get`（空/局部列表合法）；
 - 宣称 `directoryRead` 者，**MUST** 对其以独立文件服务的每个 skill 命名空间内目录支持该方法（方法本身通用，不限于 skill scheme）；
 - `skills/get` 的未知 URI 返回 `-32602`，与 `resources/read` 未知资源一致；
+- 宣称 `io.mcpp/server-catalog` 者，MUST 实现 3.7.1 的 `mcpp/servers/list`、`mcpp/servers/get`、`mcpp/servers/resolve`，且 `resolve` 无副作用；
 - Agent 仅在看到对应声明后才调用相应方法；其余情况下 fallback 到 resources 渠道（3.4 的模板/指令基线）。
 
 ---
@@ -1075,6 +1115,7 @@ MCPP 把安全规则写成 Agent 侧义务（与 SEP-2640 的安全模型一致�
 | S11 | 实现项目 MUST 按 Agent Plugin 1.0.0 布局组织（`plugin.json` + `skills/` + `mcp.json`）；`name` 遵守第 3.2 约束 |
 | S12 | 聚合 HTTP 出口（3.7）：各子端点为独立 MCP endpoint 与 origin，路径 MUST 明确可审计；端点间不得静默互访；stdio 不支持该形态 |
 | S13 | 以 npm 包分发者（若采用，第 4 章）：包根即插件根；`package.json` 与 `plugin.json` 的 `name`/`version` MUST 一致；`keywords` MUST 含 `mcpp-plugin`；`files` 白名单含全部 MCPP 组件、MUST NOT 含凭据与运行数据 |
+| S14 | 声明 `io.mcpp/server-catalog` 者（3.7.1）：只列出当前调用者可连接的已挂载 Child MCP；`id ↔ endpointPath` 唯一稳定且可审计；`resolve` 仅返回同 authority 的相对路径并校验 `entryDigest`；MUST NOT 下发、安装、启动、provision 或代理能力 |
 
 ### 11.2 Agent / Host
 
@@ -1089,7 +1130,7 @@ MCPP 把安全规则写成 Agent 侧义务（与 SEP-2640 的安全模型一致�
 | A7 | `depends_on` 拓扑加载、环检测、缺口报告（宣称 `io.mcpp/skill-orchestration` 时） |
 | A8 | 阅读 Skill 时携带 origin 标记；模型有权且仅依赖此标记决策 |
 | A9 | 远端 Skill 批准：内容绑定、逐 Skill、改集即撤销；MCP origin 的 `allowed-tools` 忽略 |
-| A10 | 订阅/缓存遵循 `ttlMs`/`cacheScope`；`resources/updated` 后重取 |
+| A10 | 订阅/缓存遵循 `ttlMs`/`cacheScope`；`resources/updated` 后立即标为 stale，并在活跃引用或下次使用时重取 |
 | A11 | MRTR input_required：暂停 → 用户决策 → 原请求重发；禁止代答 |
 | A12 | 错误处置：执行错误回传模型自纠；协议错误有限重试；无界重试禁止 |
 | A13 | 缓存隔离：远端 Skill 缓存不进本地 skill 发现路径，断开后仍按 MCP 对待 |
@@ -1113,8 +1154,8 @@ MCPP 把安全规则写成 Agent 侧义务（与 SEP-2640 的安全模型一致�
 
 本仓库以两层结构落地 MCPP（即 1.1「项目身份」的实现示例）：
 
-- [`packages/mcpp`](packages/mcpp)：规范行为即代码的 SDK——skills 扫描/摘要/资源挂载（`ResourceForSkills`，第 3.4 双通道投影参考实现）、双模式启动（stdio + streamable HTTP）、`createGateway` 聚合（第 3.7）、`plugin.json`/`mcp.json` 校验。
-- [`examples/plugins/monorepo`](examples/plugins/monorepo)：聚合上层（monorepo 拓扑，第 3.7）——单一 HTTP 出口路径路由多个子 server（`/hello/mcp`、`/openspec/mcp`），并可经 `worker.ts` 部署到 Cloudflare Workers；`openspec/skills` 打包第三方 OpenSpec 技能集（通道 A 素材），由子 server 投影为 `skill://` 资源（通道 B）。
+- [`packages/mcpp`](packages/mcpp)：规范行为即代码的 SDK——skills 扫描/摘要/资源挂载（`ResourceForSkills`，第 3.4 双通道投影参考实现）、双模式启动（stdio + streamable HTTP）、默认 `127.0.0.1:8457`、`createGateway` 聚合与只读 Server Catalog（第 3.7–3.7.1）、`plugin.json`/`mcp.json` 校验。
+- [`examples/plugins/monorepo`](examples/plugins/monorepo)：聚合上层（monorepo 拓扑，第 3.7）——单一 HTTP 出口包含 `/catalog/mcp`、`/openspec/mcp` 与根路径 HTML + CDN Catalog demo；Catalog 仅解析静态 Child endpoint，不提供安装或下发。`openspec/skills` 打包第三方 OpenSpec 技能集（通道 A 素材），由子 server 投影为 `skill://` 资源（通道 B）。
 - [`examples/plugins/.mcp.json`](examples/plugins/.mcp.json)：MCP 客户端级配置（`streamable-http` 指向聚合出口），与第 3.3 的插件级 `mcp.json` 同构——客户端把插件的便携 `mcp.json` 映射到自身原生 MCP 配置。
 
 **待办标记**（通往完整 MCPP conforming）：

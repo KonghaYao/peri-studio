@@ -2,10 +2,10 @@
  * Cloudflare Workers 部署入口 —— monorepo 聚合出口的 serverless 形态。
  *
  * 与本地 createMonorepoGateway 共用同一挂载表（MONOREPO_ROUTES）：
- *   /openspec/mcp 独立 MCP endpoint。
+ *   /catalog/mcp 是只读 Server Catalog；/openspec/mcp 是独立 Child endpoint。
  *
  * 部署：
- *   bunx wrangler dev        # 本地预览（http://127.0.0.1:8787）
+ *   bunx wrangler dev        # 本地预览（http://127.0.0.1:8457）
  *   bunx wrangler deploy     # 发布
  *
  * 注意：会话注册表为 isolate 内存态（单实例下可用）。生产多实例并发时

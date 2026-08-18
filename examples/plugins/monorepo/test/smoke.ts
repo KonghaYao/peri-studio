@@ -5,11 +5,48 @@
  * 运行：bun test/smoke.ts
  */
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
+import { z } from "zod";
 import { createMonorepoGateway, createMonorepoRoutes } from "../src/index.ts";
+
+async function requestCatalog<T extends z.ZodType>(
+    client: Client,
+    method: string,
+    params: Record<string, unknown>,
+    schema: T,
+): Promise<z.output<T>> {
+    return client.request({ method, params }, schema) as Promise<z.output<T>>;
+}
+
+const catalogListSchema = z.object({
+    servers: z.array(z.object({
+        id: z.string(),
+        title: z.string(),
+        entryDigest: z.string(),
+    })),
+});
+
+const catalogGetSchema = z.object({
+    server: z.object({
+        id: z.string(),
+        entryDigest: z.string(),
+    }),
+});
+
+const catalogResolveSchema = z.object({
+    serverId: z.string(),
+    entryDigest: z.string(),
+    endpoint: z.object({
+        transport: z.literal("streamable-http"),
+        endpointPath: z.string(),
+    }),
+});
 
 async function connect(url: string): Promise<{ client: Client; close: () => Promise<void> }> {
     const transport = new StreamableHTTPClientTransport(new URL(url));
-    const client = new Client({ name: "smoke", version: "1" });
+    const client = new Client(
+        { name: "smoke", version: "1" },
+        { versionNegotiation: { mode: { pin: "2026-07-28" } } },
+    );
     await client.connect(transport);
     return { client, close: () => client.close() };
 }
@@ -18,8 +55,173 @@ async function main(): Promise<void> {
     const gw = await createMonorepoGateway({ host: "127.0.0.1", port: 0 });
 
     try {
+        // 根路径是可人工检查的 Catalog demo，而非 MCP endpoint。
+        const demo = await fetch(gw.url);
+        if (demo.status !== 200) throw new Error(`Catalog demo 应返回 200，得到 ${demo.status}`);
+        const html = await demo.text();
+        if (
+            !html.includes("https://cdn.tailwindcss.com") ||
+            !html.includes("mcpp/servers/resolve") ||
+            !html.includes("resources/list") ||
+            !html.includes("id=\"copy-url\"") ||
+            !html.includes("id=\"copy-mcp-json\"") ||
+            !html.includes('document.createElement("table")') ||
+            !html.includes("bg-white text-slate-900") ||
+            !html.includes("server-list-item-template") ||
+            !html.includes('data-role="badges"') ||
+            !html.includes("fragment.querySelector('[data-role=\"badges\"]')") ||
+            !html.includes('resource.name || resource.title') ||
+            !html.includes('cell.classList.add("whitespace-nowrap", "font-medium", "text-slate-950")') ||
+            html.includes("server-card-template")
+        ) {
+            throw new Error("Catalog demo 未包含 CDN 样式、浅色列表、连接解析、Child MCP 资源表格或复制操作");
+        }
+        console.log("✓ GET /：Catalog HTML + Tailwind CDN demo 可访问");
+
+        // 模拟 CDN demo 的无 SDK 直连：_meta 必须属于 params，不得放在 JSON-RPC 顶层。
+        const browserCatalog = await fetch(gw.url + "/catalog/mcp", {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+                accept: "application/json, text/event-stream",
+                "MCP-Protocol-Version": "2026-07-28",
+                "Mcp-Method": "mcpp/servers/list",
+            },
+            body: JSON.stringify({
+                jsonrpc: "2.0",
+                id: "browser-demo",
+                method: "mcpp/servers/list",
+                params: {
+                    _meta: {
+                        "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+                        "io.modelcontextprotocol/clientInfo": { name: "browser-demo", version: "1" },
+                        "io.modelcontextprotocol/clientCapabilities": {
+                            extensions: { "io.mcpp/server-catalog": {} },
+                        },
+                    },
+                },
+            }),
+        });
+        const browserCatalogBody = await browserCatalog.json() as { result?: { servers?: unknown[] } };
+        if (browserCatalog.status !== 200 || !browserCatalogBody.result?.servers?.length) {
+            throw new Error("无 SDK 的浏览器 Catalog 请求失败");
+        }
+        console.log("✓ 浏览器直连：Catalog RPC 可由 CDN demo 正确发起");
+
+        // 二级详情页直连 Child MCP：先协商，再只读取 tools/resources 元数据；不读取
+        // resource 正文，更不会调用 Tool。OpenSpec 当前仅提供 Resources。
+        const browserChildDiscover = await fetch(gw.url + "/openspec/mcp", {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+                accept: "application/json, text/event-stream",
+                "MCP-Protocol-Version": "2026-07-28",
+                "Mcp-Method": "server/discover",
+            },
+            body: JSON.stringify({
+                jsonrpc: "2.0",
+                id: "browser-child-discover",
+                method: "server/discover",
+                params: {
+                    _meta: {
+                        "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+                        "io.modelcontextprotocol/clientInfo": { name: "browser-demo", version: "1" },
+                        "io.modelcontextprotocol/clientCapabilities": {},
+                    },
+                },
+            }),
+        });
+        const browserChildDiscovery = await browserChildDiscover.json() as {
+            result?: { capabilities?: { tools?: unknown; resources?: unknown } };
+        };
+        if (browserChildDiscover.status !== 200 || !browserChildDiscovery.result?.capabilities?.resources) {
+            throw new Error("无 SDK 的浏览器 Child MCP 协商失败，或未声明 Resources");
+        }
+        if (browserChildDiscovery.result.capabilities.tools) {
+            throw new Error("OpenSpec Child MCP 不应在未注册 Tools 时声明 tools capability");
+        }
+
+        const browserResources = await fetch(gw.url + "/openspec/mcp", {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+                accept: "application/json, text/event-stream",
+                "MCP-Protocol-Version": "2026-07-28",
+                "Mcp-Method": "resources/list",
+            },
+            body: JSON.stringify({
+                jsonrpc: "2.0",
+                id: "browser-child-resources",
+                method: "resources/list",
+                params: {
+                    _meta: {
+                        "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+                        "io.modelcontextprotocol/clientInfo": { name: "browser-demo", version: "1" },
+                        "io.modelcontextprotocol/clientCapabilities": {},
+                    },
+                },
+            }),
+        });
+        const browserResourcesBody = await browserResources.json() as {
+            result?: { resources?: Array<{ name?: unknown; title?: unknown }> };
+        };
+        const firstBrowserResource = browserResourcesBody.result?.resources?.[0];
+        if (
+            browserResources.status !== 200 ||
+            browserResourcesBody.result?.resources?.length !== 12 ||
+            firstBrowserResource?.name !== "openspec-apply-change" ||
+            firstBrowserResource?.title !== "skill skill"
+        ) {
+            throw new Error("无 SDK 的浏览器 Child MCP Resources 列表或 Resource 元数据不符合预期");
+        }
+        console.log("✓ 浏览器二级详情：Child MCP 协商后只读取 Tools/Resources 元数据");
+
+        // Catalog 是独立的只读 MCP endpoint；解析不连接、不启动或 provision Child MCP。
+        const catalog = await connect(gw.url + "/catalog/mcp");
+        try {
+            const listed = await requestCatalog(catalog.client, "mcpp/servers/list", {}, catalogListSchema);
+            const entry = listed.servers.find((server) => server.id === "openspec");
+            if (!entry) throw new Error("Catalog 未列出已挂载的 openspec Child MCP");
+
+            const detail = await requestCatalog(
+                catalog.client,
+                "mcpp/servers/get",
+                { serverId: entry.id },
+                catalogGetSchema,
+            );
+            if (detail.server.entryDigest !== entry.entryDigest) {
+                throw new Error("Catalog get 的条目摘要与 list 不一致");
+            }
+
+            const plan = await requestCatalog(
+                catalog.client,
+                "mcpp/servers/resolve",
+                { serverId: entry.id, entryDigest: entry.entryDigest },
+                catalogResolveSchema,
+            );
+            if (plan.endpoint.endpointPath !== "/openspec/mcp") {
+                throw new Error(`Catalog resolve 返回了意外 endpoint '${plan.endpoint.endpointPath}'`);
+            }
+
+            let rejectedStaleDigest = false;
+            try {
+                await requestCatalog(
+                    catalog.client,
+                    "mcpp/servers/resolve",
+                    { serverId: entry.id, entryDigest: "sha256:" + "0".repeat(64) },
+                    catalogResolveSchema,
+                );
+            } catch {
+                rejectedStaleDigest = true;
+            }
+            if (!rejectedStaleDigest) throw new Error("Catalog 必须拒绝未审阅的 entryDigest");
+            console.log("✓ /catalog/mcp：list/get/resolve 只读可用，摘要变化被拒绝");
+        } finally {
+            await catalog.close();
+        }
+
         // 端点：/openspec/mcp —— 第三方 OpenSpec skills 集（12 个 openspec-*）
-        const osp = await connect(gw.url + "openspec/mcp");
+        const osp = await connect(gw.url + "/openspec/mcp");
         try {
             const res = await osp.client.listResources();
             const skills = res.resources?.filter((r) => r.uri.startsWith("skill://")) ?? [];
@@ -39,7 +241,7 @@ async function main(): Promise<void> {
         }
 
         // 多会话：同一端点第二个客户端应能独立初始化（每会话独立 transport + server）
-        const osp2 = await connect(gw.url + "openspec/mcp");
+        const osp2 = await connect(gw.url + "/openspec/mcp");
         try {
             const res = await osp2.client.listResources();
             const skills = res.resources?.filter((r) => r.uri.startsWith("skill://")) ?? [];
@@ -52,41 +254,50 @@ async function main(): Promise<void> {
         }
 
         // 未匹配路径 → 404（挂载表必须可审计）
-        const miss = await fetch(gw.url + "nope", { method: "POST" });
+        const miss = await fetch(gw.url + "/nope", { method: "POST" });
         console.log(`✓ 未匹配路径 POST /nope → ${miss.status}`);
         if (miss.status !== 404) throw new Error("未匹配路径应 404");
     } finally {
         await gw.stop();
     }
 
-    // Worker 形态：不经 Bun.serve，直接调纯 fetch handler（Cloudflare 部署路径）
+    // Worker 形态：不经 Bun.serve，直接调纯 fetch handler（Cloudflare 部署路径）。
+    // 0728 用 server/discover 作为现代协商入口；协议已不再返回 mcp-session-id。
     const routes = createMonorepoRoutes();
     try {
         const res = await routes.fetch(
-            new Request("http://localhost/openspec/mcp", {
+            new Request("http://localhost/catalog/mcp", {
                 method: "POST",
                 headers: {
                     "content-type": "application/json",
                     accept: "application/json, text/event-stream",
+                    "MCP-Protocol-Version": "2026-07-28",
+                    "Mcp-Method": "server/discover",
                 },
                 body: JSON.stringify({
                     jsonrpc: "2.0",
                     id: 1,
-                    method: "initialize",
+                    method: "server/discover",
                     params: {
-                        protocolVersion: "2026-07-28",
-                        capabilities: {},
-                        clientInfo: { name: "worker-smoke", version: "1" },
+                        _meta: {
+                            "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+                            "io.modelcontextprotocol/clientInfo": { name: "worker-smoke", version: "1" },
+                            "io.modelcontextprotocol/clientCapabilities": {
+                                extensions: { "io.mcpp/server-catalog": {} },
+                            },
+                        },
                     },
                 }),
             }),
         );
-        if (res.status !== 200) throw new Error(`纯 handler initialize 应 200，得到 ${res.status}`);
-        if (!res.headers.get("mcp-session-id")) throw new Error("initialize 应返回 mcp-session-id");
-        await res.text();
+        if (res.status !== 200) throw new Error(`纯 handler discover 应 200，得到 ${res.status}`);
+        const body = await res.json() as { result?: { capabilities?: { extensions?: Record<string, unknown> } } };
+        if (!body.result?.capabilities?.extensions?.["io.mcpp/server-catalog"]) {
+            throw new Error("纯 handler 未声明 Server Catalog 扩展");
+        }
         const miss2 = await routes.fetch(new Request("http://localhost/nope"));
         if (miss2.status !== 404) throw new Error("纯 handler 未匹配路径应 404");
-        console.log("✓ Worker 形态：纯 fetch handler 可初始化端点（无监听进程依赖）");
+        console.log("✓ Worker 形态：纯 fetch handler 可发现 Catalog endpoint（无监听进程依赖）");
     } finally {
         await routes.close();
     }
