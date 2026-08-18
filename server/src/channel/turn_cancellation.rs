@@ -17,6 +17,7 @@ use crate::control::{ChatRegistry, InstanceError, InstanceRegistry};
 use crate::persist::outbox::LastError;
 use crate::persist::Store;
 use crate::protocol::{OutboundCtx, OutboundMessage, Translator};
+use crate::state::aggregator::ApplyReason;
 use crate::state::doc_manager::{DocCommand, DocManager, SubmitResult};
 
 #[derive(Clone)]
@@ -140,6 +141,30 @@ impl TurnCancellation {
                     .await;
             }
         };
+        let active_turn = self.chats.active_turn(&request.chat_id).await;
+        if let Some(turn_id) = active_turn.as_ref() {
+            let result = self
+                .doc
+                .submit_command(
+                    &request.chat_id,
+                    DocCommand::MarkTurnCancelling {
+                        turn_id: turn_id.clone(),
+                    },
+                )
+                .await;
+            if !matches!(result, SubmitResult::Applied(result) if result.applied) {
+                return self
+                    .predispatch_failure(
+                        &store,
+                        request.command_id,
+                        ErrorCode::InvalidState,
+                        "active turn could not enter cancelling state",
+                        "cancelling_projection_failed",
+                    )
+                    .await;
+            }
+        }
+
         if store
             .outbox()
             .lock()
@@ -221,7 +246,7 @@ impl TurnCancellation {
                 .await;
         }
 
-        if let Some(turn_id) = self.chats.active_turn(&request.chat_id).await {
+        if let Some(turn_id) = active_turn {
             let result = self
                 .doc
                 .submit_command(
@@ -233,10 +258,12 @@ impl TurnCancellation {
                     },
                 )
                 .await;
-            // Any Applied result means the writer durably observed either the
-            // requested terminal or a stronger terminal race. Rejected or
-            // PersistFailed cannot support ProjectionCommitted.
-            if !matches!(result, SubmitResult::Applied(_)) {
+            let terminal_persisted = matches!(
+                result,
+                SubmitResult::Applied(result)
+                    if result.applied || result.reason == Some(ApplyReason::DuplicateIdempotent)
+            );
+            if !terminal_persisted {
                 self.chats.clear_active_turn(&request.chat_id).await;
                 return self
                     .delivery_unknown(

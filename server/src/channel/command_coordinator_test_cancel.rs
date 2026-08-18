@@ -44,6 +44,36 @@ async fn cancel_notification_injects_cancelled_and_clears_active_turn() {
                     .is_err(),
                 "channel enqueue alone must not commit before instance writer ack"
             );
+            let (snapshot, _) = env
+                .sink
+                .snapshot(&peri_studio_proto::conn::DocId::session(S5))
+                .await
+                .expect("session 镜像快照");
+            use yrs::updates::decoder::Decode as _;
+            use yrs::{Map as _, ReadTxn as _, Transact as _};
+            let mirror = yrs::Doc::new();
+            let parsed = yrs::Update::decode_v1(&snapshot).unwrap();
+            mirror.transact_mut().apply_update(parsed).unwrap();
+            let txn = mirror.transact();
+            let root = txn.get_map("root").unwrap();
+            let sm = root
+                .get(&txn, "session")
+                .unwrap()
+                .cast::<yrs::MapRef>()
+                .unwrap();
+            assert_eq!(
+                sm.get(&txn, "active_turn_status")
+                    .unwrap()
+                    .cast::<String>()
+                    .unwrap(),
+                "cancelling",
+                "等待 writer ack 时 Yjs 必须投影 cancelling"
+            );
+            assert!(
+                sm.get(&txn, "loading").unwrap().cast::<bool>().unwrap(),
+                "Agent 尚未确认停止时仍保持 loading"
+            );
+            drop(txn);
             env.instance
                 .on_ack(
                     "local",
@@ -94,6 +124,10 @@ async fn cancel_notification_injects_cancelled_and_clears_active_turn() {
             .unwrap(),
         "cancelled",
         "cancel 发送成功 → turn 终态 Cancelled（§7.2）"
+    );
+    assert!(
+        !sm.get(&txn, "loading").unwrap().cast::<bool>().unwrap(),
+        "cancel 终态必须清除 loading"
     );
 }
 
