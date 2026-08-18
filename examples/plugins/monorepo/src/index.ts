@@ -31,7 +31,7 @@ export interface MonorepoOptions {
 
 /**
  * 纯请求分发（无监听进程）：Cloudflare Workers / 边缘运行时部署用。
- * 会话注册表驻留于句柄生命周期（单 isolate 内存态，见 wrangler 注释）。
+ * 每个路由使用独立的 MCP 2026-07-28 handler 与 subscription 总线。
  */
 export function createMonorepoRoutes(): GatewayRoutesHandle {
     return createGatewayRoutes([...MONOREPO_ROUTES]);

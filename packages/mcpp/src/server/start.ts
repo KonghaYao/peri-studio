@@ -1,19 +1,21 @@
 /**
- * startServer —— MCPP 5.x 之外的部署骨架（MCPP 3.1 承载：一个 server 两项入口）。
+ * MCP 2026-07-28 严格模式 Server 启动入口。
  *
- * 双模式（对应 3.3 mcp.json 的 stdio / streamable-http）：
- *   - 默认 streamable HTTP（单会话，Web Standard + Bun.serve）
- *   - `--stdio` 参数或显式 transport 走 stdio
- *
- * HTTP 服务形态说明：v2 SDK 的 streamable HTTP transport 一个实例对应一个会话
- * （session）。单会话部署下由第一个初始化请求建立会话，后续请求复用同一
- * transport。多会话并发请使用 createGateway（packages/mcpp/gateway.ts）。
+ * HTTP 通过 createMcpHandler 承载，每个请求创建独立 Server 实例；stdio 通过
+ * serveStdio 承载，每条连接固定一个实例。两种模式均拒绝 2025-era 请求。
  */
 import {
-    McpServer,
-    WebStandardStreamableHTTPServerTransport,
+    createMcpHandler,
+    type McpHttpHandler,
+    type McpServerFactory,
+    type ServerEventBus,
+    type ServerNotifier,
 } from "@modelcontextprotocol/server";
-import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
+import {
+    serveStdio,
+    type StdioServerHandle,
+    type StdioServerTransport,
+} from "@modelcontextprotocol/server/stdio";
 
 export type StartMode = "http" | "stdio";
 
@@ -21,70 +23,96 @@ export interface StartServerOptions {
     mode?: StartMode;
     host?: string;
     port?: number;
-    /** 显式 StdioServerTransport（测试/嵌入场景注入）。 */
+    /** 显式 stdio transport（测试或嵌入场景注入）。 */
     transport?: StdioServerTransport;
-    /** 启动完成回调，返回监听地址说明（供日志/测试断言）。 */
+    /** 多进程部署可注入共享事件总线。 */
+    bus?: ServerEventBus;
+    maxSubscriptions?: number;
+    keepAliveMs?: number;
     onReady?: (info: { mode: StartMode; url?: string }) => void;
 }
 
-/** 从 argv 推断 mode：`--stdio` 即 stdio（与 useStandardMCPP 兼容）。 */
+export interface StartedServer {
+    mode: StartMode;
+    url?: string;
+    /** HTTP 模式下用于向 subscriptions/listen 发布变化通知。 */
+    subscriptions?: ServerNotifier;
+    stop: () => Promise<void>;
+}
+
+/** 从 argv 推断 mode：`--stdio` 即 stdio。 */
 export function inferModeFromArgv(argv: string[], fallback: StartMode = "http"): StartMode {
     return argv.includes("--stdio") ? "stdio" : fallback;
 }
 
-async function runHttp(
-    server: McpServer,
+function createStrictHttpHandler(
+    factory: McpServerFactory,
     options: StartServerOptions,
-): Promise<{ url: string }> {
+): McpHttpHandler {
+    return createMcpHandler(factory, {
+        legacy: "reject",
+        bus: options.bus,
+        maxSubscriptions: options.maxSubscriptions,
+        keepAliveMs: options.keepAliveMs,
+    });
+}
+
+async function runHttp(
+    factory: McpServerFactory,
+    options: StartServerOptions,
+): Promise<StartedServer> {
     const host = options.host ?? process.env.HOST ?? "127.0.0.1";
     const port = Number(options.port ?? process.env.PORT ?? 8457);
-
-    // 单会话 transport：一个实例服务一个 session（并发多会话见 gateway）
-    const transport = new WebStandardStreamableHTTPServerTransport({
-        sessionIdGenerator: () => crypto.randomUUID(),
-    });
-    await server.connect(transport);
-
-    Bun.serve({
+    const handler = createStrictHttpHandler(factory, options);
+    const bunServer = Bun.serve({
         hostname: host,
         port,
-        async fetch(request) {
-            return transport.handleRequest(request);
-        },
+        fetch: (request) => handler.fetch(request),
     });
-    const url = `http://${host}:${port}/mcp`;
-    return { url };
+    const url = `http://${host}:${bunServer.port}/mcp`;
+
+    return {
+        mode: "http",
+        url,
+        subscriptions: handler.notify,
+        async stop() {
+            bunServer.stop();
+            await handler.close();
+        },
+    };
 }
 
-async function runStdio(server: McpServer, options: StartServerOptions): Promise<void> {
-    const transport = options.transport ?? new StdioServerTransport();
-    await server.connect(transport);
+function runStdio(factory: McpServerFactory, options: StartServerOptions): StartedServer {
+    const handle: StdioServerHandle = serveStdio(factory, {
+        legacy: "reject",
+        transport: options.transport,
+        maxSubscriptions: options.maxSubscriptions,
+    });
+    return {
+        mode: "stdio",
+        stop: () => handle.close(),
+    };
 }
 
-/**
- * 启动 server（HTTP 默认 / `--stdio` 切换），异常统一打日志后退出（exit 1）。
- */
+/** 启动仅支持 MCP 2026-07-28 的 Server。 */
 export async function startServer(
-    server: McpServer,
+    factory: McpServerFactory,
     options: StartServerOptions = {},
-): Promise<{ mode: StartMode; url?: string }> {
+): Promise<StartedServer> {
     const mode = options.mode ?? inferModeFromArgv(process.argv);
+    const started = mode === "stdio" ? runStdio(factory, options) : await runHttp(factory, options);
+    options.onReady?.({ mode: started.mode, url: started.url });
+    return started;
+}
+
+export async function main(
+    factory: McpServerFactory,
+    options?: StartServerOptions,
+): Promise<void> {
     try {
-        if (mode === "stdio") {
-            await runStdio(server, options);
-            options.onReady?.({ mode });
-            return { mode };
-        }
-        const { url } = await runHttp(server, options);
-        options.onReady?.({ mode: "http", url });
-        return { mode: "http", url };
+        await startServer(factory, options);
     } catch (error) {
         console.error("Fatal: failed to start MCPP server", error);
         process.exit(1);
     }
-}
-
-/** 与用例常用入口一致：启动 server 并在 failure 时退出进程。 */
-export async function main(server: McpServer, options?: StartServerOptions): Promise<void> {
-    await startServer(server, options);
 }
