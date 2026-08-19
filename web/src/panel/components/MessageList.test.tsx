@@ -31,18 +31,136 @@ beforeEach(() => {
 
 afterEach(resetStore);
 
+describe('MessageList timeline follow', () => {
+  function configureScrollArea(area: HTMLElement) {
+    Object.defineProperties(area, {
+      clientHeight: { configurable: true, value: 100 },
+      scrollHeight: { configurable: true, value: 500 },
+      scrollTop: { configurable: true, writable: true, value: 0 },
+    });
+  }
+
+  it('preserves an up-scrolled reader position and offers an explicit new-content action', () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    setChatEntries([message('assistant-1', 'live', null)]);
+    render(() => <MessageList />);
+    const area = screen.getByRole('region', { name: 'Conversation messages' });
+    configureScrollArea(area);
+    const scrollTo = vi.mocked(area.scrollTo);
+    scrollTo.mockClear();
+
+    fireEvent.scroll(area);
+    setChatEntries([message('assistant-1', 'live', null), message('assistant-2', 'live', null)]);
+
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: '↓ New content' })).toBeInTheDocument();
+  });
+
+  it('returns to the latest message without motion when reduced motion is requested', () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
+    setRuntimeDocsState({ chat: true, control: true });
+    setChatEntries([message('assistant-1', 'live', null)]);
+    render(() => <MessageList />);
+    const area = screen.getByRole('region', { name: 'Conversation messages' });
+    configureScrollArea(area);
+    const scrollTo = vi.mocked(area.scrollTo);
+    scrollTo.mockClear();
+
+    fireEvent.scroll(area);
+    setChatEntries([message('assistant-1', 'live', null), message('assistant-2', 'live', null)]);
+    fireEvent.click(screen.getByRole('button', { name: '↓ New content' }));
+
+    expect(scrollTo).toHaveBeenLastCalledWith({ top: 500, behavior: 'auto' });
+    expect(screen.queryByRole('button', { name: /latest/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('MessageList overlay inset', () => {
+  it('keeps the last message and jump action above an overlay composer', () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    setChatEntries([message('assistant-1', 'live', null)]);
+    const { container } = render(() => <MessageList bottomInset={160} />);
+
+    expect(container.querySelector('.message-list-content')).toHaveStyle({ 'padding-bottom': '200px' });
+  });
+});
+
+describe('MessageList completion announcement', () => {
+  it('does not re-announce recovered history that arrives after hydration, then announces one newly completed response', () => {
+    setRuntimeDocsState({ chat: true, control: false });
+    render(() => <MessageList />);
+    const announcement = document.querySelector('[aria-atomic="true"]');
+
+    setChatEntries([message('history-1', 'session_replay', true)]);
+    setRuntimeDocsState({ chat: true, control: true });
+
+    expect(announcement).toHaveTextContent('');
+    setChatEntries([{ ...message('assistant-1', 'live', null), status: 'completed' }]);
+
+    expect(announcement).toHaveTextContent('Assistant response completed');
+    expect(announcement).toHaveAttribute('aria-live', 'polite');
+    expect(announcement).toHaveAttribute('aria-atomic', 'true');
+  });
+});
+
+describe('MessageList entry updates', () => {
+  it('keeps the same message, reasoning, and tool DOM nodes open while its server projection updates', () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    const initial = {
+      ...message('assistant-1', 'live', null),
+      reasoning: [{ id: 'reasoning-1', text: 'Inspecting the current state', visibility: 'visible' }],
+      toolCalls: [{
+        toolCallId: 'tool-1', name: 'shell', status: 'completed', arguments: { command: 'pwd' }, result: { exitCode: 0 },
+        resultOmitted: false, resultBytes: 14, publicError: null, startedAt: null, completedAt: null,
+      }],
+    };
+    setChatEntries([initial]);
+    render(() => <MessageList />);
+
+    const messageRow = screen.getByLabelText('Assistant message');
+    const reasoning = screen.getByText('Thinking').closest('details')!;
+    const tool = messageRow.querySelector<HTMLDetailsElement>('.tool-card')!;
+    fireEvent.click(reasoning.querySelector('summary')!);
+    fireEvent.click(tool.querySelector('summary')!);
+    expect(reasoning).toHaveAttribute('open');
+    expect(tool).toHaveAttribute('open');
+
+    setChatEntries([{
+      ...initial,
+      text: 'Updated answer',
+      reasoning: [{ ...initial.reasoning[0], text: 'Updated reasoning' }],
+      toolCalls: [{ ...initial.toolCalls[0], result: { exitCode: 1 } }],
+    }]);
+
+    const updatedMessageRow = screen.getByLabelText('Assistant message');
+    const updatedReasoning = screen.getByText('Thinking').closest('details')!;
+    const updatedTool = updatedMessageRow.querySelector<HTMLDetailsElement>('.tool-card')!;
+    expect(updatedMessageRow).toBe(messageRow);
+    expect(updatedReasoning).toBe(reasoning);
+    expect(updatedTool).toBe(tool);
+    expect(updatedReasoning).toHaveAttribute('open');
+    expect(updatedTool).toHaveAttribute('open');
+    expect(updatedMessageRow).toHaveTextContent('Updated answer');
+    expect(updatedMessageRow).toHaveTextContent('Updated reasoning');
+    expect(updatedTool).toHaveTextContent('"exitCode": 1');
+  });
+});
+
 describe('MessageList hydration', () => {
   it('describes recovery until both authoritative runtime documents arrive', () => {
     setRuntimeDocsState({ chat: true, control: false });
     render(() => <MessageList />);
-    expect(screen.getByText('Loading session')).toBeInTheDocument();
+    const loading = screen.getByRole('status', { name: 'Loading session' });
+    expect(loading).toHaveClass('ui-loading-state');
+    expect(loading.querySelector('.ui-spinner')).toHaveAttribute('aria-hidden', 'true');
     expect(screen.queryByText('Start this conversation')).not.toBeInTheDocument();
   });
 
   it('turns a confirmed empty projection into a meaningful first-message state', () => {
     setRuntimeDocsState({ chat: true, control: true });
     render(() => <MessageList />);
-    expect(screen.getByText('Start this conversation')).toBeInTheDocument();
+    const empty = screen.getByText('Start this conversation').closest('.ui-empty');
+    expect(empty).toBeInTheDocument();
     expect(screen.getByText(/Content is saved to this session/)).toBeInTheDocument();
     expect(screen.queryByText('Loading session')).not.toBeInTheDocument();
   });
@@ -59,7 +177,9 @@ describe('MessageList hydration', () => {
 
     render(() => <MessageList />);
 
-    expect(screen.getByRole('status', { name: 'Assistant is working' })).toBeInTheDocument();
+    const loading = screen.getByRole('status', { name: 'Assistant is working' });
+    expect(loading).toHaveClass('ui-loading-state', 'message-loading');
+    expect(loading.querySelector('.ui-spinner')).toHaveAttribute('aria-hidden', 'true');
     expect(document.querySelectorAll('.message-loading')).toHaveLength(1);
   });
 

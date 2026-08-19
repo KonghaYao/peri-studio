@@ -62,6 +62,7 @@
   /* Elevation */
   --shadow-popover: var(--shadow-popover);
   --shadow-float: var(--shadow-float);
+  --shadow-composer-overlay: var(--shadow-composer-overlay);
   --shadow-form: var(--shadow-form);
   --shadow-auth: var(--shadow-auth);
   --shadow-recovery: var(--shadow-recovery);

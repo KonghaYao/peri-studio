@@ -37,7 +37,9 @@ describe('ConnectionProblem', () => {
     setConnectionProblem({ code: 4502, title: 'Sign-in expired', detail: 'Please sign in again.', action: 'login' });
     render(() => <ConnectionProblem />);
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Please sign in again.');
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('Please sign in again.');
+    expect(alert).toHaveClass('ui-inline-notice', 'ui-inline-notice--danger');
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });

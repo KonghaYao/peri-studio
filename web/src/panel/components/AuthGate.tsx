@@ -7,7 +7,7 @@
 import { Show, type JSX } from 'solid-js';
 import { AuthActionsContext, useAuth } from '../lib/auth-hook';
 import { resetAuthenticatedSession } from '../store';
-import { Button, CopyButton, TextField } from '../../components/ui';
+import { Button, CopyButton, InlineNotice, LoadingState, TextField } from '../../components/ui';
 
 export function AuthGate(props: { children: JSX.Element }) {
   const auth = useAuth({ resetSession: resetAuthenticatedSession });
@@ -27,7 +27,7 @@ export function AuthGate(props: { children: JSX.Element }) {
           <Show when={auth.state() === 'checking'} fallback={
             <form onSubmit={signIn} class="auth-form">
               <TextField label="Access token" type="password" value={auth.token()} onInput={(e) => auth.setToken(e.currentTarget.value)} autocomplete="off" autofocus />
-              <Show when={auth.problem()}>{(item) => <div class="auth-problem my-10 border border-danger-border rounded-10 bg-danger-soft px-12 py-11 text-13 leading-145 text-danger" role="alert"><p class="m-0">{item().message}</p><Show when={item().retryable}><Button type="button" variant="ghost" size="compact" class="mt-7" onClick={() => void auth.status()}>Re-check connection</Button></Show></div>}</Show>
+              <Show when={auth.problem()}>{(item) => <InlineNotice tone="danger" class="my-10" role="alert"><p>{item().message}</p><Show when={item().retryable}><Button type="button" variant="ghost" size="compact" class="mt-7" onClick={() => void auth.status()}>Re-check connection</Button></Show></InlineNotice>}</Show>
               <Button variant="primary" type="submit" class="mt-8 w-full" busy={auth.submitting()} disabled={!auth.token().trim()}>Sign in</Button>
               <details class="auth-help mt-18 border-t border-divider pt-14 text-12 leading-155 text-text-secondary">
                 <summary class="cursor-pointer font-semibold text-text-primary">Where is my token?</summary>
@@ -43,7 +43,7 @@ export function AuthGate(props: { children: JSX.Element }) {
               </details>
             </form>
           }>
-            <span class="ui-spinner" aria-label="Checking sign-in state" />
+            <LoadingState label="Checking sign-in state" class="justify-center" />
           </Show>
         </section>
       </main>

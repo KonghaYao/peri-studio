@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { describe, expect, it, vi } from 'vitest';
 import type { ChatEntry } from '../lib/chat-view';
 import { ConversationMessage } from './ConversationMessage';
+import { Markdown } from './Markdown';
 
 function entry(overrides: Partial<ChatEntry> = {}): ChatEntry {
   return {
@@ -62,7 +63,9 @@ describe('ConversationMessage', () => {
     expect(screen.getByText('checked repository state')).toBeInTheDocument();
     expect(screen.getByLabelText('main.rs')).toHaveTextContent('text/rust');
     expect(screen.getByTitle('file:///workspace/src/main.rs')).toBeInTheDocument();
-    expect(screen.getByRole('alert', { name: 'Message error' })).toHaveTextContent('TOOL_FAILED: exit 1');
+    const error = screen.getByRole('alert', { name: 'Message error' });
+    expect(error).toHaveTextContent('TOOL_FAILED: exit 1');
+    expect(error).toHaveClass('ui-inline-notice', 'ui-inline-notice--danger');
   });
 
   it('does not render entry-level status or loading indicators', () => {
@@ -79,8 +82,10 @@ describe('ConversationMessage', () => {
       deliveryState: 'delivery_unknown',
       deliveryErrorCode: 'DELIVERY_UNKNOWN',
     })} />);
-    expect(screen.getByRole('alert')).toHaveTextContent('Delivery result unknown');
-    expect(screen.getByRole('alert')).toHaveTextContent('not resent automatically');
+    const warning = screen.getByRole('alert');
+    expect(warning).toHaveTextContent('Delivery result unknown');
+    expect(warning).toHaveTextContent('not resent automatically');
+    expect(warning).toHaveClass('ui-inline-notice', 'ui-inline-notice--warning');
   });
 
   it('does not present Hub observation time as the original time of restored history', () => {
@@ -88,5 +93,24 @@ describe('ConversationMessage', () => {
       origin: 'session_replay', replayVerified: true, text: 'older answer', createdAt: new Date().toISOString(),
     })} />);
     expect(screen.getByLabelText('Assistant message').querySelector('time')).toBeNull();
+  });
+});
+
+describe('Markdown', () => {
+  it('renders raw HTML and active links as inert text', () => {
+    render(() => <Markdown source={'<script>alert(1)</script>\n\n[unsafe](javascript:alert(2))'} />);
+    expect(document.querySelector('script')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.getByText('<script>alert(1)</script>')).toBeInTheDocument();
+    expect(document.querySelector('.markdown-body')).toHaveTextContent('unsafe');
+  });
+
+  it('isolates safe links and exposes copyable fenced code', () => {
+    render(() => <Markdown source={'[docs](https://example.com)\n\n```ts\nconst x = 1;\n```'} />);
+    const link = screen.getByRole('link', { name: /docs/ });
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(screen.getByRole('button', { name: 'Copy code' })).toBeInTheDocument();
+    expect(screen.getByText('const x = 1;')).toBeInTheDocument();
   });
 });

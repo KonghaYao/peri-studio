@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { chatEntries, chatHead, elicitations, permissions, projects, projectSessions, selectedCid, selectedSessionId } from '../panel/store';
+import { chatEntries, chatHead, elicitations, permissions, projects, projectSessions, registryHydrated, selectedCid, selectedSessionId } from '../panel/store';
 import { principalRole } from '../panel/lib/auth-state';
 import * as store from '../panel/store';
 import { DEFAULT_VISUAL_SCENARIO, installVisualScenario, resolveVisualScenario, VISUAL_NOW, visualScenarios } from './scenarios';
@@ -16,6 +16,7 @@ describe('visual fixture scenarios', () => {
     expect(installed.scenario.id).toBe('conversation');
     expect(Date.now()).toBe(VISUAL_NOW);
     expect(projects().length).toBeGreaterThan(1);
+    expect(registryHydrated()).toBe(true);
     expect(selectedSessionId()).toBe('session-current');
     expect(selectedCid()).toBe('chat-current');
     expect(chatEntries().some((entry) => entry.text.includes('```rust'))).toBe(true);
@@ -81,6 +82,7 @@ describe('visual fixture scenarios', () => {
       installed.dispose();
       expect(projects()).toEqual([]);
       expect(projectSessions()).toEqual([]);
+      expect(registryHydrated()).toBe(false);
       expect(selectedSessionId()).toBeNull();
       expect(selectedCid()).toBeNull();
       expect(elicitations()).toEqual([]);

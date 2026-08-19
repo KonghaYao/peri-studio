@@ -5,13 +5,52 @@ import { compactViewportQuery } from '../lib/breakpoints';
 import { ProjectDrawer } from './shared/ProjectDrawer';
 import { SettingsDialog } from './SettingsDialog';
 
+const SIDEBAR_MIN_WIDTH = 240;
+const SIDEBAR_MAX_WIDTH = 480;
+const SIDEBAR_DEFAULT_WIDTH = 304;
+const SIDEBAR_COLLAPSED_WIDTH = 64;
+const SIDEBAR_KEYBOARD_STEP = 24;
+
+function clampSidebarWidth(width: number) {
+  return Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, width));
+}
+
 export function AppShell() {
   const [open, setOpen] = createSignal(false);
   const [systemOpen, setSystemOpen] = createSignal(false);
   const [mobile, setMobile] = createSignal(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = createSignal(false);
+  const [sidebarWidth, setSidebarWidth] = createSignal(SIDEBAR_DEFAULT_WIDTH);
   const [sidebarIntent, setSidebarIntent] = createSignal<{ kind: 'create-project' | 'import'; projectId?: string; nonce: number } | null>(null);
   let drawer: HTMLElement | undefined;
   let main: HTMLElement | undefined;
+
+  const setClampedSidebarWidth = (width: number) => setSidebarWidth(clampSidebarWidth(width));
+  const stopSidebarResize = () => {
+    window.removeEventListener('pointermove', resizeSidebar);
+    window.removeEventListener('pointerup', stopSidebarResize);
+    window.removeEventListener('pointercancel', stopSidebarResize);
+    document.body.classList.remove('sidebar-resizing');
+  };
+  const resizeSidebar = (event: PointerEvent) => setClampedSidebarWidth(event.clientX);
+  const startSidebarResize = (event: PointerEvent) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    document.body.classList.add('sidebar-resizing');
+    window.addEventListener('pointermove', resizeSidebar);
+    window.addEventListener('pointerup', stopSidebarResize);
+    window.addEventListener('pointercancel', stopSidebarResize);
+  };
+  const resizeSidebarWithKeyboard = (event: KeyboardEvent) => {
+    const step = event.shiftKey ? SIDEBAR_KEYBOARD_STEP * 2 : SIDEBAR_KEYBOARD_STEP;
+    if (event.key === 'ArrowLeft') setClampedSidebarWidth(sidebarWidth() - step);
+    else if (event.key === 'ArrowRight') setClampedSidebarWidth(sidebarWidth() + step);
+    else if (event.key === 'Home') setClampedSidebarWidth(SIDEBAR_MIN_WIDTH);
+    else if (event.key === 'End') setClampedSidebarWidth(SIDEBAR_MAX_WIDTH);
+    else return;
+    event.preventDefault();
+  };
+
   onMount(() => {
     const query = window.matchMedia(compactViewportQuery);
     const sync = () => {
@@ -19,21 +58,53 @@ export function AppShell() {
       if (!query.matches) setOpen(false);
     };
     sync(); query.addEventListener('change', sync);
-    onCleanup(() => query.removeEventListener('change', sync));
+    onCleanup(() => {
+      query.removeEventListener('change', sync);
+      stopSidebarResize();
+    });
   });
   const openDrawer = () => {
     if (mobile()) setOpen(true);
-    else queueMicrotask(() => drawer?.querySelector<HTMLElement>('.project-heading button:not(:disabled),.new-project-button:not(:disabled)')?.focus());
+    else {
+      setSidebarCollapsed(false);
+      queueMicrotask(() => drawer?.querySelector<HTMLElement>('.new-project-button:not(:disabled),.project-heading button:not(:disabled)')?.focus());
+    }
   };
   const requestSidebar = (kind: 'create-project' | 'import', projectId?: string) => {
     setSidebarIntent({ kind, projectId, nonce: Date.now() });
     if (mobile()) openDrawer();
+    else setSidebarCollapsed(false);
   };
+  const desktopSidebarCollapsed = () => !mobile() && sidebarCollapsed();
+  const sidebarGridTemplate = () => mobile()
+    ? 'minmax(0, 1fr)'
+    : `${desktopSidebarCollapsed() ? SIDEBAR_COLLAPSED_WIDTH : sidebarWidth()}px minmax(0, 1fr)`;
+
   return (
-    <div class="app-shell grid h-dvh overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide">
+    <div class="app-shell relative grid h-dvh overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide" style={{ 'grid-template-columns': sidebarGridTemplate() }}>
       <ProjectDrawer ref={(element) => { drawer = element; }} open={open()} modal={mobile()} onOpenChange={setOpen}>
-        <ProjectSidebar onNavigate={() => setOpen(false)} onOpenSystem={() => setSystemOpen(true)} intent={sidebarIntent()} />
+        <ProjectSidebar
+          collapsed={desktopSidebarCollapsed()}
+          onToggleCollapsed={() => { if (!mobile()) setSidebarCollapsed((collapsed) => !collapsed); }}
+          onNavigate={() => setOpen(false)}
+          onOpenSystem={() => setSystemOpen(true)}
+          intent={sidebarIntent()}
+        />
       </ProjectDrawer>
+      {!desktopSidebarCollapsed() && <div
+        class="sidebar-resize-handle max-desk:hidden"
+        style={{ left: `${sidebarWidth()}px` }}
+        role="separator"
+        aria-label="Resize sidebar"
+        aria-orientation="vertical"
+        aria-valuemin={SIDEBAR_MIN_WIDTH}
+        aria-valuemax={SIDEBAR_MAX_WIDTH}
+        aria-valuenow={sidebarWidth()}
+        aria-valuetext={`${sidebarWidth()} pixels wide`}
+        tabIndex={0}
+        onPointerDown={startSidebarResize}
+        onKeyDown={resizeSidebarWithKeyboard}
+      />}
       <main ref={main} class="conversation-pane min-w-0 min-h-0 overflow-hidden">
         <ChatView onOpenNavigation={openDrawer} onOpenSystem={() => setSystemOpen(true)} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />
       </main>

@@ -1,10 +1,1 @@
-/* auth.css（Tailwind 迁移后保留规则）。
-   .auth-* 布局样式已迁移为 AuthGate.tsx 中的原子类；以下为变体无法
-   表达的紧凑按钮场景覆盖 —— 原子类间覆盖顺序不可控（compact 基类的
-   px-9/font-size 12px 与场景要求的 padding:0/font-size 14px 冲突），
-   故保留自定义规则。margin 等布局值在 JSX 原子类上。 */
-.auth-problem .ui-button--compact {
-  padding-inline: 0;
-  color: var(--text-primary);
-  font-size: 14px;
-}
+/* Auth layout uses shared UI primitives and Tailwind utilities. */

@@ -56,4 +56,15 @@ describe('SessionSearch', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Opening is not confirmed yet');
     expect(screen.getByRole('alert')).toHaveTextContent('The current session was not switched');
   });
+
+  it('keeps listbox keyboard navigation semantic while selecting the exact session', async () => {
+    render(() => <SessionSearch open onClose={() => {}} />);
+    fireEvent.input(screen.getByRole('textbox', { name: 'Search sessions' }), { target: { value: 'New conversation' } });
+    const listbox = await screen.findByRole('listbox', { name: 'Search results' });
+    const option = screen.getByRole('option', { name: /New conversation/ });
+    fireEvent.focusIn(listbox);
+    await Promise.resolve();
+    expect(option).toHaveFocus();
+    expect(option).toHaveAttribute('aria-selected', 'false');
+  });
 });

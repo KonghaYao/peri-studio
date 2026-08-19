@@ -1,7 +1,7 @@
 import * as Y from 'yjs';
 import { asArray, asMap, getNum, getStr, safeTime, yText, yValue } from './yjs-values';
 
-export interface ReasoningBlock { text: string; visibility: string | null }
+export interface ReasoningBlock { id?: string; text: string; visibility: string | null }
 export interface ToolCallInfo {
   toolCallId: string | null;
   name: string | null;
@@ -108,7 +108,7 @@ export function renderChat(doc: Y.Doc): ChatView {
           break;
         }
         case 'reasoning':
-          entry.reasoning.push({ text: yText(block.get('text')) || '', visibility: getStr(block, 'visibility') });
+          entry.reasoning.push({ id: blockIdValue, text: yText(block.get('text')) || '', visibility: getStr(block, 'visibility') });
           break;
         case 'tool_call': {
           const id = getStr(block, 'tool_call_id');

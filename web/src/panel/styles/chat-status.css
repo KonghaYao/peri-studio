@@ -1,5 +1,4 @@
-/* 会话头与运行状态、连接与错误状态。
-   由 chat.css 按区块拆分而来（原行 21-108、884-1083），选择器与媒体查询保持原样。 */
+/* Chat header runtime status and responsive chat layout. */
 /* 会话头与运行状态 */
 .chat-header {
   position: relative;
@@ -68,14 +67,6 @@
     opacity: .35;
   }
 }
-@keyframes message-loading-pulse {
-  0%,100% {
-    opacity: .25;
-  }
-  50% {
-    opacity: 1;
-  }
-}
 .connection-pill .ui-status__dot {
   width: 6px;
   height: 6px;
@@ -88,119 +79,6 @@
   top: 42px;
   min-width: 190px;
 }
-/* 连接与错误状态 */
-.connection-problem {
-  display: flex;
-  align-items: center;
-  gap: var(--space-12);
-  margin: var(--space-12) var(--space-20) 0;
-  padding: var(--space-13) var(--space-14);
-  border: 1px solid var(--danger-border);
-  border-radius: var(--radius-14);
-  background: var(--danger-soft);
-}
-.connection-problem__mark {
-  display: grid;
-  width: 26px;
-  height: 26px;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: var(--radius-full);
-  background: var(--danger);
-  color: var(--surface);
-  font-weight: 700;
-}
-.connection-problem__body {
-  min-width: 0;
-  flex: 1;
-}
-.connection-problem__body strong {
-  font-size: 13px;
-}
-.connection-problem__body p {
-  margin: var(--space-3) 0 0;
-  color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 1.45;
-}
-.restore-banner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-9);
-  margin: var(--space-12) var(--space-20) 0;
-  padding: var(--space-10);
-  border-radius: var(--radius-12);
-  background: var(--surface-muted);
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-.error-center {
-  display: flex;
-  max-height: 180px;
-  flex-direction: column;
-  gap: var(--space-6);
-  margin: var(--space-10) var(--space-20) 0;
-  overflow: auto;
-}
-.error-card {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-12);
-  padding: var(--space-11) var(--space-12);
-  border: 1px solid var(--danger-border);
-  border-radius: var(--radius-12);
-  background: var(--danger-soft);
-  font-size: 12px;
-}
-.error-card strong {
-  font-size: 13px;
-}
-.error-card p {
-  margin: var(--space-3) 0;
-  color: var(--text-secondary);
-}
-.error-card code {
-  padding: 0;
-  background: transparent;
-  font-size: 10px;
-}
-.error-card__actions {
-  display: flex;
-  flex-shrink: 0;
-  gap: var(--space-4);
-}
-.error-card__actions button {
-  min-height: 32px;
-  border: 0;
-  border-radius: var(--radius-8);
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-.error-card__actions button:hover {
-  background: var(--surface-hover-translucent);
-}
-.message-actions {
-  display: flex;
-  min-height: 28px;
-  align-items: center;
-}
-.message-actions button {
-  min-height: 28px;
-  padding: 0 var(--space-8);
-  border: 0;
-  border-radius: var(--radius-7);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 11px;
-}
-.message-actions button:hover {
-  background: var(--hover);
-  color: var(--text-primary);
-}
 @media (min-width:960px) and (max-width:1199px) {
   .chat-header {
     height: 56px;
@@ -209,9 +87,6 @@
   .message-list-content {
     max-width: 760px;
     padding-inline: var(--space-18);
-  }
-  .connection-problem,.error-center {
-    margin-inline: var(--space-16);
   }
 }
 @media (max-width:959px) {
@@ -228,22 +103,6 @@
   }
   .message-list-content {
     max-width: 760px;
-  }
-  .connection-problem,.error-center {
-    margin-inline: var(--space-12);
-  }
-}
-@media (max-width:480px) {
-  .connection-problem {
-    align-items: flex-start;
-    margin: var(--space-10);
-    flex-wrap: wrap;
-  }
-  .connection-problem .ui-button {
-    width: 100%;
-  }
-  .restore-banner {
-    margin: var(--space-10);
   }
 }
 @media (max-width:480px) {
@@ -275,10 +134,6 @@
   }
 }
 @media (pointer:coarse) {
-  .jump-latest {
-    min-height: 44px;
-    padding-inline: var(--space-16);
-  }
   .md-code-header {
     min-height: 44px;
   }

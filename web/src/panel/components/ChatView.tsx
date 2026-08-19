@@ -12,14 +12,12 @@
 import { ChatHeader } from './ChatHeader';
 import { Composer } from './Composer';
 import { MessageList } from './MessageList';
-import { createMemo, Show } from 'solid-js';
-import { chatHead, createProjectSession, creatingSessionProjectId, elicitationResponses, elicitations, projects, respondElicitation, selectedSessionId } from '../store';
+import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
+import { chatHead, createProjectSession, creatingSessionProjectId, elicitationResponses, elicitations, projects, registryHydrated, respondElicitation, restoringSessionId, selectedSessionId } from '../store';
 import { readOnly } from '../lib/auth-state';
-import { EmptyState } from '../../components/ui';
+import { Button, EmptyState, LoadingState } from '../../components/ui';
 import { ConnectionProblem } from './ConnectionProblem';
-import { restoringSessionId } from '../store';
 import { ErrorCenter } from './ErrorCenter';
-import { Button } from '../../components/ui';
 import { QuickStartComposer } from './QuickStartComposer';
 import { AgentActivityRail } from './AgentActivityRail';
 import { AgentPlanPanel } from './AgentPlanPanel';
@@ -33,7 +31,24 @@ type ChatViewProps = {
 };
 
 export function ChatView(props: ChatViewProps) {
+  const [composerHeight, setComposerHeight] = createSignal(0);
+  let composerStack: HTMLDivElement | undefined;
+  let composerObserver: ResizeObserver | undefined;
+  onMount(() => {
+    if (!composerStack || typeof ResizeObserver === 'undefined') return;
+    const updateHeight = () => setComposerHeight(composerStack?.getBoundingClientRect().height ?? 0);
+    updateHeight();
+    composerObserver = new ResizeObserver(updateHeight);
+    composerObserver.observe(composerStack);
+  });
+  onCleanup(() => composerObserver?.disconnect());
   const activeProjects = createMemo(() => projects().filter((project) => !project.archivedAt));
+  const hasArchivedProjects = createMemo(() => projects().some((project) => !!project.archivedAt));
+  const emptyDescription = () => activeProjects().length
+    ? 'Start a new session, or add an existing ACP session to the sidebar.'
+    : hasArchivedProjects()
+      ? 'Restore an archived project or create a new project to continue.'
+      : 'Create a project first; Peri Studio saves and restores ACP sessions within it.';
   return (
     <section class="chat-view flex h-full min-h-0 flex-col">
       <ChatHeader
@@ -42,24 +57,31 @@ export function ChatView(props: ChatViewProps) {
       />
       <ConnectionProblem />
       <ErrorCenter />
-      <Show when={restoringSessionId()}><div class="restore-banner flex items-center justify-center gap-9 mt-12 mx-20 p-10 rounded-12 bg-surface-muted text-text-secondary text-13 max-narrow:m-10" role="status"><span class="ui-spinner" aria-hidden="true" />Restoring last session and ACP context…</div></Show>
-      <Show when={selectedSessionId()} fallback={<EmptyState title="What would you like to do today?" description={activeProjects().length ? 'Start a new session, or add an existing ACP session to the sidebar.' : 'Create a project first; Peri Studio saves and restores ACP sessions within it.'} action={
+      <Show when={restoringSessionId()}><LoadingState label="Restoring last session and ACP context…" class="restore-banner justify-center mt-12 mx-20 max-narrow:m-10" /></Show>
+      <Show when={selectedSessionId()} fallback={<Show
+        when={registryHydrated()}
+        fallback={<LoadingState label="Loading projects" description="Syncing projects and sessions from the Peri Studio server…" class="flex-1 justify-center text-center" />}
+      >
+        <EmptyState title="What would you like to do today?" description={emptyDescription()} action={
         <div class="empty-actions">
           <Show when={activeProjects().length === 0}><Button variant="primary" disabled={readOnly()} onClick={props.onCreateProject}>New project</Button></Show>
           <Show when={activeProjects().length > 0}><QuickStartComposer projects={activeProjects().map(({ id, name }) => ({ id, name }))} initialProjectId={activeProjects().length === 1 ? activeProjects()[0].id : undefined} /><div class="empty-secondary-actions"><Show when={activeProjects().length === 1}><Button busy={creatingSessionProjectId() === activeProjects()[0].id} disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(activeProjects()[0].id)}>Start empty session</Button><Button disabled={readOnly()} onClick={() => props.onImport?.(activeProjects()[0].id)}>Import existing session</Button></Show><Show when={activeProjects().length > 1}><Button onClick={props.onOpenNavigation}>Browse projects and sessions</Button></Show></div></Show>
         </div>
-      } />}>
-        <AgentActivityRail activities={chatHead()?.agent?.activities ?? []} />
-        <AgentPlanPanel entries={chatHead()?.agent?.plan ?? []} />
-        <MessageList />
-        <div class="composer-stack flex-none">
-          <ElicitationQueue
-            elicitations={elicitations()}
-            responding={elicitationResponses()}
-            readOnly={readOnly()}
-            onRespond={respondElicitation}
-          />
-          <Composer />
+        } />
+      </Show>}>
+        <div class="chat-workspace relative flex min-h-0 flex-1 flex-col">
+          <AgentActivityRail activities={chatHead()?.agent?.activities ?? []} />
+          <AgentPlanPanel entries={chatHead()?.agent?.plan ?? []} />
+          <MessageList bottomInset={composerHeight()} />
+          <div ref={composerStack} class="composer-stack composer-stack--overlay absolute right-0 bottom-0 left-0 z-20">
+            <ElicitationQueue
+              elicitations={elicitations()}
+              responding={elicitationResponses()}
+              readOnly={readOnly()}
+              onRespond={respondElicitation}
+            />
+            <Composer />
+          </div>
         </div>
       </Show>
     </section>

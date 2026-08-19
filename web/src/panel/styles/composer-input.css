@@ -23,7 +23,7 @@
   background: var(--surface);
   box-shadow: var(--shadow-float);
 }
-.quick-start .ui-textarea {
+.quick-start__textarea {
   box-sizing: border-box;
   width: 100%;
   min-height: 84px;
@@ -49,27 +49,25 @@
   font-size: 11px;
 }
 .quick-start__state {
-  display: flex;
-  align-items: center;
-  gap: var(--space-9);
   margin-top: var(--space-8);
-  padding: var(--space-9) var(--space-10);
-  border-radius: var(--radius-10);
-  background: var(--surface-muted);
-  color: var(--text-secondary);
-  font-size: 12px;
 }
 .quick-start__state small {
   min-width: 0;
-  flex: 1;
 }
-.quick-start__state--uncertain {
-  background: var(--warning-soft);
-  color: var(--warning);
+.quick-start__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
 }
-.quick-start__state--failed {
-  background: var(--danger-soft);
-  color: var(--danger);
+.composer-submission {
+  margin-top: var(--space-2);
+  border-style: dashed;
+}
+.composer-submission__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  margin-top: var(--space-8);
 }
 .empty-secondary-actions {
   display: flex;
@@ -84,6 +82,19 @@
   max-width: var(--composer-max);
   margin: 0 auto;
   padding: 0 var(--space-20) var(--space-20);
+}
+/* 聊天工作区内的 composer 不是普通页脚：悬浮表面、渐进遮罩和更强层级让它成为
+   提示词工作台，同时仍沿用原有 submit/delivery 状态。 */
+.composer-wrap--overlay {
+  padding-bottom: calc(var(--space-20) + env(safe-area-inset-bottom));
+}
+.composer-wrap--overlay .composer-surface {
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: var(--shadow-composer-overlay);
+  backdrop-filter: blur(14px) saturate(1.08);
+}
+.composer-wrap--overlay .composer-toolbar {
+  border-top: 1px solid color-mix(in srgb, var(--divider) 84%, transparent);
 }
 .composer-surface {
   overflow: hidden;

@@ -12,11 +12,11 @@
 .rewind-dialog__intro {
   padding: var(--space-8) 0 var(--space-16);
 }
-.rewind-dialog__intro strong,.rewind-dialog__result>strong,.rewind-dialog__loading>strong {
+.rewind-dialog__intro strong,.rewind-dialog__result>strong {
   color: var(--text-primary);
   font-size: 15px;
 }
-.rewind-dialog__intro p,.rewind-dialog__loading p,.rewind-dialog__result p {
+.rewind-dialog__intro p,.rewind-dialog__result p {
   margin: var(--space-5) 0 0;
   color: var(--text-secondary);
   font-size: 13px;
@@ -42,29 +42,12 @@
   padding: 0;
   list-style: none;
 }
-.rewind-candidates button {
-  display: grid;
-  width: 100%;
-  min-height: 58px;
-  grid-template-columns: minmax(0,1fr) auto;
-  align-items: center;
-  gap: var(--space-18);
-  padding: var(--space-11) var(--space-13);
-  border: 1px solid var(--divider);
-  border-radius: var(--radius-12);
-  background: var(--surface-muted);
-  color: var(--text-primary);
+.rewind-candidate {
   font: inherit;
-  text-align: left;
-  cursor: pointer;
 }
-.rewind-candidates button:hover {
+.rewind-candidate:hover {
   border-color: var(--border-strong);
   background: var(--selected);
-}
-.rewind-candidates button:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
 }
 .rewind-candidates span {
   overflow: hidden;
@@ -164,7 +147,7 @@
     max-height: 82dvh;
     padding: var(--space-2) var(--space-16) var(--space-17);
   }
-  .rewind-candidates button {
+  .rewind-candidate {
     min-height: 58px;
   }
   .rewind-dialog .form-actions {

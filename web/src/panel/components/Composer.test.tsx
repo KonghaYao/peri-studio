@@ -12,7 +12,7 @@ import {
 } from '../store';
 import { setPrincipalRole } from '../lib/auth-state';
 import { setComposerDraft } from '../lib/composer-draft';
-import { markMessageDeliveryUncertain, messageSubmission, resetMessageDelivery, startMessageDelivery } from '../lib/message-delivery';
+import { blockUnknownMessageDelivery, failMessageDelivery, markMessageDeliveryUncertain, messageSubmission, resetMessageDelivery, startMessageDelivery } from '../lib/message-delivery';
 import { markRuntimeControlUncertain, resetRuntimeControls, startRuntimeControl } from '../lib/runtime-control';
 import { Composer } from './Composer';
 
@@ -64,6 +64,28 @@ describe('Composer', () => {
     expect(input).toBeDisabled();
     expect(input).toHaveAttribute('placeholder', 'Select or create a session from the left first');
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+  });
+
+  it('keeps Enter, Shift+Enter, and IME composition distinct without creating a local message', () => {
+    selectReadyChat();
+    render(() => <Composer />);
+    const input = screen.getByRole('textbox');
+    fireEvent.input(input, { target: { value: 'inspect the state' } });
+
+    const shiftEnter = new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true, cancelable: true });
+    input.dispatchEvent(shiftEnter);
+    expect(shiftEnter.defaultPrevented).toBe(false);
+
+    const composingEnter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    Object.defineProperty(composingEnter, 'isComposing', { value: true });
+    input.dispatchEvent(composingEnter);
+    expect(composingEnter.defaultPrevented).toBe(false);
+    expect(messageSubmission()).toBeNull();
+
+    const sendEnter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    input.dispatchEvent(sendEnter);
+    expect(sendEnter.defaultPrevented).toBe(true);
+    expect(messageSubmission()).toBeNull();
   });
 
   it('enables send only after meaningful input', () => {
@@ -259,7 +281,7 @@ describe('Composer', () => {
     expect(retry).toHaveClass('composer-action--uncertain');
   });
 
-  it('keeps an uncertain message out of the editor while the outbox owns it', async () => {
+  it('keeps an uncertain message out of the editor while exposing only same-request confirmation', async () => {
     selectReadyChat();
     setComposerDraft('session-1', 'preserved draft');
     startMessageDelivery('cmd-1', 'preserved draft', 'session-1', 'chat-1');
@@ -267,7 +289,43 @@ describe('Composer', () => {
     render(() => <Composer />);
     await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue(''));
     expect(screen.getByRole('textbox')).toBeDisabled();
-    expect(screen.queryByText('Result not confirmed yet')).not.toBeInTheDocument();
+    expect(screen.getByText('Message result not confirmed')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirm with the same request' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Back to edit' })).not.toBeInTheDocument();
+  });
+
+  it('marks an in-flight submission as busy without treating it as a conversation message', () => {
+    selectReadyChat();
+    startMessageDelivery('cmd-1', 'pending text', 'session-1', 'chat-1');
+    render(() => <Composer />);
+
+    expect(document.querySelector('.composer-surface')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByText('Sending message')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveAccessibleDescription(/The message is not part of the conversation until the server projects it/);
+  });
+
+  it('restores only a definitely failed submission to the current project session draft', async () => {
+    selectReadyChat();
+    startMessageDelivery('cmd-1', 'restore this draft', 'session-1', 'chat-1');
+    failMessageDelivery('cmd-1', 'Message submission failed');
+    render(() => <Composer />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back to edit' }));
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('restore this draft'));
+    expect(screen.getByRole('textbox')).toBeEnabled();
+    expect(messageSubmission()).toBeNull();
+  });
+
+  it('keeps delivery-unknown locked without retry or editing controls', () => {
+    selectReadyChat();
+    startMessageDelivery('cmd-1', 'possibly executed', 'session-1', 'chat-1');
+    blockUnknownMessageDelivery('cmd-1');
+    render(() => <Composer />);
+
+    expect(screen.getByText('Message delivery result unknown')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Confirm with the same request' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Back to edit' })).not.toBeInTheDocument();
   });
 
   it('isolates drafts and recovery surfaces by persisted session identity', async () => {

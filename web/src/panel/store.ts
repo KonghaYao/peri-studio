@@ -49,6 +49,7 @@ export const [permissions, setPermissions] = createSignal<ControlView['pendingPe
 export const [elicitations, setElicitations] = createSignal<NonNullable<ControlView['pendingElicitations']>>([]);
 export const [elicitationResponses, setElicitationResponses] = createSignal<Record<string, string>>({});
 export const [projects, setProjects] = createSignal<ProjectInfo[]>([]);
+export const [registryHydrated, setRegistryHydrated] = createSignal(false);
 export const [projectSessions, setProjectSessions] = createSignal<ProjectSessionInfo[]>([]);
 export const [importableSessions, setImportableSessions] = createSignal<SessionSummaryInfo[]>([]);
 /** registry 投影的实例清单（拓扑面板只读消费；由 server 权威维护状态）。 */
@@ -82,7 +83,6 @@ export const [sessionConfigMutation, setSessionConfigMutation] = createSignal<Se
 const store = new DocStore(); // docId → Y.Doc
 let currentCid: string | null = null; // 选中对话（重连后恢复订阅）
 const [uncertainMetadataCount, setUncertainMetadataCount] = createSignal(0);
-let registryReceived = false;
 
 const commands = new CommandTracker<ActionFrame, Ack, ActionError>({
   timeoutMs: ACK_TIMEOUT_MS,
@@ -193,7 +193,7 @@ installConnection({
   toast,
   sendSubscribe,
   onReady: () => {
-    if (registryReceived) reconcileSessionNavigation(projectSessions());
+    if (registryHydrated()) reconcileSessionNavigation(projectSessions());
     if (selectedSessionId()) requestPromptRecovery(selectedSessionId()!);
   },
   onFrame,
@@ -284,7 +284,7 @@ store.onUpdate = (docId: string): void => {
     const projectedSessions = retainLiveRuntimeHints(reg.projectSessions, reg.chats) as ProjectSessionInfo[];
     setProjectSessions(projectedSessions);
     setImportableSessions(unimportedSessions(reg.sessions, reg.projectSessions));
-    registryReceived = true;
+    setRegistryHydrated(true);
     reconcileSessionNavigation(projectedSessions);
     return;
   }
@@ -446,7 +446,7 @@ export function resetAuthenticatedSession(): void {
   setPersistentErrors([]);
   commands.reset();
   resetPermissionDecisions();
-  registryReceived = false;
+  setRegistryHydrated(false);
   store.clear();
   // Keep this last: disconnect/reset callbacks are allowed to publish feedback,
   // but no notification from the previous principal may survive this boundary.

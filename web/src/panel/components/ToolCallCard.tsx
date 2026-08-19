@@ -1,4 +1,4 @@
-import { createMemo, Show } from 'solid-js';
+import { createMemo, Show, type Accessor } from 'solid-js';
 import type { ToolCallInfo } from '../lib/chat-view';
 import { CopyButton } from '../../components/ui';
 import { CollapsibleSection } from './shared/CollapsibleSection';
@@ -51,8 +51,10 @@ function DataSection(props: { label: string; value: unknown; tone?: 'error' }) {
   );
 }
 
-export function ToolCallCard(props: { toolCall: ToolCallInfo }) {
-  const tool = () => props.toolCall;
+type ToolCallSource = ToolCallInfo | Accessor<ToolCallInfo>;
+
+export function ToolCallCard(props: { toolCall: ToolCallSource }) {
+  const tool = () => typeof props.toolCall === 'function' ? props.toolCall() : props.toolCall;
   const state = createMemo(() => STATUS[(tool().status || '').toLowerCase()] || { label: tool().status || 'Unknown status', tone: 'neutral' });
   const duration = createMemo(() => observedDuration(tool().startedAt, tool().completedAt));
   const errorText = createMemo(() => [tool().publicError?.code, tool().publicError?.message].filter(Boolean).join(': '));

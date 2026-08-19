@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import type { MessageSubmission } from '../lib/message-delivery';
-import { Button, CopyButton } from '../../components/ui';
+import { Button, CopyButton, Spinner } from '../../components/ui';
 
 const titleFor = (phase: MessageSubmission['phase']) => phase === 'uncertain'
   ? 'Result not confirmed yet'
@@ -21,6 +21,7 @@ export function MessageOutbox(props: {
   onEdit: () => void;
 }) {
   const actionable = () => ['uncertain', 'delivery_unknown', 'failed'].includes(props.submission.phase);
+  const inFlight = () => ['sending', 'accepted', 'committed'].includes(props.submission.phase);
 
   return <article
     class={`conversation-message conversation-message--user message-outbox message-outbox--${props.submission.phase} flex mb-12 justify-end`}
@@ -30,7 +31,7 @@ export function MessageOutbox(props: {
     <div class={`conversation-message__surface min-w-0 max-w-72p p-12 px-16 rounded-16 border border-dashed [&>*+*]:mt-10 ${props.submission.phase === 'uncertain' ? 'border-warning-border bg-warning-soft' : props.submission.phase === 'failed' ? 'border-danger-border bg-danger-soft' : 'border-strong bg-surface-muted'}`}>
       <div class="conversation-message__text text-text-primary text-15 leading-25"><span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{props.submission.text}</span></div>
       <footer class="message-outbox__status flex items-center gap-7 text-text-secondary text-12 leading-14">
-        <span class={`message-outbox__indicator w-7 h-7 shrink-0 rounded-full ${props.submission.phase === 'uncertain' ? 'bg-warning-strong' : props.submission.phase === 'failed' ? 'bg-danger' : 'bg-text-muted'}`} aria-hidden="true" />
+        <Show when={inFlight()} fallback={<span class={`message-outbox__indicator w-7 h-7 shrink-0 rounded-full ${props.submission.phase === 'uncertain' ? 'bg-warning-strong' : props.submission.phase === 'failed' ? 'bg-danger' : 'bg-text-muted'}`} aria-hidden="true" />}><Spinner decorative /></Show>
         <span><strong class="text-text-primary font-semibold">{titleFor(props.submission.phase)}</strong><Show when={props.submission.detail}> · {props.submission.detail}</Show></span>
       </footer>
       <Show when={actionable()}>

@@ -130,28 +130,13 @@
 }
 /* 提交状态条 */
 .submission-state {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-16);
   margin: var(--space-10) var(--space-4) 0;
-  padding: var(--space-12) var(--space-14);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-14);
-  background: var(--surface);
-  box-shadow: var(--shadow-recovery);
-  font-size: 13px;
 }
 .submission-state__body {
   min-width: 0;
 }
-.submission-state strong {
-  font-size: 13px;
-}
 .submission-state p {
   margin: var(--space-3) 0 0;
-  color: var(--text-secondary);
-  line-height: 1.45;
 }
 .submission-state details {
   margin-top: var(--space-8);
@@ -169,31 +154,10 @@
   color: var(--text-primary);
   font: 12px/1.5 var(--font-mono);
 }
-.submission-state--uncertain {
-  border-color: var(--warning-border);
-  background: var(--warning-soft);
-}
-.submission-state--failed {
-  border-color: var(--danger-border);
-  background: var(--danger-soft);
-}
 .submission-state__actions {
   display: flex;
   flex-shrink: 0;
   gap: var(--space-4);
-}
-.submission-state__actions button {
-  min-height: 32px;
-  border: 0;
-  border-radius: var(--radius-8);
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-.submission-state__actions .submission-state__primary {
-  background: var(--btn-primary);
-  color: var(--surface);
-  padding: 0 var(--space-10);
 }
 .composer-skills {
   position: relative;

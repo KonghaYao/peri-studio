@@ -1,5 +1,5 @@
 import { For, Match, Show, Switch } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, Spinner } from '../../components/ui';
+import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, Listbox, ListboxItem, LoadingState } from '../../components/ui';
 import { closeRewindFlow, executeRewind, openRewindFlow, previewRewind, rewindFlow } from '../lib/rewind-assembly';
 
 export function RewindDialog(props: { open: boolean; onClose: () => void }) {
@@ -19,25 +19,34 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
     <section class="rewind-dialog box-border px-22 pb-22 pt-4">
       <Switch>
         <Match when={state().kind === 'loading_candidates'}>
-          <div class="rewind-dialog__loading grid min-h-180 place-content-center justify-items-center p-24 text-center"><Spinner label="Reading rewindable messages" /><p>Reading user messages from the Peri session history.</p></div>
+          <LoadingState class="rewind-dialog__loading grid min-h-180 place-content-center justify-items-center p-24 text-center" label="Reading rewindable messages" description="Reading user messages from the Peri session history." />
         </Match>
         <Match when={state().kind === 'select_target' && state()} keyed>{(current) => {
           if (current.kind !== 'select_target') return null;
           return <>
             <div class="rewind-dialog__intro pt-8 pb-16"><strong>Choose the message to rewind to</strong><p>Messages after it will be removed. You will see the file impact first; nothing executes immediately.</p></div>
-            <Show when={current.candidates.length} fallback={<div class="rewind-dialog__empty grid min-h-180 place-content-center justify-items-center p-24 text-center">The current session has no user messages to rewind to.</div>}>
-              <ol class="rewind-candidates grid gap-7 m-0 p-0 list-none">
-                <For each={current.candidates}>{(candidate, index) => <li>
-                  <button type="button" class="hover:border-border-strong hover:bg-selected focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring" onClick={() => previewRewind(candidate)}>
-                    <span>{candidate.preview || 'Empty message'}</span><small>Message {index() + 1}</small>
-                  </button>
-                </li>}</For>
-              </ol>
+            <Show when={current.candidates.length} fallback={<EmptyState variant="inline" class="rewind-dialog__empty min-h-180 p-24" title="No user messages" description="The current session has no user messages to rewind to." />}>
+              <Listbox
+                class="rewind-candidates grid gap-7 m-0 p-0 list-none"
+                aria-label="Rewind target message"
+                options={current.candidates}
+                optionValue="messageId"
+                optionTextValue={(candidate) => candidate.preview || 'Empty message'}
+                selectionMode="single"
+                onChange={(selected) => {
+                  const id = [...selected][0];
+                  const candidate = current.candidates.find((item) => item.messageId === id);
+                  if (candidate) previewRewind(candidate);
+                }}
+                renderItem={(item) => <ListboxItem item={item} class="rewind-candidate grid w-full min-h-58 grid-cols-[minmax(0,1fr)_auto] items-center gap-18 px-13 py-11 border border-divider rounded-12 bg-surface-muted text-text-primary text-left">
+                  <span>{item.rawValue.preview || 'Empty message'}</span><small>Message {current.candidates.findIndex((candidate) => candidate.messageId === item.rawValue.messageId) + 1}</small>
+                </ListboxItem>}
+              />
             </Show>
           </>;
         }}</Match>
         <Match when={state().kind === 'loading_preview'}>
-          <div class="rewind-dialog__loading grid min-h-180 place-content-center justify-items-center p-24 text-center"><Spinner label="Generating rewind preview" /><p>Checking the session history and workspace file impact.</p></div>
+          <LoadingState class="rewind-dialog__loading grid min-h-180 place-content-center justify-items-center p-24 text-center" label="Generating rewind preview" description="Checking the session history and workspace file impact." />
         </Match>
         <Match when={state().kind === 'confirm' && state()} keyed>{(current) => {
           if (current.kind !== 'confirm') return null;
@@ -55,7 +64,7 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
           </>;
         }}</Match>
         <Match when={state().kind === 'executing'}>
-          <div class="rewind-dialog__loading grid min-h-180 place-content-center justify-items-center p-24 text-center"><Spinner label="Executing rewind" /><strong>Rewinding and reloading the session</strong><p>Keep the page open. This operation will not retry automatically.</p></div>
+          <LoadingState class="rewind-dialog__loading grid min-h-180 place-content-center justify-items-center p-24 text-center" label="Executing rewind" description="Keep the page open. This operation will not retry automatically.">Rewinding and reloading the session</LoadingState>
         </Match>
         <Match when={state().kind === 'completed'}>
           <div class="rewind-dialog__result rewind-dialog__result--ok grid min-h-180 place-content-center justify-items-center p-24 text-center text-success"><strong>Rewind complete</strong><p>The session history and file projection have been reloaded.</p><Button variant="primary" onClick={close}>Done</Button></div>

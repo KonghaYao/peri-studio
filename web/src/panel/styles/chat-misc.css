@@ -370,48 +370,11 @@
   font-size: 12px;
   line-height: 1.5;
 }
-.elicitation-field textarea {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 82px;
-  resize: vertical;
-  padding: var(--space-11) var(--space-12);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-12);
-  background: var(--surface-muted);
-  color: var(--text-primary);
-  font: inherit;
-  line-height: 1.5;
-  outline: none;
-}
-.elicitation-field textarea:focus-visible {
-  border-color: var(--text-primary);
-  box-shadow: 0 0 0 2px var(--focus-ring);
-}
 .elicitation-options {
   display: grid;
   gap: var(--space-6);
 }
-.elicitation-options label {
-  display: flex;
-  min-height: 42px;
-  align-items: flex-start;
-  gap: var(--space-10);
-  padding: var(--space-9) var(--space-11);
-  border: 1px solid var(--divider);
-  border-radius: var(--radius-11);
-  background: var(--surface-muted);
-  cursor: pointer;
-}
-.elicitation-options label:has(input:checked) {
-  border-color: var(--border-strong);
-  background: var(--selected);
-}
-.elicitation-options input {
-  margin-top: var(--space-3);
-  accent-color: var(--text-primary);
-}
-.elicitation-options span {
+.elicitation-option span {
   display: grid;
   gap: var(--space-2);
 }
@@ -452,7 +415,7 @@
   .elicitation-card__actions .ui-button:first-child {
     flex-basis: 100%;
   }
-  .elicitation-options label {
+  .elicitation-option {
     min-height: 44px;
   }
 }

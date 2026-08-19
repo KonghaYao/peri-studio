@@ -1,10 +1,10 @@
 import { primaryShortcut } from '../lib/keyboard';
 import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
-import { archiveProject, archiveProjectSession, chatStatusSignal, createProject, createProjectSession, creatingSessionProjectId, discoverProjectSessions, discoveringSessionsProjectId, importableSessions, importProjectSession, navigateProjectSession, openingSessionId, permissions, projects, projectSessions, renameProject, renameProjectSession, restoreProject, restoreProjectSession, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '../store';
+import { archiveProject, archiveProjectSession, chatStatusSignal, createProject, createProjectSession, creatingSessionProjectId, discoverProjectSessions, discoveringSessionsProjectId, importableSessions, importProjectSession, navigateProjectSession, openingSessionId, permissions, projects, projectSessions, registryHydrated, renameProject, renameProjectSession, restoreProject, restoreProjectSession, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '../store';
 import { isTerminal } from '../lib/action-state';
 import { connState } from '../lib/connection';
 import { readOnly } from '../lib/auth-state';
-import { Button, Dialog, DialogContent, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Icon, IconButton, Status, TextField } from '../../components/ui';
+import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, Dialog, DialogContent, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, EmptyState, Icon, IconButton, LoadingState, Status, TextField } from '../../components/ui';
 import { useAuthActions } from '../lib/auth-hook';
 import { SessionSearch } from './SessionSearch';
 import { SessionImportDialog } from './SessionImportDialog';
@@ -20,8 +20,18 @@ function ImportIcon() { return <Icon class="size-17!"><path d="M10 3v9m0 0 3-3m-
 function ChevronIcon(props: { class?: string }) { return <Icon size="small" class={`size-16 flex-none text-text-muted ${props.class ?? ''}`}><path d="m7 5 5 5-5 5" /></Icon>; }
 function MoreIcon() { return <Icon><circle cx="4" cy="10" r="1" /><circle cx="10" cy="10" r="1" /><circle cx="16" cy="10" r="1" /></Icon>; }
 function SearchIcon() { return <Icon><circle cx="8.5" cy="8.5" r="5" /><path d="m12.2 12.2 4 4" /></Icon>; }
+function CollapseIcon() { return <Icon><path d="M12 4 6 10l6 6M6 10h9" /></Icon>; }
+function ExpandIcon() { return <Icon><path d="m8 4 6 6-6 6m6-6H5" /></Icon>; }
 
-export function ProjectSidebar(props: { onNavigate?: () => void; onOpenSystem?: () => void; intent?: { kind: 'create-project' | 'import'; projectId?: string; nonce: number } | null }) {
+interface ProjectSidebarProps {
+  collapsed?: boolean;
+  onNavigate?: () => void;
+  onOpenSystem?: () => void;
+  onToggleCollapsed?: () => void;
+  intent?: { kind: 'create-project' | 'import'; projectId?: string; nonce: number } | null;
+}
+
+export function ProjectSidebar(props: ProjectSidebarProps) {
   const [creating, setCreating] = createSignal(false);
   const [projectCreateSubmitting, setProjectCreateSubmitting] = createSignal(false);
   const [name, setName] = createSignal('');
@@ -48,14 +58,14 @@ export function ProjectSidebar(props: { onNavigate?: () => void; onOpenSystem?: 
     return session.id !== selectedSessionId() || !isTerminal(chatStatusSignal()[session.activeChatId]);
   };
   const projectHasRunningSession = (projectId: string) => projectSessions().some((session) => session.projectId === projectId && sessionHasRunningRuntime(session));
-  const toggleProject = (projectId: string) => setCollapsedProjects((current) => {
+  const setProjectCollapsed = (projectId: string, collapsed: boolean) => setCollapsedProjects((current) => {
     const next = new Set(current);
-    if (next.has(projectId)) next.delete(projectId); else next.add(projectId);
+    if (collapsed) next.add(projectId); else next.delete(projectId);
     return next;
   });
-  const toggleArchivedSessions = (projectId: string) => setArchivedSessionsOpen((current) => {
+  const setArchivedSessionsExpanded = (projectId: string, open: boolean) => setArchivedSessionsOpen((current) => {
     const next = new Set(current);
-    if (next.has(projectId)) next.delete(projectId); else next.add(projectId);
+    if (open) next.add(projectId); else next.delete(projectId);
     return next;
   });
 
@@ -104,11 +114,25 @@ export function ProjectSidebar(props: { onNavigate?: () => void; onOpenSystem?: 
   };
 
   return (
-    <nav class="project-sidebar flex h-full min-h-0 flex-col px-12 desk:px-9 wide:px-12" aria-label="Projects & Sessions">
-      <div class="brand-row flex h-60 items-center gap-9 px-8 text-15 font-650 -tracking-1 desk:h-56 desk:px-6 wide:h-60 wide:px-8"><span class="brand-glyph grid size-26 place-items-center rounded-8 bg-text-primary text-12 text-surface">✦</span><span>Peri Studio</span></div>
-      <Button class="new-project-button w-full justify-start! mb-14 desk:mb-12 wide:mb-14" disabled={readOnly()} onClick={() => setCreating(true)}><PlusIcon />New project</Button>
-      <Button class="session-search-button w-full justify-start! -mt-8 mb-12 text-text-muted!" onClick={() => setSearchOpen(true)}><SearchIcon />Search sessions<kbd class="ml-auto rounded-5 border border-border-subtle bg-surface px-5 py-1 font-inherit text-11 text-text-muted">{primaryShortcut('K')}</kbd></Button>
-      <SessionSearch open={searchOpen()} onClose={() => setSearchOpen(false)} onSelected={props.onNavigate} />
+    <nav class={`project-sidebar flex h-full min-h-0 flex-col px-12 desk:px-9 wide:px-12 ${props.collapsed ? 'is-collapsed' : ''}`} aria-label="Projects & Sessions">
+      <div class="sidebar-workspace-header">
+        <Show
+          when={!props.collapsed}
+          fallback={<div class="sidebar-rail"><IconButton label="Expand sidebar" onClick={props.onToggleCollapsed}><ExpandIcon /></IconButton></div>}
+        >
+          <div class="brand-row flex h-60 items-center gap-9 px-8 text-15 font-650 -tracking-1 desk:h-56 desk:px-6 wide:h-60 wide:px-8">
+            <span class="brand-glyph grid size-26 place-items-center rounded-8 bg-text-primary text-12 text-surface">✦</span>
+            <span class="brand-copy"><small>Workspace</small><strong>Peri Studio</strong></span>
+            <IconButton class="sidebar-collapse-button max-desk:hidden" label="Collapse sidebar" onClick={props.onToggleCollapsed}><CollapseIcon /></IconButton>
+          </div>
+        </Show>
+      </div>
+      <Show when={!props.collapsed}>
+        <div class="workspace-actions">
+          <Button variant="primary" class="new-project-button w-full justify-start!" disabled={readOnly() || !registryHydrated()} onClick={() => setCreating(true)}><PlusIcon />New project</Button>
+          <Button class="session-search-button w-full justify-start! text-text-muted!" disabled={!registryHydrated()} onClick={() => setSearchOpen(true)}><SearchIcon /><span>Search sessions</span><kbd>{primaryShortcut('K')}</kbd></Button>
+        </div>
+        <SessionSearch open={searchOpen()} onClose={() => setSearchOpen(false)} onSelected={props.onNavigate} />
       <Show when={readOnly()}><div class="readonly-label -mt-8 mx-8 mb-12 text-11 font-semibold text-warning">Read-only mode</div></Show>
       <Dialog open={creating()} onOpenChange={(open) => { if (!open && !projectCreateSubmitting()) setCreating(false); }}><DialogContent dismissible={!projectCreateSubmitting()}><DialogTitle class="sr-only">New project</DialogTitle>
         <form class="project-form" onSubmit={submitProject}>
@@ -118,15 +142,27 @@ export function ProjectSidebar(props: { onNavigate?: () => void; onOpenSystem?: 
         </form>
       </DialogContent></Dialog>
       <div class="project-scroll min-h-0 flex-1 overflow-auto pb-16">
-        <Show when={projects().length} fallback={<p class="sidebar-empty mx-8 border-0 bg-transparent p-8 text-left text-12 text-text-muted">Create a project, then start a new session from the + on the right.</p>}>
-          <For each={projects().filter((p) => !p.archivedAt)}>{(project) => {
+        <Show
+          when={registryHydrated()}
+          fallback={<LoadingState label="Loading projects" description="Syncing projects and sessions from the Peri Studio server…" class="sidebar-loading mx-8 p-8! text-left!" />}
+        >
+          <Show
+            when={projects().some((project) => !project.archivedAt)}
+            fallback={<EmptyState
+              variant="inline"
+              class="sidebar-empty mx-8 p-8! text-left!"
+              title={projects().length ? 'No active projects' : 'No projects yet'}
+              description={projects().length ? 'Restore an archived project or create a new project to continue.' : 'Create a project, then start a new session from the plus button.'}
+            />}
+          >
+            <For each={projects().filter((p) => !p.archivedAt)}>{(project) => {
             const sessions = () => projectSessions().filter((s) => s.projectId === project.id && !s.archivedAt);
             const archivedSessions = () => projectSessions().filter((s) => s.projectId === project.id && !!s.archivedAt);
             const collapsed = () => collapsedProjects().has(project.id);
             const projectMenuId = `project-menu-${project.id}`;
-            return <section class="project-group relative mt-4 mb-18 desk:mb-14 wide:mb-18">
+            return <Collapsible as="section" class="project-group relative mt-4 mb-18 desk:mb-14 wide:mb-18" open={!collapsed()} onOpenChange={(open) => setProjectCollapsed(project.id, !open)}>
               <div class="project-heading relative flex min-h-42 items-center gap-2 pl-2 pointer-coarse:min-h-52">
-                <button type="button" class={`project-disclosure flex min-h-38 min-w-0 flex-1 cursor-pointer items-center gap-5 rounded-8 border-0 bg-transparent px-3 text-left text-text-primary hover:bg-surface-hover-translucent pointer-coarse:min-h-44 ${collapsed() ? '' : 'is-expanded'}`} aria-expanded={!collapsed()} aria-controls={`project-sessions-${project.id}`} onClick={() => toggleProject(project.id)}><ChevronIcon class={collapsed() ? '' : 'rotate-90'} /><span class="flex min-w-0 flex-col gap-1"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12p5 font-650 -tracking-5">{project.name}</strong><small class="text-10 font-450 text-text-muted">{sessions().length ? `${sessions().length} sessions` : 'No sessions yet'}</small></span></button>
+                <CollapsibleTrigger class="project-disclosure flex min-h-38 min-w-0 flex-1 cursor-pointer items-center gap-5 rounded-8 border-0 bg-transparent px-3 text-left text-text-primary hover:bg-surface-hover-translucent pointer-coarse:min-h-44"><ChevronIcon /><span class="flex min-w-0 flex-col gap-1"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12p5 font-650 -tracking-5">{project.name}</strong><small class="text-10 font-450 text-text-muted">{sessions().length ? `${sessions().length} sessions` : 'No sessions yet'}</small></span></CollapsibleTrigger>
                 <IconButton tooltipPlacement="end" label={`New session in ${project.name}`} busy={creatingSessionProjectId() === project.id} disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(project.id)}><PlusIcon /></IconButton>
                 <DropdownMenu open={projectMenu() === project.id} onOpenChange={(open) => setProjectMenu(open ? project.id : null)} placement="bottom-end">
                   <DropdownMenuTrigger as={IconButton} tooltipPlacement="end" label={`${project.name} actions`} disabled={readOnly()}><MoreIcon /></DropdownMenuTrigger>
@@ -137,7 +173,7 @@ export function ProjectSidebar(props: { onNavigate?: () => void; onOpenSystem?: 
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <div id={`project-sessions-${project.id}`} class="session-list flex flex-col gap-2" hidden={collapsed()}>
+              <CollapsibleContent id={`project-sessions-${project.id}`} class="session-list flex flex-col gap-2">
                 <For each={sessions()} fallback={<Button busy={creatingSessionProjectId() === project.id} disabled={readOnly() || !!creatingSessionProjectId()} class="session-empty mx-8 cursor-pointer rounded-8! border-0! bg-transparent p-8! text-left text-12! text-text-muted! hover:bg-hover hover:text-text-secondary!" onClick={() => createProjectSession(project.id)}>Start your first conversation</Button>}>
                   {(session) => {
                     const selected = () => selectedSessionId() === session.id;
@@ -180,26 +216,27 @@ export function ProjectSidebar(props: { onNavigate?: () => void; onOpenSystem?: 
                     label="Archived sessions"
                     count={archivedSessions().length}
                     open={archivedSessionsOpen().has(project.id)}
-                    onToggle={() => toggleArchivedSessions(project.id)}
+                    onOpenChange={(open) => setArchivedSessionsExpanded(project.id, open)}
                     listId={`archived-sessions-${project.id}`}
                     listClass="archived-session-list flex flex-col gap-2 pt-2 pr-3 pb-5 pl-16"
                   >
                     <For each={archivedSessions()}>{(session) => <div class="archived-session-row flex min-h-42 items-center gap-8 rounded-8 py-3 pr-4 pl-8 hover:bg-hover"><span class="flex min-w-0 flex-1 flex-col gap-2"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12 font-550">{sessionDisplayTitle(session.title, session.acpSessionId || session.id)}</strong><small class="text-10 text-text-muted">{session.lifecycle === 'ready' ? 'Session saved' : session.lifecycle}</small></span><Button size="compact" class="min-h-30! px-8! text-11! pointer-coarse:min-h-44!" busy={sessionLifecycleBusy() === session.id} disabled={readOnly() || !!sessionLifecycleBusy()} onClick={() => runConfirmedMutation(() => setSessionLifecycleBusy(session.id), () => setSessionLifecycleBusy(null), (committed, failed) => restoreProjectSession(session.id, committed, failed), () => {})}>Restore</Button></div>}</For>
                   </ArchivedSection>
                 </Show>
-              </div>
-            </section>;
-          }}</For>
+              </CollapsibleContent>
+            </Collapsible>;
+            }}</For>
+          </Show>
         </Show>
       </div>
-      <Show when={projects().some((project) => !!project.archivedAt)}>
+      <Show when={registryHydrated() && projects().some((project) => !!project.archivedAt)}>
         <section class="archived-projects mx-2 mb-8 border-t border-divider pt-7">
           <ArchivedSection
             toggleClass="archived-projects__toggle flex w-full min-h-34 cursor-pointer items-center gap-6 rounded-8 border-0 bg-transparent px-7 text-left text-11 text-text-muted hover:bg-hover hover:text-text-secondary pointer-coarse:min-h-44"
             label="Archived"
             count={projects().filter((project) => !!project.archivedAt).length}
             open={archivedOpen()}
-            onToggle={() => setArchivedOpen((open) => !open)}
+            onOpenChange={setArchivedOpen}
             listId="archived-project-list"
             listClass="archived-project-list flex max-h-180 flex-col gap-2 overflow-auto p-3"
           >
@@ -266,6 +303,7 @@ export function ProjectSidebar(props: { onNavigate?: () => void; onOpenSystem?: 
         <Button size="compact" class="min-h-36! cursor-pointer rounded-8! border-0! bg-transparent px-9! text-text-secondary! hover:bg-hover hover:text-text-primary! pointer-coarse:min-h-44!" onClick={props.onOpenSystem}>System</Button>
         <Button size="compact" class="min-h-36! cursor-pointer rounded-8! border-0! bg-transparent px-9! text-text-secondary! hover:bg-hover hover:text-text-primary! pointer-coarse:min-h-44!" onClick={auth?.logout}>Log out</Button>
       </div>
+      </Show>
     </nav>
   );
 }

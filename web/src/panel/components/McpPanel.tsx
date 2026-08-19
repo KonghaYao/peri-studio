@@ -1,5 +1,5 @@
 import { createEffect, For, Show } from 'solid-js';
-import { Badge, Button, Dialog, DialogContent, DialogTitle, EmptyState } from '../../components/ui';
+import { Badge, Button, Dialog, DialogContent, DialogTitle, EmptyState, InlineNotice, LoadingState } from '../../components/ui';
 import { readOnly } from '../lib/auth-state';
 import {
   cancelMcpOAuth,
@@ -27,7 +27,7 @@ export function McpPanel(props: { open: boolean; onClose: () => void }) {
         <div><h2 id="mcp-panel-title">MCP connections</h2><p>View the MCP services of the current Peri runtime and complete authorization as needed.</p></div>
         <Button size="compact" busy={mcpLoading()} onClick={refreshMcpServers}>Refresh</Button>
       </div>
-      <Show when={mcpServers().length} fallback={<EmptyState title="No MCP servers" description={mcpLoading() ? 'Reading Peri’s secure connection snapshot…' : 'The current runtime has no MCP servers to manage.'} />}>
+      <Show when={mcpServers().length} fallback={<Show when={mcpLoading()} fallback={<EmptyState title="No MCP servers" description="The current runtime has no MCP servers to manage." />}><LoadingState class="mcp-panel__loading mt-20" label="Reading MCP servers" description="Reading Peri’s secure connection snapshot…" /></Show>}>
         <div class="mcp-server-list grid gap-10 mt-20">
           <For each={mcpServers()}>{(server) => {
             const flow = () => flowFor(server.activeFlowId);
@@ -55,12 +55,12 @@ export function McpPanel(props: { open: boolean; onClose: () => void }) {
                 </Show>
                 <Show when={exactAuthorization()}>{(grant) => <a class="ui-button ui-button--primary ui-button--default" href={grant().authorizationUrl} target="_blank" rel="noopener noreferrer">Open authorization page</a>}</Show>
               </div>
-              <Show when={exactAuthorization()}><p class="mcp-server-card__notice mt-10 leading-15 text-text-secondary text-12">The authorization URL is kept in memory for this page only and expires soon. After opening it, come back here to check the connection result.</p></Show>
+              <Show when={exactAuthorization()}><InlineNotice class="mcp-server-card__notice mt-10" tone="info">The authorization URL is kept in memory for this page only and expires soon. After opening it, come back here to check the connection result.</InlineNotice></Show>
             </article>;
           }}</For>
         </div>
       </Show>
-      <Show when={readOnly()}><p class="mcp-panel__readonly mt-16 px-12 py-10 rounded-10 bg-surface-muted leading-15 text-text-secondary text-12">Read-only sign-in can view MCP status but cannot start, read or cancel authorizations.</p></Show>
+      <Show when={readOnly()}><InlineNotice class="mcp-panel__readonly mt-16" tone="info">Read-only sign-in can view MCP status but cannot start, read or cancel authorizations.</InlineNotice></Show>
     </section>
   </DialogContent></Dialog>;
 }

@@ -15,23 +15,6 @@
   border-bottom: 1px solid var(--divider);
   background: var(--surface);
 }
-.settings-tab {
-  padding: var(--space-14) var(--space-2) var(--space-11);
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: none;
-  color: var(--text-muted);
-  font-size: 13px;
-  cursor: pointer;
-}
-.settings-tab:hover {
-  color: var(--text-primary);
-}
-.settings-tab.is-selected {
-  margin-bottom: -1px;
-  border-bottom-color: var(--accent);
-  color: var(--text-primary);
-}
 .settings-panel-note {
   margin: var(--space-13) 0 0;
   color: var(--text-muted);

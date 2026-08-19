@@ -28,6 +28,17 @@ afterEach(() => {
 });
 
 describe('AuthGate rendering', () => {
+  it('keeps sign-in checks in one labeled shared live region', () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+
+    render(() => <AuthGate><div>authenticated workspace</div></AuthGate>);
+
+    const status = screen.getByRole('status', { name: 'Checking sign-in state' });
+    expect(status).toHaveClass('ui-loading-state');
+    expect(status).toHaveAttribute('aria-live', 'polite');
+    expect(status.querySelector('.ui-spinner')).toHaveAttribute('aria-hidden', 'true');
+  });
+
   it('shows the authoritative server token path and generation command', async () => {
     const command = "PERI_STUDIO_CONFIG_DIR='/custom/peri studio' peri-studio-server token generate --name web --role full";
     vi.stubGlobal('fetch', vi.fn(async () => ({

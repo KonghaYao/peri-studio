@@ -201,7 +201,7 @@
 .import-session-row:hover {
   background: var(--hover);
 }
-.import-session-row.is-selected {
+.import-session-row[data-selected] {
   border-color: var(--border-strong);
   background: var(--selected);
 }
@@ -299,27 +299,7 @@
   line-height: 1.5;
 }
 .import-session-status,.import-session-problem {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
   margin-top: var(--space-10);
-  padding: var(--space-9) var(--space-10);
-  border-radius: var(--radius-9);
-  font-size: 12px;
-  line-height: 1.45;
-}
-.import-session-status {
-  background: var(--surface-muted);
-  color: var(--text-secondary);
-}
-.import-session-status .ui-spinner {
-  width: 14px;
-  height: 14px;
-}
-.import-session-problem {
-  border: 1px solid var(--danger-border);
-  background: var(--danger-soft);
-  color: var(--danger);
 }
 .dialog-eyebrow {
   display: block;

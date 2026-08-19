@@ -61,6 +61,27 @@ test('wide dialog owns its viewport width without child overflow', async ({ page
   expect(geometry.width).toBeLessThanOrEqual(560);
 });
 
+test('desktop sidebar visibly resizes, collapses, and restores its workspace rail', async ({ page }) => {
+  const browserErrors = collectBrowserErrors(page);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
+
+  const resize = page.getByRole('separator', { name: 'Resize sidebar' });
+  await expect(resize).toHaveAttribute('aria-valuenow', '304');
+  await resize.focus();
+  await page.keyboard.press('End');
+  await expect(resize).toHaveAttribute('aria-valuenow', '480');
+
+  await page.getByRole('button', { name: 'Collapse sidebar' }).click();
+  await expect(page.getByRole('button', { name: 'Expand sidebar' })).toBeVisible();
+  await expect(page.getByRole('separator', { name: 'Resize sidebar' })).toBeHidden();
+
+  await page.getByRole('button', { name: 'Expand sidebar' }).click();
+  await expect(page.getByRole('button', { name: 'Collapse sidebar' })).toBeVisible();
+  await expect(page.getByRole('separator', { name: 'Resize sidebar' })).toHaveAttribute('aria-valuenow', '480');
+  expect(browserErrors).toEqual([]);
+});
+
 test('mobile drawer and nested dialog preserve inertness, focus and viewport geometry', async ({ page }) => {
   const browserErrors = collectBrowserErrors(page);
   await page.setViewportSize({ width: 390, height: 844 });

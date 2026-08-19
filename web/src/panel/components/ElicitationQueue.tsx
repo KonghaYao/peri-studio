@@ -1,7 +1,7 @@
 import { For, Show, createSignal } from 'solid-js';
 import type { PendingElicitation } from '../lib/control-view';
 import type { ElicitationAnswer } from '../lib/protocol';
-import { Button } from '../../components/ui';
+import { Button, Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel, RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel, Textarea } from '../../components/ui';
 
 interface Props {
   elicitations: PendingElicitation[];
@@ -76,24 +76,26 @@ function AskUserQuestionDialog(props: {
               <legend class="p-0 text-text-primary text-13 font-650">{field.title}{field.required ? <span aria-label="Required"> *</span> : null}</legend>
               <Show when={field.description}><p class="mt-3 mb-8 text-text-secondary text-12 leading-15">{field.description}</p></Show>
               <Show when={field.kind === 'text'}>
-                <textarea rows={3} maxlength={4096} aria-label={field.title} required={field.required} disabled={locked()} value={typeof answers()[field.id] === 'string' ? answers()[field.id] as string : ''} onInput={(event) => update(field.id, event.currentTarget.value)} class="box-border w-full min-h-82 resize-y px-12 py-11 border border-border-strong rounded-12 bg-surface-muted text-text-primary leading-15 outline-none focus-visible:border-text-primary focus-visible:ring-2 focus-visible:ring-focus-ring" />
+                <Textarea variant="field" rows={3} maxlength={4096} aria-label={field.title} required={field.required} disabled={locked()} value={typeof answers()[field.id] === 'string' ? answers()[field.id] as string : ''} onInput={(event) => update(field.id, event.currentTarget.value)} />
               </Show>
               <Show when={field.kind === 'single_select'}>
-                <div class="elicitation-options grid gap-6 mt-8">
-                  <For each={field.options}>{(option) => <label class="flex min-h-42 items-start gap-10 px-11 py-9 border border-divider rounded-11 bg-surface-muted cursor-pointer has-checked:border-text-primary has-checked:bg-selected">
-                    <input type="radio" name={`${props.elicitation.elicitationId}-${field.id}`} value={option.value} required={field.required} disabled={locked()} checked={answers()[field.id] === option.value} onChange={() => update(field.id, option.value)} class="mt-3 accent-text-primary" />
-                    <span class="grid gap-2"><strong class="text-13 font-semibold">{option.label}</strong><Show when={option.description}><small class="text-text-secondary text-11 leading-14">{option.description}</small></Show></span>
-                  </label>}</For>
-                </div>
+                <RadioGroup aria-label={field.title} value={typeof answers()[field.id] === 'string' ? answers()[field.id] as string : ''} required={field.required} disabled={locked()} onChange={(value) => update(field.id, value)} class="elicitation-options grid gap-6 mt-8">
+                  <For each={field.options}>{(option) => <RadioGroupItem value={option.value} class="elicitation-option flex min-h-42 items-start gap-10 px-11 py-9 border border-divider rounded-11 bg-surface-muted cursor-pointer data-[checked]:border-text-primary data-[checked]:bg-selected">
+                    <RadioGroupItemInput />
+                    <RadioGroupItemControl class="ui-radio-control mt-3" />
+                    <RadioGroupItemLabel class="grid gap-2"><strong class="text-13 font-semibold">{option.label}</strong><Show when={option.description}><small class="text-text-secondary text-11 leading-14">{option.description}</small></Show></RadioGroupItemLabel>
+                  </RadioGroupItem>}</For>
+                </RadioGroup>
               </Show>
               <Show when={field.kind === 'multi_select'}>
                 <div class="elicitation-options grid gap-6 mt-8">
                   <For each={field.options}>{(option) => {
                     const selected = () => Array.isArray(answers()[field.id]) ? answers()[field.id] as string[] : [];
-                    return <label class="flex min-h-42 items-start gap-10 px-11 py-9 border border-divider rounded-11 bg-surface-muted cursor-pointer has-checked:border-text-primary has-checked:bg-selected">
-                      <input type="checkbox" value={option.value} disabled={locked()} checked={selected().includes(option.value)} onChange={(event) => update(field.id, event.currentTarget.checked ? [...selected(), option.value] : selected().filter((value) => value !== option.value))} class="mt-3 accent-text-primary" />
-                      <span class="grid gap-2"><strong class="text-13 font-semibold">{option.label}</strong><Show when={option.description}><small class="text-text-secondary text-11 leading-14">{option.description}</small></Show></span>
-                    </label>;
+                    return <Checkbox checked={selected().includes(option.value)} disabled={locked()} onChange={(checked) => update(field.id, checked ? [...selected(), option.value] : selected().filter((value) => value !== option.value))} class="elicitation-option flex min-h-42 items-start gap-10 px-11 py-9 border border-divider rounded-11 bg-surface-muted cursor-pointer data-[checked]:border-text-primary data-[checked]:bg-selected">
+                      <CheckboxInput />
+                      <CheckboxControl class="ui-checkbox-control mt-3" />
+                      <CheckboxLabel class="grid gap-2"><strong class="text-13 font-semibold">{option.label}</strong><Show when={option.description}><small class="text-text-secondary text-11 leading-14">{option.description}</small></Show></CheckboxLabel>
+                    </Checkbox>;
                   }}</For>
                 </div>
               </Show>

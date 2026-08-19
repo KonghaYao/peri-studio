@@ -13,6 +13,7 @@ import {
   setPermissions,
   setProjects,
   setProjectSessions,
+  setRegistryHydrated,
   setRuntimeDocsState,
   setSelectedCid,
   setSelectedSessionId,
@@ -115,6 +116,8 @@ function control(active = false): ControlView {
 function seedCatalog(): void {
   setProjects(projects);
   setProjectSessions(sessions);
+  // 静态 fixture 已完整安装 Registry 投影，显式标记为已水合以模拟首帧到达。
+  setRegistryHydrated(true);
   setImportableSessions(importable);
   setConnState({ text: 'Local server connected', kind: 'ok' });
   setPromptDeliveryReady(true);

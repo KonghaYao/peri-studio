@@ -15,12 +15,60 @@
   flex: 1;
   overflow-y: auto;
 }
+.chat-workspace {
+  isolation: isolate;
+}
+/* T3code 式工作区：输入窗口覆盖在时间线末端，内容的动态留白由 MessageList 提供。 */
+.composer-stack--overlay {
+  padding-top: var(--space-28);
+  background: linear-gradient(0deg, var(--app-bg) 0%, color-mix(in srgb, var(--app-bg) 94%, transparent) 72%, transparent 100%);
+  pointer-events: none;
+}
+.composer-stack--overlay > * {
+  pointer-events: auto;
+}
 .message-list-content {
   box-sizing: border-box;
   width: 100%;
   max-width: 760px;
   margin-inline: auto;
   padding: var(--space-32) var(--space-20) var(--space-40);
+}
+/* Assistant turns read as an agent activity timeline rather than anonymous chat bubbles. */
+.conversation-message--timeline {
+  position: relative;
+  padding-left: var(--space-28);
+}
+.conversation-message--timeline::before {
+  position: absolute;
+  top: var(--space-22);
+  bottom: calc(var(--space-12) * -1);
+  left: var(--space-9);
+  width: 1px;
+  background: linear-gradient(var(--divider), transparent);
+  content: '';
+}
+.conversation-message__timeline-mark {
+  position: absolute;
+  z-index: 1;
+  top: var(--space-12);
+  left: var(--space-4);
+  width: var(--space-11);
+  height: var(--space-11);
+  border: 3px solid var(--app-bg);
+  border-radius: var(--radius-full);
+  background: var(--success);
+  box-shadow: var(--shadow-success-ring);
+}
+.conversation-message__meta--assistant {
+  min-height: var(--space-18);
+  opacity: 1;
+}
+.conversation-message__author {
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 680;
+  letter-spacing: .02em;
 }
 /* 工具调用卡片 */
 .tool-card {
@@ -205,47 +253,6 @@
   overflow: hidden;
 }
 /* 对话消息与 markdown 渲染 */
-.conversation-placeholder {
-  display: flex;
-  min-height: clamp(240px,48vh,460px);
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  text-align: center;
-}
-.conversation-placeholder>.ui-spinner {
-  width: 18px;
-  height: 18px;
-  margin-bottom: var(--space-14);
-}
-.conversation-placeholder strong {
-  color: var(--text-primary);
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -.01em;
-}
-.conversation-placeholder p {
-  max-width: 390px;
-  margin: var(--space-7) 0 0;
-  color: var(--text-muted);
-  font-size: 13px;
-  line-height: 1.55;
-}
-.conversation-placeholder__mark {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  margin-bottom: var(--space-14);
-  place-items: center;
-  border-radius: var(--radius-12);
-  background: var(--empty-mark-bg);
-  color: var(--empty-mark-fg);
-  font-size: 14px;
-}
-.conversation-placeholder--empty {
-  min-height: clamp(260px,52vh,500px);
-}
 .conversation-message {
   display: flex;
   margin-bottom: var(--space-12);
@@ -297,16 +304,6 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.message-loading {
-  display: inline-flex;
-  align-items: center;
-  margin-left: var(--space-2);
-  color: var(--text-muted);
-}
-.message-loading>span {
-  animation: message-loading-pulse 1.5s ease-in-out infinite;
-  line-height: 1;
-}
 .message-reasoning {
   color: var(--text-secondary);
   font-size: 13px;
@@ -349,13 +346,6 @@
   overflow-wrap: anywhere;
   color: var(--text-muted);
   font: 11px/1.45 var(--font-mono);
-}
-.message-error {
-  padding: var(--space-10) var(--space-12);
-  border-left: 3px solid var(--danger);
-  border-radius: var(--radius-12);
-  background: var(--danger-soft);
-  color: var(--danger);
 }
 .message-error code {
   white-space: pre-wrap;
@@ -470,26 +460,4 @@
   background: transparent;
   color: inherit;
   font: inherit;
-}
-/* 回到最新消息按钮 */
-.jump-latest {
-  position: absolute;
-  z-index: 12;
-  bottom: 12px;
-  left: 50%;
-  display: block;
-  min-height: 36px;
-  padding: 0 var(--space-13);
-  transform: translateX(-50%);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-full);
-  background: var(--surface-translucent);
-  color: var(--text-secondary);
-  box-shadow: var(--shadow-popover);
-  cursor: pointer;
-  font-size: 12px;
-  backdrop-filter: blur(8px);
-}
-.jump-latest:hover {
-  color: var(--text-primary);
 }

@@ -1,7 +1,7 @@
 // 消息区：权限条 + 消息列表（自动吸底滚动）。
 //
 // 由 ChatView 拆出（中间区三块之一）；气泡内 reasoning 在前、正文在后，
-// loading 状态统一由 LoadingDots 组件承担。
+// loading feedback uses the shared LoadingState primitive.
 //
 // F4（ui.md §四.6 / §3.8）：滚动区为 flex-1 + min-h-0 独立滚动，内部为
 // 居中正文列（max-w 820px，pt-6 / pb-6，底部 156px 留白随 F7 Composer
@@ -15,7 +15,7 @@ import { readOnly } from '../lib/auth-state';
 import { messageActivity, nextFollowState } from '../lib/message-follow.ts';
 import { messageTime } from '../lib/message-time.ts';
 import type { ChatEntry } from '../lib/chat-view';
-import { Button } from '../../components/ui';
+import { Button, EmptyState, LoadingState } from '../../components/ui';
 import { PermissionQueue } from './PermissionQueue';
 import { ConversationMessage } from './ConversationMessage';
 import { permissionDecisions } from '../lib/permission-delivery';
@@ -55,28 +55,30 @@ function HistoryBoundary(props: { kind: Exclude<ReplayBoundary, null> }) {
 }
 
 function ChatLoading() {
-  return <div class="chat-loading flex items-center gap-8 py-8 text-text-muted text-12" role="status" aria-label="Assistant is working">
-    <span class="message-loading inline-flex items-center" aria-hidden="true">
-      <For each={[0, 1, 2]}>{(index) => <span style={{ 'animation-delay': `${index * 0.15}s` }}>●</span>}</For>
-    </span>
-    <span>Working…</span>
-  </div>;
+  return <LoadingState label="Assistant is working" description="Working…" class="chat-loading message-loading py-8" />;
 }
 
 // ── 消息滚动区 ──────────────────────────────────────────────────────────
 
-export function MessageList() {
+export function MessageList(props: { bottomInset?: number }) {
   const [stick, setStick] = createSignal(true);
   const [hasNewContent, setHasNewContent] = createSignal(false);
+  const [completionAnnouncement, setCompletionAnnouncement] = createSignal('');
   let areaRef: HTMLDivElement | undefined;
   let previousActivity = '';
+  let completionBaselineReady = false;
+  let announcementChatId: string | null | undefined;
+  let announcedCompletionKey: string | null = null;
   const outboxForChat = () => {
     const submission = messageSubmission();
     return submission?.chatId === selectedCid() && !submission.projected ? submission : null;
   };
 
+  const contentBottomInset = () => `${Math.max(props.bottomInset ?? 0, 0) + 40}px`;
+  const jumpBottomInset = () => `${Math.max(props.bottomInset ?? 0, 0) + 12}px`;
+
   // 稳定槽位与按 id 索引（见下方 <For> 注释：等效显式 itemKey）。
-  // id 字符串序列供外层 <For> diff；Map 供内层 keyed <Show> 读取最新投影。
+  // id 字符串序列供外层 <For> diff；Map 供稳定槽位读取最新投影。
   const chatEntryIds = createMemo(() => chatEntries().map((entry) => entry.id));
   const chatEntriesById = createMemo(() => {
     const byId = new Map<string, ChatEntry>();
@@ -104,19 +106,36 @@ export function MessageList() {
     previousActivity = follow.activity;
   });
 
+  const latestCompletion = () => [...chatEntries()].reverse().find((item) => item.role === 'assistant' && ['completed', 'failed', 'cancelled', 'interrupted'].includes(item.status || ''));
+
+  createEffect(() => {
+    const chatId = selectedCid() ?? null;
+    const completion = latestCompletion();
+    const completionKey = completion ? `${completion.id}:${completion.status}:${completion.completedAt ?? ''}` : null;
+    if (chatId !== announcementChatId) {
+      announcementChatId = chatId;
+      announcedCompletionKey = null;
+      completionBaselineReady = false;
+      setCompletionAnnouncement('');
+    }
+    if (!runtimeDocsHydrated()) return;
+    if (!completionBaselineReady) {
+      announcedCompletionKey = completionKey;
+      completionBaselineReady = true;
+      return;
+    }
+    if (!completion || completionKey === announcedCompletionKey) return;
+    announcedCompletionKey = completionKey;
+    const status = completion.status === 'completed' ? 'completed' : completion.status === 'failed' ? 'failed' : completion.status === 'cancelled' ? 'cancelled' : 'interrupted';
+    const timestamp = messageTime(completion.createdAt);
+    setCompletionAnnouncement(`Assistant response ${status}${timestamp ? `, ${timestamp.label}` : ''}`);
+  });
+
   const jumpToLatest = () => {
     if (!areaRef) return;
     scrollToBottom('smooth');
     setStick(true);
     setHasNewContent(false);
-  };
-
-  const completionAnnouncement = () => {
-    const entry = [...chatEntries()].reverse().find((item) => item.role === 'assistant' && ['completed', 'failed', 'cancelled', 'interrupted'].includes(item.status || ''));
-    if (!entry) return '';
-    const status = entry.status === 'completed' ? 'completed' : entry.status === 'failed' ? 'failed' : entry.status === 'cancelled' ? 'cancelled' : 'interrupted';
-    const timestamp = messageTime(entry.createdAt);
-    return `Assistant response ${status}${timestamp ? `, ${timestamp.label}` : ''}`;
   };
 
   return (
@@ -130,38 +149,27 @@ export function MessageList() {
       class="ui-scrollbar message-list-scroll min-h-0 flex-1 overflow-y-auto"
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
-      {/* 阅读列由 CSS 统一控制宽度与上下留白；Composer 保持在正常布局流中。 */}
-      <div class="message-list-content w-full max-w-(--container-chat) mx-auto py-24 px-16 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 max-desk:max-w-(--container-chat-narrow)">
+      {/* Composer 覆盖在时间线底部；动态 inset 让最后一条消息始终完整可读。 */}
+      <div class="message-list-content w-full max-w-(--container-chat) mx-auto py-24 px-16 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 max-desk:max-w-(--container-chat-narrow)" style={{ 'padding-bottom': contentBottomInset() }}>
         <PermissionBar />
         <Show when={!runtimeDocsHydrated()}>
-          <div class="conversation-placeholder flex min-h-(--container-placeholder-narrow) flex-col items-center justify-center text-text-secondary text-center" role="status">
-            <span class="ui-spinner w-18 h-18 mb-14" aria-hidden="true" />
-            <strong class="text-text-primary text-16 font-semibold -tracking-1">Loading session</strong>
-            <p class="max-w-390 mt-7 text-text-muted text-13 leading-155">Restoring messages and runtime state from the Peri Studio server…</p>
-          </div>
+          <LoadingState label="Loading session" description="Restoring messages and runtime state from the Peri Studio server…" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />
         </Show>
         <Show when={runtimeDocsHydrated() && chatEntries().length === 0 && !outboxForChat()}>
-          <div class="conversation-placeholder conversation-placeholder--empty flex min-h-(--container-placeholder) flex-col items-center justify-center text-text-secondary text-center">
-            <span class="conversation-placeholder__mark grid w-38 h-38 mb-14 place-items-center rounded-12 bg-empty-mark-bg text-empty-mark-fg text-14" aria-hidden="true">✦</span>
-            <strong class="text-text-primary text-16 font-semibold -tracking-1">Start this conversation</strong>
-            <p class="max-w-390 mt-7 text-text-muted text-13 leading-155">Send the first message. Content is saved to this session and can be restored later.</p>
-          </div>
+          <EmptyState title="Start this conversation" description="Send the first message. Content is saved to this session and can be restored later." class="min-h-(--container-placeholder)" />
         </Show>
         {/* 显式稳定 key（等效 itemKey）：Solid 1.9 的 <For> 没有 React 式 key
             prop，它按 item 引用做 diff；而 chatEntries() 每次 Yjs 投影都全量
             重建对象（store.ts:403 renderChat），任何单条更新都会让全部引用
             失配 → 整个列表 DOM 重挂载，滚动跟随与气泡内部状态随之丢失。
-            ChatEntry.id 是 chat-view.ts 中 Yjs entries map 的稳定键，这里外层
-            <For> 按 id 字符串序列渲染稳定槽位（字符串按值相等，diff 正确），
-            内层 keyed <Show> 随最新投影更新条目内容，等效于显式 itemKey。 */}
+            ChatEntry.id 是 chat-view.ts 中 Yjs entries map 的稳定键，外层 <For>
+            按 id 字符串序列渲染稳定槽位，条目 props 读取最新的同 ID 投影。 */}
         <For each={chatEntryIds()}>
           {(id, index) => (
-            <Show when={chatEntriesById().get(id)} keyed>
-              {(entry) => <>
-                <Show when={replayBoundaryAt(chatEntries(), index())}>{(kind) => <HistoryBoundary kind={kind()} />}</Show>
-                <ConversationMessage entry={entry} />
-              </>}
-            </Show>
+            <>
+              <Show when={replayBoundaryAt(chatEntries(), index())}>{(kind) => <HistoryBoundary kind={kind()} />}</Show>
+              <ConversationMessage entry={() => chatEntriesById().get(id)!} />
+            </>
           )}
         </For>
         <Show when={chatHead()?.chat?.loading}><ChatLoading /></Show>
@@ -170,7 +178,7 @@ export function MessageList() {
         }</Show>
       </div>
     </section>
-    <Show when={!stick() || hasNewContent()}><Button type="button" size="compact" class="jump-latest absolute z-12 bottom-12 left-1/2 -translate-x-1/2 min-h-36 px-13 border border-border-subtle rounded-full bg-surface-translucent text-text-secondary shadow-popover cursor-pointer text-12 backdrop-blur-sm hover:text-text-primary pointer-coarse:min-h-44 pointer-coarse:px-16" onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button></Show>
+    <Show when={!stick() || hasNewContent()}><Button type="button" size="compact" class="jump-latest absolute z-12 left-1/2 -translate-x-1/2 min-h-36 px-13 border border-border-subtle rounded-full bg-surface-translucent text-text-secondary shadow-popover cursor-pointer text-12 backdrop-blur-sm hover:text-text-primary pointer-coarse:min-h-44 pointer-coarse:px-16" style={{ bottom: jumpBottomInset() }} onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button></Show>
     </div>
   );
 }

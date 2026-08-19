@@ -82,9 +82,8 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
   };
 
   return <div data-session-id={props.session.id} class={`session-row group relative rounded-9 hover:bg-selected ${props.selected ? 'is-selected bg-selected' : ''}`}>
-    <button
-      type="button"
-      class="session-main flex w-full min-h-48 cursor-pointer items-center gap-9 rounded-9 border-0 bg-transparent py-6 pr-34 pl-9 text-left text-14 disabled:cursor-wait disabled:text-text-muted desk:min-h-46 desk:gap-7 desk:pl-7 wide:min-h-48 wide:gap-9 wide:pl-9 pointer-coarse:min-h-52 pointer-coarse:pr-42"
+    <Button
+      class="session-main flex w-full min-h-48 cursor-pointer items-center justify-start! gap-9 rounded-9 border-0! bg-transparent py-6 pr-34 pl-9 text-left text-14 disabled:cursor-wait disabled:text-text-muted desk:min-h-46 desk:gap-7 desk:pl-7 wide:min-h-48 wide:gap-9 wide:pl-9 pointer-coarse:min-h-52 pointer-coarse:pr-42"
       aria-current={props.selected ? 'page' : undefined}
       title={props.readOnly && !props.session.activeChatId ? 'Full permission required to start this session' : undefined}
       onClick={open}
@@ -96,7 +95,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
         <small class={`session-state session-state--${props.state.tone} overflow-hidden text-ellipsis whitespace-nowrap text-10p5 text-text-muted ${props.state.tone === 'attention' ? 'text-warning' : props.state.tone === 'danger' ? 'text-danger' : ''}`}>{props.state.label} · {formatRelativeTime(props.session.lastOpenedAt || props.session.updatedAt)}</small>
       </span>
       <Show when={props.opening || ['activating', 'pending'].includes(props.session.lifecycle)}><Spinner label="Opening…" /></Show>
-    </button>
+    </Button>
     <DropdownMenu open={props.menuOpen} onOpenChange={props.onMenuOpenChange} placement="bottom-end">
       <DropdownMenuTrigger as={IconButton}
         tooltipPlacement="end"
@@ -124,7 +123,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
         onEscapeKeyDown={(event) => submitting() && event.preventDefault()}
         onPointerDownOutside={(event) => submitting() && event.preventDefault()}
       >
-        <form class="rename-popover w-240 rounded-12 border border-border-subtle bg-surface p-10 shadow-popover" onSubmit={submitRename}>
+        <form class="rename-popover w-240 p-10" onSubmit={submitRename}>
           <TextField aria-label="Session name" value={draft()} error={!renameValid() ? 'Name cannot be empty' : undefined} onInput={(event) => setDraft(event.currentTarget.value)} autofocus />
           <div class="form-actions">
             <Button disabled={submitting()} onClick={() => props.onRenameOpenChange(false)}>Cancel</Button>

@@ -169,11 +169,6 @@
   border-radius: var(--radius-full);
   background: var(--text-muted);
 }
-.message-outbox--sending .message-outbox__indicator,
-.message-outbox--accepted .message-outbox__indicator,
-.message-outbox--committed .message-outbox__indicator {
-  animation: message-loading-pulse 1.5s ease-in-out infinite;
-}
 .message-outbox--uncertain .message-outbox__indicator {
   background: var(--warning-strong);
 }
@@ -185,28 +180,6 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-6);
-}
-@media (pointer: coarse) {
-  .message-outbox__actions button {
-    min-height: 44px;
-  }
-}
-/* 消息投递警示 */
-.message-delivery-warning {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-9) var(--space-11);
-  border: 1px solid var(--warning-border);
-  border-radius: var(--radius-10);
-  background: var(--warning-soft);
-  color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 1.5;
-}
-.message-delivery-warning strong {
-  color: var(--text-primary);
-  font-weight: 600;
 }
 /* Session provenance is a chapter boundary, not a badge repeated on every message. */
 .history-boundary {

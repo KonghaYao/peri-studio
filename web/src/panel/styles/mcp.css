@@ -59,7 +59,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.mcp-server-card__identity span,.mcp-server-card__facts,.mcp-server-card__notice,.mcp-panel__readonly {
+.mcp-server-card__identity span,.mcp-server-card__facts {
   color: var(--text-secondary);
   font-size: 12px;
 }
@@ -80,17 +80,6 @@
 }
 .mcp-server-card__actions a {
   text-decoration: none;
-}
-.mcp-server-card__notice {
-  margin: var(--space-10) 0 0;
-  line-height: 1.5;
-}
-.mcp-panel__readonly {
-  margin: var(--space-16) 0 0;
-  padding: var(--space-10) var(--space-12);
-  border-radius: var(--radius-10);
-  background: var(--surface-muted);
-  line-height: 1.5;
 }
 @media (max-width:640px) {
   .mcp-panel {

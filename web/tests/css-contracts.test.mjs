@@ -113,11 +113,12 @@ test('high-frequency chat controls are owned by the Solid UI library', () => {
   }
 });
 
-test('MessageList delegates entry semantics to one tested conversation component', () => {
+test('MessageList delegates entry semantics through stable entry-id slots to one tested conversation component', () => {
   const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
   const list = readFileSync(join(components, 'MessageList.tsx'), 'utf8');
   const message = readFileSync(join(components, 'ConversationMessage.tsx'), 'utf8');
-  assert.match(list, /<ConversationMessage entry=\{entry\}/);
+  assert.match(list, /const chatEntryIds = createMemo\(\(\) => chatEntries\(\)\.map\(\(entry\) => entry\.id\)\)/);
+  assert.match(list, /<ConversationMessage entry=\{\(\) => chatEntriesById\(\)\.get\(id\)!\} \/>/);
   assert.doesNotMatch(list, /function MessageBubble|<Markdown|<ToolCallCard/);
   assert.match(message, /conversation-message--\$\{role\(\)\}/);
   assert.match(message, /role="alert" aria-label="Message error"/);

@@ -33,6 +33,14 @@ describe('MessageOutbox', () => {
     expect(edit).toHaveBeenCalledOnce();
   });
 
+  it('uses a decorative shared spinner while a non-actionable submission is in flight', () => {
+    render(() => <MessageOutbox submission={submission('sending')} onRetry={vi.fn()} onEdit={vi.fn()} />);
+
+    const status = screen.getByRole('status', { name: 'Your pending-confirmation message' });
+    expect(status.querySelector('.ui-spinner')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('keeps delivery-unknown visible but offers neither retry nor edit', () => {
     render(() => <MessageOutbox submission={submission('delivery_unknown')} onRetry={vi.fn()} onEdit={vi.fn()} />);
     expect(screen.getByText('Delivery result unknown, do not resend')).toBeInTheDocument();

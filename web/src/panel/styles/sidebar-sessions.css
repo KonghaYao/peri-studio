@@ -5,7 +5,7 @@
   min-height: 0;
   flex: 1;
   overflow: auto;
-  padding-bottom: var(--space-16);
+  padding: var(--space-10) var(--space-2) var(--space-16);
 }
 .project-group {
   position: relative;
@@ -71,7 +71,7 @@
   color: var(--text-muted);
   transition: transform 140ms ease;
 }
-.project-disclosure.is-expanded>svg {
+.project-disclosure[data-expanded] > svg {
   transform: rotate(90deg);
 }
 .project-disclosure>span {
@@ -188,16 +188,12 @@
 .session-row:hover .session-menu,.session-row.is-selected .session-menu,.session-menu:focus-visible {
   opacity: 1;
 }
-.session-empty,.sidebar-empty {
+.session-empty {
   margin: 0 var(--space-8);
   padding: var(--space-8);
-  border: 0;
-  background: transparent;
   color: var(--text-muted);
   font-size: 12px;
   text-align: left;
-}
-.session-empty {
   cursor: pointer;
   border-radius: var(--radius-8);
 }
@@ -205,16 +201,10 @@
   background: var(--hover);
   color: var(--text-secondary);
 }
-/* The rename form renders inside the Popover primitive; the primitive owns
-   positioning (absolute, top/right placement), so the form keeps only its
-   surface styling. */
+/* The Popover primitive owns the rename surface; the form only provides layout. */
 .rename-popover {
   width: 240px;
   padding: var(--space-10);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-12);
-  background: var(--surface);
-  box-shadow: var(--shadow-popover);
 }
 .sidebar-footer {
   display: flex;

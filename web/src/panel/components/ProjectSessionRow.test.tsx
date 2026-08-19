@@ -66,6 +66,12 @@ describe('ProjectSessionRow', () => {
     expect(value.onOpen).not.toHaveBeenCalled();
   });
 
+  it('uses the shared popover surface for a controlled rename form', () => {
+    render(() => <ProjectSessionRow {...props({ renameOpen: true })} />);
+    expect(screen.getByRole('dialog', { name: 'Rename Architecture refactor' })).toHaveClass('ui-popover');
+    expect(screen.getByRole('textbox', { name: 'Session name' }).closest('form')).toHaveClass('rename-popover');
+  });
+
   it('submits a trimmed rename and closes only after committed', async () => {
     let commit: (() => void) | undefined;
     const value = props({

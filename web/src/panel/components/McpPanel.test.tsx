@@ -36,6 +36,16 @@ describe('McpPanel', () => {
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
+  it('announces server snapshot loading without exposing an empty result as final', () => {
+    setPrincipalRole('full');
+    setSelectedCid('chat-1');
+    setMcpLoading(true);
+    render(() => <McpPanel open onClose={() => undefined} />);
+
+    expect(screen.getByRole('status', { name: 'Reading MCP servers' })).toHaveTextContent('Reading Peri’s secure connection snapshot…');
+    expect(screen.queryByRole('heading', { name: 'No MCP servers' })).not.toBeInTheDocument();
+  });
+
   it('keeps OAuth mutation controls disabled for read-only principals', () => {
     setPrincipalRole('read-only');
     setSelectedCid('chat-1');

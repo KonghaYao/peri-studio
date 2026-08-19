@@ -12,18 +12,18 @@
 // lib/composer-placeholder；inputPrediction 展示在 lib/composer-prediction。
 // 本组件保留编排：信号装配、textarea 聚焦与草稿读写、提交/取消状态机。
 
-import { createSignal, Show } from 'solid-js';
-import { cancelTurn, chatHead, chatStatusSignal, navigateProjectSession, openingSessionId, projectSessions, retryPersistentAction, runtimeDocsHydrated, selectedCid, selectedSessionId, sendMessage, turnActive } from '../store';
+import { createSignal, createUniqueId, Show } from 'solid-js';
+import { cancelTurn, chatHead, chatStatusSignal, navigateProjectSession, openingSessionId, projectSessions, retryMessageSubmission, retryPersistentAction, runtimeDocsHydrated, selectedCid, selectedSessionId, sendMessage, turnActive } from '../store';
 import { isTerminal } from '../lib/action-state';
 import { promptDeliveryReady } from '../lib/connection';
 import { readOnly } from '../lib/auth-state';
 import { composerDraft, setComposerDraft } from '../lib/composer-draft';
-import { messageSubmission } from '../lib/message-delivery';
+import { dismissFailedMessageDelivery, messageSubmission } from '../lib/message-delivery';
 import { runtimeControlFor } from '../lib/runtime-control';
 import { composerInputState } from '../lib/composer-placeholder';
 import { useComposerPrediction } from '../lib/composer-prediction';
 import { useComposerSlash } from '../lib/composer-slash';
-import { Button, Icon, IconButton, Textarea } from '../../components/ui';
+import { Button, Icon, IconButton, InlineNotice, Textarea } from '../../components/ui';
 import { SlashMenu } from './SlashMenu';
 import { SessionModelMenu } from './SessionConfigDialog';
 
@@ -39,9 +39,43 @@ export function Composer() {
   let modelTrigger: HTMLButtonElement | undefined;
   const slashMenuId = 'composer-slash-menu';
   const modelMenuId = 'composer-model-menu';
+  const submissionStatusId = `composer-submission-${createUniqueId()}`;
   const [modelMenuOpen, setModelMenuOpen] = createSignal(false);
   const submissionForSession = () => messageSubmission()?.sessionId === selectedSessionId() ? messageSubmission() : null;
   const submissionInAnotherSession = () => messageSubmission() && !submissionForSession() ? messageSubmission() : null;
+  const submissionIsInFlight = () => ['sending', 'accepted', 'committed'].includes(submissionForSession()?.phase ?? '');
+  const submissionTitle = () => {
+    switch (submissionForSession()?.phase) {
+      case 'accepted': return 'Message received by the server';
+      case 'committed': return 'Message confirmed by the server';
+      case 'uncertain': return 'Message result not confirmed';
+      case 'delivery_unknown': return 'Message delivery result unknown';
+      case 'failed': return 'Message was not sent';
+      default: return 'Sending message';
+    }
+  };
+  const submissionDetail = () => {
+    switch (submissionForSession()?.phase) {
+      case 'accepted': return 'Waiting for final confirmation before the conversation updates.';
+      case 'committed': return 'Waiting for the server-authoritative conversation projection.';
+      case 'uncertain': return 'Re-confirming uses the original request and does not create a second message.';
+      case 'delivery_unknown': return 'This message may already have executed. Resending and editing remain disabled to avoid duplicates.';
+      case 'failed': return 'Return to editing restores the text only to this project session draft.';
+      default: return 'The message is not part of the conversation until the server projects it.';
+    }
+  };
+  const submissionTone = () => {
+    const phase = submissionForSession()?.phase;
+    return phase === 'failed' ? 'danger' : phase === 'uncertain' || phase === 'delivery_unknown' ? 'warning' : 'info';
+  };
+  const restoreFailedDraft = () => {
+    dismissFailedMessageDelivery();
+    queueMicrotask(() => {
+      taRef?.focus();
+      const cursor = taRef?.value.length ?? 0;
+      taRef?.setSelectionRange(cursor, cursor);
+    });
+  };
   const pendingSessionTitle = () => {
     const submission = submissionInAnotherSession();
     return projectSessions().find((session) => session.id === submission?.sessionId)?.title || 'another session';
@@ -87,6 +121,10 @@ export function Composer() {
   });
   const inputDisabled = () => inputState().disabled;
   const inputPlaceholder = () => inputState().placeholder;
+  const inputDescribedBy = () => [
+    prediction.activePrediction() ? 'composer-prediction-description' : null,
+    submissionForSession() ? submissionStatusId : null,
+  ].filter(Boolean).join(' ') || undefined;
 
   // 信息行三个真实值（agent map，server 写入；缺失 → —）。
   const model = () => chatHead()?.agent?.model || '—';
@@ -168,7 +206,7 @@ export function Composer() {
   }
 
   return (
-    <div class="composer-wrap relative box-border w-full max-w-(--container-composer) mx-auto px-20 pb-20 desk:max-w-(--container-composer) desk:px-18 wide:max-w-(--container-composer) wide:px-20 max-desk:max-w-(--container-composer) max-narrow:px-10 max-narrow:pb-safe">
+    <div class="composer-wrap composer-wrap--overlay relative box-border w-full max-w-(--container-composer) mx-auto px-20 pb-20 desk:max-w-(--container-composer) desk:px-18 wide:max-w-(--container-composer) wide:px-20 max-desk:max-w-(--container-composer) max-narrow:px-10 max-narrow:pb-safe">
       <Show when={slash.slashMenuOpen()}>
         <SlashMenu
           id={slashMenuId}
@@ -179,6 +217,7 @@ export function Composer() {
         />
       </Show>
       <section
+        aria-busy={submissionIsInFlight() || undefined}
         aria-disabled={inputDisabled()}
         class="composer-surface overflow-hidden border border-composer-border rounded-24 bg-surface shadow-float focus-within:border-border-strong focus-within:shadow-float max-narrow:rounded-20"
       >
@@ -202,7 +241,7 @@ export function Composer() {
           onSelect={(e) => slash.onCaret(e.currentTarget)}
           onBlur={slash.onBlur}
           onKeyDown={(e) => {
-            if (e.isComposing) return; // IME 组合确认回车不误发
+            if (e.isComposing || e.keyCode === 229) return; // IME 组合确认回车不误发
             if (slash.handleKeyDown(e)) return;
             if (prediction.activePrediction() && e.key === 'Tab') {
               e.preventDefault();
@@ -226,11 +265,30 @@ export function Composer() {
           aria-expanded={slash.slashMenuOpen()}
           aria-controls={slash.slashMenuOpen() ? slashMenuId : undefined}
           aria-activedescendant={slash.slashMenuOpen() ? `${slashMenuId}-option-${slash.boundedActiveIndex()}` : undefined}
-          aria-describedby={prediction.activePrediction() ? 'composer-prediction-description' : undefined}
+          aria-describedby={inputDescribedBy()}
           spellcheck={false}
           class="composer-input ui-scrollbar relative z-1 block w-full h-58 min-h-58 max-h-180 pt-17 px-18 pb-7 border-0 outline-0 resize-none overflow-y-auto bg-transparent text-text-primary text-15 leading-24 placeholder:text-text-muted disabled:bg-transparent disabled:text-text-secondary focus-visible:outline-0 max-narrow:min-h-54 max-narrow:pt-15 max-narrow:px-15 max-narrow:pb-5"
           />
         </div>
+        <Show when={submissionForSession()}>{(submission) =>
+          <InlineNotice
+            id={submissionStatusId}
+            class={`composer-submission composer-submission--${submission().phase} mx-10 mb-8 max-narrow:mx-8`}
+            title={submissionTitle()}
+            tone={submissionTone()}
+            role="note"
+          >
+            <p>{submissionDetail()}</p>
+            <div class="composer-submission__actions">
+              <Show when={submission().phase === 'uncertain' && submission().retryable}>
+                <Button size="compact" variant="secondary" class="pointer-coarse:min-h-44" onClick={retryMessageSubmission}>Confirm with the same request</Button>
+              </Show>
+              <Show when={submission().phase === 'failed'}>
+                <Button size="compact" class="pointer-coarse:min-h-44" onClick={restoreFailedDraft}>Back to edit</Button>
+              </Show>
+            </div>
+          </InlineNotice>
+        }</Show>
         <div class="composer-toolbar flex min-h-48 items-center gap-9 pt-2 pr-8 pb-7 pl-10 max-narrow:min-h-46 max-narrow:pt-1 max-narrow:pr-6 max-narrow:pb-5 max-narrow:pl-12">
           <Show when={prediction.activePrediction()}>
             <Button size="compact" class="composer-prediction-action min-h-30 px-9 border-border-subtle bg-surface-muted text-text-secondary text-11 pointer-coarse:min-h-44 max-narrow:min-h-44" onClick={prediction.accept}>
@@ -276,10 +334,10 @@ export function Composer() {
         </div>
       </section>
       <Show when={submissionInAnotherSession()}>{(submission) =>
-        <section class="submission-state submission-state--foreign flex items-start justify-between gap-16 mt-10 mx-4 px-14 py-12 border border-border-subtle rounded-14 bg-surface shadow-recovery text-13 max-narrow:flex-col" role="status">
-          <div class="submission-state__body min-w-0"><strong class="text-13">Another session is still confirming</strong><p class="mt-3 text-text-secondary leading-145">"{pendingSessionTitle()}" has a message awaiting a final server state. To avoid duplicate execution, no new messages are sent until it is confirmed.</p></div>
-          <div class="submission-state__actions flex shrink-0 gap-4 max-narrow:w-full"><Button size="compact" class="min-h-32 border-0 rounded-8 bg-transparent text-text-secondary cursor-pointer max-narrow:first:flex-1" onClick={() => navigateProjectSession(submission().sessionId)}>Back to that session</Button></div>
-        </section>
+        <InlineNotice class="submission-state submission-state--foreign mt-10 mx-4 max-narrow:flex-col" role="status" title="Another session is still confirming" tone="warning">
+          <div class="submission-state__body"><p>"{pendingSessionTitle()}" has a message awaiting a final server state. To avoid duplicate execution, no new messages are sent until it is confirmed.</p></div>
+          <div class="submission-state__actions max-narrow:w-full"><Button size="compact" class="max-narrow:first:flex-1" onClick={() => navigateProjectSession(submission().sessionId)}>Back to that session</Button></div>
+        </InlineNotice>
       }</Show>
     </div>
   );

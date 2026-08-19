@@ -1,22 +1,57 @@
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { createSignal } from 'solid-js';
 import { describe, expect, it, vi } from 'vitest';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './Collapsible';
 import { Button, IconButton } from './Button';
 import { Icon } from './Icon';
 import { Badge } from './Badge';
 import { CopyButton } from './CopyButton';
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from './Dialog';
-import { ProjectDrawer as Drawer } from '../../panel/components/shared/ProjectDrawer';
+import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from './Checkbox';
 import { TextField } from './Field';
-import { Markdown } from '../../panel/components/Markdown';
+import { Listbox, ListboxItem } from './Listbox';
 import { Popover, PopoverContent, PopoverTrigger } from './Popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './dropdown-menu';
 import { Status } from './Status';
+import { RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel } from './RadioGroup';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './Tabs';
 import { Textarea } from './Textarea';
 import { SelectField } from './SelectField';
+import { EmptyState } from './EmptyState';
+import { InlineNotice } from './InlineNotice';
+import { LoadingState } from './LoadingState';
+import { Spinner } from './Spinner';
 import { showToast, Toaster } from './Toast';
-import { primaryShortcut } from '../../panel/lib/keyboard';
 import { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip';
+
+describe('Collapsible', () => {
+  it('keeps controlled disclosure state and the trigger relationship intact', () => {
+    const onOpenChange = vi.fn();
+    render(() => <Collapsible open={false} onOpenChange={onOpenChange}><CollapsibleTrigger>Archived sessions</CollapsibleTrigger><CollapsibleContent id="archived-list">Archived row</CollapsibleContent></Collapsible>);
+    const trigger = screen.getByRole('button', { name: 'Archived sessions' });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('Archived row')).not.toBeInTheDocument();
+    fireEvent.click(trigger);
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+  });
+});
+
+describe('Listbox', () => {
+  it('owns single-selection, disabled options, and arrow-key focus', async () => {
+    const onChange = vi.fn();
+    const options = [{ id: 'one', label: 'One', disabled: false }, { id: 'two', label: 'Two', disabled: true }];
+    render(() => <Listbox options={options} optionValue="id" optionTextValue="label" optionDisabled="disabled" onChange={onChange} renderItem={(item) => <ListboxItem item={item}>{item.rawValue.label}</ListboxItem>} />);
+    const listbox = screen.getByRole('listbox');
+    const [first, second] = screen.getAllByRole('option');
+    expect(second).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.focusIn(listbox);
+    await Promise.resolve();
+    expect(first).toHaveFocus();
+    fireEvent.click(first);
+    const [value] = onChange.mock.calls[0] ?? [];
+    expect([...value]).toEqual(['one']);
+  });
+});
 
 describe('Button', () => {
   it('keeps component-only props out of the DOM and locks while busy', () => {
@@ -142,17 +177,6 @@ describe('Toast', () => {
   });
 });
 
-describe('keyboard labels', () => {
-  it('uses the visible platform modifier instead of claiming every user has Command', () => {
-    const platform = navigator.platform;
-    Object.defineProperty(navigator, 'platform', { configurable: true, value: 'Linux x86_64' });
-    expect(primaryShortcut('k')).toBe('Ctrl+K');
-    Object.defineProperty(navigator, 'platform', { configurable: true, value: 'MacIntel' });
-    expect(primaryShortcut('k')).toBe('⌘K');
-    Object.defineProperty(navigator, 'platform', { configurable: true, value: platform });
-  });
-});
-
 describe('Textarea', () => {
   it('forwards normal props and hides component-only auto-growth controls', () => {
     render(() => <Textarea autoResize maxHeight={180} aria-label="Message" />);
@@ -161,6 +185,99 @@ describe('Textarea', () => {
     expect(textarea).not.toHaveAttribute('maxheight');
     fireEvent.input(textarea, { target: { value: 'Draft' } });
     expect(textarea).toHaveValue('Draft');
+  });
+
+  it('connects its label, hint and error when rendered as a field', () => {
+    render(() => <Textarea variant="field" label="Instruction" hint="Keep it concise" error="Instruction is required" />);
+    const textarea = screen.getByRole('textbox', { name: 'Instruction' });
+    expect(textarea).toHaveAccessibleDescription('Keep it concise Instruction is required');
+    expect(textarea).toHaveAttribute('aria-invalid', 'true');
+    expect(textarea).not.toHaveAttribute('variant');
+  });
+});
+
+describe('Kobalte selection primitives', () => {
+  it('keeps tabs controlled with semantic relationships and arrow navigation', () => {
+    function Harness() {
+      const [value, setValue] = createSignal('topology');
+      return <Tabs value={value()} onChange={setValue}><TabsList aria-label="Categories"><TabsTrigger value="topology">Topology</TabsTrigger><TabsTrigger value="about">About</TabsTrigger></TabsList><TabsContent value="topology">Topology panel</TabsContent><TabsContent value="about">About panel</TabsContent></Tabs>;
+    }
+    render(() => <Harness />);
+    const topology = screen.getByRole('tab', { name: 'Topology' });
+    fireEvent.keyDown(topology, { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: 'About' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('About panel');
+  });
+
+  it('keeps virtual listbox selection controlled', () => {
+    const choose = vi.fn();
+    const options = [{ id: 'one', label: 'One' }, { id: 'two', label: 'Two' }];
+    render(() => <Listbox options={options} optionValue="id" optionTextValue="label" shouldUseVirtualFocus value={['one']} onChange={(value) => choose([...value][0])} aria-label="Commands" renderItem={(item) => <ListboxItem item={item}>{item.rawValue.label}</ListboxItem>} />);
+    fireEvent.click(screen.getByRole('option', { name: 'Two' }));
+    expect(choose).toHaveBeenCalledWith('two');
+  });
+
+  it('uses native radio and checkbox inputs with controlled state', () => {
+    function Harness() {
+      const [radio, setRadio] = createSignal('safe');
+      const [checked, setChecked] = createSignal(false);
+      return <><RadioGroup aria-label="Mode" value={radio()} onChange={setRadio}><RadioGroupItem value="safe"><RadioGroupItemInput /><RadioGroupItemControl /><RadioGroupItemLabel>Safe</RadioGroupItemLabel></RadioGroupItem><RadioGroupItem value="fast"><RadioGroupItemInput /><RadioGroupItemControl /><RadioGroupItemLabel>Fast</RadioGroupItemLabel></RadioGroupItem></RadioGroup><Checkbox checked={checked()} onChange={setChecked}><CheckboxInput /><CheckboxControl /><CheckboxLabel>Tests</CheckboxLabel></Checkbox></>;
+    }
+    render(() => <Harness />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Fast' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Tests' }));
+    expect(screen.getByRole('radio', { name: 'Fast' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Tests' })).toBeChecked();
+  });
+});
+
+describe('Spinner', () => {
+  it('only exposes a status when it has a label and can be explicitly decorative', () => {
+    const labeled = render(() => <Spinner label="Loading session" />);
+    expect(screen.getByRole('status', { name: 'Loading session' })).not.toHaveAttribute('aria-hidden');
+    labeled.unmount();
+
+    const decorative = render(() => <Spinner decorative />);
+    const spinner = decorative.container.querySelector('.ui-spinner');
+    expect(spinner).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+});
+
+describe('LoadingState', () => {
+  it('owns one polite live region and keeps its spinner decorative', () => {
+    render(() => <LoadingState label="Checking connection" description="Contacting the local server" data-testid="loading" />);
+    const loading = screen.getByRole('status', { name: 'Checking connection' });
+    expect(loading).toHaveAttribute('aria-live', 'polite');
+    expect(loading).toHaveTextContent('Contacting the local server');
+    expect(loading.querySelector('.ui-spinner')).toHaveAttribute('aria-hidden', 'true');
+    expect(loading).not.toHaveAttribute('label');
+    expect(loading).not.toHaveAttribute('description');
+  });
+});
+
+describe('InlineNotice', () => {
+  it('uses alert semantics for danger and only enables live updates when requested', () => {
+    const { unmount } = render(() => <InlineNotice tone="danger" title="Import failed">The server rejected the request.</InlineNotice>);
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('Import failed');
+    expect(alert).not.toHaveAttribute('aria-live');
+    expect(alert).toHaveClass('ui-inline-notice--danger');
+    unmount();
+
+    render(() => <InlineNotice live tone="warning">Waiting for confirmation</InlineNotice>);
+    expect(screen.getByRole('status')).toHaveAttribute('aria-live', 'polite');
+  });
+});
+
+describe('EmptyState', () => {
+  it('supports an inline surface without changing its title, description and action contract', () => {
+    render(() => <EmptyState variant="inline" title="No sessions" description="Import an ACP session to continue." action={<Button>Import session</Button>} data-testid="empty" />);
+    const empty = screen.getByTestId('empty');
+    expect(empty).toHaveClass('ui-empty--inline');
+    expect(screen.getByRole('heading', { name: 'No sessions' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Import session' })).toBeInTheDocument();
+    expect(empty).not.toHaveAttribute('variant');
   });
 });
 
@@ -263,98 +380,6 @@ describe('Dialog', () => {
     expect(screen.getByRole('heading', { name: 'Search sessions' })).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Close Search sessions' }));
     expect(close).toHaveBeenCalledOnce();
-  });
-});
-
-describe('Drawer', () => {
-  it('becomes a labeled modal only on compact layouts and restores its trigger', async () => {
-    const background = document.createElement('main');
-    document.body.append(background);
-    const trigger = document.createElement('button');
-    trigger.textContent = 'Open navigation';
-    document.body.append(trigger);
-    trigger.focus();
-    let close!: () => void;
-    function Harness() {
-      const [open, setOpen] = createSignal(true);
-      close = () => setOpen(false);
-      return <Drawer open={open()} modal onOpenChange={(value) => { if (!value) close(); }}><button>First project</button><button>Last project</button></Drawer>;
-    }
-    render(() => <Harness />);
-    const drawer = await screen.findByRole('dialog', { name: 'Projects & Sessions' });
-    await waitFor(() => expect(screen.getByRole('button', { name: 'First project' })).toHaveFocus());
-    expect(drawer).toHaveAttribute('role', 'dialog');
-    expect(background).toHaveAttribute('aria-hidden', 'true');
-    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
-    expect(drawer).toContainElement(document.activeElement as HTMLElement);
-    fireEvent.keyDown(document, { key: 'Escape' });
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Projects & Sessions' })).not.toBeInTheDocument());
-    await waitFor(() => expect(background).not.toHaveAttribute('aria-hidden'));
-    expect(document.activeElement).not.toBe(drawer);
-    background.remove(); trigger.remove();
-  });
-
-  it('stays structural and non-modal on wide layouts', () => {
-    render(() => <Drawer open={false} modal={false} onOpenChange={() => {}}><button>Project</button></Drawer>);
-    const navigation = screen.getByText('Project').closest('aside');
-    expect(navigation).not.toHaveAttribute('role');
-    expect(navigation).not.toHaveAttribute('aria-modal');
-    expect(navigation).not.toHaveAttribute('inert');
-    expect(screen.queryByRole('button', { name: 'Close Projects & Sessions' })).not.toBeInTheDocument();
-  });
-
-  it('lets a nested Dialog consume Escape before the navigation layer', async () => {
-    const app = document.createElement('div'); app.id = 'app'; document.body.append(app);
-    const background = document.createElement('main'); document.body.append(background);
-    function Harness() {
-      const [drawerOpen, setDrawerOpen] = createSignal(true);
-      const [dialogOpen, setDialogOpen] = createSignal(true);
-      return <Drawer open={drawerOpen()} modal onOpenChange={setDrawerOpen}><button>Project</button><Dialog open={dialogOpen()} onOpenChange={setDialogOpen}><DialogContent><DialogTitle>Create project</DialogTitle><button>Create</button></DialogContent></Dialog></Drawer>;
-    }
-    render(() => <Harness />);
-    await waitFor(() => expect(screen.getAllByRole('dialog')).toHaveLength(2));
-    fireEvent.keyDown(document, { key: 'Escape' });
-    await waitFor(() => expect(screen.getAllByRole('dialog')).toHaveLength(1));
-    expect(screen.getByRole('dialog', { name: 'Projects & Sessions' })).toBeInTheDocument();
-    fireEvent.keyDown(document, { key: 'Escape' });
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    app.remove(); background.remove();
-  });
-
-  it('lets a nested Menu consume one Escape before the navigation layer', async () => {
-    const background = document.createElement('main'); document.body.append(background);
-    function Harness() {
-      const [drawerOpen, setDrawerOpen] = createSignal(true);
-      const [menuOpen, setMenuOpen] = createSignal(true);
-      return <Drawer open={drawerOpen()} modal onOpenChange={setDrawerOpen}><DropdownMenu open={menuOpen()} onOpenChange={setMenuOpen}><DropdownMenuTrigger>Project actions</DropdownMenuTrigger><DropdownMenuContent aria-label="Project actions"><DropdownMenuItem>Rename</DropdownMenuItem></DropdownMenuContent></DropdownMenu></Drawer>;
-    }
-    render(() => <Harness />);
-    await waitFor(() => expect(screen.getByRole('menu', { name: 'Project actions' })).toBeInTheDocument());
-    fireEvent.keyDown(document, { key: 'Escape' });
-    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
-    expect(screen.getByRole('dialog', { name: 'Projects & Sessions' })).toBeInTheDocument();
-    fireEvent.keyDown(document, { key: 'Escape' });
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    background.remove();
-  });
-});
-
-describe('Markdown', () => {
-  it('renders raw HTML and active links as inert text', () => {
-    render(() => <Markdown source={'<script>alert(1)</script>\n\n[unsafe](javascript:alert(2))'} />);
-    expect(document.querySelector('script')).not.toBeInTheDocument();
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
-    expect(screen.getByText('<script>alert(1)</script>')).toBeInTheDocument();
-    expect(document.querySelector('.markdown-body')).toHaveTextContent('unsafe');
-  });
-
-  it('isolates safe links and exposes copyable fenced code', () => {
-    render(() => <Markdown source={'[docs](https://example.com)\n\n```ts\nconst x = 1;\n```'} />);
-    const link = screen.getByRole('link', { name: /docs/ });
-    expect(link).toHaveAttribute('target', '_blank');
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-    expect(screen.getByRole('button', { name: 'Copy code' })).toBeInTheDocument();
-    expect(screen.getByText('const x = 1;')).toBeInTheDocument();
   });
 });
 

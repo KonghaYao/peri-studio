@@ -30,15 +30,15 @@ describe('SessionImportDialog', () => {
 
   it('shows a non-interactive loading state while discovery is running', () => {
     render(() => <SessionImportDialog {...props({ sessions: [], discovering: true })} />);
-    expect(screen.getByText('Reading ACP sessions…')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Reading ACP sessions' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Search sessions' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Import selected session' })).toBeDisabled();
   });
 
   it('shows only cwd-scoped candidates and filters by stable id', () => {
     render(() => <SessionImportDialog {...props()} />);
-    expect(screen.getByRole('button', { name: /Architecture refactor/ })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Other directory/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Architecture refactor/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Other directory/ })).not.toBeInTheDocument();
     fireEvent.input(screen.getByRole('textbox', { name: 'Search sessions' }), { target: { value: 'missing' } });
     expect(screen.getByText('No sessions to import')).toBeInTheDocument();
   });
@@ -48,7 +48,7 @@ describe('SessionImportDialog', () => {
     let commit = () => {};
     const onImport = vi.fn((_projectId, _sessionId, onCommitted) => { commit = onCommitted; return true; });
     render(() => <SessionImportDialog {...props({ onClose, onImport })} />);
-    fireEvent.click(screen.getByRole('button', { name: /Architecture refactor/ }));
+    fireEvent.click(screen.getByRole('option', { name: /Architecture refactor/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Import selected session' }));
     expect(onImport).toHaveBeenCalledWith('p1', 'acp-one', expect.any(Function), expect.any(Function));
     expect(onClose).not.toHaveBeenCalled();
@@ -59,19 +59,19 @@ describe('SessionImportDialog', () => {
   it('shows an explicit fact-only review before import', () => {
     render(() => <SessionImportDialog {...props()} />);
     expect(screen.queryByRole('region', { name: 'Pending import details' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Architecture refactor/ }));
+    fireEvent.click(screen.getByRole('option', { name: /Architecture refactor/ }));
     const review = screen.getByRole('region', { name: 'Pending import details' });
     expect(review).toHaveTextContent('Architecture refactor');
     expect(review).toHaveTextContent('/repo');
     expect(review).toHaveTextContent('acp-one');
     expect(review).toHaveTextContent('ACP does not provide a message preview');
-    expect(screen.getByRole('button', { name: /Architecture refactor/ })).toHaveAttribute('aria-controls', 'import-session-review');
+    expect(screen.getByRole('option', { name: /Architecture refactor/ })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('cannot submit a selection hidden by search or catalog refresh', () => {
     const onImport = vi.fn(() => true);
     const view = render(() => <SessionImportDialog {...props({ onImport })} />);
-    fireEvent.click(screen.getByRole('button', { name: /Architecture refactor/ }));
+    fireEvent.click(screen.getByRole('option', { name: /Architecture refactor/ }));
     fireEvent.input(screen.getByRole('textbox', { name: 'Search sessions' }), { target: { value: 'missing' } });
     expect(screen.getByRole('button', { name: 'Import selected session' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Import selected session' }));
@@ -83,10 +83,10 @@ describe('SessionImportDialog', () => {
     const onClose = vi.fn();
     const onImport = vi.fn((_projectId, _sessionId, _committed, failed) => { failed('failed'); return true; });
     render(() => <SessionImportDialog {...props({ onClose, onImport })} />);
-    fireEvent.click(screen.getByRole('button', { name: /Architecture refactor/ }));
+    fireEvent.click(screen.getByRole('option', { name: /Architecture refactor/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Import selected session' }));
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: /Architecture refactor/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('option', { name: /Architecture refactor/ })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('button', { name: 'Import selected session' })).not.toBeDisabled();
     expect(screen.getByRole('alert')).toHaveTextContent('The server rejected this import');
   });
@@ -94,7 +94,7 @@ describe('SessionImportDialog', () => {
   it('distinguishes an uncertain timeout from a definite rejection', () => {
     const onImport = vi.fn((_projectId, _sessionId, _committed, failed) => { failed('uncertain'); return true; });
     render(() => <SessionImportDialog {...props({ onImport })} />);
-    fireEvent.click(screen.getByRole('button', { name: /Architecture refactor/ }));
+    fireEvent.click(screen.getByRole('option', { name: /Architecture refactor/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Import selected session' }));
     expect(screen.getByRole('alert')).toHaveTextContent('The import result is not confirmed yet');
     expect(screen.getByRole('alert')).toHaveTextContent('Do not create a duplicate request');

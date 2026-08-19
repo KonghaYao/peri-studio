@@ -12,7 +12,8 @@ describe('RewindDialog', () => {
       candidates: [{ messageId: 'message-1', preview: 'Fix the login flow' }],
     });
     render(() => <RewindDialog open onClose={() => undefined} />);
-    expect(screen.getByRole('button', { name: /Fix the login flow/ })).toBeInTheDocument();
+    const target = screen.getByRole('option', { name: /Fix the login flow/ });
+    expect(screen.getByRole('listbox', { name: 'Rewind target message' })).toContainElement(target);
     expect(screen.queryByRole('button', { name: 'Rewind session and files' })).not.toBeInTheDocument();
   });
 

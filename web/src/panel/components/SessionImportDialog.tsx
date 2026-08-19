@@ -1,6 +1,6 @@
-import { createEffect, createMemo, createSignal, For, Show, untrack } from 'solid-js';
+import { createEffect, createMemo, createSignal, Show, untrack } from 'solid-js';
 import type { ProjectInfo, SessionSummaryInfo } from '../lib/registry-view';
-import { Button, Dialog, DialogContent, DialogTitle, Icon, TextField } from '../../components/ui';
+import { Button, Dialog, DialogContent, DialogTitle, EmptyState, Icon, InlineNotice, Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel, LoadingState, TextField } from '../../components/ui';
 import { importCandidates } from '../lib/session-import.ts';
 import { cleanSessionTitle, formatRelativeTime, shortSessionId } from '../lib/recovery-state.ts';
 
@@ -76,6 +76,13 @@ export function SessionImportDialog(props: SessionImportDialogProps) {
     }
   };
 
+  const selectCandidate = (values: Set<string>) => {
+    const sessionId = values.values().next().value as string | undefined;
+    if (!sessionId) return;
+    setSelectedId(sessionId);
+    setProblem(null);
+  };
+
   return <Dialog open={props.open} onOpenChange={(open) => { if (!open && !submitting()) close(); }}><DialogContent dismissible={!submitting()}><DialogTitle class="sr-only">Import ACP session</DialogTitle>
     <div class="import-dialog p-20">
       <div class="import-dialog__header">
@@ -84,22 +91,26 @@ export function SessionImportDialog(props: SessionImportDialogProps) {
         <p>Shows only ACP sessions in this project directory that are not yet in the sidebar. Importing does not copy or move the original session.</p>
       </div>
       <TextField label="Search sessions" value={query()} disabled={submitting() || props.discovering} onInput={(event) => setQuery(event.currentTarget.value)} placeholder="Search by title or session ID" />
-      <div class="import-session-list flex max-h-300 flex-col gap-4 overflow-auto">
-        <For each={candidates()} fallback={<div class="import-empty px-12 py-28 text-text-muted text-13 text-center">{props.discovering ? <><span class="ui-spinner" aria-hidden="true" />Reading ACP sessions…</> : 'No sessions to import'}</div>}>
-          {(candidate) => <button
-            type="button"
-            disabled={submitting() || props.discovering}
-            class={`import-session-row ${selectedId() === candidate.sessionId ? 'is-selected' : ''} grid grid-cols-import items-center gap-10 w-full min-h-54 px-10 py-9 border border-transparent rounded-10 bg-transparent text-left cursor-pointer hover:bg-hover`}
-            aria-pressed={selectedId() === candidate.sessionId}
-            aria-controls={selectedId() === candidate.sessionId ? 'import-session-review' : undefined}
-            onClick={() => { setSelectedId(candidate.sessionId); setProblem(null); }}
-          >
+      <Show when={props.discovering} fallback={<Show when={candidates().length} fallback={<EmptyState variant="inline" class="import-empty px-12 py-28" title="No sessions to import" description="No matching ACP sessions are available for this project directory." />}>
+        <Listbox
+          class="ui-listbox import-session-list flex max-h-300 flex-col gap-4 overflow-auto"
+          aria-label="Importable ACP sessions"
+          options={candidates()}
+          optionValue="sessionId"
+          optionTextValue={(candidate) => cleanSessionTitle(candidate.title)}
+          optionDisabled={() => submitting() || props.discovering}
+          value={selectedId() ? [selectedId()!] : []}
+          onChange={selectCandidate}
+          shouldFocusWrap
+          renderItem={(item) => <ListboxItem item={item} class="import-session-row grid grid-cols-import items-center gap-10 w-full min-h-54 px-10 py-9 border border-transparent rounded-10 bg-transparent text-left cursor-pointer hover:bg-hover">
             <ChatIcon />
-            <span><strong>{cleanSessionTitle(candidate.title)}</strong><small>{formatRelativeTime(candidate.updatedAt)} · ID …{shortSessionId(candidate.sessionId)}</small></span>
-            <Show when={selectedId() === candidate.sessionId}><span class="import-session-check !grid place-items-center w-18 h-18 rounded-full bg-btn-primary text-surface text-11" aria-hidden="true">✓</span></Show>
-          </button>}
-        </For>
-      </div>
+            <span><ListboxItemLabel as="strong">{cleanSessionTitle(item.rawValue.title)}</ListboxItemLabel><ListboxItemDescription as="small">{formatRelativeTime(item.rawValue.updatedAt)} · ID …{shortSessionId(item.rawValue.sessionId)}</ListboxItemDescription></span>
+            <Show when={selectedId() === item.rawValue.sessionId}><span class="import-session-check !grid place-items-center w-18 h-18 rounded-full bg-btn-primary text-surface text-11" aria-hidden="true">✓</span></Show>
+          </ListboxItem>}
+        />
+      </Show>}>
+        <LoadingState class="import-empty px-12 py-28" label="Reading ACP sessions" />
+      </Show>
       <Show when={selected()}>{(candidate) => <section id="import-session-review" class="import-session-review mt-12 p-12 border border-border-subtle rounded-12 bg-surface-muted" role="region" aria-label="Pending import details">
         <header><span>Review before import</span><strong>{cleanSessionTitle(candidate().title)}</strong></header>
         <dl>
@@ -109,8 +120,8 @@ export function SessionImportDialog(props: SessionImportDialogProps) {
         </dl>
         <p>ACP does not provide a message preview. Confirm via the project directory, title, time and full ID; importing only adds this session to the sidebar, without copying or moving content.</p>
       </section>}</Show>
-      <Show when={submitting()}><div class="import-session-status flex items-center gap-8 mt-10 px-10 py-9 rounded-9 text-12 leading-145 bg-surface-muted text-text-secondary" role="status"><span class="ui-spinner" aria-hidden="true" />Confirming the import result with the server…</div></Show>
-      <Show when={problem()}>{(message) => <div class="import-session-problem flex items-center gap-8 mt-10 px-10 py-9 rounded-9 text-12 leading-145 border border-danger-border bg-danger-soft text-danger" role="alert">{message()}</div>}</Show>
+      <Show when={submitting()}><LoadingState class="import-session-status mt-10 px-10 py-9" label="Confirming the import result with the server" /></Show>
+      <Show when={problem()}>{(message) => <InlineNotice class="import-session-problem mt-10" tone="danger">{message()}</InlineNotice>}</Show>
       <Show when={!props.discovering && problem()}><Button size="compact" onClick={() => { const id = props.project?.id; if (id) props.onDiscover(id, () => setProblem(null), setProblem); }}>Refresh ACP sessions</Button></Show>
       <div class="form-actions flex justify-end gap-6 mt-10">
         <Button disabled={submitting()} onClick={close}>Cancel</Button>

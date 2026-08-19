@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const store = vi.hoisted(() => ({
   archiveProject: vi.fn(),
@@ -16,6 +16,7 @@ const store = vi.hoisted(() => ({
   navigateProjectSession: vi.fn(),
   openingSessionId: vi.fn(() => null as string | null),
   permissions: vi.fn(() => []),
+  registryHydrated: vi.fn(() => true),
   projects: vi.fn(() => [{
     id: 'p1',
     name: 'Perihelion',
@@ -52,13 +53,52 @@ vi.mock('../lib/auth-state', () => ({ readOnly: store.readOnly }));
 vi.mock('./AuthGate', () => ({ useAuthActions: () => ({ logout: vi.fn() }) }));
 
 import { ProjectSidebar } from './ProjectSidebar';
+import { primaryShortcut } from '../lib/keyboard';
 
 function sessionButton() {
   return screen.getByRole('button', { name: /^Architecture refactor/ });
 }
 
+describe('ProjectSidebar registry hydration', () => {
+  afterEach(() => {
+    store.registryHydrated.mockReturnValue(true);
+  });
+
+  it('keeps an unknown registry as a loading surface instead of an empty directory', () => {
+    store.registryHydrated.mockReturnValue(false);
+    store.projects.mockReturnValue([]);
+
+    render(() => <ProjectSidebar />);
+
+    expect(screen.getByRole('status', { name: 'Loading projects' })).toBeInTheDocument();
+    expect(screen.queryByText('No projects yet')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'New project' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Search sessions/ })).toBeDisabled();
+  });
+
+  it('shows the empty directory only after the registry confirms it', () => {
+    store.projects.mockReturnValue([]);
+
+    render(() => <ProjectSidebar />);
+
+    expect(screen.getByText('No projects yet')).toBeInTheDocument();
+    expect(screen.queryByRole('status', { name: 'Loading projects' })).not.toBeInTheDocument();
+  });
+
+  it('keeps an archived-only registry distinct from an empty registry', () => {
+    store.projects.mockReturnValue([{ id: 'archived', name: 'Archived project', cwd: '/repo', instanceId: 'local', createdAt: '2026-08-13T10:00:00Z', updatedAt: '2026-08-13T10:00:00Z', archivedAt: '2026-08-14T10:00:00Z' }]);
+
+    render(() => <ProjectSidebar />);
+
+    expect(screen.getByText('No active projects')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Archived\s*1/ })).toBeInTheDocument();
+  });
+});
+
 describe('ProjectSidebar session navigation', () => {
   beforeEach(() => {
+    store.registryHydrated.mockReturnValue(true);
+    store.projects.mockReturnValue([{ id: 'p1', name: 'Perihelion', cwd: '/repo', instanceId: 'local', createdAt: '2026-08-13T10:00:00Z', updatedAt: '2026-08-13T10:00:00Z', archivedAt: null }]);
     store.navigateProjectSession.mockReset();
     store.openingSessionId.mockReturnValue(null);
     store.readOnly.mockReturnValue(false);
@@ -75,6 +115,14 @@ describe('ProjectSidebar session navigation', () => {
       acpSessionId: 'acp-12345678',
       archivedAt: null,
     }]);
+  });
+
+  it('uses a controlled disclosure for project sessions', () => {
+    render(() => <ProjectSidebar />);
+    const disclosure = screen.getByRole('button', { name: /Perihelion.*1 sessions/ });
+    expect(disclosure).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(disclosure);
+    expect(disclosure).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('waits for the exact open command to commit before navigating', () => {
@@ -169,5 +217,29 @@ describe('ProjectSidebar session navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
     expect(store.restoreProjectSession).toHaveBeenCalledWith('hub-abcdef12', expect.any(Function), expect.any(Function));
     commit();
+  });
+});
+
+describe('collapsed sidebar rail', () => {
+  it('keeps an accessible expand control while hiding the full workspace navigation', () => {
+    const toggle = vi.fn();
+
+    render(() => <ProjectSidebar collapsed onToggleCollapsed={toggle} />);
+
+    expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'New project' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Expand sidebar' }));
+    expect(toggle).toHaveBeenCalledOnce();
+  });
+});
+
+describe('keyboard labels', () => {
+  it('uses the visible platform modifier instead of claiming every user has Command', () => {
+    const platform = navigator.platform;
+    Object.defineProperty(navigator, 'platform', { configurable: true, value: 'Linux x86_64' });
+    expect(primaryShortcut('k')).toBe('Ctrl+K');
+    Object.defineProperty(navigator, 'platform', { configurable: true, value: 'MacIntel' });
+    expect(primaryShortcut('k')).toBe('⌘K');
+    Object.defineProperty(navigator, 'platform', { configurable: true, value: platform });
   });
 });
