@@ -2,15 +2,16 @@
 
 MCPP（MCP Plus）的 Server 侧 TypeScript 参考实现。该包基于 MCP SDK，提供 Skills 资源挂载、MCP Server 双模式启动、多 Server HTTP 网关，以及 Agent Plugin 清单校验。
 
-> 当前状态：`0.2.0`。MCPP 规范仍处于 Draft 阶段，API 可能随规范演进而调整。
+> 当前状态：`0.3.0`。MCPP 规范仍处于 Draft 阶段，API 可能随规范演进而调整。
 
 ## 功能
 
-- **Skills 资源挂载**：将 `skills/<name>/SKILL.md` 实时投影为 `skill://<name>/SKILL.md` MCP Resource。
+- **Skills 资源挂载**：将 `skills/<name>/SKILL.md` 及经过受限扫描的附属文件实时投影为 `skill://<name>/<path>` MCP Resource。
 - **Skills 元数据处理**：解析 frontmatter、提取 `io.mcpp/*` 编排字段、生成 SHA-256 digest。
 - **双模式 Server 启动**：默认使用 Streamable HTTP，也可通过 `--stdio` 或配置切换到 stdio。
 - **多 Server HTTP 网关**：在单个端口上按路径挂载多个 MCP endpoint，并隔离各 endpoint、各客户端会话。
 - **Server Catalog**：从静态挂载表派生只读目录，支持 Child MCP 的列表、查询和 content-bound 连接解析；不下发、安装、启动、provision 或代理能力。
+- **Server Catalog 页面 helper**：提供无需构建链的、可嵌入 Bun / Worker 的同源 Catalog 检查页面；页面只发现 Child MCP 的 Tools / Resources 元数据与生成连接配置。
 - **Serverless 路由**：提供标准 `fetch(Request): Promise<Response>` handler，可嵌入 Worker 或其他 Web Standard 运行时。
 - **插件清单校验**：使用 Zod 校验 Agent Plugin 的 `plugin.json` 与 `mcp.json`。
 
@@ -153,14 +154,62 @@ ResourceForSkills(server, {
 
 ```text
 skill://code-review/SKILL.md
+skill://code-review/references/checklist.md
+skill://code-review/scripts/verify.py
+skill://code-review/assets/diagram.svg
+skill://code-review/templates/report.json
+```
+
+只有根 `SKILL.md` 是 Skill 入口；其余 URI 均是附属 Resource，必须由 Agent 按需读取，不能据此获得执行权限。
+
+`ResourceForSkills` 默认只递归公开 `references/`、`scripts/`、`assets/`、`templates/`。可以用 `resourceLimits.publicDirectories` 追加其他**一级**目录（不会替换默认目录）：
+
+```ts
+ResourceForSkills(server, {
+    skillsDir: "/absolute/path/to/skills",
+    resourceLimits: {
+        publicDirectories: ["examples"],
+        maxFileBytes: 512 * 1024,
+        maxSkillBytes: 4 * 1024 * 1024,
+    },
+});
 ```
 
 安全约束：
 
-- 只扫描 `skills/` 的直接子目录，不递归发现更深层 Skill。
-- 每个目录必须包含根级 `SKILL.md`。
-- Skill 名只允许字母、数字、下划线和连字符，长度为 1–64。
-- URI 中的 Skill 名经过白名单校验，防止路径穿越。
+- 只扫描 `skills/` 的直接子目录，不递归发现更深层 Skill；每个目录必须有通过 frontmatter 校验的根 `SKILL.md`。
+- 仅公开允许目录中的已知文本类型与常见图片类型；隐藏路径、`node_modules`、未知二进制、含 NUL 或无效 UTF-8 的文本、符号链接均被拒绝。
+- 默认限制为：单文件 1 MiB、单 Skill 8 MiB / 128 文件、一次挂载总计 32 MiB / 1024 文件；读取时会重新扫描、检查路径和内容，降低扫描后替换的风险。
+- scripts 作为 Resource 可读取不表示可以执行；执行仍须经过独立 Tool 与批准流程。
+
+### `ResourceForStaticSkills(server, options)`：Worker 构建期投影
+
+Worker 没有可用的本地文件系统时，不能使用 `ResourceForSkills` 的实时扫描。构建阶段用 `buildStaticSkillResources()` 收集同一套白名单/预算校验后的文件，将结果写成源码；运行时以 `ResourceForStaticSkills()` 挂载该表。
+
+```ts
+// scripts/generate-skills-registry.ts（构建阶段）
+import { writeFile } from "node:fs/promises";
+import {
+    buildStaticSkillResources,
+    renderStaticSkillResourcesModule,
+} from "@peri-code/mcpp/skills/build";
+
+const resources = await buildStaticSkillResources("./skills");
+await writeFile(
+    "./src/static-skills.generated.ts",
+    renderStaticSkillResourcesModule(resources),
+);
+```
+
+```ts
+// Worker 运行时
+import { ResourceForStaticSkills } from "@peri-code/mcpp/skills/static";
+import { STATIC_SKILL_RESOURCES } from "./static-skills.generated.ts";
+
+ResourceForStaticSkills(server, { resources: STATIC_SKILL_RESOURCES });
+```
+
+生成步骤必须在 Worker bundle 前执行；静态 registry 会再次校验 URI、内容长度和 Skill 根存在性，孤儿附属文件不会公开。
 
 ### `scanSkillsDir(skillsDir, options?)`
 
@@ -240,6 +289,31 @@ gateway.endpoints[0]?.subscriptions.toolsChanged();
 - MCP `2025-era` 请求统一以 unsupported protocol version 拒绝。
 - 不使用 `mcp-session-id`；0728 请求按协议要求自描述。
 - 不同 endpoint 的 Server 实例和 subscription 总线相互隔离。
+
+### Catalog 检查页面 helper
+
+`createCatalogPageHandler` 把只读 Catalog 页面作为 gateway fallback；页面自身只调用
+Catalog 的 `list` / `resolve`，并在用户选择后直接向 Child endpoint 发现
+`tools/list` 与 `resources/list` 元数据。它不会读取 Resource 内容或调用 Tool，且不依赖
+`Bun.file`，因此可复用于 Worker。
+
+```ts
+import {
+    createCatalogPageHandler,
+    createGateway,
+} from "@peri-code/mcpp";
+
+const gateway = await createGateway(routes, {
+    catalog: { path: "/catalog/mcp" },
+    fallback: createCatalogPageHandler({
+        pagePath: "/",
+        catalogPath: "/catalog/mcp",
+    }),
+});
+```
+
+默认页面路径为 `/`，Catalog 路径为 `/catalog/mcp`。两者只能是同源安全绝对路径；helper
+会以 `Cache-Control: no-store` 返回 HTML，避免浏览器使用旧页面脚本。
 
 ### Serverless / Web Standard
 
@@ -327,9 +401,11 @@ const result = validateMcpJson({
 | 入口 | 内容 |
 | --- | --- |
 | `@peri-code/mcpp` | 全部公开 API |
-| `@peri-code/mcpp/skills` | Skills 扫描、frontmatter、URI、digest 与 Resource 挂载 |
+| `@peri-code/mcpp/skills` | Skills 扫描、前端元数据、URI、digest、受限 Resource 挂载与纯公开策略 |
+| `@peri-code/mcpp/skills/static` | Worker 的构建期静态 Skill Resource 挂载 |
+| `@peri-code/mcpp/skills/build` | 仅构建阶段使用的静态 registry 收集与源码生成 |
 | `@peri-code/mcpp/server` | 默认 HTTP 地址/端口、`startServer`、`main` 与启动类型 |
-| `@peri-code/mcpp/catalog` | 只读 Server Catalog 类型、扩展标识与实现 |
+| `@peri-code/mcpp/catalog` | 只读 Server Catalog 类型、扩展标识、实现与 Catalog 页面 helper |
 | `@peri-code/mcpp/gateway` | HTTP gateway 与 serverless routes |
 | `@peri-code/mcpp/plugin` | `plugin.json`、`mcp.json` schema 与校验函数 |
 

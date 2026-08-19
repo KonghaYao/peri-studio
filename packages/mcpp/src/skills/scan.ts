@@ -33,7 +33,12 @@ export async function readSkillMeta(
             stat(file),
         ]);
         const frontmatter = parseSkillFrontmatter(raw, dirName);
-        if (!frontmatter || typeof frontmatter.name !== "string" || !frontmatter.name) {
+        if (
+            !frontmatter ||
+            typeof frontmatter.name !== "string" ||
+            !frontmatter.name ||
+            frontmatter.name !== dirName
+        ) {
             return undefined;
         }
         return {

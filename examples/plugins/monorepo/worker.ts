@@ -11,10 +11,12 @@
  * 注意：会话注册表为 isolate 内存态（单实例下可用）。生产多实例并发时
  * 会话可能落到不同 isolate，需外置会话状态（Durable Objects）。
  */
-import { createMonorepoRoutes } from "./src/index.ts";
+import { createStaticOpenspecServer } from "./openspec/static-server.ts";
+import { createMonorepoRoutesForOpenspec } from "./src/routes.ts";
 
-// 顶层单例：会话注册表随 isolate 生命周期存活，跨请求复用
-const gateway = createMonorepoRoutes();
+// 顶层单例：会话注册表随 isolate 生命周期存活，跨请求复用。
+// Child 的 Skill 资源来自构建期 registry，不在 Worker 运行时读取本地目录。
+const gateway = createMonorepoRoutesForOpenspec(createStaticOpenspecServer);
 
 export default {
     fetch: gateway.fetch,

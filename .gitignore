@@ -4,6 +4,7 @@
 # Node / Vite
 node_modules/
 dist/
+examples/plugins/monorepo/dist-worker/
 *.tsbuildinfo
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*

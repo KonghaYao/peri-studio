@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "bun src/index.ts",
     "start": "bun src/index.ts",
+    "generate:skills": "bun scripts/generate-skills-registry.ts",
+    "build:worker": "bun run generate:skills && bun build worker.ts --outdir dist-worker --target browser",
     "demo": "bun test/smoke.ts"
   },
   "devDependencies": {

@@ -591,7 +591,8 @@ flowchart LR
 ├── references/     # OPTIONAL：支持文档（按需读取）
 ├── scripts/        # OPTIONAL：可执行代码（需显式批准执行）
 ├── assets/         # OPTIONAL：模板、资源
-└── ...             # 任意其他文件
+├── templates/      # OPTIONAL：可复用结构化模板
+└── ...             # 仅当 server 的公开策略明确允许时才可作为 Resource 暴露
 ```
 
 `SKILL.md` **MUST** 以 YAML frontmatter 开头，且 frontmatter **至少包含** `name` 与 `description` 两个字段：
@@ -646,7 +647,7 @@ metadata:
 
 ### 5.3 URI 与资源映射（skill:// 约定）
 
-MCPP 采用 SEP-2640 的 URI 约定。Skill 目录中的**每个文件**各暴露为一个 MCP resource：
+MCPP 采用 SEP-2640 的 URI 约定。Skill 作者选择公开的**每个文件**各暴露为一个 MCP resource：
 
 ```
 skill://{org-prefix/}{skillName}/{相对路径}
@@ -655,7 +656,10 @@ skill://{org-prefix/}{skillName}/{相对路径}
 - 末段（`{skillName}`）MUST 等于 frontmatter 的 `name`；
 - 首段占据 authority 组件，MUST 是合法 `reg-name`，承载组织前缀，Agent MUST NOT 对其做 DNS/网络解析；
 - `SKILL.md` 恒可寻址为 `skill://{skillName}/SKILL.md`，技能根目录为 `skill://{skillName}`（去后缀、无尾斜杠）；
-- `{相对路径}` 支持任意深度（references / scripts / templates 等）。
+- `{相对路径}` 支持任意深度（references / scripts / templates 等）；Server 对文件类型、单文件大小、累计大小或文件数施加公开限制时，MUST 在 Discovery 中仅列出实际可读文件，且不得让附属文件在根 `SKILL.md` 未公开时单独可读；
+- `SKILL.md` 是唯一 Skill 根/激活入口。相同 `skillName` 下的 `references/`、`scripts/`、`assets/`、`templates/` 文件是附属 Resource，MUST NOT 被作为独立 Skill 呈现；
+- Server SHOULD 默认只递归公开上述四个目录，其他一级目录 MUST 经部署者显式允许。Server MUST 拒绝隐藏路径、路径穿越、符号链接、未知或危险二进制，并在扫描与读取两阶段重新校验路径、文件类型、大小与文本完整性；
+- scripts 可作为只读 Resource 公开，但其可读性 MUST NOT 被解释为执行授权；执行仍走独立 Tool 与批准边界。
 
 示例（摘自 SEP-2640）：
 
@@ -683,7 +687,7 @@ Server 声明 `io.modelcontextprotocol/skills` 扩展后（声明细则见第 9 
 
 另有两类兜底暴露，不要求枚举能力：
 
-- **资源模板**：Server MAY 用 `resources/templates/list` 暴露 `skill://{skillName}/...` 模板，并在 `resources/list` 中列出具体 Skill 资源。本仓库 `ResourceForSkills.ts` 即此模式（每次访问实时 `readdir`，新增 Skill 无需重启）。这种模式的最大好处是无停机、可增量。
+- **资源模板**：Server MAY 用 `resources/templates/list` 暴露 `skill://{skillName}/...` 模板，并在 `resources/list` 中列出具体 Skill 资源。本仓库 `ResourceForSkills.ts` 即此模式（每次访问实时 `readdir`，新增 Skill 无需重启）；无运行时文件系统的 Worker 应在构建期用同一公开策略生成静态 registry，并以 `ResourceForStaticSkills` 从 bundle 中挂载，MUST NOT 依赖运行时路径读取。这种模式的最大好处是无停机、可增量。
 - **服务器指令指向**：Server MAY 在 `server/discover` 的 `instructions` 字段中直接给出 Skill URI。Agent 拿到 URI 即可通过 `resources/read` 读取，**无需任何枚举机制**。
 
 分级要求（满足其一即可让 Agent 发现一次的 Skill）：

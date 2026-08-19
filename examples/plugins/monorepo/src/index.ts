@@ -11,46 +11,24 @@
  * 运行：bun src/index.ts            → 监听 http://127.0.0.1:8457/
  *        bun test/smoke.ts          → 官方 client 连接端点验证
  */
-import { resolve } from "node:path";
 import {
+    createCatalogPageHandler,
     createGateway,
-    createGatewayRoutes,
     DEFAULT_MCPP_HTTP_HOST,
     DEFAULT_MCPP_HTTP_PORT,
     type GatewayHandle,
     type GatewayRoutesHandle,
 } from "@peri-code/mcpp";
 import { createOpenspecServer } from "../openspec/server.ts";
+import {
+    createMonorepoRoutesForOpenspec,
+    createOpenspecRoute,
+} from "./routes.ts";
 
 /** 挂载表：/xxx/mcp → xxx 子 server（3.7：路径即路由，唯一 HTTP 出口）。 */
 export const MONOREPO_ROUTES = [
-    {
-        path: "/openspec/mcp",
-        createServer: createOpenspecServer,
-        catalog: {
-            id: "openspec",
-            title: "OpenSpec Recipes",
-            description: "Workflow skills for proposing, applying, and verifying OpenSpec changes.",
-            version: "1.0.0",
-            tags: ["specification", "workflow"],
-            capabilities: ["resources", "skills"],
-            auth: { required: false },
-        },
-    },
+    createOpenspecRoute(createOpenspecServer),
 ] as const;
-
-async function serveDemo(request: Request): Promise<Response> {
-    const path = new URL(request.url).pathname;
-    if (request.method === "GET" && (path === "/" || path === "/catalog-demo.html")) {
-        return new Response(Bun.file(resolve(import.meta.dir, "../catalog-demo.html")), {
-            headers: {
-                "content-type": "text/html; charset=utf-8",
-                "cache-control": "no-store",
-            },
-        });
-    }
-    return new Response("MCPP monorepo demo: route not found", { status: 404 });
-}
 
 export interface MonorepoOptions {
     host?: string;
@@ -62,13 +40,7 @@ export interface MonorepoOptions {
  * 每个路由使用独立的 MCP 2026-07-28 handler 与 subscription 总线。
  */
 export function createMonorepoRoutes(): GatewayRoutesHandle {
-    return createGatewayRoutes([...MONOREPO_ROUTES], {
-        catalog: {
-            path: "/catalog/mcp",
-            name: "mcpp-monorepo-catalog",
-            version: "1.0.0",
-        },
-    });
+    return createMonorepoRoutesForOpenspec(createOpenspecServer);
 }
 
 /**
@@ -85,7 +57,7 @@ export function createMonorepoGateway(options: MonorepoOptions = {}): Promise<Ga
             name: "mcpp-monorepo-catalog",
             version: "1.0.0",
         },
-        fallback: serveDemo,
+        fallback: createCatalogPageHandler(),
     });
 }
 

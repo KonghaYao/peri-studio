@@ -13,6 +13,14 @@ import {
 import { z } from "zod";
 import { computeDigest } from "./skills/digest.ts";
 
+export {
+    createCatalogPageHandler,
+    DEFAULT_CATALOG_ENDPOINT_PATH,
+    DEFAULT_CATALOG_PAGE_PATH,
+    renderCatalogPage,
+    type CatalogPageOptions,
+} from "./catalog-page.ts";
+
 /** MCPP Server Catalog 扩展标识。 */
 export const MCPP_SERVER_CATALOG_EXTENSION = "io.mcpp/server-catalog";
 

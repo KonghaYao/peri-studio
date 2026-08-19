@@ -1,6 +1,6 @@
 {
   "name": "@peri-code/mcpp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "MCPP (MCP Plus) 规范行为的参考实现 — Server 侧：Skills 挂载、双模式启动、聚合 HTTP 出口、插件清单校验",
   "type": "module",
   "private": false,
@@ -8,6 +8,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./skills": "./src/skills/index.ts",
+    "./skills/static": "./src/skills/static-skills.ts",
+    "./skills/build": "./src/skills/build-static-skills.ts",
     "./server": "./src/server/index.ts",
     "./catalog": "./src/catalog.ts",
     "./gateway": "./src/gateway.ts",

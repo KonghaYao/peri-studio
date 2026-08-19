@@ -26,7 +26,41 @@ export function skillUri(skillName: string): string {
 /** 构造带嵌套路径的 skill 资源 URI（skill program 引用 references/scripts 等）。 */
 export function skillFileUri(skillName: string, path: string): string {
     const clean = path.replace(/^\/+/, "");
-    return clean ? `skill://${skillName}/${clean}` : skillUri(skillName);
+    if (!clean) return skillUri(skillName);
+    return `skill://${skillName}/${clean.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+/**
+ * 解码 ResourceTemplate 匹配到的目录内路径。每个 URI 段独立解码，禁止编码后的
+ * `/`、`\\`、隐藏段与路径穿越，避免把 URI 数据解释为宿主文件系统路径。
+ */
+export function decodeSkillFilePath(path: string): string | undefined {
+    if (!path || path.includes("\\") || path.includes("\0")) return undefined;
+
+    const segments: string[] = [];
+    for (const encoded of path.split("/")) {
+        if (!encoded) return undefined;
+        let segment: string;
+        try {
+            segment = decodeURIComponent(encoded);
+        } catch {
+            return undefined;
+        }
+        if (
+            !segment ||
+            segment === "." ||
+            segment === ".." ||
+            segment === "node_modules" ||
+            segment.startsWith(".") ||
+            segment.includes("/") ||
+            segment.includes("\\") ||
+            segment.includes("\0")
+        ) {
+            return undefined;
+        }
+        segments.push(segment);
+    }
+    return segments.join("/");
 }
 
 /**

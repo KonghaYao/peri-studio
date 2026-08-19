@@ -6,7 +6,9 @@
  */
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { z } from "zod";
-import { createMonorepoGateway, createMonorepoRoutes } from "../src/index.ts";
+import { createStaticOpenspecServer } from "../openspec/static-server.ts";
+import { createMonorepoGateway } from "../src/index.ts";
+import { createMonorepoRoutesForOpenspec } from "../src/routes.ts";
 
 async function requestCatalog<T extends z.ZodType>(
     client: Client,
@@ -63,6 +65,9 @@ async function main(): Promise<void> {
             !html.includes("https://cdn.tailwindcss.com") ||
             !html.includes("mcpp/servers/resolve") ||
             !html.includes("resources/list") ||
+            !html.includes('id="skills"') ||
+            !html.includes('id="normal-resources"') ||
+            !html.includes("function partitionResources(items)") ||
             !html.includes("id=\"copy-url\"") ||
             !html.includes("id=\"copy-mcp-json\"") ||
             !html.includes('document.createElement("table")') ||
@@ -163,16 +168,21 @@ async function main(): Promise<void> {
             }),
         });
         const browserResourcesBody = await browserResources.json() as {
-            result?: { resources?: Array<{ name?: unknown; title?: unknown }> };
+            result?: { resources?: Array<{ uri?: unknown; name?: unknown; title?: unknown }> };
         };
-        const firstBrowserResource = browserResourcesBody.result?.resources?.[0];
+        const browserSkillResources = browserResourcesBody.result?.resources ?? [];
+        const firstBrowserResource = browserSkillResources[0];
         if (
             browserResources.status !== 200 ||
-            browserResourcesBody.result?.resources?.length !== 12 ||
+            browserSkillResources.length !== 13 ||
             firstBrowserResource?.name !== "openspec-apply-change" ||
-            firstBrowserResource?.title !== "skill skill"
+            firstBrowserResource?.title !== "skill file" ||
+            !browserSkillResources.some((resource) => (
+                resource.uri === "skill://openspec-apply-change/references/workflow.md" &&
+                resource.name === "references/workflow.md"
+            ))
         ) {
-            throw new Error("无 SDK 的浏览器 Child MCP Resources 列表或 Resource 元数据不符合预期");
+            throw new Error("无 SDK 的浏览器 Child MCP Resources 列表或 Skill 附属 Resource 元数据不符合预期");
         }
         console.log("✓ 浏览器二级详情：Child MCP 协商后只读取 Tools/Resources 元数据");
 
@@ -220,13 +230,17 @@ async function main(): Promise<void> {
             await catalog.close();
         }
 
-        // 端点：/openspec/mcp —— 第三方 OpenSpec skills 集（12 个 openspec-*）
+        // 端点：/openspec/mcp —— 12 个 OpenSpec Skill 根与其附属 Resource。
         const osp = await connect(gw.url + "/openspec/mcp");
         try {
             const res = await osp.client.listResources();
-            const skills = res.resources?.filter((r) => r.uri.startsWith("skill://")) ?? [];
-            if (skills.length !== 12) {
-                throw new Error(`/openspec/mcp 应投影到 12 个 skill，得到 ${skills.length}`);
+            const resources = res.resources ?? [];
+            const skillRoots = resources.filter((resource) => resource.uri.endsWith("/SKILL.md"));
+            if (skillRoots.length !== 12) {
+                throw new Error(`/openspec/mcp 应投影到 12 个 Skill 根，得到 ${skillRoots.length}`);
+            }
+            if (!resources.some((resource) => resource.uri === "skill://openspec-apply-change/references/workflow.md")) {
+                throw new Error("/openspec/mcp 未投影 openspec-apply-change 的 workflow.md 附属 Resource");
             }
             const doc = await osp.client.readResource({
                 uri: "skill://openspec-explore/SKILL.md",
@@ -235,7 +249,14 @@ async function main(): Promise<void> {
             if (!text.includes("openspec-explore")) {
                 throw new Error("SKILL.md 内容读取失败");
             }
-            console.log(`✓ /openspec/mcp：独立取得 openspec skills（skills: ${skills.length}，SKILL.md 可读）`);
+            const reference = await osp.client.readResource({
+                uri: "skill://openspec-apply-change/references/workflow.md",
+            });
+            const referenceText = (reference.contents?.[0] as { text?: string } | undefined)?.text ?? "";
+            if (!referenceText.includes("Apply-change workflow reference")) {
+                throw new Error("Skill 附属 Resource 内容读取失败");
+            }
+            console.log(`✓ /openspec/mcp：取得 ${skillRoots.length} 个 Skill 根与附属 Resource（SKILL.md/Reference 可读）`);
         } finally {
             await osp.close();
         }
@@ -244,9 +265,9 @@ async function main(): Promise<void> {
         const osp2 = await connect(gw.url + "/openspec/mcp");
         try {
             const res = await osp2.client.listResources();
-            const skills = res.resources?.filter((r) => r.uri.startsWith("skill://")) ?? [];
-            if (skills.length !== 12) {
-                throw new Error("第二会话连接后能力不可用");
+            const skillRoots = res.resources?.filter((resource) => resource.uri.endsWith("/SKILL.md")) ?? [];
+            if (skillRoots.length !== 12) {
+                throw new Error("第二会话连接后 Skill 能力不可用");
             }
             console.log("✓ 多会话：同一端点第二个客户端可独立初始化");
         } finally {
@@ -261,9 +282,9 @@ async function main(): Promise<void> {
         await gw.stop();
     }
 
-    // Worker 形态：不经 Bun.serve，直接调纯 fetch handler（Cloudflare 部署路径）。
+    // Worker 形态：使用构建期 static registry，不经 Bun.serve，也不读取 skills 目录。
     // 0728 用 server/discover 作为现代协商入口；协议已不再返回 mcp-session-id。
-    const routes = createMonorepoRoutes();
+    const routes = createMonorepoRoutesForOpenspec(createStaticOpenspecServer);
     try {
         const res = await routes.fetch(
             new Request("http://localhost/catalog/mcp", {
@@ -294,6 +315,40 @@ async function main(): Promise<void> {
         const body = await res.json() as { result?: { capabilities?: { extensions?: Record<string, unknown> } } };
         if (!body.result?.capabilities?.extensions?.["io.mcpp/server-catalog"]) {
             throw new Error("纯 handler 未声明 Server Catalog 扩展");
+        }
+        const workerResources = await routes.fetch(
+            new Request("http://localhost/openspec/mcp", {
+                method: "POST",
+                headers: {
+                    "content-type": "application/json",
+                    accept: "application/json, text/event-stream",
+                    "MCP-Protocol-Version": "2026-07-28",
+                    "Mcp-Method": "resources/list",
+                },
+                body: JSON.stringify({
+                    jsonrpc: "2.0",
+                    id: 2,
+                    method: "resources/list",
+                    params: {
+                        _meta: {
+                            "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+                            "io.modelcontextprotocol/clientInfo": { name: "worker-smoke", version: "1" },
+                            "io.modelcontextprotocol/clientCapabilities": {},
+                        },
+                    },
+                }),
+            }),
+        );
+        const workerResourcesBody = await workerResources.json() as {
+            result?: { resources?: Array<{ uri?: unknown }> };
+        };
+        if (
+            workerResources.status !== 200 ||
+            !workerResourcesBody.result?.resources?.some((resource) => (
+                resource.uri === "skill://openspec-apply-change/references/workflow.md"
+            ))
+        ) {
+            throw new Error("Worker static registry 未暴露 Skill 附属 Resource");
         }
         const miss2 = await routes.fetch(new Request("http://localhost/nope"));
         if (miss2.status !== 404) throw new Error("纯 handler 未匹配路径应 404");
