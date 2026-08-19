@@ -150,6 +150,7 @@
   /* Layout */
   --composer-radius: var(--radius-24);
   --composer-max: 864px;
+  --container-popover: 288px;
 
   /* Typography */
   --font-sans:

@@ -1,6 +1,7 @@
 import { createMemo, For, Show, type Accessor } from 'solid-js';
 import type { ChatEntry } from '../lib/chat-view';
 import { messageTime } from '../lib/message-time.ts';
+import { splitSystemReminders } from '../lib/system-reminder';
 import { CopyButton, InlineNotice } from '../../components/ui';
 import { Markdown } from './Markdown';
 import { ToolCallCard } from './ToolCallCard';
@@ -19,6 +20,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
   const role = createMemo(() => entry().role === 'user' ? 'user' : entry().role === 'system' ? 'system' : 'assistant');
   const streaming = () => entry().status === 'streaming';
   const markdown = createMemo(() => ({ text: entry().text, streaming: streaming() }));
+  const userSegments = createMemo(() => splitSystemReminders(entry().text));
   const label = () => role() === 'user' ? 'Your message' : role() === 'system' ? 'System message' : 'Assistant message';
 
   return <article class={`conversation-message conversation-message--${role()} ${role() === 'assistant' ? 'conversation-message--timeline' : ''} flex mb-12 group ${role() === 'user' ? 'justify-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
@@ -35,7 +37,13 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
         return <details class="message-reasoning text-text-secondary text-13"><summary class="cursor-pointer select-none">Thinking</summary><pre class="mt-5 ml-12 pl-12 border-l-2 border-l-divider whitespace-pre-wrap wrap-anywhere text-text-secondary font-mono text-12 leading-20">{reasoning().text}</pre></details>;
       }}</For>
       <div class="conversation-message__text text-text-primary text-15 leading-25">
-        <Show when={role() === 'assistant'} fallback={<span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{entry().text}</span>}>
+        <Show when={role() === 'assistant'} fallback={<For each={userSegments()}>{(segment) =>
+          <Show when={segment.kind === 'system_reminder'} fallback={<span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{segment.text}</span>}>
+            <InlineNotice class="system-reminder-message my-8 max-w-full text-left!" tone="info" title="Untrusted system reminder" aria-label="Untrusted system reminder">
+              <p class="whitespace-pre-wrap wrap-anywhere">{segment.text}</p>
+            </InlineNotice>
+          </Show>
+        }</For>}>
           <Show when={markdown()} keyed>{(value) => <Markdown source={value.text} streaming={value.streaming} />}</Show>
         </Show>
       </div>

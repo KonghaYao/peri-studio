@@ -256,6 +256,14 @@ describe('LoadingState', () => {
   });
 });
 
+describe('Popover', () => {
+  it('owns a padded, bounded floating surface', () => {
+    render(() => <Popover open><PopoverTrigger>Details</PopoverTrigger><PopoverContent>Popover details</PopoverContent></Popover>);
+    const content = screen.getByText('Popover details');
+    expect(content).toHaveClass('ui-popover');
+  });
+});
+
 describe('InlineNotice', () => {
   it('uses alert semantics for danger and only enables live updates when requested', () => {
     const { unmount } = render(() => <InlineNotice tone="danger" title="Import failed">The server rejected the request.</InlineNotice>);

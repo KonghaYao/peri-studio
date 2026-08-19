@@ -311,7 +311,7 @@ export function Composer() {
           <SessionModelMenu open={modelMenuOpen()} id={modelMenuId} onOpenChange={setModelMenuOpen} trigger={
             <Button
               size="compact"
-              class="composer-runtime flex min-w-0 max-w-35p items-center gap-7 overflow-hidden text-text-secondary text-11 leading-none text-ellipsis whitespace-nowrap max-middle:max-w-40p max-tight:max-w-42p max-tight:mr-auto"
+              class="composer-runtime flex min-w-0 shrink items-center gap-7 overflow-hidden text-text-secondary text-11 leading-none text-ellipsis whitespace-nowrap max-tight:mr-auto"
               ref={modelTrigger}
               title={runtimeSummary()}
               aria-label={`${runtimeSummary()}, choose model`}

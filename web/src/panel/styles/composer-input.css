@@ -195,7 +195,8 @@
 .composer-runtime {
   display: flex;
   min-width: 0;
-  max-width: 35%;
+  max-width: 100%;
+  flex: 0 1 auto;
   align-items: center;
   gap: var(--space-7);
   overflow: hidden;

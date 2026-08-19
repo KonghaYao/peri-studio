@@ -74,8 +74,19 @@
   min-height: 34px;
   padding: 0;
 }
-.ui-tooltip-anchor {
-  display: inline-flex;
+.ui-popover {
+  box-sizing: border-box;
+  width: min(var(--container-popover, 288px),calc(100vw - 2 * var(--space-16)));
+  padding: var(--space-10) var(--space-12);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-12);
+  background: var(--surface);
+  box-shadow: var(--shadow-popover);
+  color: var(--text-primary);
+}
+.ui-popover:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 .ui-tooltip {
   position: fixed;
