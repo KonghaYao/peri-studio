@@ -40,6 +40,8 @@ function ChatIcon() {
 }
 
 function MoreIcon() { return <Icon class="size-17!"><circle cx="4" cy="10" r="1" /><circle cx="10" cy="10" r="1" /><circle cx="16" cy="10" r="1" /></Icon>; }
+function RenameIcon() { return <Icon class="size-16!"><path d="m5 14-1 3 3-1 8.5-8.5-2-2L5 14Z" /><path d="m12.5 6.5 2 2" /></Icon>; }
+function ArchiveIcon() { return <Icon class="size-16!"><path d="M3.5 6.5h13v10h-13zM2.5 3.5h15v3h-15zM8 10h4" /></Icon>; }
 
 export function ProjectSessionRow(props: ProjectSessionRowProps) {
   const [draft, setDraft] = createSignal(props.session.title);
@@ -104,11 +106,11 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
         <MoreIcon />
       </DropdownMenuTrigger>
       <DropdownMenuContent id={`${renameId()}-menu`} aria-label={`Session actions: ${displayTitle()}`} class="ui-menu">
-        <DropdownMenuItem onSelect={() => props.onRenameOpenChange(true)}>Rename session</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => props.onRenameOpenChange(true)}><RenameIcon />Rename session</DropdownMenuItem>
         <DropdownMenuItem class="text-danger focus:text-danger" disabled={props.runtimeActive} title={props.runtimeActive ? 'Close this session’s running instance first' : undefined} onClick={() => {
           props.onMenuOpenChange(false);
           props.onArchiveRequest(props.session.id);
-        }}>Archive session</DropdownMenuItem>
+        }}><ArchiveIcon />Archive session</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
     <Popover open={props.renameOpen} onOpenChange={(open) => props.onRenameOpenChange(open)} placement="bottom-end">

@@ -211,7 +211,7 @@ describe('Composer', () => {
       activeTurn: null, pendingPermissions: [],
     });
     render(() => <Composer />);
-    fireEvent.click(screen.getByRole('button', { name: /Skills 2/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Browse skills (2)' }));
     expect(screen.getByRole('listbox', { name: 'Available commands and skills' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /compact/ })).not.toBeInTheDocument();
     const input = screen.getByRole('textbox');

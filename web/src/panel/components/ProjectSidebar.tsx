@@ -19,6 +19,8 @@ function ImportIcon() { return <Icon class="size-17!"><path d="M10 3v9m0 0 3-3m-
 function ChevronIcon(props: { class?: string }) { return <Icon size="small" class={`size-16 flex-none text-text-muted ${props.class ?? ''}`}><path d="m7 5 5 5-5 5" /></Icon>; }
 function MoreIcon() { return <Icon><circle cx="4" cy="10" r="1" /><circle cx="10" cy="10" r="1" /><circle cx="16" cy="10" r="1" /></Icon>; }
 function SearchIcon() { return <Icon><circle cx="8.5" cy="8.5" r="5" /><path d="m12.2 12.2 4 4" /></Icon>; }
+function RenameIcon() { return <Icon class="size-16!"><path d="m5 14-1 3 3-1 8.5-8.5-2-2L5 14Z" /><path d="m12.5 6.5 2 2" /></Icon>; }
+function ArchiveIcon() { return <Icon class="size-16!"><path d="M3.5 6.5h13v10h-13zM2.5 3.5h15v3h-15zM8 10h4" /></Icon>; }
 
 interface ProjectSidebarProps {
   onNavigate?: () => void;
@@ -180,9 +182,9 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                 <DropdownMenu open={projectMenu() === project.id} onOpenChange={(open) => setProjectMenu(open ? project.id : null)} placement="bottom-end">
                   <DropdownMenuTrigger as={IconButton} class="project-menu-trigger" tooltipPlacement="end" label={`${project.name} actions`} disabled={readOnly()}><MoreIcon /></DropdownMenuTrigger>
                   <DropdownMenuContent id={projectMenuId} aria-label={`${project.name} actions`} class="ui-menu">
-                    <DropdownMenuItem onSelect={() => { setProjectNameDraft(project.name); setRenamingProject(project.id); }}>Rename project</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => { setProjectNameDraft(project.name); setRenamingProject(project.id); }}><RenameIcon />Rename project</DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => setImportingProject(project.id)}><ImportIcon />Import existing session</DropdownMenuItem>
-                    <DropdownMenuItem class="text-danger focus:text-danger" disabled={projectHasRunningSession(project.id)} title={projectHasRunningSession(project.id) ? 'Close the running sessions in this project first' : undefined} onSelect={() => setArchiveCandidate(project.id)}>Archive project</DropdownMenuItem>
+                    <DropdownMenuItem class="text-danger focus:text-danger" disabled={projectHasRunningSession(project.id)} title={projectHasRunningSession(project.id) ? 'Close the running sessions in this project first' : undefined} onSelect={() => setArchiveCandidate(project.id)}><ArchiveIcon />Archive project</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

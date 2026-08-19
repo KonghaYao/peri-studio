@@ -18,7 +18,6 @@
 }
 /* 输入区固定在阅读区末端，留白只为突出当前输入焦点。 */
 .composer-stack--overlay {
-  padding-top: var(--space-28);
   background: var(--app-bg);
   pointer-events: none;
 }

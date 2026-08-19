@@ -291,22 +291,24 @@ export function Composer() {
         }</Show>
         <div class="composer-toolbar flex min-h-48 items-center gap-9 pt-2 pr-8 pb-7 pl-10 max-narrow:min-h-46 max-narrow:pt-1 max-narrow:pr-6 max-narrow:pb-5 max-narrow:pl-12">
           <Show when={prediction.activePrediction()}>
-            <Button size="compact" class="composer-prediction-action min-h-30 px-9 border-border-subtle bg-surface-muted text-text-secondary text-11 pointer-coarse:min-h-44 max-narrow:min-h-44" onClick={prediction.accept}>
-              Use suggestion <kbd class="ml-3 px-4 py-2 border border-border-subtle rounded-4 bg-surface text-9 max-narrow:hidden">Tab</kbd>
+            <Button size="compact" variant="secondary" class="composer-prediction-action min-h-30 px-9 border-border-subtle bg-surface-muted text-text-secondary text-11 pointer-coarse:min-h-44 max-narrow:min-h-44" onClick={prediction.accept} aria-label="Use suggestion" title="Use suggestion (Tab)">
+              <Icon class="size-16!"><path d="m4 10 3.5 3.5L16 5" /></Icon><kbd class="ml-3 px-4 py-2 border border-border-subtle rounded-4 bg-surface text-9 max-narrow:hidden">Tab</kbd>
             </Button>
           </Show>
           <Show when={canBrowseSkills()}>
             <Button
               size="compact"
-              class="composer-skills relative min-h-30 px-9 border-border-subtle bg-surface-muted text-text-primary text-11 font-680 pointer-coarse:min-h-44 max-tight:size-44 max-tight:min-w-44 max-tight:p-0 max-tight:text-0 max-tight:before:content-['/'] max-tight:before:font-mono max-tight:before:text-15 max-tight:before:leading-none max-tight:before:font-bold"
+              class="composer-skills relative min-h-30 px-8 border-border-subtle bg-surface-muted text-text-primary text-11 pointer-coarse:min-h-44 max-tight:size-44 max-tight:min-w-44 max-tight:p-0"
               aria-expanded={slash.browseSkills() && slash.slashMenuOpen()}
               aria-controls={slashMenuId}
+              aria-label={`Browse skills (${skillCount()})`}
+              title={`Browse skills (${skillCount()})`}
               onClick={() => {
                 slash.toggleBrowse(taRef);
                 queueMicrotask(() => taRef?.focus());
               }}
               disabled={inputDisabled()}
-            >Skills <span class="grid min-w-18 h-18 place-items-center rounded-full bg-surface text-text-secondary font-mono text-10 leading-none max-tight:absolute max-tight:translate-x-12 max-tight:-translate-y-10">{skillCount()}</span></Button>
+            ><Icon class="size-16!" aria-hidden="true"><path d="M7 4H4v3M13 4h3v3M7 16H4v-3M13 16h3v-3" /><path d="M7 10h6M10 7v6" /></Icon><span class="composer-skills__count">{skillCount()}</span></Button>
           </Show>
           <SessionModelMenu open={modelMenuOpen()} id={modelMenuId} onOpenChange={setModelMenuOpen} trigger={
             <Button

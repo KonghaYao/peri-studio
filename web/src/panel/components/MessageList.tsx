@@ -74,7 +74,8 @@ export function MessageList(props: { bottomInset?: number }) {
     return submission?.chatId === selectedCid() && !submission.projected ? submission : null;
   };
 
-  const contentBottomInset = () => `${Math.max(props.bottomInset ?? 0, 0) + 40}px`;
+  // Composer 绝对覆盖在滚动区上方：动态高度 + 最小安全留白，保证最后一条消息不被贴住或遮挡。
+  const contentBottomInset = () => `${Math.max(props.bottomInset ?? 0, 64) + 40}px`;
   const jumpBottomInset = () => `${Math.max(props.bottomInset ?? 0, 0) + 12}px`;
 
   // 稳定槽位与按 id 索引（见下方 <For> 注释：等效显式 itemKey）。

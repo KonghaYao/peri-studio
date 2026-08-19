@@ -495,7 +495,7 @@
   right: 0;
   top: 36px;
 }
-.ui-menu {
+.ui-menu,.ui-menu--surface {
   position: absolute;
   z-index: 24;
   display: flex;
@@ -504,9 +504,9 @@
   padding: var(--space-7);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-11);
-  background: var(--surface);
+  background: var(--surface) !important;
   box-shadow: var(--shadow-popover);
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
 }
 .ui-menu__item {
   width: 100%;
@@ -514,8 +514,8 @@
   padding: 0 var(--space-10);
   border: 0;
   border-radius: var(--radius-7);
-  background: transparent;
-  color: var(--text-primary);
+  background: transparent !important;
+  color: var(--text-primary) !important;
   text-align: left;
   cursor: pointer;
   font-size: 13px;
