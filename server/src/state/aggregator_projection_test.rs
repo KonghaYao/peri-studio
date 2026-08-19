@@ -185,6 +185,51 @@ fn projection_version_increments_per_apply() {
 }
 
 #[test]
+fn empty_stream_delta_advances_sequence_without_yjs_update() {
+    let mut p = pair();
+    let mut agg = Aggregator;
+    seed_user_msg(&mut p, "t1", "t1:user", "a");
+    let read = |pair: &DocPair| {
+        let txn = pair.chat.transact();
+        chat_writer::root_map_read(&txn)
+            .and_then(|root| root.get(&txn, "projection_version"))
+            .and_then(|v| v.cast::<u32>().ok())
+            .unwrap_or(0)
+    };
+    let before_version = read(&p);
+    let before_entries = entry_count(&p);
+    let read_session = |pair: &DocPair| {
+        let txn = pair.session.transact();
+        chat_writer::root_map_read(&txn)
+            .and_then(|root| root.get(&txn, "projection_version"))
+            .and_then(|v| v.cast::<u32>().ok())
+            .unwrap_or(0)
+    };
+    let before_session_version = read_session(&p);
+
+    // 空 chunk 是有效的传输顺序证据：必须消费 seq，但不应制造 Yjs 投影噪声。
+    let results = agg.apply_batch(
+        &mut p,
+        &[ev("s1", 2, msg_delta("t1", "t1:assistant", "b1", ""))],
+    );
+    assert_eq!(results.len(), 1);
+    assert!(results[0].applied);
+    assert_eq!(read(&p), before_version);
+    assert_eq!(read_session(&p), before_session_version);
+    assert_eq!(entry_count(&p), before_entries);
+
+    // 后续 seq 连续，证明空 chunk 已被消费，而非被当作丢帧。
+    assert!(
+        agg.apply(
+            &mut p,
+            &ev("s1", 3, msg_delta("t1", "t1:assistant", "b1", "out"))
+        )
+        .applied
+    );
+    assert_eq!(read(&p), before_version + 1);
+}
+
+#[test]
 fn session_status_str_matches_schema() {
     assert_eq!(
         crate::state::aggregator::chat_status_str(ChatStatus::Active),
@@ -195,4 +240,3 @@ fn session_status_str_matches_schema() {
         "crashed"
     );
 }
-

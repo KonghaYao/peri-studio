@@ -139,6 +139,15 @@ struct ControlSnapshot {
     replay_negotiated: bool,
 }
 
+/// 空文本/推理增量不改变 Yjs 视图，但仍须经过聚合器的顺序判定以推进 seq 水位。
+fn is_empty_delta(body: &EventBody) -> bool {
+    matches!(
+        body,
+        EventBody::MessageDelta { text, .. } | EventBody::ReasoningDelta { text, .. }
+            if text.is_empty()
+    )
+}
+
 impl Aggregator {
     /// Consume transport ordering evidence for a frame that intentionally has
     /// no document projection, such as a JSON-RPC response. This shares the
@@ -162,6 +171,12 @@ impl Aggregator {
         // 判定（只读，含 stream 状态推进）。
         if let Err(reason) = self.judge(pair, ev) {
             return ApplyResult::rejected(reason);
+        }
+        // ACP 可能发送空流式 chunk。它仍是有效的顺序证据，必须先经过
+        // judge_stream 消费 seq；但没有可投影的内容，禁止创建空 entry/block 或
+        // bump projection_version，从而避免无效 Yjs update、持久化与广播。
+        if is_empty_delta(&ev.body) {
+            return ApplyResult::applied();
         }
         // 应用：chat → control。
         self.write(pair, ev);
@@ -203,7 +218,7 @@ impl Aggregator {
             let mut applied_in_segment = false;
             for ev in &evs[i..end] {
                 let r = self.apply_delta_in_txn(&mut pair.stream, &mut txn, ev, &snapshot);
-                if r.applied {
+                if r.applied && !is_empty_delta(&ev.body) {
                     applied_in_segment = true;
                 }
                 results.push(r);
@@ -306,6 +321,11 @@ impl Aggregator {
             if let Err(reason) = self.judge_turn_guard(snapshot.active_turn.as_ref(), &ev.body) {
                 return ApplyResult::rejected(reason);
             }
+        }
+        // 空流式 chunk 只携带顺序证据：水位已在上方推进，但没有状态可写入。
+        // 跳过 Yjs 事务修改，避免产生空 entry/block 与无意义的 update。
+        if is_empty_delta(&ev.body) {
+            return ApplyResult::applied();
         }
         // 写入（chat doc，共享事务内）。
         let root = txn.get_or_insert_map(ROOT);
