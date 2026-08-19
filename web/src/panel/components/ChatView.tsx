@@ -62,7 +62,7 @@ export function ChatView(props: ChatViewProps) {
         when={registryHydrated()}
         fallback={<LoadingState label="Loading projects" description="Syncing projects and sessions from the Peri Studio server…" class="flex-1 justify-center text-center" />}
       >
-        <EmptyState title="What would you like to do today?" description={emptyDescription()} action={
+        <EmptyState title="Start with a clear prompt" description={emptyDescription()} action={
         <div class="empty-actions">
           <Show when={activeProjects().length === 0}><Button variant="primary" disabled={readOnly()} onClick={props.onCreateProject}>New project</Button></Show>
           <Show when={activeProjects().length > 0}><QuickStartComposer projects={activeProjects().map(({ id, name }) => ({ id, name }))} initialProjectId={activeProjects().length === 1 ? activeProjects()[0].id : undefined} /><div class="empty-secondary-actions"><Show when={activeProjects().length === 1}><Button busy={creatingSessionProjectId() === activeProjects()[0].id} disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(activeProjects()[0].id)}>Start empty session</Button><Button disabled={readOnly()} onClick={() => props.onImport?.(activeProjects()[0].id)}>Import existing session</Button></Show><Show when={activeProjects().length > 1}><Button onClick={props.onOpenNavigation}>Browse projects and sessions</Button></Show></div></Show>

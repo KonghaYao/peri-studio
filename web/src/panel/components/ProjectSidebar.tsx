@@ -1,10 +1,9 @@
 import { primaryShortcut } from '../lib/keyboard';
 import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
-import { archiveProject, archiveProjectSession, chatStatusSignal, createProject, createProjectSession, creatingSessionProjectId, discoverProjectSessions, discoveringSessionsProjectId, importableSessions, importProjectSession, navigateProjectSession, openingSessionId, permissions, projects, projectSessions, registryHydrated, renameProject, renameProjectSession, restoreProject, restoreProjectSession, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '../store';
+import { archiveProject, archiveProjectSession, chatStatusSignal, createProject, createProjectSession, creatingSessionProjectId, discoverProjectSessions, discoveringSessionsProjectId, importableSessions, importProjectSession, instances, navigateProjectSession, openingSessionId, permissions, projects, projectSessions, registryHydrated, renameProject, renameProjectSession, restoreProject, restoreProjectSession, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '../store';
 import { isTerminal } from '../lib/action-state';
-import { connState } from '../lib/connection';
 import { readOnly } from '../lib/auth-state';
-import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, Dialog, DialogContent, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, EmptyState, Icon, IconButton, LoadingState, Status, TextField } from '../../components/ui';
+import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, Dialog, DialogContent, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, EmptyState, Icon, IconButton, LoadingState, TextField } from '../../components/ui';
 import { useAuthActions } from '../lib/auth-hook';
 import { SessionSearch } from './SessionSearch';
 import { SessionImportDialog } from './SessionImportDialog';
@@ -20,14 +19,10 @@ function ImportIcon() { return <Icon class="size-17!"><path d="M10 3v9m0 0 3-3m-
 function ChevronIcon(props: { class?: string }) { return <Icon size="small" class={`size-16 flex-none text-text-muted ${props.class ?? ''}`}><path d="m7 5 5 5-5 5" /></Icon>; }
 function MoreIcon() { return <Icon><circle cx="4" cy="10" r="1" /><circle cx="10" cy="10" r="1" /><circle cx="16" cy="10" r="1" /></Icon>; }
 function SearchIcon() { return <Icon><circle cx="8.5" cy="8.5" r="5" /><path d="m12.2 12.2 4 4" /></Icon>; }
-function CollapseIcon() { return <Icon><path d="M12 4 6 10l6 6M6 10h9" /></Icon>; }
-function ExpandIcon() { return <Icon><path d="m8 4 6 6-6 6m6-6H5" /></Icon>; }
 
 interface ProjectSidebarProps {
-  collapsed?: boolean;
   onNavigate?: () => void;
   onOpenSystem?: () => void;
-  onToggleCollapsed?: () => void;
   intent?: { kind: 'create-project' | 'import'; projectId?: string; nonce: number } | null;
 }
 
@@ -58,6 +53,29 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
     return session.id !== selectedSessionId() || !isTerminal(chatStatusSignal()[session.activeChatId]);
   };
   const projectHasRunningSession = (projectId: string) => projectSessions().some((session) => session.projectId === projectId && sessionHasRunningRuntime(session));
+  const activeProjects = () => projects().filter((project) => !project.archivedAt);
+  const machines = () => {
+    const grouped = new Map<string, { id: string; name: string; offline: boolean; projects: ReturnType<typeof activeProjects> }>();
+    for (const instance of instances()) {
+      grouped.set(instance.id, {
+        id: instance.id,
+        name: instance.hostname || instance.id,
+        offline: instance.status === 'offline',
+        projects: [],
+      });
+    }
+    for (const project of activeProjects()) {
+      const machine = grouped.get(project.instanceId) || {
+        id: project.instanceId,
+        name: project.instanceId || 'Machine',
+        offline: false,
+        projects: [],
+      };
+      machine.projects.push(project);
+      grouped.set(project.instanceId, machine);
+    }
+    return [...grouped.values()];
+  };
   const setProjectCollapsed = (projectId: string, collapsed: boolean) => setCollapsedProjects((current) => {
     const next = new Set(current);
     if (collapsed) next.add(projectId); else next.delete(projectId);
@@ -114,25 +132,14 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
   };
 
   return (
-    <nav class={`project-sidebar flex h-full min-h-0 flex-col px-12 desk:px-9 wide:px-12 ${props.collapsed ? 'is-collapsed' : ''}`} aria-label="Projects & Sessions">
+    <nav class="project-sidebar flex h-full min-h-0 flex-col px-12 desk:px-9 wide:px-12" aria-label="Projects & Sessions">
       <div class="sidebar-workspace-header">
-        <Show
-          when={!props.collapsed}
-          fallback={<div class="sidebar-rail"><IconButton label="Expand sidebar" onClick={props.onToggleCollapsed}><ExpandIcon /></IconButton></div>}
-        >
-          <div class="brand-row flex h-60 items-center gap-9 px-8 text-15 font-650 -tracking-1 desk:h-56 desk:px-6 wide:h-60 wide:px-8">
-            <span class="brand-glyph grid size-26 place-items-center rounded-8 bg-text-primary text-12 text-surface">✦</span>
-            <span class="brand-copy"><small>Workspace</small><strong>Peri Studio</strong></span>
-            <IconButton class="sidebar-collapse-button max-desk:hidden" label="Collapse sidebar" onClick={props.onToggleCollapsed}><CollapseIcon /></IconButton>
-          </div>
-        </Show>
+        <div class="brand-row">peri studio</div>
       </div>
-      <Show when={!props.collapsed}>
-        <div class="workspace-actions">
-          <Button variant="primary" class="new-project-button w-full justify-start!" disabled={readOnly() || !registryHydrated()} onClick={() => setCreating(true)}><PlusIcon />New project</Button>
-          <Button class="session-search-button w-full justify-start! text-text-muted!" disabled={!registryHydrated()} onClick={() => setSearchOpen(true)}><SearchIcon /><span>Search sessions</span><kbd>{primaryShortcut('K')}</kbd></Button>
-        </div>
-        <SessionSearch open={searchOpen()} onClose={() => setSearchOpen(false)} onSelected={props.onNavigate} />
+      <div class="workspace-actions">
+        <Button class="session-search-button" disabled={!registryHydrated()} onClick={() => setSearchOpen(true)}><SearchIcon /><span>Search sessions</span><kbd>{primaryShortcut('K')}</kbd></Button>
+      </div>
+      <SessionSearch open={searchOpen()} onClose={() => setSearchOpen(false)} onSelected={props.onNavigate} />
       <Show when={readOnly()}><div class="readonly-label -mt-8 mx-8 mb-12 text-11 font-semibold text-warning">Read-only mode</div></Show>
       <Dialog open={creating()} onOpenChange={(open) => { if (!open && !projectCreateSubmitting()) setCreating(false); }}><DialogContent dismissible={!projectCreateSubmitting()}><DialogTitle class="sr-only">New project</DialogTitle>
         <form class="project-form" onSubmit={submitProject}>
@@ -147,34 +154,40 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
           fallback={<LoadingState label="Loading projects" description="Syncing projects and sessions from the Peri Studio server…" class="sidebar-loading mx-8 p-8! text-left!" />}
         >
           <Show
-            when={projects().some((project) => !project.archivedAt)}
+            when={machines().length > 0}
             fallback={<EmptyState
               variant="inline"
               class="sidebar-empty mx-8 p-8! text-left!"
               title={projects().length ? 'No active projects' : 'No projects yet'}
-              description={projects().length ? 'Restore an archived project or create a new project to continue.' : 'Create a project, then start a new session from the plus button.'}
+              description={projects().length ? 'Restore an archived project to continue.' : 'No connected machines or projects are available.'}
             />}
           >
-            <For each={projects().filter((p) => !p.archivedAt)}>{(project) => {
+            <For each={machines()}>{(machine) => <section class="machine-group">
+              <div class="machine-row">
+                <span class="machine-name">{machine.name}</span>
+                <Show when={machine.offline}><span class="machine-offline-dot" role="img" aria-label="Machine offline" /></Show>
+                <IconButton class="row-create-action machine-create-action" label={`New project on ${machine.name} unavailable: choose a remote directory first; the current API cannot create by machine`} disabled><PlusIcon /></IconButton>
+              </div>
+              <For each={machine.projects}>{(project) => {
             const sessions = () => projectSessions().filter((s) => s.projectId === project.id && !s.archivedAt);
             const archivedSessions = () => projectSessions().filter((s) => s.projectId === project.id && !!s.archivedAt);
             const collapsed = () => collapsedProjects().has(project.id);
             const projectMenuId = `project-menu-${project.id}`;
-            return <Collapsible as="section" class="project-group relative mt-4 mb-18 desk:mb-14 wide:mb-18" open={!collapsed()} onOpenChange={(open) => setProjectCollapsed(project.id, !open)}>
-              <div class="project-heading relative flex min-h-42 items-center gap-2 pl-2 pointer-coarse:min-h-52">
-                <CollapsibleTrigger class="project-disclosure flex min-h-38 min-w-0 flex-1 cursor-pointer items-center gap-5 rounded-8 border-0 bg-transparent px-3 text-left text-text-primary hover:bg-surface-hover-translucent pointer-coarse:min-h-44"><ChevronIcon /><span class="flex min-w-0 flex-col gap-1"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12p5 font-650 -tracking-5">{project.name}</strong><small class="text-10 font-450 text-text-muted">{sessions().length ? `${sessions().length} sessions` : 'No sessions yet'}</small></span></CollapsibleTrigger>
-                <IconButton tooltipPlacement="end" label={`New session in ${project.name}`} busy={creatingSessionProjectId() === project.id} disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(project.id)}><PlusIcon /></IconButton>
+            return <Collapsible as="section" class="project-group" open={!collapsed()} onOpenChange={(open) => setProjectCollapsed(project.id, !open)}>
+              <div class="project-heading">
+                <CollapsibleTrigger class="project-disclosure"><ChevronIcon /><span>{project.name}</span></CollapsibleTrigger>
+                <IconButton class="row-create-action" tooltipPlacement="end" label={`New session in ${project.name}`} busy={creatingSessionProjectId() === project.id} disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(project.id)}><PlusIcon /></IconButton>
                 <DropdownMenu open={projectMenu() === project.id} onOpenChange={(open) => setProjectMenu(open ? project.id : null)} placement="bottom-end">
-                  <DropdownMenuTrigger as={IconButton} tooltipPlacement="end" label={`${project.name} actions`} disabled={readOnly()}><MoreIcon /></DropdownMenuTrigger>
+                  <DropdownMenuTrigger as={IconButton} class="project-menu-trigger" tooltipPlacement="end" label={`${project.name} actions`} disabled={readOnly()}><MoreIcon /></DropdownMenuTrigger>
                   <DropdownMenuContent id={projectMenuId} aria-label={`${project.name} actions`} class="ui-menu">
-                    <DropdownMenuItem class="flex items-center gap-9" onSelect={() => { setProjectNameDraft(project.name); setRenamingProject(project.id); }}>Rename project</DropdownMenuItem>
-                    <DropdownMenuItem class="flex items-center gap-9" onSelect={() => setImportingProject(project.id)}><ImportIcon />Import existing session</DropdownMenuItem>
-                    <DropdownMenuItem class="flex items-center gap-9 text-danger focus:text-danger" disabled={projectHasRunningSession(project.id)} title={projectHasRunningSession(project.id) ? 'Close the running sessions in this project first' : undefined} onSelect={() => setArchiveCandidate(project.id)}>Archive project</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => { setProjectNameDraft(project.name); setRenamingProject(project.id); }}>Rename project</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setImportingProject(project.id)}><ImportIcon />Import existing session</DropdownMenuItem>
+                    <DropdownMenuItem class="text-danger focus:text-danger" disabled={projectHasRunningSession(project.id)} title={projectHasRunningSession(project.id) ? 'Close the running sessions in this project first' : undefined} onSelect={() => setArchiveCandidate(project.id)}>Archive project</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <CollapsibleContent id={`project-sessions-${project.id}`} class="session-list flex flex-col gap-2">
-                <For each={sessions()} fallback={<Button busy={creatingSessionProjectId() === project.id} disabled={readOnly() || !!creatingSessionProjectId()} class="session-empty mx-8 cursor-pointer rounded-8! border-0! bg-transparent p-8! text-left text-12! text-text-muted! hover:bg-hover hover:text-text-secondary!" onClick={() => createProjectSession(project.id)}>Start your first conversation</Button>}>
+              <CollapsibleContent id={`project-sessions-${project.id}`} class="session-list">
+                <For each={sessions()} fallback={<Button busy={creatingSessionProjectId() === project.id} disabled={readOnly() || !!creatingSessionProjectId()} class="session-empty" onClick={() => createProjectSession(project.id)}>Start your first conversation</Button>}>
                   {(session) => {
                     const selected = () => selectedSessionId() === session.id;
                     const state = () => runtimeState({
@@ -225,7 +238,8 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                 </Show>
               </CollapsibleContent>
             </Collapsible>;
-            }}</For>
+              }}</For>
+            </section>}</For>
           </Show>
         </Show>
       </div>
@@ -298,12 +312,11 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
           />;
         })()}
       </DialogContent></Dialog>
-      <div class="sidebar-footer flex min-h-58 items-center gap-6 border-t border-divider text-12 text-text-muted">
-        <Status tone={connState().kind || 'idle'} class="min-w-0 flex-1">{connState().text}</Status>
-        <Button size="compact" class="min-h-36! cursor-pointer rounded-8! border-0! bg-transparent px-9! text-text-secondary! hover:bg-hover hover:text-text-primary! pointer-coarse:min-h-44!" onClick={props.onOpenSystem}>System</Button>
-        <Button size="compact" class="min-h-36! cursor-pointer rounded-8! border-0! bg-transparent px-9! text-text-secondary! hover:bg-hover hover:text-text-primary! pointer-coarse:min-h-44!" onClick={auth?.logout}>Log out</Button>
+      <div class="sidebar-footer">
+        <span class="account-avatar" aria-hidden="true">A</span>
+        <Button class="account-entry" onClick={props.onOpenSystem}>Account</Button>
+        <Button class="account-logout" size="compact" onClick={auth?.logout}>Log out</Button>
       </div>
-      </Show>
     </nav>
   );
 }

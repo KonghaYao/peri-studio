@@ -19,7 +19,7 @@
 .quick-start__surface {
   overflow: hidden;
   border: 1px solid var(--composer-border);
-  border-radius: var(--radius-20);
+  border-radius: var(--radius-16);
   background: var(--surface);
   box-shadow: var(--shadow-float);
 }
@@ -83,18 +83,16 @@
   margin: 0 auto;
   padding: 0 var(--space-20) var(--space-20);
 }
-/* 聊天工作区内的 composer 不是普通页脚：悬浮表面、渐进遮罩和更强层级让它成为
-   提示词工作台，同时仍沿用原有 submit/delivery 状态。 */
+/* 对话工作区里的输入面板固定在底部，保持当前提示词和状态操作在一个清晰焦点内。 */
 .composer-wrap--overlay {
   padding-bottom: calc(var(--space-20) + env(safe-area-inset-bottom));
 }
 .composer-wrap--overlay .composer-surface {
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  background: var(--surface);
   box-shadow: var(--shadow-composer-overlay);
-  backdrop-filter: blur(14px) saturate(1.08);
 }
 .composer-wrap--overlay .composer-toolbar {
-  border-top: 1px solid color-mix(in srgb, var(--divider) 84%, transparent);
+  border-top: 1px solid var(--divider);
 }
 .composer-surface {
   overflow: hidden;

@@ -13,6 +13,7 @@ const store = vi.hoisted(() => ({
   discoveringSessionsProjectId: vi.fn(() => null as string | null),
   importableSessions: vi.fn(() => []),
   importProjectSession: vi.fn(),
+  instances: vi.fn(() => [{ id: 'local', hostname: 'Local machine', status: 'online' }]),
   navigateProjectSession: vi.fn(),
   openingSessionId: vi.fn(() => null as string | null),
   permissions: vi.fn(() => []),
@@ -72,30 +73,42 @@ describe('ProjectSidebar registry hydration', () => {
 
     expect(screen.getByRole('status', { name: 'Loading projects' })).toBeInTheDocument();
     expect(screen.queryByText('No projects yet')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'New project' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /New project on/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Search sessions/ })).toBeDisabled();
   });
 
-  it('shows the empty directory only after the registry confirms it', () => {
+  it('shows connected machines without inventing an empty project directory', () => {
     store.projects.mockReturnValue([]);
 
     render(() => <ProjectSidebar />);
 
-    expect(screen.getByText('No projects yet')).toBeInTheDocument();
+    expect(screen.getByText('Local machine')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /New project on Local machine unavailable: choose a remote directory first/ })).toBeDisabled();
+    expect(screen.queryByText('No projects yet')).not.toBeInTheDocument();
+    expect(screen.queryByText('Root workspace')).not.toBeInTheDocument();
     expect(screen.queryByRole('status', { name: 'Loading projects' })).not.toBeInTheDocument();
   });
 
-  it('keeps an archived-only registry distinct from an empty registry', () => {
+  it('keeps archived projects separate while retaining their machine', () => {
     store.projects.mockReturnValue([{ id: 'archived', name: 'Archived project', cwd: '/repo', instanceId: 'local', createdAt: '2026-08-13T10:00:00Z', updatedAt: '2026-08-13T10:00:00Z', archivedAt: '2026-08-14T10:00:00Z' }]);
 
     render(() => <ProjectSidebar />);
 
-    expect(screen.getByText('No active projects')).toBeInTheDocument();
+    expect(screen.getByText('Local machine')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Archived project' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Archived\s*1/ })).toBeInTheDocument();
   });
-});
+  it('renders an offline machine without projects and exposes its offline state', () => {
+    store.projects.mockReturnValue([]);
+    store.instances.mockReturnValue([{ id: 'remote', hostname: 'Remote machine', status: 'offline' }]);
 
-describe('ProjectSidebar session navigation', () => {
+    render(() => <ProjectSidebar />);
+
+    expect(screen.getByText('Remote machine')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Machine offline' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /New project on Remote machine unavailable: choose a remote directory first/ })).toBeDisabled();
+  });
+
   beforeEach(() => {
     store.registryHydrated.mockReturnValue(true);
     store.projects.mockReturnValue([{ id: 'p1', name: 'Perihelion', cwd: '/repo', instanceId: 'local', createdAt: '2026-08-13T10:00:00Z', updatedAt: '2026-08-13T10:00:00Z', archivedAt: null }]);
@@ -119,7 +132,7 @@ describe('ProjectSidebar session navigation', () => {
 
   it('uses a controlled disclosure for project sessions', () => {
     render(() => <ProjectSidebar />);
-    const disclosure = screen.getByRole('button', { name: /Perihelion.*1 sessions/ });
+    const disclosure = screen.getByRole('button', { name: 'Perihelion' });
     expect(disclosure).toHaveAttribute('aria-expanded', 'true');
     fireEvent.click(disclosure);
     expect(disclosure).toHaveAttribute('aria-expanded', 'false');
@@ -192,7 +205,7 @@ describe('ProjectSidebar session navigation', () => {
 
     render(() => <ProjectSidebar />);
 
-    expect(screen.getByText(/Running · click to switch/)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Runtime status: Running · click to switch' })).toBeInTheDocument();
     expect(screen.queryByText(/Ready/)).not.toBeInTheDocument();
   });
 
@@ -217,19 +230,6 @@ describe('ProjectSidebar session navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
     expect(store.restoreProjectSession).toHaveBeenCalledWith('hub-abcdef12', expect.any(Function), expect.any(Function));
     commit();
-  });
-});
-
-describe('collapsed sidebar rail', () => {
-  it('keeps an accessible expand control while hiding the full workspace navigation', () => {
-    const toggle = vi.fn();
-
-    render(() => <ProjectSidebar collapsed onToggleCollapsed={toggle} />);
-
-    expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'New project' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Expand sidebar' }));
-    expect(toggle).toHaveBeenCalledOnce();
   });
 });
 

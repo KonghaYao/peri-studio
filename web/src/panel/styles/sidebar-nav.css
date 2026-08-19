@@ -65,11 +65,10 @@
   flex: none;
 }
 
-/* T3code workspace surface: fixed controls and a clearly separated navigation plane. */
+/* 纯白导航平面：依靠发丝分隔与内容层级，而不是底色、渐变或悬浮阴影。 */
 .project-sidebar {
   position: relative;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface) 72%, var(--sidebar-bg)) 0, var(--sidebar-bg) 180px);
+  background: var(--sidebar-bg);
 }
 .sidebar-workspace-header {
   position: sticky;
@@ -77,10 +76,8 @@
   z-index: var(--z-12);
   margin: 0 calc(var(--space-12) * -1);
   padding: 0 var(--space-12) var(--space-10);
-  border-bottom: 1px solid color-mix(in srgb, var(--divider) 74%, transparent);
-  background: color-mix(in srgb, var(--sidebar-bg) 94%, transparent);
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--sidebar-bg) 82%, transparent);
-  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--divider);
+  background: var(--sidebar-bg);
 }
 .brand-row {
   height: 52px;
@@ -88,9 +85,8 @@
   padding: 0 var(--space-4);
 }
 .brand-glyph {
-  border: 1px solid color-mix(in srgb, var(--text-primary) 70%, transparent);
+  border: 1px solid var(--text-primary);
   border-radius: var(--radius-7);
-  box-shadow: 0 5px 12px color-mix(in srgb, var(--text-primary) 16%, transparent);
 }
 .brand-copy {
   display: grid;
@@ -129,9 +125,8 @@
 .new-project-button {
   min-height: 34px;
   margin: 0;
-  border-color: color-mix(in srgb, var(--btn-primary) 72%, var(--border-strong));
+  border-color: var(--btn-primary);
   border-radius: var(--radius-8);
-  box-shadow: 0 5px 12px color-mix(in srgb, var(--btn-primary) 16%, transparent);
   font-size: 12px;
   font-weight: 650;
 }
@@ -140,16 +135,16 @@
   margin: 0;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-8);
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  background: var(--surface);
   font-size: 12px;
 }
 .session-search-button:hover:not(:disabled) {
   border-color: var(--border-strong);
-  background: var(--surface);
+  background: var(--hover);
   color: var(--text-primary);
 }
 .session-search-button kbd {
-  border-color: color-mix(in srgb, var(--border-strong) 82%, transparent);
+  border-color: var(--border-subtle);
   background: var(--surface-muted);
   font-size: 10px;
 }
@@ -165,7 +160,6 @@
   border-radius: var(--radius-9);
   background: var(--surface);
   color: var(--text-secondary);
-  box-shadow: 0 4px 10px color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
 .project-sidebar.is-collapsed {
   align-items: stretch;
@@ -219,3 +213,13 @@ body.sidebar-resizing * {
     margin-inline: calc(var(--space-12) * -1);
   }
 }
+
+/* Machine / root workspace / project rows share one navigation rhythm. */
+.sidebar-workspace-header { padding-bottom: 0; border-bottom: 0; box-shadow: none; }
+.brand-row { gap: 0; font-size: 14px; font-weight: 500; }
+.brand-glyph,.brand-copy { display: none; }
+.sidebar-collapse-button { margin-left: auto; }
+.workspace-actions { display: block; margin: 0 0 var(--space-8); }
+.session-search-button { min-height: 32px; border: 0; border-radius: var(--radius-8); background: transparent; }
+.session-search-button kbd { border: 0; padding: 0; background: transparent; }
+.new-project-button { display: none; }

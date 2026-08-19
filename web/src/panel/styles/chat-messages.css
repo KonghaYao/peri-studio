@@ -6,9 +6,7 @@
   height: 100%;
   min-height: 0;
   flex-direction: column;
-  background:
-    linear-gradient(180deg,color-mix(in srgb,var(--surface-header) 72%,transparent),transparent 112px),
-    var(--app-bg);
+  background: var(--app-bg);
 }
 .message-list-scroll {
   min-height: 0;
@@ -18,10 +16,10 @@
 .chat-workspace {
   isolation: isolate;
 }
-/* T3code 式工作区：输入窗口覆盖在时间线末端，内容的动态留白由 MessageList 提供。 */
+/* 输入区固定在阅读区末端，留白只为突出当前输入焦点。 */
 .composer-stack--overlay {
   padding-top: var(--space-28);
-  background: linear-gradient(0deg, var(--app-bg) 0%, color-mix(in srgb, var(--app-bg) 94%, transparent) 72%, transparent 100%);
+  background: var(--app-bg);
   pointer-events: none;
 }
 .composer-stack--overlay > * {
@@ -34,31 +32,16 @@
   margin-inline: auto;
   padding: var(--space-32) var(--space-20) var(--space-40);
 }
-/* Assistant turns read as an agent activity timeline rather than anonymous chat bubbles. */
+/* Assistant turns stay in a clean, document-like reading flow. */
 .conversation-message--timeline {
   position: relative;
-  padding-left: var(--space-28);
+  padding-left: 0;
 }
 .conversation-message--timeline::before {
-  position: absolute;
-  top: var(--space-22);
-  bottom: calc(var(--space-12) * -1);
-  left: var(--space-9);
-  width: 1px;
-  background: linear-gradient(var(--divider), transparent);
-  content: '';
+  display: none;
 }
 .conversation-message__timeline-mark {
-  position: absolute;
-  z-index: 1;
-  top: var(--space-12);
-  left: var(--space-4);
-  width: var(--space-11);
-  height: var(--space-11);
-  border: 3px solid var(--app-bg);
-  border-radius: var(--radius-full);
-  background: var(--success);
-  box-shadow: var(--shadow-success-ring);
+  display: none;
 }
 .conversation-message__meta--assistant {
   min-height: var(--space-18);
@@ -269,7 +252,8 @@
 .conversation-message--user .conversation-message__surface {
   max-width: 72%;
   padding: var(--space-12) var(--space-16);
-  border-radius: var(--radius-16);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-14);
   background: var(--surface-muted);
 }
 .conversation-message--system .conversation-message__surface {

@@ -25,7 +25,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
 
   return <article class={`conversation-message conversation-message--${role()} ${role() === 'assistant' ? 'conversation-message--timeline' : ''} flex mb-12 group ${role() === 'user' ? 'justify-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
     <Show when={role() === 'assistant'}><span class="conversation-message__timeline-mark" aria-hidden="true" /></Show>
-    <div class={`conversation-message__surface min-w-0 ${role() === 'user' ? 'max-w-72p p-12 px-16 rounded-16 bg-surface-muted' : role() === 'system' ? 'max-w-70p py-4 px-12 rounded-full bg-surface-muted text-text-secondary text-12' : ''} [&>*+*]:mt-10`}>
+    <div class={`conversation-message__surface min-w-0 ${role() === 'user' ? 'max-w-72p p-12 px-16 rounded-14 bg-surface-muted' : role() === 'system' ? 'max-w-70p py-4 px-12 rounded-full bg-surface-muted text-text-secondary text-12' : ''} [&>*+*]:mt-10`}>
       <Show when={role() !== 'system'}>
         <header class={`conversation-message__meta flex items-center gap-6 text-text-muted text-12 transition-opacity duration-150 ${role() === 'assistant' ? 'conversation-message__meta--assistant' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'}`}>
           <Show when={role() === 'assistant'}><span class="conversation-message__author">Peri</span></Show>

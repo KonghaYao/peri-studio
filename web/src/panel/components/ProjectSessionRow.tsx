@@ -1,7 +1,7 @@
 import { createEffect, createSignal, Show } from 'solid-js';
 import type { ProjectSessionInfo } from '../lib/registry-view';
 import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Icon, IconButton, Popover, PopoverContent, PopoverTrigger, Spinner, TextField } from '../../components/ui';
-import { formatRelativeTime, sessionDisplayTitle } from '../lib/recovery-state.ts';
+import { sessionDisplayTitle } from '../lib/recovery-state.ts';
 import { runConfirmedMutation } from '../lib/form-mutation';
 
 export interface SessionRowState {
@@ -81,25 +81,22 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     );
   };
 
-  return <div data-session-id={props.session.id} class={`session-row group relative rounded-9 hover:bg-selected ${props.selected ? 'is-selected bg-selected' : ''}`}>
+  return <div data-session-id={props.session.id} class={`session-row ${props.selected ? 'is-selected' : ''}`}>
     <Button
-      class="session-main flex w-full min-h-48 cursor-pointer items-center justify-start! gap-9 rounded-9 border-0! bg-transparent py-6 pr-34 pl-9 text-left text-14 disabled:cursor-wait disabled:text-text-muted desk:min-h-46 desk:gap-7 desk:pl-7 wide:min-h-48 wide:gap-9 wide:pl-9 pointer-coarse:min-h-52 pointer-coarse:pr-42"
+      class="session-main"
       aria-current={props.selected ? 'page' : undefined}
       title={props.readOnly && !props.session.activeChatId ? 'Full permission required to start this session' : undefined}
       onClick={open}
       disabled={(props.readOnly && !props.session.activeChatId) || props.session.lifecycle !== 'ready' || props.navigationBusy}
     >
       <ChatIcon />
-      <span class="session-copy flex min-w-0 flex-1 flex-col gap-2">
-        <strong class="overflow-hidden text-ellipsis whitespace-nowrap text-13 font-medium text-text-primary">{displayTitle()}</strong>
-        <small class={`session-state session-state--${props.state.tone} overflow-hidden text-ellipsis whitespace-nowrap text-10p5 text-text-muted ${props.state.tone === 'attention' ? 'text-warning' : props.state.tone === 'danger' ? 'text-danger' : ''}`}>{props.state.label} · {formatRelativeTime(props.session.lastOpenedAt || props.session.updatedAt)}</small>
-      </span>
-      <Show when={props.opening || ['activating', 'pending'].includes(props.session.lifecycle)}><Spinner label="Opening…" /></Show>
+      <span class="session-copy"><strong>{displayTitle()}</strong></span>
+      <Show when={props.opening || ['activating', 'pending'].includes(props.session.lifecycle)} fallback={<span class={`session-status-dot session-status-dot--${props.state.tone}`} role="img" aria-label={`Runtime status: ${props.state.label}`} />}><Spinner label="Opening…" /></Show>
     </Button>
     <DropdownMenu open={props.menuOpen} onOpenChange={props.onMenuOpenChange} placement="bottom-end">
       <DropdownMenuTrigger as={IconButton}
         tooltipPlacement="end"
-        class="session-menu absolute right-0 top-6 grid! size-36! cursor-pointer place-items-center rounded-8! border-0! bg-transparent opacity-0 group-hover:opacity-100! group-[.is-selected]:opacity-100! focus-visible:opacity-100! pointer-coarse:-right-4 pointer-coarse:top-4 pointer-coarse:size-44! pointer-coarse:opacity-100"
+        class="session-menu"
         ref={menuTrigger}
         disabled={props.readOnly || submitting()}
         label={`Session actions: ${displayTitle()}`}

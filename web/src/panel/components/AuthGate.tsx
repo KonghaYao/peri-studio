@@ -20,10 +20,10 @@ export function AuthGate(props: { children: JSX.Element }) {
   return (
     <Show when={auth.state() === 'signed-in'} fallback={
       <main class="auth-page grid min-h-dvh place-items-center bg-sidebar-bg p-24">
-        <section class="auth-card w-(--container-auth-card) border border-border-subtle rounded-20 bg-surface p-34 shadow-auth" aria-labelledby="auth-title">
+        <section class="auth-card w-(--container-auth-card) border border-border-subtle rounded-16 bg-surface p-34 shadow-auth" aria-labelledby="auth-title">
           <div class="auth-brand mb-42 text-14 font-650">Peri Studio</div>
           <h1 id="auth-title" class="text-28 -tracking-35">Continue your work</h1>
-          <p class="mt-10 mb-26 text-14 leading-16 text-text-secondary">Sign in with a full token issued by the server to open a secure browser session. The token is stored in this browser and used to sign in automatically next time; to clear it, sign out from the top-right corner.</p>
+          <p class="mt-10 mb-26 text-14 leading-16 text-text-secondary">Sign in with a full token issued by the server to open your secure browser session. The token stays in this browser for the next sign-in; sign out from the top-right corner whenever you want to remove it.</p>
           <Show when={auth.state() === 'checking'} fallback={
             <form onSubmit={signIn} class="auth-form">
               <TextField label="Access token" type="password" value={auth.token()} onInput={(e) => auth.setToken(e.currentTarget.value)} autocomplete="off" autofocus />

@@ -42,6 +42,14 @@ function props(overrides: Partial<ProjectSessionRowProps> = {}): ProjectSessionR
 describe('ProjectSessionRow', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('reserves separate menu and runtime-status slots without changing the runtime hint', () => {
+    render(() => <ProjectSessionRow {...props({ state: { label: 'Agent is working', tone: 'busy' } })} />);
+
+    expect(screen.getByRole('img', { name: 'Runtime status: Agent is working' })).toHaveClass('session-status-dot--busy');
+    expect(screen.getByRole('button', { name: 'Session actions: Architecture refactor' })).toHaveClass('session-menu');
+    expect(screen.getByText('Architecture refactor').closest('.session-copy')).toBeInTheDocument();
+  });
+
   it('delegates server-authoritative opening without navigating early', () => {
     const value = props();
     render(() => <ProjectSessionRow {...value} />);

@@ -46,7 +46,7 @@ describe('ChatView project directory hydration', () => {
     render(() => <ChatView />);
 
     expect(screen.getByRole('status', { name: 'Loading projects' })).toBeInTheDocument();
-    expect(screen.queryByText('What would you like to do today?')).not.toBeInTheDocument();
+    expect(screen.queryByText('Start with a clear prompt')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'New project' })).not.toBeInTheDocument();
   });
 
@@ -56,7 +56,7 @@ describe('ChatView project directory hydration', () => {
 
     render(() => <ChatView />);
 
-    expect(screen.getByText('What would you like to do today?')).toBeInTheDocument();
+    expect(screen.getByText('Start with a clear prompt')).toBeInTheDocument();
     expect(screen.getByText('Create a project first; Peri Studio saves and restores ACP sessions within it.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'New project' })).toBeInTheDocument();
     expect(screen.queryByRole('status', { name: 'Loading projects' })).not.toBeInTheDocument();

@@ -6,58 +6,58 @@
 :root {
   color-scheme: light;
 
-  /* Surfaces */
+  /* Surfaces: white is the canvas; hierarchy comes from spacing and hairlines. */
   --app-bg: #ffffff;
-  --sidebar-bg: #f7f7f6;
+  --sidebar-bg: #ffffff;
   --surface: #ffffff;
-  --surface-muted: #f4f4f3;
-  --surface-translucent: rgb(255 255 255 / 94%);
-  --surface-header: rgb(255 255 255 / 92%);
-  --surface-hover-translucent: rgb(255 255 255 / 60%);
-  --empty-mark-bg: #f1f1ee;
-  --empty-mark-fg: #494945;
-  --scrim: rgb(20 20 19 / 22%);
+  --surface-muted: #fafaf9;
+  --surface-translucent: rgb(255 255 255 / 98%);
+  --surface-header: rgb(255 255 255 / 96%);
+  --surface-hover-translucent: rgb(250 250 249 / 88%);
+  --empty-mark-bg: #f7f7f5;
+  --empty-mark-fg: #30302e;
+  --scrim: rgb(20 20 19 / 18%);
 
   /* Borders */
-  --border-subtle: #e4e4e1;
-  --border-strong: #d5d5d1;
-  --divider: #ececea;
-  --danger-border: rgb(199 68 68 / 28%);
-  --warning-border: rgb(163 101 22 / 35%);
-  --composer-border: #dededb;
+  --border-subtle: #e9e9e6;
+  --border-strong: #cececa;
+  --divider: #eeeeeb;
+  --danger-border: rgb(190 60 60 / 30%);
+  --warning-border: rgb(146 93 23 / 32%);
+  --composer-border: #dbdbd7;
 
   /* Text */
-  --text-primary: #20201f;
-  --text-secondary: #60605d;
-  --text-muted: #686864;
-  --text-faint: #b4b4b0;
-  --link: #315f96;
-  --link-decoration: rgb(49 95 150 / 35%);
+  --text-primary: #1f1f1d;
+  --text-secondary: #5f5f5b;
+  --text-muted: #767671;
+  --text-faint: #b5b5af;
+  --link: #245b92;
+  --link-decoration: rgb(36 91 146 / 28%);
 
   /* Interaction and feedback */
-  --accent: #62625e;
-  --hover: #eeeeed;
-  --selected: #e9e9e7;
-  --focus-ring: #62625e;
-  --success: #26895c;
-  --success-soft: #eaf6ef;
-  --activity-bg: color-mix(in srgb, var(--surface) 92%, var(--success) 8%);
-  --warning: #a36516;
-  --warning-strong: #81500f;
-  --warning-soft: #fff5df;
-  --danger: #c74444;
-  --danger-soft: #fff0ef;
-  --btn-primary: #252524;
-  --btn-primary-hover: #111110;
-  --scrollbar-thumb: #cececa;
+  --accent: #2a2a27;
+  --hover: #f6f6f4;
+  --selected: #f2f2ef;
+  --focus-ring: #2a2a27;
+  --success: #25865a;
+  --success-soft: #f0f8f3;
+  --activity-bg: #ffffff;
+  --warning: #98601a;
+  --warning-strong: #70420e;
+  --warning-soft: #fff8e9;
+  --danger: #b83f3f;
+  --danger-soft: #fff3f2;
+  --btn-primary: #242422;
+  --btn-primary-hover: #0d0d0c;
+  --scrollbar-thumb: #d5d5d1;
 
-  /* Elevation */
-  --shadow-popover: 0 16px 42px rgb(25 25 24 / 14%), 0 2px 8px rgb(25 25 24 / 8%);
-  --shadow-float: 0 8px 24px rgb(25 25 24 / 7%), 0 1px 4px rgb(25 25 24 / 5%);
-  --shadow-composer-overlay: 0 18px 44px rgb(25 25 24 / 12%), 0 2px 10px rgb(25 25 24 / 7%);
-  --shadow-form: 0 6px 18px rgb(30 30 28 / 5%);
-  --shadow-auth: 0 18px 60px rgb(30 30 28 / 8%);
-  --shadow-recovery: 0 6px 18px rgb(25 25 24 / 6%);
+  /* Elevation: use only for layers that leave the canvas. */
+  --shadow-popover: 0 14px 34px rgb(25 25 24 / 10%), 0 2px 5px rgb(25 25 24 / 5%);
+  --shadow-float: 0 5px 16px rgb(25 25 24 / 5%), 0 1px 2px rgb(25 25 24 / 4%);
+  --shadow-composer-overlay: 0 8px 24px rgb(25 25 24 / 7%), 0 1px 3px rgb(25 25 24 / 5%);
+  --shadow-form: 0 4px 12px rgb(30 30 28 / 4%);
+  --shadow-auth: 0 16px 44px rgb(30 30 28 / 7%);
+  --shadow-recovery: 0 4px 12px rgb(25 25 24 / 5%);
   /* Status halo rings: exact arbitrary-shadow equivalents used by
      running/done activity states (color-mix over accent/success). */
   --shadow-accent-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
@@ -148,7 +148,7 @@
   --radius-full: 999px;
 
   /* Layout */
-  --composer-radius: var(--radius-24);
+  --composer-radius: var(--radius-16);
   --composer-max: 864px;
   --container-popover: 288px;
 

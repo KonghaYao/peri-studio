@@ -219,7 +219,7 @@ export function Composer() {
       <section
         aria-busy={submissionIsInFlight() || undefined}
         aria-disabled={inputDisabled()}
-        class="composer-surface overflow-hidden border border-composer-border rounded-24 bg-surface shadow-float focus-within:border-border-strong focus-within:shadow-float max-narrow:rounded-20"
+        class="composer-surface overflow-hidden border border-composer-border rounded-16 bg-surface shadow-float focus-within:border-border-strong focus-within:shadow-float max-narrow:rounded-14"
       >
         <div class="composer-editor relative">
           <Show when={prediction.activePrediction()}>{(prediction) => <>

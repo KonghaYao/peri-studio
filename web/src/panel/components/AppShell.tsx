@@ -8,7 +8,6 @@ import { SettingsDialog } from './SettingsDialog';
 const SIDEBAR_MIN_WIDTH = 240;
 const SIDEBAR_MAX_WIDTH = 480;
 const SIDEBAR_DEFAULT_WIDTH = 304;
-const SIDEBAR_COLLAPSED_WIDTH = 64;
 const SIDEBAR_KEYBOARD_STEP = 24;
 
 function clampSidebarWidth(width: number) {
@@ -19,7 +18,6 @@ export function AppShell() {
   const [open, setOpen] = createSignal(false);
   const [systemOpen, setSystemOpen] = createSignal(false);
   const [mobile, setMobile] = createSignal(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = createSignal(false);
   const [sidebarWidth, setSidebarWidth] = createSignal(SIDEBAR_DEFAULT_WIDTH);
   const [sidebarIntent, setSidebarIntent] = createSignal<{ kind: 'create-project' | 'import'; projectId?: string; nonce: number } | null>(null);
   let drawer: HTMLElement | undefined;
@@ -65,33 +63,26 @@ export function AppShell() {
   });
   const openDrawer = () => {
     if (mobile()) setOpen(true);
-    else {
-      setSidebarCollapsed(false);
-      queueMicrotask(() => drawer?.querySelector<HTMLElement>('.new-project-button:not(:disabled),.project-heading button:not(:disabled)')?.focus());
-    }
+    else queueMicrotask(() => drawer?.querySelector<HTMLElement>('.new-project-button:not(:disabled),.project-heading button:not(:disabled)')?.focus());
   };
   const requestSidebar = (kind: 'create-project' | 'import', projectId?: string) => {
     setSidebarIntent({ kind, projectId, nonce: Date.now() });
     if (mobile()) openDrawer();
-    else setSidebarCollapsed(false);
   };
-  const desktopSidebarCollapsed = () => !mobile() && sidebarCollapsed();
   const sidebarGridTemplate = () => mobile()
     ? 'minmax(0, 1fr)'
-    : `${desktopSidebarCollapsed() ? SIDEBAR_COLLAPSED_WIDTH : sidebarWidth()}px minmax(0, 1fr)`;
+    : `${sidebarWidth()}px minmax(0, 1fr)`;
 
   return (
     <div class="app-shell relative grid h-dvh overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide" style={{ 'grid-template-columns': sidebarGridTemplate() }}>
       <ProjectDrawer ref={(element) => { drawer = element; }} open={open()} modal={mobile()} onOpenChange={setOpen}>
         <ProjectSidebar
-          collapsed={desktopSidebarCollapsed()}
-          onToggleCollapsed={() => { if (!mobile()) setSidebarCollapsed((collapsed) => !collapsed); }}
           onNavigate={() => setOpen(false)}
           onOpenSystem={() => setSystemOpen(true)}
           intent={sidebarIntent()}
         />
       </ProjectDrawer>
-      {!desktopSidebarCollapsed() && <div
+      <div
         class="sidebar-resize-handle max-desk:hidden"
         style={{ left: `${sidebarWidth()}px` }}
         role="separator"
@@ -104,7 +95,7 @@ export function AppShell() {
         tabIndex={0}
         onPointerDown={startSidebarResize}
         onKeyDown={resizeSidebarWithKeyboard}
-      />}
+      />
       <main ref={main} class="conversation-pane min-w-0 min-h-0 overflow-hidden">
         <ChatView onOpenNavigation={openDrawer} onOpenSystem={() => setSystemOpen(true)} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />
       </main>

@@ -1,0 +1,382 @@
+<!doctype html>
+<!--
+  Workspace / Project / Session 界面概念稿。
+  静态原型，不接真实接口：用于讨论信息架构、状态层级与交互重点。
+  产品 UI 文案保持英文；本文件可直接在浏览器打开。
+-->
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Peri Studio · Workspace Concept</title>
+  <style>
+    :root {
+      --bg: #faf9f7;
+      --side: #f3f2ee;
+      --surface: #fff;
+      --surface-muted: #f4f3ef;
+      --hover: #eceae4;
+      --active: #e9e4db;
+      --line: #e6e4dd;
+      --line-strong: #d5d2c8;
+      --ink: #211f1a;
+      --ink-2: #68635a;
+      --ink-3: #a09a8e;
+      --accent: #1677ff;
+      --accent-soft: #e6f4ff;
+      --ok: #34795a;
+      --ok-soft: #e6f2ec;
+      --warn: #9c5e0f;
+      --warn-soft: #faf0da;
+      --off: #777167;
+      --off-soft: #eeeae3;
+      --danger: #b8443a;
+      --danger-soft: #f8ebe8;
+      --shadow: 0 16px 42px rgb(32 27 20 / 10%), 0 2px 8px rgb(32 27 20 / 6%);
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --sans: ui-rounded, "Avenir Next", Avenir, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 1040px; background: var(--bg); color: var(--ink); font-family: var(--sans); }
+    button { font: inherit; }
+    .app { display: grid; grid-template-columns: 310px minmax(590px, 1fr) 278px; height: 100vh; min-height: 700px; overflow: hidden; }
+
+    /* navigation: persistent topology, not a chat list */
+    .nav { display: flex; min-width: 0; flex-direction: column; background: var(--side); border-right: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 10px; height: 58px; padding: 0 18px; border-bottom: 1px solid var(--line); }
+    .mark { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 8px; background: var(--accent); color: #fff; font: 700 16px/1 Georgia, serif; }
+    .brand strong { font-size: 14px; letter-spacing: -.01em; }
+    .brand span { margin-left: auto; color: var(--ink-3); font: 11px var(--mono); }
+    .nav-actions { display: flex; gap: 8px; padding: 14px 14px 10px; }
+    .button { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--line-strong); border-radius: 8px; padding: 0 10px; background: var(--surface); color: var(--ink); cursor: pointer; font-size: 12px; font-weight: 650; }
+    .button:hover { background: var(--hover); }
+    .button.primary { flex: 1; border-color: var(--accent); background: var(--accent); color: #fff; }
+    .button.primary:hover { background: #4096ff; }
+    .nav-scroll { flex: 1; overflow: auto; padding: 2px 10px 18px; }
+    .machine { margin-top: 10px; }
+    .machine-head { display: flex; align-items: center; gap: 8px; padding: 8px 8px 10px; color: var(--ink-2); font-size: 11px; font-weight: 750; letter-spacing: .07em; text-transform: uppercase; }
+    .machine-head .machine-icon { display: grid; width: 18px; height: 18px; place-items: center; border: 1px solid var(--line-strong); border-radius: 5px; background: var(--surface); color: var(--ink-2); font: 11px var(--mono); }
+    .machine-head .health { margin-left: auto; color: var(--ok); font: 10px var(--mono); letter-spacing: 0; text-transform: none; }
+    .root { margin: 0 4px 5px; border: 1px solid transparent; border-radius: 9px; }
+    .root-title { display: flex; align-items: center; gap: 7px; padding: 8px 7px 6px; color: var(--ink-2); font: 11px var(--mono); }
+    .root-title .folder { color: var(--accent); font-size: 14px; }
+    .root-title .root-more { margin-left: auto; color: var(--ink-3); cursor: pointer; }
+    .project { display: block; width: 100%; border: 0; border-radius: 7px; padding: 8px 8px 8px 13px; background: transparent; color: var(--ink); cursor: pointer; text-align: left; }
+    .project:hover { background: var(--hover); }
+    .project.selected { background: var(--active); box-shadow: inset 2px 0 0 var(--accent); }
+    .project-top { display: flex; align-items: center; gap: 7px; }
+    .project-name { overflow: hidden; flex: 1; font-size: 13px; font-weight: 680; text-overflow: ellipsis; white-space: nowrap; }
+    .count { color: var(--ink-3); font: 10px var(--mono); }
+    .session-list { margin: 3px 0 3px 15px; padding-left: 10px; border-left: 1px solid var(--line); }
+    .session { display: flex; width: 100%; align-items: center; gap: 8px; border: 0; border-radius: 6px; padding: 6px 7px; background: transparent; color: var(--ink-2); cursor: pointer; text-align: left; }
+    .session:hover { background: var(--hover); }
+    .session.current { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(32 27 20 / 7%); }
+    .session-name { overflow: hidden; flex: 1; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    .status { display: inline-flex; width: 8px; height: 8px; flex: 0 0 8px; border-radius: 99px; background: var(--off); }
+    .status.running { background: var(--ok); box-shadow: 0 0 0 3px rgb(52 121 90 / 16%); animation: pulse 1.6s infinite; }
+    .status.idle { background: var(--ok); }
+    .status.waiting { background: var(--warn); box-shadow: 0 0 0 3px rgb(156 94 15 / 14%); }
+    .status.offline { background: var(--off); }
+    @keyframes pulse { 50% { box-shadow: 0 0 0 6px rgb(52 121 90 / 0%); } }
+    .nav-foot { padding: 12px 15px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 11px; }
+    .nav-foot code { color: var(--ink-2); font-family: var(--mono); }
+
+    /* main: one session as the focused work surface */
+    .main { display: flex; min-width: 0; flex-direction: column; }
+    .topbar { display: flex; min-height: 58px; align-items: center; gap: 12px; padding: 0 24px; border-bottom: 1px solid var(--line); background: rgb(250 249 247 / 88%); backdrop-filter: blur(12px); }
+    .crumb { display: flex; min-width: 0; align-items: center; gap: 8px; color: var(--ink-2); font-size: 12px; }
+    .crumb strong { overflow: hidden; color: var(--ink); font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .slash { color: var(--ink-3); }
+    .state-pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #e5d1a6; border-radius: 99px; padding: 5px 9px; background: var(--warn-soft); color: #79510f; font: 700 10px var(--mono); letter-spacing: .025em; text-transform: uppercase; }
+    .top-actions { display: flex; gap: 7px; margin-left: auto; }
+    .icon-button { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ink-2); cursor: pointer; }
+    .icon-button:hover { background: var(--hover); color: var(--ink); }
+    .chat { flex: 1; overflow: auto; }
+    .thread { width: min(760px, calc(100% - 64px)); margin: 0 auto; padding: 38px 0 120px; }
+    .session-intro { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+    .session-emblem { display: grid; width: 39px; height: 39px; flex: 0 0 39px; place-items: center; border-radius: 12px; background: var(--accent-soft); color: var(--accent); font: 19px Georgia, serif; }
+    .eyebrow { margin: 2px 0 4px; color: var(--ink-3); font: 10px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: 21px; letter-spacing: -.035em; }
+    .session-meta { margin-top: 6px; color: var(--ink-2); font-size: 12px; }
+    .session-meta code { color: var(--ink-3); font: 10px var(--mono); }
+    .message { max-width: 680px; margin: 0 0 28px; }
+    .message.user { margin-left: auto; padding: 13px 15px; border: 1px solid var(--line); border-radius: 13px 13px 3px 13px; background: var(--surface); box-shadow: 0 1px 2px rgb(32 27 20 / 4%); }
+    .message-meta { margin-bottom: 7px; color: var(--ink-3); font: 10px var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+    .message p { margin: 0; color: var(--ink); font-size: 14px; line-height: 1.65; }
+    .activity { display: flex; align-items: center; gap: 8px; margin: 0 0 17px; color: var(--ok); font: 11px var(--mono); }
+    .tool { display: flex; align-items: center; gap: 10px; margin: 0 0 24px; border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; background: var(--surface-muted); }
+    .tool-mark { color: var(--ok); font-size: 13px; }
+    .tool div { flex: 1; }
+    .tool strong { display: block; font-size: 12px; }
+    .tool code { color: var(--ink-3); font: 10px var(--mono); }
+    .tool span { color: var(--ok); font: 10px var(--mono); }
+    .composer { position: sticky; bottom: 0; padding-top: 24px; background: linear-gradient(transparent, var(--bg) 34%); }
+    .compose-box { display: flex; align-items: flex-end; gap: 10px; border: 1px solid var(--line-strong); border-radius: 12px; padding: 10px; background: var(--surface); box-shadow: var(--shadow); }
+    .compose-box textarea { min-height: 43px; flex: 1; resize: none; border: 0; outline: 0; background: transparent; color: var(--ink); font: 13px/1.5 var(--sans); }
+    .send { width: 36px; height: 36px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; font-size: 16px; }
+    .compose-hint { display: flex; justify-content: space-between; padding: 8px 3px 0; color: var(--ink-3); font-size: 10px; }
+
+    /* right rail: state explains itself and invites a safe decision */
+    .rail { overflow: auto; border-left: 1px solid var(--line); background: var(--surface); }
+    .rail-head { display: flex; align-items: center; height: 58px; padding: 0 18px; border-bottom: 1px solid var(--line); }
+    .rail-head strong { font-size: 12px; }
+    .rail-head span { margin-left: auto; color: var(--ink-3); font: 10px var(--mono); }
+    .rail-content { padding: 16px; }
+    .approval { border: 1px solid #e5d1a6; border-radius: 12px; overflow: hidden; background: var(--warn-soft); }
+    .approval-head { display: flex; gap: 10px; padding: 13px; border-bottom: 1px solid #ecdcb9; }
+    .approval-symbol { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 7px; background: #f1dba9; color: #76510f; font-weight: 900; }
+    .approval h2 { margin: 1px 0 3px; font-size: 13px; }
+    .approval p { margin: 0; color: #795f2b; font-size: 11px; line-height: 1.45; }
+    .approval-body { padding: 13px; }
+    .approval-body label { display: block; margin-bottom: 6px; color: #796132; font: 10px var(--mono); text-transform: uppercase; }
+    .command { overflow: hidden; border: 1px solid #e9d7ae; border-radius: 7px; padding: 9px; background: rgb(255 255 255 / 50%); color: #514124; font: 10px/1.55 var(--mono); word-break: break-word; }
+    .approval-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .approve { border: 0; border-radius: 7px; padding: 9px 6px; background: var(--accent); color: #fff; cursor: pointer; font-size: 11px; font-weight: 750; }
+    .deny { border: 1px solid #d7bd80; border-radius: 7px; padding: 9px 6px; background: transparent; color: #72520f; cursor: pointer; font-size: 11px; font-weight: 750; }
+    .section { margin-top: 16px; }
+    .section-toggle { display: flex; width: 100%; align-items: center; justify-content: space-between; min-height: 36px; border: 0; border-radius: 4px; padding: 0 6px; background: transparent; color: var(--ink-2); cursor: pointer; text-align: left; }
+    .section-toggle:hover { background: #f5f5f5; }
+    .section-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .section-toggle .toggle-icon { color: var(--ink-3); font-size: 17px; font-weight: 400; line-height: 1; }
+    .section-body { padding: 3px 0 2px; }
+    .section-body[hidden] { display: none; }
+    .section h3 { margin: 0; color: var(--ink-3); font: 700 10px var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+    .fact { display: flex; flex-direction: column; gap: 3px; padding: 9px 0; border-top: 1px solid var(--line); }
+    .fact:first-of-type { border-top: 0; }
+    .fact label { color: var(--ink-3); font-size: 10px; }
+    .fact strong, .fact code { overflow: hidden; color: var(--ink-2); font-size: 11px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+    .fact code { font-family: var(--mono); font-size: 10px; font-weight: 400; }
+    .state-key { display: grid; gap: 7px; }
+    .key { display: flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 11px; }
+    .key b { margin-left: auto; color: var(--ink-3); font: 10px var(--mono); font-weight: 400; }
+    .toast { position: fixed; right: 25px; bottom: 22px; display: none; border: 1px solid #a8cdb7; border-radius: 9px; padding: 10px 13px; background: var(--ok-soft); color: #24563f; box-shadow: var(--shadow); font-size: 12px; }
+    .toast.show { display: block; animation: rise .22s ease-out; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+  <style>
+    /* Ant Design-inspired refinement: quiet blue, compact controls, clear hierarchy. */
+    :root {
+      --bg: #f5f7fa;
+      --side: #f8fafc;
+      --surface: #ffffff;
+      --surface-muted: #fafafa;
+      --hover: #f0f5ff;
+      --active: #e6f4ff;
+      --line: #f0f0f0;
+      --line-strong: #d9d9d9;
+      --ink: #1f1f1f;
+      --ink-2: #595959;
+      --ink-3: #8c8c8c;
+      --accent: #1677ff;
+      --accent-soft: #e6f4ff;
+      --ok: #52c41a;
+      --ok-soft: #f6ffed;
+      --warn: #faad14;
+      --warn-soft: #fffbe6;
+      --off: #bfbfbf;
+      --off-soft: #fafafa;
+      --danger: #ff4d4f;
+      --danger-soft: #fff2f0;
+      --shadow: 0 6px 16px rgb(0 0 0 / 8%);
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    /* 导航行系统：Machine / Root / Project 共用左基线；只有 Session 下沉一层。 */
+    .nav-scroll { padding: 4px 10px 18px; }
+    .machine { margin-top: 8px; }
+    .machine-head, .root-title, .project-row, .session {
+      min-height: 32px;
+      padding-top: 4px;
+      padding-bottom: 4px;
+      color: var(--ink-2);
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .machine-head { gap: 8px; padding-right: 4px; padding-left: 8px; }
+    .machine-head .machine-icon {
+      display: inline-grid;
+      width: 16px;
+      height: 16px;
+      place-items: center;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--ink-3);
+      font: 13px/1 var(--sans);
+    }
+    .root { margin: 0; border: 0; border-radius: 0; }
+    .root-title { gap: 8px; padding-right: 8px; padding-left: 8px; }
+    .root-title .folder, .root-title .root-more { color: var(--ink-3); font-size: 13px; }
+    .root-title .root-more { margin-left: auto; }
+    .project-row { gap: 0; margin: 0; padding-right: 4px; padding-left: 8px; }
+    .project-row:hover { background: #f5f5f5; }
+    .project-row.selected { background: var(--active); }
+    .project-row .project {
+      min-height: 24px;
+      padding: 0;
+      color: var(--ink-2);
+      font-weight: 400;
+    }
+    .project-row .project, .project-row .project:hover, .project-row .project.selected { background: transparent; box-shadow: none; }
+    .project-top { gap: 8px; }
+    .project-name { font-size: 13px; font-weight: 400; }
+    .count { margin-left: auto; color: var(--ink-3); font: 11px var(--sans); }
+    .session-list { margin: 0; padding: 0; border: 0; }
+    .session { gap: 8px; padding-right: 8px; padding-left: 32px; color: var(--ink-2); }
+    .session:hover { background: #f5f5f5; }
+    .session.current { background: var(--active); color: var(--ink); box-shadow: none; }
+    .session-name { font-size: 13px; font-weight: 400; }
+    .session .status { order: 2; margin-left: auto; }
+    .status { width: 7px; height: 7px; flex-basis: 7px; }
+    .status.running { box-shadow: 0 0 0 3px rgb(82 196 26 / 14%); }
+    .status.waiting { box-shadow: 0 0 0 3px rgb(250 173 20 / 14%); }
+    .machine-add, .project-add { color: var(--ink-3); }
+    .machine-add:hover, .project-add:hover { background: #eaeaea; color: var(--ink); }
+    .brand strong, .account-name { color: var(--ink-2); font-weight: 400; }
+    .nav { background: #fff; }
+    .brand { height: 56px; border-bottom: 0; padding: 0 16px; }
+    .machine-head { display: flex; }
+    .machine-add, .project-add { display: inline-grid; width: 24px; height: 24px; place-items: center; border: 0; border-radius: 4px; padding: 0; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 18px; font-weight: 300; line-height: 1; opacity: 0; pointer-events: none; transition: opacity .14s ease; }
+    .machine:hover .machine-add, .machine:focus-within .machine-add, .project-row:hover .project-add, .project-row:focus-within .project-add { opacity: 1; pointer-events: auto; }
+    .machine-add { margin-left: auto; }
+    .machine-offline { display: inline-flex; width: 7px; height: 7px; margin-left: 7px; border-radius: 50%; background: var(--danger); }
+    .project-row { display: flex; align-items: center; border-radius: 4px; }
+    .project-row:hover { background: #f5f5f5; }
+    .project-row.selected { background: var(--active); }
+    .project-row .project { flex: 1; }
+    .project-row .project, .project-row .project:hover, .project-row .project.selected { background: transparent; box-shadow: none; }
+    .project-add { margin-right: 4px; }
+    .machine-add:hover, .project-add:hover { background: #f5f5f5; color: var(--ink); }
+    .machine-add:focus-visible, .project-add:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .brand strong { font-size: 15px; font-weight: 600; }
+    .mark, .brand span { display: none; }
+    .nav-account { display: flex; align-items: center; gap: 10px; min-height: 60px; border-top: 1px solid var(--line); padding: 12px 16px; background: #fff; cursor: pointer; }
+    .nav-account:hover { background: #fafafa; }
+    .account-avatar { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; background: #e6f4ff; color: #1677ff; font-size: 12px; font-weight: 600; }
+    .account-name { color: var(--ink-2); font-size: 13px; }
+    .account-more { margin-left: auto; color: var(--ink-3); }
+    .nav-actions { display: block; padding: 12px 12px 8px; }
+    .nav-actions .primary { width: 100%; justify-content: flex-start; border-color: transparent; padding-left: 12px; background: transparent; color: var(--ink-2); }
+    .nav-actions .primary:hover { background: #f5f5f5; color: var(--ink); }
+    .nav-actions .primary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .button { min-height: 32px; border-radius: 6px; font-size: 13px; font-weight: 400; }
+    .button.primary { border-color: transparent; background: transparent; }
+    .send:hover, .approve:hover { background: #4096ff; }
+    .machine { margin-top: 8px; }
+    .machine-head { padding: 9px 8px 7px; color: var(--ink-2); font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+    .machine-head .machine-icon { border-color: var(--line); border-radius: 4px; }
+    /* 左侧保持树状导航，不给 Root / Project / Session 制造卡片边框或分割线。 */
+    .root { border: 0; }
+    .session-list { border-left: 0; padding-left: 8px; }
+    .project.selected { box-shadow: none; }
+    .session.current { box-shadow: none; }
+    .topbar { min-height: 56px; padding: 0 22px; background: rgb(255 255 255 / 88%); }
+    .state-pill { border-color: #ffe58f; border-radius: 4px; padding: 4px 8px; background: var(--warn-soft); color: #ad6800; font-family: var(--sans); font-size: 12px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+    .icon-button { width: 32px; height: 32px; border-color: transparent; border-radius: 4px; background: transparent; }
+    .icon-button:hover { background: #f5f5f5; }
+    .session-emblem { border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-family: var(--sans); }
+    .message.user { border-radius: 8px 8px 2px 8px; box-shadow: none; }
+    .tool { border-radius: 6px; box-shadow: none; }
+    .compose-box { border-radius: 8px; box-shadow: 0 2px 8px rgb(0 0 0 / 7%); }
+    .send { border-radius: 6px; background: var(--accent); }
+    .approval { border-color: #ffe58f; border-radius: 8px; }
+    .approval-head { border-bottom-color: #ffe7ba; }
+    .approval-symbol { border-radius: 4px; background: #fff1b8; }
+    .approval-actions { grid-template-columns: 1fr 1fr; }
+    .approve { border-radius: 5px; background: var(--accent); }
+    .deny { border-color: var(--line-strong); border-radius: 5px; color: var(--ink-2); }
+    .rail { background: #fff; }
+    .section h3 { font-family: var(--sans); font-size: 11px; letter-spacing: .02em; }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="Peri Studio workspace interface concept">
+    <aside class="nav" aria-label="Projects and remote machines">
+      <div class="brand"><strong>peri studio</strong></div>
+      <div class="nav-scroll">
+        <section class="machine">
+          <div class="machine-head"><span class="machine-icon">⌘</span> MacBook Pro <button class="machine-add" type="button" title="New project on MacBook Pro" aria-label="New project on MacBook Pro" onclick="notify('New project will be bound to MacBook Pro.')">＋</button></div>
+          <div class="root">
+            <div class="root-title"><span class="folder">⌄</span><span>AI projects</span><span class="root-more">···</span></div>
+            <div class="project-row selected"><button class="project selected"><span class="project-top"><span>⌘</span><span class="project-name">peri-studio</span><span class="count">3</span></span></button><button class="project-add" type="button" title="New session in peri-studio" aria-label="New session in peri-studio" onclick="notify('New session will be created in peri-studio.')">＋</button></div>
+            <div class="session-list" aria-label="Peri Studio sessions">
+              <button class="session current" onclick="selectSession(this, 'Design workspace state', 'waiting_for_approve')"><span class="status waiting"></span><span class="session-name">Design workspace state</span></button>
+              <button class="session" onclick="selectSession(this, 'Fix session restore', 'running')"><span class="status running"></span><span class="session-name">Fix session restore</span></button>
+              <button class="session" onclick="selectSession(this, 'Release preparation', 'idle')"><span class="status idle"></span><span class="session-name">Release preparation</span></button>
+            </div>
+          </div>
+          <div class="root">
+            <div class="root-title"><span class="folder">⌄</span><span>Experiments</span><span class="root-more">···</span></div>
+            <div class="project-row"><button class="project"><span class="project-top"><span>⌘</span><span class="project-name">acp-examples</span><span class="count">1</span></span></button><button class="project-add" type="button" title="New session in acp-examples" aria-label="New session in acp-examples" onclick="notify('New session will be created in acp-examples.')">＋</button></div>
+            <div class="session-list"><button class="session" onclick="selectSession(this, 'Schema notes', 'offline')"><span class="status offline"></span><span class="session-name">Schema notes</span></button></div>
+          </div>
+        </section>
+        <section class="machine">
+          <div class="machine-head"><span class="machine-icon">⊞</span> Build host <span class="machine-offline" role="img" aria-label="Offline"></span><button class="machine-add" type="button" title="New project on Build host" aria-label="New project on Build host" onclick="notify('Build host is offline. Reconnect it before creating a project.')">＋</button></div>
+          <div class="root"><div class="root-title"><span class="folder" style="color:var(--ink-3)">›</span><span style="color:var(--ink-3)">Build artifacts</span></div></div>
+        </section>
+      </div>
+      <button class="nav-account" type="button" aria-label="Open account menu"><span class="account-avatar" aria-hidden="true">KH</span><span class="account-name">Kong Hayao</span><span class="account-more" aria-hidden="true">···</span></button>
+    </aside>
+
+    <section class="main" aria-label="Selected project session">
+      <header class="topbar">
+        <div class="crumb"><span>peri-studio</span><span class="slash">/</span><strong id="crumb-title">Design workspace state</strong></div>
+        <span class="state-pill" id="state-pill"><span class="status waiting"></span> waiting for approve</span>
+        <div class="top-actions"><button class="icon-button" title="Session details">ⓘ</button><button class="icon-button" title="More session actions">···</button></div>
+      </header>
+      <div class="chat">
+        <div class="thread">
+          <div class="session-intro">
+            <div class="session-emblem">↗</div>
+            <div><div class="eyebrow">Remote ACP session · persisted reference</div><h1 id="session-heading">Design workspace state</h1><div class="session-meta">Last confirmed title from ACP · <code>ses_01JQ…B4</code></div></div>
+          </div>
+          <article class="message user"><div class="message-meta">You · 14:32</div><p>Let's make the workspace, project, and session boundaries explicit in the architecture.</p></article>
+          <div class="activity"><span class="status running"></span><span>Agent inspected workspace metadata</span></div>
+          <div class="tool"><span class="tool-mark">✓</span><div><strong>Read workspace-authoritative-design.md</strong><code>docs/arch/workspace-authoritative-design.md</code></div><span>0.8s</span></div>
+          <article class="message"><div class="message-meta">Peri · now</div><p>The persistent local reference can keep the latest ACP title and state. A running chat remains runtime-only, while the project session is safe to reopen against the exact remote session identity.</p></article>
+          <div class="composer"><div class="compose-box"><textarea aria-label="Message agent" placeholder="Reply after resolving the approval…" id="prompt"></textarea><button class="send" onclick="notify('Prompt is intentionally blocked until the permission decision is resolved.')" aria-label="Send prompt">↑</button></div><div class="compose-hint"><span>Workspace cwd is verified server-side</span><span>⌘ ↵ to send</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="rail" aria-label="Session context and approval">
+      <div class="rail-head"><strong>Session context</strong><span>live projection</span></div>
+      <div class="rail-content">
+        <section class="approval" id="approval-card">
+          <div class="approval-head"><div class="approval-symbol">!</div><div><h2>Permission needed</h2><p>Agent is paused. This is a remote ACP request, not a browser-side action.</p></div></div>
+          <div class="approval-body"><label>Requested command</label><div class="command">cargo test -p peri-studio-server --lib</div><div class="approval-actions"><button class="approve" onclick="approve()">Approve once</button><button class="deny" onclick="deny()">Deny</button></div></div>
+        </section>
+        <section class="section"><button class="section-toggle" type="button" aria-expanded="true" aria-controls="bound-execution" onclick="toggleSection(this)"><h3>Bound execution</h3><span class="toggle-icon" aria-hidden="true">−</span></button><div class="section-body" id="bound-execution"><div class="fact"><label>Machine</label><strong>MacBook Pro · online</strong></div><div class="fact"><label>Workspace</label><strong>Verified remote directory</strong></div><div class="fact"><label>Root workspace</label><strong>AI projects</strong></div><div class="fact"><label>ACP session identity</label><code>ses_01JQ7E7PP9…B4</code></div></div></section>
+        <section class="section"><button class="section-toggle" type="button" aria-expanded="false" aria-controls="state-vocabulary" onclick="toggleSection(this)"><h3>State vocabulary</h3><span class="toggle-icon" aria-hidden="true">＋</span></button><div class="section-body state-key" id="state-vocabulary" hidden><div class="key"><span class="status idle"></span>Idle <b>confirmed, no turn</b></div><div class="key"><span class="status running"></span>Running <b>agent executing</b></div><div class="key"><span class="status waiting"></span>Waiting for approve <b>permission pause</b></div><div class="key"><span class="status offline"></span>Offline <b>not currently proven</b></div></div></section>
+      </div>
+    </aside>
+  </main>
+  <div class="toast" id="toast" role="status"></div>
+  <script>
+    const labels = { idle: 'idle', running: 'running', waiting_for_approve: 'waiting for approve', offline: 'offline' };
+    function notify(message) { const toast = document.getElementById('toast'); toast.textContent = message; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3200); }
+    function toggleSection(button) {
+      const body = document.getElementById(button.getAttribute('aria-controls'));
+      const expanded = button.getAttribute('aria-expanded') === 'true';
+      button.setAttribute('aria-expanded', String(!expanded));
+      body.hidden = expanded;
+      button.querySelector('.toggle-icon').textContent = expanded ? '＋' : '−';
+    }
+    function selectSession(node, title, state) {
+      document.querySelectorAll('.session').forEach((item) => item.classList.remove('current'));
+      node.classList.add('current');
+      document.getElementById('crumb-title').textContent = title;
+      document.getElementById('session-heading').textContent = title;
+      const pill = document.getElementById('state-pill');
+      pill.innerHTML = `<span class="status ${state === 'waiting_for_approve' ? 'waiting' : state}"></span> ${labels[state]}`;
+      document.getElementById('approval-card').style.display = state === 'waiting_for_approve' ? 'block' : 'none';
+      notify(`Selected persisted project session: ${title}`);
+    }
+    function approve() { document.getElementById('approval-card').style.display = 'none'; document.getElementById('state-pill').innerHTML = '<span class="status running"></span> running'; notify('Approval submitted to the authenticated remote ACP session.'); }
+    function deny() { document.getElementById('approval-card').style.display = 'none'; document.getElementById('state-pill').innerHTML = '<span class="status idle"></span> idle'; notify('Denial submitted. The session is waiting for its confirmed next state.'); }
+  </script>
+</body>
+</html>
