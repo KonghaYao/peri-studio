@@ -73,15 +73,16 @@ async function createFixture(): Promise<string> {
         mkdir(join(skillRoot, "scripts"), { recursive: true }),
         mkdir(join(skillRoot, "assets"), { recursive: true }),
         mkdir(join(skillRoot, "private"), { recursive: true }),
-        mkdir(join(skillRoot, "templates", "nested"), { recursive: true }),
+        mkdir(join(skillRoot, "automation", "nested"), { recursive: true }),
     ]);
     await Promise.all([
         writeFile(join(skillRoot, "SKILL.md"), "---\nname: demo\ndescription: Demo skill\n---\n\n# Demo\n"),
         writeFile(join(skillRoot, "references", "guide.md"), "# Guide\n"),
         writeFile(join(skillRoot, "references", "中文 文档.md"), "# 中文\n"),
-        writeFile(join(skillRoot, "scripts", "check.py"), "print('checked')\n"),
-        writeFile(join(skillRoot, "assets", "icon.png"), Buffer.from([0x89, 0x50, 0x4e, 0x47])),
-        writeFile(join(skillRoot, "templates", "nested", "prompt.txt"), "Write a summary.\n"),
+        writeFile(join(skillRoot, "run.js"), "export default 'run';\n"),
+        writeFile(join(skillRoot, "automation", "nested", "check.py"), "print('checked')\n"),
+        writeFile(join(skillRoot, "automation", "nested", "instructions.custom"), "custom instructions\n"),
+        writeFile(join(skillRoot, "automation", "nested", "payload.data"), Buffer.from([0, 1, 2])),
         writeFile(join(skillRoot, "private", "notes.md"), "must not be exposed by default\n"),
         writeFile(join(skillRoot, ".private.md"), "must not be exposed\n"),
         writeFile(join(skillRoot, "fake-text.md"), Buffer.from([0, 1, 2])),
@@ -93,27 +94,38 @@ async function createFixture(): Promise<string> {
 }
 
 describe("Skill 目录附属 Resource 投影", () => {
-    test("递归枚举受支持的附属文件，拒绝隐藏、未知类型与符号链接", async () => {
+    test("递归枚举 Skill 根内的普通文件，拒绝隐藏路径与符号链接", async () => {
         const root = await createFixture();
         try {
             const files = await scanSkillResourceFiles(root);
             expect(files.map((file) => file.uri)).toEqual([
                 "skill://demo/SKILL.md",
-                "skill://demo/assets/icon.png",
+                "skill://demo/automation/nested/check.py",
+                "skill://demo/automation/nested/instructions.custom",
+                "skill://demo/automation/nested/payload.data",
+                "skill://demo/fake-text.md",
+                "skill://demo/private/notes.md",
                 "skill://demo/references/guide.md",
                 "skill://demo/references/%E4%B8%AD%E6%96%87%20%E6%96%87%E6%A1%A3.md",
-                "skill://demo/scripts/check.py",
-                "skill://demo/templates/nested/prompt.txt",
+                "skill://demo/run.js",
+                "skill://demo/secret.bin",
             ]);
             expect(files.find((file) => file.relativePath === "SKILL.md")?.kind).toBe("skill");
-            expect(files.find((file) => file.relativePath === "assets/icon.png")?.contentKind).toBe("blob");
-            expect(files.find((file) => file.relativePath === "scripts/check.py")?.mimeType).toBe("text/x-python");
+            expect(files.find((file) => file.relativePath === "automation/nested/check.py")?.mimeType).toBe("text/x-python");
+            expect(files.find((file) => file.relativePath === "automation/nested/instructions.custom")).toMatchObject({
+                mimeType: "text/plain",
+                contentKind: "text",
+            });
+            expect(files.find((file) => file.relativePath === "fake-text.md")).toMatchObject({
+                mimeType: "application/octet-stream",
+                contentKind: "blob",
+            });
         } finally {
             await rm(root, { recursive: true, force: true });
         }
     });
 
-    test("读取附属文本和图片，且不允许绕过 Skill 根", async () => {
+    test("读取任意目录与未知扩展名的附属文件，且不允许绕过 Skill 根", async () => {
         const root = await createFixture();
         try {
             const reference = await readSkillResourceFile(root, "demo", "references/中文 文档.md");
@@ -123,10 +135,15 @@ describe("Skill 目录附属 Resource 投影", () => {
                 text: "# 中文\n",
             });
 
-            const image = await readSkillResourceFile(root, "demo", "assets/icon.png");
-            expect(image).toMatchObject({
-                mimeType: "image/png",
-                blob: "iVBORw==",
+            const script = await readSkillResourceFile(root, "demo", "automation/nested/check.py");
+            expect(script).toMatchObject({
+                mimeType: "text/x-python",
+                text: "print('checked')\n",
+            });
+            const binary = await readSkillResourceFile(root, "demo", "automation/nested/payload.data");
+            expect(binary).toMatchObject({
+                mimeType: "application/octet-stream",
+                blob: "AAEC",
             });
             expect(await readSkillResourceFile(root, "demo", "references/outside-link")).toBeUndefined();
             expect(decodeSkillFilePath("references/%2E%2E/secret.md")).toBeUndefined();
@@ -139,18 +156,16 @@ describe("Skill 目录附属 Resource 投影", () => {
         }
     });
 
-    test("额外目录必须显式声明后才可公开", async () => {
+    test("普通目录默认可公开", async () => {
         const root = await createFixture();
         try {
-            expect((await scanSkillResourceFiles(root)).some((file) => file.relativePath === "private/notes.md")).toBe(false);
-            expect((await scanSkillResourceFiles(root, { publicDirectories: ["private"] }))
-                .some((file) => file.relativePath === "private/notes.md")).toBe(true);
+            expect((await scanSkillResourceFiles(root)).some((file) => file.relativePath === "private/notes.md")).toBe(true);
         } finally {
             await rm(root, { recursive: true, force: true });
         }
     });
 
-    test("拒绝被符号链接替换的 Skill 根或批准目录", async () => {
+    test("拒绝被符号链接替换的 Skill 根或子目录", async () => {
         const root = await createFixture();
         const skillRoot = join(root, "demo");
         const references = join(skillRoot, "references");
@@ -193,14 +208,14 @@ describe("Skill 目录附属 Resource 投影", () => {
         }]);
         try {
             const reference = resources.find((resource) => resource.relativePath === "references/guide.md");
-            expect(resources).toHaveLength(6);
+            expect(resources).toHaveLength(10);
             expect(reference).toBeDefined();
             expect(createStaticSkillResources([
                 ...resources,
                 { ...reference!, skillName: "orphan", uri: "skill://orphan/references/guide.md" },
-                { ...reference!, relativePath: "private/notes.md", uri: "skill://demo/private/notes.md" },
+                { ...reference!, relativePath: ".hidden.md", uri: "skill://demo/.hidden.md" },
             ]).some((resource) => (
-                resource.skillName === "orphan" || resource.relativePath === "private/notes.md"
+                resource.skillName === "orphan" || resource.relativePath === ".hidden.md"
             ))).toBe(false);
             expect(renderStaticSkillResourcesModule(resources)).toContain("STATIC_SKILL_RESOURCES");
 

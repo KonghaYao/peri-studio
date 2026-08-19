@@ -1,9 +1,9 @@
 /**
  * Skill 目录内文件的受限递归投影。
  *
- * SKILL.md 是唯一的 Skill 入口；references、scripts、assets 等只是该 Skill 的
- * 按需读取 Resource。扫描拒绝符号链接、隐藏路径、未知类型和超出预算的文件，
- * 防止把构建产物、凭据或任意二进制意外暴露给 MCP client。
+ * SKILL.md 是唯一的 Skill 入口；其他普通文件都是按需读取 Resource。扫描拒绝
+ * 符号链接、隐藏路径和超出预算的文件，避免把构建缓存、凭据或宿主目录外内容
+ * 意外暴露给 MCP client。文件扩展名和目录名不参与发现决策。
  */
 import type { Dirent } from "node:fs";
 import {
@@ -16,7 +16,6 @@ import { join, relative, sep } from "node:path";
 import { isValidSkillName } from "../types.ts";
 import {
     classifySkillResourceFile,
-    isPublicSkillResourcePath,
     resolveSkillResourceOptions,
     type SkillResourceContentKind,
     type SkillResourceLimits,
@@ -51,7 +50,7 @@ export interface ReadSkillResourceFile {
     contentKind: SkillResourceContentKind;
     /** text 文件的 UTF-8 内容。 */
     text?: string;
-    /** 图片文件的 base64 内容。 */
+    /** blob 文件的 base64 内容。 */
     blob?: string;
 }
 
@@ -121,6 +120,7 @@ async function collectCandidates(
             continue;
         }
         if (!entry.isFile()) continue;
+        if (relativePath === "SKILL.md") continue;
 
         candidates.push({ relativePath, absolutePath, size: entry.size });
     }
@@ -138,17 +138,6 @@ async function safeSkillRoot(skillsDir: string, skillName: string): Promise<stri
         return isInside(skillsRoot, root) ? root : undefined;
     } catch {
         return undefined;
-    }
-}
-
-async function safeDirectory(root: string, path: string): Promise<boolean> {
-    try {
-        const directory = await lstat(path);
-        if (!directory.isDirectory() || directory.isSymbolicLink()) return false;
-        const resolved = await realpath(path);
-        return isInside(root, resolved);
-    } catch {
-        return false;
     }
 }
 
@@ -177,14 +166,18 @@ async function safeFile(root: string, relativePath: string): Promise<string | un
     }
 }
 
-async function isSafeTextFile(path: string): Promise<boolean> {
+async function contentKindForFile(path: string): Promise<SkillResourceContentKind | undefined> {
     try {
         const data = await readFile(path);
-        if (data.includes(0)) return false;
-        UTF8.decode(data);
-        return true;
+        if (data.includes(0)) return "blob";
+        try {
+            UTF8.decode(data);
+            return "text";
+        } catch {
+            return "blob";
+        }
     } catch {
-        return false;
+        return undefined;
     }
 }
 
@@ -193,9 +186,9 @@ function fileMeta(
     relativePath: string,
     size: number,
     description: string | undefined,
-): SkillResourceFile | undefined {
-    const classification = classifySkillResourceFile(relativePath);
-    if (!classification) return undefined;
+    contentKind: SkillResourceContentKind,
+): SkillResourceFile {
+    const classification = classifySkillResourceFile(relativePath, contentKind);
     const isSkill = relativePath === "SKILL.md";
 
     return {
@@ -213,13 +206,13 @@ function fileMeta(
 
 /**
  * 列出可传递的 Skill 文件。返回顺序稳定：Skill 名、根 SKILL.md、其余相对路径。
- * 不符合类型、安全或预算限制的文件不会作为 MCP Resource 暴露。
+ * 不符合安全或预算限制的文件不会作为 MCP Resource 暴露。
  */
 export async function scanSkillResourceFiles(
     skillsDir: string,
     options?: SkillResourceScanOptions,
 ): Promise<SkillResourceFile[]> {
-    const { limits, publicDirectories } = resolveSkillResourceOptions(options);
+    const { limits } = resolveSkillResourceOptions(options);
     const skills = await scanSkillsDir(skillsDir);
     const output: SkillResourceFile[] = [];
     const total: Budget = { files: 0, bytes: 0 };
@@ -247,12 +240,7 @@ export async function scanSkillResourceFiles(
             scannedEntries: 0,
             maxScannedEntries: limits.maxScannedEntriesPerSkill,
         };
-        for (const directory of publicDirectories) {
-            const directoryPath = join(root, directory);
-            if (await safeDirectory(root, directoryPath)) {
-                await collectCandidates(root, directoryPath, state, candidates);
-            }
-        }
+        await collectCandidates(root, root, state, candidates);
         candidates.sort((left, right) => {
             if (left.relativePath === "SKILL.md") return -1;
             if (right.relativePath === "SKILL.md") return 1;
@@ -260,25 +248,33 @@ export async function scanSkillResourceFiles(
         });
 
         const entry = candidates.find((candidate) => candidate.relativePath === "SKILL.md");
+        const entryContentKind = entry ? await contentKindForFile(entry.absolutePath) : undefined;
         if (
             !entry ||
-            !fileMeta(skill.name, entry.relativePath, entry.size, skill.description) ||
+            entryContentKind !== "text" ||
             entry.size > limits.maxFileBytes ||
             entry.size > limits.maxSkillBytes ||
             total.files >= limits.maxTotalFiles ||
             total.bytes + entry.size > limits.maxTotalBytes ||
-            !await safeFile(root, entry.relativePath) ||
-            !await isSafeTextFile(entry.absolutePath)
+            !await safeFile(root, entry.relativePath)
         ) {
             continue;
         }
 
         const skillBudget: Budget = { files: 0, bytes: 0 };
         for (const candidate of candidates) {
-            if (!isPublicSkillResourcePath(candidate.relativePath, publicDirectories)) continue;
-
-            const meta = fileMeta(skill.name, candidate.relativePath, candidate.size, skill.description);
-            if (!meta || candidate.size > limits.maxFileBytes) continue;
+            if (candidate.size > limits.maxFileBytes) continue;
+            const safePath = await safeFile(root, candidate.relativePath);
+            if (!safePath) continue;
+            const contentKind = await contentKindForFile(safePath);
+            if (!contentKind) continue;
+            const meta = fileMeta(
+                skill.name,
+                candidate.relativePath,
+                candidate.size,
+                skill.description,
+                contentKind,
+            );
             if (
                 skillBudget.files >= limits.maxSkillFiles ||
                 skillBudget.bytes + candidate.size > limits.maxSkillBytes ||
@@ -288,11 +284,7 @@ export async function scanSkillResourceFiles(
                 continue;
             }
 
-            // 再确认 realpath 未逃离 Skill 根，抵御扫描后的链接替换；文本也必须
-            // 确为无 NUL 的有效 UTF-8，不能仅靠扩展名伪装为可读资源。
-            const safePath = await safeFile(root, candidate.relativePath);
-            if (!safePath || (meta.contentKind === "text" && !await isSafeTextFile(safePath))) continue;
-
+            // safeFile 在分类前完成 realpath 与逐级 lstat 校验，抵御扫描后的链接替换。
             output.push(meta);
             skillBudget.files += 1;
             skillBudget.bytes += candidate.size;
@@ -305,7 +297,7 @@ export async function scanSkillResourceFiles(
 }
 
 /**
- * 读取已受限公开的单个 Skill Resource。该函数会重新扫描并校验，因此目录变更后
+ * 读取已通过安全与预算限制的单个 Skill Resource。该函数会重新扫描并校验，因此目录变更后
  * 不会沿用旧的公开清单；未知、过限或不安全文件与不存在资源等价。
  */
 export async function readSkillResourceFile(

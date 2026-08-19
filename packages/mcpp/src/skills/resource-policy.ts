@@ -21,28 +21,16 @@ export interface SkillResourceLimits {
     maxScannedEntriesPerSkill?: number;
 }
 
-export interface SkillResourceScanOptions extends SkillResourceLimits {
-    /** Skill 根下额外可递归公开的一级目录；默认仅 references/scripts/assets/templates。 */
-    publicDirectories?: readonly string[];
-}
+export interface SkillResourceScanOptions extends SkillResourceLimits {}
 
 export type ResolvedSkillResourceOptions = {
     limits: Required<SkillResourceLimits>;
-    publicDirectories: string[];
 };
 
 export interface SkillResourceFileClassification {
     mimeType: string;
     contentKind: SkillResourceContentKind;
 }
-
-/** 默认可递归公开的 Skill 根级目录。 */
-export const DEFAULT_SKILL_RESOURCE_PUBLIC_DIRECTORIES = [
-    "references",
-    "scripts",
-    "assets",
-    "templates",
-] as const;
 
 const DEFAULT_LIMITS: Required<SkillResourceLimits> = {
     maxFileBytes: 1024 * 1024,
@@ -115,7 +103,7 @@ const TEXT_MIME_TYPES: Record<string, string> = {
     ".zsh": "text/x-shellscript",
 };
 
-const IMAGE_MIME_TYPES: Record<string, string> = {
+const BLOB_MIME_TYPES: Record<string, string> = {
     ".avif": "image/avif",
     ".gif": "image/gif",
     ".jpeg": "image/jpeg",
@@ -132,21 +120,7 @@ function positiveInteger(value: number | undefined, fallback: number, label: str
     return value;
 }
 
-/** 规范化部署者追加的根级公开目录；追加而非替换默认目录。 */
-export function resolveSkillResourcePublicDirectories(
-    additionalDirectories?: readonly string[],
-): string[] {
-    const directories = [...new Set([
-        ...DEFAULT_SKILL_RESOURCE_PUBLIC_DIRECTORIES,
-        ...(additionalDirectories ?? []),
-    ])].sort((left, right) => left.localeCompare(right));
-    if (directories.some((directory) => !/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(directory))) {
-        throw new Error("MCPP skill resources: publicDirectories must contain safe directory names");
-    }
-    return directories;
-}
-
-/** 解析公开目录及各类预算上限。 */
+/** 解析全部文件通用的预算上限。 */
 export function resolveSkillResourceOptions(
     options: SkillResourceScanOptions | undefined,
 ): ResolvedSkillResourceOptions {
@@ -163,18 +137,7 @@ export function resolveSkillResourceOptions(
                 "maxScannedEntriesPerSkill",
             ),
         },
-        publicDirectories: resolveSkillResourcePublicDirectories(options?.publicDirectories),
     };
-}
-
-/** 确认相对路径是 Skill 根或一个已批准根级目录下的附属文件。 */
-export function isPublicSkillResourcePath(
-    relativePath: string,
-    publicDirectories: readonly string[],
-): boolean {
-    if (relativePath === "SKILL.md") return true;
-    const firstSegment = relativePath.split("/", 1)[0];
-    return firstSegment !== undefined && publicDirectories.includes(firstSegment);
 }
 
 function extensionFor(relativePath: string): string {
@@ -183,13 +146,24 @@ function extensionFor(relativePath: string): string {
     return index > 0 ? filename.slice(index).toLowerCase() : "";
 }
 
-/** 按扩展名映射允许公开的文本/图片类型；未知类型一律不公开。 */
-export function classifySkillResourceFile(relativePath: string): SkillResourceFileClassification | undefined {
+/**
+ * 为已发现的普通文件提供 Resource 表示。内容类别由扫描器依据实际字节决定：
+ * UTF-8 文本保留已知扩展名的 MIME，未知文本以 text/plain 表示；二进制仅保留
+ * 已知图片 MIME，其余以 application/octet-stream 的 blob 传递。
+ */
+export function classifySkillResourceFile(
+    relativePath: string,
+    contentKind: SkillResourceContentKind,
+): SkillResourceFileClassification {
     const extension = extensionFor(relativePath);
-    const textMimeType = TEXT_MIME_TYPES[extension];
-    if (textMimeType) return { mimeType: textMimeType, contentKind: "text" };
-
-    const imageMimeType = IMAGE_MIME_TYPES[extension];
-    if (imageMimeType) return { mimeType: imageMimeType, contentKind: "blob" };
-    return undefined;
+    if (contentKind === "text") {
+        return {
+            mimeType: TEXT_MIME_TYPES[extension] ?? "text/plain",
+            contentKind,
+        };
+    }
+    return {
+        mimeType: BLOB_MIME_TYPES[extension] ?? "application/octet-stream",
+        contentKind,
+    };
 }

@@ -6,7 +6,7 @@ MCPP（MCP Plus）的 Server 侧 TypeScript 参考实现。该包基于 MCP SDK�
 
 ## 功能
 
-- **Skills 资源挂载**：将 `skills/<name>/SKILL.md` 及经过受限扫描的附属文件实时投影为 `skill://<name>/<path>` MCP Resource。
+- **Skills 资源挂载**：将 `skills/<name>/SKILL.md` 及其目录内经过安全与预算限制的所有普通文件实时投影为 `skill://<name>/<path>` MCP Resource。
 - **Skills 元数据处理**：解析 frontmatter、提取 `io.mcpp/*` 编排字段、生成 SHA-256 digest。
 - **双模式 Server 启动**：默认使用 Streamable HTTP，也可通过 `--stdio` 或配置切换到 stdio。
 - **多 Server HTTP 网关**：在单个端口上按路径挂载多个 MCP endpoint，并隔离各 endpoint、各客户端会话。

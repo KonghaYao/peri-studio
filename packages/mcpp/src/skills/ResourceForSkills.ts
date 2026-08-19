@@ -4,7 +4,7 @@
  *
  * 暴露入口（对应 S2/S3）：
  *   - `skill://{skillName}/SKILL.md` —— Skill 入口（text/markdown）
- *   - `skill://{skillName}/{relativePath}` —— references/scripts/assets 等受限附属文件
+ *   - `skill://{skillName}/{relativePath}` —— Skill 根内任意受限附属文件
  *   - `resources/list` 经模板 list 回调枚举 Skill 入口与可安全公开的附属文件
  *
  * 挂载要点：list/read 不做启动期快照，每次访问实时 readdir + frontmatter 解析
@@ -31,7 +31,7 @@ export interface ResourceForSkillsOptions {
     skillsDir: string;
     /** 资源名描述前缀，默认 "skill:{skillName}"。 */
     namePrefix?: string;
-    /** 附属文件的默认公开目录、类型、单文件和累计公开上限。 */
+    /** Skill 根内普通文件的累计公开上限。 */
     resourceLimits?: SkillResourceScanOptions;
 }
 

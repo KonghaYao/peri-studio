@@ -15,7 +15,6 @@ import { decodeSkillFilePath, firstTemplateVar, skillFileUri } from "./skill-uri
 import type { SkillResourceFile } from "./skill-files.ts";
 import {
     classifySkillResourceFile,
-    isPublicSkillResourcePath,
     resolveSkillResourceOptions,
     type SkillResourceContentKind,
     type SkillResourceScanOptions,
@@ -33,7 +32,7 @@ export interface ResourceForStaticSkillsOptions {
     resources: readonly StaticSkillResourceFile[];
     /** 资源名描述前缀，默认 "skill"。 */
     namePrefix?: string;
-    /** 与实时扫描相同的公开目录与累计限制。 */
+    /** 与实时扫描相同的累计限制。 */
     resourceLimits?: SkillResourceScanOptions;
 }
 
@@ -81,7 +80,7 @@ export function createStaticSkillResources(
     resources: readonly StaticSkillResourceFile[],
     resourceLimits?: SkillResourceScanOptions,
 ): StaticSkillResourceFile[] {
-    const { limits, publicDirectories } = resolveSkillResourceOptions(resourceLimits);
+    const { limits } = resolveSkillResourceOptions(resourceLimits);
     const candidates = new Map<string, StaticSkillResourceFile>();
     for (const resource of resources) {
         const relativePath = decodeSkillFilePath(resource.relativePath);
@@ -89,11 +88,10 @@ export function createStaticSkillResources(
             !isValidSkillName(resource.skillName) ||
             !relativePath ||
             resource.relativePath !== relativePath ||
-            !isPublicSkillResourcePath(relativePath, publicDirectories) ||
             resource.uri !== skillFileUri(resource.skillName, relativePath) ||
             (resource.contentKind !== "text" && resource.contentKind !== "blob") ||
-            classifySkillResourceFile(relativePath)?.contentKind !== resource.contentKind ||
-            classifySkillResourceFile(relativePath)?.mimeType !== resource.mimeType ||
+            classifySkillResourceFile(relativePath, resource.contentKind).contentKind !== resource.contentKind ||
+            classifySkillResourceFile(relativePath, resource.contentKind).mimeType !== resource.mimeType ||
             !Number.isSafeInteger(resource.size) ||
             resource.size < 0 ||
             !hasMatchingContent(resource)
@@ -101,7 +99,7 @@ export function createStaticSkillResources(
             continue;
         }
         const expectedKind = relativePath === "SKILL.md" ? "skill" : "file";
-        if (resource.kind !== expectedKind) continue;
+        if (resource.kind !== expectedKind || (expectedKind === "skill" && resource.contentKind !== "text")) continue;
         candidates.set(resourceKey(resource.skillName, relativePath), { ...resource, relativePath });
     }
 
