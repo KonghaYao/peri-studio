@@ -656,9 +656,11 @@ skill://{org-prefix/}{skillName}/{相对路径}
 - 末段（`{skillName}`）MUST 等于 frontmatter 的 `name`；
 - 首段占据 authority 组件，MUST 是合法 `reg-name`，承载组织前缀，Agent MUST NOT 对其做 DNS/网络解析；
 - `SKILL.md` 恒可寻址为 `skill://{skillName}/SKILL.md`，技能根目录为 `skill://{skillName}`（去后缀、无尾斜杠）；
-- `{相对路径}` 支持任意深度（references / scripts / templates 等）；Server 对文件类型、单文件大小、累计大小或文件数施加公开限制时，MUST 在 Discovery 中仅列出实际可读文件，且不得让附属文件在根 `SKILL.md` 未公开时单独可读；
-- `SKILL.md` 是唯一 Skill 根/激活入口。相同 `skillName` 下的 `references/`、`scripts/`、`assets/`、`templates/` 文件是附属 Resource，MUST NOT 被作为独立 Skill 呈现；
-- Server SHOULD 默认只递归公开上述四个目录，其他一级目录 MUST 经部署者显式允许。Server MUST 拒绝隐藏路径、路径穿越、符号链接、未知或危险二进制，并在扫描与读取两阶段重新校验路径、文件类型、大小与文本完整性；
+- `{相对路径}` 支持任意深度与任意文件名（`references/`、`scripts/`、`assets/`、`templates/` 等仅为惯例命名，不构成限制）；Server 对文件类型、单文件大小、累计大小或文件数施加公开限制时，MUST 在 Discovery 中仅列出实际可读文件，且不得让附属文件在根 `SKILL.md` 未公开时单独可读；
+- `SKILL.md` 是唯一 Skill 根/激活入口。相同 `skillName` 下的附属文件是 Resource，MUST NOT 被作为独立 Skill 呈现；附属文件的目录名与扩展名**不得参与可发现性决策**——任何位置的普通文件（`.js`、`.py`、未知扩展名等）都进入枚举，是否可读由大小与下述安全约束决定；
+- Server 对附属文件 SHOULD 施加明确的资源预算并只列出预算内文件。参考实现默认：单文件 ≤ 1 MiB、单 Skill ≤ 8 MiB / 128 个文件、单次挂载 ≤ 32 MiB / 1024 个文件；每个 Skill 递归扫描的目录项 ≤ 1024；
+- Server MUST 拒绝隐藏路径（`.` 前缀段）、`node_modules`、`..` 路径穿越与反斜杠/NUL/绝对路径、符号链接及其指向 Skill 根外的解析结果；在**扫描与读取两阶段**重新校验路径、大小与内容完整性；
+- 内容表现由实际字节决定：有效 UTF-8 文本按已知扩展名取精确 MIME，未知文本退化为 `text/plain`；二进制（含 NUL 或非 UTF-8）按已知图片类型取 `image/*`，其余一律 `application/octet-stream` blob。扩展名只影响 MIME 映射，不决定文件是否可发现或按文本/二进制呈现——SKILL.md 必须由实际字节验证为可读文本；
 - scripts 可作为只读 Resource 公开，但其可读性 MUST NOT 被解释为执行授权；执行仍走独立 Tool 与批准边界。
 
 示例（摘自 SEP-2640）：

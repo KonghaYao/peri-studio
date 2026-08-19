@@ -162,15 +162,15 @@ skill://code-review/templates/report.json
 
 只有根 `SKILL.md` 是 Skill 入口；其余 URI 均是附属 Resource，必须由 Agent 按需读取，不能据此获得执行权限。
 
-`ResourceForSkills` 默认只递归公开 `references/`、`scripts/`、`assets/`、`templates/`。可以用 `resourceLimits.publicDirectories` 追加其他**一级**目录（不会替换默认目录）：
+`ResourceForSkills` 默认递归公开 Skill 根内的**全部普通文件**（目录名与扩展名不参与发现决策）。如需收紧，可设置 `resourceLimits` 的预算上限（无法用目录白名单控制，规避文件会绕过预算校验）：
 
 ```ts
 ResourceForSkills(server, {
     skillsDir: "/absolute/path/to/skills",
     resourceLimits: {
-        publicDirectories: ["examples"],
         maxFileBytes: 512 * 1024,
         maxSkillBytes: 4 * 1024 * 1024,
+        maxSkillFiles: 64,
     },
 });
 ```
@@ -178,13 +178,14 @@ ResourceForSkills(server, {
 安全约束：
 
 - 只扫描 `skills/` 的直接子目录，不递归发现更深层 Skill；每个目录必须有通过 frontmatter 校验的根 `SKILL.md`。
-- 仅公开允许目录中的已知文本类型与常见图片类型；隐藏路径、`node_modules`、未知二进制、含 NUL 或无效 UTF-8 的文本、符号链接均被拒绝。
-- 默认限制为：单文件 1 MiB、单 Skill 8 MiB / 128 文件、一次挂载总计 32 MiB / 1024 文件；读取时会重新扫描、检查路径和内容，降低扫描后替换的风险。
+- Skill 根内除 `SKILL.md` 外的全部普通文件均为可发现 Resource：有效 UTF-8 文本按扩展名取精确 MIME（未知扩展名退化为 `text/plain`）；二进制按内容判定为 blob（已知图片取 `image/*`，其余为 `application/octet-stream`）。扩展名只影响 MIME 映射，不决定文件是否可发现或按文本/二进制呈现。
+- 隐藏路径、`node_modules`、`..` 穿越、反斜杠/NUL、符号链接及指向 Skill 根外的解析结果均被拒绝；SKILL.md 必须是可读 UTF-8 文本。
+- 默认限制为：单文件 1 MiB、单 Skill 8 MiB / 128 文件、一次挂载总计 32 MiB / 1024 文件、每 Skill 扫描 1024 个目录项；读取时会重新扫描、检查路径和内容，降低扫描后替换的风险。
 - scripts 作为 Resource 可读取不表示可以执行；执行仍须经过独立 Tool 与批准流程。
 
 ### `ResourceForStaticSkills(server, options)`：Worker 构建期投影
 
-Worker 没有可用的本地文件系统时，不能使用 `ResourceForSkills` 的实时扫描。构建阶段用 `buildStaticSkillResources()` 收集同一套白名单/预算校验后的文件，将结果写成源码；运行时以 `ResourceForStaticSkills()` 挂载该表。
+Worker 没有可用的本地文件系统时，不能使用 `ResourceForSkills` 的实时扫描。构建阶段用 `buildStaticSkillResources()` 收集同一套预算/安全校验后的文件，将结果写成源码；运行时以 `ResourceForStaticSkills()` 挂载该表。
 
 ```ts
 // scripts/generate-skills-registry.ts（构建阶段）
