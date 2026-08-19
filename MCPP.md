@@ -663,6 +663,15 @@ skill://{org-prefix/}{skillName}/{相对路径}
 - 内容表现由实际字节决定：有效 UTF-8 文本按已知扩展名取精确 MIME，未知文本退化为 `text/plain`；二进制（含 NUL 或非 UTF-8）按已知图片类型取 `image/*`，其余一律 `application/octet-stream` blob。扩展名只影响 MIME 映射，不决定文件是否可发现或按文本/二进制呈现——SKILL.md 必须由实际字节验证为可读文本；
 - scripts 可作为只读 Resource 公开，但其可读性 MUST NOT 被解释为执行授权；执行仍走独立 Tool 与批准边界。
 
+**相对引用解析（获取两个通道共享）**：`SKILL.md` 及已加载的附件正文中，指向 Skill 根内文件的相对路径（如 `./scripts/check.py`、`scripts/check.py`、`references/FORMS.md`）按以下规则解析为 `skill://` 资源 URI：
+
+- 以当前激活 Skill 的根 URI（`skill://{skillName}`）为基准，把相对路径规范化后拼成 `skill://{skillName}/{相对路径}`：
+  - 去掉前导 `./`（`./scripts/check.py` → `scripts/check.py`）；
+  - 保留目录结构原样（`a/../a` 不做规约，避免把 URI 数据解释为宿主文件系统路径）；
+  - MUST 拒绝 `..` 越界、隐藏段（`.` 前缀）、反斜杠、NUL 与绝对路径；
+- 解析前的**权威校验**以 `skills/list` / `skills/get` 条目的 `resources` 清单（§5.4-1）为准：相对路径解析出的 URI 不在清单内时，MUST NOT 读取，视为引用失效；解析结果符合 §5.3 的路径安全约束（与 `decodeSkillFilePath` 一致）；
+- 跨 Skill/跨 origin 引用 MUST 使用绝对 `skill://{skillName}/{path}` 形式（含前缀），不用 `..` 相对形式。
+
 示例（摘自 SEP-2640）：
 
 | 技能路径 | 文件 | 资源 URI |
@@ -759,7 +768,8 @@ Skill 的正式加载（进入模型上下文）为 **Activation 阶段**，触�
 #### 5.7.3 上下文预算
 
 - `io.mcpp/context_budget` 声明该 Skill 建议占用的上下文符号上限；Agent SHOULD 遵守，超限时 SHOULD 仅加载 `SKILL.md` 与最必要的 references；
-- references / scripts / assets MUST 按需懒加载（执行阶段遇到相对路径引用时再经 5.6 的读取规则加载），不得随 SKILL.md 一并注入。
+- references / scripts / assets MUST 按需懒加载（执行阶段遇到相对路径引用时再经 5.6 的读取规则加载），不得随 SKILL.md 一并注入；
+- **推荐获取方式（相对引用 → `skill://` → `resources/read`）**：Agent 在执行阶段遇到正文中的相对路径引用时，SHOULD 按 §5.3 的「相对引用解析」把它解析为 `skill://{skillName}/{相对路径}` 资源 URI，校验其出现在该 Skill 的 `resources` 清单后，用 `resources/read` 读取——不把相对路径传回 server 作为文件系统路径，也不在 client 本地拼绝对路径。这样目录文件（scripts/references/assets）可通过正文指向、按需获取，同时仍受 §5.3 与 §5.6 的路径安全与完整性校验约束。
 
 ### 5.8 完整示例
 
