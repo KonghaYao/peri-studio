@@ -10,6 +10,7 @@ import {
     ResourceNotFoundError,
     ResourceTemplate,
 } from "@modelcontextprotocol/server";
+import { McppCache, type McppCacheScope } from "../cache.ts";
 import { isValidSkillName } from "../types.ts";
 import { decodeSkillFilePath, firstTemplateVar, skillFileUri } from "./skill-uri.ts";
 import type { SkillResourceFile } from "./skill-files.ts";
@@ -34,7 +35,33 @@ export interface ResourceForStaticSkillsOptions {
     namePrefix?: string;
     /** 与实时扫描相同的累计限制。 */
     resourceLimits?: SkillResourceScanOptions;
+    /** 缓存所属 origin；未提供时不复用跨 Server 实例的缓存。 */
+    origin?: string;
+    /** MCP cacheScope；private 时必须同时提供 opaque authorizationContext。 */
+    cacheScope?: McppCacheScope;
+    authorizationContext?: string;
+    /** Resource 响应的 TTL；未提供时默认 30 秒。 */
+    ttlMs?: number;
+    /** 由宿主在 Server factory 外创建，以跨请求复用。 */
+    cache?: McppCache;
 }
+
+type StaticSkillListResponse = {
+    resources: Array<{
+        uri: string;
+        name: string;
+        description: string;
+        mimeType: string;
+        size: number;
+    }>;
+};
+
+type StaticSkillReadResponse = {
+    contents: Array<
+        | { uri: string; mimeType: string; text: string }
+        | { uri: string; mimeType: string; blob: string }
+    >;
+};
 
 type StaticResourceIndex = {
     files: StaticSkillResourceFile[];
@@ -169,21 +196,45 @@ export function ResourceForStaticSkills(
     server: McpServer,
     options: ResourceForStaticSkillsOptions,
 ): void {
-    const namePrefix = options.namePrefix ?? "skill";
-    const index = indexStaticResources(options.resources, options.resourceLimits);
+    const {
+        namePrefix = "skill",
+        resourceLimits,
+        cache,
+        origin,
+        cacheScope = "public",
+        authorizationContext,
+        ttlMs = 30_000,
+    } = options;
+    if (cacheScope === "private" && !authorizationContext) {
+        throw new Error("MCPP private static Skill resource cache requires an opaque authorization context");
+    }
+    const index = indexStaticResources(options.resources, resourceLimits);
+    const cacheKey = (method: string, params?: unknown) => ({
+        origin: origin!,
+        method,
+        params,
+        authorizationContext,
+    });
 
     server.registerResource(
         "static-skill-file",
         new ResourceTemplate("skill://{skillName}/{+path}", {
-            list: () => ({
-                resources: index.files.map((resource) => ({
-                    uri: resource.uri,
-                    name: resource.name,
-                    description: resourceDescription(namePrefix, resource),
-                    mimeType: resource.mimeType,
-                    size: resource.size,
-                })),
-            }),
+            list: () => {
+                const key = origin ? cacheKey("resources/templates/list", { template: "skill://{skillName}/{+path}" }) : undefined;
+                const cached = key ? cache?.get<StaticSkillListResponse>(key) : undefined;
+                if (cached) return cached;
+                const response: StaticSkillListResponse = {
+                    resources: index.files.map((resource) => ({
+                        uri: resource.uri,
+                        name: resource.name,
+                        description: resourceDescription(namePrefix, resource),
+                        mimeType: resource.mimeType,
+                        size: resource.size,
+                    })),
+                };
+                if (key) cache?.set(key, response, { scope: cacheScope, ttlMs });
+                return response;
+            },
         }),
         {
             title: `${namePrefix} file`,
@@ -199,10 +250,19 @@ export function ResourceForStaticSkills(
             if (!resource) {
                 throw new ResourceNotFoundError(uri.href, `Skill resource '${uri.href}' not found`);
             }
+            const key = origin ? cacheKey("resources/read", { uri: uri.href }) : undefined;
+            const cached = key ? cache?.get<StaticSkillReadResponse>(key) : undefined;
+            if (cached) return cached;
             const contents = resource.contentKind === "text"
                 ? { uri: uri.href, mimeType: resource.mimeType, text: resource.text ?? "" }
                 : { uri: uri.href, mimeType: resource.mimeType, blob: resource.blob ?? "" };
-            return { contents: [contents] };
+            const response: StaticSkillReadResponse = { contents: [contents] };
+            if (key) cache?.set(key, response, {
+                scope: cacheScope,
+                ttlMs,
+                resourceUri: uri.href,
+            });
+            return response;
         },
     );
 }

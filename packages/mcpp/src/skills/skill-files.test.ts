@@ -3,6 +3,7 @@ import { mkdtemp, mkdir, rename, rm, symlink, writeFile } from "node:fs/promises
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/server";
+import { McppCache } from "../cache.ts";
 import { createGatewayRoutes } from "../gateway.ts";
 import { ResourceForSkills } from "./ResourceForSkills.ts";
 import {
@@ -191,6 +192,54 @@ describe("Skill 目录附属 Resource 投影", () => {
         try {
             expect(await scanSkillResourceFiles(root, { maxFileBytes: 8 })).toEqual([]);
         } finally {
+            await rm(root, { recursive: true, force: true });
+        }
+    });
+
+    test("静态 registry 跨 Server 实例按 TTL 缓存资源列表和读取结果", async () => {
+        const root = await createFixture();
+        let now = 1_000;
+        const cache = new McppCache(() => now);
+        const resources = await buildStaticSkillResources(root);
+        const gateway = createGatewayRoutes([{
+            path: "/skills/mcp",
+            createServer: () => {
+                const server = new McpServer({ name: "static-skill-cache-fixture", version: "1" });
+                ResourceForStaticSkills(server, {
+                    resources,
+                    cache,
+                    origin: "static-skill-cache-fixture",
+                    ttlMs: 100,
+                });
+                return server;
+            },
+        }]);
+        try {
+            await request(gateway, "resources/list", {});
+            await request(gateway, "resources/read", { uri: "skill://demo/SKILL.md" });
+            const listKey = {
+                origin: "static-skill-cache-fixture",
+                method: "resources/templates/list",
+                params: { template: "skill://{skillName}/{+path}" },
+            };
+            const readKey = {
+                origin: "static-skill-cache-fixture",
+                method: "resources/read",
+                params: { uri: "skill://demo/SKILL.md" },
+            };
+            expect(cache.get(listKey)).toBeDefined();
+            expect(cache.get(readKey)).toBeDefined();
+
+            now += 100;
+            expect(cache.get(listKey)).toBeUndefined();
+            expect(cache.get(readKey)).toBeUndefined();
+
+            await request(gateway, "resources/list", {});
+            await request(gateway, "resources/read", { uri: "skill://demo/SKILL.md" });
+            expect(cache.get(listKey)).toBeDefined();
+            expect(cache.get(readKey)).toBeDefined();
+        } finally {
+            await gateway.close();
             await rm(root, { recursive: true, force: true });
         }
     });
