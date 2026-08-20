@@ -13,8 +13,8 @@ describe('ToolCallCard', () => {
   it('shows structured execution facts and honest observed duration', () => {
     render(() => <ToolCallCard toolCall={base} />);
     expect(screen.getByText('shell')).toBeInTheDocument();
-    expect(screen.getByText('Completed')).toBeInTheDocument();
-    expect(screen.getByText('Hub observed 1.3 s')).toBeInTheDocument();
+    expect(screen.getByText('Done')).toBeInTheDocument();
+    expect(screen.getByText('1.3 s')).toBeInTheDocument();
     expect(screen.getByText(/"command": "pwd"/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copy Input' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copy Output' })).toBeInTheDocument();
@@ -58,7 +58,7 @@ describe('ToolCallCard', () => {
 
   it('renders the server-authoritative permission wait without claiming an empty result', () => {
     render(() => <ToolCallCard toolCall={{ ...base, status: 'awaitingPermission', result: null, resultOmitted: false, completedAt: null }} />);
-    expect(screen.getByText('Waiting for your permission')).toBeInTheDocument();
+    expect(screen.getByText('Approval')).toBeInTheDocument();
     expect(screen.queryByText('The tool returned no displayable output.')).not.toBeInTheDocument();
   });
 });

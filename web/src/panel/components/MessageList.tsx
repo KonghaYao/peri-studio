@@ -40,7 +40,8 @@ function PermissionBar() {
 }
 
 function HistoryBoundary(props: { kind: Exclude<ReplayBoundary, null> }) {
-  const label = () => props.kind === 'live_runtime'
+  const label = () => props.kind === 'live_runtime' ? 'Current' : 'Recovered';
+  const accessibleLabel = () => props.kind === 'live_runtime'
     ? 'Current run'
     : props.kind === 'verified_history'
       ? 'Peri-verified recovered history'
@@ -48,14 +49,13 @@ function HistoryBoundary(props: { kind: Exclude<ReplayBoundary, null> }) {
   const detail = () => props.kind === 'inferred_history'
     ? 'Identified from the session load window; some sources are marked unverifiable'
     : null;
-  return <div class="history-boundary grid grid-cols-boundary items-center gap-10 mt-26 mb-18 text-text-muted text-11 tracking-35 text-center before:h-px before:bg-divider before:content-[''] after:h-px after:bg-divider after:content-['']" role="separator" aria-label={label()}>
+  return <div class="history-boundary grid grid-cols-boundary items-center gap-10 mt-26 mb-18 text-text-muted text-11 tracking-35 text-center before:h-px before:bg-divider before:content-[''] after:h-px after:bg-divider after:content-['']" role="separator" aria-label={accessibleLabel()} title={detail() || accessibleLabel()}>
     <span class="whitespace-nowrap">{label()}</span>
-    <Show when={detail()}>{(text) => <small class="col-span-full -mt-5 text-text-muted text-11 tracking-normal">{text()}</small>}</Show>
   </div>;
 }
 
 function ChatLoading() {
-  return <LoadingState label="Assistant is working" description="Working…" class="chat-loading message-loading py-8" />;
+  return <LoadingState label="Assistant is working" class="chat-loading message-loading py-8" />;
 }
 
 // ── 消息滚动区 ──────────────────────────────────────────────────────────
@@ -151,10 +151,10 @@ export function MessageList(props: { bottomInset?: number }) {
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
       {/* Composer 覆盖在时间线底部；动态 inset 让最后一条消息始终完整可读。 */}
-      <div class="message-list-content box-border w-full max-w-(--container-chat) mx-auto pt-32 px-20 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 max-desk:max-w-(--container-chat-narrow)" style={{ 'padding-bottom': contentBottomInset() }}>
+      <div class="message-list-content box-border w-full max-w-(--container-chat) mx-auto pt-32 px-20 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 max-desk:max-w-(--container-chat-narrow) max-narrow:px-10" style={{ 'padding-bottom': contentBottomInset() }}>
         <PermissionBar />
         <Show when={!runtimeDocsHydrated()}>
-          <LoadingState label="Loading session" description="Restoring messages and runtime state from the Peri Studio server…" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />
+          <LoadingState label="Loading session" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />
         </Show>
         <Show when={runtimeDocsHydrated() && chatEntries().length === 0 && !outboxForChat()}>
           <EmptyState title="Start this conversation" description="Send the first message. Content is saved to this session and can be restored later." class="min-h-(--container-placeholder)" />

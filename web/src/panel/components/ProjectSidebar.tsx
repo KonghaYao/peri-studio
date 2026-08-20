@@ -143,11 +143,11 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
           <div class="mt-10 flex justify-end gap-6"><Button type="button" disabled={projectCreateSubmitting()} onClick={() => setCreating(false)}>Cancel</Button><Button variant="primary" type="submit" busy={projectCreateSubmitting()} disabled={!cwd().trim()}>Create</Button></div>
         </form>
       </DialogContent></Dialog>
-      <div class="project-scroll min-h-0 flex-1 overflow-auto pt-4 pb-16 [scrollbar-color:var(--scrollbar-thumb)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-scrollbar-thumb [&::-webkit-scrollbar]:w-6 hover:[&::-webkit-scrollbar-thumb]:bg-[color-mix(in_srgb,var(--scrollbar-thumb)_82%,var(--text-muted))]">
+      <div class="project-scroll ui-scrollbar min-h-0 flex-1 overflow-auto pt-4 pb-16">
         <div class="mb-7 flex h-28 items-center px-8 text-12 font-550 text-text-muted"><span>Projects</span><Button size="compact" class="new-project-button ml-auto size-28 min-h-28 border-0 p-0 text-text-muted" disabled={readOnly()} onClick={() => setCreating(true)} aria-label="New project"><PlusIcon /></Button></div>
         <Show
           when={registryHydrated()}
-          fallback={<LoadingState label="Loading projects" description="Syncing projects and sessions from the Peri Studio server…" class="sidebar-loading mx-8 p-8! text-left!" />}
+          fallback={<LoadingState label="Loading projects" class="sidebar-loading mx-8 p-8! text-left!" />}
         >
           <Show
             when={machines().length > 0}
@@ -171,7 +171,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
             const projectMenuId = `project-menu-${project.id}`;
             return <Collapsible as="section" class="project-group" open={!collapsed()} onOpenChange={(open) => setProjectCollapsed(project.id, !open)}>
               <div class="project-heading group flex min-h-36 items-center rounded-8 hover:bg-hover focus-within:bg-hover pointer-coarse:min-h-52">
-                <CollapsibleTrigger class="project-disclosure flex min-h-36 min-w-0 flex-1 items-center gap-7 rounded-8 border-0 bg-transparent px-8 text-left text-14 font-normal text-text-primary cursor-pointer pointer-coarse:min-h-44"><ChevronIcon class="size-12! transition-transform duration-150 group-data-[expanded]:rotate-90" /><FolderIcon /><span class="block overflow-hidden text-ellipsis whitespace-nowrap">{project.name}</span></CollapsibleTrigger>
+                <CollapsibleTrigger class="project-disclosure flex min-h-36 min-w-0 flex-1 items-center gap-7 rounded-8 border-0 bg-transparent px-8 text-left text-13 font-normal text-text-primary cursor-pointer pointer-coarse:min-h-44"><ChevronIcon class="size-12! transition-transform duration-150 group-data-[expanded]:rotate-90" /><FolderIcon /><span class="block overflow-hidden text-ellipsis whitespace-nowrap">{project.name}</span></CollapsibleTrigger>
                 <IconButton class="row-create-action ml-auto size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" tooltipPlacement="end" label={`New session in ${project.name}`} busy={creatingSessionProjectId() === project.id} disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(project.id)}><PlusIcon /></IconButton>
                 <DropdownMenu open={projectMenu() === project.id} onOpenChange={(open) => setProjectMenu(open ? project.id : null)} placement="bottom-end">
                   <DropdownMenuTrigger as={IconButton} class="project-menu-trigger size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" tooltipPlacement="end" label={`${project.name} actions`} disabled={readOnly()}><MoreIcon /></DropdownMenuTrigger>

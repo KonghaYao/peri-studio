@@ -10,11 +10,11 @@ const buttonVariantClasses = {
 } as const;
 
 const buttonSizeClasses = {
-  compact: 'min-h-32 px-9 text-12',
+  compact: 'min-h-32 px-9 [font-size:var(--text-12)]',
   default: '',
 } as const;
 
-const buttonBaseClasses = 'inline-flex min-h-36 items-center justify-center gap-8 rounded-8 border border-transparent bg-transparent px-12 text-14 font-500 text-inherit cursor-pointer [transition:background_120ms_ease,border-color_120ms_ease,color_120ms_ease,transform_120ms_ease,opacity_120ms_ease] hover:bg-hover active:not-disabled:translate-y-1 disabled:cursor-not-allowed disabled:opacity-45 pointer-coarse:min-h-44';
+const buttonBaseClasses = 'inline-flex min-h-36 items-center justify-center gap-8 rounded-8 border border-transparent bg-transparent px-12 [font-size:var(--text-13)] font-500 text-inherit cursor-pointer [transition:background_120ms_ease,border-color_120ms_ease,color_120ms_ease,transform_120ms_ease,opacity_120ms_ease] hover:bg-hover active:not-disabled:translate-y-1 disabled:cursor-not-allowed disabled:opacity-45 pointer-coarse:min-h-44';
 
 type Props = JSX.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: keyof typeof buttonVariantClasses;

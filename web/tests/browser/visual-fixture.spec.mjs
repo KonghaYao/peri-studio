@@ -86,12 +86,225 @@ test('conversation copy and markdown keep compact authored line heights', async 
     assistantHeight: document.querySelector('.conversation-message--assistant').getBoundingClientRect().height,
   }));
 
-  expect(geometry.lineHeight).toBe('25px');
-  expect(geometry.composerLineHeight).toBe('24px');
-  expect(geometry.headingLineHeight).toBe('23.75px');
+  expect(geometry.lineHeight).toBe('22px');
+  expect(geometry.composerLineHeight).toBe('22px');
+  expect(geometry.headingLineHeight).toBe('21.25px');
   expect(geometry.height).toBeLessThan(100);
   expect(geometry.assistantHeight).toBeLessThan(800);
 });
+
+test('intervention actions stay compact in a narrow desktop panel', async ({ page }) => {
+  const measure = () => page.evaluate(() => {
+    const labels = ['Allow', 'Deny', 'Decline', 'Cancel', 'Submit'];
+    return labels.map((label) => {
+      const button = [...document.querySelectorAll('button')].find((element) => element.textContent?.trim() === label);
+      const box = button.getBoundingClientRect();
+      return { label, width: box.width, height: box.height, top: box.top };
+    });
+  });
+
+  await page.setViewportSize({ width: 631, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
+  const desktopGeometry = await measure();
+  expect(Math.max(...desktopGeometry.map(({ width }) => width))).toBeLessThan(160);
+  expect(new Set(desktopGeometry.map(({ height }) => height))).toEqual(new Set([36]));
+  expect(new Set(desktopGeometry.slice(2).map(({ top }) => top)).size).toBe(1);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobileGeometry = await measure();
+  expect(Math.max(...mobileGeometry.map(({ width }) => width))).toBeLessThan(160);
+  expect(new Set(mobileGeometry.map(({ height }) => height))).toEqual(new Set([44]));
+});
+
+test('conversation typography and status copy stay dense', async ({ page }) => {
+  await page.setViewportSize({ width: 631, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
+
+  const density = await page.evaluate(() => {
+    const style = (selector) => getComputedStyle(document.querySelector(selector));
+    const visibleText = document.body.innerText;
+    return {
+      body: style('body').fontSize,
+      message: [style('.conversation-message__text').fontSize, style('.conversation-message__text').lineHeight],
+      button: style('.permission-request [data-slot=button]').fontSize,
+      heading: style('.markdown-body h2').fontSize,
+      visibleText,
+    };
+  });
+
+  expect(density.body).toBe('14px');
+  expect(density.message).toEqual(['14px', '22px']);
+  expect(density.button).toBe('13px');
+  expect(density.heading).toBe('17px');
+  expect(density.visibleText).not.toContain('Locks immediately once selected');
+  expect(density.visibleText).not.toContain('Waiting for your permission');
+  expect(density.visibleText).not.toContain('Hub observed');
+  expect(density.visibleText).not.toContain('shows only redacted run summaries');
+});
+
+test('permission surfaces keep white as the dominant canvas', async ({ page }) => {
+  await page.setViewportSize({ width: 631, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
+
+  const palette = await page.evaluate(() => {
+    const color = (selector) => getComputedStyle(document.querySelector(selector)).backgroundColor;
+    const navigation = document.querySelector('.permission-queue__navigation');
+    return {
+      page: color('body'),
+      permission: color('.permission-request'),
+      mark: color('.permission-request__mark'),
+      navigation: navigation ? getComputedStyle(navigation).backgroundColor : null,
+    };
+  });
+
+  expect(palette.page).toBe('rgb(255, 255, 255)');
+  expect(palette.permission).toBe(palette.page);
+  expect(palette.mark).toBe(palette.page);
+  if (palette.navigation) expect(palette.navigation).toBe(palette.page);
+});
+
+test('desktop chrome is white, focus is soft, and placeholder onboarding is absent', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
+
+  await expect(page.locator('.onboarding-card')).toHaveCount(0);
+  const input = page.locator('.composer-input');
+  await expect(input).toBeEnabled();
+  await input.focus();
+  await page.waitForTimeout(180);
+
+  const palette = await page.evaluate(() => {
+    const sidebar = document.querySelector('.project-sidebar');
+    const surface = document.querySelector('.composer-surface');
+    const input = document.querySelector('.composer-input');
+    return {
+      page: getComputedStyle(document.body).backgroundColor,
+      sidebar: getComputedStyle(sidebar).backgroundColor,
+      input: getComputedStyle(input).backgroundColor,
+      focusBorder: getComputedStyle(surface).borderColor,
+      focusShadow: getComputedStyle(surface).boxShadow,
+      focusRing: getComputedStyle(document.documentElement).getPropertyValue('--focus-ring').trim(),
+    };
+  });
+
+  expect(palette.sidebar).toBe(palette.page);
+  expect(palette.input).toBe('rgba(0, 0, 0, 0)');
+  expect(palette.focusRing).toBe('#8fafc6');
+  expect(palette.focusBorder).toBe('rgb(143, 175, 198)');
+  expect(palette.focusShadow).not.toContain('rgb(42, 42, 39)');
+});
+
+test('runtime and recovery status labels use one visible word', async ({ page }) => {
+  await page.setViewportSize({ width: 631, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
+  await expect(page.locator('.runtime-status')).toHaveText('Approval');
+  await expect(page.locator('.connection-pill')).toHaveText('Online');
+
+  await page.goto('/visual-fixture.html?scenario=terminal-readonly', { waitUntil: 'networkidle' });
+  await expect(page.locator('.runtime-status')).toHaveText('Crashed');
+  const boundaries = await page.locator('.history-boundary > span').allTextContents();
+  expect(boundaries).toContain('Recovered');
+  expect(boundaries.every((label) => /^\S+$/.test(label))).toBe(true);
+
+  const visibleText = await page.locator('body').innerText();
+  expect(visibleText).not.toContain('Run exited abnormally');
+  expect(visibleText).not.toContain('Peri-verified recovered history');
+  expect(visibleText).not.toContain('Local server connected');
+});
+
+test('token usage is a quiet graphic and scrollbars share one global style', async ({ page }) => {
+  await page.setViewportSize({ width: 631, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
+
+  const usage = page.locator('.composer-usage');
+  await expect(usage).toHaveAttribute('role', 'img');
+  await expect(usage).toHaveAttribute('aria-label', /Input 12,400.*Output 860.*Cached 9,800/);
+  await expect(usage.locator('.composer-usage__segment')).toHaveCount(3);
+  await expect(usage).toHaveText('');
+  await expect(usage).not.toContainText('Input');
+  await expect(usage).not.toContainText('Output');
+  await expect(usage).not.toContainText('Cached');
+
+  const geometry = await usage.evaluate((element) => ({
+    width: element.getBoundingClientRect().width,
+    height: element.getBoundingClientRect().height,
+    opacity: getComputedStyle(element).opacity,
+  }));
+  expect(geometry.width).toBeLessThanOrEqual(50);
+  expect(geometry.height).toBeLessThanOrEqual(12);
+  expect(Number(geometry.opacity)).toBeLessThan(1);
+
+  const scrollbar = await page.locator('.message-list-scroll').evaluate((element) => ({
+    color: getComputedStyle(element).scrollbarColor,
+    width: getComputedStyle(element, '::-webkit-scrollbar').width,
+  }));
+  expect(scrollbar.color).not.toBe('transparent transparent');
+  expect(scrollbar.width).toBe('6px');
+});
+
+test('sidebar chrome and composer match the compact input shell', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
+
+  await expect(page.locator('.window-toolbar > span.rounded-full')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add attachment' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Approval mode' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Voice input' })).toBeDisabled();
+  await expect(page.locator('.composer-runtime')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Browse skills/ })).toBeVisible();
+  await expect(page.locator('.composer-action')).toBeVisible();
+
+  const geometry = await page.evaluate(() => {
+    const surface = document.querySelector('.composer-surface');
+    const input = document.querySelector('.composer-input');
+    const toolbar = document.querySelector('.composer-toolbar');
+    return {
+      surfaceHeight: surface.getBoundingClientRect().height,
+      inputHeight: input.getBoundingClientRect().height,
+      radius: getComputedStyle(surface).borderRadius,
+      toolbarBorder: getComputedStyle(toolbar).borderTopWidth,
+      overflowingIcons: [...toolbar.querySelectorAll('button svg')].filter((icon) => {
+        const iconBox = icon.getBoundingClientRect();
+        const buttonBox = icon.closest('button').getBoundingClientRect();
+        return iconBox.left < buttonBox.left
+          || iconBox.right > buttonBox.right
+          || iconBox.top < buttonBox.top
+          || iconBox.bottom > buttonBox.bottom;
+      }).length,
+    };
+  });
+
+  expect(geometry.surfaceHeight).toBeLessThanOrEqual(108);
+  expect(geometry.inputHeight).toBeLessThanOrEqual(64);
+  expect(geometry.radius).toBe('20px');
+  expect(geometry.toolbarBorder).toBe('0px');
+  expect(geometry.overflowingIcons).toBe(0);
+});
+
+for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 768 }, { width: 390, height: 844 }]) {
+  test(`conversation surfaces share one content rail at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
+
+    const geometry = await page.evaluate(() => {
+      const rect = (selector) => {
+        const box = document.querySelector(selector).getBoundingClientRect();
+        return { left: Math.round(box.left), right: Math.round(box.right), width: Math.round(box.width), height: Math.round(box.height) };
+      };
+      return [
+        rect('.conversation-message--assistant'),
+        rect('.permission-queue'),
+        rect('.elicitation-card'),
+        rect('.composer-surface'),
+      ];
+    });
+
+    expect(new Set(geometry.map(({ left }) => left)).size).toBe(1);
+    expect(new Set(geometry.map(({ right }) => right)).size).toBe(1);
+    expect(new Set(geometry.map(({ width }) => width)).size).toBe(1);
+    expect(geometry[2].height).toBeLessThanOrEqual(300);
+  });
+}
 
 test('sidebar session labels retain space beside action and status slots', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });

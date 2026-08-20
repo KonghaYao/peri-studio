@@ -15,9 +15,11 @@ describe('AgentActivityRail', () => {
     render(() => <AgentActivityRail activities={activities} />);
     const rail = screen.getByRole('group', { name: 'Peri activity' });
     expect(rail).not.toHaveAttribute('open');
-    expect(rail).toHaveTextContent('Code review · Running');
+    const summary = rail.querySelector('summary')!;
+    expect(summary).toHaveTextContent('ActivityCode reviewRunning');
+    expect(summary.querySelector('.sr-only')).toHaveTextContent('Running');
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
-    fireEvent.click(rail.querySelector('summary')!);
+    fireEvent.click(summary);
     expect(rail).toHaveAttribute('open');
     expect(rail).toHaveTextContent('Context compacted');
     expect(rail).toHaveTextContent('Before compaction');

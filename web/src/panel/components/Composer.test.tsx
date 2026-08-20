@@ -180,7 +180,10 @@ describe('Composer', () => {
       activeTurn: null, pendingPermissions: [],
     });
     render(() => <Composer />);
-    expect(screen.getByText('Input 1k · Output 345 · Cached 900')).toBeInTheDocument();
+    const usage = screen.getByRole('img', { name: 'Input 1,200 · Output 345 · Cached 900' });
+    expect(usage).toBeInTheDocument();
+    expect(usage.querySelectorAll('.composer-usage__segment')).toHaveLength(3);
+    expect(usage).not.toHaveTextContent('Input');
     setChatHead({
       chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
       agent: {
@@ -190,7 +193,7 @@ describe('Composer', () => {
       },
       activeTurn: null, pendingPermissions: [],
     });
-    expect(screen.queryByText(/Input 1k/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /Input/ })).not.toBeInTheDocument();
   });
 
   it('discovers negotiated Peri Skills and inserts one without sending it', async () => {

@@ -33,7 +33,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
       </Show>
       <span class="ml-auto flex items-center gap-8 text-text-muted"><Icon class="size-16!"><path d="M4 5h12v8H4zM7 16h6M10 13v3" /></Icon>Local</span>
     </div>
-    <div class="quick-start__surface overflow-hidden border border-composer-border rounded-18 bg-surface shadow-composer-overlay focus-within:border-border-strong focus-within:shadow-composer-overlay has-[.ui-textarea:focus-visible]:shadow-[var(--shadow-composer-overlay),0_0_0_2px_var(--surface),0_0_0_4px_var(--focus-ring)]" aria-busy={pendingIsInFlight() || undefined}>
+    <div class="quick-start__surface overflow-hidden border border-composer-border rounded-18 bg-surface shadow-composer-overlay focus-within:border-focus-ring focus-within:shadow-composer-overlay has-[.ui-textarea:focus-visible]:shadow-[var(--shadow-composer-overlay),0_0_0_1px_var(--surface),0_0_0_3px_var(--focus-ring)]" aria-busy={pendingIsInFlight() || undefined}>
       <Textarea
         autoResize
         maxHeight={180}
@@ -48,7 +48,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
         aria-label="First message"
         aria-describedby={pending() ? statusId : undefined}
         variant="bare"
-        class="quick-start__textarea w-full min-h-60 px-18 pt-16 pb-8 border-0 outline-0 resize-none bg-transparent text-15 leading-24 text-text-primary"
+        class="quick-start__textarea w-full min-h-60 px-18 pt-16 pb-8 border-0 outline-0 resize-none bg-transparent text-14 leading-22 text-text-primary"
       />
       <div class="quick-start__footer flex min-h-52 items-center gap-7 px-10 pb-8">
         <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="size-34 min-h-34 border-0 bg-transparent text-text-primary"><Icon><path d="M10 4v12M4 10h12" /></Icon></IconButton>

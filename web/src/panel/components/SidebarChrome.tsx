@@ -42,10 +42,7 @@ export function SidebarChrome(props: SidebarChromeProps) {
 
   return <nav class="project-sidebar relative flex h-full min-h-0 flex-col bg-sidebar-bg px-12 desk:px-10 wide:px-12" aria-label="Projects & Sessions">
     <div class="sidebar-workspace-header sticky top-0 z-12 -mx-12 bg-sidebar-bg px-12 desk:-mx-10 desk:px-10 wide:-mx-12 wide:px-12">
-      <div class="window-toolbar flex h-48 items-center gap-10 px-6" aria-label="Window controls">
-        <span class="size-13 rounded-full bg-danger" aria-hidden="true" />
-        <span class="size-13 rounded-full bg-warning" aria-hidden="true" />
-        <span class="mr-12 size-13 rounded-full bg-success" aria-hidden="true" />
+      <div class="window-toolbar flex h-48 items-center gap-4 px-2" aria-label="Navigation history">
         <IconButton label="Back" title="Navigation history is not connected yet" disabled class="size-32 min-h-32 border-0 bg-transparent text-text-faint disabled:opacity-100"><BackIcon /></IconButton>
         <IconButton label="Forward" title="Navigation history is not connected yet" disabled class="size-32 min-h-32 border-0 bg-transparent text-text-faint disabled:opacity-100"><ForwardIcon /></IconButton>
       </div>
@@ -56,19 +53,14 @@ export function SidebarChrome(props: SidebarChromeProps) {
       </div>
     </div>
     <div class="workspace-actions mb-16 flex flex-col gap-2">
-      <Button class="new-session-button min-h-38 w-full justify-start rounded-8 border-0 bg-transparent px-8 text-14 font-550 text-text-primary disabled:opacity-100" disabled={!canStartSession()} onClick={startSession}><ComposeIcon /><span>New session</span></Button>
-      <For each={PLACEHOLDER_NAV_ITEMS}>{(item) => <Button class="min-h-38 w-full justify-start rounded-8 border-0 bg-transparent px-8 text-14 text-text-secondary disabled:opacity-100" disabled title={item.title}><item.icon /><span>{item.label}</span></Button>}</For>
+      <Button class="new-session-button min-h-38 w-full justify-start rounded-8 border-0 bg-transparent px-8 text-13 font-550 text-text-primary disabled:opacity-100" disabled={!canStartSession()} onClick={startSession}><ComposeIcon /><span>New session</span></Button>
+      <For each={PLACEHOLDER_NAV_ITEMS}>{(item) => <Button class="min-h-38 w-full justify-start rounded-8 border-0 bg-transparent px-8 text-13 text-text-secondary disabled:opacity-100" disabled title={item.title}><item.icon /><span>{item.label}</span></Button>}</For>
       <Button aria-hidden="true" tabIndex={-1} class="session-search-button sr-only border border-border-subtle" disabled><span>Search sessions</span><kbd class="border border-border-subtle">{primaryShortcut('K')}</kbd></Button>
     </div>
     {props.children}
-    <Button class="onboarding-card mx-4 mb-10 min-h-[64px] justify-start rounded-16 border border-border-subtle bg-surface px-12 text-left shadow-float disabled:opacity-100" disabled title="Onboarding progress is not connected yet">
-      <span class="grid size-24 place-items-center rounded-full border-2 border-divider text-10 text-text-muted" aria-hidden="true" />
-      <span class="flex-1 text-14 font-550 text-text-primary">Get started</span>
-      <span class="text-12 text-text-muted">0/4</span>
-    </Button>
     <div class="sidebar-footer -mx-12 flex h-58 items-center gap-6 border-t border-divider px-16 text-12 text-text-muted desk:-mx-10 wide:-mx-12">
       <span class="account-avatar grid size-28 place-items-center rounded-full bg-surface text-11 font-550 text-text-secondary shadow-[inset_0_0_0_1px_var(--border-subtle)]" aria-hidden="true">A</span>
-      <Button class="account-entry min-h-36 flex-1 justify-start rounded-8 border-0 bg-transparent px-5 text-14 text-text-primary hover:bg-hover pointer-coarse:min-h-44" disabled={!props.onOpenSystem} onClick={props.onOpenSystem}>Account</Button>
+      <Button class="account-entry min-h-36 flex-1 justify-start rounded-8 border-0 bg-transparent px-5 text-13 text-text-primary hover:bg-hover pointer-coarse:min-h-44" disabled={!props.onOpenSystem} onClick={props.onOpenSystem}>Account</Button>
       <IconButton label="Voice" title="Voice is not connected yet" disabled class="size-32 min-h-32 border-0 bg-transparent text-text-muted disabled:opacity-100"><VoiceIcon /></IconButton>
       <IconButton label="Help and system information" disabled={!props.onOpenSystem} onClick={props.onOpenSystem} class="size-32 min-h-32 border-0 bg-transparent text-text-muted"><HelpIcon /></IconButton>
       <Button class="account-logout sr-only" onClick={auth?.logout}>Log out</Button>

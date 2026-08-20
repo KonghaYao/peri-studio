@@ -152,7 +152,7 @@ describe('MessageList hydration', () => {
     render(() => <MessageList />);
     const loading = screen.getByRole('status', { name: 'Loading session' });
     expect(loading).toHaveAttribute('aria-live', 'polite');
-    expect(loading).toHaveTextContent('Restoring messages and runtime state from the Peri Studio server…');
+    expect(loading).toHaveTextContent('Loading session');
     expect(loading.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
     expect(screen.queryByText('Start this conversation')).not.toBeInTheDocument();
   });
@@ -181,7 +181,7 @@ describe('MessageList hydration', () => {
     const loading = screen.getByRole('status', { name: 'Assistant is working' });
     expect(loading).toHaveClass('message-loading');
     expect(loading).toHaveAttribute('aria-live', 'polite');
-    expect(loading).toHaveTextContent('Working…');
+    expect(loading).toHaveTextContent('Assistant is working');
     expect(loading.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
     expect(document.querySelectorAll('.message-loading')).toHaveLength(1);
   });

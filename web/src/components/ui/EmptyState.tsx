@@ -18,8 +18,8 @@ export function EmptyState(props: Props) {
   return (
     <div {...div} class={cn('flex min-h-0 flex-col items-center justify-center text-center', VARIANT_CLASS[local.variant ?? 'page'], local.class)}>
       <div class="mb-18 grid h-42 w-42 place-items-center rounded-12 border border-border-subtle bg-empty-mark-bg text-empty-mark-fg" aria-hidden="true">✦</div>
-      <h2 class="text-24 font-650 tracking-[-.025em] text-text-primary">{local.title}</h2>
-      <p class="mt-10 mb-18 max-w-[430px] text-14 leading-155 text-text-muted">{local.description}</p>
+      <h2 class="text-20 font-650 tracking-[-.025em] text-text-primary">{local.title}</h2>
+      <p class="mt-8 mb-16 max-w-[430px] text-13 leading-155 text-text-muted">{local.description}</p>
       {local.action}
     </div>
   );

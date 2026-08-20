@@ -30,7 +30,7 @@ describe('PermissionRequestCard', () => {
 
   it('keeps the lock and explains uncertainty instead of offering a contrary decision', () => {
     render(() => <PermissionRequestCard permission={permission} decision={{ commandId: 'cmd-1', permissionId: permission.permissionId, decision: 'deny', phase: 'uncertain', retryable: false }} readOnly={false} onResolve={vi.fn()} />);
-    expect(screen.getByRole('alert')).toHaveTextContent('Deny outcome not confirmed yet');
+    expect(screen.getByRole('alert')).toHaveTextContent('Deny not confirmed');
     expect(screen.getByRole('button', { name: 'Allow' })).toBeDisabled();
     expect(screen.getByRole('button', { name: /Denying/ })).toBeDisabled();
     expect(screen.getByLabelText('Run shell command')).not.toHaveAttribute('aria-busy');
@@ -40,14 +40,14 @@ describe('PermissionRequestCard', () => {
   it('offers the original command only after a definitely retryable delivery failure', () => {
     const retry = vi.fn();
     render(() => <PermissionRequestCard permission={permission} decision={{ commandId: 'cmd-1', permissionId: permission.permissionId, decision: 'allow', phase: 'uncertain', retryable: true }} readOnly={false} onResolve={vi.fn()} onRetry={retry} />);
-    expect(screen.getByRole('alert')).toHaveTextContent('not delivered yet');
+    expect(screen.getByRole('alert')).toHaveTextContent('Retry available');
     fireEvent.click(screen.getByRole('button', { name: 'Retry with original request' }));
     expect(retry).toHaveBeenCalledExactlyOnceWith('cmd-1');
   });
 
   it('closes mutation affordances for a read-only principal', () => {
     render(() => <PermissionRequestCard permission={permission} readOnly onResolve={vi.fn()} />);
-    expect(screen.getByText('Read-only mode cannot handle this request.')).toBeInTheDocument();
+    expect(screen.getByText('Read only')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Allow' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Deny' })).toBeDisabled();
   });
@@ -55,7 +55,7 @@ describe('PermissionRequestCard', () => {
   it('fails closed when a malformed projection has no permission identity', () => {
     const resolve = vi.fn();
     render(() => <PermissionRequestCard permission={{ ...permission, permissionId: null }} readOnly={false} onResolve={resolve} />);
-    expect(screen.getByText(/lacks a permission marker/)).toBeInTheDocument();
+    expect(screen.getByText('Unavailable')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Allow' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Deny' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Allow' }));

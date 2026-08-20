@@ -7,6 +7,7 @@ import { runConfirmedMutation } from '../lib/form-mutation';
 export interface SessionRowState {
   label: string;
   tone: string;
+  detail?: string;
 }
 
 export interface ProjectSessionRowProps {
@@ -93,7 +94,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     >
       <ChatIcon />
       <span class="session-copy min-w-0 flex-1"><strong class="block overflow-hidden text-ellipsis whitespace-nowrap text-13 font-normal text-inherit">{displayTitle()}</strong></span>
-      <span class="absolute right-[10px] grid size-7 place-items-center"><Show when={props.opening || ['activating', 'pending'].includes(props.session.lifecycle)} fallback={<span class={`session-status-dot session-status-dot--${props.state.tone} size-7 shrink-0 rounded-full ${props.state.tone === 'idle' ? 'bg-text-faint' : props.state.tone === 'attention' ? 'bg-warning' : props.state.tone === 'danger' ? 'bg-danger' : 'bg-success'}`} role="img" aria-label={`Runtime status: ${props.state.label}`} />}><Spinner label="Opening…" /></Show></span>
+      <span class="absolute right-[10px] grid size-7 place-items-center"><Show when={props.opening || ['activating', 'pending'].includes(props.session.lifecycle)} fallback={<span class={`session-status-dot session-status-dot--${props.state.tone} size-7 shrink-0 rounded-full ${props.state.tone === 'idle' ? 'bg-text-faint' : props.state.tone === 'attention' ? 'bg-warning' : props.state.tone === 'danger' ? 'bg-danger' : 'bg-success'}`} role="img" aria-label={`Runtime status: ${props.state.detail || props.state.label}`} />}><Spinner label="Opening…" /></Show></span>
     </Button>
     <DropdownMenu open={props.menuOpen} onOpenChange={props.onMenuOpenChange} placement="bottom-end">
       <DropdownMenuTrigger as={IconButton}

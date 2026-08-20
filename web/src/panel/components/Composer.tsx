@@ -26,12 +26,25 @@ import { useComposerSlash } from '../lib/composer-slash';
 import { Button, Icon, IconButton, InlineNotice, Textarea } from '../../components/ui';
 import { SlashMenu } from './SlashMenu';
 import { SessionModelMenu } from './SessionConfigDialog';
+import { TokenUsageMeter, tokenUsageLabel } from './TokenUsageMeter';
 
 /** tokens 数值 → "12k"/"200k" 缩写（>=1000 取 k；非法值 → null）。 */
 function fmtTokens(n: number | null): string | null {
   if (n === null) return null;
   if (n >= 1000) return `${Math.round(n / 1000)}k`;
   return String(n);
+}
+
+function AttachmentIcon() {
+  return <Icon class="size-18!"><path d="M10 4v12M4 10h12" /></Icon>;
+}
+
+function ApprovalIcon() {
+  return <Icon class="size-18!"><path d="M10 3.5 16 6v4.5c0 3.5-2.4 5.6-6 6.8-3.6-1.2-6-3.3-6-6.8V6z" /><path d="m7.5 10.5 1.7 1.7 3.5-4" /></Icon>;
+}
+
+function MicrophoneIcon() {
+  return <Icon><rect x="7" y="3" width="6" height="10" rx="3" /><path d="M4.5 10.5a5.5 5.5 0 0 0 11 0M10 16v2M7.5 18h5" /></Icon>;
 }
 
 export function Composer() {
@@ -137,14 +150,14 @@ export function Composer() {
     if (used === null || cap === null) return '—';
     return `${used}/${cap}`;
   };
-  const preciseUsage = () => {
+  const latestUsage = () => {
     const agent = chatHead()?.agent;
     if (!agent?.extensions.includes('peri.tokenStats')) return null;
     const usage = agent.latestUsage;
     if (!usage || usage.inputTokens === null || usage.outputTokens === null) return null;
-    const cache = usage.cacheReadTokens === null ? '' : ` · Cached ${fmtTokens(usage.cacheReadTokens)}`;
-    return `Input ${fmtTokens(usage.inputTokens)} · Output ${fmtTokens(usage.outputTokens)}${cache}`;
+    return usage;
   };
+  const preciseUsage = () => latestUsage() ? tokenUsageLabel(latestUsage()!) : null;
   const commandCatalog = () => chatHead()?.agent?.commandCatalog ?? [];
   const skillCount = () => commandCatalog().filter((command) => command.kind !== 'command').length;
   const canBrowseSkills = () => !!chatHead()?.agent?.extensions.includes('peri.skillNames')
@@ -206,7 +219,7 @@ export function Composer() {
   }
 
   return (
-    <div class="composer-wrap composer-wrap--overlay relative box-border w-full max-w-(--composer-max) mx-auto px-20 pb-[calc(var(--space-20)+env(safe-area-inset-bottom))] desk:max-w-(--composer-max) desk:px-18 wide:max-w-(--composer-max) wide:px-20 max-desk:max-w-(--composer-max) max-narrow:px-10">
+    <div class="composer-wrap composer-wrap--overlay relative box-border w-full max-w-(--container-chat) mx-auto px-20 pb-[calc(var(--space-20)+env(safe-area-inset-bottom))] desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 wide:max-w-(--container-chat) wide:px-20 max-desk:max-w-(--container-chat-narrow) max-narrow:px-10">
       <Show when={slash.slashMenuOpen()}>
         <SlashMenu
           id={slashMenuId}
@@ -219,11 +232,11 @@ export function Composer() {
       <section
         aria-busy={submissionIsInFlight() || undefined}
         aria-disabled={inputDisabled()}
-        class="composer-surface overflow-hidden border border-composer-border rounded-16 bg-surface shadow-composer-overlay transition-[box-shadow,border-color] duration-[140ms] ease-[ease] focus-within:border-border-strong focus-within:shadow-float has-[.composer-input:focus-visible]:shadow-[var(--shadow-float),0_0_0_2px_var(--surface),0_0_0_4px_var(--focus-ring)] max-narrow:rounded-14"
+        class="composer-surface overflow-hidden border border-composer-border rounded-[20px] bg-surface shadow-float transition-[box-shadow,border-color] duration-[140ms] ease-[ease] focus-within:border-focus-ring focus-within:shadow-float has-[.composer-input:focus-visible]:shadow-[var(--shadow-float),0_0_0_1px_var(--surface),0_0_0_3px_var(--focus-ring)] max-narrow:rounded-16"
       >
         <div class="composer-editor relative">
           <Show when={prediction.activePrediction()}>{(prediction) => <>
-            <span class="composer-prediction absolute z-0 top-17 right-18 left-18 overflow-hidden text-text-faint text-15 leading-24 pointer-events-none text-ellipsis whitespace-nowrap max-narrow:top-15 max-narrow:right-15 max-narrow:left-15" aria-hidden="true">{prediction().text}</span>
+            <span class="composer-prediction absolute z-0 top-14 right-16 left-16 overflow-hidden text-text-faint text-15 leading-22 pointer-events-none text-ellipsis whitespace-nowrap max-narrow:right-15 max-narrow:left-15" aria-hidden="true">{prediction().text}</span>
             <span id="composer-prediction-description" class="sr-only">
               Peri suggests: {prediction().text}. Press Tab to use it, or Escape to ignore.
             </span>
@@ -267,7 +280,7 @@ export function Composer() {
           aria-activedescendant={slash.slashMenuOpen() ? `${slashMenuId}-option-${slash.boundedActiveIndex()}` : undefined}
           aria-describedby={inputDescribedBy()}
           spellcheck={false}
-          class="composer-input ui-scrollbar relative z-1 block w-full h-58 min-h-58 max-h-180 pt-17 px-18 pb-7 border-0 outline-0 resize-none overflow-y-auto bg-transparent text-text-primary text-15 leading-24 placeholder:text-text-muted disabled:bg-transparent disabled:text-text-secondary focus-visible:outline-0 max-narrow:min-h-54 max-narrow:pt-15 max-narrow:px-15 max-narrow:pb-5"
+          class="composer-input ui-scrollbar relative z-1 block w-full h-52 min-h-52 max-h-180 pt-14 px-16 pb-4 border-0 outline-0 resize-none overflow-y-auto bg-transparent text-text-primary text-14 leading-22 placeholder:text-text-muted disabled:bg-transparent disabled:text-text-secondary focus-visible:outline-0 max-narrow:px-15"
           />
         </div>
         <Show when={submissionForSession()}>{(submission) =>
@@ -289,7 +302,13 @@ export function Composer() {
             </div>
           </InlineNotice>
         }</Show>
-        <div class="composer-toolbar flex min-h-48 items-center gap-9 pt-2 pr-8 pb-7 pl-10 border-t border-divider max-narrow:min-h-46 max-narrow:pt-1 max-narrow:pr-6 max-narrow:pb-5 max-narrow:pl-12">
+        <div class="composer-toolbar flex min-h-44 items-center gap-5 px-10 pb-8 max-narrow:px-8">
+          <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="composer-attachment size-32 min-h-32 shrink-0 border-0 bg-transparent text-text-primary disabled:opacity-55">
+            <AttachmentIcon />
+          </IconButton>
+          <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled class="composer-approval size-32 min-h-32 shrink-0 border-0 bg-transparent text-text-muted disabled:opacity-55">
+            <ApprovalIcon />
+          </IconButton>
           <Show when={prediction.activePrediction()}>
             <Button size="compact" variant="secondary" class="composer-prediction-action inline-flex min-h-30 items-center justify-center px-9 border-border-subtle bg-surface-muted text-text-secondary text-11 pointer-coarse:min-h-44 max-narrow:min-h-44" onClick={prediction.accept} aria-label="Use suggestion" title="Use suggestion (Tab)">
               <Icon class="size-16!"><path d="m4 10 3.5 3.5L16 5" /></Icon><kbd class="ml-3 px-4 py-2 border border-border-subtle rounded-4 bg-surface text-9 max-narrow:hidden">Tab</kbd>
@@ -298,7 +317,7 @@ export function Composer() {
           <Show when={canBrowseSkills()}>
             <Button
               size="compact"
-              class="composer-skills relative inline-flex min-h-30 items-center gap-6 px-8 border-border-subtle bg-surface-muted text-text-primary text-11 font-normal pointer-coarse:min-h-44 max-tight:size-44 max-tight:min-w-44 max-tight:p-0 max-tight:before:content-['/'] max-tight:before:font-mono max-tight:before:text-15 max-tight:before:leading-none max-tight:before:font-bold"
+              class="composer-skills relative inline-flex size-32 min-h-32 items-center justify-center gap-0 border-0 bg-transparent p-0 text-text-primary text-11 font-normal pointer-coarse:size-40 pointer-coarse:min-h-40 max-tight:before:content-['/'] max-tight:before:font-mono max-tight:before:text-15 max-tight:before:leading-none max-tight:before:font-bold"
               aria-expanded={slash.browseSkills() && slash.slashMenuOpen()}
               aria-controls={slashMenuId}
               aria-label={`Browse skills (${skillCount()})`}
@@ -308,31 +327,38 @@ export function Composer() {
                 queueMicrotask(() => taRef?.focus());
               }}
               disabled={inputDisabled()}
-            ><Icon class="size-16!" aria-hidden="true"><path d="M7 4H4v3M13 4h3v3M7 16H4v-3M13 16h3v-3" /><path d="M7 10h6M10 7v6" /></Icon><span class="composer-skills__count text-text-muted text-10 leading-none font-mono max-tight:absolute max-tight:translate-x-12 max-tight:-translate-y-10">{skillCount()}</span></Button>
+            ><Icon class="size-17! max-tight:hidden" aria-hidden="true"><path d="M7 4H4v3M13 4h3v3M7 16H4v-3M13 16h3v-3" /><path d="M7 10h6M10 7v6" /></Icon><span class="composer-skills__count sr-only">{skillCount()}</span></Button>
           </Show>
+          <span class="composer-shortcut sr-only" aria-hidden="true">Enter to send · Shift + Enter for newline</span>
+          <div class="composer-toolbar__right ml-auto flex min-w-0 items-center gap-5">
+          <Show when={latestUsage()}>{(usage) =>
+            <TokenUsageMeter usage={usage()} />
+          }</Show>
           <SessionModelMenu open={modelMenuOpen()} id={modelMenuId} onOpenChange={setModelMenuOpen} trigger={
             <Button
               size="compact"
-              class="composer-runtime flex min-w-0 shrink items-center gap-7 overflow-hidden text-text-secondary text-11 leading-none text-ellipsis whitespace-nowrap max-tight:mr-auto"
+              class="composer-runtime flex min-w-0 shrink items-center gap-6 overflow-hidden border-0 bg-transparent px-7 text-text-secondary text-11 leading-none text-ellipsis whitespace-nowrap"
               ref={modelTrigger}
               title={runtimeSummary()}
               aria-label={`${runtimeSummary()}, choose model`}
               disabled={!selectedCid() || !runtimeDocsHydrated()}
             ><span aria-hidden="true" class="size-6 flex-none rounded-full bg-success" />{model()}</Button>
           } />
-          <Show when={preciseUsage()}>{(usage) =>
-            <span class="composer-usage min-w-0 overflow-hidden text-text-muted text-11 leading-none text-ellipsis whitespace-nowrap max-middle:ml-auto max-tight:hidden" title={`Latest model request: ${usage()}`}>{usage()}</span>
-          }</Show>
-          <span class="composer-shortcut ml-auto text-text-muted text-11 whitespace-nowrap max-middle:hidden" aria-hidden="true">Enter to send · Shift + Enter for newline</span>
+          <span class="composer-voice-slot flex size-32 shrink-0 items-center justify-center">
+            <IconButton label="Voice input" title="Voice input is not connected yet" disabled class="composer-voice size-32 min-h-32 shrink-0 border-0 bg-transparent text-text-primary disabled:opacity-55">
+              <MicrophoneIcon />
+            </IconButton>
+          </span>
           <Show when={turnActive()} fallback={
-            <span class="ml-auto shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || !composerDraft(selectedSessionId()).trim()} label="Send" class="composer-action flex size-40 shrink-0 items-center justify-center border-0 rounded-full bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint pointer-coarse:size-44">
+            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || !composerDraft(selectedSessionId()).trim()} label="Send" class="composer-action flex size-36 min-h-36 shrink-0 items-center justify-center border-0 rounded-full bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:size-40 max-narrow:min-h-40">
               <Icon class="size-20"><path d="M10 16V4" /><path d="M5 9l5-5 5 5" /></Icon>
             </IconButton></span>
           }>
-            <span class="ml-auto shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={requestCancel} disabled={cancelLocked() || readOnly()} busy={cancelControl()?.phase === 'sending' || cancelControl()?.phase === 'accepted'} label={cancelLabel()} class={`composer-action composer-action--stop flex size-40 shrink-0 items-center justify-center border-0 rounded-full bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint pointer-coarse:size-44 ${cancelControl()?.phase === 'uncertain' ? 'bg-warning hover:bg-warning-strong' : ''}`}>
+            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={requestCancel} disabled={cancelLocked() || readOnly()} busy={cancelControl()?.phase === 'sending' || cancelControl()?.phase === 'accepted'} label={cancelLabel()} class={`composer-action composer-action--stop flex size-36 min-h-36 shrink-0 items-center justify-center border-0 rounded-full bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:size-40 max-narrow:min-h-40 ${cancelControl()?.phase === 'uncertain' ? 'bg-warning hover:bg-warning-strong' : ''}`}>
               <Show when={!cancelControl() || cancelControl()?.phase === 'uncertain' || cancelControl()?.phase === 'confirmed'}><span aria-hidden="true" class="size-10 rounded-2 bg-current" /></Show>
             </IconButton></span>
           </Show>
+          </div>
         </div>
       </section>
       <Show when={submissionInAnotherSession()}>{(submission) =>

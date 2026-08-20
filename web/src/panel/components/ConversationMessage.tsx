@@ -36,7 +36,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
         const reasoning = () => reasoningById().get(id)!;
         return <details class="message-reasoning text-text-secondary text-13"><summary class="cursor-pointer select-none">Thinking</summary><pre class="mt-5 ml-12 pl-12 border-l-2 border-l-divider whitespace-pre-wrap wrap-anywhere text-text-secondary font-mono text-12 leading-20">{reasoning().text}</pre></details>;
       }}</For>
-      <div class="conversation-message__text text-text-primary text-15 leading-25">
+      <div class="conversation-message__text text-text-primary text-14 leading-22">
         <Show when={role() === 'assistant'} fallback={<For each={userSegments()}>{(segment) =>
           <Show when={segment.kind === 'system_reminder'} fallback={<span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{segment.text}</span>}>
             <InlineNotice class="system-reminder-message my-8 max-w-full text-left!" tone="info" title="Untrusted system reminder" aria-label="Untrusted system reminder">

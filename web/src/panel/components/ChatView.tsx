@@ -54,7 +54,7 @@ export function ChatView(props: ChatViewProps) {
       <Show when={restoringSessionId()}><LoadingState label="Restoring last session and ACP context…" class="restore-banner justify-center mt-12 mx-20 max-narrow:m-10" /></Show>
       <Show when={selectedSessionId()} fallback={<Show
         when={registryHydrated()}
-        fallback={<LoadingState label="Loading projects" description="Syncing projects and sessions from the Peri Studio server…" class="flex-1 justify-center text-center" />}
+        fallback={<LoadingState label="Loading projects" class="flex-1 justify-center text-center" />}
       >
         <LaunchWorkspace onOpenNavigation={props.onOpenNavigation} onCreateProject={props.onCreateProject} onImport={props.onImport} />
       </Show>}>

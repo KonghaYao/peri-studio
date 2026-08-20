@@ -79,14 +79,14 @@ export function AgentActivityRail(props: AgentActivityRailProps) {
       label="Peri activity"
       mark={<span class={`agent-activity__pulse agent-activity__pulse--${current().status} size-8 flex-none rounded-full ${pulseTone(current().status)}`} aria-hidden="true" />}
       copy={<span class="agent-activity__summary-copy flex min-w-0 flex-1 items-baseline gap-8 max-narrow:grid max-narrow:gap-1">
-        <strong class="text-12 font-680">Peri activity</strong>
-        <span class="overflow-hidden text-text-secondary text-11 text-ellipsis whitespace-nowrap">{current().label || KIND_LABEL[current().kind]} · {STATUS_LABEL[current().status]}</span>
+        <strong class="text-11 font-680">Activity</strong>
+        <span class="overflow-hidden text-text-secondary text-11 text-ellipsis whitespace-nowrap">{current().label || KIND_LABEL[current().kind]}</span>
+        <span class="sr-only">{STATUS_LABEL[current().status]}</span>
       </span>}
       meta={<span class="agent-activity__count grid min-w-21 h-21 place-items-center rounded-full bg-surface-muted text-text-muted text-10 tabular-nums">{props.activities.length}</span>}
       chevronClass="agent-activity__chevron text-text-muted text-18 transition-transform duration-140 group-open:rotate-90"
     >
       <div class="agent-activity__body max-h-240 overflow-auto border-t border-divider pt-9 pr-11 pb-11 pl-11 max-narrow:max-h-210">
-        <p class="mt-0 mb-8 text-text-muted text-10p5 leading-145">Enabled by the current ACP session; shows only redacted run summaries.</p>
         <ol class="flex flex-col m-0 p-0 list-none"><For each={latestFirst()}>{(activity) => <ActivityRow activity={activity} />}</For></ol>
       </div>
     </CollapsibleSection>

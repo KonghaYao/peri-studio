@@ -54,6 +54,7 @@
   --color-btn-primary: var(--btn-primary);
   --color-btn-primary-hover: var(--btn-primary-hover);
   --color-scrollbar-thumb: var(--scrollbar-thumb);
+  --color-scrollbar-thumb-hover: var(--scrollbar-thumb-hover);
 
   /* Elevation */
   --shadow-popover: var(--shadow-popover);
@@ -171,6 +172,7 @@
   --leading-155: var(--leading-155);
   --leading-16: var(--leading-16);
   --leading-20: var(--leading-20);
+  --leading-22: var(--leading-22);
   --leading-24: var(--leading-24);
   --leading-25: var(--leading-25);
 

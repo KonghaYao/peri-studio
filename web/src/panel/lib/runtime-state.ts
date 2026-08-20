@@ -3,6 +3,7 @@ export type RuntimeStateTone = 'idle' | 'attention' | 'danger' | 'busy' | 'ready
 export interface RuntimeStateView {
   label: string;
   tone: RuntimeStateTone;
+  detail?: string;
 }
 
 export interface RuntimeStateInput {
@@ -23,33 +24,31 @@ export interface ConnectionKindLike {
   text?: string;
 }
 
-const TERMINAL_LABELS: Record<string, string> = {
-  ended: 'Run ended · session kept',
-  closed: 'Run closed · session kept',
-  crashed: 'Run exited abnormally · session kept',
+const TERMINAL_STATES: Record<string, RuntimeStateView> = {
+  ended: { label: 'Ended', tone: 'idle', detail: 'Run ended · session kept' },
+  closed: { label: 'Closed', tone: 'idle', detail: 'Run closed · session kept' },
+  crashed: { label: 'Crashed', tone: 'danger', detail: 'Run exited abnormally · session kept' },
 };
 
 /** User-facing state of one durable session and its optional runtime chat. */
 export function runtimeState(input: RuntimeStateInput): RuntimeStateView {
   if (!input.hasSession) return { label: '', tone: 'idle' };
-  if (input.lifecycle === 'reconciliation_required') return { label: 'Reconciliation required', tone: 'attention' };
-  if (input.lifecycle === 'failed') return { label: 'Failed to open', tone: 'danger' };
-  if (input.isOpening || ['activating', 'pending'].includes(input.lifecycle || '')) return { label: 'Restoring ACP session…', tone: 'busy' };
-  if (!input.hasRuntime) return { label: 'Not started · session saved', tone: 'idle' };
+  if (input.lifecycle === 'reconciliation_required') return { label: 'Reconcile', tone: 'attention', detail: 'Reconciliation required' };
+  if (input.lifecycle === 'failed') return { label: 'Failed', tone: 'danger', detail: 'Failed to open' };
+  if (input.isOpening || ['activating', 'pending'].includes(input.lifecycle || '')) return { label: 'Opening', tone: 'busy', detail: 'Restoring ACP session' };
+  if (!input.hasRuntime) return { label: 'Idle', tone: 'idle', detail: 'Not started · session saved' };
 
   // A Registry runtime hint says that an ACP process exists; it does not mean
   // this browser has selected and hydrated that conversation. Keep the
   // sidebar honest instead of advertising “可输入” on multiple rows at once.
-  if (input.isSelected === false) return { label: 'Running · click to switch', tone: 'ready' };
+  if (input.isSelected === false) return { label: 'Running', tone: 'ready', detail: 'Running · click to switch' };
 
   const chatStatus = String(input.chatStatus || '').toLowerCase();
-  if (TERMINAL_LABELS[chatStatus]) {
-    return { label: TERMINAL_LABELS[chatStatus], tone: chatStatus === 'crashed' ? 'danger' : 'idle' };
-  }
-  if (input.hasPendingPermission) return { label: 'Awaiting your permission', tone: 'attention' };
-  if (input.isHydrated === false) return { label: 'Loading session…', tone: 'busy' };
-  if (input.turnActive) return { label: 'Agent is working', tone: 'busy' };
-  return { label: 'Ready · session saved', tone: 'ready' };
+  if (TERMINAL_STATES[chatStatus]) return TERMINAL_STATES[chatStatus];
+  if (input.hasPendingPermission) return { label: 'Approval', tone: 'attention', detail: 'Awaiting your permission' };
+  if (input.isHydrated === false) return { label: 'Loading', tone: 'busy', detail: 'Loading session' };
+  if (input.turnActive) return { label: 'Working', tone: 'busy', detail: 'Agent is working' };
+  return { label: 'Ready', tone: 'ready', detail: 'Ready · session saved' };
 }
 
 /**
@@ -61,9 +60,9 @@ export function runtimeState(input: RuntimeStateInput): RuntimeStateView {
 export function connectedRuntimeState(input: RuntimeStateInput, connection: ConnectionKindLike | null | undefined): RuntimeStateView {
   const state = runtimeState(input);
   const chatStatus = String(input.chatStatus || '').toLowerCase();
-  if (!input.hasRuntime || TERMINAL_LABELS[chatStatus] || connection?.kind === 'ok') return state;
-  if (connection?.kind === 'err') return { label: 'Connection stopped · session saved', tone: 'danger' };
-  if (connection?.kind === 'warn') return { label: 'Reconnecting · session saved', tone: 'attention' };
-  if (String(connection?.text || '').includes('Connecting')) return { label: 'Connecting · session saved', tone: 'busy' };
-  return { label: 'Disconnected · session saved', tone: 'idle' };
+  if (!input.hasRuntime || TERMINAL_STATES[chatStatus] || connection?.kind === 'ok') return state;
+  if (connection?.kind === 'err') return { label: 'Offline', tone: 'danger', detail: 'Connection stopped · session saved' };
+  if (connection?.kind === 'warn') return { label: 'Reconnecting', tone: 'attention', detail: 'Reconnecting · session saved' };
+  if (String(connection?.text || '').includes('Connecting')) return { label: 'Connecting', tone: 'busy', detail: 'Connecting · session saved' };
+  return { label: 'Offline', tone: 'idle', detail: 'Disconnected · session saved' };
 }

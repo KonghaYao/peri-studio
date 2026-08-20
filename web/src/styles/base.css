@@ -120,6 +120,8 @@ body {
   margin: 0;
   overflow: hidden;
   font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
   color: var(--text-primary);
   background: var(--app-bg);
   -webkit-font-smoothing: antialiased;

@@ -12,9 +12,9 @@ type InlineNoticeProps = JSX.HTMLAttributes<HTMLElement> & {
 
 const TONE_CLASS: Record<InlineNoticeTone, string> = {
   info: 'border-border-subtle bg-surface-muted text-text-secondary',
-  success: 'border-success bg-success-soft',
-  warning: 'border-warning-border bg-warning-soft',
-  danger: 'border-danger-border bg-danger-soft text-danger',
+  success: 'border-success bg-surface',
+  warning: 'border-warning-border bg-surface',
+  danger: 'border-danger-border bg-surface text-danger',
 };
 
 /** Compact feedback surface for messages that remain within a feature flow. */

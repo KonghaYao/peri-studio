@@ -26,28 +26,28 @@ const parsePrincipal = (v) => v && ['full','read-only'].includes(v.role) ? v.rol
 const canMutate = (role) => role === 'full';
 
 test('runtime status distinguishes durable session state from process state', () => {
-  assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: false, hasPendingPermission: false, turnActive: false }).label, 'Not started · session saved');
+  assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: false, hasPendingPermission: false, turnActive: false }).label, 'Idle');
   assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: true, chatStatus: 'active', hasPendingPermission: false, turnActive: false }).tone, 'ready');
-  assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: true, isSelected: false, chatStatus: null, hasPendingPermission: false, turnActive: false }).label, 'Running · click to switch');
-  assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: true, isHydrated: false, chatStatus: 'active', hasPendingPermission: false, turnActive: false }).label, 'Loading session…');
-  assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: true, chatStatus: 'active', hasPendingPermission: true, turnActive: true }).label, 'Awaiting your permission');
+  assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: true, isSelected: false, chatStatus: null, hasPendingPermission: false, turnActive: false }).label, 'Running');
+  assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: true, isHydrated: false, chatStatus: 'active', hasPendingPermission: false, turnActive: false }).label, 'Loading');
+  assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: true, chatStatus: 'active', hasPendingPermission: true, turnActive: true }).label, 'Approval');
   assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: true, chatStatus: 'crashed', hasPendingPermission: false, turnActive: false }).tone, 'danger');
   assert.equal(runtimeState({ hasSession: true, lifecycle: 'reconciliation_required', isOpening: false, hasRuntime: false, hasPendingPermission: false, turnActive: false }).tone, 'attention');
   assert.deepEqual(
     connectedRuntimeState({ hasSession: true, hasRuntime: true, chatStatus: 'active', hasPendingPermission: false, turnActive: false }, { text: 'Stopped (4501)', kind: 'err' }),
-    { label: 'Connection stopped · session saved', tone: 'danger' },
+    { label: 'Offline', tone: 'danger', detail: 'Connection stopped · session saved' },
   );
   assert.equal(
     connectedRuntimeState({ hasSession: true, hasRuntime: true, chatStatus: 'crashed', hasPendingPermission: false, turnActive: false }, { text: 'Stopped (4501)', kind: 'err' }).label,
-    'Run exited abnormally · session kept',
+    'Crashed',
   );
   assert.equal(
     connectedRuntimeState({ hasSession: true, hasRuntime: true, chatStatus: 'active', hasPendingPermission: false, turnActive: false }, { text: 'Connecting…', kind: 'idle' }).label,
-    'Connecting · session saved',
+    'Connecting',
   );
   assert.equal(
     connectedRuntimeState({ hasSession: true, hasRuntime: true, chatStatus: 'active', hasPendingPermission: false, turnActive: false }, { text: 'Reconnecting (in 2s)', kind: 'warn' }).label,
-    'Reconnecting · session saved',
+    'Reconnecting',
   );
 });
 

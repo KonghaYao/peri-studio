@@ -8,10 +8,10 @@
 
   /* Surfaces: white is the canvas; hierarchy comes from spacing and hairlines. */
   --app-bg: #ffffff;
-  --sidebar-bg: #f3f4f3;
+  --sidebar-bg: #ffffff;
   --surface: #ffffff;
-  --surface-muted: #fafaf9;
-  --empty-mark-bg: #f7f7f5;
+  --surface-muted: #fcfcfb;
+  --empty-mark-bg: #fbfbfa;
   --empty-mark-fg: #30302e;
   --scrim: rgb(20 20 19 / 18%);
 
@@ -33,9 +33,9 @@
 
   /* Interaction and feedback */
   --accent: #2a2a27;
-  --hover: #f6f6f4;
-  --selected: #f2f2ef;
-  --focus-ring: #2a2a27;
+  --hover: #f8f8f7;
+  --selected: #f5f6f5;
+  --focus-ring: #8fafc6;
   --success: #25865a;
   --success-soft: #f0f8f3;
   --warning: #98601a;
@@ -45,7 +45,8 @@
   --danger-soft: #fff3f2;
   --btn-primary: #242422;
   --btn-primary-hover: #0d0d0c;
-  --scrollbar-thumb: #d5d5d1;
+  --scrollbar-thumb: rgb(42 42 39 / 18%);
+  --scrollbar-thumb-hover: rgb(42 42 39 / 34%);
 
   /* Elevation: use only for layers that leave the canvas. */
   --shadow-popover: 0 14px 34px rgb(25 25 24 / 10%), 0 2px 5px rgb(25 25 24 / 5%);
@@ -167,6 +168,7 @@
   --leading-155: 1.55;
   --leading-16: 1.6;
   --leading-20: 20px;
+  --leading-22: 22px;
   --leading-24: 24px;
   --leading-25: 25px;
 

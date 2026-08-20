@@ -50,7 +50,7 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
                 <ul class="grid gap-5 m-0 p-0 list-none"><For each={current.fileChanges}>{(change) => <li class="flex min-w-0 items-center justify-between gap-12 rounded-9 bg-surface-muted px-10 py-8"><code class="overflow-hidden text-ellipsis whitespace-nowrap text-11 text-text-primary">{change.path}</code><span class="shrink-0 text-11 text-text-muted">{change.kind === 'write' ? 'Restore write' : 'Restore edit'}</span></li>}</For></ul>
               </Show>
             </section>
-            <p class="mt-18 mb-0 rounded-10 bg-danger-soft px-12 py-10 text-12 leading-15 !text-danger">This is a destructive action. Do not repeat it after confirming; if the result is unknown, reopen the session to check.</p>
+            <p class="mt-18 mb-0 rounded-10 border border-danger-border bg-surface px-12 py-10 text-12 leading-15 !text-danger">This is a destructive action. Do not repeat it after confirming; if the result is unknown, reopen the session to check.</p>
             <div class="mt-20 flex justify-end gap-8 max-[640px]:grid max-[640px]:grid-cols-1 [&_[data-slot=button]]:max-[640px]:min-h-44 [&_[data-slot=button]:last-child]:max-[640px]:row-start-1"><Button onClick={close}>Cancel</Button><Button variant="danger" onClick={executeRewind}>Rewind session and files</Button></div>
           </>;
         }}</Match>
@@ -62,7 +62,7 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
         </Match>
         <Match when={state().kind === 'delivery_unknown' && state()} keyed>{(current) => {
           if (current.kind !== 'delivery_unknown') return null;
-          return <div class="grid min-h-180 place-content-center justify-items-start rounded-12 bg-warning-soft p-24 text-left max-[640px]:px-8 max-[640px]:py-20" role="alert"><strong class="text-15 text-text-primary">Rewind result not confirmed</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">{current.detail}</p><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">To avoid duplicate changes, re-execution is not offered. Close this window and reopen the session to check the history and files.</p><Button class="mt-18" onClick={close}>Got it</Button></div>;
+          return <div class="grid min-h-180 place-content-center justify-items-start rounded-12 border border-warning-border bg-surface p-24 text-left max-[640px]:px-8 max-[640px]:py-20" role="alert"><strong class="text-15 text-text-primary">Rewind result not confirmed</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">{current.detail}</p><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">To avoid duplicate changes, re-execution is not offered. Close this window and reopen the session to check the history and files.</p><Button class="mt-18" onClick={close}>Got it</Button></div>;
         }}</Match>
         <Match when={state().kind === 'error' && state()} keyed>{(current) => {
           if (current.kind !== 'error') return null;

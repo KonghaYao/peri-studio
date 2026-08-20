@@ -80,7 +80,7 @@ describe('ChatHeader runtime truth', () => {
     render(() => <ChatHeader />);
 
     expect(screen.getByText('Persistent session')).toBeInTheDocument();
-    expect(screen.getByText('Not started · session saved')).toBeInTheDocument();
+    expect(screen.getByText('Idle')).toBeInTheDocument();
   });
 
   it('disambiguates a fallback title with the durable ACP identity', () => {
@@ -108,8 +108,8 @@ describe('ChatHeader runtime truth', () => {
     setConnState({ text: 'Ready', kind: 'ok' });
     render(() => <ChatHeader />);
 
-    expect(screen.getByText('Awaiting your permission')).toBeInTheDocument();
-    expect(screen.queryByText('Agent is working')).not.toBeInTheDocument();
+    expect(screen.getByText('Approval')).toBeInTheDocument();
+    expect(screen.queryByText('Working')).not.toBeInTheDocument();
   });
 
   it('states that a crashed runtime did not delete the session', () => {
@@ -119,7 +119,7 @@ describe('ChatHeader runtime truth', () => {
     setChatStatusSignal({ 'chat-1': 'crashed' });
     render(() => <ChatHeader />);
 
-    const status = screen.getByText('Run exited abnormally · session kept');
+    const status = screen.getByText('Crashed');
     expect(status).toHaveClass('runtime-status--danger');
   });
 
@@ -132,8 +132,8 @@ describe('ChatHeader runtime truth', () => {
     setConnState({ text: 'Ready', kind: 'ok' });
     render(() => <ChatHeader />);
 
-    expect(screen.getByText('Loading session…')).toBeInTheDocument();
-    expect(screen.queryByText('Ready · session saved')).not.toBeInTheDocument();
+    expect(screen.getByText('Loading')).toBeInTheDocument();
+    expect(screen.queryByText('Ready')).not.toBeInTheDocument();
   });
 
   it('does not advertise input readiness after the browser connection stops', () => {
@@ -145,8 +145,8 @@ describe('ChatHeader runtime truth', () => {
     setConnState({ text: 'Stopped (4501)', kind: 'err' });
     render(() => <ChatHeader />);
 
-    expect(screen.getByText('Connection stopped · session saved')).toHaveClass('runtime-status--danger');
-    expect(screen.queryByText('Ready · session saved')).not.toBeInTheDocument();
+    expect(screen.getByText('Offline', { selector: '.runtime-status' })).toHaveClass('runtime-status--danger');
+    expect(screen.queryByText('Ready')).not.toBeInTheDocument();
   });
 
   it('prevents close while another control owns the runtime', () => {

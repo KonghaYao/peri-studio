@@ -152,6 +152,23 @@ test('feature components never introduce literal colors', () => {
   assert.deepEqual(offenders, []);
 });
 
+test('large semantic status surfaces stay white', () => {
+  const source = join(import.meta.dirname, '..', 'src');
+  const files = [
+    'components/ui/InlineNotice.tsx',
+    'panel/components/MessageOutbox.tsx',
+    'panel/components/PermissionQueue.tsx',
+    'panel/components/PermissionRequestCard.tsx',
+    'panel/components/RewindDialog.tsx',
+    'panel/components/ToolCallCard.tsx',
+    'panel/components/shared/ConfirmDialog.tsx',
+  ];
+  for (const file of files) {
+    const code = readFileSync(join(source, file), 'utf8');
+    assert.doesNotMatch(code, /bg-(?:warning|danger|success)-soft/, `${file} uses a tinted status canvas`);
+  }
+});
+
 test('responsive behavior has compact, medium and wide layout contracts', () => {
   const root = join(import.meta.dirname, '..', 'src');
   const shell = readFileSync(join(root, 'panel', 'components', 'AppShell.tsx'), 'utf8');
@@ -175,7 +192,8 @@ test('responsive behavior has compact, medium and wide layout contracts', () => 
   assert.match(drawer, /max-desk:fixed[^']*max-desk:w-\(--container-drawer\)/);
   // 中宽布局的内容宽度：chat 列表 760px、composer 使用同一布局 token。
   assert.match(messageList, /desk:max-wide:max-w-\(--container-chat-narrow\)/);
-  assert.match(composer, /max-w-\(--composer-max\)/);
+  assert.match(composer, /max-w-\(--container-chat\)/);
+  assert.match(composer, /desk:max-wide:max-w-\(--container-chat-narrow\)/);
   assert.match(composer, /max-narrow:px-10/);
   assert.doesNotMatch(drawer, /project-drawer\s*\{[^}]*position\s*:\s*fixed/);
 });
@@ -211,9 +229,9 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
   assert.match(composer, /runtimeSummary/);
   assert.doesNotMatch(composer, />\s*effort：/);
   assert.doesNotMatch(composer, />\s*上下文：/);
-  assert.match(composer, /focus-within:border-border-strong/);
-  assert.match(composer, /has-\[\.composer-input:focus-visible\]:shadow-\[var\(--shadow-float\),0_0_0_2px_var\(--surface\),0_0_0_4px_var\(--focus-ring\)\]/);
-  assert.match(composer, /composer-toolbar flex min-h-48 items-center/);
+  assert.match(composer, /focus-within:border-focus-ring/);
+  assert.match(composer, /has-\[\.composer-input:focus-visible\]:shadow-\[var\(--shadow-float\),0_0_0_1px_var\(--surface\),0_0_0_3px_var\(--focus-ring\)\]/);
+  assert.match(composer, /composer-toolbar flex min-h-44 items-center/);
   assert.match(base, /:focus-visible\s*\{\s*outline:\s*2px solid var\(--focus-ring\)/);
 });
 
@@ -304,6 +322,8 @@ test('primitive visuals remain in shared UI components and out of feature styles
   const dialog = readFileSync(join(root, 'components', 'ui', 'Dialog.tsx'), 'utf8');
   const drawer = readFileSync(join(root, 'panel', 'components', 'shared', 'ProjectDrawer.tsx'), 'utf8');
   assert.match(primitives, /\.ui-scrollbar\s*\{/);
+  assert.match(primitives, /\*::\-webkit-scrollbar\s*\{/);
+  assert.match(primitives, /scrollbar-color:\s*var\(--scrollbar-thumb\) transparent/);
   assert.match(button, /export function Button/);
   assert.match(dialog, /export function DialogContent/);
   assert.equal(styles.trim(), '');
