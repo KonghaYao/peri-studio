@@ -45,6 +45,60 @@ for (const [scenario, expected] of scenarios) {
   }
 }
 
+test('migrated surfaces retain their authored computed borders', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
+
+  const borders = await page.evaluate(() => {
+    const style = (selector) => getComputedStyle(document.querySelector(selector));
+    return {
+      search: style('.session-search-button').borderWidth,
+      shortcut: style('.session-search-button kbd').borderWidth,
+      sessionGuide: style('.session-list').borderLeftWidth,
+      selectedSession: style('[data-session-id="session-current"]').borderLeftWidth,
+      userMessage: style('.conversation-message--user .conversation-message__surface').borderWidth,
+      composer: style('.composer-surface').borderWidth,
+      toolCard: style('.tool-card').borderWidth,
+    };
+  });
+
+  expect(borders).toEqual({
+    search: '1px',
+    shortcut: '1px',
+    sessionGuide: '1px',
+    selectedSession: '2px',
+    userMessage: '1px',
+    composer: '1px',
+    toolCard: '1px',
+  });
+});
+
+test('sidebar session labels retain space beside action and status slots', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
+
+  const sessionRow = page.locator('[data-session-id="session-current"]');
+  const sessionCopy = sessionRow.locator('.session-copy');
+  await expect(sessionCopy).toBeVisible();
+
+  const geometry = await sessionRow.evaluate((row) => {
+    const rect = (selector) => row.querySelector(selector)?.getBoundingClientRect();
+    const copy = rect('.session-copy');
+    const menu = rect('.session-menu');
+    const status = rect('.session-status-dot');
+    return {
+      copyWidth: copy?.width ?? 0,
+      copyRight: copy?.right ?? 0,
+      menuLeft: menu?.left ?? 0,
+      statusLeft: status?.left ?? 0,
+    };
+  });
+
+  expect(geometry.copyWidth).toBeGreaterThan(20);
+  expect(geometry.copyRight).toBeLessThanOrEqual(geometry.menuLeft);
+  expect(geometry.menuLeft).toBeLessThan(geometry.statusLeft);
+});
+
 test('wide topology dialog owns its viewport width without child overflow', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
@@ -68,7 +122,7 @@ test('desktop sidebar visibly resizes and preserves project navigation', async (
   await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
 
   const resize = page.getByRole('separator', { name: 'Resize sidebar' });
-  await expect(resize).toHaveAttribute('aria-valuenow', '304');
+  await expect(resize).toHaveAttribute('aria-valuenow', '242');
   await resize.focus();
   await page.keyboard.press('End');
   await expect(resize).toHaveAttribute('aria-valuenow', '480');

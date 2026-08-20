@@ -184,7 +184,7 @@ test('coarse pointers expose sidebar actions without hover and keep controls tou
   const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'components', 'ProjectSessionRow.tsx'), 'utf8');
   const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Dialog.tsx'), 'utf8');
   assert.match(sessionRow, /group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100/);
-  assert.match(sessionRow, /pointer-coarse:min-h-52 pointer-coarse:pr-68/);
+  assert.match(sessionRow, /pointer-coarse:min-h-52 pointer-coarse:pr-\[68px\]/);
   assert.match(dialog, /pointer-coarse:size-44/);
 });
 
@@ -230,8 +230,9 @@ test('reusable design tokens have one UI-library source', () => {
   const featureStyles = featureCss();
   const primitives = readFileSync(join(root, 'styles', 'primitives.css'), 'utf8');
   const tokens = readFileSync(join(root, 'styles', 'tokens.css'), 'utf8');
-  // Tailwind 采纳后入口链为 theme.css（含 @import 'tailwindcss'）→ base.css → primitives.css。
-  assert.match(styles, /^@import '\.\/styles\/theme\.css';\n@import '\.\/styles\/base\.css';\n@import '\.\/styles\/primitives\.css';/);
+  // 产品基线必须先于 Tailwind 加载，避免无 layer 的 reset 覆盖
+  // Tailwind utilities layer 生成的原子化边框宽度。
+  assert.match(styles, /^@import '\.\/styles\/base\.css';\n@import '\.\/styles\/theme\.css';\n@import '\.\/styles\/primitives\.css';/);
   assert.doesNotMatch(styles, /@import '\.\/styles\/tokens\.css'/);
   assert.match(primitives, /^@import '\.\/tokens\.css';/);
   assert.doesNotMatch(styles, /:root\s*\{/);
@@ -276,7 +277,7 @@ test('product CSS owns its browser baseline and semantic layout', () => {
   assert.match(vite, /tailwindcss\(\)/);
   assert.match(theme, /@import 'tailwindcss';/);
   assert.doesNotMatch(theme, /@theme[ \t]+(?!inline)/);
-  assert.match(base, /\*[^]*box model[^]*\*\//i);
+  assert.match(base, /\*[^]*盒模型[^]*\*\//);
   assert.match(base, /box-sizing:\s*border-box/);
   assert.match(base, /margin:\s*0/);
   assert.match(base, /padding:\s*0/);
@@ -348,4 +349,3 @@ test('responsive navigation uses structural desktop layout and Kobalte modal beh
   assert.match(drawer, /<DialogTitle class="sr-only">Projects &amp; Sessions<\/DialogTitle>/);
   assert.doesNotMatch(drawer, /acquireOverlay|document\.addEventListener/);
 });
-

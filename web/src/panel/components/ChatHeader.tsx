@@ -12,7 +12,7 @@ import { McpPanel } from './McpPanel';
 import { RewindDialog } from './RewindDialog';
 import { ConfirmDialog } from './shared/ConfirmDialog';
 
-export type ChatHeaderProps = { onOpenNavigation?: () => void; onOpenSystem?: () => void };
+export type ChatHeaderProps = { launch?: boolean; onOpenNavigation?: () => void; onOpenSystem?: () => void };
 
 export function ChatHeader(props: ChatHeaderProps) {
   const [menuOpen, setMenuOpen] = createSignal(false);
@@ -43,15 +43,15 @@ export function ChatHeader(props: ChatHeaderProps) {
     turnActive: turnActive(),
   }, connState());
   const menuId = 'chat-session-menu';
-  return <header class="chat-header relative flex items-center gap-12 h-60 px-20 border-b border-divider bg-surface-header desk:max-wide:h-56 desk:max-wide:px-16 max-desk:h-56 max-desk:px-12">
+  return <header class={`chat-header relative flex items-center gap-12 h-60 px-20 bg-transparent desk:max-wide:h-56 desk:max-wide:px-16 max-desk:h-56 max-desk:px-12 ${props.launch ? 'chat-header--launch justify-end' : 'border-b border-divider'}`}>
     <IconButton tooltipPlacement="start" label="Open navigation" class="mobile-nav-button hidden max-desk:inline-flex" onClick={props.onOpenNavigation}>
       <Icon><path d="M3 5h14M3 10h14M3 15h14" /></Icon>
     </IconButton>
-    <div class="chat-title min-w-0 flex-1 flex flex-col justify-center gap-3"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-15 leading-115">{title()}</strong><Show when={runtime().label}><span class={`runtime-status runtime-status--${runtime().tone} flex items-center gap-6 overflow-hidden text-muted text-11 leading-12 text-ellipsis whitespace-nowrap ${runtime().tone === 'ready' ? '[&_i]:bg-success' : runtime().tone === 'busy' ? '[&_i]:bg-accent [&_i]:animate-pulse' : runtime().tone === 'attention' ? 'text-warning [&_i]:bg-warning' : runtime().tone === 'danger' ? 'text-danger [&_i]:bg-danger' : '[&_i]:bg-text-faint'}`}><i aria-hidden="true" class="w-6 h-6 shrink-0 rounded-full bg-text-faint" />{runtime().label}</span></Show></div>
-    <Status live tone={connState().kind || 'idle'} class="connection-pill [&_.ui-status__dot]:size-6 max-desk:[&_.ui-status__label]:hidden max-desk:[&_.ui-status__dot]:size-8">{connState().text}</Status>
-    <IconButton tooltipPlacement="end" label="Open system information" onClick={props.onOpenSystem}>
-      <Icon><circle cx="10" cy="10" r="2.6" /><path d="M10 3.4v2M10 14.6v2M3.4 10h2M14.6 10h2M5.3 5.3l1.4 1.4M13.3 13.3l1.4 1.4M14.7 5.3l-1.4 1.4M6.7 13.3l-1.4 1.4" /></Icon>
-    </IconButton>
+    <Show when={!props.launch} fallback={<Status live tone={connState().kind || 'idle'} class="connection-pill mr-2 [&_.ui-status__dot]:size-6 [&_.ui-status__label]:sr-only">{connState().text}</Status>}><div class="chat-title min-w-0 flex-1 flex flex-col justify-center gap-3"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-15 leading-115">{title()}</strong><Show when={runtime().label && runtime().tone !== 'ready'}><span class={`runtime-status runtime-status--${runtime().tone} flex items-center gap-6 overflow-hidden text-muted text-11 leading-12 text-ellipsis whitespace-nowrap ${runtime().tone === 'ready' ? '[&_i]:bg-success' : runtime().tone === 'busy' ? '[&_i]:bg-accent [&_i]:animate-pulse' : runtime().tone === 'attention' ? 'text-warning [&_i]:bg-warning' : runtime().tone === 'danger' ? 'text-danger [&_i]:bg-danger' : '[&_i]:bg-text-faint'}`}><i aria-hidden="true" class="w-6 h-6 shrink-0 rounded-full bg-text-faint" />{runtime().label}</span></Show></div>
+    <Status live tone={connState().kind || 'idle'} class="connection-pill [&_.ui-status__dot]:size-6 max-desk:[&_.ui-status__label]:hidden max-desk:[&_.ui-status__dot]:size-8">{connState().text}</Status></Show>
+    <Show when={props.launch} fallback={<IconButton tooltipPlacement="end" label="Open system information" onClick={props.onOpenSystem}><Icon><circle cx="10" cy="10" r="2.6" /><path d="M10 3.4v2M10 14.6v2M3.4 10h2M14.6 10h2M5.3 5.3l1.4 1.4M13.3 13.3l1.4 1.4M14.7 5.3l-1.4 1.4M6.7 13.3l-1.4 1.4" /></Icon></IconButton>}>
+      <IconButton tooltipPlacement="end" label="Toggle side panel" title="Side panel is not connected yet" disabled class="disabled:opacity-100"><Icon><rect x="4" y="4" width="12" height="12" rx="2" /><path d="M12.5 4v12" /></Icon></IconButton>
+    </Show>
     <Show when={logical() && selectedCid()}>
       <div class="chat-actions relative">
         <DropdownMenu open={menuOpen()} onOpenChange={setMenuOpen} placement="bottom-end">

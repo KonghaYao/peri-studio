@@ -5,9 +5,9 @@ import { compactViewportQuery } from '../lib/breakpoints';
 import { ProjectDrawer } from './shared/ProjectDrawer';
 import { SettingsDialog } from './SettingsDialog';
 
-const SIDEBAR_MIN_WIDTH = 240;
+const SIDEBAR_MIN_WIDTH = 220;
 const SIDEBAR_MAX_WIDTH = 480;
-const SIDEBAR_DEFAULT_WIDTH = 304;
+const SIDEBAR_DEFAULT_WIDTH = 242;
 const SIDEBAR_KEYBOARD_STEP = 24;
 
 function clampSidebarWidth(width: number) {

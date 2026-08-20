@@ -26,7 +26,7 @@ vi.mock('./ConnectionProblem', () => ({ ConnectionProblem: () => null }));
 vi.mock('./ElicitationQueue', () => ({ ElicitationQueue: () => null }));
 vi.mock('./ErrorCenter', () => ({ ErrorCenter: () => null }));
 vi.mock('./MessageList', () => ({ MessageList: () => null }));
-vi.mock('./QuickStartComposer', () => ({ QuickStartComposer: () => null }));
+vi.mock('./QuickStartComposer', () => ({ QuickStartComposer: () => <section aria-label="Start new session" class="quick-start quick-start--docked" /> }));
 
 import { ChatView } from './ChatView';
 
@@ -60,6 +60,20 @@ describe('ChatView project directory hydration', () => {
     expect(screen.getByText('Create a project first; Peri Studio saves and restores ACP sessions within it.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'New project' })).toBeInTheDocument();
     expect(screen.queryByRole('status', { name: 'Loading projects' })).not.toBeInTheDocument();
+  });
+
+  it('presents an unselected project directory as a Codex-style launch workspace', () => {
+    state.selectedSessionId.mockReturnValue(null);
+    state.projects.mockReturnValue([{
+      id: 'project-1', name: 'Peri Studio', cwd: '/repo', instanceId: 'local',
+      createdAt: '2026-08-13T10:00:00Z', updatedAt: '2026-08-13T10:00:00Z', archivedAt: null,
+    }]);
+
+    render(() => <ChatView />);
+
+    expect(screen.getByRole('heading', { name: 'What do you want to build in Peri Studio?' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Start new session' })).toHaveClass('quick-start--docked');
+    expect(document.querySelector('.chat-view')).toHaveClass('chat-view--launch');
   });
 
   it('keeps an archived-only registry distinct from an empty directory', () => {

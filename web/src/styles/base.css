@@ -1,6 +1,7 @@
-/* Product-owned browser baseline. This file owns box model and native element
-   normalization only; tokens, primitive visuals, and feature layout live in
-   their respective stylesheets. */
+/* 产品自有浏览器基线：这里只负责盒模型和原生元素归一化；token、基础组件视觉与
+   功能布局由各自样式表负责。Tailwind utility 必须能够覆盖这层 reset。 */
+
+@layer base {
 
 *,
 *::before,
@@ -10,6 +11,7 @@
   margin: 0;
   padding: 0;
   border: 0 solid;
+  --tw-border-style: solid;
 }
 
 html {
@@ -148,4 +150,5 @@ code {
     transition-duration: .01ms !important;
     scroll-behavior: auto !important;
   }
+}
 }

@@ -34,9 +34,9 @@ describe('AppShell desktop sidebar', () => {
     render(() => <AppShell />);
     const handle = screen.getByRole('separator', { name: 'Resize sidebar' });
 
-    expect(handle).toHaveAttribute('aria-valuenow', '304');
+    expect(handle).toHaveAttribute('aria-valuenow', '242');
     fireEvent.keyDown(handle, { key: 'ArrowRight' });
-    expect(handle).toHaveAttribute('aria-valuenow', '328');
+    expect(handle).toHaveAttribute('aria-valuenow', '266');
 
     fireEvent.pointerDown(handle, { button: 0 });
     expect(document.body).toHaveClass('sidebar-resizing');
@@ -52,6 +52,6 @@ describe('AppShell desktop sidebar', () => {
 
     expect(screen.getByTestId('project-sidebar')).toBeInTheDocument();
     expect(screen.getByRole('separator', { name: 'Resize sidebar' })).toBeInTheDocument();
-    expect(shell().style.gridTemplateColumns).toBe('304px minmax(0, 1fr)');
+    expect(shell().style.gridTemplateColumns).toBe('242px minmax(0, 1fr)');
   });
 });

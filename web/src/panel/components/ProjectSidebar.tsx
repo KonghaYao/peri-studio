@@ -19,6 +19,24 @@ function ImportIcon() { return <Icon class="size-17!"><path d="M10 3v9m0 0 3-3m-
 function ChevronIcon(props: { class?: string }) { return <Icon size="small" class={`size-16 flex-none text-text-muted ${props.class ?? ''}`}><path d="m7 5 5 5-5 5" /></Icon>; }
 function MoreIcon() { return <Icon><circle cx="4" cy="10" r="1" /><circle cx="10" cy="10" r="1" /><circle cx="16" cy="10" r="1" /></Icon>; }
 function SearchIcon() { return <Icon><circle cx="8.5" cy="8.5" r="5" /><path d="m12.2 12.2 4 4" /></Icon>; }
+function ComposeIcon() { return <Icon><path d="M12.5 4.5h3v3M15.5 4.5l-7.8 7.8-3.2.8.8-3.2 7.2-7.2" /><path d="M9 4H4.5v11.5H16V11" /></Icon>; }
+function PullRequestIcon() { return <Icon><circle cx="5" cy="4" r="1.5" /><circle cx="5" cy="16" r="1.5" /><circle cx="15" cy="16" r="1.5" /><path d="M5 5.5v9M9 5h2a4 4 0 0 1 4 4v5.5M9 5l2-2M9 5l2 2" /></Icon>; }
+function SitesIcon() { return <Icon><rect x="3.5" y="3.5" width="5" height="5" rx="1" /><rect x="11.5" y="3.5" width="5" height="5" rx="1" /><rect x="3.5" y="11.5" width="5" height="5" rx="1" /><path d="M11.5 14h5M14 11.5v5" /></Icon>; }
+function ClockIcon() { return <Icon><circle cx="10" cy="10" r="7" /><path d="M10 6v4l-2.5 2" /></Icon>; }
+function PluginIcon() { return <Icon><path d="M7 4v3M13 4v3M5 7h10v2a5 5 0 0 1-5 5 5 5 0 0 1-5-5zM10 14v3" /></Icon>; }
+function BellIcon() { return <Icon><path d="M5 13h10l-1.5-2V8a3.5 3.5 0 0 0-7 0v3zM8.5 15.5h3" /></Icon>; }
+function FolderIcon() { return <Icon class="size-17!"><path d="M3 6h5l1.5 2H17l-1.2 7.5H3.5z" /><path d="M3 6V4.5h5l1.5 1.5" /></Icon>; }
+function BackIcon() { return <Icon><path d="m12.5 4.5-5.5 5.5 5.5 5.5" /></Icon>; }
+function ForwardIcon() { return <Icon><path d="m7.5 4.5 5.5 5.5-5.5 5.5" /></Icon>; }
+function VoiceIcon() { return <Icon><path d="M3 9v2M6 6v8M9 4v12M12 7v6M15 5v10M18 8v4" /></Icon>; }
+function HelpIcon() { return <Icon><circle cx="10" cy="10" r="7" /><path d="M8.2 7.7a2 2 0 1 1 2.8 1.8c-.8.4-1 1-1 1.7M10 14.5h.01" /></Icon>; }
+
+const PLACEHOLDER_NAV_ITEMS = [
+  { label: 'Pull requests', title: 'Pull request review is not connected yet', icon: PullRequestIcon },
+  { label: 'Sites', title: 'Sites are not connected yet', icon: SitesIcon },
+  { label: 'Scheduled', title: 'Scheduled tasks are not connected yet', icon: ClockIcon },
+  { label: 'Plugins', title: 'Plugin management is not connected yet', icon: PluginIcon },
+] as const;
 function RenameIcon() { return <Icon class="size-16!"><path d="m5 14-1 3 3-1 8.5-8.5-2-2L5 14Z" /><path d="m12.5 6.5 2 2" /></Icon>; }
 function ArchiveIcon() { return <Icon class="size-16!"><path d="M3.5 6.5h13v10h-13zM2.5 3.5h15v3h-15zM8 10h4" /></Icon>; }
 
@@ -134,12 +152,25 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
   };
 
   return (
-    <nav class="project-sidebar relative flex h-full min-h-0 flex-col bg-sidebar-bg px-12 desk:px-9 wide:px-12" aria-label="Projects & Sessions">
-      <div class="sidebar-workspace-header sticky top-0 z-12 -mx-12 bg-sidebar-bg px-12 desk:-mx-9 desk:px-9 wide:-mx-12 wide:px-12">
-        <div class="brand-row flex h-52 items-center text-14 font-normal">peri studio</div>
+    <nav class="project-sidebar relative flex h-full min-h-0 flex-col bg-sidebar-bg px-12 desk:px-10 wide:px-12" aria-label="Projects & Sessions">
+      <div class="sidebar-workspace-header sticky top-0 z-12 -mx-12 bg-sidebar-bg px-12 desk:-mx-10 desk:px-10 wide:-mx-12 wide:px-12">
+        <div class="window-toolbar flex h-48 items-center gap-10 px-6" aria-label="Window controls">
+          <span class="size-13 rounded-full bg-danger" aria-hidden="true" />
+          <span class="size-13 rounded-full bg-warning" aria-hidden="true" />
+          <span class="mr-12 size-13 rounded-full bg-success" aria-hidden="true" />
+          <IconButton label="Back" title="Navigation history is not connected yet" disabled class="size-32 min-h-32 border-0 bg-transparent text-text-faint disabled:opacity-100"><BackIcon /></IconButton>
+          <IconButton label="Forward" title="Navigation history is not connected yet" disabled class="size-32 min-h-32 border-0 bg-transparent text-text-faint disabled:opacity-100"><ForwardIcon /></IconButton>
+        </div>
+        <div class="brand-row flex h-60 items-center gap-5 px-6">
+          <strong class="mr-auto text-17 font-650 tracking-[-.025em]">Peri</strong>
+          <IconButton label="Search sessions" disabled={!registryHydrated()} onClick={() => setSearchOpen(true)} class="size-34 min-h-34 border-0 bg-transparent text-text-muted"><SearchIcon /></IconButton>
+          <IconButton label="Notifications" title="Notifications are not connected yet" disabled class="size-34 min-h-34 border-0 bg-transparent text-text-muted disabled:opacity-100"><BellIcon /></IconButton>
+        </div>
       </div>
-      <div class="workspace-actions mb-8">
-        <Button class="session-search-button min-h-32 w-full justify-start rounded-8 border-0 bg-transparent text-12 text-text-muted hover:border-border-strong hover:bg-hover hover:text-text-primary" disabled={!registryHydrated()} onClick={() => setSearchOpen(true)}><SearchIcon /><span>Search sessions</span><kbd class="ml-auto border-0 bg-transparent p-0 text-10 text-text-muted">{primaryShortcut('K')}</kbd></Button>
+      <div class="workspace-actions mb-16 flex flex-col gap-2">
+        <Button class="new-session-button min-h-38 w-full justify-start rounded-8 border-0 bg-transparent px-8 text-14 font-550 text-text-primary disabled:opacity-100" disabled={readOnly() || activeProjects().length !== 1 || !!creatingSessionProjectId()} onClick={() => activeProjects().length === 1 && createProjectSession(activeProjects()[0].id)}><ComposeIcon /><span>New session</span></Button>
+        <For each={PLACEHOLDER_NAV_ITEMS}>{(item) => <Button class="min-h-38 w-full justify-start rounded-8 border-0 bg-transparent px-8 text-14 text-text-secondary disabled:opacity-100" disabled title={item.title}><item.icon /><span>{item.label}</span></Button>}</For>
+        <Button aria-hidden="true" tabIndex={-1} class="session-search-button sr-only border border-border-subtle" disabled><span>Search sessions</span><kbd class="border border-border-subtle">{primaryShortcut('K')}</kbd></Button>
       </div>
       <SessionSearch open={searchOpen()} onClose={() => setSearchOpen(false)} onSelected={props.onNavigate} />
       <Show when={readOnly()}><div class="readonly-label -mt-8 mx-8 mb-12 text-11 font-semibold text-warning">Read-only mode</div></Show>
@@ -151,6 +182,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
         </form>
       </DialogContent></Dialog>
       <div class="project-scroll min-h-0 flex-1 overflow-auto pt-4 pb-16 [scrollbar-color:var(--scrollbar-thumb)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-scrollbar-thumb [&::-webkit-scrollbar]:w-6 hover:[&::-webkit-scrollbar-thumb]:bg-[color-mix(in_srgb,var(--scrollbar-thumb)_82%,var(--text-muted))]">
+        <div class="mb-7 flex h-28 items-center px-8 text-12 font-550 text-text-muted"><span>Projects</span><Button size="compact" class="new-project-button ml-auto size-28 min-h-28 border-0 p-0 text-text-muted" disabled={readOnly()} onClick={() => setCreating(true)} aria-label="New project"><PlusIcon /></Button></div>
         <Show
           when={registryHydrated()}
           fallback={<LoadingState label="Loading projects" description="Syncing projects and sessions from the Peri Studio server…" class="sidebar-loading mx-8 p-8! text-left!" />}
@@ -165,7 +197,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
             />}
           >
             <For each={machines()}>{(machine) => <section class="machine-group mb-10">
-              <div class="machine-row group flex min-h-32 items-center gap-8 px-8 text-13 font-normal text-text-secondary">
+              <div class="machine-row group flex min-h-26 items-center gap-8 px-8 text-10 font-normal uppercase tracking-6 text-text-faint">
                 <span class="machine-name min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{machine.name}</span>
                 <Show when={machine.offline}><span class="machine-offline-dot size-7 shrink-0 rounded-full bg-danger" role="img" aria-label="Machine offline" /></Show>
                 <IconButton class="row-create-action machine-create-action ml-auto size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 disabled:cursor-not-allowed pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" label={`New project on ${machine.name} unavailable: choose a remote directory first; the current API cannot create by machine`} disabled><PlusIcon /></IconButton>
@@ -176,8 +208,8 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
             const collapsed = () => collapsedProjects().has(project.id);
             const projectMenuId = `project-menu-${project.id}`;
             return <Collapsible as="section" class="project-group" open={!collapsed()} onOpenChange={(open) => setProjectCollapsed(project.id, !open)}>
-              <div class="project-heading group flex min-h-32 items-center rounded-8 hover:bg-hover focus-within:bg-hover pointer-coarse:min-h-52">
-                <CollapsibleTrigger class="project-disclosure flex min-h-32 min-w-0 flex-1 items-center gap-5 rounded-8 border-0 bg-transparent px-8 text-left text-13 font-normal text-text-primary cursor-pointer pointer-coarse:min-h-44"><ChevronIcon class="size-14! transition-transform duration-150 group-data-[expanded]:rotate-90" /><span class="block overflow-hidden text-ellipsis whitespace-nowrap">{project.name}</span></CollapsibleTrigger>
+              <div class="project-heading group flex min-h-36 items-center rounded-8 hover:bg-hover focus-within:bg-hover pointer-coarse:min-h-52">
+                <CollapsibleTrigger class="project-disclosure flex min-h-36 min-w-0 flex-1 items-center gap-7 rounded-8 border-0 bg-transparent px-8 text-left text-14 font-normal text-text-primary cursor-pointer pointer-coarse:min-h-44"><ChevronIcon class="size-12! transition-transform duration-150 group-data-[expanded]:rotate-90" /><FolderIcon /><span class="block overflow-hidden text-ellipsis whitespace-nowrap">{project.name}</span></CollapsibleTrigger>
                 <IconButton class="row-create-action ml-auto size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" tooltipPlacement="end" label={`New session in ${project.name}`} busy={creatingSessionProjectId() === project.id} disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(project.id)}><PlusIcon /></IconButton>
                 <DropdownMenu open={projectMenu() === project.id} onOpenChange={(open) => setProjectMenu(open ? project.id : null)} placement="bottom-end">
                   <DropdownMenuTrigger as={IconButton} class="project-menu-trigger size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" tooltipPlacement="end" label={`${project.name} actions`} disabled={readOnly()}><MoreIcon /></DropdownMenuTrigger>
@@ -188,7 +220,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <CollapsibleContent id={`project-sessions-${project.id}`} class="session-list flex flex-col pl-16">
+              <CollapsibleContent id={`project-sessions-${project.id}`} class="session-list flex flex-col pl-16 border-l border-divider">
                 <For each={sessions()} fallback={<Button busy={creatingSessionProjectId() === project.id} disabled={readOnly() || !!creatingSessionProjectId()} class="session-empty mx-8 cursor-pointer rounded-8 p-8 text-left text-12 text-text-muted hover:bg-hover hover:text-text-secondary" onClick={() => createProjectSession(project.id)}>Start your first conversation</Button>}>
                   {(session) => {
                     const selected = () => selectedSessionId() === session.id;
@@ -260,6 +292,11 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
           </ArchivedSection>
         </section>
       </Show>
+      <Button class="onboarding-card mx-4 mb-10 min-h-[64px] justify-start rounded-16 border border-border-subtle bg-surface px-12 text-left shadow-float disabled:opacity-100" disabled title="Onboarding progress is not connected yet">
+        <span class="grid size-24 place-items-center rounded-full border-2 border-divider text-10 text-text-muted" aria-hidden="true" />
+        <span class="flex-1 text-14 font-550 text-text-primary">Get started</span>
+        <span class="text-12 text-text-muted">0/4</span>
+      </Button>
       <SessionImportDialog
         open={!!importingProject()}
         project={projects().find((item) => item.id === importingProject()) || null}
@@ -314,10 +351,12 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
           />;
         })()}
       </DialogContent></Dialog>
-      <div class="sidebar-footer flex h-52 items-center gap-8 border-t border-divider px-8 text-12 text-text-muted">
-        <span class="account-avatar grid size-24 place-items-center rounded-full bg-surface-muted text-11 text-text-secondary" aria-hidden="true">A</span>
-        <Button class="account-entry min-h-32 flex-1 justify-start rounded-8 border-0 bg-transparent px-8 text-text-secondary hover:bg-hover hover:text-text-primary pointer-coarse:min-h-44" onClick={props.onOpenSystem}>Account</Button>
-        <Button class="account-logout min-h-32 rounded-8 border-0 bg-transparent px-8 text-text-secondary hover:bg-hover hover:text-text-primary pointer-coarse:min-h-44" size="compact" onClick={auth?.logout}>Log out</Button>
+      <div class="sidebar-footer -mx-12 flex h-58 items-center gap-6 border-t border-divider px-16 text-12 text-text-muted desk:-mx-10 wide:-mx-12">
+        <span class="account-avatar grid size-28 place-items-center rounded-full bg-surface text-11 font-550 text-text-secondary shadow-[inset_0_0_0_1px_var(--border-subtle)]" aria-hidden="true">A</span>
+        <Button class="account-entry min-h-36 flex-1 justify-start rounded-8 border-0 bg-transparent px-5 text-14 text-text-primary hover:bg-hover pointer-coarse:min-h-44" onClick={props.onOpenSystem}>Account</Button>
+        <IconButton label="Voice" title="Voice is not connected yet" disabled class="size-32 min-h-32 border-0 bg-transparent text-text-muted disabled:opacity-100"><VoiceIcon /></IconButton>
+        <IconButton label="Help and system information" onClick={props.onOpenSystem} class="size-32 min-h-32 border-0 bg-transparent text-text-muted"><HelpIcon /></IconButton>
+        <Button class="account-logout sr-only" onClick={auth?.logout}>Log out</Button>
       </div>
     </nav>
   );

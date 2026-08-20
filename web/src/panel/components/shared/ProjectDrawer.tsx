@@ -9,7 +9,7 @@ interface ProjectDrawerProps {
   ref?: (element: HTMLElement) => void;
 }
 
-const drawerClass = 'project-drawer min-w-0 border-r border-border-subtle bg-sidebar-bg max-desk:fixed max-desk:inset-y-0 max-desk:left-0 max-desk:z-40 max-desk:w-(--container-drawer) max-desk:-translate-x-full';
+const drawerClass = 'project-drawer min-h-0 min-w-0 overflow-hidden border-r border-border-subtle bg-sidebar-bg max-desk:fixed max-desk:inset-y-0 max-desk:left-0 max-desk:z-40 max-desk:w-(--container-drawer) max-desk:-translate-x-full';
 
 /** Product navigation: structural on desktop and a Kobalte modal dialog on compact viewports. */
 export function ProjectDrawer(props: ProjectDrawerProps) {

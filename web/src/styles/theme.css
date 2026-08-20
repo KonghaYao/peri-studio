@@ -156,6 +156,7 @@
   --text-16: var(--text-16);
   --text-17: var(--text-17);
   --text-18: var(--text-18);
+  --text-24: var(--text-24);
   --text-28: var(--text-28);
 
   /* Line-height scale */
@@ -198,6 +199,7 @@
   /* Containers: max-w-/max-h-/w- utilities resolve to these */
   --container-chat: var(--container-chat);
   --container-chat-narrow: var(--container-chat-narrow);
+  --container-composer-launch: var(--container-composer-launch);
   --container-auth-card: var(--container-auth-card);
   --container-drawer: var(--container-drawer);
   --container-settings: var(--container-settings);

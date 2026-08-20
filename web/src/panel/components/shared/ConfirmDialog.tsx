@@ -35,7 +35,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
       <Show when={props.eyebrow}><span class="block mb-5 text-text-muted text-10 font-bold tracking-8 uppercase">{props.eyebrow}</span></Show>
       <h2 class="m-0 text-19 tracking-[-.02em]">{props.title}</h2>
       <p class="mt-9 mb-0 text-13 leading-155 text-text-secondary">{props.description}</p>
-      <Show when={props.warning}><p class="mt-9 mb-0 rounded-9 bg-warning-soft px-10 py-9 !text-warning text-13 leading-155">{props.warning}</p></Show>
+      <Show when={props.warning}><p class="mt-9 mb-0 rounded-9 border border-warning-border bg-warning-soft px-10 py-9 !text-warning text-13 leading-155">{props.warning}</p></Show>
       <div class="mt-20 flex justify-end gap-6">
         <Button disabled={props.cancelDisabled} onClick={props.onCancel}>Cancel</Button>
         <Button variant="danger" busy={props.confirmBusy} disabled={props.confirmDisabled} onClick={props.onConfirm}>{props.confirmLabel}</Button>

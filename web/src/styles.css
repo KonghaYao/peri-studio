@@ -1,8 +1,8 @@
-@import './styles/theme.css';
 @import './styles/base.css';
+@import './styles/theme.css';
 @import './styles/primitives.css';
 
-/* peri-studio panel layout and feature styling. This entry only wires the cascade:
-   styles/theme.css (Tailwind v4 theme + preflight) → styles/base.css →
-   styles/primitives.css (→ styles/tokens.css). Reusable design values live in
-   styles/tokens.css; feature layout is expressed in component JSX utilities. */
+/* peri-studio 面板样式入口只负责组织级联顺序：
+   styles/base.css → styles/theme.css（Tailwind v4 theme + preflight）→
+   styles/primitives.css（→ styles/tokens.css）。复用设计值集中在
+   styles/tokens.css，功能布局由组件 JSX utility 表达。 */

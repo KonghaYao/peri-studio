@@ -8,7 +8,7 @@
 
   /* Surfaces: white is the canvas; hierarchy comes from spacing and hairlines. */
   --app-bg: #ffffff;
-  --sidebar-bg: #ffffff;
+  --sidebar-bg: #f3f4f3;
   --surface: #ffffff;
   --surface-muted: #fafaf9;
   --empty-mark-bg: #f7f7f5;
@@ -126,6 +126,7 @@
 
   /* Layout */
   --composer-max: 864px;
+  --composer-launch-max: 736px;
   --container-popover: 288px;
 
   /* Typography */
@@ -151,6 +152,7 @@
   --text-16: 16px;
   --text-17: 17px;
   --text-18: 18px;
+  --text-24: 24px;
   --text-28: 28px;
 
   /* Line-height scale (unitless ratios) */
@@ -193,6 +195,7 @@
   /* Containers (bounded surfaces; used by max-w-/max-h-/w- utilities) */
   --container-chat: 820px;
   --container-chat-narrow: 760px;
+  --container-composer-launch: var(--composer-launch-max);
   --container-auth-card: min(440px, 100%);
   --container-drawer: min(88vw, 320px);
   --container-settings: min(560px, calc(100vw - 40px));

@@ -1,4 +1,12 @@
 @import './tokens.css';
+
+/* Tailwind v4 的 border-width utility 会读取此变量。产品基线将边框宽度
+   reset 为零，因此这里显式保留 solid 样式。 */
+*,
+*::before,
+*::after {
+  --tw-border-style: solid;
+}
 .ui-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;

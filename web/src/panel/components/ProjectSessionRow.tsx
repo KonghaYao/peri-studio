@@ -83,9 +83,9 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     );
   };
 
-  return <div data-session-id={props.session.id} class={`session-row group relative rounded-8 hover:bg-selected ${props.selected ? 'is-selected bg-selected' : ''}`}>
+  return <div data-session-id={props.session.id} class={`session-row group relative rounded-8 border-l-2 border-transparent hover:bg-selected ${props.selected ? 'is-selected border-accent bg-selected' : ''}`}>
     <Button
-      class="session-main relative flex min-h-32 w-full items-center gap-8 rounded-8 border-0 bg-transparent px-8 pr-68 text-left text-13 font-normal text-text-secondary cursor-pointer disabled:cursor-wait pointer-coarse:min-h-52 pointer-coarse:pr-68"
+      class="session-main relative flex min-h-32 w-full min-w-0 items-center justify-start gap-8 rounded-8 border-0 bg-transparent px-8 pr-[68px] text-left text-13 font-normal text-text-secondary cursor-pointer disabled:cursor-wait pointer-coarse:min-h-52 pointer-coarse:pr-[68px]"
       aria-current={props.selected ? 'page' : undefined}
       title={props.readOnly && !props.session.activeChatId ? 'Full permission required to start this session' : undefined}
       onClick={open}
@@ -93,12 +93,12 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     >
       <ChatIcon />
       <span class="session-copy min-w-0 flex-1"><strong class="block overflow-hidden text-ellipsis whitespace-nowrap text-13 font-normal text-inherit">{displayTitle()}</strong></span>
-      <span class="absolute right-42 grid size-7 place-items-center"><Show when={props.opening || ['activating', 'pending'].includes(props.session.lifecycle)} fallback={<span class={`session-status-dot session-status-dot--${props.state.tone} size-7 shrink-0 rounded-full ${props.state.tone === 'idle' ? 'bg-text-faint' : props.state.tone === 'attention' ? 'bg-warning' : props.state.tone === 'danger' ? 'bg-danger' : 'bg-success'}`} role="img" aria-label={`Runtime status: ${props.state.label}`} />}><Spinner label="Opening…" /></Show></span>
+      <span class="absolute right-[10px] grid size-7 place-items-center"><Show when={props.opening || ['activating', 'pending'].includes(props.session.lifecycle)} fallback={<span class={`session-status-dot session-status-dot--${props.state.tone} size-7 shrink-0 rounded-full ${props.state.tone === 'idle' ? 'bg-text-faint' : props.state.tone === 'attention' ? 'bg-warning' : props.state.tone === 'danger' ? 'bg-danger' : 'bg-success'}`} role="img" aria-label={`Runtime status: ${props.state.label}`} />}><Spinner label="Opening…" /></Show></span>
     </Button>
     <DropdownMenu open={props.menuOpen} onOpenChange={props.onMenuOpenChange} placement="bottom-end">
       <DropdownMenuTrigger as={IconButton}
         tooltipPlacement="end"
-        class="session-menu absolute top-0 right-20 size-32 min-h-32 border-0 bg-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100"
+        class="session-menu absolute top-0 right-[20px] size-32 min-h-32 border-0 bg-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100"
         ref={menuTrigger}
         disabled={props.readOnly || submitting()}
         label={`Session actions: ${displayTitle()}`}
