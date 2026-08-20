@@ -73,6 +73,22 @@ test('migrated surfaces retain their authored computed borders', async ({ page }
   });
 });
 
+test('conversation copy keeps compact authored line heights', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
+
+  const userMessage = page.getByRole('article', { name: 'Your message' }).first();
+  const geometry = await userMessage.evaluate((element) => ({
+    height: element.getBoundingClientRect().height,
+    lineHeight: getComputedStyle(element.querySelector('.conversation-message__text')).lineHeight,
+    composerLineHeight: getComputedStyle(document.querySelector('.composer-input')).lineHeight,
+  }));
+
+  expect(geometry.lineHeight).toBe('25px');
+  expect(geometry.composerLineHeight).toBe('24px');
+  expect(geometry.height).toBeLessThan(100);
+});
+
 test('sidebar session labels retain space beside action and status slots', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });

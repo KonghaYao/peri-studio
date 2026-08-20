@@ -167,6 +167,8 @@
   --leading-155: var(--leading-155);
   --leading-16: var(--leading-16);
   --leading-20: var(--leading-20);
+  --leading-24: var(--leading-24);
+  --leading-25: var(--leading-25);
 
   /* Font-weight scale (non-standard weights) */
   --font-weight-550: var(--font-weight-550);

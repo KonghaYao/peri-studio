@@ -163,6 +163,8 @@
   --leading-155: 1.55;
   --leading-16: 1.6;
   --leading-20: 20px;
+  --leading-24: 24px;
+  --leading-25: 25px;
 
   /* Font-weight scale (non-standard weights used by the panel) */
   --font-weight-550: 550;
