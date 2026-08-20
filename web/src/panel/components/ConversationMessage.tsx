@@ -19,7 +19,6 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
   const timestamp = createMemo(() => entry().origin === 'session_replay' ? null : messageTime(entry().createdAt));
   const role = createMemo(() => entry().role === 'user' ? 'user' : entry().role === 'system' ? 'system' : 'assistant');
   const streaming = () => entry().status === 'streaming';
-  const markdown = createMemo(() => ({ text: entry().text, streaming: streaming() }));
   const userSegments = createMemo(() => splitSystemReminders(entry().text));
   const label = () => role() === 'user' ? 'Your message' : role() === 'system' ? 'System message' : 'Assistant message';
 
@@ -44,7 +43,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
             </InlineNotice>
           </Show>
         }</For>}>
-          <Show when={markdown()} keyed>{(value) => <Markdown source={value.text} streaming={value.streaming} />}</Show>
+          <Markdown source={() => entry().text} streaming={streaming()} />
         </Show>
       </div>
       <For each={toolCallIds()}>{(id) => <ToolCallCard toolCall={() => toolCallsById().get(id)!} />}</For>

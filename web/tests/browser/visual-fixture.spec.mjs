@@ -4,6 +4,7 @@ import { assertVisualContract, visualContract } from '../../scripts/visual-contr
 const scenarios = [
   ['catalog', { projects: 2, sessions: 4 }],
   ['conversation', { messages: 4, markdown: true }],
+  ['markdown', { messages: 1 }],
   ['permission-streaming', { permissions: 1, permissionQueueLabel: 'Pending permission requests, 2 total' }],
   ['terminal-readonly', { readonly: true }],
 ];
@@ -21,6 +22,38 @@ function collectBrowserErrors(page) {
   });
   return errors;
 }
+
+test('markdown lab renders rich content without eager network media', async ({ page }) => {
+  const requested = [];
+  page.on('request', (request) => requested.push(request.url()));
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await page.goto('/visual-fixture.html?scenario=markdown', { waitUntil: 'networkidle' });
+
+  await expect(page.locator('.markdown-body table')).toHaveCount(1);
+  await expect(page.locator('.markdown-body .katex')).toHaveCount(2);
+  await expect(page.locator('.md-code-block[data-highlighted=true]')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Render diagram' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Load image: Architecture' })).toBeVisible();
+  expect(requested.some((url) => url.includes('architecture.png'))).toBe(false);
+
+  await page.getByRole('button', { name: 'Render diagram' }).click();
+  await expect(page.locator('.md-mermaid__result svg')).toBeVisible();
+  await expect(page.locator('.md-mermaid__result script, .md-mermaid__result foreignObject')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Copy SVG' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open diagram' }).click();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Diagram' })).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  const geometry = await page.locator('.markdown-body').evaluate((body) => ({
+    width: body.getBoundingClientRect().width,
+    tableWidth: body.querySelector('.md-table').getBoundingClientRect().width,
+    codeWidth: body.querySelector('.md-code-block').getBoundingClientRect().width,
+    scrollWidth: body.scrollWidth,
+  }));
+  expect(geometry.tableWidth).toBeLessThanOrEqual(geometry.width);
+  expect(geometry.codeWidth).toBeLessThanOrEqual(geometry.width);
+  expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.width + 1);
+});
 
 for (const [scenario, expected] of scenarios) {
   for (const viewport of viewports) {

@@ -18,6 +18,7 @@ const SAFE_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
 export const safeHref = (value: unknown): string | null => {
   const href = String(value || '').trim();
   if (!href || href.startsWith('//')) return null;
+  if (/^#[^\u0000-\u0020]*$/u.test(href)) return href;
   try {
     const url = new URL(href, 'https://peri-studio.invalid/');
     if (!SAFE_PROTOCOLS.has(url.protocol)) return null;

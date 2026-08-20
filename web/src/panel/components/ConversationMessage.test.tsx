@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from '@solidjs/testing-library';
+import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
+import { createSignal } from 'solid-js';
 import { describe, expect, it, vi } from 'vitest';
 import type { ChatEntry } from '../lib/chat-view';
 import { ConversationMessage } from './ConversationMessage';
@@ -43,6 +44,33 @@ describe('ConversationMessage', () => {
     expect(screen.queryByRole('button', { name: 'Copy answer' })).not.toBeInTheDocument();
     expect(document.querySelector('.message-loading')).toBeNull();
     view.unmount();
+  });
+
+  it('keeps the Markdown surface mounted while streaming text grows', () => {
+    const [current, setCurrent] = createSignal(entry({ status: 'streaming', text: 'First' }));
+    render(() => <ConversationMessage entry={current} />);
+    const surface = document.querySelector('.markdown-body');
+    setCurrent(entry({ status: 'streaming', text: 'First second' }));
+    expect(document.querySelector('.markdown-body')).toBe(surface);
+    expect(surface).toHaveTextContent('First second');
+  });
+
+  it('preserves completed Markdown block instances while the stream edge grows', async () => {
+    const [source, setSource] = createSignal('```ts\nconst value = 1;\n```\n\nFirst');
+    render(() => <Markdown source={source} streaming />);
+    await waitFor(() => expect(document.querySelector('.md-code-block')).toHaveAttribute('data-highlighted', 'true'));
+    const codeBlock = document.querySelector('.md-code-block');
+    setSource('```ts\nconst value = 1;\n```\n\nFirst second');
+    expect(document.querySelector('.md-code-block')).toBe(codeBlock);
+  });
+
+  it('preserves remote image consent while later Markdown streams in', () => {
+    const [source, setSource] = createSignal('![Diagram](https://example.test/diagram.png)\n\nFirst');
+    render(() => <Markdown source={source} streaming />);
+    fireEvent.click(screen.getByRole('button', { name: 'Load image: Diagram' }));
+    const image = screen.getByRole('img', { name: 'Diagram' });
+    setSource('![Diagram](https://example.test/diagram.png)\n\nFirst second');
+    expect(screen.getByRole('img', { name: 'Diagram' })).toBe(image);
   });
 
   it('keeps untrusted HTML inert in assistant Markdown', () => {
@@ -127,5 +155,129 @@ describe('Markdown', () => {
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     expect(screen.getByRole('button', { name: 'Copy code' })).toBeInTheDocument();
     expect(screen.getByText('const x = 1;')).toBeInTheDocument();
+  });
+
+  it('renders GFM tables, tasks, strikethrough and footnotes with table controls', () => {
+    render(() => <Markdown source={'| Item | State |\n| --- | --- |\n| Build | Done |\n\n- [x] Tests\n- [ ] Release\n\n~~obsolete~~\n\nFact[^1]\n\n[^1]: Verified'} />);
+
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Copy table' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Download table as CSV' })).toBeInTheDocument();
+    expect(screen.getAllByRole('checkbox')).toHaveLength(2);
+    expect(screen.getAllByRole('checkbox')[0]).toBeChecked();
+    expect(document.querySelector('del')).toHaveTextContent('obsolete');
+    expect(document.querySelector('.markdown-body footer')).toHaveTextContent('Verified');
+    expect(screen.getByText('1').closest('a')).toHaveAttribute('href', '#1');
+  });
+
+  it('copies table cells as a compact tab-separated grid', () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    render(() => <Markdown source={'| Item | State |\n| --- | --- |\n| Build | Done |'} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Copy table' }));
+    expect(writeText).toHaveBeenCalledWith('Item\tState\nBuild\tDone');
+  });
+
+  it('renders CJK emphasis adjacent to ideographic punctuation', () => {
+    render(() => <Markdown source={'**重要提示（请注意）。**后续内容'} />);
+    expect(document.querySelector('strong')).toHaveTextContent('重要提示（请注意）。');
+  });
+
+  it('renders inline and block math through accessible KaTeX output', async () => {
+    render(() => <Markdown source={'Inline $x^2 + y^2$ formula.\n\n$$\nE = mc^2\n$$'} />);
+
+    await waitFor(() => expect(document.querySelectorAll('.katex')).toHaveLength(2));
+    expect(document.querySelector('.md-math--inline')).toHaveAttribute('aria-label', 'x^2 + y^2');
+    expect(document.querySelector('.md-math--block')).toHaveAttribute('aria-label', 'E = mc^2');
+    expect(document.querySelectorAll('.katex-mathml').length).toBeGreaterThan(0);
+  });
+
+  it('provides highlighted code metadata, line numbers, copy and download controls', async () => {
+    render(() => <Markdown source={'```ts startLine=7 filename=answer.ts\nconst answer: number = 42;\nconsole.log(answer);\n```'} />);
+
+    expect(screen.getByText('TypeScript')).toBeInTheDocument();
+    expect(screen.getByText('answer.ts')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Copy code' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Download code' })).toBeInTheDocument();
+    expect(screen.getByText('7')).toHaveClass('md-code-line__number');
+    expect(screen.getByText('8')).toHaveClass('md-code-line__number');
+    await waitFor(() => expect(document.querySelector('.md-code-block')).toHaveAttribute('data-highlighted', 'true'));
+  });
+
+  it('supports code blocks without line numbers and leaves unmatched prices literal', () => {
+    render(() => <Markdown source={'Price is $5.\n\n```sh noLineNumbers\necho safe\n```'} />);
+    expect(screen.getByText(/Price is \$5/)).toBeInTheDocument();
+    expect(document.querySelector('.md-code-line__number')).not.toBeInTheDocument();
+  });
+
+  it('allows consumers to override individual Markdown components', () => {
+    render(() => <Markdown source="_custom_" overrides={{ em: { component: (props) => <em {...props} data-renderer="custom" /> } }} />);
+    expect(document.querySelector('em')).toHaveAttribute('data-renderer', 'custom');
+  });
+
+  it('keeps link and image safety when presentation overrides are provided', () => {
+    render(() => <Markdown source={'[Unsafe](javascript:alert(1))\n\n![Remote](https://example.test/image.png)'} overrides={{ a: 'div', img: 'div' }} />);
+    expect(screen.queryByRole('link', { name: 'Unsafe' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Load image: Remote' })).toBeInTheDocument();
+  });
+
+  it('does not highlight an incomplete streaming code fence', async () => {
+    render(() => <Markdown streaming source={'```ts\nconst value = 1'} />);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(document.querySelector('.md-code-block')).toHaveAttribute('data-highlighted', 'false');
+  });
+
+  it('unlocks and highlights a fence when its closing marker streams in', async () => {
+    const [source, setSource] = createSignal('```ts\nconst value = 1;');
+    render(() => <Markdown streaming source={source} />);
+    expect(document.querySelector('.md-code-block')).toHaveAttribute('data-incomplete', 'true');
+    setSource('```ts\nconst value = 1;\n```');
+    await waitFor(() => expect(document.querySelector('.md-code-block')).toHaveAttribute('data-highlighted', 'true'));
+    expect(document.querySelector('.md-code-block')).not.toHaveAttribute('data-incomplete');
+    expect(screen.getByRole('button', { name: 'Copy code' })).toBeEnabled();
+  });
+
+  it('highlights languages from the complete Shiki registry', async () => {
+    render(() => <Markdown source={'```dockerfile\nFROM node:22\n```'} />);
+    await waitFor(() => expect(document.querySelector('.md-code-block')).toHaveAttribute('data-highlighted', 'true'));
+  });
+
+  it('does not typeset incomplete streaming block math', async () => {
+    render(() => <Markdown streaming source={'$$\nx +'} />);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(document.querySelector('.md-code-block')).toHaveAttribute('data-incomplete', 'true');
+    expect(document.querySelector('.md-math')).not.toBeInTheDocument();
+  });
+
+  it('keeps incomplete streaming code stable and locks expensive controls', () => {
+    render(() => <Markdown streaming source={'```mermaid\ngraph TD\n  A --> B'} />);
+
+    expect(screen.getByText('Mermaid')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Render diagram' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Copy code' })).toBeDisabled();
+    expect(document.querySelector('.md-code-block')).toHaveAttribute('data-incomplete', 'true');
+  });
+
+  it('offers completed Mermaid as an explicit interactive render', () => {
+    render(() => <Markdown source={'```mermaid\ngraph TD\n  A --> B\n```'} />);
+    expect(screen.getByRole('button', { name: 'Render diagram' })).toBeEnabled();
+    expect(document.querySelector('.md-mermaid code')).toHaveTextContent('graph TD');
+  });
+
+  it('requires explicit consent before loading remote Markdown images', () => {
+    render(() => <Markdown source={'![Architecture](https://example.com/architecture.png)'} />);
+    expect(screen.getByRole('button', { name: 'Load image: Architecture' })).toBeInTheDocument();
+    expect(document.querySelector('.markdown-body img')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Load image: Architecture' }));
+    const image = screen.getByRole('img', { name: 'Architecture' });
+    expect(image).toHaveAttribute('loading', 'lazy');
+    expect(image).toHaveAttribute('referrerpolicy', 'no-referrer');
+  });
+
+  it('never offers unsafe or malformed image protocols', () => {
+    render(() => <Markdown source={'![Unsafe](javascript:alert(1))\n\n![Local](file:///etc/passwd)'} />);
+    expect(screen.queryByRole('button', { name: /Load image/ })).not.toBeInTheDocument();
+    expect(document.querySelector('.markdown-body img')).not.toBeInTheDocument();
+    expect(screen.getByText('Image unavailable: Unsafe')).toBeInTheDocument();
   });
 });

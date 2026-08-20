@@ -1,0 +1,41 @@
+import { createResource, Show } from 'solid-js';
+import { Button } from '../../../components/ui';
+import { memoizeAsync } from './async-cache';
+
+async function loadMath(expression: string, displayMode: boolean) {
+  const [{ default: katex }] = await Promise.all([
+    import('katex'),
+    import('katex/dist/katex.min.css'),
+  ]);
+  return {
+    html: katex.renderToString(expression, {
+      displayMode,
+      output: 'htmlAndMathml',
+      strict: 'warn',
+      throwOnError: false,
+      trust: false,
+    }),
+    error: false,
+  };
+}
+
+const loadMathCached = memoizeAsync((expression: string, displayMode: boolean) => `${displayMode ? 'block' : 'inline'}\u0000${expression}`, loadMath);
+
+async function typeset(expression: string, displayMode: boolean) {
+  try {
+    return await loadMathCached(expression, displayMode);
+  } catch {
+    return { html: '', error: true };
+  }
+}
+
+export function MathExpression(props: { expression: string; block?: boolean }) {
+  const [result, { refetch }] = createResource(() => [props.expression, props.block === true] as const, ([expression, block]) => typeset(expression, block));
+  const className = () => `md-math ${props.block ? 'md-math--block my-12 overflow-x-auto py-6 text-center' : 'md-math--inline'}`;
+  return <span class={className()} aria-label={props.expression}>
+    <Show when={result()?.html} fallback={<code class="md-math__source">{props.expression}</code>}>
+      {(value) => <span innerHTML={value()} />}
+    </Show>
+    <Show when={result()?.error}><Button size="compact" class="ml-6" onClick={() => refetch()} aria-label="Retry math rendering">Retry</Button></Show>
+  </span>;
+}

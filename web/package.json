@@ -19,7 +19,10 @@
     "@kobalte/core": "^0.13.13",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "katex": "^0.18.4",
     "markdown-to-jsx": "^9.9.0",
+    "mermaid": "^11.17.0",
+    "shiki": "^4.4.3",
     "solid-js": "^1",
     "tailwind-merge": "^3.6.0",
     "yjs": "^13"

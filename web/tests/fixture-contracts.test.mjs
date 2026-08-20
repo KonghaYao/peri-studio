@@ -37,7 +37,7 @@ test('the visual fixture is a development-only entry and cannot bypass productio
   }
   assert.doesNotMatch(fixtureMain, /AuthGate|connectWithCookie|api\/auth\/session|token/i);
   assert.match(fixtureMain, /installVisualScenario/);
-  for (const id of ['catalog', 'conversation', 'permission-streaming', 'terminal-readonly']) {
+  for (const id of ['catalog', 'conversation', 'markdown', 'permission-streaming', 'terminal-readonly']) {
     assert.match(scenarios, new RegExp(`['"]${id}['"]`));
   }
   assert.match(scenarios, /DEFAULT_VISUAL_SCENARIO\s*=\s*['"]conversation['"]/);
@@ -49,4 +49,3 @@ test('the visual fixture is a development-only entry and cannot bypass productio
   assert.match(visualContract, /messageListViewportHeight/);
   assert.match(visualContract, /connectionStatus/);
 });
-

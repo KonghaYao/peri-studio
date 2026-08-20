@@ -23,7 +23,7 @@ import { acquireFixtureClock } from './fixture-clock';
 
 export const VISUAL_NOW = Date.parse('2026-08-14T08:00:00+08:00');
 export const DEFAULT_VISUAL_SCENARIO = 'conversation';
-export const VISUAL_SCENARIO_IDS = ['catalog', 'conversation', 'permission-streaming', 'terminal-readonly'] as const;
+export const VISUAL_SCENARIO_IDS = ['catalog', 'conversation', 'markdown', 'permission-streaming', 'terminal-readonly'] as const;
 export type VisualScenarioId = typeof VISUAL_SCENARIO_IDS[number];
 export type FixtureControlMode = 'display-only' | 'locally-interactive' | 'production-gated';
 
@@ -37,6 +37,7 @@ export interface VisualScenarioDefinition {
 export const visualScenarios: readonly VisualScenarioDefinition[] = [
   { id: 'catalog', label: 'Catalog & Quick Start', description: 'Multiple projects, empty state, and no session selected.', controls: 'locally-interactive' },
   { id: 'conversation', label: 'Full Conversation', description: 'Markdown, tools, resources, and long content.', controls: 'locally-interactive' },
+  { id: 'markdown', label: 'Markdown Lab', description: 'GFM, code, math, diagrams, and remote media safety.', controls: 'locally-interactive' },
   { id: 'permission-streaming', label: 'Permissions & Streaming', description: 'Active turn, permission queue, and stop control.', controls: 'production-gated' },
   { id: 'terminal-readonly', label: 'Terminal Read-only', description: 'Crashed runtime, archived sessions, and read-only role.', controls: 'locally-interactive' },
 ] as const;
@@ -65,6 +66,49 @@ const entries: ChatEntry[] = [
   { id: 'entry-user-2', turnId: 'turn-2', kind: 'message', role: 'user', status: 'completed', authorUserId: 'local-user', sourceCommandId: 'command-user-2', createdAt: '2026-08-14T00:05:00Z', completedAt: '2026-08-14T00:05:00Z', text: 'Continue verifying failure paths and public errors.', reasoning: [], toolCalls: [], resources: [], error: null },
   { id: 'entry-assistant-2', turnId: 'turn-2', kind: 'message', role: 'assistant', status: 'failed', authorUserId: null, sourceCommandId: null, createdAt: '2026-08-14T00:05:02Z', completedAt: '2026-08-14T00:05:20Z', text: 'A failed database write never sends a committed Ack.', reasoning: [], toolCalls: [tool({ toolCallId: 'tool-01J5FAIL', name: 'Finalize metadata', status: 'failed', result: null, resultOmitted: false, publicError: { code: 'METADATA_UNAVAILABLE', message: 'metadata transaction could not be committed' } })], resources: [], error: { code: 'METADATA_UNAVAILABLE', message: 'Session metadata is temporarily unavailable; reconciliation state is preserved.' } },
 ];
+
+const markdownEntry: ChatEntry = {
+  id: 'entry-markdown', turnId: 'turn-markdown', kind: 'message', role: 'assistant', status: 'completed', authorUserId: null, sourceCommandId: null,
+  origin: 'live', replayVerified: null, createdAt: '2026-08-14T00:12:00Z', completedAt: '2026-08-14T00:12:03Z', reasoning: [], toolCalls: [], resources: [], error: null,
+  text: `# Markdown rendering lab
+
+**重要提示（请注意）。**内容继续显示，且 ~~旧结论~~ 已被替换。
+
+> [!NOTE]
+> Streaming content stays readable while syntax is incomplete.
+
+| Capability | State | Notes |
+| :--- | :---: | ---: |
+| GFM table | Ready | Responsive |
+| Math | Ready | Accessible |
+
+- [x] Parse CommonMark and GFM
+- [x] Protect remote images
+- [ ] Review the final diagram
+
+Inline math $$x^2 + y^2$$ stays in the sentence.
+
+$$
+E = mc^2
+$$
+
+\`\`\`ts startLine=7 filename=recovery.ts
+type Result = { ok: boolean };
+const result: Result = { ok: true };
+console.log(result);
+\`\`\`
+
+\`\`\`mermaid
+flowchart LR
+  Input --> Parse --> Render
+\`\`\`
+
+![Architecture](https://example.test/architecture.png)
+
+Footnotes remain compact.[^security]
+
+[^security]: Generated content is treated as untrusted input.`,
+};
 
 for (const entry of entries.slice(0, 2)) {
   entry.origin = 'session_replay';
@@ -155,6 +199,9 @@ export function installVisualScenario(value: string | null | undefined): { scena
     ]);
     setMcpOAuthEvents({ 'flow-fixture': { chatId: 'chat-current', flowId: 'flow-fixture', serverName: 'github', status: 'authorization_needed', updatedAt: '2026-08-14T00:10:00Z' } });
     setMcpAuthorization({ commandId: 'fixture-auth', chatId: 'chat-current', flowId: 'flow-fixture', authorizationUrl: 'https://example.test/oauth?state=fixture-opaque', expiresAt: '2026-08-14T00:12:00Z' });
+  }
+  if (id === 'markdown') {
+    selectConversation([markdownEntry]);
   }
   if (id === 'permission-streaming') {
     const streaming = [...entries, { ...entries[1], id: 'entry-stream', turnId: 'turn-stream', status: 'streaming', text: 'Checking permission boundaries and tool call order…', completedAt: null, reasoning: [], toolCalls: [tool({ toolCallId: 'tool-stream', name: 'Apply patch', status: 'awaitingPermission', result: null, resultOmitted: null })], resources: [], error: null }];
