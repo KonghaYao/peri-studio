@@ -2,7 +2,17 @@
 
 MCPP（MCP Plus）的 Server 侧 TypeScript 参考实现。该包基于 MCP SDK，提供 Skills 资源挂载、MCP Server 双模式启动、多 Server HTTP 网关，以及 Agent Plugin 清单校验。
 
-> 当前状态：`0.3.0`。MCPP 规范仍处于 Draft 阶段，API 可能随规范演进而调整。
+> 当前状态：`0.6.5`。MCPP 规范仍处于 Draft 阶段，API 可能随规范演进而调整。
+
+## 版本更新
+
+| 版本 | 主要更新 |
+| --- | --- |
+| `0.6.5` | 为 `ResourceForStaticSkills` 增加与实时 Skills 一致的 `McppCache`、TTL、`public` / `private` scope 和 opaque authorization context 隔离；静态 registry 可在跨请求创建 Server 实例的 Worker 中复用 Resource 列表和读取结果。 |
+| `0.5.0` | 引入统一的进程内 `McppCache`；实时 `ResourceForSkills` 支持按 origin、MCP method、参数和授权上下文隔离缓存，并可按 Resource URI 精确失效。 |
+| `0.3.0` | 支持将 Skill 根内全部经安全校验的普通文件投影为附属 Resource；新增构建期静态 registry，使无本地文件系统的 Worker 可以挂载 Skills。 |
+
+升级到 `0.6.5` 时，缓存仅在调用方显式传入 `cache` 后启用。`cacheScope: "private"` 必须同时提供由宿主生成的、不含 token、cookie 或其他凭据的 opaque `authorizationContext`。
 
 ## 功能
 
@@ -204,13 +214,24 @@ await writeFile(
 
 ```ts
 // Worker 运行时
+import { McppCache } from "@peri-code/mcpp";
 import { ResourceForStaticSkills } from "@peri-code/mcpp/skills/static";
 import { STATIC_SKILL_RESOURCES } from "./static-skills.generated.ts";
 
-ResourceForStaticSkills(server, { resources: STATIC_SKILL_RESOURCES });
+// 在 Server factory 外创建，才能跨 HTTP 请求创建的 Server 实例复用缓存。
+const cache = new McppCache();
+
+ResourceForStaticSkills(server, {
+    resources: STATIC_SKILL_RESOURCES,
+    cache,
+    origin: "example-static-skills",
+    ttlMs: 30_000,
+});
 ```
 
-生成步骤必须在 Worker bundle 前执行；静态 registry 会再次校验 URI、内容长度和 Skill 根存在性，孤儿附属文件不会公开。
+生成步骤必须在 Worker bundle 前执行；静态 registry 会再次校验 URI、内容长度和 Skill 根存在性，孤儿附属文件不会公开。传入 `cache`、稳定的 `origin` 和正数 `ttlMs` 后，`resources/list` 与 `resources/read` 会在 TTL 内复用结果；未传入 `origin` 时不跨 Server 实例复用缓存。
+
+多用户场景使用 `cacheScope: "private"` 时，必须传入宿主生成的 opaque `authorizationContext`。它只能是不可逆的上下文标识，不能包含 token、cookie 或其他凭据。
 
 ### `scanSkillsDir(skillsDir, options?)`
 
