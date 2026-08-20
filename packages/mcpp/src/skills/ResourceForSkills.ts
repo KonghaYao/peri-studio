@@ -16,6 +16,7 @@ import {
     ResourceNotFoundError,
 } from "@modelcontextprotocol/server";
 import { isValidSkillName } from "../types.ts";
+import { McppCache, type McppCacheScope } from "../cache.ts";
 import {
     decodeSkillFilePath,
     firstTemplateVar,
@@ -33,8 +34,15 @@ export interface ResourceForSkillsOptions {
     namePrefix?: string;
     /** Skill 根内普通文件的累计公开上限。 */
     resourceLimits?: SkillResourceScanOptions;
+    /** 缓存所属 origin；未提供时使用 skillsDir 派生的稳定标识。 */
+    origin?: string;
+    /** MCP cacheScope；private 时必须同时提供 opaque authorizationContext。 */
+    cacheScope?: McppCacheScope;
+    authorizationContext?: string;
+    /** Resource 响应的 TTL；未提供表示由宿主按需刷新。 */
+    ttlMs?: number;
+    cache?: McppCache;
 }
-
 /**
  * 挂载 skills 目录。
  *
@@ -45,14 +53,35 @@ export function ResourceForSkills(
     server: McpServer,
     options: ResourceForSkillsOptions,
 ): void {
-    const { skillsDir, namePrefix = "skill", resourceLimits } = options;
+    const {
+        skillsDir,
+        namePrefix = "skill",
+        resourceLimits,
+        cache,
+        origin = skillsDir,
+        cacheScope = "public",
+        authorizationContext,
+        ttlMs = 30_000,
+    } = options;
+    if (cacheScope === "private" && !authorizationContext) {
+        throw new Error("MCPP private Skill resource cache requires an opaque authorization context");
+    }
     const descriptionFor = (name: string, d?: string) => d ?? `${namePrefix}:${name}`;
+    const cacheKey = (method: string, params?: unknown) => ({
+        origin,
+        method,
+        params,
+        authorizationContext,
+    });
 
     server.registerResource(
         "skill-file",
         new ResourceTemplate("skill://{skillName}/{+path}", {
             list: async () => {
-                const files = await scanSkillResourceFiles(skillsDir, resourceLimits);
+                const key = cacheKey("resources/templates/list", { template: "skill://{skillName}/{+path}" });
+                const cached = cache?.get<Awaited<ReturnType<typeof scanSkillResourceFiles>>>(key);
+                const files = cached ?? await scanSkillResourceFiles(skillsDir, resourceLimits);
+                if (!cached) cache?.set(key, files, { scope: cacheScope, ttlMs });
                 return {
                     resources: files.map((file) => ({
                         uri: file.uri,
@@ -78,12 +107,21 @@ export function ResourceForSkills(
                 throw new ResourceNotFoundError(u.href, "Invalid Skill resource URI");
             }
 
-            const resource = await readSkillResourceFile(
+            const key = cacheKey("resources/read", { uri: u.href });
+            const cached = cache?.get<Awaited<ReturnType<typeof readSkillResourceFile>>>(key);
+            const resource = cached ?? await readSkillResourceFile(
                 skillsDir,
                 name,
                 relativePath,
                 resourceLimits,
             );
+            if (!cached && resource) {
+                cache?.set(key, resource, {
+                    scope: cacheScope,
+                    ttlMs,
+                    resourceUri: u.href,
+                });
+            }
             if (!resource) {
                 throw new ResourceNotFoundError(u.href, `Skill resource '${u.href}' not found`);
             }

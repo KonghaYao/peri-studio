@@ -938,7 +938,7 @@ MCPP 规则：
 
 ### 7.3 MCP Resource Cache：缓存与新鲜度
 
-**MCP Resource Cache** 是 MCPP 对 MCP Caching 的 Agent 层消费约定。Agent SHOULD 按 MCP Caching 规范消费 `resources/list`、`resources/templates/list` 与 `resources/read` 完整结果携带的 `ttlMs`、`cacheScope` 及相关失效通知。MCPP 不规定缓存介质、是否持久化、淘汰算法或预取策略。
+**MCP Resource Cache** 是 MCPP 对 MCP Caching 的 Agent 层消费约定。MCPP 实现 MUST 提供统一的 cache abstraction，并至少实现 capability metadata cache 与 resource content cache；具体缓存介质、是否持久化、淘汰算法、容量限制或预取策略由宿主决定。`skills/get` 及 Skill references/assets 若通过 MCP Resource 暴露，MUST 复用 resource content cache 语义。Agent SHOULD 按 MCP Caching 规范消费 `resources/list`、`resources/templates/list`、`resources/read`、`skills/list` 与 `skills/get` 完整结果携带的 `ttlMs`、`cacheScope` 及相关失效通知。
 
 缓存键 MUST 至少隔离 origin、MCP method 与所有影响结果的请求参数；分页列表的 `cursor` 是该键的一部分。`cacheScope: private` 的结果 MUST 按 authorization context 隔离，MUST NOT 跨身份复用；`cacheScope: public` 的结果可跨授权上下文复用，但也 MUST NOT 跨 origin 复用。
 

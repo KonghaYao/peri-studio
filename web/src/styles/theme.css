@@ -160,7 +160,11 @@
   --text-28: var(--text-28);
 
   /* Line-height scale */
+  --leading-115: var(--leading-115);
+  --leading-12: var(--leading-12);
+  --leading-125: var(--leading-125);
   --leading-13: var(--leading-13);
+  --leading-135: var(--leading-135);
   --leading-14: var(--leading-14);
   --leading-145: var(--leading-145);
   --leading-15: var(--leading-15);

@@ -73,7 +73,7 @@ test('migrated surfaces retain their authored computed borders', async ({ page }
   });
 });
 
-test('conversation copy keeps compact authored line heights', async ({ page }) => {
+test('conversation copy and markdown keep compact authored line heights', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
 
@@ -82,11 +82,15 @@ test('conversation copy keeps compact authored line heights', async ({ page }) =
     height: element.getBoundingClientRect().height,
     lineHeight: getComputedStyle(element.querySelector('.conversation-message__text')).lineHeight,
     composerLineHeight: getComputedStyle(document.querySelector('.composer-input')).lineHeight,
+    headingLineHeight: getComputedStyle(document.querySelector('.markdown-body h2')).lineHeight,
+    assistantHeight: document.querySelector('.conversation-message--assistant').getBoundingClientRect().height,
   }));
 
   expect(geometry.lineHeight).toBe('25px');
   expect(geometry.composerLineHeight).toBe('24px');
+  expect(geometry.headingLineHeight).toBe('23.75px');
   expect(geometry.height).toBeLessThan(100);
+  expect(geometry.assistantHeight).toBeLessThan(800);
 });
 
 test('sidebar session labels retain space beside action and status slots', async ({ page }) => {

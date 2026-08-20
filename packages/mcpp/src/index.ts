@@ -7,6 +7,7 @@
  *  - gateway：monorepo 多 server 聚合 HTTP 路径路由（3.7）
  *  - plugin：plugin.json / mcp.json 校验（3.2 / 3.3）
  */
+export * from "./cache.ts";
 export * from "./types.ts";
 export * from "./skills/index.ts";
 export * from "./server/index.ts";
