@@ -268,11 +268,11 @@ test('all empty-session creation entry points share one store-level single-fligh
   const store = readFileSync(join(root, 'panel', 'store.ts'), 'utf8');
   const activation = readFileSync(join(root, 'panel', 'lib', 'session-activation.ts'), 'utf8');
   const sidebar = readFileSync(join(root, 'panel', 'components', 'ProjectSidebar.tsx'), 'utf8');
-  const chatView = readFileSync(join(root, 'panel', 'components', 'ChatView.tsx'), 'utf8');
+  const launchWorkspace = readFileSync(join(root, 'panel', 'components', 'LaunchWorkspace.tsx'), 'utf8');
   assert.match(activation, /this\.deps\.creatingProjectId\(\)/);
   assert.match(activation, /this\.deps\.setCreatingProjectId\(projectId\)/);
   assert.match(sidebar, /busy=\{creatingSessionProjectId\(\) === project\.id\}/);
-  assert.match(chatView, /busy=\{creatingSessionProjectId\(\) === activeProjects\(\)\[0\]\.id\}/);
+  assert.match(launchWorkspace, /busy=\{creatingSessionProjectId\(\) === activeProjects\(\)\[0\]\.id\}/);
 });
 
 test('uncertain metadata retries preserve the original frame identity and are identity-scoped', () => {
@@ -412,4 +412,3 @@ test('session activation policy is a deep module rather than store callback spra
   assert.match(activation, /'Incomplete create-session reply'/);
   assert.match(activation, /if \(!ack\.sessionId \|\| !ack\.chatId\)/);
 });
-

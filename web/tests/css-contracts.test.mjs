@@ -191,7 +191,7 @@ test('coarse pointers expose sidebar actions without hover and keep controls tou
 test('P0 interaction architecture cannot regress to hidden cancel or viewport-breaking overlays', () => {
   const componentRoot = join(import.meta.dirname, '..', 'src', 'panel', 'components');
   const composer = readFileSync(join(componentRoot, 'Composer.tsx'), 'utf8');
-  const sidebar = readFileSync(join(componentRoot, 'ProjectSidebar.tsx'), 'utf8');
+  const sidebarChrome = readFileSync(join(componentRoot, 'SidebarChrome.tsx'), 'utf8');
   const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Dialog.tsx'), 'utf8');
   const styles = featureCss();
   assert.match(composer, /cancelTurn/);
@@ -199,7 +199,7 @@ test('P0 interaction architecture cannot regress to hidden cancel or viewport-br
   assert.match(composer, /control\?\.phase === 'uncertain'[\s\S]*?retryPersistentAction\(control\.commandId\)/);
   assert.match(composer, /Confirm stop with original request/);
   assert.match(dialog, /DialogPrimitive\.Portal/);
-  assert.match(sidebar, /sidebar-footer/);
+  assert.match(sidebarChrome, /sidebar-footer/);
   assert.doesNotMatch(styles, /logout-button[^}]*position\s*:\s*fixed/s);
 });
 
