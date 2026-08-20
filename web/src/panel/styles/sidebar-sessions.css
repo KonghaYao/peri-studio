@@ -534,6 +534,9 @@
     min-height: 44px;
     opacity: 1;
   }
+  .session-menu {
+    opacity: 1;
+  }
   .session-main {
     min-height: 52px;
     padding-right: var(--space-42);

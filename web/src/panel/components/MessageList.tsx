@@ -151,7 +151,7 @@ export function MessageList(props: { bottomInset?: number }) {
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
       {/* Composer 覆盖在时间线底部；动态 inset 让最后一条消息始终完整可读。 */}
-      <div class="message-list-content w-full max-w-(--container-chat) mx-auto py-24 px-16 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 max-desk:max-w-(--container-chat-narrow)" style={{ 'padding-bottom': contentBottomInset() }}>
+      <div class="message-list-content box-border w-full max-w-(--container-chat) mx-auto pt-32 px-20 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 max-desk:max-w-(--container-chat-narrow)" style={{ 'padding-bottom': contentBottomInset() }}>
         <PermissionBar />
         <Show when={!runtimeDocsHydrated()}>
           <LoadingState label="Loading session" description="Restoring messages and runtime state from the Peri Studio server…" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />

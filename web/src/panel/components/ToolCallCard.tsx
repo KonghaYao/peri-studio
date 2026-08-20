@@ -68,13 +68,13 @@ export function ToolCallCard(props: { toolCall: ToolCallSource }) {
   };
   return (
     <CollapsibleSection
-      detailsClass={`tool-card tool-card--${state().tone} overflow-hidden border rounded-12 bg-surface-muted ${state().tone === 'error' ? 'border-danger-border' : 'border-border-subtle'}`}
+      detailsClass={`tool-card tool-card--${state().tone} group overflow-hidden border rounded-12 bg-surface-muted ${state().tone === 'error' ? 'border-danger-border' : 'border-border-subtle'}`}
       summaryClass="tool-card__summary flex min-h-48 items-center gap-9 px-10 py-7 cursor-pointer list-none focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2"
       open={state().tone === 'error'}
       mark={<span class={`tool-card__mark size-8 flex-none rounded-full ${markTone()}`} aria-hidden="true" />}
       copy={<span class="tool-card__identity flex min-w-0 flex-1 flex-col gap-1"><strong class="overflow-hidden text-text-primary text-13 font-semibold text-ellipsis whitespace-nowrap">{tool().name || 'Tool call'}</strong><code class="overflow-hidden text-text-muted font-mono text-10 leading-13 text-ellipsis whitespace-nowrap">{tool().toolCallId || 'No call ID'}</code></span>}
       meta={<><span class={`tool-card__status flex-none text-11 ${state().tone === 'error' ? 'text-danger' : 'text-text-secondary'}`}>{state().label}</span><Show when={duration()}>{(value) => <span class="tool-card__duration flex-none pl-8 border-l border-divider text-text-muted text-11" title="Time between start and completion events as observed by Hub">Hub observed {value()}</span>}</Show></>}
-      chevronClass="tool-card__chevron text-text-muted text-18 transition-transform duration-140"
+      chevronClass="tool-card__chevron text-text-muted text-18 transition-transform duration-140 group-open:rotate-90"
     >
       <div class="tool-card__body flex flex-col gap-10 p-11 border-t border-divider bg-surface">
         <Show when={tool().arguments !== undefined && tool().arguments !== null}><DataSection label="Input" value={tool().arguments} /></Show>

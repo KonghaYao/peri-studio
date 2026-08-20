@@ -10,7 +10,6 @@
 @import './panel/styles/base.css';
 @import './panel/styles/sidebar-nav.css';
 @import './panel/styles/sidebar-sessions.css';
-@import './panel/styles/chat-messages.css';
 @import './panel/styles/chat-misc.css';
 @import './panel/styles/chat-status.css';
 @import './panel/styles/chat-permissions.css';

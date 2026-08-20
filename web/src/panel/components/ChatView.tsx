@@ -50,7 +50,7 @@ export function ChatView(props: ChatViewProps) {
       ? 'Restore an archived project or create a new project to continue.'
       : 'Create a project first; Peri Studio saves and restores ACP sessions within it.';
   return (
-    <section class="chat-view flex h-full min-h-0 flex-col">
+    <section class="chat-view relative flex h-full min-h-0 flex-col bg-app-bg">
       <ChatHeader
         onOpenNavigation={props.onOpenNavigation}
         onOpenSystem={props.onOpenSystem}
@@ -73,7 +73,7 @@ export function ChatView(props: ChatViewProps) {
           <AgentActivityRail activities={chatHead()?.agent?.activities ?? []} />
           <AgentPlanPanel entries={chatHead()?.agent?.plan ?? []} />
           <MessageList bottomInset={composerHeight()} />
-          <div ref={composerStack} class="composer-stack composer-stack--overlay absolute right-0 bottom-0 left-0 z-20">
+          <div ref={composerStack} class="composer-stack composer-stack--overlay pointer-events-none absolute right-0 bottom-0 left-0 z-20 bg-app-bg [&>*]:pointer-events-auto">
             <ElicitationQueue
               elicitations={elicitations()}
               responding={elicitationResponses()}

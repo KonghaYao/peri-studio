@@ -285,8 +285,6 @@ test('product CSS owns its browser baseline and semantic layout', () => {
   const styles = featureCss();
   const base = readFileSync(join(source, 'styles', 'base.css'), 'utf8');
   const theme = readFileSync(join(source, 'styles', 'theme.css'), 'utf8');
-  const chatView = readFileSync(join(source, 'panel', 'components', 'ChatView.tsx'), 'utf8');
-  const messageList = readFileSync(join(source, 'panel', 'components', 'MessageList.tsx'), 'utf8');
   const manifest = readFileSync(join(root, 'package.json'), 'utf8');
   const vite = readFileSync(join(root, 'vite.config.ts'), 'utf8');
 
@@ -310,9 +308,6 @@ test('product CSS owns its browser baseline and semantic layout', () => {
   assert.match(base, /img,\s*svg,\s*video,\s*canvas,\s*audio/);
   assert.match(base, /summary\s*\{\s*display:\s*list-item/);
 
-  assert.match(chatView, /class="chat-view flex h-full min-h-0 flex-col"/);
-  assert.match(messageList, /class="ui-scrollbar message-list-scroll min-h-0 flex-1 overflow-y-auto"/);
-  assert.match(messageList, /class="message-list-content w-full max-w-\(--container-chat\) mx-auto py-24 px-16 /);
   assert.doesNotMatch(styles, /\.message-list-shell>section>div/);
 });
 

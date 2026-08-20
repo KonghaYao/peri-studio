@@ -495,7 +495,7 @@
   right: 0;
   top: 36px;
 }
-.ui-menu,.ui-menu--surface {
+.ui-menu {
   position: absolute;
   z-index: 24;
   display: flex;
@@ -506,6 +506,10 @@
   border-radius: var(--radius-11);
   background: var(--surface) !important;
   box-shadow: var(--shadow-popover);
+  color: var(--text-primary) !important;
+}
+.ui-menu--surface {
+  background: var(--surface) !important;
   color: var(--text-primary) !important;
 }
 .ui-menu__item {

@@ -10,12 +10,12 @@ function SafeLink(props: JSX.AnchorHTMLAttributes<HTMLAnchorElement>) {
 }
 
 function Code(props: JSX.HTMLAttributes<HTMLElement>) {
-  return <code {...props} class="md-inline-code" />;
+  return <code {...props} class="md-inline-code border border-divider rounded-5 bg-surface-muted px-5 py-2 text-[.88em] text-text-primary" />;
 }
 
 function Pre(props: JSX.HTMLAttributes<HTMLPreElement>) {
   const text = String((props.children as { props?: { children?: unknown } })?.props?.children ?? props.children ?? '').replace(/\n$/, '');
-  return <div class="md-code-block"><CopyButton text={text} label="Copy code" /><pre {...props} /></div>;
+  return <div class="md-code-block my-12 overflow-hidden border border-border-subtle rounded-11 bg-sidebar-bg"><CopyButton text={text} label="Copy code" class="pointer-coarse:min-h-44" /><pre {...props} class="max-h-520 m-0 overflow-auto bg-transparent px-14 py-13 text-text-primary font-mono text-12p5 leading-16 [&_code]:bg-transparent [&_code]:p-0 [&_code]:text-inherit [&_code]:font-inherit" /></div>;
 }
 
 const options: SolidOptions = {
@@ -42,7 +42,7 @@ export function Markdown(props: { source: string; streaming?: boolean }) {
     optimizeForStreaming: props.streaming === true,
   });
 
-  return <div class="markdown-body min-w-0 text-text-primary">
+  return <div class="markdown-body min-w-0 text-text-primary [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:mb-12 [&_p]:mt-0 [&_h2]:mt-22 [&_h2]:mb-9 [&_h2]:text-[19px] [&_h2]:leading-125 [&_h2]:tracking-[-.018em] [&_h3]:mt-22 [&_h3]:mb-9 [&_h3]:text-17 [&_h3]:leading-125 [&_h3]:tracking-[-.018em] [&_h4]:mt-22 [&_h4]:mb-9 [&_h4]:text-15 [&_h4]:leading-125 [&_h4]:tracking-[-.018em] [&_ul]:my-8 [&_ul]:mb-14 [&_ul]:pl-24 [&_ol]:my-8 [&_ol]:mb-14 [&_ol]:pl-24 [&_li]:my-4 [&_li]:pl-2 [&_blockquote]:my-12 [&_blockquote]:border-l-[3px] [&_blockquote]:border-border-strong [&_blockquote]:py-2 [&_blockquote]:pl-14 [&_blockquote]:text-text-secondary [&_hr]:my-20 [&_hr]:h-px [&_hr]:border-0 [&_hr]:bg-divider [&_a]:text-link [&_a]:underline [&_a]:decoration-link-decoration [&_a]:underline-offset-3 [&_a:hover]:decoration-current">
     <MarkdownRenderer options={streamingOptions()}>{() => props.source}</MarkdownRenderer>
   </div>;
 }
