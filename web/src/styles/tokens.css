@@ -11,9 +11,6 @@
   --sidebar-bg: #ffffff;
   --surface: #ffffff;
   --surface-muted: #fafaf9;
-  --surface-translucent: rgb(255 255 255 / 98%);
-  --surface-header: rgb(255 255 255 / 96%);
-  --surface-hover-translucent: rgb(250 250 249 / 88%);
   --empty-mark-bg: #f7f7f5;
   --empty-mark-fg: #30302e;
   --scrim: rgb(20 20 19 / 18%);
@@ -41,7 +38,6 @@
   --focus-ring: #2a2a27;
   --success: #25865a;
   --success-soft: #f0f8f3;
-  --activity-bg: #ffffff;
   --warning: #98601a;
   --warning-strong: #70420e;
   --warning-soft: #fff8e9;
@@ -55,13 +51,10 @@
   --shadow-popover: 0 14px 34px rgb(25 25 24 / 10%), 0 2px 5px rgb(25 25 24 / 5%);
   --shadow-float: 0 5px 16px rgb(25 25 24 / 5%), 0 1px 2px rgb(25 25 24 / 4%);
   --shadow-composer-overlay: 0 8px 24px rgb(25 25 24 / 7%), 0 1px 3px rgb(25 25 24 / 5%);
-  --shadow-form: 0 4px 12px rgb(30 30 28 / 4%);
-  --shadow-auth: 0 16px 44px rgb(30 30 28 / 7%);
   --shadow-recovery: 0 4px 12px rgb(25 25 24 / 5%);
   /* Status halo rings: exact arbitrary-shadow equivalents used by
      running/done activity states (color-mix over accent/success). */
   --shadow-accent-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
-  --shadow-success-ring: 0 0 0 4px color-mix(in srgb, var(--success) 14%, transparent);
 
   /* Spacing scale. Feature and primitive styles consume these for every
      padding/gap/margin value; each step is an exact pixel value, so the
@@ -88,7 +81,6 @@
   --space-21: 21px;
   --space-22: 22px;
   --space-24: 24px;
-  --space-25: 25px;
   --space-26: 26px;
   --space-28: 28px;
   --space-30: 30px;
@@ -101,13 +93,11 @@
   --space-44: 44px;
   --space-46: 46px;
   --space-48: 48px;
-  --space-50: 50px;
   --space-52: 52px;
   --space-54: 54px;
   --space-56: 56px;
   --space-58: 58px;
   --space-60: 60px;
-  --space-64: 64px;
   --space-72: 72px;
   --space-82: 82px;
   --space-84: 84px;
@@ -115,20 +105,11 @@
   --space-240: 240px;
   --space-260: 260px;
   --space-300: 300px;
-  --space-390: 390px;
   --space-520: 520px;
-  --space-760: 760px;
-  --space-800: 800px;
-  --space-820: 820px;
-  --space-neg-1: -1px;
-  --space-neg-4: -4px;
-  --space-neg-5: -5px;
-  --space-neg-8: -8px;
 
   /* Radius scale. --radius-full is the pill shape; every other step is an
      exact pixel value matching the legacy design values. */
   --radius-2: 2px;
-  --radius-3: 3px;
   --radius-4: 4px;
   --radius-5: 5px;
   --radius-6: 6px;
@@ -138,17 +119,12 @@
   --radius-10: 10px;
   --radius-11: 11px;
   --radius-12: 12px;
-  --radius-13: 13px;
   --radius-14: 14px;
   --radius-16: 16px;
-  --radius-17: 17px;
   --radius-18: 18px;
-  --radius-20: 20px;
-  --radius-24: 24px;
   --radius-full: 999px;
 
   /* Layout */
-  --composer-radius: var(--radius-16);
   --composer-max: 864px;
   --container-popover: 288px;
 
@@ -162,7 +138,6 @@
 
   /* Font-size scale. Every step is an exact pixel value used by the panel;
      Tailwind text-* utilities resolve to these. */
-  --text-0: 0px;
   --text-9: 9px;
   --text-10: 10px;
   --text-10p5: 10.5px;
@@ -177,25 +152,17 @@
   --text-17: 17px;
   --text-18: 18px;
   --text-28: 28px;
-  --text-code: 0.88em;
 
   /* Line-height scale (unitless ratios) */
-  --leading-1: 1;
-  --leading-12: 1.2;
-  --leading-115: 1.15;
   --leading-13: 1.3;
-  --leading-135: 1.35;
   --leading-14: 1.4;
   --leading-145: 1.45;
   --leading-15: 1.5;
   --leading-155: 1.55;
   --leading-16: 1.6;
   --leading-20: 20px;
-  --leading-24: 24px;
-  --leading-25: 25px;
 
   /* Font-weight scale (non-standard weights used by the panel) */
-  --font-weight-450: 450;
   --font-weight-550: 550;
   --font-weight-610: 610;
   --font-weight-650: 650;
@@ -203,28 +170,18 @@
   --font-weight-750: 750;
 
   /* Letter-spacing scale (em). Negative values use -tracking-* utilities. */
-  --tracking-1: 0.01em;
-  --tracking-5: 0.005em;
   --tracking-35: 0.035em;
   --tracking-6: 0.06em;
   --tracking-7: 0.07em;
   --tracking-8: 0.08em;
 
-  /* Opacity scale */
-  --opacity-52: 0.52;
-
-  /* Motion */
-  --duration-180: 180ms;
-  --z-1: 1;
+  /* Motion and z-index */
   --z-12: 12;
-  --z-35: 35;
 
   /* Grid templates (semantic column layouts) */
   --grid-cols-shell: 280px minmax(0, 1fr);
   --grid-cols-shell-desk: 240px minmax(0, 1fr);
   --grid-cols-shell-wide: 280px minmax(0, 1fr);
-  --grid-cols-recovery: 64px minmax(0, 1fr);
-  --grid-cols-recovery-item: 7px minmax(0, 1fr) auto;
   --grid-cols-activity: 10px minmax(0, 1fr) auto;
   --grid-cols-plan: 12px minmax(0, 1fr) auto;
   --grid-cols-import: 20px minmax(0, 1fr) 18px;
@@ -232,21 +189,16 @@
   --grid-cols-boundary: minmax(24px, 1fr) auto minmax(24px, 1fr);
   --grid-cols-settings-form: 150px 1fr;
   --grid-cols-slash: minmax(150px, 0.8fr) minmax(0, 1.2fr);
-  --grid-cols-config: repeat(auto-fit, minmax(140px, 1fr));
 
   /* Containers (bounded surfaces; used by max-w-/max-h-/w- utilities) */
   --container-chat: 820px;
   --container-chat-narrow: 760px;
-  --container-composer: 800px;
   --container-auth-card: min(440px, 100%);
   --container-drawer: min(88vw, 320px);
-  --container-recovery: min(42dvh, 360px);
-  --container-recovery-body: min(32dvh, 280px);
   --container-settings: min(560px, calc(100vw - 40px));
   --container-settings-tall: min(76dvh, 680px);
   --container-rewind: min(640px, calc(100vw - 40px));
   --container-rewind-tall: min(76dvh, 700px);
-  --container-config: min(680px, calc(100dvh - 110px));
   --container-mcp: min(620px, calc(100vw - 40px));
   --container-search: min(520px, calc(100vw - 56px));
   --container-search-results: min(440px, 60vh);

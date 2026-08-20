@@ -45,12 +45,13 @@ for (const [scenario, expected] of scenarios) {
   }
 }
 
-test('wide dialog owns its viewport width without child overflow', async ({ page }) => {
+test('wide topology dialog owns its viewport width without child overflow', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'System', exact: true }).click();
+  await page.getByRole('button', { name: 'Open system information' }).click();
   const dialog = page.getByRole('dialog', { name: 'System' });
   await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('tab', { name: 'Topology' })).toHaveAttribute('data-selected', '');
   const geometry = await dialog.evaluate((element) => ({
     clientWidth: element.clientWidth,
     scrollWidth: element.scrollWidth,
@@ -61,7 +62,7 @@ test('wide dialog owns its viewport width without child overflow', async ({ page
   expect(geometry.width).toBeLessThanOrEqual(560);
 });
 
-test('desktop sidebar visibly resizes, collapses, and restores its workspace rail', async ({ page }) => {
+test('desktop sidebar visibly resizes and preserves project navigation', async ({ page }) => {
   const browserErrors = collectBrowserErrors(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
@@ -72,17 +73,21 @@ test('desktop sidebar visibly resizes, collapses, and restores its workspace rai
   await page.keyboard.press('End');
   await expect(resize).toHaveAttribute('aria-valuenow', '480');
 
-  await page.getByRole('button', { name: 'Collapse sidebar' }).click();
-  await expect(page.getByRole('button', { name: 'Expand sidebar' })).toBeVisible();
-  await expect(page.getByRole('separator', { name: 'Resize sidebar' })).toBeHidden();
-
-  await page.getByRole('button', { name: 'Expand sidebar' }).click();
-  await expect(page.getByRole('button', { name: 'Collapse sidebar' })).toBeVisible();
-  await expect(page.getByRole('separator', { name: 'Resize sidebar' })).toHaveAttribute('aria-valuenow', '480');
+  const project = page.getByRole('button', { name: 'ACP Protocol Lab', exact: true });
+  const session = page.locator('[data-session-id="session-protocol"] button').first();
+  await expect(project).toHaveAttribute('aria-expanded', 'true');
+  await expect(session).toBeVisible();
+  await project.click();
+  await expect(project).toHaveAttribute('aria-expanded', 'false');
+  await expect(session).toBeHidden();
+  await project.click();
+  await expect(project).toHaveAttribute('aria-expanded', 'true');
+  await expect(session).toBeVisible();
+  await expect(resize).toHaveAttribute('aria-valuenow', '480');
   expect(browserErrors).toEqual([]);
 });
 
-test('mobile drawer and nested dialog preserve inertness, focus and viewport geometry', async ({ page }) => {
+test('mobile drawer preserves machine-bound project creation semantics and nested dialog inertness', async ({ page }) => {
   const browserErrors = collectBrowserErrors(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
@@ -91,17 +96,20 @@ test('mobile drawer and nested dialog preserve inertness, focus and viewport geo
   const drawer = page.getByRole('dialog', { name: 'Projects & Sessions' });
   await expect(drawer).toBeVisible();
   await expect(page.locator('#app')).toHaveAttribute('aria-hidden');
-  const newProject = drawer.getByRole('button', { name: 'New project' });
-  await newProject.click();
-  const dialog = page.getByRole('dialog', { name: 'New project' });
+  const newProject = drawer.getByRole('button', { name: /New project on local unavailable/ });
+  await expect(newProject).toBeDisabled();
+  await expect(newProject).toHaveAttribute('aria-label', 'New project on local unavailable: choose a remote directory first; the current API cannot create by machine');
+
+  await page.keyboard.press('Meta+K');
+  const dialog = page.getByRole('dialog', { name: 'Search sessions' });
   await expect(dialog).toBeVisible();
   await expect(page.locator('#app')).toHaveAttribute('aria-hidden');
-  await expect(dialog.getByPlaceholder('perihelion')).toBeFocused();
-  const backdrop = await page.locator('.ui-dialog-backdrop').last().boundingBox();
+  await expect(dialog.getByRole('textbox', { name: 'Search sessions' })).toBeFocused();
+  const backdrop = await page.locator('[data-dialog-overlay]').last().boundingBox();
   expect(backdrop).toEqual({ x: 0, y: 0, width: 390, height: 844 });
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
-  await expect(drawer).toContainText('New project');
+  await expect(drawer).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(drawer).toBeHidden();
   await expect(openNavigation).toBeVisible();

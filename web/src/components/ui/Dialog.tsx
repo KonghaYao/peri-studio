@@ -6,7 +6,12 @@ import { cn } from '../../lib/cn';
 
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
-export const DialogClose = DialogPrimitive.CloseButton;
+
+type CloseProps<T extends ValidComponent = 'button'> = DialogPrimitive.DialogCloseButtonProps<T> & { class?: string };
+export function DialogClose<T extends ValidComponent = 'button'>(props: PolymorphicProps<T, CloseProps<T>>) {
+  const [local, rest] = splitProps(props as CloseProps, ['class']);
+  return <DialogPrimitive.CloseButton class={cn('grid size-36 place-items-center rounded-9 border-0 bg-transparent text-22 font-300 text-text-muted cursor-pointer hover:bg-hover hover:text-text-primary pointer-coarse:size-44', local.class)} {...rest} />;
+}
 
 export function DialogPortal(props: DialogPrimitive.DialogPortalProps) {
   return <DialogPrimitive.Portal {...props} />;
@@ -15,7 +20,7 @@ export function DialogPortal(props: DialogPrimitive.DialogPortalProps) {
 type OverlayProps<T extends ValidComponent = 'div'> = DialogPrimitive.DialogOverlayProps<T> & { class?: string };
 export function DialogOverlay<T extends ValidComponent = 'div'>(props: PolymorphicProps<T, OverlayProps<T>>) {
   const [local, rest] = splitProps(props as OverlayProps, ['class']);
-  return <DialogPrimitive.Overlay class={cn('ui-dialog-backdrop', local.class)} {...rest} />;
+  return <DialogPrimitive.Overlay data-dialog-overlay class={cn('fixed inset-0 z-60 bg-scrim', local.class)} {...rest} />;
 }
 
 type DialogSize = 'default' | 'search' | 'settings' | 'mcp' | 'rewind';
@@ -32,7 +37,12 @@ export function DialogContent<T extends ValidComponent = 'div'>(props: Polymorph
   return <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
-      class={cn('ui-dialog', `ui-dialog--${local.size ?? 'default'}`, local.class)}
+      class={cn('fixed top-1/2 left-1/2 z-61 max-h-[calc(100dvh-2*var(--space-20))] w-[min(400px,calc(100vw-2*var(--space-20)))] -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-14 border border-border-strong bg-surface shadow-popover', {
+        'w-(--container-search)': local.size === 'search',
+        'w-(--container-settings) max-h-(--container-settings-tall)': local.size === 'settings',
+        'w-(--container-mcp) max-h-(--container-settings-tall)': local.size === 'mcp',
+        'w-(--container-rewind) max-h-(--container-rewind-tall)': local.size === 'rewind',
+      }, local.class)}
       onEscapeKeyDown={preventWhenLocked}
       onPointerDownOutside={preventWhenLocked}
       {...rest}
@@ -45,10 +55,10 @@ export const DialogDescription = DialogPrimitive.Description;
 
 export const DialogHeader: Component<ComponentProps<'header'>> = (props) => {
   const [local, rest] = splitProps(props, ['class']);
-  return <header class={cn('ui-dialog__header', local.class)} {...rest} />;
+  return <header class={cn('flex min-h-54 items-center gap-12 px-18 pr-10', local.class)} {...rest} />;
 };
 
 export const DialogFooter: Component<ComponentProps<'footer'>> = (props) => {
   const [local, rest] = splitProps(props, ['class']);
-  return <footer class={cn('form-actions', local.class)} {...rest} />;
+  return <footer class={cn('mt-10 flex justify-end gap-6', local.class)} {...rest} />;
 };

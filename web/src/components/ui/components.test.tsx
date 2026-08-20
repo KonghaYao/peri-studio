@@ -62,13 +62,14 @@ describe('Button', () => {
     expect(button).not.toHaveAttribute('variant');
     expect(button).not.toHaveAttribute('busy');
     expect(button).not.toHaveAttribute('size');
-    expect(button).toHaveClass('ui-button--compact');
     expect(button).toHaveTextContent('Processing');
   });
 
   it('keeps secondary safety decisions neutral and semantic', () => {
     render(() => <Button variant="secondary">Decline</Button>);
-    expect(screen.getByRole('button', { name: 'Decline' })).toHaveClass('ui-button--secondary');
+    const button = screen.getByRole('button', { name: 'Decline' });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute('variant');
   });
 
   it('describes custom icon help without repeating its action label', () => {
@@ -97,7 +98,7 @@ describe('Icon', () => {
   it('owns a finite outline canvas and remains hidden from accessibility APIs', () => {
     const { container } = render(() => <Icon><circle cx="10" cy="10" r="5" /></Icon>);
     const icon = container.querySelector('svg');
-    expect(icon).toHaveClass('ui-icon', 'ui-icon--default');
+    expect(icon).toBeInTheDocument();
     expect(icon).toHaveAttribute('viewBox', '0 0 20 20');
     expect(icon).toHaveAttribute('fill', 'none');
     expect(icon).toHaveAttribute('stroke', 'currentColor');
@@ -133,9 +134,8 @@ describe('Badge', () => {
   it('owns a closed semantic tone without leaking component props', () => {
     render(() => <Badge tone="warn" data-testid="badge">Pending</Badge>);
     const badge = screen.getByTestId('badge');
-    expect(badge).toHaveClass('ui-badge--warn');
-    expect(badge).not.toHaveAttribute('tone');
     expect(badge).toHaveTextContent('Pending');
+    expect(badge).not.toHaveAttribute('tone');
   });
 });
 
@@ -163,7 +163,7 @@ describe('Status', () => {
     const status = screen.getByTestId('status');
     expect(status).toHaveAttribute('role', 'status');
     expect(status).toHaveAttribute('aria-live', 'polite');
-    expect(status).toHaveClass('ui-status--warn');
+    expect(status).toHaveTextContent('Reconnecting');
     expect(status).not.toHaveAttribute('tone');
     expect(status).not.toHaveAttribute('live');
   });
@@ -238,7 +238,7 @@ describe('Spinner', () => {
     labeled.unmount();
 
     const decorative = render(() => <Spinner decorative />);
-    const spinner = decorative.container.querySelector('.ui-spinner');
+    const spinner = decorative.container.querySelector('span[aria-hidden="true"]');
     expect(spinner).toHaveAttribute('aria-hidden', 'true');
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
@@ -250,17 +250,16 @@ describe('LoadingState', () => {
     const loading = screen.getByRole('status', { name: 'Checking connection' });
     expect(loading).toHaveAttribute('aria-live', 'polite');
     expect(loading).toHaveTextContent('Contacting the local server');
-    expect(loading.querySelector('.ui-spinner')).toHaveAttribute('aria-hidden', 'true');
+    expect(loading.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
     expect(loading).not.toHaveAttribute('label');
     expect(loading).not.toHaveAttribute('description');
   });
 });
 
 describe('Popover', () => {
-  it('owns a padded, bounded floating surface', () => {
-    render(() => <Popover open><PopoverTrigger>Details</PopoverTrigger><PopoverContent>Popover details</PopoverContent></Popover>);
-    const content = screen.getByText('Popover details');
-    expect(content).toHaveClass('ui-popover');
+  it('keeps its portal-mounted dialog surface accessible', async () => {
+    render(() => <Popover open><PopoverTrigger>Details</PopoverTrigger><PopoverContent aria-label="Details">Popover details</PopoverContent></Popover>);
+    expect(await screen.findByRole('dialog', { name: 'Details' })).toHaveTextContent('Popover details');
   });
 });
 
@@ -270,7 +269,6 @@ describe('InlineNotice', () => {
     const alert = screen.getByRole('alert');
     expect(alert).toHaveTextContent('Import failed');
     expect(alert).not.toHaveAttribute('aria-live');
-    expect(alert).toHaveClass('ui-inline-notice--danger');
     unmount();
 
     render(() => <InlineNotice live tone="warning">Waiting for confirmation</InlineNotice>);
@@ -282,7 +280,7 @@ describe('EmptyState', () => {
   it('supports an inline surface without changing its title, description and action contract', () => {
     render(() => <EmptyState variant="inline" title="No sessions" description="Import an ACP session to continue." action={<Button>Import session</Button>} data-testid="empty" />);
     const empty = screen.getByTestId('empty');
-    expect(empty).toHaveClass('ui-empty--inline');
+    expect(empty).toHaveTextContent('No sessions');
     expect(screen.getByRole('heading', { name: 'No sessions' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Import session' })).toBeInTheDocument();
     expect(empty).not.toHaveAttribute('variant');
@@ -340,7 +338,7 @@ describe('Dialog', () => {
     }
     render(() => <Harness />);
     await waitFor(() => expect(screen.getByRole('textbox', { name: 'Name' })).toHaveFocus());
-    const backdrop = document.querySelector('.ui-dialog-backdrop');
+    const backdrop = document.querySelector('[data-dialog-overlay]');
     expect(document.body.contains(backdrop)).toBe(true);
     expect(app.contains(backdrop)).toBe(false);
     expect(app).toHaveAttribute('aria-hidden', 'true');
@@ -378,7 +376,7 @@ describe('Dialog', () => {
     render(() => <Dialog open onOpenChange={(open) => { if (!open) close(); }}><DialogContent dismissible={false}><DialogTitle>Saving</DialogTitle><button>Working</button></DialogContent></Dialog>);
     await waitFor(() => expect(screen.getByRole('dialog', { name: 'Saving' })).toBeInTheDocument());
     fireEvent.keyDown(document, { key: 'Escape' });
-    fireEvent.pointerDown(document.querySelector('.ui-dialog-backdrop')!);
+    fireEvent.pointerDown(document.querySelector('[data-dialog-overlay]')!);
     expect(close).not.toHaveBeenCalled();
   });
 

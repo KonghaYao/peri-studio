@@ -17,8 +17,8 @@ const kindLabel = (kind: AgentCommandInfo['kind']) => kind === 'skill'
 export function SlashMenu(props: Props) {
   const activeName = () => props.items[props.activeIndex]?.name;
   return (
-    <div class="slash-menu absolute z-35 right-20 bottom-full-8 left-20 overflow-hidden border border-border-subtle rounded-17 bg-surface shadow-popover max-tight:right-10 max-tight:left-10">
-      <div class="slash-menu__heading flex items-baseline justify-between gap-16 pt-12 pr-14 pb-9 pl-14"><strong class="text-12">Invoke capabilities</strong><span class="text-text-muted text-10 max-tight:hidden">Writes to the draft when selected; does not run immediately</span></div>
+    <div class="slash-menu absolute z-35 right-20 bottom-[calc(100%+8px)] left-20 overflow-hidden border border-border-subtle rounded-17 bg-surface shadow-popover max-tight:right-10 max-tight:left-10">
+      <div class="slash-menu__heading flex items-baseline justify-between gap-16 pt-12 pr-14 pb-9 pl-14 border-b border-divider"><strong class="text-12">Invoke capabilities</strong><span class="text-text-muted text-10 max-tight:hidden">Writes to the draft when selected; does not run immediately</span></div>
       <Listbox
         id={props.id}
         aria-label="Available commands and skills"
@@ -40,7 +40,7 @@ export function SlashMenu(props: Props) {
           return <ListboxItem
             id={`${props.id}-option-${index()}`}
             item={item}
-            class="slash-menu__item grid w-full grid-cols-slash items-center gap-12 p-9 border-0 rounded-11 bg-transparent text-text-primary text-left cursor-pointer pointer-coarse:min-h-44 max-tight:grid-cols-1 max-tight:gap-3 max-tight:min-h-52"
+            class="slash-menu__item grid w-full grid-cols-slash items-center gap-12 p-9 border-0 rounded-11 bg-transparent text-text-primary text-left cursor-pointer aria-selected:bg-selected pointer-coarse:min-h-44 max-tight:grid-cols-1 max-tight:gap-3 max-tight:min-h-52"
             onPointerMove={() => props.onActiveIndex(index())}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => props.onSelect(command)}

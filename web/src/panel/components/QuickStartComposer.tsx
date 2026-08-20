@@ -21,11 +21,11 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
     createSessionWithFirstMessage(projectId(), text);
   };
 
-  return <section class="quick-start w-full text-left" aria-label="Start new session">
+  return <section class="quick-start w-full text-left [&>.ui-field]:mb-9" aria-label="Start new session">
     <Show when={props.projects.length > 1}><SelectField label="Save to project" value={projectId()} disabled={locked()} onChange={(event) => setProjectId(event.currentTarget.value)}>
       <For each={props.projects}>{(item) => <option value={item.id} selected={item.id === projectId()}>{item.name}</option>}</For>
     </SelectField></Show>
-    <div class="quick-start__surface overflow-hidden border border-composer-border rounded-16 bg-surface shadow-float focus-within:border-border-strong focus-within:shadow-float" aria-busy={pendingIsInFlight() || undefined}>
+    <div class="quick-start__surface overflow-hidden border border-composer-border rounded-16 bg-surface shadow-float focus-within:border-border-strong focus-within:shadow-float has-[.ui-textarea:focus-visible]:shadow-[var(--shadow-float),0_0_0_2px_var(--surface),0_0_0_4px_var(--focus-ring)]" aria-busy={pendingIsInFlight() || undefined}>
       <Textarea
         autoResize
         maxHeight={180}
@@ -44,10 +44,10 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
       />
       <div class="quick-start__footer flex min-h-48 items-center gap-12 pt-6 pr-8 pb-6 pl-16 border-t border-divider"><span class="min-w-0 flex-1 text-text-muted text-11">Enter to start · Shift+Enter for a new line</span><Button variant="primary" busy={pending()?.phase === 'creating' || pending()?.phase === 'accepted'} disabled={readOnly() || locked() || !!pending() || !draft().trim()} onClick={submit}>Start session</Button></div>
     </div>
-    <Show when={pending()}>{(submission) => <InlineNotice id={statusId} class="quick-start__state mt-8" tone={submission().phase === 'failed' ? 'danger' : submission().phase === 'uncertain' ? 'warning' : 'info'} role={submission().phase === 'failed' || submission().phase === 'uncertain' ? 'alert' : 'status'} live={pendingIsInFlight()} title={submission().phase === 'uncertain' ? 'Creation result not confirmed yet' : submission().phase === 'failed' ? 'Failed to create session' : 'Creating and connecting session…'}>
+    <Show when={pending()}>{(submission) => <InlineNotice id={statusId} class="quick-start__state mt-8 [&_small]:min-w-0" tone={submission().phase === 'failed' ? 'danger' : submission().phase === 'uncertain' ? 'warning' : 'info'} role={submission().phase === 'failed' || submission().phase === 'uncertain' ? 'alert' : 'status'} live={pendingIsInFlight()} title={submission().phase === 'uncertain' ? 'Creation result not confirmed yet' : submission().phase === 'failed' ? 'Failed to create session' : 'Creating and connecting session…'}>
       <span>{submission().phase === 'uncertain' ? 'Re-confirming uses the original request and will not create a duplicate project session.' : submission().phase === 'failed' ? 'The draft remains local until you choose to start again.' : 'Waiting for the server to confirm the project session and runtime before sending the first message.'}</span>
       <Show when={submission().detail}><small>{submission().detail}</small></Show>
-      <div class="quick-start__actions">
+      <div class="quick-start__actions flex flex-wrap gap-6">
         <Show when={(submission().phase === 'failed' || submission().phase === 'uncertain') && submission().retryable}><Button size="compact" variant="secondary" onClick={retryQuickStart}>Re-confirm with the same request</Button></Show>
         <Show when={submission().phase === 'failed'}><Button size="compact" onClick={dismissFailedQuickStart}>Back to edit</Button></Show>
       </div>

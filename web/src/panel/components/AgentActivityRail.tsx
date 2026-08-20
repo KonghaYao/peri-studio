@@ -52,13 +52,13 @@ function ActivityRow(props: { activity: AgentActivityInfo }) {
       default: return 'border-text-faint bg-surface';
     }
   };
-  return <li class={`agent-activity__item agent-activity__item--${props.activity.status} relative grid grid-cols-activity gap-9 items-start min-h-42 px-3 py-7`}>
+  return <li class={`agent-activity__item agent-activity__item--${props.activity.status} relative grid grid-cols-activity gap-9 items-start min-h-42 px-3 py-7 after:absolute after:bottom-0 after:left-19 after:right-0 after:h-1 after:bg-divider last:after:hidden max-narrow:grid-cols-[10px_minmax(0,1fr)]`}>
     <span class={`agent-activity__marker size-7 mt-5 border rounded-full ${markerTone()}`} aria-hidden="true" />
     <div class="agent-activity__copy min-w-0">
       <div class="flex min-w-0 gap-7 items-baseline"><strong class="overflow-hidden text-11p5 font-semibold text-ellipsis whitespace-nowrap">{props.activity.label || KIND_LABEL[props.activity.kind]}</strong><span class="flex-none text-text-muted text-10">{STATUS_LABEL[props.activity.status]}</span></div>
-      <Show when={metrics().length > 0}><dl class="flex flex-wrap gap-x-10 gap-y-3 mt-3"><For each={metrics()}>{([key, value]) => <div class="flex gap-4"><dt class="m-0 text-text-muted text-10">{METRIC_LABEL[key]}</dt><dd class="m-0 text-text-secondary tabular-nums text-10">{formatMetric(key, value)}</dd></div>}</For></dl></Show>
+      <Show when={metrics().length > 0}><dl class="flex flex-wrap gap-x-10 gap-y-3 mt-3 max-narrow:hidden"><For each={metrics()}>{([key, value]) => <div class="flex gap-4"><dt class="m-0 text-text-muted text-10">{METRIC_LABEL[key]}</dt><dd class="m-0 text-text-secondary tabular-nums text-10">{formatMetric(key, value)}</dd></div>}</For></dl></Show>
     </div>
-    <Show when={time()}>{(value) => <time class="mt-2 text-text-muted text-10 whitespace-nowrap" dateTime={props.activity.updatedAt ?? undefined} title={value().exact}>{value().label}</time>}</Show>
+    <Show when={time()}>{(value) => <time class="mt-2 text-text-muted text-10 whitespace-nowrap max-narrow:col-start-2" dateTime={props.activity.updatedAt ?? undefined} title={value().exact}>{value().label}</time>}</Show>
   </li>;
 }
 
@@ -74,18 +74,18 @@ export function AgentActivityRail(props: AgentActivityRailProps) {
   };
   return <Show when={latest()}>{(current) =>
     <CollapsibleSection
-      detailsClass="agent-activity w-(--container-activity) flex-none mx-auto mt-10 border border-border-subtle rounded-14 bg-activity-bg text-text-primary"
+      detailsClass="agent-activity group w-(--container-activity) flex-none mx-auto mt-10 border border-border-subtle rounded-12 bg-activity-bg text-text-primary max-narrow:w-[calc(100%-20px)] max-narrow:mt-8"
       summaryClass="flex min-h-44 items-center gap-10 px-11 py-5 cursor-pointer list-none focus-visible:rounded-13 focus-visible:outline-offset-neg-2"
       label="Peri activity"
       mark={<span class={`agent-activity__pulse agent-activity__pulse--${current().status} size-8 flex-none rounded-full ${pulseTone(current().status)}`} aria-hidden="true" />}
-      copy={<span class="agent-activity__summary-copy flex min-w-0 flex-1 items-baseline gap-8">
+      copy={<span class="agent-activity__summary-copy flex min-w-0 flex-1 items-baseline gap-8 max-narrow:grid max-narrow:gap-1">
         <strong class="text-12 font-680">Peri activity</strong>
         <span class="overflow-hidden text-text-secondary text-11 text-ellipsis whitespace-nowrap">{current().label || KIND_LABEL[current().kind]} · {STATUS_LABEL[current().status]}</span>
       </span>}
       meta={<span class="agent-activity__count grid min-w-21 h-21 place-items-center rounded-full bg-surface-muted text-text-muted text-10 tabular-nums">{props.activities.length}</span>}
-      chevronClass="agent-activity__chevron text-text-muted text-18 transition-transform duration-140"
+      chevronClass="agent-activity__chevron text-text-muted text-18 transition-transform duration-140 group-open:rotate-90"
     >
-      <div class="agent-activity__body max-h-240 overflow-auto border-t border-divider pt-9 pr-11 pb-11 pl-11">
+      <div class="agent-activity__body max-h-240 overflow-auto border-t border-divider pt-9 pr-11 pb-11 pl-11 max-narrow:max-h-210">
         <p class="mt-0 mb-8 text-text-muted text-10p5 leading-145">Enabled by the current ACP session; shows only redacted run summaries.</p>
         <ol class="flex flex-col m-0 p-0 list-none"><For each={latestFirst()}>{(activity) => <ActivityRow activity={activity} />}</For></ol>
       </div>

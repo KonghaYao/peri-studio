@@ -39,7 +39,6 @@ describe('ConnectionProblem', () => {
 
     const alert = screen.getByRole('alert');
     expect(alert).toHaveTextContent('Please sign in again.');
-    expect(alert).toHaveClass('ui-inline-notice', 'ui-inline-notice--danger');
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });

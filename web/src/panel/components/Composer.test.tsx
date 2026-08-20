@@ -278,7 +278,6 @@ describe('Composer', () => {
     render(() => <Composer />);
     const retry = screen.getByRole('button', { name: 'Confirm stop with original request' });
     expect(retry).toBeEnabled();
-    expect(retry).toHaveClass('composer-action--uncertain');
   });
 
   it('keeps an uncertain message out of the editor while exposing only same-request confirmation', async () => {

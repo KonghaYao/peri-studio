@@ -50,7 +50,7 @@ export function PermissionQueue(props: PermissionQueueProps) {
     const permissionId = () => permission().permissionId;
     return <aside class="permission-queue sticky top-12 z-10 mb-16" aria-label={`Pending permission requests, ${props.permissions.length} total`}>
       <Show when={props.permissions.length > 1}>
-        <div class="permission-queue__navigation flex min-h-34 items-center justify-between gap-12 pt-5 pr-7 pb-5 pl-12 border border-warning-border border-b-0 rounded-t-14 bg-warning-soft text-text-secondary text-11 font-650">
+        <div class="permission-queue__navigation flex min-h-34 items-center justify-between gap-12 pt-5 pr-7 pb-5 pl-12 border border-warning-border border-b-0 rounded-t-14 bg-warning-soft text-text-secondary text-11 font-650 [&_[data-slot=button]]:min-h-28 [&_[data-slot=button]]:px-9">
           <span aria-live="polite">{activeIndex() + 1} / {props.permissions.length} pending</span>
           <div class="flex gap-4">
             <Button size="compact" class="min-h-28 px-9" disabled={activeIndex() <= 0} onClick={() => select(activeIndex() - 1)}>Previous</Button>

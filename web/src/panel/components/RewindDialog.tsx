@@ -16,66 +16,57 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
   };
 
   return <Dialog open={props.open} onOpenChange={(open) => { if (!open && !executing()) close(); }}><DialogContent size="rewind" dismissible={!executing()}><DialogHeader><DialogTitle>Rewind session</DialogTitle></DialogHeader>
-    <section class="rewind-dialog box-border px-22 pb-22 pt-4">
+    <section class="box-border w-[min(640px,calc(100vw-40px))] max-h-[min(76dvh,700px)] overflow-auto px-22 pt-4 pb-22 max-[640px]:w-[calc(100vw-24px)] max-[640px]:max-h-[82dvh] max-[640px]:px-16 max-[640px]:pt-2 max-[640px]:pb-17">
       <Switch>
         <Match when={state().kind === 'loading_candidates'}>
-          <LoadingState class="rewind-dialog__loading grid min-h-180 place-content-center justify-items-center p-24 text-center" label="Reading rewindable messages" description="Reading user messages from the Peri session history." />
+          <LoadingState class="grid min-h-180 place-content-center justify-items-center p-24 text-center max-[640px]:px-8 max-[640px]:py-20 [&_.ui-spinner]:mb-12 [&_.ui-spinner]:h-22 [&_.ui-spinner]:w-22" label="Reading rewindable messages" description="Reading user messages from the Peri session history." />
         </Match>
         <Match when={state().kind === 'select_target' && state()} keyed>{(current) => {
           if (current.kind !== 'select_target') return null;
           return <>
-            <div class="rewind-dialog__intro pt-8 pb-16"><strong>Choose the message to rewind to</strong><p>Messages after it will be removed. You will see the file impact first; nothing executes immediately.</p></div>
-            <Show when={current.candidates.length} fallback={<EmptyState variant="inline" class="rewind-dialog__empty min-h-180 p-24" title="No user messages" description="The current session has no user messages to rewind to." />}>
-              <Listbox
-                class="rewind-candidates grid gap-7 m-0 p-0 list-none"
-                aria-label="Rewind target message"
-                options={current.candidates}
-                optionValue="messageId"
-                optionTextValue={(candidate) => candidate.preview || 'Empty message'}
-                selectionMode="single"
-                onChange={(selected) => {
-                  const id = [...selected][0];
-                  const candidate = current.candidates.find((item) => item.messageId === id);
-                  if (candidate) previewRewind(candidate);
-                }}
-                renderItem={(item) => <ListboxItem item={item} class="rewind-candidate grid w-full min-h-58 grid-cols-[minmax(0,1fr)_auto] items-center gap-18 px-13 py-11 border border-divider rounded-12 bg-surface-muted text-text-primary text-left">
-                  <span>{item.rawValue.preview || 'Empty message'}</span><small>Message {current.candidates.findIndex((candidate) => candidate.messageId === item.rawValue.messageId) + 1}</small>
-                </ListboxItem>}
-              />
+            <div class="pt-8 pb-16"><strong class="text-15 text-text-primary">Choose the message to rewind to</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">Messages after it will be removed. You will see the file impact first; nothing executes immediately.</p></div>
+            <Show when={current.candidates.length} fallback={<EmptyState variant="inline" class="grid min-h-180 place-content-center justify-items-center p-24 text-center max-[640px]:px-8 max-[640px]:py-20" title="No user messages" description="The current session has no user messages to rewind to." />}>
+              <Listbox class="grid gap-7 m-0 p-0 list-none" aria-label="Rewind target message" options={current.candidates} optionValue="messageId" optionTextValue={(candidate) => candidate.preview || 'Empty message'} selectionMode="single" onChange={(selected) => {
+                const id = [...selected][0];
+                const candidate = current.candidates.find((item) => item.messageId === id);
+                if (candidate) previewRewind(candidate);
+              }} renderItem={(item) => <ListboxItem item={item} class="grid w-full min-h-58 grid-cols-[minmax(0,1fr)_auto] items-center gap-18 rounded-12 border border-divider bg-surface-muted px-13 py-11 text-left text-text-primary hover:border-border-strong hover:bg-selected">
+                <span class="overflow-hidden text-13 leading-145 [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box]">{item.rawValue.preview || 'Empty message'}</span><small class="whitespace-nowrap text-11 text-text-muted">Message {current.candidates.findIndex((candidate) => candidate.messageId === item.rawValue.messageId) + 1}</small>
+              </ListboxItem>} />
             </Show>
           </>;
         }}</Match>
         <Match when={state().kind === 'loading_preview'}>
-          <LoadingState class="rewind-dialog__loading grid min-h-180 place-content-center justify-items-center p-24 text-center" label="Generating rewind preview" description="Checking the session history and workspace file impact." />
+          <LoadingState class="grid min-h-180 place-content-center justify-items-center p-24 text-center max-[640px]:px-8 max-[640px]:py-20 [&_.ui-spinner]:mb-12 [&_.ui-spinner]:h-22 [&_.ui-spinner]:w-22" label="Generating rewind preview" description="Checking the session history and workspace file impact." />
         </Match>
         <Match when={state().kind === 'confirm' && state()} keyed>{(current) => {
           if (current.kind !== 'confirm') return null;
           return <>
-            <div class="rewind-dialog__intro pt-8 pb-16"><strong>Confirm the rewind impact</strong><p>The session will rewind to before this message and reload the server projection.</p></div>
-            <blockquote class="rewind-target m-0 px-15 py-13 border-l-3 border-solid-l border-l-text-primary rounded-r-10 bg-surface-muted text-text-primary text-13 leading-15">{current.candidate.preview || 'Empty message'}</blockquote>
-            <section class="rewind-impact mt-18" aria-labelledby="rewind-files-title">
-              <h3 id="rewind-files-title">File impact · {current.fileChanges.length}</h3>
-              <Show when={current.fileChanges.length} fallback={<p>No workspace files need to be restored.</p>}>
-                <ul><For each={current.fileChanges}>{(change) => <li><code>{change.path}</code><span>{change.kind === 'write' ? 'Restore write' : 'Restore edit'}</span></li>}</For></ul>
+            <div class="pt-8 pb-16"><strong class="text-15 text-text-primary">Confirm the rewind impact</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">The session will rewind to before this message and reload the server projection.</p></div>
+            <blockquote class="m-0 rounded-r-10 border-l-3 border-solid-l border-l-text-primary bg-surface-muted px-15 py-13 text-13 leading-15 text-text-primary">{current.candidate.preview || 'Empty message'}</blockquote>
+            <section class="mt-18" aria-labelledby="rewind-files-title">
+              <h3 id="rewind-files-title" class="mb-8 mt-0 text-12 text-text-primary">File impact · {current.fileChanges.length}</h3>
+              <Show when={current.fileChanges.length} fallback={<p class="m-0 text-12 text-text-secondary">No workspace files need to be restored.</p>}>
+                <ul class="grid gap-5 m-0 p-0 list-none"><For each={current.fileChanges}>{(change) => <li class="flex min-w-0 items-center justify-between gap-12 rounded-9 bg-surface-muted px-10 py-8"><code class="overflow-hidden text-ellipsis whitespace-nowrap text-11 text-text-primary">{change.path}</code><span class="shrink-0 text-11 text-text-muted">{change.kind === 'write' ? 'Restore write' : 'Restore edit'}</span></li>}</For></ul>
               </Show>
             </section>
-            <p class="rewind-dialog__warning mt-18 px-12 py-10 rounded-10 bg-danger-soft !text-danger text-12 leading-15">This is a destructive action. Do not repeat it after confirming; if the result is unknown, reopen the session to check.</p>
-            <div class="form-actions flex justify-end gap-8 mt-20"><Button onClick={close}>Cancel</Button><Button variant="danger" onClick={executeRewind}>Rewind session and files</Button></div>
+            <p class="mt-18 mb-0 rounded-10 bg-danger-soft px-12 py-10 text-12 leading-15 !text-danger">This is a destructive action. Do not repeat it after confirming; if the result is unknown, reopen the session to check.</p>
+            <div class="mt-20 flex justify-end gap-8 max-[640px]:grid max-[640px]:grid-cols-1 [&_[data-slot=button]]:max-[640px]:min-h-44 [&_[data-slot=button]:last-child]:max-[640px]:row-start-1"><Button onClick={close}>Cancel</Button><Button variant="danger" onClick={executeRewind}>Rewind session and files</Button></div>
           </>;
         }}</Match>
         <Match when={state().kind === 'executing'}>
-          <LoadingState class="rewind-dialog__loading grid min-h-180 place-content-center justify-items-center p-24 text-center" label="Executing rewind" description="Keep the page open. This operation will not retry automatically.">Rewinding and reloading the session</LoadingState>
+          <LoadingState class="grid min-h-180 place-content-center justify-items-center p-24 text-center max-[640px]:px-8 max-[640px]:py-20 [&_.ui-spinner]:mb-12 [&_.ui-spinner]:h-22 [&_.ui-spinner]:w-22" label="Executing rewind" description="Keep the page open. This operation will not retry automatically.">Rewinding and reloading the session</LoadingState>
         </Match>
         <Match when={state().kind === 'completed'}>
-          <div class="rewind-dialog__result rewind-dialog__result--ok grid min-h-180 place-content-center justify-items-center p-24 text-center text-success"><strong>Rewind complete</strong><p>The session history and file projection have been reloaded.</p><Button variant="primary" onClick={close}>Done</Button></div>
+          <div class="grid min-h-180 place-content-center justify-items-center p-24 text-center text-success max-[640px]:px-8 max-[640px]:py-20"><strong class="text-15 text-text-primary">Rewind complete</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">The session history and file projection have been reloaded.</p><Button class="mt-18" variant="primary" onClick={close}>Done</Button></div>
         </Match>
         <Match when={state().kind === 'delivery_unknown' && state()} keyed>{(current) => {
           if (current.kind !== 'delivery_unknown') return null;
-          return <div class="rewind-dialog__result rewind-dialog__result--unknown grid min-h-180 place-content-center justify-items-center p-24 text-center justify-items-start rounded-12 bg-warning-soft text-left" role="alert"><strong>Rewind result not confirmed</strong><p>{current.detail}</p><p>To avoid duplicate changes, re-execution is not offered. Close this window and reopen the session to check the history and files.</p><Button onClick={close}>Got it</Button></div>;
+          return <div class="grid min-h-180 place-content-center justify-items-start rounded-12 bg-warning-soft p-24 text-left max-[640px]:px-8 max-[640px]:py-20" role="alert"><strong class="text-15 text-text-primary">Rewind result not confirmed</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">{current.detail}</p><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">To avoid duplicate changes, re-execution is not offered. Close this window and reopen the session to check the history and files.</p><Button class="mt-18" onClick={close}>Got it</Button></div>;
         }}</Match>
         <Match when={state().kind === 'error' && state()} keyed>{(current) => {
           if (current.kind !== 'error') return null;
-          return <div class="rewind-dialog__result grid min-h-180 place-content-center justify-items-center p-24 text-center" role="alert"><strong>{current.stage === 'execute' ? 'Rewind incomplete' : 'Could not generate rewind preview'}</strong><p>{current.detail}</p><div class="form-actions flex justify-end gap-8 mt-20"><Button onClick={close}>Close</Button><Show when={current.stage !== 'execute'}><Button variant="primary" onClick={restart}>Query again</Button></Show></div></div>;
+          return <div class="grid min-h-180 place-content-center justify-items-center p-24 text-center max-[640px]:px-8 max-[640px]:py-20" role="alert"><strong class="text-15 text-text-primary">{current.stage === 'execute' ? 'Rewind incomplete' : 'Could not generate rewind preview'}</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">{current.detail}</p><div class="mt-20 flex justify-end gap-8 max-[640px]:grid max-[640px]:grid-cols-1 [&_[data-slot=button]]:max-[640px]:min-h-44 [&_[data-slot=button]:last-child]:max-[640px]:row-start-1"><Button onClick={close}>Close</Button><Show when={current.stage !== 'execute'}><Button variant="primary" onClick={restart}>Query again</Button></Show></div></div>;
         }}</Match>
       </Switch>
     </section>

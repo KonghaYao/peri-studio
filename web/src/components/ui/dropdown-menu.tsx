@@ -29,7 +29,7 @@ const DropdownMenuContent = <T extends ValidComponent = "div">(
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
         class={cn(
-          "ui-menu ui-menu--surface z-50 min-w-32 origin-[var(--kb-menu-content-transform-origin)] animate-content-hide overflow-hidden data-[expanded]:animate-content-show",
+          "absolute z-50 flex min-w-32 flex-col gap-2 overflow-hidden rounded-11 border border-border-subtle !bg-surface p-7 !text-text-primary shadow-popover origin-[var(--kb-menu-content-transform-origin)] animate-content-hide data-[expanded]:animate-content-show",
           props.class
         )}
         {...rest}
@@ -50,7 +50,7 @@ const DropdownMenuItem = <T extends ValidComponent = "div">(
   return (
     <DropdownMenuPrimitive.Item
       class={cn(
-        "ui-menu__item relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex w-full min-h-36 cursor-pointer select-none items-center gap-2 rounded-7 border-0 !bg-transparent px-10 text-left text-13 !text-text-primary outline-none transition-colors hover:bg-hover focus-visible:bg-hover focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-45 [@media(pointer:coarse)]:size-44",
         props.class
       )}
       {...rest}

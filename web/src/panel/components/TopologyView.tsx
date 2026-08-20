@@ -41,13 +41,13 @@ export function TopologyView() {
         />
       }
     >
-      <div class="topology-tree grid gap-8 mt-14">
-        <article class="topology-node topology-node--server border border-divider rounded-12 bg-surface-muted bg-surface">
-          <div class="topology-node__head flex items-center gap-10 px-14 py-12">
-            <span class="topology-node__mark topology-node__mark--server w-9 h-9 shrink-0 rounded-full bg-accent" aria-hidden="true" />
-            <div class="topology-node__identity grid min-w-0 flex-1 gap-2">
-              <strong>Peri Studio server</strong>
-              <span class="topology-node__meta overflow-hidden text-text-muted font-mono text-11 text-ellipsis whitespace-nowrap">hub:registry · schema {String(schemaVersion() ?? '—')}</span>
+      <div class="grid gap-8 mt-14">
+        <article class="border border-divider rounded-12 bg-surface">
+          <div class="flex items-center gap-10 px-14 py-12">
+            <span class="w-9 h-9 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+            <div class="grid min-w-0 flex-1 gap-2">
+              <strong class="overflow-hidden text-text-primary text-14 text-ellipsis whitespace-nowrap">Peri Studio server</strong>
+              <span class="overflow-hidden text-text-muted font-mono text-11 text-ellipsis whitespace-nowrap">hub:registry · schema {String(schemaVersion() ?? '—')}</span>
             </div>
             <Badge tone={SERVER_TONE[globalStatus()] ?? 'neutral'}>{serverStatusLabel(globalStatus())}</Badge>
           </div>
@@ -56,26 +56,26 @@ export function TopologyView() {
           const registered = () => messageTime(node.registeredAt);
           const heartbeat = () => messageTime(node.lastHeartbeat);
           return (
-            <article class="topology-node topology-node--instance border border-divider rounded-12 bg-surface-muted">
-              <div class="topology-node__head flex items-center gap-10 px-14 py-12">
-                <span class="topology-node__mark topology-node__mark--instance w-9 h-9 shrink-0 rounded-full bg-success" aria-hidden="true" />
-                <div class="topology-node__identity grid min-w-0 flex-1 gap-2">
-                  <strong>{node.hostname || node.id}</strong>
-                  <span class="topology-node__meta overflow-hidden text-text-muted font-mono text-11 text-ellipsis whitespace-nowrap">{node.id} · token {node.tokenId || '—'}</span>
+            <article class="border border-divider rounded-12 bg-surface-muted">
+              <div class="flex items-center gap-10 px-14 py-12">
+                <span class="w-9 h-9 shrink-0 rounded-full bg-success" aria-hidden="true" />
+                <div class="grid min-w-0 flex-1 gap-2">
+                  <strong class="overflow-hidden text-text-primary text-14 text-ellipsis whitespace-nowrap">{node.hostname || node.id}</strong>
+                  <span class="overflow-hidden text-text-muted font-mono text-11 text-ellipsis whitespace-nowrap">{node.id} · token {node.tokenId || '—'}</span>
                 </div>
                 <Badge tone={INSTANCE_TONE[node.status ?? ''] ?? 'neutral'}>{instanceStatusLabel(node.status)}</Badge>
               </div>
-              <div class="topology-node__facts flex flex-wrap gap-x-14 gap-y-5 px-14 pb-11 text-text-secondary text-12">
+              <div class="flex flex-wrap gap-x-14 gap-y-5 px-14 pb-11 text-text-secondary text-12">
                 <span>{node.chats.length} conversations</span>
                 <span>Registered {registered()?.label ?? '—'}</span>
                 <span>Last heartbeat {heartbeat()?.label ?? '—'}</span>
               </div>
               <Show when={node.chats.length > 0}>
-                <ul class="topology-chats grid gap-2 mx-14 mb-11 pt-7 pl-13 border-t border-l-2 border-dashed-t border-solid-l border-divider list-none">
+                <ul class="grid gap-2 mx-14 mb-11 pt-7 pl-13 border-t border-l-2 [border-top-style:dashed] border-solid-l border-divider list-none">
                   <For each={node.chats}>{(chat) => (
-                    <li class="topology-chat flex items-center gap-8 px-6 py-4 rounded-8 hover:bg-hover">
-                      <span class="topology-chat__title min-w-0 overflow-hidden flex-1 text-text-primary text-12p5 text-ellipsis whitespace-nowrap">{chat.title || chat.id}</span>
-                      <span class="topology-chat__id overflow-hidden max-w-40p text-text-faint font-mono text-10p5 text-ellipsis whitespace-nowrap">{chat.id}</span>
+                    <li class="flex items-center gap-8 px-6 py-4 rounded-8 hover:bg-hover">
+                      <span class="min-w-0 overflow-hidden flex-1 text-text-primary text-12p5 text-ellipsis whitespace-nowrap">{chat.title || chat.id}</span>
+                      <span class="overflow-hidden max-w-[40%] text-text-faint font-mono text-10p5 text-ellipsis whitespace-nowrap">{chat.id}</span>
                       <Badge tone={CHAT_TONE[chat.status ?? ''] ?? 'neutral'}>{chatStatusLabel(chat.status)}</Badge>
                     </li>
                   )}</For>

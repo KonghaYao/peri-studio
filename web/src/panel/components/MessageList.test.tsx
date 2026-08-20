@@ -151,15 +151,16 @@ describe('MessageList hydration', () => {
     setRuntimeDocsState({ chat: true, control: false });
     render(() => <MessageList />);
     const loading = screen.getByRole('status', { name: 'Loading session' });
-    expect(loading).toHaveClass('ui-loading-state');
-    expect(loading.querySelector('.ui-spinner')).toHaveAttribute('aria-hidden', 'true');
+    expect(loading).toHaveAttribute('aria-live', 'polite');
+    expect(loading).toHaveTextContent('Restoring messages and runtime state from the Peri Studio server…');
+    expect(loading.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
     expect(screen.queryByText('Start this conversation')).not.toBeInTheDocument();
   });
 
   it('turns a confirmed empty projection into a meaningful first-message state', () => {
     setRuntimeDocsState({ chat: true, control: true });
     render(() => <MessageList />);
-    const empty = screen.getByText('Start this conversation').closest('.ui-empty');
+    const empty = screen.getByRole('heading', { name: 'Start this conversation' }).parentElement;
     expect(empty).toBeInTheDocument();
     expect(screen.getByText(/Content is saved to this session/)).toBeInTheDocument();
     expect(screen.queryByText('Loading session')).not.toBeInTheDocument();
@@ -178,8 +179,10 @@ describe('MessageList hydration', () => {
     render(() => <MessageList />);
 
     const loading = screen.getByRole('status', { name: 'Assistant is working' });
-    expect(loading).toHaveClass('ui-loading-state', 'message-loading');
-    expect(loading.querySelector('.ui-spinner')).toHaveAttribute('aria-hidden', 'true');
+    expect(loading).toHaveClass('message-loading');
+    expect(loading).toHaveAttribute('aria-live', 'polite');
+    expect(loading).toHaveTextContent('Working…');
+    expect(loading.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
     expect(document.querySelectorAll('.message-loading')).toHaveLength(1);
   });
 

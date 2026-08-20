@@ -106,3 +106,46 @@ textarea { resize: vertical; }
 [hidden]:where(:not([hidden=until-found])) {
   display: none !important;
 }
+
+/* Fixed-viewport product shell: navigation and conversation own scrolling. */
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: var(--app-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Inline code remains legible but visually subordinate in all product content. */
+code {
+  border-radius: var(--radius-6);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  padding: var(--space-1) var(--space-6);
+  font-size: .85em;
+}
+
+/* Keyboard focus must not depend on each component defining an outline. */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+/* Respect system motion preferences across primitives and third-party content. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

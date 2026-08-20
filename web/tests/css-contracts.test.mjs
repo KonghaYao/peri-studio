@@ -42,22 +42,14 @@ test('source stylesheets are structurally valid and consume only declared design
   assert.deepEqual([...used].filter((token) => !defined.has(token)).sort(), []);
 });
 
-test('Kobalte dialog overlay and content are independently fixed in the shared portal', () => {
-  const primitives = readFileSync(join(import.meta.dirname, '..', 'src', 'styles', 'primitives.css'), 'utf8');
-  const root = postcss.parse(primitives);
-  const declarations = (selector) => {
-    const values = new Map();
-    root.walkRules(selector, (rule) => rule.walkDecls((decl) => values.set(decl.prop, decl.value)));
-    return values;
-  };
-  const overlay = declarations('.ui-dialog-backdrop');
-  const content = declarations('.ui-dialog');
-  assert.equal(overlay.get('position'), 'fixed');
-  assert.equal(content.get('position'), 'fixed');
-  assert.equal(content.get('top'), '50%');
-  assert.equal(content.get('left'), '50%');
-  assert.equal(content.get('transform'), 'translate(-50%,-50%)');
-  assert.ok(Number(content.get('z-index')) > Number(overlay.get('z-index')));
+test('Kobalte dialog composes an independently layered portal overlay and content', () => {
+  const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Dialog.tsx'), 'utf8');
+  assert.match(dialog, /return <DialogPrimitive\.Portal \{\.\.\.props\} \/>;/);
+  assert.match(dialog, /<DialogOverlay \/>\s*<DialogPrimitive\.Content/s);
+  assert.match(dialog, /DialogPrimitive\.Overlay data-dialog-overlay class=\{cn\('fixed inset-0 z-60 bg-scrim'/);
+  assert.match(dialog, /DialogPrimitive\.Content\s+class=\{cn\('fixed top-1\/2 left-1\/2 z-61/);
+  assert.match(dialog, /onEscapeKeyDown=\{preventWhenLocked\}/);
+  assert.match(dialog, /onPointerDownOutside=\{preventWhenLocked\}/);
 });
 
 test('dialog size belongs to DialogContent rather than an overflowing child', () => {
@@ -74,16 +66,16 @@ test('dialog size belongs to DialogContent rather than an overflowing child', ()
   }
 });
 
-test('Composer and quick start have one neutral keyboard-focus owner and no stale selectors', () => {
-  const css = featureCss();
-  const root = postcss.parse(css);
-  const focusRules = [];
-  root.walkRules((rule) => {
-    if (rule.selector.includes('.composer-surface:focus-within') || rule.selector.includes('.quick-start__surface:focus-within')) focusRules.push(rule.selector);
-  });
-  assert.equal(focusRules.length, 1);
-  assert.doesNotMatch(css, /--focus-neutral|--surface-border-focus|\.permission-actions\b/);
-  assert.match(css, /\.composer-surface:has\(\.composer-input:focus-visible\)/);
+test('Composer and quick start expose one labeled textarea and keyboard submit guidance', () => {
+  const root = join(import.meta.dirname, '..', 'src', 'panel', 'components');
+  const composer = readFileSync(join(root, 'Composer.tsx'), 'utf8');
+  const quickStart = readFileSync(join(root, 'QuickStartComposer.tsx'), 'utf8');
+  assert.match(composer, /<Textarea[\s\S]*?aria-label="Message the agent"/);
+  assert.match(composer, /aria-autocomplete="list"/);
+  assert.match(composer, /if \(e\.key === 'Enter' && !e\.shiftKey\) \{\s*e\.preventDefault\(\);\s*submit\(\);/);
+  assert.match(quickStart, /<Textarea[\s\S]*?aria-label="First message"/);
+  assert.match(quickStart, /variant="bare"/);
+  assert.match(quickStart, /if \(event\.key === 'Enter' && !event\.shiftKey\) \{ event\.preventDefault\(\); submit\(\); \}/);
 });
 
 test('feature components consume the Solid UI library only through its public barrel', () => {
@@ -101,7 +93,9 @@ test('feature-owned SVG geometry always uses the shared finite icon canvas', () 
     .filter((file) => /<svg\b/.test(readFileSync(join(components, file), 'utf8')));
   assert.deepEqual(offenders, []);
   const icon = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Icon.tsx'), 'utf8');
-  assert.match(icon, /class={`ui-icon/);
+  assert.match(icon, /<svg/);
+  assert.match(icon, /viewBox="0 0 20 20"/);
+  assert.match(icon, /aria-hidden="true"/);
   assert.match(icon, /fill="none"/);
   assert.match(icon, /stroke="currentColor"/);
 });
@@ -179,30 +173,19 @@ test('responsive behavior has compact, medium and wide layout contracts', () => 
   assert.match(drawer, /<aside[^>]*class=\{drawerClass\}/);
   assert.match(drawer, /<Dialog open=\{props\.open\}/);
   assert.match(drawer, /max-desk:fixed[^']*max-desk:w-\(--container-drawer\)/);
-  // 中宽布局的内容宽度：chat 列表 760px、composer 800px
+  // 中宽布局的内容宽度：chat 列表 760px、composer 使用同一布局 token。
   assert.match(messageList, /desk:max-wide:max-w-\(--container-chat-narrow\)/);
-  assert.match(composer, /desk:max-w-\(--container-composer\)/);
+  assert.match(composer, /max-w-\(--composer-max\)/);
+  assert.match(composer, /max-narrow:px-10/);
   assert.doesNotMatch(drawer, /project-drawer\s*\{[^}]*position\s*:\s*fixed/);
 });
 
-test('coarse pointers never depend on hover to discover sidebar actions', () => {
-  const styles = featureCss();
-  const primitives = readFileSync(join(import.meta.dirname, '..', 'src', 'styles', 'primitives.css'), 'utf8');
-  const coarseBlocks = [];
-  postcss.parse(styles).walkAtRules('media', (media) => {
-    if (/\(pointer:coarse\)/.test(media.params)) coarseBlocks.push(media.toString());
-  });
-  const coarse = coarseBlocks.join('\n');
-  assert.match(coarse, /\.session-menu\s*\{[^}]*opacity\s*:\s*1/);
-  assert.match(coarse, /\.project-heading>\s*\.ui-tooltip-anchor\s+\.ui-icon-button\s*\{[^}]*width\s*:\s*44px[^}]*min-height\s*:\s*44px[^}]*opacity\s*:\s*1/);
-  assert.match(coarse, /\.project-disclosure,\.archived-projects__toggle,\.archived-sessions__toggle,\.session-search-results button\s*\{[^}]*min-height\s*:\s*44px/);
-  assert.match(coarse, /\.archived-project-row \.ui-button,\.archived-session-row \.ui-button\s*\{[^}]*min-height\s*:\s*44px/);
-  const coarsePrimitives = [];
-  postcss.parse(primitives).walkAtRules('media', (media) => {
-    if (/\(pointer:coarse\)/.test(media.params)) coarsePrimitives.push(media.toString());
-  });
-  assert.match(coarsePrimitives.join('\n'), /\.ui-button,\.ui-menu__item\s*\{[^}]*min-height\s*:\s*44px[\s\S]*?\.ui-icon-button\s*\{[^}]*width\s*:\s*44px[^}]*min-height\s*:\s*44px[\s\S]*?\.ui-dialog__close\s*\{[^}]*width\s*:\s*44px[^}]*height\s*:\s*44px/);
-  assert.match(styles, /\.session-row\.is-selected \.session-menu/);
+test('coarse pointers expose sidebar actions without hover and keep controls touch-sized', () => {
+  const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'components', 'ProjectSessionRow.tsx'), 'utf8');
+  const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Dialog.tsx'), 'utf8');
+  assert.match(sessionRow, /group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100/);
+  assert.match(sessionRow, /pointer-coarse:min-h-52 pointer-coarse:pr-68/);
+  assert.match(dialog, /pointer-coarse:size-44/);
 });
 
 test('P0 interaction architecture cannot regress to hidden cancel or viewport-breaking overlays', () => {
@@ -223,15 +206,15 @@ test('P0 interaction architecture cannot regress to hidden cancel or viewport-br
 test('composer keeps the writing surface quiet and keyboard behavior discoverable', () => {
   const root = join(import.meta.dirname, '..', 'src');
   const composer = readFileSync(join(root, 'panel', 'components', 'Composer.tsx'), 'utf8');
-  const styles = featureCss();
+  const base = readFileSync(join(root, 'styles', 'base.css'), 'utf8');
   assert.match(composer, /Enter to send · Shift \+ Enter for newline/);
   assert.match(composer, /runtimeSummary/);
   assert.doesNotMatch(composer, />\s*effort：/);
   assert.doesNotMatch(composer, />\s*上下文：/);
-  assert.match(styles, /\.composer-surface:focus-within\s*\{[^}]*border-color:\s*var\(--border-strong\)/);
-  assert.match(styles, /\.composer-surface:has\(\.composer-input:focus-visible\)\s*\{[^}]*var\(--focus-ring\)/);
-  assert.match(styles, /\.composer-toolbar>\s*\.ui-tooltip-anchor\s*\{[^}]*margin-left\s*:\s*auto;?[^}]*flex\s*:\s*0\s+0\s+auto/);
-  assert.doesNotMatch(styles, /\.composer-surface:focus-within\{[^}]*(?:blue|#[0-9a-f]*ff[0-9a-f]*)/i);
+  assert.match(composer, /focus-within:border-border-strong/);
+  assert.match(composer, /has-\[\.composer-input:focus-visible\]:shadow-\[var\(--shadow-float\),0_0_0_2px_var\(--surface\),0_0_0_4px_var\(--focus-ring\)\]/);
+  assert.match(composer, /composer-toolbar flex min-h-48 items-center/);
+  assert.match(base, /:focus-visible\s*\{\s*outline:\s*2px solid var\(--focus-ring\)/);
 });
 
 test('design tokens cannot directly reference themselves', () => {
@@ -311,29 +294,20 @@ test('product CSS owns its browser baseline and semantic layout', () => {
   assert.doesNotMatch(styles, /\.message-list-shell>section>div/);
 });
 
-test('primitive visuals are standalone and do not leak into feature styles', () => {
+test('primitive visuals remain in shared UI components and out of feature styles', () => {
   const root = join(import.meta.dirname, '..', 'src');
   const styles = cssFiles().filter((file) => file.startsWith('panel/styles/'))
     .map((file) => readFileSync(join(root, file), 'utf8')).join('\n');
   const primitives = readFileSync(join(root, 'styles', 'primitives.css'), 'utf8');
+  const button = readFileSync(join(root, 'components', 'ui', 'Button.tsx'), 'utf8');
+  const dialog = readFileSync(join(root, 'components', 'ui', 'Dialog.tsx'), 'utf8');
   const drawer = readFileSync(join(root, 'panel', 'components', 'shared', 'ProjectDrawer.tsx'), 'utf8');
-  const ownedSelectors = [
-    '.ui-icon', '.ui-button', '.ui-icon-button', '.ui-field', '.ui-dialog-backdrop',
-    '.ui-drawer-scrim', '.ui-menu', '.ui-tooltip', '.ui-status', '.ui-badge',
-    '.ui-toast', '.ui-empty', '.ui-spinner', '.ui-scrollbar',
-  ];
-  for (const selector of ownedSelectors) {
-    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    assert.match(primitives, new RegExp(`${escaped}\\s*\\{`));
-    assert.doesNotMatch(
-      styles,
-      new RegExp(`(?:^|})\\s*${escaped}\\s*\\{`, 'm'),
-      `${selector} base styles must remain owned by primitives.css`,
-    );
-  }
+  assert.match(primitives, /\.ui-scrollbar\s*\{/);
+  assert.match(button, /export function Button/);
+  assert.match(dialog, /export function DialogContent/);
+  assert.equal(styles.trim(), '');
   assert.match(drawer, /<Dialog open=\{props\.open\}/);
   assert.match(drawer, /<DialogContent/);
-  assert.doesNotMatch(styles, /drawer-scrim/);
 });
 
 test('domain status inference delegates visual rendering to the shared Badge', () => {

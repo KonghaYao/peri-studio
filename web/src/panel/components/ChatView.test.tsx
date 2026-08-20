@@ -82,8 +82,9 @@ describe('ChatView feedback', () => {
     render(() => <ChatView />);
 
     const status = screen.getByRole('status', { name: 'Restoring last session and ACP context…' });
-    expect(status).toHaveClass('ui-loading-state', 'restore-banner');
+    expect(status).toHaveClass('restore-banner');
     expect(status).toHaveAttribute('aria-live', 'polite');
-    expect(status.querySelector('.ui-spinner')).toHaveAttribute('aria-hidden', 'true');
+    expect(status).toHaveTextContent('Restoring last session and ACP context…');
+    expect(status.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
   });
 });

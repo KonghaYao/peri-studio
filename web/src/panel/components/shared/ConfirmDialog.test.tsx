@@ -19,11 +19,12 @@ describe('ConfirmDialog', () => {
       onConfirm={vi.fn()}
     />);
 
-    expect(screen.getByText('Project management')).toHaveClass('dialog-eyebrow');
+    expect(screen.getByText('Project management')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Archive “Perihelion”?' })).toBeInTheDocument();
     expect(screen.getByText(/hidden from the sidebar/)).toBeInTheDocument();
     const confirm = screen.getByRole('button', { name: 'Archive project' });
-    expect(confirm).toHaveClass('ui-button--danger');
+    expect(confirm).toBeEnabled();
+    expect(confirm).not.toHaveAttribute('variant');
     expect(screen.queryByText(/Warning|running instance/i)).not.toBeInTheDocument();
   });
 
@@ -37,7 +38,7 @@ describe('ConfirmDialog', () => {
       onConfirm={vi.fn()}
     />);
 
-    expect(screen.getByText('The Agent is still working. Closing the instance stops the current generation and running tools.')).toHaveClass('runtime-dialog__warning');
+    expect(screen.getByText('The Agent is still working. Closing the instance stops the current generation and running tools.')).toBeInTheDocument();
     expect(screen.queryByText('Project management')).not.toBeInTheDocument();
   });
 

@@ -19,6 +19,7 @@ export function AppShell() {
   const [systemOpen, setSystemOpen] = createSignal(false);
   const [mobile, setMobile] = createSignal(false);
   const [sidebarWidth, setSidebarWidth] = createSignal(SIDEBAR_DEFAULT_WIDTH);
+  const [sidebarResizing, setSidebarResizing] = createSignal(false);
   const [sidebarIntent, setSidebarIntent] = createSignal<{ kind: 'create-project' | 'import'; projectId?: string; nonce: number } | null>(null);
   let drawer: HTMLElement | undefined;
   let main: HTMLElement | undefined;
@@ -29,12 +30,14 @@ export function AppShell() {
     window.removeEventListener('pointerup', stopSidebarResize);
     window.removeEventListener('pointercancel', stopSidebarResize);
     document.body.classList.remove('sidebar-resizing');
+    setSidebarResizing(false);
   };
   const resizeSidebar = (event: PointerEvent) => setClampedSidebarWidth(event.clientX);
   const startSidebarResize = (event: PointerEvent) => {
     if (event.button !== 0) return;
     event.preventDefault();
     document.body.classList.add('sidebar-resizing');
+    setSidebarResizing(true);
     window.addEventListener('pointermove', resizeSidebar);
     window.addEventListener('pointerup', stopSidebarResize);
     window.addEventListener('pointercancel', stopSidebarResize);
@@ -83,7 +86,7 @@ export function AppShell() {
         />
       </ProjectDrawer>
       <div
-        class="sidebar-resize-handle max-desk:hidden"
+        class={`sidebar-resize-handle group absolute z-35 top-0 bottom-0 w-12 -translate-x-1/2 cursor-col-resize touch-none max-desk:hidden ${sidebarResizing() ? 'select-none [&_*]:cursor-col-resize!' : ''}`}
         style={{ left: `${sidebarWidth()}px` }}
         role="separator"
         aria-label="Resize sidebar"
@@ -95,7 +98,7 @@ export function AppShell() {
         tabIndex={0}
         onPointerDown={startSidebarResize}
         onKeyDown={resizeSidebarWithKeyboard}
-      />
+      ><span aria-hidden="true" class="absolute top-0 bottom-0 left-5 w-2 rounded-full bg-transparent transition-colors group-hover:bg-accent group-focus-visible:bg-accent" /></div>
       <main ref={main} class="conversation-pane min-w-0 min-h-0 overflow-hidden">
         <ChatView onOpenNavigation={openDrawer} onOpenSystem={() => setSystemOpen(true)} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />
       </main>

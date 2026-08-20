@@ -31,13 +31,13 @@ export function Textarea(props: Props) {
     resize();
     const handler = textarea.onInput;
     if (typeof handler === 'function') handler(event);
-  }} class={`ui-textarea${local.variant ? ` ui-textarea--${local.variant}` : ''} ${local.class ?? ''}`} />;
+  }} class={`${local.variant === 'field' ? 'box-border min-h-82 w-full resize-y rounded-12 border border-border-strong bg-surface-muted px-12 py-11 text-text-primary leading-15 outline-none focus-visible:border-text-primary focus-visible:shadow-[0_0_0_2px_var(--focus-ring)]' : 'font-inherit'} ${local.class ?? ''}`} />;
   return <Show when={local.label || local.hint || local.error} fallback={control}>
-    <div class="ui-field">
-      <Show when={local.label}><label class="ui-field__label" for={id()}>{local.label}</label></Show>
+    <div class="mb-9 flex flex-col gap-6">
+      <Show when={local.label}><label class="text-12 font-semibold text-text-secondary" for={id()}>{local.label}</label></Show>
       {control}
-      <Show when={local.hint}><span id={hintId()} class="ui-field__hint">{local.hint}</span></Show>
-      <Show when={local.error}><span id={errorId()} class="ui-error">{local.error}</span></Show>
+      <Show when={local.hint}><span id={hintId()} class="text-11 text-text-muted">{local.hint}</span></Show>
+      <Show when={local.error}><span id={errorId()} class="m-0 text-13 text-danger">{local.error}</span></Show>
     </div>
   </Show>;
 }

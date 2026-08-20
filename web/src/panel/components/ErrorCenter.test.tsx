@@ -33,7 +33,7 @@ describe('ErrorCenter', () => {
     render(() => <ErrorCenter />);
 
     expect(screen.getAllByRole('alert')).toHaveLength(2);
-    expect(screen.getByText('Result not confirmed').closest('.error-card')).toHaveClass('ui-inline-notice', 'ui-inline-notice--danger');
+    expect(screen.getByText('Result not confirmed').closest('.error-card')).toHaveAttribute('role', 'alert');
     expect(screen.getByRole('button', { name: 'Re-confirm with the original request' })).toBeInTheDocument();
     expect(screen.getByText('Result not confirmed').closest('.error-card')).not.toHaveTextContent('Close');
     expect(screen.getByText('No permission').closest('.error-card')).not.toHaveTextContent('Re-confirm with the original request');

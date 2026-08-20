@@ -28,12 +28,12 @@ export function PermissionRequestCard(props: PermissionRequestCardProps) {
   const statusId = `permission-status-${domId}`;
 
   return <section
-    class={`permission-request ${uncertain() ? 'permission-request--uncertain' : ''} grid grid-cols-permission gap-12 items-start m-0 p-14 border rounded-16 bg-warning-soft ${uncertain() ? 'border-warning shadow-none' : 'border-warning-border shadow-recovery'}`}
+    class={`permission-request ${uncertain() ? 'permission-request--uncertain' : ''} grid grid-cols-permission gap-12 items-start m-0 p-14 border rounded-16 bg-warning-soft max-middle:grid-cols-[24px_minmax(0,1fr)] max-middle:p-12 ${uncertain() ? 'border-warning shadow-none' : 'border-warning-border shadow-recovery'}`}
     aria-labelledby={`${statusId}-title`}
     aria-describedby={statusId}
     aria-busy={locked() && !uncertain() ? 'true' : undefined}
   >
-    <div class="permission-request__mark grid size-28 place-items-center rounded-full bg-warning text-surface text-13 font-750" aria-hidden="true">!</div>
+    <div class="permission-request__mark grid size-28 place-items-center rounded-full bg-warning text-surface text-13 font-750 max-middle:size-24" aria-hidden="true">!</div>
     <div class="permission-request__body min-w-0">
       <span class="permission-request__eyebrow block mb-3 text-warning text-10 font-750 tracking-6 uppercase">Permission needed</span>
       <strong class="block text-text-primary text-14" id={`${statusId}-title`}>{props.permission.title || 'Permission request'}</strong>
@@ -47,7 +47,7 @@ export function PermissionRequestCard(props: PermissionRequestCardProps) {
         </Show>
       </div>
     </div>
-    <div class="permission-request__actions flex gap-7 self-center">
+    <div class="permission-request__actions flex gap-7 self-center max-middle:col-span-full max-middle:w-full max-middle:pt-2 max-middle:[&_[data-slot=button]]:flex-1 max-middle:[&_[data-slot=button]]:min-h-44 pointer-coarse:[&_[data-slot=button]]:min-h-44">
       <Button variant="primary" class="min-w-72" disabled={props.readOnly || locked() || !actionable()} busy={props.decision?.phase === 'pending' && props.decision.decision === 'allow'} onClick={() => actionable() && props.onResolve('allow')}>
         {props.decision?.decision === 'allow' ? 'Allowing…' : 'Allow'}
       </Button>

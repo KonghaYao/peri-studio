@@ -37,7 +37,8 @@ describe('MessageOutbox', () => {
     render(() => <MessageOutbox submission={submission('sending')} onRetry={vi.fn()} onEdit={vi.fn()} />);
 
     const status = screen.getByRole('status', { name: 'Your pending-confirmation message' });
-    expect(status.querySelector('.ui-spinner')).toHaveAttribute('aria-hidden', 'true');
+    expect(status).toHaveTextContent('Sending');
+    expect(status.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 

@@ -34,9 +34,9 @@ describe('AuthGate rendering', () => {
     render(() => <AuthGate><div>authenticated workspace</div></AuthGate>);
 
     const status = screen.getByRole('status', { name: 'Checking sign-in state' });
-    expect(status).toHaveClass('ui-loading-state');
     expect(status).toHaveAttribute('aria-live', 'polite');
-    expect(status.querySelector('.ui-spinner')).toHaveAttribute('aria-hidden', 'true');
+    expect(status).toHaveTextContent('Checking sign-in state');
+    expect(status.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
   });
 
   it('shows the authoritative server token path and generation command', async () => {

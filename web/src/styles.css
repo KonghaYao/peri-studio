@@ -4,19 +4,5 @@
 
 /* peri-studio panel layout and feature styling. This entry only wires the cascade:
    styles/theme.css (Tailwind v4 theme + preflight) → styles/base.css →
-   styles/primitives.css (→ styles/tokens.css), then the feature stylesheets in
-   layout order. Reusable design values live in styles/tokens.css; each feature
-   sheet owns its selectors and media queries. */
-@import './panel/styles/base.css';
-@import './panel/styles/sidebar-nav.css';
-@import './panel/styles/sidebar-sessions.css';
-@import './panel/styles/chat-misc.css';
-@import './panel/styles/chat-status.css';
-@import './panel/styles/chat-permissions.css';
-@import './panel/styles/composer-input.css';
-@import './panel/styles/composer-menu.css';
-@import './panel/styles/dialogs-form.css';
-@import './panel/styles/dialogs-rewind.css';
-@import './panel/styles/auth.css';
-@import './panel/styles/mcp.css';
-@import './panel/styles/settings.css';
+   styles/primitives.css (→ styles/tokens.css). Reusable design values live in
+   styles/tokens.css; feature layout is expressed in component JSX utilities. */

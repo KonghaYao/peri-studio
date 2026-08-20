@@ -9,7 +9,7 @@ interface ProjectDrawerProps {
   ref?: (element: HTMLElement) => void;
 }
 
-const drawerClass = 'project-drawer min-w-0 border-r border-border-subtle bg-sidebar-bg max-desk:fixed max-desk:inset-y-0 max-desk:left-0 max-desk:z-40 max-desk:w-(--container-drawer)';
+const drawerClass = 'project-drawer min-w-0 border-r border-border-subtle bg-sidebar-bg max-desk:fixed max-desk:inset-y-0 max-desk:left-0 max-desk:z-40 max-desk:w-(--container-drawer) max-desk:-translate-x-full';
 
 /** Product navigation: structural on desktop and a Kobalte modal dialog on compact viewports. */
 export function ProjectDrawer(props: ProjectDrawerProps) {
@@ -19,7 +19,7 @@ export function ProjectDrawer(props: ProjectDrawerProps) {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent
         ref={props.ref}
-        class={`${drawerClass} ${props.open ? 'is-open' : ''}`}
+        class={`${drawerClass} ${props.open ? 'translate-x-0' : ''}`}
       >
         <DialogTitle class="sr-only">Projects &amp; Sessions</DialogTitle>
         {props.children}

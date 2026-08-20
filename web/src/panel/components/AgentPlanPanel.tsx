@@ -23,19 +23,19 @@ export function AgentPlanPanel(props: AgentPlanPanelProps) {
   };
   return <Show when={props.entries.length > 0}>
     <CollapsibleSection
-      detailsClass="agent-plan w-(--container-activity) flex-none mx-auto mt-10 border border-border-subtle rounded-14 bg-surface text-text-primary"
+      detailsClass="agent-plan group w-(--container-activity) flex-none mx-auto mt-10 border border-border-subtle rounded-14 bg-surface text-text-primary max-narrow:w-[calc(100%-20px)] max-narrow:mt-8"
       summaryClass="flex min-h-44 items-center gap-10 px-11 py-5 cursor-pointer list-none focus-visible:rounded-13 focus-visible:outline-offset-neg-2"
       label="Agent execution plan"
       mark={<span class="agent-plan__mark size-9 flex-none border-2 border-accent rounded-3" aria-hidden="true" />}
-      copy={<span class="agent-plan__summary-copy flex min-w-0 flex-1 items-baseline gap-8">
+      copy={<span class="agent-plan__summary-copy flex min-w-0 flex-1 items-baseline gap-8 max-narrow:grid max-narrow:gap-1">
         <strong class="text-12 font-680">Execution plan</strong>
         <span class="overflow-hidden text-text-secondary text-11 text-ellipsis whitespace-nowrap">{current()?.activeForm || current()?.content || 'View task progress'}</span>
       </span>}
       meta={<span class="agent-plan__progress text-text-muted text-10 tabular-nums">{completed()}/{props.entries.length}</span>}
-      chevronClass="agent-plan__chevron text-text-muted text-18 transition-transform duration-140"
+      chevronClass="agent-plan__chevron text-text-muted text-18 transition-transform duration-140 group-open:rotate-90"
     >
       <ol class="flex max-h-260 flex-col overflow-auto m-0 pt-5 pr-11 pb-10 pl-11 border-t border-divider list-none">
-        <For each={props.entries}>{(entry) => <li class={`agent-plan__item agent-plan__item--${entry.status} grid grid-cols-plan gap-9 items-start px-2 py-8`}>
+        <For each={props.entries}>{(entry) => <li class={`agent-plan__item agent-plan__item--${entry.status} grid grid-cols-plan gap-9 items-start px-2 py-8 max-narrow:grid-cols-[12px_minmax(0,1fr)]`}>
           <span class={`agent-plan__status size-8 mt-4 border rounded-full ${statusTone(entry.status)}`} aria-hidden="true" />
           <span class="agent-plan__content grid min-w-0 gap-2">
             <strong class={`text-11p5 font-610 leading-14 ${entry.status === 'completed' ? 'text-text-secondary line-through' : ''}`}>{entry.status === 'in_progress' && entry.activeForm ? entry.activeForm : entry.content}</strong>
@@ -43,7 +43,7 @@ export function AgentPlanPanel(props: AgentPlanPanelProps) {
               <span class="text-text-muted text-10">{entry.content}</span>
             </Show>
           </span>
-          <span class="agent-plan__label text-text-muted text-10 whitespace-nowrap">{STATUS_LABEL[entry.status]}</span>
+          <span class="agent-plan__label text-text-muted text-10 whitespace-nowrap max-narrow:col-start-2">{STATUS_LABEL[entry.status]}</span>
         </li>}</For>
       </ol>
     </CollapsibleSection>

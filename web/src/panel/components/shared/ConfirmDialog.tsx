@@ -31,12 +31,12 @@ export interface ConfirmDialogProps {
 
 export function ConfirmDialog(props: ConfirmDialogProps) {
   return (
-    <div class="runtime-dialog p-20">
-      <Show when={props.eyebrow}><span class="dialog-eyebrow block mb-5 text-text-muted text-10 font-bold tracking-8 uppercase">{props.eyebrow}</span></Show>
-      <h2>{props.title}</h2>
-      <p>{props.description}</p>
-      <Show when={props.warning}><p class="runtime-dialog__warning px-10 py-9 rounded-9 bg-warning-soft !text-warning">{props.warning}</p></Show>
-      <div class="form-actions flex justify-end gap-6 mt-20">
+    <div class="p-20">
+      <Show when={props.eyebrow}><span class="block mb-5 text-text-muted text-10 font-bold tracking-8 uppercase">{props.eyebrow}</span></Show>
+      <h2 class="m-0 text-19 tracking-[-.02em]">{props.title}</h2>
+      <p class="mt-9 mb-0 text-13 leading-155 text-text-secondary">{props.description}</p>
+      <Show when={props.warning}><p class="mt-9 mb-0 rounded-9 bg-warning-soft px-10 py-9 !text-warning text-13 leading-155">{props.warning}</p></Show>
+      <div class="mt-20 flex justify-end gap-6">
         <Button disabled={props.cancelDisabled} onClick={props.onCancel}>Cancel</Button>
         <Button variant="danger" busy={props.confirmBusy} disabled={props.confirmDisabled} onClick={props.onConfirm}>{props.confirmLabel}</Button>
       </div>

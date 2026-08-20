@@ -12,5 +12,5 @@ export const RadioGroupItemLabel = RadioGroupPrimitive.ItemLabel;
 type ControlProps<T extends ValidComponent = 'div'> = RadioGroupPrimitive.RadioGroupItemControlProps<T> & { class?: string };
 export function RadioGroupItemControl<T extends ValidComponent = 'div'>(props: PolymorphicProps<T, ControlProps<T>>) {
   const [local, rest] = splitProps(props as ControlProps, ['class']);
-  return <RadioGroupPrimitive.ItemControl class={cn('ui-radio-control', local.class)} {...rest} />;
+  return <RadioGroupPrimitive.ItemControl class={cn('h-16 w-16 shrink-0 rounded-full border border-border-strong bg-surface data-checked:border-text-primary data-checked:bg-text-primary data-checked:shadow-[inset_0_0_0_3px_var(--surface)]', local.class)} {...rest} />;
 }

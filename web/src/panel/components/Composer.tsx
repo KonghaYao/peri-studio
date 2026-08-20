@@ -206,7 +206,7 @@ export function Composer() {
   }
 
   return (
-    <div class="composer-wrap composer-wrap--overlay relative box-border w-full max-w-(--container-composer) mx-auto px-20 pb-20 desk:max-w-(--container-composer) desk:px-18 wide:max-w-(--container-composer) wide:px-20 max-desk:max-w-(--container-composer) max-narrow:px-10 max-narrow:pb-safe">
+    <div class="composer-wrap composer-wrap--overlay relative box-border w-full max-w-(--composer-max) mx-auto px-20 pb-[calc(var(--space-20)+env(safe-area-inset-bottom))] desk:max-w-(--composer-max) desk:px-18 wide:max-w-(--composer-max) wide:px-20 max-desk:max-w-(--composer-max) max-narrow:px-10">
       <Show when={slash.slashMenuOpen()}>
         <SlashMenu
           id={slashMenuId}
@@ -219,7 +219,7 @@ export function Composer() {
       <section
         aria-busy={submissionIsInFlight() || undefined}
         aria-disabled={inputDisabled()}
-        class="composer-surface overflow-hidden border border-composer-border rounded-16 bg-surface shadow-float focus-within:border-border-strong focus-within:shadow-float max-narrow:rounded-14"
+        class="composer-surface overflow-hidden border border-composer-border rounded-16 bg-surface shadow-composer-overlay transition-[box-shadow,border-color] duration-[140ms] ease-[ease] focus-within:border-border-strong focus-within:shadow-float has-[.composer-input:focus-visible]:shadow-[var(--shadow-float),0_0_0_2px_var(--surface),0_0_0_4px_var(--focus-ring)] max-narrow:rounded-14"
       >
         <div class="composer-editor relative">
           <Show when={prediction.activePrediction()}>{(prediction) => <>
@@ -273,13 +273,13 @@ export function Composer() {
         <Show when={submissionForSession()}>{(submission) =>
           <InlineNotice
             id={submissionStatusId}
-            class={`composer-submission composer-submission--${submission().phase} mx-10 mb-8 max-narrow:mx-8`}
+            class={`composer-submission composer-submission--${submission().phase} mt-2 mx-10 mb-8 border-dashed max-narrow:mx-8`}
             title={submissionTitle()}
             tone={submissionTone()}
             role="note"
           >
             <p>{submissionDetail()}</p>
-            <div class="composer-submission__actions">
+            <div class="composer-submission__actions flex flex-wrap gap-6 mt-8">
               <Show when={submission().phase === 'uncertain' && submission().retryable}>
                 <Button size="compact" variant="secondary" class="pointer-coarse:min-h-44" onClick={retryMessageSubmission}>Confirm with the same request</Button>
               </Show>
@@ -289,16 +289,16 @@ export function Composer() {
             </div>
           </InlineNotice>
         }</Show>
-        <div class="composer-toolbar flex min-h-48 items-center gap-9 pt-2 pr-8 pb-7 pl-10 max-narrow:min-h-46 max-narrow:pt-1 max-narrow:pr-6 max-narrow:pb-5 max-narrow:pl-12">
+        <div class="composer-toolbar flex min-h-48 items-center gap-9 pt-2 pr-8 pb-7 pl-10 border-t border-divider max-narrow:min-h-46 max-narrow:pt-1 max-narrow:pr-6 max-narrow:pb-5 max-narrow:pl-12">
           <Show when={prediction.activePrediction()}>
-            <Button size="compact" variant="secondary" class="composer-prediction-action min-h-30 px-9 border-border-subtle bg-surface-muted text-text-secondary text-11 pointer-coarse:min-h-44 max-narrow:min-h-44" onClick={prediction.accept} aria-label="Use suggestion" title="Use suggestion (Tab)">
+            <Button size="compact" variant="secondary" class="composer-prediction-action inline-flex min-h-30 items-center justify-center px-9 border-border-subtle bg-surface-muted text-text-secondary text-11 pointer-coarse:min-h-44 max-narrow:min-h-44" onClick={prediction.accept} aria-label="Use suggestion" title="Use suggestion (Tab)">
               <Icon class="size-16!"><path d="m4 10 3.5 3.5L16 5" /></Icon><kbd class="ml-3 px-4 py-2 border border-border-subtle rounded-4 bg-surface text-9 max-narrow:hidden">Tab</kbd>
             </Button>
           </Show>
           <Show when={canBrowseSkills()}>
             <Button
               size="compact"
-              class="composer-skills relative min-h-30 px-8 border-border-subtle bg-surface-muted text-text-primary text-11 pointer-coarse:min-h-44 max-tight:size-44 max-tight:min-w-44 max-tight:p-0"
+              class="composer-skills relative inline-flex min-h-30 items-center gap-6 px-8 border-border-subtle bg-surface-muted text-text-primary text-11 font-normal pointer-coarse:min-h-44 max-tight:size-44 max-tight:min-w-44 max-tight:p-0 max-tight:before:content-['/'] max-tight:before:font-mono max-tight:before:text-15 max-tight:before:leading-none max-tight:before:font-bold"
               aria-expanded={slash.browseSkills() && slash.slashMenuOpen()}
               aria-controls={slashMenuId}
               aria-label={`Browse skills (${skillCount()})`}
@@ -308,7 +308,7 @@ export function Composer() {
                 queueMicrotask(() => taRef?.focus());
               }}
               disabled={inputDisabled()}
-            ><Icon class="size-16!" aria-hidden="true"><path d="M7 4H4v3M13 4h3v3M7 16H4v-3M13 16h3v-3" /><path d="M7 10h6M10 7v6" /></Icon><span class="composer-skills__count">{skillCount()}</span></Button>
+            ><Icon class="size-16!" aria-hidden="true"><path d="M7 4H4v3M13 4h3v3M7 16H4v-3M13 16h3v-3" /><path d="M7 10h6M10 7v6" /></Icon><span class="composer-skills__count text-text-muted text-10 leading-none font-mono max-tight:absolute max-tight:translate-x-12 max-tight:-translate-y-10">{skillCount()}</span></Button>
           </Show>
           <SessionModelMenu open={modelMenuOpen()} id={modelMenuId} onOpenChange={setModelMenuOpen} trigger={
             <Button
@@ -325,20 +325,20 @@ export function Composer() {
           }</Show>
           <span class="composer-shortcut ml-auto text-text-muted text-11 whitespace-nowrap max-middle:hidden" aria-hidden="true">Enter to send · Shift + Enter for newline</span>
           <Show when={turnActive()} fallback={
-            <IconButton tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || !composerDraft(selectedSessionId()).trim()} label="Send" class="composer-action flex size-40 ml-auto shrink-0 items-center justify-center border-0 rounded-full bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint pointer-coarse:size-44">
+            <span class="ml-auto shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || !composerDraft(selectedSessionId()).trim()} label="Send" class="composer-action flex size-40 shrink-0 items-center justify-center border-0 rounded-full bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint pointer-coarse:size-44">
               <Icon class="size-20"><path d="M10 16V4" /><path d="M5 9l5-5 5 5" /></Icon>
-            </IconButton>
+            </IconButton></span>
           }>
-            <IconButton tooltipPlacement="end" variant="primary" type="button" onClick={requestCancel} disabled={cancelLocked() || readOnly()} busy={cancelControl()?.phase === 'sending' || cancelControl()?.phase === 'accepted'} label={cancelLabel()} class={`composer-action composer-action--stop ${cancelControl()?.phase === 'uncertain' ? 'composer-action--uncertain' : ''} flex size-40 ml-auto shrink-0 items-center justify-center border-0 rounded-full bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint pointer-coarse:size-44`}>
+            <span class="ml-auto shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={requestCancel} disabled={cancelLocked() || readOnly()} busy={cancelControl()?.phase === 'sending' || cancelControl()?.phase === 'accepted'} label={cancelLabel()} class={`composer-action composer-action--stop flex size-40 shrink-0 items-center justify-center border-0 rounded-full bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint pointer-coarse:size-44 ${cancelControl()?.phase === 'uncertain' ? 'bg-warning hover:bg-warning-strong' : ''}`}>
               <Show when={!cancelControl() || cancelControl()?.phase === 'uncertain' || cancelControl()?.phase === 'confirmed'}><span aria-hidden="true" class="size-10 rounded-2 bg-current" /></Show>
-            </IconButton>
+            </IconButton></span>
           </Show>
         </div>
       </section>
       <Show when={submissionInAnotherSession()}>{(submission) =>
-        <InlineNotice class="submission-state submission-state--foreign mt-10 mx-4 max-narrow:flex-col" role="status" title="Another session is still confirming" tone="warning">
-          <div class="submission-state__body"><p>"{pendingSessionTitle()}" has a message awaiting a final server state. To avoid duplicate execution, no new messages are sent until it is confirmed.</p></div>
-          <div class="submission-state__actions max-narrow:w-full"><Button size="compact" class="max-narrow:first:flex-1" onClick={() => navigateProjectSession(submission().sessionId)}>Back to that session</Button></div>
+        <InlineNotice class="submission-state submission-state--foreign mt-10 mx-4 min-w-0 bg-surface-muted shadow-none max-narrow:flex-col" role="status" title="Another session is still confirming" tone="warning">
+          <div class="submission-state__body min-w-0"><p class="mt-3">&quot;{pendingSessionTitle()}&quot; has a message awaiting a final server state. To avoid duplicate execution, no new messages are sent until it is confirmed.</p></div>
+          <div class="submission-state__actions flex shrink-0 gap-4 max-narrow:w-full"><Button size="compact" class="max-narrow:first:flex-1" onClick={() => navigateProjectSession(submission().sessionId)}>Back to that session</Button></div>
         </InlineNotice>
       }</Show>
     </div>

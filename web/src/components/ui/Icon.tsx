@@ -10,7 +10,7 @@ export interface IconProps {
 export function Icon(props: IconProps) {
   return (
     <svg
-      class={`ui-icon ui-icon--${props.size ?? 'default'} ${props.class ?? ''}`}
+      class={`block h-18 w-18 shrink-0 overflow-visible ${props.size === 'small' ? 'h-14 w-14' : ''} ${props.class ?? ''}`.trim()}
       viewBox="0 0 20 20"
       fill="none"
       stroke="currentColor"

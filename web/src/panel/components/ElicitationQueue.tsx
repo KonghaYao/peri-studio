@@ -61,7 +61,7 @@ function AskUserQuestionDialog(props: {
     aria-label="Agent question"
   >
     <form
-      class="elicitation-card max-h-300 overflow-y-auto rounded-16 border border-border-strong bg-surface shadow-recovery"
+      class="elicitation-card scroll-mt-12 mb-16 max-h-300 overflow-y-auto p-18 rounded-18 border border-border-strong bg-surface shadow-recovery max-[640px]:p-15"
       data-elicitation-id={props.elicitation.elicitationId}
       aria-busy={props.busy ? 'true' : undefined}
       noValidate
@@ -107,9 +107,9 @@ function AskUserQuestionDialog(props: {
         <Show when={props.readOnly}><p class="mt-12 text-12 leading-15 text-text-secondary">Read-only mode lets you view questions but not submit answers.</p></Show>
       </div>
       <div class="flex flex-wrap justify-end gap-7 mt-16 px-18 py-14 border-t border-divider">
-        <Button type="button" variant="ghost" disabled={locked()} onClick={() => props.onRespond(props.elicitation.elicitationId, 'decline')}>Decline</Button>
-        <Button type="button" variant="secondary" disabled={locked()} onClick={cancel}>Cancel</Button>
-        <Button type="submit" variant="primary" busy={props.busy} disabled={locked()}>Submit answer</Button>
+        <Button class="max-[640px]:basis-full max-[640px]:min-h-44" type="button" variant="ghost" disabled={locked()} onClick={() => props.onRespond(props.elicitation.elicitationId, 'decline')}>Decline</Button>
+        <Button class="max-[640px]:flex-1 max-[640px]:min-h-44" type="button" variant="secondary" disabled={locked()} onClick={cancel}>Cancel</Button>
+        <Button class="max-[640px]:flex-1 max-[640px]:min-h-44" type="submit" variant="primary" busy={props.busy} disabled={locked()}>Submit answer</Button>
       </div>
     </form>
   </section>;

@@ -19,9 +19,6 @@
   --color-sidebar-bg: var(--sidebar-bg);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
-  --color-surface-translucent: var(--surface-translucent);
-  --color-surface-header: var(--surface-header);
-  --color-surface-hover-translucent: var(--surface-hover-translucent);
   --color-empty-mark-bg: var(--empty-mark-bg);
   --color-empty-mark-fg: var(--empty-mark-fg);
   --color-scrim: var(--scrim);
@@ -49,7 +46,6 @@
   --color-focus-ring: var(--focus-ring);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
-  --color-activity-bg: var(--activity-bg);
   --color-warning: var(--warning);
   --color-warning-strong: var(--warning-strong);
   --color-warning-soft: var(--warning-soft);
@@ -63,11 +59,8 @@
   --shadow-popover: var(--shadow-popover);
   --shadow-float: var(--shadow-float);
   --shadow-composer-overlay: var(--shadow-composer-overlay);
-  --shadow-form: var(--shadow-form);
-  --shadow-auth: var(--shadow-auth);
   --shadow-recovery: var(--shadow-recovery);
   --shadow-accent-ring: var(--shadow-accent-ring);
-  --shadow-success-ring: var(--shadow-success-ring);
 
   /* Spacing scale: exact pixel values from tokens (p-16 = 16px, etc.). */
   --spacing-1: var(--space-1);
@@ -92,7 +85,6 @@
   --spacing-21: var(--space-21);
   --spacing-22: var(--space-22);
   --spacing-24: var(--space-24);
-  --spacing-25: var(--space-25);
   --spacing-26: var(--space-26);
   --spacing-28: var(--space-28);
   --spacing-30: var(--space-30);
@@ -105,13 +97,11 @@
   --spacing-44: var(--space-44);
   --spacing-46: var(--space-46);
   --spacing-48: var(--space-48);
-  --spacing-50: var(--space-50);
   --spacing-52: var(--space-52);
   --spacing-54: var(--space-54);
   --spacing-56: var(--space-56);
   --spacing-58: var(--space-58);
   --spacing-60: var(--space-60);
-  --spacing-64: var(--space-64);
   --spacing-72: var(--space-72);
   --spacing-82: var(--space-82);
   --spacing-84: var(--space-84);
@@ -119,15 +109,10 @@
   --spacing-240: var(--space-240);
   --spacing-260: var(--space-260);
   --spacing-300: var(--space-300);
-  --spacing-390: var(--space-390);
   --spacing-520: var(--space-520);
-  --spacing-760: var(--space-760);
-  --spacing-800: var(--space-800);
-  --spacing-820: var(--space-820);
 
   /* Radius scale: exact pixel values from tokens. */
   --radius-2: var(--radius-2);
-  --radius-3: var(--radius-3);
   --radius-4: var(--radius-4);
   --radius-5: var(--radius-5);
   --radius-6: var(--radius-6);
@@ -137,13 +122,9 @@
   --radius-10: var(--radius-10);
   --radius-11: var(--radius-11);
   --radius-12: var(--radius-12);
-  --radius-13: var(--radius-13);
   --radius-14: var(--radius-14);
   --radius-16: var(--radius-16);
-  --radius-17: var(--radius-17);
   --radius-18: var(--radius-18);
-  --radius-20: var(--radius-20);
-  --radius-24: var(--radius-24);
   --radius-full: var(--radius-full);
 
   /* Typography */
@@ -162,7 +143,6 @@
   --breakpoint-middle: 760px;
 
   /* Font-size scale */
-  --text-0: var(--text-0);
   --text-9: var(--text-9);
   --text-10: var(--text-10);
   --text-10p5: var(--text-10p5);
@@ -177,25 +157,17 @@
   --text-17: var(--text-17);
   --text-18: var(--text-18);
   --text-28: var(--text-28);
-  --text-code: var(--text-code);
 
   /* Line-height scale */
-  --leading-1: var(--leading-1);
-  --leading-12: var(--leading-12);
-  --leading-115: var(--leading-115);
   --leading-13: var(--leading-13);
-  --leading-135: var(--leading-135);
   --leading-14: var(--leading-14);
   --leading-145: var(--leading-145);
   --leading-15: var(--leading-15);
   --leading-155: var(--leading-155);
   --leading-16: var(--leading-16);
   --leading-20: var(--leading-20);
-  --leading-24: var(--leading-24);
-  --leading-25: var(--leading-25);
 
   /* Font-weight scale (non-standard weights) */
-  --font-weight-450: var(--font-weight-450);
   --font-weight-550: var(--font-weight-550);
   --font-weight-610: var(--font-weight-610);
   --font-weight-650: var(--font-weight-650);
@@ -203,28 +175,18 @@
   --font-weight-750: var(--font-weight-750);
 
   /* Letter-spacing scale */
-  --tracking-1: var(--tracking-1);
-  --tracking-5: var(--tracking-5);
   --tracking-35: var(--tracking-35);
   --tracking-6: var(--tracking-6);
   --tracking-7: var(--tracking-7);
   --tracking-8: var(--tracking-8);
 
-  /* Opacity scale */
-  --opacity-52: var(--opacity-52);
-
   /* Motion and z-index */
-  --duration-180: var(--duration-180);
-  --z-1: var(--z-1);
   --z-12: var(--z-12);
-  --z-35: var(--z-35);
 
   /* Grid templates */
   --grid-template-columns-shell: var(--grid-cols-shell);
   --grid-template-columns-shell-desk: var(--grid-cols-shell-desk);
   --grid-template-columns-shell-wide: var(--grid-cols-shell-wide);
-  --grid-template-columns-recovery: var(--grid-cols-recovery);
-  --grid-template-columns-recovery-item: var(--grid-cols-recovery-item);
   --grid-template-columns-activity: var(--grid-cols-activity);
   --grid-template-columns-plan: var(--grid-cols-plan);
   --grid-template-columns-import: var(--grid-cols-import);
@@ -232,21 +194,16 @@
   --grid-template-columns-boundary: var(--grid-cols-boundary);
   --grid-template-columns-settings-form: var(--grid-cols-settings-form);
   --grid-template-columns-slash: var(--grid-cols-slash);
-  --grid-template-columns-config: var(--grid-cols-config);
 
   /* Containers: max-w-/max-h-/w- utilities resolve to these */
   --container-chat: var(--container-chat);
   --container-chat-narrow: var(--container-chat-narrow);
-  --container-composer: var(--container-composer);
   --container-auth-card: var(--container-auth-card);
   --container-drawer: var(--container-drawer);
-  --container-recovery: var(--container-recovery);
-  --container-recovery-body: var(--container-recovery-body);
   --container-settings: var(--container-settings);
   --container-settings-tall: var(--container-settings-tall);
   --container-rewind: var(--container-rewind);
   --container-rewind-tall: var(--container-rewind-tall);
-  --container-config: var(--container-config);
   --container-mcp: var(--container-mcp);
   --container-search: var(--container-search);
   --container-search-results: var(--container-search-results);
@@ -257,40 +214,18 @@
   --container-placeholder-narrow: var(--container-placeholder-narrow);
 }
 
-/* Named utilities for values that have no Tailwind namespace
-   (percentage widths, per-side border styles, font shorthand). */
+/* Named utilities that are shared across multiple JSX consumers. */
 @utility font-inherit {
   font: inherit;
 }
 @utility border-solid-l {
   border-left-style: solid;
 }
-@utility border-dashed-t {
-  border-top-style: dashed;
-}
-@utility max-w-35p {
-  max-width: 35%;
-}
-@utility max-w-40p {
-  max-width: 40%;
-}
-@utility max-w-42p {
-  max-width: 42%;
-}
-@utility max-w-70p {
-  max-width: 70%;
-}
 @utility max-w-72p {
   max-width: 72%;
 }
-@utility bottom-full-8 {
-  bottom: calc(100% + 8px);
-}
 @utility wrap-anywhere {
   overflow-wrap: anywhere;
-}
-@utility pb-safe {
-  padding-bottom: max(var(--space-10), env(safe-area-inset-bottom));
 }
 @utility outline-offset-neg-2 {
   outline-offset: -2px;

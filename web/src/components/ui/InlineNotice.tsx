@@ -10,12 +10,20 @@ type InlineNoticeProps = JSX.HTMLAttributes<HTMLElement> & {
   role?: 'alert' | 'status' | 'note';
 };
 
+const TONE_CLASS: Record<InlineNoticeTone, string> = {
+  info: 'border-border-subtle bg-surface-muted text-text-secondary',
+  success: 'border-success bg-success-soft',
+  warning: 'border-warning-border bg-warning-soft',
+  danger: 'border-danger-border bg-danger-soft text-danger',
+};
+
 /** Compact feedback surface for messages that remain within a feature flow. */
 export function InlineNotice(props: InlineNoticeProps) {
   const [local, element] = splitProps(props, ['class', 'tone', 'title', 'live', 'role', 'children']);
-  const role = () => local.role ?? (local.tone === 'danger' ? 'alert' : local.live ? 'status' : 'note');
-  return <section {...element} role={role()} aria-live={local.live && role() !== 'alert' ? 'polite' : undefined} class={cn('ui-inline-notice', `ui-inline-notice--${local.tone ?? 'info'}`, local.class)}>
-    <Show when={local.title}><strong class="ui-inline-notice__title">{local.title}</strong></Show>
-    <div class="ui-inline-notice__body">{local.children}</div>
+  const tone = () => local.tone ?? 'info';
+  const role = () => local.role ?? (tone() === 'danger' ? 'alert' : local.live ? 'status' : 'note');
+  return <section {...element} role={role()} aria-live={local.live && role() !== 'alert' ? 'polite' : undefined} class={cn('flex flex-col gap-3 rounded-10 border px-12 py-10 text-12 leading-145 [&>div>:first-child]:mt-0 [&>div>:last-child]:mb-0', TONE_CLASS[tone()], local.class)}>
+    <Show when={local.title}><strong class={tone() === 'danger' ? 'text-13 font-semibold text-danger' : 'text-13 font-semibold text-text-primary'}>{local.title}</strong></Show>
+    <div>{local.children}</div>
   </section>;
 }
