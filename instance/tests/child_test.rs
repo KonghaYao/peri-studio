@@ -63,8 +63,9 @@ async fn test_stdout_events_and_dropped_no_sid() {
     let mut frames = Vec::new();
     for _ in 0..10 {
         match tokio::time::timeout(Duration::from_secs(2), rx.recv()).await {
-            Ok(Some(ChildOutput::DroppedNoSessionId))
-            | Ok(Some(ChildOutput::OversizeLine)) => saw_dropped = true,
+            Ok(Some(ChildOutput::DroppedNoSessionId)) | Ok(Some(ChildOutput::OversizeLine)) => {
+                saw_dropped = true
+            }
             Ok(Some(ChildOutput::Frame(evt))) => frames.push(evt),
             Ok(Some(ChildOutput::Exit { .. })) | Ok(None) | Err(_) => break,
         }
@@ -129,8 +130,9 @@ async fn test_stdout_events_and_dropped_no_sid() {
     let mut frames2 = Vec::new();
     for _ in 0..6 {
         match tokio::time::timeout(Duration::from_secs(2), rx2.recv()).await {
-            Ok(Some(ChildOutput::DroppedNoSessionId))
-            | Ok(Some(ChildOutput::OversizeLine)) => saw_dropped = true,
+            Ok(Some(ChildOutput::DroppedNoSessionId)) | Ok(Some(ChildOutput::OversizeLine)) => {
+                saw_dropped = true
+            }
             Ok(Some(ChildOutput::Frame(evt))) => frames2.push(evt),
             Ok(Some(ChildOutput::Exit { .. })) | Ok(None) | Err(_) => break,
         }
@@ -166,8 +168,9 @@ async fn test_stdout_events_and_dropped_no_sid() {
     let mut saw_dropped = false;
     for _ in 0..4 {
         match tokio::time::timeout(Duration::from_secs(2), rx3.recv()).await {
-            Ok(Some(ChildOutput::DroppedNoSessionId))
-            | Ok(Some(ChildOutput::OversizeLine)) => saw_dropped = true,
+            Ok(Some(ChildOutput::DroppedNoSessionId)) | Ok(Some(ChildOutput::OversizeLine)) => {
+                saw_dropped = true
+            }
             Ok(Some(ChildOutput::Exit { .. })) | Ok(None) | Err(_) => break,
             _ => {}
         }
@@ -216,8 +219,7 @@ async fn test_session_load_restores_notification_identity() {
         match tokio::time::timeout(Duration::from_secs(2), rx.recv()).await {
             Ok(Some(ChildOutput::Frame(evt))) => frames.push(evt),
             Ok(Some(ChildOutput::Exit { .. })) | Ok(None) | Err(_) => break,
-            Ok(Some(ChildOutput::DroppedNoSessionId))
-            | Ok(Some(ChildOutput::OversizeLine)) => {}
+            Ok(Some(ChildOutput::DroppedNoSessionId)) | Ok(Some(ChildOutput::OversizeLine)) => {}
         }
         if frames
             .iter()
@@ -260,7 +262,9 @@ async fn test_kill_idempotent_and_exit_event() {
     let exit = tokio::time::timeout(Duration::from_secs(3), async {
         loop {
             match rx.recv().await {
-                Some(ChildOutput::Exit { session_id, code, .. }) => {
+                Some(ChildOutput::Exit {
+                    session_id, code, ..
+                }) => {
                     return (session_id, code);
                 }
                 _ => continue,
@@ -358,8 +362,9 @@ async fn request_permission_request_forwarded() {
     let mut frames = Vec::new();
     for _ in 0..6 {
         match tokio::time::timeout(Duration::from_secs(2), rx.recv()).await {
-            Ok(Some(ChildOutput::DroppedNoSessionId))
-            | Ok(Some(ChildOutput::OversizeLine)) => saw_dropped = true,
+            Ok(Some(ChildOutput::DroppedNoSessionId)) | Ok(Some(ChildOutput::OversizeLine)) => {
+                saw_dropped = true
+            }
             Ok(Some(ChildOutput::Frame(evt))) => frames.push(evt),
             Ok(Some(ChildOutput::Exit { .. })) | Ok(None) | Err(_) => break,
         }
@@ -431,19 +436,27 @@ async fn test_spawn_env_is_whitelist_isolated() {
         .decode(joined.trim())
         .expect("env base64 应可解码");
     let env_text = String::from_utf8_lossy(&decoded);
-    let vars: Vec<(&str, &str)> = env_text
-        .lines()
-        .filter_map(|l| l.split_once('='))
-        .collect();
+    let vars: Vec<(&str, &str)> = env_text.lines().filter_map(|l| l.split_once('=')).collect();
     assert!(
-        vars.iter().any(|(k, v)| *k == "ACP_TEST_ALLOWED" && *v == "allowed-value"),
+        vars.iter()
+            .any(|(k, v)| *k == "ACP_TEST_ALLOWED" && *v == "allowed-value"),
         "显式传入的白名单变量必须可见，实际 {vars:?}"
     );
     assert!(
         vars.iter().any(|(k, _)| *k == "PATH"),
         "基集 PATH 必须继承，实际 {vars:?}"
     );
-    let allow_keys = ["PATH", "HOME", "LANG", "SHELL", "ACP_TEST_ALLOWED"];
+    // 测试 shell 会自行合成 PWD、SHLVL 与 `_`；它们不是从宿主环境继承的变量。
+    let allow_keys = [
+        "PATH",
+        "HOME",
+        "LANG",
+        "SHELL",
+        "PWD",
+        "SHLVL",
+        "_",
+        "ACP_TEST_ALLOWED",
+    ];
     for (k, _) in &vars {
         assert!(
             allow_keys.contains(k),

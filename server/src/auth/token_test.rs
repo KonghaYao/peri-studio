@@ -94,6 +94,44 @@ fn t1_generate_to_file_is_private_exact_and_no_overwrite() {
             .contains(".instance-token.tmp")));
 }
 
+#[test]
+fn ensured_instance_credential_reuses_token_and_atomically_restricts_output() {
+    let dir = tempfile::tempdir().unwrap();
+    let store_path = dir.path().join("tokens.toml");
+    let output = dir.path().join("instance.token");
+    let mut store = TokenStore::load(&store_path).unwrap();
+
+    let first = store
+        .ensure_instance_credential_to_file("local", &output)
+        .unwrap();
+    let first_token = std::fs::read_to_string(&output).unwrap();
+    assert!(first.newly_created);
+    assert_eq!(first.instance_id, "local");
+
+    // 模拟旧文件内容和过宽权限；再次确保必须原子替换并收紧权限。
+    std::fs::write(&output, "stale credential\n").unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        std::fs::set_permissions(&output, std::fs::Permissions::from_mode(0o666)).unwrap();
+    }
+
+    let second = store
+        .ensure_instance_credential_to_file("local", &output)
+        .unwrap();
+    assert!(!second.newly_created);
+    assert_eq!(second.token_id, first.token_id);
+    assert_eq!(std::fs::read_to_string(&output).unwrap(), first_token);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        assert_eq!(
+            std::fs::metadata(&output).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+    }
+}
+
 #[cfg(unix)]
 #[test]
 fn t1_generate_to_file_retains_inert_credential_when_store_cannot_commit() {
@@ -394,4 +432,3 @@ fn t8_redaction() {
     });
     assert_audit_redacted(&log, &[&token]);
 }
-

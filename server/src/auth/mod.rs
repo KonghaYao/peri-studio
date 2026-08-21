@@ -8,10 +8,12 @@
 //! 审计、错误 Display（本模块内仅 [`TokenRecord.token`] 持有，落 0600 文件）。
 
 pub mod audit;
+mod credential;
 mod nonce;
 mod service;
 mod stats;
 mod token;
+pub use credential::EnsuredInstanceCredential;
 pub use nonce::{NonceRegistry, NonceVerdict};
 pub use service::{AuthService, ConnectionCtx, InstanceAuthOk};
 pub use stats::AuthStats;
@@ -261,13 +263,13 @@ impl AuthError {
 }
 
 #[cfg(test)]
-mod test_util;
-#[cfg(test)]
-#[path = "token_test.rs"]
-mod token_test;
+#[path = "bootstrap_test.rs"]
+mod bootstrap_test;
 #[cfg(test)]
 #[path = "service_test.rs"]
 mod service_test;
 #[cfg(test)]
-#[path = "bootstrap_test.rs"]
-mod bootstrap_test;
+mod test_util;
+#[cfg(test)]
+#[path = "token_test.rs"]
+mod token_test;

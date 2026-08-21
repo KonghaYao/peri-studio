@@ -1,9 +1,9 @@
-//! peri-instance —— 由原 peri-studio 单机版演化（docs/architecture.md §3.2/§12）
+//! Peri Studio instance 角色运行时库（docs/architecture.md §3.2/§12）。
 //!
 //! 职责：每台机器一个 daemon，outbound 连 server，收 spawn/kill 指令，
 //! 管理 ACP 进程树，透明转发 + 断线缓冲。
 //!
-//! 模块预声明：后续并行 feature agent 只写各自文件，不碰 lib.rs。
+//! OS signal 与 `connect` CLI 由唯一产品入口 `app/` 拥有。
 
 pub mod auth;
 pub mod buffer;

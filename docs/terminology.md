@@ -1,6 +1,6 @@
 # Peri Studio 术语集合（定制版）
 
-> 状态：v1.1 定稿（2026-08-12）
+> 状态：v1.2 定稿（2026-08-21，单二进制运行模型）
 > 定位：本仓库**唯一权威术语表**。代码标识符、ws 协议帧、磁盘持久化格式、
 > 文档一律以本表为准。旧术语仅在「历史数据/迁移说明」中出现。
 > 原则：**session 一词特指 ACP 进程内的会话**，其余原 session 概念全部更名。
@@ -12,7 +12,7 @@
 | 术语 | 定义 | 身份标识 | 取代旧术语 |
 | --- | --- | --- | --- |
 | **chat**（对话） | server 侧对话容器：一次用户对话的持久化身份（UUID），面板左侧列表条目；对应 `chats/{chat_id}/` 目录 + 双 Doc + registry 摘要 | `chat_id`（UUID，server 生成） | session（hub 侧）/ `session_id` |
-| **instance**（实例） | 一个 ws 连接所注册的 machine：运行 ACP 进程的宿主 daemon，outbound ws 连 server，接收 spawn/kill 指令 | `instance_id` | machine / `machine_id` |
+| **instance**（实例） | 一个 ws 连接所注册的 machine：运行 ACP 进程的独立运行角色，outbound ws 连 server，接收 spawn/kill 指令 | `instance_id` | machine / `machine_id` |
 | **session**（会话） | **ACP 进程内的会话**：agent 进程收到 `session/new` 后建立，`session/prompt` 等 JSON-RPC 方法的作用域 | `session_id`（agent 返回） | acp_session_id（所指实体，名不变） |
 | **project**（项目） | Web 侧持久分组；继承 workspace 的名称、cwd 与 instance 路由语义，由 SQLite 作为事实源 | `project_id`（hub 生成） | workspace（兼容投影继续保留） |
 | **project session**（项目会话） | Web 左栏中的持久会话入口；记录 ACP session、显示标题与最近一次 runtime chat，但自身不等同于 ACP session 或 chat | `project_session_id`（协议字段为 `sessionId`） | 无 |
@@ -22,6 +22,21 @@
 **归属关系**：一个 chat → 归属 1 个 instance（`instance_id` 字段，create 时指定，缺省 `local`）+ 绑定 1 个 ACP session（binding：`session_id → chat_id`）。instance 可同时承载多个 chat（心跳 `alive_sessions`），ACP 一进程一会话。
 
 Web 项目模型额外遵守：一个 project → 多个 project session；一个 project session → 至多一个 ACP session，并可在不同时刻激活为不同的 runtime chat。server 重启后旧 chat 不复活，打开 project session 时用持久的 ACP session id 执行 `session/load` 并建立新 binding。
+
+## 1.1 产品与运行形态
+
+| 术语 | 定义 | 不是 |
+| --- | --- | --- |
+| **`peri-studio` 可执行文件** | 唯一发布单元；包含 server 与 instance 全部能力以及内嵌 Web 资产 | 单一运行角色；单一 OS 进程的承诺 |
+| **server 角色** | 中心控制面、HTTP/ws listener、认证、投影与持久化的运行角色 | instance；浏览器客户端 |
+| **instance 角色** | 以 `connect` 模式主动连接 server，持有 ACP 子进程与断线缓冲的运行角色 | Web 面板；server 内部线程 |
+| **local 模式** | 在同一台机器启动 server 角色，再以同一可执行文件启动独立 instance 进程，通过真实 `/instance` ws + HMAC 回连 | 绕过网络协议的进程内直调 |
+| **connect 模式** | 只启动 instance 角色，连接用户明确指定的 server URL | 打开 Web 面板；新建 server |
+| **Web 面板** | 由 server 托管内嵌静态资产、在浏览器运行的视图客户端 | `connect` 模式；instance |
+
+在指代产品运行角色时，“client”一词不得单独使用：它可能指 Web 面板，也可能
+指以 WebSocket 主动连接 server 的 instance。必须使用“Web 面板”或“instance
+角色”明示指代；协议中已定义的 `client token` 与 client→server 方向标记仍保持不变。
 
 ## 2. 代码/协议/存储映射表（旧 → 新）
 
@@ -63,10 +78,19 @@ Web 项目模型额外遵守：一个 project → 多个 project session；一�
 
 | 旧 | 新 |
 | --- | --- |
-| `machine/` crate、`acp-machine` 二进制 | `instance/` crate、`peri-instance` 二进制 |
-| `MACHINE_TOKEN_FILE` / `MACHINE_LOG` 环境变量（dev.sh） | `INSTANCE_TOKEN_FILE` / `INSTANCE_LOG` |
-| 数据目录 `~/.local/share/peri-studio/machine/` | `~/.local/share/peri-studio/instance/` |
+| `machine/` crate、`acp-machine` / `peri-instance` 发布二进制 | `instance/` 运行时库；由 `peri-studio connect` 启动 instance 角色 |
+| `MACHINE_TOKEN_FILE` / `MACHINE_LOG` 环境变量（旧 dev.sh） | 删除；开发入口直接调用 `peri-studio local/serve/connect` 参数 |
+| 数据目录 `~/.local/share/peri-studio/machine/` | `~/.local/share/peri-studio/instances/<profile>/`；本地自连接使用 `instances/local/` |
 | 文档模块名 `f6-machine.md` | `f6-instance.md` |
+
+### 2.5 单二进制迁移
+
+| 旧 | 新 |
+| --- | --- |
+| `peri-studio-server` 发布二进制 | `peri-studio serve` 的 server 角色 |
+| `peri-instance` 发布二进制 | `peri-studio connect <URL>` 的 instance 角色 |
+| 同一机器安装两个可执行文件 | 安装一个 `peri-studio`；默认命令或 `local` 启动两个独立进程角色 |
+| server 调用 instance 库的进程内快速路径 | 禁止；本地与远程一律走 `/instance` ws + HMAC |
 
 ## 3. 保持不变（session 一词的合法使用域）
 

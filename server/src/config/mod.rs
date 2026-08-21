@@ -74,23 +74,39 @@ pub enum ConfigError {
 #[derive(Debug, Clone, Default, Args)]
 pub struct CliOverrides {
     /// 监听地址（覆盖配置文件与默认 127.0.0.1）
-    #[arg(long = "listen", env = "PERI_STUDIO_LISTEN_ADDR")]
+    #[arg(
+        long = "listen",
+        env = "PERI_STUDIO_LISTEN_ADDR",
+        help = "Server listen address"
+    )]
     pub listen_addr: Option<IpAddr>,
     /// 监听端口（覆盖配置文件与默认 8456）
-    #[arg(long, env = "PERI_STUDIO_LISTEN_PORT")]
+    #[arg(long, env = "PERI_STUDIO_LISTEN_PORT", help = "Server listen port")]
     pub listen_port: Option<u16>,
     /// 数据目录（覆盖配置文件与 XDG 默认）
-    #[arg(long, env = "PERI_STUDIO_DATA_DIR")]
+    #[arg(long, env = "PERI_STUDIO_DATA_DIR", help = "Runtime data directory")]
     pub data_dir: Option<PathBuf>,
     /// 配置/token 目录（覆盖配置文件与 XDG 默认）
-    #[arg(long, env = "PERI_STUDIO_CONFIG_DIR")]
+    #[arg(
+        long,
+        env = "PERI_STUDIO_CONFIG_DIR",
+        help = "Configuration and token directory"
+    )]
     pub config_dir: Option<PathBuf>,
     /// 日志级别（trace/debug/info/warn/error；覆盖配置文件，RUST_LOG 仍优先）
-    #[arg(long, env = "PERI_STUDIO_LOG_LEVEL")]
+    #[arg(
+        long,
+        env = "PERI_STUDIO_LOG_LEVEL",
+        help = "Log level when RUST_LOG is unset"
+    )]
     pub log_level: Option<String>,
     /// ACP 启动命令（空格拆分 argv；§11 默认 `peri acp`，M1 起可配置——
     /// 无 peri 环境可用 test-child 等替身充当 ACP 进程做验收）
-    #[arg(long, env = "PERI_STUDIO_ACP_CMD")]
+    #[arg(
+        long,
+        env = "PERI_STUDIO_ACP_CMD",
+        help = "ACP command and arguments, split on spaces"
+    )]
     pub acp_cmd: Option<String>,
 }
 

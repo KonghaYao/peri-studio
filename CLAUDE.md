@@ -17,15 +17,16 @@
 
 ## 项目概览
 
-Peri Studio 是本地 ACP agent 的持久 Web 工作台（仓库名 peri-studio，产品名 peri-studio）：server 负责认证、project/session 元数据、运行实例编排与 Yjs 只读投影；SolidJS Web 只消费 server 事实，不在浏览器里伪造对话历史。架构分 server / instance 两级实体：server 是中心控制面，instance 是实际运行 ACP 进程的宿主 daemon，二者经 WebSocket 联通。当前仅支持 loopback 单机部署，不面向公网（远程部署为后置里程碑）。
+Peri Studio 是 ACP agent 的持久 Web 工作台（仓库名 peri-studio，产品名 Peri Studio）：server 负责认证、project/session 元数据、运行实例编排与 Yjs 只读投影；SolidJS Web 只消费 server 事实，不在浏览器里伪造对话历史。产品只发布一个 `peri-studio` 可执行文件，但保留 server / instance 两种进程角色：server 是中心控制面，instance 是实际运行 ACP 进程的宿主 daemon，二者经 WebSocket 联通。本地模式由 server 启动同一文件的 `connect` 子进程并走真实协议回连；远程连接必须优先使用 TLS。
 
 ## 仓库结构
 
+- `app/`（peri-studio）：唯一产品二进制、CLI、OS signal、本地进程监督与运行角色装配
 - `proto/`（peri-studio-proto）：共享协议 crate——ws 帧、HMAC 双向认证、RPC schema、Yjs 同步，三端共用的事实源
-- `server/`（peri-studio-server）：中心控制面，模块按职责拆分：`auth`（token/审计）、`channel`（命令协调、runtime 生命周期、catalog 同步）、`control`（registry、心跳）、`persist`（SQLite、outbox）、`protocol`（ACP 通道）、`state`、`web`；`build.rs` 编译期内嵌 `web/dist` 产物
-- `instance/`（peri-instance）：运行 ACP 子进程的宿主 daemon
+- `server/`（peri-studio-server library）：中心控制面运行时，模块按职责拆分：`auth`（token/审计）、`channel`（命令协调、runtime 生命周期、catalog 同步）、`control`（registry、心跳）、`persist`（SQLite、outbox）、`protocol`（ACP 通道）、`state`、`web`；`build.rs` 编译期内嵌 `web/dist` 产物
+- `instance/`（peri-instance library）：运行 ACP 子进程的宿主运行时；仅测试辅助二进制 `test-child` 独立存在
 - `web/`：SolidJS 单页面板（`src/panel`）+ 可复用 UI 组件库（`src/ui`）
-- `docs/`：`architecture.md`（权威架构基准，v2.6 与实现对齐）、`terminology.md`（唯一权威术语表）、`topology.md`、`design/`（设计决策与验证证据，如 `prompt-recovery-provenance.md`）、`audit-2026-08.md`
+- `docs/`：`architecture.md`（权威架构基准，v2.7 与实现对齐）、`terminology.md`（唯一权威术语表）、`topology.md`、`adr/`、`design/`（设计决策与验证证据）
 - `scripts/`：契约测试与端到端验证脚本（含 release 打包）
 - `dev.sh`：一键启动 server + instance 并校验就绪
 
@@ -52,13 +53,15 @@ cargo test -p peri-studio-server --lib
 cargo test -p peri-instance
 cargo clippy --workspace --all-targets -- -D warnings   # 必须零告警
 
-# server CLI（token 与 liveness）
-cargo run -q -p peri-studio-server -- token generate --name web --role full
-cargo run -q -p peri-studio-server -- token list
-cargo run -q -p peri-studio-server -- status --json | --ready
+# 唯一产品 CLI
+cargo run -q -p peri-studio -- local
+cargo run -q -p peri-studio -- serve --local
+cargo run -q -p peri-studio -- connect https://peri.example --token-file /secure/instance.token
+cargo run -q -p peri-studio -- token generate --name web --role full
+cargo run -q -p peri-studio -- status --json | --ready
 ```
 
-自定义目录/端口用环境变量：`PERI_STUDIO_CONFIG_DIR`、`PERI_STUDIO_DATA_DIR`、`PERI_STUDIO_LISTEN_ADDR`、`PERI_STUDIO_LISTEN_PORT`、`PERI_STUDIO_SERVER_URL`。
+自定义目录/端口用环境变量：`PERI_STUDIO_CONFIG_DIR`、`PERI_STUDIO_DATA_DIR`、`PERI_STUDIO_LISTEN_ADDR`、`PERI_STUDIO_LISTEN_PORT`；远程 instance 连接地址由 `connect <URL>` 显式提供。
 
 ## 关键架构契约
 
@@ -68,7 +71,7 @@ cargo run -q -p peri-studio-server -- status --json | --ready
 - **四层身份不可互换**：`project_id` / `project_session_id` / ACP `session_id` / `chat_id` 各有边界；server 重启后不复活旧 runtime，打开持久入口必须以精确 ACP session id 走 `session/load`。
 - **SQLite 是唯一落盘产物**：`<data_dir>/metadata.sqlite3` 持有 project/session 元数据与全局 commandId 去重；per-chat Yjs 投影与 outbox 均为内存态，崩溃恢复由 ACP 重放提供，不复制第二份持久事实。
 - **副作用边界**：runtime create 横跨 Hub chat 状态、instance child 与 ACP durable thread；`session/new` 一旦可能进入 ACP stdin，kill child 也不能证明 thread 未创建，命令必须收敛为 `DELIVERY_UNKNOWN` 且禁止自动重放。客户端以同一 `commandId` 重发不得产生重复副作用。
-- **安全边界**：loopback 明文 HTTP 仅限本机；`/api/health` 的 peer 与 Host 必须同为 loopback；token（`full`/`instance` 等角色）只打印一次，不得进入代码、日志、issue 或聊天记录；浏览器会话用 HttpOnly opaque cookie；日志不得泄露敏感信息。
+- **安全边界**：loopback 明文 HTTP/ws 仅限本机；非回环 `connect` 默认要求 `wss`，`--allow-insecure` 只用于受控测试网络；`/api/health` 的 peer 与 Host 必须同为 loopback；token（`full`/`instance` 等角色）不得进入代码、日志、issue 或聊天记录；浏览器会话用 HttpOnly opaque cookie；日志不得泄露敏感信息。
 
 ## 代码与测试约定
 
@@ -79,5 +82,5 @@ cargo run -q -p peri-studio-server -- status --json | --ready
 
 ## 构建与发布
 
-- 升级顺序：先 server、后 instance，最后 `status --ready` 验收；instance hello 显式携带协议版本，版本不匹配以稳定错误码 `protocol_version_mismatch` 拒绝。
-- Release：CI release workflow 未随仓库迁移重建（原仓库契约见 `docs/architecture.md` §13.1，待恢复）；当前以本地产物链为准——`scripts/package-release.sh`（cargo-deny → 浏览器契约 → Web 测试与构建 → `cargo test --workspace --locked` → release 构建 → 可复现打包）与 `scripts/verify-release.sh` 验证。产物排除 `test-child`、token、配置与运行数据。
+- 升级以唯一 `peri-studio` 文件为原子发布物；后台双任务部署仍先重启 server 角色、确认恢复后再重启 connect 角色，最后 `status --ready` 验收。instance hello 显式携带协议版本，版本不匹配以稳定错误码 `protocol_version_mismatch` 拒绝。
+- Release：CI release workflow 未随仓库迁移重建（原仓库契约见 `docs/architecture.md` §13.1，待恢复）；当前本地产物链依次执行 cargo-deny、浏览器契约、Web 测试与构建、`cargo test --workspace --locked`、release 构建，再由 `scripts/package-release.sh` 可复现打包、`scripts/verify-release.sh` 验证。产物排除 `test-child`、token、配置与运行数据。

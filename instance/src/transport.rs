@@ -45,7 +45,7 @@ pub enum StoppedReason {
     AuthFailed,
     /// server 以 4502 关闭（配置性永久失败，§4.7）：不自动重连。
     ConfigFatal,
-    /// 本机优雅关闭（ctrl_c）。
+    /// 调用方请求优雅关闭。
     Shutdown,
 }
 

@@ -29,6 +29,7 @@
 //!   阻塞窗口（ack 等待/kill grace）内不再无界堆积。
 
 mod config;
+mod control;
 mod forward;
 mod handlers;
 mod resync;
@@ -43,6 +44,7 @@ use peri_studio_proto::instance::{InstanceHeartbeat, InstanceHello};
 use peri_studio_proto::Frame;
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
+use tokio_util::sync::CancellationToken;
 
 use crate::auth::{AuthClient, AuthSession, HelloCtx};
 use crate::buffer::{Buffer, RingBuffer, Watermark};
@@ -54,6 +56,23 @@ pub use config::InstanceConfig;
 use forward::forward_child_output;
 use handlers::{handle_inbound, mark_all_buffered, shutdown_all};
 use startup::{env_allowlist_extra, startup_cleanup};
+
+/// instance owner 的结构化身份，用于本地 supervisor 安全接管。
+pub use startup::InstanceOwnerIdentity;
+
+/// 查询持有指定 instance 数据目录的运行进程，用于本地 supervisor 接管。
+pub fn owner_identity(data_dir: &std::path::Path) -> anyhow::Result<Option<InstanceOwnerIdentity>> {
+    startup::current_owner(data_dir)
+}
+
+/// 经身份绑定的本地控制通道请求 owner 自行优雅关闭。
+pub async fn request_owner_shutdown(
+    data_dir: &std::path::Path,
+    owner: &InstanceOwnerIdentity,
+    token: &str,
+) -> anyhow::Result<()> {
+    control::request_shutdown(data_dir, owner, token).await
+}
 
 /// child 事件汇聚通道容量（问题 3：有界，满时反压到 ACP 管道）。
 const CHILD_CHANNEL_CAP: usize = 4096;
@@ -111,10 +130,26 @@ pub(super) struct HubState {
 // 主循环
 // ---------------------------------------------------------------------------
 
-/// 启动 instance daemon 主循环（阻塞直到 transport 停止 / ctrl_c / 错误）。
-pub async fn run(config: InstanceConfig) -> anyhow::Result<()> {
+/// 启动 instance daemon 主循环。
+///
+/// 调用方拥有 `shutdown`，因此独立 CLI、统一二进制的本地监督模块与测试都可
+/// 使用同一运行入口；本模块不安装进程级信号处理。函数会阻塞到 transport
+/// 停止、调用方请求关闭或发生错误，并在返回前清理 ACP 进程树。
+pub async fn run(config: InstanceConfig, shutdown: CancellationToken) -> anyhow::Result<()> {
     // 0. 启动清理（§8 第三层）→ 水位 + buffer_lost。
     let (watermark, buffer_lost, owner_lock) = startup_cleanup(&config)?;
+    let owner_control = config
+        .managed_local_id
+        .as_ref()
+        .map(|_| control::OwnerControl::bind(&config.data_dir, owner_lock.identity()))
+        .transpose()?;
+    let owner_token = config.token.clone();
+    let mut owner_shutdown = Box::pin(async move {
+        match owner_control {
+            Some(control) => control.wait_for_shutdown(owner_token).await,
+            None => std::future::pending::<anyhow::Result<()>>().await,
+        }
+    });
 
     // 1. 认证客户端（token fail-fast）。
     let auth_client = AuthClient::new(config.token.clone())?;
@@ -201,10 +236,7 @@ pub async fn run(config: InstanceConfig) -> anyhow::Result<()> {
     heartbeat.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
     let mut resync: Option<JoinHandle<()>> = None;
     let mut authenticated = false;
-    // ctrl_c 监听提到循环外（问题 19）：每次迭代重建会在迭代间窗口丢失信号。
-    let sigint = tokio::signal::ctrl_c();
-    tokio::pin!(sigint);
-
+    let mut owner_control_error = None;
     loop {
         tokio::select! {
             evt = events_rx.recv() => {
@@ -279,17 +311,36 @@ pub async fn run(config: InstanceConfig) -> anyhow::Result<()> {
                 forward_child_output(&state, &handle, &config, out, authenticated).await;
             }
             _ = heartbeat.tick() => {
-                eprintln!("DBG hub: heartbeat tick");
                 if handle.is_authenticated() {
                     send_heartbeat(&state, &handle).await;
                 }
             }
-            _ = &mut sigint => {
-                tracing::info!(target: "peri_studio::instance", "SIGINT received, shutting down gracefully");
+            _ = shutdown.cancelled() => {
+                tracing::info!(target: "peri_studio::instance", "shutdown requested, shutting down gracefully");
                 shutdown_all(&state, &config).await;
                 // 水位收尾（问题 20）：shutdown_all 只杀进程，Exit 事件由 stdout
                 // 读任务 wait 后经 child_rx 上报；主循环即将退出不再消费——短暂
                 // 消费至超时，让水位以 pgid=0 落盘，避免下次启动误报 buffer_lost。
+                drain_exit_events(&state, &handle, &config, &mut child_rx).await;
+                handle.shutdown();
+                break;
+            }
+            result = &mut owner_shutdown => {
+                match result {
+                    Ok(()) => tracing::info!(
+                        target: "peri_studio::instance",
+                        "authenticated owner shutdown requested"
+                    ),
+                    Err(error) => {
+                        tracing::error!(
+                            target: "peri_studio::instance",
+                            %error,
+                            "owner control channel failed"
+                        );
+                        owner_control_error = Some(error);
+                    }
+                }
+                shutdown_all(&state, &config).await;
                 drain_exit_events(&state, &handle, &config, &mut child_rx).await;
                 handle.shutdown();
                 break;
@@ -302,7 +353,10 @@ pub async fn run(config: InstanceConfig) -> anyhow::Result<()> {
         h.abort();
     }
     tracing::info!(target: "peri_studio::instance", "daemon exited");
-    Ok(())
+    match owner_control_error {
+        Some(error) => Err(error.context("owner control channel failed")),
+        None => Ok(()),
+    }
 }
 
 /// 收尾消费 child_rx 中的 Exit 事件（优雅关闭后，问题 20）：进程已 SIGKILL，
@@ -372,7 +426,10 @@ async fn send_heartbeat(state: &HubState, handle: &TransportHandle) {
 
 /// 环形滑窗快照（冲突 2 预留：server 发现缺口请求滑窗重发时使用）。
 #[allow(dead_code)]
-fn ring_snapshot(state: &HubState, chat_id: &str) -> Vec<peri_studio_proto::instance::BufferedFrame> {
+fn ring_snapshot(
+    state: &HubState,
+    chat_id: &str,
+) -> Vec<peri_studio_proto::instance::BufferedFrame> {
     state
         .rings
         .lock()

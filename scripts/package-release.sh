@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build a deterministic native Unix release archive from already-built binaries.
+# 从统一二进制构建可复现的原生 Unix 发布归档。
 set -euo pipefail
 umask 077
 
@@ -14,9 +14,15 @@ usage() {
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
-        --bin-dir) BIN_DIR="$2"; shift 2 ;;
-        --out-dir) OUT_DIR="$2"; shift 2 ;;
-        --target) TARGET="$2"; shift 2 ;;
+        --bin-dir|--out-dir|--target)
+            [ "$#" -ge 2 ] || { usage; exit 2; }
+            case "$1" in
+                --bin-dir) BIN_DIR="$2" ;;
+                --out-dir) OUT_DIR="$2" ;;
+                --target) TARGET="$2" ;;
+            esac
+            shift 2
+            ;;
         -h|--help) usage; exit 0 ;;
         *) usage; exit 2 ;;
     esac
@@ -28,33 +34,29 @@ if [ -z "${VERSION}" ] || [ -z "${TARGET}" ]; then
     exit 1
 fi
 
-SERVER_BIN="${BIN_DIR}/peri-studio-server"
-INSTANCE_BIN="${BIN_DIR}/peri-instance"
-for binary in "${SERVER_BIN}" "${INSTANCE_BIN}"; do
-    if ! [ -x "${binary}" ]; then
-        echo "missing executable release binary: ${binary}" >&2
-        exit 1
-    fi
-done
+APP_BIN="${BIN_DIR}/peri-studio"
+if ! [ -x "${APP_BIN}" ]; then
+    echo "missing executable release binary: ${APP_BIN}" >&2
+    exit 1
+fi
 if ! [ -f "${ROOT}/web/dist/index.html" ]; then
     echo "web/dist is missing; build and test the Web client before Rust release binaries" >&2
     exit 1
 fi
-
-if [ "$("${SERVER_BIN}" --version)" != "peri-studio-server ${VERSION}" ]; then
-    echo "server binary version does not match workspace ${VERSION}" >&2
-    exit 1
-fi
-if [ "$("${INSTANCE_BIN}" --version)" != "peri-instance ${VERSION}" ]; then
-    echo "instance binary version does not match workspace ${VERSION}" >&2
+if ! [ -f "${ROOT}/LICENSE" ]; then
+    echo "repository LICENSE is missing; release archives must include explicit license terms" >&2
     exit 1
 fi
 
-# Capture source provenance before creating caller-selected output directories.
-# Otherwise a second reproducibility pass such as `--out-dir dist-repeat` can
-# make its own untracked directory change source_dirty and therefore the bytes.
-SOURCE_REVISION="$(git -C "${ROOT}/.." rev-parse HEAD 2>/dev/null || printf unknown)"
-if [ -n "$(git -C "${ROOT}/.." status --porcelain --untracked-files=normal 2>/dev/null || true)" ]; then
+if [ "$("${APP_BIN}" --version)" != "peri-studio ${VERSION}" ]; then
+    echo "peri-studio binary version does not match workspace ${VERSION}" >&2
+    exit 1
+fi
+
+# 在创建调用方指定的输出目录前记录源码来源，避免第二次可复现构建创建的
+# 未跟踪目录改变 source_dirty，进而改变归档字节。
+SOURCE_REVISION="$(git -C "${ROOT}" rev-parse HEAD 2>/dev/null || printf unknown)"
+if [ -n "$(git -C "${ROOT}" status --porcelain --untracked-files=normal 2>/dev/null || true)" ]; then
     SOURCE_DIRTY=true
 else
     SOURCE_DIRTY=false
@@ -65,11 +67,10 @@ mkdir -p "${OUT_DIR}"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/peri-studio-package.XXXXXX")"
 trap 'rm -rf "${WORK}"' EXIT
 STAGE="${WORK}/${PACKAGE}"
-mkdir -p "${STAGE}/bin" "${STAGE}/deploy" "${STAGE}/docs/design" "${STAGE}/web"
+mkdir -p "${STAGE}/bin" "${STAGE}/deploy" "${STAGE}/docs/adr" "${STAGE}/docs/design" "${STAGE}/web"
 
-cp "${SERVER_BIN}" "${STAGE}/bin/peri-studio-server"
-cp "${INSTANCE_BIN}" "${STAGE}/bin/peri-instance"
-cp "${ROOT}/../LICENSE" "${STAGE}/LICENSE"
+cp "${APP_BIN}" "${STAGE}/bin/peri-studio"
+cp "${ROOT}/LICENSE" "${STAGE}/LICENSE"
 cp "${ROOT}/README.md" "${STAGE}/README.md"
 cp "${ROOT}/SECURITY.md" "${STAGE}/SECURITY.md"
 cp "${ROOT}/deny.toml" "${STAGE}/deny.toml"
@@ -78,6 +79,8 @@ cp "${ROOT}/web/bun.lock" "${STAGE}/web/bun.lock"
 cp -R "${ROOT}/deploy/." "${STAGE}/deploy/"
 cp "${ROOT}/docs/architecture.md" "${STAGE}/docs/architecture.md"
 cp "${ROOT}/docs/terminology.md" "${STAGE}/docs/terminology.md"
+cp "${ROOT}/docs/topology.md" "${STAGE}/docs/topology.md"
+cp "${ROOT}/docs/adr/0001-single-binary-dual-process-roles.md" "${STAGE}/docs/adr/"
 cp "${ROOT}/docs/design/prompt-recovery-provenance.md" "${STAGE}/docs/design/"
 printf '%s\n' "${VERSION}" > "${STAGE}/VERSION"
 cat > "${STAGE}/BUILD-METADATA" <<EOF
@@ -87,8 +90,7 @@ source_revision=${SOURCE_REVISION}
 source_dirty=${SOURCE_DIRTY}
 EOF
 
-chmod 755 "${STAGE}/bin/peri-studio-server" "${STAGE}/bin/peri-instance"
-chmod 755 "${STAGE}/deploy/provision-instance-token.sh"
+chmod 755 "${STAGE}/bin/peri-studio"
 find "${STAGE}" -type f ! -perm -0100 -exec chmod 644 {} +
 find "${STAGE}" -exec touch -t 198001010000 {} +
 

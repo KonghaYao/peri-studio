@@ -52,7 +52,7 @@ describe('createAuthController', () => {
   });
 
   it('keeps the authoritative server token path when status is rejected with setup', async () => {
-    const command = "PERI_STUDIO_CONFIG_DIR='/custom/peri studio' peri-studio-server token generate --name web --role full";
+    const command = "PERI_STUDIO_CONFIG_DIR='/custom/peri studio' peri-studio token generate --name web --role full";
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: false,
       status: 401,

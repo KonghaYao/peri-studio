@@ -8,7 +8,7 @@
 //! rename 原子写为文档明示决策（§4.3.2）。
 
 use std::collections::HashSet;
-use std::fs::{self, OpenOptions};
+use std::fs;
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
@@ -19,9 +19,12 @@ use rand::Rng as _;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use super::credential::{
+    write_private_credential, write_private_credential_replace, EnsuredInstanceCredential,
+};
 use crate::auth::{
-    AuthError, TokenInfo, TokenRecord, TokenRole, BOOTSTRAP_INSTANCE_NAME, TOKEN_B64_LEN,
-    TOKENS_FILE_VERSION,
+    AuthError, TokenInfo, TokenRecord, TokenRole, BOOTSTRAP_INSTANCE_NAME, TOKENS_FILE_VERSION,
+    TOKEN_B64_LEN,
 };
 
 /// store 错误（token 文件面）。
@@ -111,14 +114,11 @@ impl TokenStore {
         Ok(record)
     }
 
-    /// Generate an instance/client credential into an exclusive private file,
-    /// then persist the matching server-side record.
+    /// 将 instance/client 凭据排他写入私有文件，再持久化对应服务端记录。
     ///
-    /// The output is made durable first. The two files cannot share an atomic
-    /// transaction, so a later store error intentionally retains the private
-    /// output: deleting it could strand a record that crossed the token-store
-    /// rename boundary. A crash before that boundary leaves only an inert
-    /// credential, never an active token whose sole secret was lost.
+    /// 两个文件无法共享原子事务，因此输出会先持久化。若 store 随后失败，
+    /// 私有输出会刻意保留，避免删掉一个可能已越过 token-store rename 边界的
+    /// 有效凭据。边界前崩溃只会留下无效凭据，不会丢失有效 token 的唯一 secret。
     pub fn generate_to_file(
         &mut self,
         role: TokenRole,
@@ -138,6 +138,35 @@ impl TokenStore {
             )));
         }
         Ok(record)
+    }
+
+    /// 确保指定 instance 身份存在一个有效 token，并把凭据原子发布到文件。
+    ///
+    /// 已有同名、未吊销的 instance token 时复用它；否则先持久化新记录。
+    /// 输出文件允许存在，发布使用同目录临时文件 + rename，且每次都会把权限
+    /// 收紧到 0600。返回值不含 token 本体，调用方不需要解析 `tokens.toml`。
+    pub fn ensure_instance_credential_to_file(
+        &mut self,
+        instance_id: &str,
+        output: &Path,
+    ) -> Result<EnsuredInstanceCredential, StoreError> {
+        self.maybe_reload();
+        let (record, newly_created) = match self.records.iter().find(|record| {
+            record.role == TokenRole::Instance && record.name == instance_id && !record.revoked
+        }) {
+            Some(record) => (record.clone(), false),
+            None => (self.generate(TokenRole::Instance, instance_id)?, true),
+        };
+
+        // 新记录已先持久化；若凭据发布失败，重试会复用同一记录并补齐文件，
+        // 不会产生一个 server 接受但唯一 secret 已丢失的新 token。
+        write_private_credential_replace(output, &record.token)?;
+        Ok(EnsuredInstanceCredential {
+            token_id: record.id,
+            instance_id: record.name,
+            path: output.to_path_buf(),
+            newly_created,
+        })
     }
 
     fn prepare_record(&self, role: TokenRole, name: &str) -> Result<TokenRecord, StoreError> {
@@ -366,61 +395,6 @@ fn write_atomic_tmp(tmp: &Path, content: &str) -> Result<(), StoreError> {
     f.write_all(content.as_bytes())?;
     f.sync_all()?;
     Ok(())
-}
-
-/// Create a raw credential file without an overwrite window. The hard link is
-/// the atomic publication point and both the file and parent directory are
-/// synced before the caller may persist the matching active record.
-fn write_private_credential(output: &Path, token: &str) -> Result<(), StoreError> {
-    let dir = output
-        .parent()
-        .filter(|parent| !parent.as_os_str().is_empty())
-        .unwrap_or_else(|| Path::new("."));
-    if !dir.is_dir() {
-        return Err(StoreError::Persist(format!(
-            "credential output directory does not exist: {}",
-            dir.display()
-        )));
-    }
-    if output.exists() {
-        return Err(StoreError::Persist(format!(
-            "credential output already exists: {}",
-            output.display()
-        )));
-    }
-
-    let tmp = dir.join(format!(
-        ".instance-token.tmp.{}.{}",
-        std::process::id(),
-        uuid::Uuid::new_v4()
-    ));
-    let result = (|| -> Result<(), StoreError> {
-        let mut options = OpenOptions::new();
-        options.create_new(true).write(true);
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::OpenOptionsExt as _;
-            options.mode(0o600);
-        }
-        let mut file = options.open(&tmp)?;
-        file.write_all(token.as_bytes())?;
-        file.write_all(b"\n")?;
-        file.sync_all()?;
-        fs::hard_link(&tmp, output)?;
-        fs::remove_file(&tmp)?;
-        sync_directory(dir)?;
-        Ok(())
-    })();
-    if result.is_err() {
-        let _ = fs::remove_file(&tmp);
-    }
-    result
-}
-
-fn sync_directory(dir: &Path) -> Result<(), StoreError> {
-    fs::File::open(dir)?
-        .sync_all()
-        .map_err(|error| StoreError::Persist(format!("directory fsync failed: {error}")))
 }
 
 /// 读取并校验 records（不触碰 mtime）。

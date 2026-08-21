@@ -132,7 +132,7 @@ async fn t09_body() -> Result<(), String> {
         )
         .await?;
     assert!(
-        instance2.log_contains("ACP 进程启动", Duration::from_secs(10)),
+        instance2.log_contains("ACP process started", Duration::from_secs(10)),
         "重连后 instance 应能接收 spawn 并拉起 ACP 进程"
     );
     // 收掉 create 的终态。
@@ -214,7 +214,10 @@ async fn t10_body() -> Result<(), String> {
                 Frame::ActionAck(a) if a.status == AckStatus::Committed => {
                     // test-child 应退出（instance kill）。
                     assert!(
-                        instance.log_contains("kill 完成", Duration::from_secs(10)),
+                        instance.log_contains(
+                            "kill complete (process group)",
+                            Duration::from_secs(10),
+                        ),
                         "instance 应执行 kill"
                     );
                     // Registry：session 状态 closed（或已从活跃摘要移除）。

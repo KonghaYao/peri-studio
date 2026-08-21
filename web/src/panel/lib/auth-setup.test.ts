@@ -7,12 +7,12 @@ describe('parseAuthSetup', () => {
       authenticated: false,
       setup: {
         tokenFile: '/custom/peri studio/tokens.toml',
-        generateCommand: "PERI_STUDIO_CONFIG_DIR='/custom/peri studio' peri-studio-server token generate --name web --role full",
+        generateCommand: "PERI_STUDIO_CONFIG_DIR='/custom/peri studio' peri-studio token generate --name web --role full",
         future: true,
       },
     })).toEqual({
       tokenFile: '/custom/peri studio/tokens.toml',
-      generateCommand: "PERI_STUDIO_CONFIG_DIR='/custom/peri studio' peri-studio-server token generate --name web --role full",
+      generateCommand: "PERI_STUDIO_CONFIG_DIR='/custom/peri studio' peri-studio token generate --name web --role full",
     });
   });
 

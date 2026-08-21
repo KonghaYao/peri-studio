@@ -26,17 +26,18 @@ forbid() {
 
 bash -n "${DEV}"
 require 'LISTEN_PORT="${PERI_STUDIO_LISTEN_PORT:-8456}"' 'listen port must have one authoritative shell value'
-require 'INSTANCE_SERVER_URL="${PERI_STUDIO_SERVER_URL:-ws://${LISTEN_ADDR}:${LISTEN_PORT}/instance}"' 'instance URL must derive from the same listen address/port'
 require 'lsof -nP -iTCP:"${LISTEN_PORT}" -sTCP:LISTEN' 'occupied ports must fail before rebuilding or spawning'
-require '--listen "${LISTEN_ADDR}"' 'server launch must receive the authoritative listen address'
-require '--listen-port "${LISTEN_PORT}"' 'server launch must receive the authoritative listen port'
-require '--config-dir "${CONFIG_DIR}"' 'server launch must receive the authoritative config directory'
-require '--data-dir "${DATA_DIR}"' 'server launch must receive the authoritative data directory'
-require '--server-url "${INSTANCE_SERVER_URL}"' 'instance launch must receive the derived URL'
+require 'cargo run -q -p peri-studio -- local' 'development must launch the unified local mode'
+require '--listen "${LISTEN_ADDR}"' 'local mode must receive the authoritative listen address'
+require '--listen-port "${LISTEN_PORT}"' 'local mode must receive the authoritative listen port'
+require '--config-dir "${CONFIG_DIR}"' 'local mode must receive the authoritative config directory'
+require '--data-dir "${DATA_DIR}"' 'local mode must receive the authoritative data directory'
 require 'umask 077' 'runtime logs and credentials must default to private permissions'
-require 'server.${$}.log' 'readiness logs must be scoped to this script run'
+require 'peri-studio.${$}.log' 'readiness logs must be scoped to this script run'
 require 'CLEANED_UP=1' 'cleanup must be idempotent'
 forbid "pkill -f" 'cleanup must never kill unrelated processes by name'
+forbid 'peri-studio-server' 'development must not launch the retired server binary'
+forbid 'peri-instance' 'development must not launch the retired instance binary'
 forbid 'if [ ! -f "${WEB_DIST}/index.html" ]' 'startup must not reuse a potentially stale Web bundle'
 
 PORT_GUARD_LINE="$(grep -nF 'lsof -nP -iTCP:"${LISTEN_PORT}" -sTCP:LISTEN' "${DEV}" | head -1 | cut -d: -f1)"

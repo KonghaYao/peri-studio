@@ -37,10 +37,10 @@ use crate::config::Config;
 use peri_studio_proto::schema::GlobalStatus;
 use peri_studio_proto::version::PROTOCOL_VERSION;
 
-pub(crate) use parse::{cookie_value, header_end, is_ws_upgrade, valid_loopback_host};
-pub(crate) use http::serve_http;
 #[cfg(test)]
 pub(crate) use http::serve;
+pub(crate) use http::serve_http;
+pub(crate) use parse::{cookie_value, header_end, is_ws_upgrade, valid_loopback_host};
 #[cfg(test)]
 pub(crate) use parse::{is_json_content_type, request_path};
 #[cfg(test)]
@@ -107,7 +107,7 @@ impl BrowserAuthSetup {
         let executable = std::env::current_exe()
             .ok()
             .map(|path| path.to_string_lossy().into_owned())
-            .unwrap_or_else(|| "peri-studio-server".to_string());
+            .unwrap_or_else(|| "peri-studio".to_string());
         Self::from_parts(cfg, &executable)
     }
 
@@ -133,11 +133,11 @@ fn shell_single_quote(value: &str) -> String {
 }
 
 #[cfg(test)]
-#[path = "test_util.rs"]
-mod test_util;
-#[cfg(test)]
 #[path = "http_test.rs"]
 mod http_test;
 #[cfg(test)]
 #[path = "static_test.rs"]
 mod static_test;
+#[cfg(test)]
+#[path = "test_util.rs"]
+mod test_util;

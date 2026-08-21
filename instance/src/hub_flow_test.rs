@@ -9,13 +9,33 @@ use tokio::net::TcpListener;
 use tokio_tungstenite::tungstenite::Message;
 
 #[tokio::test]
+async fn test_caller_owned_shutdown_stops_daemon() {
+    let dir = tempfile::tempdir().unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let config = test_config(addr, dir.path());
+    let shutdown = tokio_util::sync::CancellationToken::new();
+    let hub = tokio::spawn(run(config, shutdown.clone()));
+
+    // 完成认证以证明运行循环已启动，再由调用方发出关闭，而不是依赖进程信号。
+    let (_sink, _stream, _hello) = handshake_server(accept_ws(&listener).await).await;
+    shutdown.cancel();
+
+    let result = tokio::time::timeout(Duration::from_secs(2), hub)
+        .await
+        .expect("调用方取消后 daemon 应及时退出")
+        .expect("hub task 不应 panic");
+    result.expect("优雅关闭应成功");
+}
+
+#[tokio::test]
 async fn test_full_flow_spawn_event_heartbeat_kill_exit() {
     let dir = tempfile::tempdir().unwrap();
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     let config = test_config(addr, dir.path());
 
-    let hub = tokio::spawn(run(config));
+    let hub = tokio::spawn(run(config, tokio_util::sync::CancellationToken::new()));
     let (mut sink, mut stream, hello) = handshake_server(accept_ws(&listener).await).await;
     assert_eq!(hello.buffered, Some(false), "无缓冲时 hello.buffered=false");
 
@@ -102,7 +122,7 @@ async fn test_spawn_before_auth_is_dropped() {
     let addr = listener.local_addr().unwrap();
     let config = test_config(addr, dir.path());
 
-    let hub = tokio::spawn(run(config));
+    let hub = tokio::spawn(run(config, tokio_util::sync::CancellationToken::new()));
 
     // 连接 1：读 hello，但**不回 auth_response**，直接发 spawn（模拟未经
     // 认证的指令注入）。
@@ -149,7 +169,11 @@ async fn test_spawn_before_auth_is_dropped() {
     // 认证后 spawn 正常工作。
     let (mut sink2, mut s2, _hello2) = handshake_server(accept_ws(&listener).await).await;
     // 认证通过后 spawn 正常执行（此前注入的 spawn 未执行/未缓冲）。
-    send_frame(&mut sink2, &spawn_frame("c2", "s2", "echo x; exec sleep 30")).await;
+    send_frame(
+        &mut sink2,
+        &spawn_frame("c2", "s2", "echo x; exec sleep 30"),
+    )
+    .await;
     match next_frame_skipping_hb(&mut s2).await {
         Frame::InstanceSpawnAck(a) => {
             assert!(a.ok);

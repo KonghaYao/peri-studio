@@ -4,12 +4,14 @@
 
 Before the first stable `peri-studio-v*` release, security fixes land on the default branch. After
 releases begin, only the newest peri-studio release line is supported unless a release note explicitly
-states otherwise. The server and instance form one protocol-compatible pair and should be upgraded
-together.
+states otherwise. The single `peri-studio` artifact contains both server and instance roles; long-lived
+processes using the file should be upgraded as one protocol-compatible pair.
 
-peri-studio M1 is a single-user, loopback-only application. Binding its HTTP/WebSocket listener to a
-public interface, placing it behind an unreviewed proxy, or treating the unsigned native archive as
-notarized software is outside the supported security boundary.
+The browser application remains a single-user, loopback-only surface. Binding its HTTP/WebSocket
+listener to a public interface, placing it behind an unreviewed proxy, or treating the unsigned native
+archive as notarized software is outside the supported security boundary. The `connect` role may reach
+a remote instance endpoint only through reviewed TLS (`wss`); non-loopback plaintext requires the
+explicit `--allow-insecure` escape hatch and is unsupported outside controlled test networks.
 
 ## Reporting a vulnerability
 

@@ -16,8 +16,10 @@ pub struct InstanceConfig {
     pub server_url: String,
     /// instance token（从 token 文件读入，不落日志）。
     pub token: String,
-    /// 数据目录（`~/.local/share/peri-studio/instance/`，0600）。
+    /// 数据目录（远程为 `instances/<profile>/`，本地为 `instances/local/`）。
     pub data_dir: PathBuf,
+    /// 本地 supervisor 传入的 token 记录 id；远程 connect 恒为 `None`。
+    pub managed_local_id: Option<String>,
     /// 心跳间隔（proto::Defaults::HEARTBEAT_INTERVAL，5s）。
     pub heartbeat_interval: Duration,
     /// 重连退避起点（§7.1，1s）。
@@ -49,6 +51,7 @@ impl InstanceConfig {
             server_url,
             token,
             data_dir,
+            managed_local_id: None,
             heartbeat_interval: Defaults::HEARTBEAT_INTERVAL,
             reconnect_base: Duration::from_secs(1),
             reconnect_max: Duration::from_secs(60),
@@ -70,6 +73,7 @@ impl fmt::Debug for InstanceConfig {
             .field("server_url", &self.server_url)
             .field("token", &"[REDACTED]")
             .field("data_dir", &self.data_dir)
+            .field("managed_local_id", &self.managed_local_id)
             .field("heartbeat_interval", &self.heartbeat_interval)
             .field("reconnect_base", &self.reconnect_base)
             .field("reconnect_max", &self.reconnect_max)

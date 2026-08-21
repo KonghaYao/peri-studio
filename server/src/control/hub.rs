@@ -34,6 +34,30 @@ use crate::persist::Store;
 use crate::state::doc_manager::{BatchConfig, DocManager};
 use crate::state::registry::RegistryState;
 
+/// 后台任务所有权护栏：外层运行 future 被取消时同步发出 abort，禁止任务脱离。
+struct AbortTaskOnDrop(Option<tokio::task::JoinHandle<()>>);
+
+impl AbortTaskOnDrop {
+    fn new(task: tokio::task::JoinHandle<()>) -> Self {
+        Self(Some(task))
+    }
+
+    async fn stop(mut self) {
+        if let Some(task) = self.0.take() {
+            task.abort();
+            let _ = task.await;
+        }
+    }
+}
+
+impl Drop for AbortTaskOnDrop {
+    fn drop(&mut self) {
+        if let Some(task) = self.0.take() {
+            task.abort();
+        }
+    }
+}
+
 /// hub 装配/运行错误。
 #[derive(Debug, thiserror::Error)]
 pub enum HubError {
@@ -261,10 +285,7 @@ impl Hub {
                 // 等 instance hello 对账（alive_sessions）裁决后再复用为
                 // live runtime（§8.3）。未确认的 chat 打开时走 spawn +
                 // `session/load` 恢复。
-                if let Err(error) = chats
-                    .bind(&runtime.chat_id, acp_session_id, false)
-                    .await
-                {
+                if let Err(error) = chats.bind(&runtime.chat_id, acp_session_id, false).await {
                     warn!(
                         chat_id = %runtime.chat_id,
                         error = ?error,
@@ -293,14 +314,27 @@ impl Hub {
         let listener = tokio::net::TcpListener::bind(addr)
             .await
             .map_err(HubError::Bind)?;
-        info!(%addr, "peri-studio-server listening");
+        self.run_server_on(listener, signal).await
+    }
+
+    /// 使用调用方预先绑定的 listener 运行 server。
+    ///
+    /// 统一应用入口需要在启动本地 instance 前获得端口 0 的实际 endpoint，
+    /// 因此 socket 的所有权可以从外层传入；shutdown 仍完全由调用方交付。
+    pub async fn run_server_on(
+        self,
+        listener: tokio::net::TcpListener,
+        signal: impl std::future::Future<Output = ()>,
+    ) -> anyhow::Result<()> {
+        let addr = listener.local_addr().map_err(HubError::Bind)?;
+        info!(%addr, "peri-studio server role listening");
 
         // 周期任务：instance 离线 sweep + nonce sweep（单一 tick，设计稿
         // 决策 5；判定粒度 1s【决策】）。
         let instance = self.instance.clone();
         let relay = self.relay.clone();
         let auth = self.auth.clone();
-        let maintenance = tokio::spawn(async move {
+        let maintenance = AbortTaskOnDrop::new(tokio::spawn(async move {
             let mut ticker = tokio::time::interval(std::time::Duration::from_secs(1));
             ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
             loop {
@@ -315,7 +349,7 @@ impl Hub {
                 // nonce sweep（§9.2：30s 窗口过期清理）。
                 auth.lock().await.nonces_mut().sweep(now);
             }
-        });
+        }));
 
         // 优雅关闭：停止 accept + 周期任务 → 连接自然关闭。
         let gateway = self.gateway.clone();
@@ -327,8 +361,8 @@ impl Hub {
                 info!("shutdown signal received; closing connections");
             }
         }
-        maintenance.abort();
-        info!("peri-studio-server stopped");
+        maintenance.stop().await;
+        info!("peri-studio server role stopped");
         Ok(())
     }
 
@@ -345,7 +379,6 @@ impl Hub {
 mod hub_sink;
 
 pub use hub_sink::StoreSink;
-
 
 #[cfg(test)]
 #[path = "hub_test.rs"]

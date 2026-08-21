@@ -115,6 +115,7 @@ impl RegistryApplier {
                         Some(v) => m.insert(&mut txn, "acp_session_id", v.clone()),
                         None => m.insert(&mut txn, "acp_session_id", yrs::Any::Null),
                     };
+                    m.insert(&mut txn, "title", s.title.clone());
                     m.insert(&mut txn, "lifecycle", s.lifecycle.clone());
                     m.insert(&mut txn, "updated_at", s.updated_at.clone());
                     match &s.last_opened_at {

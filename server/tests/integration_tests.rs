@@ -10,7 +10,9 @@ mod common;
 use std::time::Duration;
 
 use peri_studio_proto::ack::AckStatus;
-use peri_studio_proto::action::{ActionEnvelope, PersistedSessionCreatePayload, ProjectCreatePayload};
+use peri_studio_proto::action::{
+    ActionEnvelope, PersistedSessionCreatePayload, ProjectCreatePayload,
+};
 use peri_studio_proto::Frame;
 
 use common::{
@@ -64,11 +66,11 @@ impl Stack {
 async fn t01_body() -> Result<(), String> {
     let stack = Stack::start()?;
 
-    // 1. hello 双向认证：instance 侧「认证通过」日志（HMAC 校验通过）。
+    // 1. hello 双向认证：instance 侧认证成功日志（HMAC 校验通过）。
     assert!(
         stack
             .instance
-            .log_contains("认证通过", Duration::from_secs(5)),
+            .log_contains("authenticated, starting resync", Duration::from_secs(5)),
         "instance 未确认 auth_response HMAC"
     );
     // server 侧注册日志（instance_id = token name = "local"）。
@@ -124,7 +126,7 @@ async fn t01_body() -> Result<(), String> {
     assert!(
         stack
             .instance
-            .log_contains("ACP 进程启动", Duration::from_secs(10)),
+            .log_contains("ACP process started", Duration::from_secs(10)),
         "instance 应收到 instance/spawn 并拉起 ACP 进程"
     );
     // 后续终态：create 全链（spawn → initialize → session/new → binding →

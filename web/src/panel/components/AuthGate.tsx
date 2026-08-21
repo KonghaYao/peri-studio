@@ -36,8 +36,8 @@ export function AuthGate(props: { children: JSX.Element }) {
                     {(hint) => <><p class="my-7">This server reads tokens from:</p><code class="auth-command block overflow-auto whitespace-nowrap rounded-8 border border-divider bg-surface-muted px-10 py-9 text-11 text-text-primary">{hint().tokenFile}</code></>}
                   </Show>
                   <p class="my-7">If you have no full token, run this on the machine running the server:</p>
-                  <code class="auth-command block overflow-auto whitespace-nowrap rounded-8 border border-divider bg-surface-muted px-10 py-9 text-11 text-text-primary">{auth.setup()?.generateCommand ?? 'peri-studio-server token generate --name web --role full'}</code>
-                  <CopyButton class="mt-7" label="Copy generate command" copiedLabel="Generate command copied" text={auth.setup()?.generateCommand ?? 'peri-studio-server token generate --name web --role full'} size="compact" />
+                  <code class="auth-command block overflow-auto whitespace-nowrap rounded-8 border border-divider bg-surface-muted px-10 py-9 text-11 text-text-primary">{auth.setup()?.generateCommand ?? 'peri-studio token generate --name web --role full'}</code>
+                  <CopyButton class="mt-7" label="Copy generate command" copiedLabel="Generate command copied" text={auth.setup()?.generateCommand ?? 'peri-studio token generate --name web --role full'} size="compact" />
                   <p class="my-7">The command prints the full token only once. Do not commit it to code, logs or chat history.</p>
                 </div>
               </details>

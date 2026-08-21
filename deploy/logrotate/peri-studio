@@ -1,0 +1,8 @@
+/Users/REPLACE_ME/Library/Logs/Peri\ Studio/*.log {
+    daily
+    rotate 7
+    compress
+    missingok
+    notifempty
+    copytruncate
+}

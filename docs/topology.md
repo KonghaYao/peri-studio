@@ -1,10 +1,10 @@
 # Peri Studio 顶层模块拓扑
 
-> 状态：现行（2026-08-15 核对，无状态投影重构后）
-> 事实来源：仓库代码（`proto/`、`server/`、`instance/`、`web/`）、`Cargo.toml`、`dev.sh`、`README.md`
+> 状态：现行（2026-08-21，单二进制发布后）
+> 事实来源：仓库代码（`app/`、`proto/`、`server/`、`instance/`、`web/`）、`Cargo.toml`、`dev.sh`、`README.md`
 > 与 `docs/architecture.md` 的关系：本文只描述**模块间拓扑与依赖方向**，是 §3.1 旧 ASCII 拓扑图的现行版；协议细节、安全模型、状态机等权威契约仍以 `docs/architecture.md` 为准。
 
-## 1. 一图总览（进程 / 二进制拓扑）
+## 1. 一图总览（单二进制 / 双进程角色）
 
 ```mermaid
 flowchart TB
@@ -12,8 +12,10 @@ flowchart TB
         WEB["Web 面板（SolidJS + Vite）"]
     end
 
-    subgraph SRV["peri-studio-server（常驻后台进程，server/）"]
-        MAIN["main.rs<br/>CLI 装配 run / token / status"]
+    BIN["peri-studio（唯一发布二进制，app/）<br/>默认/local · serve [--local] · connect &lt;URL&gt; · token · status"]
+
+    subgraph SRV["peri-studio server 角色（server/）"]
+        MAIN["ServerRuntime<br/>listener 就绪 · 关闭契约"]
         WEBMOD["web/<br/>内嵌面板 · /api 端点"]
         AUTH["auth/<br/>AuthService · TokenStore<br/>NonceRegistry · audit"]
         CONTROL["control/<br/>Hub 装配 · InstanceRegistry<br/>ChatRegistry · WorkspaceRegistry<br/>Heartbeat · ProjectService"]
@@ -23,7 +25,7 @@ flowchart TB
         PERSIST["persist/<br/>metadata.sqlite3（唯一落盘）<br/>内存 Store · outbox 状态机"]
     end
 
-    subgraph INST["peri-instance（每机一个 daemon，instance/）"]
+    subgraph INST["peri-studio instance 角色（每机一个独立进程，instance/）"]
         IHUB["hub.rs<br/>主循环 · 会话表 · 补推协调 · 心跳"]
         ITRAN["transport.rs<br/>outbound ws · 指数退避重连 · 双向认证握手"]
         IAUTH["auth.rs<br/>AuthClient · AuthSession"]
@@ -40,6 +42,8 @@ flowchart TB
 
     DB[("metadata.sqlite3<br/>projects · project_sessions<br/>session_runtime_history ...")]
 
+    BIN -.->|"选择角色 / 监督"| SRV
+    BIN -.->|"local 拉起同一可执行文件的 connect 子进程"| INST
     WEB -->|"HTTP/ws（同源）"| MAIN
     MAIN --> WEBMOD
     MAIN --> CONTROL
@@ -52,7 +56,7 @@ flowchart TB
     PERSIST --> DB
     CONTROL --> PERSIST
 
-    SRV -->|"ws outbound（instance 主动连）<br/>instance 协议 · HMAC 双向认证"| INST
+    INST -->|"ws outbound /instance<br/>instance 协议 · HMAC 双向认证"| SRV
     ITRAN --> IHUB
     IAUTH --> IHUB
     IHUB --> ICHILD
@@ -67,6 +71,8 @@ flowchart TB
 要点：
 
 - **连接方向**：instance **主动 outbound** 连接 server（`ws://127.0.0.1:8456/instance`，NAT 友好、server 零入站依赖）；浏览器经同源 HTTP/ws 连接 server（静态面板 + `/api` 端点）。
+- **发布物 ≠ 故障域**：发布包仅有 `peri-studio`，但 local 的 server 与 instance 是两个 OS 进程。server crash 不得级联终止 instance/ACP。
+- **本地与远程同路**：默认/`local` 和 `serve --local` 拉起同一二进制的 `connect` 子进程；不设进程内快速路径，同样经过 `/instance` ws、版本校验、HMAC、重连与补推。
 - **单 ws 多路复用**：server ↔ instance、server ↔ 浏览器均为单连接按 `Frame` 枚举区分控制帧（Action/Ack）与状态帧（y-sync），见 `architecture.md §4`。
 - **instance 是 dumb pipe**：不解析事件语义、不聚合、不落盘业务状态，只做 sessionId 提取、按 chat 分桶 + seq、进程管理与断线缓冲（`architecture.md §3.3`）。
 - **规范化只在 server 侧**：`protocol::ACPChannel` 把 ACP 原始事件流规范化为 `NormalizedEvent`，经 `state` 层投影到 Y.Doc 视图。
@@ -76,14 +82,15 @@ flowchart TB
 
 | 目录 | 角色 | 形态 | 关键职责 | 对外接口 |
 | --- | --- | --- | --- | --- |
+| `app/` | `peri-studio` | **唯一发布二进制** | CLI 角色选择、信号/就绪契约、local 子进程监督 | `local`、`serve [--local]`、`connect <URL>`、`token`、`status` |
 | `proto/` | `peri-studio-proto` | 纯协议 crate（无异步依赖） | 帧模型、Action/Ack 信封、instance 协议 9 帧、连接生命周期、y-sync envelope、M1 帧集白名单、HMAC 双向认证原语、Y.Doc schema 类型镜像 | server / instance 编译期共享 |
-| `server/` | `peri-studio-server` | 常驻后台二进制 | 认证/授权、控制面（Hub）、ACPChannel 规范化、Y.Doc 聚合投影、命令协调（mcp/oauth/prompt/rewind）、唯一持久化 `metadata.sqlite3`、内嵌 Web 面板 | ws `/`（浏览器）、ws `/instance`（instance）、HTTP `/api/health`、`/api/auth/session` |
-| `instance/` | `peri-instance` | 每机一个 daemon 二进制 | outbound 连 server、收 spawn/kill 指令、管理 ACP 进程树（进程组信号）、透明转发 + 断线缓冲 + 补推、心跳 | ws outbound `/instance`；stdio 对接 ACP 进程 |
-| `web/` | Web 面板 | 前端源码（Vite + SolidJS + TS，Bun 构建） | 面板 UI；构建产物 `dist/` 被 server 内嵌，只消费 server 事实 | 仅经 server 暴露 |
-| `deploy/` | 部署模板 | systemd unit / launchd plist / logrotate 配置 | 后台托管 server 与 instance，保持 loopback 边界，不内嵌 token | 面向运维，无代码依赖 |
+| `server/` | server 角色库 | 运行时模块 | 认证/授权、控制面（Hub）、ACPChannel 规范化、Y.Doc 聚合投影、命令协调（mcp/oauth/prompt/rewind）、唯一持久化 `metadata.sqlite3`、内嵌 Web 面板 | ws `/`（浏览器）、ws `/instance`（instance）、HTTP `/api/health`、`/api/auth/session` |
+| `instance/` | instance 角色库 | 运行时模块 | outbound 连 server、收 spawn/kill 指令、管理 ACP 进程树（进程组信号）、透明转发 + 断线缓冲 + 补推、心跳 | ws outbound `/instance`；stdio 对接 ACP 进程 |
+| `web/` | Web 面板 | 前端源码（Vite + SolidJS + TS，Bun 构建） | 面板 UI；构建产物 `dist/` 内嵌进 `peri-studio`，只消费 server 事实 | 仅经 server 角色暴露 |
+| `deploy/` | 部署模板 | systemd unit / launchd plist / logrotate 配置 | 同一可执行文件以两个 service 分别托管 `serve` 与 `connect`，保持故障隔离 | 面向运维，不内嵌 token |
 | `scripts/` | 验证脚本 | shell + .mjs（bun） | 契约测试、e2e 流、release 验证、ws 验证客户端 | 开发期使用，无运行时依赖 |
-| `docs/` | 文档 | `architecture.md`（权威）、`terminology.md`、`design/`、`plans/`（f1–f6 历史计划） | 架构契约、术语、历史决策 | 面向人 |
-| 根文件 | 装配与门禁 | `dev.sh`、`Cargo.toml`（workspace）、`README.md`、`SECURITY.md`、`deny.toml`、`maturity-report.md`、`ui.md`（历史基线） | 开发启动编排、依赖门禁、安全边界声明 | 面向人/CI |
+| `docs/` | 文档 | `architecture.md`（权威）、`terminology.md`、`topology.md`、`adr/`、`design/` | 架构契约、术语、决策与设计记录 | 面向人 |
+| 根文件 | 装配与门禁 | `dev.sh`、`Cargo.toml`（workspace）、`README.md`、`SECURITY.md`、`deny.toml`、`ui.md`（历史基线） | 开发启动编排、依赖门禁、安全边界声明 | 面向人/CI |
 
 ## 3. 通信拓扑（连接方向与协议）
 
@@ -228,7 +235,7 @@ flowchart LR
     BUF["buffer<br/>两级缓冲 + 环形滑窗 500"]
     TX["transport 指数退避重连"]
     HELLO["hello 认证 → 补推 buffer_sync"]
-    SRV["peri-studio-server（重启后）"]
+    SRV["peri-studio server 角色（重启后）"]
 
     ACP --> HUB2 --> BUF --> TX -->|"重连"| HELLO -->|"from_seq = last_sent_seq + 1 起补推"| SRV
 ```
@@ -261,7 +268,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     subgraph SRV["server/src/"]
-        MAIN["main.rs<br/>CLI + 装配"]
+        RUNTIME["ServerRuntime<br/>装配 · 就绪 · 关闭"]
         AUTH["auth/<br/>token · cookie · nonce · audit"]
         CFG["config/<br/>Config · CliOverrides"]
         WEB["web/<br/>内嵌面板 · /api 端点"]
@@ -272,10 +279,10 @@ flowchart LR
         PS["persist/<br/>SQLite · Store · outbox 状态机"]
     end
 
-    MAIN --> CFG
-    MAIN --> AUTH
-    MAIN --> WEB
-    MAIN --> CTRL
+    RUNTIME --> CFG
+    RUNTIME --> AUTH
+    RUNTIME --> WEB
+    RUNTIME --> CTRL
     AUTH --> CTRL
     WEB --> AUTH
     CTRL --> CH
@@ -291,7 +298,7 @@ flowchart LR
 
 | 模块 | 职责 | 关键类型 | 依赖 |
 | --- | --- | --- | --- |
-| `main.rs` | CLI（`run`/`token`/`status`）与装配 | `Cli`、`Command` | 全部模块 |
+| server 运行时接口 | 装配 Hub，回报 listener 就绪，接受调用方 shutdown | `ServerRuntime` | `app/` 持有 CLI 与信号管理 |
 | `config/` | 配置加载（CLI > env > 默认），`Config::load` | `Config`、`CliOverrides` | 无 |
 | `auth/` | 客户端 token 与浏览器会话（HttpOnly cookie）、nonce 防重放、审计 | `AuthService`、`TokenStore`、`NonceRegistry` | `config/` |
 | `web/` | 内嵌 Vite 面板与 `/api` 端点（health/auth/session）、ws 升级识别 | `HealthSnapshot`、`BrowserAuthSetup` | `auth/`、`config/` |
@@ -308,7 +315,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     subgraph INST["instance/src/"]
-        IMAIN["main.rs<br/>CLI · token 文件 · runtime"]
+        IRUN["hub::run<br/>InstanceConfig · shutdown"]
         IHUB["hub.rs<br/>主循环 · 会话表 · 转发调度<br/>补推 · 心跳 · 孤儿清理"]
         ITR["transport.rs<br/>outbound ws · 重连 · 帧校验"]
         IAU["auth.rs<br/>AuthClient · AuthSession"]
@@ -317,7 +324,7 @@ flowchart LR
         IERR["error.rs<br/>sessionId 提取"]
     end
 
-    IMAIN --> IHUB
+    IRUN --> IHUB
     IHUB --> ITR
     IHUB --> IAU
     IHUB --> ICH
@@ -328,8 +335,9 @@ flowchart LR
 
 | 模块 | 职责 | 关键类型 | 依赖 |
 | --- | --- | --- | --- |
-| `main.rs` | CLI（`--server-url`/`--token-file`/`--data-dir`）+ 装配 `InstanceConfig` | `Cli` | `hub/` |
+| instance 运行时接口 | 接受 `InstanceConfig` 与调用方 shutdown；不自行抢占全局 `Ctrl+C` | `hub::run` | `app/` 持有 CLI 与信号管理 |
 | `hub.rs` | daemon 主循环：会话表、seq/epoch 分配、转发调度（在线直送 / 断线入缓冲）、补推协调、心跳、孤儿清理三层 | `InstanceConfig`、`Sessions` | `transport/`、`auth/`、`child/`、`buffer/` |
+| `hub/control.rs` | managed-local owner 的 HMAC 身份绑定关闭通道；由 instance 自行收尾，supervisor 不向 adopted PID 发信号 | `OwnerControl`、`request_owner_shutdown` | 0600 Unix socket、owner lock、instance token |
 | `transport.rs` | outbound ws、指数退避重连、双向认证握手编排、每帧 `Frame::parse` + M1 白名单校验、`send_acked` 发送确认 | `TransportConfig`、`TransportEvent`、`TransportHandle` | `auth/` |
 | `auth.rs` | token 认证客户端与握手状态 | `AuthClient`、`AuthSession`、`HelloCtx` | 无 |
 | `child.rs` | ACP 进程 spawn（进程组）/kill（组级 SIGTERM→SIGKILL）/stdin 写/stdout 读/wait 监控 | `AcpProcess`、`ChildOutput` | `error/`、`buffer/`（`ProcessFingerprint`） |
@@ -365,25 +373,25 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    DEV["dev.sh<br/>构建 web → 起 server → 起 instance → 就绪判定"]
+    DEV["dev.sh<br/>构建 web → peri-studio local → 就绪判定"]
     WEB2["web/<br/>bun run build → dist/"]
-    SRV2["server<br/>内嵌 dist（编译期）"]
+    APP2["app + server + instance<br/>peri-studio 内嵌 dist（编译期）"]
     DEP["deploy/<br/>launchd/systemd/logrotate"]
     SCR["scripts/<br/>契约/e2e/verify 验证"]
-    DOC["docs/<br/>architecture.md 权威 · plans/ 历史"]
+    DOC["docs/<br/>architecture.md 权威 · terminology · ADR"]
 
     DEV --> WEB2
-    DEV --> SRV2
-    WEB2 --> SRV2
-    DEP -. 托管 .-> SRV2
-    SCR -. 验证 .-> SRV2
-    DOC -. 契约 .-> SRV2
+    DEV --> APP2
+    WEB2 --> APP2
+    DEP -. 托管 .-> APP2
+    SCR -. 验证 .-> APP2
+    DOC -. 契约 .-> APP2
 ```
 
-- `dev.sh`：构建 Web 产物 → `cargo run` 启动 server → 等待 bootstrap 生成 instance token（`tokens.toml`）→ 提取写入 `instance.token`（0600）→ 启动 instance → 等认证完成 → 前台滚动日志、退出时清理两个进程组。
-- `deploy/`：systemd user unit / launchd plist / logrotate 模板，默认 loopback 边界、不内嵌 token（`deploy/README.md`）。
+- `dev.sh`：构建 Web 产物 → `cargo run -p peri-studio` 启动 local 模式 → 等 listener 与本地 instance 认证完成 → 前台滚动日志。
+- `deploy/`：systemd / launchd 各以两个 service 执行同一 `peri-studio` 的 `serve` 与 `connect`，保留失败隔离；默认 loopback 边界、不内嵌 token（`deploy/README.md`）。
 - `scripts/`：`dev-contract-test.sh`（协议契约测试）、`e2e-flow.mjs`、`verify-create-chain.sh`、`verify-load.mjs`、`verify-release.sh`、`ws-verify*.mjs`（ws 闭环验证）。
-- `docs/`：`architecture.md` 为权威架构契约；`plans/f1–f6` 为历史 feature 计划（f1 proto、f2 auth/config、f3 persist、f4 state、f5 channel-control、f6 machine）；`design/prompt-recovery-provenance.md` 为设计记录。
+- `docs/`：`architecture.md` 为权威架构契约；`terminology.md` 为唯一权威术语表；`adr/` 保留难以逆转的架构裁决；`design/` 保留专项设计记录。
 - `ui.md` 是重构前历史基线，非当前实现说明（`README.md` 明确声明）。
 
 ## 10. 变更维护约定

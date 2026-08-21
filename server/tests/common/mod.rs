@@ -1,8 +1,8 @@
 //! F7 集成测试基建（真实进程全链路）。
 //!
 //! 职责：
-//! - 二进制路径解析（`CARGO_BIN_EXE_peri-studio-server` 推导同 target 目录下的
-//!   `peri-instance` / `test-child`，需先 `cargo build --workspace`）；
+//! - 二进制路径解析（`PERI_STUDIO_BIN_DIR` 或当前测试进程推导
+//!   `target/<profile>/peri-studio` 与 `test-child`，需先构建对应 bin）；
 //! - 随机端口（bind :0 后读出）、独立 temp 数据/配置目录；
 //! - tokens.toml 直接构造（§9.2.1：TokenStore 文件格式，与 CLI `token
 //!   generate` 等价，避免污染用户 `~/.config/peri-studio`）；
@@ -34,26 +34,36 @@ pub const RECV_TIMEOUT: Duration = Duration::from_secs(8);
 // 二进制路径
 // ---------------------------------------------------------------------------
 
-/// server 二进制（cargo 注入的编译期绝对路径）。
-pub fn server_bin() -> PathBuf {
-    PathBuf::from(env!("CARGO_BIN_EXE_peri-studio-server"))
-}
-
-/// 从 server bin 所在目录（target/<profile>/）推导同 workspace 的其余 bin。
-/// 要求先 `cargo build --workspace`（任务验证流程已约定）。
+/// 解析 `target/<profile>/`：显式目录优先，否则从
+/// `target/<profile>/deps/<integration-test>` 回退一级。
 fn target_bin_dir() -> PathBuf {
-    server_bin()
+    if let Some(dir) = std::env::var_os("PERI_STUDIO_BIN_DIR") {
+        let dir = PathBuf::from(dir);
+        assert!(
+            dir.is_dir(),
+            "PERI_STUDIO_BIN_DIR 不是目录：{}",
+            dir.display()
+        );
+        return dir;
+    }
+
+    let executable = std::env::current_exe().expect("读取当前测试可执行文件路径");
+    let mut dir = executable
         .parent()
-        .expect("server bin 必有父目录")
-        .to_path_buf()
+        .expect("测试可执行文件必有父目录")
+        .to_path_buf();
+    if dir.file_name().is_some_and(|name| name == "deps") {
+        dir.pop();
+    }
+    dir
 }
 
-/// instance daemon 二进制。
-pub fn instance_bin() -> PathBuf {
-    let p = target_bin_dir().join("peri-instance");
+/// 唯一产品二进制；server 与 instance 测试角色均由它启动。
+pub fn product_bin() -> PathBuf {
+    let p = target_bin_dir().join(format!("peri-studio{}", std::env::consts::EXE_SUFFIX));
     assert!(
         p.exists(),
-        "peri-instance 未构建：请先 `cargo build --workspace`（期望路径 {}）",
+        "peri-studio 未构建：请先 `cargo build -p peri-studio`，或设置 PERI_STUDIO_BIN_DIR（期望路径 {}）",
         p.display()
     );
     p
@@ -61,10 +71,10 @@ pub fn instance_bin() -> PathBuf {
 
 /// 假 ACP 进程二进制（instance 包的 test-child bin）。
 pub fn test_child_bin() -> PathBuf {
-    let p = target_bin_dir().join("test-child");
+    let p = target_bin_dir().join(format!("test-child{}", std::env::consts::EXE_SUFFIX));
     assert!(
         p.exists(),
-        "test-child 未构建：请先 `cargo build --workspace`（期望路径 {}）",
+        "test-child 未构建：请先 `cargo build -p peri-instance --bin test-child`（期望路径 {}）",
         p.display()
     );
     let source =
@@ -246,7 +256,7 @@ pub struct ServerProc {
 }
 
 impl ServerProc {
-    /// 启动 server：`run --listen 127.0.0.1 --port <p> --data-dir <d> --config-dir <c>`。
+    /// 启动 server：`serve --listen 127.0.0.1 --listen-port <p> --data-dir <d> --config-dir <c>`。
     /// 可选 `--config`（config.toml 覆盖默认，如短心跳）。
     pub fn start(env: &TestEnv, config_file: Option<&Path>) -> ServerProc {
         Self::start_listen(env, config_file, "127.0.0.1")
@@ -256,13 +266,12 @@ impl ServerProc {
     /// `0.0.0.0` 才能收到非回环源连接）。
     pub fn start_listen(env: &TestEnv, config_file: Option<&Path>, listen: &str) -> ServerProc {
         let stderr_log = env.tmp.path().join("server.stderr.log");
-        let mut cmd = Command::new(server_bin());
-        // `--config` 是 clap 顶层参数，必须位于 `run` 子命令之前
-        // （放在 run 后面会被 Run 子命令解析器拒绝）。
+        let mut cmd = Command::new(product_bin());
+        // `--config` 是 clap 顶层参数，统一置于 `serve` 子命令之前。
         if let Some(cfg) = config_file {
             cmd.args(["--config"]).arg(cfg);
         }
-        cmd.arg("run")
+        cmd.arg("serve")
             .args([
                 "--listen",
                 listen,
@@ -273,7 +282,9 @@ impl ServerProc {
             .arg(&env.data_dir)
             .args(["--config-dir"])
             .arg(&env.config_dir)
-            .args(["--log-level", "debug"]);
+            .args(["--log-level", "debug"])
+            // 测试断言依赖 info/debug 日志，不能继承开发者终端的 RUST_LOG。
+            .env_remove("RUST_LOG");
         let child = cmd
             .stdin(Stdio::null())
             .stdout(Stdio::null())
@@ -281,7 +292,7 @@ impl ServerProc {
                 fs::File::create(&stderr_log).expect("create server log"),
             ))
             .spawn()
-            .expect("spawn peri-studio-server");
+            .expect("spawn peri-studio serve");
         ServerProc {
             child: Some(child),
             port: env.port,
@@ -375,11 +386,16 @@ pub struct InstanceProc {
 }
 
 impl InstanceProc {
-    /// 启动 instance：`--server-url ws://127.0.0.1:<port>/instance --token-file
+    /// 启动 instance：`connect ws://127.0.0.1:<port>/instance --token-file
     /// <f> --data-dir <d>`。PATH 注入 fake-bin（含 `peri`），HOSTNAME 固定。
     pub fn start(env: &TestEnv) -> InstanceProc {
         let token_file = env.tmp.path().join("instance.token");
         fs::write(&token_file, env.instance_token.clone()).unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt as _;
+            fs::set_permissions(&token_file, fs::Permissions::from_mode(0o600)).unwrap();
+        }
         let stderr_log = env.tmp.path().join("instance.stderr.log");
 
         let path = format!(
@@ -387,18 +403,18 @@ impl InstanceProc {
             env.fake_bin_dir.display(),
             std::env::var("PATH").unwrap_or_default()
         );
-        let mut cmd = Command::new(instance_bin());
-        cmd.args([
-            "--server-url",
-            &format!("ws://127.0.0.1:{}/instance", env.port),
-            "--token-file",
-        ])
-        .arg(&token_file)
-        .args(["--data-dir"])
-        .arg(&env.instance_data_dir)
-        .args(["--log-level", "debug"])
-        .env("PATH", &path)
-        .env("HOSTNAME", "it-host");
+        let mut cmd = Command::new(product_bin());
+        cmd.arg("connect")
+            .arg(format!("ws://127.0.0.1:{}/instance", env.port))
+            .arg("--token-file")
+            .arg(&token_file)
+            .args(["--data-dir"])
+            .arg(&env.instance_data_dir)
+            .args(["--log-level", "debug"])
+            .env("PATH", &path)
+            .env("HOSTNAME", "it-host")
+            // 测试断言依赖认证与进程生命周期日志。
+            .env_remove("RUST_LOG");
         #[cfg(unix)]
         {
             use std::os::unix::process::CommandExt;
@@ -411,7 +427,7 @@ impl InstanceProc {
                 fs::File::create(&stderr_log).expect("create instance log"),
             ))
             .spawn()
-            .expect("spawn peri-instance");
+            .expect("spawn peri-studio connect");
         InstanceProc {
             child: Some(child),
             env_path: env.fake_bin_dir.clone(),
@@ -419,13 +435,12 @@ impl InstanceProc {
         }
     }
 
-    /// 等待认证通过（instance stderr 出现「认证通过」或 server 侧「instance
-    /// connected」由调用方轮询；这里轮询本进程日志）。
+    /// 等待认证通过（instance stderr 出现认证成功日志）。
     pub fn wait_authenticated(&self, timeout: Duration) -> bool {
         let deadline = std::time::Instant::now() + timeout;
         while std::time::Instant::now() < deadline {
             if let Ok(content) = fs::read_to_string(&self.stderr_log) {
-                if content.contains("认证通过") || content.contains("instance connected") {
+                if content.contains("authenticated, starting resync") {
                     return true;
                 }
             }
@@ -488,8 +503,8 @@ impl Drop for InstanceProc {
 // ws 客户端
 // ---------------------------------------------------------------------------
 
-use peri_studio_proto::Frame;
 use futures::{SinkExt, StreamExt};
+use peri_studio_proto::Frame;
 use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::WebSocketStream;
@@ -702,7 +717,9 @@ impl WsClient {
         self.send(&Frame::YsyncSubscribe(
             peri_studio_proto::ysync::YsyncSubscribe {
                 docs: docs.iter().map(|d| d.parse().unwrap()).collect(),
-                client_capabilities: vec![peri_studio_proto::ysync::CAP_PROMPT_DELIVERY_V2.to_string()],
+                client_capabilities: vec![
+                    peri_studio_proto::ysync::CAP_PROMPT_DELIVERY_V2.to_string()
+                ],
             },
         ))
         .await?;

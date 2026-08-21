@@ -1,5 +1,5 @@
 #!/bin/bash
-# Verify checksum, safe membership and executable provenance of one native archive.
+# 校验原生归档的摘要、安全成员列表与可执行文件来源。
 set -euo pipefail
 umask 077
 
@@ -82,19 +82,21 @@ for required in \
     "${ROOT_NAME}/web/bun.lock" \
     "${ROOT_NAME}/docs/architecture.md" \
     "${ROOT_NAME}/docs/terminology.md" \
-    "${ROOT_NAME}/bin/peri-studio-server" \
-    "${ROOT_NAME}/bin/peri-instance" \
-    "${ROOT_NAME}/deploy/provision-instance-token.sh" \
-    "${ROOT_NAME}/deploy/systemd/peri-studio-server.service" \
-    "${ROOT_NAME}/deploy/systemd/peri-instance.service" \
-    "${ROOT_NAME}/deploy/launchd/com.perihelion.peri-studio.plist" \
-    "${ROOT_NAME}/deploy/launchd/com.perihelion.peri-instance.plist"; do
+    "${ROOT_NAME}/docs/topology.md" \
+    "${ROOT_NAME}/docs/adr/0001-single-binary-dual-process-roles.md" \
+    "${ROOT_NAME}/bin/peri-studio" \
+    "${ROOT_NAME}/deploy/README.md" \
+    "${ROOT_NAME}/deploy/systemd/peri-studio-serve.service" \
+    "${ROOT_NAME}/deploy/systemd/peri-studio-connect.service" \
+    "${ROOT_NAME}/deploy/launchd/com.perihelion.peri-studio.serve.plist" \
+    "${ROOT_NAME}/deploy/launchd/com.perihelion.peri-studio.connect.plist" \
+    "${ROOT_NAME}/deploy/logrotate/peri-studio"; do
     if ! grep -Fqx "${required}" "${MEMBERS}"; then
         echo "release archive is missing ${required}" >&2
         exit 1
     fi
 done
-if grep -E '(^|/)(test-child|tokens\.toml|instance\.token|metadata\.sqlite3)($|/)' "${MEMBERS}" >/dev/null; then
+if grep -E '(^|/)(test-child|peri-studio-server|peri-instance|tokens\.toml|instance\.token|metadata\.sqlite3)($|/)' "${MEMBERS}" >/dev/null; then
     echo "release archive contains a test binary, credential or runtime data" >&2
     exit 1
 fi
@@ -137,14 +139,9 @@ if [ "${REQUIRE_CLEAN}" -eq 1 ] &&
     exit 1
 fi
 if [ "${EXECUTE_BINARIES}" -eq 1 ]; then
-    if [ "$("${ROOT}/bin/peri-studio-server" --version)" != "peri-studio-server ${VERSION}" ]; then
-        echo "packaged server version mismatch" >&2
-        exit 1
-    fi
-    if [ "$("${ROOT}/bin/peri-instance" --version)" != "peri-instance ${VERSION}" ]; then
-        echo "packaged instance version mismatch" >&2
+    if [ "$("${ROOT}/bin/peri-studio" --version)" != "peri-studio ${VERSION}" ]; then
+        echo "packaged peri-studio version mismatch" >&2
         exit 1
     fi
 fi
-bash -n "${ROOT}/deploy/provision-instance-token.sh"
 echo "release archive verified: ${ARCHIVE}"

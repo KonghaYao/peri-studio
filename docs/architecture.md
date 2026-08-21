@@ -1,9 +1,9 @@
 # Peri Studio 架构设计（权威版）
 
-> 状态：v2.6（实现同步修订：视图层落地形态、帧面/方法面、工程结构、演进状态与仓库迁移事实）
-> 日期：2026-08-17
+> 状态：v2.7（单二进制发布 + server/instance 独立运行角色）
+> 日期：2026-08-21
 > 定位：peri-studio 独立项目的架构基准文档。与 peri 的唯一耦合点是 ACP 进程（协议线格式），本设计不依赖 peri 的任何 crate 与部署形态。
-> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；**v2.6 与代码实现对齐**（视图层以 Web 面板落地、TUI 未实现，帧面/方法面/DocId/工程结构/演进状态按 `peri-studio-proto` 与 workspace 实际修正，标注「【v2.6】」）。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
+> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
 > 约定：引用 chat-channel 处标注其文档章节号（如「chat §5.2」），实现时以该仓库为对照基线。协议事实（帧 tag、action 面、schema 版本、默认值）以 `peri-studio-proto` / `server/src/config` 实现为真相来源，本文与实现不一致时以实现为准并回改本文。
 
 ---
@@ -21,7 +21,7 @@
 1. **server / instance 两级实体**：server 是中心控制面；instance 是实际运行 ACP 进程的机器，与 server 通过 WebSocket 联通，接收 server 下发指令完成 ACP 进程的启动/停止。
 2. **ws 通信取代 stdio**：为未来远程模式（本机客户端连远程 server、局域网多机）打基础。
 3. **yjs 统一数据对象**：ACP 事件在 server 侧经**规范化边界 + 聚合器（agg）**投影为**视图对象**，以 yjs 标准数据结构承载（每 chat 双 Doc + 全局 Registry Doc），多端（Web 面板 ×N；【v2.6】原多 TUI 规划未实现）经 yjs 同步一致。
-4. **视图层纯客户端**：server 是独立常驻后台进程；视图层只是客户端，与 server 是 client–server 关系，经 ws + yjs 同步状态。【v2.6】原规划的 `peri-studio-tui` **未实现**，视图层由 SolidJS **Web 面板**承担（构建产物内嵌进 server，§3.2）；「纯视图层、不上行 update」的约束不变（§5.6）。
+4. **视图层纯客户端**：server 角色与浏览器的 Web 面板是 client–server 关系，经 ws + yjs 同步状态。【v2.6】原规划的 `peri-studio-tui` **未实现**，视图层由 SolidJS **Web 面板**承担；【v2.7】构建产物内嵌进唯一 `peri-studio` 可执行文件并由 server 角色托管（§3.2）。「纯视图层、不上行 update」的约束不变（§5.6）。
 
 ### 1.3 非目标（明确不做）
 
@@ -52,7 +52,7 @@
 
 ---
 
-## 3. 系统拓扑与组件
+## 3. 系统拓扑与模块
 
 ### 3.0 Web project session 扩展
 
@@ -82,7 +82,7 @@ Registry 视图无独立日志/快照：`registry.log`/`registry.snapshot` 及�
 
 浏览器认证通过同源 `POST/GET/DELETE /api/auth/session` 建立内存 opaque session，并下发 `HttpOnly; SameSite=Strict; Path=/; Max-Age=28800` Cookie，与服务端 8 小时 TTL 对齐。会话本身始终是 HttpOnly cookie，WebSocket 帧与 URL 不携带 bearer；为免去每次重开登录，Web 把 full token 存入 localStorage（`peri_studio_token`），仅在下一次打开时自动重放 `POST /api/auth/session`——token 是登录界面的本地便利凭据，不是会话事实源，登出、server 判定 token 失效（`auth_error`/认证终态关闭码）或浏览器存储不可用时立即清除并退回手动输入。Cookie attach 与存量连接按心跳重新校验 token id、撤销状态和当前 role；instance HMAC 与旧 CLI wire-token 流程保持兼容。
 
-首次 bootstrap instance token 只允许在 server stderr 直连交互终端时显示一次；stderr 被日志文件、管道、service manager 或开发脚本重定向时，输出只能包含受 `0600` 保护的 `tokens.toml` 路径，禁止复制 token 本体到日志。instance 由文件读取该凭据，不依赖日志抓取。
+server 启动时确保名为 `local` 的 instance token 存在，并把对应凭据原子发布到 `<data_dir>/instance.token`（`0600`）；启动路径不打印或返回 token 本体。本地 supervisor 只把该受限文件路径交给 `connect` 子进程，不解析 `tokens.toml`，也不依赖日志抓取。运维显式执行 `token generate` 时仍遵守 stdout 一次性显示或 `--output-file` 私密落盘语义。
 
 登录帮助由 server 的权威运行时 `Config` 派生，不得由 Web 猜测 XDG 默认值。`GET/POST /api/auth/session` 的成功与 401 响应可附带 credential-free `setup { tokenFile, generateCommand }`；字段只描述当前进程实际使用的 token 文件和带精确 config-dir/可执行文件的生成命令，不得包含 token 内容、token id、名称或文件数据。浏览器严格解析这两个非空字符串，畸形/缺失时只显示无路径的通用命令。AuthService `try_lock` 竞争在 GET/POST 上返回 `503 auth_busy` 与 `Retry-After`，不得坍缩成 401 并归罪正确凭证。
 
@@ -137,18 +137,20 @@ Composer 草稿以持久 `project_session_id` 隔离，而不是跟随临时 `ch
 ### 3.1 拓扑
 
 ```
-┌──────────────────┐  ws(单连接, 多路复用)  ┌──────────────────────┐
-│ Web 面板(SolidJS) │◄────────────────────►│                      │
-│ (浏览器内, ×N)    │  Action/Ack 控制帧     │  peri-studio-server  │
-│                  │  + y-sync 状态帧       │  (常驻后台进程)       │
-└──────────────────┘  + HttpOnly cookie    │  - 认证/授权          │
-【v2.6】静态资源由 server 内嵌托管         │  - 控制面             │
-（原 peri-studio-tui 规划未实现，§3.2）    │  - ACPChannel/聚合器  │
-                                            │  - DocManager/广播器  │
-┌──────────────────┐  ws(outbound, 主动连)  │  - HTTP 面(静态       │
-│ peri-instance    │◄────────────────────►│    + auth/health)    │
-│ (每台机器 1个)    │  instance 协议         │                      │
-└────────┬─────────┘  (路径 /instance)     └──────────────────────┘
+┌──────────────────┐  HTTP/ws 同源     ┌──────────────────────┐
+│ Web 面板(SolidJS) │◄──────────────────►│ peri-studio         │
+│ (浏览器内, ×N)    │ Action/Ack + y-sync │ server 角色         │
+└──────────────────┘ + HttpOnly cookie  │ (控制面 + 内嵌 Web)   │
+                                          └───────────┬──────────┘
+                                                     ▲
+                                                     │ outbound
+                                           /instance ws + HMAC
+                                                     │
+┌──────────────────┐                    │
+│ peri-studio      │────────────────────┘
+│ instance 角色     │  local: 同一可执行文件的独立子进程
+│ (每台机器 1 个)    │  remote: `connect <URL>` 前台进程
+└────────┬─────────┘
          │ stdio (JSON-RPC 行协议)
          ├───────────► [ACP 进程 session_1]
          ├───────────► [ACP 进程 session_2]
@@ -162,20 +164,32 @@ Composer 草稿以持久 `project_session_id` 隔离，而不是跟随临时 `ch
 - **instance 与 ACP 进程之间保持 stdio**：`instance/src/child` 的 spawn/进程组监控/双格式转发能力（【v2.6】已落地，含 fingerprint 与 sys 进程组原语）；instance 对上层统一输出为**原始 ACP 帧流**。
 - **规范化只发生在 server 侧**：`ACPChannel` 边界在 server（§6.1），instance 保持透明转发。
 - **浏览器认证走同源 HTTP**：`/api/auth/session` 建立 HttpOnly cookie 会话后升 ws（§3.0 浏览器认证契约），与 instance 的 HMAC 双向认证（§9.2）是两条独立认证路径。
+- **一个发布物，两个进程角色**：默认命令/`local` 与 `serve --local` 在 server 就绪后，以 `current_exe` 拉起独立 `connect` 子进程。不得改为进程内 instance task，否则 server crash 会同时中断 ACP，违反 P3。
+- **本地/远程同路**：本地 instance 也必须走 `/instance` ws、版本校验、HMAC 和补推协议；禁止增加仅本地可用的直调 adapter。
 
-### 3.2 组件与二进制
+### 3.2 模块与单二进制
 
-【v2.6】两个 Rust 二进制 + 一个内嵌 Web 前端（共享一个协议 crate）：
+【v2.7】唯一发布二进制 + 两个独立运行角色 + 一个内嵌 Web 前端：
 
-| 组件 | crate / 位置 | 职责 | 备注 |
+| 模块 / 角色 | crate / 位置 | 职责 | 备注 |
 |--------|------|------|------|
-| `peri-studio-server` | `server/`（peri-studio-server） | 常驻后台：认证、HTTP 面与静态托管、控制面、ACPChannel 规范化、聚合器、DocManager、instance 注册表、SQLite 元数据 | 无 TUI 依赖，可 launchd/systemd 托管；内嵌 `web/dist`（build.rs 编译期打包） |
-| `peri-instance` | `instance/`（peri-instance） | 每台机器一个：outbound 连 server（`/instance`）、收 spawn/kill/forward 指令、管理 ACP 进程树、透明转发 + 断线缓冲 | child 进程组管理 + fingerprint 孤儿清理（§3.3） |
+| `peri-studio` 应用 | `app/` | 唯一 CLI 与发布入口；选择 `local`/`serve`/`connect`，持有信号、就绪与子进程监督契约 | 发布包仅有 `bin/peri-studio`；默认命令 = `local` |
+| server 角色 | `server/`（库） | 认证、HTTP 面与静态托管、控制面、ACPChannel 规范化、聚合器、DocManager、instance 注册表、SQLite 元数据 | `peri-studio serve`；`--local` 要求同时拉起本地 instance |
+| instance 角色 | `instance/`（库） | outbound 连 server（`/instance`）、收 spawn/kill/forward 指令、管理 ACP 进程树、透明转发 + 断线缓冲 | `peri-studio connect <URL>`；child 进程组 + fingerprint 孤儿清理（§3.3） |
 | Web 面板 | `web/`（`src/panel` + `src/ui`） | SolidJS 视图层：yjs 只读投影渲染 + Action/Ack 操作；`src/ui` 为可复用组件库 | 构建产物经 Vite 生成 `web/dist`，**不单独部署**；原规划 `peri-studio-tui` 未实现 |
 
-共享 crate：`peri-studio-proto`（帧定义、Action/Ack 信封、instance 协议类型、HMAC 原语、Y.Doc schema 的 Rust 类型镜像、schema registry）。
+共享 crate：`peri-studio-proto`（帧定义、Action/Ack 信封、instance 协议类型、HMAC 原语、Y.Doc schema 的 Rust 类型镜像、schema registry）。`app` 可依赖 server 与 instance；server 与 instance 仍互不依赖，只共享 proto。
 
-> 裁决依据：用户明确要求 server 与 instance 为两个独立二进制。共享代码收敛在 `peri-studio-proto`，避免两处重复实现协议解析。【v2.6】视图层从 ratatui TUI 调整为 SolidJS Web 面板（原 §3.2 的 `peri-studio-tui` 行作废）；「server 常驻 + 视图纯客户端」的拓扑裁决不变。
+> 裁决依据：发布与安装只需一个文件，但 P3 要求 server crash 不中断 agent。因此合并的是**发布物**，不是**故障域**；详见 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)。
+
+**命令与生命周期契约**：
+
+- `peri-studio` 与 `peri-studio local` 等价；启动 server，等 listener 实际就绪后拉起同一可执行文件的 `connect` 子进程；
+- `peri-studio serve` 只启动 server；`peri-studio serve --local` 与本地复合模式共享同一监督实现，不另造启动路径；
+- `peri-studio connect <URL>` 只启动 instance 角色，可作为远程机器的前台 daemon；
+- 本地正常关闭由监督者停止接收新命令后通知 instance 优雅退出；server 异常退出或被 `SIGKILL` 时，不得以 parent-death 或 service cgroup 级联动终止 instance/ACP；
+- server 重启后已存活 instance 先重连。新 local 仅在 owner lock 中的 managed-local token id、server endpoint、凭据摘要、PID 与出生指纹全部匹配时接管；不匹配则明确失败且绝不发信号；
+- 接管把监督责任转移给新 local：持续监听 owner lock，owner 退出后恢复同一 `connect` 的 spawn/backoff；新 local 优雅退出时通过数据目录内的 0600 Unix socket 发送绑定完整 owner 身份的 HMAC 关闭请求，由 instance 自行收尾，supervisor 不向 adopted PID 发信号。server 异常退出则解除监督但保留 instance/ACP；PID 复用、记录损坏、认证失败或探测 I/O 失败都 fail closed。
 
 ### 3.3 instance 职责边界【审查：架构 P1-2 + 运维 P0-2】
 
@@ -191,7 +205,7 @@ instance 是 **dumb pipe**，但「不做协议理解」需精确化——缓冲
 **无法提取 sessionId 的帧**：丢弃并记本地缺口计数（随 `instance/hello` 上报）。
 
 **instance 进程本身崩溃**【审查：运维 P0-2】：
-- 正常退出由 `shutdown_all` + `kill_on_drop` 终止 ACP 进程树；daemon 被 `SIGKILL` 时 Drop 无法运行，ACP 进程组可能残留。instance data-dir 持有非阻塞独占 owner lock，watermark 同时记录 data-dir `(dev,ino)` 与进程组 leader 出生指纹；下次启动只在两者精确匹配时发 `SIGKILL`。旧 watermark、目录副本、PID/PGID 复用或指纹不可读都 fail closed 为不发信号，仍上报 `buffer_lost` 交给 server 对账；
+- 正常退出由 `shutdown_all` + `kill_on_drop` 终止 ACP 进程树；daemon 被 `SIGKILL` 时 Drop 无法运行，ACP 进程组可能残留。instance data-dir 持有非阻塞独占 owner lock；owner 记录保存 PID、出生指纹、endpoint、凭据摘要及可选 managed-local token id，供 local 接管核验。watermark 同时记录 data-dir `(dev,ino)` 与 ACP 进程组 leader 出生指纹；下次启动只在两者精确匹配时发 `SIGKILL`。旧记录、目录副本、PID/PGID 复用或指纹不可读都 fail closed 为不发信号，仍上报 `buffer_lost` 交给 server 对账；
 - 内存缓冲与磁盘溢出缓冲**不跨重启保留**（重启后 `hello` 上报 `buffer_lost: true`）；
 - 每 chat `seq` 计数器与 `stream_epoch` 绑定（daemon 重启后 epoch +1、seq 可重置，§4.5.1【顾问：P0-2】）。
 
@@ -1114,12 +1128,12 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 
 ## 10. 视图层（Web 面板）
 
-> 【v2.6】原规划的 `peri-studio-tui`（ratatui）**未实现**；视图层由 SolidJS Web 面板（`web/src/panel`）承担，构建产物内嵌 server 托管（§3.2）。本节按实现改写；「纯客户端、不上行 update」的裁决（P1/P2 语义）不变。浏览器侧的完整行为契约（认证、目录动作、命令追踪、消息投递恢复、导航、渲染边界）见 §3.0。
+> 【v2.6】原规划的 `peri-studio-tui`（ratatui）**未实现**；视图层由 SolidJS Web 面板（`web/src/panel`）承担。【v2.7】构建产物内嵌最终 `peri-studio` 并由 server 角色托管（§3.2）。本节按实现改写；「纯客户端、不上行 update」的裁决（P1/P2 语义）不变。浏览器侧的完整行为契约（认证、目录动作、命令追踪、消息投递恢复、导航、渲染边界）见 §3.0。
 
 ### 10.1 定位
 
 - 纯 client：连接 server（单 ws 多路复用），本地维护 **Y.Doc 只读镜像**（server-authoritative，不上行 update，§5.6）【顾问：P0-4】，渲染源 = Chat Doc / Control Doc / Registry Doc；操作 = Action/Ack。
-- SolidJS + Tailwind v4 + Vite + Yjs，Bun 管理依赖；`web/dist` 由 server `build.rs` 编译期内嵌，不单独部署。
+- SolidJS + Tailwind v4 + Vite + Yjs，Bun 管理依赖；`web/dist` 在编译期内嵌进最终 `peri-studio` 可执行文件，由 server 角色托管，不单独部署。
 - 面板崩溃/刷新零影响（P1），多面板并存（P2）。
 
 ### 10.2 结构与数据源
@@ -1153,7 +1167,7 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 |------|------|
 | 耦合点 | 仅 ACP 协议线格式（JSON-RPC over stdio）与 InitializeResponse 能力协商 |
 | instance 上的 ACP 进程 | 默认 `peri acp`，可配置为任意符合 ACP 的 server |
-| 依赖方向 | peri-studio 三个二进制均不依赖 peri crate；`peri-studio-proto` 独立 |
+| 依赖方向 | 唯一 `peri-studio` 二进制不依赖 peri crate；server/instance 库互不依赖，`peri-studio-proto` 独立 |
 | stdio 路径 | peri 侧 stdio host（3.0）不受影响、不合并；hub 独立演进 |
 | e2e | 独立测试矩阵：假 ACP 进程（现有 test-child 模式）+ 真 `peri acp`；不进入 peri 的 e2e 基建 |
 
@@ -1161,16 +1175,18 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 
 ## 12. 工程结构
 
-【v2.6】按当前 workspace 实际（`tui/` 未落地，新增 `web/`、`scripts/`、`dev.sh`；channel 按单一职责拆分为数十个子模块，测试 `*_test.rs` 内联同目录）：
+【v2.7】单二进制 workspace（channel 继续按单一职责拆分，server/instance 互不依赖）：
 
 ```
 peri-studio/
 ├── Cargo.toml            # workspace；依赖版本单一事实源 [workspace.dependencies]
+├── app/                  # peri-studio 唯一二进制；CLI / local supervisor / serve / connect /
+│                         #   status / token；统一信号、就绪与子进程退出语义
 ├── proto/                # peri-studio-proto：frame（FRAME_TAGS 注册表）/ hmac / whitelist（帧集白名单）/
 │                         #   conn（DocId）/ action / ack / instance / ysync / oauth / rewind / event /
 │                         #   schema（chat/control/agent/elicitation/registry 类型镜像 + schema registry）/ version / protocol（Defaults）
-├── server/               # peri-studio-server
-│   ├── build.rs          # 编译期内嵌 web/dist（缺失即构建失败并提示先构建 Web）
+├── server/               # server 运行时库（无独立发布二进制）
+│   ├── build.rs          # 编译期准备 web/dist 内嵌资产（最终链入 peri-studio）
 │   ├── src/protocol/     # acp-channel*（入站规范化+permission/elicit/config/活动目录）、translator（出站 action → ACP JSON-RPC）
 │   ├── src/state/        # aggregator*（幂等投影+judge+write 分域）、chat-writer*（doc 写入原语）、
 │   │                     #   doc-manager*（doc 生命周期+微批次+唯一提交边界）、doc-pair、factory、
@@ -1197,14 +1213,14 @@ peri-studio/
 │   ├── src/web/          # http（loopback HTTP 面）/ auth-http（/api/auth/session）/ static（内嵌资源+缓存策略）/ parse
 │   ├── src/config/       # config.toml + CLI/env 覆盖（§16 默认值）
 │   └── tests/            # contract（auth）/ integration / product-flow / resilience
-├── instance/              # peri-instance：child（进程组+fingerprint）/ buffer（断线缓冲+watermark）/
+├── instance/              # instance 运行时库（无独立发布二进制）：child（进程组+fingerprint）/ buffer（断线缓冲+watermark）/
 │                         #   transport（重连循环）/ hub（daemon 主循环）/ auth / router / global；tests/child_test.rs
 ├── web/                   # SolidJS 面板：src/panel（store + components + lib，§10.2）/ src/ui（组件库）；
 │                         #   vitest 单测 + tests/*.test.mjs（node --test 协议/状态契约）+ Playwright 浏览器契约
 ├── scripts/               # dev-contract-test / verify-create-chain / verify-load / package-release / verify-release（+ e2e-flow/ws-verify JS 验证脚本）
-├── dev.sh                 # 一键开发：构建 Web → 启动 server + instance → 就绪校验
+├── dev.sh                 # 一键开发：构建 Web → 启动 peri-studio local → 就绪校验
 └── docs/                  # architecture.md（本文）/ terminology.md（唯一权威术语表）/ topology.md /
-                          #   audit-2026-08.md / design/（prompt-recovery-provenance.md 等）
+                          #   adr/（架构裁决）/ audit-2026-08.md / design/（prompt-recovery-provenance.md 等）
 ```
 
 测试沿用仓库规范：单元测试 `*_test.rs` 同目录、集成测试 `tests/`；proto 契约测试 `proto/tests/contract.rs`；Web 侧 `bun run test`（typecheck + node --test + vitest + 生产边界校验）与 `bun run test:browser`（Playwright）。
@@ -1232,22 +1248,27 @@ peri-studio/
 
 ### 13.1 部署包（M1 验收项）【审查：运维 P1-1 + P2-6】
 
-【v2.6】仓库迁移状态：本仓库（自 perihelion 独立迁出）当前**不包含** `deploy/` 模板与 `.github/workflows/`；`deny.toml`（cargo-deny 策略）与本地产物链（`scripts/package-release.sh` / `verify-release.sh`）已就位。下述 CI 与部署模板条目为**原仓库已验证、待在本仓库恢复的契约**，恢复前以本地脚本链为准。
+【v2.7】`deploy/` 模板与本地产物链（`scripts/package-release.sh` /
+`verify-release.sh`）均以唯一 `peri-studio` 可执行文件为准。
 
-- `deploy/` 提供 systemd user unit 与 launchd user agent 模板：失败自动重启，SIGTERM
-  沿用 §8.6 优雅关闭；server 与 instance 分离托管，instance 只 Wants/After server，
-  不共享失败命运并可跨 server 重启自行重连。模板不包含 token，也不扩大 loopback
-  listener。
+- 交互式本地启动使用 `peri-studio` / `peri-studio local`。`deploy/` 的后台模板
+  使用**两个 OS service，同一可执行文件**：一个执行 `serve`，一个执行
+  `connect`。这是为了让 service manager 的 cgroup/job 级清理不把 server crash 扩大成
+  instance/ACP crash；不是恢复两个发布二进制。
+- instance service 只 Wants/After server，不与 server 共享失败命运，可跨 server
+  重启自行重连。模板不包含 token，也不扩大 loopback listener；凭据文件
+  必须由运维者以 `0600` 权限提供。
 - `GET /api/health` 是受 loopback peer + 严格 Host 双门禁保护的无凭据 liveness：所有
   已运行状态返回 HTTP 200，正文仅含 `status/ready/protocolVersion/serverVersion`；
-  `ready=true` 只对应 `GlobalStatus::Healthy`。`peri-studio-server status` 探测 liveness，
+  `ready=true` 只对应 `GlobalStatus::Healthy`。`peri-studio status` 探测 liveness，
   `status --ready` 为 degraded/restarting 返回非零，`--json` 提供稳定机器输出。
 - 日志继续只写 stderr。systemd 交由 journald 限额；launchd 文件输出可使用
   `deploy/logrotate/peri-studio` 的外部轮转模板，不在应用内删除或重命名活跃日志。
-- **升级流程**：先升 server、后升 instance；`instance/hello.protocolVersion` 由 proto
-  crate 定义并参与 HMAC 上下文。缺失字段按 legacy `0` 解码，server 在 token 校验与
-  nonce 消耗前以 `protocol_version_mismatch` 拒绝连接，避免把版本问题伪装成认证失败。
-  回滚时 server/instance 必须成对，SQLite 未知更高 schema 继续 fail-fast。
+- **升级流程**：原子替换单个 `peri-studio` 文件，先重启 server service，再滚动
+  重启 instance service。server 停机期间旧 instance/ACP 继续运行并重连。
+  `instance/hello.protocolVersion` 由 proto crate 定义并参与 HMAC 上下文；不匹配在
+  token 校验与 nonce 消耗前以 `protocol_version_mismatch` 拒绝。回滚时两个
+  运行角色必须使用同一旧版 `peri-studio`，SQLite 未知更高 schema 继续 fail-fast。
 - 独立 `Peri Studio CI` 是 peri-studio workspace 的 required evidence：固定 cargo-deny 版本并
   刷新 RustSec，执行 advisory/license/source/bans 策略与 Bun audit；任何数据库/网络
   失败均 fail closed。策略通过后安装 committed Bun lock 对应的 Chromium，执行五个
@@ -1256,7 +1277,7 @@ peri-studio/
   build/test/Clippy，最后重复生成相同 native archive 并比较字节。根 workspace CI 不被
   误当作 peri-studio 的覆盖证据。
 - `peri-studio-v*` tag 只在 tag 版本精确等于 workspace 版本时产出 native Linux/macOS
-  归档。native build 必须同时依赖独立 policy 与 browser jobs；归档包含两个同版本 daemon、部署资产、
+  归档。native build 必须同时依赖独立 policy 与 browser jobs；归档包含唯一同版本 `peri-studio`、部署资产、
   LICENSE、安全策略与精确 Cargo/Bun locks，排除测试二进制、凭据和运行数据；每个平台
   先本机执行 provenance 验证，再由 release job 汇总 SHA-256。Locks 是依赖 provenance，
   不冒充 SBOM 或第三方许可证清单。
@@ -1278,6 +1299,7 @@ peri-studio/
 | 补推边界歧义 | daemon 重启后旧流残余与新流无法区分 | stream_epoch 代际标识 + 不可校准 gap（§4.5.1）【顾问：P0-2】 |
 | 投影与 SQLite 状态不一致 | chat/control 双 Doc 内存镜像与 metadata.sqlite3 无跨库事务 | 以 SQLite 为唯一权威 + 视图从零重建（rebuild_chat_views / reproject）+ degraded 降级（§8.4.1）【顾问：P0-5】 |
 | L3 未知状态盲重试 | L2 后 ACP 侧状态未知时自动重发 → 重复外部副作用 | delivery_unknown 状态 + 非幂等命令禁止盲重试（§4.4）【顾问2：P0-1】 |
+| 单二进制被误解为单进程 | server 异常退出会同时中断 instance/ACP，直接破坏 P3 | 只合并发布物；local 使用同一可执行文件的独立 `connect` 进程，后台托管使用两个 service（ADR-0001） |
 
 开放问题（排期时确认）：
 
@@ -1318,7 +1340,7 @@ peri-studio/
 
 ## 16. 配置（新增章节）【审查：运维 P1-2】
 
-配置来源优先级：**CLI > 环境变量（`PERI_STUDIO_*` 前缀，如 `PERI_STUDIO_LISTEN_ADDR` / `PERI_STUDIO_LISTEN_PORT` / `PERI_STUDIO_DATA_DIR` / `PERI_STUDIO_CONFIG_DIR` / `PERI_STUDIO_ACP_CMD`；instance 侧另有 `PERI_STUDIO_SERVER_URL`）> 配置文件（`~/.config/peri-studio/config.toml`）> 默认值**。【v2.6】环境变量由 clap `env` 注入，与 CLI flag 同名映射。
+配置来源优先级：**CLI > 环境变量（`PERI_STUDIO_*` 前缀，如 `PERI_STUDIO_LISTEN_ADDR` / `PERI_STUDIO_LISTEN_PORT` / `PERI_STUDIO_DATA_DIR` / `PERI_STUDIO_CONFIG_DIR` / `PERI_STUDIO_ACP_CMD`）> 配置文件（`~/.config/peri-studio/config.toml`）> 默认值**。远程 instance 的 server 地址由 `connect <URL>` 显式提供，凭据路径可由 `PERI_STUDIO_TOKEN_FILE` 注入；不再存在独立 daemon 的隐式默认远程地址。【v2.7】环境变量由 clap `env` 注入，与 CLI flag 同名映射。
 
 | 项 | 默认值 | 说明 |
 |----|--------|------|
@@ -1381,7 +1403,7 @@ peri-studio/
 | 2 | 多端定义 | 多 TUI + 未来 Web 面板；IDE 走 ACP 协议不进 yjs |
 | 3 | TUI 操作权 | 可操作；控制走 Action/Ack（请求-响应），视图走 yjs |
 | 4 | 项目定位 | peri-studio 是独立项目；与 peri 唯一耦合 = ACP 进程 |
-| 5 | 二进制形态 | server 与 instance 两个独立二进制（共享 proto crate） |
+| 5 | 二进制形态（已被 #37 取代） | 历史裁决：server 与 instance 两个独立二进制（共享 proto crate） |
 | 6 | instance 接入 | instance 主动 outbound 连接 + token 注册 + 心跳 |
 | 7 | 断线语义 | instance 断线 → 其上 chat 标记 interrupted，绑定不迁移 |
 | 8 | chat 调度 | 显式指定 instance + 默认本机 |
@@ -1413,3 +1435,4 @@ peri-studio/
 | 34 | 决策门禁与幂等分类【顾问3】 | 关联 ID 确认从开工门禁降为发布前决策门禁（路径 B 兜底开工）；未分类命令默认禁止自动重发（§4.4） |
 | 35 | delivery_unknown runbook【顾问3】 | 裁决入口/权限/依据状态/三种迁移结果/审计记录；可查询可持久化可展示，不静默丢弃（§4.4） |
 | 36 | HMAC 线格式精度【顾问3】 | HMAC-SHA256 + 固定字节序 MAC 输入 + 常量时间比较 + HKDF 派生；字节级测试向量（§9.2） |
+| 37 | 单发布物、双进程角色【v2.7】 | 发布仅 `peri-studio`；server/instance 仍为独立故障域，local 通过同一可执行文件的 `connect` 子进程走真实 `/instance` ws + HMAC（ADR-0001） |

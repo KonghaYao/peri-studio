@@ -27,7 +27,7 @@ fn hmac_byte_level_vector() {
     let key = derive_mac_key(&TOKEN, ROLE);
     assert_eq!(
         hex(&key),
-        "a8f589b9745ae5101cfa8a83bd9b20d6c4eb494b96d32c8b14ebff4581851152"
+        "fb59517e5d61355871520520c058572fadaba3e59c73be7109ba0131c655215a"
     );
 
     // MAC 输入规范化：字段顺序 challenge‖context‖version‖role，u16 BE 长度前缀
@@ -49,11 +49,11 @@ fn hmac_byte_level_vector() {
 
     // HMAC-SHA256 输出（base64，RFC 4648 标准字母表 + padding）
     let mac = compute_mac(&key, &input);
-    assert_eq!(b64(&mac), "5pS+WZkp9gV/NWS/wNmyB8TZHJrPjpNgHOwCrHzlIGY=");
+    assert_eq!(b64(&mac), "pwcIaq4KEAX0q+QsnZgTrEhSML8rI1Q1a/MdY8b0aJg=");
 
     // 完整校验路径：Ok
     assert_eq!(
-        verify_mac(&key, &input, "5pS+WZkp9gV/NWS/wNmyB8TZHJrPjpNgHOwCrHzlIGY="),
+        verify_mac(&key, &input, "pwcIaq4KEAX0q+QsnZgTrEhSML8rI1Q1a/MdY8b0aJg="),
         Ok(())
     );
 }

@@ -21,8 +21,6 @@ cleanup() {
   [ -n "${INSTANCE_PID}" ] && kill -TERM "${INSTANCE_PID}" 2>/dev/null || true
   [ -n "${SERVER_PID}" ] && kill -TERM "${SERVER_PID}" 2>/dev/null || true
   sleep 1
-  pkill -f 'target/debug/peri-instance' 2>/dev/null || true
-  pkill -f 'target/debug/peri-studio-server' 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -33,27 +31,23 @@ cat > "$T/token-config.toml" <<INNER
 config_dir = "$T/config"
 data_dir = "$T/data"
 INNER
-CT=$(target/debug/peri-studio-server --config "$T/token-config.toml" token generate \
+CT=$(target/debug/peri-studio --config "$T/token-config.toml" token generate \
   --name verify-client --role full 2>/dev/null | tail -1)
 [ -n "$CT" ] || { echo "!! no client token"; exit 1; }
 
-target/debug/peri-studio-server run --listen-port "$PORT" > "$T/server.log" 2>&1 &
+target/debug/peri-studio --config "$T/token-config.toml" serve --listen-port "$PORT" > "$T/server.log" 2>&1 &
 SERVER_PID=$!
 sleep 2
 for _ in $(seq 1 40); do
-  grep -q 'role = "instance"' "$T/config/tokens.toml" 2>/dev/null && break
+  [ -f "$T/data/instance.token" ] && break
   sleep 0.5
 done
-IT=$(awk 'BEGIN { RS = "" } /role = "instance"/ && !/revoked = true/ {
-  line = $0; sub(/^.*token = "/, "", line); sub(/".*$/, "", line); print line; exit }' \
-  "$T/config/tokens.toml")
-[ -n "$IT" ] || { echo "!! no instance token"; exit 1; }
-echo "$IT" > "$T/instance.token"
+[ -s "$T/data/instance.token" ] || { echo "!! no instance token"; exit 1; }
 
 start_instance() { # $1=logfile $2..=extra env
   local log="$1"; shift
-  env "$@" target/debug/peri-instance --server-url "ws://127.0.0.1:${PORT}/instance" \
-    --token-file "$T/instance.token" --data-dir "$T/idata" > "$log" 2>&1 &
+  env "$@" target/debug/peri-studio connect "ws://127.0.0.1:${PORT}/instance" \
+    --token-file "$T/data/instance.token" --data-dir "$T/idata" > "$log" 2>&1 &
   INSTANCE_PID=$!
   for _ in $(seq 1 20); do
     grep -q 'instance hello registered' "$T/server.log" && break
@@ -76,14 +70,14 @@ run_client "a 缺省 instanceId（预期 error）" ""
 stop_instance
 
 start_instance "$T/instance-b.log" "PATH=/usr/bin:/bin:/usr/sbin:/sbin"
-run_client "b 显式 instanceId + 无 peri PATH（预期 error）" "bootstrap-instance"
+run_client "b 显式 instanceId + 无 peri PATH（预期 error）" "local"
 stop_instance
 
 # 重启 server（b 场景强杀 instance 触发 session_gap degraded 竞态，§17.2 缺陷，
 # 会挡住后续 create；c 用独立 server 实例验证全链路）
 kill -TERM "${SERVER_PID}" 2>/dev/null || true
 sleep 2
-target/debug/peri-studio-server run --listen-port "$PORT" > "$T/server2.log" 2>&1 &
+target/debug/peri-studio --config "$T/token-config.toml" serve --listen-port "$PORT" > "$T/server2.log" 2>&1 &
 SERVER_PID=$!
 sleep 2
 
@@ -91,7 +85,7 @@ mkdir -p "$T/fakebin"
 printf '#!/bin/sh\nexec %s/target/debug/test-child "$@"\n' "$(pwd)" > "$T/fakebin/peri"
 chmod +x "$T/fakebin/peri"
 start_instance "$T/instance-c.log" "PATH=$T/fakebin:/usr/bin:/bin"
-run_client "c 显式 instanceId + test-child（预期 committed）" "bootstrap-instance"
+run_client "c 显式 instanceId + test-child（预期 committed）" "local"
 stop_instance
 
 echo

@@ -2,10 +2,10 @@
 // peri-studio 端到端验收脚本（M3 方案 §7 自动化版）：模拟 Web 面板用户全流程。
 //
 // 零 npm 依赖（node ≥21 内置 WebSocket）；自包含、可重复执行：
-//   1. 随机端口 + 临时 config/data 目录启动真实 peri-studio-server 二进制
+//   1. 随机端口 + 临时 config/data 目录启动 peri-studio serve
 //      （PERI_STUDIO_CONFIG_DIR/PERI_STUDIO_DATA_DIR/PERI_STUDIO_LISTEN_PORT 注入，
 //      PERI_STUDIO_ACP_CMD 指向 test-child 替身）→ 等 bootstrap instance token；
-//   2. 启动 peri-instance（--token-file）→ 等 server 日志 "instance connected"；
+//   2. 用同一个 peri-studio 执行 connect → 等 server 日志 "instance connected"；
 //   3. token generate 生成 client full token；
 //   4. ws 客户端全流程断言（a..h，每步 PASS/FAIL 打印）；
 //   5. 清理全部子进程（server/instance/test-child）与临时目录。
@@ -39,7 +39,7 @@ process.on('unhandledRejection', (err) => {
 });
 
 import { spawn, execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -49,8 +49,7 @@ import readline from 'node:readline';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, '..');
 const BIN_DIR = process.env.PERI_STUDIO_BIN_DIR || join(REPO, 'target', 'debug');
-const SERVER_BIN = join(BIN_DIR, 'peri-studio-server');
-const INSTANCE_BIN = join(BIN_DIR, 'peri-instance');
+const APP_BIN = join(BIN_DIR, 'peri-studio');
 const TEST_CHILD_BIN = join(BIN_DIR, 'test-child');
 
 // ── 断言记账 ────────────────────────────────────────────────────────────────
@@ -248,8 +247,7 @@ async function main() {
   const verbose = process.argv.includes('--verbose');
 
   for (const [name, p] of [
-    ['peri-studio-server', SERVER_BIN],
-    ['peri-instance', INSTANCE_BIN],
+    ['peri-studio', APP_BIN],
     ['test-child', TEST_CHILD_BIN],
   ]) {
     if (!existsSync(p)) {
@@ -265,7 +263,7 @@ async function main() {
   const configDir = join(tmpRoot, 'config');
   const dataDir = join(tmpRoot, 'data');
   const instanceDataDir = join(tmpRoot, 'instance-data');
-  const instanceTokenFile = join(tmpRoot, 'instance.token');
+  const instanceTokenFile = join(dataDir, 'instance.token');
 
   let server;
   let instance;
@@ -273,8 +271,8 @@ async function main() {
     // ── 1. 启动 server（随机端口 + 临时目录 + test-child 替身 ACP）────────
     server = startProc(
       'server',
-      SERVER_BIN,
-      [],
+      APP_BIN,
+      ['serve'],
       {
         PERI_STUDIO_CONFIG_DIR: configDir,
         PERI_STUDIO_DATA_DIR: dataDir,
@@ -288,49 +286,38 @@ async function main() {
       },
       REPO // default_cwd（§4.3 裁决）必须存在
     );
-    await waitLog(server, /starting: listening/, 15000, 'server 启动横幅');
+    await waitLog(server, /peri-studio server role listening/, 15000, 'server 监听就绪');
     console.log(`server 已启动：127.0.0.1:${port}（config=${configDir}）`);
 
-    // bootstrap instance token：优先 stderr 打印行，回退 tokens.toml 解析。
-    const allLog = logDump(server);
-    const m = allLog.match(/已自动生成 bootstrap instance token[^\n]*\n(\S+)/);
-    let instanceToken = m ? m[1].trim() : null;
-    if (!instanceToken) {
-      const tokPath = join(configDir, 'tokens.toml');
-      const deadline = Date.now() + 15000;
-      while (Date.now() < deadline && !existsSync(tokPath)) {
-        await new Promise((r) => setTimeout(r, 200));
-      }
-      if (existsSync(tokPath)) {
-        const txt = readFileSync(tokPath, 'utf8');
-        const recs = [...txt.matchAll(/\[\[tokens\]\][\s\S]*?role\s*=\s*"instance"[\s\S]*?token\s*=\s*"([^"]+)"/g)];
-        instanceToken = recs[0] ? recs[0][1] : null;
-      }
+    const tokenDeadline = Date.now() + 15000;
+    while (Date.now() < tokenDeadline && !existsSync(instanceTokenFile)) {
+      await new Promise((r) => setTimeout(r, 200));
     }
-    if (!instanceToken || instanceToken.length < 40) {
-      throw new Error('未能提取 bootstrap instance token（stderr 与 tokens.toml 均失败）');
+    if (!existsSync(instanceTokenFile)) {
+      throw new Error('server 未发布本地 instance 凭据文件');
     }
-    console.log('bootstrap instance token 已提取（长度 ' + instanceToken.length + '）');
-    writeFileSync(instanceTokenFile, instanceToken + '\n', { mode: 0o600 });
 
     // ── 2. 启动 instance → 等 server 日志 "instance connected" ──────────────
     instance = startProc(
       'instance',
-      INSTANCE_BIN,
+      APP_BIN,
       [
+        'connect', `ws://127.0.0.1:${port}/instance`,
         '--token-file', instanceTokenFile,
-        '--server-url', `ws://127.0.0.1:${port}/instance`,
         '--data-dir', instanceDataDir,
         '--log-level', 'info',
       ],
-      {},
+      {
+        // 避免宿主 RUST_LOG=warn 隐藏端到端流程所需的 instance 诊断证据。
+        RUST_LOG: 'peri_studio=info,peri_instance=info',
+      },
       REPO
     );
     await waitLog(server, /instance connected/, 20000, 'instance 注册（hello 双向认证）');
     pass('b', `instance connected（instance_id=local，端口 ${port}）`);
 
     // ── 3. 生成 client full token（token generate 子命令，目录语义一致）──
-    const tokOut = execFileSync(SERVER_BIN, ['token', 'generate', '--name', 'e2e-client', '--role', 'full'], {
+    const tokOut = execFileSync(APP_BIN, ['token', 'generate', '--name', 'e2e-client', '--role', 'full'], {
       env: { ...process.env, PERI_STUDIO_CONFIG_DIR: configDir, PERI_STUDIO_DATA_DIR: dataDir },
       encoding: 'utf8',
     });
@@ -435,12 +422,17 @@ async function runWsFlow({ base, clientToken, instance, server }) {
     (f) => f.t === 'ysync.update' && f.doc === 'hub:registry' && 'projectionVersion' in f,
     15000
   );
-  send({ t: 'ysync.subscribe', docs: ['hub:registry'] });
-  const ready = await waitFor(
+  const readyWaiter = waitFor(
     'ready 含 hub:registry',
     (f) => f.t === 'ready' && f.projectionVersions && 'hub:registry' in f.projectionVersions,
     15000
   );
+  send({
+    t: 'ysync.subscribe',
+    docs: ['hub:registry'],
+    clientCapabilities: ['prompt-delivery-v2'],
+  });
+  const ready = await readyWaiter;
   pass('a', `auth → subscribe → ready（projectionVersions=${JSON.stringify(ready.projectionVersions)}）`);
 
   // (b) chat/create → accepted → committed（chatId 非空）
@@ -458,8 +450,9 @@ async function runWsFlow({ base, clientToken, instance, server }) {
     15000
   );
   const createCid = uuid();
+  const createTerminal = waitTerminal(createCid, 30000);
   send({ t: 'action', commandId: createCid, type: 'chat/create', payload: {} });
-  const createAck = await waitTerminal(createCid, 30000);
+  const createAck = await createTerminal;
   if (createAck.t === 'action_error') {
     fail('b', `create 被拒 code=${createAck.code} msg=${createAck.message}`);
     return;
@@ -493,7 +486,7 @@ async function runWsFlow({ base, clientToken, instance, server }) {
 
   // (c) 关键：真实 spawn 成功（instance 拉起 test-child 进程组）
   try {
-    await waitLog(instance, /ACP 子进程已启动/, 10000, 'instance spawn test-child');
+    await waitLog(instance, /ACP child process started/, 10000, 'instance spawn test-child');
     pass('c', `spawn 真实发生（instance 拉起 ACP 进程组，chat=${sid}）`);
   } catch (e) {
     fail('c', `create committed 但 instance 未记录 spawn 成功：${e.message}`);
@@ -505,12 +498,18 @@ async function runWsFlow({ base, clientToken, instance, server }) {
   // 见 server/src/control/hub.rs snapshot 注释）；故 session 快照为可选。
   const chatDoc = `chat:${sid}`;
   const sessionDoc = `session:${sid}`;
-  send({ t: 'ysync.subscribe', docs: [chatDoc, sessionDoc] });
-  const chatSnap = await waitFor(
+  const chatSnapshot = waitFor(
     `chat 快照 ${chatDoc}`,
     (f) => f.t === 'ysync.update' && f.doc === chatDoc && 'projectionVersion' in f,
     15000
   );
+  const sessionSnapshot = waitFor(
+    `session 快照 ${sessionDoc}`,
+    (f) => f.t === 'ysync.update' && f.doc === sessionDoc && 'projectionVersion' in f,
+    3000
+  );
+  send({ t: 'ysync.subscribe', docs: [chatDoc, sessionDoc] });
+  const chatSnap = await chatSnapshot;
   const chatB64 = checkBase64(chatSnap.update);
   if (!chatB64.ok) {
     fail('d', `chat 快照 update 非法: ${chatB64.why}`);
@@ -518,11 +517,7 @@ async function runWsFlow({ base, clientToken, instance, server }) {
     pass('d', `chat:{sid} 快照投影 projectionVersion=${chatSnap.projectionVersion}（合法 base64）`);
   }
   try {
-    const sessionSnap = await waitFor(
-      `session 快照 ${sessionDoc}`,
-      (f) => f.t === 'ysync.update' && f.doc === sessionDoc && 'projectionVersion' in f,
-      3000
-    );
+    const sessionSnap = await sessionSnapshot;
     console.log(`      session:{sid} 快照 projectionVersion=${sessionSnap.projectionVersion}`);
   } catch {
     console.log('      session:{sid} 无快照帧（doc 尚无 update，按空 doc 处理，§4.6 语义）');
@@ -549,6 +544,8 @@ async function runWsFlow({ base, clientToken, instance, server }) {
     120000
   );
   const promptCid = uuid();
+  const promptAccepted = waitAck(promptCid, 'accepted', 15000);
+  const promptTerminal = waitTerminal(promptCid, 120000);
   // 真实 peri 会把 prompt 当真实任务执行（agent 循环 + 工具调用，可能
   // 持续数分钟）——验收用显式超短任务，约束执行时长到秒级。
   const promptMsg = '只回复一个字：好。不要调用任何工具，不要读取任何文件。';
@@ -558,8 +555,8 @@ async function runWsFlow({ base, clientToken, instance, server }) {
     type: 'chat/prompt',
     payload: { chatId: sid, message: promptMsg },
   });
-  await waitAck(promptCid, 'accepted', 15000);
-  const promptAck = await waitTerminal(promptCid, 120000);
+  await promptAccepted;
+  const promptAck = await promptTerminal;
   if (promptAck.t === 'action_error') {
     fail('e', `prompt 被拒 code=${promptAck.code} msg=${promptAck.message}`);
     return;
@@ -617,14 +614,16 @@ async function runWsFlow({ base, clientToken, instance, server }) {
   // L3 stopReason 驱动注入，cancel 对已终态 turn 幂等——终态增量在 prompt
   // 阶段已广播，由 sessionIncCollect 累计断言）。
   const cancelCid = uuid();
+  const cancelAccepted = waitAck(cancelCid, 'accepted', 15000);
+  const cancelTerminal = waitTerminal(cancelCid, 15000);
   send({
     t: 'action',
     commandId: cancelCid,
     type: 'chat/cancel',
     payload: { chatId: sid },
   });
-  await waitAck(cancelCid, 'accepted', 15000);
-  const cancelAck = await waitTerminal(cancelCid, 15000);
+  await cancelAccepted;
+  const cancelAck = await cancelTerminal;
   if (cancelAck.t === 'action_error') {
     fail('f', `cancel 被拒 code=${cancelAck.code} msg=${cancelAck.message}`);
     return;
@@ -639,13 +638,14 @@ async function runWsFlow({ base, clientToken, instance, server }) {
 
   // (g) chat/close → committed + server 日志 chat closed + instance kill
   const closeCid = uuid();
+  const closeTerminal = waitTerminal(closeCid, 20000);
   send({
     t: 'action',
     commandId: closeCid,
     type: 'chat/close',
     payload: { chatId: sid },
   });
-  const closeAck = await waitTerminal(closeCid, 20000);
+  const closeAck = await closeTerminal;
   if (closeAck.t === 'action_error') {
     fail('g', `close 被拒 code=${closeAck.code} msg=${closeAck.message}`);
   } else {
@@ -659,7 +659,7 @@ async function runWsFlow({ base, clientToken, instance, server }) {
       fail('g', `server 未见 chat closed 日志（debug 级）：${e.message}`);
     }
     try {
-      await waitLog(instance, /kill (完成（进程组）|幂等)/, 10000, 'instance kill 日志');
+      await waitLog(instance, /kill (complete \(process group\)|idempotent)/, 10000, 'instance kill 日志');
       console.log('      instance 日志：kill 指令已处理');
     } catch (e) {
       ok = false;

@@ -1,8 +1,8 @@
-# peri-studio —— 独立 workspace（三个二进制 + 一个共享协议 crate）
+# peri-studio —— 单一产品二进制 + 内部运行时库
 # 架构基准：docs/architecture.md §3.2/§12
 
 [workspace]
-members = ["proto", "server", "instance"]
+members = ["app", "proto", "server", "instance"]
 resolver = "2"
 
 [workspace.package]
@@ -48,7 +48,7 @@ dirs-next = "2"
 url = "2"
 
 # --- WebSocket (ws server + client) ---
-tokio-tungstenite = "0.30"
+tokio-tungstenite = { version = "0.30", features = ["rustls-tls-webpki-roots"] }
 
 # --- Crypto / 编码（§9.2 双向认证、§8.4 CRC） ---
 sha2 = "0.10"  # digest 0.10；hmac/hkdf 取 0.12 以保持 digest 大版本一致

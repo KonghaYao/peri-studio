@@ -17,8 +17,8 @@ use super::test_util::{
 };
 use crate::auth::{AuthService, TokenRole, TokenStore};
 use crate::web::{
-    cookie_value, header_end, is_json_content_type, is_ws_upgrade, request_path,
-    valid_loopback_host, serve_http, BrowserAuthSetup, HealthSnapshot, HealthStatus,
+    cookie_value, header_end, is_json_content_type, is_ws_upgrade, request_path, serve_http,
+    valid_loopback_host, BrowserAuthSetup, HealthSnapshot, HealthStatus,
 };
 
 /// 请求行解析：常规 GET 路径。
@@ -82,7 +82,11 @@ fn auth_contract_host_and_cookie_parsing() {
     assert!(!valid_loopback_host("127.0.0.1:bad"));
     assert!(!valid_loopback_host("::1"));
     assert_eq!(
-        cookie_value("x=1; peri_studio_session=opaque; y=2", "peri_studio_session").as_deref(),
+        cookie_value(
+            "x=1; peri_studio_session=opaque; y=2",
+            "peri_studio_session"
+        )
+        .as_deref(),
         Some("opaque")
     );
 }
@@ -104,7 +108,7 @@ fn browser_auth_setup_uses_authoritative_config_dir_and_shell_quotes_it() {
     let mut cfg = crate::config::Config::defaults();
     cfg.config_dir = std::path::PathBuf::from("/tmp/peri studio/operator's config");
 
-    let setup = BrowserAuthSetup::from_parts(&cfg, "/opt/peri studio/bin/peri-studio-server");
+    let setup = BrowserAuthSetup::from_parts(&cfg, "/opt/peri studio/bin/peri-studio");
     let json = serde_json::to_value(setup).unwrap();
 
     assert_eq!(
@@ -113,14 +117,15 @@ fn browser_auth_setup_uses_authoritative_config_dir_and_shell_quotes_it() {
     );
     assert_eq!(
         json["generateCommand"],
-        "PERI_STUDIO_CONFIG_DIR='/tmp/peri studio/operator'\\''s config' '/opt/peri studio/bin/peri-studio-server' token generate --name web --role full"
+        "PERI_STUDIO_CONFIG_DIR='/tmp/peri studio/operator'\\''s config' '/opt/peri studio/bin/peri-studio' token generate --name web --role full"
     );
     assert_eq!(json.as_object().unwrap().len(), 2);
 }
 
 #[tokio::test]
 async fn health_is_credential_free_liveness_with_explicit_readiness() {
-    let health = HealthSnapshot::from_global_status(peri_studio_proto::schema::GlobalStatus::Degraded);
+    let health =
+        HealthSnapshot::from_global_status(peri_studio_proto::schema::GlobalStatus::Degraded);
     let response = health_socket_response(
         health,
         "GET /api/health HTTP/1.1\r\nHost: 127.0.0.1:8456\r\nContent-Length: 0\r\n\r\n",
@@ -431,4 +436,3 @@ async fn auth_http_requires_origin_for_state_changes() {
         );
     }
 }
-

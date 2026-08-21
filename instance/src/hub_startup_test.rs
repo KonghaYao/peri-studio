@@ -51,7 +51,10 @@ async fn test_startup_cleanup_skips_copied_directory_identity() {
     let config = test_config("127.0.0.1:1".parse().unwrap(), dir.path());
     let (_watermark, buffer_lost, _lock) = super::startup::startup_cleanup(&config).unwrap();
     assert!(buffer_lost);
-    assert!(crate::child::sys::kill_group(pgid, 0), "目录副本不得继承清理权");
+    assert!(
+        crate::child::sys::kill_group(pgid, 0),
+        "目录副本不得继承清理权"
+    );
     crate::child::sys::kill_group(pgid, crate::child::sys::SIGKILL);
     assert!(wait_group_exit(pgid).await);
 }
@@ -116,6 +119,9 @@ fn test_startup_cleanup_rejects_second_daemon_for_same_directory() {
     let dir = tempfile::tempdir().unwrap();
     let config = test_config("127.0.0.1:1".parse().unwrap(), dir.path());
     let (_watermark, _lost, _lock) = super::startup::startup_cleanup(&config).unwrap();
+    let identity = super::owner_identity(dir.path()).unwrap().unwrap();
+    assert_eq!(identity.pid(), std::process::id());
+    assert!(!identity.matches_managed_local("127.0.0.1:1", "token", "local-token"));
     let error = super::startup::startup_cleanup(&config)
         .err()
         .expect("第二个 daemon 必须被拒绝");
@@ -133,4 +139,65 @@ fn test_startup_cleanup_rejects_second_daemon_for_same_directory() {
             & 0o777;
         assert_eq!(mode, 0o600, "owner lock 必须是 0600");
     }
+}
+
+#[test]
+fn test_owner_probe_reports_available_after_lock_drop() {
+    let dir = tempfile::tempdir().unwrap();
+    let config = test_config("127.0.0.1:1".parse().unwrap(), dir.path());
+    let (_watermark, _lost, owner) = super::startup::startup_cleanup(&config).unwrap();
+    assert_eq!(
+        super::owner_identity(dir.path()).unwrap().unwrap().pid(),
+        std::process::id()
+    );
+    drop(owner);
+    assert_eq!(super::owner_identity(dir.path()).unwrap(), None);
+}
+
+#[cfg(unix)]
+#[test]
+fn test_owner_probe_rejects_oversized_identity() {
+    use std::io::Write as _;
+    use std::os::fd::AsRawFd as _;
+
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("instance.owner.lock");
+    let mut owner = fs::OpenOptions::new()
+        .create(true)
+        .read(true)
+        .write(true)
+        .truncate(true)
+        .open(&path)
+        .unwrap();
+    owner
+        .write_all(&vec![b'x'; super::startup::OWNER_IDENTITY_MAX_BYTES + 1])
+        .unwrap();
+    // SAFETY: flock 只操作测试持有的有效文件描述符。
+    assert_eq!(unsafe { libc::flock(owner.as_raw_fd(), libc::LOCK_EX) }, 0);
+
+    let error = super::owner_identity(dir.path()).unwrap_err();
+    assert!(
+        error.to_string().contains("too large"),
+        "unexpected: {error}"
+    );
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn test_owner_control_requires_hmac_and_stops_exact_owner() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut config = test_config("127.0.0.1:1".parse().unwrap(), dir.path());
+    config.token = "owner-control-secret".into();
+    let (_watermark, _lost, owner_lock) = super::startup::startup_cleanup(&config).unwrap();
+    let owner = owner_lock.identity();
+    let control = super::control::OwnerControl::bind(dir.path(), owner.clone()).unwrap();
+    let expected_token = config.token.clone();
+    let task = tokio::spawn(async move { control.wait_for_shutdown(expected_token).await });
+
+    let rejected = super::control::request_shutdown(dir.path(), &owner, "wrong-token").await;
+    assert!(rejected.is_err(), "错误凭据不得触发关闭");
+    super::control::request_shutdown(dir.path(), &owner, &config.token)
+        .await
+        .unwrap();
+    task.await.unwrap().unwrap();
 }

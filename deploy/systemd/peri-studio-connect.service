@@ -1,0 +1,15 @@
+[Unit]
+Description=Peri Studio local instance role
+Wants=peri-studio-serve.service
+After=network.target peri-studio-serve.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/peri-studio connect ws://127.0.0.1:8456/instance --token-file %h/.config/peri-studio/instance.token
+Restart=always
+RestartSec=2
+TimeoutStopSec=30
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target
