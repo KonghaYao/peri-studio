@@ -19,6 +19,22 @@ export const MCPP_METADATA_KEYS = [
 /** skill:// 资源模板（4.3）：{skillName} 单段，末段即 skill 名。 */
 export const SKILL_URI_TEMPLATE = "skill://{skillName}/SKILL.md";
 
+/** Server Cache Version 协商使用的 MCPP extension id。 */
+export const MCPP_SERVER_CACHE_VERSION_EXTENSION = "io.mcpp/server-cache-version";
+
+/** 初始化协商中由 Server 返回的 opaque Server Cache Version。 */
+export type McppServerCacheVersionCapability = {
+    cacheVersion: string;
+};
+
+/**
+ * 构造 Server Cache Version 能力声明。该值只用于相等比较，不得包含凭据或用户标识。
+ */
+export function serverCacheVersionCapability(cacheVersion: string): McppServerCacheVersionCapability {
+    if (!cacheVersion.trim()) throw new Error("MCPP server cacheVersion must be non-empty");
+    return { cacheVersion };
+}
+
 /** frontmatter 中 depends_on 的单个条目：URI 字符串；或显式 { server, uri }。 */
 export type DependsOnEntry = string | { server?: string; uri: string };
 

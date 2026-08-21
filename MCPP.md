@@ -20,7 +20,7 @@ MCP Plus（以下简称 **MCPP**）是在 MCP 2026-07-28 之上的**协议扩展
 - 定义 **Agent Plugin** 作为标准分发与部署形态：`plugin.json` 身份清单、`skills/` 打包技能、`mcp.json` 声明的 MCP server 作为运行时执行载体（第 3 章），覆盖两种部署形态——**MCP Mono Server**（3.7，中心化部署）与 **MCP Registry** 下发（第 4 章，端侧 stdio）；
 - 定义 **MCP Registry** 作为端侧 stdio 下发的标准分发与发现渠道：插件以标准 npm 包发布，任何标准 npm registry 即 MCP Registry（第 4 章）；
 - 定义 **MCP Skills**（Skill 作为一等公民）的承载格式、传递约定与编排规则（依赖声明、拓扑加载、工具绑定），以及 **MCP Tools** 的 Agent 侧工具使用约定（第 6 章）；
-- 定义 **MCP Resources** 的 Agent 层统一策略：资源**发现**（渠道、过滤、排序、缓存、新鲜度，第 7 章）与资源**使用**（读取、订阅、嵌入、引用、输入需求、状态句柄，第 8 章）；其中缓存与新鲜度细化为 **MCP Resource Cache**（7.3）；
+- 定义 **MCP Resources** 的 Agent 层统一策略：资源**发现**（渠道、过滤、排序、缓存、新鲜度，第 7 章）与资源**使用**（读取、订阅、嵌入、引用、输入需求、状态句柄，第 8 章）；其中缓存与新鲜度细化为 **MCPP Cache**（7.3）；
 - 定义 **MCP Extension** 的扩展声明与双向协商约定（能力位、版本、最低实现面，第 9 章）；
 - 为 server 与 Agent 提供可验证的 **一致性要求**（conformance requirements）。
 
@@ -77,7 +77,7 @@ flowchart TB
 - MCP Registry：插件经标准 npm registry 的分发与发现形态、单个 npm 包规范及其与 `mcp.json` 的关系（第 4 章）；
 - **MCP Tools**：工具目录的 Agent 消费约定——元数据质量、可追溯引用（2.5）、状态句柄、错误处理、懒加载与 Tool Search（6.6）；
 - **MCP Resources · 发现**：`resources/list`、`resources/templates/list`、目录读取、缓存与注释（annotations）的使用策略（第 7 章）；
-- **MCP Resources · 使用**：读取、订阅、嵌入、引用跟随、输入需求、状态句柄（第 8 章）；其中缓存细化见 **MCP Resource Cache**（7.3）；
+- **MCP Resources · 使用**：读取、订阅、嵌入、引用跟随、输入需求、状态句柄（第 8 章）；其中缓存细化见 **MCPP Cache**（7.3）；
 - 超大载荷与私域数据的引用优先传递（8.6，stdio 同机 vs HTTP 跨机通道选择）；
 - 扩展声明与安全信任边界；
 - 技能的命令化（slash command）用户触达模式（5.9）；
@@ -936,13 +936,39 @@ MCPP 规则：
 - Agent 的默认上下文纳入准则是 `audience: assistant` 且 `priority` 高于阈值；阈值由宿主策略决定；
 - 仅当资源标注缺失时，Agent 才退化为按名称/描述启发式。
 
-### 7.3 MCP Resource Cache：缓存与新鲜度
+### 7.3 MCPP Cache：缓存与新鲜度
 
-**MCP Resource Cache** 是 MCPP 对 MCP Caching 的 Agent 层消费约定。MCPP 实现 MUST 提供统一的 cache abstraction，并至少实现 capability metadata cache 与 resource content cache；具体缓存介质、是否持久化、淘汰算法、容量限制或预取策略由宿主决定。`skills/get` 及 Skill references/assets 若通过 MCP Resource 暴露，MUST 复用 resource content cache 语义。Agent SHOULD 按 MCP Caching 规范消费 `resources/list`、`resources/templates/list`、`resources/read`、`skills/list` 与 `skills/get` 完整结果携带的 `ttlMs`、`cacheScope` 及相关失效通知。
+**MCPP Cache** 是 MCPP 对 MCP Caching 的 Agent 层消费约定，也是本规范对缓存能力的总称。MCPP 实现 MUST 提供统一的 cache abstraction，并至少实现 **MCPP Response Cache** 与 **Resource Content Cache**；具体缓存介质、是否持久化、淘汰算法、容量限制或预取策略由宿主决定。`skills/get` 及 Skill references/assets 若通过 MCP Resource 暴露，MUST 复用 Resource Content Cache 语义。Agent SHOULD 按 MCP Caching 规范消费 `resources/list`、`resources/templates/list`、`resources/read`、`skills/list` 与 `skills/get` 完整结果携带的 `ttlMs`、`cacheScope` 及相关失效通知。
+
+#### 7.3.1 术语与命名
+
+| 规范术语 | 代码 / 线级名称 | 定义 |
+| --- | --- | --- |
+| **MCPP Cache** | `McppCache` | 本节全部缓存能力的总称与统一抽象，不表示某一种具体缓存层。 |
+| **Server Cache Version** | `cacheVersion` | Server 对当前授权可见、声明可缓存状态的整体 opaque 版本；仅用于相等比较，不是缓存条目本身，也不是 Server 软件版本。 |
+| **MCPP Response Cache** | `McppCache` 中按 `method + params` 寻址的条目 | 保存声明可缓存的完整 MCP 响应，并按 origin、scope 和 authorization context 隔离。 |
+| **Resource Content Cache** | `McppCache` 中按 Resource URI 寻址的内容条目 | 保存 `resources/read` 及经 MCP Resource 暴露的 Skill 文件内容，是 MCPP Response Cache 的 Resource 专用视图。 |
+| **stale** | `stale` | 条目已失效，不得作为新鲜缓存静默使用；与“未存储”不同。 |
+| **cache hit / cache miss** | 缓存命中 / 缓存未命中 | 当前层可直接返回 / 必须继续下一层或远程获取。 |
+| **remote fetch** | 远程获取 | 通过 MCP 请求从 Server 重新取得响应；不使用“回源”指代该动作。 |
+
+规范正文、实现 API 与测试名称 SHOULD 使用上表术语；`version` 单独出现时不得指代 Server Cache Version，必须写作 `cacheVersion` 或完整术语。
+
+#### 7.3.2 推荐的缓存决策顺序
+
+Agent 的缓存读取策略 RECOMMENDED 按以下顺序逐层判定；上层 cache hit 即停止，不应继续发起下层远程获取：
+
+1. **Server Cache Version**：优先协商 `io.mcpp/server-cache-version`（9.3）。若当前 origin、cache scope 与 authorization context 下的 `cacheVersion` 严格一致，直接复用该版本覆盖的 MCPP Response Cache 与 Resource Content Cache；这是跨连接复用的首选路径。
+2. **MCPP Response Cache**：Server Cache Version 缺失、不一致或未协商时，按统一 `McppCache` 语义检查 method、完整请求参数、TTL、scope 与 authorization context，对 `tools/list`、`prompts/list`、`skills/list`、`skills/get`、`resources/list` 等声明可缓存的完整响应进行方法级复用。
+3. **Resource Content Cache**：前两层 cache miss 时，对 `resources/read` 及经 MCP Resource 暴露的 Skill references/assets 按 origin、Resource URI、请求参数与授权上下文检查内容缓存；仅缺失或 stale 的 Resource 需要单独远程获取。
+
+该顺序是 cache hit 效率与远程获取粒度的建议，不改变安全和新鲜度边界。任一层发生通知失效、授权上下文变化、origin 移除或宿主安全策略要求刷新时，Agent MUST 跳过相应缓存；不得用较低层缓存覆盖较高层已确认的 stale 状态。实际执行、有副作用或实时语义的方法不进入任何一层。
 
 缓存键 MUST 至少隔离 origin、MCP method 与所有影响结果的请求参数；分页列表的 `cursor` 是该键的一部分。`cacheScope: private` 的结果 MUST 按 authorization context 隔离，MUST NOT 跨身份复用；`cacheScope: public` 的结果可跨授权上下文复用，但也 MUST NOT 跨 origin 复用。
 
-`ttlMs` 是新鲜度提示而非内容不变保证。Agent MAY 在 TTL 内复用响应；条目过期后 SHOULD 在下次需要时重取，MUST NOT 将 TTL 当作后台轮询周期。收到 `notifications/resources/list_changed` 时，Agent MUST 将该 origin 的 `resources/list` 与 `resources/templates/list` 缓存视为 stale；收到 `notifications/resources/updated` 时，Agent MUST 将对应 URI 的 `resources/read` 缓存视为 stale。一次读取若返回多个 `contents[]` URI，Agent SHOULD 使所有受影响的聚合缓存同时 stale；无法精确定位时 MUST 保守地使该 origin 的相关 read 缓存 stale。
+`ttlMs` 是新鲜度提示而非内容不变保证。Agent MAY 在 TTL 内复用响应；条目过期后 SHOULD 在下次需要时重取，MUST NOT 将 TTL 当作后台轮询周期。若双方已协商 `io.mcpp/server-cache-version`（9.3），Agent MAY 在重新连接时仅完成初始化与 `cacheVersion` 协商：当 server 返回的版本与本地该 origin、cache scope 及 authorization context 下保存的版本严格相等时，Agent MAY 直接复用该版本覆盖的能力目录与内容缓存，而不因 TTL 过期再次远程获取；版本缺失、不相等或协商失败时 MUST 视为未命中并正常获取。版本命中不得绕过通知失效、scope 隔离或宿主安全策略。
+
+收到 `notifications/resources/list_changed` 时，Agent MUST 将该 origin 的 `resources/list` 与 `resources/templates/list` 缓存视为 stale；收到 `notifications/resources/updated` 时，Agent MUST 将对应 URI 的 `resources/read` 缓存视为 stale。一次读取若返回多个 `contents[]` URI，Agent SHOULD 使所有受影响的聚合缓存同时 stale；无法精确定位时 MUST 保守地使该 origin 的相关 read 缓存 stale。
 
 重取失败时，Agent MAY 向用户展示 stale 内容，但 MUST 标注 origin、最后接收时间与过期状态；MUST NOT 将 stale 内容静默用于自动上下文注入、Skill 激活、工具执行、授权或安全决策。缓存副本 MUST 保留原始 origin，MUST NOT 伪装成 `file://` 或本地可信资源。
 
@@ -1055,6 +1081,7 @@ MCPP 的能力需要 server 与 Agent 双向显式协商，遵循 MCP 扩展的�
 | `io.mcpp/server-catalog` | server declarations | Catalog endpoint 实现只读 `mcpp/servers/list` / `get` / `resolve`（3.7.1）；不声明即不得调用 |
 | `io.mcpp/skill-orchestration` | agent-side（host 声明） | Agent 支持 `io.mcpp/depends_on` / `io.mcpp/tools` 编排字段的解析与拓扑加载 |
 | `io.mcpp/context-budget` | agent-side | Agent 支持 `io.mcpp/context_budget` 预算约束 |
+| `io.mcpp/server-cache-version` | 双向协商 | Agent 支持按 Server Cache Version 复用 MCPP Cache；Server 声明 opaque `cacheVersion` |
 
 Server 的 skill 能力声明（示意，wire 细节属 MCP 层）：
 
@@ -1068,7 +1095,27 @@ Server 的 skill 能力声明（示意，wire 细节属 MCP 层）：
 
 Agent（客户端）侧的 MCPP 编排能力属于宿主行为声明，主要用于 server 决定 instruction 措辞；Server 不得因 Agent 未声明编排能力而拒绝服务。
 
-### 9.3 最低实现面
+### 9.3 Server Cache Version 协商
+
+`io.mcpp/server-cache-version` 为可选的双向协商能力。Agent 声明该能力表示其能够安全保存 MCPP Cache 并按 Server Cache Version 复用；Server 声明该能力时 MUST 在初始化结果的扩展设置中返回非空 opaque `cacheVersion`。该值只用于相等比较，不要求 SemVer、可排序或可逆，且 MUST NOT 包含 token、用户标识等敏感信息。
+
+Server MUST 将 `cacheVersion` 视为其对当前授权可见、声明可缓存状态的整体标识；任何可能改变 `tools/list`、`prompts/list`、`resources/list`、`resources/templates/list`、`skills/list`，或相应 `resources/read`、`skills/get` 等可缓存内容的变化，MUST 产生不同的 Server Cache Version。`tools/call`、采样、授权、状态推进及其他有副作用或实时语义的方法 MUST NOT 因 Server Cache Version 相等而跳过。
+
+Agent MUST 按 origin 保存带 `cacheVersion` 的 MCPP Cache 条目，并继续遵守 `public` / `private` cache scope：private 条目的 Server Cache Version 与内容 MUST 按 authorization context 隔离。即使两个身份收到相同 `cacheVersion`，也不得跨身份复用 private 内容；不同 origin 即使 `cacheVersion` 字符串相同也不得复用。Server 若无法保证授权视图变化必然改变 Server Cache Version，MUST NOT 声明此能力。
+
+```jsonc
+"capabilities": {
+  "extensions": {
+    "io.mcpp/server-cache-version": {
+      "cacheVersion": "sha256:opaque-snapshot-id"
+    }
+  }
+}
+```
+
+Server Cache Version 相等只证明 Server 声明的可缓存状态未变化，不提升内容信任等级，也不取消通知失效规则；它仅在重新协商成功后替代对应 MCPP Cache 条目的 TTL 新鲜度判断。客户端移除 Server、authorization context 失效或安全策略要求刷新时，Agent SHOULD 删除对应 MCPP Cache 条目。
+
+### 9.4 最低实现面
 
 - 宣称实现 `io.modelcontextprotocol/skills` 的 Server，**MUST** 至少实现 `skills/list` 与 `skills/get`（空/局部列表合法）；
 - 宣称 `directoryRead` 者，**MUST** 对其以独立文件服务的每个 skill 命名空间内目录支持该方法（方法本身通用，不限于 skill scheme）；
@@ -1196,7 +1243,7 @@ MCPP 把安全规则写成 Agent 侧义务（与 SEP-2640 的安全模型一致�
 | **MCP Registry** | MCPP 顶层特性（第 4 章）：插件的标准 npm 分发与发现渠道，任何标准 npm registry 均构成 |
 | **MCP Mono Server** | MCPP 顶层特性（3.7）：单 HTTP 进程、URL 路径路由托管多个 MCP endpoint 的中心化聚合形态 |
 | **MCP Resources** | MCPP 顶层特性（第 7/8 章）：Agent 层资源发现与使用的统一约定 |
-| **MCP Resource Cache** | MCPP 顶层特性（7.3）：对 MCP Caching 的 Agent 层消费约定（`ttlMs`/`cacheScope`/失效通知） |
+| **MCPP Cache** | MCPP 顶层特性（7.3）：对 MCP Caching 的 Agent 层消费约定及统一缓存抽象；包含 Server Cache Version、MCPP Response Cache 与 Resource Content Cache |
 | **MCP Tools** | MCPP 顶层特性（第 6 章）：Agent 侧工具使用约定与 Server / Skill 作者的「可被正确调用」要求 |
 | **MCP Extension** | MCPP 顶层特性（第 9 章）：MCPP 扩展的声明与双向协商约定（扩展标识、版本、能力位、最低实现面） |
 | Agent Plugin | agent-plugins.org 1.0.0 定义的部署单元：plugin.json + 可选 skills/ 与 mcp.json（第 3 章）；MCPP 的标准分发形态 |

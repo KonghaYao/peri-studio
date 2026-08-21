@@ -8,7 +8,7 @@ MCPP（MCP Plus）的 Server 侧 TypeScript 参考实现。该包基于 MCP SDK�
 
 | 版本 | 主要更新 |
 | --- | --- |
-| `0.6.5` | 为 `ResourceForStaticSkills` 增加与实时 Skills 一致的 `McppCache`、TTL、`public` / `private` scope 和 opaque authorization context 隔离；静态 registry 可在跨请求创建 Server 实例的 Worker 中复用 Resource 列表和读取结果。 |
+| `0.6.5` | 为 `ResourceForStaticSkills` 增加与实时 Skills 一致的 MCPP Cache（`McppCache`）、TTL、`public` / `private` scope 和 opaque authorization context 隔离；同时支持协商 Server Cache Version（`cacheVersion`），相等时可直接复用 MCPP Response Cache 与 Resource Content Cache，不相等时拒绝旧条目。 |
 | `0.5.0` | 引入统一的进程内 `McppCache`；实时 `ResourceForSkills` 支持按 origin、MCP method、参数和授权上下文隔离缓存，并可按 Resource URI 精确失效。 |
 | `0.3.0` | 支持将 Skill 根内全部经安全校验的普通文件投影为附属 Resource；新增构建期静态 registry，使无本地文件系统的 Worker 可以挂载 Skills。 |
 
