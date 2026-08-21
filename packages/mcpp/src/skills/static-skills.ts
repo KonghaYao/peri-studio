@@ -11,6 +11,7 @@ import {
     ResourceTemplate,
 } from "@modelcontextprotocol/server";
 import { McppCache, type McppCacheScope } from "../cache.ts";
+import { DEFAULT_MCPP_CACHE_TTL_MS } from "../server/defaults.ts";
 import { isValidSkillName } from "../types.ts";
 import { decodeSkillFilePath, firstTemplateVar, skillFileUri } from "./skill-uri.ts";
 import type { SkillResourceFile } from "./skill-files.ts";
@@ -40,8 +41,10 @@ export interface ResourceForStaticSkillsOptions {
     /** MCP cacheScope；private 时必须同时提供 opaque authorizationContext。 */
     cacheScope?: McppCacheScope;
     authorizationContext?: string;
-    /** Resource 响应的 TTL；未提供时默认 30 秒。 */
+    /** Resource 响应的 TTL；默认 1 天。 */
     ttlMs?: number;
+    /** 已协商的 Server Cache Version。 */
+    cacheVersion?: string;
     /** 由宿主在 Server factory 外创建，以跨请求复用。 */
     cache?: McppCache;
 }
@@ -203,7 +206,8 @@ export function ResourceForStaticSkills(
         origin,
         cacheScope = "public",
         authorizationContext,
-        ttlMs = 30_000,
+        ttlMs = DEFAULT_MCPP_CACHE_TTL_MS,
+        cacheVersion,
     } = options;
     if (cacheScope === "private" && !authorizationContext) {
         throw new Error("MCPP private static Skill resource cache requires an opaque authorization context");
@@ -221,7 +225,7 @@ export function ResourceForStaticSkills(
         new ResourceTemplate("skill://{skillName}/{+path}", {
             list: () => {
                 const key = origin ? cacheKey("resources/templates/list", { template: "skill://{skillName}/{+path}" }) : undefined;
-                const cached = key ? cache?.get<StaticSkillListResponse>(key) : undefined;
+                const cached = key ? cache?.get<StaticSkillListResponse>(key, { cacheVersion }) : undefined;
                 if (cached) return cached;
                 const response: StaticSkillListResponse = {
                     resources: index.files.map((resource) => ({
@@ -232,7 +236,7 @@ export function ResourceForStaticSkills(
                         size: resource.size,
                     })),
                 };
-                if (key) cache?.set(key, response, { scope: cacheScope, ttlMs });
+                if (key) cache?.set(key, response, { scope: cacheScope, ttlMs, cacheVersion });
                 return response;
             },
         }),
@@ -251,7 +255,7 @@ export function ResourceForStaticSkills(
                 throw new ResourceNotFoundError(uri.href, `Skill resource '${uri.href}' not found`);
             }
             const key = origin ? cacheKey("resources/read", { uri: uri.href }) : undefined;
-            const cached = key ? cache?.get<StaticSkillReadResponse>(key) : undefined;
+            const cached = key ? cache?.get<StaticSkillReadResponse>(key, { cacheVersion }) : undefined;
             if (cached) return cached;
             const contents = resource.contentKind === "text"
                 ? { uri: uri.href, mimeType: resource.mimeType, text: resource.text ?? "" }
@@ -260,6 +264,7 @@ export function ResourceForStaticSkills(
             if (key) cache?.set(key, response, {
                 scope: cacheScope,
                 ttlMs,
+                cacheVersion,
                 resourceUri: uri.href,
             });
             return response;

@@ -84,26 +84,44 @@ metadata:
 ```ts
 import { McpServer } from "@modelcontextprotocol/server";
 import {
+    createCacheVersion,
+    createMcppServerFactory,
     ResourceForSkills,
     startServer,
 } from "@peri-code/mcpp";
 
-const createServer = () => {
-    const server = new McpServer({
-        name: "example-mcpp-server",
-        version: "0.1.0",
-    });
+const cacheVersion = await createCacheVersion({
+    schemaVersion: "1",
+    skills: bundledSkillMetadata,
+    resourceContentDigests: bundledSkillDigests,
+});
 
-    ResourceForSkills(server, {
-        skillsDir: new URL("./skills", import.meta.url).pathname,
-    });
-    return server;
-};
+const createServer = createMcppServerFactory(
+    { cacheVersion },
+    (_request, mcpp) => {
+        const server = new McpServer(
+            {
+                name: "example-mcpp-server",
+                version: "0.1.0",
+            },
+            { capabilities: mcpp.capabilities },
+        );
+
+        ResourceForSkills(server, {
+            skillsDir: new URL("./skills", import.meta.url).pathname,
+            origin: "example-mcpp-server",
+            ...mcpp.resourceCache,
+        });
+        return server;
+    },
+);
 
 const started = await startServer(createServer);
 ```
 
-默认监听 `127.0.0.1:8457`，仅接受 MCP `2026-07-28`。旧版请求会以 `-32022` 拒绝。可通过选项或环境变量修改地址：
+默认监听 `127.0.0.1:8457`，仅接受 MCP `2026-07-28`。`createCacheVersion` 会确定性排序对象键，并对完整可缓存状态计算 `sha256:<hex>`；数组顺序保留语义。示例中的 `bundledSkillMetadata` 是规范化 Skill 目录，`bundledSkillDigests` 是 Resource URI 到内容 digest 的映射。调用方应确保输入覆盖 tools、prompts、resources、skills 及所有可缓存内容，避免内容变化但 Server Cache Version 未变化。
+
+`createMcppServerFactory` 在请求级 `McpServer` 实例之外共享 MCPP Response Cache 与 Resource Content Cache，默认 TTL 为 1 天；`cacheVersion` 相等时可跨连接复用。调用方可通过 `ttlMs` 覆盖默认值，设为 `0` 可禁用条目写入。旧版请求会以 `-32022` 拒绝。可通过选项或环境变量修改地址：
 
 ```ts
 await startServer(createServer, {

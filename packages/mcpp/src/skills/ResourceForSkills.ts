@@ -17,6 +17,7 @@ import {
 } from "@modelcontextprotocol/server";
 import { isValidSkillName } from "../types.ts";
 import { McppCache, type McppCacheScope } from "../cache.ts";
+import { DEFAULT_MCPP_CACHE_TTL_MS } from "../server/defaults.ts";
 import {
     decodeSkillFilePath,
     firstTemplateVar,
@@ -39,8 +40,10 @@ export interface ResourceForSkillsOptions {
     /** MCP cacheScope；private 时必须同时提供 opaque authorizationContext。 */
     cacheScope?: McppCacheScope;
     authorizationContext?: string;
-    /** Resource 响应的 TTL；未提供表示由宿主按需刷新。 */
+    /** Resource 响应的 TTL；默认 1 天。 */
     ttlMs?: number;
+    /** 已协商的 Server Cache Version。 */
+    cacheVersion?: string;
     cache?: McppCache;
 }
 /**
@@ -61,7 +64,8 @@ export function ResourceForSkills(
         origin = skillsDir,
         cacheScope = "public",
         authorizationContext,
-        ttlMs = 30_000,
+        ttlMs = DEFAULT_MCPP_CACHE_TTL_MS,
+        cacheVersion,
     } = options;
     if (cacheScope === "private" && !authorizationContext) {
         throw new Error("MCPP private Skill resource cache requires an opaque authorization context");
@@ -79,9 +83,9 @@ export function ResourceForSkills(
         new ResourceTemplate("skill://{skillName}/{+path}", {
             list: async () => {
                 const key = cacheKey("resources/templates/list", { template: "skill://{skillName}/{+path}" });
-                const cached = cache?.get<Awaited<ReturnType<typeof scanSkillResourceFiles>>>(key);
+                const cached = cache?.get<Awaited<ReturnType<typeof scanSkillResourceFiles>>>(key, { cacheVersion });
                 const files = cached ?? await scanSkillResourceFiles(skillsDir, resourceLimits);
-                if (!cached) cache?.set(key, files, { scope: cacheScope, ttlMs });
+                if (!cached) cache?.set(key, files, { scope: cacheScope, ttlMs, cacheVersion });
                 return {
                     resources: files.map((file) => ({
                         uri: file.uri,
@@ -108,7 +112,7 @@ export function ResourceForSkills(
             }
 
             const key = cacheKey("resources/read", { uri: u.href });
-            const cached = cache?.get<Awaited<ReturnType<typeof readSkillResourceFile>>>(key);
+            const cached = cache?.get<Awaited<ReturnType<typeof readSkillResourceFile>>>(key, { cacheVersion });
             const resource = cached ?? await readSkillResourceFile(
                 skillsDir,
                 name,
@@ -119,6 +123,7 @@ export function ResourceForSkills(
                 cache?.set(key, resource, {
                     scope: cacheScope,
                     ttlMs,
+                    cacheVersion,
                     resourceUri: u.href,
                 });
             }
