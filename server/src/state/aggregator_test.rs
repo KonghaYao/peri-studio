@@ -8,21 +8,21 @@
 //! `mod aggregator_test` 声明不变），测试代码仅移动 + 文件级 use
 //! 调整，断言语义零改动。
 
-#[path = "aggregator_test_util.rs"]
-mod util;
-#[path = "aggregator_judge_test.rs"]
-mod judge;
-#[path = "aggregator_stream_test.rs"]
-mod stream;
-#[path = "aggregator_write_test.rs"]
-mod write;
-#[path = "aggregator_projection_test.rs"]
-mod projection;
-#[path = "aggregator_permission_test.rs"]
-mod permission;
-#[path = "aggregator_tool_test.rs"]
-mod tool;
-#[path = "aggregator_agent_test.rs"]
-mod agent;
 #[path = "aggregator_activity_test.rs"]
 mod activity;
+#[path = "aggregator_agent_test.rs"]
+mod agent;
+#[path = "aggregator_judge_test.rs"]
+mod judge;
+#[path = "aggregator_permission_test.rs"]
+mod permission;
+#[path = "aggregator_projection_test.rs"]
+mod projection;
+#[path = "aggregator_stream_test.rs"]
+mod stream;
+#[path = "aggregator_tool_test.rs"]
+mod tool;
+#[path = "aggregator_test_util.rs"]
+mod util;
+#[path = "aggregator_write_test.rs"]
+mod write;

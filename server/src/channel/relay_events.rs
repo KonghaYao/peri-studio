@@ -18,7 +18,12 @@ impl RelayEventHandler {
     /// it must not masquerade as a missing frame in the independent gap model.
     /// Private discovery runtimes intentionally have no chat writer and thus
     /// no stream state to advance.
-    pub(super) async fn observe_non_projected_frame(&self, chat_id: &str, epoch: u64, seq: u64) -> bool {
+    pub(super) async fn observe_non_projected_frame(
+        &self,
+        chat_id: &str,
+        epoch: u64,
+        seq: u64,
+    ) -> bool {
         match self
             .inner
             .doc

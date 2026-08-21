@@ -22,7 +22,11 @@ use super::aggregator_write_catalog::{chat_status_from_str, turn_status_from_str
 
 impl Aggregator {
     /// 判定（§9.2 顺序）。只读 doc + 推进 pair.stream；返回拒绝原因。
-    pub(crate) fn judge(&self, pair: &mut DocPair, ev: &NormalizedEvent) -> Result<(), ApplyReason> {
+    pub(crate) fn judge(
+        &self,
+        pair: &mut DocPair,
+        ev: &NormalizedEvent,
+    ) -> Result<(), ApplyReason> {
         // 1/2/3. epoch/seq/gap/uncalibratable。
         self.judge_stream(&mut pair.stream, ev.epoch, ev.seq)?;
         // 4. chat 终态（§8.2）：读 session doc session map status。
@@ -412,6 +416,4 @@ impl Aggregator {
             .and_then(|value| value.cast::<String>().ok());
         Some((status, tool_call_id))
     }
-
 }
-

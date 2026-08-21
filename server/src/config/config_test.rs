@@ -460,5 +460,8 @@ fn xdg_dir_resolution() {
         default_config_dir(),
         PathBuf::from("/tmp/xdg-config/peri-studio")
     );
-    assert_eq!(default_data_dir(), PathBuf::from("/tmp/xdg-data/peri-studio"));
+    assert_eq!(
+        default_data_dir(),
+        PathBuf::from("/tmp/xdg-data/peri-studio")
+    );
 }

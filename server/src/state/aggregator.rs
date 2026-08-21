@@ -34,8 +34,8 @@ use crate::state::factory::ROOT;
 use crate::state::normalized::{EventBody, EventProvenance, NormalizedEvent};
 use crate::state::view_store::TransactionCtx;
 
-pub(crate) use super::aggregator_write_catalog::{chat_status_from_str, chat_status_str};
 pub(crate) use super::aggregator_write_catalog::turn_status_from_str;
+pub(crate) use super::aggregator_write_catalog::{chat_status_from_str, chat_status_str};
 pub(crate) use super::aggregator_write_helpers::write_session_config_catalog;
 
 /// 幂等聚合器（§6.3）。无跨调用状态：全部状态在 DocPair 内（§4）。
@@ -419,7 +419,13 @@ impl Aggregator {
                     text,
                     ContentKind::Reasoning,
                 );
-                chat_writer::set_reasoning_visibility(txn, &root, &entry_id, &block_id, *visibility);
+                chat_writer::set_reasoning_visibility(
+                    txn,
+                    &root,
+                    &entry_id,
+                    &block_id,
+                    *visibility,
+                );
                 chat_writer::record_entry_origin(
                     txn,
                     &root,

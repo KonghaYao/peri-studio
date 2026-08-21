@@ -325,9 +325,9 @@ fn test_evict_from_disk_then_drain() {
     // evict 与 drain 交错且无每帧 flush 后，顺序与计数仍正确。
     let dir = setup();
     let mut buf = Buffer::new(
-        1,    // mem 预算极小 → 全部写盘
+        1, // mem 预算极小 → 全部写盘
         10_000,
-        300,  // total 预算小 → 触发磁盘段首 evict
+        300, // total 预算小 → 触发磁盘段首 evict
         10_000,
         10_000,
         dir.path().join("buffer"),
@@ -439,5 +439,3 @@ fn test_ring_buffer_evicts_oldest() {
         "满则淘汰最旧"
     );
 }
-
-

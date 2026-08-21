@@ -313,7 +313,8 @@ describe('CopyButton', () => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
     render(() => <CopyButton text="exact source" label="Copy" />);
     fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
-    await waitFor(() => expect(screen.getByRole('button')).toHaveTextContent('Copied'));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Copied' })).toHaveTextContent('');
     expect(writeText).toHaveBeenCalledWith('exact source');
   });
 
@@ -321,7 +322,7 @@ describe('CopyButton', () => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } });
     render(() => <CopyButton text="source" label="Copy" />);
     fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
-    await waitFor(() => expect(screen.getByRole('button')).toHaveTextContent('Copy failed'));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Copy failed' })).toBeInTheDocument());
   });
 });
 

@@ -274,4 +274,3 @@ pub(crate) fn active_turn_status(pair: &DocPair) -> Option<TurnStatus> {
             _ => TurnStatus::Accepting,
         })
 }
-

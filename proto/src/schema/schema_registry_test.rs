@@ -25,7 +25,10 @@ fn registry_root_workspaces_roundtrip_and_camel_case_shape() {
 
     // 旧快照（缺 workspaces 键）解码为空 map（additive，兼容读全 doc 路径）
     let mut legacy = serde_json::to_value(&root).unwrap();
-    legacy.as_object_mut().expect("root object").remove("workspaces");
+    legacy
+        .as_object_mut()
+        .expect("root object")
+        .remove("workspaces");
     let decoded: RegistryDocRoot = serde_json::from_value(legacy).unwrap();
     assert!(decoded.workspaces.is_empty());
 }
@@ -44,5 +47,8 @@ fn workspace_summary_is_a_registry_map_value() {
     let value = serde_json::to_value(&ws).unwrap();
     assert_eq!(value["createdAt"], "2026-08-01T00:00:00Z");
     assert_eq!(value["updatedAt"], "2026-08-07T00:00:01Z");
-    assert_eq!(serde_json::from_value::<WorkspaceSummary>(value).unwrap(), ws);
+    assert_eq!(
+        serde_json::from_value::<WorkspaceSummary>(value).unwrap(),
+        ws
+    );
 }

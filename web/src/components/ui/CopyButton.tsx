@@ -1,5 +1,6 @@
 import { createSignal, onCleanup } from 'solid-js';
-import { Button } from './Button';
+import { IconButton } from './Button';
+import { CheckIcon, CopyIcon, ErrorIcon } from './Icon';
 
 export function CopyButton(props: { text: string; label?: string; copiedLabel?: string; class?: string; size?: 'compact' | 'default'; disabled?: boolean }) {
   const [copied, setCopied] = createSignal(false);
@@ -14,5 +15,8 @@ export function CopyButton(props: { text: string; label?: string; copiedLabel?: 
       timer = setTimeout(() => setCopied(false), 1600);
     } catch { setCopied(false); setFailed(true); }
   };
-  return <Button type="button" size={props.size} class={props.class} onClick={copy} disabled={props.disabled} aria-live="polite">{failed() ? 'Copy failed' : copied() ? (props.copiedLabel || 'Copied') : (props.label || 'Copy')}</Button>;
+  const label = () => failed() ? 'Copy failed' : copied() ? (props.copiedLabel || 'Copied') : (props.label || 'Copy');
+  return <IconButton type="button" size={props.size} class={props.class} onClick={copy} disabled={props.disabled} label={label()} aria-live="polite">
+    {failed() ? <ErrorIcon /> : copied() ? <CheckIcon /> : <CopyIcon />}
+  </IconButton>;
 }

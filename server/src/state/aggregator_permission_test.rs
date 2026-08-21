@@ -248,4 +248,3 @@ fn tool_evidence_is_monotonic_across_sparse_and_late_frames() {
     assert_eq!(late.reason, Some(ApplyReason::DuplicateIdempotent));
     assert_eq!(tool_call(&p, "tc1"), first_terminal);
 }
-

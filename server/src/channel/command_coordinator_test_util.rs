@@ -183,7 +183,12 @@ pub(super) async fn setup_active_turn(env: &Env, sid: &str) {
 
 /// 官方 request_permission 入站（binding 命中）→ 投影 pending + 登记表；
 /// 返回 server 生成的 permission_id。
-pub(super) async fn register_official_permission(env: &Env, sid: &str, acp: &str, seq: u64) -> String {
+pub(super) async fn register_official_permission(
+    env: &Env,
+    sid: &str,
+    acp: &str,
+    seq: u64,
+) -> String {
     let ev = peri_studio_proto::instance::InstanceEvent {
         chat_id: sid.into(),
         epoch: 0,
@@ -232,7 +237,12 @@ pub(super) fn session_new_action(cid: &str, chat_id: &str) -> ActionEnvelope {
 /// 驱动一轮完整 prompt L3 链路：提交 → forward_ack（L1+L2）→ L3 response
 /// （`stop_reason` 缺省 = result 无 stopReason）→ committed ack。返回 session
 /// doc 镜像中 `active_turn_status`；断言活动 turn 表项已清理。
-pub(super) async fn drive_prompt_l3(env: &mut Env, sid: &str, acp: &str, stop_reason: Option<&str>) -> String {
+pub(super) async fn drive_prompt_l3(
+    env: &mut Env,
+    sid: &str,
+    acp: &str,
+    stop_reason: Option<&str>,
+) -> String {
     bound_session(env, sid, acp).await;
     let (tx, mut rx) = mpsc::channel(16);
     let cid = uuid::Uuid::new_v4().to_string();

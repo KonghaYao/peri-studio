@@ -8,11 +8,11 @@
 //! 拆分——命令面（本文件）、API 面（`doc_manager.rs`）、写者循环与 persist
 //! 提交（`doc_manager_persist.rs`）、事件/命令应用（`doc_manager_apply_*`）。
 
+use peri_studio_proto::schema::InstanceStatus;
 use peri_studio_proto::schema::{
-    ChatStatus, ChatSummary, SessionConfigOptionProjection,
-    SessionSummaryProjection, TurnStatus, WorkspaceSummary,
+    ChatStatus, ChatSummary, SessionConfigOptionProjection, SessionSummaryProjection, TurnStatus,
+    WorkspaceSummary,
 };
-use peri_studio_proto::schema::{InstanceStatus};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DocCommand {

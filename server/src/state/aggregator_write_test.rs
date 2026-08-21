@@ -370,4 +370,3 @@ fn replay_delta_batch_retains_negotiated_producer_provenance() {
         "synthetic placeholder is inferred rather than producer-authored"
     );
 }
-

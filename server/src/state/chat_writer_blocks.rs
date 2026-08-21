@@ -333,7 +333,12 @@ fn insert_opt_json(
     };
 }
 
-pub(crate) fn write_public_error(txn: &mut TransactionCtx<'_>, map: &yrs::MapRef, key: &str, e: &PublicError) {
+pub(crate) fn write_public_error(
+    txn: &mut TransactionCtx<'_>,
+    map: &yrs::MapRef,
+    key: &str,
+    e: &PublicError,
+) {
     let em = map.insert(txn, key, yrs::MapPrelim::default());
     em.insert(txn, "code", e.code.clone());
     em.insert(txn, "message", e.message.clone());

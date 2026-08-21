@@ -31,7 +31,9 @@ use serde_json::Value;
 
 use peri_studio_proto::schema::ElicitationFieldProjection;
 
-use crate::state::normalized::{EventBody, EventProvenance, NormalizedEvent, PermissionToolSnapshot};
+use crate::state::normalized::{
+    EventBody, EventProvenance, NormalizedEvent, PermissionToolSnapshot,
+};
 
 use super::acp_channel_elicitation::{normalize_elicitation_request, ElicitationMapError};
 use super::acp_channel_parse::{
@@ -42,14 +44,16 @@ use super::acp_channel_parse::{
 // 测试经 `use super::*` 引用（拆分前为 acp_channel 模块私有符号；现位于各
 // 子模块，此处 cfg(test) pub(crate) 转发保持测试路径不变，可见域与拆分前
 // 等价——原符号即为模块私有）。
+pub use super::acp_channel_config::{
+    normalize_agent_config, AgentConfigSnapshot, ConfigCatalogError,
+};
 #[cfg(test)]
 pub(crate) use super::acp_channel_config::{
     parse_available_commands, COMMAND_CATALOG_MAX_ITEMS, COMMAND_DESCRIPTION_MAX_BYTES,
 };
+pub use super::acp_channel_parse::extract_session_id;
 #[cfg(test)]
 pub(crate) use super::acp_channel_parse::{field, TEXT_MAX_BYTES};
-pub use super::acp_channel_config::{normalize_agent_config, AgentConfigSnapshot, ConfigCatalogError};
-pub use super::acp_channel_parse::extract_session_id;
 
 /// 权限请求超时（§16/§7.1：5min，`expires_at` 由 server 权威时钟注入，§4.7）。
 pub const PERMISSION_TIMEOUT: Duration = Duration::from_secs(5 * 60);

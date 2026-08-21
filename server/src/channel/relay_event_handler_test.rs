@@ -9,7 +9,9 @@ use std::time::Duration;
 use serde_json::json;
 use tokio::sync::mpsc;
 
-use peri_studio_proto::instance::{BufferedFrame, InstanceBufferSync, InstanceEvent, InstanceHello};
+use peri_studio_proto::instance::{
+    BufferedFrame, InstanceBufferSync, InstanceEvent, InstanceHello,
+};
 
 use crate::channel::{ConsumeResult, RelayEventHandler};
 use crate::control::ChatRegistry;

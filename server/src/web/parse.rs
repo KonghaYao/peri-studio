@@ -31,7 +31,11 @@ pub(crate) fn is_ws_upgrade(buf: &[u8]) -> bool {
 }
 
 /// 单值头写入：重复出现 → `malformed`（拒绝歧义 framing）。
-pub(super) fn set_unique_header<'a>(slot: &mut Option<&'a str>, value: &'a str, malformed: &mut bool) {
+pub(super) fn set_unique_header<'a>(
+    slot: &mut Option<&'a str>,
+    value: &'a str,
+    malformed: &mut bool,
+) {
     if slot.replace(value).is_some() {
         *malformed = true;
     }

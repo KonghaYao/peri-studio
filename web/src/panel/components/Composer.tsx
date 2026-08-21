@@ -232,7 +232,7 @@ export function Composer() {
       <section
         aria-busy={submissionIsInFlight() || undefined}
         aria-disabled={inputDisabled()}
-        class="composer-surface overflow-hidden border border-composer-border rounded-[20px] bg-surface shadow-float transition-[box-shadow,border-color] duration-[140ms] ease-[ease] focus-within:border-focus-ring focus-within:shadow-float has-[.composer-input:focus-visible]:shadow-[var(--shadow-float),0_0_0_1px_var(--surface),0_0_0_3px_var(--focus-ring)] max-narrow:rounded-16"
+        class="composer-surface overflow-hidden border border-composer-border rounded-[20px] bg-surface shadow-float max-narrow:rounded-16"
       >
         <div class="composer-editor relative">
           <Show when={prediction.activePrediction()}>{(prediction) => <>

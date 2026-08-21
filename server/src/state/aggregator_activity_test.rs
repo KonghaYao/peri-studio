@@ -189,10 +189,7 @@ fn input_prediction_clear_and_next_user_message_remove_stale_value() {
     pair.stream.replay_active = true;
     assert!(
         Aggregator
-            .apply(
-                &mut pair,
-                &ev("s1", 4, user_msg("", "", "继续"))
-            )
+            .apply(&mut pair, &ev("s1", 4, user_msg("", "", "继续")))
             .applied
     );
     assert_eq!(projected_prediction(&pair), None);

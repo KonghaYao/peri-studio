@@ -12,9 +12,7 @@ use crate::auth::audit::audit;
 use crate::auth::ConnectionCtx;
 use crate::channel::broadcaster::OutboundMsg;
 use crate::channel::command_coordinator::{ExecCmd, SubmitAck};
-use crate::channel::command_outcome_broker::{
-    TerminalOutcome, TerminalPublication,
-};
+use crate::channel::command_outcome_broker::{TerminalOutcome, TerminalPublication};
 use crate::channel::coordinator_helpers::{action_error, chat_uuid, extract_command_id};
 use crate::channel::metadata_command_processor::MetadataRuntimePort;
 use crate::channel::runtime_creation::{CreateTerminal, RuntimeCreationTerminalPort};

@@ -17,16 +17,16 @@ use uuid::Uuid;
 // 结构拆分：schema 迁移 / 命令账本 / 项目会话 CRUD / 重启恢复为同目录
 // 实现段（`metadata_migrations.rs` / `metadata_commands.rs` /
 // `metadata_catalog.rs` / `metadata_sessions.rs` / `metadata_recovery.rs`）。
-#[path = "metadata_migrations.rs"]
-mod metadata_migrations;
-#[path = "metadata_commands.rs"]
-mod metadata_commands;
 #[path = "metadata_catalog.rs"]
 mod metadata_catalog;
-#[path = "metadata_sessions.rs"]
-mod metadata_sessions;
+#[path = "metadata_commands.rs"]
+mod metadata_commands;
+#[path = "metadata_migrations.rs"]
+mod metadata_migrations;
 #[path = "metadata_recovery.rs"]
 mod metadata_recovery;
+#[path = "metadata_sessions.rs"]
+mod metadata_sessions;
 
 pub const METADATA_DB_FILE: &str = "metadata.sqlite3";
 #[derive(Debug, Error)]
@@ -325,4 +325,3 @@ pub fn payload_hash(value: &impl Serialize) -> Result<String> {
 pub fn new_id() -> String {
     Uuid::new_v4().to_string()
 }
-

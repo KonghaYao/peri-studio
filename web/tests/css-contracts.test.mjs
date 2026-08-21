@@ -229,8 +229,8 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
   assert.match(composer, /runtimeSummary/);
   assert.doesNotMatch(composer, />\s*effort：/);
   assert.doesNotMatch(composer, />\s*上下文：/);
-  assert.match(composer, /focus-within:border-focus-ring/);
-  assert.match(composer, /has-\[\.composer-input:focus-visible\]:shadow-\[var\(--shadow-float\),0_0_0_1px_var\(--surface\),0_0_0_3px_var\(--focus-ring\)\]/);
+  assert.doesNotMatch(composer, /focus-within:border-focus-ring/);
+  assert.doesNotMatch(composer, /has-\[\.composer-input:focus-visible\]:shadow-/);
   assert.match(composer, /composer-toolbar flex min-h-44 items-center/);
   assert.match(base, /:focus-visible\s*\{\s*outline:\s*2px solid var\(--focus-ring\)/);
 });

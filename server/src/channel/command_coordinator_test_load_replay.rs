@@ -139,7 +139,6 @@ async fn prompt_waits_for_in_flight_load_and_translates_new_binding() {
     }
 }
 
-
 /// 未知 chat → CHAT_NOT_FOUND（同步失败，无 instance 帧）。
 #[tokio::test]
 async fn load_chat_unknown_chat_fails_chat_not_found() {

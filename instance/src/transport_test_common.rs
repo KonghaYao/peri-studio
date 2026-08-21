@@ -7,11 +7,11 @@ use super::*;
 use std::collections::HashMap;
 use std::time::Duration;
 
+use base64::Engine as _;
 use peri_studio_proto::hmac::{
     compute_mac, derive_mac_key, generate_connection_context, mac_input, CHALLENGE_NONCE_LEN,
 };
 use peri_studio_proto::instance::InstanceHello;
-use base64::Engine as _;
 use tokio::sync::mpsc;
 
 use crate::auth::{AuthClient, HelloCtx};

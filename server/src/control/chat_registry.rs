@@ -11,8 +11,8 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use std::time::{Duration, Instant};
 
-use peri_studio_proto::schema::SessionConfigOptionProjection;
 use chrono::{DateTime, Utc};
+use peri_studio_proto::schema::SessionConfigOptionProjection;
 use tokio::sync::{Mutex, OwnedMutexGuard, RwLock};
 use tracing::{debug, info, warn};
 
@@ -439,7 +439,6 @@ impl ChatRegistry {
             .cloned()
             .collect()
     }
-
 }
 
 #[cfg(test)]

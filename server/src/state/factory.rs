@@ -150,7 +150,11 @@ impl Factory {
                 // 维护，与 schema_version 解耦（约定登记见 docs/architecture.md
                 // §5.3）。
                 if root.get(txn, chat_writer::USER_ENTRY_INDEX).is_none() {
-                    root.insert(txn, chat_writer::USER_ENTRY_INDEX, yrs::MapPrelim::default());
+                    root.insert(
+                        txn,
+                        chat_writer::USER_ENTRY_INDEX,
+                        yrs::MapPrelim::default(),
+                    );
                 }
             }
             DocKind::Session => {

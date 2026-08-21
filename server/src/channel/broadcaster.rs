@@ -274,10 +274,7 @@ impl Broadcaster {
         while let Some((doc, update)) = pending.pop_front() {
             // 成功路径：原始 (doc, update) 在迭代结束 drop（省 1 次复制）；
             // Full 分支仍 move 原值入 kept（pending 供 merge，§8.6 必需）。
-            match tx.try_send(OutboundMsg::Frame(encode_update_frame(
-                &doc,
-                &update,
-            ))) {
+            match tx.try_send(OutboundMsg::Frame(encode_update_frame(&doc, &update))) {
                 Ok(()) => continue,
                 Err(TrySendError::Full(_)) => {
                     // 慢消费者：本帧与剩余帧全部保留（保持序，push_back 不颠倒

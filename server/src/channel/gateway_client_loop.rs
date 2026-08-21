@@ -353,6 +353,4 @@ impl Gateway {
             DispatchOutcome::None => None,
         }
     }
-
-
 }

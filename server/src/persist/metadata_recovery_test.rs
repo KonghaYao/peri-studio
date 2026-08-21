@@ -1,8 +1,6 @@
 use tempfile::tempdir;
 
-use super::metadata::{
-    MetadataStore, NewSession,
-};
+use super::metadata::{MetadataStore, NewSession};
 
 #[tokio::test]
 async fn restart_recovers_durable_acp_id_and_clears_runtime_chat() {
@@ -205,4 +203,3 @@ async fn runtime_rewind_restart_never_redelivers_dispatch_or_confirmed_effect() 
         Some("server_restart_after_rewind_confirmed")
     );
 }
-

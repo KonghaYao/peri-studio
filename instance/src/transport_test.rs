@@ -8,8 +8,8 @@ use super::transport_test_common::*;
 use super::*;
 use std::time::Duration;
 
-use peri_studio_proto::frame::Frame;
 use futures::SinkExt;
+use peri_studio_proto::frame::Frame;
 use tokio::net::TcpListener;
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::protocol::CloseFrame;

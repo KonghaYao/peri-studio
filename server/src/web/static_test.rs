@@ -5,9 +5,7 @@ use tokio::io::AsyncReadExt as _;
 use tokio::net::{TcpListener, TcpStream};
 
 use super::test_util::auth_socket_response;
-use crate::web::{
-    cache_headers_for_static, content_type, route, serve, ASSETS,
-};
+use crate::web::{cache_headers_for_static, content_type, route, serve, ASSETS};
 
 #[test]
 fn route_resolves_static_assets() {

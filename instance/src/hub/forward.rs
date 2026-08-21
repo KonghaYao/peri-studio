@@ -192,7 +192,12 @@ pub(super) async fn forward_child_output(
                 ring_push(state, &sid, seq, evt.frame, config.ring_capacity);
             }
         }
-        ChildOutput::Exit { session_id, code, stderr_tail, signal } => {
+        ChildOutput::Exit {
+            session_id,
+            code,
+            stderr_tail,
+            signal,
+        } => {
             let sid = session_id;
             // 水位更新（epoch 保留供重建 +1；last_seq 诊断；pgid 置 0，§4.4.3）。
             {
@@ -223,9 +228,11 @@ pub(super) async fn forward_child_output(
                 // 诊断：非零退出码附信号号与 stderr 首部（§9.3 脱敏：仅前
                 // 512 字节，已截断标记；定位 spawn 即崩类问题必需）。
                 match &stderr_tail {
-                    Some(tail) => tracing::warn!(target: "peri_studio::instance", chat_id = %sid, code,
+                    Some(tail) => {
+                        tracing::warn!(target: "peri_studio::instance", chat_id = %sid, code,
                         signal, stderr_tail = %tail,
-                        "ACP process exited abnormally (stderr head, truncated diagnostic)"),
+                        "ACP process exited abnormally (stderr head, truncated diagnostic)")
+                    }
                     None => tracing::warn!(target: "peri_studio::instance", chat_id = %sid, code,
                         signal, "ACP process exited abnormally (no stderr output)"),
                 }
@@ -235,10 +242,11 @@ pub(super) async fn forward_child_output(
             }
 
             if authenticated {
-                let frame = Frame::InstanceProcessExit(peri_studio_proto::instance::InstanceProcessExit {
-                    chat_id: sid.clone(),
-                    code,
-                });
+                let frame =
+                    Frame::InstanceProcessExit(peri_studio_proto::instance::InstanceProcessExit {
+                        chat_id: sid.clone(),
+                        code,
+                    });
                 let _ = handle.send(frame).await;
             } else {
                 // 断线期间不缓冲 process_exit【决策】：终态由重连后 hello 的

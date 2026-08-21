@@ -1,5 +1,5 @@
 import { createMemo, createResource, For, Show, type JSX } from 'solid-js';
-import { Button, CopyButton } from '../../../components/ui';
+import { CopyButton, DownloadIcon, IconButton, RefreshIcon } from '../../../components/ui';
 import { memoizeAsync } from './async-cache';
 import { downloadText, safeFilename } from './download';
 import { MathExpression } from './Math';
@@ -76,9 +76,9 @@ export function CodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { streamin
   return <div class="md-code-block my-12 overflow-hidden rounded-10 border border-border-subtle bg-surface" data-highlighted={highlighted()?.result ? 'true' : 'false'} data-incomplete={props.incomplete ? 'true' : undefined}>
     <div class="md-code-toolbar flex min-h-38 items-center gap-4 border-b border-divider px-8 py-5">
       <span class="mr-auto flex min-w-0 items-center gap-8 text-12 text-text-secondary"><strong class="font-600">{label()}</strong><Show when={details().filename}><span class="truncate text-text-tertiary">{details().filename}</span></Show></span>
-      <Show when={highlighted()?.error}><Button size="compact" onClick={() => refetch()} aria-label="Retry syntax highlighting">Retry</Button></Show>
+      <Show when={highlighted()?.error}><IconButton size="compact" onClick={() => refetch()} label="Retry syntax highlighting"><RefreshIcon /></IconButton></Show>
       <CopyButton text={details().text} label="Copy code" size="compact" disabled={locked()} />
-      <Button size="compact" disabled={locked()} onClick={() => downloadText(details().text, safeFilename(details().filename || `snippet.${extension()}`, 'snippet.txt'))} aria-label="Download code">Download</Button>
+      <IconButton size="compact" disabled={locked()} onClick={() => downloadText(details().text, safeFilename(details().filename || `snippet.${extension()}`, 'snippet.txt'))} label="Download code"><DownloadIcon /></IconButton>
     </div>
     <pre class="m-0 max-h-520 overflow-auto bg-sidebar-bg px-0 py-12 text-12p5 leading-18 text-text-primary"><code class="block min-w-max bg-transparent p-0 font-mono text-inherit">
       <For each={lines()}>{(line, index) => <span class="md-code-line grid min-h-18 grid-cols-[auto_1fr] px-14">

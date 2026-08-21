@@ -53,7 +53,10 @@ pub(crate) fn acp_replay_provenance(update: &serde_json::Map<String, Value>) -> 
     }
 }
 
-pub(crate) fn raw_replay_provenance(kind: &str, payload: &serde_json::Map<String, Value>) -> EventProvenance {
+pub(crate) fn raw_replay_provenance(
+    kind: &str,
+    payload: &serde_json::Map<String, Value>,
+) -> EventProvenance {
     let marked = match kind {
         "agent_message_chunk"
         | "agent_thought_chunk"
@@ -116,7 +119,11 @@ pub(crate) fn field(obj: &serde_json::Map<String, Value>, names: &[&str]) -> Opt
         .find_map(|n| obj.get(*n).and_then(Value::as_str).map(str::to_string))
 }
 
-pub(crate) fn string_field(obj: &serde_json::Map<String, Value>, camel: &str, snake: &str) -> Option<String> {
+pub(crate) fn string_field(
+    obj: &serde_json::Map<String, Value>,
+    camel: &str,
+    snake: &str,
+) -> Option<String> {
     field(obj, &[camel, snake])
 }
 
@@ -139,7 +146,9 @@ pub(crate) fn normalize_activity_label(value: &str) -> Option<String> {
     ))
 }
 
-pub(crate) fn parse_activity_metrics(value: Option<&Value>) -> Result<BTreeMap<String, u64>, MapError> {
+pub(crate) fn parse_activity_metrics(
+    value: Option<&Value>,
+) -> Result<BTreeMap<String, u64>, MapError> {
     const KEYS: &[&str] = &[
         "tool_count",
         "duration_ms",
@@ -182,7 +191,9 @@ pub(crate) fn parse_activity_metrics(value: Option<&Value>) -> Result<BTreeMap<S
     Ok(result)
 }
 
-pub(crate) fn parse_activity_attributes(value: Option<&Value>) -> Result<BTreeMap<String, String>, MapError> {
+pub(crate) fn parse_activity_attributes(
+    value: Option<&Value>,
+) -> Result<BTreeMap<String, String>, MapError> {
     let Some(value) = value else {
         return Ok(BTreeMap::new());
     };
@@ -241,7 +252,11 @@ pub(crate) fn nonterminal_tool_status(status: Option<&str>) -> ToolCallStatus {
 
 /// 非负整数提取（camelCase 优先，snake_case 回退）：负数/超 u32 上限 →
 /// None（缺省语义，不整体拒绝——§6.3 仅必填字段缺失才 MissingField）。
-pub(crate) fn number_field(obj: &serde_json::Map<String, Value>, camel: &str, snake: &str) -> Option<u32> {
+pub(crate) fn number_field(
+    obj: &serde_json::Map<String, Value>,
+    camel: &str,
+    snake: &str,
+) -> Option<u32> {
     [camel, snake]
         .iter()
         .find_map(|n| obj.get(*n).and_then(Value::as_u64))

@@ -414,7 +414,6 @@ impl MetadataStore {
         })
     }
 
-
     pub async fn generation(&self) -> Result<(i64, i64)> {
         let row = sqlx::query(
             "SELECT generation,projected_generation FROM projection_state WHERE singleton=1",

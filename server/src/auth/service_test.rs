@@ -9,9 +9,7 @@ use futures::executor::block_on;
 use tempfile::tempdir;
 
 use peri_studio_proto::conn::Auth;
-use peri_studio_proto::hmac::{
-    compute_mac, derive_mac_key, mac_input, verify_mac, NONCE_TTL,
-};
+use peri_studio_proto::hmac::{compute_mac, derive_mac_key, mac_input, verify_mac, NONCE_TTL};
 use peri_studio_proto::version::PROTOCOL_VERSION;
 use peri_studio_proto::whitelist::Role;
 

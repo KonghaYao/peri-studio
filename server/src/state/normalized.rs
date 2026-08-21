@@ -311,4 +311,3 @@ impl EventBody {
         }
     }
 }
-

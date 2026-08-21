@@ -385,4 +385,3 @@ fn session_list_orphan_key_removed_by_full_sync() {
         .unwrap();
     assert_eq!(b.get(&txn, "title").unwrap().cast::<String>().unwrap(), "B");
 }
-

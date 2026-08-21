@@ -23,8 +23,7 @@ use crate::state::session_list;
 
 use super::aggregator::Aggregator;
 use super::aggregator_write_catalog::{
-    write_agent_activity, write_agent_plan, write_capabilities, write_chat_info,
-    AgentActivityWrite,
+    write_agent_activity, write_agent_plan, write_capabilities, write_chat_info, AgentActivityWrite,
 };
 use super::aggregator_write_helpers::{
     write_agent_config, write_agent_status, write_agent_usage, write_input_prediction,

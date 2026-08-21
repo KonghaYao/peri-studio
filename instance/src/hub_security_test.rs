@@ -3,8 +3,8 @@
 use super::hub_test_common::*;
 use super::*;
 
-use peri_studio_proto::instance::InstanceSpawnAck;
 use super::forward::ChildFrameDeliveryClass;
+use peri_studio_proto::instance::InstanceSpawnAck;
 use tokio::net::TcpListener;
 
 #[test]
@@ -81,7 +81,7 @@ async fn test_sensitive_oauth_frame_is_online_only_and_not_replayed() {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     let config = test_config(addr, dir.path());
-    let hub = tokio::spawn(run(config));
+    let hub = tokio::spawn(run(config, tokio_util::sync::CancellationToken::new()));
     let (mut sink, mut stream, _) = handshake_server(accept_ws(&listener).await).await;
     let script = format!(
         "echo '{{\"jsonrpc\":\"2.0\",\"method\":\"peri/oauth\",\"params\":{{\"schemaVersion\":1,\"flowId\":\"flow-1\",\"serverName\":\"docs\",\"status\":\"authorization_needed\",\"authorizationUrl\":\"https://auth.example.test/?state={SECRET}\"}}}}'; exec sleep 30"
@@ -120,7 +120,7 @@ async fn test_offline_sensitive_oauth_frame_never_enters_buffer_or_disk() {
     let mut config = test_config(addr, dir.path());
     config.reconnect_base = Duration::from_millis(700);
     config.mem_buffer_bytes = 1;
-    let hub = tokio::spawn(run(config));
+    let hub = tokio::spawn(run(config, tokio_util::sync::CancellationToken::new()));
 
     let (mut sink1, mut stream1, _) = handshake_server(accept_ws(&listener).await).await;
     let script = format!(
@@ -166,7 +166,7 @@ async fn test_oversize_sensitive_oauth_frame_is_dropped_without_retention() {
     let addr = listener.local_addr().unwrap();
     let mut config = test_config(addr, dir.path());
     config.max_frame_bytes = 512;
-    let hub = tokio::spawn(run(config));
+    let hub = tokio::spawn(run(config, tokio_util::sync::CancellationToken::new()));
     let (mut sink, mut stream, _) = handshake_server(accept_ws(&listener).await).await;
     let padding = "x".repeat(1500);
     let script = format!(

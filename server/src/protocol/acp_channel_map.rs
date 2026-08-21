@@ -20,7 +20,9 @@ use peri_studio_proto::schema::{BlockVisibility, ChatStatus, PublicError, TurnSt
 use crate::state::normalized::EventBody;
 
 use super::acp_channel::AcpChannel;
-use super::acp_channel_config::{normalize_agent_config, parse_agent_plan, parse_available_commands};
+use super::acp_channel_config::{
+    normalize_agent_config, parse_agent_plan, parse_available_commands,
+};
 use super::acp_channel_parse::{
     nonterminal_tool_status, number_field, opt_json, permission_options, public_error, required,
     string_field, truncate_identifier, truncate_text, MapError,

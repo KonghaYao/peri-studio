@@ -38,7 +38,8 @@ pub(super) fn elicitation_response_fingerprint(
         chat_id: &'a str,
         elicitation_id: &'a str,
         action: peri_studio_proto::action::ElicitationResponseAction,
-        answers: &'a std::collections::BTreeMap<String, peri_studio_proto::action::ElicitationAnswer>,
+        answers:
+            &'a std::collections::BTreeMap<String, peri_studio_proto::action::ElicitationAnswer>,
     }
 
     payload_hash(&CanonicalElicitationResponse {

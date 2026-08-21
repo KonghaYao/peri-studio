@@ -158,8 +158,6 @@ pub(super) struct CoordInner {
 }
 
 impl CommandCoordinator {
-
-
     /// 提交入口（§7.4 规则 6）：三条面——metadata 直通（独立子系统）、
     /// 管理面直通（`submit_management_action`）、队列面
     /// （`submit_queued_action`：临界区内 去重判定 → try_reserve → 入队）。
@@ -247,7 +245,3 @@ impl CommandCoordinator {
             .await
     }
 }
-
-
-
-

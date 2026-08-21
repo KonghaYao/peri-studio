@@ -34,8 +34,7 @@ mod watermark;
 pub use disk::DiskSegment;
 pub use ring::RingBuffer;
 pub use watermark::{
-    DataDirIdentity, ProcessFingerprint, SessionWatermark, Watermark, WatermarkError,
-    WatermarkFile,
+    DataDirIdentity, ProcessFingerprint, SessionWatermark, Watermark, WatermarkError, WatermarkFile,
 };
 
 use std::collections::HashMap;
@@ -181,13 +180,11 @@ impl Buffer {
             entry.dropped_disk_failed += 1;
             return PushOutcome::DiskFailed;
         }
-        if self.mem_bytes + size <= self.mem_bytes_limit
-            && self.mem_frames < self.mem_frames_limit
+        if self.mem_bytes + size <= self.mem_bytes_limit && self.mem_frames < self.mem_frames_limit
         {
             entry.mem_bytes += size;
             entry.mem.push_back((bf, size));
-            if classify_frame(&entry.mem.back().expect("just pushed").0.frame) == FrameKind::Event
-            {
+            if classify_frame(&entry.mem.back().expect("just pushed").0.frame) == FrameKind::Event {
                 entry.mem_event_count += 1;
             }
             self.mem_bytes += size;
@@ -222,7 +219,8 @@ impl Buffer {
         self.total_frames += 1;
 
         // 预算丢弃（§8.5 全局合计口径：任一超限触发，round-robin 跨 session）。
-        while self.total_bytes > self.total_bytes_limit || self.total_frames > self.total_frames_limit
+        while self.total_bytes > self.total_bytes_limit
+            || self.total_frames > self.total_frames_limit
         {
             if !self.evict_one(false) {
                 break;

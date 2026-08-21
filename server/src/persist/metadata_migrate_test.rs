@@ -1,9 +1,7 @@
 use sqlx::{Connection, Executor};
 use tempfile::tempdir;
 
-use super::metadata::{
-    payload_hash, BeginOAuthCommand, MetadataError, MetadataStore,
-};
+use super::metadata::{payload_hash, BeginOAuthCommand, MetadataError, MetadataStore};
 
 #[tokio::test]
 async fn v2_catalog_migrates_additively_to_current_schema() {
@@ -364,4 +362,3 @@ async fn owner_lock_is_exclusive_and_db_files_are_private() {
     drop(store);
     MetadataStore::open(dir.path()).await.unwrap();
 }
-

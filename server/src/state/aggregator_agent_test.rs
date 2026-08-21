@@ -304,4 +304,3 @@ fn command_catalog_projects_descriptions_and_requires_negotiated_local_skill_cap
         .unwrap();
     assert_eq!(local.get(&txn, "kind"), Some("command".into()));
 }
-

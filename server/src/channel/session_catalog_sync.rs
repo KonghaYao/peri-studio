@@ -322,10 +322,7 @@ fn select_poll_targets(chats: Vec<(String, ChatRecord)>) -> HashMap<(String, Str
         // 轮询通道必须是「有存活证据的绑定 runtime」：未确认的 chat（如
         // server 重启重建、进程已退出）查询必然失败，跳过以免每轮向
         // instance 空发 session/list。
-        if record.state.is_terminal()
-            || record.session_id.is_none()
-            || !record.runtime_confirmed
-        {
+        if record.state.is_terminal() || record.session_id.is_none() || !record.runtime_confirmed {
             continue;
         }
         targets

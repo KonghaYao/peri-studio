@@ -15,10 +15,10 @@
 //! 职责边界：本文件只做「驱动与屏障推进」，不持有失败裁决语义（裁决在
 //! cleanup 模块）也不持有会话绑定语义（绑定在 bind 模块）。
 
+use chrono::Utc;
 use peri_studio_proto::ack::ErrorCode;
 use peri_studio_proto::action::ActionEnvelope;
 use peri_studio_proto::instance::InstanceSpawn;
-use chrono::Utc;
 use tracing::warn;
 use uuid::Uuid;
 
@@ -34,7 +34,11 @@ use crate::protocol::negotiated_peri_extensions;
 use crate::state::doc_manager::{DocCommand, SubmitResult};
 
 impl RuntimeCreation {
-    pub(super) async fn execute_inner(&self, command: &ExecCmd, terminal: &dyn RuntimeCreationTerminalPort) {
+    pub(super) async fn execute_inner(
+        &self,
+        command: &ExecCmd,
+        terminal: &dyn RuntimeCreationTerminalPort,
+    ) {
         let command_id_text = extract_command_id(&command.action).unwrap_or_default();
         let command_id = match Uuid::parse_str(&command_id_text) {
             Ok(command_id) => command_id,

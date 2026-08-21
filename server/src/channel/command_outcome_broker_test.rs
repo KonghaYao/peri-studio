@@ -23,6 +23,7 @@ use tempfile::TempDir;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
+use super::command_outcome_broker_terminal::admit_terminal_fallback;
 use super::*;
 use crate::channel::command_identity::prompt_payload_fingerprint;
 use crate::persist::outbox::{
@@ -31,7 +32,6 @@ use crate::persist::outbox::{
 };
 use crate::persist::PersistConfig;
 use crate::state::registry::{RegistryMsg, RegistryState};
-use super::command_outcome_broker_terminal::admit_terminal_fallback;
 
 /// 主题子模块：observer 附加 / fallback 重放 / permission recovery / 容量。
 #[cfg(test)]

@@ -184,7 +184,11 @@ impl RegistryState {
     /// 全局状态（§17.2）：条件上报，任一 cause 活跃 → Degraded。
     pub async fn report_condition(&self, cause: DegradeCause) -> Result<(), RegistryError> {
         let was_empty = {
-            let mut conditions = self.inner.conditions.lock().unwrap_or_else(|e| e.into_inner());
+            let mut conditions = self
+                .inner
+                .conditions
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             let was_empty = conditions.is_empty();
             conditions.insert(cause);
             was_empty
@@ -203,7 +207,11 @@ impl RegistryState {
     /// 全局状态（§17.2）：条件清除；全部清除 → Healthy。
     pub async fn clear_condition(&self, cause: DegradeCause) -> Result<(), RegistryError> {
         let empty = {
-            let mut conditions = self.inner.conditions.lock().unwrap_or_else(|e| e.into_inner());
+            let mut conditions = self
+                .inner
+                .conditions
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             conditions.remove(&cause);
             conditions.is_empty()
         };
@@ -224,7 +232,12 @@ impl RegistryState {
     /// 「恢复不变量完成置 Healthy」需要置出接口）。
     pub async fn clear_restarting(&self) -> Result<(), RegistryError> {
         self.inner.restarting.store(false, Ordering::SeqCst);
-        let degraded = !self.inner.conditions.lock().unwrap_or_else(|e| e.into_inner()).is_empty();
+        let degraded = !self
+            .inner
+            .conditions
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .is_empty();
         let status = if degraded {
             GlobalStatus::Degraded
         } else {
@@ -239,7 +252,13 @@ impl RegistryState {
         if self.inner.restarting.load(Ordering::SeqCst) {
             return GlobalStatus::Restarting;
         }
-        if self.inner.conditions.lock().unwrap_or_else(|e| e.into_inner()).is_empty() {
+        if self
+            .inner
+            .conditions
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .is_empty()
+        {
             GlobalStatus::Healthy
         } else {
             GlobalStatus::Degraded

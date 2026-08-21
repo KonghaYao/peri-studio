@@ -120,7 +120,11 @@ pub(crate) fn read_session_active_turn(pair: &DocPair) -> (Option<String>, Strin
     }
 }
 
-pub(crate) fn migrate_permission_tool(pair: &mut DocPair, tool_call_id: Option<&str>, next: ToolCallStatus) {
+pub(crate) fn migrate_permission_tool(
+    pair: &mut DocPair,
+    tool_call_id: Option<&str>,
+    next: ToolCallStatus,
+) {
     let Some(tool_call_id) = tool_call_id else {
         return;
     };
@@ -156,7 +160,8 @@ pub(crate) fn bump_control_projection(pair: &mut DocPair) {
 pub(crate) fn report_projection_failure(registry: &RegistryState) {
     let registry = registry.clone();
     tokio::spawn(async move {
-        let _ = registry.report_condition(DegradeCause::ProjectionError).await;
+        let _ = registry
+            .report_condition(DegradeCause::ProjectionError)
+            .await;
     });
 }
-

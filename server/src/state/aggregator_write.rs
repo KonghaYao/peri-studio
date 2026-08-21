@@ -4,10 +4,22 @@
 //! [`Aggregator::write`] 的预读与 Chat Doc 事务内写入；control 侧写入
 //! （CAS 自开事务，须在 chat 事务 drop 后）见 `aggregator_write_control.rs`。
 
+use super::{
+    aggregator::{Aggregator, TOOL_RESULT_MAX_BYTES},
+    aggregator_write_helpers::{advance_tool_status, default_tool_call, extension_negotiated},
+};
+use crate::state::{
+    chat_writer::{self, ContentKind},
+    doc_pair::DocPair,
+    factory::ROOT,
+    normalized::{EventBody, EventProvenance, NormalizedEvent},
+    permission,
+};
+use peri_studio_proto::{
+    action::PermissionDecision,
+    schema::{EntryKind, EntryRole, EntryStatus, ToolCallProjection, ToolCallStatus, TurnStatus},
+};
 use yrs::{Transact, WriteTxn};
-use peri_studio_proto::{action::PermissionDecision, schema::{EntryKind, EntryRole, EntryStatus, ToolCallProjection, ToolCallStatus, TurnStatus}};
-use crate::state::{chat_writer::{self, ContentKind}, doc_pair::DocPair, factory::ROOT, normalized::{EventBody, EventProvenance, NormalizedEvent}, permission};
-use super::{aggregator::{Aggregator, TOOL_RESULT_MAX_BYTES}, aggregator_write_helpers::{advance_tool_status, default_tool_call, extension_negotiated}};
 
 impl Aggregator {
     pub(crate) fn write(&self, pair: &mut DocPair, ev: &NormalizedEvent) {
@@ -185,7 +197,13 @@ impl Aggregator {
                         text,
                         ContentKind::Reasoning,
                     );
-                    chat_writer::set_reasoning_visibility(&mut txn, &root, &entry_id, &block_id, *visibility);
+                    chat_writer::set_reasoning_visibility(
+                        &mut txn,
+                        &root,
+                        &entry_id,
+                        &block_id,
+                        *visibility,
+                    );
                     chat_writer::record_entry_origin(
                         &mut txn,
                         &root,
@@ -498,11 +516,3 @@ impl Aggregator {
         self.write_control_side(pair, ev, replay_active);
     }
 }
-
-
-
-
-
-
-
-

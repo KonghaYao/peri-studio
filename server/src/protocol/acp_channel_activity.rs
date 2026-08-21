@@ -22,8 +22,8 @@ use crate::state::normalized::{EventBody, PermissionToolSnapshot};
 use super::acp_channel::{AcpChannel, PermissionRequestFields, TOOL_ARGUMENTS_MAX_BYTES};
 use super::acp_channel_parse::{
     normalize_activity_label, normalize_prediction_text, parse_activity_attributes,
-    parse_activity_metrics, required, string_field, validate_prediction_actions,
-    valid_activity_correlation, MapError,
+    parse_activity_metrics, required, string_field, valid_activity_correlation,
+    validate_prediction_actions, MapError,
 };
 
 impl AcpChannel {

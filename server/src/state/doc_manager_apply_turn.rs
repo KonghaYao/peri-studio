@@ -18,7 +18,11 @@ use crate::state::doc_pair::DocPair;
 
 use super::doc_manager_apply_event::{is_terminal_turn, read_session_active_turn};
 
-pub(crate) fn apply_turn_group(pair: &mut DocPair, _agg: &mut Aggregator, cmd: &DocCommand) -> ApplyResult {
+pub(crate) fn apply_turn_group(
+    pair: &mut DocPair,
+    _agg: &mut Aggregator,
+    cmd: &DocCommand,
+) -> ApplyResult {
     match cmd {
         DocCommand::MarkTurnInterrupted { turn_id } => {
             // 读 active_turn：匹配且非终态 → 置 interrupted（§7.3）。

@@ -159,12 +159,12 @@ fn truncated_text() {
 }
 
 // ── 主题拆分（#[path] 子模块，经 use super::* 共享 helper 与符号）─────
+#[path = "acp_channel_config_test.rs"]
+mod config;
 #[path = "acp_channel_map_test.rs"]
 mod map;
 #[path = "acp_channel_permission_test.rs"]
 mod permission;
-#[path = "acp_channel_config_test.rs"]
-mod config;
 #[path = "acp_channel_replay_test.rs"]
 mod replay;
 #[path = "acp_channel_rpc_test.rs"]

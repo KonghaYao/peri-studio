@@ -56,7 +56,13 @@ fn poll_targets_are_live_bound_and_deduplicated_by_exact_instance_and_cwd() {
             // 无存活证据的 chat（server 重启重建/进程已退出）：不作为
             // 轮询通道，查询必然失败（§8.3）。
             "unconfirmed".into(),
-            record(ChatState::Accepting, "local", "/repo2", Some("acp-f"), false),
+            record(
+                ChatState::Accepting,
+                "local",
+                "/repo2",
+                Some("acp-f"),
+                false,
+            ),
         ),
     ]);
 

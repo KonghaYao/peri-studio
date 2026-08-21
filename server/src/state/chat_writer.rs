@@ -36,8 +36,8 @@ use crate::state::factory::ROOT;
 use crate::state::view_store::TransactionCtx;
 
 pub(crate) use super::chat_writer_blocks::{
-    append_block, append_text_delta, cancel_nonterminal_tools_for_turn,
-    ensure_entry_with_blocks, set_reasoning_visibility, upsert_tool_call,
+    append_block, append_text_delta, cancel_nonterminal_tools_for_turn, ensure_entry_with_blocks,
+    set_reasoning_visibility, upsert_tool_call,
 };
 pub(crate) use super::chat_writer_entries::{
     clear_input_prediction, create_pending_prompt_entry, create_user_entry, prompt_entry_turn_id,
@@ -158,7 +158,10 @@ fn indexed_user_entry<T: ReadTxn>(
     root: &yrs::MapRef,
     turn_id: &str,
 ) -> Option<(String, yrs::MapRef)> {
-    let index = root.get(txn, USER_ENTRY_INDEX)?.cast::<yrs::MapRef>().ok()?;
+    let index = root
+        .get(txn, USER_ENTRY_INDEX)?
+        .cast::<yrs::MapRef>()
+        .ok()?;
     let entry_id = index.get(txn, turn_id)?.cast::<String>().ok()?;
     let entry = root
         .get(txn, "entries")?
@@ -212,10 +215,7 @@ fn scan_user_entry<T: ReadTxn>(
 /// `ensure_user_entry_indexed`）。对索引缺失/键 stale 的 doc，judge 重复命中
 /// （不经过写路径）时每次查询仍 O(n) 扫描，属已知边界；一旦任何新 user
 /// entry 写路径经过即整体自愈。
-pub fn user_entry_for_turn<T: ReadTxn>(
-    txn: &T,
-    turn_id: &str,
-) -> Option<(String, yrs::MapRef)> {
+pub fn user_entry_for_turn<T: ReadTxn>(txn: &T, turn_id: &str) -> Option<(String, yrs::MapRef)> {
     let root = root_map_read(txn)?;
     let Some(index) = root
         .get(txn, USER_ENTRY_INDEX)
@@ -242,7 +242,9 @@ pub(crate) fn ensure_user_entry_indexed(
     entry_id: &str,
 ) {
     let index = root.get_or_init::<_, yrs::MapRef>(txn, USER_ENTRY_INDEX);
-    let current = index.get(txn, turn_id).and_then(|value| value.cast::<String>().ok());
+    let current = index
+        .get(txn, turn_id)
+        .and_then(|value| value.cast::<String>().ok());
     if current.as_deref() != Some(entry_id) {
         index.insert(txn, turn_id, entry_id.to_string());
     }

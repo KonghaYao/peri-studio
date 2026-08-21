@@ -224,7 +224,10 @@ async fn persisted_permission_recovery_without_runtime_fails_closed() {
         .await
     {
         SubmitAck::Failed(error) => {
-            assert_eq!(error.code, peri_studio_proto::ack::ErrorCode::DeliveryUnknown);
+            assert_eq!(
+                error.code,
+                peri_studio_proto::ack::ErrorCode::DeliveryUnknown
+            );
             assert!(!error.retryable);
             assert!(error.message.contains("delivery result is unknown"));
         }
@@ -244,7 +247,10 @@ async fn persisted_permission_recovery_without_runtime_fails_closed() {
     env.chats.transition(S2, ChatState::Ended).await.unwrap();
     match env.coordinator.submit(&ctx("c"), action, tx).await {
         SubmitAck::Failed(error) => {
-            assert_eq!(error.code, peri_studio_proto::ack::ErrorCode::DeliveryUnknown);
+            assert_eq!(
+                error.code,
+                peri_studio_proto::ack::ErrorCode::DeliveryUnknown
+            );
             assert!(!error.retryable);
             assert!(error.message.contains("operator reconciliation"));
         }

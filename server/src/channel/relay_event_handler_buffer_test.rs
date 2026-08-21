@@ -146,7 +146,10 @@ async fn buffer_sync_after_disconnect_recovers_chat_from_gap() {
         .relay
         .on_instance_event(
             "local",
-            &ev(1, json!({"jsonrpc": "2.0", "method": "agent/status", "params": {"status": "busy"}})),
+            &ev(
+                1,
+                json!({"jsonrpc": "2.0", "method": "agent/status", "params": {"status": "busy"}}),
+            ),
         )
         .await;
     assert!(matches!(r, ConsumeResult::Delivered { applied: true, .. }));
@@ -205,7 +208,10 @@ async fn buffer_sync_uncalibratable_keeps_gap() {
         .relay
         .on_instance_event(
             "local",
-            &ev(1, json!({"jsonrpc": "2.0", "method": "agent/status", "params": {"status": "busy"}})),
+            &ev(
+                1,
+                json!({"jsonrpc": "2.0", "method": "agent/status", "params": {"status": "busy"}}),
+            ),
         )
         .await;
     assert!(matches!(r, ConsumeResult::Delivered { applied: true, .. }));

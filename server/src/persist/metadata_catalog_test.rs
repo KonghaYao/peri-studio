@@ -1,8 +1,6 @@
 use tempfile::tempdir;
 
-use super::metadata::{
-    MetadataError, MetadataStore, NewSession,
-};
+use super::metadata::{MetadataError, MetadataStore, NewSession};
 
 #[tokio::test]
 async fn project_archive_is_reversible_without_losing_sessions() {

@@ -322,7 +322,9 @@ async fn broadcast_stream_delivers_to_multiple_subscribers() {
         let txn = d.transact();
         txn.encode_state_as_update_v1(&yrs::StateVector::default())
     };
-    sink.persist_update(doc.clone(), update.clone()).await.unwrap();
+    sink.persist_update(doc.clone(), update.clone())
+        .await
+        .unwrap();
     for rx in [&mut rx1, &mut rx2] {
         let msg = tokio::time::timeout(std::time::Duration::from_secs(2), rx.recv())
             .await
@@ -332,4 +334,3 @@ async fn broadcast_stream_delivers_to_multiple_subscribers() {
         assert_eq!(msg.update, update, "两订阅者 update 内容一致");
     }
 }
-

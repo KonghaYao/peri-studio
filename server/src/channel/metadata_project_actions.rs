@@ -64,15 +64,7 @@ impl MetadataCommandProcessor {
                     || projects.mirror_legacy_workspace(&p).await.is_err()
                     || projects
                         .metadata()
-                        .update_command(
-                            command_id,
-                            "committed",
-                            Some(&id),
-                            None,
-                            None,
-                            None,
-                            None,
-                        )
+                        .update_command(command_id, "committed", Some(&id), None, None, None, None)
                         .await
                         .is_err()
                 {
@@ -95,15 +87,8 @@ impl MetadataCommandProcessor {
                         true,
                     ));
                 }
-                self.send_metadata_ack(
-                    cmd,
-                    AckStatus::Committed,
-                    Some(&id),
-                    None,
-                    None,
-                    None,
-                )
-                .await;
+                self.send_metadata_ack(cmd, AckStatus::Committed, Some(&id), None, None, None)
+                    .await;
             }
             Err(_) => {
                 let _ = projects
@@ -139,10 +124,7 @@ impl MetadataCommandProcessor {
         command_id: &str,
         project_id: &str,
     ) -> SubmitAck {
-        if projects
-            .archive_project_metadata(project_id)
-            .await
-            .is_err()
+        if projects.archive_project_metadata(project_id).await.is_err()
             || projects
                 .metadata()
                 .update_command(
@@ -209,8 +191,15 @@ impl MetadataCommandProcessor {
                 true,
             ));
         }
-        self.send_metadata_ack(cmd, AckStatus::Committed, Some(project_id), None, None, None)
-            .await;
+        self.send_metadata_ack(
+            cmd,
+            AckStatus::Committed,
+            Some(project_id),
+            None,
+            None,
+            None,
+        )
+        .await;
         SubmitAck::Handled
     }
 
@@ -222,10 +211,7 @@ impl MetadataCommandProcessor {
         command_id: &str,
         project_id: &str,
     ) -> SubmitAck {
-        if projects
-            .restore_project_metadata(project_id)
-            .await
-            .is_err()
+        if projects.restore_project_metadata(project_id).await.is_err()
             || projects
                 .metadata()
                 .update_command(
@@ -292,8 +278,15 @@ impl MetadataCommandProcessor {
                 true,
             ));
         }
-        self.send_metadata_ack(cmd, AckStatus::Committed, Some(project_id), None, None, None)
-            .await;
+        self.send_metadata_ack(
+            cmd,
+            AckStatus::Committed,
+            Some(project_id),
+            None,
+            None,
+            None,
+        )
+        .await;
         SubmitAck::Handled
     }
 
@@ -377,8 +370,15 @@ impl MetadataCommandProcessor {
                 true,
             ));
         }
-        self.send_metadata_ack(cmd, AckStatus::Committed, Some(project_id), None, None, None)
-            .await;
+        self.send_metadata_ack(
+            cmd,
+            AckStatus::Committed,
+            Some(project_id),
+            None,
+            None,
+            None,
+        )
+        .await;
         SubmitAck::Handled
     }
 }

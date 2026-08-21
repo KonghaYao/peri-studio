@@ -1,8 +1,7 @@
 use chrono::Utc;
 
 use crate::persist::outbox::{
-    CommandType, LastError, NewOutboxRecord, OutboxStatus, OutboxStore,
-    RetryableClass,
+    CommandType, LastError, NewOutboxRecord, OutboxStatus, OutboxStore, RetryableClass,
 };
 
 fn test_outbox() -> OutboxStore {
@@ -18,7 +17,6 @@ fn new_rec(chat_id: uuid::Uuid, command_type: CommandType) -> NewOutboxRecord {
         retryable_class: command_type.default_retryable_class(),
     }
 }
-
 
 fn fatal_err() -> LastError {
     LastError::from_error_code(peri_studio_proto::ack::ErrorCode::InvalidState)
@@ -398,4 +396,3 @@ fn elicitation_restart_reconciliation_never_redelivers_one_shot_answers() {
         OutboxStatus::Completed
     );
 }
-

@@ -216,7 +216,11 @@ pub(crate) struct AgentUsageWrite<'a> {
     pub(crate) stop_reason: Option<&'a str>,
 }
 
-pub(crate) fn write_agent_usage(txn: &mut TransactionCtx<'_>, root: &yrs::MapRef, usage: AgentUsageWrite<'_>) {
+pub(crate) fn write_agent_usage(
+    txn: &mut TransactionCtx<'_>,
+    root: &yrs::MapRef,
+    usage: AgentUsageWrite<'_>,
+) {
     let agent = root.get_or_init::<_, yrs::MapRef>(txn, "agent");
     agent.insert(txn, "context_window", usage.context_window);
     agent.insert(txn, "context_used", usage.context_used);

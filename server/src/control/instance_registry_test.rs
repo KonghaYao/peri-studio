@@ -9,7 +9,9 @@ use serde_json::json;
 use tokio::sync::mpsc;
 
 use peri_studio_proto::frame::Frame;
-use peri_studio_proto::instance::{InstanceHeartbeat, InstanceHello, InstanceKillAck, InstanceSpawn};
+use peri_studio_proto::instance::{
+    InstanceHeartbeat, InstanceHello, InstanceKillAck, InstanceSpawn,
+};
 
 use super::*;
 use crate::channel::OutboundMsg;

@@ -82,7 +82,11 @@ impl CommandOutcomeBroker {
     }
 }
 
-pub(super) fn admit_terminal_fallback(state: &mut OutcomeState, key: OutcomeKey, error: ActionError) {
+pub(super) fn admit_terminal_fallback(
+    state: &mut OutcomeState,
+    key: OutcomeKey,
+    error: ActionError,
+) {
     if state.terminal_fallbacks.len() >= MAX_TERMINAL_FALLBACKS
         && !state.terminal_fallbacks.contains_key(&key)
     {
@@ -156,7 +160,12 @@ pub(super) fn initial_terminal_response(
     terminal_response(command_id, record, duplicate_chat_id)
 }
 
-pub(super) fn action_error(command_id: &str, code: ErrorCode, message: &str, retryable: bool) -> ActionError {
+pub(super) fn action_error(
+    command_id: &str,
+    code: ErrorCode,
+    message: &str,
+    retryable: bool,
+) -> ActionError {
     ActionError {
         command_id: command_id.to_string(),
         code,

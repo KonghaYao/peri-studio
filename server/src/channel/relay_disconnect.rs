@@ -126,7 +126,10 @@ impl RelayEventHandler {
         // status 与 state 同源（review #14）：退出码 0 → ended（正常退出），
         // 非 0 → crashed（进程崩溃）。
         let (status, state) = if exit.code == 0 {
-            (peri_studio_proto::schema::ChatStatus::Ended, ChatState::Ended)
+            (
+                peri_studio_proto::schema::ChatStatus::Ended,
+                ChatState::Ended,
+            )
         } else {
             (
                 peri_studio_proto::schema::ChatStatus::Crashed,

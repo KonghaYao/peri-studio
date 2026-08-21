@@ -100,7 +100,11 @@ async fn first_frame_must_be_subscribe_or_action() {
     let (tx, _rx) = mpsc::channel(8);
     // 首帧 pong → 断开（1011）。
     let o = ch
-        .dispatch(Frame::Pong(peri_studio_proto::conn::Pong {}), &deps, tx.clone())
+        .dispatch(
+            Frame::Pong(peri_studio_proto::conn::Pong {}),
+            &deps,
+            tx.clone(),
+        )
         .await;
     assert!(matches!(o, DispatchOutcome::Disconnect(1011)));
     // 新连接：首帧 auth 类（S→C 帧）→ 断开。
@@ -289,7 +293,9 @@ async fn prompt_delivery_capability_is_connection_bound_and_fail_closed() {
         .dispatch(
             Frame::YsyncSubscribe(YsyncSubscribe {
                 docs: vec![DocId::REGISTRY],
-                client_capabilities: vec![peri_studio_proto::ysync::CAP_PROMPT_DELIVERY_V2.to_string()],
+                client_capabilities: vec![
+                    peri_studio_proto::ysync::CAP_PROMPT_DELIVERY_V2.to_string()
+                ],
             }),
             &deps,
             tx.clone(),
@@ -326,7 +332,9 @@ async fn prompt_delivery_capability_is_connection_bound_and_fail_closed() {
         .dispatch(
             Frame::YsyncSubscribe(YsyncSubscribe {
                 docs: vec![DocId::REGISTRY],
-                client_capabilities: vec![peri_studio_proto::ysync::CAP_PROMPT_DELIVERY_V2.to_string()],
+                client_capabilities: vec![
+                    peri_studio_proto::ysync::CAP_PROMPT_DELIVERY_V2.to_string()
+                ],
             }),
             &deps,
             tx.clone(),

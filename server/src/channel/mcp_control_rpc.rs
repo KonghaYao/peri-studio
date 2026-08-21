@@ -91,7 +91,11 @@ impl McpControl {
         }
     }
 
-    pub(super) async fn execute_start(&self, identity: OAuthCommandIdentity, server_name: String) -> Frame {
+    pub(super) async fn execute_start(
+        &self,
+        identity: OAuthCommandIdentity,
+        server_name: String,
+    ) -> Frame {
         let command_id = identity.command_id.clone();
         let claim = match self.ledger.claim(identity.clone()).await {
             Ok(claim) => claim,
@@ -127,7 +131,11 @@ impl McpControl {
         finish_after_dispatch(permit, &command_id, verdict).await
     }
 
-    pub(super) async fn execute_cancel(&self, identity: OAuthCommandIdentity, flow_id: String) -> Frame {
+    pub(super) async fn execute_cancel(
+        &self,
+        identity: OAuthCommandIdentity,
+        flow_id: String,
+    ) -> Frame {
         let command_id = identity.command_id.clone();
         let claim = match self.ledger.claim(identity.clone()).await {
             Ok(claim) => claim,
@@ -160,7 +168,11 @@ impl McpControl {
         finish_after_dispatch(permit, &command_id, verdict).await
     }
 
-    pub(super) async fn target(&self, command_id: &str, chat_id: &str) -> Result<Target, ActionError> {
+    pub(super) async fn target(
+        &self,
+        command_id: &str,
+        chat_id: &str,
+    ) -> Result<Target, ActionError> {
         let Some(record) = self.chats.entry(chat_id).await else {
             return Err(error(
                 command_id,

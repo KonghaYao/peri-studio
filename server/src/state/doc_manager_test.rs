@@ -8,8 +8,6 @@
 //! `mod doc_manager_test` 声明不变），测试代码仅移动 + 文件级 use
 //! 调整，断言语义零改动（ClockBlocker 抑制技巧、幂等/拒绝契约不变）。
 
-#[path = "doc_manager_test_util.rs"]
-mod util;
 #[path = "doc_manager_apply_event_test.rs"]
 mod apply_event;
 #[path = "doc_manager_batch_test.rs"]
@@ -20,3 +18,5 @@ mod command;
 mod persist;
 #[path = "doc_manager_registry_test.rs"]
 mod registry;
+#[path = "doc_manager_test_util.rs"]
+mod util;

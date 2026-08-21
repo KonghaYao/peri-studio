@@ -132,7 +132,6 @@ impl MetadataStore {
             .fetch_all(&self.pool).await?.into_iter().map(project_from_row).collect())
     }
 
-
     pub async fn import_explicit_session(
         &self,
         id: &str,
@@ -196,7 +195,6 @@ impl MetadataStore {
         Ok(row.map(session_from_row))
     }
 
-
     pub async fn import_completed(&self, source: &str) -> Result<bool> {
         let found: Option<i64> =
             sqlx::query_scalar("SELECT 1 FROM metadata_imports WHERE source=?")
@@ -221,4 +219,3 @@ impl MetadataStore {
         Ok(())
     }
 }
-

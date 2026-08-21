@@ -4,9 +4,9 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
+use futures::future::join_all;
 use peri_studio_proto::instance::{InstanceKillAck, InstanceSpawnAck};
 use peri_studio_proto::Frame;
-use futures::future::join_all;
 
 use crate::child::{self, AcpProcess};
 use crate::transport::TransportHandle;
@@ -26,7 +26,9 @@ pub(super) async fn handle_inbound(
     match frame {
         Frame::InstanceSpawn(spawn) => {
             if !authenticated {
-                state.pre_auth_dropped.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                state
+                    .pre_auth_dropped
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 tracing::warn!(target: "peri_studio::instance", chat_id = %spawn.chat_id,
                     "instance/spawn received before authentication (dropped, not executed)");
                 return;
@@ -35,7 +37,9 @@ pub(super) async fn handle_inbound(
         }
         Frame::InstanceKill(kill) => {
             if !authenticated {
-                state.pre_auth_dropped.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                state
+                    .pre_auth_dropped
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 tracing::warn!(target: "peri_studio::instance", chat_id = %kill.chat_id,
                     "instance/kill received before authentication (dropped, not executed)");
                 return;
@@ -46,7 +50,9 @@ pub(super) async fn handle_inbound(
         // 成功/失败回 `instance/forward_ack`（L1+L2 合并确认）。
         Frame::InstanceForward(fwd) => {
             if !authenticated {
-                state.pre_auth_dropped.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                state
+                    .pre_auth_dropped
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 tracing::warn!(target: "peri_studio::instance", chat_id = %fwd.chat_id,
                     "instance/forward received before authentication (dropped, not executed)");
                 return;
@@ -100,7 +106,11 @@ async fn handle_downlink(state: &HubState, chat_id: &str, frame: &serde_json::Va
 
 /// `instance/spawn`（§4.5/§7）：按 chat_id 幂等；env 白名单 + cwd 校验；
 /// 不二次起进程；epoch = 水位 + 1（新 session 为 1）。
-async fn handle_spawn(state: &HubState, handle: &TransportHandle, spawn: peri_studio_proto::instance::InstanceSpawn) {
+async fn handle_spawn(
+    state: &HubState,
+    handle: &TransportHandle,
+    spawn: peri_studio_proto::instance::InstanceSpawn,
+) {
     let sid = spawn.chat_id.clone();
     let command_id = spawn.command_id.clone();
 

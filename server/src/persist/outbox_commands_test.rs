@@ -1,8 +1,7 @@
 use chrono::Utc;
 
 use crate::persist::outbox::{
-    CommandType, DeliveryVerdict, LastError, NewOutboxRecord, OutboxStatus,
-    OutboxStore,
+    CommandType, DeliveryVerdict, LastError, NewOutboxRecord, OutboxStatus, OutboxStore,
 };
 use crate::persist::StoreError;
 

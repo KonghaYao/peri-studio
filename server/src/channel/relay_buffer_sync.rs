@@ -9,7 +9,9 @@ use tracing::debug;
 
 use peri_studio_proto::instance::InstanceBufferSync;
 
-use crate::channel::relay_event_handler::{ClientRequestRejection, ConsumeResult, RelayEventHandler};
+use crate::channel::relay_event_handler::{
+    ClientRequestRejection, ConsumeResult, RelayEventHandler,
+};
 use crate::protocol::{extract_session_id, NormalizeOutcome};
 
 impl RelayEventHandler {

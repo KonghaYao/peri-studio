@@ -394,4 +394,3 @@ fn replay_first_delta_synthesizes_placeholder_turn() {
     assert!(r.applied);
     assert_eq!(entry_count(&p), 2, "同 turn 增量不重复合成");
 }
-

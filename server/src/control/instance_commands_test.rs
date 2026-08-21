@@ -248,4 +248,3 @@ async fn cleanup_orphans_kill_decision() {
     assert!(chats.pending_close_chats().await.is_empty());
     let _ = (doc, tmp);
 }
-

@@ -6,7 +6,6 @@
 
 use super::*;
 
-
 const SCHEMA_VERSION: i64 = 6;
 
 const MIGRATION_V1: &str = r#"
@@ -130,120 +129,119 @@ CREATE INDEX oauth_commands_updated_idx ON oauth_commands(updated_at DESC);
 "#;
 
 impl MetadataStore {
-pub(super) async fn migrate(&self) -> Result<()> {
-    let mut tx = self.pool.begin().await?;
-    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations(version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)")
+    pub(super) async fn migrate(&self) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations(version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)")
         .execute(&mut *tx).await?;
-    let found: Option<i64> = sqlx::query_scalar("SELECT MAX(version) FROM schema_migrations")
-        .fetch_one(&mut *tx)
-        .await?;
-    let found = found.unwrap_or(0);
-    if found > SCHEMA_VERSION {
-        return Err(MetadataError::NewerSchema {
-            found,
-            supported: SCHEMA_VERSION,
-        });
-    }
-    if found < 1 {
-        for statement in MIGRATION_V1
-            .split(';')
-            .map(str::trim)
-            .filter(|s| !s.is_empty())
-        {
-            sqlx::query(statement).execute(&mut *tx).await?;
-        }
-        sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(1,?)")
-            .bind(now())
-            .execute(&mut *tx)
+        let found: Option<i64> = sqlx::query_scalar("SELECT MAX(version) FROM schema_migrations")
+            .fetch_one(&mut *tx)
             .await?;
-    }
-    if found < 2 {
-        for statement in MIGRATION_V2
-            .split(';')
-            .map(str::trim)
-            .filter(|s| !s.is_empty())
-        {
-            sqlx::query(statement).execute(&mut *tx).await?;
+        let found = found.unwrap_or(0);
+        if found > SCHEMA_VERSION {
+            return Err(MetadataError::NewerSchema {
+                found,
+                supported: SCHEMA_VERSION,
+            });
         }
-        sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(2,?)")
-            .bind(now())
-            .execute(&mut *tx)
-            .await?;
-    }
-    if found < 3 {
-        for statement in MIGRATION_V3
-            .split(';')
-            .map(str::trim)
-            .filter(|s| !s.is_empty())
-        {
-            sqlx::query(statement).execute(&mut *tx).await?;
+        if found < 1 {
+            for statement in MIGRATION_V1
+                .split(';')
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                sqlx::query(statement).execute(&mut *tx).await?;
+            }
+            sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(1,?)")
+                .bind(now())
+                .execute(&mut *tx)
+                .await?;
         }
-        sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(3,?)")
-            .bind(now())
-            .execute(&mut *tx)
-            .await?;
-    }
-    if found < 4 {
-        for statement in MIGRATION_V4
-            .split(';')
-            .map(str::trim)
-            .filter(|s| !s.is_empty())
-        {
-            sqlx::query(statement).execute(&mut *tx).await?;
+        if found < 2 {
+            for statement in MIGRATION_V2
+                .split(';')
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                sqlx::query(statement).execute(&mut *tx).await?;
+            }
+            sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(2,?)")
+                .bind(now())
+                .execute(&mut *tx)
+                .await?;
         }
-        sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(4,?)")
-            .bind(now())
-            .execute(&mut *tx)
-            .await?;
-    }
-    if found < 5 {
-        for statement in MIGRATION_V5
-            .split(';')
-            .map(str::trim)
-            .filter(|s| !s.is_empty())
-        {
-            sqlx::query(statement).execute(&mut *tx).await?;
+        if found < 3 {
+            for statement in MIGRATION_V3
+                .split(';')
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                sqlx::query(statement).execute(&mut *tx).await?;
+            }
+            sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(3,?)")
+                .bind(now())
+                .execute(&mut *tx)
+                .await?;
         }
-        sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(5,?)")
-            .bind(now())
-            .execute(&mut *tx)
-            .await?;
-    }
-    if found < 6 {
-        for statement in MIGRATION_V6
-            .split(';')
-            .map(str::trim)
-            .filter(|s| !s.is_empty())
-        {
-            sqlx::query(statement).execute(&mut *tx).await?;
+        if found < 4 {
+            for statement in MIGRATION_V4
+                .split(';')
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                sqlx::query(statement).execute(&mut *tx).await?;
+            }
+            sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(4,?)")
+                .bind(now())
+                .execute(&mut *tx)
+                .await?;
         }
-        sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(6,?)")
-            .bind(now())
-            .execute(&mut *tx)
-            .await?;
+        if found < 5 {
+            for statement in MIGRATION_V5
+                .split(';')
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                sqlx::query(statement).execute(&mut *tx).await?;
+            }
+            sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(5,?)")
+                .bind(now())
+                .execute(&mut *tx)
+                .await?;
+        }
+        if found < 6 {
+            for statement in MIGRATION_V6
+                .split(';')
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                sqlx::query(statement).execute(&mut *tx).await?;
+            }
+            sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(6,?)")
+                .bind(now())
+                .execute(&mut *tx)
+                .await?;
+        }
+        tx.commit().await?;
+        Ok(())
     }
-    tx.commit().await?;
-    Ok(())
-}
 
-pub(super) async fn verify_pragmas(&self) -> Result<()> {
-    let fk: i64 = sqlx::query_scalar("PRAGMA foreign_keys")
-        .fetch_one(&self.pool)
-        .await?;
-    if fk != 1 {
-        return Err(MetadataError::InvalidState(
-            "foreign_keys is disabled".into(),
-        ));
+    pub(super) async fn verify_pragmas(&self) -> Result<()> {
+        let fk: i64 = sqlx::query_scalar("PRAGMA foreign_keys")
+            .fetch_one(&self.pool)
+            .await?;
+        if fk != 1 {
+            return Err(MetadataError::InvalidState(
+                "foreign_keys is disabled".into(),
+            ));
+        }
+        let mode: String = sqlx::query_scalar("PRAGMA journal_mode")
+            .fetch_one(&self.pool)
+            .await?;
+        if !mode.eq_ignore_ascii_case("wal") {
+            return Err(MetadataError::InvalidState(format!(
+                "journal_mode is {mode}, expected wal"
+            )));
+        }
+        Ok(())
     }
-    let mode: String = sqlx::query_scalar("PRAGMA journal_mode")
-        .fetch_one(&self.pool)
-        .await?;
-    if !mode.eq_ignore_ascii_case("wal") {
-        return Err(MetadataError::InvalidState(format!(
-            "journal_mode is {mode}, expected wal"
-        )));
-    }
-    Ok(())
-}
-
 }

@@ -57,12 +57,7 @@ impl MetadataCommandProcessor {
             .await;
             return SubmitAck::Handled;
         }
-        let rec = projects
-            .metadata()
-            .session(session_id)
-            .await
-            .ok()
-            .flatten();
+        let rec = projects.metadata().session(session_id).await.ok().flatten();
         let project_id = rec.as_ref().map(|r| r.project_id.clone());
         let acp_session_id = rec.as_ref().and_then(|r| r.acp_session_id.clone());
         if projects
@@ -147,12 +142,7 @@ impl MetadataCommandProcessor {
         } else {
             projects.restore_session_metadata(session_id).await
         };
-        let rec = projects
-            .metadata()
-            .session(session_id)
-            .await
-            .ok()
-            .flatten();
+        let rec = projects.metadata().session(session_id).await.ok().flatten();
         let project_id = rec.as_ref().map(|record| record.project_id.as_str());
         let acp_id = rec
             .as_ref()
@@ -280,13 +270,7 @@ impl MetadataCommandProcessor {
         project_id: &str,
         acp_session_id: &str,
     ) -> SubmitAck {
-        let Some(project) = projects
-            .metadata()
-            .project(project_id)
-            .await
-            .ok()
-            .flatten()
-        else {
+        let Some(project) = projects.metadata().project(project_id).await.ok().flatten() else {
             return SubmitAck::Failed(action_error(
                 command_id.to_string(),
                 ErrorCode::InvalidState,
@@ -301,9 +285,9 @@ impl MetadataCommandProcessor {
             .await
             .ok()
             .and_then(|items| {
-                items.into_iter().find(|s| {
-                    s.session_id == acp_session_id && s.cwd == project.cwd
-                })
+                items
+                    .into_iter()
+                    .find(|s| s.session_id == acp_session_id && s.cwd == project.cwd)
             });
         let Some(candidate) = candidate else {
             return SubmitAck::Failed(action_error(

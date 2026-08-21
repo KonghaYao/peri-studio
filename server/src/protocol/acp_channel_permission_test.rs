@@ -63,7 +63,10 @@ fn map_permission_response_allow() {
     match norm(f) {
         NormalizeOutcome::Event(ev) => match ev.body {
             EventBody::PermissionResolved { decision, .. } => {
-                assert_eq!(decision, peri_studio_proto::action::PermissionDecision::Allow)
+                assert_eq!(
+                    decision,
+                    peri_studio_proto::action::PermissionDecision::Allow
+                )
             }
             _ => panic!("expected permission resolved"),
         },

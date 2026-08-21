@@ -18,26 +18,26 @@ pub mod outbox;
 pub mod store;
 
 #[cfg(test)]
-#[path = "metadata_migrate_test.rs"]
-mod metadata_migrate_test;
-#[cfg(test)]
 #[path = "metadata_catalog_test.rs"]
 mod metadata_catalog_test;
 #[cfg(test)]
 #[path = "metadata_commands_test.rs"]
 mod metadata_commands_test;
 #[cfg(test)]
+#[path = "metadata_migrate_test.rs"]
+mod metadata_migrate_test;
+#[cfg(test)]
 #[path = "metadata_recovery_test.rs"]
 mod metadata_recovery_test;
+#[cfg(test)]
+#[path = "outbox_barrier_test.rs"]
+mod outbox_barrier_test;
 #[cfg(test)]
 #[path = "outbox_commands_test.rs"]
 mod outbox_commands_test;
 #[cfg(test)]
 #[path = "outbox_reconcile_test.rs"]
 mod outbox_reconcile_test;
-#[cfg(test)]
-#[path = "outbox_barrier_test.rs"]
-mod outbox_barrier_test;
 #[cfg(test)]
 mod store_test;
 

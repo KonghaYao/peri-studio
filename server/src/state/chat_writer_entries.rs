@@ -16,7 +16,7 @@ use yrs::{Array, Map};
 use peri_studio_proto::schema::{ChatEntry, ContentBlock, EntryKind, EntryRole, EntryStatus};
 
 use crate::state::chat_writer::{
-    entry_kind_str, entry_role_str, entry_status_str, ensure_user_entry_indexed,
+    ensure_user_entry_indexed, entry_kind_str, entry_role_str, entry_status_str,
     user_entry_for_turn, UserEntryRegistration,
 };
 use crate::state::chat_writer_blocks::{write_content_block, write_public_error};

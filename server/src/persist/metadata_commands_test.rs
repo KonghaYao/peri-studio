@@ -1,8 +1,6 @@
 use tempfile::tempdir;
 
-use super::metadata::{
-    payload_hash, BeginCommand, MetadataError, MetadataStore, NewSession,
-};
+use super::metadata::{payload_hash, BeginCommand, MetadataError, MetadataStore, NewSession};
 
 #[tokio::test]
 async fn command_dedup_detects_payload_mismatch_and_replays_result() {
@@ -283,4 +281,3 @@ async fn unknown_activation_atomically_reconciles_command_and_session() {
         "reconciliation_required"
     );
 }
-

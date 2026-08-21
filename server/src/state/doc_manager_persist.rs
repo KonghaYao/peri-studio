@@ -18,8 +18,7 @@ use yrs::{ReadTxn, StateVector, Transact};
 
 use crate::state::aggregator::Aggregator;
 use crate::state::doc_manager::{
-    BatchConfig, ChatMsg, DocUpdate, SendSubscription, SubmitResult, UpdateSink,
-    PERSIST_RETRY_MAX,
+    BatchConfig, ChatMsg, DocUpdate, SendSubscription, SubmitResult, UpdateSink, PERSIST_RETRY_MAX,
 };
 use crate::state::doc_pair::DocPair;
 use crate::state::normalized::{EventBody, NormalizedEvent};
@@ -283,7 +282,11 @@ pub(crate) async fn persist_and_broadcast(
     // chat 事务先提交 → update 先到（§6.4 固定顺序）。
     while let Ok(update) = chat_updates.try_recv() {
         let doc = DocId::chat(chat_id);
-        if sink.persist_update(doc.clone(), update.clone()).await.is_err() {
+        if sink
+            .persist_update(doc.clone(), update.clone())
+            .await
+            .is_err()
+        {
             all_ok = false;
             let _ = registry
                 .report_condition(DegradeCause::PersistFailure)
@@ -296,7 +299,11 @@ pub(crate) async fn persist_and_broadcast(
     }
     while let Ok(update) = control_updates.try_recv() {
         let doc = DocId::session(chat_id);
-        if sink.persist_update(doc.clone(), update.clone()).await.is_err() {
+        if sink
+            .persist_update(doc.clone(), update.clone())
+            .await
+            .is_err()
+        {
             all_ok = false;
             let _ = registry
                 .report_condition(DegradeCause::PersistFailure)
@@ -405,10 +412,7 @@ pub(crate) async fn registry_writer_loop(
         let init = doc
             .transact()
             .encode_state_as_update_v1(&StateVector::default());
-        if let Err(e) = sink
-            .persist_update(DocId::REGISTRY, init.clone())
-            .await
-        {
+        if let Err(e) = sink.persist_update(DocId::REGISTRY, init.clone()).await {
             warn!(error = ?e, "registry init baseline sink failed; queued for retry");
             persist_retry.push(DocUpdate {
                 doc: DocId::REGISTRY,

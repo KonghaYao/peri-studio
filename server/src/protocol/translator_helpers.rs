@@ -5,7 +5,7 @@
 
 use serde_json::Value;
 
-use super::{CWD_MAX_BYTES, TranslateError};
+use super::{TranslateError, CWD_MAX_BYTES};
 
 /// 第一个 `options[i]` 的 `optionId`（保底选档；options 已在入站解析时
 /// 校验为 `{optionId,name,kind}` 对象数组）。

@@ -18,6 +18,7 @@ use crate::channel::mcp_control::McpControl;
 use crate::channel::metadata_command_processor::MetadataCommandProcessor;
 use crate::channel::permission_resolution::PermissionResolution;
 use crate::channel::prompt_delivery::{PromptDelivery, PromptDeliveryDeps};
+use crate::channel::prompt_recovery::PromptRecovery;
 use crate::channel::relay_event_handler::RelayEventHandler;
 use crate::channel::runtime_closure::RuntimeClosure;
 use crate::channel::runtime_creation::{
@@ -27,16 +28,13 @@ use crate::channel::session_catalog_sync::{SessionCatalogConfig, SessionCatalogS
 use crate::channel::session_configuration::SessionConfiguration;
 use crate::channel::session_discovery::{SessionDiscovery, SessionDiscoveryConfig};
 use crate::channel::session_rewind::{SessionRewindExecution, SessionRewindQueries};
-use crate::channel::session_runtime_operations::{
-    SessionRuntimeConfig, SessionRuntimeOperations,
-};
+use crate::channel::session_runtime_operations::{SessionRuntimeConfig, SessionRuntimeOperations};
 use crate::channel::turn_cancellation::TurnCancellation;
 use crate::channel::workspace_compatibility::WorkspaceCompatibility;
 use crate::control::{ChatRegistry, InstanceRegistry, ProjectService, WorkspaceRegistry};
 use crate::persist::Store;
 use crate::protocol::Translator;
 use crate::state::doc_manager::{BatchConfig, DocManager};
-use crate::channel::prompt_recovery::PromptRecovery;
 
 impl CommandCoordinator {
     /// 装配（hub 调用；`default_cwd` = 进程工作目录，§4.3 裁决；

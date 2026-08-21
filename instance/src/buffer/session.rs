@@ -10,8 +10,8 @@ use peri_studio_proto::instance::BufferedFrame;
 
 use crate::buffer::classify_frame;
 use crate::buffer::disk::DiskSegment;
-use crate::buffer::DRAIN_ERROR_LOG_INTERVAL;
 use crate::buffer::FrameKind;
+use crate::buffer::DRAIN_ERROR_LOG_INTERVAL;
 
 // ---------------------------------------------------------------------------
 // SessionBuffer（单 session 分桶）
@@ -166,4 +166,3 @@ impl SessionBuffer {
         None
     }
 }
-

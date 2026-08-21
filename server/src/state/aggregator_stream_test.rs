@@ -189,27 +189,39 @@ fn gap_count_increments_on_seq_jump_and_clears_on_catchup() {
     seed_user_msg(&mut p, "t1", "t1:user", "a");
     // seq 连续：无 gap。
     assert!(
-        agg.apply(&mut p, &ev("s1", 1, msg_delta("t1", "t1:assistant", "b1", "b")))
-            .applied
+        agg.apply(
+            &mut p,
+            &ev("s1", 1, msg_delta("t1", "t1:assistant", "b1", "b"))
+        )
+        .applied
     );
     assert!(
-        agg.apply(&mut p, &ev("s1", 2, msg_delta("t1", "t1:assistant", "b1", "c")))
-            .applied
+        agg.apply(
+            &mut p,
+            &ev("s1", 2, msg_delta("t1", "t1:assistant", "b1", "c"))
+        )
+        .applied
     );
     assert_eq!(p.stream.gap_count, 0);
     assert!(!p.stream.gap_dirty);
     // seq 跳变：gap_count += 跳变。
     assert!(
-        agg.apply(&mut p, &ev("s1", 5, msg_delta("t1", "t1:assistant", "b1", "d")))
-            .applied
+        agg.apply(
+            &mut p,
+            &ev("s1", 5, msg_delta("t1", "t1:assistant", "b1", "d"))
+        )
+        .applied
     );
     assert_eq!(p.stream.gap_count, 2); // 期望 3，到达 5 → +2
     assert!(p.stream.gap_dirty);
     assert_eq!(p.stream.last_seq, 5);
     // 连续追平：清零 + 上报标记。
     assert!(
-        agg.apply(&mut p, &ev("s1", 6, msg_delta("t1", "t1:assistant", "b1", "e")))
-            .applied
+        agg.apply(
+            &mut p,
+            &ev("s1", 6, msg_delta("t1", "t1:assistant", "b1", "e"))
+        )
+        .applied
     );
     assert_eq!(p.stream.gap_count, 0);
     assert!(p.stream.gap_dirty);
@@ -439,4 +451,3 @@ fn unknown_turn_rejected_for_delta() {
     );
     assert_eq!(r.reason, Some(ApplyReason::UnknownTurn));
 }
-

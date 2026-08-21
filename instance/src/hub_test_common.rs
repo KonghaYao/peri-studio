@@ -23,10 +23,10 @@ pub(super) fn init_test_tracing() {
     });
 }
 
-use peri_studio_proto::hmac::{compute_mac, derive_mac_key, mac_input, CHALLENGE_NONCE_LEN};
-use peri_studio_proto::instance::{InstanceHello, InstanceKill, InstanceSpawn};
 use base64::Engine as _;
 use futures::{SinkExt, StreamExt};
+use peri_studio_proto::hmac::{compute_mac, derive_mac_key, mac_input, CHALLENGE_NONCE_LEN};
+use peri_studio_proto::instance::{InstanceHello, InstanceKill, InstanceSpawn};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::WebSocketStream;

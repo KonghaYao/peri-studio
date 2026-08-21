@@ -15,12 +15,12 @@ use std::collections::HashSet;
 
 use serde_json::Value;
 
-use peri_studio_proto::schema::{
-    ElicitationFieldKind, ElicitationFieldProjection, ElicitationOptionProjection,
-};
 use agent_client_protocol_schema::v1::{
     CreateElicitationRequest, ElicitationMode, ElicitationPropertySchema, ElicitationScope,
     MultiSelectItems,
+};
+use peri_studio_proto::schema::{
+    ElicitationFieldKind, ElicitationFieldProjection, ElicitationOptionProjection,
 };
 
 use super::acp_channel::ElicitationRequestFields;

@@ -355,7 +355,6 @@ impl Gateway {
         }
     }
 
-
     /// 连接收尾：关闭 ws + 释放配额 + 广播订阅清理。
     pub(super) async fn finish_connection(
         &self,
@@ -398,7 +397,9 @@ pub(super) async fn send_frame(
 }
 
 /// u16 关闭码 → tungstenite CloseCode（§4.7 应用码 4500–4502 属保留区）。
-pub(super) fn close_code(code: u16) -> tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode {
+pub(super) fn close_code(
+    code: u16,
+) -> tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode {
     use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode as C;
     match code {
         1000 => C::Normal,

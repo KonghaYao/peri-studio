@@ -18,8 +18,7 @@ use peri_studio_proto::rewind::{
 };
 
 use super::{
-    error, validate_message_id, MAX_CANDIDATES, MAX_FILE_CHANGES, MAX_PATH_BYTES,
-    MAX_PREVIEW_BYTES,
+    error, validate_message_id, MAX_CANDIDATES, MAX_FILE_CHANGES, MAX_PATH_BYTES, MAX_PREVIEW_BYTES,
 };
 
 pub(super) fn normalize_candidates(

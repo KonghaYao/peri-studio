@@ -10,11 +10,11 @@
 use peri_studio_proto::ack::ErrorCode;
 use peri_studio_proto::action::ActionEnvelope;
 
+use super::command_outcome_broker_terminal::action_error;
 use crate::channel::command_identity::elicitation_response_fingerprint;
 use crate::channel::command_outcome_broker::{
     ExistingCommandDisposition, ExistingCommandRequest, ExistingCommandResponse,
 };
-use super::command_outcome_broker_terminal::action_error;
 use crate::persist::outbox::{CommandRecovery, OutboxRecord, OutboxStatus};
 
 impl super::CommandOutcomeBroker {
@@ -115,7 +115,10 @@ impl super::CommandOutcomeBroker {
     }
 }
 
-pub(super) fn permission_recovery_payload_matches(record: &OutboxRecord, action: &ActionEnvelope) -> bool {
+pub(super) fn permission_recovery_payload_matches(
+    record: &OutboxRecord,
+    action: &ActionEnvelope,
+) -> bool {
     let ActionEnvelope::ResolvePermission { payload, .. } = action else {
         return false;
     };
@@ -129,7 +132,10 @@ pub(super) fn permission_recovery_payload_matches(record: &OutboxRecord, action:
     )
 }
 
-pub(super) fn elicitation_recovery_payload_matches(record: &OutboxRecord, action: &ActionEnvelope) -> bool {
+pub(super) fn elicitation_recovery_payload_matches(
+    record: &OutboxRecord,
+    action: &ActionEnvelope,
+) -> bool {
     let ActionEnvelope::RespondElicitation { payload, .. } = action else {
         return false;
     };

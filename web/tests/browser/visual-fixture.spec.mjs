@@ -32,14 +32,19 @@ test('markdown lab renders rich content without eager network media', async ({ p
   await expect(page.locator('.markdown-body table')).toHaveCount(1);
   await expect(page.locator('.markdown-body .katex')).toHaveCount(2);
   await expect(page.locator('.md-code-block[data-highlighted=true]')).toHaveCount(1);
-  await expect(page.getByRole('button', { name: 'Render diagram' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Load image: Architecture' })).toBeVisible();
   expect(requested.some((url) => url.includes('architecture.png'))).toBe(false);
 
-  await page.getByRole('button', { name: 'Render diagram' }).click();
-  await expect(page.locator('.md-mermaid__result svg')).toBeVisible();
+  await expect(page.locator('.md-mermaid__result svg[aria-roledescription]')).toBeVisible();
   await expect(page.locator('.md-mermaid__result script, .md-mermaid__result foreignObject')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Copy SVG' })).toBeVisible();
+  await expect(page.locator('.md-mermaid pre')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Show source' }).click();
+  await expect(page.locator('.md-mermaid pre')).toContainText('flowchart LR');
+  await expect(page.locator('.md-mermaid').getByRole('button', { name: 'Copy code' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open diagram' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Show diagram' }).click();
+  await expect(page.locator('.md-mermaid__result svg[aria-roledescription]')).toBeVisible();
   await page.getByRole('button', { name: 'Open diagram' }).click();
   await expect(page.getByRole('dialog').getByRole('heading', { name: 'Diagram' })).toBeVisible();
   await page.keyboard.press('Escape');
@@ -47,12 +52,33 @@ test('markdown lab renders rich content without eager network media', async ({ p
   const geometry = await page.locator('.markdown-body').evaluate((body) => ({
     width: body.getBoundingClientRect().width,
     tableWidth: body.querySelector('.md-table').getBoundingClientRect().width,
+    tableViewportWidth: body.querySelector('.md-table > div:last-child').clientWidth,
+    tableContentWidth: body.querySelector('.md-table table').getBoundingClientRect().width,
     codeWidth: body.querySelector('.md-code-block').getBoundingClientRect().width,
     scrollWidth: body.scrollWidth,
   }));
   expect(geometry.tableWidth).toBeLessThanOrEqual(geometry.width);
+  expect(geometry.tableContentWidth).toBeLessThanOrEqual(geometry.tableViewportWidth + 1);
   expect(geometry.codeWidth).toBeLessThanOrEqual(geometry.width);
   expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.width + 1);
+});
+
+test('markdown conversation uses the available desktop content track', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/visual-fixture.html?scenario=markdown', { waitUntil: 'networkidle' });
+
+  const geometry = await page.evaluate(() => {
+    const markdown = document.querySelector('.markdown-body');
+    const track = markdown.closest('.message-list-content');
+    const trackStyle = getComputedStyle(track);
+    return {
+      markdownWidth: markdown.getBoundingClientRect().width,
+      trackInnerWidth: track.clientWidth
+        - Number.parseFloat(trackStyle.paddingLeft)
+        - Number.parseFloat(trackStyle.paddingRight),
+    };
+  });
+  expect(geometry.markdownWidth).toBeGreaterThanOrEqual(geometry.trackInnerWidth - 1);
 });
 
 for (const [scenario, expected] of scenarios) {
@@ -196,12 +222,16 @@ test('permission surfaces keep white as the dominant canvas', async ({ page }) =
   if (palette.navigation) expect(palette.navigation).toBe(palette.page);
 });
 
-test('desktop chrome is white, focus is soft, and placeholder onboarding is absent', async ({ page }) => {
+test('desktop chrome is white, composer focus stays borderless, and placeholder onboarding is absent', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
 
   await expect(page.locator('.onboarding-card')).toHaveCount(0);
   const input = page.locator('.composer-input');
+  const resting = await page.locator('.composer-surface').evaluate((surface) => ({
+    border: getComputedStyle(surface).borderColor,
+    shadow: getComputedStyle(surface).boxShadow,
+  }));
   await expect(input).toBeEnabled();
   await input.focus();
   await page.waitForTimeout(180);
@@ -216,15 +246,13 @@ test('desktop chrome is white, focus is soft, and placeholder onboarding is abse
       input: getComputedStyle(input).backgroundColor,
       focusBorder: getComputedStyle(surface).borderColor,
       focusShadow: getComputedStyle(surface).boxShadow,
-      focusRing: getComputedStyle(document.documentElement).getPropertyValue('--focus-ring').trim(),
     };
   });
 
   expect(palette.sidebar).toBe(palette.page);
   expect(palette.input).toBe('rgba(0, 0, 0, 0)');
-  expect(palette.focusRing).toBe('#8fafc6');
-  expect(palette.focusBorder).toBe('rgb(143, 175, 198)');
-  expect(palette.focusShadow).not.toContain('rgb(42, 42, 39)');
+  expect(palette.focusBorder).toBe(resting.border);
+  expect(palette.focusShadow).toBe(resting.shadow);
 });
 
 test('runtime and recovery status labels use one visible word', async ({ page }) => {

@@ -18,9 +18,7 @@ use crate::auth::ConnectionCtx;
 use crate::channel::broadcaster::OutboundMsg;
 use crate::channel::command_coordinator::{CommandCoordinator, ExecCmd, SubmitAck};
 use crate::channel::command_identity::prompt_payload_fingerprint;
-use crate::channel::command_outcome_broker::{
-    ExistingCommandDisposition, ExistingCommandRequest,
-};
+use crate::channel::command_outcome_broker::{ExistingCommandDisposition, ExistingCommandRequest};
 use crate::channel::coordinator_helpers::{
     action_error, command_type_of, extract_chat_id, extract_command_id, submit_ack_from_existing,
 };
@@ -37,8 +35,8 @@ impl CommandCoordinator {
         tx: mpsc::Sender<OutboundMsg>,
         command_id_str: &str,
     ) -> SubmitAck {
-        let command_id = uuid::Uuid::parse_str(command_id_str)
-            .expect("submit entry validated commandId shape");
+        let command_id =
+            uuid::Uuid::parse_str(command_id_str).expect("submit entry validated commandId shape");
         let _guard = self.inner.gate.lock().await;
 
         // ---- 1. chat_id 解析 / create 前置（§6.2）----

@@ -7,11 +7,11 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
+use chrono::Utc;
 use peri_studio_proto::oauth::{
     EphemeralAuthorizationUrl, McpOAuthAuthorizationFrame, McpOAuthEventStatus,
     McpOAuthFailureClass, McpOAuthFrame,
 };
-use chrono::Utc;
 use serde::Deserialize;
 use tokio::sync::RwLock;
 use tokio::time::Instant;

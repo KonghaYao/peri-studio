@@ -451,4 +451,3 @@ async fn turn_terminal_is_idempotent_only_for_the_same_persisted_outcome() {
                     == Some(crate::state::aggregator::ApplyReason::TerminalProjectionConflict)
     ));
 }
-

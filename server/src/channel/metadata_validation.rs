@@ -30,8 +30,7 @@ impl MetadataCommandProcessor {
         projects: &ProjectService,
         action: &ActionEnvelope,
     ) -> Result<PreparedValidation, SubmitAck> {
-        let command_id = super::command_coordinator::extract_command_id(action)
-            .unwrap_or_default();
+        let command_id = super::command_coordinator::extract_command_id(action).unwrap_or_default();
         let mut prepared_create = None;
         let mut prepared_open = None;
         match action {
@@ -42,8 +41,7 @@ impl MetadataCommandProcessor {
                         ErrorCode::InvalidState,
                         &format!("invalid cwd: {e}"),
                         false,
-                    )
-                    ));
+                    )));
                 }
                 if !std::path::Path::new(&payload.cwd).is_dir() {
                     return Err(SubmitAck::Failed(action_error(
@@ -51,8 +49,7 @@ impl MetadataCommandProcessor {
                         ErrorCode::InvalidState,
                         "cwd not found",
                         false,
-                    )
-                    ));
+                    )));
                 }
             }
             ActionEnvelope::ProjectArchive { payload, .. } => {
@@ -63,8 +60,7 @@ impl MetadataCommandProcessor {
                         ErrorCode::InvalidState,
                         "project not found or archived",
                         false,
-                    )
-                    ));
+                    )));
                 }
                 if self.chats.has_live_workspace(&payload.project_id).await {
                     return Err(SubmitAck::Failed(action_error(
@@ -72,8 +68,7 @@ impl MetadataCommandProcessor {
                         ErrorCode::InvalidState,
                         "project has a running session; close it before archiving",
                         false,
-                    )
-                    ));
+                    )));
                 }
             }
             ActionEnvelope::ProjectRestore { payload, .. } => {
@@ -84,8 +79,7 @@ impl MetadataCommandProcessor {
                         ErrorCode::InvalidState,
                         "archived project not found",
                         false,
-                    )
-                    ));
+                    )));
                 }
             }
             ActionEnvelope::ProjectRename { payload, .. } => {
@@ -97,8 +91,7 @@ impl MetadataCommandProcessor {
                         ErrorCode::InvalidState,
                         "active project not found or name empty",
                         false,
-                    )
-                    ));
+                    )));
                 }
             }
             ActionEnvelope::PersistedSessionRename { payload, .. } => {
@@ -113,8 +106,7 @@ impl MetadataCommandProcessor {
                         ErrorCode::InvalidState,
                         "session not found or name empty",
                         false,
-                    )
-                    ));
+                    )));
                 }
             }
             ActionEnvelope::PersistedSessionArchive { payload, .. } => {
@@ -131,8 +123,7 @@ impl MetadataCommandProcessor {
                         ErrorCode::InvalidState,
                         "active session not found",
                         false,
-                    )
-                    ));
+                    )));
                 };
                 if let Some(acp_id) = session.acp_session_id.as_deref() {
                     if self.chats.has_live_acp_session(acp_id).await {
@@ -141,8 +132,7 @@ impl MetadataCommandProcessor {
                             ErrorCode::InvalidState,
                             "session has a running instance; close it before archiving",
                             false,
-                        )
-                        ));
+                        )));
                     }
                 }
             }
@@ -160,8 +150,7 @@ impl MetadataCommandProcessor {
                         ErrorCode::InvalidState,
                         "archived session or active project not found",
                         false,
-                    )
-                    ));
+                    )));
                 }
             }
             ActionEnvelope::PersistedSessionImport { payload, .. } => {
@@ -178,8 +167,7 @@ impl MetadataCommandProcessor {
                         ErrorCode::InvalidState,
                         "project not found or archived",
                         false,
-                    )
-                    ));
+                    )));
                 };
                 let candidate = self
                     .chats
@@ -198,8 +186,7 @@ impl MetadataCommandProcessor {
                         ErrorCode::InvalidState,
                         "ACP session is not available for this project",
                         false,
-                    )
-                    ));
+                    )));
                 }
             }
             ActionEnvelope::PersistedSessionCreate { payload, .. } => {
@@ -216,8 +203,7 @@ impl MetadataCommandProcessor {
                         ErrorCode::InvalidState,
                         "project not found or archived",
                         false,
-                    )
-                    ));
+                    )));
                 };
                 prepared_create = Some((project, Uuid::new_v4().to_string()));
             }
@@ -235,8 +221,7 @@ impl MetadataCommandProcessor {
                         ErrorCode::InvalidState,
                         "session not found",
                         false,
-                    )
-                    ));
+                    )));
                 };
                 // 打开闸门：`ready` 正常打开；`reconciliation_required`/`failed`
                 // 是激活中断/失败后的可恢复状态（acp_session_id 仍在 sqlite，
@@ -249,8 +234,7 @@ impl MetadataCommandProcessor {
                         ErrorCode::InvalidState,
                         "session has no ACP identity",
                         false,
-                    )
-                    ));
+                    )));
                 }
                 match session.lifecycle.as_str() {
                     "ready" | "reconciliation_required" | "failed" => {}
@@ -260,8 +244,7 @@ impl MetadataCommandProcessor {
                             ErrorCode::InvalidState,
                             "session activation in progress",
                             false,
-                        )
-                        ));
+                        )));
                     }
                     _ => {
                         return Err(SubmitAck::Failed(action_error(
@@ -269,8 +252,7 @@ impl MetadataCommandProcessor {
                             ErrorCode::InvalidState,
                             "session is not ready",
                             false,
-                        )
-                        ));
+                        )));
                     }
                 }
                 let Some(project) = projects
@@ -286,8 +268,7 @@ impl MetadataCommandProcessor {
                         ErrorCode::InvalidState,
                         "project not found or archived",
                         false,
-                    )
-                    ));
+                    )));
                 };
                 let live_chat = if let (Some(chat), Some(acp)) = (
                     session.last_chat_id.as_deref(),

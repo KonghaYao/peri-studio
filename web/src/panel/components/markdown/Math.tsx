@@ -1,5 +1,5 @@
 import { createResource, Show } from 'solid-js';
-import { Button } from '../../../components/ui';
+import { IconButton, RefreshIcon } from '../../../components/ui';
 import { memoizeAsync } from './async-cache';
 
 async function loadMath(expression: string, displayMode: boolean) {
@@ -36,6 +36,6 @@ export function MathExpression(props: { expression: string; block?: boolean }) {
     <Show when={result()?.html} fallback={<code class="md-math__source">{props.expression}</code>}>
       {(value) => <span innerHTML={value()} />}
     </Show>
-    <Show when={result()?.error}><Button size="compact" class="ml-6" onClick={() => refetch()} aria-label="Retry math rendering">Retry</Button></Show>
+    <Show when={result()?.error}><IconButton size="compact" class="ml-6" onClick={() => refetch()} label="Retry math rendering"><RefreshIcon /></IconButton></Show>
   </span>;
 }

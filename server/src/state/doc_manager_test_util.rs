@@ -19,7 +19,6 @@ use crate::state::doc_manager::{
 };
 use crate::state::normalized::{EventBody, NormalizedEvent};
 
-
 /// 抑制 paused clock 的 auto-advance（tokio 1.53：runtime 无 ready 任务时自动
 /// 推进虚拟时钟到下一 timer，导致「窗口未到不 flush」断言失效）。
 ///
@@ -199,4 +198,3 @@ pub(crate) async fn projected_active_turn_status(sink: &MemSink, chat: &str) -> 
         .await
         .map(|(_, status)| status)
 }
-

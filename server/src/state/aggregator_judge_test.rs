@@ -146,7 +146,10 @@ fn echo_user_message_after_injection_rejected() {
     seed_user_msg(&mut p, "t-<uuid>", "<uuid>:user", "hello");
     assert_eq!(entry_count(&p), 1);
     // ACP 回声：自造 id、同文本 → 拒绝（UnknownTurn），不双写。
-    let r = agg.apply(&mut p, &ev("s1", 1, user_msg("echo-turn", "echo-entry", "hello")));
+    let r = agg.apply(
+        &mut p,
+        &ev("s1", 1, user_msg("echo-turn", "echo-entry", "hello")),
+    );
     assert_eq!(r.reason, Some(ApplyReason::UnknownTurn));
     assert!(!r.applied);
     assert_eq!(entry_count(&p), 1);
@@ -214,4 +217,3 @@ fn user_entry_index_consistent_after_apply() {
         );
     }
 }
-

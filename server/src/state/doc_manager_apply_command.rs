@@ -33,7 +33,6 @@ use super::doc_manager_persist::{persist_and_broadcast, report_gap};
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn apply_command(
-
     chat_id: &str,
     pair: &mut DocPair,
     agg: &mut Aggregator,
@@ -181,7 +180,9 @@ fn apply_entry_group(pair: &mut DocPair, agg: &mut Aggregator, cmd: &DocCommand)
                         {
                             ToolCallStatus::AwaitingPermission
                         }
-                        peri_studio_proto::action::PermissionDecision::Allow => ToolCallStatus::Running,
+                        peri_studio_proto::action::PermissionDecision::Allow => {
+                            ToolCallStatus::Running
+                        }
                         peri_studio_proto::action::PermissionDecision::Deny => {
                             ToolCallStatus::Cancelled
                         }

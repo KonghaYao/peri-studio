@@ -27,8 +27,8 @@ use crate::auth::nonce::NonceRegistry;
 use crate::auth::stats::AuthStats;
 use crate::auth::token::TokenStore;
 use crate::auth::{
-    AuthError, NonceVerdict, TokenRecord, TokenRole, UNKNOWN_TOKEN_ID, BROWSER_SESSION_CAPACITY,
-    BROWSER_SESSION_TTL,
+    AuthError, NonceVerdict, TokenRecord, TokenRole, BROWSER_SESSION_CAPACITY, BROWSER_SESSION_TTL,
+    UNKNOWN_TOKEN_ID,
 };
 
 // ---------------------------------------------------------------------------
@@ -358,5 +358,3 @@ fn decode_nonce(s: &str) -> Result<[u8; CHALLENGE_NONCE_LEN], AuthError> {
         .map_err(|_| AuthError::BadNonceEncoding)?;
     bytes.try_into().map_err(|_| AuthError::BadNonceEncoding)
 }
-
-

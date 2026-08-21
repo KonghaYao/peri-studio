@@ -165,10 +165,14 @@ pub async fn spawn(
     if let Some(envs) = env {
         command.envs(envs.iter().map(|(k, v)| (k.as_str(), v.as_str())));
     }
-    let mut child = command.spawn().context("failed to spawn ACP child process")?;
+    let mut child = command
+        .spawn()
+        .context("failed to spawn ACP child process")?;
 
     let stdin = Mutex::new(child.stdin.take().map(BufWriter::new));
-    let pgid = child.id().expect("a successfully spawned child always has a pid") as i32;
+    let pgid = child
+        .id()
+        .expect("a successfully spawned child always has a pid") as i32;
     let inner = Arc::new(AcpInner {
         process: Mutex::new(Some(child)),
         stdin,
@@ -198,7 +202,11 @@ pub async fn spawn(
 /// 表示该行超过 `limit`（`buf` 截断保留前 `limit` 字节，行其余部分仍被完整
 /// 消费——不分配超限内存，问题 4 防御）。`fill_buf`/`consume` 分段读取保证
 /// `buf` 长度不超过 `limit`。
-async fn read_line_bounded<R>(reader: &mut R, buf: &mut Vec<u8>, limit: usize) -> std::io::Result<(bool, bool)>
+async fn read_line_bounded<R>(
+    reader: &mut R,
+    buf: &mut Vec<u8>,
+    limit: usize,
+) -> std::io::Result<(bool, bool)>
 where
     R: tokio::io::AsyncBufRead + Unpin,
 {
@@ -277,11 +285,7 @@ async fn run_stdout_reader(inner: Arc<AcpInner>, tx: mpsc::Sender<ChildOutput>) 
             Err(e) => {
                 tracing::warn!(target: "peri_studio::instance", session_id = %inner.session_id,
                     "ACP output is not a JSON line (dropped, counted only): {e}");
-                if tx
-                    .send(ChildOutput::DroppedNoSessionId)
-                    .await
-                    .is_err()
-                {
+                if tx.send(ChildOutput::DroppedNoSessionId).await.is_err() {
                     return;
                 }
                 continue;
@@ -427,7 +431,10 @@ async fn run_stderr_reader(inner: Arc<AcpInner>) {
     }
     if !tail.is_empty() {
         let s = String::from_utf8_lossy(&tail).into_owned();
-        let mut guard = inner.stderr_tail.lock().expect("stderr_tail mutex poisoned");
+        let mut guard = inner
+            .stderr_tail
+            .lock()
+            .expect("stderr_tail mutex poisoned");
         *guard = Some(s);
     }
     tracing::debug!(target: "peri_studio::instance", session_id = %inner.session_id, bytes, lines,

@@ -97,4 +97,3 @@ impl MetadataStore {
         Ok(self.recover_after_restart().await?.1)
     }
 }
-

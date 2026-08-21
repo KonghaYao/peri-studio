@@ -289,9 +289,8 @@ impl OutboxStore {
         for (id, target) in &decisions {
             match target {
                 OutboxStatus::Failed => self.transition(*id, OutboxStatus::Failed, |record| {
-                    record.last_error = Some(LastError::from_error_code(
-                        ErrorCode::AgentUnavailable,
-                    ));
+                    record.last_error =
+                        Some(LastError::from_error_code(ErrorCode::AgentUnavailable));
                     if let Some(error) = record.last_error.as_mut() {
                         error.retryable = false;
                     }

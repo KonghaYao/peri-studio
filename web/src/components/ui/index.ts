@@ -1,6 +1,6 @@
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from './Collapsible';
 export { Button, IconButton } from './Button';
-export { Icon } from './Icon';
+export { CheckIcon, CodeIcon, CopyIcon, DownloadIcon, ErrorIcon, ExpandIcon, Icon, RefreshIcon } from './Icon';
 export { Badge, type BadgeTone } from './Badge';
 export { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from './Checkbox';
 export { CopyButton } from './CopyButton';

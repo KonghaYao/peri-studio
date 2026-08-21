@@ -1,8 +1,8 @@
 use chrono::Utc;
 
 use crate::persist::outbox::{
-    CommandRecovery, CommandType, LastError, NewOutboxRecord,
-    OutboxStatus, OutboxStore, RetryableClass,
+    CommandRecovery, CommandType, LastError, NewOutboxRecord, OutboxStatus, OutboxStore,
+    RetryableClass,
 };
 
 fn test_outbox() -> OutboxStore {
@@ -22,7 +22,6 @@ fn new_rec(chat_id: uuid::Uuid, command_type: CommandType) -> NewOutboxRecord {
 fn retryable_err() -> LastError {
     LastError::from_error_code(peri_studio_proto::ack::ErrorCode::AgentUnavailable)
 }
-
 
 #[test]
 fn permission_recovery_clears_after_confirmed_delivery() {
@@ -224,4 +223,3 @@ fn prompt_restart_reconciliation_never_redelivers_across_the_barrier() {
         OutboxStatus::Completed
     );
 }
-

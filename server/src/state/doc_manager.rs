@@ -12,7 +12,6 @@
 //! `doc_manager_apply_turn.rs`。`DocCommand` 经 `pub(crate) use`
 //! re-export，调用方路径不变。
 
-
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -26,15 +25,10 @@ use tracing::debug;
 use peri_studio_proto::conn::DocId;
 use peri_studio_proto::schema::ChatSummary;
 
-
 use crate::state::aggregator::ApplyResult;
 use crate::state::factory::Factory;
 use crate::state::normalized::NormalizedEvent;
-use crate::state::registry::{
-
-
-    RegistryError, RegistryMsg, RegistryState,
-};
+use crate::state::registry::{RegistryError, RegistryMsg, RegistryState};
 
 pub use super::doc_manager_command::DocCommand;
 use super::doc_manager_persist::{chat_writer_loop, is_batchable, registry_writer_loop};
@@ -446,5 +440,3 @@ impl DocManager {
         rx
     }
 }
-
-

@@ -55,8 +55,9 @@ impl DiskSegment {
     /// 由 [`Self::flush_writer`] 在读路径一次性保证；「崩溃即弃」语义（§3.3）
     /// 本就不需要落盘，省去每帧 5-50µs 的同步 flush）。
     pub fn append(&mut self, bytes: &[u8]) -> std::io::Result<()> {
-        let len = u32::try_from(bytes.len())
-            .map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidInput, "frame too long (>4GB)"))?;
+        let len = u32::try_from(bytes.len()).map_err(|_| {
+            std::io::Error::new(std::io::ErrorKind::InvalidInput, "frame too long (>4GB)")
+        })?;
         self.writer.write_all(&len.to_be_bytes())?;
         self.writer.write_all(bytes)?;
         self.dirty = true;

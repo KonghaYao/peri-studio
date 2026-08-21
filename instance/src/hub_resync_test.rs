@@ -15,7 +15,7 @@ async fn test_buffer_sync_resync() {
     // 上报 buffered=true。
     config.reconnect_base = Duration::from_millis(500);
 
-    let hub = tokio::spawn(run(config));
+    let hub = tokio::spawn(run(config, tokio_util::sync::CancellationToken::new()));
 
     // --- 连接 1：auth → spawn（脚本：0.2s 后输出 3 帧，再 1.5s 后输出第 4 帧）→ 断线 ---
     let script = r#"sleep 0.2; echo '{"jsonrpc":"2.0","method":"m","params":{"sessionId":"s1","n":1}}'; echo '{"jsonrpc":"2.0","method":"m","params":{"sessionId":"s1","n":2}}'; echo '{"jsonrpc":"2.0","method":"m","params":{"sessionId":"s1","n":3}}'; sleep 1.5; echo '{"jsonrpc":"2.0","method":"m","params":{"sessionId":"s1","n":4}}'"#;
@@ -90,7 +90,7 @@ async fn test_epoch_increment_on_rebuild() {
     let addr = listener.local_addr().unwrap();
     let config = test_config(addr, dir.path());
 
-    let hub = tokio::spawn(run(config));
+    let hub = tokio::spawn(run(config, tokio_util::sync::CancellationToken::new()));
     let script =
         r#"echo '{"jsonrpc":"2.0","method":"m","params":{"sessionId":"s1","n":1}}'; exec sleep 30"#;
 
@@ -161,7 +161,7 @@ async fn test_two_sessions_isolated_seqs() {
     let addr = listener.local_addr().unwrap();
     let config = test_config(addr, dir.path());
 
-    let hub = tokio::spawn(run(config));
+    let hub = tokio::spawn(run(config, tokio_util::sync::CancellationToken::new()));
     let (mut sink, mut stream, _hello) = handshake_server(accept_ws(&listener).await).await;
 
     let script = r#"echo '{"jsonrpc":"2.0","method":"m","params":{"sessionId":"s1","n":1}}'; echo '{"jsonrpc":"2.0","method":"m","params":{"sessionId":"s1","n":2}}'; exec sleep 30"#;
@@ -238,7 +238,7 @@ async fn test_backpressure_disconnect_buffers_then_resyncs() {
     // 写超时 300ms：背压后快速断线（默认 10s 太长，测试不可等待）。
     config.write_timeout = Duration::from_millis(300);
 
-    let hub = tokio::spawn(run(config));
+    let hub = tokio::spawn(run(config, tokio_util::sync::CancellationToken::new()));
 
     // 高输出 agent：64 × 64KB 帧（≈4.2MB——双倍覆盖 Linux 默认 tcp_wmem 上限
     // 4MB，防「内核缓冲完全吸收 → 无背压 → 无断线」的平台差异假失败，review

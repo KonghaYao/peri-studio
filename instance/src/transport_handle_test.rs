@@ -6,9 +6,9 @@ use super::transport_test_common::*;
 use super::*;
 use std::time::Duration;
 
+use futures::{SinkExt, StreamExt};
 use peri_studio_proto::frame::Frame;
 use peri_studio_proto::instance::{InstanceEvent, InstanceHeartbeat};
-use futures::{SinkExt, StreamExt};
 use tokio::net::TcpListener;
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;

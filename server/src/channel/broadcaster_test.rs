@@ -128,7 +128,9 @@ async fn fan_out_same_doc_multiple_connections() {
             OutboundMsg::Frame(Frame::YsyncUpdate(u)) => {
                 assert_eq!(u.doc, doc);
                 assert_eq!(
-                    base64::engine::general_purpose::STANDARD.decode(&u.update).unwrap(),
+                    base64::engine::general_purpose::STANDARD
+                        .decode(&u.update)
+                        .unwrap(),
                     update,
                     "两连接帧内容必须一致且等于输入 update"
                 );
@@ -280,7 +282,9 @@ async fn merge_failure_falls_back_to_first_frame() {
     {
         OutboundMsg::Frame(Frame::YsyncUpdate(u)) => {
             assert_eq!(
-                base64::engine::general_purpose::STANDARD.decode(&u.update).unwrap(),
+                base64::engine::general_purpose::STANDARD
+                    .decode(&u.update)
+                    .unwrap(),
                 first_update,
                 "首帧为合法内容"
             );
@@ -304,7 +308,9 @@ async fn merge_failure_falls_back_to_first_frame() {
         OutboundMsg::Frame(Frame::YsyncUpdate(u)) => {
             assert_eq!(u.doc, doc);
             assert_eq!(
-                base64::engine::general_purpose::STANDARD.decode(&u.update).unwrap(),
+                base64::engine::general_purpose::STANDARD
+                    .decode(&u.update)
+                    .unwrap(),
                 corrupt,
                 "回落帧内容 = 首个损坏 update"
             );

@@ -118,8 +118,14 @@ fn load_vs_close_discrimination() {
 
     let load = Frame::parse(load_raw).unwrap();
     let close = Frame::parse(close_raw).unwrap();
-    assert!(matches!(load, Frame::Action(crate::action::ActionEnvelope::Load { .. })));
-    assert!(matches!(close, Frame::Action(crate::action::ActionEnvelope::Close { .. })));
+    assert!(matches!(
+        load,
+        Frame::Action(crate::action::ActionEnvelope::Load { .. })
+    ));
+    assert!(matches!(
+        close,
+        Frame::Action(crate::action::ActionEnvelope::Close { .. })
+    ));
     assert_ne!(load, close, "same-shape payloads must not collapse");
     // §8.5：缺 acpSessionId 的 chat/load 视为畸形（目标会话必填）。
     assert!(Frame::parse(

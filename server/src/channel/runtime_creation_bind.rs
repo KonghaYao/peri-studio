@@ -410,7 +410,10 @@ impl RuntimeCreation {
         // spawn + initialize + load 全部成功后进程确已存活，显式恢复
         // 「运行中」呈现（幂等：非 Gap 状态保持；新 chat 无缺口历史，
         // 不涉及 ResumeAfterGap 校准）。
-        let _ = self.chats.transition(run.chat_id, ChatState::Accepting).await;
+        let _ = self
+            .chats
+            .transition(run.chat_id, ChatState::Accepting)
+            .await;
         terminal.committed(run.command, run.chat_id).await;
         audit(
             "command.committed",
@@ -421,5 +424,4 @@ impl RuntimeCreation {
             None,
         );
     }
-
 }

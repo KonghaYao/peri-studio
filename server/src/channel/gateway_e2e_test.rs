@@ -386,7 +386,9 @@ async fn e2e_create_prompt_event_broadcast() {
                 {
                     got_broadcast = true;
                 }
-                Ok(Frame::ActionAck(a)) if a.status == peri_studio_proto::ack::AckStatus::Committed => {
+                Ok(Frame::ActionAck(a))
+                    if a.status == peri_studio_proto::ack::AckStatus::Committed =>
+                {
                     got_committed = true;
                 }
                 Ok(Frame::KeepAlive(_)) | Ok(Frame::Pong(_)) => {}

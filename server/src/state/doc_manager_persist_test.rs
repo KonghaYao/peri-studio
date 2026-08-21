@@ -408,4 +408,3 @@ async fn persist_failure_returns_persist_failed() {
         "重投后镜像应包含 user entry"
     );
 }
-

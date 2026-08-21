@@ -253,14 +253,21 @@ describe('Markdown', () => {
     render(() => <Markdown streaming source={'```mermaid\ngraph TD\n  A --> B'} />);
 
     expect(screen.getByText('Mermaid')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Render diagram' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Copy code' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Show source' })).not.toBeInTheDocument();
+    expect(document.querySelector('.md-mermaid code')).toHaveTextContent('graph TD');
     expect(document.querySelector('.md-code-block')).toHaveAttribute('data-incomplete', 'true');
   });
 
-  it('offers completed Mermaid as an explicit interactive render', () => {
+  it('automatically starts completed Mermaid rendering', async () => {
     render(() => <Markdown source={'```mermaid\ngraph TD\n  A --> B\n```'} />);
-    expect(screen.getByRole('button', { name: 'Render diagram' })).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('getComputedTextLength'));
+    expect(screen.getByRole('button', { name: 'Retry rendering' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Show source' })).toBeEnabled();
+    expect(document.querySelector('.md-mermaid code')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show source' }));
+    expect(screen.getByRole('button', { name: 'Show diagram' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Copy code' })).toBeEnabled();
     expect(document.querySelector('.md-mermaid code')).toHaveTextContent('graph TD');
   });
 

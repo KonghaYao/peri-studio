@@ -16,7 +16,9 @@ use std::time::Duration;
 use peri_studio_proto::ack::{AckStatus, ActionAck, ActionError, ErrorCode};
 use peri_studio_proto::action::{McpOAuthFlowPayload, McpOAuthStartPayload};
 use peri_studio_proto::frame::Frame;
-use peri_studio_proto::oauth::{McpConnectionStatus, McpOAuthStatus, McpServerInfo, McpServersFrame};
+use peri_studio_proto::oauth::{
+    McpConnectionStatus, McpOAuthStatus, McpServerInfo, McpServersFrame,
+};
 use serde::Deserialize;
 use tokio::sync::mpsc;
 

@@ -8,8 +8,8 @@ fn test_linux_stat_parser_handles_spaces_and_right_parenthesis_in_comm() {
     fields[2] = "42"; // field 5: pgrp
     fields[19] = "777"; // field 22: starttime
     let stat = format!("42 (worker ) name) {}", fields.join(" "));
-    let fingerprint = crate::child::fingerprint::linux_process_fingerprint(&stat, 42, "boot-id\n")
-        .unwrap();
+    let fingerprint =
+        crate::child::fingerprint::linux_process_fingerprint(&stat, 42, "boot-id\n").unwrap();
     assert_eq!(fingerprint.birth, "boot-id:777");
 }
 
