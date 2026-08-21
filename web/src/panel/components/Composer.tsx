@@ -57,24 +57,21 @@ export function Composer() {
   const submissionForSession = () => messageSubmission()?.sessionId === selectedSessionId() ? messageSubmission() : null;
   const submissionInAnotherSession = () => messageSubmission() && !submissionForSession() ? messageSubmission() : null;
   const submissionIsInFlight = () => ['sending', 'accepted', 'committed'].includes(submissionForSession()?.phase ?? '');
+  const submissionNeedsAttention = () => ['uncertain', 'delivery_unknown', 'failed'].includes(submissionForSession()?.phase ?? '');
   const submissionTitle = () => {
     switch (submissionForSession()?.phase) {
-      case 'accepted': return 'Message received by the server';
-      case 'committed': return 'Message confirmed by the server';
       case 'uncertain': return 'Message result not confirmed';
       case 'delivery_unknown': return 'Message delivery result unknown';
       case 'failed': return 'Message was not sent';
-      default: return 'Sending message';
+      default: return '';
     }
   };
   const submissionDetail = () => {
     switch (submissionForSession()?.phase) {
-      case 'accepted': return 'Waiting for final confirmation before the conversation updates.';
-      case 'committed': return 'Waiting for the server-authoritative conversation projection.';
       case 'uncertain': return 'Re-confirming uses the original request and does not create a second message.';
       case 'delivery_unknown': return 'This message may already have executed. Resending and editing remain disabled to avoid duplicates.';
       case 'failed': return 'Return to editing restores the text only to this project session draft.';
-      default: return 'The message is not part of the conversation until the server projects it.';
+      default: return '';
     }
   };
   const submissionTone = () => {
@@ -136,7 +133,7 @@ export function Composer() {
   const inputPlaceholder = () => inputState().placeholder;
   const inputDescribedBy = () => [
     prediction.activePrediction() ? 'composer-prediction-description' : null,
-    submissionForSession() ? submissionStatusId : null,
+    submissionNeedsAttention() ? submissionStatusId : null,
   ].filter(Boolean).join(' ') || undefined;
 
   // 信息行三个真实值（agent map，server 写入；缺失 → —）。
@@ -283,7 +280,7 @@ export function Composer() {
           class="composer-input ui-scrollbar relative z-1 block w-full h-52 min-h-52 max-h-180 pt-14 px-16 pb-4 border-0 outline-0 resize-none overflow-y-auto bg-transparent text-text-primary text-14 leading-22 placeholder:text-text-muted disabled:bg-transparent disabled:text-text-secondary focus-visible:outline-0 max-narrow:px-15"
           />
         </div>
-        <Show when={submissionForSession()}>{(submission) =>
+        <Show when={submissionNeedsAttention() ? submissionForSession() : null}>{(submission) =>
           <InlineNotice
             id={submissionStatusId}
             class={`composer-submission composer-submission--${submission().phase} mt-2 mx-10 mb-8 border-dashed max-narrow:mx-8`}

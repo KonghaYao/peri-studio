@@ -68,8 +68,7 @@ function AskUserQuestionDialog(props: {
       onSubmit={submit}
     >
       <div class="px-14 pt-12 pb-2">
-        <span class="block mb-4 text-text-muted text-10 font-750 tracking-7 uppercase">Input needed</span>
-        <p class="mt-0 mb-14 text-text-secondary text-13 leading-155">{props.elicitation.message}</p>
+        <p class="mt-0 mb-14 text-text-primary text-14 font-600 leading-155">{props.elicitation.message}</p>
         <div class="grid gap-14">
           <For each={props.elicitation.fields}>{(field) =>
             <fieldset class="elicitation-field min-w-0 m-0 p-0 border-0">

@@ -11,6 +11,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
   const [projectId, setProjectId] = createSignal(props.initialProjectId || props.projects[0]?.id || '');
   const pending = () => quickStartSubmission();
   const pendingIsInFlight = () => pending()?.phase === 'creating' || pending()?.phase === 'accepted';
+  const pendingNeedsAttention = () => pending()?.phase === 'uncertain' || pending()?.phase === 'failed';
   const locked = () => (!!pending() && pending()!.phase !== 'failed') || !!creatingSessionProjectId();
   const project = () => props.projects.find((item) => item.id === projectId());
   createEffect(() => {
@@ -46,19 +47,19 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
         }}
         placeholder={project() ? `Ask ${project()!.name}…` : 'Type a message…'}
         aria-label="First message"
-        aria-describedby={pending() ? statusId : undefined}
+        aria-describedby={pendingNeedsAttention() ? statusId : undefined}
         variant="bare"
         class="quick-start__textarea w-full min-h-60 px-18 pt-16 pb-8 border-0 outline-0 resize-none bg-transparent text-14 leading-22 text-text-primary"
       />
       <div class="quick-start__footer flex min-h-52 items-center gap-7 px-10 pb-8">
         <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="size-34 min-h-34 border-0 bg-transparent text-text-primary"><Icon><path d="M10 4v12M4 10h12" /></Icon></IconButton>
-        <Button size="compact" title="Approval mode is not connected yet" disabled class="min-h-34 gap-6 border-0 bg-transparent px-7 text-12 text-text-muted"><Icon class="size-17!"><path d="M10 3.5 16 6v4.5c0 3.2-2.2 5.2-6 6-3.8-.8-6-2.8-6-6V6z" /><path d="m7.5 10 1.7 1.7 3.5-3.5" /></Icon>Ask for approval</Button>
-        <span class="ml-auto hidden text-11 text-text-muted middle:inline">Enter to send</span>
+        <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled class="size-34 min-h-34 border-0 bg-transparent text-text-muted"><Icon class="size-17!"><path d="M10 3.5 16 6v4.5c0 3.2-2.2 5.2-6 6-3.8-.8-6-2.8-6-6V6z" /><path d="m7.5 10 1.7 1.7 3.5-3.5" /></Icon></IconButton>
+        <span class="ml-auto" />
         <IconButton variant="primary" label="Start session" busy={pending()?.phase === 'creating' || pending()?.phase === 'accepted'} disabled={readOnly() || locked() || !!pending() || !draft().trim()} onClick={submit} class="size-40 min-h-40 rounded-full border-0 bg-btn-primary text-surface hover:bg-btn-primary-hover"><Icon class="size-20!"><path d="M10 16V4M5 9l5-5 5 5" /></Icon></IconButton>
       </div>
     </div>
-    <Show when={pending()}>{(submission) => <InlineNotice id={statusId} class="quick-start__state mt-8 [&_small]:min-w-0" tone={submission().phase === 'failed' ? 'danger' : submission().phase === 'uncertain' ? 'warning' : 'info'} role={submission().phase === 'failed' || submission().phase === 'uncertain' ? 'alert' : 'status'} live={pendingIsInFlight()} title={submission().phase === 'uncertain' ? 'Creation result not confirmed yet' : submission().phase === 'failed' ? 'Failed to create session' : 'Creating and connecting session…'}>
-      <span>{submission().phase === 'uncertain' ? 'Re-confirming uses the original request and will not create a duplicate project session.' : submission().phase === 'failed' ? 'The draft remains local until you choose to start again.' : 'Waiting for the server to confirm the project session and runtime before sending the first message.'}</span>
+    <Show when={pendingNeedsAttention() ? pending() : null}>{(submission) => <InlineNotice id={statusId} class="quick-start__state mt-8 [&_small]:min-w-0" tone={submission().phase === 'failed' ? 'danger' : 'warning'} role="alert" title={submission().phase === 'uncertain' ? 'Creation result not confirmed yet' : 'Failed to create session'}>
+      <span>{submission().phase === 'uncertain' ? 'Re-confirming uses the original request and will not create a duplicate project session.' : 'The draft remains local until you choose to start again.'}</span>
       <Show when={submission().detail}><small>{submission().detail}</small></Show>
       <div class="quick-start__actions flex flex-wrap gap-6">
         <Show when={(submission().phase === 'failed' || submission().phase === 'uncertain') && submission().retryable}><Button size="compact" variant="secondary" onClick={retryQuickStart}>Re-confirm with the same request</Button></Show>

@@ -42,7 +42,6 @@ export function PermissionRequestCard(props: PermissionRequestCardProps) {
   >
     <div class="permission-request__mark grid size-24 place-items-center rounded-full border border-warning-border bg-surface text-warning text-12 font-750" aria-hidden="true">!</div>
     <div class="permission-request__body min-w-0">
-      <span class="permission-request__eyebrow block mb-3 text-warning text-10 font-750 tracking-6 uppercase">Permission needed</span>
       <strong class="block text-text-primary text-14" id={`${statusId}-title`}>{props.permission.title || 'Permission request'}</strong>
       <Show when={props.permission.description}><p class="mt-4 text-text-secondary text-13 leading-15">{props.permission.description}</p></Show>
       <Show when={props.permission.toolCallId}><code class="sr-only" title={props.permission.toolCallId || undefined}>tool {shortId(props.permission.toolCallId)}</code></Show>

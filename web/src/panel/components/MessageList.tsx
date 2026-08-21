@@ -10,7 +10,7 @@
 // permission decision 值（allow/deny、按钮顺序）均不变。
 
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js';
-import { chatEntries, chatHead, permissions, resolvePermission, retryMessageSubmission, retryPersistentAction, runtimeDocsHydrated, selectedCid } from '../store';
+import { chatEntries, chatHead, elicitations, permissions, resolvePermission, retryMessageSubmission, retryPersistentAction, runtimeDocsHydrated, selectedCid } from '../store';
 import { readOnly } from '../lib/auth-state';
 import { messageActivity, nextFollowState } from '../lib/message-follow.ts';
 import { messageTime } from '../lib/message-time.ts';
@@ -49,13 +49,13 @@ function HistoryBoundary(props: { kind: Exclude<ReplayBoundary, null> }) {
   const detail = () => props.kind === 'inferred_history'
     ? 'Identified from the session load window; some sources are marked unverifiable'
     : null;
-  return <div class="history-boundary grid grid-cols-boundary items-center gap-10 mt-26 mb-18 text-text-muted text-11 tracking-35 text-center before:h-px before:bg-divider before:content-[''] after:h-px after:bg-divider after:content-['']" role="separator" aria-label={accessibleLabel()} title={detail() || accessibleLabel()}>
+  return <div class="history-boundary grid grid-cols-boundary items-center gap-8 mt-14 mb-10 text-text-muted text-10 tracking-25 text-center before:h-px before:bg-divider before:content-[''] after:h-px after:bg-divider after:content-['']" role="separator" aria-label={accessibleLabel()} title={detail() || accessibleLabel()}>
     <span class="whitespace-nowrap">{label()}</span>
   </div>;
 }
 
 function ChatLoading() {
-  return <LoadingState label="Assistant is working" class="chat-loading message-loading py-8" />;
+  return <span class="chat-loading message-loading sr-only" role="status" aria-live="polite">Agent working</span>;
 }
 
 // ── 消息滚动区 ──────────────────────────────────────────────────────────
@@ -179,7 +179,7 @@ export function MessageList(props: { bottomInset?: number }) {
         }</Show>
       </div>
     </section>
-    <Show when={!stick() || hasNewContent()}><Button type="button" size="compact" class="jump-latest absolute z-12 left-1/2 -translate-x-1/2 min-h-36 px-13 border border-border-subtle rounded-full bg-surface-translucent text-text-secondary shadow-popover cursor-pointer text-12 backdrop-blur-sm hover:text-text-primary pointer-coarse:min-h-44 pointer-coarse:px-16" style={{ bottom: jumpBottomInset() }} onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button></Show>
+    <Show when={(!stick() || hasNewContent()) && permissions().length === 0 && elicitations().length === 0}><Button type="button" size="compact" class="jump-latest absolute z-12 left-1/2 -translate-x-1/2 min-h-36 px-13 border border-border-subtle rounded-full bg-surface-translucent text-text-secondary shadow-popover cursor-pointer text-12 backdrop-blur-sm hover:text-text-primary pointer-coarse:min-h-44 pointer-coarse:px-16" style={{ bottom: jumpBottomInset() }} onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button></Show>
     </div>
   );
 }

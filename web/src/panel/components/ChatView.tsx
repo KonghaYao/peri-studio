@@ -13,7 +13,7 @@ import { ChatHeader } from './ChatHeader';
 import { Composer } from './Composer';
 import { MessageList } from './MessageList';
 import { createSignal, onCleanup, onMount, Show } from 'solid-js';
-import { chatHead, elicitationResponses, elicitations, registryHydrated, respondElicitation, restoringSessionId, selectedSessionId } from '../store';
+import { chatHead, elicitationResponses, elicitations, permissions, registryHydrated, respondElicitation, restoringSessionId, selectedSessionId } from '../store';
 import { readOnly } from '../lib/auth-state';
 import { LoadingState } from '../../components/ui';
 import { ConnectionProblem } from './ConnectionProblem';
@@ -34,6 +34,7 @@ export function ChatView(props: ChatViewProps) {
   const [composerHeight, setComposerHeight] = createSignal(0);
   let composerStack: HTMLDivElement | undefined;
   let composerObserver: ResizeObserver | undefined;
+  const hasPendingPermission = () => permissions().some((permission) => permission.status === 'pending');
   onMount(() => {
     if (!composerStack || typeof ResizeObserver === 'undefined') return;
     const updateHeight = () => setComposerHeight(composerStack?.getBoundingClientRect().height ?? 0);
@@ -63,12 +64,14 @@ export function ChatView(props: ChatViewProps) {
           <AgentPlanPanel entries={chatHead()?.agent?.plan ?? []} />
           <MessageList bottomInset={composerHeight()} />
           <div ref={composerStack} class="composer-stack composer-stack--overlay pointer-events-none absolute right-0 bottom-0 left-0 z-20 bg-app-bg [&>*]:pointer-events-auto">
-            <ElicitationQueue
-              elicitations={elicitations()}
-              responding={elicitationResponses()}
-              readOnly={readOnly()}
-              onRespond={respondElicitation}
-            />
+            <Show when={!hasPendingPermission()}>
+              <ElicitationQueue
+                elicitations={elicitations()}
+                responding={elicitationResponses()}
+                readOnly={readOnly()}
+                onRespond={respondElicitation}
+              />
+            </Show>
             <Composer />
           </div>
         </div>

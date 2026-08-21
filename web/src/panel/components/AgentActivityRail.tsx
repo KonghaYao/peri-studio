@@ -65,7 +65,8 @@ function ActivityRow(props: { activity: AgentActivityInfo }) {
 /** A quiet read-only projection of negotiated Peri-exclusive capabilities. */
 export function AgentActivityRail(props: AgentActivityRailProps) {
   const latestFirst = () => [...props.activities].reverse();
-  const latest = () => latestFirst()[0];
+  const attentionActivities = () => latestFirst().filter((activity) => ['running', 'failed', 'warning', 'suspended'].includes(activity.status));
+  const latest = () => attentionActivities()[0];
   const pulseTone = (status: AgentActivityStatus) => {
     if (status === 'running') return 'bg-success shadow-success-ring';
     if (status === 'warning' || status === 'suspended') return 'bg-warning';
@@ -74,16 +75,15 @@ export function AgentActivityRail(props: AgentActivityRailProps) {
   };
   return <Show when={latest()}>{(current) =>
     <CollapsibleSection
-      detailsClass="agent-activity group w-(--container-activity) flex-none mx-auto mt-10 border border-border-subtle rounded-12 bg-activity-bg text-text-primary max-narrow:w-[calc(100%-20px)] max-narrow:mt-8"
-      summaryClass="flex min-h-44 items-center gap-10 px-11 py-5 cursor-pointer list-none focus-visible:rounded-13 focus-visible:outline-offset-neg-2"
+      detailsClass="agent-activity group w-(--container-activity) flex-none mx-auto mt-8 border border-border-subtle rounded-12 bg-activity-bg text-text-primary max-narrow:w-[calc(100%-20px)] max-narrow:mt-6"
+      summaryClass="flex min-h-36 items-center gap-8 px-11 py-4 cursor-pointer list-none focus-visible:rounded-13 focus-visible:outline-offset-neg-2"
       label="Peri activity"
       mark={<span class={`agent-activity__pulse agent-activity__pulse--${current().status} size-8 flex-none rounded-full ${pulseTone(current().status)}`} aria-hidden="true" />}
-      copy={<span class="agent-activity__summary-copy flex min-w-0 flex-1 items-baseline gap-8 max-narrow:grid max-narrow:gap-1">
-        <strong class="text-11 font-680">Activity</strong>
-        <span class="overflow-hidden text-text-secondary text-11 text-ellipsis whitespace-nowrap">{current().label || KIND_LABEL[current().kind]}</span>
+      copy={<span class="agent-activity__summary-copy flex min-w-0 flex-1 items-baseline gap-8">
+        <strong class="overflow-hidden text-text-primary text-11 font-650 text-ellipsis whitespace-nowrap">{current().label || KIND_LABEL[current().kind]}</strong>
         <span class="sr-only">{STATUS_LABEL[current().status]}</span>
       </span>}
-      meta={<span class="agent-activity__count grid min-w-21 h-21 place-items-center rounded-full bg-surface-muted text-text-muted text-10 tabular-nums">{props.activities.length}</span>}
+      meta={<Show when={attentionActivities().length > 1}><span class="agent-activity__count grid min-w-19 h-19 place-items-center rounded-full bg-surface-muted text-text-muted text-10 tabular-nums">{attentionActivities().length}</span></Show>}
       chevronClass="agent-activity__chevron text-text-muted text-18 transition-transform duration-140 group-open:rotate-90"
     >
       <div class="agent-activity__body max-h-240 overflow-auto border-t border-divider pt-9 pr-11 pb-11 pl-11 max-narrow:max-h-210">

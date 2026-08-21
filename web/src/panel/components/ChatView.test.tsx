@@ -1,5 +1,6 @@
 import { render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { PendingElicitation, PendingPermission } from '../lib/control-view';
 import type { ProjectInfo } from '../lib/registry-view';
 
 const state = vi.hoisted(() => ({
@@ -7,7 +8,8 @@ const state = vi.hoisted(() => ({
   createProjectSession: vi.fn(),
   creatingSessionProjectId: vi.fn(() => null),
   elicitationResponses: vi.fn(() => ({})),
-  elicitations: vi.fn(() => []),
+  elicitations: vi.fn<() => PendingElicitation[]>(() => []),
+  permissions: vi.fn<() => PendingPermission[]>(() => []),
   projects: vi.fn<() => ProjectInfo[]>(() => []),
   readOnly: vi.fn(() => false),
   registryHydrated: vi.fn(() => true),
@@ -23,7 +25,7 @@ vi.mock('./AgentPlanPanel', () => ({ AgentPlanPanel: () => null }));
 vi.mock('./ChatHeader', () => ({ ChatHeader: () => null }));
 vi.mock('./Composer', () => ({ Composer: () => null }));
 vi.mock('./ConnectionProblem', () => ({ ConnectionProblem: () => null }));
-vi.mock('./ElicitationQueue', () => ({ ElicitationQueue: () => null }));
+vi.mock('./ElicitationQueue', () => ({ ElicitationQueue: () => <section aria-label="Agent question" /> }));
 vi.mock('./ErrorCenter', () => ({ ErrorCenter: () => null }));
 vi.mock('./MessageList', () => ({ MessageList: () => null }));
 vi.mock('./QuickStartComposer', () => ({ QuickStartComposer: () => <section aria-label="Start new session" class="quick-start quick-start--docked" /> }));
@@ -32,6 +34,7 @@ import { ChatView } from './ChatView';
 
 afterEach(() => {
   state.projects.mockReturnValue([]);
+  state.permissions.mockReturnValue([]);
   state.registryHydrated.mockReturnValue(true);
   state.restoringSessionId.mockReturnValue(null);
   state.selectedSessionId.mockReturnValue('session-1');
@@ -100,5 +103,19 @@ describe('ChatView feedback', () => {
     expect(status).toHaveAttribute('aria-live', 'polite');
     expect(status).toHaveTextContent('Restoring last session and ACP context…');
     expect(status.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
+  });
+
+  it('shows only the blocking permission surface when permission and elicitation coexist', () => {
+    state.elicitations.mockReturnValue([{
+      elicitationId: 'ask-1', message: 'Choose an approach', status: 'pending', responseAction: null,
+      createdAt: null, fields: [],
+    }]);
+    state.permissions.mockReturnValue([{
+      permissionId: 'permission-1', turnId: 'turn-1', toolCallId: 'tool-1', title: 'Edit file',
+      description: null, status: 'pending', expiresAt: null, decision: null,
+    }]);
+    render(() => <ChatView />);
+
+    expect(screen.queryByRole('region', { name: 'Agent question' })).not.toBeInTheDocument();
   });
 });

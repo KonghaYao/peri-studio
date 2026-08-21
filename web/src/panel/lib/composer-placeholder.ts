@@ -1,7 +1,8 @@
 // Composer 输入可用性与 placeholder 决策（纯函数，P4 从 Composer 抽离）。
 //
 // 优先级顺序与原组件一致：只读 > 打开中 > 未选择会话 > 载入中 > 升级
-// 提示 > 已结束 > 工作中 > 本会话确认 > 其他会话确认 > 默认。
+// 提示 > 已结束 > 工作中/确认中 > 默认。工作中与确认中已有明确控件或异常面板，
+// 不再用占位文案重复状态。
 
 export interface ComposerPlaceholderInput {
   readOnly: boolean;
@@ -33,7 +34,7 @@ export function composerInputState(input: ComposerPlaceholderInput): ComposerInp
     || input.hasSubmission;
   let placeholder: string;
   if (input.readOnly) {
-    placeholder = 'Read-only mode';
+    placeholder = '';
   } else if (input.openingSessionId) {
     placeholder = 'Opening session…';
   } else if (!input.selectedCid) {
@@ -44,12 +45,8 @@ export function composerInputState(input: ComposerPlaceholderInput): ComposerInp
     placeholder = 'Server upgrade required to send messages safely';
   } else if (input.terminal) {
     placeholder = 'Conversation ended (history is read-only)';
-  } else if (input.turnActive) {
-    placeholder = 'Agent is working; stop it anytime';
-  } else if (input.submissionForSession) {
-    placeholder = 'Confirming the current message…';
-  } else if (input.submissionInAnotherSession) {
-    placeholder = 'Still confirming a message in another session…';
+  } else if (input.turnActive || input.submissionForSession || input.submissionInAnotherSession) {
+    placeholder = '';
   } else {
     placeholder = 'Message Agent';
   }

@@ -296,14 +296,15 @@ describe('Composer', () => {
     expect(screen.queryByRole('button', { name: 'Back to edit' })).not.toBeInTheDocument();
   });
 
-  it('marks an in-flight submission as busy without treating it as a conversation message', () => {
+  it('marks an in-flight submission as busy without rendering redundant confirmation copy', () => {
     selectReadyChat();
     startMessageDelivery('cmd-1', 'pending text', 'session-1', 'chat-1');
     render(() => <Composer />);
 
     expect(document.querySelector('.composer-surface')).toHaveAttribute('aria-busy', 'true');
-    expect(screen.getByText('Sending message')).toBeInTheDocument();
-    expect(screen.getByRole('textbox')).toHaveAccessibleDescription(/The message is not part of the conversation until the server projects it/);
+    expect(screen.queryByText('Sending message')).not.toBeInTheDocument();
+    expect(screen.queryByText('Message received by the server')).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox')).not.toHaveAccessibleDescription();
   });
 
   it('restores only a definitely failed submission to the current project session draft', async () => {
@@ -359,7 +360,7 @@ describe('Composer', () => {
     setSelectedCid('chat-2');
     render(() => <Composer />);
 
-    expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', 'Still confirming a message in another session…');
+    expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', '');
     expect(screen.getByText('Another session is still confirming')).toBeInTheDocument();
     expect(screen.queryByText('private draft A')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Back to that session' })).toBeInTheDocument();

@@ -154,7 +154,7 @@ test('conversation copy and markdown keep compact authored line heights', async 
 
 test('intervention actions stay compact in a narrow desktop panel', async ({ page }) => {
   const measure = () => page.evaluate(() => {
-    const labels = ['Allow', 'Deny', 'Decline', 'Cancel', 'Submit'];
+    const labels = ['Allow', 'Deny'];
     return labels.map((label) => {
       const button = [...document.querySelectorAll('button')].find((element) => element.textContent?.trim() === label);
       const box = button.getBoundingClientRect();
@@ -167,7 +167,7 @@ test('intervention actions stay compact in a narrow desktop panel', async ({ pag
   const desktopGeometry = await measure();
   expect(Math.max(...desktopGeometry.map(({ width }) => width))).toBeLessThan(160);
   expect(new Set(desktopGeometry.map(({ height }) => height))).toEqual(new Set([36]));
-  expect(new Set(desktopGeometry.slice(2).map(({ top }) => top)).size).toBe(1);
+  await expect(page.locator('.elicitation-card')).toHaveCount(0);
 
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileGeometry = await measure();
@@ -258,8 +258,9 @@ test('desktop chrome is white, composer focus stays borderless, and placeholder 
 test('runtime and recovery status labels use one visible word', async ({ page }) => {
   await page.setViewportSize({ width: 631, height: 800 });
   await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
-  await expect(page.locator('.runtime-status')).toHaveText('Approval');
+  await expect(page.locator('.runtime-status')).toHaveCount(0);
   await expect(page.locator('.connection-pill')).toHaveText('Online');
+  await expect(page.locator('.connection-pill .ui-status__label')).toHaveClass(/sr-only/);
 
   await page.goto('/visual-fixture.html?scenario=terminal-readonly', { waitUntil: 'networkidle' });
   await expect(page.locator('.runtime-status')).toHaveText('Crashed');
@@ -355,7 +356,6 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 768
       return [
         rect('.conversation-message--assistant'),
         rect('.permission-queue'),
-        rect('.elicitation-card'),
         rect('.composer-surface'),
       ];
     });
@@ -363,7 +363,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 768
     expect(new Set(geometry.map(({ left }) => left)).size).toBe(1);
     expect(new Set(geometry.map(({ right }) => right)).size).toBe(1);
     expect(new Set(geometry.map(({ width }) => width)).size).toBe(1);
-    expect(geometry[2].height).toBeLessThanOrEqual(300);
+    await expect(page.locator('.elicitation-card')).toHaveCount(0);
   });
 }
 

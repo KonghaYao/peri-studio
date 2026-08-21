@@ -1,7 +1,7 @@
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 import type { PendingPermission } from '../lib/control-view';
 import type { PermissionDecisionState } from '../lib/permission-delivery';
-import { Button } from '../../components/ui';
+import { Icon, IconButton } from '../../components/ui';
 import { PermissionRequestCard } from './PermissionRequestCard';
 
 export interface PermissionQueueProps {
@@ -51,10 +51,10 @@ export function PermissionQueue(props: PermissionQueueProps) {
     return <aside class="permission-queue sticky top-12 z-10 mb-16" aria-label={`Pending permission requests, ${props.permissions.length} total`}>
       <Show when={props.permissions.length > 1}>
         <div class="permission-queue__navigation flex min-h-34 items-center justify-between gap-12 pt-5 pr-7 pb-5 pl-12 border border-border-subtle border-b-0 rounded-t-14 bg-surface text-text-secondary text-11 font-650 [&_[data-slot=button]]:min-h-28 [&_[data-slot=button]]:px-9">
-          <span aria-live="polite">{activeIndex() + 1} / {props.permissions.length} pending</span>
+          <span aria-live="polite">{activeIndex() + 1} / {props.permissions.length}</span>
           <div class="flex gap-4">
-            <Button size="compact" class="min-h-28 px-9" disabled={activeIndex() <= 0} onClick={() => select(activeIndex() - 1)}>Previous</Button>
-            <Button size="compact" class="min-h-28 px-9" disabled={activeIndex() >= props.permissions.length - 1} onClick={() => select(activeIndex() + 1)}>Next</Button>
+            <IconButton label="Previous permission" class="size-28 min-h-28" disabled={activeIndex() <= 0} onClick={() => select(activeIndex() - 1)}><Icon class="size-16!"><path d="m12.5 5-5 5 5 5" /></Icon></IconButton>
+            <IconButton label="Next permission" class="size-28 min-h-28" disabled={activeIndex() >= props.permissions.length - 1} onClick={() => select(activeIndex() + 1)}><Icon class="size-16!"><path d="m7.5 5 5 5-5 5" /></Icon></IconButton>
           </div>
         </div>
       </Show>

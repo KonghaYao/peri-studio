@@ -16,7 +16,8 @@ describe('AgentActivityRail', () => {
     const rail = screen.getByRole('group', { name: 'Peri activity' });
     expect(rail).not.toHaveAttribute('open');
     const summary = rail.querySelector('summary')!;
-    expect(summary).toHaveTextContent('ActivityCode reviewRunning');
+    expect(summary).toHaveTextContent('Code reviewRunning');
+    expect(summary).not.toHaveTextContent('Activity');
     expect(summary.querySelector('.sr-only')).toHaveTextContent('Running');
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     fireEvent.click(summary);
@@ -28,6 +29,11 @@ describe('AgentActivityRail', () => {
 
   it('renders nothing without negotiated activity records', () => {
     const { container } = render(() => <AgentActivityRail activities={[]} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('does not reserve space for completed activity history', () => {
+    const { container } = render(() => <AgentActivityRail activities={[activities[0]]} />);
     expect(container).toBeEmptyDOMElement();
   });
 });

@@ -48,8 +48,9 @@ describe('QuickStartComposer', () => {
 
     expect(document.querySelector('.quick-start__surface')).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('textbox', { name: 'First message' })).toBeDisabled();
-    expect(screen.getByRole('status')).toHaveTextContent('Creating and connecting session…');
-    expect(screen.getByRole('textbox', { name: 'First message' })).toHaveAccessibleDescription(/Waiting for the server to confirm/);
+    expect(screen.queryByText('Creating and connecting session…')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Waiting for the server to confirm/)).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'First message' })).not.toHaveAccessibleDescription();
     expect(screen.queryByText('first prompt')).not.toBeInTheDocument();
   });
 

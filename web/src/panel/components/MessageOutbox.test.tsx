@@ -33,12 +33,14 @@ describe('MessageOutbox', () => {
     expect(edit).toHaveBeenCalledOnce();
   });
 
-  it('uses a decorative shared spinner while a non-actionable submission is in flight', () => {
+  it('keeps non-actionable transport progress quiet while exposing busy state', () => {
     render(() => <MessageOutbox submission={submission('sending')} onRetry={vi.fn()} onEdit={vi.fn()} />);
 
     const status = screen.getByRole('status', { name: 'Your pending-confirmation message' });
-    expect(status).toHaveTextContent('Sending');
-    expect(status.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
+    expect(status).toHaveAttribute('aria-busy', 'true');
+    expect(status).toHaveTextContent('do not lose this work');
+    expect(status).not.toHaveTextContent('Sending');
+    expect(status.querySelector('.message-outbox__status')).not.toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 

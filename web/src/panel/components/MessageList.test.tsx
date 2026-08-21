@@ -178,11 +178,11 @@ describe('MessageList hydration', () => {
 
     render(() => <MessageList />);
 
-    const loading = screen.getByRole('status', { name: 'Assistant is working' });
+    const loading = document.querySelector('.message-loading')!;
     expect(loading).toHaveClass('message-loading');
+    expect(loading).toHaveClass('sr-only');
     expect(loading).toHaveAttribute('aria-live', 'polite');
-    expect(loading).toHaveTextContent('Assistant is working');
-    expect(loading.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
+    expect(loading).toHaveTextContent('Agent working');
     expect(document.querySelectorAll('.message-loading')).toHaveLength(1);
   });
 
@@ -196,7 +196,7 @@ describe('MessageList hydration', () => {
 
     expect(screen.getByLabelText('Pending permission requests, 2 total')).toBeInTheDocument();
     expect(screen.getByText('Read file')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next permission' }));
     expect(screen.getByText('Run command')).toBeInTheDocument();
   });
 

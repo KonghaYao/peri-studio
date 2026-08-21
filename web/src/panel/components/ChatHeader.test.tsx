@@ -91,7 +91,7 @@ describe('ChatHeader runtime truth', () => {
     expect(screen.getByText('New conversation · …12345678')).toBeInTheDocument();
   });
 
-  it('announces permission attention before generic active work', () => {
+  it('leaves permission attention to the actionable permission card', () => {
     setProjectSessions([session]);
     setSelectedSessionId(session.id);
     setSelectedCid('chat-1');
@@ -108,7 +108,7 @@ describe('ChatHeader runtime truth', () => {
     setConnState({ text: 'Ready', kind: 'ok' });
     render(() => <ChatHeader />);
 
-    expect(screen.getByText('Approval')).toBeInTheDocument();
+    expect(screen.queryByText('Approval')).not.toBeInTheDocument();
     expect(screen.queryByText('Working')).not.toBeInTheDocument();
   });
 

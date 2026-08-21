@@ -14,6 +14,7 @@ describe('PermissionRequestCard', () => {
     const view = render(() => <PermissionRequestCard permission={permission} readOnly={false} onResolve={resolve} />);
     expect(screen.getByText('Run shell command')).toBeInTheDocument();
     expect(screen.getByText("Read the current project's Git status")).toBeInTheDocument();
+    expect(screen.queryByText('Permission needed')).not.toBeInTheDocument();
     expect(screen.getByText('tool tool-123…')).toHaveAttribute('title', 'tool-123456789');
     fireEvent.click(screen.getByRole('button', { name: 'Allow' }));
     expect(resolve).toHaveBeenCalledExactlyOnceWith('allow');

@@ -167,6 +167,14 @@ describe('Status', () => {
     expect(status).not.toHaveAttribute('tone');
     expect(status).not.toHaveAttribute('live');
   });
+
+  it('can retain status semantics while hiding routine label copy', () => {
+    render(() => <Status tone="ok" labelHidden data-testid="status">Online</Status>);
+    const label = screen.getByText('Online');
+    expect(label).toHaveClass('ui-status__label');
+    expect(label).toHaveClass('sr-only');
+    expect(screen.getByTestId('status')).not.toHaveAttribute('labelhidden');
+  });
 });
 
 describe('Toast', () => {

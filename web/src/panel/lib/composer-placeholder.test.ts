@@ -24,9 +24,9 @@ describe('composerInputState', () => {
     expect(state.placeholder).toBe('Select or create a session from the left first');
   });
 
-  it('defers to the read-only mode over every other state', () => {
+  it('keeps the read-only input quiet because the sidebar already exposes that mode', () => {
     const state = composerInputState(base({ readOnly: true, selectedCid: null }));
-    expect(state.placeholder).toBe('Read-only mode');
+    expect(state.placeholder).toBe('');
   });
 
   it('keeps priority order: opening beats missing selection', () => {
@@ -52,22 +52,22 @@ describe('composerInputState', () => {
     expect(state.placeholder).toBe('Conversation ended (history is read-only)');
   });
 
-  it('keeps the input open for a running turn while offering stop', () => {
+  it('does not repeat the running state already expressed by the stop control', () => {
     const state = composerInputState(base({ turnActive: true }));
     expect(state.disabled).toBe(true);
-    expect(state.placeholder).toBe('Agent is working; stop it anytime');
+    expect(state.placeholder).toBe('');
   });
 
-  it('explains the current-session confirmation lock', () => {
+  it('does not add placeholder copy for current-session confirmation', () => {
     const state = composerInputState(base({ hasSubmission: true, submissionForSession: true }));
     expect(state.disabled).toBe(true);
-    expect(state.placeholder).toBe('Confirming the current message…');
+    expect(state.placeholder).toBe('');
   });
 
-  it('distinguishes another session confirmation without leaking its draft', () => {
+  it('leaves cross-session confirmation explanation to its actionable notice', () => {
     const state = composerInputState(base({ hasSubmission: true, submissionInAnotherSession: true }));
     expect(state.disabled).toBe(true);
-    expect(state.placeholder).toBe('Still confirming a message in another session…');
+    expect(state.placeholder).toBe('');
   });
 
   it('is enabled with the default placeholder when everything is ready', () => {

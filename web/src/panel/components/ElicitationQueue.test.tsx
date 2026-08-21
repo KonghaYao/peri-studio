@@ -18,6 +18,7 @@ describe('ElicitationQueue', () => {
     const respond = vi.fn();
     render(() => <ElicitationQueue elicitations={[item]} responding={{}} readOnly={false} onRespond={respond} />);
     expect(screen.getByRole('region', { name: 'Agent question' })).toBeInTheDocument();
+    expect(screen.queryByText('Input needed')).not.toBeInTheDocument();
     await fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Detail');
     await fireEvent.input(screen.getByRole('textbox', { name: 'Detail' }), { target: { value: 'Keep compatibility' } });
