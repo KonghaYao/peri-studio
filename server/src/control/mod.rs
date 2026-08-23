@@ -13,6 +13,8 @@ mod heartbeat;
 mod hub;
 mod instance_registry;
 mod project_service;
+mod resource_projection;
+mod resource_service;
 mod workspace_registry;
 
 pub use chat_registry::{ChatError, ChatRecord, ChatRegistry, ChatState, ReconciliationReport};
@@ -27,4 +29,6 @@ pub use instance_registry::{
     KillOutcome, SpawnOutcome,
 };
 pub use project_service::{ProjectService, ProjectServiceError};
+pub use resource_projection::ResourceProjection;
+pub use resource_service::ResourceService;
 pub use workspace_registry::{WorkspaceError, WorkspaceRecord, WorkspaceRegistry};

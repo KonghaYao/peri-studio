@@ -29,6 +29,52 @@ async fn test_caller_owned_shutdown_stops_daemon() {
 }
 
 #[tokio::test]
+async fn test_authenticated_resource_query_returns_directory_projection() {
+    let dir = tempfile::tempdir().unwrap();
+    let workspace = dir.path().join("workspace");
+    std::fs::create_dir(&workspace).unwrap();
+    std::fs::write(workspace.join("README.md"), "hello").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let config = test_config(addr, dir.path());
+    let hub = tokio::spawn(run(config, tokio_util::sync::CancellationToken::new()));
+    let (mut sink, mut stream, _) = handshake_server(accept_ws(&listener).await).await;
+
+    let query = peri_studio_proto::resource::InstanceResourceQuery {
+        request_id: "resource-1".into(),
+        workspace_id: "project-1".into(),
+        root: workspace.to_string_lossy().into_owned(),
+        query: peri_studio_proto::resource::InstanceResourceQueryKind::ReadDirectory(
+            peri_studio_proto::resource::ReadDirectoryQuery {
+                path: "".into(),
+                cursor: None,
+                limit: 200,
+            },
+        ),
+    };
+    send_frame(&mut sink, &Frame::InstanceResourceQuery(query)).await;
+
+    match next_frame_skipping_hb(&mut stream).await {
+        Frame::InstanceResourceResult(result) => {
+            assert_eq!(result.request_id, "resource-1");
+            let Some(peri_studio_proto::resource::InstanceResourcePayload::DirectoryPage(page)) =
+                result.result
+            else {
+                panic!("expected directory result, got {result:?}");
+            };
+            assert_eq!(page.entries.len(), 1);
+            assert_eq!(page.entries[0].name, "README.md");
+        }
+        other => panic!("expected resource result, got {other:?}"),
+    }
+
+    drop(stream);
+    drop(sink);
+    hub.abort();
+    let _ = hub.await;
+}
+
+#[tokio::test]
 async fn test_full_flow_spawn_event_heartbeat_kill_exit() {
     let dir = tempfile::tempdir().unwrap();
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();

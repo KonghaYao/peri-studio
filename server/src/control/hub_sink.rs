@@ -21,7 +21,8 @@ use crate::state::doc_manager::{DocUpdate, PersistError, UpdateSink};
 use crate::state::factory::{DocKind, Factory};
 use crate::state::view_store::encode_state_as_update;
 use peri_studio_proto::version::{
-    CHAT_DOC_SCHEMA_VERSION, REGISTRY_DOC_SCHEMA_VERSION, SESSION_DOC_SCHEMA_VERSION,
+    CHAT_DOC_SCHEMA_VERSION, REGISTRY_DOC_SCHEMA_VERSION, RESOURCE_DOC_SCHEMA_VERSION,
+    SESSION_DOC_SCHEMA_VERSION,
 };
 
 /// UpdateSink 生产实现（F5 薄 adapter）：内存镜像 + 广播流（无落盘）。
@@ -66,6 +67,14 @@ impl StoreSink {
         let state = encode_state_as_update(d);
         let version = projection_version(d);
         Some((state, version))
+    }
+
+    /// 回收短租约资源 Doc 的内存镜像。资源投影不落盘，释放后不可恢复。
+    pub async fn remove_resource_doc(&self, doc: &DocId) -> bool {
+        if !doc.as_str().starts_with("resource:") {
+            return false;
+        }
+        self.docs.write().await.remove(doc).is_some()
     }
 
     /// Startup-only cross-store repair for a Hub-owned v2 prompt entry. The
@@ -214,6 +223,16 @@ impl UpdateSink for StoreSink {
                     })
                 }
                 "hub:registry" => Some(DocKind::Registry),
+                s if s.starts_with("resource:") => {
+                    let view_id = s
+                        .split_once(':')
+                        .map(|(_, value)| value)
+                        .unwrap_or_default();
+                    if uuid::Uuid::parse_str(view_id).is_err() {
+                        return Err(PersistError(format!("unknown doc: {doc}")));
+                    }
+                    Some(DocKind::Resource)
+                }
                 _ => None,
             };
             match kind {
@@ -266,6 +285,7 @@ fn create_mirror_doc(factory: &Factory, kind: DocKind, updates: &[Vec<u8>]) -> y
         DocKind::Chat => CHAT_DOC_SCHEMA_VERSION,
         DocKind::Session => SESSION_DOC_SCHEMA_VERSION,
         DocKind::Registry => REGISTRY_DOC_SCHEMA_VERSION,
+        DocKind::Resource => RESOURCE_DOC_SCHEMA_VERSION,
     };
     {
         use yrs::{Transact, WriteTxn};

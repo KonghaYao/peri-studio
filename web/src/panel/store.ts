@@ -39,6 +39,13 @@ import { ERROR_REASONS, persistActionProblem, reportTransportIssue, type Persist
 import { sendMessage, type SessionConfigMutation } from './lib/user-actions';
 import { installChatSubscription, reconcileCurrentRuntimeControl, selectChat, sendSubscribe } from './lib/chat-subscription';
 import { installStoreWiring } from './lib/store-installs';
+import {
+  handleResourceResult,
+  handleResourceUpdate,
+  installResourceStore,
+  replayResourceSubscriptions,
+  resetResourceProject,
+} from './lib/resource-store';
 
 // ── UI 信号（组件消费）─────────────────────────────────────────────────
 
@@ -193,6 +200,7 @@ installConnection({
   toast,
   sendSubscribe,
   onReady: () => {
+    replayResourceSubscriptions();
     if (registryHydrated()) reconcileSessionNavigation(projectSessions());
     if (selectedSessionId()) requestPromptRecovery(selectedSessionId()!);
   },
@@ -205,7 +213,12 @@ installConnection({
 function onFrame(frame: H.DownstreamFrame): void {
   switch (frame.t) {
     case 'ysync.update':
-      store.applyUpdateFrame(frame as { doc: string; update: string });
+      if (!handleResourceUpdate(frame as { doc: string; update: string })) {
+        store.applyUpdateFrame(frame as { doc: string; update: string });
+      }
+      break;
+    case 'resource_result':
+      handleResourceResult(frame as import('./lib/resource-protocol').ResourceResultFrame);
       break;
     case 'action_ack':
       onAck(frame as Ack);
@@ -448,6 +461,7 @@ export function resetAuthenticatedSession(): void {
   resetPermissionDecisions();
   setRegistryHydrated(false);
   store.clear();
+  resetResourceProject();
   // Keep this last: disconnect/reset callbacks are allowed to publish feedback,
   // but no notification from the previous principal may survive this boundary.
   toastStore.clear();
@@ -484,3 +498,13 @@ export {
 export { sendMessage };
 export type { PersistentError } from './lib/panel-errors';
 export type { SessionConfigMutation } from './lib/user-actions';
+
+installResourceStore({ send: sendFrame, ready: connectionReady, toast });
+export {
+  activateResourceProject,
+  downloadResourceFile,
+  mutateGitResource,
+  openResourceDirectory,
+  refreshResourceProject,
+  resourceWorkspace,
+} from './lib/resource-store';

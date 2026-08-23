@@ -12,6 +12,7 @@ fn client_inbound_m1_set() {
         "ysync.unsubscribe",
         "pong",
         "auth",
+        "resource_query",
     ] {
         assert_eq!(
             m1_check(FrameTag(tag), Role::Client, Direction::Inbound),
@@ -43,6 +44,7 @@ fn client_outbound_m1_set() {
         "mcp_oauth_authorization",
         "rewind_candidates",
         "rewind_preview",
+        "resource_result",
     ] {
         assert_eq!(
             m1_check(FrameTag(tag), Role::Client, Direction::Outbound),
@@ -94,6 +96,7 @@ fn instance_m1_set() {
         "instance/spawn_ack",
         "instance/kill_ack",
         "instance/process_exit",
+        "instance/resource_result",
     ] {
         assert_eq!(
             m1_check(FrameTag(tag), Role::Instance, Direction::Inbound),
@@ -102,7 +105,12 @@ fn instance_m1_set() {
         );
     }
     // S→M
-    for tag in ["instance/spawn", "instance/kill", "auth_response"] {
+    for tag in [
+        "instance/spawn",
+        "instance/kill",
+        "instance/resource_query",
+        "auth_response",
+    ] {
         assert_eq!(
             m1_check(FrameTag(tag), Role::Instance, Direction::Outbound),
             M1Check::Allowed,
@@ -190,12 +198,12 @@ fn m1_action_type_subset() {
     assert_eq!(crate::whitelist::M1_ACTION_TYPES.len(), 31);
 }
 
-/// 全量注册表：32 个 tag 且与 §3.2 表一致（含 M2/M3 保留帧与
+/// 全量注册表：36 个 tag 且与 §3.2 表一致（含 M2/M3 保留帧与
 /// instance/forward 系，冲突 1 裁决）。
 #[test]
 fn frame_tag_registry_completeness() {
     let tags: Vec<&str> = crate::frame::FRAME_TAGS.iter().map(|t| t.0).collect();
-    assert_eq!(tags.len(), 32);
+    assert_eq!(tags.len(), 36);
     for expected in [
         "action",
         "action_ack",
@@ -229,6 +237,10 @@ fn frame_tag_registry_completeness() {
         "mcp_oauth_authorization",
         "rewind_candidates",
         "rewind_preview",
+        "resource_query",
+        "resource_result",
+        "instance/resource_query",
+        "instance/resource_result",
     ] {
         assert!(tags.contains(&expected), "缺少注册 tag {expected}");
     }

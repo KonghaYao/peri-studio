@@ -18,7 +18,7 @@ use super::test_util::{
 use crate::auth::{AuthService, TokenRole, TokenStore};
 use crate::web::{
     cookie_value, header_end, is_json_content_type, is_ws_upgrade, request_path, serve_http,
-    valid_loopback_host, BrowserAuthSetup, HealthSnapshot, HealthStatus,
+    serve_http_with_resources, valid_loopback_host, BrowserAuthSetup, HealthSnapshot, HealthStatus,
 };
 
 /// 请求行解析：常规 GET 路径。
@@ -153,6 +153,75 @@ async fn health_is_credential_free_liveness_with_explicit_readiness() {
     assert!(!body.contains("token"));
     assert!(!body.contains("path"));
     assert!(!body.contains("reason"));
+}
+
+#[tokio::test]
+async fn resource_blob_requires_cookie_and_returns_exact_bytes_with_etag() {
+    let dir = tempdir().unwrap();
+    let token_path = dir.path().join("tokens.toml");
+    let mut token_store = TokenStore::load(&token_path).unwrap();
+    let record = token_store
+        .generate(TokenRole::Full, "blob-reader")
+        .unwrap();
+    let mut auth_service = AuthService::new(token_store);
+    let (session_id, ctx) = auth_service.create_browser_session(&record.token).unwrap();
+    let auth = Arc::new(Mutex::new(auth_service));
+
+    let metadata = Arc::new(
+        crate::persist::metadata::MetadataStore::open(dir.path())
+            .await
+            .unwrap(),
+    );
+    let (registry_tx, _registry_rx) = tokio::sync::mpsc::channel(1);
+    let registry = crate::state::registry::RegistryState::new(registry_tx);
+    let instance = Arc::new(crate::control::InstanceRegistry::new(
+        std::time::Duration::from_secs(30),
+        std::time::Duration::from_secs(10),
+        crate::control::ChatRegistry::new(registry),
+    ));
+    let sink = Arc::new(crate::control::StoreSink::new());
+    let resources = Arc::new(crate::control::ResourceService::new(
+        metadata,
+        instance,
+        crate::control::ResourceProjection::new(sink, std::time::Duration::from_secs(60), 2),
+    ));
+    let opened = resources
+        .store_blob(
+            &ctx.token_id,
+            b"exact\0bytes".to_vec(),
+            "application/octet-stream".into(),
+            "etag-1".into(),
+            chrono::Duration::seconds(60),
+        )
+        .await;
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let setup = test_auth_setup(dir.path());
+    let server = tokio::spawn(async move {
+        let (stream, peer) = listener.accept().await.unwrap();
+        serve_http_with_resources(stream, peer, auth, setup, test_health(), resources)
+            .await
+            .unwrap();
+    });
+    let request = format!(
+        "GET {} HTTP/1.1\r\nHost: 127.0.0.1:8456\r\nCookie: peri_studio_session={}\r\nContent-Length: 0\r\n\r\n",
+        opened.url, session_id
+    );
+    let mut client = TcpStream::connect(addr).await.unwrap();
+    client.write_all(request.as_bytes()).await.unwrap();
+    let mut response = Vec::new();
+    client.read_to_end(&mut response).await.unwrap();
+    server.await.unwrap();
+    let split = response
+        .windows(4)
+        .position(|bytes| bytes == b"\r\n\r\n")
+        .unwrap()
+        + 4;
+    let head = String::from_utf8(response[..split].to_vec()).unwrap();
+    assert!(head.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(head.contains("ETag: \"etag-1\""));
+    assert_eq!(&response[split..], b"exact\0bytes");
 }
 
 #[tokio::test]

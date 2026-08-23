@@ -4,7 +4,8 @@
 use yrs::{Map, Transact, WriteTxn};
 
 use peri_studio_proto::version::{
-    CHAT_DOC_SCHEMA_VERSION, REGISTRY_DOC_SCHEMA_VERSION, SESSION_DOC_SCHEMA_VERSION,
+    CHAT_DOC_SCHEMA_VERSION, REGISTRY_DOC_SCHEMA_VERSION, RESOURCE_DOC_SCHEMA_VERSION,
+    SESSION_DOC_SCHEMA_VERSION,
 };
 
 use crate::state::chat_writer;
@@ -23,6 +24,8 @@ pub enum DocKind {
     Session,
     /// Registry Doc（`hub:registry`，§5.5）。
     Registry,
+    /// 有界、短租约的远程 FS/Git 只读投影。
+    Resource,
 }
 
 /// Factory 错误。
@@ -44,6 +47,7 @@ pub struct Factory {
     chat_schema: u32,
     session_schema: u32,
     registry_schema: u32,
+    resource_schema: u32,
 }
 
 impl Factory {
@@ -53,6 +57,7 @@ impl Factory {
             chat_schema: CHAT_DOC_SCHEMA_VERSION,
             session_schema: SESSION_DOC_SCHEMA_VERSION,
             registry_schema: REGISTRY_DOC_SCHEMA_VERSION,
+            resource_schema: RESOURCE_DOC_SCHEMA_VERSION,
         }
     }
 
@@ -119,6 +124,7 @@ impl Factory {
             DocKind::Chat => self.chat_schema,
             DocKind::Session => self.session_schema,
             DocKind::Registry => self.registry_schema,
+            DocKind::Resource => self.resource_schema,
         }
     }
 
@@ -192,6 +198,17 @@ impl Factory {
                 }
                 if root.get(txn, "global").is_none() {
                     root.insert(txn, "global", yrs::MapPrelim::from([("status", "healthy")]));
+                }
+            }
+            DocKind::Resource => {
+                if root.get(txn, "meta").is_none() {
+                    root.insert(txn, "meta", yrs::MapPrelim::default());
+                }
+                if root.get(txn, "entry_order").is_none() {
+                    root.insert(txn, "entry_order", yrs::ArrayPrelim::default());
+                }
+                if root.get(txn, "entries").is_none() {
+                    root.insert(txn, "entries", yrs::MapPrelim::default());
                 }
             }
         }

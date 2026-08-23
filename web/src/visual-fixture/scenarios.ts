@@ -20,10 +20,11 @@ import {
 } from '../panel/store';
 import { installPrincipalRole } from '../panel/lib/auth-state';
 import { acquireFixtureClock } from './fixture-clock';
+import { setResourceWorkspace } from '../panel/lib/resource-store';
 
 export const VISUAL_NOW = Date.parse('2026-08-14T08:00:00+08:00');
 export const DEFAULT_VISUAL_SCENARIO = 'conversation';
-export const VISUAL_SCENARIO_IDS = ['catalog', 'conversation', 'markdown', 'elicitation', 'permission-streaming', 'terminal-readonly'] as const;
+export const VISUAL_SCENARIO_IDS = ['catalog', 'conversation', 'resources', 'markdown', 'elicitation', 'permission-streaming', 'terminal-readonly'] as const;
 export type VisualScenarioId = typeof VISUAL_SCENARIO_IDS[number];
 export type FixtureControlMode = 'display-only' | 'locally-interactive' | 'production-gated';
 
@@ -37,6 +38,7 @@ export interface VisualScenarioDefinition {
 export const visualScenarios: readonly VisualScenarioDefinition[] = [
   { id: 'catalog', label: 'Catalog & Quick Start', description: 'Multiple projects, empty state, and no session selected.', controls: 'locally-interactive' },
   { id: 'conversation', label: 'Full Conversation', description: 'Markdown, tools, resources, and long content.', controls: 'locally-interactive' },
+  { id: 'resources', label: 'Explorer & Git', description: 'Remote file tree and Source Control resource projections.', controls: 'locally-interactive' },
   { id: 'markdown', label: 'Markdown Lab', description: 'GFM, code, math, diagrams, and remote media safety.', controls: 'locally-interactive' },
   { id: 'elicitation', label: 'Questions', description: 'Agent questions, mixed answer fields, and compact response controls.', controls: 'locally-interactive' },
   { id: 'permission-streaming', label: 'Permissions & Streaming', description: 'Active turn, permission queue, and stop control.', controls: 'production-gated' },
@@ -212,6 +214,37 @@ export function installVisualScenario(value: string | null | undefined): { scena
     ]);
     setMcpOAuthEvents({ 'flow-fixture': { chatId: 'chat-current', flowId: 'flow-fixture', serverName: 'github', status: 'authorization_needed', updatedAt: '2026-08-14T00:10:00Z' } });
     setMcpAuthorization({ commandId: 'fixture-auth', chatId: 'chat-current', flowId: 'flow-fixture', authorizationUrl: 'https://example.test/oauth?state=fixture-opaque', expiresAt: '2026-08-14T00:12:00Z' });
+  }
+  if (id === 'resources') {
+    selectConversation();
+    setResourceWorkspace({
+      projectId: 'project-perihelion',
+      loading: [],
+      error: null,
+      directories: {
+        '': { generation: 'root-1', entries: [
+          { id: 'src', name: 'src', path: 'src', kind: 'directory' },
+          { id: 'web', name: 'web', path: 'web', kind: 'directory' },
+          { id: 'cargo', name: 'Cargo.toml', path: 'Cargo.toml', kind: 'file' },
+          { id: 'readme', name: 'README.md', path: 'README.md', kind: 'file' },
+        ] },
+        src: { generation: 'src-1', entries: [
+          { id: 'main', name: 'main.rs', path: 'src/main.rs', kind: 'file' },
+          { id: 'lib', name: 'lib.rs', path: 'src/lib.rs', kind: 'file' },
+        ] },
+      },
+      repositories: [{
+        id: 'repo-1', root: '', name: 'peri-studio', headName: 'main', generation: 'git-1', ahead: 2, behind: 0,
+        groups: {
+          index: { count: 1, revision: 'index-1', changes: [{ id: 'c1', path: 'server/src/control/resource_service.rs', status: 'modified' }] },
+          working_tree: { count: 2, revision: 'work-1', changes: [
+            { id: 'c2', path: 'web/src/panel/components/ResourceWorkbench.tsx', status: 'modified' },
+            { id: 'c3', path: 'docs/design/remote-fs-git-protocol.md', status: 'modified' },
+          ] },
+          untracked: { count: 1, revision: 'new-1', changes: [{ id: 'c4', path: 'web/src/panel/lib/resource-view.ts', status: 'untracked' }] },
+        },
+      }],
+    });
   }
   if (id === 'markdown') {
     selectConversation([markdownEntry]);

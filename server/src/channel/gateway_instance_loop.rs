@@ -220,6 +220,11 @@ impl Gateway {
                                     self.deps.instance.on_ack(&instance_id, &cid,
                                         InstanceAck::Forward(ack)).await;
                                 }
+                                Frame::InstanceResourceResult(result) => {
+                                    let request_id = result.request_id.clone();
+                                    self.deps.instance.on_ack(&instance_id, &request_id,
+                                        InstanceAck::Resource(result)).await;
+                                }
                                 Frame::InstanceProcessExit(exit) => {
                                     let r = self.relay.on_process_exit(&instance_id, &exit).await;
                                     trace_consume(&r);

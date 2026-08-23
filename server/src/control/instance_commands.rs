@@ -11,6 +11,26 @@ use tracing::{info, warn};
 use super::*;
 
 impl InstanceRegistry {
+    /// 向指定 instance 发出有界资源查询，并以 `request_id` 等待对应结果。
+    pub async fn query_resource(
+        &self,
+        instance_id: &str,
+        query: peri_studio_proto::resource::InstanceResourceQuery,
+    ) -> Result<peri_studio_proto::resource::InstanceResourceResult, InstanceError> {
+        let request_id = query.request_id.clone();
+        let ack = self
+            .send_command(
+                instance_id,
+                request_id.clone(),
+                Frame::InstanceResourceQuery(query),
+            )
+            .await?;
+        match ack {
+            InstanceAck::Resource(result) if result.request_id == request_id => Ok(result),
+            _ => Err(InstanceError::ConnectionGone),
+        }
+    }
+
     /// 指令下发统一路径：登记 ack oneshot → 发送 → 等 ack（超时
     /// `cmd_timeout`）。
     pub(super) async fn send_command(

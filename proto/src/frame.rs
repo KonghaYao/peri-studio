@@ -30,6 +30,9 @@ use crate::instance::{
     InstanceSpawnAck,
 };
 use crate::oauth::{McpOAuthAuthorizationFrame, McpOAuthFrame, McpServersFrame};
+use crate::resource::{
+    InstanceResourceQuery, InstanceResourceResult, ResourceQuery, ResourceResult,
+};
 use crate::rewind::{RewindCandidatesFrame, RewindPreviewFrame};
 use crate::session::PromptStatusFrame;
 use crate::session::SessionListFrame;
@@ -73,6 +76,10 @@ pub static FRAME_TAGS: &[FrameTag] = &[
     FrameTag("mcp_oauth_authorization"),
     FrameTag("rewind_candidates"),
     FrameTag("rewind_preview"),
+    FrameTag("resource_query"),
+    FrameTag("resource_result"),
+    FrameTag("instance/resource_query"),
+    FrameTag("instance/resource_result"),
 ];
 
 /// 帧解析与白名单检查的错误面。
@@ -199,6 +206,18 @@ pub enum Frame {
     /// S→C 精确 rewind 影响预览与确认指纹。
     #[serde(rename = "rewind_preview")]
     RewindPreview(RewindPreviewFrame),
+    /// Web 面板申请/释放有界资源视图或 blob ticket。
+    #[serde(rename = "resource_query")]
+    ResourceQuery(ResourceQuery),
+    /// server 返回资源视图/blob ticket 查询结果。
+    #[serde(rename = "resource_result")]
+    ResourceResult(ResourceResult),
+    /// server → instance 的可信资源查询。
+    #[serde(rename = "instance/resource_query")]
+    InstanceResourceQuery(InstanceResourceQuery),
+    /// instance → server 的资源查询结果。
+    #[serde(rename = "instance/resource_result")]
+    InstanceResourceResult(InstanceResourceResult),
     /// M→S ACP 进程退出事件（§4.5）。
     #[serde(rename = "instance/process_exit")]
     InstanceProcessExit(InstanceProcessExit),
@@ -268,6 +287,10 @@ impl Frame {
             Frame::McpOAuthAuthorization(_) => FrameTag("mcp_oauth_authorization"),
             Frame::RewindCandidates(_) => FrameTag("rewind_candidates"),
             Frame::RewindPreview(_) => FrameTag("rewind_preview"),
+            Frame::ResourceQuery(_) => FrameTag("resource_query"),
+            Frame::ResourceResult(_) => FrameTag("resource_result"),
+            Frame::InstanceResourceQuery(_) => FrameTag("instance/resource_query"),
+            Frame::InstanceResourceResult(_) => FrameTag("instance/resource_result"),
         }
     }
 }

@@ -310,7 +310,8 @@ async fn h7_version_binding() {
     assert!(verify_mac(&key, &input, &ok.response.hmac).is_ok());
 
     // 错误版本 → Mismatch（版本绑定天然拒绝，§4.5）
-    let wrong_input = mac_input(&nonce_bytes, &ctx_bytes, "2", "instance");
+    let wrong_version = (PROTOCOL_VERSION + 1).to_string();
+    let wrong_input = mac_input(&nonce_bytes, &ctx_bytes, &wrong_version, "instance");
     assert!(matches!(
         verify_mac(&key, &wrong_input, &ok.response.hmac),
         Err(peri_studio_proto::hmac::HmacError::Mismatch)

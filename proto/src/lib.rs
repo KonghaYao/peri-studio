@@ -34,6 +34,7 @@ pub mod hmac;
 pub mod instance;
 pub mod oauth;
 pub mod protocol;
+pub mod resource;
 pub mod rewind;
 pub mod schema;
 pub mod session;
@@ -58,6 +59,7 @@ pub use oauth::{
     McpOAuthEventStatus, McpOAuthFailureClass, McpOAuthFrame, McpOAuthStatus, McpServerInfo,
     McpServersFrame,
 };
+pub use resource::{ResourceQuery, ResourceResult};
 pub use rewind::{
     RewindCandidate, RewindCandidatesFrame, RewindFileChange, RewindFileChangeKind,
     RewindPreviewFrame,

@@ -113,7 +113,7 @@ mod tests {
     #[test]
     fn parses_bounded_json_health_response() {
         let body =
-            r#"{"status":"healthy","ready":true,"protocolVersion":1,"serverVersion":"0.2.0"}"#;
+            r#"{"status":"healthy","ready":true,"protocolVersion":2,"serverVersion":"0.2.0"}"#;
         let response = format!(
             "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{body}",
             body.len()

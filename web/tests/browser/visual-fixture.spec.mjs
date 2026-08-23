@@ -4,6 +4,7 @@ import { assertVisualContract, visualContract } from '../../scripts/visual-contr
 const scenarios = [
   ['catalog', { projects: 2, sessions: 4 }],
   ['conversation', { messages: 4, markdown: true }],
+  ['resources', { projects: 2, sessions: 4 }],
   ['markdown', { messages: 1 }],
   ['permission-streaming', { permissions: 1, permissionQueueLabel: 'Pending permission requests, 2 total' }],
   ['terminal-readonly', { readonly: true }],
@@ -22,6 +23,22 @@ function collectBrowserErrors(page) {
   });
   return errors;
 }
+
+test('resource workbench matches Explorer and Source Control interaction contracts', async ({ page }) => {
+  const browserErrors = collectBrowserErrors(page);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
+
+  await expect(page.getByRole('tree', { name: 'Workspace files' })).toBeVisible();
+  await page.getByRole('treeitem', { name: 'src' }).click();
+  await expect(page.getByRole('treeitem', { name: 'main.rs' })).toBeVisible();
+  await page.getByRole('button', { name: 'Source Control' }).click();
+  await expect(page.getByText('STAGED CHANGES')).toBeVisible();
+  await expect(page.getByText('UNTRACKED CHANGES')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Unstage server/src/control/resource_service.rs' })).toBeAttached();
+  await expect(page.getByRole('button', { name: 'Stage web/src/panel/lib/resource-view.ts' })).toBeAttached();
+  expect(browserErrors).toEqual([]);
+});
 
 test('markdown lab renders rich content without eager network media', async ({ page }) => {
   const requested = [];

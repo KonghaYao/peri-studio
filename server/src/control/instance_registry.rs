@@ -16,6 +16,7 @@ use peri_studio_proto::instance::{
     InstanceForwardAck, InstanceHeartbeat, InstanceHello, InstanceKill, InstanceKillAck,
     InstanceProcessExit, InstanceSpawn, InstanceSpawnAck,
 };
+use peri_studio_proto::resource::InstanceResourceResult;
 
 use crate::channel::OutboundMsg;
 use crate::control::{ChatRegistry, ChatState};
@@ -63,6 +64,8 @@ pub enum InstanceAck {
     Kill(InstanceKillAck),
     /// `instance/forward_ack`（下行 JSON-RPC 转发确认，L1+L2，§4.4）。
     Forward(InstanceForwardAck),
+    /// `instance/resource_result`（按 request_id 路由）。
+    Resource(InstanceResourceResult),
     /// `instance/process_exit`（无 command_id，按 chat 路由）。
     ProcessExit(InstanceProcessExit),
 }

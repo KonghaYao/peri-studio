@@ -78,6 +78,26 @@ pub(super) async fn handle_inbound(
                     error = ?e, "forward_ack send failed (connection may be down)");
             }
         }
+        Frame::InstanceResourceQuery(query) => {
+            if !authenticated {
+                state
+                    .pre_auth_dropped
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                tracing::warn!(target: "peri_studio::instance", request_id = %query.request_id,
+                    "instance/resource_query received before authentication (dropped, not executed)");
+                return;
+            }
+            // 文件系统与 Git 命令具有独立的超时和阻塞隔离；派生任务避免慢盘
+            // 或大仓库阻塞 daemon 的 heartbeat / ACP 多路复用循环。
+            let outbound = handle.clone();
+            tokio::spawn(async move {
+                let result = crate::resource::ResourceHost::default().query(query).await;
+                if let Err(error) = outbound.send(Frame::InstanceResourceResult(result)).await {
+                    tracing::warn!(target: "peri_studio::instance", error = ?error,
+                        "resource result send failed (connection may be down)");
+                }
+            });
+        }
         other => {
             tracing::warn!(target: "peri_studio::instance", tag = %other.tag(),
                 "inbound frame not handled by instance (dropped and counted)");

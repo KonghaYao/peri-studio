@@ -61,7 +61,8 @@ pub struct KeepAlive {}
 #[serde(rename_all = "camelCase")]
 pub struct Pong {}
 
-/// Doc 名称 newtype（§5.2 表）：`chat:{cid}` / `session:{cid}` / `hub:registry`。
+/// Doc 名称 newtype（§5.2 表）：`chat:{cid}` / `session:{cid}` /
+/// `resource:{opaque_view_id}` / `hub:registry`。
 ///
 /// 序列化为透明字符串（`ysync.subscribe` 的 `{ docs: ["chat:{cid}", ...] }`
 /// 形态）。`FromStr` 校验 `{sid}` 段为合法标识符（ASCII 字母数字 +
@@ -98,6 +99,11 @@ impl DocId {
         DocId(Cow::Owned(format!("session:{cid}")))
     }
 
+    /// `resource:{opaque_view_id}`——server 授权并租赁的有界资源投影。
+    pub fn resource(view_id: &str) -> Self {
+        DocId(Cow::Owned(format!("resource:{view_id}")))
+    }
+
     /// `hub:registry`——机器 + 活跃会话摘要 Doc（§5.2）。
     pub const REGISTRY: DocId = DocId(Cow::Borrowed("hub:registry"));
 
@@ -124,7 +130,7 @@ impl FromStr for DocId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (prefix, sid) = s.split_once(':').ok_or_else(|| DocIdError(s.to_string()))?;
-        if prefix != "chat" && prefix != "session" && prefix != "hub" {
+        if prefix != "chat" && prefix != "session" && prefix != "resource" && prefix != "hub" {
             return Err(DocIdError(s.to_string()));
         }
         if sid.is_empty()

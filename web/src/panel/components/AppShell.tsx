@@ -4,6 +4,7 @@ import { ChatView } from './ChatView';
 import { compactViewportQuery } from '../lib/breakpoints';
 import { ProjectDrawer } from './shared/ProjectDrawer';
 import { SettingsDialog } from './SettingsDialog';
+import { ResourceWorkbench } from './ResourceWorkbench';
 
 const SIDEBAR_MIN_WIDTH = 220;
 const SIDEBAR_MAX_WIDTH = 480;
@@ -74,7 +75,7 @@ export function AppShell() {
   };
   const sidebarGridTemplate = () => mobile()
     ? 'minmax(0, 1fr)'
-    : `${sidebarWidth()}px minmax(0, 1fr)`;
+    : `${sidebarWidth()}px auto minmax(0, 1fr)`;
 
   return (
     <div class="app-shell relative grid h-dvh overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide" style={{ 'grid-template-columns': sidebarGridTemplate() }}>
@@ -99,6 +100,7 @@ export function AppShell() {
         onPointerDown={startSidebarResize}
         onKeyDown={resizeSidebarWithKeyboard}
       ><span aria-hidden="true" class="absolute top-0 bottom-0 left-5 w-2 rounded-full bg-transparent transition-colors group-hover:bg-accent group-focus-visible:bg-accent" /></div>
+      <ResourceWorkbench />
       <main ref={main} class="conversation-pane min-w-0 min-h-0 overflow-hidden">
         <ChatView onOpenNavigation={openDrawer} onOpenSystem={() => setSystemOpen(true)} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />
       </main>

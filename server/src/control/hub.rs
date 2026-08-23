@@ -100,6 +100,8 @@ pub struct Hub {
     pub registry: RegistryState,
     pub metadata: Arc<MetadataStore>,
     pub projects: ProjectService,
+    /// 短租约远程 FS/Git 查询与 Yjs 投影服务。
+    pub resources: Arc<crate::control::ResourceService>,
 }
 
 impl Hub {
@@ -191,6 +193,16 @@ impl Hub {
         // 广播流 = StoreSink 镜像增量（单一真相，见模块文档）。
         broadcast.attach(sink.subscribe().await);
         let conns = Arc::new(ConnectionRegistry::new(cfg.connection_quota));
+        let resource_projection = crate::control::ResourceProjection::new(
+            sink.clone(),
+            std::time::Duration::from_secs(60),
+            32,
+        );
+        let resources = Arc::new(crate::control::ResourceService::new(
+            metadata.clone(),
+            instance.clone(),
+            resource_projection,
+        ));
         let deps = ChannelDeps {
             coordinator: coordinator.clone(),
             broadcast: broadcast.clone(),
@@ -206,6 +218,7 @@ impl Hub {
             relay.clone(),
             doc.clone(),
             sink.clone(),
+            resources.clone(),
             registry.clone(),
         );
         // §8.4.1 不变量 4：恢复期门禁——instance 重连（hello）对账完成前
@@ -237,6 +250,7 @@ impl Hub {
             registry,
             metadata,
             projects,
+            resources,
         })
     }
 

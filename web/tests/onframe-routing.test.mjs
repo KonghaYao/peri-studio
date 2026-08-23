@@ -25,6 +25,7 @@ const FEATURE_OWNERS = {
   mcp_servers: { module: 'panel/lib/mcp.ts', prefix: 'handleMcpServers' },
   mcp_oauth: { module: 'panel/lib/mcp.ts', prefix: 'handleMcpOAuth' },
   mcp_oauth_authorization: { module: 'panel/lib/mcp.ts', prefix: 'handleMcpOAuthAuthorization' },
+  resource_result: { module: 'panel/lib/resource-store.ts', prefix: 'handleResourceResult' },
   // ysync.update 是唯一含点的标签（[a-z_.]+），由 store 内的 doc-store
   // 实例内联消费（store.applyUpdateFrame），不委托模块 handler。
   'ysync.update': { module: 'panel/lib/doc-store.ts', prefix: 'applyUpdateFrame' },
@@ -36,7 +37,13 @@ function protocolFrameTags() {
     protocol.indexOf('export type DownstreamFrame'),
     protocol.indexOf('export const parse'),
   );
-  return [...new Set([...downstream.matchAll(/\|\s*\(?\s*\{?\s*t: '([a-z_.]+)'/g)].map((m) => m[1]))];
+  const resourceProtocol = source('panel/lib/resource-protocol.ts');
+  const resourceDownstream = resourceProtocol.slice(
+    resourceProtocol.indexOf('export interface ResourceResultFrame'),
+    resourceProtocol.indexOf('export function openResourceView'),
+  );
+  const literalTags = (text) => [...text.matchAll(/(?:\||interface\s+\w+\s*\{)[\s\S]*?\bt: '([a-z_.]+)'/g)].map((m) => m[1]);
+  return [...new Set([...literalTags(downstream), ...literalTags(resourceDownstream)])];
 }
 
 function onFrameSwitch() {
@@ -83,18 +90,19 @@ test('feature frame cases are handled by their owning module handlers', () => {
   const store = source('panel/store.ts');
   for (const [tag, owner] of Object.entries(FEATURE_OWNERS)) {
     const body = caseBody(tag);
-    const call = body.match(/(handle[A-Za-z]+)\(frame\)/);
-    if (call) {
+    const call = body.match(/(handle[A-Za-z]+)\(frame(?:\s+as\s+[^)]+)?\)/);
+    if (tag === 'ysync.update') {
+      // Resource documents are offered to their independent reader first;
+      // every other Yjs document still goes through the primary DocStore.
+      assert.match(body, /handleResourceUpdate\(/, 'ysync.update must route resource documents independently');
+      assert.match(body, /store\.applyUpdateFrame\(/, 'ysync.update must go through store.applyUpdateFrame');
+      assert.match(source(owner.module), /applyUpdateFrame\(frame: \{ doc: string; update: string \}\)/,
+        `${owner.module} must provide applyUpdateFrame`);
+    } else if (call) {
       // 拆分后：case 委托给模块 handler，模块必须导出同名函数。
       assert.equal(call[1], owner.prefix, `${tag} must delegate to ${owner.prefix}(frame)`);
       const moduleText = source(owner.module);
       assert.match(moduleText, new RegExp(`export function ${owner.prefix}\\(`), `${owner.module} must export ${owner.prefix}`);
-    } else if (tag === 'ysync.update') {
-      // ysync 帧由 store 内的 doc-store 实例内联消费：case 必须经
-      // store.applyUpdateFrame 应用，doc-store 必须提供该方法。
-      assert.match(body, /store\.applyUpdateFrame\(/, 'ysync.update must go through store.applyUpdateFrame');
-      assert.match(source(owner.module), /applyUpdateFrame\(frame: \{ doc: string; update: string \}\)/,
-        `${owner.module} must provide applyUpdateFrame`);
     } else {
       // 拆分前：case 内联处理（直接操作模块信号或 commands）。
       assert.ok(/\bset[A-Z]\w+\(|commands\.|mcpQueries|rewindQueries|promptRecoveryQueries/.test(body),

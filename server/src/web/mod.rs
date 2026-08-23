@@ -39,7 +39,9 @@ use peri_studio_proto::version::PROTOCOL_VERSION;
 
 #[cfg(test)]
 pub(crate) use http::serve;
+#[cfg(test)]
 pub(crate) use http::serve_http;
+pub(crate) use http::serve_http_with_resources;
 pub(crate) use parse::{cookie_value, header_end, is_ws_upgrade, valid_loopback_host};
 #[cfg(test)]
 pub(crate) use parse::{is_json_content_type, request_path};

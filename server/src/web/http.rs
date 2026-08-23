@@ -60,12 +60,35 @@ pub(crate) async fn serve(mut stream: TcpStream, head: &str) -> std::io::Result<
     stream.shutdown().await
 }
 
+#[cfg(test)]
 pub(crate) async fn serve_http(
+    stream: TcpStream,
+    peer: SocketAddr,
+    auth: Arc<Mutex<AuthService>>,
+    auth_setup: BrowserAuthSetup,
+    health: HealthSnapshot,
+) -> std::io::Result<()> {
+    serve_http_inner(stream, peer, auth, auth_setup, health, None).await
+}
+
+pub(crate) async fn serve_http_with_resources(
+    stream: TcpStream,
+    peer: SocketAddr,
+    auth: Arc<Mutex<AuthService>>,
+    auth_setup: BrowserAuthSetup,
+    health: HealthSnapshot,
+    resources: Arc<crate::control::ResourceService>,
+) -> std::io::Result<()> {
+    serve_http_inner(stream, peer, auth, auth_setup, health, Some(resources)).await
+}
+
+async fn serve_http_inner(
     mut stream: TcpStream,
     peer: SocketAddr,
     auth: Arc<Mutex<AuthService>>,
     auth_setup: BrowserAuthSetup,
     health: HealthSnapshot,
+    resources: Option<Arc<crate::control::ResourceService>>,
 ) -> std::io::Result<()> {
     let deadline = tokio::time::Instant::now() + HTTP_READ_TIMEOUT;
     let mut buf = Vec::with_capacity(2048);
@@ -242,6 +265,89 @@ pub(crate) async fn serve_http(
             "application/json",
             &body,
             &security_headers(),
+        )
+        .await;
+    }
+    if let Some(blob_id) = path.strip_prefix("/api/resource-blobs/") {
+        if blob_id.is_empty()
+            || blob_id.contains('/')
+            || !peer.ip().is_loopback()
+            || !valid_loopback_host(host.unwrap_or_default())
+        {
+            return write_http(
+                &mut stream,
+                "403 Forbidden",
+                "application/json",
+                br#"{"error":"forbidden"}"#,
+                &security_headers(),
+            )
+            .await;
+        }
+        if !matches!(method, "GET" | "HEAD")
+            || transfer_encoding.is_some()
+            || content_length.unwrap_or(0) != 0
+        {
+            return write_http(
+                &mut stream,
+                "405 Method Not Allowed",
+                "application/json",
+                br#"{"error":"method"}"#,
+                &security_headers(),
+            )
+            .await;
+        }
+        let Some(resources) = resources else {
+            return write_http(
+                &mut stream,
+                "404 Not Found",
+                "application/json",
+                br#"{"error":"not_found"}"#,
+                &security_headers(),
+            )
+            .await;
+        };
+        let Some(session_id) = cookie.as_deref() else {
+            return write_http(
+                &mut stream,
+                "401 Unauthorized",
+                "application/json",
+                br#"{"error":"unauthorized"}"#,
+                &security_headers(),
+            )
+            .await;
+        };
+        let principal = match auth.lock().await.validate_browser_session(session_id, peer) {
+            Ok(ctx) => ctx.token_id,
+            Err(_) => {
+                return write_http(
+                    &mut stream,
+                    "401 Unauthorized",
+                    "application/json",
+                    br#"{"error":"unauthorized"}"#,
+                    &security_headers(),
+                )
+                .await
+            }
+        };
+        let Some(blob) = resources.blob(&principal, blob_id).await else {
+            return write_http(
+                &mut stream,
+                "404 Not Found",
+                "application/json",
+                br#"{"error":"not_found"}"#,
+                &security_headers(),
+            )
+            .await;
+        };
+        let mut headers = security_headers();
+        headers.push(("ETag".into(), format!("\"{}\"", blob.etag)));
+        return write_http_response(
+            &mut stream,
+            "200 OK",
+            &blob.content_type,
+            blob.bytes.as_slice(),
+            &headers,
+            method == "GET",
         )
         .await;
     }

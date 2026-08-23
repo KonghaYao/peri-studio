@@ -134,6 +134,10 @@ pub fn m1_check(tag: FrameTag, role: Role, dir: Direction) -> M1Check {
             | "mcp_oauth_authorization"
             | "rewind_candidates"
             | "rewind_preview"
+            | "resource_query"
+            | "resource_result"
+            | "instance/resource_query"
+            | "instance/resource_result"
     );
     if !in_m1_frame_set {
         return M1Check::NotInM1;
@@ -143,7 +147,12 @@ pub fn m1_check(tag: FrameTag, role: Role, dir: Direction) -> M1Check {
         Role::Client => match dir {
             Direction::Inbound => matches!(
                 tag.0,
-                "action" | "ysync.subscribe" | "ysync.unsubscribe" | "pong" | "auth"
+                "action"
+                    | "ysync.subscribe"
+                    | "ysync.unsubscribe"
+                    | "pong"
+                    | "auth"
+                    | "resource_query"
             ),
             Direction::Outbound => matches!(
                 tag.0,
@@ -159,6 +168,7 @@ pub fn m1_check(tag: FrameTag, role: Role, dir: Direction) -> M1Check {
                     | "mcp_oauth_authorization"
                     | "rewind_candidates"
                     | "rewind_preview"
+                    | "resource_result"
             ),
         },
         Role::Instance => match dir {
@@ -172,10 +182,15 @@ pub fn m1_check(tag: FrameTag, role: Role, dir: Direction) -> M1Check {
                     | "instance/kill_ack"
                     | "instance/forward_ack"
                     | "instance/process_exit"
+                    | "instance/resource_result"
             ),
             Direction::Outbound => matches!(
                 tag.0,
-                "instance/spawn" | "instance/kill" | "instance/forward" | "auth_response"
+                "instance/spawn"
+                    | "instance/kill"
+                    | "instance/forward"
+                    | "instance/resource_query"
+                    | "auth_response"
             ),
         },
     };

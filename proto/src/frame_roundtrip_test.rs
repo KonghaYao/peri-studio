@@ -31,7 +31,7 @@ fn all_frame_tags_roundtrip() {
 #[test]
 fn every_frame_tag_is_registered() {
     let registered: Vec<&str> = crate::frame::FRAME_TAGS.iter().map(|t| t.0).collect();
-    assert_eq!(registered.len(), 32, "§3.2 全表应有 32 个 tag");
+    assert_eq!(registered.len(), 36, "资源协议加入后全表应有 36 个 tag");
     for frame in all_frames() {
         assert!(
             registered.contains(&frame.tag().0),

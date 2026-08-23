@@ -52,7 +52,7 @@ use crate::channel::command_coordinator::extract_command_id;
 use crate::channel::RelayEventHandler;
 use crate::channel::{ChannelDeps, ConnId, ConnectionRegistry};
 use crate::config::Config;
-use crate::control::StoreSink;
+use crate::control::{ResourceService, StoreSink};
 
 use crate::state::doc_manager::DocManager;
 use crate::state::registry::RegistryState;
@@ -87,6 +87,7 @@ pub struct Gateway {
     pub(super) relay: Arc<RelayEventHandler>,
     pub(super) doc: Arc<DocManager>,
     pub(super) sink: Arc<StoreSink>,
+    pub(super) resources: Arc<ResourceService>,
     pub(super) registry: RegistryState,
     pub(super) heartbeat_interval: Duration,
     pub(super) heartbeat_timeout: Duration,
@@ -104,6 +105,7 @@ impl Gateway {
         relay: Arc<RelayEventHandler>,
         doc: Arc<DocManager>,
         sink: Arc<StoreSink>,
+        resources: Arc<ResourceService>,
         registry: RegistryState,
     ) -> Self {
         let heartbeat_interval = cfg.heartbeat_interval;
@@ -117,6 +119,7 @@ impl Gateway {
             relay,
             doc,
             sink,
+            resources,
             registry,
             heartbeat_interval,
             heartbeat_timeout,
@@ -202,12 +205,13 @@ impl Gateway {
             // HTTP 分支：不进配额/注册表（§8.6 只面向 ws 连接）。
             let health =
                 crate::web::HealthSnapshot::from_global_status(self.registry.global_status());
-            if let Err(e) = crate::web::serve_http(
+            if let Err(e) = crate::web::serve_http_with_resources(
                 stream,
                 peer,
                 self.auth.clone(),
                 self.auth_setup.clone(),
                 health,
+                self.resources.clone(),
             )
             .await
             {

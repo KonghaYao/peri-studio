@@ -39,6 +39,18 @@
 
 结论：如果目标是直接得到完整远程 IDE，优先评估 OpenVSCode Server；如果目标是给 Peri Studio 增加自己的文件树和 Source Control UI，应实现本文协议，并只把 VS Code 源码作为行为参考。
 
+## 当前落地状态（2026-08-23）
+
+本轮已经交付可运行的第一条纵向切片，协议版本为 `2`，资源投影 schema 版本为 `1`：
+
+- 浏览器只提交 `projectId` 与相对路径；server 从 SQLite 项目元数据解析可信 instance 与 workspace root，并在每次 view、mutation、Y.Doc subscribe 和 HTTP blob 请求上重新授权。
+- instance 已实现有界目录分页、精确文件读取、workspace containment、symlink 逃逸拒绝、仓库发现、Git snapshot/changes，以及带 generation CAS 的 Stage/Unstage。
+- server 是资源 Y.Doc 的唯一 writer；目录、仓库、SCM group 都是按需、短租约、显式排序的独立只读投影，文件字节不进入 Yjs。
+- 浏览器通过 opaque、principal-bound、60 秒 ticket 的同源 `GET/HEAD /api/resource-blobs/{blobId}` 下载文件；响应保留精确字节、MIME、ETag，并要求当前 HttpOnly session cookie。
+- Web 已提供 VS Code 风格 Activity Bar、可折叠 Explorer、懒加载文件树、Source Control 仓库/分组/状态装饰、ahead/behind、逐文件 Stage/Unstage、刷新与 SCM badge。
+
+当前实现是该设计的 R1/R2/R5 与 R6 的可用子集，不把尚未完成的接口伪装成已支持：浏览器 bulk bytes 已走 HTTP，但 instance→server 的文件读取暂时仍以 64 MiB 硬上限的 base64 control result 传输；Range、下游取消传播、独立 authenticated data WebSocket、diff/编辑/upload、文件 mutation，以及 commit/branch/remote 等 Git 操作仍按后续阶段实现。这个兼容 seam 被限制在可信 server↔instance 链路，不会暴露给浏览器，也不会写入 Yjs。
+
 ### 2.3 Theia 与 OpenVSCode Server 的设计校准
 
 进一步沿源码调用链检查后，两者对本文设计的价值并不相同：

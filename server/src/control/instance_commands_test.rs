@@ -12,6 +12,10 @@ use peri_studio_proto::frame::Frame;
 use peri_studio_proto::instance::{
     InstanceForwardAck, InstanceHello, InstanceKillAck, InstanceSpawn, InstanceSpawnAck,
 };
+use peri_studio_proto::resource::{
+    DirectoryPage, InstanceResourcePayload, InstanceResourceQuery, InstanceResourceQueryKind,
+    InstanceResourceResult, ReadDirectoryQuery,
+};
 
 use super::*;
 use crate::channel::OutboundMsg;
@@ -122,6 +126,54 @@ async fn offline_instance_rejects_commands() {
         Err(InstanceError::Offline)
     ));
     let _ = _drop;
+}
+
+#[tokio::test]
+async fn resource_query_tracks_result_by_request_id() {
+    let (registry, _drop) = test_registry();
+    let chats = ChatRegistry::new(registry);
+    let reg = InstanceRegistry::new(Duration::from_secs(30), Duration::from_secs(10), chats);
+    let (tx, mut rx) = mpsc::channel(8);
+    reg.on_hello("m1", "tok-1", InstanceConn { tx }, &hello("m1"))
+        .await;
+
+    let query = InstanceResourceQuery {
+        request_id: "resource-1".into(),
+        workspace_id: "project-1".into(),
+        root: "/workspace".into(),
+        query: InstanceResourceQueryKind::ReadDirectory(ReadDirectoryQuery {
+            path: "".into(),
+            cursor: None,
+            limit: 200,
+        }),
+    };
+    let pending = tokio::spawn({
+        let reg = reg.clone();
+        let query = query.clone();
+        async move { reg.query_resource("m1", query).await }
+    });
+
+    match rx.recv().await {
+        Some(OutboundMsg::Frame(Frame::InstanceResourceQuery(actual))) => {
+            assert_eq!(actual, query);
+        }
+        other => panic!("expected resource query frame, got {other:?}"),
+    }
+    let result = InstanceResourceResult {
+        request_id: "resource-1".into(),
+        result: Some(InstanceResourcePayload::DirectoryPage(DirectoryPage {
+            path: "".into(),
+            source_generation: "g1".into(),
+            entries: Vec::new(),
+            next_cursor: None,
+        })),
+        error: None,
+    };
+    assert!(
+        reg.on_ack("m1", "resource-1", InstanceAck::Resource(result.clone()))
+            .await
+    );
+    assert_eq!(pending.await.unwrap().unwrap(), result);
 }
 
 #[tokio::test]

@@ -44,7 +44,7 @@ describe('AppShell desktop sidebar', () => {
     expect(handle).toHaveAttribute('aria-valuenow', '480');
     fireEvent.pointerUp(window);
     expect(document.body).not.toHaveClass('sidebar-resizing');
-    expect(shell().style.gridTemplateColumns).toBe('480px minmax(0, 1fr)');
+    expect(shell().style.gridTemplateColumns).toBe('480px auto minmax(0, 1fr)');
   });
 
   it('keeps the desktop sidebar at its current width', () => {
@@ -52,6 +52,7 @@ describe('AppShell desktop sidebar', () => {
 
     expect(screen.getByTestId('project-sidebar')).toBeInTheDocument();
     expect(screen.getByRole('separator', { name: 'Resize sidebar' })).toBeInTheDocument();
-    expect(shell().style.gridTemplateColumns).toBe('242px minmax(0, 1fr)');
+    expect(shell().style.gridTemplateColumns).toBe('242px auto minmax(0, 1fr)');
+    expect(screen.getByRole('complementary', { name: 'Workspace resources' })).toBeInTheDocument();
   });
 });

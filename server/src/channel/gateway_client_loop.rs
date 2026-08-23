@@ -31,6 +31,7 @@ use peri_studio_proto::ack::{ActionError, ErrorCode};
 use peri_studio_proto::action::ActionEnvelope;
 use peri_studio_proto::conn::Auth;
 use peri_studio_proto::frame::{Frame, ProtoError};
+use peri_studio_proto::resource::{ResourceErrorCode, ResourceFailure, ResourceResult};
 use peri_studio_proto::whitelist::{m1_allows_action_type, m1_check, Direction, Role};
 
 use crate::auth::audit::audit;
@@ -143,6 +144,16 @@ impl Gateway {
                             }
                             if let Frame::Pong(_) = frame {
                                 heartbeat.on_pong();
+                                continue;
+                            }
+                            if let Frame::ResourceQuery(query) = frame {
+                                let result = self.resources.handle(
+                                    &channel.ctx.token_id,
+                                    channel.ctx.role == crate::auth::TokenRole::Full,
+                                    query,
+                                ).await;
+                                let _ = out_tx.send(OutboundMsg::Frame(
+                                    Frame::ResourceResult(result))).await;
                                 continue;
                             }
                             // M1 action type 收窄（§4.8：`session/load`（M2）、
@@ -278,6 +289,26 @@ impl Gateway {
             DispatchOutcome::Subscribe { docs, first } => {
                 let mut versions = std::collections::HashMap::new();
                 for doc in &docs {
+                    if doc.as_str().starts_with("resource:")
+                        && !self
+                            .resources
+                            .projection()
+                            .authorize(&channel.ctx.token_id, doc)
+                            .await
+                    {
+                        let _ = out_tx
+                            .send(OutboundMsg::Frame(Frame::ResourceResult(ResourceResult {
+                                request_id: String::new(),
+                                result: None,
+                                error: Some(ResourceFailure {
+                                    code: ResourceErrorCode::Forbidden,
+                                    message: "resource view is not authorized".into(),
+                                    retryable: false,
+                                }),
+                            })))
+                            .await;
+                        continue;
+                    }
                     // 打开/恢复 Doc（§4.6 步骤 2：DocManager::open_chat 幂等；
                     // instance_id/title 来自 ChatRegistry，未登记 → 空值）。
                     if let Some(cid) = doc_cid(doc) {

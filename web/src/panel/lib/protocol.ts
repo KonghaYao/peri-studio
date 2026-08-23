@@ -10,6 +10,8 @@
 // 本模块只负责帧的构造/解析与 base64 工具，不持有任何连接状态
 // （连接状态机见 ws-client.ts）。
 
+import { isResourceResult, type ResourceResultFrame } from './resource-protocol';
+
 /** 注册表 doc id（与 proto/src/conn.rs 的 DocId::REGISTRY 对齐），常驻订阅。 */
 export const DOC_REGISTRY = 'hub:registry';
 export const CAP_PROMPT_DELIVERY_V2 = 'prompt-delivery-v2';
@@ -202,6 +204,7 @@ export type DownstreamFrame =
   | ({ t: 'mcp_oauth' } & McpOAuthFrame)
   | ({ t: 'mcp_oauth_authorization' } & McpOAuthAuthorizationFrame)
   | { t: 'auth_error'; [key: string]: unknown }
+  | ResourceResultFrame
   | { t: string; [key: string]: unknown };
 
 /**
@@ -265,6 +268,8 @@ function decodeKnownFrame(frame: Record<string, unknown>): DownstreamFrame | nul
       return isMcpOAuthAuthorizationFrame(frame) ? frame as DownstreamFrame : null;
     case 'auth_error':
       return frame as DownstreamFrame;
+    case 'resource_result':
+      return isResourceResult(frame) ? frame : null;
     default:
       return frame as DownstreamFrame;
   }
