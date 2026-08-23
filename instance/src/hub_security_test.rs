@@ -24,14 +24,16 @@ fn test_oauth_method_is_always_sensitive_ephemeral() {
         ),
         ChildFrameDeliveryClass::Replayable
     );
-    // 已知局限（问题 12 注释记录）：response 形态不识别，落入 Replayable——
-    // 泄露面有限（本地 0600 + 可信 server），决策依据见 forward.rs 注释。
-    assert_eq!(
-        super::forward::child_frame_delivery_class(
-            &serde_json::json!({"jsonrpc":"2.0","id":1,"result":{"authorizationUrl":"https://auth.example.test/"}})
-        ),
-        ChildFrameDeliveryClass::Replayable
-    );
+    for response in [
+        serde_json::json!({"jsonrpc":"2.0","id":1,"result":{"authorizationUrl":"https://auth.example.test/"}}),
+        serde_json::json!({"jsonrpc":"2.0","id":2,"result":{"nested":{"refreshToken":"secret"}}}),
+    ] {
+        assert_eq!(
+            super::forward::child_frame_delivery_class(&response),
+            ChildFrameDeliveryClass::SensitiveEphemeral,
+            "OAuth response secrets must never enter replay buffers"
+        );
+    }
 }
 
 #[test]

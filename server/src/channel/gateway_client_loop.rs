@@ -28,7 +28,6 @@ use tokio_tungstenite::WebSocketStream;
 use tracing::{debug, info, warn};
 
 use peri_studio_proto::ack::{ActionError, ErrorCode};
-use peri_studio_proto::action::ActionEnvelope;
 use peri_studio_proto::conn::Auth;
 use peri_studio_proto::frame::{Frame, ProtoError};
 use peri_studio_proto::resource::{ResourceErrorCode, ResourceFailure, ResourceResult};
@@ -36,9 +35,8 @@ use peri_studio_proto::whitelist::{m1_allows_action_type, m1_check, Direction, R
 
 use crate::auth::audit::audit;
 use crate::channel::command_coordinator::extract_command_id;
-use crate::channel::gateway::{
-    action_error_committed_rejected, close_code, doc_cid, send_frame, unsupported_error, Gateway,
-};
+use crate::channel::gateway::{close_code, doc_cid, send_frame, unsupported_error, Gateway};
+use crate::channel::mutation_admission::MutationAdmission;
 use crate::channel::{ChatChannel, DispatchOutcome};
 use crate::channel::{ConnId, OutboundMsg};
 use crate::control::HeartbeatDriver;
@@ -146,16 +144,6 @@ impl Gateway {
                                 heartbeat.on_pong();
                                 continue;
                             }
-                            if let Frame::ResourceQuery(query) = frame {
-                                let result = self.resources.handle(
-                                    &channel.ctx.token_id,
-                                    channel.ctx.role == crate::auth::TokenRole::Full,
-                                    query,
-                                ).await;
-                                let _ = out_tx.send(OutboundMsg::Frame(
-                                    Frame::ResourceResult(result))).await;
-                                continue;
-                            }
                             // M1 action type 收窄（§4.8：`session/load`（M2）、
                             // `events/*`（M3）类型保留但白名单外 → UNSUPPORTED_FRAME，
                             // 不静默）。先于 §17.2 Degraded 检查（协议层检查先于
@@ -182,29 +170,25 @@ impl Gateway {
                                     continue;
                                 }
                             }
-                            // §17.2/§8.4：Degraded/Restarting 拒绝新 committed
-                            // 承诺（与投递失败语义同源：retryable，客户端退避
-                            // 重试；Restarting 期间机器未对账，禁止控制操作，
-                            // §8.4.1 不变量 4）。read-only 查询白名单（review
-                            // #15）：与 chat_channel 的 token 档位豁免集**语义
-                            // 不同**——这里是「Degraded 拒绝 committed 承诺的
-                            // 豁免」（资源状态类只读查询），那边是「read-only
-                            // token 允许发送的动作」；扩展时须分别同步。
-                            if let Frame::Action(action) = &frame {
-                                let read_only_query = matches!(
-                                    action,
-                                    ActionEnvelope::PersistedSessionPromptStatus { .. }
-                                        | ActionEnvelope::RewindCandidates { .. }
-                                        | ActionEnvelope::RewindPreview { .. }
-                                );
-                                if !read_only_query && !self.can_accept_committed() {
-                                    let _ = out_tx
-                                        .send(OutboundMsg::Frame(Frame::ActionError(
-                                            action_error_committed_rejected(action),
-                                        )))
-                                        .await;
-                                    continue;
-                                }
+                            // §17.2/§8.4：Degraded/Restarting 拒绝所有 committed
+                            // 承诺。Action 与 Git mutation 共用一处分类，避免新增
+                            // 写入口绕过恢复屏障；资源读取始终保持可用。
+                            if let Some(rejection) = MutationAdmission::rejection(
+                                &frame,
+                                self.can_accept_committed(),
+                            ) {
+                                let _ = out_tx.send(OutboundMsg::Frame(rejection)).await;
+                                continue;
+                            }
+                            if let Frame::ResourceQuery(query) = frame {
+                                let result = self.resources.handle(
+                                    &channel.ctx.token_id,
+                                    channel.ctx.role == crate::auth::TokenRole::Full,
+                                    query,
+                                ).await;
+                                let _ = out_tx.send(OutboundMsg::Frame(
+                                    Frame::ResourceResult(result))).await;
+                                continue;
                             }
                             let outcome = channel.dispatch(frame, &deps, out_tx.clone()).await;
                             if let Some(code) = self.apply_outcome(&mut channel, &out_tx, conn_id, outcome).await {

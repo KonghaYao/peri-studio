@@ -24,6 +24,7 @@ mod elicitation_response;
 mod gateway;
 mod gateway_client_loop;
 mod gateway_instance_loop;
+mod instance_recovery;
 mod management_actions;
 mod mcp_control;
 mod metadata_activation;
@@ -31,6 +32,10 @@ mod metadata_command_processor;
 mod metadata_project_actions;
 mod metadata_session_actions;
 mod metadata_validation;
+mod mutation_admission;
+#[cfg(test)]
+#[path = "mutation_admission_test.rs"]
+mod mutation_admission_test;
 mod oauth_command_ledger;
 mod oauth_control;
 mod permission_resolution;

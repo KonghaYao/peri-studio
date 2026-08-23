@@ -83,6 +83,16 @@ pub struct HelloOutcome {
     pub chat_epochs: HashMap<String, u64>,
 }
 
+/// 权威心跳快照的变化语义。Gateway 只把这个 outcome 交给恢复协调器，
+/// 不自行推断“空列表是否可信”或“是否已经完成启动恢复”。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HeartbeatOutcome {
+    /// hello 后收到的第一个 authoritative `alive_sessions` 快照。
+    pub first_snapshot: bool,
+    /// 与上一份 authoritative 快照相比是否变化；首份恒为 true。
+    pub changed: bool,
+}
+
 /// 指令下发结果。
 #[derive(Debug, Clone, PartialEq)]
 pub enum SpawnOutcome {
@@ -138,8 +148,9 @@ struct InstanceEntry {
     pending_acks: HashMap<String, oneshot::Sender<InstanceAck>>,
     /// hello 上报的 per-chat 流纪元（§4.5.1；relay 入站校验输入）。
     chat_epochs: HashMap<String, u64>,
-    /// 最近 hello 的 alive_sessions（对账）。
-    alive_sessions: Vec<String>,
+    /// 最近 authoritative heartbeat 的 alive_sessions；hello 不携带该字段，
+    /// 因此必须以 None 区分“尚未知晓”和“已确认空集合”。
+    alive_sessions: Option<Vec<String>>,
     /// 最近 hello 的 buffer_lost。
     buffer_lost: bool,
 }
@@ -213,7 +224,7 @@ impl InstanceRegistry {
                 last_heartbeat: Instant::now(),
                 pending_acks: HashMap::new(),
                 chat_epochs: epochs.clone(),
-                alive_sessions: alive.clone(),
+                alive_sessions: None,
                 buffer_lost,
             },
         );
@@ -245,36 +256,63 @@ impl InstanceRegistry {
 
     /// 心跳更新（§7.1：5s；alive_sessions 供对账，§8.3）。
     ///
-    /// alive_sessions 变化且非空时触发对账（§8.3 步骤 5：意外存活 → kill
-    /// 裁决 §7.5、pending_close 补发 §7.6）——M1 hello 无存活清单字段
-    /// （§4.5 表），对账的 alive 输入唯一来源是心跳；spawn 后台任务避免
-    /// kill（每 chat 等 ack 最多 10s）阻塞 gateway 帧循环。
+    /// 返回首份/变化语义；对账、resume 与恢复门禁由 RecoveryCoordinator
+    /// 串行拥有。M1 hello 无存活清单，首个空心跳同样是权威快照。
+    #[cfg(test)]
     pub async fn on_heartbeat(
         &self,
         instance_id: &str,
         hb: &InstanceHeartbeat,
-    ) -> Result<(), InstanceError> {
-        let changed = {
+    ) -> Result<HeartbeatOutcome, InstanceError> {
+        self.record_heartbeat(instance_id, None, hb).await
+    }
+
+    /// 生产 gateway 路径：heartbeat 必须来自当前登记连接。hello fencing 后
+    /// 旧连接的滞后帧不能确认 runtime 或完成恢复 barrier。
+    pub async fn on_connection_heartbeat(
+        &self,
+        instance_id: &str,
+        conn: &InstanceConn,
+        hb: &InstanceHeartbeat,
+    ) -> Result<HeartbeatOutcome, InstanceError> {
+        self.record_heartbeat(instance_id, Some(&conn.tx), hb).await
+    }
+
+    async fn record_heartbeat(
+        &self,
+        instance_id: &str,
+        expected_conn: Option<&mpsc::Sender<OutboundMsg>>,
+        hb: &InstanceHeartbeat,
+    ) -> Result<HeartbeatOutcome, InstanceError> {
+        let outcome = {
             let mut instances = self.inner.instances.write().await;
             let Some(entry) = instances.get_mut(instance_id) else {
                 return Err(InstanceError::UnknownInstance(instance_id.to_string()));
             };
+            if expected_conn.is_some_and(|expected| {
+                !entry
+                    .conn
+                    .as_ref()
+                    .is_some_and(|current| current.same_channel(expected))
+            }) {
+                return Err(InstanceError::ConnectionGone);
+            }
             entry.last_heartbeat = Instant::now();
             entry.state = InstanceState::Online;
-            let changed = entry.alive_sessions != hb.alive_sessions;
-            entry.alive_sessions = hb.alive_sessions.clone();
-            changed
+            let first_snapshot = entry.alive_sessions.is_none();
+            let changed = first_snapshot
+                || entry
+                    .alive_sessions
+                    .as_ref()
+                    .is_some_and(|previous| previous != &hb.alive_sessions);
+            entry.alive_sessions = Some(hb.alive_sessions.clone());
+            HeartbeatOutcome {
+                first_snapshot,
+                changed,
+            }
         };
         debug!(instance_id, load = hb.load, "instance heartbeat");
-        if changed && !hb.alive_sessions.is_empty() {
-            let me = self.clone();
-            let mid = instance_id.to_string();
-            let alive = hb.alive_sessions.clone();
-            tokio::spawn(async move {
-                me.reconcile_and_kill(&mid, &alive).await;
-            });
-        }
-        Ok(())
+        Ok(outcome)
     }
 
     /// 离线判定 tick（与心跳同 tick）：`offline_timeout` 无心跳 → OFFLINE；

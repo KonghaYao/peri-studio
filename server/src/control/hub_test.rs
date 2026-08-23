@@ -46,7 +46,7 @@ async fn rebuild_chat_views_restores_live_chats_from_metadata() {
     // 追踪，恒 retired_at IS NULL，不构成活跃证据）。
     metadata.touch_session_open("s1", chat_id).await.unwrap();
     let chats = ChatRegistry::new(doc.registry());
-    Hub::rebuild_chat_views(&metadata, &chats).await;
+    Hub::rebuild_chat_views(&metadata, &chats).await.unwrap();
 
     // 状态 accepting（非终态——resume 路径可命中）+ 已绑定 acp 会话。
     let entry = chats.entry(chat_id).await.expect("chat registered");
@@ -126,7 +126,7 @@ async fn rebuild_chat_views_skips_retired_and_archived_runtimes() {
     metadata.archive_session("s2").await.unwrap();
 
     let chats = ChatRegistry::new(doc.registry());
-    Hub::rebuild_chat_views(&metadata, &chats).await;
+    Hub::rebuild_chat_views(&metadata, &chats).await.unwrap();
     assert!(chats.entry("chat-retired").await.is_none());
     assert!(chats.entry("chat-archived").await.is_none());
     assert!(chats.entry("chat-current").await.is_some());

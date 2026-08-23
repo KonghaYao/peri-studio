@@ -208,10 +208,21 @@ impl CommandCoordinator {
     /// server 重启恢复：对 instance 下全部非终态且已绑定会话的 chat 发起
     /// `session/resume`（实现见 `session_resume`，`SessionRuntimeOperations`
     /// 实现段）。
+    #[cfg(test)]
     pub(super) async fn resume_instance_chats(&self, instance_id: &str) -> usize {
         self.inner
             .session_operations
             .resume_instance_chats(instance_id)
+            .await
+    }
+
+    pub(super) async fn resume_instance_chats_and_wait(
+        &self,
+        instance_id: &str,
+    ) -> super::session_resume::ResumeSummary {
+        self.inner
+            .session_operations
+            .resume_instance_chats_and_wait(instance_id)
             .await
     }
 }

@@ -75,8 +75,6 @@ pub enum ChildOutput {
     Exit {
         session_id: String,
         code: i32,
-        /// 异常退出（非 0）时附带 stderr 首部（截断，诊断用途，§9.3 脱敏）。
-        stderr_tail: Option<String>,
         /// 信号终止时的信号号（正常退出为 None）。
         signal: Option<i32>,
     },
@@ -85,9 +83,6 @@ pub enum ChildOutput {
     /// stdout 单行超 [`MAX_LINE_BYTES`] 的行（已丢弃，hub 侧计数，§8.5 防御）。
     OversizeLine,
 }
-
-/// stderr 正文诊断缓冲上限（只保留首部，§9.3 脱敏）。
-const STDERR_TAIL_LIMIT: usize = 512;
 
 /// stdout 单行字节上限（问题 4 防御）。4MB 远大于单帧上限 1MB（§8.5）——
 /// 任何合法帧都能通过；无换行的异常巨行在读取侧即被截断丢弃，不得吃满内存。
@@ -108,8 +103,6 @@ struct AcpInner {
     /// 进程组 id（= 子进程 pid，`process_group(0)` 语义）。
     pgid: i32,
     state: StdMutex<ProcessState>,
-    /// 异常退出时由 stderr 读任务写入的诊断首部（stdout 读任务 wait 后读取）。
-    stderr_tail: StdMutex<Option<String>>,
 }
 
 /// ACP 子进程句柄（进程面；spawn 后经 `Arc` 共享，session 管理在 hub）。
@@ -179,7 +172,6 @@ pub async fn spawn(
         session_id: session_id.to_string(),
         pgid,
         state: StdMutex::new(ProcessState::Running),
-        stderr_tail: StdMutex::new(None),
     });
 
     let inner_read = inner.clone();
@@ -366,43 +358,17 @@ async fn run_stdout_reader(inner: Arc<AcpInner>, tx: mpsc::Sender<ChildOutput>) 
         let mut state = inner.state.lock().expect("state mutex poisoned");
         *state = ProcessState::Exited(code);
     }
-    // 异常退出时附带 stderr 首部（stdout EOF 后 wait 完成；stderr 读任务可能
-    // 尚未写回，短暂让步后读取。§9.3 脱敏：仅前 512 字节，标记诊断截断）。
-    let stderr_tail = {
-        if code != Some(0) {
-            for _ in 0..50 {
-                if inner
-                    .stderr_tail
-                    .lock()
-                    .expect("stderr_tail mutex poisoned")
-                    .is_some()
-                {
-                    break;
-                }
-                tokio::time::sleep(std::time::Duration::from_millis(2)).await;
-            }
-            inner
-                .stderr_tail
-                .lock()
-                .expect("stderr_tail mutex poisoned")
-                .take()
-        } else {
-            None
-        }
-    };
     let _ = tx
         .send(ChildOutput::Exit {
             session_id: inner.session_id.clone(),
             code: code.unwrap_or(-1),
             signal,
-            stderr_tail,
         })
         .await;
-    eprintln!("DBG child: Exit sent for {}", inner.session_id);
 }
 
-/// stderr 读任务：仅计数（行数/字节），正文只保留首部（§9.3 脱敏），防管道
-/// 阻塞。异常退出（非 0 码）时首部供 [`ChildOutput::Exit`] 诊断上报。
+/// stderr 读任务：只统计行数/字节并持续排空管道。正文可能包含 token、prompt、
+/// 路径或工具参数，任何截断都不构成脱敏，因此不进入内存诊断字段或日志。
 async fn run_stderr_reader(inner: Arc<AcpInner>) {
     let mut stderr = {
         let mut process = inner.process.lock().await;
@@ -413,7 +379,6 @@ async fn run_stderr_reader(inner: Arc<AcpInner>) {
     };
     let mut bytes: u64 = 0;
     let mut lines: u64 = 0;
-    let mut tail: Vec<u8> = Vec::with_capacity(STDERR_TAIL_LIMIT);
     let mut buf = [0u8; 4096];
     loop {
         match stderr.read(&mut buf).await {
@@ -421,24 +386,12 @@ async fn run_stderr_reader(inner: Arc<AcpInner>) {
             Ok(n) => {
                 bytes += n as u64;
                 lines += buf[..n].iter().filter(|b| **b == b'\n').count() as u64;
-                if tail.len() < STDERR_TAIL_LIMIT {
-                    let take = (STDERR_TAIL_LIMIT - tail.len()).min(n);
-                    tail.extend_from_slice(&buf[..take]);
-                }
             }
             Err(_) => break,
         }
     }
-    if !tail.is_empty() {
-        let s = String::from_utf8_lossy(&tail).into_owned();
-        let mut guard = inner
-            .stderr_tail
-            .lock()
-            .expect("stderr_tail mutex poisoned");
-        *guard = Some(s);
-    }
     tracing::debug!(target: "peri_studio::instance", session_id = %inner.session_id, bytes, lines,
-        "ACP stderr closed (only diagnostic head retained)");
+        "ACP stderr closed (content discarded)");
 }
 
 // ---------------------------------------------------------------------------

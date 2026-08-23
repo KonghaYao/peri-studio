@@ -234,6 +234,25 @@ impl InstanceRegistry {
         self.kill_chats(instance_id, &report.to_kill).await;
     }
 
+    /// 恢复协调器使用的低延迟 seam：同步提交 authoritative 对账（因此
+    /// runtime_confirmed/Gap 在返回时已经可见），耗时的 kill ack 等待在后台
+    /// 完成，不能阻塞 heartbeat 帧循环或 session/resume。
+    pub async fn reconcile_authoritative_alive(
+        &self,
+        instance_id: &str,
+        alive: &[String],
+    ) -> Result<(), crate::control::ChatError> {
+        let report = self.inner.chats.reconcile_alive(instance_id, alive).await?;
+        if !report.to_kill.is_empty() {
+            let me = self.clone();
+            let instance_id = instance_id.to_string();
+            tokio::spawn(async move {
+                me.kill_chats(&instance_id, &report.to_kill).await;
+            });
+        }
+        Ok(())
+    }
+
     /// kill 裁决下发（§7.5/§7.6）：对 `to_kill` 逐个补发 `instance/kill`
     /// （幂等，已死成功返回），成功后 chat 置 Closed（「Registry 标记已清理」）。
     async fn kill_chats(&self, instance_id: &str, to_kill: &[String]) -> Vec<String> {

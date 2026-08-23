@@ -35,20 +35,42 @@ pub(super) enum ChildFrameDeliveryClass {
 
 /// Fail-closed classification at the child stdout boundary.
 ///
-/// 决策记录（问题 12）：目前只匹配**顶层 `method` 字段**（`peri/oauth`），
-/// response 形态（如 `{"jsonrpc","id","result":{"authorizationUrl":...}}`）与
-/// 原始 `{type,payload}` 形态不识别——匹配 method alone 是有意为之：①
-/// response 无法可靠关联到 oauth 请求（pending/id 匹配归 server 侧，§6.2）；
-/// ② 即使畸形包裹携带该 method 也绝不落入可重放持久化（fail-closed 方向）。
-/// 已知局限：oauth 的 response 形态可能进入 ring/buffer 可补推重放——泄露面
-/// 有限（本地 0600 文件 + 可信 server，§9.3），且补推仅发往已认证 server。
-/// 若协议面明确 response 关联规则，再扩展识别（需补测试）。
+/// OAuth notification 以 method 识别；response 没有 method，因此还要递归检查
+/// 只有 OAuth 流才应出现的敏感字段。误判的安全后果只是该帧不能离线重放，
+/// 漏判则会把 URL/state/token 写入 ring 或磁盘，故边界必须 fail-closed。
 pub(super) fn child_frame_delivery_class(frame: &serde_json::Value) -> ChildFrameDeliveryClass {
-    if frame.get("method").and_then(serde_json::Value::as_str) == Some("peri/oauth") {
+    if frame.get("method").and_then(serde_json::Value::as_str) == Some("peri/oauth")
+        || contains_oauth_secret(frame)
+    {
         ChildFrameDeliveryClass::SensitiveEphemeral
     } else {
         ChildFrameDeliveryClass::Replayable
     }
+}
+
+fn contains_oauth_secret(value: &serde_json::Value) -> bool {
+    const SENSITIVE_KEYS: [&str; 6] = [
+        "authorizationUrl",
+        "authorization_url",
+        "accessToken",
+        "refreshToken",
+        "codeVerifier",
+        "clientSecret",
+    ];
+    let mut pending = vec![value];
+    while let Some(current) = pending.pop() {
+        match current {
+            serde_json::Value::Object(map) => {
+                if map.keys().any(|key| SENSITIVE_KEYS.contains(&key.as_str())) {
+                    return true;
+                }
+                pending.extend(map.values());
+            }
+            serde_json::Value::Array(items) => pending.extend(items),
+            _ => {}
+        }
+    }
+    false
 }
 
 fn count_sensitive_ephemeral_gap(state: &HubState, sid: &str, seq: u64, reason: &'static str) {
@@ -75,7 +97,6 @@ pub(super) async fn forward_child_output(
 ) {
     match out {
         ChildOutput::Frame(evt) => {
-            eprintln!("DBG forward: Frame sid={}", evt.session_id);
             let sid = evt.session_id;
             let delivery_class = child_frame_delivery_class(&evt.frame);
             // seq 分配（锁内同步段，不跨 await；超限帧同样消耗 seq 保持流完整，
@@ -195,7 +216,6 @@ pub(super) async fn forward_child_output(
         ChildOutput::Exit {
             session_id,
             code,
-            stderr_tail,
             signal,
         } => {
             let sid = session_id;
@@ -225,17 +245,8 @@ pub(super) async fn forward_child_output(
                 .expect("rings mutex poisoned")
                 .remove(&sid);
             if code != 0 {
-                // 诊断：非零退出码附信号号与 stderr 首部（§9.3 脱敏：仅前
-                // 512 字节，已截断标记；定位 spawn 即崩类问题必需）。
-                match &stderr_tail {
-                    Some(tail) => {
-                        tracing::warn!(target: "peri_studio::instance", chat_id = %sid, code,
-                        signal, stderr_tail = %tail,
-                        "ACP process exited abnormally (stderr head, truncated diagnostic)")
-                    }
-                    None => tracing::warn!(target: "peri_studio::instance", chat_id = %sid, code,
-                        signal, "ACP process exited abnormally (no stderr output)"),
-                }
+                tracing::warn!(target: "peri_studio::instance", chat_id = %sid, code,
+                    signal, "ACP process exited abnormally (stderr content discarded)");
             } else {
                 tracing::info!(target: "peri_studio::instance", chat_id = %sid, code,
                     "ACP process exited (session entry retained for epoch+1 rebuild)");

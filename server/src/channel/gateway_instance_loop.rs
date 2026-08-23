@@ -123,24 +123,9 @@ impl Gateway {
         if let Err(e) = self.registry.upsert_instance(view).await {
             warn!(instance_id = %instance_id, error = ?e, "registry instance upsert failed (hello)");
         }
-        // 孤儿清理钩子（§7.5：已中断/终态但 instance 声称存活 → 补发 kill）。
-        self.deps
-            .instance
-            .cleanup_orphans(&instance_id, &outcome)
-            .await;
-        // §4 恢复路径（live chat）：instance 重连（hello）后对其非终态 chat
-        // 批量发起 session/resume——ACP 进程在 server 崩溃期间继续运行，
-        // 从 ThreadStore 重放历史重建 server 视图（不阻塞 hello 帧循环；
-        // 失败由客户端显式 load 兜底）。
-        self.deps
-            .coordinator
-            .resume_instance_chats(&instance_id)
-            .await;
-        // §8.4.1 不变量 4：instance 重连（hello）对账后开门——Restarting →
-        // Healthy（或 Degraded，若其他条件仍活跃；幂等）。
-        if let Err(e) = self.registry.clear_restarting().await {
-            warn!(instance_id = %instance_id, error = ?e, "clear_restarting failed (registry write)");
-        }
+        // hello 不携带 authoritative alive_sessions，只完成认证/fencing/caps。
+        // reconcile → resume → 恢复 barrier 的唯一 owner 是首个 heartbeat 驱动
+        // 的 RecoveryCoordinator；此处不得据空集合裁决 Gap 或提前开门。
 
         let mut auth_ticker = tokio::time::interval(self.heartbeat_interval);
         auth_ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
@@ -185,8 +170,27 @@ impl Gateway {
                                     trace_consume(&r);
                                 }
                                 Frame::InstanceHeartbeat(hb) => {
-                                    if let Err(e) = self.deps.instance.on_heartbeat(&instance_id, &hb).await {
-                                        debug!(instance_id = %instance_id, error = ?e, "heartbeat rejected");
+                                    match self.deps.instance.on_connection_heartbeat(
+                                        &instance_id,
+                                        &InstanceConn { tx: out_tx.clone() },
+                                        &hb,
+                                    ).await {
+                                        Ok(heartbeat) => {
+                                            let recovery = self.recovery.clone();
+                                            let recovery_instance = instance_id.clone();
+                                            let alive = hb.alive_sessions.clone();
+                                            tokio::spawn(async move {
+                                                recovery.on_heartbeat_snapshot(
+                                                    &recovery_instance,
+                                                    alive,
+                                                    heartbeat.first_snapshot,
+                                                    heartbeat.changed,
+                                                ).await;
+                                            });
+                                        }
+                                        Err(e) => {
+                                            debug!(instance_id = %instance_id, error = ?e, "heartbeat rejected");
+                                        }
                                     }
                                     // 心跳 → Registry instances 视图更新（§4.5：
                                     // last_heartbeat 刷新 + 存活会话计数；失败仅降级

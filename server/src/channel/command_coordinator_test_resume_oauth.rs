@@ -9,6 +9,70 @@
 //! bound_session 见 command_coordinator_test_util（经父模块 re-export，经
 //! `use super::*` 可见）。
 use super::*;
+
+/// P0 回归：hello 不能用伪空列表开门；首个 heartbeat 先确认 restored runtime，
+/// 再等待 session/resume RPC 终态，最后才完成 Restarting barrier。
+#[tokio::test]
+async fn recovery_heartbeat_confirms_resumes_then_opens_gate_once() {
+    let mut env = env().await;
+    let uuid = uuid::Uuid::parse_str(S1).unwrap();
+    env.store.create_chat(uuid).unwrap();
+    env.doc
+        .open_chat(S1, "local", None, None, None)
+        .await
+        .unwrap();
+    env.chats
+        .register(S1, "local", None, "/", None)
+        .await
+        .unwrap();
+    env.chats.bind(S1, "acp-restored", false).await.unwrap();
+    assert!(!env.chats.entry(S1).await.unwrap().runtime_confirmed);
+
+    let registry = env.doc.registry();
+    registry.set_restarting().await.unwrap();
+    let recovery = crate::channel::instance_recovery::RecoveryCoordinator::new(
+        std::collections::HashSet::from(["local".to_string()]),
+        env.instance.clone(),
+        env.coordinator.clone(),
+        registry.clone(),
+    );
+    let task = tokio::spawn({
+        let recovery = recovery.clone();
+        async move {
+            recovery
+                .on_heartbeat_snapshot("local", vec![S1.to_string()], true, true)
+                .await;
+        }
+    });
+
+    let rpc_id = drive_rpc(&env.instance, &mut env.instance_rx, "session/resume").await;
+    assert!(env.chats.entry(S1).await.unwrap().runtime_confirmed);
+    assert_eq!(
+        registry.global_status(),
+        peri_studio_proto::schema::GlobalStatus::Restarting,
+        "RPC 未确认前不得开门"
+    );
+    let response = peri_studio_proto::instance::InstanceEvent {
+        chat_id: S1.into(),
+        epoch: 0,
+        seq: 1,
+        frame: serde_json::json!({"jsonrpc":"2.0","id":rpc_id,"result":{}}),
+    };
+    let _ = env.relay.on_instance_event("local", &response).await;
+    task.await.unwrap();
+    assert_eq!(
+        registry.global_status(),
+        peri_studio_proto::schema::GlobalStatus::Healthy
+    );
+
+    recovery
+        .on_heartbeat_snapshot("local", vec![S1.to_string()], false, false)
+        .await;
+    assert!(
+        env.instance_rx.try_recv().is_err(),
+        "重复快照不得重复 resume"
+    );
+}
 /// server 重启恢复（无状态投影 §4 恢复路径 live chat）：instance hello 后
 /// 对其非终态且已绑定会话的 chat 批量发起 session/resume；终态/未绑定
 /// chat 跳过。

@@ -54,15 +54,42 @@ async fn lifecycle_hello_heartbeat_offline() {
     assert_eq!(reg.state("m1").await, Some(InstanceState::Online));
 
     // 心跳续期。
-    reg.on_heartbeat(
-        "m1",
-        &InstanceHeartbeat {
-            load: 10,
-            alive_sessions: vec![],
+    let first = reg
+        .on_heartbeat(
+            "m1",
+            &InstanceHeartbeat {
+                load: 10,
+                alive_sessions: vec![],
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        first,
+        HeartbeatOutcome {
+            first_snapshot: true,
+            changed: true,
         },
-    )
-    .await
-    .unwrap();
+        "首个空 alive_sessions 仍是 authoritative 快照"
+    );
+
+    let repeated = reg
+        .on_heartbeat(
+            "m1",
+            &InstanceHeartbeat {
+                load: 10,
+                alive_sessions: vec![],
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        repeated,
+        HeartbeatOutcome {
+            first_snapshot: false,
+            changed: false,
+        }
+    );
 
     // 30s 无心跳 → OFFLINE（注入时钟）。
     let t0 = Instant::now();
@@ -153,6 +180,21 @@ async fn fencing_stale_disconnect_keeps_new_connection_serving() {
         )
         .await;
     assert!(outcome.fenced_previous);
+    let heartbeat = InstanceHeartbeat {
+        load: 0,
+        alive_sessions: vec!["s-live".to_string()],
+    };
+    assert!(matches!(
+        reg.on_connection_heartbeat("m1", &InstanceConn { tx: tx1.clone() }, &heartbeat)
+            .await,
+        Err(InstanceError::ConnectionGone)
+    ));
+    assert!(
+        reg.on_connection_heartbeat("m1", &InstanceConn { tx: tx2.clone() }, &heartbeat)
+            .await
+            .unwrap()
+            .first_snapshot
+    );
     // 旧连接退出（gateway 断链路径）——陈旧断开：不得置 Offline。
     assert!(!reg.on_disconnect("m1", &InstanceConn { tx: tx1 }).await);
     assert_eq!(reg.state("m1").await, Some(InstanceState::Online));

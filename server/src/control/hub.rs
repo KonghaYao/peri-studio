@@ -15,6 +15,7 @@
 //! - **广播**：镜像更新流（`subscribe()`）供 Broadcaster attach——快照与增量
 //!   同源同 clientID，客户端应用无 CRDT 分叉。
 
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use tracing::{info, warn};
@@ -210,6 +211,19 @@ impl Hub {
             chats: chats.clone(),
             conns: conns.clone(),
         };
+        // 恢复门禁必须先于 Gateway 接受连接；重建失败直接阻止启动，不能让
+        // 一个不完整 Registry 在 hello 后被误报为 Healthy。
+        registry
+            .set_restarting()
+            .await
+            .map_err(|error| HubError::Store(error.to_string()))?;
+        let recovery_instances = Self::rebuild_chat_views(&metadata, &chats).await?;
+        if recovery_instances.is_empty() {
+            registry
+                .clear_restarting()
+                .await
+                .map_err(|error| HubError::Store(error.to_string()))?;
+        }
         let gateway = Gateway::new(
             Arc::new(cfg.clone()),
             auth.clone(),
@@ -220,21 +234,8 @@ impl Hub {
             sink.clone(),
             resources.clone(),
             registry.clone(),
+            recovery_instances,
         );
-        // §8.4.1 不变量 4：恢复期门禁——instance 重连（hello）对账完成前
-        // 不开门（gateway 在首次 hello 后 clear_restarting；Restarting 期间
-        // 拒绝新 committed 承诺）。
-        if let Err(e) = registry.set_restarting().await {
-            warn!(error = ?e, "set_restarting failed (registry write)");
-        }
-        // 启动重建（§无状态投影 恢复路径）：chat 视图从 SQLite
-        // `session_runtime_history`（retired_at IS NULL 的活跃 runtime）全量
-        // 重建——进程内 ChatRegistry 与 Registry Doc `chats` 段同步恢复，
-        // 状态为 accepting（可 resume/load）。live chat 的 ACP 进程在 server
-        // 崩溃期间继续运行，instance 重连（hello）后由
-        // `resume_instance_chats` 批量恢复视图；终态 chat 不存在于 runtime
-        // 历史（retired），不重建，由客户端显式 load 兜底。
-        Self::rebuild_chat_views(&metadata, &chats).await;
         Ok(Hub {
             store,
             sink,
@@ -264,20 +265,18 @@ impl Hub {
     /// 视图。终态 chat 不在 runtime 历史（retired）中，不重建；用户显式
     /// 打开时由 spawn + `session/load` 兜底。重建失败仅告警——后续任何
     /// 客户端显式 load/prompt 都会按需补建（chat 存在性由 Store 判定）。
-    async fn rebuild_chat_views(metadata: &MetadataStore, chats: &ChatRegistry) {
-        let runtimes = match metadata.list_runtime_chats().await {
-            Ok(runtimes) => runtimes,
-            Err(error) => {
-                warn!(
-                    error = ?error,
-                    "chat view rebuild failed; resume unavailable until explicit load"
-                );
-                return;
-            }
-        };
+    async fn rebuild_chat_views(
+        metadata: &MetadataStore,
+        chats: &ChatRegistry,
+    ) -> Result<HashSet<String>, HubError> {
+        let runtimes = metadata
+            .list_runtime_chats()
+            .await
+            .map_err(|error| HubError::Store(error.to_string()))?;
         let mut restored = 0usize;
+        let mut recovery_instances = HashSet::new();
         for runtime in runtimes {
-            if let Err(error) = chats
+            chats
                 .register(
                     &runtime.chat_id,
                     &runtime.instance_id,
@@ -286,32 +285,24 @@ impl Hub {
                     runtime.workspace_id.as_deref(),
                 )
                 .await
-            {
-                warn!(
-                    chat_id = %runtime.chat_id,
-                    error = ?error,
-                    "chat view rebuild register failed"
-                );
-                continue;
-            }
+                .map_err(|error| HubError::Store(error.to_string()))?;
             if let Some(acp_session_id) = runtime.acp_session_id.as_deref() {
                 // 视图重建不构成进程存活证据：恢复的 chat 先按未确认处理，
                 // 等 instance hello 对账（alive_sessions）裁决后再复用为
                 // live runtime（§8.3）。未确认的 chat 打开时走 spawn +
                 // `session/load` 恢复。
-                if let Err(error) = chats.bind(&runtime.chat_id, acp_session_id, false).await {
-                    warn!(
-                        chat_id = %runtime.chat_id,
-                        error = ?error,
-                        "chat view rebuild bind failed"
-                    );
-                }
+                chats
+                    .bind(&runtime.chat_id, acp_session_id, false)
+                    .await
+                    .map_err(|error| HubError::Store(error.to_string()))?;
             }
+            recovery_instances.insert(runtime.instance_id);
             restored += 1;
         }
         if restored > 0 {
             info!(count = restored, "chat views rebuilt from metadata.sqlite3");
         }
+        Ok(recovery_instances)
     }
 
     /// 运行入口（main `run_with` 调用）：绑定监听 → 周期任务 + gateway 并发

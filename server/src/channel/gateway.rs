@@ -29,6 +29,7 @@
 //!
 //! 对外 pub 面（`Gateway`/`GatewayError`/`FIRST_FRAME_TIMEOUT`）保持不变。
 
+use std::collections::HashSet;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
@@ -49,6 +50,7 @@ use peri_studio_proto::frame::{Frame, ProtoError};
 use crate::auth::audit::audit;
 use crate::auth::AuthService;
 use crate::channel::command_coordinator::extract_command_id;
+use crate::channel::instance_recovery::RecoveryCoordinator;
 use crate::channel::RelayEventHandler;
 use crate::channel::{ChannelDeps, ConnId, ConnectionRegistry};
 use crate::config::Config;
@@ -89,6 +91,7 @@ pub struct Gateway {
     pub(super) sink: Arc<StoreSink>,
     pub(super) resources: Arc<ResourceService>,
     pub(super) registry: RegistryState,
+    pub(super) recovery: RecoveryCoordinator,
     pub(super) heartbeat_interval: Duration,
     pub(super) heartbeat_timeout: Duration,
     pub(super) auth_setup: crate::web::BrowserAuthSetup,
@@ -107,10 +110,17 @@ impl Gateway {
         sink: Arc<StoreSink>,
         resources: Arc<ResourceService>,
         registry: RegistryState,
+        recovery_instances: HashSet<String>,
     ) -> Self {
         let heartbeat_interval = cfg.heartbeat_interval;
         let heartbeat_timeout = heartbeat_interval * 3;
         let auth_setup = crate::web::BrowserAuthSetup::from_config(&cfg);
+        let recovery = RecoveryCoordinator::new(
+            recovery_instances,
+            deps.instance.clone(),
+            deps.coordinator.clone(),
+            registry.clone(),
+        );
         Gateway {
             cfg,
             auth,
@@ -121,6 +131,7 @@ impl Gateway {
             sink,
             resources,
             registry,
+            recovery,
             heartbeat_interval,
             heartbeat_timeout,
             auth_setup,
