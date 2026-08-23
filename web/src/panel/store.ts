@@ -502,14 +502,19 @@ export type { SessionConfigMutation } from './lib/user-actions';
 installResourceStore({ send: sendFrame, ready: connectionReady, toast });
 export {
   activateResourceProject,
+  closeResourceFilePreview,
   downloadResourceFile,
+  downloadPreviewedFile,
   closeResourceDiffPreview,
   mutateGitResource,
   openGitDiffPreview,
+  openFilePreview,
   openMoreGitChanges,
   openResourceDirectory,
   refreshResourceProject,
+  resourceFilePreview,
   retryGitDiffPreview,
+  retryResourceFilePreview,
   resourceDiffPreview,
   resourceWorkspace,
 } from './lib/resource-store';

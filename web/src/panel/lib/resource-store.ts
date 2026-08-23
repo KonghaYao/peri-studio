@@ -38,6 +38,19 @@ export interface ResourceDiffPreviewState {
   retryable?: boolean;
 }
 
+export interface ResourceFilePreviewState {
+  requestId: string;
+  path: string;
+  loading: boolean;
+  mode?: 'text' | 'image' | 'binary' | 'large';
+  url?: string;
+  contentType?: string;
+  size?: number;
+  etag?: string;
+  text?: string;
+  error?: string;
+}
+
 const initial = (): ResourceWorkspaceState => ({
   projectId: null,
   directories: {},
@@ -48,9 +61,11 @@ const initial = (): ResourceWorkspaceState => ({
 
 export const [resourceWorkspace, setResourceWorkspace] = createSignal<ResourceWorkspaceState>(initial());
 export const [resourceDiffPreview, setResourceDiffPreview] = createSignal<ResourceDiffPreviewState | null>(null);
+export const [resourceFilePreview, setResourceFilePreview] = createSignal<ResourceFilePreviewState | null>(null);
 const docs = new DocStore();
 const pending = new Map<string, string>();
 const pendingDiffs = new Map<string, ResourceDiffPreviewState>();
+const pendingFiles = new Map<string, ResourceFilePreviewState>();
 const openViews = new Map<string, string>();
 const requested = new Set<string>();
 
@@ -93,6 +108,32 @@ export function downloadResourceFile(path: string): void {
   setLoading(`blob:${path}`, true);
 }
 
+export function openFilePreview(path: string): void {
+  const projectId = resourceWorkspace().projectId;
+  if (!projectId || !path || !transport?.ready()) return;
+  const frame = openResourceFile(projectId, path);
+  if (!transport.send(frame)) return;
+  const preview: ResourceFilePreviewState = { requestId: frame.requestId, path, loading: true };
+  pending.set(frame.requestId, `preview:${path}`);
+  pendingFiles.set(frame.requestId, preview);
+  setResourceDiffPreview(null);
+  setResourceFilePreview(preview);
+}
+
+export function closeResourceFilePreview(): void {
+  setResourceFilePreview(null);
+}
+
+export function retryResourceFilePreview(): void {
+  const preview = resourceFilePreview();
+  if (preview) openFilePreview(preview.path);
+}
+
+export function downloadPreviewedFile(): void {
+  const preview = resourceFilePreview();
+  if (preview) downloadResourceFile(preview.path);
+}
+
 export function openGitDiffPreview(repoId: string, groupId: GitGroupId, change: ResourceEntry): void {
   const projectId = resourceWorkspace().projectId;
   const path = typeof change.path === 'string' ? change.path : '';
@@ -111,6 +152,7 @@ export function openGitDiffPreview(repoId: string, groupId: GitGroupId, change: 
   };
   pending.set(frame.requestId, `diff:${path}`);
   pendingDiffs.set(frame.requestId, preview);
+  setResourceFilePreview(null);
   setResourceDiffPreview(preview);
 }
 
@@ -149,8 +191,10 @@ export function refreshResourceProject(): void {
 export function handleResourceResult(frame: ResourceResultFrame): void {
   const key = pending.get(frame.requestId);
   const diffRequest = pendingDiffs.get(frame.requestId);
+  const fileRequest = pendingFiles.get(frame.requestId);
   pending.delete(frame.requestId);
   pendingDiffs.delete(frame.requestId);
+  pendingFiles.delete(frame.requestId);
   if (key) setLoading(key, false);
   if (frame.error) {
     if (diffRequest) {
@@ -160,6 +204,10 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
         errorCode: frame.error.code,
         retryable: frame.error.retryable,
       });
+      return;
+    }
+    if (fileRequest) {
+      updateFilePreview(fileRequest.requestId, { loading: false, error: frame.error.message });
       return;
     }
     setResourceWorkspace((state) => ({ ...state, error: frame.error!.message }));
@@ -173,13 +221,11 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
       void loadGitDiff(frame.result.data.url, diffRequest);
       return;
     }
-    const anchor = document.createElement('a');
-    anchor.href = frame.result.data.url;
-    anchor.download = key?.startsWith('blob:') ? key.slice(5).split('/').at(-1) || '' : '';
-    anchor.rel = 'noopener';
-    document.body.append(anchor);
-    anchor.click();
-    anchor.remove();
+    if (fileRequest) {
+      void loadFilePreview(frame.result.data.url, frame.result.data.etag, fileRequest);
+      return;
+    }
+    downloadUrl(frame.result.data.url, key?.startsWith('blob:') ? basename(key.slice(5)) : '');
   } else if (frame.result?.kind === 'mutated') {
     refreshResourceProject();
   }
@@ -209,9 +255,11 @@ export function resetResourceProject(): void {
   docs.clear();
   pending.clear();
   pendingDiffs.clear();
+  pendingFiles.clear();
   openViews.clear();
   requested.clear();
   setResourceDiffPreview(null);
+  setResourceFilePreview(null);
   setResourceWorkspace(initial());
 }
 
@@ -238,9 +286,87 @@ async function loadGitDiff(url: string, request: ResourceDiffPreviewState) {
   }
 }
 
+const MAX_TEXT_PREVIEW_BYTES = 4 * 1024 * 1024;
+
+async function loadFilePreview(url: string, etag: string | undefined, request: ResourceFilePreviewState) {
+  try {
+    const head = await fetch(url, {
+      method: 'HEAD', credentials: 'same-origin', cache: 'no-store',
+    });
+    if (!head.ok) throw new Error('file metadata fetch failed');
+    const contentType = head.headers.get('content-type')?.split(';')[0].trim().toLowerCase() || 'application/octet-stream';
+    const contentLength = head.headers.get('content-length');
+    const parsedSize = contentLength === null ? undefined : Number(contentLength);
+    const size = parsedSize !== undefined && Number.isFinite(parsedSize) ? parsedSize : undefined;
+    const metadata = { url, etag, contentType, size };
+    if (isRasterImage(contentType)) {
+      updateFilePreview(request.requestId, { ...metadata, loading: false, mode: 'image' });
+      return;
+    }
+    if (!isTextPreview(request.path, contentType) && contentType !== 'application/octet-stream') {
+      updateFilePreview(request.requestId, { ...metadata, loading: false, mode: 'binary' });
+      return;
+    }
+    if (size !== undefined && size > MAX_TEXT_PREVIEW_BYTES) {
+      updateFilePreview(request.requestId, { ...metadata, loading: false, mode: 'large' });
+      return;
+    }
+    const response = await fetch(url, {
+      method: 'GET', credentials: 'same-origin', cache: 'no-store',
+      headers: { Accept: 'text/plain, application/json;q=0.9, */*;q=0.1' },
+    });
+    if (!response.ok) throw new Error('file fetch failed');
+    const bytes = await response.arrayBuffer();
+    if (bytes.byteLength > MAX_TEXT_PREVIEW_BYTES) {
+      updateFilePreview(request.requestId, { ...metadata, size: bytes.byteLength, loading: false, mode: 'large' });
+      return;
+    }
+    if (new Uint8Array(bytes).includes(0)) {
+      updateFilePreview(request.requestId, { ...metadata, size: bytes.byteLength, loading: false, mode: 'binary' });
+      return;
+    }
+    let text: string;
+    try {
+      text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    } catch {
+      updateFilePreview(request.requestId, { ...metadata, size: bytes.byteLength, loading: false, mode: 'binary' });
+      return;
+    }
+    updateFilePreview(request.requestId, { ...metadata, size: bytes.byteLength, loading: false, mode: 'text', text });
+  } catch {
+    updateFilePreview(request.requestId, { loading: false, error: 'Unable to open this file. Refresh Explorer and try again.' });
+  }
+}
+
 function updateDiffPreview(requestId: string, patch: Partial<ResourceDiffPreviewState>) {
   setResourceDiffPreview((current) => current?.requestId === requestId ? { ...current, ...patch } : current);
 }
+
+function updateFilePreview(requestId: string, patch: Partial<ResourceFilePreviewState>) {
+  setResourceFilePreview((current) => current?.requestId === requestId ? { ...current, ...patch } : current);
+}
+
+function isTextPreview(path: string, contentType: string): boolean {
+  if (contentType.startsWith('text/')) return true;
+  if (['application/json', 'application/javascript', 'application/xml', 'image/svg+xml'].includes(contentType)) return true;
+  return /\.(?:c|cc|cpp|h|hpp|go|java|kt|kts|py|rb|php|sh|bash|zsh|fish|sql|vue|svelte|astro|xml|ini|cfg|conf|env|lock|gitignore|dockerfile)$/i.test(path);
+}
+
+function isRasterImage(contentType: string): boolean {
+  return ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/avif'].includes(contentType);
+}
+
+function downloadUrl(url: string, filename: string) {
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.rel = 'noopener';
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
+const basename = (path: string) => path.split('/').at(-1) || path;
 
 function request(projectId: string, key: string, payload: Parameters<typeof openResourceView>[1]) {
   if (!transport?.ready() || requested.has(key)) return;

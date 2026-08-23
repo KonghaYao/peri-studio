@@ -47,7 +47,7 @@
 - instance 已实现有界目录分页、精确文件读取、workspace containment、静态 symlink 逃逸拒绝、仓库发现、Git snapshot/changes，以及 generation-bound `changeIds`、强制 CAS、按仓库串行的 Stage/Unstage；仓库锁使用可回收 weak entry，非 UTF-8 Git 路径会显式拒绝，hello 会显式协商资源协议版本与上限。
 - server 是资源 Y.Doc 的唯一 writer；目录、仓库、SCM group 都是按需、短租约、显式排序的独立只读投影，最后一个订阅者离开后才进入 TTL，空闲过期投影由主动 sweeper 回收，文件字节不进入 Yjs。
 - 浏览器通过 opaque、principal-bound、60 秒 ticket 的同源 `GET/HEAD /api/resource-blobs/{blobId}` 下载文件和 Git diff；响应保留精确字节、MIME、ETag，并要求当前 HttpOnly session cookie。diff 查询只携带 generation-bound opaque `changeId`，不接受浏览器路径或 Git argv。
-- Web 已提供 VS Code 风格 Activity Bar、可折叠 Explorer、懒加载/连续分页文件树、Source Control 仓库/分组/状态装饰、ahead/behind、逐文件 Stage/Unstage、分页加载、刷新与 SCM badge；选择变更会在主编辑区打开有界双栏 unified diff，包含行号、hunk、二进制/空/加载/错误状态、重试和键盘关闭。重连后会重新申请短租约视图，不重放可能过期的 Doc ID。
+- Web 已提供 VS Code 风格 Activity Bar、可折叠 Explorer、懒加载/连续分页文件树、Source Control 仓库/分组/状态装饰、ahead/behind、逐文件 Stage/Unstage、分页加载、刷新与 SCM badge。选择文件会在主编辑区打开只读标签页：有界 UTF-8 文本带行号，图片使用 principal-bound URL，二进制/超大文件保持下载路径；选择变更会打开有界双栏 unified diff，包含行号、hunk、二进制/空/加载/错误状态、重试和键盘关闭。重连后会重新申请短租约视图，不重放可能过期的 Doc ID。
 
 当前实现是该设计的 R1/R2、部分 R3、R6 与部分 R7，不把尚未完成的接口伪装成已支持：浏览器 bulk bytes 已走 HTTP，但 instance→server 的文件读取与 diff 暂时仍分别以 64 MiB/8 MiB 硬上限的 base64 control result 传输；Range、下游取消传播、独立 authenticated data WebSocket、watch/invalidation、文件编辑/upload/mutation，以及 discard/commit/branch/remote 等 Git 操作仍按后续阶段实现。Stage/Unstage 当前使用关联 `requestId`、generation-bound `changeIds` 与非自动重试的 `DELIVERY_UNKNOWN` 收敛不确定结果，但尚未接入持久化 action/outbox，因此不能扩展到 commit/push 等非幂等副作用。静态 containment 已覆盖，抵抗工作区内恶意进程并发替换路径所需的 fd-anchored traversal/openat2 仍是文件 mutation 上线前的硬门禁。这个兼容 seam 被限制在可信 server↔instance 链路，不会暴露给浏览器，也不会写入 Yjs。
 

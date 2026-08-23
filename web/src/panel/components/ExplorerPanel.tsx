@@ -1,6 +1,6 @@
 import { For, Show, createSignal } from 'solid-js';
 import { Icon, IconButton, LoadingState } from '../../components/ui';
-import { downloadResourceFile, openResourceDirectory, resourceWorkspace } from '../store';
+import { openFilePreview, openResourceDirectory, resourceWorkspace } from '../store';
 import type { ResourceEntry } from '../lib/resource-view';
 
 function ChevronIcon() { return <Icon size="small"><path d="m7 4 6 6-6 6" /></Icon>; }
@@ -50,7 +50,7 @@ function FileRow(props: { entry: ResourceEntry; depth: number; expanded: Set<str
       aria-expanded={directory() ? open() : undefined}
       class="group flex h-24 w-full items-center border-0 bg-transparent pr-6 text-left text-12 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-none"
       style={{ 'padding-left': `${6 + props.depth * 13}px` }}
-      onClick={() => directory() ? props.onToggle(path()) : downloadResourceFile(path())}
+      onClick={() => directory() ? props.onToggle(path()) : openFilePreview(path())}
       title={path()}
     >
       <span class={`mr-1 grid size-14 place-items-center text-text-muted ${directory() ? '' : 'opacity-0'}`}><ChevronIcon /></span>

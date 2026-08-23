@@ -43,6 +43,19 @@ test('resource workbench matches Explorer and Source Control interaction contrac
   await expect(page.getByText('const width = view() ? 310 : 46;')).toBeVisible();
   await page.getByRole('button', { name: 'Close diff' }).click();
   await expect(page.getByRole('region', { name: 'Git diff preview' })).toHaveCount(0);
+  await page.evaluate(async () => {
+    const resources = await import('/src/panel/lib/resource-store.ts');
+    resources.setResourceFilePreview({
+      requestId: 'browser-file', path: 'src/main.rs', loading: false, mode: 'text',
+      url: '/api/resource-blobs/browser-file', contentType: 'text/plain', size: 30,
+      text: 'fn main() {\n    println!("ready");\n}\n',
+    });
+  });
+  await expect(page.getByRole('region', { name: 'File preview' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Contents of src/main.rs' })).toContainText('println!("ready")');
+  await expect(page.getByText('Read-only', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Close file' }).click();
+  await expect(page.getByRole('region', { name: 'File preview' })).toHaveCount(0);
   expect(browserErrors).toEqual([]);
 });
 

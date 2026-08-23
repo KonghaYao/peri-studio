@@ -7,6 +7,7 @@ import {
   installResourceStore,
   replayResourceSubscriptions,
   resourceDiffPreview,
+  resourceFilePreview,
   resetResourceProject,
   setResourceWorkspace,
 } from '../lib/resource-store';
@@ -17,10 +18,21 @@ afterEach(() => { cleanup(); resetResourceProject(); installPrincipalRole(null);
 describe('VS Code-style resource panels', () => {
   it('lazy-loads a directory when its tree row expands', async () => {
     const sent: unknown[] = [];
+    const bytes = new TextEncoder().encode('export const ready = true;\n');
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'text/plain; charset=utf-8', 'content-length': String(bytes.byteLength) }),
+      })
+      .mockResolvedValueOnce({ ok: true, arrayBuffer: async () => bytes.buffer });
+    vi.stubGlobal('fetch', fetch);
     installResourceStore({ send: (frame) => { sent.push(frame); return true; }, ready: () => true, toast: vi.fn() });
     setResourceWorkspace({
       projectId: 'project-1',
-      directories: { '': { generation: 'g1', nextCursor: 'g1.1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory' }] } },
+      directories: {
+        '': { generation: 'g1', nextCursor: 'g1.1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory' }] },
+        src: { generation: 'g2', entries: [{ id: 'main', name: 'main.ts', path: 'src/main.ts', kind: 'file', size: 24 }] },
+      },
       repositories: [], loading: [], error: null,
     });
     render(() => <ExplorerPanel />);
@@ -33,6 +45,21 @@ describe('VS Code-style resource panels', () => {
     expect(sent).toContainEqual(expect.objectContaining({
       payload: expect.objectContaining({ kind: 'fs-directory-page', path: '', cursor: 'g1.1' }),
     }));
+    await fireEvent.click(screen.getByRole('treeitem', { name: /main\.ts/i }));
+    expect(sent).toContainEqual(expect.objectContaining({
+      t: 'resource_query', type: 'resource/open-blob', projectId: 'project-1',
+      payload: { kind: 'file', path: 'src/main.ts' },
+    }));
+    expect(resourceFilePreview()).toEqual(expect.objectContaining({ path: 'src/main.ts', loading: true }));
+    const open = sent.find((frame) => (frame as { type?: string; payload?: { kind?: string } }).type === 'resource/open-blob'
+      && (frame as { payload?: { kind?: string } }).payload?.kind === 'file') as { requestId: string };
+    handleResourceResult({
+      t: 'resource_result', requestId: open.requestId,
+      result: { kind: 'blob', data: { blobId: 'file-blob', url: '/api/resource-blobs/file-blob', expiresAt: '2026-08-23T12:00:00Z', etag: 'file-etag' } },
+    });
+    await waitFor(() => expect(resourceFilePreview()?.text).toBe('export const ready = true;\n'));
+    expect(fetch).toHaveBeenNthCalledWith(1, '/api/resource-blobs/file-blob', expect.objectContaining({ method: 'HEAD', credentials: 'same-origin' }));
+    expect(fetch).toHaveBeenNthCalledWith(2, '/api/resource-blobs/file-blob', expect.objectContaining({ method: 'GET', credentials: 'same-origin' }));
   });
 
   it('opens a principal-bound Git diff blob from a change row', async () => {
