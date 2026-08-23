@@ -507,6 +507,7 @@ export {
   downloadPreviewedFile,
   closeResourceDiffPreview,
   mutateGitResource,
+  retryGitResourceMutation,
   openGitDiffPreview,
   openFilePreview,
   openMoreGitChanges,

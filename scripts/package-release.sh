@@ -7,9 +7,10 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BIN_DIR="${ROOT}/target/release"
 OUT_DIR="${ROOT}/dist"
 TARGET="$(rustc -vV | sed -n 's/^host: //p')"
+ALLOW_DIRTY=0
 
 usage() {
-    echo "usage: $0 [--bin-dir DIR] [--out-dir DIR] [--target TRIPLE]" >&2
+    echo "usage: $0 [--allow-dirty] [--bin-dir DIR] [--out-dir DIR] [--target TRIPLE]" >&2
 }
 
 while [ "$#" -gt 0 ]; do
@@ -23,6 +24,7 @@ while [ "$#" -gt 0 ]; do
             esac
             shift 2
             ;;
+        --allow-dirty) ALLOW_DIRTY=1; shift ;;
         -h|--help) usage; exit 0 ;;
         *) usage; exit 2 ;;
     esac
@@ -43,6 +45,11 @@ if ! [ -f "${ROOT}/web/dist/index.html" ]; then
     echo "web/dist is missing; build and test the Web client before Rust release binaries" >&2
     exit 1
 fi
+if find "${ROOT}/web/src" "${ROOT}/web/package.json" "${ROOT}/web/bun.lock" \
+    "${ROOT}/web/vite.config.ts" -type f -newer "${ROOT}/web/dist/index.html" -print -quit | grep -q .; then
+    echo "web/dist is stale; rebuild the Web client before packaging" >&2
+    exit 1
+fi
 if ! [ -f "${ROOT}/LICENSE" ]; then
     echo "repository LICENSE is missing; release archives must include explicit license terms" >&2
     exit 1
@@ -60,6 +67,10 @@ if [ -n "$(git -C "${ROOT}" status --porcelain --untracked-files=normal 2>/dev/n
     SOURCE_DIRTY=true
 else
     SOURCE_DIRTY=false
+fi
+if [ "${SOURCE_DIRTY}" = true ] && [ "${ALLOW_DIRTY}" -ne 1 ]; then
+    echo "refusing to package a dirty source tree (use --allow-dirty only for local diagnostics)" >&2
+    exit 1
 fi
 
 PACKAGE="peri-studio-${VERSION}-${TARGET}"

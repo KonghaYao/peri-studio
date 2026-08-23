@@ -4,6 +4,7 @@ import { memoizeAsync } from './async-cache';
 import { downloadText, safeFilename } from './download';
 import { MathExpression } from './Math';
 import { MermaidBlock } from './MermaidBlock';
+import type { LanguageInput } from 'shiki/core';
 
 type CodeElement = HTMLElement & { props?: Record<string, unknown> };
 
@@ -12,10 +13,49 @@ const LANGUAGE_ALIASES: Record<string, string> = {
 };
 
 const LANGUAGE_LABELS: Record<string, string> = {
-  bash: 'Bash', c: 'C', cpp: 'C++', css: 'CSS', go: 'Go', html: 'HTML', java: 'Java', javascript: 'JavaScript', json: 'JSON', jsx: 'JSX', kotlin: 'Kotlin', markdown: 'Markdown', php: 'PHP', python: 'Python', ruby: 'Ruby', rust: 'Rust', shellscript: 'Shell', sql: 'SQL', swift: 'Swift', typescript: 'TypeScript', tsx: 'TSX', xml: 'XML', yaml: 'YAML', zsh: 'Zsh', mermaid: 'Mermaid', math: 'Math',
+  bash: 'Bash', c: 'C', cpp: 'C++', css: 'CSS', dockerfile: 'Dockerfile', go: 'Go', html: 'HTML', java: 'Java', javascript: 'JavaScript', json: 'JSON', jsx: 'JSX', kotlin: 'Kotlin', markdown: 'Markdown', php: 'PHP', python: 'Python', ruby: 'Ruby', rust: 'Rust', shellscript: 'Shell', sql: 'SQL', swift: 'Swift', typescript: 'TypeScript', tsx: 'TSX', xml: 'XML', yaml: 'YAML', zsh: 'Zsh', mermaid: 'Mermaid', math: 'Math',
 };
 
 const EXTENSIONS: Record<string, string> = { javascript: 'js', markdown: 'md', python: 'py', rust: 'rs', shellscript: 'sh', typescript: 'ts', yaml: 'yml' };
+
+type LanguageModule = { default: LanguageInput[] };
+const LANGUAGE_LOADERS: Record<string, () => Promise<LanguageModule>> = {
+  bash: () => import('shiki/dist/langs/bash.mjs'),
+  c: () => import('shiki/dist/langs/c.mjs'),
+  cpp: () => import('shiki/dist/langs/cpp.mjs'),
+  css: () => import('shiki/dist/langs/css.mjs'),
+  dockerfile: () => import('shiki/dist/langs/dockerfile.mjs'),
+  go: () => import('shiki/dist/langs/go.mjs'),
+  html: () => import('shiki/dist/langs/html.mjs'),
+  java: () => import('shiki/dist/langs/java.mjs'),
+  javascript: () => import('shiki/dist/langs/javascript.mjs'),
+  json: () => import('shiki/dist/langs/json.mjs'),
+  jsx: () => import('shiki/dist/langs/jsx.mjs'),
+  kotlin: () => import('shiki/dist/langs/kotlin.mjs'),
+  markdown: () => import('shiki/dist/langs/markdown.mjs'),
+  php: () => import('shiki/dist/langs/php.mjs'),
+  python: () => import('shiki/dist/langs/python.mjs'),
+  ruby: () => import('shiki/dist/langs/ruby.mjs'),
+  rust: () => import('shiki/dist/langs/rust.mjs'),
+  shellscript: () => import('shiki/dist/langs/shellscript.mjs'),
+  sql: () => import('shiki/dist/langs/sql.mjs'),
+  swift: () => import('shiki/dist/langs/swift.mjs'),
+  typescript: () => import('shiki/dist/langs/typescript.mjs'),
+  tsx: () => import('shiki/dist/langs/tsx.mjs'),
+  xml: () => import('shiki/dist/langs/xml.mjs'),
+  yaml: () => import('shiki/dist/langs/yaml.mjs'),
+  zsh: () => import('shiki/dist/langs/zsh.mjs'),
+};
+
+const highlighter = Promise.all([
+  import('shiki/core'),
+  import('shiki/engine/javascript'),
+  import('shiki/dist/themes/github-light-default.mjs'),
+]).then(([{ createHighlighterCore }, { createJavaScriptRegexEngine }, theme]) => createHighlighterCore({
+  themes: [theme.default],
+  langs: [],
+  engine: createJavaScriptRegexEngine(),
+}));
 
 function childDetails(child: unknown) {
   const element = (Array.isArray(child) ? child[0] : child) as CodeElement | undefined;
@@ -31,9 +71,14 @@ function childDetails(child: unknown) {
 }
 
 async function loadHighlight(code: string, language: string) {
-  const { bundledLanguages, codeToTokens } = await import('shiki');
-  if (!(language in bundledLanguages)) return { result: null, error: false };
-  return { result: await codeToTokens(code, { lang: language as keyof typeof bundledLanguages, theme: 'github-light-default' }), error: false };
+  const load = LANGUAGE_LOADERS[language];
+  if (!load) return { result: null, error: false };
+  const instance = await highlighter;
+  if (!instance.getLoadedLanguages().includes(language)) {
+    const module = await load();
+    await instance.loadLanguage(...module.default);
+  }
+  return { result: instance.codeToTokens(code, { lang: language, theme: 'github-light-default' }), error: false };
 }
 
 const loadHighlightCached = memoizeAsync((code: string, language: string) => `${language}\u0000${code}`, loadHighlight);

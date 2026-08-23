@@ -21,6 +21,17 @@ export interface ResourceWorkspaceState {
   repositories: RepositoryState[];
   loading: string[];
   error: string | null;
+  mutations?: Record<string, GitMutationState>;
+}
+
+export interface GitMutationState {
+  requestId: string;
+  repoId: string;
+  action: 'stage' | 'unstage';
+  changeIds: string[];
+  pending: boolean;
+  error?: string;
+  retryable?: boolean;
 }
 
 export interface ResourceDiffPreviewState {
@@ -57,6 +68,7 @@ const initial = (): ResourceWorkspaceState => ({
   repositories: [],
   loading: [],
   error: null,
+  mutations: {},
 });
 
 export const [resourceWorkspace, setResourceWorkspace] = createSignal<ResourceWorkspaceState>(initial());
@@ -66,6 +78,7 @@ const docs = new DocStore();
 const pending = new Map<string, string>();
 const pendingDiffs = new Map<string, ResourceDiffPreviewState>();
 const pendingFiles = new Map<string, ResourceFilePreviewState>();
+const pendingMutations = new Map<string, GitMutationState>();
 const openViews = new Map<string, string>();
 const requested = new Set<string>();
 
@@ -171,14 +184,33 @@ export function retryGitDiffPreview(): void {
   });
 }
 
-export function mutateGitResource(repoId: string, action: 'stage' | 'unstage', changeIds: string[]): void {
+export function mutateGitResource(repoId: string, action: 'stage' | 'unstage', changeIds: string[]): boolean {
   const state = resourceWorkspace();
   const repo = state.repositories.find((item) => item.id === repoId);
-  if (!state.projectId || !transport?.ready() || !repo?.generation || !changeIds.length) return;
+  if (!state.projectId || !transport?.ready() || !repo?.generation || !changeIds.length) return false;
+  if (changeIds.some((changeId) => state.mutations?.[changeId]?.pending)) return false;
   const frame = gitResourceAction(state.projectId, repoId, action, changeIds, repo.generation);
-  if (!transport.send(frame)) return;
+  if (!transport.send(frame)) return false;
+  const mutation: GitMutationState = {
+    requestId: frame.requestId, repoId, action, changeIds, pending: true,
+  };
+  pendingMutations.set(frame.requestId, mutation);
   pending.set(frame.requestId, `mutation:${repoId}`);
   setLoading(`mutation:${repoId}`, true);
+  setResourceWorkspace((current) => ({
+    ...current,
+    mutations: {
+      ...current.mutations,
+      ...Object.fromEntries(changeIds.map((changeId) => [changeId, mutation])),
+    },
+  }));
+  return true;
+}
+
+export function retryGitResourceMutation(changeId: string): boolean {
+  const mutation = resourceWorkspace().mutations?.[changeId];
+  if (!mutation || mutation.pending || !mutation.retryable) return false;
+  return mutateGitResource(mutation.repoId, mutation.action, mutation.changeIds);
 }
 
 export function refreshResourceProject(): void {
@@ -192,9 +224,11 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
   const key = pending.get(frame.requestId);
   const diffRequest = pendingDiffs.get(frame.requestId);
   const fileRequest = pendingFiles.get(frame.requestId);
+  const mutationRequest = pendingMutations.get(frame.requestId);
   pending.delete(frame.requestId);
   pendingDiffs.delete(frame.requestId);
   pendingFiles.delete(frame.requestId);
+  pendingMutations.delete(frame.requestId);
   if (key) setLoading(key, false);
   if (frame.error) {
     if (diffRequest) {
@@ -208,6 +242,21 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
     }
     if (fileRequest) {
       updateFilePreview(fileRequest.requestId, { loading: false, error: frame.error.message });
+      return;
+    }
+    if (mutationRequest) {
+      setResourceWorkspace((state) => ({
+        ...state,
+        mutations: {
+          ...state.mutations,
+          ...Object.fromEntries(mutationRequest.changeIds.map((changeId) => [changeId, {
+            ...mutationRequest,
+            pending: false,
+            error: frame.error!.message,
+            retryable: frame.error!.retryable,
+          }])),
+        },
+      }));
       return;
     }
     setResourceWorkspace((state) => ({ ...state, error: frame.error!.message }));
@@ -256,6 +305,7 @@ export function resetResourceProject(): void {
   pending.clear();
   pendingDiffs.clear();
   pendingFiles.clear();
+  pendingMutations.clear();
   openViews.clear();
   requested.clear();
   setResourceDiffPreview(null);

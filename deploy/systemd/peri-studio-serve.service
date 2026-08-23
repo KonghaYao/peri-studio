@@ -8,6 +8,7 @@ ExecStart=/usr/local/bin/peri-studio serve
 Restart=on-failure
 RestartSec=2
 TimeoutStopSec=30
+UMask=0077
 NoNewPrivileges=true
 
 [Install]

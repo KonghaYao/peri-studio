@@ -22,6 +22,16 @@ export default defineConfig({
         // 与 Rust 端路由保持的 URL 契约：`/` 即 Web 面板。
         index: resolve(rootDir, 'index.html'),
       },
+      output: {
+        manualChunks(id) {
+          if (!id.includes('/node_modules/')) return undefined;
+          if (id.includes('/yjs/') || id.includes('/lib0/')) return 'vendor-crdt';
+          if (id.includes('/markdown-to-jsx/')) return 'vendor-markdown';
+          if (id.includes('/@kobalte/')) return 'vendor-interactions';
+          if (id.includes('/solid-js/')) return 'vendor-solid';
+          return undefined;
+        },
+      },
     },
   },
 });

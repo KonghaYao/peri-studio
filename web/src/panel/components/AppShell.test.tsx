@@ -55,4 +55,20 @@ describe('AppShell desktop sidebar', () => {
     expect(shell().style.gridTemplateColumns).toBe('242px auto minmax(0, 1fr)');
     expect(screen.getByRole('complementary', { name: 'Workspace resources' })).toBeInTheDocument();
   });
+
+  it('opens filesystem and Git resources from the compact status bar', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })));
+    render(() => <AppShell />);
+
+    const resources = screen.getByRole('button', { name: 'Open workspace resources' });
+    await fireEvent.click(resources);
+
+    expect(screen.getByRole('dialog', { name: 'Workspace resources' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Explorer' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Source Control' })).toBeInTheDocument();
+  });
 });

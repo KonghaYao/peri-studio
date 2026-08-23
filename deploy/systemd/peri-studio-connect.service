@@ -6,9 +6,10 @@ After=network.target peri-studio-serve.service
 [Service]
 Type=simple
 ExecStart=/usr/local/bin/peri-studio connect ws://127.0.0.1:8456/instance --token-file %h/.config/peri-studio/instance.token
-Restart=always
+Restart=on-failure
 RestartSec=2
 TimeoutStopSec=30
+UMask=0077
 NoNewPrivileges=true
 
 [Install]

@@ -1,7 +1,7 @@
 import { For, Show, createMemo, onCleanup, onMount } from 'solid-js';
 import { Button, Icon, IconButton, LoadingState } from '../../components/ui';
 import { closeResourceDiffPreview, refreshResourceProject, resourceDiffPreview, retryGitDiffPreview } from '../store';
-import { parseUnifiedDiff, type DiffRow } from '../lib/resource-diff';
+import { MAX_RENDERED_DIFF_ROWS, parseUnifiedDiff, type DiffRow } from '../lib/resource-diff';
 
 function CloseIcon() {
   return <Icon size="small"><path d="m5 5 10 10M15 5 5 15" /></Icon>;
@@ -55,6 +55,7 @@ export function ResourceDiffEditor() {
       }>
         <Show when={!parsed().binary} fallback={<EmptyDiff title="Binary file" detail="Binary files cannot be compared in the text diff viewer." />}>
           <Show when={parsed().hunks.length > 0} fallback={<EmptyDiff title="No textual changes" detail="The file has no line changes to display." />}>
+            <Show when={parsed().truncated}><div role="status" class="shrink-0 border-b border-warning-border bg-warning-soft px-12 py-6 text-11 text-warning-strong">Preview limited to the first {MAX_RENDERED_DIFF_ROWS.toLocaleString()} rows to keep the editor responsive.</div></Show>
             <div class="ui-scrollbar min-h-0 flex-1 overflow-auto" role="table" aria-label={`Changes in ${preview()?.path ?? 'file'}`}>
               <div class="min-w-[720px] font-mono text-11 leading-18">
                 <For each={parsed().hunks}>{(hunk) => <section role="rowgroup">
@@ -88,7 +89,7 @@ function DiffCell(props: { number?: number; text?: string; changed: boolean; sid
     : props.text === undefined ? 'bg-surface-muted' : 'border-l-2 border-transparent';
   return <div role="cell" class={`grid min-w-0 grid-cols-[48px_minmax(0,1fr)] ${props.side === 'right' ? 'border-l border-divider' : ''} ${tone()}`}>
     <span class="select-none border-r border-divider px-7 text-right tabular-nums text-text-faint" aria-hidden="true">{props.number ?? ''}</span>
-    <code class="overflow-visible whitespace-pre px-8 text-text-primary [tab-size:4]">{props.text ?? ''}</code>
+    <code class="overflow-visible whitespace-pre rounded-none bg-transparent px-8 py-0 text-text-primary [tab-size:4]">{props.text ?? ''}</code>
   </div>;
 }
 

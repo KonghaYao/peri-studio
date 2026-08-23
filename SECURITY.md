@@ -17,7 +17,7 @@ explicit `--allow-insecure` escape hatch and is unsupported outside controlled t
 
 Do not open a public issue for a suspected vulnerability or include credentials, tokens, private
 prompts, database contents or exploit details in public logs. Use the repository's
-[private security advisory form](https://github.com/KonghaYao/peri/security/advisories/new).
+[private security advisory form](https://github.com/KonghaYao/peri-studio/security/advisories/new).
 
 Include only the minimum evidence needed to reproduce the issue:
 

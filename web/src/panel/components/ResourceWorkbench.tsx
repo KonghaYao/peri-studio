@@ -1,5 +1,5 @@
 import { Show, createEffect, createMemo, createSignal, untrack } from 'solid-js';
-import { Icon, IconButton } from '../../components/ui';
+import { Dialog, DialogContent, DialogTitle, Icon, IconButton } from '../../components/ui';
 import { activateResourceProject, projectSessions, projects, refreshResourceProject, resourceWorkspace, selectedSessionId } from '../store';
 import { ExplorerPanel } from './ExplorerPanel';
 import { SourceControlPanel } from './SourceControlPanel';
@@ -10,8 +10,16 @@ function GitIcon() { return <Icon><circle cx="5" cy="4" r="1.5" /><circle cx="5"
 function RefreshIcon() { return <Icon size="small"><path d="M15.5 7A6 6 0 0 0 5 5.5L3.5 7M4.5 13A6 6 0 0 0 15 14.5l1.5-1.5" /><path d="M3.5 3.5V7h3.5M16.5 16.5V13H13" /></Icon>; }
 function CloseIcon() { return <Icon size="small"><path d="m5 5 10 10M15 5 5 15" /></Icon>; }
 
-export function ResourceWorkbench() {
+type ResourceWorkbenchProps = {
+  compact?: boolean;
+  overlay?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+};
+
+export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   const [view, setView] = createSignal<WorkbenchView>('explorer');
+  let wasOverlay = false;
   const project = createMemo(() => {
     const session = projectSessions().find((item) => item.id === selectedSessionId());
     return projects().find((item) => item.id === session?.projectId && !item.archivedAt)
@@ -20,30 +28,55 @@ export function ResourceWorkbench() {
   });
   createEffect(() => {
     const selected = project();
-    if (selected && view()) untrack(() => activateResourceProject(selected.id));
+    if (selected && view() && (!props.compact || props.open)) {
+      untrack(() => activateResourceProject(selected.id));
+    }
   });
-  const toggle = (next: Exclude<WorkbenchView, null>) => setView((current) => current === next ? null : next);
-  return <aside class="resource-workbench max-desk:hidden flex h-full min-h-0 border-l border-r border-divider bg-sidebar-bg" style={{ width: view() ? '310px' : '46px' }} aria-label="Workspace resources">
+  createEffect(() => {
+    if (props.compact && props.open && !view()) setView('explorer');
+  });
+  createEffect(() => {
+    const overlay = !!props.overlay;
+    if (overlay && !wasOverlay) setView(null);
+    if (!overlay && wasOverlay && !view()) setView('explorer');
+    wasOverlay = overlay;
+  });
+  const toggle = (next: Exclude<WorkbenchView, null>) => {
+    if (props.compact) setView(next);
+    else setView((current) => current === next ? null : next);
+  };
+  const close = () => props.compact ? props.onOpenChange?.(false) : setView(null);
+  const surface = () => <aside class={`resource-workbench relative flex h-full min-h-0 border-l border-r border-divider bg-sidebar-bg ${props.compact ? 'w-full' : view() ? 'w-[46px] wide:w-[310px]' : 'w-[46px]'}`} aria-label="Workspace resources">
     <nav class="flex w-46 shrink-0 flex-col items-center border-r border-divider py-7" aria-label="Resource views">
       <ActivityButton label="Explorer" active={view() === 'explorer'} onClick={() => toggle('explorer')}><FilesIcon /></ActivityButton>
       <ActivityButton label="Source Control" active={view() === 'scm'} badge={resourceWorkspace().repositories.reduce((sum, repo) => sum + Object.values(repo.groups).reduce((count, group) => count + group.count, 0), 0)} onClick={() => toggle('scm')}><GitIcon /></ActivityButton>
     </nav>
     <Show when={view()}>
-      <div class="flex min-w-0 flex-1 flex-col">
+      <div class={`flex min-w-0 flex-1 flex-col bg-sidebar-bg ${props.compact ? '' : 'desk:max-wide:absolute desk:max-wide:inset-y-0 desk:max-wide:left-46 desk:max-wide:z-30 desk:max-wide:w-[264px] desk:max-wide:border-r desk:max-wide:border-divider desk:max-wide:shadow-popover'}`}>
         <header class="flex h-40 shrink-0 items-center gap-5 border-b border-divider px-10">
           <strong class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-11 font-650 uppercase tracking-5 text-text-secondary">{project()?.name ?? 'Workspace'}</strong>
           <IconButton label="Refresh resources" onClick={refreshResourceProject} class="size-26 min-h-26 border-0 bg-transparent text-text-muted"><RefreshIcon /></IconButton>
-          <IconButton label="Close resource panel" onClick={() => setView(null)} class="size-26 min-h-26 border-0 bg-transparent text-text-muted"><CloseIcon /></IconButton>
+          <IconButton label="Close resource panel" onClick={close} class="size-26 min-h-26 border-0 bg-transparent text-text-muted"><CloseIcon /></IconButton>
         </header>
         <Show when={project()} fallback={<div class="p-14 text-12 text-text-muted">Select or create a project to browse its workspace.</div>}>
-          <Show when={!resourceWorkspace().error} fallback={<div class="m-8 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">{resourceWorkspace().error}</div>}>
-            <Show when={view() === 'explorer'}><ExplorerPanel /></Show>
-            <Show when={view() === 'scm'}><SourceControlPanel /></Show>
-          </Show>
+          <Show when={resourceWorkspace().error}>{(message) => <div role="alert" class="m-8 flex items-start gap-6 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">
+            <span class="min-w-0 flex-1">{message()}</span>
+            <button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline" onClick={refreshResourceProject}>Retry</button>
+          </div>}</Show>
+          <Show when={view() === 'explorer'}><ExplorerPanel /></Show>
+          <Show when={view() === 'scm'}><SourceControlPanel /></Show>
         </Show>
       </div>
     </Show>
   </aside>;
+  return <Show when={props.compact} fallback={surface()}>
+    <Dialog open={!!props.open} onOpenChange={(open) => props.onOpenChange?.(open)}>
+      <DialogContent class="top-0 right-0 bottom-22 left-auto h-auto max-h-none w-[min(92vw,360px)] translate-x-0 translate-y-0 overflow-hidden rounded-none border-y-0 border-r-0 p-0">
+        <DialogTitle class="sr-only">Workspace resources</DialogTitle>
+        {surface()}
+      </DialogContent>
+    </Dialog>
+  </Show>;
 }
 
 function ActivityButton(props: { label: string; active: boolean; badge?: number; onClick: () => void; children: unknown }) {

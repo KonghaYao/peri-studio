@@ -1,6 +1,6 @@
 import { For, Show } from 'solid-js';
 import { Icon, IconButton, LoadingState } from '../../components/ui';
-import { mutateGitResource, openGitDiffPreview, openMoreGitChanges, resourceWorkspace } from '../store';
+import { mutateGitResource, openGitDiffPreview, openMoreGitChanges, resourceWorkspace, retryGitResourceMutation } from '../store';
 import type { RepositoryState } from '../lib/resource-store';
 import { readOnly } from '../lib/auth-state';
 
@@ -43,26 +43,38 @@ function Repository(props: { repo: RepositoryState }) {
       const state = () => props.repo.groups[group.id];
       return <Show when={state()?.count}>
         <div class="flex h-25 items-center px-8 text-10 font-650 uppercase tracking-4 text-text-secondary"><span>{group.label}</span><span class="ml-auto tabular-nums text-text-muted">{state().count}</span></div>
-        <For each={state().changes}>{(change) => <div class="group flex h-24 items-center pr-5 text-12 hover:bg-hover">
+        <For each={state().changes}>{(change) => {
+          const mutation = () => resourceWorkspace().mutations?.[change.id];
+          const action = () => group.id === 'index' ? 'unstage' : 'stage';
+          const path = () => String(change.path ?? '');
+          return <div>
+          <div class="group flex h-24 items-center pr-5 text-12 hover:bg-hover">
           <button
             type="button"
             class="flex h-full min-w-0 flex-1 items-center gap-5 border-0 bg-transparent pl-13 text-left text-inherit"
-            aria-label={`Open changes for ${String(change.path ?? '')}`}
-            title={`Open changes for ${String(change.path ?? '')}`}
+            aria-label={`Open changes for ${path()}`}
+            title={`Open changes for ${path()}`}
             onClick={() => openGitDiffPreview(props.repo.id, group.id, change)}
           >
             <span class="text-text-muted"><FileIcon /></span>
-            <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{basename(String(change.path ?? ''))}</span>
-            <span class="max-w-90 overflow-hidden text-ellipsis whitespace-nowrap text-10 text-text-faint">{dirname(String(change.path ?? ''))}</span>
+            <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{basename(path())}</span>
+            <span class="max-w-90 overflow-hidden text-ellipsis whitespace-nowrap text-10 text-text-faint">{dirname(path())}</span>
             <span class={`w-14 text-center font-mono text-11 font-650 ${statusColor(String(change.status ?? ''))}`}>{statusLetter(String(change.status ?? ''))}</span>
           </button>
           <IconButton
-            label={group.id === 'index' ? `Unstage ${String(change.path ?? '')}` : `Stage ${String(change.path ?? '')}`}
-            disabled={readOnly()}
-            onClick={(event) => { event.stopPropagation(); mutateGitResource(props.repo.id, group.id === 'index' ? 'unstage' : 'stage', [change.id]); }}
+            label={`${action() === 'unstage' ? 'Unstage' : 'Stage'} ${path()}`}
+            busy={mutation()?.pending}
+            disabled={readOnly() || mutation()?.pending}
+            onClick={(event) => { event.stopPropagation(); mutateGitResource(props.repo.id, action(), [change.id]); }}
             class="size-22 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
           >{group.id === 'index' ? <MinusIcon /> : <PlusIcon />}</IconButton>
-        </div>}</For>
+          </div>
+          <Show when={mutation()?.error}>{(message) => <div role="alert" class="flex min-h-28 items-center gap-6 border-y border-danger-border bg-danger-soft px-12 py-4 text-10 leading-14 text-danger">
+            <span class="min-w-0 flex-1">{message()}</span>
+            <Show when={mutation()?.retryable}><button type="button" class="shrink-0 border-0 bg-transparent px-4 font-650 text-danger underline" aria-label={`Retry ${action()} ${path()}`} onClick={() => retryGitResourceMutation(change.id)}>Retry</button></Show>
+          </div>}</Show>
+        </div>;
+        }}</For>
         <Show when={state().nextCursor}>{(cursor) => <button type="button" class="h-24 w-full border-0 bg-transparent pl-28 text-left text-11 text-accent hover:bg-hover" onClick={() => openMoreGitChanges(props.repo.id, group.id, cursor())}>Load more…</button>}</Show>
       </Show>;
     }}</For>

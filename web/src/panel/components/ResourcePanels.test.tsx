@@ -16,6 +16,32 @@ import { installPrincipalRole } from '../lib/auth-state';
 afterEach(() => { cleanup(); resetResourceProject(); installPrincipalRole(null); vi.unstubAllGlobals(); });
 
 describe('VS Code-style resource panels', () => {
+  it('navigates the Explorer as a single-tab-stop ARIA tree', async () => {
+    installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
+    setResourceWorkspace({
+      projectId: 'project-1', repositories: [], loading: [], error: null,
+      directories: {
+        '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory' }] },
+        src: { generation: 'g2', entries: [{ id: 'main', name: 'main.ts', path: 'src/main.ts', kind: 'file', size: 24 }] },
+      },
+    });
+    render(() => <ExplorerPanel />);
+    const src = screen.getByRole('treeitem', { name: /src/i });
+
+    expect(src).toHaveAttribute('tabindex', '0');
+    src.focus();
+    await fireEvent.keyDown(src, { key: 'ArrowRight' });
+    expect(src).toHaveAttribute('aria-expanded', 'true');
+    const file = screen.getByRole('treeitem', { name: /main\.ts/i });
+    expect(file).toHaveAttribute('tabindex', '-1');
+
+    await fireEvent.keyDown(src, { key: 'ArrowDown' });
+    expect(file).toHaveFocus();
+    await fireEvent.keyDown(file, { key: 'ArrowLeft' });
+    expect(src).toHaveFocus();
+    expect(screen.getByRole('group')).toContainElement(file);
+  });
+
   it('lazy-loads a directory when its tree row expands', async () => {
     const sent: unknown[] = [];
     const bytes = new TextEncoder().encode('export const ready = true;\n');
@@ -99,11 +125,24 @@ describe('VS Code-style resource panels', () => {
     expect(fetch).toHaveBeenCalledWith('/api/resource-blobs/blob-1', expect.objectContaining({
       method: 'GET', credentials: 'same-origin', cache: 'no-store',
     }));
-    fireEvent.click(screen.getByRole('button', { name: 'Stage src/main.ts' }));
+    const stage = screen.getByRole('button', { name: 'Stage src/main.ts' });
+    fireEvent.click(stage);
+    fireEvent.click(stage);
     expect(sent).toContainEqual(expect.objectContaining({
       t: 'resource_query', type: 'resource/git-action', projectId: 'project-1',
       payload: { repoId: 'repo-1', action: 'stage', changeIds: ['c1'], expectedGeneration: 'g1' },
     }));
+    expect(sent.filter((frame) => (frame as { type?: string }).type === 'resource/git-action')).toHaveLength(1);
+    expect(stage).toBeDisabled();
+    const mutation = sent.find((frame) => (frame as { type?: string }).type === 'resource/git-action') as { requestId: string };
+    handleResourceResult({
+      t: 'resource_result', requestId: mutation.requestId,
+      error: { code: 'UNAVAILABLE', message: 'Git is temporarily unavailable', retryable: true },
+    });
+    expect(await screen.findByRole('alert')).toHaveTextContent('Git is temporarily unavailable');
+    expect(screen.getByText('peri-studio')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry stage src/main.ts' }));
+    expect(sent.filter((frame) => (frame as { type?: string }).type === 'resource/git-action')).toHaveLength(2);
     fireEvent.click(screen.getByRole('button', { name: 'Load more…' }));
     expect(sent).toContainEqual(expect.objectContaining({
       payload: expect.objectContaining({ kind: 'git-group-page', repoId: 'repo-1', groupId: 'working_tree', cursor: 'g1.1' }),

@@ -1,13 +1,14 @@
-import { Show, createSignal, onCleanup, onMount } from 'solid-js';
+import { Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import { ProjectSidebar } from './ProjectSidebar';
 import { ChatView } from './ChatView';
-import { compactViewportQuery } from '../lib/breakpoints';
+import { compactViewportQuery, mediumViewportQuery } from '../lib/breakpoints';
 import { ProjectDrawer } from './shared/ProjectDrawer';
 import { SettingsDialog } from './SettingsDialog';
 import { ResourceWorkbench } from './ResourceWorkbench';
 import { resourceDiffPreview, resourceFilePreview } from '../store';
 import { ResourceDiffEditor } from './ResourceDiffEditor';
 import { ResourceFileEditor } from './ResourceFileEditor';
+import { WorkbenchStatusBar } from './WorkbenchStatusBar';
 
 const SIDEBAR_MIN_WIDTH = 220;
 const SIDEBAR_MAX_WIDTH = 480;
@@ -21,7 +22,9 @@ function clampSidebarWidth(width: number) {
 export function AppShell() {
   const [open, setOpen] = createSignal(false);
   const [systemOpen, setSystemOpen] = createSignal(false);
+  const [resourcesOpen, setResourcesOpen] = createSignal(false);
   const [mobile, setMobile] = createSignal(false);
+  const [medium, setMedium] = createSignal(false);
   const [sidebarWidth, setSidebarWidth] = createSignal(SIDEBAR_DEFAULT_WIDTH);
   const [sidebarResizing, setSidebarResizing] = createSignal(false);
   const [sidebarIntent, setSidebarIntent] = createSignal<{ kind: 'create-project' | 'import'; projectId?: string; nonce: number } | null>(null);
@@ -58,13 +61,16 @@ export function AppShell() {
 
   onMount(() => {
     const query = window.matchMedia(compactViewportQuery);
+    const mediumQuery = window.matchMedia(mediumViewportQuery);
     const sync = () => {
       setMobile(query.matches);
+      setMedium(mediumQuery.matches);
       if (!query.matches) setOpen(false);
     };
-    sync(); query.addEventListener('change', sync);
+    sync(); query.addEventListener('change', sync); mediumQuery.addEventListener('change', sync);
     onCleanup(() => {
       query.removeEventListener('change', sync);
+      mediumQuery.removeEventListener('change', sync);
       stopSidebarResize();
     });
   });
@@ -76,12 +82,19 @@ export function AppShell() {
     setSidebarIntent({ kind, projectId, nonce: Date.now() });
     if (mobile()) openDrawer();
   };
+  const openResources = () => {
+    setOpen(false);
+    if (mobile()) setResourcesOpen(true);
+  };
+  createEffect(() => {
+    if (mobile() && (resourceFilePreview() || resourceDiffPreview())) setResourcesOpen(false);
+  });
   const sidebarGridTemplate = () => mobile()
     ? 'minmax(0, 1fr)'
     : `${sidebarWidth()}px auto minmax(0, 1fr)`;
 
   return (
-    <div class="app-shell relative grid h-dvh overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide" style={{ 'grid-template-columns': sidebarGridTemplate() }}>
+    <div class="app-shell relative grid h-dvh grid-rows-[minmax(0,1fr)_22px] overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide" style={{ 'grid-template-columns': sidebarGridTemplate() }}>
       <ProjectDrawer ref={(element) => { drawer = element; }} open={open()} modal={mobile()} onOpenChange={setOpen}>
         <ProjectSidebar
           onNavigate={() => setOpen(false)}
@@ -103,7 +116,7 @@ export function AppShell() {
         onPointerDown={startSidebarResize}
         onKeyDown={resizeSidebarWithKeyboard}
       ><span aria-hidden="true" class="absolute top-0 bottom-0 left-5 w-2 rounded-full bg-transparent transition-colors group-hover:bg-accent group-focus-visible:bg-accent" /></div>
-      <ResourceWorkbench />
+      <ResourceWorkbench compact={mobile()} overlay={medium() && !mobile()} open={resourcesOpen()} onOpenChange={setResourcesOpen} />
       <main ref={main} class="conversation-pane min-w-0 min-h-0 overflow-hidden">
         <Show when={resourceFilePreview()} fallback={<Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenSystem={() => setSystemOpen(true)} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
           <ResourceDiffEditor />
@@ -111,6 +124,7 @@ export function AppShell() {
           <ResourceFileEditor />
         </Show>
       </main>
+      <WorkbenchStatusBar onOpenResources={openResources} />
       <SettingsDialog open={systemOpen()} onClose={() => setSystemOpen(false)} />
     </div>
   );

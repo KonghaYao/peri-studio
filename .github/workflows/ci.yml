@@ -1,0 +1,74 @@
+name: Peri Studio CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.8
+      - name: Install locked Web dependencies
+        working-directory: web
+        run: bun install --frozen-lockfile
+      - name: Run Web contracts and unit tests
+        working-directory: web
+        run: bun run test
+      - name: Install Chromium
+        working-directory: web
+        run: bunx playwright install --with-deps chromium
+      - name: Run browser contracts
+        working-directory: web
+        run: bun run test:browser
+      - name: Build embedded Web assets
+        working-directory: web
+        run: bun run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: embedded-web
+          path: web/dist
+          if-no-files-found: error
+
+  dependency-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.8
+      - name: Audit locked Web dependencies
+        working-directory: web
+        run: |
+          bun install --frozen-lockfile
+          bun audit
+      - name: Install exact cargo-deny policy engine
+        run: cargo install cargo-deny --version 0.20.2 --locked
+      - name: Enforce Rust advisory, license and source policy
+        run: cargo deny check
+
+  rust:
+    needs: web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: embedded-web
+          path: web/dist
+      - name: Install Rust quality components
+        run: rustup component add rustfmt clippy
+      - name: Check formatting
+        run: cargo fmt --all --check
+      - name: Run workspace tests
+        run: cargo test --workspace --locked
+      - name: Reject warnings
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings

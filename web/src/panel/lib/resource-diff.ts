@@ -16,13 +16,17 @@ export interface ParsedDiff {
   newLabel?: string;
   binary: boolean;
   hunks: DiffHunk[];
+  truncated: boolean;
 }
 
-export function parseUnifiedDiff(source: string): ParsedDiff {
+export const MAX_RENDERED_DIFF_ROWS = 5_000;
+
+export function parseUnifiedDiff(source: string, maxRows = MAX_RENDERED_DIFF_ROWS): ParsedDiff {
   const lines = source.replaceAll('\r\n', '\n').split('\n');
   const result: ParsedDiff = {
     binary: lines.some((line) => line.startsWith('Binary files ') || line === 'GIT binary patch'),
     hunks: [],
+    truncated: false,
   };
   for (const line of lines) {
     if (line.startsWith('@@ ')) break;
@@ -69,6 +73,17 @@ export function parseUnifiedDiff(source: string): ParsedDiff {
       index += 1;
     }
     result.hunks.push(hunk);
+  }
+  const rowCount = result.hunks.reduce((sum, hunk) => sum + hunk.rows.length, 0);
+  if (rowCount > maxRows) {
+    let remaining = maxRows;
+    result.hunks = result.hunks.flatMap((hunk) => {
+      if (remaining <= 0) return [];
+      const rows = hunk.rows.slice(0, remaining);
+      remaining -= rows.length;
+      return [{ ...hunk, rows }];
+    });
+    result.truncated = true;
   }
   return result;
 }

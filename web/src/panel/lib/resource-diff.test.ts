@@ -53,4 +53,19 @@ describe('unified Git diff projection', () => {
       kind: 'change',
     }]);
   });
+
+  it('caps projected rows while preserving an explicit truncation signal', () => {
+    const parsed = parseUnifiedDiff([
+      '--- a/large.txt',
+      '+++ b/large.txt',
+      '@@ -1,4 +1,4 @@',
+      ' one',
+      ' two',
+      ' three',
+      ' four',
+    ].join('\n'), 2);
+
+    expect(parsed.hunks[0].rows).toHaveLength(2);
+    expect(parsed.truncated).toBe(true);
+  });
 });
