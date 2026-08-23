@@ -2,7 +2,7 @@
 
 > 状态：Draft v0.1（2026-08-17）
 > 基础协议：[MCP 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)
-> 扩展基准：[SEP-2640 Skills Extension](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2640)（Extensions Track，Draft）与 [Agent Skills 规范](https://agentskills.io/specification)
+> 扩展基准：[SEP-2640 Skills Extension](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2640)（Extensions Track，Draft）、[Agent Skills 规范](https://agentskills.io/specification)与 [Claude Code custom subagents](https://code.claude.com/docs/en/sub-agents)（MCP Agents 文件形态参考；非线级依赖）
 > 定位：MCPP 具有**双重身份**——
 > - **规范身份**：一份构建于 MCP 2026-07-28 之上的**规范化规范**（conforming spec），即 Agent 层交互指南，规范 Agent 如何发现、评估、使用基于 MCP 传递的 Skills、Tools 与 Resources，不改变 MCP 线级语义；
 > - **项目身份**：其实现又是一个遵循 **Agent Plugin 1.0.0 格式**的标准插件项目（`plugin.json` + `skills/` + `mcp.json`），执行能力由 MCP server 承载。
@@ -19,7 +19,7 @@ MCP Plus（以下简称 **MCPP**）是在 MCP 2026-07-28 之上的**协议扩展
 
 - 定义 **Agent Plugin** 作为标准分发与部署形态：`plugin.json` 身份清单、`skills/` 打包技能、`mcp.json` 声明的 MCP server 作为运行时执行载体（第 3 章），覆盖两种部署形态——**MCP Mono Server**（3.7，中心化部署）与 **MCP Registry** 下发（第 4 章，端侧 stdio）；
 - 定义 **MCP Registry** 作为端侧 stdio 下发的标准分发与发现渠道：插件以标准 npm 包发布，任何标准 npm registry 即 MCP Registry（第 4 章）；
-- 定义 **MCP Skills**（Skill 作为一等公民）的承载格式、传递约定与编排规则（依赖声明、拓扑加载、工具绑定），以及 **MCP Tools** 的 Agent 侧工具使用约定（第 6 章）；
+- 定义 **MCP Skills**（Skill 作为一等公民）的承载格式、传递约定与编排规则（依赖声明、拓扑加载、工具绑定），定义 **MCP Agents**（可下发的 subagent 配置资源）的承载、发现、激活与权限收敛规则，以及 **MCP Tools** 的 Agent 侧工具使用约定（第 5/6 章）；
 - 定义 **MCP Resources** 的 Agent 层统一策略：资源**发现**（渠道、过滤、排序、缓存、新鲜度，第 7 章）与资源**使用**（读取、订阅、嵌入、引用、输入需求、状态句柄，第 8 章）；其中缓存与新鲜度细化为 **MCPP Cache**（7.3）；
 - 定义 **MCP Extension** 的扩展声明与双向协商约定（能力位、版本、最低实现面，第 9 章）；
 - 为 server 与 Agent 提供可验证的 **一致性要求**（conformance requirements）。
@@ -823,6 +823,94 @@ flowchart LR
 - **双入口等价**：用户命令触发与 Agent 经宿主技能发现工具主动加载是**同一条路径的两段**，MUST 复用同一套加载 / 校验 / 批准规则（5.6 / 10.3）；
 - **执行绑定**：正文声明的 `io.mcpp/tools`（5.7.2）经宿主工具体系完成绑定（宿主侧的「搜索工具定义 → 执行工具」两个环节，对应工具形态由宿主定义，不在 MCPP 约定范围内），与 5.8 的完整示例一致。
 
+### 5.10 MCP Agents：subagent 配置资源下发
+
+**MCP Agents** 是 MCPP 对可复用 subagent 配置的分发约定。它借鉴 Claude Code 自定义 subagent 的「YAML frontmatter + Markdown system prompt」文件形态，但通过 MCP Resource 下发；它不是新的 MCP primitive，也不赋予 server 创建进程、启动模型或绕过宿主权限的能力。宿主是否提供 subagent runtime、如何调度、是否支持并行或恢复，仍属 Agent 层实现决策。
+
+#### 5.10.1 承载格式与 URI
+
+一个 MCP Agent **MUST** 由单个 UTF-8 Markdown Resource 承载：
+
+```text
+agent://{org-prefix/}{agentName}/agent.md
+```
+
+- authority 的组织前缀语义与 5.3 相同：仅作命名空间，MUST NOT 被解析为网络地址；无组织前缀时入口为 `agent://{agentName}/agent.md`；
+- `{agentName}` MUST 等于 frontmatter 的 `name`，使用小写 ASCII 字母、数字与 `-`，首尾为字母或数字；
+- 入口文件名固定为小写 `agent.md`；`mimeType` SHOULD 为 `text/markdown`；
+- Agent MUST NOT 仅凭 `agent://` scheme 信任或激活配置；权威身份始终为 `(origin, name, uri)`；
+- MCP Agents v1 不定义附属目录。正文若引用 Skill 或普通 Resource，必须使用显式 URI，并分别遵守对应资源的读取、跨 origin 与批准规则。
+
+文件 **MUST** 以 YAML frontmatter 开头，正文作为建议的 subagent system prompt：
+
+```yaml
+---
+name: code-reviewer
+description: 审查代码质量、安全性与可维护性；在代码变更后使用
+tools:
+  - Read
+  - Grep
+  - Glob
+disallowedTools:
+  - Write
+  - Edit
+model: inherit
+skills:
+  - skill://review-conventions/SKILL.md
+maxTurns: 12
+---
+
+你是代码审查 subagent。按严重程度报告可验证的问题，不修改文件。
+```
+
+| 字段 | 类型 | 必填 | MCP Agents v1 语义 |
+| --- | --- | --- | --- |
+| `name` | string | yes | server 内可发现名称；与 URI 的 `{agentName}` 一致 |
+| `description` | string | yes | Discovery / 自动委派的唯一选择依据，写清何时使用 |
+| `tools` | string[] | no | 请求的工具 allowlist；省略表示不额外缩小宿主默认集合，不表示继承全部工具 |
+| `disallowedTools` | string[] | no | 请求的工具 denylist；与 `tools` 同时存在时 deny 优先 |
+| `model` | string | no | 建议模型（如 `inherit`、宿主支持的 alias 或完整 ID）；宿主 MAY 替换或拒绝 |
+| `skills` | string[] | no | 建议预加载的 Skill URI；每项独立发现、校验与批准，不因 Agent 激活而自动可信 |
+| `maxTurns` | positive integer | no | 建议最大 agentic turn 数；宿主 MAY 进一步收紧 |
+| `metadata` | object | no | 扩展元数据；`io.mcpp/` 字段仅可使用本文登记项 |
+
+为保持跨宿主互操作，v1 只标准化上表字段。Claude Code 等宿主的 `permissionMode`、`mcpServers`、`hooks`、`memory`、`background`、`effort`、`isolation`、`color`、`initialPrompt` 等本地字段具有执行、持久化或宿主 UI 语义：server MAY 透传，但通用 MCPP Host **MUST ignore by default**，MUST NOT 因未知字段拒载。宿主若选择支持其中任一字段，MUST 以自有策略显式声明并执行本节权限收敛与 10.3 批准规则；尤其不得由远端配置新增 MCP server、安装 hook、启用持久 memory、切换 bypass 类权限模式或扩大文件系统边界。
+
+#### 5.10.2 暴露、发现与激活
+
+MCP Agents v1 复用标准 Resource 方法，不新增 `agents/list` / `agents/get`：
+
+1. **暴露**：Server 经 `resources/list` 枚举 `agent://.../agent.md` 条目，至少提供 `uri`、`name`、`description` 与 `mimeType`。动态或大规模 server MAY 通过 `resources/templates/list` 暴露 `agent://` 模板，因此空或局部列表不证明没有 Agent；
+2. **发现**：Host 将条目以 `(origin, name, uri)` 并入独立的 MCP Agent registry，只摄入元数据，MUST NOT 在 Discovery 阶段读取正文或注册为已授权的本地 subagent；跨 origin 同名项必须并存且可追溯；
+3. **评估**：用户点名或任务与 `description` 匹配时，Host MAY 选择候选。自动委派是否开启、排序和 UI 呈现属于宿主策略；
+4. **读取**：首次激活时调用 `resources/read`。Host MUST 限制文档大小、解析 YAML、校验 `name` / URI 一致，并为完整 `agent.md` 计算 `sha256:{64hex}` content digest；
+5. **批准**：远端 Agent 首次激活 MUST 获得显式用户同意。持久批准 MUST 绑定 `(origin, uri, digest)` 以及最终解析后的有效能力集合；内容或能力集合变化时，在下次激活前重新批准；
+6. **实例化**：Host 以正文作为不可信的候选 system prompt，在新鲜、隔离的 subagent context 中实例化；非 fork subagent MUST NOT 自动继承主会话历史、凭据、批准或未列明的私有上下文。
+
+MCP Agent 的 registry 与本地 `.claude/agents/`、插件 agent 或其他宿主原生配置属于不同 origin。Host MAY 在 UI 中统一呈现，但 MUST NOT 将远端项写入本地配置发现目录后按本地可信配置加载，也 MUST NOT 让远端同名项静默覆盖 managed、session、project、user 或 plugin scope 的定义。
+
+#### 5.10.3 权限与能力收敛
+
+MCP Agent frontmatter 的全部能力字段均为**请求**而非授权。最终有效能力 MUST 是以下集合的交集或更小集合：
+
+```text
+effectiveCapabilities =
+  parentDelegableCapabilities
+  ∩ hostPolicy
+  ∩ userApproval
+  ∩ agentRequestedCapabilities
+```
+
+- `tools` 省略时，`agentRequestedCapabilities` 对工具维度视为“不额外约束”，但其余三层仍生效；显式空数组表示无工具；`disallowedTools` 最后做减法；
+- 子 Agent MUST NOT 获得父 Agent 无权委派的 tool、MCP server、授权上下文或数据范围；工具名称无法解析时 Host SHOULD 报告并保守移除，解析后为零工具时 MUST 明确失败或以纯推理模式启动，不得静默扩大集合；
+- `model`、`maxTurns`、并发数、递归深度与 token 预算均受宿主上限约束；MCP Agent MUST NOT 通过正文指令改变这些限制；
+- `skills` 只是预加载请求。每个 MCP Skill 仍按 5.5–5.7 与 10.3 独立校验和批准，跨 origin 引用继续适用 10.2；
+- Agent 输出与工具调用结果仍是不可信输入；最终报告回到主 Agent 前 SHOULD 保留 origin 与 agent name，且不得把子 Agent 文本当作用户批准。
+
+#### 5.10.4 缓存与更新
+
+`agent.md` 是 Resource Content Cache 的普通成员，适用 7.3 的客户端强缓存、协商缓存与通知失效规则。`resources/list_changed` 使该 origin 的 Agent 目录元数据 stale；`resources/updated` 使对应 `agent://` 内容 stale。缓存命中不得绕过解析、digest 校验、权限交集或 content-bound 批准；stale Agent 配置不得用于自动委派。若 server 声明 Server Cache Version，其计算 MUST 覆盖 Agent 列表元数据与所有公开 `agent.md` 内容。
+
 ---
 
 ## 6. MCP Tools：Agent 侧使用约定
@@ -954,23 +1042,49 @@ MCPP 规则：
 
 规范正文、实现 API 与测试名称 SHOULD 使用上表术语；`version` 单独出现时不得指代 Server Cache Version，必须写作 `cacheVersion` 或完整术语。
 
-#### 7.3.2 推荐的缓存决策顺序
+#### 7.3.2 客户端强缓存（fresh cache hit）
 
-Agent 的缓存读取策略 RECOMMENDED 按以下顺序逐层判定；上层 cache hit 即停止，不应继续发起下层远程获取：
+客户端强缓存指：已有条目的 TTL 尚未到期，且 scope、authorization context、origin 与请求键均匹配时，Agent **MAY 直接复用，不发起任何 MCP 请求**。这里的“强”描述客户端的新鲜度决策，不等同于 HTTP `Cache-Control`，也不允许绕过宿主安全策略。
 
-1. **Server Cache Version**：优先协商 `io.mcpp/server-cache-version`（9.3）。若当前 origin、cache scope 与 authorization context 下的 `cacheVersion` 严格一致，直接复用该版本覆盖的 MCPP Response Cache 与 Resource Content Cache；这是跨连接复用的首选路径。
-2. **MCPP Response Cache**：Server Cache Version 缺失、不一致或未协商时，按统一 `McppCache` 语义检查 method、完整请求参数、TTL、scope 与 authorization context，对 `tools/list`、`prompts/list`、`skills/list`、`skills/get`、`resources/list` 等声明可缓存的完整响应进行方法级复用。
-3. **Resource Content Cache**：前两层 cache miss 时，对 `resources/read` 及经 MCP Resource 暴露的 Skill references/assets 按 origin、Resource URI、请求参数与授权上下文检查内容缓存；仅缺失或 stale 的 Resource 需要单独远程获取。
+推荐读取顺序如下；命中即停止，不应为“确认仍然新鲜”而额外访问 Server：
 
-该顺序是 cache hit 效率与远程获取粒度的建议，不改变安全和新鲜度边界。任一层发生通知失效、授权上下文变化、origin 移除或宿主安全策略要求刷新时，Agent MUST 跳过相应缓存；不得用较低层缓存覆盖较高层已确认的 stale 状态。实际执行、有副作用或实时语义的方法不进入任何一层。
+1. **MCPP Response Cache**：按 origin、MCP method、所有影响结果的请求参数、scope 与 authorization context 查找完整响应；分页列表的 `cursor` 是缓存键的一部分；
+2. **Resource Content Cache**：对 `resources/read` 及经 Resource 暴露的 Skill / Agent 文件，按 origin、Resource URI、完整请求参数与授权上下文查找内容；
+3. **remote fetch**：条目缺失、TTL 到期、已标记 stale 或安全策略要求刷新时，才远程获取。
 
-缓存键 MUST 至少隔离 origin、MCP method 与所有影响结果的请求参数；分页列表的 `cursor` 是该键的一部分。`cacheScope: private` 的结果 MUST 按 authorization context 隔离，MUST NOT 跨身份复用；`cacheScope: public` 的结果可跨授权上下文复用，但也 MUST NOT 跨 origin 复用。
+`cacheScope: private` 的结果 MUST 按 authorization context 隔离，MUST NOT 跨身份复用；`cacheScope: public` 的结果可跨授权上下文复用，但也 MUST NOT 跨 origin 复用。authorization context 必须是宿主生成的 opaque 标识，MUST NOT 包含 token、cookie 或其他凭据。实际执行、有副作用或实时语义的方法不得进入强缓存。
 
-`ttlMs` 是新鲜度提示而非内容不变保证。Agent MAY 在 TTL 内复用响应；条目过期后 SHOULD 在下次需要时重取，MUST NOT 将 TTL 当作后台轮询周期。若双方已协商 `io.mcpp/server-cache-version`（9.3），Agent MAY 在重新连接时仅完成初始化与 `cacheVersion` 协商：当 server 返回的版本与本地该 origin、cache scope 及 authorization context 下保存的版本严格相等时，Agent MAY 直接复用该版本覆盖的能力目录与内容缓存，而不因 TTL 过期再次远程获取；版本缺失、不相等或协商失败时 MUST 视为未命中并正常获取。版本命中不得绕过通知失效、scope 隔离或宿主安全策略。
+`ttlMs` 是新鲜度上限提示而非内容不变证明。Agent MAY 在 TTL 内直接复用；条目过期后 SHOULD 在下次需要时进入协商缓存或远程获取，MUST NOT 把 TTL 当作后台轮询周期。server 未提供可缓存字段、返回 `ttlMs: 0`，或宿主无法安全构造缓存键时，Agent SHOULD 不存储。
 
-收到 `notifications/resources/list_changed` 时，Agent MUST 将该 origin 的 `resources/list` 与 `resources/templates/list` 缓存视为 stale；收到 `notifications/resources/updated` 时，Agent MUST 将对应 URI 的 `resources/read` 缓存视为 stale。一次读取若返回多个 `contents[]` URI，Agent SHOULD 使所有受影响的聚合缓存同时 stale；无法精确定位时 MUST 保守地使该 origin 的相关 read 缓存 stale。
+#### 7.3.3 客户端协商缓存（Server Cache Version revalidation）
 
-重取失败时，Agent MAY 向用户展示 stale 内容，但 MUST 标注 origin、最后接收时间与过期状态；MUST NOT 将 stale 内容静默用于自动上下文注入、Skill 激活、工具执行、授权或安全决策。缓存副本 MUST 保留原始 origin，MUST NOT 伪装成 `file://` 或本地可信资源。
+协商缓存用于**避免强缓存未命中后的完整目录与内容重传**，而不是每次读取前的前置请求。它只在双方协商 `io.mcpp/server-cache-version`（9.3）后生效，RECOMMENDED 触发点为：
+
+- 建立或重新建立连接并完成 MCP 初始化时；
+- 本地条目 TTL 到期且下一次确实需要该内容时；
+- 宿主执行显式 refresh 时。
+
+Agent 将初始化结果中的 `cacheVersion` 与本地同一 origin、cache scope、authorization context 下保存的版本做严格相等比较：
+
+- **相等**：Agent MAY 将该版本覆盖且未被通知或安全策略单独失效的 MCPP Response Cache 与 Resource Content Cache 重新标记为 fresh，并按各条目已保存的 `ttlMs` 从本次成功协商时刻重新计时；无需重取每个 list/read 响应；
+- **缺失、不相等或协商失败**：视为协商未命中。Agent MUST 将旧版本覆盖的条目标记 stale，再按需远程获取；MUST NOT 用新 `cacheVersion` 给旧内容续鲜；
+- **离线或 Server 不可达**：不构成协商命中。条目保持 stale，只能按本节后述降级展示，不得自动使用。
+
+Server Cache Version 是整体 validator，不是内容、授权或信任凭证。一次协商不得把 `private` 条目迁移到另一 authorization context，也不得跨 origin 复用。为避免“版本相等但通知已精确失效”的回退，Agent MUST 保存该连接世代内的本地 stale 标记；除非后续得到覆盖该变化的新版本并完成相应远程获取，否则单纯重复看到相同版本不得清除该标记。
+
+#### 7.3.4 失效、stale 降级与决策摘要
+
+收到 `notifications/resources/list_changed` 时，Agent MUST 将该 origin 的 `resources/list`、`resources/templates/list` 以及由其派生的 Skill / Agent registry 元数据缓存视为 stale；收到 `notifications/resources/updated` 时，Agent MUST 将对应 URI 的 `resources/read` 缓存视为 stale。一次读取若返回多个 `contents[]` URI，Agent SHOULD 使所有受影响的聚合缓存同时 stale；无法精确定位时 MUST 保守地使该 origin 的相关 read 缓存 stale。
+
+重取失败时，Agent MAY 向用户展示 stale 内容，但 MUST 标注 origin、最后接收时间与过期状态；MUST NOT 将 stale 内容静默用于自动上下文注入、Skill 或 Agent 激活、工具执行、授权或安全决策。缓存副本 MUST 保留原始 origin，MUST NOT 伪装成 `file://` 或本地可信资源。
+
+| 当前状态 | 客户端行为 | 是否产生远程请求 |
+| --- | --- | --- |
+| fresh 且键 / scope / 身份匹配 | 强缓存直接返回 | 否 |
+| TTL 到期，连接初始化可协商且 `cacheVersion` 相等 | 协商续鲜后返回 | 仅初始化协商；不逐资源重取 |
+| TTL 到期且版本缺失 / 变化 / 协商失败 | 标 stale，按需重取 | 是 |
+| 收到精确失效通知 | 标 stale；活跃项主动重取，其余下次使用重取 | 按需 |
+| 离线且仅有 stale 副本 | 只可带显著标记展示 | 否；不得自动消费 |
 
 - 列表缓存是新鲜度提示而非完整性/信任证据：目录可能过期、局部、被篡改（见第 10 章）；
 - **确定性顺序**在资源列表同样成立：Agent 的排序键 RECOMMENDED 为 `(audience, priority desc, lastModified desc, uri)`，稳定输出以保 LLM prompt cache 收益；
@@ -1078,6 +1192,7 @@ MCPP 的能力需要 server 与 Agent 双向显式协商，遵循 MCP 扩展的�
 | --- | --- | --- |
 | `io.modelcontextprotocol/skills`（extension） | server declarations | 承诺实现 `skills/list` 与 `skills/get` |
 | `io.modelcontextprotocol/skills.directoryRead` | extension setting | 承诺实现 `resources/directory/read` |
+| `io.mcpp/agents` | server declarations | Server 承诺按 5.10 通过标准 Resources 暴露 MCP Agents；不新增 `agents/*` 方法，也不表示 Host 必然支持 subagent runtime |
 | `io.mcpp/server-catalog` | server declarations | Catalog endpoint 实现只读 `mcpp/servers/list` / `get` / `resolve`（3.7.1）；不声明即不得调用 |
 | `io.mcpp/skill-orchestration` | agent-side（host 声明） | Agent 支持 `io.mcpp/depends_on` / `io.mcpp/tools` 编排字段的解析与拓扑加载 |
 | `io.mcpp/context-budget` | agent-side | Agent 支持 `io.mcpp/context_budget` 预算约束 |
@@ -1099,7 +1214,7 @@ Agent（客户端）侧的 MCPP 编排能力属于宿主行为声明，主要用
 
 `io.mcpp/server-cache-version` 为可选的双向协商能力。Agent 声明该能力表示其能够安全保存 MCPP Cache 并按 Server Cache Version 复用；Server 声明该能力时 MUST 在初始化结果的扩展设置中返回非空 opaque `cacheVersion`。该值只用于相等比较，不要求 SemVer、可排序或可逆，且 MUST NOT 包含 token、用户标识等敏感信息。
 
-Server MUST 将 `cacheVersion` 视为其对当前授权可见、声明可缓存状态的整体标识；任何可能改变 `tools/list`、`prompts/list`、`resources/list`、`resources/templates/list`、`skills/list`，或相应 `resources/read`、`skills/get` 等可缓存内容的变化，MUST 产生不同的 Server Cache Version。`tools/call`、采样、授权、状态推进及其他有副作用或实时语义的方法 MUST NOT 因 Server Cache Version 相等而跳过。
+Server MUST 将 `cacheVersion` 视为其对当前授权可见、声明可缓存状态的整体标识；任何可能改变 `tools/list`、`prompts/list`、`resources/list`、`resources/templates/list`、`skills/list`，或相应 `resources/read`、`skills/get` 等可缓存内容的变化（包括 `agent://` 列表元数据或 `agent.md` 内容变化），MUST 产生不同的 Server Cache Version。`tools/call`、采样、授权、状态推进及其他有副作用或实时语义的方法 MUST NOT 因 Server Cache Version 相等而跳过。
 
 Agent MUST 按 origin 保存带 `cacheVersion` 的 MCPP Cache 条目，并继续遵守 `public` / `private` cache scope：private 条目的 Server Cache Version 与内容 MUST 按 authorization context 隔离。即使两个身份收到相同 `cacheVersion`，也不得跨身份复用 private 内容；不同 origin 即使 `cacheVersion` 字符串相同也不得复用。Server 若无法保证授权视图变化必然改变 Server Cache Version，MUST NOT 声明此能力。
 
@@ -1131,7 +1246,7 @@ MCPP 把安全规则写成 Agent 侧义务（与 SEP-2640 的安全模型一致�
 
 ### 10.1 内容不可信与提示注入
 
-- Agent **MUST** 将 MCP 下发的所有内容视为**不可信模型输入**：工具描述、资源注释、Skill 正文、指令字段，都可能被恶意或受损 server 用于注入。这包括 frontmatter 中的 description 被改为「要求执行敏感操作」的情形。
+- Agent **MUST** 将 MCP 下发的所有内容视为**不可信模型输入**：工具描述、资源注释、Skill 正文、MCP Agent frontmatter / system prompt、指令字段，都可能被恶意或受损 server 用于注入。这包括 description 被改为「要求执行敏感操作」的情形。
 - 防御基线：与任何 server 提供文本同级的注入防御（隔离执行上下文、敏感操作二次确认、输出审计）。一个 server 被连接，不等于其内容获得权威地位。
 
 ### 10.2 origin 可见与原信任
@@ -1184,6 +1299,7 @@ MCPP 把安全规则写成 Agent 侧义务（与 SEP-2640 的安全模型一致�
 | S12 | **MCP Mono Server** 聚合（3.7）：各子端点为独立 MCP endpoint 与 origin，路径 MUST 明确可审计；端点间不得静默互访；stdio 不支持该形态 |
 | S13 | 以 npm 包分发者（若采用，第 4 章）：包根即插件根；`package.json` 与 `plugin.json` 的 `name`/`version` MUST 一致；`keywords` MUST 含 `mcpp-plugin`；`files` 白名单含全部 MCPP 组件、MUST NOT 含凭据与运行数据 |
 | S14 | 声明 `io.mcpp/server-catalog` 者（3.7.1）：只列出当前调用者可连接的已挂载 Child MCP；`id ↔ endpointPath` 唯一稳定且可审计；`resolve` 仅返回同 authority 的相对路径并校验 `entryDigest`；MUST NOT 下发、安装、启动、provision 或代理能力 |
+| S15 | 暴露 MCP Agents 者（5.10）：URI MUST 为 `agent://{prefix/}{name}/agent.md`，frontmatter 至少含一致的 `name` / `description`；Server Cache Version MUST 覆盖其目录元数据与内容变化 |
 
 ### 11.2 Agent / Host
 
@@ -1209,6 +1325,8 @@ MCPP 把安全规则写成 Agent 侧义务（与 SEP-2640 的安全模型一致�
 | A18 | 超大 / 机密载荷（8.6）：MUST 引用优先，不内嵌 JSON-RPC；载荷引用短期有效、不留日志、不入上下文摘要；谁创建谁清理 |
 | A19 | Tool 懒加载与 Tool Search（6.6）：目录元数据入索引，定义按命中注入；零候选时如实报告，MUST NOT 杜撰工具 |
 | A20 | registry 安装的插件（第 4 章）：按远端不可信内容对待（10.1）；origin 标签携带 registry 来源（4.3）；安装后仍按 3.5 顺序加载；升级时按 content-bound 复核批准（10.3），MUST NOT 静默沿用旧批准 |
+| A21 | 客户端强缓存（7.3.2）：fresh 且键 / scope / 身份匹配时直接返回且不发请求；协商缓存（7.3.3）只在强缓存未命中、重连初始化或显式 refresh 时比较 `cacheVersion`，版本变化不得给旧内容续鲜 |
+| A22 | MCP Agents（5.10）：发现只摄入元数据；激活时校验 URI / frontmatter / digest 并取得 content-bound 批准；最终工具与能力 MUST 收敛为父级可委派能力、宿主策略、用户批准和配置请求的交集，远端配置不得覆盖本地定义或自行提权 |
 
 > **依赖就绪状态**：conformance 表中引用未定稿基建的条款（尤以 A10 依赖 MCP Caching 规范）在该基建尚未落地前按 SHOULD / 前瞻性占位解释，不构成当前 MUST 义务；待对应规范（MCP 或 SEP 正式版）就绪后，本表在下一次版本对齐（1.6 末注）。其余 MUST 依 BCP 14 生效。
 
@@ -1240,6 +1358,7 @@ MCPP 把安全规则写成 Agent 侧义务（与 SEP-2640 的安全模型一致�
 | --- | --- |
 | MCPP / MCP Plus | 本文档：MCP 2026-07-28 之上的 Agent 层交互规范 |
 | **MCP Skills** | MCPP 顶层特性（第 5 章）：Skill 的跨协议传递、检校、激活与编排约定 |
+| **MCP Agents** | MCPP 顶层特性（5.10）：以 `agent://.../agent.md` Resource 下发 subagent 配置，并约束发现、激活、缓存、content-bound 批准与最小权限收敛 |
 | **MCP Registry** | MCPP 顶层特性（第 4 章）：插件的标准 npm 分发与发现渠道，任何标准 npm registry 均构成 |
 | **MCP Mono Server** | MCPP 顶层特性（3.7）：单 HTTP 进程、URL 路径路由托管多个 MCP endpoint 的中心化聚合形态 |
 | **MCP Resources** | MCPP 顶层特性（第 7/8 章）：Agent 层资源发现与使用的统一约定 |
