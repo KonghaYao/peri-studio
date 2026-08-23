@@ -97,8 +97,10 @@ export function renderChat(doc: Y.Doc): ChatView {
     if (error) entry.error = { code: getStr(error, 'code'), message: getStr(error, 'message') };
 
     const blocks = asMap(map.get('blocks'));
+    const seenBlockIds = new Set<string>();
     asArray(map.get('block_order'))?.toArray().forEach((blockIdValue) => {
-      if (typeof blockIdValue !== 'string') return;
+      if (typeof blockIdValue !== 'string' || seenBlockIds.has(blockIdValue)) return;
+      seenBlockIds.add(blockIdValue);
       const block = asMap(blocks?.get(blockIdValue));
       if (!block) return;
       switch (block.get('kind')) {

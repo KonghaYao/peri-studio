@@ -3,7 +3,7 @@
 //! 索引完备性（含缺失/陈旧索引回落扫描、写路径自愈回填）。
 
 use peri_studio_proto::schema::{ActiveTurnProjection, TurnStatus};
-use yrs::{Map, Transact, WriteTxn};
+use yrs::{Array, Map, Transact, WriteTxn};
 
 use crate::state::chat_writer::{
     create_user_entry, set_active_turn, set_active_turn_status_if, user_entry_for_turn,
@@ -128,6 +128,42 @@ fn user_entry_source_command_backfill_is_exact_and_conflict_safe() {
             .unwrap(),
         "cmd-1"
     );
+}
+
+#[test]
+fn user_entry_records_each_content_block_once() {
+    let doc = yrs::Doc::new();
+    let mut txn = doc.transact_mut();
+    let root = txn.get_or_insert_map(ROOT);
+    assert_eq!(
+        create_user_entry(
+            &mut txn,
+            &root,
+            "t",
+            "t:user",
+            "你的 pwd 在哪里",
+            None,
+            Some("cmd-1"),
+            "now"
+        ),
+        UserEntryRegistration::Created
+    );
+
+    let entry = root
+        .get(&txn, "entries")
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap()
+        .get(&txn, "t:user")
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap();
+    let block_order = entry
+        .get(&txn, "block_order")
+        .unwrap()
+        .cast::<yrs::ArrayRef>()
+        .unwrap();
+    assert_eq!(block_order.len(&txn), 1);
 }
 
 #[test]

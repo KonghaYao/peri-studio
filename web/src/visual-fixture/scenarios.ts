@@ -23,7 +23,7 @@ import { acquireFixtureClock } from './fixture-clock';
 
 export const VISUAL_NOW = Date.parse('2026-08-14T08:00:00+08:00');
 export const DEFAULT_VISUAL_SCENARIO = 'conversation';
-export const VISUAL_SCENARIO_IDS = ['catalog', 'conversation', 'markdown', 'permission-streaming', 'terminal-readonly'] as const;
+export const VISUAL_SCENARIO_IDS = ['catalog', 'conversation', 'markdown', 'elicitation', 'permission-streaming', 'terminal-readonly'] as const;
 export type VisualScenarioId = typeof VISUAL_SCENARIO_IDS[number];
 export type FixtureControlMode = 'display-only' | 'locally-interactive' | 'production-gated';
 
@@ -38,6 +38,7 @@ export const visualScenarios: readonly VisualScenarioDefinition[] = [
   { id: 'catalog', label: 'Catalog & Quick Start', description: 'Multiple projects, empty state, and no session selected.', controls: 'locally-interactive' },
   { id: 'conversation', label: 'Full Conversation', description: 'Markdown, tools, resources, and long content.', controls: 'locally-interactive' },
   { id: 'markdown', label: 'Markdown Lab', description: 'GFM, code, math, diagrams, and remote media safety.', controls: 'locally-interactive' },
+  { id: 'elicitation', label: 'Questions', description: 'Agent questions, mixed answer fields, and compact response controls.', controls: 'locally-interactive' },
   { id: 'permission-streaming', label: 'Permissions & Streaming', description: 'Active turn, permission queue, and stop control.', controls: 'production-gated' },
   { id: 'terminal-readonly', label: 'Terminal Read-only', description: 'Crashed runtime, archived sessions, and read-only role.', controls: 'locally-interactive' },
 ] as const;
@@ -141,6 +142,18 @@ const elicitations: NonNullable<ControlView['pendingElicitations']> = [{
       { value: 'lint', label: 'Run static checks', description: null },
     ] },
   ],
+}, {
+  elicitationId: 'elicitation-release-scope',
+  message: 'Which release scope should this change use?',
+  status: 'pending',
+  responseAction: null,
+  createdAt: '2026-08-14T00:10:31Z',
+  fields: [{
+    id: 'scope', title: 'Release scope', description: null, kind: 'single_select', required: true, options: [
+      { value: 'patch', label: 'Patch release', description: 'Ship only the compatible UI change' },
+      { value: 'minor', label: 'Minor release', description: 'Include the related workflow improvements' },
+    ],
+  }],
 }];
 
 const importable: SessionSummaryInfo[] = [
@@ -203,10 +216,14 @@ export function installVisualScenario(value: string | null | undefined): { scena
   if (id === 'markdown') {
     selectConversation([markdownEntry]);
   }
+  if (id === 'elicitation') {
+    selectConversation(entries, control(false));
+    setElicitations(elicitations);
+  }
   if (id === 'permission-streaming') {
     const streaming = [...entries, { ...entries[1], id: 'entry-stream', turnId: 'turn-stream', status: 'streaming', text: 'Checking permission boundaries and tool call order…', completedAt: null, reasoning: [], toolCalls: [tool({ toolCallId: 'tool-stream', name: 'Apply patch', status: 'awaitingPermission', result: null, resultOmitted: null })], resources: [], error: null }];
     selectConversation(streaming, control(true));
-    setElicitations(elicitations);
+    setElicitations(elicitations.slice(0, 1));
   }
   if (id === 'terminal-readonly') {
     selectConversation(entries.slice(0, 2), { ...control(false), chat: { ...control(false).chat!, status: 'crashed' }, agent: { ...control(false).agent!, status: 'offline' } });

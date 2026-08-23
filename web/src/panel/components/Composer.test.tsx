@@ -11,7 +11,7 @@ import {
   setSelectedSessionId,
 } from '../store';
 import { setPrincipalRole } from '../lib/auth-state';
-import { setComposerDraft } from '../lib/composer-draft';
+import { composerDraft, setComposerDraft } from '../lib/composer-draft';
 import { blockUnknownMessageDelivery, failMessageDelivery, markMessageDeliveryUncertain, messageSubmission, resetMessageDelivery, startMessageDelivery } from '../lib/message-delivery';
 import { markRuntimeControlUncertain, resetRuntimeControls, startRuntimeControl } from '../lib/runtime-control';
 import { Composer } from './Composer';
@@ -86,6 +86,31 @@ describe('Composer', () => {
     input.dispatchEvent(sendEnter);
     expect(sendEnter.defaultPrevented).toBe(true);
     expect(messageSubmission()).toBeNull();
+  });
+
+  it('does not commit an intermediate IME value into the controlled draft', () => {
+    selectReadyChat();
+    render(() => <Composer />);
+    const input = screen.getByRole('textbox') as HTMLTextAreaElement;
+
+    input.value = '你的 pwd 在哪里';
+    input.dispatchEvent(new InputEvent('input', {
+      bubbles: true,
+      data: '里',
+      inputType: 'insertCompositionText',
+      isComposing: true,
+    }));
+
+    expect(composerDraft('session-1')).toBe('');
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+
+    input.dispatchEvent(new InputEvent('input', {
+      bubbles: true,
+      data: '里',
+      inputType: 'insertText',
+      isComposing: false,
+    }));
+    expect(composerDraft('session-1')).toBe('你的 pwd 在哪里');
   });
 
   it('enables send only after meaningful input', () => {

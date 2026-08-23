@@ -35,6 +35,25 @@ describe('renderControl chat loading projection', () => {
 });
 
 describe('renderChat tool projection', () => {
+  it('reads a legacy duplicated block reference only once', () => {
+    const doc = new Y.Doc();
+    const root = doc.getMap<unknown>('root');
+    const order = new Y.Array<string>();
+    const entries = new Y.Map<unknown>();
+    const entry = new Y.Map<unknown>();
+    const blockOrder = new Y.Array<string>();
+    const blocks = new Y.Map<unknown>();
+    const block = new Y.Map<unknown>();
+    const text = new Y.Text();
+    root.set('entry_order', order); root.set('entries', entries);
+    entries.set('t:user', entry); order.push(['t:user']);
+    entry.set('role', 'user'); entry.set('created_at', 'now'); entry.set('block_order', blockOrder); entry.set('blocks', blocks);
+    blocks.set('t:user:text', block); blockOrder.push(['t:user:text', 't:user:text']);
+    block.set('kind', 'text'); block.set('text', text); text.insert(0, '你的 pwd 在哪里');
+
+    expect(renderChat(doc).entries[0].text).toBe('你的 pwd 在哪里');
+  });
+
   it('reads exact prompt identity while keeping legacy entries compatible', () => {
     const doc = new Y.Doc();
     const root = doc.getMap<unknown>('root');

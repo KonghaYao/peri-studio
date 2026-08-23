@@ -11,6 +11,8 @@
 //! 投影（`chat_writer_turn.rs`）；函数经 `chat_writer.rs` `pub use`
 //! re-export，调用方 `chat_writer::xxx` 路径不变。
 
+use std::collections::HashSet;
+
 use yrs::{Array, Map};
 
 use peri_studio_proto::schema::{ChatEntry, ContentBlock, EntryKind, EntryRole, EntryStatus};
@@ -79,12 +81,25 @@ pub fn ensure_entry(txn: &mut TransactionCtx<'_>, root: &yrs::MapRef, entry: &Ch
         }
     };
     let block_order = entry_map.get_or_init::<_, yrs::ArrayRef>(txn, "block_order");
-    for bid in &entry.block_order {
-        block_order.push_back(txn, bid.clone());
-    }
     let blocks = entry_map.get_or_init::<_, yrs::MapRef>(txn, "blocks");
-    for (bid, block) in &entry.blocks {
-        write_content_block(txn, &blocks, &block_order, bid, block);
+    let mut written = HashSet::new();
+    for bid in &entry.block_order {
+        if written.insert(bid.as_str()) {
+            if let Some(block) = entry.blocks.get(bid) {
+                write_content_block(txn, &blocks, &block_order, bid, block);
+            }
+        }
+    }
+    // 防御性保留未列入 block_order 的块；排序后写入，避免 HashMap 迭代
+    // 顺序泄漏到持久投影。
+    let mut unlisted = entry
+        .blocks
+        .keys()
+        .filter(|bid| !written.contains(bid.as_str()))
+        .collect::<Vec<_>>();
+    unlisted.sort();
+    for bid in unlisted {
+        write_content_block(txn, &blocks, &block_order, bid, &entry.blocks[bid]);
     }
     let order = root.get_or_init::<_, yrs::ArrayRef>(txn, "entry_order");
     order.push_back(txn, entry.entry_id.clone());

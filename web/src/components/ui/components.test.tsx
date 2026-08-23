@@ -186,6 +186,13 @@ describe('Toast', () => {
 });
 
 describe('Textarea', () => {
+  it('forwards one native input event exactly once', () => {
+    const onInput = vi.fn();
+    render(() => <Textarea aria-label="Message" onInput={onInput} />);
+    fireEvent.input(screen.getByRole('textbox', { name: 'Message' }), { target: { value: '你的 pwd 在哪里' } });
+    expect(onInput).toHaveBeenCalledTimes(1);
+  });
+
   it('forwards normal props and hides component-only auto-growth controls', () => {
     render(() => <Textarea autoResize maxHeight={180} aria-label="Message" />);
     const textarea = screen.getByRole('textbox', { name: 'Message' });

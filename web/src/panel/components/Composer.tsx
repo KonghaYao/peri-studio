@@ -187,6 +187,10 @@ export function Composer() {
       focusAt(caret);
     },
   });
+  const commitInputValue = (el: HTMLTextAreaElement) => {
+    setComposerDraft(selectedSessionId(), el.value);
+    slash.onInputValue(el);
+  };
 
   // inputPrediction 展示（lib/composer-prediction）。
   const prediction = useComposerPrediction({
@@ -244,10 +248,13 @@ export function Composer() {
           maxHeight={180}
           value={composerDraft(selectedSessionId())}
           onInput={(e) => {
-            const el = e.currentTarget;
-            setComposerDraft(selectedSessionId(), el.value);
-            slash.onInputValue(el);
+            // 中文 IME 组合期间 DOM value 只是候选中间态。若此时写回受控
+            // state，浏览器会重置输入法维护的组合范围，最终提交可能再次追加
+            // 同一段文本。只在组合完成后提交一次最终值。
+            if (e.isComposing) return;
+            commitInputValue(e.currentTarget);
           }}
+          onCompositionEnd={(e) => commitInputValue(e.currentTarget)}
           onSelect={(e) => slash.onCaret(e.currentTarget)}
           onBlur={slash.onBlur}
           onKeyDown={(e) => {

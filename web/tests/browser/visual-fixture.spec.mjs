@@ -367,6 +367,38 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 768
   });
 }
 
+for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
+  test(`question surface stays compact and aligned at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/visual-fixture.html?scenario=elicitation', { waitUntil: 'networkidle' });
+
+    const card = page.locator('.elicitation-card');
+    await expect(card).toBeVisible();
+    await expect(card.getByText('Questions', { exact: true })).toBeVisible();
+    await expect(card.getByText('1 / 2')).toBeVisible();
+    await expect(card.getByRole('button', { name: 'Previous question' })).toBeDisabled();
+    await card.getByRole('button', { name: 'Next question' }).click();
+    await expect(card.getByText('Which release scope should this change use?')).toBeVisible();
+    await expect(card.getByText('2 / 2')).toBeVisible();
+    await card.getByRole('button', { name: 'Previous question' }).click();
+    await expect(card.getByText('How should we proceed with this refactor?')).toBeVisible();
+    await expect(card.getByRole('button', { name: 'Skip' })).toBeVisible();
+    await expect(card.getByRole('button', { name: 'Continue' })).toBeVisible();
+    const geometry = await page.evaluate(() => {
+      const card = document.querySelector('.elicitation-card').getBoundingClientRect();
+      const composer = document.querySelector('.composer-surface').getBoundingClientRect();
+      return {
+        aligned: Math.round(card.left) === Math.round(composer.left) && Math.round(card.right) === Math.round(composer.right),
+        height: Math.round(card.height),
+        insideViewport: card.left >= 0 && card.right <= innerWidth,
+      };
+    });
+    expect(geometry.aligned).toBe(true);
+    expect(geometry.insideViewport).toBe(true);
+    expect(geometry.height).toBeLessThanOrEqual(430);
+  });
+}
+
 test('sidebar session labels retain space beside action and status slots', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });

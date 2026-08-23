@@ -26,7 +26,7 @@ describe('visual fixture scenarios', () => {
   });
 
   it('covers permissions and closed-by-default read-only state', () => {
-    expect(visualScenarios.map((item) => item.id)).toEqual(['catalog', 'conversation', 'markdown', 'permission-streaming', 'terminal-readonly']);
+    expect(visualScenarios.map((item) => item.id)).toEqual(['catalog', 'conversation', 'markdown', 'elicitation', 'permission-streaming', 'terminal-readonly']);
     let installed = installVisualScenario('terminal-readonly');
     dispose = installed.dispose;
     expect(principalRole()).toBe('read-only');
@@ -78,6 +78,10 @@ describe('visual fixture scenarios', () => {
           status: 'pending',
         })]);
         expect(chatEntries().some((entry) => entry.status === 'streaming')).toBe(true);
+      }
+      if (scenario.id === 'elicitation') {
+        expect(permissions()).toEqual([]);
+        expect(elicitations()).toHaveLength(2);
       }
       installed.dispose();
       expect(projects()).toEqual([]);
