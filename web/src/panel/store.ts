@@ -15,19 +15,17 @@
 import { createSignal } from 'solid-js';
 import * as H from './lib/protocol';
 import { DocStore } from './lib/doc-store';
-import { renderChat, type ChatEntry } from './lib/chat-view';
-import { renderControl, type ControlView } from './lib/control-view';
-import { renderRegistry, type ChatInfo, type InstanceInfo, type ProjectInfo, type ProjectSessionInfo, type SessionSummaryInfo } from './lib/registry-view';
-import { unimportedSessions } from './lib/session-import.ts';
+import type { ChatEntry } from './lib/chat-view';
+import type { ControlView } from './lib/control-view';
+import type { ChatInfo, InstanceInfo, ProjectInfo, ProjectSessionInfo, SessionSummaryInfo } from './lib/registry-view';
 import { isTerminal, isTurnActive } from './lib/action-state.ts';
-import { retainLiveRuntimeHints } from './lib/recovery-state.ts';
 import { CommandTracker } from './lib/command-tracker';
 import { SessionActivation, type OpeningSession, type OpenSessionCallbacks } from './lib/session-activation';
 import { installPrincipalRole, publishAuthInvalidation, readOnly } from './lib/auth-state';
-import { completeMessageDelivery, messageSubmission, reconcileMessageProjection, resetMessageDelivery } from './lib/message-delivery';
+import { completeMessageDelivery, messageSubmission, resetMessageDelivery } from './lib/message-delivery';
 import { settleLateQuickStart } from './lib/quick-start-delivery';
-import { confirmRuntimeControl, reconcileRuntimeControl, resetRuntimeControls } from './lib/runtime-control';
-import { resetPermissionDecisions, retainProjectedPermissions } from './lib/permission-delivery';
+import { confirmRuntimeControl, resetRuntimeControls } from './lib/runtime-control';
+import { resetPermissionDecisions } from './lib/permission-delivery';
 import { CatalogActions } from './lib/catalog-actions';
 import { ToastStore } from './lib/toast-store';
 import { ACK_TIMEOUT_MS, type Ack, type ActionError, type ActionFrame, type ActionOptions } from './lib/action-contract';
@@ -39,6 +37,7 @@ import { ERROR_REASONS, persistActionProblem, reportTransportIssue, type Persist
 import { sendMessage, type SessionConfigMutation } from './lib/user-actions';
 import { installChatSubscription, reconcileCurrentRuntimeControl, selectChat, sendSubscribe } from './lib/chat-subscription';
 import { installStoreWiring } from './lib/store-installs';
+import { installStoreProjection, type RuntimeDocsState } from './lib/store-projection';
 import {
   handleResourceResult,
   handleResourceUpdate,
@@ -70,7 +69,7 @@ export const [schemaVersion, setSchemaVersion] = createSignal<unknown>(null);
 export const [selectedSessionId, setSelectedSessionId] = createSignal<string | null>(null);
 export const [openingSession, setOpeningSession] = createSignal<OpeningSession | null>(null);
 export const openingSessionId = () => openingSession()?.sessionId ?? null;
-export interface RuntimeDocsState { chat: boolean; control: boolean }
+export type { RuntimeDocsState };
 export const [runtimeDocsState, setRuntimeDocsState] = createSignal<RuntimeDocsState>({ chat: false, control: false });
 export const runtimeDocsHydrated = () => runtimeDocsState().chat && runtimeDocsState().control;
 /** 各 chat 的运行时状态（终态判定；selectChat 需要当前 status）。 */
@@ -276,57 +275,6 @@ function onActionError(err: ActionError): void {
   persistActionProblem(reason || err.code || 'Operation failed', err.message || 'The server provided no further information.', err.commandId);
 }
 
-// ── 渲染入口（store.onUpdate：rAF 合帧后每个被更新 doc 调一次）──────────
-
-store.onUpdate = (docId: string): void => {
-  if (docId === H.DOC_REGISTRY) {
-    const reg = renderRegistry(store.docFor(docId));
-    // 状态映射（终态判定）：selectChat 需要当前 status。
-    const statusMap: Record<string, string> = {};
-    reg.chats.forEach((s) => {
-      statusMap[s.id] = s.status || '';
-      if (isTerminal(s.status || undefined)) reconcileRuntimeControl(s.id, true, true);
-    });
-    setChatStatusSignal(statusMap);
-    setInstances(reg.instances);
-    setChatCatalog(reg.chats);
-    setGlobalStatus(reg.globalStatus);
-    setSchemaVersion(reg.schemaVersion);
-    // 工作区定义（§6.3 workspace 扩展）：左栏过滤依据。
-    setProjects(reg.projects);
-    const projectedSessions = retainLiveRuntimeHints(reg.projectSessions, reg.chats) as ProjectSessionInfo[];
-    setProjectSessions(projectedSessions);
-    setImportableSessions(unimportedSessions(reg.sessions, reg.projectSessions));
-    setRegistryHydrated(true);
-    reconcileSessionNavigation(projectedSessions);
-    return;
-  }
-  if (currentCid && docId === H.chatDoc(currentCid)) {
-    const conv = renderChat(store.docFor(docId));
-    setChatEntries(conv.entries);
-    reconcileMessageProjection(new Set(conv.entries
-      .map((entry) => entry.sourceCommandId)
-      .filter((commandId): commandId is string => commandId !== null)));
-    setRuntimeDocsState((state) => ({ ...state, chat: true }));
-    return;
-  }
-  if (currentCid && docId === H.sessionDoc(currentCid)) {
-    const ctrl = renderControl(store.docFor(docId));
-    setChatHead(ctrl);
-    setPermissions(ctrl.pendingPermissions);
-    const projectedElicitations = ctrl.pendingElicitations ?? [];
-    setElicitations(projectedElicitations);
-    const visibleElicitations = new Set(projectedElicitations.map((item) => item.elicitationId));
-    setElicitationResponses((current) => Object.fromEntries(
-      Object.entries(current).filter(([id]) => visibleElicitations.has(id)),
-    ));
-    setRuntimeDocsState((state) => ({ ...state, control: true }));
-    const visiblePermissionIds = new Set(ctrl.pendingPermissions.map((item) => item.permissionId).filter((id): id is string => !!id));
-    retainProjectedPermissions(visiblePermissionIds);
-    reconcileCurrentRuntimeControl(ctrl);
-  }
-};
-
 function clearCurrentSelection(): void {
   clearPromptRecoverySelection();
   setSelectedSessionId(null);
@@ -386,6 +334,30 @@ const sessionActivation = new SessionActivation({
 function reconcileSessionNavigation(sessions: ProjectSessionInfo[]): void {
   sessionActivation.reconcileCatalog(sessions);
 }
+
+installStoreProjection(
+  store,
+  () => currentCid,
+  {
+    setChatEntries,
+    setChatHead,
+    setPermissions,
+    setElicitations,
+    setElicitationResponses,
+    setProjects,
+    setRegistryHydrated,
+    setProjectSessions,
+    setImportableSessions,
+    setInstances,
+    setChatCatalog,
+    setGlobalStatus,
+    setSchemaVersion,
+    setChatStatusSignal,
+    setRuntimeDocsState,
+  },
+  reconcileSessionNavigation,
+  reconcileCurrentRuntimeControl,
+);
 
 const catalogActions = new CatalogActions({
   isReady: connectionReady,
@@ -507,6 +479,7 @@ export {
   downloadPreviewedFile,
   closeResourceDiffPreview,
   mutateGitResource,
+  retryGitRepositoryMutation,
   retryGitResourceMutation,
   openGitDiffPreview,
   openFilePreview,

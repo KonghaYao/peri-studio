@@ -259,14 +259,8 @@ async fn hub_assemble_smoke_ready_sequence() {
         other => panic!("expected ready, got {other:?}"),
     }
 
-    // Degraded 入口（§17.2 + §8.4.1 不变量 4）：装配后（instance 重连对账
-    // 前）Restarting 门禁——拒绝新 committed 承诺；instance 重连（hello）
-    // 对账后开门 → Healthy。
-    assert!(
-        !hub.can_accept_committed(),
-        "Restarting 期间不得接受新 committed（§8.4.1 不变量 4）"
-    );
-    hub.registry.clear_restarting().await.unwrap();
+    // 此 fixture 没有待恢复 runtime，多 instance barrier 为空，装配阶段应直接
+    // 清除 Restarting；只有存在恢复候选时才等待首份 authoritative heartbeat。
     assert!(hub.can_accept_committed());
 
     task.abort();

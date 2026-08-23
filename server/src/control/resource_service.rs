@@ -11,15 +11,16 @@ use peri_studio_proto::resource::{
     DiscoverRepositoriesQuery, GitChangesQuery, GitDiffQuery, GitMutateQuery, GitSnapshotQuery,
     InstanceResourcePayload, InstanceResourceQuery, InstanceResourceQueryKind, OpenResourceBlob,
     OpenResourceView, ReadDirectoryQuery, ReadFileQuery, ResourceBlobKind, ResourceBlobOpened,
-    ResourceErrorCode, ResourceFailure, ResourceQuery, ResourceQueryResult, ResourceResult,
-    ResourceViewKind, DEFAULT_DIRECTORY_PAGE_SIZE, MAX_DIRECTORY_PAGE_SIZE,
+    ResourceErrorCode, ResourceFailure, ResourceGitActionKind, ResourceQuery, ResourceQueryResult,
+    ResourceResult, ResourceViewKind, DEFAULT_DIRECTORY_PAGE_SIZE, MAX_COMMIT_MESSAGE_BYTES,
+    MAX_DIRECTORY_PAGE_SIZE, MAX_RESOURCE_BLOB_BYTES,
 };
 
 use crate::control::{InstanceError, InstanceRegistry, ResourceProjection};
 use crate::persist::metadata::MetadataStore;
 
 const MAX_BLOBS_PER_PRINCIPAL: usize = 4;
-const MAX_SINGLE_BLOB_BYTES: usize = 64 * 1024 * 1024;
+const MAX_SINGLE_BLOB_BYTES: usize = MAX_RESOURCE_BLOB_BYTES as usize;
 const MAX_BLOB_CACHE_BYTES: usize = 256 * 1024 * 1024;
 
 #[derive(Clone)]
@@ -115,13 +116,7 @@ impl ResourceService {
         project_id: &str,
         action: peri_studio_proto::resource::ResourceGitAction,
     ) -> Result<ResourceQueryResult, ResourceFailure> {
-        if action.expected_generation.is_empty() {
-            return Err(failure(
-                ResourceErrorCode::InvalidRequest,
-                "Git generation is required",
-                false,
-            ));
-        }
+        validate_git_action(&action)?;
         let project = self
             .metadata
             .project(project_id)
@@ -144,6 +139,7 @@ impl ResourceService {
                 action: action.action,
                 change_ids: action.change_ids,
                 expected_generation: action.expected_generation,
+                message: action.message,
             }),
         };
         let result = self
@@ -229,7 +225,7 @@ impl ResourceService {
                 let path = required(request.path, "file path is required")?;
                 InstanceResourceQueryKind::ReadFile(ReadFileQuery {
                     path,
-                    max_bytes: 64 * 1024 * 1024,
+                    max_bytes: MAX_RESOURCE_BLOB_BYTES,
                 })
             }
             ResourceBlobKind::GitDiff => {
@@ -238,7 +234,7 @@ impl ResourceService {
                 InstanceResourceQueryKind::GitDiff(GitDiffQuery {
                     repo_id,
                     change_id,
-                    max_bytes: 8 * 1024 * 1024,
+                    max_bytes: MAX_RESOURCE_BLOB_BYTES,
                 })
             }
             ResourceBlobKind::GitHead | ResourceBlobKind::GitIndex => {
@@ -279,6 +275,14 @@ impl ResourceService {
         let Some(InstanceResourcePayload::Blob(blob)) = result.result else {
             return Err(unavailable());
         };
+        // 在 decode 分配前先约束 base64 长度；加 4 覆盖 padding 取整。
+        if !relay_base64_length_is_valid(blob.content_base64.len()) {
+            return Err(failure(
+                ResourceErrorCode::ViewTooLarge,
+                "resource blob exceeds relay limit",
+                false,
+            ));
+        }
         let bytes = base64::engine::general_purpose::STANDARD
             .decode(blob.content_base64)
             .map_err(|_| unavailable())?;
@@ -334,6 +338,43 @@ impl ResourceService {
             .await?;
         Ok(ResourceQueryResult::View(opened))
     }
+}
+
+fn relay_base64_length_is_valid(encoded_len: usize) -> bool {
+    encoded_len <= (MAX_SINGLE_BLOB_BYTES * 4).div_ceil(3) + 4
+}
+
+fn validate_git_action(
+    action: &peri_studio_proto::resource::ResourceGitAction,
+) -> Result<(), ResourceFailure> {
+    let path_action = matches!(
+        action.action,
+        ResourceGitActionKind::Stage
+            | ResourceGitActionKind::Unstage
+            | ResourceGitActionKind::Discard
+    );
+    let message_valid = match (action.action, action.message.as_deref()) {
+        (ResourceGitActionKind::Commit, Some(message)) => {
+            !message.trim().is_empty() && message.len() <= MAX_COMMIT_MESSAGE_BYTES
+        }
+        (ResourceGitActionKind::Commit, None) => false,
+        (_, None) => true,
+        (_, Some(_)) => false,
+    };
+    if action.repo_id.is_empty()
+        || action.expected_generation.is_empty()
+        || path_action == action.change_ids.is_empty()
+        || action.change_ids.len() > 500
+        || action.change_ids.iter().map(String::len).sum::<usize>() > 64 * 1024
+        || !message_valid
+    {
+        return Err(failure(
+            ResourceErrorCode::InvalidRequest,
+            "Git action payload is invalid",
+            false,
+        ));
+    }
+    Ok(())
 }
 
 fn view_to_instance_query(

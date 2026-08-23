@@ -20,11 +20,17 @@ import {
 } from '../panel/store';
 import { installPrincipalRole } from '../panel/lib/auth-state';
 import { acquireFixtureClock } from './fixture-clock';
-import { setResourceDiffPreview, setResourceWorkspace } from '../panel/lib/resource-store';
+import { setResourceDiffPreview, setResourceFilePreview, setResourceWorkspace } from '../panel/lib/resource-store';
+import type { ResourceFilePreviewState } from '../panel/lib/resource-preview';
 
 export const VISUAL_NOW = Date.parse('2026-08-14T08:00:00+08:00');
 export const DEFAULT_VISUAL_SCENARIO = 'conversation';
 export const VISUAL_SCENARIO_IDS = ['catalog', 'conversation', 'resources', 'markdown', 'elicitation', 'permission-streaming', 'terminal-readonly'] as const;
+
+/** Browser acceptance bridge; this module shares the fixture's live store graph. */
+export function setVisualFilePreview(preview: ResourceFilePreviewState): void {
+  setResourceFilePreview(preview);
+}
 export type VisualScenarioId = typeof VISUAL_SCENARIO_IDS[number];
 export type FixtureControlMode = 'display-only' | 'locally-interactive' | 'production-gated';
 

@@ -87,6 +87,7 @@ test('active turn excludes every terminal projection state', () => {
 
 test('permission delivery uncertainty remains locked in the security surface', () => {
   const store = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'store.ts'), 'utf8');
+  const projection = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'store-projection.ts'), 'utf8');
   const actions = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'user-actions.ts'), 'utf8');
   const delivery = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'permission-delivery.ts'), 'utf8');
   assert.match(actions, /startPermissionDecision\(frame\.commandId, permissionId, decision\)/);
@@ -95,7 +96,7 @@ test('permission delivery uncertainty remains locked in the security surface', (
   assert.match(actions, /onError:\s*\(error\)\s*=>\s*error\.retryable[\s\S]*?markPermissionDecisionUncertain\(frame\.commandId, true\)[\s\S]*?failPermissionDecision\(frame\.commandId\)/);
   assert.match(delivery, /retryable:\s*boolean/);
   assert.match(delivery, /markPermissionDecisionUncertain\(commandId: string, retryable = false\)/);
-  assert.match(store, /retainProjectedPermissions\(visiblePermissionIds\)/);
+  assert.match(projection, /retainProjectedPermissions\(new Set\(control\.pendingPermissions/);
   assert.doesNotMatch(store, /pendingPermissionDecisions|setPendingPermissionDecisions|lockPermissionDecision|unlockPermissionDecision/);
   assert.match(delivery, /if \(!permissionId \|\| decisions\(\)\.has\(permissionId\)\) return false/);
 });
@@ -343,13 +344,14 @@ test('terminal action effects have one owner and late acknowledgements cannot re
 test('runtime controls are chat-scoped and reconcile through projection truth', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
   const store = readFileSync(join(root, 'store.ts'), 'utf8');
+  const projection = readFileSync(join(root, 'lib', 'store-projection.ts'), 'utf8');
   const actions = readFileSync(join(root, 'lib', 'user-actions.ts'), 'utf8');
   const control = readFileSync(join(root, 'lib', 'runtime-control.ts'), 'utf8');
   assert.doesNotMatch(store, /cancellingTurn|closingChat|setCancellingTurn|setClosingChat/);
   assert.match(actions, /startRuntimeControl\(frame\.commandId, chatId, 'cancel'\)/);
   assert.match(actions, /startRuntimeControl\(frame\.commandId, chatId, 'close'\)/);
   assert.match(actions, /retryOnUncertain: true/);
-  assert.match(store, /reconcileCurrentRuntimeControl\(ctrl\)/);
+  assert.match(projection, /reconcileCurrentRuntimeControl\(control\)/);
   assert.match(control, /const \[controls, setControls\] = createSignal<Record<string, RuntimeControlSubmission>>/);
   assert.match(control, /current\.kind === 'cancel' && \(!turnActive \|\| terminal\)/);
   assert.match(control, /current\.kind === 'close' && terminal/);

@@ -41,15 +41,15 @@
 
 ## 当前落地状态（2026-08-23）
 
-当前已经交付可运行的 FS/SCM 纵向切片，协议版本为 `3`，资源投影 schema 版本为 `1`：
+当前已经交付可运行的 FS/SCM 纵向切片，协议版本为 `4`，资源投影 schema 版本为 `1`：
 
 - 浏览器只提交 `projectId` 与相对路径；server 从 SQLite 项目元数据解析可信 instance 与 workspace root，并在每次 view、mutation、Y.Doc subscribe 和 HTTP blob 请求上重新授权。
-- instance 已实现有界目录分页、精确文件读取、workspace containment、静态 symlink 逃逸拒绝、仓库发现、Git snapshot/changes，以及 generation-bound `changeIds`、强制 CAS、按仓库串行的 Stage/Unstage；仓库锁使用可回收 weak entry，非 UTF-8 Git 路径会显式拒绝，hello 会显式协商资源协议版本与上限。
+- instance 已实现有界目录分页、精确文件读取、Unix root-dirfd + `openat(O_NOFOLLOW)` 的同句柄 containment、仓库发现、Git snapshot/changes，以及 generation-bound `changeIds`、强制 CAS、按仓库串行的 Stage/Unstage/Discard/Commit/Pull/Push/Sync；仓库锁使用可回收 weak entry，非 UTF-8 Git 路径会显式拒绝，hello 会显式协商资源协议版本与上限。
 - server 是资源 Y.Doc 的唯一 writer；目录、仓库、SCM group 都是按需、短租约、显式排序的独立只读投影，最后一个订阅者离开后才进入 TTL，空闲过期投影由主动 sweeper 回收，文件字节不进入 Yjs。
 - 浏览器通过 opaque、principal-bound、60 秒 ticket 的同源 `GET/HEAD /api/resource-blobs/{blobId}` 下载文件和 Git diff；响应保留精确字节、MIME、ETag，并要求当前 HttpOnly session cookie。diff 查询只携带 generation-bound opaque `changeId`，不接受浏览器路径或 Git argv。
-- Web 已提供 VS Code 风格 Activity Bar、可折叠 Explorer、懒加载/连续分页文件树、Source Control 仓库/分组/状态装饰、ahead/behind、逐文件 Stage/Unstage、分页加载、刷新与 SCM badge。选择文件会在主编辑区打开只读标签页：有界 UTF-8 文本带行号，图片使用 principal-bound URL，二进制/超大文件保持下载路径；选择变更会打开有界双栏 unified diff，包含行号、hunk、二进制/空/加载/错误状态、重试和键盘关闭。重连后会重新申请短租约视图，不重放可能过期的 Doc ID。
+- Web 已提供 VS Code 风格 Activity Bar、可折叠 Explorer、懒加载/连续分页文件树、Source Control 仓库/分组/状态装饰、ahead/behind、逐文件 Stage/Unstage/Discard（确认对话框）、提交信息与 Commit、Pull/Push/Sync、分页加载、刷新与 SCM badge。选择文件会在主编辑区打开只读标签页：有界 UTF-8 文本带行号，图片使用 principal-bound URL，二进制/超大文件保持下载路径；选择变更会打开有界双栏 unified diff，包含行号、hunk、二进制/空/加载/错误状态、重试和键盘关闭。重连后会重新申请短租约视图，不重放可能过期的 Doc ID。
 
-当前实现是该设计的 R1/R2、部分 R3、R6 与部分 R7，不把尚未完成的接口伪装成已支持：浏览器 bulk bytes 已走 HTTP，但 instance→server 的文件读取与 diff 暂时仍分别以 64 MiB/8 MiB 硬上限的 base64 control result 传输；Range、下游取消传播、独立 authenticated data WebSocket、watch/invalidation、文件编辑/upload/mutation，以及 discard/commit/branch/remote 等 Git 操作仍按后续阶段实现。Stage/Unstage 当前使用关联 `requestId`、generation-bound `changeIds` 与非自动重试的 `DELIVERY_UNKNOWN` 收敛不确定结果，但尚未接入持久化 action/outbox，因此不能扩展到 commit/push 等非幂等副作用。静态 containment 已覆盖，抵抗工作区内恶意进程并发替换路径所需的 fd-anchored traversal/openat2 仍是文件 mutation 上线前的硬门禁。这个兼容 seam 被限制在可信 server↔instance 链路，不会暴露给浏览器，也不会写入 Yjs。
+当前实现是该设计的 R1/R2、部分 R3、R4、R6 与部分 R7，不把尚未完成的接口伪装成已支持：浏览器 bulk bytes 已走 HTTP，但 instance→server 的文件读取与 diff 暂时仍以统一 8 MiB 原始字节上限的 base64 control result 传输；server 在 decode 前校验编码长度，WebSocket message 显式限制为 12 MiB。Range、下游取消传播、独立 authenticated data WebSocket、watch/invalidation、文件编辑/upload/mutation，以及 branch/checkout/merge/stash 仍按后续阶段实现。全部 Git mutation 使用关联 `requestId`、generation-bound CAS、单仓库串行与非自动重试的 `DELIVERY_UNKNOWN` 收敛不确定结果；远程命令禁交互、丢弃 stderr，失败后要求刷新事实再行动。该兼容 seam 被限制在可信 server↔instance 链路，不会暴露给浏览器，也不会写入 Yjs。
 
 ### 2.3 Theia 与 OpenVSCode Server 的设计校准
 
@@ -113,13 +113,10 @@ flowchart LR
 ```jsonc
 {
   "resources": {
-    "protocolVersion": 3,
-    "fs": ["stat", "readDir", "read", "write", "move", "delete", "watch"],
-    "fileReadModes": ["whole", "range", "stream"],
-    "git": ["snapshot", "diff", "stage", "unstage", "discard", "commit"],
-    "binaryStreams": true,
-    "maxChunkBytes": 262144,
-    "pathCaseSensitive": true
+    "protocolVersion": 4,
+    "maxDirectoryPageSize": 500,
+    "maxFileBytes": 8388608,
+    "git": true
   }
 }
 ```
@@ -353,7 +350,7 @@ stream 不跨 data connection 重连恢复；断线即取消，HTTP 调用方按
 - `resource_stream_end { streamId, byteLength, sha256 }`
 - `resource_stream_error/cancel { streamId, code }`
 
-默认建议：chunk 256 KiB、初始 credit 2 MiB、每 principal 同时 4 条 HTTP blob、普通文件读取 64 MiB、diff 8 MiB、upload ticket TTL 60 秒。所有值由服务端配置收紧，不能由浏览器扩大。
+未来流式 adapter 默认建议：chunk 256 KiB、初始 credit 2 MiB、每 principal 同时 4 条 HTTP blob、upload ticket TTL 60 秒。当前有界中继的文件与 diff 原始内容统一最多 8 MiB、wire message 最多 12 MiB；所有值由服务端配置收紧，不能由浏览器扩大。
 
 credit 与 HTTP downstream drain 关联：server 只有在 HTTP response 消费并释放 buffer 后才向 instance 补 credit。server relay 每条 stream 最多缓存 1–2 个 chunk，绝不以 unbounded queue 桥接 instance data WS 与 HTTP response。
 
@@ -427,7 +424,7 @@ mutation：
 - `git/commit { repoId, message, expectedGeneration }`
 - `git/checkout { repoId, refId, expectedGeneration }`
 
-fetch/pull/push、rebase、merge、stash、worktree 放到第二阶段。它们涉及远端凭据、任意 hooks、长任务和更强的投递不确定性，不应和本地 status/stage 一次上线。
+当前 R4 已提供禁交互、固定 argv、无 stderr 穿透的 `pull --ff-only`、`push` 与顺序 Sync；它们没有凭据提示或自动重试，失败时保持仓库视图并要求刷新。fetch、rebase、merge、stash、worktree 与 branch/checkout 仍放到后续阶段；这些操作涉及远端凭据、任意 hooks、长任务和更强的投递不确定性，必须先扩展专用进度/取消与审计模型。
 
 ### 7.3 Git CLI adapter
 

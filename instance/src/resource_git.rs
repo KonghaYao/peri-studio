@@ -1,25 +1,25 @@
-use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::Arc;
 
 use peri_studio_proto::resource::{
     GitChange, GitChangeStatus, GitGroupId, GitGroupPage, GitGroupSummary, GitRepositorySnapshot,
-    GitRepositorySummary, InstanceMutationResult, InstanceResourcePayload, RepositoriesPage,
-    ResourceErrorCode, ResourceFailure, ResourceGitActionKind, MAX_DIRECTORY_PAGE_SIZE,
+    GitRepositorySummary, InstanceResourcePayload, RepositoriesPage, ResourceErrorCode,
+    ResourceFailure, MAX_DIRECTORY_PAGE_SIZE,
 };
 use tokio::io::AsyncReadExt;
 use tokio::process::Command;
 use tokio::sync::Mutex;
 
 use super::common::{
-    canonical_root, cursor_for, failure, hash_bytes, hash_text, map_io, parse_cursor,
-    relative_path, validate_relative,
+    canonical_root, cursor_for, failure, hash_bytes, hash_text, map_io, parse_cursor, relative_path,
 };
 use super::ResourceHost;
 
 #[path = "resource_git_diff.rs"]
 mod diff;
+#[path = "resource_git_mutation.rs"]
+mod mutation;
 
 const STATUS_ARGS: &[&str] = &[
     "status",
@@ -29,67 +29,8 @@ const STATUS_ARGS: &[&str] = &[
     "--untracked-files=all",
 ];
 const MAX_GIT_OUTPUT_BYTES: u64 = 8 * 1024 * 1024;
-const MAX_MUTATION_PATH_BYTES: usize = 64 * 1024;
 
 impl ResourceHost {
-    pub(super) async fn git_mutate(
-        &self,
-        root: &str,
-        expected_repo_id: &str,
-        action: ResourceGitActionKind,
-        change_ids: &[String],
-        expected_generation: &str,
-    ) -> Result<InstanceResourcePayload, ResourceFailure> {
-        if change_ids.is_empty()
-            || change_ids.len() > 500
-            || change_ids.iter().map(String::len).sum::<usize>() > MAX_MUTATION_PATH_BYTES
-        {
-            return Err(failure(ResourceErrorCode::InvalidRequest, false));
-        }
-        // 先解析可信仓库再登记锁，避免攻击者用随机 repoId 扩张锁表。
-        let (_, initial_repo) = self.resolve_repo(root, expected_repo_id).await?;
-        let mutation_lock = self.mutation_lock(&initial_repo).await;
-        let _mutation_guard = mutation_lock.lock().await;
-        let (_root, repo) = self.resolve_repo(root, expected_repo_id).await?;
-        let before = self.git(&repo, STATUS_ARGS).await?;
-        let generation = hash_bytes(&before);
-        if expected_generation != generation {
-            return Err(failure(ResourceErrorCode::VersionConflict, false));
-        }
-        let parsed = parse_status(&before)?;
-        let paths = resolve_change_paths(&parsed, &generation, action, change_ids)?;
-        for path in &paths {
-            validate_relative(path)?;
-        }
-        let mut command = Command::new("git");
-        command.current_dir(&repo).env("GIT_TERMINAL_PROMPT", "0");
-        match action {
-            ResourceGitActionKind::Stage => command.arg("add"),
-            ResourceGitActionKind::Unstage => command.args(["restore", "--staged"]),
-        };
-        command
-            .arg("--")
-            .args(&paths)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .kill_on_drop(true);
-        let status = tokio::time::timeout(self.git_timeout, command.status())
-            .await
-            .map_err(|_| delivery_unknown())?
-            .map_err(|_| delivery_unknown())?;
-        if !status.success() {
-            return Err(failure(ResourceErrorCode::Unavailable, false));
-        }
-        // 命令成功后即使快照读取失败，也不能暗示调用方安全重试。
-        let after = self
-            .git(&repo, STATUS_ARGS)
-            .await
-            .map_err(|_| delivery_unknown())?;
-        Ok(InstanceResourcePayload::Mutation(InstanceMutationResult {
-            generation: hash_bytes(&after),
-        }))
-    }
-
     pub(super) async fn discover_repositories(
         &self,
         root: &str,
@@ -301,59 +242,8 @@ fn repo_id(repo: &Path) -> String {
     hash_bytes(repo.to_string_lossy().as_bytes())
 }
 
-fn delivery_unknown() -> ResourceFailure {
-    failure(ResourceErrorCode::DeliveryUnknown, false)
-}
-
 fn change_id(generation: &str, group: GitGroupId, path: &str) -> String {
     hash_text(&format!("{}:{}:{}", generation, group_label(group), path))
-}
-
-fn resolve_change_paths(
-    parsed: &ParsedStatus,
-    generation: &str,
-    action: ResourceGitActionKind,
-    change_ids: &[String],
-) -> Result<Vec<String>, ResourceFailure> {
-    let available = parsed
-        .changes
-        .iter()
-        .flat_map(|change| {
-            change.groups.iter().filter_map(|group| {
-                let valid_group = match action {
-                    ResourceGitActionKind::Stage => *group != GitGroupId::Index,
-                    ResourceGitActionKind::Unstage => *group == GitGroupId::Index,
-                };
-                valid_group.then(|| {
-                    let mut paths = vec![change.path.clone()];
-                    let rename_code = if *group == GitGroupId::Index {
-                        change.x
-                    } else {
-                        change.y
-                    };
-                    if rename_code == 'R' {
-                        if let Some(original_path) = &change.original_path {
-                            paths.push(original_path.clone());
-                        }
-                    }
-                    (change_id(generation, *group, &change.path), paths)
-                })
-            })
-        })
-        .collect::<HashMap<_, _>>();
-    let mut paths = Vec::with_capacity(change_ids.len());
-    let mut seen = HashSet::with_capacity(change_ids.len());
-    for expected_id in change_ids {
-        let Some(change_paths) = available.get(expected_id) else {
-            return Err(failure(ResourceErrorCode::VersionConflict, false));
-        };
-        for path in change_paths {
-            if seen.insert(path) {
-                paths.push(path.clone());
-            }
-        }
-    }
-    Ok(paths)
 }
 
 #[derive(Default)]

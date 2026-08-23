@@ -89,6 +89,7 @@ impl ResourceHost {
                     input.action,
                     &input.change_ids,
                     &input.expected_generation,
+                    input.message.as_deref(),
                 )
                 .await
             }
@@ -111,6 +112,9 @@ impl ResourceHost {
 #[cfg(test)]
 #[path = "resource_diff_test.rs"]
 mod resource_diff_test;
+#[cfg(test)]
+#[path = "resource_mutation_test.rs"]
+mod resource_mutation_test;
 #[cfg(test)]
 #[path = "resource_test.rs"]
 mod resource_test;

@@ -123,6 +123,9 @@ impl Gateway {
         if let Err(e) = self.registry.upsert_instance(view).await {
             warn!(instance_id = %instance_id, error = ?e, "registry instance upsert failed (hello)");
         }
+        self.recovery
+            .on_connection_registered(&instance_id, conn_id)
+            .await;
         // hello 不携带 authoritative alive_sessions，只完成认证/fencing/caps。
         // reconcile → resume → 恢复 barrier 的唯一 owner 是首个 heartbeat 驱动
         // 的 RecoveryCoordinator；此处不得据空集合裁决 Gap 或提前开门。
@@ -176,17 +179,13 @@ impl Gateway {
                                         &hb,
                                     ).await {
                                         Ok(heartbeat) => {
-                                            let recovery = self.recovery.clone();
-                                            let recovery_instance = instance_id.clone();
-                                            let alive = hb.alive_sessions.clone();
-                                            tokio::spawn(async move {
-                                                recovery.on_heartbeat_snapshot(
-                                                    &recovery_instance,
-                                                    alive,
-                                                    heartbeat.first_snapshot,
-                                                    heartbeat.changed,
-                                                ).await;
-                                            });
+                                            self.recovery.on_heartbeat_snapshot(
+                                                &instance_id,
+                                                conn_id,
+                                                hb.alive_sessions.clone(),
+                                                heartbeat.first_snapshot,
+                                                heartbeat.changed,
+                                            ).await;
                                         }
                                         Err(e) => {
                                             debug!(instance_id = %instance_id, error = ?e, "heartbeat rejected");

@@ -6,6 +6,7 @@ export type ResourceViewKind =
   | 'git-group-page';
 
 export type GitGroupId = 'conflicts' | 'index' | 'working_tree' | 'untracked';
+export type GitActionKind = 'stage' | 'unstage' | 'discard' | 'commit' | 'pull' | 'push' | 'sync';
 
 export interface OpenResourceView {
   kind: ResourceViewKind;
@@ -81,16 +82,17 @@ export function openResourceGitDiff(projectId: string, repoId: string, changeId:
 export function gitResourceAction(
   projectId: string,
   repoId: string,
-  action: 'stage' | 'unstage',
+  action: GitActionKind,
   changeIds: string[],
   expectedGeneration: string,
+  message?: string,
 ) {
   return {
     t: 'resource_query',
     type: 'resource/git-action',
     requestId: crypto.randomUUID(),
     projectId,
-    payload: { repoId, action, changeIds, expectedGeneration },
+    payload: { repoId, action, changeIds, expectedGeneration, ...(message === undefined ? {} : { message }) },
   } as const;
 }
 

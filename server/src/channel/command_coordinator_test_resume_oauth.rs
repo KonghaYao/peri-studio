@@ -36,14 +36,10 @@ async fn recovery_heartbeat_confirms_resumes_then_opens_gate_once() {
         env.coordinator.clone(),
         registry.clone(),
     );
-    let task = tokio::spawn({
-        let recovery = recovery.clone();
-        async move {
-            recovery
-                .on_heartbeat_snapshot("local", vec![S1.to_string()], true, true)
-                .await;
-        }
-    });
+    recovery.on_connection_registered("local", 1).await;
+    recovery
+        .on_heartbeat_snapshot("local", 1, vec![S1.to_string()], true, true)
+        .await;
 
     let rpc_id = drive_rpc(&env.instance, &mut env.instance_rx, "session/resume").await;
     assert!(env.chats.entry(S1).await.unwrap().runtime_confirmed);
@@ -59,20 +55,27 @@ async fn recovery_heartbeat_confirms_resumes_then_opens_gate_once() {
         frame: serde_json::json!({"jsonrpc":"2.0","id":rpc_id,"result":{}}),
     };
     let _ = env.relay.on_instance_event("local", &response).await;
-    task.await.unwrap();
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while registry.global_status() != peri_studio_proto::schema::GlobalStatus::Healthy {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .expect("恢复终态后应开门");
     assert_eq!(
         registry.global_status(),
         peri_studio_proto::schema::GlobalStatus::Healthy
     );
 
     recovery
-        .on_heartbeat_snapshot("local", vec![S1.to_string()], false, false)
+        .on_heartbeat_snapshot("local", 1, vec![S1.to_string()], false, false)
         .await;
     assert!(
         env.instance_rx.try_recv().is_err(),
         "重复快照不得重复 resume"
     );
 }
+
 /// server 重启恢复（无状态投影 §4 恢复路径 live chat）：instance hello 后
 /// 对其非终态且已绑定会话的 chat 批量发起 session/resume；终态/未绑定
 /// chat 跳过。

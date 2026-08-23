@@ -18,7 +18,8 @@ use super::test_util::{
 use crate::auth::{AuthService, TokenRole, TokenStore};
 use crate::web::{
     cookie_value, header_end, is_json_content_type, is_ws_upgrade, request_path, serve_http,
-    serve_http_with_resources, valid_loopback_host, BrowserAuthSetup, HealthSnapshot, HealthStatus,
+    serve_http_with_resources, valid_loopback_host, valid_ws_host, valid_ws_origin,
+    BrowserAuthSetup, HealthSnapshot, HealthStatus,
 };
 
 /// 请求行解析：常规 GET 路径。
@@ -89,6 +90,24 @@ fn auth_contract_host_and_cookie_parsing() {
         .as_deref(),
         Some("opaque")
     );
+}
+
+#[test]
+fn websocket_host_policy_requires_explicit_remote_tls_origin() {
+    assert!(valid_ws_host("127.0.0.1:8456", false));
+    assert!(!valid_ws_host("studio.example:443", false));
+    assert!(valid_ws_host("studio.example:443", true));
+    assert!(valid_ws_host("studio.example", true));
+    assert!(!valid_ws_host("studio.example:0", true));
+    assert!(valid_ws_origin(
+        Some("https://studio.example:443"),
+        "studio.example:443"
+    ));
+    assert!(!valid_ws_origin(
+        Some("http://studio.example:443"),
+        "studio.example:443"
+    ));
+    assert!(valid_ws_origin(None, "studio.example:443"));
 }
 
 #[test]

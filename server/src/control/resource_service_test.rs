@@ -1,5 +1,7 @@
 use super::*;
-use peri_studio_proto::resource::{GitGroupId, ResourceViewKind};
+use peri_studio_proto::resource::{
+    GitGroupId, ResourceGitAction, ResourceGitActionKind, ResourceViewKind,
+};
 use peri_studio_proto::Frame;
 use serde_json::json;
 
@@ -54,6 +56,34 @@ fn git_timeout_is_reported_as_delivery_unknown_and_never_auto_retryable() {
     let error = git_instance_failure(InstanceError::Timeout);
     assert_eq!(error.code, ResourceErrorCode::DeliveryUnknown);
     assert!(!error.retryable);
+}
+
+#[test]
+fn git_action_validates_commit_message_and_change_identity_shape() {
+    let mut commit = ResourceGitAction {
+        repo_id: "repo-1".into(),
+        action: ResourceGitActionKind::Commit,
+        change_ids: vec![],
+        expected_generation: "g1".into(),
+        message: Some("Ship SCM".into()),
+    };
+    assert!(validate_git_action(&commit).is_ok());
+    commit.message = Some("   ".into());
+    assert_eq!(
+        validate_git_action(&commit).unwrap_err().code,
+        ResourceErrorCode::InvalidRequest
+    );
+    commit.message = Some("界".repeat(MAX_COMMIT_MESSAGE_BYTES / 3 + 1));
+    assert_eq!(
+        validate_git_action(&commit).unwrap_err().code,
+        ResourceErrorCode::InvalidRequest
+    );
+
+    commit.action = ResourceGitActionKind::Discard;
+    commit.message = None;
+    assert!(validate_git_action(&commit).is_err());
+    commit.change_ids.push("opaque-change".into());
+    assert!(validate_git_action(&commit).is_ok());
 }
 
 #[tokio::test]
@@ -316,6 +346,10 @@ async fn git_diff_blob_resolves_project_and_returns_a_principal_bound_http_ticke
     };
     assert_eq!(input.repo_id, "repo-1");
     assert_eq!(input.change_id, "change-1");
+    assert_eq!(
+        input.max_bytes,
+        peri_studio_proto::resource::MAX_RESOURCE_BLOB_BYTES
+    );
     let diff = b"@@ -1 +1 @@\n-before\n+after\n";
     assert!(
         instances
@@ -355,6 +389,13 @@ async fn git_diff_blob_resolves_project_and_returns_a_principal_bound_http_ticke
     assert!(service.blob("other-token", &opened.blob_id).await.is_none());
 }
 
+#[test]
+fn relay_rejects_base64_that_cannot_fit_the_blob_limit() {
+    let maximum = (MAX_SINGLE_BLOB_BYTES * 4).div_ceil(3) + 4;
+    assert!(relay_base64_length_is_valid(maximum));
+    assert!(!relay_base64_length_is_valid(maximum + 1));
+}
+
 #[tokio::test]
 async fn read_only_principal_cannot_stage_changes() {
     let dir = tempfile::tempdir().unwrap();
@@ -384,6 +425,7 @@ async fn read_only_principal_cannot_stage_changes() {
                     action: peri_studio_proto::resource::ResourceGitActionKind::Stage,
                     change_ids: vec!["change-1".into()],
                     expected_generation: "g1".into(),
+                    message: None,
                 },
             },
         )

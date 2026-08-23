@@ -11,6 +11,10 @@ use tokio_util::sync::CancellationToken;
 
 use crate::private_file::read_private_text;
 
+const RESTART_BASE_DELAY: Duration = Duration::from_secs(1);
+const RESTART_MAX_DELAY: Duration = Duration::from_secs(30);
+const RESTART_STABLE_UPTIME: Duration = Duration::from_secs(60);
+
 /// 启动 server；`managed_local` 决定是否用当前二进制启动本地 instance。
 pub async fn run(
     config: Config,
@@ -62,7 +66,8 @@ async fn supervise_local_instance(
         )?),
     };
     let mut server = Box::pin(runtime.wait());
-    let mut restart_delay = Duration::from_secs(1);
+    let mut restart_delay = RESTART_BASE_DELAY;
+    let mut managed_started_at = tokio::time::Instant::now();
     let mut owner_poll = tokio::time::interval(Duration::from_millis(250));
     owner_poll.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
@@ -89,13 +94,15 @@ async fn supervise_local_instance(
                         instance = LocalInstance::Adopted(owner);
                         continue;
                     }
-                    tracing::warn!(%status, delay_ms = restart_delay.as_millis(),
+                    let uptime = managed_started_at.elapsed();
+                    let delay = restart_delay_for_uptime(restart_delay, uptime);
+                    tracing::warn!(%status, delay_ms = delay.as_millis(),
                         "local instance exited; restarting");
                     tokio::select! {
-                        _ = tokio::time::sleep(restart_delay) => {}
+                        _ = tokio::time::sleep(delay) => {}
                         _ = shutdown.cancelled() => return server.await,
                     }
-                    restart_delay = (restart_delay * 2).min(Duration::from_secs(30));
+                    restart_delay = (delay * 2).min(RESTART_MAX_DELAY);
                     instance = LocalInstance::Managed(spawn_local_instance(
                         &executable,
                         &ready,
@@ -103,6 +110,7 @@ async fn supervise_local_instance(
                         &config.log_level,
                         json_log,
                     )?);
+                    managed_started_at = tokio::time::Instant::now();
                 }
             },
             LocalInstance::Adopted(owner) => tokio::select! {
@@ -124,6 +132,7 @@ async fn supervise_local_instance(
                     }
                     None => {
                         tracing::warn!(pid = owner.pid(), "adopted local instance exited; restarting");
+                        restart_delay = RESTART_BASE_DELAY;
                         instance = LocalInstance::Managed(spawn_local_instance(
                             &executable,
                             &ready,
@@ -131,10 +140,19 @@ async fn supervise_local_instance(
                             &config.log_level,
                             json_log,
                         )?);
+                        managed_started_at = tokio::time::Instant::now();
                     }
                 }
             },
         }
+    }
+}
+
+fn restart_delay_for_uptime(current: Duration, uptime: Duration) -> Duration {
+    if uptime >= RESTART_STABLE_UPTIME {
+        RESTART_BASE_DELAY
+    } else {
+        current
     }
 }
 
@@ -308,6 +326,7 @@ async fn wait_for_owner_exit(
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
+    use std::time::Duration;
 
     #[test]
     fn local_instance_uses_role_specific_data_directory() {
@@ -315,6 +334,18 @@ mod tests {
         assert_eq!(
             root.join("instances").join("local"),
             PathBuf::from("/tmp/peri-data/instances/local")
+        );
+    }
+
+    #[test]
+    fn stable_local_instance_resets_restart_backoff() {
+        assert_eq!(
+            super::restart_delay_for_uptime(Duration::from_secs(30), Duration::from_secs(59)),
+            Duration::from_secs(30)
+        );
+        assert_eq!(
+            super::restart_delay_for_uptime(Duration::from_secs(30), Duration::from_secs(60)),
+            Duration::from_secs(1)
         );
     }
 }

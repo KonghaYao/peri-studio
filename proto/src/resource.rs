@@ -1,16 +1,24 @@
 //! 远程文件系统与 Git 资源协议。
 //!
 //! 浏览器只提交 project identity 与相对资源定位；server 解析可信的 instance
-//! 与 workspace root 后，构造独立的 `instance/resource_query`。文件正文、diff
-//! 与 upload 字节不属于本模块的 JSON 帧，统一经 HTTP/blob 数据面传输。
+//! 与 workspace root 后，构造独立的 `instance/resource_query`。目录与 Git 状态
+//! 以有界 Yjs 视图发布；浏览器只通过短租约 HTTP blob 下载正文。当前
+//! instance → server 一跳仍使用有界 base64 JSON 中继，必须受本模块的 wire
+//! 上限约束，不得将其误当作任意大小的流式传输。
 
 use serde::{Deserialize, Serialize};
 
 use crate::conn::DocId;
 
-pub const RESOURCE_PROTOCOL_VERSION: u32 = 3;
+pub const RESOURCE_PROTOCOL_VERSION: u32 = 4;
 pub const DEFAULT_DIRECTORY_PAGE_SIZE: u32 = 200;
 pub const MAX_DIRECTORY_PAGE_SIZE: u32 = 500;
+/// instance → server 单次 blob 中继的原始字节上限。
+pub const MAX_RESOURCE_BLOB_BYTES: u64 = 8 * 1024 * 1024;
+/// 包含 base64 与 JSON 信封后的 WebSocket message 上限。
+pub const MAX_RESOURCE_WS_MESSAGE_BYTES: usize = 12 * 1024 * 1024;
+/// UTF-8 编码后的提交信息上限，防止控制帧和子进程 stdin 无界增长。
+pub const MAX_COMMIT_MESSAGE_BYTES: usize = 4 * 1024;
 
 /// Web 面板申请一个有界只读投影视图。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -59,6 +67,8 @@ pub struct ResourceGitAction {
     pub action: ResourceGitActionKind,
     pub change_ids: Vec<String>,
     pub expected_generation: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -66,6 +76,11 @@ pub struct ResourceGitAction {
 pub enum ResourceGitActionKind {
     Stage,
     Unstage,
+    Discard,
+    Commit,
+    Pull,
+    Push,
+    Sync,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -234,6 +249,8 @@ pub struct GitMutateQuery {
     pub action: ResourceGitActionKind,
     pub change_ids: Vec<String>,
     pub expected_generation: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

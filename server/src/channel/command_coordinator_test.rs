@@ -319,6 +319,10 @@ mod command_coordinator_test_session_open;
 mod command_coordinator_test_resume_oauth;
 
 #[cfg(test)]
+#[path = "instance_recovery_test.rs"]
+mod instance_recovery_test;
+
+#[cfg(test)]
 #[path = "command_coordinator_test_rewind.rs"]
 mod command_coordinator_test_rewind;
 

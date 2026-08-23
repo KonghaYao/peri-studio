@@ -3,7 +3,7 @@ use std::process::Command;
 use base64::Engine as _;
 use peri_studio_proto::resource::{
     GitGroupId, InstanceResourcePayload, InstanceResourceQuery, InstanceResourceQueryKind,
-    ReadDirectoryQuery, ResourceErrorCode,
+    ReadDirectoryQuery, ReadFileQuery, ResourceErrorCode,
 };
 use tempfile::tempdir;
 
@@ -98,6 +98,20 @@ async fn file_blob_is_bounded_and_preserves_exact_bytes() {
         too_small.error.unwrap().code,
         ResourceErrorCode::ViewTooLarge
     );
+
+    let above_relay_limit = ResourceHost::default()
+        .query(query(
+            root.path(),
+            InstanceResourceQueryKind::ReadFile(peri_studio_proto::resource::ReadFileQuery {
+                path: "hello.txt".into(),
+                max_bytes: peri_studio_proto::resource::MAX_RESOURCE_BLOB_BYTES + 1,
+            }),
+        ))
+        .await;
+    assert_eq!(
+        above_relay_limit.error.unwrap().code,
+        ResourceErrorCode::ViewTooLarge
+    );
 }
 
 #[cfg(unix)]
@@ -122,6 +136,60 @@ async fn directory_query_rejects_a_symlink_that_leaves_the_workspace() {
         .await;
     assert_eq!(
         result.error.unwrap().code,
+        ResourceErrorCode::OutsideWorkspace
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn file_read_does_not_follow_a_target_swapped_after_validation() {
+    use std::os::unix::fs::symlink;
+
+    let root = tempdir().unwrap();
+    let outside = tempdir().unwrap();
+    let target = root.path().join("target.txt");
+    let original = root.path().join("original.txt");
+    let secret = outside.path().join("secret.txt");
+    std::fs::write(&target, b"workspace").unwrap();
+    std::fs::write(&secret, b"outside-secret").unwrap();
+
+    let result = super::fs::read_file_with_hook(
+        root.path().to_str().unwrap(),
+        ReadFileQuery {
+            path: "target.txt".into(),
+            max_bytes: 1024,
+        },
+        || {
+            std::fs::rename(&target, &original).unwrap();
+            symlink(&secret, &target).unwrap();
+        },
+    );
+    assert_eq!(
+        result.unwrap_err().code,
+        ResourceErrorCode::OutsideWorkspace
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn file_read_rejects_a_symlink_in_an_intermediate_directory() {
+    use std::os::unix::fs::symlink;
+
+    let root = tempdir().unwrap();
+    let outside = tempdir().unwrap();
+    std::fs::write(outside.path().join("secret.txt"), b"outside-secret").unwrap();
+    symlink(outside.path(), root.path().join("escape")).unwrap();
+
+    let result = super::fs::read_file_with_hook(
+        root.path().to_str().unwrap(),
+        ReadFileQuery {
+            path: "escape/secret.txt".into(),
+            max_bytes: 1024,
+        },
+        || {},
+    );
+    assert_eq!(
+        result.unwrap_err().code,
         ResourceErrorCode::OutsideWorkspace
     );
 }
@@ -197,6 +265,7 @@ async fn git_query_projects_repository_groups_without_raw_output() {
                 action: peri_studio_proto::resource::ResourceGitActionKind::Stage,
                 change_ids: vec!["invalid-change".into()],
                 expected_generation: generation.clone(),
+                message: None,
             }),
         ))
         .await;
@@ -252,6 +321,7 @@ async fn git_query_projects_repository_groups_without_raw_output() {
             action: peri_studio_proto::resource::ResourceGitActionKind::Stage,
             change_ids: vec![new_change_id],
             expected_generation: generation.clone(),
+            message: None,
         }),
     ));
     let second = competing_host.query(query(
@@ -261,6 +331,7 @@ async fn git_query_projects_repository_groups_without_raw_output() {
             action: peri_studio_proto::resource::ResourceGitActionKind::Stage,
             change_ids: vec![tracked_change_id],
             expected_generation: generation,
+            message: None,
         }),
     ));
     let (first, second) = tokio::join!(first, second);
@@ -390,6 +461,7 @@ async fn git_unstage_rename_resolves_both_new_and_original_paths() {
                 action: peri_studio_proto::resource::ResourceGitActionKind::Unstage,
                 change_ids: vec![changes.changes[0].change_id.clone()],
                 expected_generation: repository.generation,
+                message: None,
             }),
         ))
         .await;

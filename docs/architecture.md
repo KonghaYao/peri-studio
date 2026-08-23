@@ -126,7 +126,7 @@ Web 的逻辑会话导航由 `SessionNavigator` 状态机唯一裁决。Registry
 
 Registry 中的 `active_chat_id` 只证明某个 runtime 仍可复用，不证明当前浏览器已经选择、水合或能够向它输入。侧栏未选中的 live runtime 必须显示为“运行中，可切换”；只有当前选中、非终态且完成 Chat/Control 两份文档水合的 runtime 才能宣称“可输入”。默认标题必须在 sidebar、search 与 header 使用同一稳定身份消歧规则，避免多个“新对话”在切换后失去可识别性。
 
-Web 组件库以 `src/ui/index.ts` 和 `src/ui/primitives.css` 为唯一公共代码/视觉入口。`primitives.css` 自包含地引入 `tokens.css`，基础组件必须独立拥有默认、交互、禁用、错误、焦点与响应式触控状态；产品 `styles.css` 只允许页面布局和有明确父级语境的覆盖，不得重新定义独立 `.ui-*` 基类。Feature 组件不得深层导入 UI 实现、创建裸 SVG canvas，或依赖产品样式才能让 Dialog、Drawer、Button、Field、Menu、Tooltip、Status、Toast 等基础能力正确渲染。该边界由源码架构契约与真实 Solid DOM 测试共同执行。
+Web 组件库以 `src/components/ui/index.ts` 为唯一公共代码入口，以 `src/styles/tokens.css` 和 `src/styles/base.css` 为视觉入口。基础组件必须独立拥有默认、交互、禁用、错误、焦点与响应式触控状态；Feature 组件不得深层导入 UI 实现、创建裸 SVG canvas，或依赖偶然的页面样式才能让 Dialog、Drawer、Button、Field、Menu、Tooltip、Status、Toast 等基础能力正确渲染。该边界由源码架构契约与真实 Solid DOM 测试共同执行。
 
 源样式必须在测试中通过 Lightning CSS 的无错误恢复严格解析，并由 PostCSS AST 检查媒体查询结构与设计令牌引用。Composer 与 quick-start 的容器焦点外观只能由一条共享规则拥有：指针焦点保持中性，只有内部输入命中 `:focus-visible` 时才显示高对比键盘焦点环；Feature 样式不得重新引入已淘汰的焦点令牌或失效选择器。
 
@@ -176,7 +176,7 @@ Composer 草稿以持久 `project_session_id` 隔离，而不是跟随临时 `ch
 | `peri-studio` 应用 | `app/` | 唯一 CLI 与发布入口；选择 `local`/`serve`/`connect`，持有信号、就绪与子进程监督契约 | 发布包仅有 `bin/peri-studio`；默认命令 = `local` |
 | server 角色 | `server/`（库） | 认证、HTTP 面与静态托管、控制面、ACPChannel 规范化、聚合器、DocManager、instance 注册表、SQLite 元数据 | `peri-studio serve`；`--local` 要求同时拉起本地 instance |
 | instance 角色 | `instance/`（库） | outbound 连 server（`/instance`）、收 spawn/kill/forward 指令、管理 ACP 进程树、透明转发 + 断线缓冲 | `peri-studio connect <URL>`；child 进程组 + fingerprint 孤儿清理（§3.3） |
-| Web 面板 | `web/`（`src/panel` + `src/ui`） | SolidJS 视图层：yjs 只读投影渲染 + Action/Ack 操作；`src/ui` 为可复用组件库 | 构建产物经 Vite 生成 `web/dist`，**不单独部署**；原规划 `peri-studio-tui` 未实现 |
+| Web 面板 | `web/`（`src/panel` + `src/components/ui`） | SolidJS 视图层：yjs 只读投影渲染 + Action/Ack 操作；`src/components/ui` 为可复用组件库 | 构建产物经 Vite 生成 `web/dist`，**不单独部署**；原规划 `peri-studio-tui` 未实现 |
 
 共享 crate：`peri-studio-proto`（帧定义、Action/Ack 信封、instance 协议类型、HMAC 原语、Y.Doc schema 的 Rust 类型镜像、schema registry）。`app` 可依赖 server 与 instance；server 与 instance 仍互不依赖，只共享 proto。
 
@@ -983,10 +983,9 @@ chat/create 或 load ──► accepting ──► ... （turn 状态机驱动�
 1. server 崩溃瞬间：instance 检测到 ws 断开。
 2. instance 上的 ACP 进程**继续运行**；daemon 将原始 ACP 帧写入本地缓冲（内存，超限溢出到磁盘；上限默认 10MB/万条，可配置）。**「产出不丢」是有界承诺**【顾问：P0-3】：缓冲上限内不丢；超限按 §8.5 丢弃策略丢弃（delta 优先、控制帧最后），并以 `gap` 结构化呈现缺口——**不承诺无限缓冲**，避免「10MB 与产出不丢」矛盾表述。
 3. instance 以指数退避重连 server。
-4. server 重启后：**无快照重建**——不加载任何投影/命令状态（§8.4：StoreSink 启动即空，outbox 重启即空；命令从不重新发送，以 ACP 现场为准）。live chat 视图先由 `Hub::rebuild_chat_views` 从 metadata.sqlite3 `session_runtime_history`（retired_at IS NULL 的活跃 runtime）重建为 accepting（§8.4.1）；随后各 instance 重连 `instance/hello`（含存活 session 清单、缓冲水位、`buffer_lost`、`stream_epochs`）→ 对非终态 chat 批量转发 `session/resume`（`resume_instance_chats`：不切换 binding、不开回放窗口，peri 从 ThreadStore 重放历史 → view-commit → 聚合器投影 → 视图重建；独立后台任务，不阻塞 hello 帧循环，失败由客户端显式 load 兜底）→ **epoch 相同**的 chat 按 `instance/buffer_sync` 补推（from_seq 由 instance 给出，环形滑窗兜底）；**epoch 变化**的 chat 判不可校准缺口（§4.5.1）【顾问：P0-2】→ 聚合器按 §6.3 幂等规则重放（重放安全由 turnId/entryId/toolCallId 幂等键 + interrupted 校准例外保证）→ 视图校准。已结束会话的 ACP 进程已死、不重建视图；用户打开历史会话时 spawn 新 ACP 进程 + `session/load` 重放。
-5. **恢复对账**【审查：运维 P1-7】：重连完成后再逐 session 比对 `alive_sessions` 与 Registry 状态，输出对账摘要日志（存活/缺失/意外存活）；意外存活的 session 按 §7.5 裁决（kill 清理），已 close 的 session 补发 kill；Chat Doc 级无法对账的置 gap 并在面板提示「载入以校准」。
-   6. **runtime 存活确认**：`rebuild_chat_views` 重建的 chat 一律视为**无进程存活证据**（`runtime_confirmed=false`）——视图重建不构成存活证据，也不得自动复活旧进程；对账时 `alive_sessions` 命中的 chat 置确认（此后可复用为 live runtime、参与 `session/resume` 与 `session/list` 轮询通道），已登记但未上报（missing）的 chat 保持/清除确认位。未确认的 chat 打开时一律走 spawn 新 ACP 进程 + `session/load`（acp_session_id 来自 metadata.sqlite3），既不复用不存在的进程，也不再作为轮询通道向 instance 空发 `session/list`。
-6. 面板断线期间自行退避重连，重连后经 §4.6 时序秒级恢复（快照携带 projection_version，面板可显示「校准中」）【审查：开发 P1】。
+4. server 重启后：**无快照重建**——不加载任何投影/命令状态（§8.4：StoreSink 启动即空，outbox 重启即空；命令从不重新发送，以 ACP 现场为准）。live chat 视图先由 `Hub::rebuild_chat_views` 从 metadata.sqlite3 `session_runtime_history`（retired_at IS NULL 的活跃 runtime）重建为 accepting 且 `runtime_confirmed=false`。各 instance 的 `instance/hello` 只完成认证、连接 fencing、capability 与 `stream_epochs` 登记；hello **没有** authoritative `alive_sessions`，不得触发对账、resume 或清除 Restarting。
+5. **首份权威心跳恢复屏障**：每个待恢复 instance 的首份 `instance/heartbeat`（空集合也有效）由 `RecoveryCoordinator` 的 per-instance 串行 lane 依次执行 `alive_sessions` 对账 → 仅对 confirmed runtime 批量 `session/resume` 并等待 RPC 终态 → 完成该 instance barrier。相邻快照按连接 epoch fencing，未开始的快照 latest-wins；旧连接不能确认 runtime、发送 resume 或完成 barrier。任一恢复失败报告 `RestoreInvariant` 并进入 Degraded；所有待恢复 instance 完成后才能清除 Restarting。
+6. **runtime 存活确认与补推**：心跳命中的 chat 才置 `runtime_confirmed=true`，missing chat 清除确认并置 gap；未确认 chat 打开时一律 spawn 新 ACP 进程 + `session/load`。恢复确认后，**epoch 相同**的 chat 按 `instance/buffer_sync` 补推；**epoch 变化**判不可校准缺口（§4.5.1）。已结束会话不重建视图；面板断线期间自行退避重连，重连后经 §4.6 时序恢复。
 
 ### 8.4 Y.Doc 持久化规范【无状态投影重构修订：无落盘契约】
 
@@ -1011,7 +1010,7 @@ yrs CRDT docs 与 command outbox **均不落盘**（§无状态投影重构；�
 1. **outbox 纯内存、重启即空**：启动不重放任何 outbox 日志（无日志）；命令**从不重新发送**，命令状态以 ACP 现场为准（客户端手动重试 prompt 可能重复执行为已接受边缘风险）。`reconcile_*_after_restart` 在空索引上执行为 **no-op**；
 2. **无 last_seq 持久化**：`(epoch, last_seq)` 为内存态（§4.5.1）；缓冲补推起点由 instance 给出（§8.5），无日志核对；
 3. **视图从零重建**：StoreSink 启动即空；live chat 视图由 `Hub::rebuild_chat_views` 从 SQLite `session_runtime_history`（retired_at IS NULL）重建为 accepting（绑定 acp_session_id），registry 由 `ProjectService::reproject` 从 metadata.sqlite3 全量重建；schema_version 判空幂等补结构（§5.6）仍适用；
-4. **instance 对账后开门**：装配后 Registry 置 `Restarting`，instance 重连（hello）后 `resume_instance_chats` 批量恢复并 `clear_restarting`（§8.3）——Restarting 期间拒绝新 committed 承诺（防基于未对账状态的错误指令）；
+4. **instance 对账后开门**：装配后 Registry 置 `Restarting`；hello 只登记连接，首份 authoritative heartbeat 由 `RecoveryCoordinator` 对账并等待 `resume_instance_chats` 终态。多 instance barrier 全部完成后才 `clear_restarting`（§8.3）——Restarting 期间拒绝 Action 与 Git mutation 等新 committed 承诺；
 5. **任一不变量失败**：进入 `degraded`（§17.2），可继续服务只读视图，拒绝新 committed 承诺。
 
 **降级行为**：chat 与 control 双 Doc 中仅一个成功写入内存镜像时，允许视图短暂不一致（chat 有内容、control 无 agent 状态），**下一个控制事件 flush 时收敛**（§6.4 控制类先 flush），不允许恢复逻辑把两个 Doc 当原子对处理。
@@ -1112,7 +1111,7 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 
 - **token 即身份**：M1 无用户概念；一个 token = 一个身份（instance 或 client），无账号、无会话登录、无用户级 ACL；
 - **授权面 = token 角色**：`instance` 角色可收 spawn/kill 指令；`full` client 角色可读全部 Doc + 发 Action；`read-only` client 角色仅读（§9.2.2）。**没有 chat 级细粒度授权**——持有 client token 即可访问 server 上全部 chat（单用户本地/家庭局域网前提下的显式取舍）；
-- **非 loopback 拒绝策略**：M1 默认监听 `127.0.0.1`；显式配置局域网监听（M2）时，配置文件中声明 `allow_non_loopback: true` 才接受非回环连接——默认拒绝，防误暴露（§16）；
+- **非 loopback 拒绝策略**：M1 默认监听 `127.0.0.1`；显式配置局域网监听（M2）时，配置文件中声明 `allow_non_loopback: true` 才接受语法有效的远程 WebSocket authority——默认拒绝，防误暴露（§16）。原生 instance 可省略 Origin；远程浏览器必须满足 `Origin=https://Host`，健康端点仍只允许 loopback peer + Host；
 - **边界声明**：多用户、配额、chat 级共享、审计合规均不在 M1–M3 范围（§1.3），演进到 M4 公网前必须重新评估授权模型，**不得在现有模型上打补丁**。
 
 ### 9.6 spawn.env 白名单【顾问：P1-7】
@@ -1138,7 +1137,7 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 
 ### 10.2 结构与数据源
 
-`web/src/panel` 分两层：`lib/`（领域逻辑，纯 TS，node --test / vitest 覆盖）与 `components/`（Solid 组件）；`web/src/ui` 是可复用基础组件库（Button/Dialog/Drawer/Field/Menu/Popover/Toast/Tooltip 等，`src/ui/index.ts` + `primitives.css` 为唯一公共入口）。
+`web/src/panel` 分两层：`lib/`（领域逻辑，纯 TS，node --test / vitest 覆盖）与 `components/`（Solid 组件）；`web/src/components/ui` 是可复用基础组件库（Button/Dialog/Drawer/Field/Menu/Popover/Toast/Tooltip 等，以 `index.ts` 作为唯一公共代码入口）。
 
 | 区域 / 模块 | 数据源 | 说明 |
 |------|--------|------|
@@ -1215,7 +1214,7 @@ peri-studio/
 │   └── tests/            # contract（auth）/ integration / product-flow / resilience
 ├── instance/              # instance 运行时库（无独立发布二进制）：child（进程组+fingerprint）/ buffer（断线缓冲+watermark）/
 │                         #   transport（重连循环）/ hub（daemon 主循环）/ auth / router / global；tests/child_test.rs
-├── web/                   # SolidJS 面板：src/panel（store + components + lib，§10.2）/ src/ui（组件库）；
+├── web/                   # SolidJS 面板：src/panel（store + components + lib，§10.2）/ src/components/ui（组件库）；
 │                         #   vitest 单测 + tests/*.test.mjs（node --test 协议/状态契约）+ Playwright 浏览器契约
 ├── scripts/               # dev-contract-test / verify-create-chain / verify-load / package-release / verify-release（+ e2e-flow/ws-verify JS 验证脚本）
 ├── dev.sh                 # 一键开发：构建 Web → 启动 peri-studio local → 就绪校验
@@ -1383,7 +1382,7 @@ peri-studio/
 
 ### 17.2 Degraded 判定规则（Registry Doc `global.status`）
 
-以下任一触发 `Degraded`：**UpdateSink 投递失败 / 终态无法建立**（§8.4：无落盘路径，原「落盘失败」语义由 `PersistFailed`（sink 投递失败）与 `mark_terminal_state_unavailable`（终态无法建立的 fail-closed）承担）/ 缓冲溢出丢弃 / 任一存活 chat 存在 gap / 镜像失败（聚合器异常）/ **启动恢复不变量失败（§8.4.1）**【顾问：P0-5】。`Restarting` 仅在 server 启动装配到首次 instance hello 之间。判定规则集中实现于 server 状态源，面板状态栏呈现。
+以下任一触发 `Degraded`：**UpdateSink 投递失败 / 终态无法建立**（§8.4：无落盘路径，原「落盘失败」语义由 `PersistFailed`（sink 投递失败）与 `mark_terminal_state_unavailable`（终态无法建立的 fail-closed）承担）/ 缓冲溢出丢弃 / 任一存活 chat 存在 gap / 镜像失败（聚合器异常）/ **启动恢复不变量失败（§8.4.1）**【顾问：P0-5】。`Restarting` 从 server 启动装配持续到所有待恢复 instance 的首份权威心跳完成对账与 resume barrier；hello 不能提前开门。判定规则集中实现于 server 状态源，面板状态栏呈现。
 
 ### 17.3 最小 SLO（对照 chat §12.2 缩放到本地单节点）
 

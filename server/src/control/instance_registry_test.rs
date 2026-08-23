@@ -317,10 +317,9 @@ async fn heartbeat_recovery_after_offline_sweep_serves_commands() {
     let _ = _drop;
 }
 
-/// 心跳驱动的 alive_sessions 对账（§8.3 步骤 5）：M1 hello 无存活清单字段
-/// （§4.5 表），对账输入唯一来源是 `instance/heartbeat`——alive 变化且非空
-/// 时触发 reconcile + kill（意外存活 §7.5 / pending_close §7.6），且不阻塞
-/// 心跳调用（后台任务）。
+/// 心跳只记录 authoritative alive 快照并返回变化语义；具体 reconcile + kill
+/// 由 RecoveryCoordinator 的串行 lane 调用，InstanceRegistry 不得自行 spawn
+/// 后台任务破坏快照顺序。
 #[tokio::test]
 async fn heartbeat_alive_sessions_reconciliation_kills() {
     let tmp = tempfile::tempdir().unwrap();
@@ -345,16 +344,27 @@ async fn heartbeat_alive_sessions_reconciliation_kills() {
     chats.register("s2", "m1", None, "/", None).await.unwrap();
     chats.request_close_offline("s2").await.unwrap();
 
-    // 首次心跳带存活清单（变化）→ 触发对账 + kill（后台任务）。
-    reg.on_heartbeat(
-        "m1",
-        &InstanceHeartbeat {
-            load: 0,
-            alive_sessions: vec!["s1".to_string(), "s2".to_string()],
-        },
-    )
-    .await
-    .unwrap();
+    let heartbeat = reg
+        .on_heartbeat(
+            "m1",
+            &InstanceHeartbeat {
+                load: 0,
+                alive_sessions: vec!["s1".to_string(), "s2".to_string()],
+            },
+        )
+        .await
+        .unwrap();
+    assert!(heartbeat.first_snapshot);
+    assert!(heartbeat.changed);
+    assert!(
+        tokio::time::timeout(Duration::from_millis(20), rx.recv())
+            .await
+            .is_err(),
+        "registry 记录心跳时不得自行启动异步对账"
+    );
+    reg.reconcile_authoritative_alive("m1", &["s1".to_string(), "s2".to_string()])
+        .await
+        .unwrap();
     let mut targets = Vec::new();
     for _ in 0..2 {
         let msg = tokio::time::timeout(Duration::from_secs(5), rx.recv())

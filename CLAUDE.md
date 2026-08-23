@@ -25,7 +25,7 @@ Peri Studio 是 ACP agent 的持久 Web 工作台（仓库名 peri-studio，产�
 - `proto/`（peri-studio-proto）：共享协议 crate——ws 帧、HMAC 双向认证、RPC schema、Yjs 同步，三端共用的事实源
 - `server/`（peri-studio-server library）：中心控制面运行时，模块按职责拆分：`auth`（token/审计）、`channel`（命令协调、runtime 生命周期、catalog 同步）、`control`（registry、心跳）、`persist`（SQLite、outbox）、`protocol`（ACP 通道）、`state`、`web`；`build.rs` 编译期内嵌 `web/dist` 产物
 - `instance/`（peri-instance library）：运行 ACP 子进程的宿主运行时；仅测试辅助二进制 `test-child` 独立存在
-- `web/`：SolidJS 单页面板（`src/panel`）+ 可复用 UI 组件库（`src/ui`）
+- `web/`：SolidJS 单页面板（`src/panel`）+ 可复用 UI 组件库（`src/components/ui`）
 - `docs/`：`architecture.md`（权威架构基准，v2.7 与实现对齐）、`terminology.md`（唯一权威术语表）、`topology.md`、`adr/`、`design/`（设计决策与验证证据）
 - `scripts/`：契约测试与端到端验证脚本（含 release 打包）
 - `dev.sh`：一键启动 server + instance 并校验就绪
@@ -83,4 +83,4 @@ cargo run -q -p peri-studio -- status --json | --ready
 ## 构建与发布
 
 - 升级以唯一 `peri-studio` 文件为原子发布物；后台双任务部署仍先重启 server 角色、确认恢复后再重启 connect 角色，最后 `status --ready` 验收。instance hello 显式携带协议版本，版本不匹配以稳定错误码 `protocol_version_mismatch` 拒绝。
-- Release：CI release workflow 未随仓库迁移重建（原仓库契约见 `docs/architecture.md` §13.1，待恢复）；当前本地产物链依次执行 cargo-deny、浏览器契约、Web 测试与构建、`cargo test --workspace --locked`、release 构建，再由 `scripts/package-release.sh` 可复现打包、`scripts/verify-release.sh` 验证。产物排除 `test-child`、token、配置与运行数据。
+- Release：`.github/workflows/ci.yml` 执行 Web、浏览器、供应链与 locked Rust 门禁；`peri-studio-v<workspace-version>` 触发 `.github/workflows/release.yml`，在 Linux/macOS 构建、双次打包比对、生成 SPDX SBOM 与 provenance attestation。对应本地产物链依次执行 cargo-deny、浏览器契约、Web 测试与构建、`cargo test --workspace --locked`、release 构建，再由 `scripts/package-release.sh` 打包、`scripts/verify-release.sh` 验证。产物排除 `test-child`、token、配置与运行数据。

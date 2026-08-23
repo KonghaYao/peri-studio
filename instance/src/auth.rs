@@ -23,6 +23,7 @@ use peri_studio_proto::hmac::{
     CHALLENGE_NONCE_LEN, CONNECTION_CONTEXT_LEN,
 };
 use peri_studio_proto::instance::InstanceHello;
+use peri_studio_proto::resource::MAX_RESOURCE_BLOB_BYTES;
 use peri_studio_proto::version::PROTOCOL_VERSION;
 
 /// HMAC 派生 role 字符串（§9.2：仅 instance 连接走双向认证，取值恒为 `"instance"`）。
@@ -144,7 +145,7 @@ impl AuthSession {
                 "resources": {
                     "protocolVersion": peri_studio_proto::resource::RESOURCE_PROTOCOL_VERSION,
                     "maxDirectoryPageSize": peri_studio_proto::resource::MAX_DIRECTORY_PAGE_SIZE,
-                    "maxFileBytes": 64 * 1024 * 1024,
+                    "maxFileBytes": MAX_RESOURCE_BLOB_BYTES,
                     "git": true
                 }
             }),

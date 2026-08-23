@@ -1,4 +1,4 @@
-//! 聚合器 tool 卡片与回放合成测试（对应 `aggregator_write.rs`/
+//! 聚合器 tool 卡片与回放合成测试（对应 `aggregator_write_tool.rs`/
 //! `aggregator_write_control.rs`）：permission 先行的 tool card 原子
 //! 合成、deny/expired 收敛、终态收敛不覆写已完成、running 启动推进
 //! turn，以及回放合成占位（§8.5 REPLAY_NEEDS_TURN）。

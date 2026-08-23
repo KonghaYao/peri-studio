@@ -69,7 +69,7 @@ fn trusted_instance_query_carries_root_separately() {
 
 #[test]
 fn git_diff_query_uses_only_opaque_change_identity() {
-    assert_eq!(RESOURCE_PROTOCOL_VERSION, 3);
+    assert_eq!(RESOURCE_PROTOCOL_VERSION, 4);
     let frame = Frame::InstanceResourceQuery(InstanceResourceQuery {
         request_id: "request-1".into(),
         workspace_id: "workspace-1".into(),
@@ -88,7 +88,7 @@ fn git_diff_query_uses_only_opaque_change_identity() {
 
 #[test]
 fn git_mutation_is_generation_bound_and_never_accepts_browser_paths() {
-    assert_eq!(RESOURCE_PROTOCOL_VERSION, 3);
+    assert_eq!(RESOURCE_PROTOCOL_VERSION, 4);
     let frame = Frame::ResourceQuery(ResourceQuery::GitAction {
         request_id: "request-1".into(),
         project_id: "project-1".into(),
@@ -97,12 +97,33 @@ fn git_mutation_is_generation_bound_and_never_accepts_browser_paths() {
             action: ResourceGitActionKind::Stage,
             change_ids: vec!["change-1".into()],
             expected_generation: "generation-1".into(),
+            message: None,
         },
     });
     let value = serde_json::to_value(&frame).unwrap();
     assert_eq!(value["payload"]["changeIds"][0], "change-1");
     assert_eq!(value["payload"]["expectedGeneration"], "generation-1");
     assert!(value["payload"].get("paths").is_none());
+}
+
+#[test]
+fn repository_git_action_carries_only_a_bounded_command_payload() {
+    let frame = Frame::ResourceQuery(ResourceQuery::GitAction {
+        request_id: "request-commit".into(),
+        project_id: "project-1".into(),
+        payload: ResourceGitAction {
+            repo_id: "repo-1".into(),
+            action: ResourceGitActionKind::Commit,
+            change_ids: vec![],
+            expected_generation: "generation-1".into(),
+            message: Some("Ship SCM".into()),
+        },
+    });
+    let value = serde_json::to_value(frame).unwrap();
+    assert_eq!(value["payload"]["action"], "commit");
+    assert_eq!(value["payload"]["message"], "Ship SCM");
+    assert_eq!(value["payload"]["changeIds"], serde_json::json!([]));
+    assert!(value["payload"].get("argv").is_none());
 }
 
 #[test]

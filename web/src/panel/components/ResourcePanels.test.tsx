@@ -5,9 +5,11 @@ import { SourceControlPanel } from './SourceControlPanel';
 import {
   handleResourceResult,
   installResourceStore,
+  mutateGitResource,
   replayResourceSubscriptions,
   resourceDiffPreview,
   resourceFilePreview,
+  resourceWorkspace,
   resetResourceProject,
   setResourceWorkspace,
 } from '../lib/resource-store';
@@ -147,6 +149,111 @@ describe('VS Code-style resource panels', () => {
     expect(sent).toContainEqual(expect.objectContaining({
       payload: expect.objectContaining({ kind: 'git-group-page', repoId: 'repo-1', groupId: 'working_tree', cursor: 'g1.1' }),
     }));
+  });
+
+  it('commits staged changes with a bounded non-empty message and keeps failures at the repository', async () => {
+    const sent: unknown[] = [];
+    installResourceStore({ send: (frame) => { sent.push(frame); return true; }, ready: () => true, toast: vi.fn() });
+    installPrincipalRole('full');
+    setResourceWorkspace({
+      projectId: 'project-1', directories: {}, loading: [], error: null,
+      repositories: [{
+        id: 'repo-1', root: '', name: 'peri-studio', headName: 'main', upstream: 'origin/main', generation: 'g1', ahead: 1, behind: 2,
+        groups: { index: { count: 1, revision: 'r1', changes: [{ id: 'c1', path: 'src/main.ts', status: 'modified' }] } },
+      }],
+    });
+    render(() => <SourceControlPanel />);
+
+    const message = screen.getByRole('textbox', { name: 'Commit message' });
+    const commit = screen.getByRole('button', { name: 'Commit staged changes' });
+    expect(commit).toBeDisabled();
+    await fireEvent.input(message, { target: { value: '界'.repeat(1_366) } });
+    expect(screen.getByRole('alert')).toHaveTextContent('4,096 UTF-8 bytes');
+    expect(commit).toBeDisabled();
+    await fireEvent.input(message, { target: { value: '  Ship remote SCM  ' } });
+    await fireEvent.click(commit);
+
+    expect(sent).toContainEqual(expect.objectContaining({
+      t: 'resource_query', type: 'resource/git-action', projectId: 'project-1',
+      payload: { repoId: 'repo-1', action: 'commit', changeIds: [], expectedGeneration: 'g1', message: 'Ship remote SCM' },
+    }));
+    const mutation = sent.find((frame) => (frame as { type?: string }).type === 'resource/git-action') as { requestId: string };
+    handleResourceResult({
+      t: 'resource_result', requestId: mutation.requestId,
+      error: { code: 'UNAVAILABLE', message: 'Commit failed. Check the staged changes and try again.', retryable: false },
+    });
+    expect(await screen.findByRole('alert')).toHaveTextContent('Commit failed');
+    expect(screen.getByText('peri-studio')).toBeInTheDocument();
+    expect(message).toHaveValue('  Ship remote SCM  ');
+  });
+
+  it('requires confirmation before discarding a change', async () => {
+    const sent: unknown[] = [];
+    installResourceStore({ send: (frame) => { sent.push(frame); return true; }, ready: () => true, toast: vi.fn() });
+    installPrincipalRole('full');
+    setResourceWorkspace({
+      projectId: 'project-1', directories: {}, loading: [], error: null,
+      repositories: [{
+        id: 'repo-1', root: '', name: 'peri-studio', headName: 'main', generation: 'g1',
+        groups: { working_tree: { count: 1, revision: 'r1', changes: [{ id: 'c1', path: 'src/main.ts', status: 'modified' }] } },
+      }],
+    });
+    render(() => <SourceControlPanel />);
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Discard src/main.ts' }));
+    expect(screen.getByRole('dialog', { name: 'Discard changes' })).toBeInTheDocument();
+    expect(sent).toHaveLength(0);
+    await fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
+    expect(sent).toContainEqual(expect.objectContaining({
+      payload: { repoId: 'repo-1', action: 'discard', changeIds: ['c1'], expectedGeneration: 'g1' },
+    }));
+  });
+
+  it('offers non-interactive pull, push and sync actions from ahead/behind state', async () => {
+    const sent: unknown[] = [];
+    installResourceStore({ send: (frame) => { sent.push(frame); return true; }, ready: () => true, toast: vi.fn() });
+    installPrincipalRole('full');
+    setResourceWorkspace({
+      projectId: 'project-1', directories: {}, loading: [], error: null,
+      repositories: [{ id: 'repo-1', root: '', name: 'peri-studio', headName: 'main', upstream: 'origin/main', generation: 'g1', ahead: 1, behind: 2, groups: {} }],
+    });
+    render(() => <SourceControlPanel />);
+
+    expect(screen.getByRole('button', { name: 'Pull from upstream' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Push to upstream' })).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole('button', { name: 'Synchronize changes' }));
+    expect(sent).toContainEqual(expect.objectContaining({
+      payload: { repoId: 'repo-1', action: 'sync', changeIds: [], expectedGeneration: 'g1' },
+    }));
+  });
+
+  it('keeps an interleaved mutation in another repository when the first repository refreshes', () => {
+    const sent: Array<{ type?: string; requestId?: string; payload?: { repoId?: string } }> = [];
+    installResourceStore({ send: (frame) => { sent.push(frame as typeof sent[number]); return true; }, ready: () => true, toast: vi.fn() });
+    setResourceWorkspace({
+      projectId: 'project-1', directories: {}, loading: [], error: null,
+      repositories: [
+        { id: 'repo-1', root: 'one', name: 'one', generation: 'g1', groups: { working_tree: { count: 1, revision: 'r1', changes: [{ id: 'c1', path: 'one.ts' }] } } },
+        { id: 'repo-2', root: 'two', name: 'two', generation: 'g2', groups: { working_tree: { count: 1, revision: 'r2', changes: [{ id: 'c2', path: 'two.ts' }] } } },
+      ],
+    });
+    expect(mutateGitResource('repo-1', 'stage', ['c1'])).toBe(true);
+    expect(mutateGitResource('repo-2', 'stage', ['c2'])).toBe(true);
+    const first = sent.find((frame) => frame.type === 'resource/git-action' && frame.payload?.repoId === 'repo-1')!;
+    const second = sent.find((frame) => frame.type === 'resource/git-action' && frame.payload?.repoId === 'repo-2')!;
+
+    handleResourceResult({ t: 'resource_result', requestId: first.requestId!, result: { kind: 'mutated' } });
+    expect(resourceWorkspace().mutations?.c2?.pending).toBe(true);
+    expect(resourceWorkspace().repositories.find((repo) => repo.id === 'repo-2')?.groups.working_tree.count).toBe(1);
+    expect(sent).toContainEqual(expect.objectContaining({
+      type: 'resource/open-view', payload: expect.objectContaining({ repoId: 'repo-1', kind: 'git-repository' }),
+    }));
+
+    handleResourceResult({
+      t: 'resource_result', requestId: second.requestId!,
+      error: { code: 'UNAVAILABLE', message: 'Repository two failed', retryable: true },
+    });
+    expect(resourceWorkspace().mutations?.c2).toEqual(expect.objectContaining({ pending: false, error: 'Repository two failed' }));
   });
 
   it('reopens short-lived resource views after reconnect instead of replaying stale doc ids', () => {

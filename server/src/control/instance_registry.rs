@@ -185,7 +185,8 @@ impl InstanceRegistry {
 
     /// hello 处理（认证在 gateway 完成，§9.2；§4.5 幂等替换）：同 instance_id
     /// 新连接 → 旧连接 fencing（旧连接事件丢弃、关闭）；注册/替换连接与
-    /// 对账输入。返回 [`HelloOutcome`]（补推协调与孤儿清理钩子输入，§7.5）。
+    /// capability 输入。返回 [`HelloOutcome`]；authoritative 对账输入只来自
+    /// 后续 heartbeat，hello 的空集合不得用于孤儿清理。
     pub async fn on_hello(
         &self,
         instance_id: &str,

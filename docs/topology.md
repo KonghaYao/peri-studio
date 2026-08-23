@@ -196,14 +196,15 @@ flowchart LR
     SQL[("metadata.sqlite3<br/>session_runtime_history")]
     REBUILD["Hub::rebuild_chat_views"]
     REG["ChatRegistry 恢复<br/>（accepting + bind）"]
-    INSTANCE["instance 重连 hello"]
-    RECON["alive_sessions 对账<br/>（§8.3 步骤 5）"]
+    INSTANCE["instance 重连 hello<br/>认证 / fencing / caps"]
+    HEARTBEAT["首份 authoritative heartbeat<br/>（空集合同样有效）"]
+    RECON["RecoveryCoordinator 串行对账<br/>（§8.3 步骤 5）"]
     KILL["意外存活/终态 → 补发 kill"]
     RESUME["确认存活 → 复用 live runtime<br/>（session/resume 重放）"]
     LOAD["未确认/已结束 → spawn + session/load"]
 
     SQL -->|"retired_at IS NULL 的活跃 runtime"| REBUILD --> REG
-    INSTANCE --> RECON
+    INSTANCE --> HEARTBEAT --> RECON
     REG -->|"恢复态不构成存活证据（未确认）"| RECON
     RECON --> KILL
     RECON --> RESUME
@@ -213,14 +214,13 @@ flowchart LR
 - **视图重建**（`Hub::rebuild_chat_views`，control/hub.rs）：从 `session_runtime_history`
   （`retired_at` 为空）全量恢复非终态 chat——`ChatRegistry::register` +
   `bind(acp_session_id, confirmed = false)`；Registry Doc `chats` 段同步恢复。
-- **未确认语义**：重建不构成进程存活证据。恢复的 chat 先按未确认处理，等
-  instance 重连 hello / 心跳携带的 `alive_sessions` 对账裁决（§8.3 步骤 5）：
+- **未确认语义**：重建不构成进程存活证据。恢复的 chat 先按未确认处理；
+  hello 不携带 `alive_sessions`，必须等首份 heartbeat 对账裁决（§8.3 步骤 5）：
   - 确认存活 → 复用为 live runtime（`session/resume` 重放）；
   - 意外存活 / 需终止 → server 补发 kill；
   - 未确认 → 用户显式打开时 spawn + `session/load`。
 - **终态 chat 不重建**（不在 runtime 历史中），显式打开由 spawn + `session/load`
-  兜底；重建失败仅告警，后续任何显式 load/prompt 按需补建（chat 存在性由
-  `Store` 判定）。
+  兜底；活跃 runtime 重建不完整会 fail-fast，不能以部分 Registry 进入 Healthy。
 - **Registry Doc 全量重建**：由 `metadata.sqlite3` 经 `ProjectService::reproject`；
   server 侧 `StoreSink` 内存镜像启动即空（零落盘，不参与恢复）。
 - **后台维护**：单一 tick 合并 instance 离线 sweep + nonce sweep；周期

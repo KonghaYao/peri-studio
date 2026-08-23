@@ -41,6 +41,10 @@ mod gateway_instance_test;
 mod gateway_e2e_test;
 
 #[cfg(test)]
+#[path = "gateway_resource_e2e_test.rs"]
+mod gateway_resource_e2e_test;
+
+#[cfg(test)]
 #[path = "gateway_disconnect_test.rs"]
 mod gateway_disconnect_test;
 // 装配工具（TestServer/start_server/next_frame/next_action_ack）与客户端

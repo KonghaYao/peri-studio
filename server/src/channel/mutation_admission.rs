@@ -1,8 +1,7 @@
-//! Global health gate for client operations that create committed side effects.
+//! 对产生已提交副作用的客户端操作实施全局健康门禁。
 //!
-//! This is deliberately independent from token authorization: authorization
-//! answers *who* may mutate, while admission answers *whether the recovered
-//! server is currently able to make a durable commitment*.
+//! 它刻意独立于令牌授权：授权回答“谁可以修改”，本门禁回答“恢复后的服务
+//! 当前是否有能力作出持久承诺”。
 
 use peri_studio_proto::action::ActionEnvelope;
 use peri_studio_proto::frame::Frame;

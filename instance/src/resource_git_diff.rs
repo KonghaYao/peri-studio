@@ -5,6 +5,7 @@ use std::process::Stdio;
 use base64::Engine as _;
 use peri_studio_proto::resource::{
     GitGroupId, InstanceBlob, InstanceResourcePayload, ResourceErrorCode, ResourceFailure,
+    MAX_RESOURCE_BLOB_BYTES,
 };
 use tokio::io::AsyncReadExt;
 use tokio::process::Command;
@@ -12,8 +13,6 @@ use tokio::process::Command;
 use super::{change_id, parse_status, STATUS_ARGS};
 use crate::resource::common::{failure, hash_bytes, map_io, validate_relative};
 use crate::resource::ResourceHost;
-
-const MAX_DIFF_BYTES: u64 = 8 * 1024 * 1024;
 
 impl ResourceHost {
     pub(in crate::resource) async fn git_diff(
@@ -23,7 +22,7 @@ impl ResourceHost {
         expected_change_id: &str,
         max_bytes: u64,
     ) -> Result<InstanceResourcePayload, ResourceFailure> {
-        if expected_change_id.is_empty() || max_bytes == 0 || max_bytes > MAX_DIFF_BYTES {
+        if expected_change_id.is_empty() || max_bytes == 0 || max_bytes > MAX_RESOURCE_BLOB_BYTES {
             return Err(failure(ResourceErrorCode::InvalidRequest, false));
         }
         let (_, repo) = self.resolve_repo(root, expected_repo_id).await?;

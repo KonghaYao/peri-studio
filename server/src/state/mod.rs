@@ -28,6 +28,7 @@ mod aggregator_write;
 mod aggregator_write_catalog;
 mod aggregator_write_control;
 mod aggregator_write_helpers;
+mod aggregator_write_tool;
 pub mod chat_writer;
 mod chat_writer_blocks;
 mod chat_writer_entries;

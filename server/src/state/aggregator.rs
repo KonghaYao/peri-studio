@@ -8,8 +8,9 @@
 //! （chat 写入 → control 写入，事务顺序固定 chat → control，§6.4/§7.4）。
 //!
 //! 拆分说明（结构拆分，行为不变）：本文件保留类型/常量与 apply 入口族；
-//! 判定族 → `aggregator_judge.rs`，写入 → `aggregator_write.rs`（chat 侧）
-//! 与 `aggregator_write_control.rs`（control 侧），写辅助 →
+//! 判定族 → `aggregator_judge.rs`，写入编排 → `aggregator_write.rs`，tool 与
+//! permission 的 chat 投影 → `aggregator_write_tool.rs`，control 投影 →
+//! `aggregator_write_control.rs`，写辅助 →
 //! `aggregator_write_helpers.rs` / `aggregator_write_catalog.rs`。
 //! 以下 `pub(crate) use` 使外部调用方 `aggregator::xxx` 路径保持不变。
 

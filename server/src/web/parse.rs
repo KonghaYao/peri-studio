@@ -82,6 +82,28 @@ pub(crate) fn valid_loopback_host(host: &str) -> bool {
     matches!(address, "localhost" | "127.0.0.1") && valid_optional_port(&suffix)
 }
 
+pub(crate) fn valid_ws_host(host: &str, allow_non_loopback: bool) -> bool {
+    if valid_loopback_host(host) {
+        return true;
+    }
+    if !allow_non_loopback || host.is_empty() {
+        return false;
+    }
+    host.parse::<tokio_tungstenite::tungstenite::http::uri::Authority>()
+        .is_ok_and(|authority| {
+            !authority.host().is_empty() && authority.port_u16().is_none_or(|port| port != 0)
+        })
+}
+
+pub(crate) fn valid_ws_origin(origin: Option<&str>, host: &str) -> bool {
+    let Some(origin) = origin else { return true };
+    if valid_loopback_host(host) {
+        origin == format!("http://{host}")
+    } else {
+        origin == format!("https://{host}")
+    }
+}
+
 fn valid_optional_port(suffix: &str) -> bool {
     suffix.is_empty()
         || suffix

@@ -19,10 +19,16 @@ fn background_units_fail_closed_without_embedding_credentials() {
         "deploy/systemd/peri-studio-connect.service",
     ] {
         let unit = read(path);
-        assert!(unit.contains("UMask=0077"), "{path} must create private files");
+        assert!(
+            unit.contains("UMask=0077"),
+            "{path} must create private files"
+        );
         assert!(unit.contains("NoNewPrivileges=true"));
         assert!(unit.contains("Restart=on-failure"));
-        assert!(!unit.contains("--token "), "{path} must not embed bearer material");
+        assert!(
+            !unit.contains("--token "),
+            "{path} must not embed bearer material"
+        );
     }
 }
 
@@ -40,9 +46,15 @@ fn ci_is_a_real_required_evidence_chain() {
         "cargo deny check",
         "bun audit",
     ] {
-        assert!(ci.contains(evidence), "CI is missing required evidence: {evidence}");
+        assert!(
+            ci.contains(evidence),
+            "CI is missing required evidence: {evidence}"
+        );
     }
-    assert!(ci.contains("needs: web"), "Rust must consume a freshly built Web artifact");
+    assert!(
+        ci.contains("needs: web"),
+        "Rust must consume a freshly built Web artifact"
+    );
 }
 
 #[test]
@@ -56,6 +68,10 @@ fn release_requires_clean_fresh_sources_and_attests_the_archive() {
     assert!(release.contains("scripts/verify-release.sh --require-clean"));
     assert!(release.contains("attest-build-provenance"));
     assert!(release.contains("sbom-action"));
+    assert!(release.contains("tags: ['peri-studio-v*']"));
+    assert!(release.contains("peri-studio-v${version}"));
+    assert!(release.contains("macos-14"));
+    assert!(release.contains("cmp \"$first\" \"$second\""));
 }
 
 #[test]

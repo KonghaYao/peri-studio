@@ -1,6 +1,8 @@
 import { createSignal } from 'solid-js';
 import { DocStore } from './doc-store';
-import { gitResourceAction, openResourceFile, openResourceGitDiff, openResourceView, releaseResourceView, type GitGroupId, type ResourceResultFrame } from './resource-protocol';
+import { openResourceFile, openResourceGitDiff, openResourceView, releaseResourceView, type GitActionKind, type GitGroupId, type ResourceResultFrame } from './resource-protocol';
+import { GitMutationController, type GitMutationState } from './resource-mutations';
+import { loadFilePreview, loadGitDiff, type ResourceDiffPreviewState, type ResourceFilePreviewState } from './resource-preview';
 import { renderResourceView, type ResourceEntry, type ResourceView } from './resource-view';
 
 export interface DirectoryState { generation: string; entries: ResourceEntry[]; nextCursor?: string }
@@ -10,6 +12,7 @@ export interface RepositoryState {
   name: string;
   generation?: string;
   headName?: string;
+  upstream?: string;
   detached?: boolean;
   ahead?: number;
   behind?: number;
@@ -22,44 +25,7 @@ export interface ResourceWorkspaceState {
   loading: string[];
   error: string | null;
   mutations?: Record<string, GitMutationState>;
-}
-
-export interface GitMutationState {
-  requestId: string;
-  repoId: string;
-  action: 'stage' | 'unstage';
-  changeIds: string[];
-  pending: boolean;
-  error?: string;
-  retryable?: boolean;
-}
-
-export interface ResourceDiffPreviewState {
-  requestId: string;
-  repoId: string;
-  groupId: GitGroupId;
-  changeId: string;
-  path: string;
-  originalPath?: string;
-  status: string;
-  loading: boolean;
-  text?: string;
-  error?: string;
-  errorCode?: string;
-  retryable?: boolean;
-}
-
-export interface ResourceFilePreviewState {
-  requestId: string;
-  path: string;
-  loading: boolean;
-  mode?: 'text' | 'image' | 'binary' | 'large';
-  url?: string;
-  contentType?: string;
-  size?: number;
-  etag?: string;
-  text?: string;
-  error?: string;
+  repoMutations?: Record<string, GitMutationState>;
 }
 
 const initial = (): ResourceWorkspaceState => ({
@@ -69,6 +35,7 @@ const initial = (): ResourceWorkspaceState => ({
   loading: [],
   error: null,
   mutations: {},
+  repoMutations: {},
 });
 
 export const [resourceWorkspace, setResourceWorkspace] = createSignal<ResourceWorkspaceState>(initial());
@@ -78,8 +45,10 @@ const docs = new DocStore();
 const pending = new Map<string, string>();
 const pendingDiffs = new Map<string, ResourceDiffPreviewState>();
 const pendingFiles = new Map<string, ResourceFilePreviewState>();
-const pendingMutations = new Map<string, GitMutationState>();
+const ignoredRequests = new Set<string>();
+const gitMutations = new GitMutationController();
 const openViews = new Map<string, string>();
+const openViewKeys = new Map<string, string>();
 const requested = new Set<string>();
 
 interface Transport { send: (frame: unknown) => boolean; ready: () => boolean; toast: (message: string) => void }
@@ -184,33 +153,22 @@ export function retryGitDiffPreview(): void {
   });
 }
 
-export function mutateGitResource(repoId: string, action: 'stage' | 'unstage', changeIds: string[]): boolean {
-  const state = resourceWorkspace();
-  const repo = state.repositories.find((item) => item.id === repoId);
-  if (!state.projectId || !transport?.ready() || !repo?.generation || !changeIds.length) return false;
-  if (changeIds.some((changeId) => state.mutations?.[changeId]?.pending)) return false;
-  const frame = gitResourceAction(state.projectId, repoId, action, changeIds, repo.generation);
-  if (!transport.send(frame)) return false;
-  const mutation: GitMutationState = {
-    requestId: frame.requestId, repoId, action, changeIds, pending: true,
-  };
-  pendingMutations.set(frame.requestId, mutation);
-  pending.set(frame.requestId, `mutation:${repoId}`);
-  setLoading(`mutation:${repoId}`, true);
-  setResourceWorkspace((current) => ({
-    ...current,
-    mutations: {
-      ...current.mutations,
-      ...Object.fromEntries(changeIds.map((changeId) => [changeId, mutation])),
-    },
-  }));
-  return true;
+export function mutateGitResource(repoId: string, action: GitActionKind, changeIds: string[] = [], message?: string): boolean {
+  if (!transport) return false;
+  return gitMutations.start({ state: resourceWorkspace(), repoId, action, changeIds, message,
+    ready: transport.ready(), send: transport.send, update: setResourceWorkspace, setLoading });
 }
 
 export function retryGitResourceMutation(changeId: string): boolean {
   const mutation = resourceWorkspace().mutations?.[changeId];
   if (!mutation || mutation.pending || !mutation.retryable) return false;
-  return mutateGitResource(mutation.repoId, mutation.action, mutation.changeIds);
+  return mutateGitResource(mutation.repoId, mutation.action, mutation.changeIds, mutation.message);
+}
+
+export function retryGitRepositoryMutation(repoId: string): boolean {
+  const mutation = resourceWorkspace().repoMutations?.[repoId];
+  if (!mutation || mutation.pending || !mutation.retryable) return false;
+  return mutateGitResource(mutation.repoId, mutation.action, mutation.changeIds, mutation.message);
 }
 
 export function refreshResourceProject(): void {
@@ -221,15 +179,19 @@ export function refreshResourceProject(): void {
 }
 
 export function handleResourceResult(frame: ResourceResultFrame): void {
+  if (ignoredRequests.delete(frame.requestId)) {
+    if (frame.result?.kind === 'view') transport?.send(releaseResourceView(frame.result.data.viewId));
+    return;
+  }
   const key = pending.get(frame.requestId);
   const diffRequest = pendingDiffs.get(frame.requestId);
   const fileRequest = pendingFiles.get(frame.requestId);
-  const mutationRequest = pendingMutations.get(frame.requestId);
+  const mutationRequest = gitMutations.take(frame.requestId);
   pending.delete(frame.requestId);
   pendingDiffs.delete(frame.requestId);
   pendingFiles.delete(frame.requestId);
-  pendingMutations.delete(frame.requestId);
   if (key) setLoading(key, false);
+  if (mutationRequest) setLoading(`mutation:${mutationRequest.repoId}`, false);
   if (frame.error) {
     if (diffRequest) {
       updateDiffPreview(diffRequest.requestId, {
@@ -245,18 +207,7 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
       return;
     }
     if (mutationRequest) {
-      setResourceWorkspace((state) => ({
-        ...state,
-        mutations: {
-          ...state.mutations,
-          ...Object.fromEntries(mutationRequest.changeIds.map((changeId) => [changeId, {
-            ...mutationRequest,
-            pending: false,
-            error: frame.error!.message,
-            retryable: frame.error!.retryable,
-          }])),
-        },
-      }));
+      gitMutations.fail(mutationRequest, frame.error, setResourceWorkspace);
       return;
     }
     setResourceWorkspace((state) => ({ ...state, error: frame.error!.message }));
@@ -264,20 +215,52 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
   }
   if (frame.result?.kind === 'view') {
     openViews.set(frame.result.data.docId, frame.result.data.viewId);
+    if (key) openViewKeys.set(frame.result.data.docId, key);
     transport?.send({ t: 'ysync.subscribe', docs: [frame.result.data.docId], clientCapabilities: [] });
   } else if (frame.result?.kind === 'blob') {
     if (diffRequest) {
-      void loadGitDiff(frame.result.data.url, diffRequest);
+      void loadGitDiff(frame.result.data.url, diffRequest, updateDiffPreview);
       return;
     }
     if (fileRequest) {
-      void loadFilePreview(frame.result.data.url, frame.result.data.etag, fileRequest);
+      void loadFilePreview(frame.result.data.url, frame.result.data.etag, fileRequest, updateFilePreview);
       return;
     }
     downloadUrl(frame.result.data.url, key?.startsWith('blob:') ? basename(key.slice(5)) : '');
-  } else if (frame.result?.kind === 'mutated') {
-    refreshResourceProject();
+  } else if (frame.result?.kind === 'mutated' && mutationRequest) {
+    gitMutations.succeed(mutationRequest, setResourceWorkspace);
+    refreshGitRepository(mutationRequest.repoId);
   }
+}
+
+function refreshGitRepository(repoId: string): void {
+  const projectId = resourceWorkspace().projectId;
+  if (!projectId || !transport) return;
+  const prefixes = [`repository:${repoId}`, `group:${repoId}:`];
+  for (const key of [...requested]) {
+    if (prefixes.some((prefix) => key.startsWith(prefix))) requested.delete(key);
+  }
+  for (const [requestId, key] of [...pending]) {
+    if (!prefixes.some((prefix) => key.startsWith(prefix))) continue;
+    pending.delete(requestId);
+    ignoredRequests.add(requestId);
+  }
+  for (const [docId, key] of [...openViewKeys]) {
+    if (!prefixes.some((prefix) => key.startsWith(prefix))) continue;
+    const viewId = openViews.get(docId);
+    transport.send({ t: 'ysync.unsubscribe', docs: [docId] });
+    if (viewId) transport.send(releaseResourceView(viewId));
+    docs.drop(docId);
+    openViews.delete(docId);
+    openViewKeys.delete(docId);
+  }
+  setResourceWorkspace((state) => ({
+    ...state,
+    repositories: state.repositories.map((repo) => repo.id === repoId
+      ? { ...repo, groups: {} }
+      : repo),
+  }));
+  request(projectId, `repository:${repoId}`, { kind: 'git-repository', repoId });
 }
 
 export function handleResourceUpdate(frame: { doc: string; update: string }): boolean {
@@ -305,87 +288,14 @@ export function resetResourceProject(): void {
   pending.clear();
   pendingDiffs.clear();
   pendingFiles.clear();
-  pendingMutations.clear();
+  ignoredRequests.clear();
+  gitMutations.clear();
   openViews.clear();
+  openViewKeys.clear();
   requested.clear();
   setResourceDiffPreview(null);
   setResourceFilePreview(null);
   setResourceWorkspace(initial());
-}
-
-async function loadGitDiff(url: string, request: ResourceDiffPreviewState) {
-  try {
-    const response = await fetch(url, {
-      method: 'GET', credentials: 'same-origin', cache: 'no-store',
-      headers: { Accept: 'text/x-diff, text/plain;q=0.9' },
-    });
-    if (!response.ok) throw new Error('diff fetch failed');
-    updateDiffPreview(request.requestId, {
-      loading: false,
-      text: await response.text(),
-      error: undefined,
-      errorCode: undefined,
-      retryable: undefined,
-    });
-  } catch {
-    updateDiffPreview(request.requestId, {
-      loading: false,
-      error: 'Unable to load this diff. Refresh Source Control and try again.',
-      retryable: true,
-    });
-  }
-}
-
-const MAX_TEXT_PREVIEW_BYTES = 4 * 1024 * 1024;
-
-async function loadFilePreview(url: string, etag: string | undefined, request: ResourceFilePreviewState) {
-  try {
-    const head = await fetch(url, {
-      method: 'HEAD', credentials: 'same-origin', cache: 'no-store',
-    });
-    if (!head.ok) throw new Error('file metadata fetch failed');
-    const contentType = head.headers.get('content-type')?.split(';')[0].trim().toLowerCase() || 'application/octet-stream';
-    const contentLength = head.headers.get('content-length');
-    const parsedSize = contentLength === null ? undefined : Number(contentLength);
-    const size = parsedSize !== undefined && Number.isFinite(parsedSize) ? parsedSize : undefined;
-    const metadata = { url, etag, contentType, size };
-    if (isRasterImage(contentType)) {
-      updateFilePreview(request.requestId, { ...metadata, loading: false, mode: 'image' });
-      return;
-    }
-    if (!isTextPreview(request.path, contentType) && contentType !== 'application/octet-stream') {
-      updateFilePreview(request.requestId, { ...metadata, loading: false, mode: 'binary' });
-      return;
-    }
-    if (size !== undefined && size > MAX_TEXT_PREVIEW_BYTES) {
-      updateFilePreview(request.requestId, { ...metadata, loading: false, mode: 'large' });
-      return;
-    }
-    const response = await fetch(url, {
-      method: 'GET', credentials: 'same-origin', cache: 'no-store',
-      headers: { Accept: 'text/plain, application/json;q=0.9, */*;q=0.1' },
-    });
-    if (!response.ok) throw new Error('file fetch failed');
-    const bytes = await response.arrayBuffer();
-    if (bytes.byteLength > MAX_TEXT_PREVIEW_BYTES) {
-      updateFilePreview(request.requestId, { ...metadata, size: bytes.byteLength, loading: false, mode: 'large' });
-      return;
-    }
-    if (new Uint8Array(bytes).includes(0)) {
-      updateFilePreview(request.requestId, { ...metadata, size: bytes.byteLength, loading: false, mode: 'binary' });
-      return;
-    }
-    let text: string;
-    try {
-      text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-    } catch {
-      updateFilePreview(request.requestId, { ...metadata, size: bytes.byteLength, loading: false, mode: 'binary' });
-      return;
-    }
-    updateFilePreview(request.requestId, { ...metadata, size: bytes.byteLength, loading: false, mode: 'text', text });
-  } catch {
-    updateFilePreview(request.requestId, { loading: false, error: 'Unable to open this file. Refresh Explorer and try again.' });
-  }
 }
 
 function updateDiffPreview(requestId: string, patch: Partial<ResourceDiffPreviewState>) {
@@ -394,16 +304,6 @@ function updateDiffPreview(requestId: string, patch: Partial<ResourceDiffPreview
 
 function updateFilePreview(requestId: string, patch: Partial<ResourceFilePreviewState>) {
   setResourceFilePreview((current) => current?.requestId === requestId ? { ...current, ...patch } : current);
-}
-
-function isTextPreview(path: string, contentType: string): boolean {
-  if (contentType.startsWith('text/')) return true;
-  if (['application/json', 'application/javascript', 'application/xml', 'image/svg+xml'].includes(contentType)) return true;
-  return /\.(?:c|cc|cpp|h|hpp|go|java|kt|kts|py|rb|php|sh|bash|zsh|fish|sql|vue|svelte|astro|xml|ini|cfg|conf|env|lock|gitignore|dockerfile)$/i.test(path);
-}
-
-function isRasterImage(contentType: string): boolean {
-  return ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/avif'].includes(contentType);
 }
 
 function downloadUrl(url: string, filename: string) {
@@ -470,6 +370,7 @@ function consume(view: ResourceView) {
           root: String(view.meta.root ?? ''),
           generation: view.sourceGeneration,
           headName: stringOrUndefined(view.meta.head_name),
+          upstream: stringOrUndefined(view.meta.upstream),
           detached: !!view.meta.detached,
           ahead: numberOrZero(view.meta.ahead),
           behind: numberOrZero(view.meta.behind),

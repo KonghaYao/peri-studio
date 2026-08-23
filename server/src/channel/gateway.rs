@@ -37,8 +37,9 @@ use std::time::Duration;
 use futures::{SinkExt as _, StreamExt as _};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::Mutex;
-use tokio_tungstenite::accept_hdr_async;
+use tokio_tungstenite::accept_hdr_async_with_config;
 use tokio_tungstenite::tungstenite::protocol::CloseFrame;
+use tokio_tungstenite::tungstenite::protocol::WebSocketConfig;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::WebSocketStream;
 use tracing::{debug, info, warn};
@@ -46,6 +47,7 @@ use tracing::{debug, info, warn};
 use peri_studio_proto::ack::{ActionError, ErrorCode};
 use peri_studio_proto::action::ActionEnvelope;
 use peri_studio_proto::frame::{Frame, ProtoError};
+use peri_studio_proto::resource::MAX_RESOURCE_WS_MESSAGE_BYTES;
 
 use crate::auth::audit::audit;
 use crate::auth::AuthService;
@@ -253,7 +255,14 @@ impl Gateway {
         // 4. ws 握手。
         let cookie_principal = Arc::new(std::sync::Mutex::new(None::<String>));
         let captured = cookie_principal.clone();
-        let ws = match accept_hdr_async(
+        let allow_non_loopback = self.cfg.allow_non_loopback;
+        // 默认 tungstenite 允许 64 MiB message；这里显式收紧到资源中继契约，
+        // 同时保留管理员显式调大的 ACP frame 配置。
+        let ws_message_limit = MAX_RESOURCE_WS_MESSAGE_BYTES.max(self.cfg.max_frame_bytes + 4096);
+        let ws_config = WebSocketConfig::default()
+            .max_message_size(Some(ws_message_limit))
+            .max_frame_size(Some(ws_message_limit));
+        let ws = match accept_hdr_async_with_config(
             stream,
             move |req: &tokio_tungstenite::tungstenite::handshake::server::Request,
                   resp: tokio_tungstenite::tungstenite::handshake::server::Response| {
@@ -263,10 +272,8 @@ impl Gateway {
                     .and_then(|v| v.to_str().ok())
                     .unwrap_or_default();
                 let origin = req.headers().get("origin").and_then(|v| v.to_str().ok());
-                if !crate::web::valid_loopback_host(host)
-                    || origin
-                        .map(|o| o != format!("http://{host}"))
-                        .unwrap_or(false)
+                if !crate::web::valid_ws_host(host, allow_non_loopback)
+                    || !crate::web::valid_ws_origin(origin, host)
                 {
                     return Err(
                         tokio_tungstenite::tungstenite::handshake::server::ErrorResponse::new(
@@ -284,6 +291,7 @@ impl Gateway {
                 }
                 Ok(resp)
             },
+            Some(ws_config),
         )
         .await
         {

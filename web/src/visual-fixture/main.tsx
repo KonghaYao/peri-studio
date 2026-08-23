@@ -4,13 +4,23 @@ import '../styles.css';
 import './fixture.css';
 import { AppShell } from '../panel/components/AppShell';
 import { Toasts } from '../panel/components/Toasts';
-import { DEFAULT_VISUAL_SCENARIO, installVisualScenario, visualScenarios } from './scenarios';
+import { DEFAULT_VISUAL_SCENARIO, installVisualScenario, setVisualFilePreview, visualScenarios } from './scenarios';
+
+declare global {
+  interface Window {
+    __PERI_VISUAL_FIXTURE__?: { setFilePreview: typeof setVisualFilePreview };
+  }
+}
 
 const selected = new URLSearchParams(window.location.search).get('scenario') || DEFAULT_VISUAL_SCENARIO;
 
 function VisualFixture() {
   const installed = installVisualScenario(selected);
-  onCleanup(installed.dispose);
+  window.__PERI_VISUAL_FIXTURE__ = { setFilePreview: setVisualFilePreview };
+  onCleanup(() => {
+    delete window.__PERI_VISUAL_FIXTURE__;
+    installed.dispose();
+  });
   return <>
     <div class="authenticated-app visual-fixture-root">
       <aside class="visual-fixture-rail" aria-label="Visual acceptance scenarios">

@@ -6,6 +6,7 @@ use base64::Engine as _;
 use peri_studio_proto::resource::{
     DirectoryPage, FileEntry, FileKind, InstanceBlob, InstanceResourcePayload, ReadDirectoryQuery,
     ReadFileQuery, ResourceErrorCode, ResourceFailure, MAX_DIRECTORY_PAGE_SIZE,
+    MAX_RESOURCE_BLOB_BYTES,
 };
 use sha2::{Digest, Sha256};
 
@@ -61,17 +62,21 @@ pub(super) fn read_file(
     root: &str,
     query: ReadFileQuery,
 ) -> Result<InstanceResourcePayload, ResourceFailure> {
-    const HARD_MAX_BYTES: u64 = 64 * 1024 * 1024;
-    if query.max_bytes == 0 || query.max_bytes > HARD_MAX_BYTES {
+    read_file_with_hook(root, query, || {})
+}
+
+pub(super) fn read_file_with_hook(
+    root: &str,
+    query: ReadFileQuery,
+    before_final_open: impl FnOnce(),
+) -> Result<InstanceResourcePayload, ResourceFailure> {
+    if query.max_bytes == 0 || query.max_bytes > MAX_RESOURCE_BLOB_BYTES {
         return Err(failure(ResourceErrorCode::ViewTooLarge, false));
     }
     let root = canonical_root(root)?;
     let relative = validate_relative(&query.path)?;
-    let canonical = std::fs::canonicalize(root.join(&relative)).map_err(map_io)?;
-    if !canonical.starts_with(&root) {
-        return Err(failure(ResourceErrorCode::OutsideWorkspace, false));
-    }
-    let metadata = canonical.metadata().map_err(map_io)?;
+    let file = open_workspace_file(&root, &relative, before_final_open)?;
+    let metadata = file.metadata().map_err(map_io)?;
     if !metadata.is_file() {
         return Err(failure(ResourceErrorCode::NotFound, false));
     }
@@ -79,9 +84,7 @@ pub(super) fn read_file(
         return Err(failure(ResourceErrorCode::ViewTooLarge, false));
     }
     let mut bytes = Vec::with_capacity(metadata.len() as usize);
-    std::fs::File::open(&canonical)
-        .map_err(map_io)?
-        .take(query.max_bytes + 1)
+    file.take(query.max_bytes + 1)
         .read_to_end(&mut bytes)
         .map_err(map_io)?;
     if bytes.len() as u64 > query.max_bytes {
@@ -92,6 +95,74 @@ pub(super) fn read_file(
         content_type: content_type(&query.path).to_string(),
         etag: hash_bytes(&bytes),
     }))
+}
+
+#[cfg(unix)]
+fn open_workspace_file(
+    root: &Path,
+    relative: &Path,
+    before_final_open: impl FnOnce(),
+) -> Result<std::fs::File, ResourceFailure> {
+    use std::ffi::CString;
+    use std::os::fd::{AsRawFd, FromRawFd};
+    use std::os::unix::ffi::OsStrExt;
+
+    fn open_at(
+        directory_fd: i32,
+        name: &std::ffi::OsStr,
+        directory: bool,
+    ) -> Result<std::fs::File, ResourceFailure> {
+        let name = CString::new(name.as_bytes())
+            .map_err(|_| failure(ResourceErrorCode::InvalidPath, false))?;
+        let mut flags = libc::O_RDONLY | libc::O_CLOEXEC | libc::O_NOFOLLOW;
+        if directory {
+            flags |= libc::O_DIRECTORY;
+        }
+        // SAFETY: `name` 是存活的 NUL 结尾缓冲；成功 fd 立即交给 File 独占。
+        let fd = unsafe { libc::openat(directory_fd, name.as_ptr(), flags) };
+        if fd < 0 {
+            let error = std::io::Error::last_os_error();
+            if matches!(error.raw_os_error(), Some(code) if code == libc::ELOOP || code == libc::ENOTDIR)
+            {
+                return Err(failure(ResourceErrorCode::OutsideWorkspace, false));
+            }
+            return Err(map_io(error));
+        }
+        // SAFETY: `openat` 返回新的 owned fd，File 成为唯一 owner。
+        Ok(unsafe { std::fs::File::from_raw_fd(fd) })
+    }
+
+    let mut directory = open_at(libc::AT_FDCWD, root.as_os_str(), true)?;
+    let mut components = relative
+        .components()
+        .filter_map(|component| match component {
+            std::path::Component::Normal(value) => Some(value),
+            _ => None,
+        })
+        .peekable();
+    let Some(mut component) = components.next() else {
+        return Err(failure(ResourceErrorCode::NotFound, false));
+    };
+    for next in components {
+        directory = open_at(directory.as_raw_fd(), component, true)?;
+        component = next;
+    }
+    before_final_open();
+    open_at(directory.as_raw_fd(), component, false)
+}
+
+#[cfg(not(unix))]
+fn open_workspace_file(
+    root: &Path,
+    relative: &Path,
+    before_final_open: impl FnOnce(),
+) -> Result<std::fs::File, ResourceFailure> {
+    let canonical = std::fs::canonicalize(root.join(relative)).map_err(map_io)?;
+    if !canonical.starts_with(root) {
+        return Err(failure(ResourceErrorCode::OutsideWorkspace, false));
+    }
+    before_final_open();
+    std::fs::File::open(canonical).map_err(map_io)
 }
 
 fn content_type(path: &str) -> &'static str {

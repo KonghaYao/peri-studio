@@ -260,11 +260,11 @@ impl Hub {
     /// 重建——进程内 ChatRegistry 与 Registry Doc `chats` 段同步恢复。
     ///
     /// 状态语义：**accepting + 绑定 acp_session_id**——live chat 的 ACP 进程
-    /// 在 server 崩溃期间继续运行（§8.3 不变），instance 重连 hello 后
-    /// `resume_instance_chats` 只命中非终态 chat，必须保持非终态才能恢复
+    /// 在 server 崩溃期间继续运行（§8.3 不变），instance 重连并提交首份
+    /// authoritative heartbeat 后，`resume_instance_chats` 只命中非终态 chat，必须保持非终态才能恢复
     /// 视图。终态 chat 不在 runtime 历史（retired）中，不重建；用户显式
-    /// 打开时由 spawn + `session/load` 兜底。重建失败仅告警——后续任何
-    /// 客户端显式 load/prompt 都会按需补建（chat 存在性由 Store 判定）。
+    /// 打开时由 spawn + `session/load` 兜底。重建不完整会阻止 server 启动，
+    /// 不能让缺失的 Registry 事实被后续 hello 提前标成 Healthy。
     async fn rebuild_chat_views(
         metadata: &MetadataStore,
         chats: &ChatRegistry,
@@ -288,7 +288,7 @@ impl Hub {
                 .map_err(|error| HubError::Store(error.to_string()))?;
             if let Some(acp_session_id) = runtime.acp_session_id.as_deref() {
                 // 视图重建不构成进程存活证据：恢复的 chat 先按未确认处理，
-                // 等 instance hello 对账（alive_sessions）裁决后再复用为
+                // 等 instance 首份 heartbeat 对账（alive_sessions）裁决后再复用为
                 // live runtime（§8.3）。未确认的 chat 打开时走 spawn +
                 // `session/load` 恢复。
                 chats

@@ -1,12 +1,12 @@
 import { For, Show, createSignal } from 'solid-js';
 import { Icon, IconButton, LoadingState } from '../../components/ui';
-import { openFilePreview, openResourceDirectory, resourceWorkspace } from '../store';
+import { openFilePreview, openResourceDirectory, refreshResourceProject, resourceWorkspace } from '../store';
 import type { ResourceEntry } from '../lib/resource-view';
 
 function ChevronIcon() { return <Icon size="small"><path d="m7 4 6 6-6 6" /></Icon>; }
 function FolderIcon() { return <Icon size="small"><path d="M3 5.5h5l1.5 2H17v8.5H3z" /></Icon>; }
 function FileIcon() { return <Icon size="small"><path d="M5 2.8h6l4 4V17H5z" /><path d="M11 2.8V7h4" /></Icon>; }
-function MoreIcon() { return <Icon size="small"><circle cx="4" cy="10" r=".7" fill="currentColor" /><circle cx="10" cy="10" r=".7" fill="currentColor" /><circle cx="16" cy="10" r=".7" fill="currentColor" /></Icon>; }
+function RefreshIcon() { return <Icon size="small"><path d="M15.5 6.5V3.8l-2 2A6 6 0 1 0 16 10" /></Icon>; }
 
 export function ExplorerPanel() {
   const [expanded, setExpanded] = createSignal(new Set<string>(['']));
@@ -53,7 +53,7 @@ export function ExplorerPanel() {
   };
   return <section class="flex min-h-0 flex-1 flex-col" aria-label="Explorer">
     <div class="resource-section-title flex h-28 items-center border-b border-divider px-8 text-10 font-650 uppercase tracking-6 text-text-secondary">
-      <span>Files</span><IconButton label="Explorer actions" class="ml-auto size-24 min-h-24 border-0 bg-transparent text-text-muted"><MoreIcon /></IconButton>
+      <span>Files</span><IconButton label="Refresh Explorer" onClick={refreshResourceProject} class="ml-auto size-24 min-h-24 border-0 bg-transparent text-text-muted"><RefreshIcon /></IconButton>
     </div>
     <div ref={tree} class="ui-scrollbar min-h-0 flex-1 overflow-auto py-3" role="tree" aria-label="Workspace files" onKeyDown={navigateTree}>
       <Show when={resourceWorkspace().directories['']} fallback={<LoadingState label="Loading files" class="m-8 p-8! text-left!" />}>

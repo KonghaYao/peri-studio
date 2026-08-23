@@ -26,6 +26,7 @@ struct ResourceLease {
     principal: String,
     expires_at: DateTime<Utc>,
     subscribers: HashSet<u64>,
+    publishing: bool,
 }
 
 #[derive(Clone)]
@@ -63,7 +64,7 @@ impl ResourceProjection {
         let view_id = uuid::Uuid::new_v4().to_string();
         let doc_id = DocId::resource(&view_id);
         let update = build_update(&view_id, project_id, payload);
-        let persist_failed = {
+        {
             let mut leases = self.leases.lock().await;
             let count = leases
                 .values()
@@ -82,27 +83,28 @@ impl ResourceProjection {
                     principal: principal.to_string(),
                     expires_at,
                     subscribers: HashSet::new(),
+                    publishing: true,
                 },
             );
-            // 授权、过期回收与首个快照发布共用该临界区，避免短 TTL
-            // 在 persist 完成前回收 lease，随后留下无主 Doc。
-            let failed = self
-                .sink
-                .persist_update(doc_id.clone(), update)
-                .await
-                .is_err();
-            if failed {
-                leases.remove(&doc_id);
-            }
-            failed
-        };
-        if persist_failed {
+        }
+        // publishing reservation 让 sweeper 跳过尚未完成的视图；持久化必须在
+        // lease 锁外等待，避免慢 sink 阻塞其他 principal 的授权与释放。
+        if self
+            .sink
+            .persist_update(doc_id.clone(), update)
+            .await
+            .is_err()
+        {
+            self.leases.lock().await.remove(&doc_id);
             self.sink.remove_resource_doc(&doc_id).await;
             return Err(failure(
                 ResourceErrorCode::Unavailable,
                 "resource projection unavailable",
                 true,
             ));
+        }
+        if let Some(lease) = self.leases.lock().await.get_mut(&doc_id) {
+            lease.publishing = false;
         }
         Ok(ResourceViewOpened {
             view_id,
@@ -118,7 +120,7 @@ impl ResourceProjection {
             .lock()
             .await
             .get(doc)
-            .is_some_and(|lease| lease.principal == principal)
+            .is_some_and(|lease| !lease.publishing && lease.principal == principal)
     }
 
     /// 授权并登记活跃连接；有订阅者的 view 不进入 TTL 回收。
@@ -128,7 +130,7 @@ impl ResourceProjection {
         let mut leases = self.leases.lock().await;
         let Some(lease) = leases
             .get_mut(doc)
-            .filter(|lease| lease.principal == principal)
+            .filter(|lease| !lease.publishing && lease.principal == principal)
         else {
             return false;
         };
@@ -216,7 +218,9 @@ async fn sweep_expired_parts(
         let mut leases = leases.lock().await;
         let expired = leases
             .iter()
-            .filter(|(_, lease)| lease.subscribers.is_empty() && lease.expires_at <= now)
+            .filter(|(_, lease)| {
+                !lease.publishing && lease.subscribers.is_empty() && lease.expires_at <= now
+            })
             .map(|(doc, _)| doc.clone())
             .collect::<Vec<_>>();
         for doc in &expired {

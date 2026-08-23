@@ -16,6 +16,7 @@ fn git_mutation_requires_a_healthy_server_but_resource_reads_do_not() {
             action: ResourceGitActionKind::Stage,
             change_ids: vec!["change-1".into()],
             expected_generation: "generation-1".into(),
+            message: None,
         },
     });
     let read = Frame::ResourceQuery(ResourceQuery::OpenView {
@@ -66,6 +67,7 @@ fn rejected_git_mutation_preserves_request_correlation_and_retry_semantics() {
             action: ResourceGitActionKind::Unstage,
             change_ids: vec!["change-1".into()],
             expected_generation: "generation-1".into(),
+            message: None,
         },
     });
 
