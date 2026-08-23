@@ -6,7 +6,7 @@
 
 /// 线协议版本（§13.1：`instance/hello` 携带，版本不匹配拒绝连接）。
 ///
-/// 【决策】数值取 1；版本不匹配时的拒绝语义在 server auth 模块。
+/// 【决策】资源帧加入后数值升级为 2；版本不匹配时的拒绝语义在 server auth 模块。
 pub const PROTOCOL_VERSION: u32 = 2;
 
 /// Chat Doc 结构版本（§5.3 明示，真相来源以本 crate 实现为准）。
@@ -23,7 +23,7 @@ pub const SESSION_DOC_SCHEMA_VERSION: u32 = 1;
 /// 时以此判空补结构。
 pub const REGISTRY_DOC_SCHEMA_VERSION: u32 = 2;
 
-/// Remote FS/Git resource projection Doc schema version.
+/// 远程 FS/Git 资源投影 Doc 的结构版本。
 pub const RESOURCE_DOC_SCHEMA_VERSION: u32 = 1;
 
 /// y-sync update 编码版本（§4.1「固定 update 编码版本 v1」）。

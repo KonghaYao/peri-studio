@@ -4,7 +4,7 @@ use peri_studio_proto::resource::{ResourceErrorCode, ResourceFailure};
 use sha2::{Digest, Sha256};
 
 pub(super) fn validate_relative(value: &str) -> Result<PathBuf, ResourceFailure> {
-    if value.contains('\0') || value.contains('\\') {
+    if value.len() > 4096 || value.contains('\0') || value.contains('\\') {
         return Err(failure(ResourceErrorCode::InvalidPath, false));
     }
     let path = Path::new(value);

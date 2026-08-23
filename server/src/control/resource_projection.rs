@@ -53,12 +53,14 @@ impl ResourceProjection {
         payload: &InstanceResourcePayload,
     ) -> Result<ResourceViewOpened, ResourceFailure> {
         let now = Utc::now();
+        self.sweep_expired(now).await;
         let expires_at = now
             + chrono::Duration::from_std(self.lease_ttl)
                 .unwrap_or_else(|_| chrono::Duration::minutes(1));
+        let view_id = uuid::Uuid::new_v4().to_string();
+        let doc_id = DocId::resource(&view_id);
         {
             let mut leases = self.leases.lock().await;
-            leases.retain(|_, lease| lease.expires_at > now);
             let count = leases
                 .values()
                 .filter(|lease| lease.principal == principal)
@@ -70,28 +72,30 @@ impl ResourceProjection {
                     true,
                 ));
             }
+            leases.insert(
+                doc_id.clone(),
+                ResourceLease {
+                    principal: principal.to_string(),
+                    expires_at,
+                },
+            );
         }
 
-        let view_id = uuid::Uuid::new_v4().to_string();
-        let doc_id = DocId::resource(&view_id);
         let update = build_update(&view_id, project_id, payload);
-        self.sink
+        if self
+            .sink
             .persist_update(doc_id.clone(), update)
             .await
-            .map_err(|_| {
-                failure(
-                    ResourceErrorCode::Unavailable,
-                    "resource projection unavailable",
-                    true,
-                )
-            })?;
-        self.leases.lock().await.insert(
-            doc_id.clone(),
-            ResourceLease {
-                principal: principal.to_string(),
-                expires_at,
-            },
-        );
+            .is_err()
+        {
+            self.leases.lock().await.remove(&doc_id);
+            self.sink.remove_resource_doc(&doc_id).await;
+            return Err(failure(
+                ResourceErrorCode::Unavailable,
+                "resource projection unavailable",
+                true,
+            ));
+        }
         Ok(ResourceViewOpened {
             view_id,
             doc_id,
@@ -101,14 +105,16 @@ impl ResourceProjection {
 
     pub async fn authorize(&self, principal: &str, doc: &DocId) -> bool {
         let now = Utc::now();
-        let mut leases = self.leases.lock().await;
-        leases.retain(|_, lease| lease.expires_at > now);
-        leases
+        self.sweep_expired(now).await;
+        self.leases
+            .lock()
+            .await
             .get(doc)
             .is_some_and(|lease| lease.principal == principal)
     }
 
     pub async fn release(&self, principal: &str, view_id: &str) -> bool {
+        self.sweep_expired(Utc::now()).await;
         let doc = DocId::resource(view_id);
         let removed = {
             let mut leases = self.leases.lock().await;
@@ -126,6 +132,24 @@ impl ResourceProjection {
             self.sink.remove_resource_doc(&doc).await;
         }
         removed
+    }
+
+    async fn sweep_expired(&self, now: DateTime<Utc>) {
+        let expired = {
+            let mut leases = self.leases.lock().await;
+            let expired = leases
+                .iter()
+                .filter(|(_, lease)| lease.expires_at <= now)
+                .map(|(doc, _)| doc.clone())
+                .collect::<Vec<_>>();
+            for doc in &expired {
+                leases.remove(doc);
+            }
+            expired
+        };
+        for doc in expired {
+            self.sink.remove_resource_doc(&doc).await;
+        }
     }
 }
 
@@ -241,26 +265,11 @@ fn insert_optional(
 }
 
 fn group_id(id: GitGroupId) -> &'static str {
-    match id {
-        GitGroupId::Conflicts => "conflicts",
-        GitGroupId::Index => "index",
-        GitGroupId::WorkingTree => "working_tree",
-        GitGroupId::Untracked => "untracked",
-    }
+    id.as_str()
 }
 
 fn change_status(status: GitChangeStatus) -> &'static str {
-    match status {
-        GitChangeStatus::Added => "added",
-        GitChangeStatus::Modified => "modified",
-        GitChangeStatus::Deleted => "deleted",
-        GitChangeStatus::Renamed => "renamed",
-        GitChangeStatus::Copied => "copied",
-        GitChangeStatus::Untracked => "untracked",
-        GitChangeStatus::Ignored => "ignored",
-        GitChangeStatus::Conflict => "conflict",
-        GitChangeStatus::TypeChanged => "type_changed",
-    }
+    status.as_str()
 }
 
 fn failure(code: ResourceErrorCode, message: &str, retryable: bool) -> ResourceFailure {

@@ -504,6 +504,7 @@ export {
   activateResourceProject,
   downloadResourceFile,
   mutateGitResource,
+  openMoreGitChanges,
   openResourceDirectory,
   refreshResourceProject,
   resourceWorkspace,

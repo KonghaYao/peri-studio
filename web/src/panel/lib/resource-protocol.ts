@@ -73,7 +73,7 @@ export function gitResourceAction(
   repoId: string,
   action: 'stage' | 'unstage',
   paths: string[],
-  expectedGeneration?: string,
+  expectedGeneration: string,
 ) {
   return {
     t: 'resource_query',

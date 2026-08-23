@@ -322,7 +322,9 @@ fn instance_error_code(error: &InstanceError) -> ErrorCode {
         | InstanceError::UnknownInstance(_)
         | InstanceError::ConnectionGone => ErrorCode::AgentUnavailable,
         // 协议形态错误：确定性失败（非 retryable，与 default_retryable 一致）。
-        InstanceError::MalformedFrame(_) => ErrorCode::InvalidState,
+        InstanceError::MalformedFrame(_) | InstanceError::ResourceUnsupported => {
+            ErrorCode::InvalidState
+        }
     }
 }
 

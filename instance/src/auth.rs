@@ -134,13 +134,20 @@ impl AuthSession {
     }
 
     /// 构造 `instance/hello`（§4.5）：token + 本次连接 nonce + hostname + caps +
-    /// 缓冲水位/纪元映射。caps M1 不透明透传（【决策】文档未展开结构）。
+    /// 缓冲水位/纪元映射，并显式声明资源协议能力。
     pub fn build_hello(&self, ctx: &HelloCtx) -> InstanceHello {
         InstanceHello {
             protocol_version: PROTOCOL_VERSION,
             token: self.auth.token.clone(),
             hostname: ctx.hostname.clone(),
-            caps: serde_json::json!({}),
+            caps: serde_json::json!({
+                "resources": {
+                    "protocolVersion": peri_studio_proto::resource::RESOURCE_PROTOCOL_VERSION,
+                    "maxDirectoryPageSize": peri_studio_proto::resource::MAX_DIRECTORY_PAGE_SIZE,
+                    "maxFileBytes": 64 * 1024 * 1024,
+                    "git": true
+                }
+            }),
             buffered: Some(ctx.buffered),
             buffer_lost: Some(ctx.buffer_lost),
             stream_epochs: Some(ctx.stream_epochs.clone()),

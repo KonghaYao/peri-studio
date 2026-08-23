@@ -18,6 +18,10 @@ use peri_studio_proto::resource::{
 use crate::control::{InstanceError, InstanceRegistry, ResourceProjection};
 use crate::persist::metadata::MetadataStore;
 
+const MAX_BLOBS_PER_PRINCIPAL: usize = 4;
+const MAX_SINGLE_BLOB_BYTES: usize = 64 * 1024 * 1024;
+const MAX_BLOB_CACHE_BYTES: usize = 256 * 1024 * 1024;
+
 #[derive(Clone)]
 pub struct ResourceService {
     metadata: Arc<MetadataStore>,
@@ -117,6 +121,13 @@ impl ResourceService {
         project_id: &str,
         action: peri_studio_proto::resource::ResourceGitAction,
     ) -> Result<ResourceQueryResult, ResourceFailure> {
+        if action.expected_generation.is_empty() {
+            return Err(failure(
+                ResourceErrorCode::InvalidRequest,
+                "Git generation is required",
+                false,
+            ));
+        }
         let project = self
             .metadata
             .project(project_id)
@@ -145,7 +156,7 @@ impl ResourceService {
             .instance
             .query_resource(&project.instance_id, query)
             .await
-            .map_err(instance_failure)?;
+            .map_err(git_instance_failure)?;
         if let Some(error) = result.error {
             return Err(error);
         }
@@ -172,10 +183,30 @@ impl ResourceService {
         content_type: String,
         etag: String,
         ttl: chrono::Duration,
-    ) -> ResourceBlobOpened {
+    ) -> Result<ResourceBlobOpened, ResourceFailure> {
         let blob_id = uuid::Uuid::new_v4().to_string();
         let expires_at = Utc::now() + ttl;
-        self.blobs.lock().await.insert(
+        let mut blobs = self.blobs.lock().await;
+        let now = Utc::now();
+        blobs.retain(|_, blob| blob.expires_at > now);
+        let principal_count = blobs
+            .values()
+            .filter(|blob| blob.principal == principal)
+            .count();
+        let cached_bytes = blobs.values().map(|blob| blob.bytes.len()).sum::<usize>();
+        if bytes.len() > MAX_SINGLE_BLOB_BYTES
+            || principal_count >= MAX_BLOBS_PER_PRINCIPAL
+            || cached_bytes
+                .checked_add(bytes.len())
+                .is_none_or(|total| total > MAX_BLOB_CACHE_BYTES)
+        {
+            return Err(failure(
+                ResourceErrorCode::RateLimited,
+                "resource blob capacity reached",
+                true,
+            ));
+        }
+        blobs.insert(
             blob_id.clone(),
             ResourceBlob {
                 principal: principal.to_string(),
@@ -185,12 +216,12 @@ impl ResourceService {
                 expires_at,
             },
         );
-        ResourceBlobOpened {
+        Ok(ResourceBlobOpened {
             blob_id: blob_id.clone(),
             url: format!("/api/resource-blobs/{blob_id}"),
             expires_at: expires_at.to_rfc3339(),
             etag: Some(etag),
-        }
+        })
     }
 
     async fn open_blob(
@@ -251,7 +282,7 @@ impl ResourceService {
                 blob.etag,
                 chrono::Duration::seconds(60),
             )
-            .await,
+            .await?,
         ))
     }
 
@@ -363,7 +394,23 @@ fn instance_failure(error: InstanceError) -> ResourceFailure {
         InstanceError::Timeout => {
             failure(ResourceErrorCode::Timeout, "resource query timed out", true)
         }
+        InstanceError::ResourceUnsupported => failure(
+            ResourceErrorCode::Unavailable,
+            "project instance does not support workspace resources",
+            false,
+        ),
         _ => unavailable(),
+    }
+}
+
+fn git_instance_failure(error: InstanceError) -> ResourceFailure {
+    match error {
+        InstanceError::Timeout | InstanceError::ConnectionGone => failure(
+            ResourceErrorCode::DeliveryUnknown,
+            "Git outcome is unknown; refresh repository state",
+            false,
+        ),
+        other => instance_failure(other),
     }
 }
 

@@ -1,6 +1,6 @@
 import { For, Show } from 'solid-js';
 import { Icon, IconButton, LoadingState } from '../../components/ui';
-import { mutateGitResource, resourceWorkspace } from '../store';
+import { mutateGitResource, openMoreGitChanges, resourceWorkspace } from '../store';
 import type { RepositoryState } from '../lib/resource-store';
 import { readOnly } from '../lib/auth-state';
 
@@ -55,6 +55,7 @@ function Repository(props: { repo: RepositoryState }) {
             class="size-22 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
           >{group.id === 'index' ? <MinusIcon /> : <PlusIcon />}</IconButton>
         </div>}</For>
+        <Show when={state().nextCursor}>{(cursor) => <button type="button" class="h-24 w-full border-0 bg-transparent pl-28 text-left text-11 text-accent hover:bg-hover" onClick={() => openMoreGitChanges(props.repo.id, group.id, cursor())}>Load more…</button>}</Show>
       </Show>;
     }}</For>
   </section>;

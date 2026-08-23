@@ -193,7 +193,8 @@ async fn resource_blob_requires_cookie_and_returns_exact_bytes_with_etag() {
             "etag-1".into(),
             chrono::Duration::seconds(60),
         )
-        .await;
+        .await
+        .unwrap();
 
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();

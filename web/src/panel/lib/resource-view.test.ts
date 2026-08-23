@@ -33,4 +33,20 @@ describe('resource Yjs projection reader', () => {
   it('fails closed when structural maps are missing', () => {
     expect(renderResourceView('resource:bad', new Y.Doc())).toBeNull();
   });
+
+  it('rejects unknown view and Git group discriminants at the Yjs boundary', () => {
+    for (const [viewType, groupId] of [['future_view', 'index'], ['git_group_page', 'future_group']]) {
+      const doc = new Y.Doc();
+      const root = doc.getMap('root');
+      const meta = new Y.Map();
+      meta.set('view_id', 'view-1');
+      meta.set('project_id', 'project-1');
+      meta.set('view_type', viewType);
+      meta.set('group_id', groupId);
+      root.set('meta', meta);
+      root.set('entry_order', new Y.Array());
+      root.set('entries', new Y.Map());
+      expect(renderResourceView('resource:bad', doc)).toBeNull();
+    }
+  });
 });

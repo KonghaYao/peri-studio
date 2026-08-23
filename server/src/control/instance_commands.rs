@@ -17,6 +17,17 @@ impl InstanceRegistry {
         instance_id: &str,
         query: peri_studio_proto::resource::InstanceResourceQuery,
     ) -> Result<peri_studio_proto::resource::InstanceResourceResult, InstanceError> {
+        {
+            let instances = self.inner.instances.read().await;
+            let Some(entry) = instances.get(instance_id) else {
+                return Err(InstanceError::UnknownInstance(instance_id.to_string()));
+            };
+            if entry.resource_protocol_version
+                != Some(peri_studio_proto::resource::RESOURCE_PROTOCOL_VERSION)
+            {
+                return Err(InstanceError::ResourceUnsupported);
+            }
+        }
         let request_id = query.request_id.clone();
         let ack = self
             .send_command(

@@ -112,6 +112,8 @@ pub(super) struct HubState {
     pub(super) hostname: String,
     /// 子进程事件汇聚通道（各 session spawn 共用，有界，问题 3）。
     pub(super) child_tx: mpsc::Sender<ChildOutput>,
+    /// 资源查询宿主在 daemon 生命周期内共享，保证同一仓库 mutation 串行。
+    pub(super) resource_host: crate::resource::ResourceHost,
     /// 无法提取 sessionId 的帧计数（§3.3 本地缺口）。
     pub(super) dropped_no_sid: AtomicU64,
     /// stdout 超长行丢弃计数（问题 4 本地缺口）。
@@ -210,6 +212,7 @@ pub async fn run(config: InstanceConfig, shutdown: CancellationToken) -> anyhow:
         buffer_lost,
         hostname,
         child_tx,
+        resource_host: crate::resource::ResourceHost::default(),
         dropped_no_sid: AtomicU64::new(0),
         oversize_lines: AtomicU64::new(0),
         oversize_gaps: AtomicU64::new(0),

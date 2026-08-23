@@ -3,7 +3,7 @@ import { DocStore } from './doc-store';
 import { gitResourceAction, openResourceFile, openResourceView, releaseResourceView, type ResourceResultFrame } from './resource-protocol';
 import { renderResourceView, type ResourceEntry, type ResourceView } from './resource-view';
 
-export interface DirectoryState { generation: string; entries: ResourceEntry[] }
+export interface DirectoryState { generation: string; entries: ResourceEntry[]; nextCursor?: string }
 export interface RepositoryState {
   id: string;
   root: string;
@@ -13,7 +13,7 @@ export interface RepositoryState {
   detached?: boolean;
   ahead?: number;
   behind?: number;
-  groups: Record<string, { count: number; revision: string; changes: ResourceEntry[] }>;
+  groups: Record<string, { count: number; revision: string; changes: ResourceEntry[]; sourceGeneration?: string; nextCursor?: string }>;
 }
 export interface ResourceWorkspaceState {
   projectId: string | null;
@@ -55,9 +55,16 @@ export function activateResourceProject(projectId: string): void {
   request(projectId, 'repositories', { kind: 'workspace-repositories-page' });
 }
 
-export function openResourceDirectory(path: string): void {
+export function openResourceDirectory(path: string, cursor?: string): void {
   const projectId = resourceWorkspace().projectId;
-  if (projectId) request(projectId, `directory:${path}`, { kind: 'fs-directory-page', path });
+  if (projectId) request(projectId, `directory:${path}:${cursor ?? 'first'}`, { kind: 'fs-directory-page', path, cursor });
+}
+
+export function openMoreGitChanges(repoId: string, groupId: import('./resource-protocol').GitGroupId, cursor: string): void {
+  const projectId = resourceWorkspace().projectId;
+  if (projectId) request(projectId, `group:${repoId}:${groupId}:${cursor}`, {
+    kind: 'git-group-page', repoId, groupId, cursor,
+  });
 }
 
 export function downloadResourceFile(path: string): void {
@@ -72,7 +79,7 @@ export function downloadResourceFile(path: string): void {
 export function mutateGitResource(repoId: string, action: 'stage' | 'unstage', paths: string[]): void {
   const state = resourceWorkspace();
   const repo = state.repositories.find((item) => item.id === repoId);
-  if (!state.projectId || !transport?.ready() || !repo || !paths.length) return;
+  if (!state.projectId || !transport?.ready() || !repo?.generation || !paths.length) return;
   const frame = gitResourceAction(state.projectId, repoId, action, paths, repo.generation);
   if (!transport.send(frame)) return;
   pending.set(frame.requestId, `mutation:${repoId}`);
@@ -161,7 +168,10 @@ function consume(view: ResourceView) {
       const path = view.path ?? '';
       setResourceWorkspace((state) => ({
         ...state,
-        directories: { ...state.directories, [path]: { generation: view.sourceGeneration ?? '', entries: view.entries } },
+        directories: {
+          ...state.directories,
+          [path]: mergeDirectoryPage(state.directories[path], view),
+        },
       }));
       break;
     }
@@ -208,12 +218,46 @@ function consume(view: ResourceView) {
         ...state,
         repositories: state.repositories.map((repo) => repo.id === repoId ? {
           ...repo,
-          groups: { ...repo.groups, [groupId]: { ...(repo.groups[groupId] ?? { count: view.entries.length, revision: '' }), changes: view.entries } },
+          groups: {
+            ...repo.groups,
+            [groupId]: mergeGitPage(repo.groups[groupId], view),
+          },
         } : repo),
       }));
       break;
     }
   }
+}
+
+function mergeDirectoryPage(current: DirectoryState | undefined, view: ResourceView): DirectoryState {
+  const generation = view.sourceGeneration ?? '';
+  const entries = current?.generation === generation
+    ? mergeEntries(current.entries, view.entries)
+    : view.entries;
+  return { generation, entries, nextCursor: view.nextCursor };
+}
+
+function mergeGitPage(
+  current: RepositoryState['groups'][string] | undefined,
+  view: ResourceView,
+): RepositoryState['groups'][string] {
+  const sourceGeneration = view.sourceGeneration ?? '';
+  const changes = current?.sourceGeneration === sourceGeneration
+    ? mergeEntries(current.changes, view.entries)
+    : view.entries;
+  return {
+    count: current?.count ?? changes.length,
+    revision: current?.revision ?? '',
+    changes,
+    sourceGeneration,
+    nextCursor: view.nextCursor,
+  };
+}
+
+function mergeEntries(current: ResourceEntry[], incoming: ResourceEntry[]): ResourceEntry[] {
+  const byId = new Map(current.map((entry) => [entry.id, entry]));
+  for (const entry of incoming) byId.set(entry.id, entry);
+  return [...byId.values()];
 }
 
 function upsertRepo(repositories: RepositoryState[], id: string, patch: Partial<RepositoryState>): RepositoryState[] {

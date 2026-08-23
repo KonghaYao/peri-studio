@@ -79,6 +79,8 @@ fn test_build_hello_fields() {
     assert_eq!(hello.hostname, "h1");
     assert_eq!(hello.buffered, Some(true));
     assert_eq!(hello.buffer_lost, Some(false));
+    assert_eq!(hello.caps["resources"]["protocolVersion"], 1);
+    assert_eq!(hello.caps["resources"]["git"], true);
     assert_eq!(
         hello.stream_epochs,
         Some(HashMap::from([("s1".to_string(), 2u64)]))

@@ -13,7 +13,7 @@ describe('VS Code-style resource panels', () => {
     installResourceStore({ send: (frame) => { sent.push(frame); return true; }, ready: () => true, toast: vi.fn() });
     setResourceWorkspace({
       projectId: 'project-1',
-      directories: { '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory' }] } },
+      directories: { '': { generation: 'g1', nextCursor: 'g1.1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory' }] } },
       repositories: [], loading: [], error: null,
     });
     render(() => <ExplorerPanel />);
@@ -21,6 +21,10 @@ describe('VS Code-style resource panels', () => {
     expect(sent).toContainEqual(expect.objectContaining({
       t: 'resource_query', type: 'resource/open-view', projectId: 'project-1',
       payload: expect.objectContaining({ kind: 'fs-directory-page', path: 'src' }),
+    }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Load more…' }));
+    expect(sent).toContainEqual(expect.objectContaining({
+      payload: expect.objectContaining({ kind: 'fs-directory-page', path: '', cursor: 'g1.1' }),
     }));
   });
 
@@ -32,7 +36,7 @@ describe('VS Code-style resource panels', () => {
       projectId: 'project-1', directories: {}, loading: [], error: null,
       repositories: [{
         id: 'repo-1', root: '', name: 'peri-studio', headName: 'main', generation: 'g1', groups: {
-          working_tree: { count: 1, revision: 'r1', changes: [{ id: 'c1', path: 'src/main.ts', status: 'modified' }] },
+          working_tree: { count: 1, revision: 'r1', nextCursor: 'g1.1', changes: [{ id: 'c1', path: 'src/main.ts', status: 'modified' }] },
         },
       }],
     });
@@ -46,6 +50,10 @@ describe('VS Code-style resource panels', () => {
     expect(sent).toContainEqual(expect.objectContaining({
       t: 'resource_query', type: 'resource/git-action', projectId: 'project-1',
       payload: { repoId: 'repo-1', action: 'stage', paths: ['src/main.ts'], expectedGeneration: 'g1' },
+    }));
+    fireEvent.click(screen.getByRole('button', { name: 'Load more…' }));
+    expect(sent).toContainEqual(expect.objectContaining({
+      payload: expect.objectContaining({ kind: 'git-group-page', repoId: 'repo-1', groupId: 'working_tree', cursor: 'g1.1' }),
     }));
   });
 });

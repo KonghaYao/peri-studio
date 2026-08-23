@@ -58,8 +58,7 @@ pub struct ResourceGitAction {
     pub repo_id: String,
     pub action: ResourceGitActionKind,
     pub paths: Vec<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub expected_generation: Option<String>,
+    pub expected_generation: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -188,6 +187,7 @@ pub enum ResourceErrorCode {
     PermissionDenied,
     StaleCursor,
     VersionConflict,
+    DeliveryUnknown,
     RepoNotFound,
     GitNotAvailable,
     ViewTooLarge,
@@ -223,8 +223,7 @@ pub struct GitMutateQuery {
     pub repo_id: String,
     pub action: ResourceGitActionKind,
     pub paths: Vec<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub expected_generation: Option<String>,
+    pub expected_generation: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -381,6 +380,17 @@ pub enum GitGroupId {
     Untracked,
 }
 
+impl GitGroupId {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Conflicts => "conflicts",
+            Self::Index => "index",
+            Self::WorkingTree => "working_tree",
+            Self::Untracked => "untracked",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitGroupPage {
@@ -414,6 +424,22 @@ pub enum GitChangeStatus {
     Ignored,
     Conflict,
     TypeChanged,
+}
+
+impl GitChangeStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Added => "added",
+            Self::Modified => "modified",
+            Self::Deleted => "deleted",
+            Self::Renamed => "renamed",
+            Self::Copied => "copied",
+            Self::Untracked => "untracked",
+            Self::Ignored => "ignored",
+            Self::Conflict => "conflict",
+            Self::TypeChanged => "type_changed",
+        }
+    }
 }
 
 #[cfg(test)]

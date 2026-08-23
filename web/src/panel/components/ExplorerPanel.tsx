@@ -32,7 +32,11 @@ export function ExplorerPanel() {
 
 function FileLevel(props: { path: string; depth: number; expanded: Set<string>; onToggle: (path: string) => void }) {
   const entries = () => resourceWorkspace().directories[props.path]?.entries ?? [];
-  return <For each={entries()}>{(entry) => <FileRow entry={entry} depth={props.depth} expanded={props.expanded} onToggle={props.onToggle} />}</For>;
+  const nextCursor = () => resourceWorkspace().directories[props.path]?.nextCursor;
+  return <>
+    <For each={entries()}>{(entry) => <FileRow entry={entry} depth={props.depth} expanded={props.expanded} onToggle={props.onToggle} />}</For>
+    <Show when={nextCursor()}>{(cursor) => <button type="button" class="h-24 w-full border-0 bg-transparent text-left text-11 text-accent hover:bg-hover" style={{ 'padding-left': `${26 + props.depth * 13}px` }} onClick={() => openResourceDirectory(props.path, cursor())}>Load more…</button>}</Show>
+  </>;
 }
 
 function FileRow(props: { entry: ResourceEntry; depth: number; expanded: Set<string>; onToggle: (path: string) => void }) {

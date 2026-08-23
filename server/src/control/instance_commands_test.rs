@@ -37,7 +37,7 @@ fn hello(instance_id: &str) -> InstanceHello {
         protocol_version: peri_studio_proto::version::PROTOCOL_VERSION,
         token: "tok".into(),
         hostname: instance_id.into(),
-        caps: json!({}),
+        caps: json!({"resources": {"protocolVersion": peri_studio_proto::resource::RESOURCE_PROTOCOL_VERSION}}),
         buffered: None,
         buffer_lost: None,
         stream_epochs: None,
@@ -174,6 +174,38 @@ async fn resource_query_tracks_result_by_request_id() {
             .await
     );
     assert_eq!(pending.await.unwrap().unwrap(), result);
+}
+
+#[tokio::test]
+async fn resource_query_requires_negotiated_instance_capability() {
+    let (registry, _drop) = test_registry();
+    let reg = InstanceRegistry::new(
+        Duration::from_secs(30),
+        Duration::from_secs(1),
+        ChatRegistry::new(registry),
+    );
+    let (tx, _rx) = mpsc::channel(4);
+    let mut unsupported = hello("m1");
+    unsupported.caps = json!({});
+    reg.on_hello("m1", "tok-1", InstanceConn { tx }, &unsupported)
+        .await;
+    let error = reg
+        .query_resource(
+            "m1",
+            InstanceResourceQuery {
+                request_id: "resource-unsupported".into(),
+                workspace_id: "workspace-1".into(),
+                root: "/workspace".into(),
+                query: InstanceResourceQueryKind::ReadDirectory(ReadDirectoryQuery {
+                    path: String::new(),
+                    cursor: None,
+                    limit: 10,
+                }),
+            },
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(error, InstanceError::ResourceUnsupported);
 }
 
 #[tokio::test]

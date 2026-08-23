@@ -72,10 +72,33 @@ async fn projection_enforces_bounded_views_per_principal() {
             repositories: Vec::new(),
             next_cursor: None,
         });
-    projection.publish("token-a", "p1", &payload).await.unwrap();
-    let error = projection
-        .publish("token-a", "p1", &payload)
-        .await
-        .unwrap_err();
-    assert_eq!(error.code, ResourceErrorCode::RateLimited);
+    let (left, right) = tokio::join!(
+        projection.publish("token-a", "p1", &payload),
+        projection.publish("token-a", "p1", &payload),
+    );
+    let results = [left, right];
+    assert_eq!(results.iter().filter(|result| result.is_ok()).count(), 1);
+    assert_eq!(
+        results
+            .iter()
+            .filter_map(|result| result.as_ref().err())
+            .filter(|error| error.code == ResourceErrorCode::RateLimited)
+            .count(),
+        1
+    );
+}
+
+#[tokio::test]
+async fn expired_projection_removes_its_doc_snapshot() {
+    let sink = Arc::new(StoreSink::new());
+    let projection = ResourceProjection::new(sink.clone(), Duration::ZERO, 1);
+    let payload =
+        InstanceResourcePayload::RepositoriesPage(peri_studio_proto::resource::RepositoriesPage {
+            source_generation: "g1".into(),
+            repositories: Vec::new(),
+            next_cursor: None,
+        });
+    let opened = projection.publish("token-a", "p1", &payload).await.unwrap();
+    assert!(!projection.authorize("token-a", &opened.doc_id).await);
+    assert!(sink.snapshot(&opened.doc_id).await.is_none());
 }

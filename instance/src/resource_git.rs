@@ -1,11 +1,15 @@
 use std::path::{Path, PathBuf};
+use std::process::Stdio;
+use std::sync::Arc;
 
 use peri_studio_proto::resource::{
     GitChange, GitChangeStatus, GitGroupId, GitGroupPage, GitGroupSummary, GitRepositorySnapshot,
     GitRepositorySummary, InstanceMutationResult, InstanceResourcePayload, RepositoriesPage,
     ResourceErrorCode, ResourceFailure, ResourceGitActionKind, MAX_DIRECTORY_PAGE_SIZE,
 };
+use tokio::io::AsyncReadExt;
 use tokio::process::Command;
+use tokio::sync::Mutex;
 
 use super::common::{
     canonical_root, cursor_for, failure, hash_bytes, hash_text, map_io, parse_cursor,
@@ -20,6 +24,8 @@ const STATUS_ARGS: &[&str] = &[
     "--branch",
     "--untracked-files=all",
 ];
+const MAX_GIT_OUTPUT_BYTES: u64 = 8 * 1024 * 1024;
+const MAX_MUTATION_PATH_BYTES: usize = 64 * 1024;
 
 impl ResourceHost {
     pub(super) async fn git_mutate(
@@ -28,17 +34,22 @@ impl ResourceHost {
         expected_repo_id: &str,
         action: ResourceGitActionKind,
         paths: &[String],
-        expected_generation: Option<&str>,
+        expected_generation: &str,
     ) -> Result<InstanceResourcePayload, ResourceFailure> {
-        if paths.is_empty() || paths.len() > 500 {
+        if paths.is_empty()
+            || paths.len() > 500
+            || paths.iter().map(String::len).sum::<usize>() > MAX_MUTATION_PATH_BYTES
+        {
             return Err(failure(ResourceErrorCode::InvalidRequest, false));
         }
         for path in paths {
             validate_relative(path)?;
         }
+        let mutation_lock = self.mutation_lock(root, expected_repo_id).await;
+        let _mutation_guard = mutation_lock.lock().await;
         let (_root, repo) = self.resolve_repo(root, expected_repo_id).await?;
         let before = self.git(&repo, STATUS_ARGS).await?;
-        if expected_generation.is_some_and(|expected| expected != hash_bytes(&before)) {
+        if expected_generation != hash_bytes(&before) {
             return Err(failure(ResourceErrorCode::VersionConflict, false));
         }
         let mut command = Command::new("git");
@@ -47,12 +58,17 @@ impl ResourceHost {
             ResourceGitActionKind::Stage => command.arg("add"),
             ResourceGitActionKind::Unstage => command.args(["restore", "--staged"]),
         };
-        command.arg("--").args(paths).kill_on_drop(true);
-        let output = tokio::time::timeout(self.git_timeout, command.output())
+        command
+            .arg("--")
+            .args(paths)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .kill_on_drop(true);
+        let status = tokio::time::timeout(self.git_timeout, command.status())
             .await
             .map_err(|_| failure(ResourceErrorCode::Timeout, true))?
             .map_err(map_io)?;
-        if !output.status.success() {
+        if !status.success() {
             return Err(failure(ResourceErrorCode::Unavailable, false));
         }
         let after = self.git(&repo, STATUS_ARGS).await?;
@@ -205,6 +221,16 @@ impl ResourceHost {
         Ok((root, repo))
     }
 
+    async fn mutation_lock(&self, root: &str, repo_id: &str) -> Arc<Mutex<()>> {
+        let key = format!("{root}\0{repo_id}");
+        self.mutation_locks
+            .lock()
+            .await
+            .entry(key)
+            .or_insert_with(|| Arc::new(Mutex::new(())))
+            .clone()
+    }
+
     async fn git(&self, cwd: &Path, args: &[&str]) -> Result<Vec<u8>, ResourceFailure> {
         let mut command = Command::new("git");
         command
@@ -212,19 +238,39 @@ impl ResourceHost {
             .args(args)
             .env("GIT_OPTIONAL_LOCKS", "0")
             .env("GIT_TERMINAL_PROMPT", "0")
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
             .kill_on_drop(true);
-        let output = tokio::time::timeout(self.git_timeout, command.output())
-            .await
-            .map_err(|_| failure(ResourceErrorCode::Timeout, true))?
-            .map_err(|error| {
-                if error.kind() == std::io::ErrorKind::NotFound {
-                    failure(ResourceErrorCode::GitNotAvailable, false)
-                } else {
-                    failure(ResourceErrorCode::Unavailable, true)
-                }
-            })?;
-        if output.status.success() {
-            Ok(output.stdout)
+        let mut child = command.spawn().map_err(|error| {
+            if error.kind() == std::io::ErrorKind::NotFound {
+                failure(ResourceErrorCode::GitNotAvailable, false)
+            } else {
+                failure(ResourceErrorCode::Unavailable, true)
+            }
+        })?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| failure(ResourceErrorCode::Unavailable, true))?;
+        let output = tokio::time::timeout(self.git_timeout, async move {
+            let mut bytes = Vec::new();
+            stdout
+                .take(MAX_GIT_OUTPUT_BYTES + 1)
+                .read_to_end(&mut bytes)
+                .await
+                .map_err(map_io)?;
+            if bytes.len() as u64 > MAX_GIT_OUTPUT_BYTES {
+                let _ = child.kill().await;
+                let _ = child.wait().await;
+                return Err(failure(ResourceErrorCode::ViewTooLarge, false));
+            }
+            let status = child.wait().await.map_err(map_io)?;
+            Ok((status, bytes))
+        })
+        .await
+        .map_err(|_| failure(ResourceErrorCode::Timeout, true))??;
+        if output.0.success() {
+            Ok(output.1)
         } else {
             Err(failure(ResourceErrorCode::RepoNotFound, false))
         }
@@ -368,10 +414,5 @@ fn parse_branch(value: &str, parsed: &mut ParsedStatus) {
 }
 
 fn group_label(group: GitGroupId) -> &'static str {
-    match group {
-        GitGroupId::Conflicts => "conflicts",
-        GitGroupId::Index => "index",
-        GitGroupId::WorkingTree => "working_tree",
-        GitGroupId::Untracked => "untracked",
-    }
+    group.as_str()
 }

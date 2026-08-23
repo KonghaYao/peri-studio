@@ -121,6 +121,9 @@ pub enum InstanceError {
     /// 映射为稳定错误码 `INVALID_STATE`（确定性失败，非 retryable）。
     #[error("malformed JSON-RPC frame: {0}")]
     MalformedFrame(String),
+    /// instance 未声明当前资源协议能力，不能向其发送资源帧。
+    #[error("instance does not support the resource protocol")]
+    ResourceUnsupported,
 }
 
 /// instance 条目（进程内状态）。
@@ -128,6 +131,7 @@ struct InstanceEntry {
     state: InstanceState,
     token_id: String,
     hostname: String,
+    resource_protocol_version: Option<u32>,
     conn: Option<mpsc::Sender<OutboundMsg>>,
     last_heartbeat: Instant,
     /// command_id → ack oneshot（spawn/kill ack 跟踪，§4.5）。
@@ -200,6 +204,11 @@ impl InstanceRegistry {
                 state: InstanceState::Online,
                 token_id: token_id.to_string(),
                 hostname: hello.hostname.clone(),
+                resource_protocol_version: hello
+                    .caps
+                    .pointer("/resources/protocolVersion")
+                    .and_then(serde_json::Value::as_u64)
+                    .and_then(|value| u32::try_from(value).ok()),
                 conn: Some(conn.tx),
                 last_heartbeat: Instant::now(),
                 pending_acks: HashMap::new(),

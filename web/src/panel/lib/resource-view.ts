@@ -16,6 +16,11 @@ export interface ResourceView {
   meta: Record<string, unknown>;
 }
 
+const VIEW_TYPES: ResourceView['viewType'][] = [
+  'fs_directory_page', 'workspace_repositories_page', 'git_repository', 'git_group_page',
+];
+const GIT_GROUP_IDS: GitGroupId[] = ['conflicts', 'index', 'working_tree', 'untracked'];
+
 export function renderResourceView(docId: string, doc: Y.Doc): ResourceView | null {
   const root = doc.getMap('root');
   const meta = root.get('meta');
@@ -24,8 +29,11 @@ export function renderResourceView(docId: string, doc: Y.Doc): ResourceView | nu
   if (!(meta instanceof Y.Map) || !(order instanceof Y.Array) || !(entries instanceof Y.Map)) return null;
   const plainMeta = mapValue(meta);
   const viewType = plainMeta.view_id && plainMeta.view_type;
-  if (typeof viewType !== 'string' || typeof plainMeta.view_id !== 'string'
+  if (typeof viewType !== 'string' || !VIEW_TYPES.includes(viewType as ResourceView['viewType'])
+    || typeof plainMeta.view_id !== 'string'
     || typeof plainMeta.project_id !== 'string') return null;
+  const groupId = stringValue(plainMeta.group_id);
+  if (groupId !== undefined && !GIT_GROUP_IDS.includes(groupId as GitGroupId)) return null;
   const projected = order.toArray()
     .filter((id): id is string => typeof id === 'string')
     .map((id) => {
@@ -40,7 +48,7 @@ export function renderResourceView(docId: string, doc: Y.Doc): ResourceView | nu
     viewType: viewType as ResourceView['viewType'],
     path: stringValue(plainMeta.path),
     repoId: stringValue(plainMeta.repo_id),
-    groupId: stringValue(plainMeta.group_id) as GitGroupId | undefined,
+    groupId: groupId as GitGroupId | undefined,
     sourceGeneration: stringValue(plainMeta.source_generation),
     nextCursor: stringValue(plainMeta.next_cursor),
     entries: projected,

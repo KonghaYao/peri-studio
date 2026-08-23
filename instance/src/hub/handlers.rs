@@ -90,8 +90,9 @@ pub(super) async fn handle_inbound(
             // 文件系统与 Git 命令具有独立的超时和阻塞隔离；派生任务避免慢盘
             // 或大仓库阻塞 daemon 的 heartbeat / ACP 多路复用循环。
             let outbound = handle.clone();
+            let resource_host = state.resource_host.clone();
             tokio::spawn(async move {
-                let result = crate::resource::ResourceHost::default().query(query).await;
+                let result = resource_host.query(query).await;
                 if let Err(error) = outbound.send(Frame::InstanceResourceResult(result)).await {
                     tracing::warn!(target: "peri_studio::instance", error = ?error,
                         "resource result send failed (connection may be down)");

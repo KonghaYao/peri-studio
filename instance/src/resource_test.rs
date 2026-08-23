@@ -187,21 +187,45 @@ async fn git_query_projects_repository_groups_without_raw_output() {
     assert_eq!(count(GitGroupId::WorkingTree), 1);
     assert_eq!(count(GitGroupId::Untracked), 1);
 
-    let mutation = host
-        .query(query(
-            dir.path(),
-            InstanceResourceQueryKind::GitMutate(peri_studio_proto::resource::GitMutateQuery {
-                repo_id: repo_id.clone(),
-                action: peri_studio_proto::resource::ResourceGitActionKind::Stage,
-                paths: vec!["new.txt".into()],
-                expected_generation: Some(repo.generation.clone()),
-            }),
-        ))
-        .await;
-    assert!(matches!(
-        mutation.result,
-        Some(InstanceResourcePayload::Mutation(_))
+    let competing_host = host.clone();
+    let generation = repo.generation.clone();
+    let first = host.query(query(
+        dir.path(),
+        InstanceResourceQueryKind::GitMutate(peri_studio_proto::resource::GitMutateQuery {
+            repo_id: repo_id.clone(),
+            action: peri_studio_proto::resource::ResourceGitActionKind::Stage,
+            paths: vec!["new.txt".into()],
+            expected_generation: generation.clone(),
+        }),
     ));
+    let second = competing_host.query(query(
+        dir.path(),
+        InstanceResourceQueryKind::GitMutate(peri_studio_proto::resource::GitMutateQuery {
+            repo_id: repo_id.clone(),
+            action: peri_studio_proto::resource::ResourceGitActionKind::Stage,
+            paths: vec!["tracked.txt".into()],
+            expected_generation: generation,
+        }),
+    ));
+    let (first, second) = tokio::join!(first, second);
+    let results = [first, second];
+    assert_eq!(
+        results
+            .iter()
+            .filter(|result| matches!(result.result, Some(InstanceResourcePayload::Mutation(_))))
+            .count(),
+        1
+    );
+    assert_eq!(
+        results
+            .iter()
+            .filter(|result| result
+                .error
+                .as_ref()
+                .is_some_and(|error| error.code == ResourceErrorCode::VersionConflict))
+            .count(),
+        1
+    );
     let refreshed = host
         .query(query(
             dir.path(),

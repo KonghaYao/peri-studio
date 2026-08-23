@@ -49,6 +49,13 @@ fn page_limit_is_bounded_at_the_server_seam() {
     assert_eq!(error.code, ResourceErrorCode::InvalidRequest);
 }
 
+#[test]
+fn git_timeout_is_reported_as_delivery_unknown_and_never_auto_retryable() {
+    let error = git_instance_failure(InstanceError::Timeout);
+    assert_eq!(error.code, ResourceErrorCode::DeliveryUnknown);
+    assert!(!error.retryable);
+}
+
 #[tokio::test]
 async fn blob_ticket_is_principal_bound() {
     let dir = tempfile::tempdir().unwrap();
@@ -74,7 +81,8 @@ async fn blob_ticket_is_principal_bound() {
             "etag-1".into(),
             chrono::Duration::seconds(10),
         )
-        .await;
+        .await
+        .unwrap();
     assert_eq!(
         service
             .blob("token-a", &opened.blob_id)
@@ -85,6 +93,50 @@ async fn blob_ticket_is_principal_bound() {
         b"hello"
     );
     assert!(service.blob("token-b", &opened.blob_id).await.is_none());
+}
+
+#[tokio::test]
+async fn blob_cache_is_bounded_per_principal() {
+    let dir = tempfile::tempdir().unwrap();
+    let metadata = Arc::new(MetadataStore::open(dir.path()).await.unwrap());
+    let (tx, _rx) = tokio::sync::mpsc::channel(1);
+    let registry = crate::state::registry::RegistryState::new(tx);
+    let service = ResourceService::new(
+        metadata,
+        Arc::new(InstanceRegistry::new(
+            std::time::Duration::from_secs(30),
+            std::time::Duration::from_secs(10),
+            crate::control::ChatRegistry::new(registry),
+        )),
+        ResourceProjection::new(
+            Arc::new(crate::control::StoreSink::new()),
+            std::time::Duration::from_secs(60),
+            2,
+        ),
+    );
+    for index in 0..MAX_BLOBS_PER_PRINCIPAL {
+        service
+            .store_blob(
+                "token-a",
+                vec![index as u8],
+                "application/octet-stream".into(),
+                format!("etag-{index}"),
+                chrono::Duration::seconds(10),
+            )
+            .await
+            .unwrap();
+    }
+    let error = service
+        .store_blob(
+            "token-a",
+            vec![5],
+            "application/octet-stream".into(),
+            "etag-5".into(),
+            chrono::Duration::seconds(10),
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(error.code, ResourceErrorCode::RateLimited);
 }
 
 #[tokio::test]
@@ -117,7 +169,7 @@ async fn open_view_resolves_trusted_project_and_publishes_authorized_doc() {
                 protocol_version: peri_studio_proto::version::PROTOCOL_VERSION,
                 token: "token".into(),
                 hostname: "machine".into(),
-                caps: json!({}),
+                caps: json!({"resources": {"protocolVersion": peri_studio_proto::resource::RESOURCE_PROTOCOL_VERSION}}),
                 buffered: None,
                 buffer_lost: None,
                 stream_epochs: None,
@@ -208,7 +260,7 @@ async fn read_only_principal_cannot_stage_changes() {
                     repo_id: "repo-1".into(),
                     action: peri_studio_proto::resource::ResourceGitActionKind::Stage,
                     paths: vec!["src/main.rs".into()],
-                    expected_generation: None,
+                    expected_generation: "g1".into(),
                 },
             },
         )

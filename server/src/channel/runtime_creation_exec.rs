@@ -160,7 +160,9 @@ impl RuntimeCreation {
                     }
                     // spawn 不会产生 MalformedFrame（防御分支）：协议 bug 属
                     // 本地失败，无需 runtime 清理。
-                    InstanceError::MalformedFrame(_) => CreateFailureBoundary::LocalOnly,
+                    InstanceError::MalformedFrame(_) | InstanceError::ResourceUnsupported => {
+                        CreateFailureBoundary::LocalOnly
+                    }
                 };
                 let code = instance_error_code(&error);
                 self.fail(
