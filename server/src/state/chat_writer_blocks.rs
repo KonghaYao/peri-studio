@@ -82,8 +82,7 @@ pub fn append_block(
         return false;
     }
     let block_order = entry_map.get_or_init::<_, yrs::ArrayRef>(txn, "block_order");
-    write_content_block(txn, &blocks, &block_order, &block_id, &block);
-    true
+    write_content_block(txn, &blocks, &block_order, &block_id, &block)
 }
 
 fn block_id_of(block: &ContentBlock) -> Option<String> {
@@ -101,7 +100,18 @@ pub(crate) fn write_content_block(
     block_order: &yrs::ArrayRef,
     block_id: &str,
     block: &ContentBlock,
-) {
+) -> bool {
+    // Chat Doc 会直接同步给浏览器。hidden reasoning 不得写入该共享数据面；
+    // 如未来需要内部留存，应使用独立的 principal-bound projection。
+    if matches!(
+        block,
+        ContentBlock::Reasoning {
+            visibility: BlockVisibility::Hidden,
+            ..
+        }
+    ) {
+        return false;
+    }
     let bm = blocks.insert(txn, block_id, yrs::MapPrelim::default());
     match block {
         ContentBlock::Text { block_id, text } => {
@@ -141,6 +151,7 @@ pub(crate) fn write_content_block(
         }
     }
     block_order.push_back(txn, block_id.to_string());
+    true
 }
 
 /// 文本增量追加：block 不存在则先建（block_id 幂等），`Y.Text` insert（块

@@ -35,6 +35,35 @@ fn permission_response_rpc_allow_selects_allow_option() {
     assert_eq!(v["result"]["outcome"]["optionId"], json!("allow-once"));
 }
 
+#[test]
+fn permission_response_rpc_allow_prefers_once_over_session_order() {
+    let t = Translator::new();
+    let options = json!([
+        {"optionId": "allow-session", "name": "允许本会话", "kind": "allowSession"},
+        {"optionId": "allow-once", "name": "仅允许一次", "kind": "allowOnce"}
+    ]);
+    let v = t.permission_response_rpc(
+        &json!(7),
+        PermissionDecision::Allow,
+        options.as_array().unwrap(),
+    );
+    assert_eq!(v["result"]["outcome"]["optionId"], json!("allow-once"));
+}
+
+#[test]
+fn permission_response_rpc_allow_does_not_fallback_to_unrelated_option() {
+    let t = Translator::new();
+    let options = json!([
+        {"optionId": "reject-once", "name": "拒绝", "kind": "reject_once"}
+    ]);
+    let v = t.permission_response_rpc(
+        &json!(8),
+        PermissionDecision::Allow,
+        options.as_array().unwrap(),
+    );
+    assert_eq!(v["result"]["outcome"]["outcome"], json!("cancelled"));
+}
+
 /// ②Deny 无 reject 类 option → `cancelled` 且无 optionId。
 #[test]
 fn permission_response_rpc_deny_without_reject_cancelled() {

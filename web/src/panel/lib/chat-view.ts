@@ -109,9 +109,15 @@ export function renderChat(doc: Y.Doc): ChatView {
           if (text !== null) entry.text += text;
           break;
         }
-        case 'reasoning':
-          entry.reasoning.push({ id: blockIdValue, text: yText(block.get('text')) || '', visibility: getStr(block, 'visibility') });
+        case 'reasoning': {
+          // Chat Doc 是浏览器共享投影。只有协议明确标记为 summary 的推理
+          // 才属于用户可见内容；hidden、缺失与未来未知值一律 fail closed。
+          const visibility = getStr(block, 'visibility');
+          if (visibility === 'summary') {
+            entry.reasoning.push({ id: blockIdValue, text: yText(block.get('text')) || '', visibility });
+          }
           break;
+        }
         case 'tool_call': {
           const id = getStr(block, 'tool_call_id');
           if (id) referencedToolIds.add(id);

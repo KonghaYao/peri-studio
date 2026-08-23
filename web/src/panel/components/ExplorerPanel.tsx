@@ -52,8 +52,8 @@ export function ExplorerPanel() {
     event.preventDefault();
   };
   return <section class="flex min-h-0 flex-1 flex-col" aria-label="Explorer">
-    <div class="resource-section-title flex h-28 items-center border-b border-divider px-8 text-10 font-650 uppercase tracking-6 text-text-secondary">
-      <span>Files</span><IconButton label="Refresh Explorer" onClick={refreshResourceProject} class="ml-auto size-24 min-h-24 border-0 bg-transparent text-text-muted"><RefreshIcon /></IconButton>
+    <div class="resource-section-title flex h-28 items-center border-b border-divider px-8 text-10 font-650 uppercase tracking-6 text-text-secondary pointer-coarse:h-44">
+      <span>Files</span><IconButton label="Refresh Explorer" onClick={refreshResourceProject} class="ml-auto size-24 min-h-24 border-0 bg-transparent text-text-muted pointer-coarse:size-44 pointer-coarse:min-h-44"><RefreshIcon /></IconButton>
     </div>
     <div ref={tree} class="ui-scrollbar min-h-0 flex-1 overflow-auto py-3" role="tree" aria-label="Workspace files" onKeyDown={navigateTree}>
       <Show when={resourceWorkspace().directories['']} fallback={<LoadingState label="Loading files" class="m-8 p-8! text-left!" />}>
@@ -68,7 +68,7 @@ function FileLevel(props: { path: string; depth: number; expanded: Set<string>; 
   const nextCursor = () => resourceWorkspace().directories[props.path]?.nextCursor;
   return <>
     <For each={entries()}>{(entry, index) => <FileRow entry={entry} depth={props.depth} index={index()} setSize={entries().length} expanded={props.expanded} activePath={props.activePath} onActive={props.onActive} onToggle={props.onToggle} />}</For>
-    <Show when={nextCursor()}>{(cursor) => <button type="button" class="h-24 w-full border-0 bg-transparent text-left text-11 text-accent hover:bg-hover" style={{ 'padding-left': `${26 + props.depth * 13}px` }} onClick={() => openResourceDirectory(props.path, cursor())}>Load more…</button>}</Show>
+    <Show when={nextCursor()}>{(cursor) => <button type="button" class="h-24 w-full border-0 bg-transparent text-left text-11 text-accent hover:bg-hover pointer-coarse:h-44" style={{ 'padding-left': `${26 + props.depth * 13}px` }} onClick={() => openResourceDirectory(props.path, cursor())}>Load more…</button>}</Show>
   </>;
 }
 
@@ -87,7 +87,7 @@ function FileRow(props: { entry: ResourceEntry; depth: number; index: number; se
       data-path={path()}
       data-directory={directory() ? 'true' : 'false'}
       tabIndex={props.activePath === path() || (!props.activePath && props.depth === 0 && props.index === 0) ? 0 : -1}
-      class="group flex h-24 w-full items-center border-0 bg-transparent pr-6 text-left text-12 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2"
+      class="group flex h-24 w-full items-center border-0 bg-transparent pr-6 text-left text-12 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44"
       style={{ 'padding-left': `${6 + props.depth * 13}px` }}
       onClick={() => directory() ? props.onToggle(path()) : openFilePreview(path())}
       onFocus={() => props.onActive(path())}

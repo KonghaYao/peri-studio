@@ -129,8 +129,8 @@ for (const entry of entries.slice(2)) {
 }
 
 const permissions: PendingPermission[] = [
-  { permissionId: 'permission-write', turnId: 'turn-stream', toolCallId: 'tool-write', title: 'Modify workspace file', description: 'Agent requests an update to the Peri Studio Web visual regression scenario.', status: 'pending', expiresAt: '2026-08-14T00:30:00Z', decision: null },
-  { permissionId: 'permission-command', turnId: 'turn-stream', toolCallId: 'tool-command', title: 'Run test command', description: 'Runs bun run test without accessing data outside the workspace.', status: 'pending', expiresAt: '2026-08-14T00:31:00Z', decision: null },
+  { permissionId: 'permission-write', turnId: 'turn-stream', toolCallId: 'tool-write', title: 'Modify workspace file', description: 'Agent requests an update to the Peri Studio Web visual regression scenario.', options: ['allowOnce', 'allowSession', 'deny'], status: 'pending', expiresAt: '2026-08-14T00:30:00Z', decision: null },
+  { permissionId: 'permission-command', turnId: 'turn-stream', toolCallId: 'tool-command', title: 'Run test command', description: 'Runs bun run test without accessing data outside the workspace.', options: ['allowSession', 'deny'], status: 'pending', expiresAt: '2026-08-14T00:31:00Z', decision: null },
 ];
 
 const elicitations: NonNullable<ControlView['pendingElicitations']> = [{
@@ -276,7 +276,7 @@ export function installVisualScenario(value: string | null | undefined): { scena
     setElicitations(elicitations);
   }
   if (id === 'permission-streaming') {
-    const streaming = [...entries, { ...entries[1], id: 'entry-stream', turnId: 'turn-stream', status: 'streaming', text: 'Checking permission boundaries and tool call order…', completedAt: null, reasoning: [], toolCalls: [tool({ toolCallId: 'tool-stream', name: 'Apply patch', status: 'awaitingPermission', result: null, resultOmitted: null })], resources: [], error: null }];
+    const streaming = [...entries, { ...entries[1], id: 'entry-stream', turnId: 'turn-stream', status: 'streaming', origin: 'live' as const, replayVerified: null, text: 'Checking permission boundaries and tool call order…', completedAt: null, reasoning: [], toolCalls: [tool({ toolCallId: 'tool-stream', name: 'Apply patch', status: 'awaitingPermission', result: null, resultOmitted: null })], resources: [], error: null }];
     selectConversation(streaming, control(true));
     setElicitations(elicitations.slice(0, 1));
   }

@@ -69,6 +69,16 @@ describe('WsClient protocol boundary', () => {
     expect(frames).toHaveBeenCalledWith({ t: 'future.frame', value: 1 });
   });
 
+  it('delivers leased resource Yjs updates through the protocol seam', () => {
+    const { socket, frames, issues } = harness();
+    socket.deliver('{"t":"ysync.update","doc":"resource:view-1","update":"AAAA","projectionVersion":1}');
+
+    expect(issues).not.toHaveBeenCalled();
+    expect(frames).toHaveBeenCalledWith({
+      t: 'ysync.update', doc: 'resource:view-1', update: 'AAAA', projectionVersion: 1,
+    });
+  });
+
   it('rejects malformed known terminal frames before consumers can navigate', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const { socket, frames, issues } = harness();

@@ -16,7 +16,7 @@ use peri_studio_proto::action::ActionEnvelope;
 
 #[path = "translator_helpers.rs"]
 mod translator_helpers;
-use translator_helpers::{first_option_id, pick_option_id};
+use translator_helpers::pick_option_id;
 // validate_cwd 为公开 API（coordinator / metadata 校验等消费），经
 // helpers 模块实现后在此 re-export 保持 `protocol::validate_cwd` 路径。
 pub use translator_helpers::validate_cwd;
@@ -281,8 +281,8 @@ impl Translator {
     /// id = agent request id 原样回显。响应帧不回 L3（JSON-RPC response 无
     /// 回执，§4.4 以 forward_ack 为确认点）。
     ///
-    /// 选档规则：`Allow` → 第一个 `options[i].kind ∈ {allow_once, allow_always}`
-    /// 的 `optionId`（无匹配 → 第一个元素的 `optionId` 保底）；`Deny` → 第一
+    /// 选档规则：`Allow` → 优先最小权限 `allow_once`，仅在不存在时选择
+    /// `allow_always`；没有 allow 选项则 fail closed 为 cancelled。`Deny` → 第一
     /// 个 `kind ∈ {reject_once, reject_always}` 的 `optionId`（有则
     /// `selected`+optionId；无 → `cancelled`）。kind 兼容 camelCase 别名
     /// （`allowOnce`/`allowSession`，对齐 relay 投影层 P2-e 兼容先例）。
@@ -294,8 +294,8 @@ impl Translator {
     ) -> serde_json::Value {
         let outcome = match decision {
             peri_studio_proto::action::PermissionDecision::Allow => {
-                match pick_option_id(options, &["allow_once", "allow_always"])
-                    .or_else(|| first_option_id(options))
+                match pick_option_id(options, &["allow_once"])
+                    .or_else(|| pick_option_id(options, &["allow_always"]))
                 {
                     Some(option_id) => {
                         json!({ "outcome": "selected", "optionId": option_id })

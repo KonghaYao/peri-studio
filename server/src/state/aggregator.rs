@@ -26,7 +26,7 @@
 use yrs::{Array, Map, Transact, WriteTxn};
 
 use peri_studio_proto::schema::{
-    ActiveTurnProjection, ChatStatus, EntryKind, EntryRole, TurnStatus,
+    ActiveTurnProjection, BlockVisibility, ChatStatus, EntryKind, EntryRole, TurnStatus,
 };
 
 use crate::state::chat_writer::{self, ContentKind};
@@ -140,13 +140,17 @@ struct ControlSnapshot {
     replay_negotiated: bool,
 }
 
-/// 空文本/推理增量不改变 Yjs 视图，但仍须经过聚合器的顺序判定以推进 seq 水位。
+/// 空增量与 hidden 推理不进入浏览器共享 Yjs 视图，但仍须经过聚合器的顺序
+/// 判定以推进 seq 水位。hidden 若需内部留存，必须进入独立、按 principal 授权
+/// 的投影，不能借用 Chat Doc。
 fn is_empty_delta(body: &EventBody) -> bool {
-    matches!(
-        body,
-        EventBody::MessageDelta { text, .. } | EventBody::ReasoningDelta { text, .. }
-            if text.is_empty()
-    )
+    match body {
+        EventBody::MessageDelta { text, .. } => text.is_empty(),
+        EventBody::ReasoningDelta {
+            text, visibility, ..
+        } => text.is_empty() || *visibility == BlockVisibility::Hidden,
+        _ => false,
+    }
 }
 
 impl Aggregator {

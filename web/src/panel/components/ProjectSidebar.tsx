@@ -159,7 +159,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
             />}
           >
             <For each={machines()}>{(machine) => <section class="machine-group mb-10">
-              <div class="machine-row group flex min-h-26 items-center gap-8 px-8 text-10 font-normal uppercase tracking-6 text-text-faint">
+              <div class="machine-row group flex min-h-26 items-center gap-8 px-8 text-10 font-normal uppercase tracking-6 text-text-muted">
                 <span class="machine-name min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{machine.name}</span>
                 <Show when={machine.offline}><span class="machine-offline-dot size-7 shrink-0 rounded-full bg-danger" role="img" aria-label="Machine offline" /></Show>
                 <IconButton class="row-create-action machine-create-action ml-auto size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 disabled:cursor-not-allowed pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" label={`New project on ${machine.name} unavailable: choose a remote directory first; the current API cannot create by machine`} disabled><PlusIcon /></IconButton>

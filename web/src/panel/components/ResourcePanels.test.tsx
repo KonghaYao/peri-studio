@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ExplorerPanel } from './ExplorerPanel';
 import { SourceControlPanel } from './SourceControlPanel';
 import {
+  activateResourceProject,
   handleResourceResult,
+  handleResourceUpdate,
   installResourceStore,
   mutateGitResource,
   replayResourceSubscriptions,
@@ -14,10 +16,35 @@ import {
   setResourceWorkspace,
 } from '../lib/resource-store';
 import { installPrincipalRole } from '../lib/auth-state';
+import { DocStore } from '../lib/doc-store';
 
 afterEach(() => { cleanup(); resetResourceProject(); installPrincipalRole(null); vi.unstubAllGlobals(); });
 
 describe('VS Code-style resource panels', () => {
+  it('releases a stale project view without subscribing to it', () => {
+    const sent: Array<Record<string, unknown>> = [];
+    installResourceStore({ send: (frame) => { sent.push(frame as Record<string, unknown>); return true; }, ready: () => true, toast: vi.fn() });
+    activateResourceProject('project-a');
+    const stale = sent.find((frame) => frame.type === 'resource/open-view')!;
+    activateResourceProject('project-b');
+
+    handleResourceResult({
+      t: 'resource_result', requestId: stale.requestId as string,
+      result: { kind: 'view', data: { viewId: 'view-a', docId: 'resource:view-a', leaseExpiresAt: '2026-08-24T00:00:00Z' } },
+    });
+
+    expect(resourceWorkspace().projectId).toBe('project-b');
+    expect(sent).toContainEqual(expect.objectContaining({ type: 'resource/release-view', payload: { viewId: 'view-a' } }));
+    expect(sent).not.toContainEqual(expect.objectContaining({ t: 'ysync.subscribe', docs: ['resource:view-a'] }));
+  });
+
+  it('consumes an unleased resource update without allocating a Y.Doc', () => {
+    const docFor = vi.spyOn(DocStore.prototype, 'docFor');
+
+    expect(handleResourceUpdate({ doc: 'resource:unleased', update: 'AAAA' })).toBe(true);
+    expect(docFor).not.toHaveBeenCalled();
+  });
+
   it('navigates the Explorer as a single-tab-stop ARIA tree', async () => {
     installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
     setResourceWorkspace({
@@ -257,13 +284,12 @@ describe('VS Code-style resource panels', () => {
   });
 
   it('reopens short-lived resource views after reconnect instead of replaying stale doc ids', () => {
-    const sent: unknown[] = [];
-    installResourceStore({ send: (frame) => { sent.push(frame); return true; }, ready: () => true, toast: vi.fn() });
-    setResourceWorkspace({
-      projectId: 'project-1', directories: {}, repositories: [], loading: [], error: null,
-    });
+    const sent: Array<Record<string, unknown>> = [];
+    installResourceStore({ send: (frame) => { sent.push(frame as Record<string, unknown>); return true; }, ready: () => true, toast: vi.fn() });
+    activateResourceProject('project-1');
+    const request = sent.find((frame) => frame.type === 'resource/open-view')!;
     handleResourceResult({
-      t: 'resource_result', requestId: 'request-1',
+      t: 'resource_result', requestId: request.requestId as string,
       result: { kind: 'view', data: { viewId: 'view-1', docId: 'resource:view-1', leaseExpiresAt: '2026-08-23T12:00:00Z' } },
     });
     sent.length = 0;

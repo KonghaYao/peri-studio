@@ -557,7 +557,7 @@ struct ChatEntry {
 
 enum ContentBlock {
     Text { block_id, text },                          // 流式文本用 Y.Text
-    Reasoning { block_id, text, visibility: Summary | Hidden },  // hidden 内容绝不发给无权客户端
+    Reasoning { block_id, text, visibility: Summary },  // hidden 不写入浏览器共享 Chat Doc
     ToolCall { block_id, tool_call_id },
     Resource { block_id, resource_id, media_type, name },        // 只存引用，不嵌入内容
 }
@@ -817,7 +817,7 @@ Composer 草稿为 `/name `，不得自动发送、不得增加 ACP prompt 私�
 | 规范化事件 | Y.Doc 写入位置 | 聚合规则 |
 |-----------|---------------|---------|
 | 文本增量 | Chat Doc entry block | 追加（微批次合并，§6.4） |
-| 思考/推理增量 | Chat Doc reasoning block | 按可见性写 `summary`/`hidden`，hidden 绝不发给无权客户端 |
+| 思考/推理增量 | Chat Doc reasoning block | 仅写 `summary`；`hidden` 只推进流序号，不进入浏览器共享投影 |
 | 工具调用开始/更新/完成 | Chat Doc `tool_calls` | 按 `toolCallId` upsert；状态与证据均单调迁移：缺省 arguments 不清空旧输入，普通更新/完成不可越过权限等待，首个终态拥有 result/error/completedAt 且不可被晚到帧覆盖；超大结果只记录省略事实与字节数 |
 | 权限请求/决议/过期 | Control Doc `pending_permissions` + Chat Doc `tool_calls` | 官方 permission request 保留完整 `toolCall` 快照；即使先于普通 tool 通知到达，也在同一 seq 原子创建可达工具卡并进入 awaitingPermission。稍后正式通知只补全字段，不越过等待或重开终态；allow 恢复 running，deny/expire 进入 cancelled；旧事件缺快照或未知可选关联时仍不抑制权限请求 |
 | 权限请求/解决/过期 | Control Doc `pending_permissions` | 按 `permissionId` upsert；决议写 `decision`（CAS，§7.4） |
@@ -929,6 +929,7 @@ chat/create 或 load ──► accepting ──► ... （turn 状态机驱动�
 2. 默认每 chat**仅一个活动 turn**；若未来支持并行 turn，必须先引入独立 branch/thread 聚合，不能直接放宽约束。
 3. `commandId` 去重记录在内存 outbox（§4.4），覆盖客户端进程内重试窗口；**不覆盖 server 重启**（重启即空，命令不重发，§8.4.1）。
 4. **Permission resolution 使用 compare-and-set**：仅 `pending → resolved` 原子迁移一次，重复或过期回答返回幂等结果（`duplicate` ack）；迁移成功后才向 ACP 进程发 `permission.resolve`。官方 request 在首次裁决时同时申领 `(commandId, decision)` 唯一投递权；明确未送达只能以同一 commandId 和同一 decision 在同一存活 runtime 恢复，新 commandId 即使决策相同也不得重放安全副作用。`dispatched` 之后没有确认的结果属于 delivery unknown；server 重启后旧 runtime 按§8.3 终止，因此恢复证据不授权自动重放，只供运维对账。
+   兼容旧 `Allow` 决策时，translator 只允许选择投影中的 `allow_once`，不存在该选项则最多选择明确的 `allow_always`，不得按数组顺序选择或回退到无关 option。Web 必须把实际范围显示为 `Allow once` / `Allow for this session`；后续协议升级由客户端传精确 optionId，删除兼容猜测。
 5. 标题更新等非 Agent 操作可独立排队，但仍经服务端命令写入；不能借 YJS client update 绕过授权。
 
 **每 chat 单写者（Y.Doc 写入串行化）**【审查：开发 P0-2】：

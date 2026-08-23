@@ -78,15 +78,18 @@
   --space-16: 16px;
   --space-17: 17px;
   --space-18: 18px;
+  --space-19: 19px;
   --space-20: 20px;
   --space-21: 21px;
   --space-22: 22px;
   --space-24: 24px;
+  --space-25: 25px;
   --space-26: 26px;
   --space-28: 28px;
   --space-30: 30px;
   --space-32: 32px;
   --space-34: 34px;
+  --space-35: 35px;
   --space-36: 36px;
   --space-38: 38px;
   --space-40: 40px;
@@ -102,10 +105,15 @@
   --space-72: 72px;
   --space-82: 82px;
   --space-84: 84px;
+  --space-90: 90px;
+  --space-100: 100px;
   --space-180: 180px;
+  --space-210: 210px;
   --space-240: 240px;
   --space-260: 260px;
   --space-300: 300px;
+  --space-360: 360px;
+  --space-420: 420px;
   --space-520: 520px;
 
   /* Radius scale. --radius-full is the pill shape; every other step is an
@@ -153,6 +161,7 @@
   --text-16: 16px;
   --text-17: 17px;
   --text-18: 18px;
+  --text-19: 19px;
   --text-24: 24px;
   --text-28: 28px;
 

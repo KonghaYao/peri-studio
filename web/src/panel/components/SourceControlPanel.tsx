@@ -21,7 +21,7 @@ function TrashIcon() { return <Icon size="small"><path d="M4 6h12M8 6V4h4v2M6 6l
 
 export function SourceControlPanel() {
   return <section class="flex min-h-0 flex-1 flex-col" aria-label="Source Control">
-    <div class="resource-section-title flex h-28 items-center border-b border-divider px-8 text-10 font-650 uppercase tracking-6 text-text-secondary">Source Control</div>
+    <div class="resource-section-title flex h-28 items-center border-b border-divider px-8 text-10 font-650 uppercase tracking-6 text-text-secondary pointer-coarse:h-44">Source Control</div>
     <div class="ui-scrollbar min-h-0 flex-1 overflow-auto pb-12">
       <Show when={!resourceWorkspace().loading.includes('repositories')} fallback={<LoadingState label="Reading repositories" class="m-8 p-8! text-left!" />}>
         <Show when={resourceWorkspace().repositories.length} fallback={<div class="px-14 py-18 text-12 leading-18 text-text-muted">No Git repository was found in this workspace.</div>}>
@@ -63,11 +63,11 @@ function Repository(props: { repo: RepositoryState }) {
         class="box-border min-h-52 w-full resize-y rounded-5 border border-divider bg-surface px-8 py-6 text-11 leading-16 text-text-primary outline-none focus-visible:border-focus-ring"
       />
       <Show when={messageTooLarge()}><div role="alert" class="mt-4 text-10 leading-14 text-danger">Commit message must be at most {MAX_COMMIT_MESSAGE_BYTES.toLocaleString()} UTF-8 bytes.</div></Show>
-      <Button size="compact" variant="primary" class="mt-5 w-full min-h-28! text-11!" aria-label="Commit staged changes" busy={repoMutation()?.action === 'commit' && repoMutation()?.pending} disabled={readOnly() || repoBusy() || !props.repo.generation || staged() === 0 || !message().trim() || messageTooLarge()} onClick={commit}>Commit</Button>
+      <Button size="compact" variant="primary" class="mt-5 w-full min-h-28! text-11! pointer-coarse:min-h-44!" aria-label="Commit staged changes" busy={repoMutation()?.action === 'commit' && repoMutation()?.pending} disabled={readOnly() || repoBusy() || !props.repo.generation || staged() === 0 || !message().trim() || messageTooLarge()} onClick={commit}>Commit</Button>
       <div class="mt-5 grid grid-cols-3 gap-4">
-        <Button size="compact" class="min-h-28! px-4! text-10!" aria-label="Pull from upstream" busy={repoMutation()?.action === 'pull' && repoMutation()?.pending} disabled={readOnly() || repoBusy() || !props.repo.generation || !props.repo.upstream} title={props.repo.upstream ? `Pull ${props.repo.upstream}` : 'Configure an upstream branch first'} onClick={() => runRepoAction('pull')}>Pull</Button>
-        <Button size="compact" class="min-h-28! px-4! text-10!" aria-label="Synchronize changes" busy={repoMutation()?.action === 'sync' && repoMutation()?.pending} disabled={readOnly() || repoBusy() || !props.repo.generation || !props.repo.upstream} title={props.repo.upstream ? `Pull then push ${props.repo.upstream}` : 'Configure an upstream branch first'} onClick={() => runRepoAction('sync')}>Sync</Button>
-        <Button size="compact" class="min-h-28! px-4! text-10!" aria-label="Push to upstream" busy={repoMutation()?.action === 'push' && repoMutation()?.pending} disabled={readOnly() || repoBusy() || !props.repo.generation || !props.repo.upstream} title={props.repo.upstream ? `Push ${props.repo.upstream}` : 'Configure an upstream branch first'} onClick={() => runRepoAction('push')}>Push</Button>
+        <Button size="compact" class="min-h-28! px-4! text-10! pointer-coarse:min-h-44!" aria-label="Pull from upstream" busy={repoMutation()?.action === 'pull' && repoMutation()?.pending} disabled={readOnly() || repoBusy() || !props.repo.generation || !props.repo.upstream} title={props.repo.upstream ? `Pull ${props.repo.upstream}` : 'Configure an upstream branch first'} onClick={() => runRepoAction('pull')}>Pull</Button>
+        <Button size="compact" class="min-h-28! px-4! text-10! pointer-coarse:min-h-44!" aria-label="Synchronize changes" busy={repoMutation()?.action === 'sync' && repoMutation()?.pending} disabled={readOnly() || repoBusy() || !props.repo.generation || !props.repo.upstream} title={props.repo.upstream ? `Pull then push ${props.repo.upstream}` : 'Configure an upstream branch first'} onClick={() => runRepoAction('sync')}>Sync</Button>
+        <Button size="compact" class="min-h-28! px-4! text-10! pointer-coarse:min-h-44!" aria-label="Push to upstream" busy={repoMutation()?.action === 'push' && repoMutation()?.pending} disabled={readOnly() || repoBusy() || !props.repo.generation || !props.repo.upstream} title={props.repo.upstream ? `Push ${props.repo.upstream}` : 'Configure an upstream branch first'} onClick={() => runRepoAction('push')}>Push</Button>
       </div>
       <Show when={repoMutation()?.error}>{(error) => <div role="alert" class="mt-5 flex min-h-28 items-center gap-6 border border-danger-border bg-danger-soft px-8 py-5 text-10 leading-14 text-danger">
         <span class="min-w-0 flex-1">{error()}</span>
@@ -77,13 +77,13 @@ function Repository(props: { repo: RepositoryState }) {
     <For each={GROUPS}>{(group) => {
       const state = () => props.repo.groups[group.id];
       return <Show when={state()?.count}>
-        <div class="flex h-25 items-center px-8 text-10 font-650 uppercase tracking-4 text-text-secondary"><span>{group.label}</span><span class="ml-auto tabular-nums text-text-muted">{state().count}</span></div>
+        <div class="flex h-25 items-center px-8 text-10 font-650 uppercase tracking-4 text-text-secondary pointer-coarse:h-44"><span>{group.label}</span><span class="ml-auto tabular-nums text-text-muted">{state().count}</span></div>
         <For each={state().changes}>{(change) => {
           const mutation = () => resourceWorkspace().mutations?.[change.id];
           const action = () => group.id === 'index' ? 'unstage' : 'stage';
           const path = () => String(change.path ?? '');
           return <div>
-          <div class="group flex h-24 items-center pr-5 text-12 hover:bg-hover">
+          <div class="group flex h-24 items-center pr-5 text-12 hover:bg-hover pointer-coarse:h-44">
           <button
             type="button"
             class="flex h-full min-w-0 flex-1 items-center gap-5 border-0 bg-transparent pl-13 text-left text-inherit"
@@ -93,7 +93,7 @@ function Repository(props: { repo: RepositoryState }) {
           >
             <span class="text-text-muted"><FileIcon /></span>
             <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{basename(path())}</span>
-            <span class="max-w-90 overflow-hidden text-ellipsis whitespace-nowrap text-10 text-text-faint">{dirname(path())}</span>
+            <span class="max-w-90 overflow-hidden text-ellipsis whitespace-nowrap text-10 text-text-muted">{dirname(path())}</span>
             <span class={`w-14 text-center font-mono text-11 font-650 ${statusColor(String(change.status ?? ''))}`}>{statusLetter(String(change.status ?? ''))}</span>
           </button>
           <IconButton
@@ -101,13 +101,13 @@ function Repository(props: { repo: RepositoryState }) {
             busy={mutation()?.pending}
             disabled={readOnly() || repoBusy() || mutation()?.pending}
             onClick={(event) => { event.stopPropagation(); mutateGitResource(props.repo.id, action(), [change.id]); }}
-            class="size-22 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+            class="size-22 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44"
           >{group.id === 'index' ? <MinusIcon /> : <PlusIcon />}</IconButton>
           <Show when={group.id === 'working_tree' || group.id === 'untracked'}><IconButton
             label={`Discard ${path()}`}
             disabled={readOnly() || repoBusy() || mutation()?.pending}
             onClick={(event) => { event.stopPropagation(); setDiscard({ id: change.id, path: path() }); }}
-            class="size-22 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-danger"
+            class="size-22 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-danger pointer-coarse:size-44 pointer-coarse:min-h-44"
           ><TrashIcon /></IconButton></Show>
           </div>
           <Show when={mutation()?.error}>{(message) => <div role="alert" class="flex min-h-28 items-center gap-6 border-y border-danger-border bg-danger-soft px-12 py-4 text-10 leading-14 text-danger">
@@ -116,7 +116,7 @@ function Repository(props: { repo: RepositoryState }) {
           </div>}</Show>
         </div>;
         }}</For>
-        <Show when={state().nextCursor}>{(cursor) => <button type="button" class="h-24 w-full border-0 bg-transparent pl-28 text-left text-11 text-accent hover:bg-hover" onClick={() => openMoreGitChanges(props.repo.id, group.id, cursor())}>Load more…</button>}</Show>
+        <Show when={state().nextCursor}>{(cursor) => <button type="button" class="h-24 w-full border-0 bg-transparent pl-28 text-left text-11 text-accent hover:bg-hover pointer-coarse:h-44" onClick={() => openMoreGitChanges(props.repo.id, group.id, cursor())}>Load more…</button>}</Show>
       </Show>;
     }}</For>
   </section>

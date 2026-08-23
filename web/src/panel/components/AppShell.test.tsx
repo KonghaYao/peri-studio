@@ -71,4 +71,17 @@ describe('AppShell desktop sidebar', () => {
     expect(screen.getByRole('button', { name: 'Explorer' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Source Control' })).toBeInTheDocument();
   });
+
+  it('opens Explorer from the medium rail status entry', async () => {
+    vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
+      matches: query.includes('1199'),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })));
+    render(() => <AppShell />);
+
+    expect(screen.getByRole('button', { name: 'Explorer' })).toHaveAttribute('aria-pressed', 'false');
+    await fireEvent.click(screen.getByRole('button', { name: 'Open workspace resources' }));
+    expect(screen.getByRole('button', { name: 'Explorer' })).toHaveAttribute('aria-pressed', 'true');
+  });
 });

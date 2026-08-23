@@ -7,16 +7,6 @@ use serde_json::Value;
 
 use super::{TranslateError, CWD_MAX_BYTES};
 
-/// 第一个 `options[i]` 的 `optionId`（保底选档；options 已在入站解析时
-/// 校验为 `{optionId,name,kind}` 对象数组）。
-pub(super) fn first_option_id(options: &[Value]) -> Option<String> {
-    options.iter().find_map(|v| {
-        v.get("optionId")
-            .and_then(Value::as_str)
-            .map(str::to_string)
-    })
-}
-
 /// 第一个 `kind` 命中 `kinds`（含 camelCase 别名）的 `optionId`。
 pub(super) fn pick_option_id(options: &[Value], kinds: &[&str]) -> Option<String> {
     options.iter().find_map(|v| {

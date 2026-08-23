@@ -4,7 +4,7 @@ import { ChatView } from './ChatView';
 import { compactViewportQuery, mediumViewportQuery } from '../lib/breakpoints';
 import { ProjectDrawer } from './shared/ProjectDrawer';
 import { SettingsDialog } from './SettingsDialog';
-import { ResourceWorkbench } from './ResourceWorkbench';
+import { ResourceWorkbench, type WorkbenchView } from './ResourceWorkbench';
 import { resourceDiffPreview, resourceFilePreview } from '../store';
 import { ResourceDiffEditor } from './ResourceDiffEditor';
 import { ResourceFileEditor } from './ResourceFileEditor';
@@ -23,6 +23,7 @@ export function AppShell() {
   const [open, setOpen] = createSignal(false);
   const [systemOpen, setSystemOpen] = createSignal(false);
   const [resourcesOpen, setResourcesOpen] = createSignal(false);
+  const [resourceView, setResourceView] = createSignal<WorkbenchView>('explorer');
   const [mobile, setMobile] = createSignal(false);
   const [medium, setMedium] = createSignal(false);
   const [sidebarWidth, setSidebarWidth] = createSignal(SIDEBAR_DEFAULT_WIDTH);
@@ -84,6 +85,7 @@ export function AppShell() {
   };
   const openResources = () => {
     setOpen(false);
+    setResourceView('explorer');
     if (mobile()) setResourcesOpen(true);
   };
   createEffect(() => {
@@ -94,7 +96,7 @@ export function AppShell() {
     : `${sidebarWidth()}px auto minmax(0, 1fr)`;
 
   return (
-    <div class="app-shell relative grid h-dvh grid-rows-[minmax(0,1fr)_22px] overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide" style={{ 'grid-template-columns': sidebarGridTemplate() }}>
+    <div class="app-shell relative grid h-dvh grid-rows-[minmax(0,1fr)_22px] overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide pointer-coarse:grid-rows-[minmax(0,1fr)_44px]" style={{ 'grid-template-columns': sidebarGridTemplate() }}>
       <ProjectDrawer ref={(element) => { drawer = element; }} open={open()} modal={mobile()} onOpenChange={setOpen}>
         <ProjectSidebar
           onNavigate={() => setOpen(false)}
@@ -116,7 +118,7 @@ export function AppShell() {
         onPointerDown={startSidebarResize}
         onKeyDown={resizeSidebarWithKeyboard}
       ><span aria-hidden="true" class="absolute top-0 bottom-0 left-5 w-2 rounded-full bg-transparent transition-colors group-hover:bg-accent group-focus-visible:bg-accent" /></div>
-      <ResourceWorkbench compact={mobile()} overlay={medium() && !mobile()} open={resourcesOpen()} onOpenChange={setResourcesOpen} />
+      <ResourceWorkbench compact={mobile()} overlay={medium() && !mobile()} open={resourcesOpen()} onOpenChange={setResourcesOpen} view={resourceView()} onViewChange={setResourceView} />
       <main ref={main} class="conversation-pane min-w-0 min-h-0 overflow-hidden">
         <Show when={resourceFilePreview()} fallback={<Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenSystem={() => setSystemOpen(true)} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
           <ResourceDiffEditor />

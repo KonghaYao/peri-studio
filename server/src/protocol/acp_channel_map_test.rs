@@ -79,6 +79,18 @@ fn map_reasoning_alias() {
 }
 
 #[test]
+fn unknown_reasoning_visibility_fails_closed() {
+    let f = json!({
+        "type": "agent_thought_chunk",
+        "payload": {"turnId": "t1", "entryId": "e", "blockId": "b", "text": "private", "visibility": "internal"}
+    });
+    assert!(matches!(
+        norm(f),
+        NormalizeOutcome::Dropped(DropReason::UnsupportedFrame)
+    ));
+}
+
+#[test]
 fn map_user_message() {
     let f = json!({
         "type": "user_message_chunk",

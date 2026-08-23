@@ -87,6 +87,7 @@ export interface PendingPermission {
   toolCallId: string | null;
   title: string | null;
   description: string | null;
+  options: Array<'allowOnce' | 'allowSession' | 'deny'>;
   status: string | null;
   expiresAt: string | null;
   decision: string | null;
@@ -264,12 +265,16 @@ export function renderControl(doc: Y.Doc): ControlView {
   asMap(root.get('pending_permissions'))?.forEach((value) => {
     const permission = asMap(value);
     if (!permission || getStr(permission, 'status') !== 'pending') return;
+    const options = (asArray(permission.get('options'))?.toArray() ?? [])
+      .filter((option): option is 'allowOnce' | 'allowSession' | 'deny' =>
+        option === 'allowOnce' || option === 'allowSession' || option === 'deny');
     result.pendingPermissions.push({
       permissionId: getStr(permission, 'permission_id'),
       turnId: getStr(permission, 'turn_id'),
       toolCallId: getStr(permission, 'tool_call_id'),
       title: getStr(permission, 'title'),
       description: getStr(permission, 'description'),
+      options,
       status: getStr(permission, 'status'),
       expiresAt: getStr(permission, 'expires_at'),
       decision: getStr(permission, 'decision'),

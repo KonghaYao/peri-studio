@@ -35,6 +35,29 @@ describe('renderControl chat loading projection', () => {
 });
 
 describe('renderChat tool projection', () => {
+  it('fails closed for hidden and unknown reasoning visibility', () => {
+    const doc = new Y.Doc();
+    const root = doc.getMap<unknown>('root');
+    const order = new Y.Array<string>(); const entries = new Y.Map<unknown>();
+    const entry = new Y.Map<unknown>(); const blockOrder = new Y.Array<string>(); const blocks = new Y.Map<unknown>();
+    root.set('entry_order', order); root.set('entries', entries);
+    entries.set('assistant', entry); order.push(['assistant']);
+    entry.set('created_at', 'now'); entry.set('block_order', blockOrder); entry.set('blocks', blocks);
+    for (const [id, visibility, value] of [
+      ['summary', 'summary', 'safe summary'],
+      ['hidden', 'hidden', 'private chain'],
+      ['future', 'future', 'unknown private data'],
+    ]) {
+      const block = new Y.Map<unknown>(); const text = new Y.Text();
+      blocks.set(id, block); blockOrder.push([id]);
+      block.set('kind', 'reasoning'); block.set('visibility', visibility); block.set('text', text); text.insert(0, value);
+    }
+
+    expect(renderChat(doc).entries[0].reasoning).toEqual([
+      { id: 'summary', text: 'safe summary', visibility: 'summary' },
+    ]);
+  });
+
   it('reads a legacy duplicated block reference only once', () => {
     const doc = new Y.Doc();
     const root = doc.getMap<unknown>('root');

@@ -20,6 +20,27 @@ const cssFiles = () => {
 };
 const featureCss = () => cssFiles().map((file) => readFileSync(join(import.meta.dirname, '..', 'src', file), 'utf8')).join('\n');
 
+test('numeric Tailwind spacing utilities resolve to an explicit product token', () => {
+  const source = join(import.meta.dirname, '..', 'src');
+  const files = [];
+  const walk = (directory) => {
+    for (const item of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, item.name);
+      if (item.isDirectory()) walk(path);
+      else if (/\.(?:ts|tsx|css)$/.test(item.name)) files.push(path);
+    }
+  };
+  walk(source);
+  const used = new Set();
+  const utility = /(?:^|[\s:"`])(?:-?m[trblxy]?|-?p[trblxy]?|gap|[wh]|min-[wh]|max-[wh]|size|top|right|bottom|left)-(\d+)(?=[^\dA-Za-z_.-]|$)/g;
+  for (const file of files) {
+    for (const match of readFileSync(file, 'utf8').matchAll(utility)) used.add(match[1]);
+  }
+  const theme = readFileSync(join(source, 'styles', 'theme.css'), 'utf8');
+  const declared = new Set([...theme.matchAll(/--spacing-(\d+)\s*:/g)].map((match) => match[1]));
+  assert.deepEqual([...used].filter((token) => token !== '0' && !declared.has(token)).sort((left, right) => Number(left) - Number(right)), []);
+});
+
 test('source stylesheets are structurally valid and consume only declared design tokens', () => {
   const source = join(import.meta.dirname, '..', 'src');
   const files = ['styles.css', 'styles/base.css', 'styles/primitives.css', 'styles/tokens.css', ...cssFiles().filter((file) => file.startsWith('panel/styles/'))];

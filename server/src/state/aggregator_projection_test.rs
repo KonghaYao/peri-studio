@@ -19,7 +19,7 @@ use crate::state::normalized::EventBody;
 // ---------------------------------------------------------------------------
 
 #[test]
-fn reasoning_visibility_written() {
+fn hidden_reasoning_is_not_written_to_shared_chat_doc() {
     let mut p = pair();
     let mut agg = Aggregator;
     seed_user_msg(&mut p, "t1", "t1:user", "hi");
@@ -47,24 +47,9 @@ fn reasoning_visibility_written() {
         .unwrap()
         .cast::<yrs::MapRef>()
         .unwrap();
-    let em = entries
-        .get(&txn, "t1:assistant")
-        .unwrap()
-        .cast::<yrs::MapRef>()
-        .unwrap();
-    let blocks = em
-        .get(&txn, "blocks")
-        .unwrap()
-        .cast::<yrs::MapRef>()
-        .unwrap();
-    let bm = blocks
-        .get(&txn, "r1")
-        .unwrap()
-        .cast::<yrs::MapRef>()
-        .unwrap();
-    assert_eq!(
-        bm.get(&txn, "visibility"),
-        Some(yrs::Out::Any("hidden".into()))
+    assert!(
+        entries.get(&txn, "t1:assistant").is_none(),
+        "hidden reasoning text must never enter the browser-shared Chat Doc"
     );
     let _ = root;
 }

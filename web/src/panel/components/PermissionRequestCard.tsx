@@ -21,6 +21,9 @@ export interface PermissionRequestCardProps {
 export function PermissionRequestCard(props: PermissionRequestCardProps) {
   const domId = createUniqueId();
   const actionable = () => !!props.permission.permissionId;
+  const allowLabel = () => props.permission.options.includes('allowOnce')
+    ? 'Allow once'
+    : props.permission.options.includes('allowSession') ? 'Allow for this session' : null;
   const locked = () => !!props.decision;
   const uncertain = () => props.decision?.phase === 'uncertain';
   const retryable = () => uncertain() && props.decision?.retryable === true;
@@ -48,9 +51,9 @@ export function PermissionRequestCard(props: PermissionRequestCardProps) {
       <Show when={status()}><div id={statusId} class={`permission-request__status mt-7 text-11 leading-145 ${uncertain() ? 'text-warning font-semibold' : 'text-text-secondary'}`} role={uncertain() ? 'alert' : 'status'} aria-live="polite">{status()}</div></Show>
     </div>
     <div class="permission-request__actions flex justify-end gap-7 self-center max-middle:col-span-full max-middle:w-full max-middle:pt-2">
-      <Button variant="primary" class="min-h-36! min-w-72 max-narrow:min-h-44!" disabled={props.readOnly || locked() || !actionable()} busy={props.decision?.phase === 'pending' && props.decision.decision === 'allow'} onClick={() => actionable() && props.onResolve('allow')}>
-        {props.decision?.decision === 'allow' ? 'Allowing…' : 'Allow'}
-      </Button>
+      <Show when={allowLabel()}>{(label) => <Button variant="primary" class="min-h-36! min-w-72 max-narrow:min-h-44!" disabled={props.readOnly || locked() || !actionable()} busy={props.decision?.phase === 'pending' && props.decision.decision === 'allow'} onClick={() => actionable() && props.onResolve('allow')}>
+        {props.decision?.decision === 'allow' ? `${label()}…` : label()}
+      </Button>}</Show>
       <Button variant="secondary" class="min-h-36! min-w-72 max-narrow:min-h-44!" disabled={props.readOnly || locked() || !actionable()} busy={props.decision?.phase === 'pending' && props.decision.decision === 'deny'} onClick={() => actionable() && props.onResolve('deny')}>
         {props.decision?.decision === 'deny' ? 'Denying…' : 'Deny'}
       </Button>

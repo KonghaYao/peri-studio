@@ -82,15 +82,18 @@
   --spacing-16: var(--space-16);
   --spacing-17: var(--space-17);
   --spacing-18: var(--space-18);
+  --spacing-19: var(--space-19);
   --spacing-20: var(--space-20);
   --spacing-21: var(--space-21);
   --spacing-22: var(--space-22);
   --spacing-24: var(--space-24);
+  --spacing-25: var(--space-25);
   --spacing-26: var(--space-26);
   --spacing-28: var(--space-28);
   --spacing-30: var(--space-30);
   --spacing-32: var(--space-32);
   --spacing-34: var(--space-34);
+  --spacing-35: var(--space-35);
   --spacing-36: var(--space-36);
   --spacing-38: var(--space-38);
   --spacing-40: var(--space-40);
@@ -106,10 +109,15 @@
   --spacing-72: var(--space-72);
   --spacing-82: var(--space-82);
   --spacing-84: var(--space-84);
+  --spacing-90: var(--space-90);
+  --spacing-100: var(--space-100);
   --spacing-180: var(--space-180);
+  --spacing-210: var(--space-210);
   --spacing-240: var(--space-240);
   --spacing-260: var(--space-260);
   --spacing-300: var(--space-300);
+  --spacing-360: var(--space-360);
+  --spacing-420: var(--space-420);
   --spacing-520: var(--space-520);
 
   /* Radius scale: exact pixel values from tokens. */
@@ -157,6 +165,7 @@
   --text-16: var(--text-16);
   --text-17: var(--text-17);
   --text-18: var(--text-18);
+  --text-19: var(--text-19);
   --text-24: var(--text-24);
   --text-28: var(--text-28);
 

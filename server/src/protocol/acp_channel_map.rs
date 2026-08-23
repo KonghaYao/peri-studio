@@ -256,7 +256,10 @@ impl AcpChannel {
                 let visibility = match string_field(payload, "visibility", "visibility").as_deref()
                 {
                     Some("hidden") => BlockVisibility::Hidden,
-                    _ => BlockVisibility::Summary,
+                    Some("summary") | None => BlockVisibility::Summary,
+                    // 显式未知值不得降级为可共享摘要；否则上游拼写错误会把
+                    // 私有推理写入 Chat Doc。缺省值仅为旧 ACP 兼容保留。
+                    Some(_) => return Err(MapError::Unsupported),
                 };
                 B::ReasoningDelta {
                     turn_id: required(payload, "turnId", "turn_id")?,

@@ -3,7 +3,9 @@ import { cn } from '../../lib/cn';
 import { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip';
 
 const buttonVariantClasses = {
-  primary: 'bg-btn-primary text-surface hover:bg-btn-primary-hover',
+  // `cn` 使用 tailwind-merge；自定义 text-surface 会被误判成 font-size，
+  // 当调用方追加 text-12 时遭删除。显式重要 color 属性把前景色留在 interface。
+  primary: 'bg-btn-primary [color:var(--surface)]! hover:bg-btn-primary-hover',
   secondary: 'border-border-strong bg-surface text-text-secondary hover:border-text-primary hover:bg-surface hover:text-text-primary',
   ghost: 'hover:bg-hover',
   danger: 'text-danger hover:bg-hover',
@@ -14,7 +16,10 @@ const buttonSizeClasses = {
   default: '',
 } as const;
 
-const buttonBaseClasses = 'inline-flex min-h-36 items-center justify-center gap-8 rounded-8 border border-transparent bg-transparent px-12 [font-size:var(--text-13)] font-500 text-inherit cursor-pointer [transition:background_120ms_ease,border-color_120ms_ease,color_120ms_ease,transform_120ms_ease,opacity_120ms_ease] hover:bg-hover active:not-disabled:translate-y-1 disabled:cursor-not-allowed disabled:opacity-45 pointer-coarse:min-h-44';
+// 不在 base 设置 text-*：Tailwind 的 utility 排序与 class 字符串顺序无关，
+// base 的 text-inherit 会覆盖 primary 的前景色，形成深色字叠深色按钮。
+// 未声明文字色的 ghost 按钮天然继承父级，其他 variant 各自拥有明确颜色。
+const buttonBaseClasses = 'inline-flex min-h-36 items-center justify-center gap-8 rounded-8 border border-transparent bg-transparent px-12 [font-size:var(--text-13)] font-500 cursor-pointer [transition:background_120ms_ease,border-color_120ms_ease,color_120ms_ease,transform_120ms_ease,opacity_120ms_ease] hover:bg-hover active:not-disabled:translate-y-1 disabled:cursor-not-allowed disabled:opacity-45 pointer-coarse:min-h-44';
 
 type Props = JSX.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: keyof typeof buttonVariantClasses;

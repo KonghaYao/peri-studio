@@ -32,12 +32,17 @@ describe('downstream protocol envelope parsing', () => {
       .toMatchObject({ t: 'action_ack', commandId: 'c', status: 'duplicate', sessionId: 's', chatId: 'chat', futureField: true });
     expect(parse('{"t":"ysync.update","doc":"hub:registry","update":"AAAA","projectionVersion":2}'))
       .toEqual({ t: 'ysync.update', doc: 'hub:registry', update: 'AAAA', projectionVersion: 2 });
+    expect(parse('{"t":"ysync.update","doc":"resource:view-1","update":"AAAA","projectionVersion":1}'))
+      .toEqual({ t: 'ysync.update', doc: 'resource:view-1', update: 'AAAA', projectionVersion: 1 });
+    expect(parse('{"t":"ysync.update","doc":"resource:view:escape","update":"AAAA"}')).toBeNull();
   });
 
   it('strictly decodes opaque resource view results', () => {
     expect(parse('{"t":"resource_result","requestId":"q1","result":{"kind":"view","data":{"viewId":"v1","docId":"resource:v1","leaseExpiresAt":"2026-08-23T00:00:00Z"}}}'))
       .toMatchObject({ t: 'resource_result', requestId: 'q1', result: { kind: 'view', data: { docId: 'resource:v1' } } });
     expect(parse('{"t":"resource_result","requestId":"q1","result":{"kind":"view","data":{"viewId":"v1","docId":"chat:secret","leaseExpiresAt":"x"}}}'))
+      .toBeNull();
+    expect(parse('{"t":"resource_result","requestId":"q1","result":{"kind":"view","data":{"viewId":"v1","docId":"resource:other","leaseExpiresAt":"x"}}}'))
       .toBeNull();
     expect(parse('{"t":"resource_result","requestId":"q1","result":{"kind":"blob","data":{"blobId":"b1","url":"https://evil.example/file","expiresAt":"x"}}}'))
       .toBeNull();

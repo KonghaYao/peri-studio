@@ -19,7 +19,9 @@ export function ResourceDiffEditor() {
 
   onMount(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && resourceDiffPreview()) closeResourceDiffPreview();
+      // Escape 只关闭最上层交互。确认弹窗由 Dialog 自己消费第一次 Escape；
+      // 底层 diff 必须保持，等待用户再次明确关闭。
+      if (event.key === 'Escape' && resourceDiffPreview() && !document.querySelector('[data-dialog-overlay]')) closeResourceDiffPreview();
     };
     window.addEventListener('keydown', closeOnEscape);
     onCleanup(() => window.removeEventListener('keydown', closeOnEscape));

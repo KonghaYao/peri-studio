@@ -110,7 +110,8 @@ export function isResourceResult(frame: Record<string, unknown>): frame is Recor
     if (result.kind === 'view') {
       const data = result.data as Record<string, unknown>;
       if (!data || typeof data.viewId !== 'string' || typeof data.docId !== 'string'
-        || !data.docId.startsWith('resource:') || typeof data.leaseExpiresAt !== 'string') return false;
+        || !isServerDocId(data.docId) || data.docId !== `resource:${data.viewId}`
+        || typeof data.leaseExpiresAt !== 'string') return false;
     } else if (result.kind === 'blob') {
       const data = result.data as Record<string, unknown>;
       if (!data || typeof data.blobId !== 'string' || typeof data.url !== 'string'
@@ -122,3 +123,4 @@ export function isResourceResult(frame: Record<string, unknown>): frame is Recor
   }
   return frame.result !== undefined || frame.error !== undefined;
 }
+import { isServerDocId } from './doc-id';

@@ -11,9 +11,10 @@
 // （连接状态机见 ws-client.ts）。
 
 import { isResourceResult, type ResourceResultFrame } from './resource-protocol';
+import { isServerDocId } from './doc-id';
 
 /** 注册表 doc id（与 proto/src/conn.rs 的 DocId::REGISTRY 对齐），常驻订阅。 */
-export const DOC_REGISTRY = 'hub:registry';
+export { DOC_REGISTRY, isServerDocId } from './doc-id';
 export const CAP_PROMPT_DELIVERY_V2 = 'prompt-delivery-v2';
 
 /** chat 派生 doc id（订阅字段透明字符串，前缀区分投影）。 */
@@ -427,8 +428,7 @@ function isProjectionVersions(value: unknown): value is Record<string, number> {
     && Object.entries(value).every(([key, item]) => isDocId(key) && nonNegativeInteger(item));
 }
 
-const isDocId = (value: unknown): value is string => value === DOC_REGISTRY
-  || (typeof value === 'string' && /^(?:chat|session):[A-Za-z0-9._-]+$/.test(value));
+const isDocId = isServerDocId;
 
 function isBase64(value: unknown): value is string {
   if (typeof value !== 'string' || value.length % 4 !== 0 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)) return false;

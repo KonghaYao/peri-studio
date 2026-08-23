@@ -192,6 +192,12 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
   pendingFiles.delete(frame.requestId);
   if (key) setLoading(key, false);
   if (mutationRequest) setLoading(`mutation:${mutationRequest.repoId}`, false);
+  // 只有本 session 明确登记过的 request 才能取得 view/blob/mutation 的
+  // 所有权。切 project 或 reset 后的迟到 view 立即释放，绝不订阅。
+  if (!key && !diffRequest && !fileRequest && !mutationRequest) {
+    if (frame.result?.kind === 'view') transport?.send(releaseResourceView(frame.result.data.viewId));
+    return;
+  }
   if (frame.error) {
     if (diffRequest) {
       updateDiffPreview(diffRequest.requestId, {
@@ -265,6 +271,9 @@ function refreshGitRepository(repoId: string): void {
 
 export function handleResourceUpdate(frame: { doc: string; update: string }): boolean {
   if (!frame.doc.startsWith('resource:')) return false;
+  // 合法 docId 仍必须来自本 session 已接受的短租约；未知/迟到 update
+  // 只在总帧入口被消费，不得分配 DocStore 或污染当前 project。
+  if (!openViews.has(frame.doc)) return true;
   docs.applyUpdateFrame(frame);
   return true;
 }
@@ -337,6 +346,7 @@ function setLoading(key: string, loading: boolean) {
 }
 
 function consume(view: ResourceView) {
+  if (view.projectId !== resourceWorkspace().projectId) return;
   switch (view.viewType) {
     case 'fs_directory_page': {
       const path = view.path ?? '';

@@ -63,6 +63,8 @@ describe('Button', () => {
     expect(button).not.toHaveAttribute('busy');
     expect(button).not.toHaveAttribute('size');
     expect(button).toHaveTextContent('Processing');
+    expect(button).toHaveClass('[color:var(--surface)]!');
+    expect(button).not.toHaveClass('text-inherit');
   });
 
   it('keeps secondary safety decisions neutral and semantic', () => {

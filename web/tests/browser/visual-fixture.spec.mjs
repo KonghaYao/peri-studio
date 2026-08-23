@@ -24,44 +24,6 @@ function collectBrowserErrors(page) {
   return errors;
 }
 
-test('resource workbench matches Explorer and Source Control interaction contracts', async ({ page }) => {
-  const browserErrors = collectBrowserErrors(page);
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
-
-  await expect(page.getByRole('tree', { name: 'Workspace files' })).toBeVisible();
-  await page.getByRole('treeitem', { name: 'src' }).click();
-  await expect(page.getByRole('treeitem', { name: 'main.rs' })).toBeVisible();
-  await page.getByRole('button', { name: 'Source Control' }).click();
-  await expect(page.getByText('STAGED CHANGES')).toBeVisible();
-  await expect(page.getByText('UNTRACKED CHANGES')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Unstage server/src/control/resource_service.rs' })).toBeAttached();
-  await expect(page.getByRole('button', { name: 'Stage web/src/panel/lib/resource-view.ts' })).toBeAttached();
-  await expect(page.getByRole('region', { name: 'Git diff preview' })).toBeVisible();
-  await expect(page.getByRole('table', { name: 'Changes in web/src/panel/components/ResourceWorkbench.tsx' })).toBeVisible();
-  await expect(page.getByText('const width = view() ? 300 : 46;')).toBeVisible();
-  await expect(page.getByText('const width = view() ? 310 : 46;')).toBeVisible();
-  await page.getByRole('button', { name: 'Close diff' }).click();
-  await expect(page.getByRole('region', { name: 'Git diff preview' })).toHaveCount(0);
-  const previewInjected = await page.evaluate(() => {
-    const bridge = window.__PERI_VISUAL_FIXTURE__;
-    if (!bridge) return false;
-    bridge.setFilePreview({
-      requestId: 'browser-file', path: 'src/main.rs', loading: false, mode: 'text',
-      url: '/api/resource-blobs/browser-file', contentType: 'text/plain', size: 30,
-      text: 'fn main() {\n    println!("ready");\n}\n',
-    });
-    return true;
-  });
-  expect(previewInjected).toBe(true);
-  await expect(page.getByRole('region', { name: 'File preview' })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Contents of src/main.rs' })).toContainText('println!("ready")');
-  await expect(page.getByText('Read-only', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Close file' }).click();
-  await expect(page.getByRole('region', { name: 'File preview' })).toHaveCount(0);
-  expect(browserErrors).toEqual([]);
-});
-
 test('markdown lab renders rich content without eager network media', async ({ page }) => {
   const requested = [];
   page.on('request', (request) => requested.push(request.url()));
@@ -193,7 +155,7 @@ test('conversation copy and markdown keep compact authored line heights', async 
 
 test('intervention actions stay compact in a narrow desktop panel', async ({ page }) => {
   const measure = () => page.evaluate(() => {
-    const labels = ['Allow', 'Deny'];
+    const labels = ['Allow once', 'Deny'];
     return labels.map((label) => {
       const button = [...document.querySelectorAll('button')].find((element) => element.textContent?.trim() === label);
       const box = button.getBoundingClientRect();

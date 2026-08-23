@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
-import { resetResourceProject, setResourceDiffPreview } from '../lib/resource-store';
+import { resetResourceProject, resourceDiffPreview, setResourceDiffPreview } from '../lib/resource-store';
 import { ResourceDiffEditor } from './ResourceDiffEditor';
 
 afterEach(() => { cleanup(); resetResourceProject(); });
@@ -50,5 +50,23 @@ describe('VS Code-style Git diff editor', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('repository state changed');
     expect(screen.getByRole('button', { name: 'Refresh Source Control' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+  });
+
+  it('does not close through a modal that owns the first Escape', () => {
+    setResourceDiffPreview({
+      requestId: 'request-4', repoId: 'repo-1', groupId: 'working_tree', changeId: 'change-4',
+      path: 'src/modal.ts', status: 'modified', loading: false,
+      text: '--- a/src/modal.ts\n+++ b/src/modal.ts\n@@ -1 +1 @@\n-old\n+new\n',
+    });
+    render(() => <ResourceDiffEditor />);
+    const overlay = document.createElement('div');
+    overlay.setAttribute('data-dialog-overlay', '');
+    document.body.append(overlay);
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(resourceDiffPreview()?.path).toBe('src/modal.ts');
+    overlay.remove();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(resourceDiffPreview()).toBeNull();
   });
 });
