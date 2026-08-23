@@ -5,9 +5,9 @@ mod common;
 
 use std::time::Duration;
 
+use base64::Engine as _;
 use peri_studio_proto::ack::ErrorCode;
 use peri_studio_proto::Frame;
-use base64::Engine as _;
 
 use common::{fresh_token, wait_until, ServerProc, TestEnv, WsClient, RECV_TIMEOUT, TEST_BUDGET};
 

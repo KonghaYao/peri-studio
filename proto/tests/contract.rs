@@ -132,13 +132,13 @@ fn vector_6_client_uplink_update_rejected() {
 /// 版本常量一致性：hello 携带的 protocol_version 与 auth MAC 输入中的版本一致。
 #[test]
 fn protocol_version_consistency() {
-    assert_eq!(PROTOCOL_VERSION, 1);
+    assert_eq!(PROTOCOL_VERSION, 2);
     assert_eq!(CHAT_DOC_SCHEMA_VERSION, 1);
     // MAC 输入使用 PROTOCOL_VERSION 的十进制字符串表示（§10）
     let key = derive_mac_key(&INSTANCE_TOKEN, ROLE);
     let input = mac_input(&[0u8; 32], &[0u8; 32], &PROTOCOL_VERSION.to_string(), ROLE);
-    // 与固化的字节级向量一致（向量 12 主向量以 version="1" 计算）
-    let expected = mac_input(&[0u8; 32], &[0u8; 32], "1", ROLE);
+    // 与当前资源协议升级后的字节级版本输入一致。
+    let expected = mac_input(&[0u8; 32], &[0u8; 32], "2", ROLE);
     assert_eq!(input, expected);
     let _ = key;
 }
