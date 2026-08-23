@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::conn::DocId;
 use crate::frame::Frame;
 use crate::resource::{
-    InstanceResourcePayload, InstanceResourceQuery, InstanceResourceQueryKind,
+    GitDiffQuery, InstanceResourcePayload, InstanceResourceQuery, InstanceResourceQueryKind,
     InstanceResourceResult, OpenResourceView, ReadDirectoryQuery, ResourceGitAction,
     ResourceGitActionKind, ResourceQuery, ResourceQueryResult, ResourceResult, ResourceViewKind,
     ResourceViewOpened, RESOURCE_PROTOCOL_VERSION,
@@ -68,8 +68,27 @@ fn trusted_instance_query_carries_root_separately() {
 }
 
 #[test]
+fn git_diff_query_uses_only_opaque_change_identity() {
+    assert_eq!(RESOURCE_PROTOCOL_VERSION, 3);
+    let frame = Frame::InstanceResourceQuery(InstanceResourceQuery {
+        request_id: "request-1".into(),
+        workspace_id: "workspace-1".into(),
+        root: "/srv/workspaces/demo".into(),
+        query: InstanceResourceQueryKind::GitDiff(GitDiffQuery {
+            repo_id: "repo-1".into(),
+            change_id: "change-1".into(),
+            max_bytes: 8 * 1024 * 1024,
+        }),
+    });
+    let value = serde_json::to_value(&frame).unwrap();
+    assert_eq!(value["query"]["type"], "git_diff");
+    assert_eq!(value["query"]["payload"]["changeId"], "change-1");
+    assert!(value["query"]["payload"].get("path").is_none());
+}
+
+#[test]
 fn git_mutation_is_generation_bound_and_never_accepts_browser_paths() {
-    assert_eq!(RESOURCE_PROTOCOL_VERSION, 2);
+    assert_eq!(RESOURCE_PROTOCOL_VERSION, 3);
     let frame = Frame::ResourceQuery(ResourceQuery::GitAction {
         request_id: "request-1".into(),
         project_id: "project-1".into(),

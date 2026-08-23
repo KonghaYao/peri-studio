@@ -233,6 +233,129 @@ async fn open_view_resolves_trusted_project_and_publishes_authorized_doc() {
 }
 
 #[tokio::test]
+async fn git_diff_blob_resolves_project_and_returns_a_principal_bound_http_ticket() {
+    use base64::Engine as _;
+
+    let dir = tempfile::tempdir().unwrap();
+    let metadata = Arc::new(MetadataStore::open(dir.path()).await.unwrap());
+    metadata
+        .create_project(
+            "project-1",
+            "Demo",
+            dir.path().to_str().unwrap(),
+            "machine-1",
+        )
+        .await
+        .unwrap();
+    let (registry_tx, _registry_rx) = tokio::sync::mpsc::channel(1);
+    let registry = crate::state::registry::RegistryState::new(registry_tx);
+    let instances = Arc::new(InstanceRegistry::new(
+        std::time::Duration::from_secs(30),
+        std::time::Duration::from_secs(10),
+        crate::control::ChatRegistry::new(registry),
+    ));
+    let (instance_tx, mut instance_rx) = tokio::sync::mpsc::channel(4);
+    instances
+        .on_hello(
+            "machine-1",
+            "instance-token",
+            crate::control::InstanceConn { tx: instance_tx },
+            &peri_studio_proto::instance::InstanceHello {
+                protocol_version: peri_studio_proto::version::PROTOCOL_VERSION,
+                token: "token".into(),
+                hostname: "machine".into(),
+                caps: json!({"resources": {"protocolVersion": peri_studio_proto::resource::RESOURCE_PROTOCOL_VERSION}}),
+                buffered: None,
+                buffer_lost: None,
+                stream_epochs: None,
+                nonce: "nonce".into(),
+            },
+        )
+        .await;
+    let service = ResourceService::new(
+        metadata,
+        instances.clone(),
+        ResourceProjection::new(
+            Arc::new(crate::control::StoreSink::new()),
+            std::time::Duration::from_secs(60),
+            2,
+        ),
+    );
+    let pending = tokio::spawn({
+        let service = service.clone();
+        async move {
+            service
+                .handle(
+                    "browser-token",
+                    false,
+                    ResourceQuery::OpenBlob {
+                        request_id: "diff-query".into(),
+                        project_id: "project-1".into(),
+                        payload: peri_studio_proto::resource::OpenResourceBlob {
+                            kind: peri_studio_proto::resource::ResourceBlobKind::GitDiff,
+                            path: None,
+                            repo_id: Some("repo-1".into()),
+                            change_id: Some("change-1".into()),
+                            if_match: None,
+                        },
+                    },
+                )
+                .await
+        }
+    });
+    let Some(crate::channel::OutboundMsg::Frame(Frame::InstanceResourceQuery(query))) =
+        tokio::time::timeout(std::time::Duration::from_millis(100), instance_rx.recv())
+            .await
+            .expect("Git diff must be routed to the project instance")
+    else {
+        panic!("expected trusted instance resource query");
+    };
+    assert_eq!(query.root, dir.path().to_str().unwrap());
+    let InstanceResourceQueryKind::GitDiff(input) = &query.query else {
+        panic!("expected Git diff query");
+    };
+    assert_eq!(input.repo_id, "repo-1");
+    assert_eq!(input.change_id, "change-1");
+    let diff = b"@@ -1 +1 @@\n-before\n+after\n";
+    assert!(
+        instances
+            .on_ack(
+                "machine-1",
+                &query.request_id,
+                crate::control::InstanceAck::Resource(
+                    peri_studio_proto::resource::InstanceResourceResult {
+                        request_id: query.request_id.clone(),
+                        result: Some(InstanceResourcePayload::Blob(
+                            peri_studio_proto::resource::InstanceBlob {
+                                content_base64: base64::engine::general_purpose::STANDARD
+                                    .encode(diff),
+                                content_type: "text/x-diff; charset=utf-8".into(),
+                                etag: "diff-etag".into(),
+                            },
+                        )),
+                        error: None,
+                    },
+                ),
+            )
+            .await
+    );
+    let result = pending.await.unwrap();
+    let Some(ResourceQueryResult::Blob(opened)) = result.result else {
+        panic!("expected blob ticket: {result:?}");
+    };
+    assert_eq!(
+        service
+            .blob("browser-token", &opened.blob_id)
+            .await
+            .unwrap()
+            .bytes
+            .as_slice(),
+        diff
+    );
+    assert!(service.blob("other-token", &opened.blob_id).await.is_none());
+}
+
+#[tokio::test]
 async fn read_only_principal_cannot_stage_changes() {
     let dir = tempfile::tempdir().unwrap();
     let metadata = Arc::new(MetadataStore::open(dir.path()).await.unwrap());

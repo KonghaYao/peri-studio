@@ -1,6 +1,6 @@
 import { For, Show } from 'solid-js';
 import { Icon, IconButton, LoadingState } from '../../components/ui';
-import { mutateGitResource, openMoreGitChanges, resourceWorkspace } from '../store';
+import { mutateGitResource, openGitDiffPreview, openMoreGitChanges, resourceWorkspace } from '../store';
 import type { RepositoryState } from '../lib/resource-store';
 import { readOnly } from '../lib/auth-state';
 
@@ -43,15 +43,23 @@ function Repository(props: { repo: RepositoryState }) {
       const state = () => props.repo.groups[group.id];
       return <Show when={state()?.count}>
         <div class="flex h-25 items-center px-8 text-10 font-650 uppercase tracking-4 text-text-secondary"><span>{group.label}</span><span class="ml-auto tabular-nums text-text-muted">{state().count}</span></div>
-        <For each={state().changes}>{(change) => <div class="group flex h-24 items-center gap-5 pl-13 pr-5 text-12 hover:bg-hover" title={String(change.path ?? '')}>
-          <span class="text-text-muted"><FileIcon /></span>
-          <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{basename(String(change.path ?? ''))}</span>
-          <span class="max-w-90 overflow-hidden text-ellipsis whitespace-nowrap text-10 text-text-faint">{dirname(String(change.path ?? ''))}</span>
-          <span class={`w-14 text-center font-mono text-11 font-650 ${statusColor(String(change.status ?? ''))}`}>{statusLetter(String(change.status ?? ''))}</span>
+        <For each={state().changes}>{(change) => <div class="group flex h-24 items-center pr-5 text-12 hover:bg-hover">
+          <button
+            type="button"
+            class="flex h-full min-w-0 flex-1 items-center gap-5 border-0 bg-transparent pl-13 text-left text-inherit"
+            aria-label={`Open changes for ${String(change.path ?? '')}`}
+            title={`Open changes for ${String(change.path ?? '')}`}
+            onClick={() => openGitDiffPreview(props.repo.id, group.id, change)}
+          >
+            <span class="text-text-muted"><FileIcon /></span>
+            <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{basename(String(change.path ?? ''))}</span>
+            <span class="max-w-90 overflow-hidden text-ellipsis whitespace-nowrap text-10 text-text-faint">{dirname(String(change.path ?? ''))}</span>
+            <span class={`w-14 text-center font-mono text-11 font-650 ${statusColor(String(change.status ?? ''))}`}>{statusLetter(String(change.status ?? ''))}</span>
+          </button>
           <IconButton
             label={group.id === 'index' ? `Unstage ${String(change.path ?? '')}` : `Stage ${String(change.path ?? '')}`}
             disabled={readOnly()}
-            onClick={() => mutateGitResource(props.repo.id, group.id === 'index' ? 'unstage' : 'stage', [change.id])}
+            onClick={(event) => { event.stopPropagation(); mutateGitResource(props.repo.id, group.id === 'index' ? 'unstage' : 'stage', [change.id]); }}
             class="size-22 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
           >{group.id === 'index' ? <MinusIcon /> : <PlusIcon />}</IconButton>
         </div>}</For>

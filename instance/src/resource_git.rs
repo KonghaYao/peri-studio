@@ -18,6 +18,9 @@ use super::common::{
 };
 use super::ResourceHost;
 
+#[path = "resource_git_diff.rs"]
+mod diff;
+
 const STATUS_ARGS: &[&str] = &[
     "status",
     "--porcelain=v1",

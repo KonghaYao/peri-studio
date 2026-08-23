@@ -37,6 +37,12 @@ test('resource workbench matches Explorer and Source Control interaction contrac
   await expect(page.getByText('UNTRACKED CHANGES')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Unstage server/src/control/resource_service.rs' })).toBeAttached();
   await expect(page.getByRole('button', { name: 'Stage web/src/panel/lib/resource-view.ts' })).toBeAttached();
+  await expect(page.getByRole('region', { name: 'Git diff preview' })).toBeVisible();
+  await expect(page.getByRole('table', { name: 'Changes in web/src/panel/components/ResourceWorkbench.tsx' })).toBeVisible();
+  await expect(page.getByText('const width = view() ? 300 : 46;')).toBeVisible();
+  await expect(page.getByText('const width = view() ? 310 : 46;')).toBeVisible();
+  await page.getByRole('button', { name: 'Close diff' }).click();
+  await expect(page.getByRole('region', { name: 'Git diff preview' })).toHaveCount(0);
   expect(browserErrors).toEqual([]);
 });
 

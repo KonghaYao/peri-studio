@@ -73,6 +73,15 @@ impl ResourceHost {
                 )
                 .await
             }
+            InstanceResourceQueryKind::GitDiff(input) => {
+                self.git_diff(
+                    &query.root,
+                    &input.repo_id,
+                    &input.change_id,
+                    input.max_bytes,
+                )
+                .await
+            }
             InstanceResourceQueryKind::GitMutate(input) => {
                 self.git_mutate(
                     &query.root,
@@ -99,6 +108,9 @@ impl ResourceHost {
     }
 }
 
+#[cfg(test)]
+#[path = "resource_diff_test.rs"]
+mod resource_diff_test;
 #[cfg(test)]
 #[path = "resource_test.rs"]
 mod resource_test;

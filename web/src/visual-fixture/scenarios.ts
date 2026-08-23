@@ -20,7 +20,7 @@ import {
 } from '../panel/store';
 import { installPrincipalRole } from '../panel/lib/auth-state';
 import { acquireFixtureClock } from './fixture-clock';
-import { setResourceWorkspace } from '../panel/lib/resource-store';
+import { setResourceDiffPreview, setResourceWorkspace } from '../panel/lib/resource-store';
 
 export const VISUAL_NOW = Date.parse('2026-08-14T08:00:00+08:00');
 export const DEFAULT_VISUAL_SCENARIO = 'conversation';
@@ -244,6 +244,22 @@ export function installVisualScenario(value: string | null | undefined): { scena
           untracked: { count: 1, revision: 'new-1', changes: [{ id: 'c4', path: 'web/src/panel/lib/resource-view.ts', status: 'untracked' }] },
         },
       }],
+    });
+    setResourceDiffPreview({
+      requestId: 'fixture-diff', repoId: 'repo-1', groupId: 'working_tree', changeId: 'c2',
+      path: 'web/src/panel/components/ResourceWorkbench.tsx', status: 'modified', loading: false,
+      text: [
+        'diff --git a/web/src/panel/components/ResourceWorkbench.tsx b/web/src/panel/components/ResourceWorkbench.tsx',
+        '--- a/web/src/panel/components/ResourceWorkbench.tsx',
+        '+++ b/web/src/panel/components/ResourceWorkbench.tsx',
+        '@@ -12,3 +12,4 @@ export function ResourceWorkbench() {',
+        '   const [view, setView] = createSignal<WorkbenchView>(\'explorer\');',
+        '-  const width = view() ? 300 : 46;',
+        '+  const width = view() ? 310 : 46;',
+        '+  const label = view() === \'scm\' ? \'Source Control\' : \'Explorer\';',
+        '   return <aside style={{ width: `${width}px` }} />;',
+        '',
+      ].join('\n'),
     });
   }
   if (id === 'markdown') {

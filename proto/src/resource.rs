@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::conn::DocId;
 
-pub const RESOURCE_PROTOCOL_VERSION: u32 = 2;
+pub const RESOURCE_PROTOCOL_VERSION: u32 = 3;
 pub const DEFAULT_DIRECTORY_PAGE_SIZE: u32 = 200;
 pub const MAX_DIRECTORY_PAGE_SIZE: u32 = 500;
 
@@ -215,7 +215,16 @@ pub enum InstanceResourceQueryKind {
     DiscoverRepositories(DiscoverRepositoriesQuery),
     GitSnapshot(GitSnapshotQuery),
     GitChanges(GitChangesQuery),
+    GitDiff(GitDiffQuery),
     GitMutate(GitMutateQuery),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitDiffQuery {
+    pub repo_id: String,
+    pub change_id: String,
+    pub max_bytes: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

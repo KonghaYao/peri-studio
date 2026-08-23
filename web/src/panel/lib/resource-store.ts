@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
 import { DocStore } from './doc-store';
-import { gitResourceAction, openResourceFile, openResourceView, releaseResourceView, type ResourceResultFrame } from './resource-protocol';
+import { gitResourceAction, openResourceFile, openResourceGitDiff, openResourceView, releaseResourceView, type GitGroupId, type ResourceResultFrame } from './resource-protocol';
 import { renderResourceView, type ResourceEntry, type ResourceView } from './resource-view';
 
 export interface DirectoryState { generation: string; entries: ResourceEntry[]; nextCursor?: string }
@@ -23,6 +23,21 @@ export interface ResourceWorkspaceState {
   error: string | null;
 }
 
+export interface ResourceDiffPreviewState {
+  requestId: string;
+  repoId: string;
+  groupId: GitGroupId;
+  changeId: string;
+  path: string;
+  originalPath?: string;
+  status: string;
+  loading: boolean;
+  text?: string;
+  error?: string;
+  errorCode?: string;
+  retryable?: boolean;
+}
+
 const initial = (): ResourceWorkspaceState => ({
   projectId: null,
   directories: {},
@@ -32,8 +47,10 @@ const initial = (): ResourceWorkspaceState => ({
 });
 
 export const [resourceWorkspace, setResourceWorkspace] = createSignal<ResourceWorkspaceState>(initial());
+export const [resourceDiffPreview, setResourceDiffPreview] = createSignal<ResourceDiffPreviewState | null>(null);
 const docs = new DocStore();
 const pending = new Map<string, string>();
+const pendingDiffs = new Map<string, ResourceDiffPreviewState>();
 const openViews = new Map<string, string>();
 const requested = new Set<string>();
 
@@ -76,6 +93,42 @@ export function downloadResourceFile(path: string): void {
   setLoading(`blob:${path}`, true);
 }
 
+export function openGitDiffPreview(repoId: string, groupId: GitGroupId, change: ResourceEntry): void {
+  const projectId = resourceWorkspace().projectId;
+  const path = typeof change.path === 'string' ? change.path : '';
+  if (!projectId || !path || !transport?.ready()) return;
+  const frame = openResourceGitDiff(projectId, repoId, change.id);
+  if (!transport.send(frame)) return;
+  const preview: ResourceDiffPreviewState = {
+    requestId: frame.requestId,
+    repoId,
+    groupId,
+    changeId: change.id,
+    path,
+    originalPath: typeof change.original_path === 'string' ? change.original_path : undefined,
+    status: typeof change.status === 'string' ? change.status : 'modified',
+    loading: true,
+  };
+  pending.set(frame.requestId, `diff:${path}`);
+  pendingDiffs.set(frame.requestId, preview);
+  setResourceDiffPreview(preview);
+}
+
+export function closeResourceDiffPreview(): void {
+  setResourceDiffPreview(null);
+}
+
+export function retryGitDiffPreview(): void {
+  const preview = resourceDiffPreview();
+  if (!preview) return;
+  openGitDiffPreview(preview.repoId, preview.groupId, {
+    id: preview.changeId,
+    path: preview.path,
+    original_path: preview.originalPath,
+    status: preview.status,
+  });
+}
+
 export function mutateGitResource(repoId: string, action: 'stage' | 'unstage', changeIds: string[]): void {
   const state = resourceWorkspace();
   const repo = state.repositories.find((item) => item.id === repoId);
@@ -95,9 +148,20 @@ export function refreshResourceProject(): void {
 
 export function handleResourceResult(frame: ResourceResultFrame): void {
   const key = pending.get(frame.requestId);
+  const diffRequest = pendingDiffs.get(frame.requestId);
   pending.delete(frame.requestId);
+  pendingDiffs.delete(frame.requestId);
   if (key) setLoading(key, false);
   if (frame.error) {
+    if (diffRequest) {
+      updateDiffPreview(diffRequest.requestId, {
+        loading: false,
+        error: frame.error.message,
+        errorCode: frame.error.code,
+        retryable: frame.error.retryable,
+      });
+      return;
+    }
     setResourceWorkspace((state) => ({ ...state, error: frame.error!.message }));
     return;
   }
@@ -105,6 +169,10 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
     openViews.set(frame.result.data.docId, frame.result.data.viewId);
     transport?.send({ t: 'ysync.subscribe', docs: [frame.result.data.docId], clientCapabilities: [] });
   } else if (frame.result?.kind === 'blob') {
+    if (diffRequest) {
+      void loadGitDiff(frame.result.data.url, diffRequest);
+      return;
+    }
     const anchor = document.createElement('a');
     anchor.href = frame.result.data.url;
     anchor.download = key?.startsWith('blob:') ? key.slice(5).split('/').at(-1) || '' : '';
@@ -140,9 +208,38 @@ export function resetResourceProject(): void {
   }
   docs.clear();
   pending.clear();
+  pendingDiffs.clear();
   openViews.clear();
   requested.clear();
+  setResourceDiffPreview(null);
   setResourceWorkspace(initial());
+}
+
+async function loadGitDiff(url: string, request: ResourceDiffPreviewState) {
+  try {
+    const response = await fetch(url, {
+      method: 'GET', credentials: 'same-origin', cache: 'no-store',
+      headers: { Accept: 'text/x-diff, text/plain;q=0.9' },
+    });
+    if (!response.ok) throw new Error('diff fetch failed');
+    updateDiffPreview(request.requestId, {
+      loading: false,
+      text: await response.text(),
+      error: undefined,
+      errorCode: undefined,
+      retryable: undefined,
+    });
+  } catch {
+    updateDiffPreview(request.requestId, {
+      loading: false,
+      error: 'Unable to load this diff. Refresh Source Control and try again.',
+      retryable: true,
+    });
+  }
+}
+
+function updateDiffPreview(requestId: string, patch: Partial<ResourceDiffPreviewState>) {
+  setResourceDiffPreview((current) => current?.requestId === requestId ? { ...current, ...patch } : current);
 }
 
 function request(projectId: string, key: string, payload: Parameters<typeof openResourceView>[1]) {

@@ -68,6 +68,16 @@ export function openResourceFile(projectId: string, path: string) {
   } as const;
 }
 
+export function openResourceGitDiff(projectId: string, repoId: string, changeId: string) {
+  return {
+    t: 'resource_query',
+    type: 'resource/open-blob',
+    requestId: crypto.randomUUID(),
+    projectId,
+    payload: { kind: 'git-diff', repoId, changeId },
+  } as const;
+}
+
 export function gitResourceAction(
   projectId: string,
   repoId: string,

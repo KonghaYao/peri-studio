@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
+import { cleanup, fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ExplorerPanel } from './ExplorerPanel';
 import { SourceControlPanel } from './SourceControlPanel';
@@ -6,12 +6,13 @@ import {
   handleResourceResult,
   installResourceStore,
   replayResourceSubscriptions,
+  resourceDiffPreview,
   resetResourceProject,
   setResourceWorkspace,
 } from '../lib/resource-store';
 import { installPrincipalRole } from '../lib/auth-state';
 
-afterEach(() => { cleanup(); resetResourceProject(); installPrincipalRole(null); });
+afterEach(() => { cleanup(); resetResourceProject(); installPrincipalRole(null); vi.unstubAllGlobals(); });
 
 describe('VS Code-style resource panels', () => {
   it('lazy-loads a directory when its tree row expands', async () => {
@@ -34,8 +35,13 @@ describe('VS Code-style resource panels', () => {
     }));
   });
 
-  it('renders repository branch, SCM groups and compact status decorations', () => {
+  it('opens a principal-bound Git diff blob from a change row', async () => {
     const sent: unknown[] = [];
+    const fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => '--- a/src/main.ts\n+++ b/src/main.ts\n@@ -1 +1 @@\n-before\n+after\n',
+    });
+    vi.stubGlobal('fetch', fetch);
     installResourceStore({ send: (frame) => { sent.push(frame); return true; }, ready: () => true, toast: vi.fn() });
     installPrincipalRole('full');
     setResourceWorkspace({
@@ -52,6 +58,20 @@ describe('VS Code-style resource panels', () => {
     expect(screen.getByText('Changes')).toBeInTheDocument();
     expect(screen.getByText('main.ts')).toBeInTheDocument();
     expect(screen.getByText('M')).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole('button', { name: /Open changes for src\/main\.ts/i }));
+    expect(sent).toContainEqual(expect.objectContaining({
+      t: 'resource_query', type: 'resource/open-blob', projectId: 'project-1',
+      payload: { kind: 'git-diff', repoId: 'repo-1', changeId: 'c1' },
+    }));
+    const open = sent.find((frame) => (frame as { type?: string }).type === 'resource/open-blob') as { requestId: string };
+    handleResourceResult({
+      t: 'resource_result', requestId: open.requestId,
+      result: { kind: 'blob', data: { blobId: 'blob-1', url: '/api/resource-blobs/blob-1', expiresAt: '2026-08-23T12:00:00Z' } },
+    });
+    await waitFor(() => expect(resourceDiffPreview()?.text).toContain('+after'));
+    expect(fetch).toHaveBeenCalledWith('/api/resource-blobs/blob-1', expect.objectContaining({
+      method: 'GET', credentials: 'same-origin', cache: 'no-store',
+    }));
     fireEvent.click(screen.getByRole('button', { name: 'Stage src/main.ts' }));
     expect(sent).toContainEqual(expect.objectContaining({
       t: 'resource_query', type: 'resource/git-action', projectId: 'project-1',

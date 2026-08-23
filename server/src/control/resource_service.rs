@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use peri_studio_proto::resource::{
-    DiscoverRepositoriesQuery, GitChangesQuery, GitMutateQuery, GitSnapshotQuery,
+    DiscoverRepositoriesQuery, GitChangesQuery, GitDiffQuery, GitMutateQuery, GitSnapshotQuery,
     InstanceResourcePayload, InstanceResourceQuery, InstanceResourceQueryKind, OpenResourceBlob,
     OpenResourceView, ReadDirectoryQuery, ReadFileQuery, ResourceBlobKind, ResourceBlobOpened,
     ResourceErrorCode, ResourceFailure, ResourceQuery, ResourceQueryResult, ResourceResult,
@@ -224,14 +224,31 @@ impl ResourceService {
         project_id: &str,
         request: OpenResourceBlob,
     ) -> Result<ResourceQueryResult, ResourceFailure> {
-        if request.kind != ResourceBlobKind::File {
-            return Err(failure(
-                ResourceErrorCode::InvalidRequest,
-                "blob kind is not supported",
-                false,
-            ));
-        }
-        let path = required(request.path, "file path is required")?;
+        let query_kind = match request.kind {
+            ResourceBlobKind::File => {
+                let path = required(request.path, "file path is required")?;
+                InstanceResourceQueryKind::ReadFile(ReadFileQuery {
+                    path,
+                    max_bytes: 64 * 1024 * 1024,
+                })
+            }
+            ResourceBlobKind::GitDiff => {
+                let repo_id = required(request.repo_id, "repository is required")?;
+                let change_id = required(request.change_id, "Git change is required")?;
+                InstanceResourceQueryKind::GitDiff(GitDiffQuery {
+                    repo_id,
+                    change_id,
+                    max_bytes: 8 * 1024 * 1024,
+                })
+            }
+            ResourceBlobKind::GitHead | ResourceBlobKind::GitIndex => {
+                return Err(failure(
+                    ResourceErrorCode::InvalidRequest,
+                    "blob kind is not supported",
+                    false,
+                ));
+            }
+        };
         let project = self
             .metadata
             .project(project_id)
@@ -249,10 +266,7 @@ impl ResourceService {
             request_id: uuid::Uuid::new_v4().to_string(),
             workspace_id: project.id,
             root: project.cwd,
-            query: InstanceResourceQueryKind::ReadFile(ReadFileQuery {
-                path,
-                max_bytes: 64 * 1024 * 1024,
-            }),
+            query: query_kind,
         };
         let result = self
             .instance

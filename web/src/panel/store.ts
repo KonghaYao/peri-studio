@@ -503,9 +503,13 @@ installResourceStore({ send: sendFrame, ready: connectionReady, toast });
 export {
   activateResourceProject,
   downloadResourceFile,
+  closeResourceDiffPreview,
   mutateGitResource,
+  openGitDiffPreview,
   openMoreGitChanges,
   openResourceDirectory,
   refreshResourceProject,
+  retryGitDiffPreview,
+  resourceDiffPreview,
   resourceWorkspace,
 } from './lib/resource-store';
