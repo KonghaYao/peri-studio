@@ -3,7 +3,7 @@
 //! instance 返回普通 DTO；本模块是唯一将 DTO 写入 `resource:{view_id}` Doc
 //! 的 server writer，并同时拥有 principal 授权与生命周期回收。
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -25,6 +25,7 @@ use crate::state::view_store::encode_state_as_update;
 struct ResourceLease {
     principal: String,
     expires_at: DateTime<Utc>,
+    subscribers: HashSet<u64>,
 }
 
 #[derive(Clone)]
@@ -37,12 +38,14 @@ pub struct ResourceProjection {
 
 impl ResourceProjection {
     pub fn new(sink: Arc<StoreSink>, lease_ttl: Duration, max_views_per_principal: usize) -> Self {
-        Self {
+        let projection = Self {
             sink,
             leases: Arc::new(Mutex::new(HashMap::new())),
             lease_ttl,
             max_views_per_principal,
-        }
+        };
+        projection.spawn_lease_sweeper();
+        projection
     }
 
     /// 发布一次 instance 查询结果并签发 principal 绑定的 Doc 租约。
@@ -59,7 +62,8 @@ impl ResourceProjection {
                 .unwrap_or_else(|_| chrono::Duration::minutes(1));
         let view_id = uuid::Uuid::new_v4().to_string();
         let doc_id = DocId::resource(&view_id);
-        {
+        let update = build_update(&view_id, project_id, payload);
+        let persist_failed = {
             let mut leases = self.leases.lock().await;
             let count = leases
                 .values()
@@ -77,18 +81,22 @@ impl ResourceProjection {
                 ResourceLease {
                     principal: principal.to_string(),
                     expires_at,
+                    subscribers: HashSet::new(),
                 },
             );
-        }
-
-        let update = build_update(&view_id, project_id, payload);
-        if self
-            .sink
-            .persist_update(doc_id.clone(), update)
-            .await
-            .is_err()
-        {
-            self.leases.lock().await.remove(&doc_id);
+            // 授权、过期回收与首个快照发布共用该临界区，避免短 TTL
+            // 在 persist 完成前回收 lease，随后留下无主 Doc。
+            let failed = self
+                .sink
+                .persist_update(doc_id.clone(), update)
+                .await
+                .is_err();
+            if failed {
+                leases.remove(&doc_id);
+            }
+            failed
+        };
+        if persist_failed {
             self.sink.remove_resource_doc(&doc_id).await;
             return Err(failure(
                 ResourceErrorCode::Unavailable,
@@ -113,6 +121,46 @@ impl ResourceProjection {
             .is_some_and(|lease| lease.principal == principal)
     }
 
+    /// 授权并登记活跃连接；有订阅者的 view 不进入 TTL 回收。
+    pub async fn subscribe(&self, principal: &str, conn_id: u64, doc: &DocId) -> bool {
+        let now = Utc::now();
+        self.sweep_expired(now).await;
+        let mut leases = self.leases.lock().await;
+        let Some(lease) = leases
+            .get_mut(doc)
+            .filter(|lease| lease.principal == principal)
+        else {
+            return false;
+        };
+        lease.subscribers.insert(conn_id);
+        true
+    }
+
+    /// 连接退订后，最后一个订阅者离开才开始短 TTL。
+    pub async fn unsubscribe(&self, conn_id: u64, docs: &[DocId]) {
+        let expires_at = lease_deadline(Utc::now(), self.lease_ttl);
+        let mut leases = self.leases.lock().await;
+        for doc in docs {
+            if let Some(lease) = leases.get_mut(doc) {
+                lease.subscribers.remove(&conn_id);
+                if lease.subscribers.is_empty() {
+                    lease.expires_at = expires_at;
+                }
+            }
+        }
+    }
+
+    /// 连接断开等同于它对全部资源 Doc 的退订。
+    pub async fn disconnect(&self, conn_id: u64) {
+        let expires_at = lease_deadline(Utc::now(), self.lease_ttl);
+        let mut leases = self.leases.lock().await;
+        for lease in leases.values_mut() {
+            if lease.subscribers.remove(&conn_id) && lease.subscribers.is_empty() {
+                lease.expires_at = expires_at;
+            }
+        }
+    }
+
     pub async fn release(&self, principal: &str, view_id: &str) -> bool {
         self.sweep_expired(Utc::now()).await;
         let doc = DocId::resource(view_id);
@@ -135,22 +183,54 @@ impl ResourceProjection {
     }
 
     async fn sweep_expired(&self, now: DateTime<Utc>) {
-        let expired = {
-            let mut leases = self.leases.lock().await;
-            let expired = leases
-                .iter()
-                .filter(|(_, lease)| lease.expires_at <= now)
-                .map(|(doc, _)| doc.clone())
-                .collect::<Vec<_>>();
-            for doc in &expired {
-                leases.remove(doc);
-            }
-            expired
-        };
-        for doc in expired {
-            self.sink.remove_resource_doc(&doc).await;
-        }
+        sweep_expired_parts(&self.sink, &self.leases, now).await;
     }
+
+    fn spawn_lease_sweeper(&self) {
+        let Ok(runtime) = tokio::runtime::Handle::try_current() else {
+            return;
+        };
+        let sink = Arc::downgrade(&self.sink);
+        let leases = Arc::downgrade(&self.leases);
+        let interval = self
+            .lease_ttl
+            .clamp(Duration::from_millis(10), Duration::from_secs(30));
+        runtime.spawn(async move {
+            loop {
+                tokio::time::sleep(interval).await;
+                let (Some(sink), Some(leases)) = (sink.upgrade(), leases.upgrade()) else {
+                    break;
+                };
+                sweep_expired_parts(&sink, &leases, Utc::now()).await;
+            }
+        });
+    }
+}
+
+async fn sweep_expired_parts(
+    sink: &StoreSink,
+    leases: &Mutex<HashMap<DocId, ResourceLease>>,
+    now: DateTime<Utc>,
+) {
+    let expired = {
+        let mut leases = leases.lock().await;
+        let expired = leases
+            .iter()
+            .filter(|(_, lease)| lease.subscribers.is_empty() && lease.expires_at <= now)
+            .map(|(doc, _)| doc.clone())
+            .collect::<Vec<_>>();
+        for doc in &expired {
+            leases.remove(doc);
+        }
+        expired
+    };
+    for doc in expired {
+        sink.remove_resource_doc(&doc).await;
+    }
+}
+
+fn lease_deadline(now: DateTime<Utc>, ttl: Duration) -> DateTime<Utc> {
+    now + chrono::Duration::from_std(ttl).unwrap_or_else(|_| chrono::Duration::minutes(1))
 }
 
 fn build_update(view_id: &str, project_id: &str, payload: &InstanceResourcePayload) -> Vec<u8> {

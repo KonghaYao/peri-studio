@@ -76,11 +76,11 @@ export function downloadResourceFile(path: string): void {
   setLoading(`blob:${path}`, true);
 }
 
-export function mutateGitResource(repoId: string, action: 'stage' | 'unstage', paths: string[]): void {
+export function mutateGitResource(repoId: string, action: 'stage' | 'unstage', changeIds: string[]): void {
   const state = resourceWorkspace();
   const repo = state.repositories.find((item) => item.id === repoId);
-  if (!state.projectId || !transport?.ready() || !repo?.generation || !paths.length) return;
-  const frame = gitResourceAction(state.projectId, repoId, action, paths, repo.generation);
+  if (!state.projectId || !transport?.ready() || !repo?.generation || !changeIds.length) return;
+  const frame = gitResourceAction(state.projectId, repoId, action, changeIds, repo.generation);
   if (!transport.send(frame)) return;
   pending.set(frame.requestId, `mutation:${repoId}`);
   setLoading(`mutation:${repoId}`, true);
@@ -124,10 +124,11 @@ export function handleResourceUpdate(frame: { doc: string; update: string }): bo
 }
 
 export function replayResourceSubscriptions(): void {
-  const docIds = [...openViews.keys()];
-  if (docIds.length) transport?.send({ t: 'ysync.subscribe', docs: docIds, clientCapabilities: [] });
   const projectId = resourceWorkspace().projectId;
-  if (projectId && !docIds.length) activateResourceProject(projectId);
+  if (!projectId) return;
+  // 资源 Doc 是短租约快照；重连后重新申请，避免重放已经过期的 opaque docId。
+  resetResourceProject();
+  activateResourceProject(projectId);
 }
 
 export function resetResourceProject(): void {

@@ -383,6 +383,7 @@ impl Gateway {
                 reason: reason.to_string().into(),
             })))
             .await;
+        self.resources.projection().disconnect(conn_id).await;
         self.deps.broadcast.unsubscribe_all(conn_id).await;
         self.conns.unregister(conn_id);
         info!(conn_id, code, reason, "connection closed");

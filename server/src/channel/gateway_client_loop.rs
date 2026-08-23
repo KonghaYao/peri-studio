@@ -293,7 +293,7 @@ impl Gateway {
                         && !self
                             .resources
                             .projection()
-                            .authorize(&channel.ctx.token_id, doc)
+                            .subscribe(&channel.ctx.token_id, conn_id, doc)
                             .await
                     {
                         let _ = out_tx
@@ -377,6 +377,10 @@ impl Gateway {
                 None
             }
             DispatchOutcome::Unsubscribe { docs } => {
+                self.resources
+                    .projection()
+                    .unsubscribe(conn_id, &docs)
+                    .await;
                 self.deps.broadcast.unsubscribe(conn_id, docs).await;
                 None
             }

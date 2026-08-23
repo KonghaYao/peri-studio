@@ -102,3 +102,42 @@ async fn expired_projection_removes_its_doc_snapshot() {
     assert!(!projection.authorize("token-a", &opened.doc_id).await);
     assert!(sink.snapshot(&opened.doc_id).await.is_none());
 }
+
+#[tokio::test]
+async fn idle_expired_projection_is_reclaimed_without_another_request() {
+    let sink = Arc::new(StoreSink::new());
+    let projection = ResourceProjection::new(sink.clone(), Duration::from_millis(10), 1);
+    let payload =
+        InstanceResourcePayload::RepositoriesPage(peri_studio_proto::resource::RepositoriesPage {
+            source_generation: "g1".into(),
+            repositories: Vec::new(),
+            next_cursor: None,
+        });
+    let opened = projection.publish("token-a", "p1", &payload).await.unwrap();
+    assert!(sink.snapshot(&opened.doc_id).await.is_some());
+
+    tokio::time::sleep(Duration::from_millis(40)).await;
+
+    assert!(sink.snapshot(&opened.doc_id).await.is_none());
+}
+
+#[tokio::test]
+async fn active_subscription_defers_ttl_until_disconnect() {
+    let sink = Arc::new(StoreSink::new());
+    let projection = ResourceProjection::new(sink.clone(), Duration::from_millis(10), 1);
+    let payload =
+        InstanceResourcePayload::RepositoriesPage(peri_studio_proto::resource::RepositoriesPage {
+            source_generation: "g1".into(),
+            repositories: Vec::new(),
+            next_cursor: None,
+        });
+    let opened = projection.publish("token-a", "p1", &payload).await.unwrap();
+    assert!(projection.subscribe("token-a", 42, &opened.doc_id).await);
+
+    tokio::time::sleep(Duration::from_millis(40)).await;
+    assert!(sink.snapshot(&opened.doc_id).await.is_some());
+
+    projection.disconnect(42).await;
+    tokio::time::sleep(Duration::from_millis(40)).await;
+    assert!(sink.snapshot(&opened.doc_id).await.is_none());
+}

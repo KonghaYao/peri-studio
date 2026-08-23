@@ -189,12 +189,68 @@ async fn git_query_projects_repository_groups_without_raw_output() {
 
     let competing_host = host.clone();
     let generation = repo.generation.clone();
+    let invalid = host
+        .query(query(
+            dir.path(),
+            InstanceResourceQueryKind::GitMutate(peri_studio_proto::resource::GitMutateQuery {
+                repo_id: "invalid-repository".into(),
+                action: peri_studio_proto::resource::ResourceGitActionKind::Stage,
+                change_ids: vec!["invalid-change".into()],
+                expected_generation: generation.clone(),
+            }),
+        ))
+        .await;
+    assert_eq!(invalid.error.unwrap().code, ResourceErrorCode::RepoNotFound);
+    assert!(host.mutation_locks.lock().await.is_empty());
+
+    let untracked = host
+        .query(query(
+            dir.path(),
+            InstanceResourceQueryKind::GitChanges(peri_studio_proto::resource::GitChangesQuery {
+                repo_id: repo_id.clone(),
+                group_id: GitGroupId::Untracked,
+                cursor: None,
+                limit: 20,
+            }),
+        ))
+        .await;
+    let Some(InstanceResourcePayload::GitGroupPage(untracked)) = untracked.result else {
+        panic!("expected untracked changes");
+    };
+    let new_change_id = untracked
+        .changes
+        .iter()
+        .find(|change| change.path == "new.txt")
+        .unwrap()
+        .change_id
+        .clone();
+    let working_tree = host
+        .query(query(
+            dir.path(),
+            InstanceResourceQueryKind::GitChanges(peri_studio_proto::resource::GitChangesQuery {
+                repo_id: repo_id.clone(),
+                group_id: GitGroupId::WorkingTree,
+                cursor: None,
+                limit: 20,
+            }),
+        ))
+        .await;
+    let Some(InstanceResourcePayload::GitGroupPage(working_tree)) = working_tree.result else {
+        panic!("expected working tree changes");
+    };
+    let tracked_change_id = working_tree
+        .changes
+        .iter()
+        .find(|change| change.path == "tracked.txt")
+        .unwrap()
+        .change_id
+        .clone();
     let first = host.query(query(
         dir.path(),
         InstanceResourceQueryKind::GitMutate(peri_studio_proto::resource::GitMutateQuery {
             repo_id: repo_id.clone(),
             action: peri_studio_proto::resource::ResourceGitActionKind::Stage,
-            paths: vec!["new.txt".into()],
+            change_ids: vec![new_change_id],
             expected_generation: generation.clone(),
         }),
     ));
@@ -203,7 +259,7 @@ async fn git_query_projects_repository_groups_without_raw_output() {
         InstanceResourceQueryKind::GitMutate(peri_studio_proto::resource::GitMutateQuery {
             repo_id: repo_id.clone(),
             action: peri_studio_proto::resource::ResourceGitActionKind::Stage,
-            paths: vec!["tracked.txt".into()],
+            change_ids: vec![tracked_change_id],
             expected_generation: generation,
         }),
     ));
@@ -246,11 +302,118 @@ async fn git_query_projects_repository_groups_without_raw_output() {
             .count,
         2
     );
+    let remaining_unstaged = refreshed
+        .groups
+        .iter()
+        .filter(|group| matches!(group.id, GitGroupId::WorkingTree | GitGroupId::Untracked))
+        .map(|group| group.count)
+        .sum::<u32>();
+    assert_eq!(remaining_unstaged, 1);
+}
+
+#[test]
+fn git_query_rejects_non_utf8_file_names_without_lossy_mutation_ids() {
+    let result = super::git::validate_status_names(b"## main\0?? invalid-\xff.txt\0");
+    assert_eq!(
+        result.unwrap_err().code,
+        ResourceErrorCode::UnrepresentableName
+    );
+}
+
+#[tokio::test]
+async fn git_unstage_rename_resolves_both_new_and_original_paths() {
+    if Command::new("git").arg("--version").output().is_err() {
+        return;
+    }
+    let dir = tempdir().unwrap();
+    let run = |args: &[&str]| {
+        let status = Command::new("git")
+            .arg("-C")
+            .arg(dir.path())
+            .args(args)
+            .status()
+            .unwrap();
+        assert!(status.success(), "git command failed: {args:?}");
+    };
+    run(&["init", "-q"]);
+    run(&["config", "user.email", "test@example.invalid"]);
+    run(&["config", "user.name", "Peri Test"]);
+    std::fs::write(dir.path().join("old.txt"), b"content\n").unwrap();
+    run(&["add", "old.txt"]);
+    run(&["commit", "-qm", "initial"]);
+    run(&["mv", "old.txt", "new.txt"]);
+
+    let host = ResourceHost::default();
+    let discovered = host
+        .query(query(
+            dir.path(),
+            InstanceResourceQueryKind::DiscoverRepositories(Default::default()),
+        ))
+        .await;
+    let Some(InstanceResourcePayload::RepositoriesPage(repositories)) = discovered.result else {
+        panic!("expected repositories");
+    };
+    let repo_id = repositories.repositories[0].repo_id.clone();
+    let snapshot = host
+        .query(query(
+            dir.path(),
+            InstanceResourceQueryKind::GitSnapshot(peri_studio_proto::resource::GitSnapshotQuery {
+                repo_id: repo_id.clone(),
+            }),
+        ))
+        .await;
+    let Some(InstanceResourcePayload::GitRepository(repository)) = snapshot.result else {
+        panic!("expected repository");
+    };
+    let changes = host
+        .query(query(
+            dir.path(),
+            InstanceResourceQueryKind::GitChanges(peri_studio_proto::resource::GitChangesQuery {
+                repo_id: repo_id.clone(),
+                group_id: GitGroupId::Index,
+                cursor: None,
+                limit: 20,
+            }),
+        ))
+        .await;
+    let Some(InstanceResourcePayload::GitGroupPage(changes)) = changes.result else {
+        panic!("expected index changes");
+    };
+    assert_eq!(changes.changes[0].path, "new.txt");
+    assert_eq!(changes.changes[0].original_path.as_deref(), Some("old.txt"));
+
+    let mutated = host
+        .query(query(
+            dir.path(),
+            InstanceResourceQueryKind::GitMutate(peri_studio_proto::resource::GitMutateQuery {
+                repo_id: repo_id.clone(),
+                action: peri_studio_proto::resource::ResourceGitActionKind::Unstage,
+                change_ids: vec![changes.changes[0].change_id.clone()],
+                expected_generation: repository.generation,
+            }),
+        ))
+        .await;
+    assert!(matches!(
+        mutated.result,
+        Some(InstanceResourcePayload::Mutation(_))
+    ));
+
+    let refreshed = host
+        .query(query(
+            dir.path(),
+            InstanceResourceQueryKind::GitSnapshot(peri_studio_proto::resource::GitSnapshotQuery {
+                repo_id,
+            }),
+        ))
+        .await;
+    let Some(InstanceResourcePayload::GitRepository(refreshed)) = refreshed.result else {
+        panic!("expected refreshed repository");
+    };
     assert_eq!(
         refreshed
             .groups
             .iter()
-            .find(|group| group.id == GitGroupId::Untracked)
+            .find(|group| group.id == GitGroupId::Index)
             .unwrap()
             .count,
         0

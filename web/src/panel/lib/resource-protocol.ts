@@ -72,7 +72,7 @@ export function gitResourceAction(
   projectId: string,
   repoId: string,
   action: 'stage' | 'unstage',
-  paths: string[],
+  changeIds: string[],
   expectedGeneration: string,
 ) {
   return {
@@ -80,7 +80,7 @@ export function gitResourceAction(
     type: 'resource/git-action',
     requestId: crypto.randomUUID(),
     projectId,
-    payload: { repoId, action, paths, expectedGeneration },
+    payload: { repoId, action, changeIds, expectedGeneration },
   } as const;
 }
 

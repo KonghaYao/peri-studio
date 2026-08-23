@@ -71,15 +71,9 @@ impl ResourceService {
                 ..
             } => self.open_view(principal, &project_id, payload).await,
             ResourceQuery::ReleaseView { payload, .. } => {
-                if self.projection.release(principal, &payload.view_id).await {
-                    Ok(ResourceQueryResult::Released)
-                } else {
-                    Err(failure(
-                        ResourceErrorCode::Forbidden,
-                        "resource view is not owned by this connection",
-                        false,
-                    ))
-                }
+                // release 幂等且不泄露 view 是否存在或属于其他 principal。
+                self.projection.release(principal, &payload.view_id).await;
+                Ok(ResourceQueryResult::Released)
             }
             ResourceQuery::OpenBlob {
                 project_id,
@@ -148,7 +142,7 @@ impl ResourceService {
             query: InstanceResourceQueryKind::GitMutate(GitMutateQuery {
                 repo_id: action.repo_id,
                 action: action.action,
-                paths: action.paths,
+                change_ids: action.change_ids,
                 expected_generation: action.expected_generation,
             }),
         };

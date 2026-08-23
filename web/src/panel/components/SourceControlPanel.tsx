@@ -51,7 +51,7 @@ function Repository(props: { repo: RepositoryState }) {
           <IconButton
             label={group.id === 'index' ? `Unstage ${String(change.path ?? '')}` : `Stage ${String(change.path ?? '')}`}
             disabled={readOnly()}
-            onClick={() => mutateGitResource(props.repo.id, group.id === 'index' ? 'unstage' : 'stage', [String(change.path ?? '')])}
+            onClick={() => mutateGitResource(props.repo.id, group.id === 'index' ? 'unstage' : 'stage', [change.id])}
             class="size-22 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
           >{group.id === 'index' ? <MinusIcon /> : <PlusIcon />}</IconButton>
         </div>}</For>

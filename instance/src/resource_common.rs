@@ -90,6 +90,7 @@ pub(super) fn failure(code: ResourceErrorCode, retryable: bool) -> ResourceFailu
         code,
         message: match code {
             ResourceErrorCode::InvalidPath => "Invalid workspace-relative path",
+            ResourceErrorCode::UnrepresentableName => "Resource name is not valid UTF-8",
             ResourceErrorCode::OutsideWorkspace => "Resource is outside the workspace",
             ResourceErrorCode::NotFound => "Resource not found",
             ResourceErrorCode::NotDirectory => "Resource is not a directory",
@@ -98,6 +99,8 @@ pub(super) fn failure(code: ResourceErrorCode, retryable: bool) -> ResourceFailu
             ResourceErrorCode::GitNotAvailable => "Git is unavailable",
             ResourceErrorCode::ViewTooLarge => "Requested resource page is too large",
             ResourceErrorCode::StaleCursor => "Resource page changed; refresh required",
+            ResourceErrorCode::VersionConflict => "Resource changed; refresh required",
+            ResourceErrorCode::DeliveryUnknown => "Git outcome is unknown; refresh required",
             ResourceErrorCode::Timeout => "Resource query timed out",
             _ => "Resource is unavailable",
         }

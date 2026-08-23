@@ -259,7 +259,7 @@ async fn read_only_principal_cannot_stage_changes() {
                 payload: peri_studio_proto::resource::ResourceGitAction {
                     repo_id: "repo-1".into(),
                     action: peri_studio_proto::resource::ResourceGitActionKind::Stage,
-                    paths: vec!["src/main.rs".into()],
+                    change_ids: vec!["change-1".into()],
                     expected_generation: "g1".into(),
                 },
             },

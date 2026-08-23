@@ -11,7 +11,10 @@ mod fs;
 mod git;
 
 use std::time::Duration;
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Weak},
+};
 use tokio::sync::Mutex;
 
 use peri_studio_proto::resource::{
@@ -26,7 +29,7 @@ const GIT_TIMEOUT: Duration = Duration::from_secs(8);
 #[derive(Debug, Clone)]
 pub struct ResourceHost {
     pub(super) git_timeout: Duration,
-    pub(super) mutation_locks: Arc<Mutex<HashMap<String, Arc<Mutex<()>>>>>,
+    pub(super) mutation_locks: Arc<Mutex<HashMap<String, Weak<Mutex<()>>>>>,
 }
 
 impl Default for ResourceHost {
@@ -75,7 +78,7 @@ impl ResourceHost {
                     &query.root,
                     &input.repo_id,
                     input.action,
-                    &input.paths,
+                    &input.change_ids,
                     &input.expected_generation,
                 )
                 .await

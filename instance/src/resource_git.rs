@@ -1,3 +1,4 @@
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::Arc;
@@ -33,24 +34,29 @@ impl ResourceHost {
         root: &str,
         expected_repo_id: &str,
         action: ResourceGitActionKind,
-        paths: &[String],
+        change_ids: &[String],
         expected_generation: &str,
     ) -> Result<InstanceResourcePayload, ResourceFailure> {
-        if paths.is_empty()
-            || paths.len() > 500
-            || paths.iter().map(String::len).sum::<usize>() > MAX_MUTATION_PATH_BYTES
+        if change_ids.is_empty()
+            || change_ids.len() > 500
+            || change_ids.iter().map(String::len).sum::<usize>() > MAX_MUTATION_PATH_BYTES
         {
             return Err(failure(ResourceErrorCode::InvalidRequest, false));
         }
-        for path in paths {
-            validate_relative(path)?;
-        }
-        let mutation_lock = self.mutation_lock(root, expected_repo_id).await;
+        // 先解析可信仓库再登记锁，避免攻击者用随机 repoId 扩张锁表。
+        let (_, initial_repo) = self.resolve_repo(root, expected_repo_id).await?;
+        let mutation_lock = self.mutation_lock(&initial_repo).await;
         let _mutation_guard = mutation_lock.lock().await;
         let (_root, repo) = self.resolve_repo(root, expected_repo_id).await?;
         let before = self.git(&repo, STATUS_ARGS).await?;
-        if expected_generation != hash_bytes(&before) {
+        let generation = hash_bytes(&before);
+        if expected_generation != generation {
             return Err(failure(ResourceErrorCode::VersionConflict, false));
+        }
+        let parsed = parse_status(&before)?;
+        let paths = resolve_change_paths(&parsed, &generation, action, change_ids)?;
+        for path in &paths {
+            validate_relative(path)?;
         }
         let mut command = Command::new("git");
         command.current_dir(&repo).env("GIT_TERMINAL_PROMPT", "0");
@@ -60,18 +66,22 @@ impl ResourceHost {
         };
         command
             .arg("--")
-            .args(paths)
+            .args(&paths)
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .kill_on_drop(true);
         let status = tokio::time::timeout(self.git_timeout, command.status())
             .await
-            .map_err(|_| failure(ResourceErrorCode::Timeout, true))?
-            .map_err(map_io)?;
+            .map_err(|_| delivery_unknown())?
+            .map_err(|_| delivery_unknown())?;
         if !status.success() {
             return Err(failure(ResourceErrorCode::Unavailable, false));
         }
-        let after = self.git(&repo, STATUS_ARGS).await?;
+        // 命令成功后即使快照读取失败，也不能暗示调用方安全重试。
+        let after = self
+            .git(&repo, STATUS_ARGS)
+            .await
+            .map_err(|_| delivery_unknown())?;
         Ok(InstanceResourcePayload::Mutation(InstanceMutationResult {
             generation: hash_bytes(&after),
         }))
@@ -123,7 +133,7 @@ impl ResourceHost {
     ) -> Result<InstanceResourcePayload, ResourceFailure> {
         let (root, repo) = self.resolve_repo(root, expected_repo_id).await?;
         let status = self.git(&repo, STATUS_ARGS).await?;
-        let parsed = parse_status(&status);
+        let parsed = parse_status(&status)?;
         let head_oid = self.git(&repo, &["rev-parse", "HEAD"]).await.ok();
         let generation = hash_bytes(&status);
         let groups = [
@@ -177,7 +187,7 @@ impl ResourceHost {
         let status = self.git(&repo, STATUS_ARGS).await?;
         let generation = hash_bytes(&status);
         let offset = parse_cursor(cursor, &generation)?;
-        let filtered = parse_status(&status)
+        let filtered = parse_status(&status)?
             .changes
             .into_iter()
             .filter(|change| change.groups.contains(&group_id))
@@ -186,12 +196,7 @@ impl ResourceHost {
         let changes = filtered[offset.min(filtered.len())..end]
             .iter()
             .map(|change| GitChange {
-                change_id: hash_text(&format!(
-                    "{}:{}:{}",
-                    generation,
-                    group_label(group_id),
-                    change.path
-                )),
+                change_id: change_id(&generation, group_id, &change.path),
                 path: change.path.clone(),
                 original_path: change.original_path.clone(),
                 status: change.status_for(group_id),
@@ -221,14 +226,16 @@ impl ResourceHost {
         Ok((root, repo))
     }
 
-    async fn mutation_lock(&self, root: &str, repo_id: &str) -> Arc<Mutex<()>> {
-        let key = format!("{root}\0{repo_id}");
-        self.mutation_locks
-            .lock()
-            .await
-            .entry(key)
-            .or_insert_with(|| Arc::new(Mutex::new(())))
-            .clone()
+    async fn mutation_lock(&self, repo: &Path) -> Arc<Mutex<()>> {
+        let key = repo.to_string_lossy().into_owned();
+        let mut locks = self.mutation_locks.lock().await;
+        locks.retain(|_, lock| lock.strong_count() > 0);
+        if let Some(lock) = locks.get(&key).and_then(std::sync::Weak::upgrade) {
+            return lock;
+        }
+        let lock = Arc::new(Mutex::new(()));
+        locks.insert(key, Arc::downgrade(&lock));
+        lock
     }
 
     async fn git(&self, cwd: &Path, args: &[&str]) -> Result<Vec<u8>, ResourceFailure> {
@@ -291,6 +298,61 @@ fn repo_id(repo: &Path) -> String {
     hash_bytes(repo.to_string_lossy().as_bytes())
 }
 
+fn delivery_unknown() -> ResourceFailure {
+    failure(ResourceErrorCode::DeliveryUnknown, false)
+}
+
+fn change_id(generation: &str, group: GitGroupId, path: &str) -> String {
+    hash_text(&format!("{}:{}:{}", generation, group_label(group), path))
+}
+
+fn resolve_change_paths(
+    parsed: &ParsedStatus,
+    generation: &str,
+    action: ResourceGitActionKind,
+    change_ids: &[String],
+) -> Result<Vec<String>, ResourceFailure> {
+    let available = parsed
+        .changes
+        .iter()
+        .flat_map(|change| {
+            change.groups.iter().filter_map(|group| {
+                let valid_group = match action {
+                    ResourceGitActionKind::Stage => *group != GitGroupId::Index,
+                    ResourceGitActionKind::Unstage => *group == GitGroupId::Index,
+                };
+                valid_group.then(|| {
+                    let mut paths = vec![change.path.clone()];
+                    let rename_code = if *group == GitGroupId::Index {
+                        change.x
+                    } else {
+                        change.y
+                    };
+                    if rename_code == 'R' {
+                        if let Some(original_path) = &change.original_path {
+                            paths.push(original_path.clone());
+                        }
+                    }
+                    (change_id(generation, *group, &change.path), paths)
+                })
+            })
+        })
+        .collect::<HashMap<_, _>>();
+    let mut paths = Vec::with_capacity(change_ids.len());
+    let mut seen = HashSet::with_capacity(change_ids.len());
+    for expected_id in change_ids {
+        let Some(change_paths) = available.get(expected_id) else {
+            return Err(failure(ResourceErrorCode::VersionConflict, false));
+        };
+        for path in change_paths {
+            if seen.insert(path) {
+                paths.push(path.clone());
+            }
+        }
+    }
+    Ok(paths)
+}
+
 #[derive(Default)]
 struct ParsedStatus {
     head_name: Option<String>,
@@ -334,12 +396,13 @@ impl ParsedChange {
     }
 }
 
-fn parse_status(output: &[u8]) -> ParsedStatus {
+fn parse_status(output: &[u8]) -> Result<ParsedStatus, ResourceFailure> {
     let chunks = output.split(|byte| *byte == 0).collect::<Vec<_>>();
     let mut parsed = ParsedStatus::default();
     let mut index = 0;
     while index < chunks.len() {
-        let value = String::from_utf8_lossy(chunks[index]);
+        let value = std::str::from_utf8(chunks[index])
+            .map_err(|_| failure(ResourceErrorCode::UnrepresentableName, false))?;
         if let Some(branch) = value.strip_prefix("## ") {
             parse_branch(branch, &mut parsed);
             index += 1;
@@ -376,12 +439,17 @@ fn parse_status(output: &[u8]) -> ParsedStatus {
                 groups.push(GitGroupId::WorkingTree);
             }
         }
-        let original_path = if matches!(x, 'R' | 'C') && index + 1 < chunks.len() {
-            index += 1;
-            Some(String::from_utf8_lossy(chunks[index]).to_string())
-        } else {
-            None
-        };
+        let original_path =
+            if (matches!(x, 'R' | 'C') || matches!(y, 'R' | 'C')) && index + 1 < chunks.len() {
+                index += 1;
+                Some(
+                    std::str::from_utf8(chunks[index])
+                        .map_err(|_| failure(ResourceErrorCode::UnrepresentableName, false))?
+                        .to_string(),
+                )
+            } else {
+                None
+            };
         parsed.changes.push(ParsedChange {
             path,
             original_path,
@@ -391,7 +459,12 @@ fn parse_status(output: &[u8]) -> ParsedStatus {
         });
         index += 1;
     }
-    parsed
+    Ok(parsed)
+}
+
+#[cfg(test)]
+pub(super) fn validate_status_names(output: &[u8]) -> Result<(), ResourceFailure> {
+    parse_status(output).map(|_| ())
 }
 
 fn parse_branch(value: &str, parsed: &mut ParsedStatus) {

@@ -2,7 +2,13 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ExplorerPanel } from './ExplorerPanel';
 import { SourceControlPanel } from './SourceControlPanel';
-import { installResourceStore, resetResourceProject, setResourceWorkspace } from '../lib/resource-store';
+import {
+  handleResourceResult,
+  installResourceStore,
+  replayResourceSubscriptions,
+  resetResourceProject,
+  setResourceWorkspace,
+} from '../lib/resource-store';
 import { installPrincipalRole } from '../lib/auth-state';
 
 afterEach(() => { cleanup(); resetResourceProject(); installPrincipalRole(null); });
@@ -49,11 +55,39 @@ describe('VS Code-style resource panels', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Stage src/main.ts' }));
     expect(sent).toContainEqual(expect.objectContaining({
       t: 'resource_query', type: 'resource/git-action', projectId: 'project-1',
-      payload: { repoId: 'repo-1', action: 'stage', paths: ['src/main.ts'], expectedGeneration: 'g1' },
+      payload: { repoId: 'repo-1', action: 'stage', changeIds: ['c1'], expectedGeneration: 'g1' },
     }));
     fireEvent.click(screen.getByRole('button', { name: 'Load more…' }));
     expect(sent).toContainEqual(expect.objectContaining({
       payload: expect.objectContaining({ kind: 'git-group-page', repoId: 'repo-1', groupId: 'working_tree', cursor: 'g1.1' }),
+    }));
+  });
+
+  it('reopens short-lived resource views after reconnect instead of replaying stale doc ids', () => {
+    const sent: unknown[] = [];
+    installResourceStore({ send: (frame) => { sent.push(frame); return true; }, ready: () => true, toast: vi.fn() });
+    setResourceWorkspace({
+      projectId: 'project-1', directories: {}, repositories: [], loading: [], error: null,
+    });
+    handleResourceResult({
+      t: 'resource_result', requestId: 'request-1',
+      result: { kind: 'view', data: { viewId: 'view-1', docId: 'resource:view-1', leaseExpiresAt: '2026-08-23T12:00:00Z' } },
+    });
+    sent.length = 0;
+
+    replayResourceSubscriptions();
+
+    expect(sent).toContainEqual({ t: 'ysync.unsubscribe', docs: ['resource:view-1'] });
+    expect(sent).toContainEqual(expect.objectContaining({
+      t: 'resource_query', type: 'resource/release-view', payload: { viewId: 'view-1' },
+    }));
+    expect(sent).toContainEqual(expect.objectContaining({
+      t: 'resource_query', type: 'resource/open-view', projectId: 'project-1',
+      payload: expect.objectContaining({ kind: 'fs-directory-page', path: '' }),
+    }));
+    expect(sent).toContainEqual(expect.objectContaining({
+      t: 'resource_query', type: 'resource/open-view', projectId: 'project-1',
+      payload: expect.objectContaining({ kind: 'workspace-repositories-page' }),
     }));
   });
 });

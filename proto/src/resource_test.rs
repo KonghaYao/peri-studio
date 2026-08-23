@@ -4,8 +4,9 @@ use crate::conn::DocId;
 use crate::frame::Frame;
 use crate::resource::{
     InstanceResourcePayload, InstanceResourceQuery, InstanceResourceQueryKind,
-    InstanceResourceResult, OpenResourceView, ReadDirectoryQuery, ResourceQuery,
-    ResourceQueryResult, ResourceResult, ResourceViewKind, ResourceViewOpened,
+    InstanceResourceResult, OpenResourceView, ReadDirectoryQuery, ResourceGitAction,
+    ResourceGitActionKind, ResourceQuery, ResourceQueryResult, ResourceResult, ResourceViewKind,
+    ResourceViewOpened, RESOURCE_PROTOCOL_VERSION,
 };
 
 #[test]
@@ -64,6 +65,25 @@ fn trusted_instance_query_carries_root_separately() {
         Frame::parse(&serde_json::to_string(&frame).unwrap()).unwrap(),
         frame
     );
+}
+
+#[test]
+fn git_mutation_is_generation_bound_and_never_accepts_browser_paths() {
+    assert_eq!(RESOURCE_PROTOCOL_VERSION, 2);
+    let frame = Frame::ResourceQuery(ResourceQuery::GitAction {
+        request_id: "request-1".into(),
+        project_id: "project-1".into(),
+        payload: ResourceGitAction {
+            repo_id: "repo-1".into(),
+            action: ResourceGitActionKind::Stage,
+            change_ids: vec!["change-1".into()],
+            expected_generation: "generation-1".into(),
+        },
+    });
+    let value = serde_json::to_value(&frame).unwrap();
+    assert_eq!(value["payload"]["changeIds"][0], "change-1");
+    assert_eq!(value["payload"]["expectedGeneration"], "generation-1");
+    assert!(value["payload"].get("paths").is_none());
 }
 
 #[test]

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::conn::DocId;
 
-pub const RESOURCE_PROTOCOL_VERSION: u32 = 1;
+pub const RESOURCE_PROTOCOL_VERSION: u32 = 2;
 pub const DEFAULT_DIRECTORY_PAGE_SIZE: u32 = 200;
 pub const MAX_DIRECTORY_PAGE_SIZE: u32 = 500;
 
@@ -57,7 +57,7 @@ impl ResourceQuery {
 pub struct ResourceGitAction {
     pub repo_id: String,
     pub action: ResourceGitActionKind,
-    pub paths: Vec<String>,
+    pub change_ids: Vec<String>,
     pub expected_generation: String,
 }
 
@@ -181,6 +181,7 @@ pub enum ResourceErrorCode {
     ProjectNotFound,
     InstanceOffline,
     InvalidPath,
+    UnrepresentableName,
     OutsideWorkspace,
     NotFound,
     NotDirectory,
@@ -222,7 +223,7 @@ pub enum InstanceResourceQueryKind {
 pub struct GitMutateQuery {
     pub repo_id: String,
     pub action: ResourceGitActionKind,
-    pub paths: Vec<String>,
+    pub change_ids: Vec<String>,
     pub expected_generation: String,
 }
 
