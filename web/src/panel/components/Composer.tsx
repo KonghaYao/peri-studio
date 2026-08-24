@@ -18,7 +18,7 @@ import { isTerminal } from '../lib/action-state';
 import { promptDeliveryReady } from '../lib/connection';
 import { readOnly } from '../lib/auth-state';
 import { composerDraft, setComposerDraft } from '../lib/composer-draft';
-import { dismissFailedMessageDelivery, messageSubmission } from '../lib/message-delivery';
+import { acknowledgeUnknownMessageDelivery, canAcknowledgeUnknownMessageDelivery, dismissFailedMessageDelivery, messageSubmission } from '../lib/message-delivery';
 import { runtimeControlFor } from '../lib/runtime-control';
 import { composerInputState } from '../lib/composer-placeholder';
 import { useComposerPrediction } from '../lib/composer-prediction';
@@ -69,7 +69,9 @@ export function Composer() {
   const submissionDetail = () => {
     switch (submissionForSession()?.phase) {
       case 'uncertain': return 'Re-confirming uses the original request and does not create a second message.';
-      case 'delivery_unknown': return 'This message may already have executed. Resending and editing remain disabled to avoid duplicates.';
+      case 'delivery_unknown': return canAcknowledgeUnknownMessageDelivery()
+        ? 'This message may already have executed. Resending and editing remain disabled to avoid duplicates.'
+        : 'Twenty earlier deliveries are still unresolved. This message stays locked until an exact server projection clears one.';
       case 'failed': return 'Return to editing restores the text only to this project session draft.';
       default: return '';
     }
@@ -302,6 +304,12 @@ export function Composer() {
               </Show>
               <Show when={submission().phase === 'failed'}>
                 <Button size="compact" class="pointer-coarse:min-h-44" onClick={restoreFailedDraft}>Back to edit</Button>
+              </Show>
+              <Show when={submission().phase === 'delivery_unknown'}>
+                <Button size="compact" variant="secondary" class="pointer-coarse:min-h-44" disabled={!canAcknowledgeUnknownMessageDelivery()} onClick={() => {
+                  if (!acknowledgeUnknownMessageDelivery(submission().commandId)) return;
+                  queueMicrotask(() => taRef?.focus());
+                }}>Acknowledge and continue</Button>
               </Show>
             </div>
           </InlineNotice>

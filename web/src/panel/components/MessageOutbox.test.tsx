@@ -44,11 +44,20 @@ describe('MessageOutbox', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('keeps delivery-unknown visible but offers neither retry nor edit', () => {
-    render(() => <MessageOutbox submission={submission('delivery_unknown')} onRetry={vi.fn()} onEdit={vi.fn()} />);
+  it('keeps delivery-unknown visible and offers only explicit acknowledge-and-continue', () => {
+    const acknowledge = vi.fn();
+    render(() => <MessageOutbox submission={submission('delivery_unknown')} onRetry={vi.fn()} onEdit={vi.fn()} onAcknowledge={acknowledge} />);
     expect(screen.getByText('Delivery result unknown, do not resend')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copy original' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Confirm with the same request' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Back to edit' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Acknowledge and continue' }));
+    expect(acknowledge).toHaveBeenCalledOnce();
+  });
+
+  it('renders acknowledged evidence without announcing it as a new alert', () => {
+    render(() => <MessageOutbox acknowledged submission={submission('delivery_unknown')} onRetry={vi.fn()} onEdit={vi.fn()} />);
+    expect(screen.getByRole('group', { name: 'Your unresolved message' })).toHaveTextContent('do not lose this work');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

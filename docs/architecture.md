@@ -96,7 +96,7 @@ loopback 认证 HTTP 面是封闭协议：只接受 HTTP/1.1；POST/DELETE 必�
 
 静态资源缓存以构建身份而非扩展名分类。页面入口 `/`、`/index.html`、兼容入口 `/panel.html`、404 与任何固定名资源使用 `Cache-Control: no-store`，确保 server 重启或协议升级后不会继续启动旧 Web 客户端。只有已命中内嵌资源表、位于 `/assets/` 且文件末段包含至少 8 字节构建指纹的 Vite 产物，才使用 `public, max-age=31536000, immutable`；不存在的 `/assets/*` 或未来固定名 public asset 不得继承 immutable。静态 `HEAD` 与 `GET` 共享状态、Content-Type、Content-Length、安全头和缓存分类，但 HEAD 不发送响应体，供健康检查与部署探针准确判断入口/资源存在性。缓存头与 CSP、nosniff、frame/referrer 安全头分别组装，所有静态响应继续携带安全头。
 
-Web action 的连接期生命周期由单一 `CommandTracker` module 所有：发送成功后登记 timer，`accepted` 只表示排队且不得释放命令，`committed`/`duplicate`/`action_error` 才是终态。超时或连接中断统一转为“结果尚未确认”；只有声明支持安全对账的 metadata action 才保留原始 frame，并且重试必须复用同一 `commandId`。晚到终态可以清除对账记录，但不得再次调用已超时的业务 continuation。Solid store 只提供 transport adapter 和领域 callback，不得自行维护第二套 pending/timer/uncertain map。
+Web action 的连接期生命周期由单一 `CommandTracker` module 所有：发送成功后登记 timer，`accepted` 只表示排队且不得释放命令，`committed`/`duplicate`/`action_error` 才是终态。普通 metadata action 使用固定墙钟超时，`accepted` 不得延长它；只有显式声明 `acceptedStartsInactivityLease` 的 prompt 才把 accepted 与所选 runtime 的 Chat/Control Doc 更新视为活动证据，通过 `touch(commandId)` 续租 30 秒静默窗口，只有连续静默才转为“结果尚未确认”。超时或连接中断统一转为“结果尚未确认”；只有声明支持安全对账的 action 才保留原始 frame，并且重试必须复用同一 `commandId`。晚到终态可以清除对账记录，但不得再次调用已超时的业务 continuation。Solid store 只提供 transport adapter、runtime progress 与领域 callback，不得自行维护第二套 pending/timer/uncertain map。
 
 project/session 目录动作的浏览器策略由 `CatalogActions` deep module 单一所有。它统一执行连接、权限与未确认 metadata 门控，构造目录命令，声明可对账 mutation 的同一 `commandId` 重试策略，并只在 `committed`/`duplicate` 后触发本地导航副作用。Solid store 只注入 transport、toast、错误持久化和选中态清理适配器；不得重新直接构造 `project/create|archive|restore|rename` 或 `session/rename|archive|restore|import|discover`，避免等价目录动作产生不同的超时文案、终态语义或权限边界。`session/create`、`session/open` 与 quick start 因包含 runtime 激活/导航状态机，仍由其各自的深模块与 store 编排，不归入纯目录 mutation。
 
@@ -118,7 +118,7 @@ Web 权限面必须完整呈现同一 Control Doc 中全部 `pending_permissions
 
 Web 消息阅读器把滚动/跟随策略与单条消息语义分离：`MessageList` 只拥有文档水合、权限队列、自动吸底与完成播报；`ConversationMessage` 统一拥有 user/system/assistant 角色层级以及 reasoning、Markdown、tool、resource、error、copy 证据层。用户和流式正文保持纯文本，只有已终态的 assistant 正文进入安全 Markdown 渲染；流式动画对辅助技术隐藏，完成状态由列表级原子播报一次。错误证据使用可命名 alert，reasoning 默认折叠，资源只展示 server 投影事实，不推断链接或可执行行为。
 
-Web 消息投递恢复由 `message-delivery` module 单一所有：它原子维护一个全局未裁决 submission 与按 durable session id 隔离的草稿，仅暴露单 session 草稿读写以及 command-correlated 的 start/accepted/uncertain/failed/retrying/terminal/reset 领域动作。`start` 必须在模块内部拒绝覆盖未裁决提交；uncertain/failed 只在目标草稿为空时恢复原文，不覆盖用户更新；committed/duplicate 只清除仍等于原文的恢复草稿。Composer 不读取整张草稿表，store 不维护第二套 signal/setter 或重实现 correlation。
+Web 消息投递恢复由 `message-delivery` module 单一所有：它原子维护一个全局未裁决 submission、按 durable session id 隔离的草稿，以及用户已确认继续但仍未取得精确投影的只读 unknown 证据。接口只暴露单 session 草稿读写以及 command-correlated 的 start/accepted/uncertain/failed/retrying/terminal/acknowledge/reset 领域动作。`start` 必须在模块内部拒绝覆盖未裁决提交；uncertain/failed 只在目标草稿为空时恢复原文，不覆盖用户更新；committed/duplicate 只清除仍等于原文的恢复草稿。`acknowledge` 仅可把 `delivery_unknown` 移入只读证据并释放新消息单飞槽，不得恢复、编辑或重发原 command；精确 `source_command_id` 投影到达后才移除证据。浏览器内只读证据上限为 20 条；容量耗尽时必须 fail-closed，拒绝继续 acknowledge 并保留当前单飞门禁，直到精确投影清除旧证据或身份重置，禁止静默淘汰可能已执行的正文。Composer 不读取整张草稿表，store 不维护第二套 signal/setter 或重实现 correlation。
 
 Web 的逻辑会话导航由 `SessionNavigator` 状态机唯一裁决。Registry catalog、连接 ready、只读策略、用户打开请求、终态 Ack、失败/超时和本地 runtime 复用都必须作为事件进入该模块；它只输出 `request-open`、`activate`、`forget-preference` 三类效果。只有与当前 `session/open` command 精确匹配的 `committed`/`duplicate` Ack 可以切换 logical session 与 runtime chat；超时后的晚到 Ack仍交给 `CommandTracker` 完成对账，但不得移动 UI。组件不自行分支“只读复用 vs. 可写打开”，localStorage 也只作为恢复偏好而非会话事实源。
 
@@ -132,7 +132,7 @@ Web 组件库以 `src/components/ui/index.ts` 为唯一公共代码入口，以 
 
 选中 runtime 后，Web 必须分别确认 `chat:{chat_id}` 与 `session:{chat_id}` 两份 server-authoritative Y.Doc 已至少应用一帧，才可以宣称“可输入”并开放 Composer。切换 runtime 会清空该 hydration 证据；断线不会抹掉已渲染历史，但任何新 runtime 都不得把初始空数组误当成空会话。控制文档已经投影出的待决权限高于普通载入文案；两份文档都到齐且消息确认为空后，UI 才显示首次消息引导。
 
-Composer 草稿以持久 `project_session_id` 隔离，而不是跟随临时 `chat_id` 或组件实例。切换会话时不得把源会话文本带入目标会话，返回源会话必须恢复原稿；登出或认证失效则清空全部草稿。消息提交状态同时携带 `command_id`、`project_session_id` 与 `chat_id`：发送失败或连接结果未知时只把原文恢复到所属会话，其他会话只能看到不含原文的全局单飞提示；`uncertain` 状态不可被直接关闭或以新 command 重发，晚到终态也只能结算原提交。
+Composer 草稿以持久 `project_session_id` 隔离，而不是跟随临时 `chat_id` 或组件实例。切换会话时不得把源会话文本带入目标会话，返回源会话必须恢复原稿；登出或认证失效则清空全部草稿与本地 unknown 证据。消息提交状态同时携带 `command_id`、`project_session_id` 与 `chat_id`：发送失败或连接结果未知时只把原文恢复到所属会话，其他会话只能看到不含原文的全局单飞提示；`uncertain` 状态不可被直接关闭或以新 command 重发。`delivery_unknown` 只能经明确的 acknowledge-and-continue 转为只读证据后释放单飞槽，晚到精确投影仍按原 command 清除该证据。
 
 ### 3.1 拓扑
 

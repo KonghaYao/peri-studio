@@ -39,6 +39,44 @@ describe('CommandTracker', () => {
     expect(tracker.acknowledge({ commandId: 'cmd-1', status: 'duplicate' })).toBe('unknown');
   });
 
+  it('uses accepted progress as an inactivity lease instead of a fixed wall timeout', () => {
+    vi.useFakeTimers();
+    const { tracker } = harness();
+    const uncertain = vi.fn();
+    tracker.dispatch({
+      frame: { t: 'action', commandId: 'long-prompt' },
+      label: 'prompt',
+      callbacks: { acceptedStartsInactivityLease: true, retryOnUncertain: true, onUncertain: uncertain },
+    }, () => true);
+
+    vi.advanceTimersByTime(20_000);
+    tracker.acknowledge({ commandId: 'long-prompt', status: 'accepted' });
+    vi.advanceTimersByTime(20_000);
+    expect(tracker.touch('long-prompt')).toBe(true);
+    vi.advanceTimersByTime(29_999);
+    expect(tracker.hasPending('long-prompt')).toBe(true);
+    expect(uncertain).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(uncertain).toHaveBeenCalledWith('timeout');
+  });
+
+  it('keeps metadata commands on their original wall-clock timeout after accepted', () => {
+    vi.useFakeTimers();
+    const { tracker } = harness();
+    const uncertain = vi.fn();
+    tracker.dispatch({
+      frame: { t: 'action', commandId: 'metadata' },
+      label: 'project/rename',
+      callbacks: { retryOnUncertain: true, onUncertain: uncertain },
+    }, () => true);
+
+    vi.advanceTimersByTime(20_000);
+    tracker.acknowledge({ commandId: 'metadata', status: 'accepted' });
+    expect(tracker.touch('metadata')).toBe(false);
+    vi.advanceTimersByTime(10_000);
+    expect(uncertain).toHaveBeenCalledWith('timeout');
+  });
+
   it('retains the exact frame for same-command retry after timeout', () => {
     vi.useFakeTimers();
     const { tracker, counts } = harness();

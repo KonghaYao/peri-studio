@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { setChatEntries, setChatHead, setElicitations, setPermissions, setRuntimeDocsState } from '../store';
+import { setChatEntries, setChatHead, setElicitations, setPermissions, setRuntimeDocsState, setSelectedCid } from '../store';
 import { MessageList } from './MessageList';
 import type { ChatEntry } from '../lib/chat-view';
+import { blockUnknownMessageDelivery, messageSubmission, resetMessageDelivery, startMessageDelivery } from '../lib/message-delivery';
 
 function message(id: string, origin: ChatEntry['origin'], replayVerified: boolean | null): ChatEntry {
   return {
@@ -18,6 +19,8 @@ function resetStore() {
   setPermissions([]);
   setElicitations([]);
   setRuntimeDocsState({ chat: false, control: false });
+  setSelectedCid(null);
+  resetMessageDelivery();
   vi.unstubAllGlobals();
 }
 
@@ -147,6 +150,19 @@ describe('MessageList entry updates', () => {
 });
 
 describe('MessageList hydration', () => {
+  it('keeps acknowledged delivery-unknown evidence visible after freeing the composer', () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    setSelectedCid('chat-1');
+    startMessageDelivery('unknown', 'possibly executed', 'session-1', 'chat-1');
+    blockUnknownMessageDelivery('unknown');
+    render(() => <MessageList />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Acknowledge and continue' }));
+    expect(messageSubmission()).toBeNull();
+    expect(screen.getByRole('group', { name: 'Your unresolved message' })).toHaveTextContent('possibly executed');
+    expect(screen.getByText('Unconfirmed delivery retained')).toBeInTheDocument();
+  });
+
   it('describes recovery until both authoritative runtime documents arrive', () => {
     setRuntimeDocsState({ chat: true, control: false });
     render(() => <MessageList />);

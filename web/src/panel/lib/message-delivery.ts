@@ -20,9 +20,15 @@ export interface MessageSubmission {
 }
 
 const [currentSubmission, setCurrentSubmission] = createSignal<MessageSubmission | null>(null);
+const [acknowledgedUnknown, setAcknowledgedUnknown] = createSignal<MessageSubmission[]>([]);
 const delivery = createSingleSlotDelivery(currentSubmission, setCurrentSubmission);
+const ACKNOWLEDGED_UNKNOWN_LIMIT = 20;
 
 export const messageSubmission = currentSubmission;
+/** 用户已确认继续工作、但仍须保留在会话中的不可重发证据。 */
+export const acknowledgedMessageDeliveries = acknowledgedUnknown;
+export const canAcknowledgeUnknownMessageDelivery = () => currentSubmission()?.projected === true
+  || acknowledgedUnknown().length < ACKNOWLEDGED_UNKNOWN_LIMIT;
 
 export function startMessageDelivery(commandId: string, text: string, sessionId: string, chatId: string): boolean {
   if (currentSubmission()) return false;
@@ -64,6 +70,23 @@ export function blockUnknownMessageDelivery(commandId: string, detail?: string):
   }));
 }
 
+/**
+ * 只解除浏览器的全局单飞门禁，不恢复草稿、不重发原 command。
+ * 原始证据移入只读历史，直到精确 server 投影到达或身份边界重置。
+ */
+export function acknowledgeUnknownMessageDelivery(commandId: string): boolean {
+  const current = currentSubmission();
+  if (!current || current.commandId !== commandId || current.phase !== 'delivery_unknown') return false;
+  if (!current.projected) {
+    if (!canAcknowledgeUnknownMessageDelivery()) return false;
+    setAcknowledgedUnknown((items) => items.some((item) => item.commandId === commandId)
+      ? items
+      : [...items, current]);
+  }
+  setCurrentSubmission(null);
+  return true;
+}
+
 export function retryMessageDelivery(commandId: string): void {
   delivery.transition(commandId, (current) => ({ ...current, phase: 'sending', detail: null }));
 }
@@ -86,8 +109,12 @@ export function completeMessageDelivery(commandId: string, status: unknown): boo
 
 /** Only the exact durable Yjs identity may replace the local outbox item. */
 export function reconcileMessageProjection(sourceCommandIds: ReadonlySet<string>): boolean {
+  const archived = acknowledgedUnknown();
+  const retained = archived.filter((item) => !sourceCommandIds.has(item.commandId));
+  const archivedReconciled = retained.length !== archived.length;
+  if (archivedReconciled) setAcknowledgedUnknown(retained);
   const current = currentSubmission();
-  if (!current || !sourceCommandIds.has(current.commandId)) return false;
+  if (!current || !sourceCommandIds.has(current.commandId)) return archivedReconciled;
   if (current.phase === 'committed') setCurrentSubmission(null);
   else setCurrentSubmission({ ...current, projected: true });
   return true;
@@ -102,5 +129,6 @@ export function dismissFailedMessageDelivery(): void {
 
 export function resetMessageDelivery(): void {
   setCurrentSubmission(null);
+  setAcknowledgedUnknown([]);
   resetComposerDrafts();
 }

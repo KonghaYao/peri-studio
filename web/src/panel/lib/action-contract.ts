@@ -33,4 +33,5 @@ export interface ActionOptions {
   onError?: (err: ActionError) => void;
   retryOnUncertain?: boolean;
   retryOnError?: boolean;
+  acceptedStartsInactivityLease?: boolean;
 }

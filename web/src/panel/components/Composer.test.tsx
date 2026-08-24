@@ -12,7 +12,7 @@ import {
 } from '../store';
 import { setPrincipalRole } from '../lib/auth-state';
 import { composerDraft, setComposerDraft } from '../lib/composer-draft';
-import { blockUnknownMessageDelivery, failMessageDelivery, markMessageDeliveryUncertain, messageSubmission, resetMessageDelivery, startMessageDelivery } from '../lib/message-delivery';
+import { acknowledgeUnknownMessageDelivery, blockUnknownMessageDelivery, failMessageDelivery, markMessageDeliveryUncertain, messageSubmission, reconcileMessageProjection, resetMessageDelivery, startMessageDelivery } from '../lib/message-delivery';
 import { markRuntimeControlUncertain, resetRuntimeControls, startRuntimeControl } from '../lib/runtime-control';
 import { Composer } from './Composer';
 
@@ -344,7 +344,7 @@ describe('Composer', () => {
     expect(messageSubmission()).toBeNull();
   });
 
-  it('keeps delivery-unknown locked without retry or editing controls', () => {
+  it('lets the user acknowledge delivery-unknown and continue without restoring the original text', () => {
     selectReadyChat();
     startMessageDelivery('cmd-1', 'possibly executed', 'session-1', 'chat-1');
     blockUnknownMessageDelivery('cmd-1');
@@ -354,6 +354,29 @@ describe('Composer', () => {
     expect(screen.getByRole('textbox')).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Confirm with the same request' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Back to edit' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Acknowledge and continue' }));
+    expect(messageSubmission()).toBeNull();
+    expect(screen.getByRole('textbox')).toBeEnabled();
+    expect(screen.getByRole('textbox')).toHaveValue('');
+  });
+
+  it('allows an exactly projected unknown to clear even when the evidence archive is full', () => {
+    for (let index = 0; index < 20; index += 1) {
+      const commandId = `archived-${index}`;
+      startMessageDelivery(commandId, `message-${index}`, `archived-session-${index}`, `archived-chat-${index}`);
+      blockUnknownMessageDelivery(commandId);
+      acknowledgeUnknownMessageDelivery(commandId);
+    }
+    selectReadyChat();
+    startMessageDelivery('projected', 'already projected', 'session-1', 'chat-1');
+    reconcileMessageProjection(new Set(['projected']));
+    blockUnknownMessageDelivery('projected');
+    render(() => <Composer />);
+
+    const acknowledge = screen.getByRole('button', { name: 'Acknowledge and continue' });
+    expect(acknowledge).toBeEnabled();
+    fireEvent.click(acknowledge);
+    expect(messageSubmission()).toBeNull();
   });
 
   it('isolates drafts and recovery surfaces by persisted session identity', async () => {

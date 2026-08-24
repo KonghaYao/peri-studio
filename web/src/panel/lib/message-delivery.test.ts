@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { composerDraft, setComposerDraft } from './composer-draft';
 import {
+  acknowledgeUnknownMessageDelivery,
+  acknowledgedMessageDeliveries,
   acceptMessageDelivery,
   blockUnknownMessageDelivery,
   completeMessageDelivery,
@@ -101,6 +103,60 @@ describe('message delivery', () => {
     dismissFailedMessageDelivery();
     expect(messageSubmission()?.phase).toBe('delivery_unknown');
     expect(composerDraft('session-a')).toBe('');
+  });
+
+  it('archives an acknowledged delivery-unknown and frees the active submission slot', () => {
+    startMessageDelivery('unknown', 'may have executed', 'session-a', 'chat-a');
+    blockUnknownMessageDelivery('unknown');
+
+    expect(acknowledgeUnknownMessageDelivery('unknown')).toBe(true);
+    expect(messageSubmission()).toBeNull();
+    expect(acknowledgedMessageDeliveries()).toEqual([
+      expect.objectContaining({ commandId: 'unknown', phase: 'delivery_unknown', text: 'may have executed' }),
+    ]);
+    expect(startMessageDelivery('next', 'continue safely', 'session-b', 'chat-b')).toBe(true);
+  });
+
+  it('removes archived uncertainty only when its exact durable projection arrives', () => {
+    startMessageDelivery('unknown', 'may have executed', 'session-a', 'chat-a');
+    blockUnknownMessageDelivery('unknown');
+    acknowledgeUnknownMessageDelivery('unknown');
+
+    expect(reconcileMessageProjection(new Set(['other']))).toBe(false);
+    expect(acknowledgedMessageDeliveries()).toHaveLength(1);
+    expect(reconcileMessageProjection(new Set(['unknown']))).toBe(true);
+    expect(acknowledgedMessageDeliveries()).toEqual([]);
+  });
+
+  it('does not duplicate unknown evidence when the exact Chat Doc entry already exists', () => {
+    startMessageDelivery('unknown', 'may have executed', 'session-a', 'chat-a');
+    reconcileMessageProjection(new Set(['unknown']));
+    blockUnknownMessageDelivery('unknown');
+
+    expect(acknowledgeUnknownMessageDelivery('unknown')).toBe(true);
+    expect(messageSubmission()).toBeNull();
+    expect(acknowledgedMessageDeliveries()).toEqual([]);
+  });
+
+  it('fails closed instead of evicting unresolved evidence after twenty deliveries', () => {
+    for (let index = 0; index < 20; index += 1) {
+      const commandId = `unknown-${index}`;
+      startMessageDelivery(commandId, `message-${index}`, `session-${index}`, `chat-${index}`);
+      blockUnknownMessageDelivery(commandId);
+      expect(acknowledgeUnknownMessageDelivery(commandId)).toBe(true);
+    }
+
+    startMessageDelivery('unknown-20', 'message-20', 'session-20', 'chat-20');
+    blockUnknownMessageDelivery('unknown-20');
+    expect(acknowledgeUnknownMessageDelivery('unknown-20')).toBe(false);
+    expect(acknowledgedMessageDeliveries()).toHaveLength(20);
+    expect(acknowledgedMessageDeliveries()[0]?.commandId).toBe('unknown-0');
+    expect(acknowledgedMessageDeliveries()[19]?.commandId).toBe('unknown-19');
+    expect(messageSubmission()?.commandId).toBe('unknown-20');
+    reconcileMessageProjection(new Set(['unknown-20']));
+    expect(acknowledgeUnknownMessageDelivery('unknown-20')).toBe(true);
+    expect(messageSubmission()).toBeNull();
+    expect(acknowledgedMessageDeliveries()).toHaveLength(20);
   });
 
   it('refuses to replace an unresolved delivery even when a caller forgets the guard', () => {

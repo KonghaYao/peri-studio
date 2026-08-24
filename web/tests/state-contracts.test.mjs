@@ -65,7 +65,7 @@ test('prompt recovery is owned by CommandTracker rather than an ad-hoc frame cac
   const actions = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'user-actions.ts'), 'utf8');
   const delivery = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'message-delivery.ts'), 'utf8');
   const activation = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'session-activation.ts'), 'utf8');
-  assert.match(actions, /sendAction\(frame, 'prompt', \{\s*retryOnUncertain: true/);
+  assert.match(actions, /sendAction\(frame, 'prompt', \{\s*acceptedStartsInactivityLease: true,\s*retryOnUncertain: true/);
   assert.match(activation, /this\.deps\.send\(frame, 'session\/create', \{\s*retryOnUncertain: true/);
   assert.match(actions, /deps!\.retry\(current\.commandId\)/);
   assert.match(store, /retry: \(commandId\) => commands\.retry\(commandId, sendFrame\)/);

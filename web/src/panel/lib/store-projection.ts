@@ -37,6 +37,7 @@ export function installStoreProjection(
   signals: ProjectionSignals,
   reconcileSessionNavigation: (sessions: ProjectSessionInfo[]) => void,
   reconcileCurrentRuntimeControl: (control?: ControlView) => void,
+  onRuntimeProgress: (chatId: string) => void,
 ): void {
   store.onUpdate = (docId: string): void => {
     if (docId === H.DOC_REGISTRY) {
@@ -62,6 +63,7 @@ export function installStoreProjection(
     const cid = currentCid();
     if (cid && docId === H.chatDoc(cid)) {
       const conversation = renderChat(store.docFor(docId));
+      onRuntimeProgress(cid);
       signals.setChatEntries(conversation.entries);
       reconcileMessageProjection(new Set(conversation.entries
         .map((entry) => entry.sourceCommandId)
@@ -71,6 +73,7 @@ export function installStoreProjection(
     }
     if (cid && docId === H.sessionDoc(cid)) {
       const control = renderControl(store.docFor(docId));
+      onRuntimeProgress(cid);
       signals.setChatHead(control);
       signals.setPermissions(control.pendingPermissions);
       const elicitations = control.pendingElicitations ?? [];

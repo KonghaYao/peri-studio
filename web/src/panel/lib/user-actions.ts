@@ -110,6 +110,7 @@ export function sendMessage(text: string, effort?: string): boolean {
     return false;
   }
   const sent = deps!.sendAction(frame, 'prompt', {
+    acceptedStartsInactivityLease: true,
     retryOnUncertain: true,
     onAccepted: () => acceptMessageDelivery(frame.commandId),
     onTimeout: () => markMessageDeliveryUncertain(frame.commandId),

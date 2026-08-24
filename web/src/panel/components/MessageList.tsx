@@ -19,7 +19,7 @@ import { Button, EmptyState, LoadingState } from '../../components/ui';
 import { PermissionQueue } from './PermissionQueue';
 import { ConversationMessage } from './ConversationMessage';
 import { permissionDecisions } from '../lib/permission-delivery';
-import { dismissFailedMessageDelivery, messageSubmission } from '../lib/message-delivery';
+import { acknowledgeUnknownMessageDelivery, acknowledgedMessageDeliveries, canAcknowledgeUnknownMessageDelivery, dismissFailedMessageDelivery, messageSubmission } from '../lib/message-delivery';
 import { MessageOutbox } from './MessageOutbox';
 import { replayBoundaryAt, type ReplayBoundary } from '../lib/replay-boundary';
 
@@ -73,6 +73,8 @@ export function MessageList(props: { bottomInset?: number }) {
     const submission = messageSubmission();
     return submission?.chatId === selectedCid() && !submission.projected ? submission : null;
   };
+  const acknowledgedForChat = () => acknowledgedMessageDeliveries()
+    .filter((submission) => submission.chatId === selectedCid());
 
   // Composer 绝对覆盖在滚动区上方：动态高度 + 最小安全留白，保证最后一条消息不被贴住或遮挡。
   const contentBottomInset = () => `${Math.max(props.bottomInset ?? 0, 64) + 40}px`;
@@ -174,8 +176,11 @@ export function MessageList(props: { bottomInset?: number }) {
           )}
         </For>
         <Show when={chatHead()?.chat?.loading}><ChatLoading /></Show>
+        <For each={acknowledgedForChat()}>{(submission) =>
+          <MessageOutbox submission={submission} acknowledged onRetry={() => {}} onEdit={() => {}} />
+        }</For>
         <Show when={outboxForChat()}>{(submission) =>
-          <MessageOutbox submission={submission()} onRetry={retryMessageSubmission} onEdit={dismissFailedMessageDelivery} />
+          <MessageOutbox submission={submission()} onRetry={retryMessageSubmission} onEdit={dismissFailedMessageDelivery} acknowledgeDisabled={!canAcknowledgeUnknownMessageDelivery()} onAcknowledge={() => acknowledgeUnknownMessageDelivery(submission().commandId)} />
         }</Show>
       </div>
     </section>

@@ -146,6 +146,7 @@ function sendAction(frame: ActionFrame, label: string, options: ActionOptions = 
       onError: options.onError,
       retryOnUncertain: options.retryOnUncertain,
       retryOnError: options.retryOnError,
+      acceptedStartsInactivityLease: options.acceptedStartsInactivityLease,
       onUncertain: options.onTimeout,
     },
   }, sendFrame);
@@ -357,6 +358,10 @@ installStoreProjection(
   },
   reconcileSessionNavigation,
   reconcileCurrentRuntimeControl,
+  (chatId) => {
+    const submission = messageSubmission();
+    if (submission?.chatId === chatId) commands.touch(submission.commandId);
+  },
 );
 
 const catalogActions = new CatalogActions({

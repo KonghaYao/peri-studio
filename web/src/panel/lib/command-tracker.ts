@@ -23,6 +23,7 @@ export interface CommandCallbacks<A extends CommandAck = CommandAck, E extends C
   onUncertain?: (reason: 'timeout' | 'disconnect') => void;
   retryOnUncertain?: boolean;
   retryOnError?: boolean;
+  acceptedStartsInactivityLease?: boolean;
 }
 
 export interface CommandRequest<F extends CommandFrame, A extends CommandAck = CommandAck, E extends CommandError = CommandError> {
@@ -88,6 +89,7 @@ export class CommandTracker<
     if (ack.status === 'accepted') {
       if (!tracked.accepted) {
         tracked.accepted = true;
+        if (tracked.callbacks?.acceptedStartsInactivityLease) this.renewPendingTimer(commandId, tracked);
         tracked.callbacks?.onAccepted?.(ack);
       }
       return 'accepted';
@@ -151,6 +153,19 @@ export class CommandTracker<
   hasUncertain(commandId: string): boolean { return this.uncertain.has(commandId); }
   uncertainCount(): number { return this.uncertain.size; }
 
+  /** 仅显式声明的命令使用运行时投影进度续租静默窗口。 */
+  touch(commandId: string): boolean {
+    const tracked = this.pending.get(commandId);
+    if (!tracked?.accepted || !tracked.callbacks?.acceptedStartsInactivityLease) return false;
+    this.renewPendingTimer(commandId, tracked);
+    return true;
+  }
+
+  private renewPendingTimer(commandId: string, tracked: TrackedCommand<F, A, E>): void {
+    clearTimeout(tracked.timer);
+    tracked.timer = setTimeout(() => this.makeUncertain(commandId, 'timeout'), this.options.timeoutMs);
+  }
+
   private releasePending(commandId: string): TrackedCommand<F, A, E> | null {
     const tracked = this.pending.get(commandId);
     if (!tracked) return null;
@@ -171,8 +186,7 @@ export class CommandTracker<
       this.uncertain.set(commandId, request);
       this.options.onUncertainCountChange?.(this.uncertain.size);
     } else {
-      // Retain only the callbacks needed to settle a definite late error.
-      // A late acknowledgement must never run an expired business continuation.
+      // 仅保留处理确定性晚到错误所需的回调；晚到 ack 不得再次执行已过期的业务 continuation。
       const timer = setTimeout(() => this.forget(commandId), this.options.timeoutMs);
       this.awaitingTerminal.set(commandId, { request, timer });
     }
