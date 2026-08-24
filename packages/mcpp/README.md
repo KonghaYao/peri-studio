@@ -17,6 +17,7 @@ MCPP（MCP Plus）的 Server 侧 TypeScript 参考实现。该包基于 MCP SDK�
 ## 功能
 
 - **Skills 资源挂载**：将 `skills/<name>/SKILL.md` 及其目录内经过安全与预算限制的所有普通文件实时投影为 `skill://<name>/<path>` MCP Resource。
+- **Agents 资源挂载**：将通过 frontmatter、UTF-8、大小和路径安全校验的 `agents/<name>/agent.md` 实时投影为 `agent://<name>/agent.md` MCP Resource。
 - **Skills 元数据处理**：解析 frontmatter、提取 `io.mcpp/*` 编排字段、生成 SHA-256 digest。
 - **双模式 Server 启动**：默认使用 Streamable HTTP，也可通过 `--stdio` 或配置切换到 stdio。
 - **多 Server HTTP 网关**：在单个端口上按路径挂载多个 MCP endpoint，并隔离各 endpoint、各客户端会话。
@@ -86,6 +87,7 @@ import { McpServer } from "@modelcontextprotocol/server";
 import {
     createCacheVersion,
     createMcppServerFactory,
+    ResourceForAgents,
     ResourceForSkills,
     startServer,
 } from "@peri-code/mcpp";
@@ -109,6 +111,11 @@ const createServer = createMcppServerFactory(
 
         ResourceForSkills(server, {
             skillsDir: new URL("./skills", import.meta.url).pathname,
+            origin: "example-mcpp-server",
+            ...mcpp.resourceCache,
+        });
+        ResourceForAgents(server, {
+            agentsDir: new URL("./agents", import.meta.url).pathname,
             origin: "example-mcpp-server",
             ...mcpp.resourceCache,
         });
@@ -164,6 +171,21 @@ started.subscriptions?.resourceUpdated("skill://code-review/SKILL.md");
 ```
 
 这些方法只向已经通过 `subscriptions/listen` 订阅对应事件的客户端发送通知；没有订阅者时调用是安全的 no-op。多进程部署应通过 `StartServerOptions.bus` 注入共享 `ServerEventBus`。
+
+## Agents API
+
+### `ResourceForAgents(server, options)`
+
+将 `agents/<name>/agent.md` 实时挂载为 `agent://<name>/agent.md`。入口必须是有效 UTF-8 Markdown，frontmatter 的 `name` 必须与目录名一致，并包含非空 `description`；默认单文件上限为 256 KiB。远端 Agent 仍是不可信配置，Host 必须在激活阶段执行 digest 绑定、用户批准和权限收敛。
+
+```ts
+ResourceForAgents(server, {
+    agentsDir: "/absolute/path/to/agents",
+    organizationPrefix: "example.org",
+});
+```
+
+配置组织前缀后，URI 为 `agent://example.org/<name>/agent.md`。辅助 API 也从 `@peri-code/mcpp/agents` 导出，包括 `scanAgentsDir`、`readAgentMeta`、`readAgentResource`、`parseAgentFrontmatter` 和 `agentUri`。
 
 ## Skills API
 
