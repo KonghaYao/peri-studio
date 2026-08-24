@@ -20,6 +20,7 @@
 10. 主按钮文字对比修复为白色；关键机器名与文件目录从 faint 提升至 muted。
 11. `delivery_unknown` 增加 acknowledge-and-continue：不恢复或重发原文，保留只读证据，同时解除全局 Composer 单飞锁。
 12. accepted prompt 改用 Chat/Control 投影进度续租 30 秒 inactivity lease，正常长回复不再按固定墙钟误报 uncertain。
+13. 2,000 条长会话改为 keyed `ChatProjection` 与变量高度 `TranscriptWindow`：流式尾部只重读关联 entry/tool，DOM/Markdown 仅挂载有界窗口，异步增高与历史前插保持可见 ID 锚点；兼容数组视图的轻量 O(n) 顺序装配仍保留，后续 keyed store 可继续消除。
 
 ## Round 1 — Chat 信息架构与可信度
 
@@ -37,7 +38,7 @@
 |---|---|---|
 | P1 | active turn 无正文时视觉上没有 working 状态 | visible、reduced-motion-safe 的工作状态行 |
 | P1 | cancelled/interrupted/failed 的部分回答无终态标记 | 尾部显示 partial terminal state，复制文案同步 |
-| P1 | 长对话全量 DOM + 每次 update 全量 Markdown 解析 | `TranscriptWindow` + keyed `ChatProjection` |
+| P1 | 长对话全量 DOM + 每次 update 全量 Markdown 解析 | 已由 `TranscriptWindow` + keyed `ChatProjection` 闭环 |
 | P2 | 大代码块仍生成无限 token DOM | 字节/行预算，超限纯文本窗口化，完整下载保留 |
 | P1 | 远程图片加载前不展示域名 | 同意前展示规范化 hostname |
 
@@ -89,7 +90,7 @@
 | P1 | faint 关键文本仅约 2.06:1 | 机器名/目录已改 muted；继续审计其他内容文本 |
 | P2 | SCM 操作与错误压到 10–11px | 操作/错误目标至少 12px |
 | P2 | 三个主区域全白，层级依赖 hairline | Remote Workspace 使用克制冷色 surface/signature |
-| P2 | 异步 Markdown 墀高不能保持 bottom anchor | ResizeObserver + stick/anchor 双模式 |
+| P2 | 异步 Markdown 增高不能保持 bottom anchor | 已接入 ResizeObserver + stick/anchor 双模式 |
 
 ## Round 8 — 状态模块深度、性能与并发
 
@@ -97,7 +98,7 @@
 |---|---|---|
 | P1 | Resource project 切换无 request generation/lease fence | `ResourceProjectionSession`；本轮已封住 orphan/update 污染 |
 | P1 | 每次 heartbeat 全量重建 Sidebar，可擦掉 rename draft | keyed `RegistryProjection` 结构共享 |
-| P1 | 2,000 条 transcript 的流式尾部导致近 O(n²) 工作 | keyed `ChatProjection` + `TranscriptWindow` |
+| P1 | 2,000 条 transcript 的流式尾部导致近 O(n²) 解析与 DOM 工作 | keyed `ChatProjection` + `TranscriptWindow` 已消除全量 Yjs/Markdown/DOM；数组顺序装配列为后续 P2 |
 | P1 | prompt 固定 30s wall timeout 与 server activity lease 冲突 | 已由 `CommandTracker.touch()` 接入 runtime projection inactivity lease |
 | P2 | async cache 的旧 rejection 可删掉同 key 新任务 | identity-checked delete + weighted LRU |
 | P2 | DocStore update 失败只有计数，无 quarantine/reload | typed failure callback + 单次权威 resubscribe |
@@ -116,13 +117,12 @@
 
 复审固定点为 `888778e`，同时检查仓库 `CLAUDE.md`、权威架构、术语表与本报告。两个独立只读审查均无遗留 P0 或功能阻断；复审发现的未知 reasoning visibility 降级、资源协议模块环、三个遗漏的 coarse 触控目标、未租赁 update 测试缺口、浏览器测试文件超限与报告计数均已闭环。`aggregator.rs` 482 行、`protocol.ts` 457 行、`resource-store.ts` 455 行接近拆分阈值，作为结构预警保留。
 
-最终门禁：Rust workspace 781 项全绿，`cargo fmt --all --check` 与 workspace 全 target Clippy `-D warnings` 通过；Web TypeScript、63 项 Node 契约、528 项 Vitest、production build/boundary 全绿；真实 Chromium 43/43（含 1024 入口、390×430 短视口和真实 coarse pointer 44px）通过；`git diff --check` 通过。Vitest 首轮曾出现一次 Dialog inert 时序抖动，隔离复跑与随后完整 528 项复跑均通过，未观察到产品回归。
+最终门禁：Rust workspace 781 项全绿，`cargo fmt --all --check` 与 workspace 全 target Clippy `-D warnings` 通过；Web TypeScript、63 项 Node 契约、542 项 Vitest、production build/boundary 全绿；真实 Chromium 44/44（含 2,000 条有界 transcript、1024 入口、390×430 短视口和真实 coarse pointer 44px）通过；`git diff --check` 通过。Vitest 早期轮次曾出现一次 Dialog inert 时序抖动，隔离复跑与后续完整复跑均通过，未观察到产品回归。
 
 后续双轴复审又闭环三项：metadata `accepted` 不再误续墙钟 timeout，只有显式 prompt inactivity lease 可由 runtime progress 续租；acknowledged `delivery_unknown` 证据上限为 20 条，满额后 fail-closed 而不静默淘汰；已确认继续的历史证据改用普通 group 语义，不再作为新 alert 重复打断读屏。
 
 ## 推荐路线
 
-1. `ChatProjection` + `TranscriptWindow`：同时恢复 block_order、长会话性能、async-height anchor。
-2. `RegistryProjection`：让 heartbeat 只更新 instance slice，保住 rename draft 与 DOM identity。
-3. Permission wire v3：`permission/resolve` 传 server 投影的精确 optionId，移除 translator 猜测。
-4. 完成可访问性矩阵：焦点往返、forced-colors、768、coarse pointer、短视口。
+1. `RegistryProjection`：让 heartbeat 只更新 instance slice，保住 rename draft 与 DOM identity。
+2. Permission wire v3：`permission/resolve` 传 server 投影的精确 optionId，移除 translator 猜测。
+3. 完成可访问性矩阵：焦点往返、forced-colors、768、coarse pointer、短视口。

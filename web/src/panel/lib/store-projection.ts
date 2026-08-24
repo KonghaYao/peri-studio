@@ -1,7 +1,8 @@
 import type { Setter } from 'solid-js';
 import * as H from './protocol';
 import type { DocStore } from './doc-store';
-import { renderChat, type ChatEntry } from './chat-view';
+import type { ChatEntry } from './chat-view';
+import { ChatProjection } from './chat-projection';
 import { renderControl, type ControlView } from './control-view';
 import { renderRegistry, type ChatInfo, type InstanceInfo, type ProjectInfo, type ProjectSessionInfo, type SessionSummaryInfo } from './registry-view';
 import { unimportedSessions } from './session-import';
@@ -39,6 +40,14 @@ export function installStoreProjection(
   reconcileCurrentRuntimeControl: (control?: ControlView) => void,
   onRuntimeProgress: (chatId: string) => void,
 ): void {
+  const chatProjection = new ChatProjection();
+  let projectedChatDocId: string | null = null;
+  store.observeRemoval((docId) => {
+    if (docId === null || docId === projectedChatDocId) {
+      chatProjection.dispose();
+      projectedChatDocId = null;
+    }
+  });
   store.onUpdate = (docId: string): void => {
     if (docId === H.DOC_REGISTRY) {
       const registry = renderRegistry(store.docFor(docId));
@@ -62,7 +71,8 @@ export function installStoreProjection(
     }
     const cid = currentCid();
     if (cid && docId === H.chatDoc(cid)) {
-      const conversation = renderChat(store.docFor(docId));
+      projectedChatDocId = docId;
+      const conversation = chatProjection.project(store.docFor(docId)).view;
       onRuntimeProgress(cid);
       signals.setChatEntries(conversation.entries);
       reconcileMessageProjection(new Set(conversation.entries

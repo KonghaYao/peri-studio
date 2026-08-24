@@ -39,16 +39,13 @@ export interface ChatEntry {
 }
 export interface ChatView { schemaVersion: unknown; projectionVersion: unknown; entries: ChatEntry[] }
 
-/** Read-only browser projection of one chat:{id} document. */
-export function renderChat(doc: Y.Doc): ChatView {
-  const root = doc.getMap<unknown>('root');
-  const order = asArray(root.get('entry_order'));
-  const entriesMap = asMap(root.get('entries'));
-  const toolCalls = asMap(root.get('tool_calls'));
-  const entries: ChatEntry[] = [];
-  const referencedToolIds = new Set<string>();
+export interface ChatEntryRead {
+  entry: ChatEntry;
+  referencedToolIds: Set<string>;
+}
 
-  const readToolCall = (id: string, map: Y.Map<unknown> | null): ToolCallInfo => ({
+export function readChatToolCall(id: string, map: Y.Map<unknown> | null): ToolCallInfo {
+  return {
     toolCallId: id,
     name: getStr(map, 'name'),
     status: getStr(map, 'status'),
@@ -62,80 +59,103 @@ export function renderChat(doc: Y.Doc): ChatView {
     })(),
     startedAt: getStr(map, 'started_at'),
     completedAt: getStr(map, 'completed_at'),
+  };
+}
+
+/** 读取单条 entry；legacy orphan tool 由上层按 turn 索引补入。 */
+export function readChatEntry(
+  entryId: string,
+  entriesMap: Y.Map<unknown> | null,
+  toolCalls: Y.Map<unknown> | null,
+): ChatEntryRead | null {
+  const map = asMap(entriesMap?.get(entryId));
+  if (!map) return null;
+  const referencedToolIds = new Set<string>();
+  const entry: ChatEntry = {
+    id: entryId,
+    turnId: getStr(map, 'turn_id'),
+    kind: getStr(map, 'kind'),
+    role: getStr(map, 'role'),
+    status: getStr(map, 'status'),
+    authorUserId: getStr(map, 'author_user_id'),
+    sourceCommandId: getStr(map, 'source_command_id'),
+    origin: (() => {
+      const value = getStr(map, 'origin');
+      return value === 'live' || value === 'session_replay' ? value : null;
+    })(),
+    replayVerified: typeof map.get('replay_verified') === 'boolean' ? map.get('replay_verified') as boolean : null,
+    deliverySchemaVersion: getNum(map, 'delivery_schema_version'),
+    deliveryState: getStr(map, 'delivery_state'),
+    deliveryErrorCode: getStr(map, 'delivery_error_code'),
+    payloadFingerprint: getStr(map, 'payload_fingerprint'),
+    createdAt: safeTime(map.get('created_at')),
+    completedAt: getStr(map, 'completed_at'),
+    text: '',
+    reasoning: [],
+    toolCalls: [],
+    resources: [],
+    error: null,
+  };
+  const error = asMap(map.get('error'));
+  if (error) entry.error = { code: getStr(error, 'code'), message: getStr(error, 'message') };
+
+  const blocks = asMap(map.get('blocks'));
+  const seenBlockIds = new Set<string>();
+  asArray(map.get('block_order'))?.toArray().forEach((blockIdValue) => {
+    if (typeof blockIdValue !== 'string' || seenBlockIds.has(blockIdValue)) return;
+    seenBlockIds.add(blockIdValue);
+    const block = asMap(blocks?.get(blockIdValue));
+    if (!block) return;
+    switch (block.get('kind')) {
+      case 'text': {
+        const text = yText(block.get('text'));
+        if (text !== null) entry.text += text;
+        break;
+      }
+      case 'reasoning': {
+        // Chat Doc 是浏览器共享投影。只有协议明确标记为 summary 的推理
+        // 才属于用户可见内容；hidden、缺失与未来未知值一律 fail closed。
+        const visibility = getStr(block, 'visibility');
+        if (visibility === 'summary') {
+          entry.reasoning.push({ id: blockIdValue, text: yText(block.get('text')) || '', visibility });
+        }
+        break;
+      }
+      case 'tool_call': {
+        const id = getStr(block, 'tool_call_id');
+        if (id) referencedToolIds.add(id);
+        entry.toolCalls.push(readChatToolCall(id || '', asMap(id ? toolCalls?.get(id) : null)));
+        break;
+      }
+      case 'resource':
+        entry.resources.push({
+          resourceId: getStr(block, 'resource_id'),
+          mediaType: getStr(block, 'media_type'),
+          name: getStr(block, 'name'),
+        });
+        break;
+      default:
+        break;
+    }
   });
+  return { entry, referencedToolIds };
+}
+
+/** Read-only browser projection of one chat:{id} document. */
+export function renderChat(doc: Y.Doc): ChatView {
+  const root = doc.getMap<unknown>('root');
+  const order = asArray(root.get('entry_order'));
+  const entriesMap = asMap(root.get('entries'));
+  const toolCalls = asMap(root.get('tool_calls'));
+  const entries: ChatEntry[] = [];
+  const referencedToolIds = new Set<string>();
 
   order?.toArray().forEach((entryIdValue) => {
     if (typeof entryIdValue !== 'string') return;
-    const map = asMap(entriesMap?.get(entryIdValue));
-    if (!map) return;
-    const entry: ChatEntry = {
-      id: entryIdValue,
-      turnId: getStr(map, 'turn_id'),
-      kind: getStr(map, 'kind'),
-      role: getStr(map, 'role'),
-      status: getStr(map, 'status'),
-      authorUserId: getStr(map, 'author_user_id'),
-      sourceCommandId: getStr(map, 'source_command_id'),
-      origin: (() => {
-        const value = getStr(map, 'origin');
-        return value === 'live' || value === 'session_replay' ? value : null;
-      })(),
-      replayVerified: typeof map.get('replay_verified') === 'boolean' ? map.get('replay_verified') as boolean : null,
-      deliverySchemaVersion: getNum(map, 'delivery_schema_version'),
-      deliveryState: getStr(map, 'delivery_state'),
-      deliveryErrorCode: getStr(map, 'delivery_error_code'),
-      payloadFingerprint: getStr(map, 'payload_fingerprint'),
-      createdAt: safeTime(map.get('created_at')),
-      completedAt: getStr(map, 'completed_at'),
-      text: '',
-      reasoning: [],
-      toolCalls: [],
-      resources: [],
-      error: null,
-    };
-    const error = asMap(map.get('error'));
-    if (error) entry.error = { code: getStr(error, 'code'), message: getStr(error, 'message') };
-
-    const blocks = asMap(map.get('blocks'));
-    const seenBlockIds = new Set<string>();
-    asArray(map.get('block_order'))?.toArray().forEach((blockIdValue) => {
-      if (typeof blockIdValue !== 'string' || seenBlockIds.has(blockIdValue)) return;
-      seenBlockIds.add(blockIdValue);
-      const block = asMap(blocks?.get(blockIdValue));
-      if (!block) return;
-      switch (block.get('kind')) {
-        case 'text': {
-          const text = yText(block.get('text'));
-          if (text !== null) entry.text += text;
-          break;
-        }
-        case 'reasoning': {
-          // Chat Doc 是浏览器共享投影。只有协议明确标记为 summary 的推理
-          // 才属于用户可见内容；hidden、缺失与未来未知值一律 fail closed。
-          const visibility = getStr(block, 'visibility');
-          if (visibility === 'summary') {
-            entry.reasoning.push({ id: blockIdValue, text: yText(block.get('text')) || '', visibility });
-          }
-          break;
-        }
-        case 'tool_call': {
-          const id = getStr(block, 'tool_call_id');
-          if (id) referencedToolIds.add(id);
-          entry.toolCalls.push(readToolCall(id || '', asMap(id ? toolCalls?.get(id) : null)));
-          break;
-        }
-        case 'resource':
-          entry.resources.push({
-            resourceId: getStr(block, 'resource_id'),
-            mediaType: getStr(block, 'media_type'),
-            name: getStr(block, 'name'),
-          });
-          break;
-        default:
-          break;
-      }
-    });
-    entries.push(entry);
+    const read = readChatEntry(entryIdValue, entriesMap, toolCalls);
+    if (!read) return;
+    read.referencedToolIds.forEach((id) => referencedToolIds.add(id));
+    entries.push(read.entry);
   });
 
   const assistantByTurn = new Map(entries
@@ -151,7 +171,7 @@ export function renderChat(doc: Y.Doc): ChatView {
   });
   legacyOrphans
     .sort((left, right) => left.startedAt.localeCompare(right.startedAt) || left.id.localeCompare(right.id))
-    .forEach((orphan) => assistantByTurn.get(orphan.turnId)?.toolCalls.push(readToolCall(orphan.id, orphan.map)));
+    .forEach((orphan) => assistantByTurn.get(orphan.turnId)?.toolCalls.push(readChatToolCall(orphan.id, orphan.map)));
 
   return {
     schemaVersion: root.get('schema_version'),

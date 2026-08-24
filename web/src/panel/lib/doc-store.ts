@@ -7,6 +7,7 @@ export class DocStore {
   private rafPending = new Set<string>();
   private generation = 0;
   private failedCount = 0;
+  private removalObservers = new Set<(docId: string | null) => void>();
   onUpdate: ((docId: string) => void) | null = null;
 
   /** 失败更新累计数（只读，供统计/监控消费；applyUpdateFrame 失败时递增）。 */
@@ -16,6 +17,7 @@ export class DocStore {
 
   clear(): void {
     this.generation += 1;
+    this.removalObservers.forEach((observer) => observer(null));
     this.docs.forEach((doc) => doc.destroy());
     this.docs.clear();
     this.rafPending.clear();
@@ -29,10 +31,17 @@ export class DocStore {
   drop(docId: string): void {
     const doc = this.docs.get(docId);
     if (doc) {
+      this.removalObservers.forEach((observer) => observer(docId));
       doc.destroy();
       this.docs.delete(docId);
     }
     this.rafPending.delete(docId);
+  }
+
+  /** 注册文档身份释放观察者；null 表示整个身份世代已清空。 */
+  observeRemoval(observer: (docId: string | null) => void): () => void {
+    this.removalObservers.add(observer);
+    return () => this.removalObservers.delete(observer);
   }
 
   docFor(docId: string): Y.Doc {

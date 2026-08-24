@@ -31,6 +31,27 @@ export const VISUAL_SCENARIO_IDS = ['catalog', 'conversation', 'resources', 'mar
 export function setVisualFilePreview(preview: ResourceFilePreviewState): void {
   setResourceFilePreview(preview);
 }
+
+/** 浏览器验收桥：只用于验证长会话的有界窗口。 */
+export function setVisualTranscriptCount(count: number): void {
+  if (!Number.isInteger(count) || count < 0 || count > 5_000) throw new Error('Invalid visual transcript count');
+  setChatEntries(Array.from({ length: count }, (_, index): ChatEntry => ({
+    id: `visual-entry-${index}`,
+    turnId: `visual-turn-${index}`,
+    kind: 'message',
+    role: index % 2 === 0 ? 'user' : 'assistant',
+    status: 'completed',
+    authorUserId: index % 2 === 0 ? 'fixture-user' : null,
+    sourceCommandId: index % 2 === 0 ? `visual-command-${index}` : null,
+    createdAt: '2026-08-14T00:00:00Z',
+    completedAt: '2026-08-14T00:00:01Z',
+    text: `Transcript message ${index}`,
+    reasoning: [],
+    toolCalls: [],
+    resources: [],
+    error: null,
+  })));
+}
 export type VisualScenarioId = typeof VISUAL_SCENARIO_IDS[number];
 export type FixtureControlMode = 'display-only' | 'locally-interactive' | 'production-gated';
 

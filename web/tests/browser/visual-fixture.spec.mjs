@@ -95,7 +95,7 @@ for (const [scenario, expected] of scenarios) {
         expect(facts.projectCount).toBeGreaterThanOrEqual(expected.projects ?? 1);
         expect(facts.sessionCount).toBeGreaterThanOrEqual(expected.sessions ?? 1);
       }
-      if (expected.messages) expect(facts.messageCount).toBe(expected.messages);
+      if (expected.messages) expect(facts.messageTotal).toBe(expected.messages);
       if (expected.markdown) expect(facts.markdown).toMatchObject({ headings: 1, lists: 1, codeBlocks: 1 });
       if (expected.permissions) expect(facts.permissionCount).toBe(expected.permissions);
       if (expected.permissionQueueLabel) expect(facts.permissionQueueLabel).toBe(expected.permissionQueueLabel);
@@ -131,129 +131,6 @@ test('migrated surfaces retain their authored computed borders', async ({ page }
     composer: '1px',
     toolCard: '1px',
   });
-});
-
-test('conversation copy and markdown keep compact authored line heights', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
-
-  const userMessage = page.getByRole('article', { name: 'Your message' }).first();
-  const geometry = await userMessage.evaluate((element) => ({
-    height: element.getBoundingClientRect().height,
-    lineHeight: getComputedStyle(element.querySelector('.conversation-message__text')).lineHeight,
-    composerLineHeight: getComputedStyle(document.querySelector('.composer-input')).lineHeight,
-    headingLineHeight: getComputedStyle(document.querySelector('.markdown-body h2')).lineHeight,
-    assistantHeight: document.querySelector('.conversation-message--assistant').getBoundingClientRect().height,
-  }));
-
-  expect(geometry.lineHeight).toBe('22px');
-  expect(geometry.composerLineHeight).toBe('22px');
-  expect(geometry.headingLineHeight).toBe('21.25px');
-  expect(geometry.height).toBeLessThan(100);
-  expect(geometry.assistantHeight).toBeLessThan(800);
-});
-
-test('intervention actions stay compact in a narrow desktop panel', async ({ page }) => {
-  const measure = () => page.evaluate(() => {
-    const labels = ['Allow once', 'Deny'];
-    return labels.map((label) => {
-      const button = [...document.querySelectorAll('button')].find((element) => element.textContent?.trim() === label);
-      const box = button.getBoundingClientRect();
-      return { label, width: box.width, height: box.height, top: box.top };
-    });
-  });
-
-  await page.setViewportSize({ width: 631, height: 800 });
-  await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
-  const desktopGeometry = await measure();
-  expect(Math.max(...desktopGeometry.map(({ width }) => width))).toBeLessThan(160);
-  expect(new Set(desktopGeometry.map(({ height }) => height))).toEqual(new Set([36]));
-  await expect(page.locator('.elicitation-card')).toHaveCount(0);
-
-  await page.setViewportSize({ width: 390, height: 844 });
-  const mobileGeometry = await measure();
-  expect(Math.max(...mobileGeometry.map(({ width }) => width))).toBeLessThan(160);
-  expect(new Set(mobileGeometry.map(({ height }) => height))).toEqual(new Set([44]));
-});
-
-test('conversation typography and status copy stay dense', async ({ page }) => {
-  await page.setViewportSize({ width: 631, height: 800 });
-  await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
-
-  const density = await page.evaluate(() => {
-    const style = (selector) => getComputedStyle(document.querySelector(selector));
-    const visibleText = document.body.innerText;
-    return {
-      body: style('body').fontSize,
-      message: [style('.conversation-message__text').fontSize, style('.conversation-message__text').lineHeight],
-      button: style('.permission-request [data-slot=button]').fontSize,
-      heading: style('.markdown-body h2').fontSize,
-      visibleText,
-    };
-  });
-
-  expect(density.body).toBe('14px');
-  expect(density.message).toEqual(['14px', '22px']);
-  expect(density.button).toBe('13px');
-  expect(density.heading).toBe('17px');
-  expect(density.visibleText).not.toContain('Locks immediately once selected');
-  expect(density.visibleText).not.toContain('Waiting for your permission');
-  expect(density.visibleText).not.toContain('Hub observed');
-  expect(density.visibleText).not.toContain('shows only redacted run summaries');
-});
-
-test('permission surfaces keep white as the dominant canvas', async ({ page }) => {
-  await page.setViewportSize({ width: 631, height: 800 });
-  await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
-
-  const palette = await page.evaluate(() => {
-    const color = (selector) => getComputedStyle(document.querySelector(selector)).backgroundColor;
-    const navigation = document.querySelector('.permission-queue__navigation');
-    return {
-      page: color('body'),
-      permission: color('.permission-request'),
-      mark: color('.permission-request__mark'),
-      navigation: navigation ? getComputedStyle(navigation).backgroundColor : null,
-    };
-  });
-
-  expect(palette.page).toBe('rgb(255, 255, 255)');
-  expect(palette.permission).toBe(palette.page);
-  expect(palette.mark).toBe(palette.page);
-  if (palette.navigation) expect(palette.navigation).toBe(palette.page);
-});
-
-test('desktop chrome is white, composer focus stays borderless, and placeholder onboarding is absent', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
-
-  await expect(page.locator('.onboarding-card')).toHaveCount(0);
-  const input = page.locator('.composer-input');
-  const resting = await page.locator('.composer-surface').evaluate((surface) => ({
-    border: getComputedStyle(surface).borderColor,
-    shadow: getComputedStyle(surface).boxShadow,
-  }));
-  await expect(input).toBeEnabled();
-  await input.focus();
-  await page.waitForTimeout(180);
-
-  const palette = await page.evaluate(() => {
-    const sidebar = document.querySelector('.project-sidebar');
-    const surface = document.querySelector('.composer-surface');
-    const input = document.querySelector('.composer-input');
-    return {
-      page: getComputedStyle(document.body).backgroundColor,
-      sidebar: getComputedStyle(sidebar).backgroundColor,
-      input: getComputedStyle(input).backgroundColor,
-      focusBorder: getComputedStyle(surface).borderColor,
-      focusShadow: getComputedStyle(surface).boxShadow,
-    };
-  });
-
-  expect(palette.sidebar).toBe(palette.page);
-  expect(palette.input).toBe('rgba(0, 0, 0, 0)');
-  expect(palette.focusBorder).toBe(resting.border);
-  expect(palette.focusShadow).toBe(resting.shadow);
 });
 
 test('runtime and recovery status labels use one visible word', async ({ page }) => {

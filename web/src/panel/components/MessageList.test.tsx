@@ -76,6 +76,72 @@ describe('MessageList timeline follow', () => {
     expect(scrollTo).toHaveBeenLastCalledWith({ top: 500, behavior: 'auto' });
     expect(screen.queryByRole('button', { name: /latest/i })).not.toBeInTheDocument();
   });
+
+  it('resets an up-scrolled reader to the latest content when the selected chat changes', async () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    setSelectedCid('chat-1');
+    setChatEntries([message('chat-1-entry', 'live', null)]);
+    render(() => <MessageList />);
+    const area = screen.getByRole('region', { name: 'Conversation messages' });
+    configureScrollArea(area);
+    fireEvent.scroll(area);
+    const scrollTo = vi.mocked(area.scrollTo);
+    scrollTo.mockClear();
+
+    setSelectedCid('chat-2');
+    setChatEntries([message('chat-2-entry', 'live', null)]);
+    await Promise.resolve();
+
+    expect(scrollTo).toHaveBeenLastCalledWith({ top: 500, behavior: 'auto' });
+    expect(screen.queryByRole('button', { name: /New content|latest/i })).not.toBeInTheDocument();
+    expect(screen.getByText('chat-2-entry')).toBeInTheDocument();
+  });
+
+  it('preserves the visible transcript when the permission prefix changes height', () => {
+    const observed: Array<{ target: Element; callback: ResizeObserverCallback }> = [];
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(private readonly callback: ResizeObserverCallback) {}
+      observe(target: Element) { observed.push({ target, callback: this.callback }); }
+      disconnect() {}
+      unobserve() {}
+    });
+    setRuntimeDocsState({ chat: true, control: true });
+    setChatEntries([message('assistant-1', 'live', null)]);
+    render(() => <MessageList />);
+    const area = screen.getByRole('region', { name: 'Conversation messages' });
+    configureScrollArea(area);
+    area.scrollTop = 100;
+    fireEvent.scroll(area);
+    const prefix = observed.find(({ target }) => target.classList.contains('transcript-prefix'))!;
+
+    prefix.callback([{ contentRect: { height: 40 } } as ResizeObserverEntry], {} as ResizeObserver);
+    prefix.callback([{ contentRect: { height: 100 } } as ResizeObserverEntry], {} as ResizeObserver);
+
+    expect(area.scrollTop).toBe(160);
+  });
+
+  it('mounts only a bounded accessible tail window for two thousand messages', () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    setChatEntries(Array.from({ length: 2_000 }, (_, index) => ({
+      ...message(`entry-${index}`, 'live', null), role: 'user', text: `transcript-${index}`,
+    })));
+    render(() => <MessageList />);
+    const area = screen.getByRole('region', { name: 'Conversation messages' });
+    Object.defineProperties(area, {
+      clientHeight: { configurable: true, value: 800 },
+      scrollHeight: { configurable: true, value: 160_000 },
+      scrollTop: { configurable: true, writable: true, value: 159_200 },
+    });
+
+    fireEvent.scroll(area);
+
+    const rows = screen.getAllByRole('listitem');
+    expect(rows.length).toBeLessThanOrEqual(24);
+    expect(rows.at(-1)).toHaveAttribute('aria-posinset', '2000');
+    expect(rows.at(-1)).toHaveAttribute('aria-setsize', '2000');
+    expect(screen.getByText('transcript-1999')).toBeInTheDocument();
+    expect(screen.queryByText('transcript-0')).not.toBeInTheDocument();
+  });
 });
 
 describe('MessageList overlay inset', () => {

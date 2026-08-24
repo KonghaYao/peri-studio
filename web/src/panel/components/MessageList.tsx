@@ -9,10 +9,10 @@
 // role/状态呈现八类视觉。消息模型、顺序、Yjs 读取、自动吸底算法与
 // permission decision 值（allow/deny、按钮顺序）均不变。
 
-import { createEffect, createMemo, createSignal, For, Show } from 'solid-js';
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, type JSX } from 'solid-js';
 import { chatEntries, chatHead, elicitations, permissions, resolvePermission, retryMessageSubmission, retryPersistentAction, runtimeDocsHydrated, selectedCid } from '../store';
 import { readOnly } from '../lib/auth-state';
-import { messageActivity, nextFollowState } from '../lib/message-follow.ts';
+import { nextFollowState } from '../lib/message-follow.ts';
 import { messageTime } from '../lib/message-time.ts';
 import type { ChatEntry } from '../lib/chat-view';
 import { Button, EmptyState, LoadingState } from '../../components/ui';
@@ -22,6 +22,7 @@ import { permissionDecisions } from '../lib/permission-delivery';
 import { acknowledgeUnknownMessageDelivery, acknowledgedMessageDeliveries, canAcknowledgeUnknownMessageDelivery, dismissFailedMessageDelivery, messageSubmission } from '../lib/message-delivery';
 import { MessageOutbox } from './MessageOutbox';
 import { replayBoundaryAt, type ReplayBoundary } from '../lib/replay-boundary';
+import { TranscriptWindow } from '../lib/transcript-window';
 
 
 // ── 权限条 ──────────────────────────────────────────────────────────────
@@ -58,6 +59,36 @@ function ChatLoading() {
   return <span class="chat-loading message-loading sr-only" role="status" aria-live="polite">Agent working</span>;
 }
 
+function TranscriptRow(props: {
+  id: string;
+  position: number;
+  size: number;
+  onMeasure: (id: string, height: number) => void;
+  children: JSX.Element;
+}) {
+  let row: HTMLDivElement | undefined;
+  let observer: ResizeObserver | undefined;
+  const measure = () => {
+    const height = row?.getBoundingClientRect().height ?? 0;
+    if (height > 0) props.onMeasure(props.id, height);
+  };
+  onMount(() => {
+    measure();
+    if (!row || typeof ResizeObserver === 'undefined') return;
+    observer = new ResizeObserver(measure);
+    observer.observe(row);
+  });
+  onCleanup(() => observer?.disconnect());
+  return <div
+    ref={row}
+    class="transcript-row flow-root"
+    role="listitem"
+    aria-posinset={props.position}
+    aria-setsize={props.size}
+    data-transcript-id={props.id}
+  >{props.children}</div>;
+}
+
 // ── 消息滚动区 ──────────────────────────────────────────────────────────
 
 export function MessageList(props: { bottomInset?: number }) {
@@ -65,10 +96,21 @@ export function MessageList(props: { bottomInset?: number }) {
   const [hasNewContent, setHasNewContent] = createSignal(false);
   const [completionAnnouncement, setCompletionAnnouncement] = createSignal('');
   let areaRef: HTMLDivElement | undefined;
+  let transcriptRef: HTMLDivElement | undefined;
+  let prefixRef: HTMLDivElement | undefined;
+  let prefixObserver: ResizeObserver | undefined;
+  let prefixHeight = 0;
+  let mounted = true;
   let previousActivity = '';
+  let previousEntryProjection: readonly ChatEntry[] | undefined;
+  let entryProjectionRevision = 0;
+  let transcriptChatId = selectedCid();
   let completionBaselineReady = false;
   let announcementChatId: string | null | undefined;
   let announcedCompletionKey: string | null = null;
+  const transcript = new TranscriptWindow({ estimatedHeight: 80, overscan: 320 });
+  const [viewport, setViewport] = createSignal({ top: 0, height: 800 });
+  const [windowRevision, setWindowRevision] = createSignal(0);
   const outboxForChat = () => {
     const submission = messageSubmission();
     return submission?.chatId === selectedCid() && !submission.projected ? submission : null;
@@ -83,24 +125,99 @@ export function MessageList(props: { bottomInset?: number }) {
   // 稳定槽位与按 id 索引（见下方 <For> 注释：等效显式 itemKey）。
   // id 字符串序列供外层 <For> diff；Map 供稳定槽位读取最新投影。
   const chatEntryIds = createMemo(() => chatEntries().map((entry) => entry.id));
-  const chatEntriesById = createMemo(() => {
-    const byId = new Map<string, ChatEntry>();
-    for (const entry of chatEntries()) byId.set(entry.id, entry);
-    return byId;
+  const transcriptOffset = () => {
+    if (!areaRef || !transcriptRef) return 0;
+    const area = areaRef.getBoundingClientRect();
+    const transcriptBounds = transcriptRef.getBoundingClientRect();
+    if (area.width === 0 && area.height === 0 && transcriptBounds.width === 0 && transcriptBounds.height === 0) return 0;
+    return areaRef.scrollTop + transcriptBounds.top - area.top;
+  };
+  const transcriptScrollTop = (areaScrollTop = areaRef?.scrollTop ?? 0) => Math.max(0, areaScrollTop - transcriptOffset());
+  const updateViewport = (areaScrollTop = areaRef?.scrollTop ?? 0) => {
+    setViewport({ top: transcriptScrollTop(areaScrollTop), height: areaRef?.clientHeight || 800 });
+  };
+  createEffect(() => {
+    const ids = chatEntryIds();
+    const chatId = selectedCid();
+    const chatChanged = chatId !== transcriptChatId;
+    transcriptChatId = chatId;
+    const anchor = areaRef && !stick() && !chatChanged ? transcript.captureAnchor(transcriptScrollTop()) : null;
+    const itemsChanged = transcript.setItems(ids);
+    if (chatChanged) {
+      setStick(true);
+      setHasNewContent(false);
+      setViewport({ top: Number.MAX_SAFE_INTEGER, height: areaRef?.clientHeight || 800 });
+      queueMicrotask(() => {
+        if (mounted && selectedCid() === chatId) scrollToBottom();
+      });
+    }
+    if (!itemsChanged) return;
+    const restored = transcript.restoreAnchor(anchor);
+    if (areaRef && restored !== null) {
+      areaRef.scrollTop = transcriptOffset() + restored;
+      updateViewport();
+    }
+    setWindowRevision((value) => value + 1);
+  });
+  const visibleTranscript = createMemo(() => {
+    windowRevision();
+    const current = viewport();
+    return transcript.slice(current.top, current.height);
   });
 
   const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
     if (!areaRef) return;
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const top = Math.max(0, areaRef.scrollHeight - areaRef.clientHeight);
+    updateViewport(top);
     areaRef.scrollTo({ top: areaRef.scrollHeight, behavior: reducedMotion ? 'auto' : behavior });
   };
+
+  const measureTranscriptRow = (id: string, height: number) => {
+    const anchor = areaRef && !stick() ? transcript.captureAnchor(transcriptScrollTop()) : null;
+    if (!transcript.measure(id, height)) return;
+    if (areaRef && stick()) {
+      scrollToBottom();
+    } else {
+      const restored = transcript.restoreAnchor(anchor);
+      if (areaRef && restored !== null) {
+        areaRef.scrollTop = transcriptOffset() + restored;
+        updateViewport();
+      }
+    }
+    setWindowRevision((value) => value + 1);
+  };
+
+  onMount(() => {
+    if (!prefixRef || typeof ResizeObserver === 'undefined') return;
+    prefixObserver = new ResizeObserver((entries) => {
+      const nextHeight = entries[0]?.contentRect.height ?? 0;
+      const delta = prefixHeight > 0 ? nextHeight - prefixHeight : 0;
+      prefixHeight = nextHeight;
+      if (!areaRef || delta === 0) return;
+      if (stick()) scrollToBottom();
+      else {
+        areaRef.scrollTop += delta;
+        updateViewport();
+      }
+    });
+    prefixObserver.observe(prefixRef);
+  });
+  onCleanup(() => {
+    mounted = false;
+    prefixObserver?.disconnect();
+  });
 
   // 自动吸底（用户上滚时暂停）——算法与阈值（40px）保持不变
   createEffect(() => {
     const list = chatEntries();
+    if (list !== previousEntryProjection) {
+      previousEntryProjection = list;
+      entryProjectionRevision += 1;
+    }
     const outbox = outboxForChat();
     const outboxActivity = outbox ? `${outbox.commandId}:${outbox.phase}` : '';
-    const activity = `${messageActivity(list)}|${outboxActivity}`;
+    const activity = `${entryProjectionRevision}|${outboxActivity}`;
     const follow = nextFollowState({ stick: stick(), hasNewContent: hasNewContent(), previousActivity, activity });
     if (follow.stick && areaRef && (list.length || outbox)) {
       scrollToBottom();
@@ -109,7 +226,14 @@ export function MessageList(props: { bottomInset?: number }) {
     previousActivity = follow.activity;
   });
 
-  const latestCompletion = () => [...chatEntries()].reverse().find((item) => item.role === 'assistant' && ['completed', 'failed', 'cancelled', 'interrupted'].includes(item.status || ''));
+  const latestCompletion = () => {
+    const list = chatEntries();
+    for (let index = list.length - 1; index >= 0; index -= 1) {
+      const item = list[index];
+      if (item.role === 'assistant' && ['completed', 'failed', 'cancelled', 'interrupted'].includes(item.status || '')) return item;
+    }
+    return undefined;
+  };
 
   createEffect(() => {
     const chatId = selectedCid() ?? null;
@@ -148,33 +272,35 @@ export function MessageList(props: { bottomInset?: number }) {
       onScroll={(e) => {
         const el = e.currentTarget;
         setStick(el.scrollHeight - el.scrollTop - el.clientHeight < 40);
+        updateViewport(el.scrollTop);
       }}
-      class="ui-scrollbar message-list-scroll min-h-0 flex-1 overflow-y-auto"
+      class="ui-scrollbar message-list-scroll min-h-0 flex-1 overflow-y-auto [overflow-anchor:none]"
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
       {/* Composer 覆盖在时间线底部；动态 inset 让最后一条消息始终完整可读。 */}
       <div class="message-list-content box-border w-full max-w-(--container-chat) mx-auto pt-32 px-20 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 max-desk:max-w-(--container-chat-narrow) max-narrow:px-10" style={{ 'padding-bottom': contentBottomInset() }}>
-        <PermissionBar />
-        <Show when={!runtimeDocsHydrated()}>
-          <LoadingState label="Loading session" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />
-        </Show>
-        <Show when={runtimeDocsHydrated() && chatEntries().length === 0 && !outboxForChat()}>
-          <EmptyState title="Start this conversation" description="Send the first message. Content is saved to this session and can be restored later." class="min-h-(--container-placeholder)" />
-        </Show>
-        {/* 显式稳定 key（等效 itemKey）：Solid 1.9 的 <For> 没有 React 式 key
-            prop，它按 item 引用做 diff；而 chatEntries() 每次 Yjs 投影都全量
-            重建对象（store.ts:403 renderChat），任何单条更新都会让全部引用
-            失配 → 整个列表 DOM 重挂载，滚动跟随与气泡内部状态随之丢失。
-            ChatEntry.id 是 chat-view.ts 中 Yjs entries map 的稳定键，外层 <For>
-            按 id 字符串序列渲染稳定槽位，条目 props 读取最新的同 ID 投影。 */}
-        <For each={chatEntryIds()}>
-          {(id, index) => (
-            <>
-              <Show when={replayBoundaryAt(chatEntries(), index())}>{(kind) => <HistoryBoundary kind={kind()} />}</Show>
-              <ConversationMessage entry={() => chatEntriesById().get(id)!} />
-            </>
-          )}
-        </For>
+        <div ref={prefixRef} class="transcript-prefix">
+          <PermissionBar />
+          <Show when={!runtimeDocsHydrated()}>
+            <LoadingState label="Loading session" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />
+          </Show>
+          <Show when={runtimeDocsHydrated() && chatEntries().length === 0 && !outboxForChat()}>
+            <EmptyState title="Start this conversation" description="Send the first message. Content is saved to this session and can be restored later." class="min-h-(--container-placeholder)" />
+          </Show>
+        </div>
+        <div ref={transcriptRef} class="transcript-window" role="list" aria-label="Conversation transcript">
+          <div class="transcript-spacer" aria-hidden="true" style={{ height: `${visibleTranscript().beforeHeight}px` }} />
+          <For each={visibleTranscript().ids}>
+            {(id, localIndex) => {
+              const globalIndex = () => visibleTranscript().start + localIndex();
+              return <TranscriptRow id={id} position={globalIndex() + 1} size={chatEntryIds().length} onMeasure={measureTranscriptRow}>
+                <Show when={replayBoundaryAt(chatEntries(), globalIndex())}>{(kind) => <HistoryBoundary kind={kind()} />}</Show>
+                <Show when={chatEntries()[globalIndex()]}>{(entry) => <ConversationMessage entry={entry} />}</Show>
+              </TranscriptRow>;
+            }}
+          </For>
+          <div class="transcript-spacer" aria-hidden="true" style={{ height: `${visibleTranscript().afterHeight}px` }} />
+        </div>
         <Show when={chatHead()?.chat?.loading}><ChatLoading /></Show>
         <For each={acknowledgedForChat()}>{(submission) =>
           <MessageOutbox submission={submission} acknowledged onRetry={() => {}} onEdit={() => {}} />

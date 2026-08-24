@@ -47,5 +47,6 @@ test('the visual fixture is a development-only entry and cannot bypass productio
   assert.match(visualContract, /navigator\.language/);
   assert.match(visualContract, /resolvedOptions\(\)\.timeZone/);
   assert.match(visualContract, /messageListViewportHeight/);
+  assert.match(visualContract, /messageTotal/);
   assert.match(visualContract, /connectionStatus/);
 });

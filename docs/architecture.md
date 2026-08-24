@@ -1,9 +1,9 @@
 # Peri Studio 架构设计（权威版）
 
-> 状态：v2.7（单二进制发布 + server/instance 独立运行角色）
-> 日期：2026-08-21
+> 状态：v2.8（无状态投影恢复 + 远程资源工作台 + 长会话可靠 UI）
+> 日期：2026-08-24
 > 定位：peri-studio 独立项目的架构基准文档。与 peri 的唯一耦合点是 ACP 进程（协议线格式），本设计不依赖 peri 的任何 crate 与部署形态。
-> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
+> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
 > 约定：引用 chat-channel 处标注其文档章节号（如「chat §5.2」），实现时以该仓库为对照基线。协议事实（帧 tag、action 面、schema 版本、默认值）以 `peri-studio-proto` / `server/src/config` 实现为真相来源，本文与实现不一致时以实现为准并回改本文。
 
 ---
@@ -117,6 +117,8 @@ Web 的 Yjs 边界按文档身份拆分。`DocStore` 只拥有 doc identity、v1
 Web 权限面必须完整呈现同一 Control Doc 中全部 `pending_permissions`，不能只显示迭代顺序中的第一项。请求按有效 `expires_at` 升序、再按 `permission_id` 稳定排序；界面一次聚焦一个决策并显示当前位置/总数，用户切换查看不得隐式提交。当前项以 `permission_id` 保持身份，投影插入其他请求时不跳题；当前项消失后才选择同位置的下一项。每个 `permission_id` 的 pending/uncertain 锁相互独立，缺失 id 的畸形投影必须 fail closed，禁止发送空 id 决议。明确未送达且 server 标记 retryable 的失败只允许在原权限卡使用保存的原 `commandId` 与原 decision 重试；超时、断线或 `dispatched` 后结果未知必须继续锁定且不得出现重试按钮。
 
 Web 消息阅读器把滚动/跟随策略与单条消息语义分离：`MessageList` 只拥有文档水合、权限队列、自动吸底与完成播报；`ConversationMessage` 统一拥有 user/system/assistant 角色层级以及 reasoning、Markdown、tool、resource、error、copy 证据层。用户和流式正文保持纯文本，只有已终态的 assistant 正文进入安全 Markdown 渲染；流式动画对辅助技术隐藏，完成状态由列表级原子播报一次。错误证据使用可命名 alert，reasoning 默认折叠，资源只展示 server 投影事实，不推断链接或可执行行为。
+
+长会话的读取与呈现由两个深模块分界：`ChatProjection` 长期观察当前 Chat Doc，以 entry/tool 身份维护索引和结构共享；单条流式更新只重读直接关联的 entry，并保持其他 `ChatEntry` 对象身份稳定。`TranscriptWindow` 只接收稳定 entry id 序列，统一拥有变量高度测量、overscan、异步增高和历史前插后的可见 ID 锚点恢复；`MessageList` 只挂载窗口内行，同时以 `aria-posinset`/`aria-setsize` 暴露全局顺序。上滚阅读时不得因远端前插或 ResizeObserver 测量跳位，吸底状态下则必须随尾部高度变化保持最新内容可见；不得重新引入每帧全文拼接、全量 Markdown 解析或全量消息 DOM。
 
 Web 消息投递恢复由 `message-delivery` module 单一所有：它原子维护一个全局未裁决 submission、按 durable session id 隔离的草稿，以及用户已确认继续但仍未取得精确投影的只读 unknown 证据。接口只暴露单 session 草稿读写以及 command-correlated 的 start/accepted/uncertain/failed/retrying/terminal/acknowledge/reset 领域动作。`start` 必须在模块内部拒绝覆盖未裁决提交；uncertain/failed 只在目标草稿为空时恢复原文，不覆盖用户更新；committed/duplicate 只清除仍等于原文的恢复草稿。`acknowledge` 仅可把 `delivery_unknown` 移入只读证据并释放新消息单飞槽，不得恢复、编辑或重发原 command；精确 `source_command_id` 投影到达后才移除证据。浏览器内只读证据上限为 20 条；容量耗尽时必须 fail-closed，拒绝继续 acknowledge 并保留当前单飞门禁，直到精确投影清除旧证据或身份重置，禁止静默淘汰可能已执行的正文。Composer 不读取整张草稿表，store 不维护第二套 signal/setter 或重实现 correlation。
 
@@ -1144,14 +1146,14 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 |------|--------|------|
 | `AuthGate` + `lib/auth-state` | `/api/auth/session` | 浏览器认证门（principal、read-only policy、失效事件；§3.0） |
 | `ProjectSidebar` + `lib/catalog-actions` | Registry Doc `projects`/`project_sessions`/`chats` | 左栏目录（§3.0：只展示 hub/imported 来源） |
-| `MessageList` / `ConversationMessage` | Chat Doc `entries`/`tool_calls` + Control Doc `active_turn` | 消息视图 + 工具卡片；订阅经 `ysync.subscribe`（§4.2）；双 Doc 水合后才开放输入（§3.0） |
+| `MessageList` / `ConversationMessage` + `lib/ChatProjection` / `TranscriptWindow` | Chat Doc `entries`/`tool_calls` + Control Doc `active_turn` | keyed 增量投影、变量高度窗口化消息视图与工具卡片；订阅经 `ysync.subscribe`（§4.2）；双 Doc 水合后才开放输入（§3.0） |
 | `Composer` + `lib/message-delivery` | Chat Doc + command tracker | 草稿按 `project_session_id` 隔离；投递恢复状态机（§3.0） |
 | `PermissionQueue` / `ElicitationQueue` | Control Doc `pending_permissions` + elicitation 投影 | 权限队列（§3.0 排序/聚焦契约）、结构化追问表单 |
 | `RewindDialog` / `McpPanel` / `TopologyView` / `SessionSearch` / `SettingsDialog` | Control Doc / 查询帧 | rewind 三步流程（§6.2）、MCP 快照、实例拓扑、会话搜索 |
 | `lib/connection-state` + `ErrorCenter` | ws 生命周期 | 连接世代/身份世代、动作门控、持久错误中心（§3.0） |
 | 状态栏 | `keep_alive` / 连接状态 | 连接状态、重连中指示、校准中指示（projection_version，§4.6） |
 
-关键 lib 模块（深模块裁决，§3.0）：`doc-store`（Yjs 边界与连接世代屏障）、`command-tracker`（连接期命令生命周期）、`message-delivery`（投递恢复）、`session-navigator`（逻辑会话导航状态机）、`session-activation`（create/open/restore/quick-start façade）、`catalog-actions`（目录动作策略）、`ws-client`/`protocol`（传输与 wire 解码边界）。
+关键 lib 模块（深模块裁决，§3.0）：`doc-store`（Yjs 边界与连接世代屏障）、`chat-projection`（按 entry/tool 身份增量读取）、`transcript-window`（变量高度窗口与锚点）、`command-tracker`（连接期命令生命周期）、`message-delivery`（投递恢复）、`session-navigator`（逻辑会话导航状态机）、`session-activation`（create/open/restore/quick-start façade）、`catalog-actions`（目录动作策略）、`ws-client`/`protocol`（传输与 wire 解码边界）。
 
 ### 10.3 断线恢复
 

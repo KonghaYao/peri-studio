@@ -4,11 +4,14 @@ import '../styles.css';
 import './fixture.css';
 import { AppShell } from '../panel/components/AppShell';
 import { Toasts } from '../panel/components/Toasts';
-import { DEFAULT_VISUAL_SCENARIO, installVisualScenario, setVisualFilePreview, visualScenarios } from './scenarios';
+import { DEFAULT_VISUAL_SCENARIO, installVisualScenario, setVisualFilePreview, setVisualTranscriptCount, visualScenarios } from './scenarios';
 
 declare global {
   interface Window {
-    __PERI_VISUAL_FIXTURE__?: { setFilePreview: typeof setVisualFilePreview };
+    __PERI_VISUAL_FIXTURE__?: {
+      setFilePreview: typeof setVisualFilePreview;
+      setTranscriptCount: typeof setVisualTranscriptCount;
+    };
   }
 }
 
@@ -16,7 +19,10 @@ const selected = new URLSearchParams(window.location.search).get('scenario') || 
 
 function VisualFixture() {
   const installed = installVisualScenario(selected);
-  window.__PERI_VISUAL_FIXTURE__ = { setFilePreview: setVisualFilePreview };
+  window.__PERI_VISUAL_FIXTURE__ = {
+    setFilePreview: setVisualFilePreview,
+    setTranscriptCount: setVisualTranscriptCount,
+  };
   onCleanup(() => {
     delete window.__PERI_VISUAL_FIXTURE__;
     installed.dispose();

@@ -8,6 +8,7 @@ export const visualContract = () => {
   const dialog = document.querySelector('.ui-dialog-backdrop');
   const toast = document.querySelector('.ui-toast-viewport');
   const messageViewport = document.querySelector('.message-list-scroll');
+  const transcriptItems = [...document.querySelectorAll('[role="listitem"][aria-setsize]')];
   const rect = shell?.getBoundingClientRect();
   return {
     fixture: document.title === 'Peri Studio UI 状态验收台',
@@ -20,6 +21,7 @@ export const visualContract = () => {
     projectCount: document.querySelectorAll('.project-group').length,
     sessionCount: document.querySelectorAll('.session-row').length,
     messageCount: document.querySelectorAll('.conversation-message').length,
+    messageTotal: Math.max(0, ...transcriptItems.map((item) => Number(item.getAttribute('aria-setsize')) || 0)),
     permissionCount: document.querySelectorAll('.permission-request').length,
     elicitationCount: document.querySelectorAll('.elicitation-card').length,
     permissionQueueLabel: document.querySelector('.permission-queue')?.getAttribute('aria-label') || null,

@@ -133,7 +133,7 @@ test('MessageList delegates entry semantics through stable entry-id slots to one
   const list = readFileSync(join(components, 'MessageList.tsx'), 'utf8');
   const message = readFileSync(join(components, 'ConversationMessage.tsx'), 'utf8');
   assert.match(list, /const chatEntryIds = createMemo\(\(\) => chatEntries\(\)\.map\(\(entry\) => entry\.id\)\)/);
-  assert.match(list, /<ConversationMessage entry=\{\(\) => chatEntriesById\(\)\.get\(id\)!\} \/>/);
+  assert.match(list, /<Show when=\{chatEntries\(\)\[globalIndex\(\)\]\}>\{\(entry\) => <ConversationMessage entry=\{entry\} \/>\}<\/Show>/);
   assert.doesNotMatch(list, /function MessageBubble|<Markdown|<ToolCallCard/);
   assert.match(message, /conversation-message--\$\{role\(\)\}/);
   assert.match(message, /role="alert" aria-label="Message error"/);

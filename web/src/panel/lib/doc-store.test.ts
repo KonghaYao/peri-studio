@@ -68,6 +68,20 @@ describe('DocStore', () => {
     expect(next.getMap('root').has('secret')).toBe(false);
   });
 
+  it('notifies projection owners before one document or an identity generation is released', () => {
+    const store = new DocStore();
+    const observer = vi.fn();
+    const stop = store.observeRemoval(observer);
+    store.docFor('chat:1');
+
+    store.drop('chat:1');
+    store.clear();
+    stop();
+    store.clear();
+
+    expect(observer.mock.calls).toEqual([['chat:1'], [null]]);
+  });
+
   it('drop() destroys the identity and fences queued renders for that doc', () => {
     const callbacks: FrameRequestCallback[] = [];
     vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((callback) => {
