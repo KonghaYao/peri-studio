@@ -38,7 +38,7 @@
 | 优先级 | 发现 | 后续接口 |
 |---|---|---|
 | P1 | active turn 无正文时视觉上没有 working 状态 | 已增加仅在无可见内容时出现、reduced-motion-safe 的工作状态行 |
-| P1 | cancelled/interrupted/failed 的部分回答无终态标记 | 尾部显示 partial terminal state，复制文案同步 |
+| P1 | cancelled/interrupted/failed 的部分回答无终态标记 | 已在尾部与复制证据同步标记 partial terminal state |
 | P1 | 长对话全量 DOM + 每次 update 全量 Markdown 解析 | 已由 `TranscriptWindow` + keyed `ChatProjection` 闭环 |
 | P2 | 大代码块仍生成无限 token DOM | 字节/行预算，超限纯文本窗口化，完整下载保留 |
 | P1 | 远程图片加载前不展示域名 | 同意前展示规范化 hostname |
@@ -118,7 +118,7 @@
 
 复审固定点为 `888778e`，同时检查仓库 `CLAUDE.md`、权威架构、术语表与本报告。两个独立只读审查均无遗留 P0 或功能阻断；复审发现的未知 reasoning visibility 降级、资源协议模块环、三个遗漏的 coarse 触控目标、未租赁 update 测试缺口、浏览器测试文件超限与报告计数均已闭环。`aggregator.rs` 482 行、`protocol.ts` 457 行、`resource-store.ts` 455 行接近拆分阈值，作为结构预警保留。
 
-最终门禁：Rust workspace 781 项全绿，`cargo fmt --all --check` 与 workspace 全 target Clippy `-D warnings` 通过；Web TypeScript、63 项 Node 契约、547 项 Vitest、production build/boundary 全绿；真实 Chromium 43/43（含 2,000 条有界 transcript、1024 入口、390×430 短视口和真实 coarse pointer 44px）通过；`git diff --check` 通过。Vitest 早期轮次曾出现一次 Dialog inert 时序抖动，隔离复跑与后续完整复跑均通过，未观察到产品回归。
+最终门禁：Rust workspace 781 项全绿，`cargo fmt --all --check` 与 workspace 全 target Clippy `-D warnings` 通过；Web TypeScript、63 项 Node 契约、550 项 Vitest、production build/boundary 全绿；真实 Chromium 43/43（含 2,000 条有界 transcript、1024 入口、390×430 短视口和真实 coarse pointer 44px）通过；`git diff --check` 通过。Vitest 早期轮次曾出现一次 Dialog inert 时序抖动，隔离复跑与后续完整复跑均通过，未观察到产品回归。
 
 后续双轴复审又闭环三项：metadata `accepted` 不再误续墙钟 timeout，只有显式 prompt inactivity lease 可由 runtime progress 续租；acknowledged `delivery_unknown` 证据上限为 20 条，满额后 fail-closed 而不静默淘汰；已确认继续的历史证据改用普通 group 语义，不再作为新 alert 重复打断读屏。
 

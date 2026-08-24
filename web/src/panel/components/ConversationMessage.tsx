@@ -21,6 +21,17 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
   const streaming = () => entry().status === 'streaming';
   const userSegments = createMemo(() => splitSystemReminders(entry().text));
   const label = () => role() === 'user' ? 'Your message' : role() === 'system' ? 'System message' : 'Assistant message';
+  const partialTerminal = createMemo(() => {
+    if (role() !== 'assistant' || !(entry().text || entry().reasoning.length || entry().toolCalls.length || entry().resources.length)) return null;
+    const status = String(entry().status || '').toLowerCase();
+    if (status === 'failed') return { label: 'Response failed', state: 'failed', tone: 'danger' as const };
+    if (status === 'interrupted') return { label: 'Response interrupted', state: 'interrupted', tone: 'warning' as const };
+    if (status === 'cancelled' || status === 'canceled') return { label: 'Response cancelled', state: 'cancelled', tone: 'warning' as const };
+    return null;
+  });
+  const copyText = () => partialTerminal()
+    ? `${entry().text}\n\n[Partial response: ${partialTerminal()!.state}]`
+    : entry().text;
 
   return <article class={`conversation-message conversation-message--${role()} ${role() === 'assistant' ? 'conversation-message--timeline relative pl-0 before:hidden' : ''} flex mb-12 group ${role() === 'user' ? 'justify-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
     <Show when={role() === 'assistant'}><span class="conversation-message__timeline-mark hidden" aria-hidden="true" /></Show>
@@ -51,6 +62,9 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
         <div class="flex items-baseline gap-8"><strong class="text-text-primary text-13 font-semibold">{resource.name || resource.resourceId || 'Resource'}</strong><span class="text-text-muted text-12">{resource.mediaType || 'Unknown type'}</span></div>
         <Show when={resource.resourceId}><code class="block mt-3 wrap-anywhere text-text-muted font-mono text-11 leading-145" title={resource.resourceId || undefined}>{resource.resourceId}</code></Show>
       </section>}</For>
+      <Show when={partialTerminal()}>{(terminal) => <InlineNotice tone={terminal().tone} role="status" title="Partial response">
+        <span>{terminal().label}. The output above may be incomplete.</span>
+      </InlineNotice>}</Show>
       <Show when={entry().error}>{(error) => <InlineNotice tone="danger" role="alert" aria-label="Message error"><code class="whitespace-pre-wrap wrap-anywhere font-mono text-12 leading-15">{error().code || 'UNKNOWN'}{error().message ? `: ${error().message}` : ''}</code></InlineNotice>}</Show>
       <Show when={role() === 'user' && entry().deliveryState === 'delivery_unknown'}>
         <InlineNotice tone="warning" role="alert" title="Delivery result unknown">
@@ -62,7 +76,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
           <span>The server confirmed ACP did not run this message. Copy it and resend.</span>
         </InlineNotice>
       </Show>
-      <Show when={role() === 'assistant' && entry().text && !streaming()}><div class="flex items-center"><CopyButton size="compact" text={entry().text} label="Copy answer" /></div></Show>
+      <Show when={role() === 'assistant' && entry().text && !streaming()}><div class="flex items-center"><CopyButton size="compact" text={copyText()} label="Copy answer" /></div></Show>
     </div>
   </article>;
 }

@@ -36,6 +36,24 @@ describe('ConversationMessage', () => {
     expect(writeText).toHaveBeenCalledWith('## Result\n\n`cargo test` passed.');
   });
 
+  it('marks interrupted output as partial in both the reader and clipboard evidence', () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    render(() => <ConversationMessage entry={entry({ status: 'interrupted', text: 'Incomplete result' })} />);
+
+    const partial = screen.getByRole('status');
+    expect(partial).toHaveTextContent('Response interrupted. The output above may be incomplete.');
+    fireEvent.click(screen.getByRole('button', { name: 'Copy answer' }));
+    expect(writeText).toHaveBeenCalledWith('Incomplete result\n\n[Partial response: interrupted]');
+  });
+
+  it.each(['cancelled', 'failed'])('labels %s partial output with its terminal state', (status) => {
+    render(() => <ConversationMessage entry={entry({ status, text: 'Partial output' })} />);
+    expect(screen.getByLabelText('Assistant message')).toHaveTextContent(
+      `Response ${status === 'cancelled' ? 'cancelled' : 'failed'}. The output above may be incomplete.`,
+    );
+  });
+
   it('renders streaming assistant Markdown without exposing incomplete syntax', () => {
     const view = render(() => <ConversationMessage entry={entry({ status: 'streaming', text: '**partial' })} />);
     const message = screen.getByLabelText('Assistant message');
