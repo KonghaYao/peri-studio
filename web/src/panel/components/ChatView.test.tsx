@@ -111,7 +111,7 @@ describe('ChatView feedback', () => {
       createdAt: null, fields: [],
     }]);
     state.permissions.mockReturnValue([{
-      permissionId: 'permission-1', turnId: 'turn-1', toolCallId: 'tool-1', title: 'Edit file',
+      queueKey: 'permission-1', permissionId: 'permission-1', turnId: 'turn-1', toolCallId: 'tool-1', title: 'Edit file',
       description: null, options: ['allowOnce', 'deny'], status: 'pending', decision: null,
     }]);
     render(() => <ChatView />);

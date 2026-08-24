@@ -1,5 +1,6 @@
-import { For, Show, createEffect, createSignal, createUniqueId } from 'solid-js';
+import { For, Show, createSignal, createUniqueId } from 'solid-js';
 import type { PendingElicitation } from '../lib/control-view';
+import { createIdentitySelection } from '../lib/identity-selection';
 import type { ElicitationAnswer } from '../lib/protocol';
 import { Button, Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel, Icon, IconButton, RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel, Textarea } from '../../components/ui';
 
@@ -16,27 +17,23 @@ interface Props {
 
 /** ACP elicitation/create 共用单个问题面板，通过页眉导航避免并发请求竞争焦点。 */
 export function ElicitationQueue(props: Props) {
-  const [currentIndex, setCurrentIndex] = createSignal(0);
   const [drafts, setDrafts] = createSignal<Record<string, Record<string, ElicitationAnswer>>>({});
-  const current = () => props.elicitations[currentIndex()];
-  createEffect(() => {
-    const lastIndex = Math.max(0, props.elicitations.length - 1);
-    if (currentIndex() > lastIndex) setCurrentIndex(lastIndex);
-  });
-  return <Show when={current()} keyed>{(item) =>
-    <AskUserQuestionDialog
-      elicitation={item}
-      busy={item.status === 'responding' || !!props.responding[item.elicitationId]}
+  const selection = createIdentitySelection(() => props.elicitations, (item) => item.elicitationId);
+  return <Show when={selection.current()?.elicitationId} keyed>{(elicitationId) => {
+    const item = () => selection.current()!;
+    return <AskUserQuestionDialog
+      elicitation={item()}
+      busy={item().status === 'responding' || !!props.responding[elicitationId]}
       readOnly={props.readOnly}
-      currentIndex={currentIndex()}
+      currentIndex={selection.index()}
       total={props.elicitations.length}
-      initialAnswers={drafts()[item.elicitationId] ?? {}}
-      onDraft={(answers) => setDrafts((current) => ({ ...current, [item.elicitationId]: answers }))}
-      onPrevious={() => setCurrentIndex((index) => Math.max(0, index - 1))}
-      onNext={() => setCurrentIndex((index) => Math.min(props.elicitations.length - 1, index + 1))}
+      initialAnswers={drafts()[elicitationId] ?? {}}
+      onDraft={(answers) => setDrafts((current) => ({ ...current, [elicitationId]: answers }))}
+      onPrevious={() => selection.select(selection.index() - 1)}
+      onNext={() => selection.select(selection.index() + 1)}
       onRespond={props.onRespond}
     />
-  }</Show>;
+  }}</Show>;
 }
 
 function AskUserQuestionDialog(props: {
@@ -117,36 +114,43 @@ function AskUserQuestionDialog(props: {
       <div id={bodyId} class="ui-scrollbar elicitation-card__body max-h-300 overflow-y-auto px-14 pt-13 pb-5 max-narrow:px-12">
         <p class="mt-0 mb-11 text-text-primary text-14 font-550 leading-155">{props.elicitation.message}</p>
         <div class="grid">
-          <For each={props.elicitation.fields}>{(field) =>
+          <For each={props.elicitation.fields.map((field) => field.id)}>{(fieldId) => {
+            const field = () => props.elicitation.fields.find((candidate) => candidate.id === fieldId)!;
+            return (
             <fieldset class="elicitation-field min-w-0 m-0 py-10 border-0 border-t border-divider first:border-t-0 first:pt-0 last:pb-0">
-              <legend class="p-0 text-text-secondary text-11 font-600">{field.title}{field.required ? <span class="text-text-muted" aria-label="Required"> *</span> : null}</legend>
-              <Show when={field.description}><p class="mt-3 mb-7 text-text-muted text-11 leading-15">{field.description}</p></Show>
-              <Show when={field.kind === 'text'}>
-                <Textarea variant="bare" class="mt-7 min-h-58! w-full resize-y rounded-10 border border-divider bg-surface-muted px-10 py-8 text-12 leading-18 text-text-primary outline-none focus-visible:border-border-strong focus-visible:outline-none" rows={2} maxlength={4096} aria-label={field.title} required={field.required} disabled={locked()} value={typeof answers()[field.id] === 'string' ? answers()[field.id] as string : ''} onInput={(event) => update(field.id, event.currentTarget.value)} />
+              <legend class="p-0 text-text-secondary text-11 font-600">{field().title}{field().required ? <span class="text-text-muted" aria-label="Required"> *</span> : null}</legend>
+              <Show when={field().description}><p class="mt-3 mb-7 text-text-muted text-11 leading-15">{field().description}</p></Show>
+              <Show when={field().kind === 'text'}>
+                <Textarea variant="bare" class="mt-7 min-h-58! w-full resize-y rounded-10 border border-divider bg-surface-muted px-10 py-8 text-12 leading-18 text-text-primary outline-none focus-visible:border-border-strong focus-visible:outline-none" rows={2} maxlength={4096} aria-label={field().title} required={field().required} disabled={locked()} value={typeof answers()[fieldId] === 'string' ? answers()[fieldId] as string : ''} onInput={(event) => update(fieldId, event.currentTarget.value)} />
               </Show>
-              <Show when={field.kind === 'single_select'}>
-                <RadioGroup aria-label={field.title} value={typeof answers()[field.id] === 'string' ? answers()[field.id] as string : ''} required={field.required} disabled={locked()} onChange={(value) => update(field.id, value)} class="elicitation-options grid gap-2 mt-6">
-                  <For each={field.options}>{(option, index) => <RadioGroupItem value={option.value} class="elicitation-option group flex min-h-36 items-center gap-9 px-7 py-6 border-0 rounded-8 bg-transparent cursor-pointer hover:bg-hover data-[checked]:bg-selected pointer-coarse:min-h-44">
+              <Show when={field().kind === 'single_select'}>
+                <RadioGroup aria-label={field().title} value={typeof answers()[fieldId] === 'string' ? answers()[fieldId] as string : ''} required={field().required} disabled={locked()} onChange={(value) => update(fieldId, value)} class="elicitation-options grid gap-2 mt-6">
+                  <For each={field().options.map((option) => option.value)}>{(optionValue, index) => {
+                    const option = () => field().options.find((candidate) => candidate.value === optionValue)!;
+                    return <RadioGroupItem value={optionValue} class="elicitation-option group flex min-h-36 items-center gap-9 px-7 py-6 border-0 rounded-8 bg-transparent cursor-pointer hover:bg-hover data-[checked]:bg-selected pointer-coarse:min-h-44">
                     <RadioGroupItemInput />
-                    <RadioGroupItemLabel class="flex min-w-0 flex-1 items-baseline gap-8 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-18 shrink-0 items-center justify-center rounded-5 bg-surface-muted text-text-muted text-10 font-650 group-data-[checked]:bg-text-primary group-data-[checked]:text-surface">{String.fromCharCode(65 + index())}</span><span class="min-w-0 text-12 leading-17"><strong class="font-550 text-text-primary">{option.label}</strong><Show when={option.description}><small class="text-text-muted"> — {option.description}</small></Show></span></RadioGroupItemLabel>
+                    <RadioGroupItemLabel class="flex min-w-0 flex-1 items-baseline gap-8 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-18 shrink-0 items-center justify-center rounded-5 bg-surface-muted text-text-muted text-10 font-650 group-data-[checked]:bg-text-primary group-data-[checked]:text-surface">{String.fromCharCode(65 + index())}</span><span class="min-w-0 text-12 leading-17"><strong class="font-550 text-text-primary">{option().label}</strong><Show when={option().description}><small class="text-text-muted"> — {option().description}</small></Show></span></RadioGroupItemLabel>
                     <RadioGroupItemControl class="ui-radio-control size-14!" />
-                  </RadioGroupItem>}</For>
+                  </RadioGroupItem>;
+                  }}</For>
                 </RadioGroup>
               </Show>
-              <Show when={field.kind === 'multi_select'}>
+              <Show when={field().kind === 'multi_select'}>
                 <div class="elicitation-options grid gap-2 mt-6">
-                  <For each={field.options}>{(option, index) => {
-                    const selected = () => Array.isArray(answers()[field.id]) ? answers()[field.id] as string[] : [];
-                    return <Checkbox checked={selected().includes(option.value)} disabled={locked()} onChange={(checked) => update(field.id, checked ? [...selected(), option.value] : selected().filter((value) => value !== option.value))} class="elicitation-option group flex min-h-36 items-center gap-9 px-7 py-6 border-0 rounded-8 bg-transparent cursor-pointer hover:bg-hover data-[checked]:bg-selected pointer-coarse:min-h-44">
+                  <For each={field().options.map((option) => option.value)}>{(optionValue, index) => {
+                    const option = () => field().options.find((candidate) => candidate.value === optionValue)!;
+                    const selected = () => Array.isArray(answers()[fieldId]) ? answers()[fieldId] as string[] : [];
+                    return <Checkbox checked={selected().includes(optionValue)} disabled={locked()} onChange={(checked) => update(fieldId, checked ? [...selected(), optionValue] : selected().filter((value) => value !== optionValue))} class="elicitation-option group flex min-h-36 items-center gap-9 px-7 py-6 border-0 rounded-8 bg-transparent cursor-pointer hover:bg-hover data-[checked]:bg-selected pointer-coarse:min-h-44">
                       <CheckboxInput />
-                      <CheckboxLabel class="flex min-w-0 flex-1 items-baseline gap-8 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-18 shrink-0 items-center justify-center rounded-5 bg-surface-muted text-text-muted text-10 font-650 group-data-[checked]:bg-text-primary group-data-[checked]:text-surface">{String.fromCharCode(65 + index())}</span><span class="min-w-0 text-12 leading-17"><strong class="font-550 text-text-primary">{option.label}</strong><Show when={option.description}><small class="text-text-muted"> — {option.description}</small></Show></span></CheckboxLabel>
+                      <CheckboxLabel class="flex min-w-0 flex-1 items-baseline gap-8 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-18 shrink-0 items-center justify-center rounded-5 bg-surface-muted text-text-muted text-10 font-650 group-data-[checked]:bg-text-primary group-data-[checked]:text-surface">{String.fromCharCode(65 + index())}</span><span class="min-w-0 text-12 leading-17"><strong class="font-550 text-text-primary">{option().label}</strong><Show when={option().description}><small class="text-text-muted"> — {option().description}</small></Show></span></CheckboxLabel>
                       <CheckboxControl class="ui-checkbox-control size-14!" />
                     </Checkbox>;
                   }}</For>
                 </div>
               </Show>
             </fieldset>
-          }</For>
+            );
+          }}</For>
         </div>
         <Show when={validation()}><p class="mt-9 text-11 leading-15 text-danger" role="alert">{validation()}</p></Show>
         <Show when={props.busy}><p class="mt-9 text-11 leading-15 text-text-muted" role="status">Submitting…</p></Show>

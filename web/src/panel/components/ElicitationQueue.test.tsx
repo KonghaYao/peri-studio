@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
+import { createSignal } from 'solid-js';
 import { describe, expect, it, vi } from 'vitest';
 import type { PendingElicitation } from '../lib/control-view';
 import { ElicitationQueue } from './ElicitationQueue';
@@ -12,6 +13,16 @@ const item: PendingElicitation = {
     { id: 'features', title: 'Features', description: null, kind: 'multi_select', required: false, options: [{ value: 'tests', label: 'Tests', description: null }, { value: 'docs', label: 'Docs', description: null }] },
   ],
 };
+
+function rebuild(value: PendingElicitation): PendingElicitation {
+  return {
+    ...value,
+    fields: value.fields.map((field) => ({
+      ...field,
+      options: field.options.map((option) => ({ ...option })),
+    })),
+  };
+}
 
 describe('ElicitationQueue', () => {
   it('renders ACP elicitation inline and submits typed answers', async () => {
@@ -66,6 +77,48 @@ describe('ElicitationQueue', () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Previous question' }));
     expect(screen.getByText('How should Peri continue?')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Detail' })).toHaveValue('Keep my draft');
+    expect(respond).not.toHaveBeenCalled();
+  });
+
+  it('keeps the selected question, draft, and focus when another request is inserted before it', async () => {
+    const respond = vi.fn();
+    const second = { ...item, elicitationId: 'e2', message: 'Second question' };
+    const inserted = { ...item, elicitationId: 'e0', message: 'Inserted question' };
+    const [items, setItems] = createSignal([item, second]);
+    render(() => <ElicitationQueue elicitations={items()} responding={{}} readOnly={false} onRespond={respond} />);
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Next question' }));
+    const input = screen.getByRole('textbox', { name: 'Detail' });
+    const radio = screen.getByRole('radio', { name: 'Safe' });
+    const checkbox = screen.getByRole('checkbox', { name: 'Tests' });
+    await fireEvent.input(input, { target: { value: 'Draft for the second question' } });
+    input.focus();
+    setItems([rebuild(inserted), rebuild(item), rebuild(second)]);
+
+    expect(screen.getByText('Second question')).toBeInTheDocument();
+    expect(screen.queryByText('How should Peri continue?')).not.toBeInTheDocument();
+    expect(screen.getByText('3 / 3')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Detail' })).toBe(input);
+    expect(screen.getByRole('radio', { name: 'Safe' })).toBe(radio);
+    expect(screen.getByRole('checkbox', { name: 'Tests' })).toBe(checkbox);
+    expect(input).toHaveValue('Draft for the second question');
+    expect(input).toHaveFocus();
+    expect(respond).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the same queue position when the selected request disappears', async () => {
+    const respond = vi.fn();
+    const second = { ...item, elicitationId: 'e2', message: 'Second question' };
+    const third = { ...item, elicitationId: 'e3', message: 'Third question' };
+    const [items, setItems] = createSignal([item, second, third]);
+    render(() => <ElicitationQueue elicitations={items()} responding={{}} readOnly={false} onRespond={respond} />);
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Next question' }));
+    expect(screen.getByText('Second question')).toBeInTheDocument();
+    setItems([item, third]);
+
+    expect(screen.getByText('Third question')).toBeInTheDocument();
+    expect(screen.getByText('2 / 2')).toBeInTheDocument();
     expect(respond).not.toHaveBeenCalled();
   });
 

@@ -190,7 +190,7 @@ describe('renderControl permission projection', () => {
       permissions.set(id, permission);
     }
 
-    expect(renderControl(doc).pendingPermissions.map((item) => item.permissionId)).toEqual(['pending']);
+    expect(renderControl(doc).pendingPermissions.map((item) => [item.queueKey, item.permissionId])).toEqual([['pending', 'pending']]);
     expect(permissions.size).toBe(3);
   });
 

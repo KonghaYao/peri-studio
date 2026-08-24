@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PermissionRequestCard } from './PermissionRequestCard';
 
 const permission = {
-  permissionId: 'permission-123456789', turnId: 'turn-1', toolCallId: 'tool-123456789',
+  queueKey: 'permission-123456789', permissionId: 'permission-123456789', turnId: 'turn-1', toolCallId: 'tool-123456789',
   title: 'Run shell command', description: "Read the current project's Git status", options: ['allowOnce', 'allowSession', 'deny'] as Array<'allowOnce' | 'allowSession' | 'deny'>, status: 'pending',
   expiresAt: '2099-08-13T12:00:00Z', decision: null,
   optionIds: { allowOnce: 'allow-once', allowSession: 'allow-session', deny: 'reject-once' },

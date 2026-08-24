@@ -82,6 +82,7 @@ export interface AgentCommandInfo {
 }
 export interface ActiveTurnInfo { turnId: string | null; turnStatus: string | null; updatedAt: string | null }
 export interface PendingPermission {
+  queueKey: string;
   permissionId: string | null;
   turnId: string | null;
   toolCallId: string | null;
@@ -269,7 +270,7 @@ export function renderControl(doc: Y.Doc): ControlView {
     };
   }
 
-  asMap(root.get('pending_permissions'))?.forEach((value) => {
+  asMap(root.get('pending_permissions'))?.forEach((value, queueKey) => {
     const permission = asMap(value);
     if (!permission || getStr(permission, 'status') !== 'pending') return;
     const options = (asArray(permission.get('options'))?.toArray() ?? [])
@@ -282,6 +283,7 @@ export function renderControl(doc: Y.Doc): ControlView {
     })) as PendingPermission['optionIds'] : undefined;
     const rawExpiresAt = permission.get('expires_at');
     result.pendingPermissions.push({
+      queueKey,
       permissionId: getStr(permission, 'permission_id'),
       turnId: getStr(permission, 'turn_id'),
       toolCallId: getStr(permission, 'tool_call_id'),

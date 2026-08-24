@@ -151,8 +151,8 @@ for (const entry of entries.slice(2)) {
 
 const permissionDeadline = (offsetMinutes: number) => new Date(VISUAL_NOW + offsetMinutes * 60_000).toISOString();
 const permissions: PendingPermission[] = [
-  { permissionId: 'permission-write', turnId: 'turn-stream', toolCallId: 'tool-write', title: 'Modify workspace file', description: 'Agent requests an update to the Peri Studio Web visual regression scenario.', options: ['allowOnce', 'allowSession', 'deny'], status: 'pending', expiresAt: permissionDeadline(5), decision: null },
-  { permissionId: 'permission-command', turnId: 'turn-stream', toolCallId: 'tool-command', title: 'Run test command', description: 'Runs bun run test without accessing data outside the workspace.', options: ['allowSession', 'deny'], status: 'pending', expiresAt: permissionDeadline(6), decision: null },
+  { queueKey: 'permission-write', permissionId: 'permission-write', turnId: 'turn-stream', toolCallId: 'tool-write', title: 'Modify workspace file', description: 'Agent requests an update to the Peri Studio Web visual regression scenario.', options: ['allowOnce', 'allowSession', 'deny'], status: 'pending', expiresAt: permissionDeadline(5), decision: null },
+  { queueKey: 'permission-command', permissionId: 'permission-command', turnId: 'turn-stream', toolCallId: 'tool-command', title: 'Run test command', description: 'Runs bun run test without accessing data outside the workspace.', options: ['allowSession', 'deny'], status: 'pending', expiresAt: permissionDeadline(6), decision: null },
 ];
 
 const elicitations: NonNullable<ControlView['pendingElicitations']> = [{

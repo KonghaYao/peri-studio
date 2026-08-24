@@ -6,7 +6,7 @@ import type { PermissionDecisionState } from '../lib/permission-delivery';
 import { PermissionQueue } from './PermissionQueue';
 
 function permission(id: string, title: string): PendingPermission {
-  return { permissionId: id, turnId: 'turn-1', toolCallId: `tool-${id}`, title, description: null, options: ['allowOnce', 'deny'], optionIds: { allowOnce: `${id}-allow`, deny: `${id}-reject` }, status: 'pending', decision: null };
+  return { queueKey: id, permissionId: id, turnId: 'turn-1', toolCallId: `tool-${id}`, title, description: null, options: ['allowOnce', 'deny'], optionIds: { allowOnce: `${id}-allow`, deny: `${id}-reject` }, status: 'pending', decision: null };
 }
 
 describe('PermissionQueue', () => {
@@ -31,6 +31,25 @@ describe('PermissionQueue', () => {
 
     expect(screen.getByText('Second item')).toBeInTheDocument();
     expect(screen.getByLabelText('Pending permission requests, 3 total')).toHaveTextContent('3 / 3');
+  });
+
+  it('keeps a malformed request selected by its projection key without enabling a decision', () => {
+    const malformed = { ...permission('internal-id', 'Malformed request'), queueKey: 'outer-malformed', permissionId: null };
+    const [items, setItems] = createSignal([permission('p1', 'First item'), malformed]);
+    const resolve = vi.fn();
+    render(() => <PermissionQueue permissions={items()} decisions={new Map()} readOnly={false} onResolve={resolve} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Next permission' }));
+
+    const card = screen.getByText('Malformed request').closest('.permission-request');
+    expect(card).not.toBeNull();
+    setItems([permission('p0', 'Prepended item'), permission('p1', 'First item'), { ...malformed }]);
+
+    expect(screen.getByText('Malformed request')).toBeInTheDocument();
+    expect(screen.getByText('Malformed request').closest('.permission-request')).toBe(card);
+    expect(screen.getByLabelText('Pending permission requests, 3 total')).toHaveTextContent('3 / 3');
+    expect(screen.getByRole('button', { name: /Allow once/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Deny' })).toBeDisabled();
+    expect(resolve).not.toHaveBeenCalled();
   });
 
   it('advances predictably when the selected request disappears', () => {

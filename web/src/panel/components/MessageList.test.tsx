@@ -274,8 +274,8 @@ describe('MessageList hydration', () => {
   it('exposes every simultaneous permission request in one navigable queue', () => {
     setRuntimeDocsState({ chat: true, control: true });
     setPermissions([
-      { permissionId: 'p1', turnId: 't1', toolCallId: 'tool-1', title: 'Read file', description: null, options: ['allowOnce', 'deny'], status: 'pending', decision: null },
-      { permissionId: 'p2', turnId: 't1', toolCallId: 'tool-2', title: 'Run command', description: null, options: ['allowOnce', 'deny'], status: 'pending', decision: null },
+      { queueKey: 'p1', permissionId: 'p1', turnId: 't1', toolCallId: 'tool-1', title: 'Read file', description: null, options: ['allowOnce', 'deny'], status: 'pending', decision: null },
+      { queueKey: 'p2', permissionId: 'p2', turnId: 't1', toolCallId: 'tool-2', title: 'Run command', description: null, options: ['allowOnce', 'deny'], status: 'pending', decision: null },
     ]);
     render(() => <MessageList />);
 
