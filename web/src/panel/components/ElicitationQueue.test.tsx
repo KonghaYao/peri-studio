@@ -27,7 +27,7 @@ function rebuild(value: PendingElicitation): PendingElicitation {
 describe('ElicitationQueue', () => {
   it('renders ACP elicitation inline and submits typed answers', async () => {
     const respond = vi.fn();
-    render(() => <ElicitationQueue elicitations={[item]} responding={{}} readOnly={false} onRespond={respond} />);
+    render(() => <ElicitationQueue elicitations={[item]} responses={{}} readOnly={false} onRefreshStatus={vi.fn()} onDismissUncertain={vi.fn()} onRespond={respond} />);
     expect(screen.getByRole('region', { name: 'Agent question' })).toBeInTheDocument();
     expect(screen.queryByText('Input needed')).not.toBeInTheDocument();
     expect(screen.getByText('Questions')).toBeInTheDocument();
@@ -43,7 +43,7 @@ describe('ElicitationQueue', () => {
 
   it('maps skip and close to distinct ACP actions', async () => {
     const respond = vi.fn();
-    const view = render(() => <ElicitationQueue elicitations={[item]} responding={{}} readOnly={false} onRespond={respond} />);
+    const view = render(() => <ElicitationQueue elicitations={[item]} responses={{}} readOnly={false} onRefreshStatus={vi.fn()} onDismissUncertain={vi.fn()} onRespond={respond} />);
     await fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
     expect(respond).toHaveBeenLastCalledWith('e1', 'decline');
     await fireEvent.click(screen.getByRole('button', { name: 'Cancel question' }));
@@ -53,7 +53,7 @@ describe('ElicitationQueue', () => {
 
   it('collapses the question body without resolving it', async () => {
     const respond = vi.fn();
-    render(() => <ElicitationQueue elicitations={[item]} responding={{}} readOnly={false} onRespond={respond} />);
+    render(() => <ElicitationQueue elicitations={[item]} responses={{}} readOnly={false} onRefreshStatus={vi.fn()} onDismissUncertain={vi.fn()} onRespond={respond} />);
     await fireEvent.click(screen.getByRole('button', { name: 'Collapse questions' }));
     expect(screen.queryByText('How should Peri continue?')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Expand questions' })).toHaveAttribute('aria-expanded', 'false');
@@ -63,7 +63,7 @@ describe('ElicitationQueue', () => {
   it('navigates concurrent requests without resolving them', async () => {
     const respond = vi.fn();
     const second = { ...item, elicitationId: 'e2', message: 'Second question' };
-    render(() => <ElicitationQueue elicitations={[item, second]} responding={{}} readOnly={false} onRespond={respond} />);
+    render(() => <ElicitationQueue elicitations={[item, second]} responses={{}} readOnly={false} onRefreshStatus={vi.fn()} onDismissUncertain={vi.fn()} onRespond={respond} />);
     expect(screen.getByText('How should Peri continue?')).toBeInTheDocument();
     expect(screen.queryByText('Second question')).not.toBeInTheDocument();
     expect(screen.getByText('1 / 2')).toBeInTheDocument();
@@ -85,7 +85,7 @@ describe('ElicitationQueue', () => {
     const second = { ...item, elicitationId: 'e2', message: 'Second question' };
     const inserted = { ...item, elicitationId: 'e0', message: 'Inserted question' };
     const [items, setItems] = createSignal([item, second]);
-    render(() => <ElicitationQueue elicitations={items()} responding={{}} readOnly={false} onRespond={respond} />);
+    render(() => <ElicitationQueue elicitations={items()} responses={{}} readOnly={false} onRefreshStatus={vi.fn()} onDismissUncertain={vi.fn()} onRespond={respond} />);
 
     await fireEvent.click(screen.getByRole('button', { name: 'Next question' }));
     const input = screen.getByRole('textbox', { name: 'Detail' });
@@ -111,7 +111,7 @@ describe('ElicitationQueue', () => {
     const second = { ...item, elicitationId: 'e2', message: 'Second question' };
     const third = { ...item, elicitationId: 'e3', message: 'Third question' };
     const [items, setItems] = createSignal([item, second, third]);
-    render(() => <ElicitationQueue elicitations={items()} responding={{}} readOnly={false} onRespond={respond} />);
+    render(() => <ElicitationQueue elicitations={items()} responses={{}} readOnly={false} onRefreshStatus={vi.fn()} onDismissUncertain={vi.fn()} onRespond={respond} />);
 
     await fireEvent.click(screen.getByRole('button', { name: 'Next question' }));
     expect(screen.getByText('Second question')).toBeInTheDocument();
@@ -124,9 +124,33 @@ describe('ElicitationQueue', () => {
 
   it('locks every response path while delivery is pending', () => {
     const respond = vi.fn();
-    render(() => <ElicitationQueue elicitations={[item]} responding={{ e1: 'command-1' }} readOnly={false} onRespond={respond} />);
+    render(() => <ElicitationQueue elicitations={[item]} responses={{ e1: { commandId: 'command-1', phase: 'pending', dismissed: false } }} readOnly={false} onRefreshStatus={vi.fn()} onDismissUncertain={vi.fn()} onRespond={respond} />);
     expect(screen.getByRole('button', { name: /Continue/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Skip' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cancel question' })).toBeDisabled();
+  });
+
+  it('offers status refresh and local hide without allowing an unknown answer to replay', async () => {
+    const respond = vi.fn();
+    const refresh = vi.fn();
+    const dismiss = vi.fn();
+    render(() => <ElicitationQueue
+      elicitations={[item]}
+      responses={{ e1: { commandId: 'command-1', phase: 'delivery_unknown', dismissed: false } }}
+      readOnly={false}
+      onRefreshStatus={refresh}
+      onDismissUncertain={dismiss}
+      onRespond={respond}
+    />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Answer delivery not confirmed');
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Skip' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancel question' })).toBeDisabled();
+    await fireEvent.click(screen.getByRole('button', { name: 'Refresh status' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Hide question' }));
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(dismiss).toHaveBeenCalledOnce();
+    expect(respond).not.toHaveBeenCalled();
   });
 });

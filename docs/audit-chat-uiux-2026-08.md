@@ -24,6 +24,7 @@
 14. 2,000 条长会话改为 keyed `ChatProjection` 与变量高度 `TranscriptWindow`：流式尾部只重读关联 entry/tool，DOM/Markdown 仅挂载有界窗口，异步增高与历史前插保持可见 ID 锚点；兼容数组视图的轻量 O(n) 顺序装配仍保留，后续 keyed store 可继续消除。
 15. Registry heartbeat 改经 `RegistryProjection` 与 keyed machine 分组结构共享；仅 `last_heartbeat` 变化时 project/session slice、rename row/input DOM、草稿与焦点均保持稳定。
 16. Permission/Elicitation Queue 共用 identity-selection；远端前插请求不再静默换题，当前请求消失才按原位置回退，草稿、焦点和 DOM 身份保持稳定。
+17. Elicitation 一次性回答改由独立 delivery 状态机持有；terminal ACK、已写入后的 action error、超时、断线、`DELIVERY_UNKNOWN` 与刷新后仍为 `responding` 均保持不可重放门禁，用户可重取 Control Doc 或在保留证据后仅本地隐藏；只有 transport 明确未接受 frame 才回滚本地占位。
 
 ## Round 1 — Chat 信息架构与可信度
 
@@ -63,7 +64,7 @@
 | P1 | 权限卡缺少与 toolCallId 绑定的可核验证据 | server 投影脱敏 tool input 摘要 |
 | P1 | `expiresAt` 只排序，UI 不显示或本地禁用 | 已增加秒级倒计时与到期 fail-close；显式畸形期限同样禁用，缺省期限兼容旧投影 |
 | P1 | Elicitation Queue 按数组 index，前插会静默换题 | 已按 elicitationId 保存选择身份，并与 Permission Queue 共用插入/删除回退算法 |
-| P1 | Elicitation `DELIVERY_UNKNOWN` 形成不可恢复锁 | refresh-status + local dismiss，禁止重发原答案 |
+| P1 | Elicitation `DELIVERY_UNKNOWN` 形成不可恢复锁 | 已增加 Control Doc refresh-status 与保留不可重放证据的 local dismiss；刷新后仍从 `responding` 恢复未知锁 |
 
 ## Round 5 — 导航、会话、项目与工作台
 

@@ -22,6 +22,7 @@ import { installPrincipalRole } from '../panel/lib/auth-state';
 import { acquireFixtureClock } from './fixture-clock';
 import { setResourceDiffPreview, setResourceFilePreview, setResourceWorkspace } from '../panel/lib/resource-store';
 import type { ResourceFilePreviewState } from '../panel/lib/resource-preview';
+import { markElicitationResponseUncertain, startElicitationResponse } from '../panel/lib/elicitation-delivery';
 
 export const VISUAL_NOW = Date.parse('2026-08-14T08:00:00+08:00');
 export const DEFAULT_VISUAL_SCENARIO = 'conversation';
@@ -51,6 +52,13 @@ export function setVisualTranscriptCount(count: number): void {
     resources: [],
     error: null,
   })));
+}
+
+/** 浏览器验收桥：模拟原回答已经越过不可重放边界但结果未知。 */
+export function setVisualElicitationUnknown(elicitationId: string): void {
+  const commandId = `visual-unknown-${elicitationId}`;
+  startElicitationResponse(elicitationId, commandId);
+  markElicitationResponseUncertain(commandId, 'delivery_unknown');
 }
 export type VisualScenarioId = typeof VISUAL_SCENARIO_IDS[number];
 export type FixtureControlMode = 'display-only' | 'locally-interactive' | 'production-gated';

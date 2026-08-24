@@ -23,6 +23,7 @@ import { acknowledgeUnknownMessageDelivery, acknowledgedMessageDeliveries, canAc
 import { MessageOutbox } from './MessageOutbox';
 import { replayBoundaryAt, type ReplayBoundary } from '../lib/replay-boundary';
 import { TranscriptWindow } from '../lib/transcript-window';
+import { visibleElicitations } from '../lib/elicitation-delivery';
 
 
 // ── 权限条 ──────────────────────────────────────────────────────────────
@@ -322,7 +323,7 @@ export function MessageList(props: { bottomInset?: number }) {
         }</Show>
       </div>
     </section>
-    <Show when={(!stick() || hasNewContent()) && permissions().length === 0 && elicitations().length === 0}><Button type="button" size="compact" class="jump-latest absolute z-12 left-1/2 -translate-x-1/2 min-h-36 px-13 border border-border-subtle rounded-full bg-surface-translucent text-text-secondary shadow-popover cursor-pointer text-12 backdrop-blur-sm hover:text-text-primary pointer-coarse:min-h-44 pointer-coarse:px-16" style={{ bottom: jumpBottomInset() }} onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button></Show>
+    <Show when={(!stick() || hasNewContent()) && permissions().length === 0 && visibleElicitations(elicitations()).length === 0}><Button type="button" size="compact" class="jump-latest absolute z-12 left-1/2 -translate-x-1/2 min-h-36 px-13 border border-border-subtle rounded-full bg-surface-translucent text-text-secondary shadow-popover cursor-pointer text-12 backdrop-blur-sm hover:text-text-primary pointer-coarse:min-h-44 pointer-coarse:px-16" style={{ bottom: jumpBottomInset() }} onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button></Show>
     </div>
   );
 }

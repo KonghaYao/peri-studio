@@ -1,13 +1,16 @@
 import { For, Show, createSignal, createUniqueId } from 'solid-js';
 import type { PendingElicitation } from '../lib/control-view';
 import { createIdentitySelection } from '../lib/identity-selection';
+import type { ElicitationDeliveryState } from '../lib/elicitation-delivery';
 import type { ElicitationAnswer } from '../lib/protocol';
 import { Button, Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel, Icon, IconButton, RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel, Textarea } from '../../components/ui';
 
 interface Props {
   elicitations: PendingElicitation[];
-  responding: Record<string, string>;
+  responses: Record<string, ElicitationDeliveryState>;
   readOnly: boolean;
+  onRefreshStatus: () => void;
+  onDismissUncertain: (elicitationId: string) => void;
   onRespond: (
     elicitationId: string,
     action: 'accept' | 'decline' | 'cancel',
@@ -23,7 +26,7 @@ export function ElicitationQueue(props: Props) {
     const item = () => selection.current()!;
     return <AskUserQuestionDialog
       elicitation={item()}
-      busy={item().status === 'responding' || !!props.responding[elicitationId]}
+      delivery={props.responses[elicitationId]}
       readOnly={props.readOnly}
       currentIndex={selection.index()}
       total={props.elicitations.length}
@@ -31,6 +34,8 @@ export function ElicitationQueue(props: Props) {
       onDraft={(answers) => setDrafts((current) => ({ ...current, [elicitationId]: answers }))}
       onPrevious={() => selection.select(selection.index() - 1)}
       onNext={() => selection.select(selection.index() + 1)}
+      onRefreshStatus={props.onRefreshStatus}
+      onDismissUncertain={() => props.onDismissUncertain(elicitationId)}
       onRespond={props.onRespond}
     />
   }}</Show>;
@@ -38,7 +43,7 @@ export function ElicitationQueue(props: Props) {
 
 function AskUserQuestionDialog(props: {
   elicitation: PendingElicitation;
-  busy: boolean;
+  delivery?: ElicitationDeliveryState;
   readOnly: boolean;
   currentIndex: number;
   total: number;
@@ -46,13 +51,20 @@ function AskUserQuestionDialog(props: {
   onDraft: (answers: Record<string, ElicitationAnswer>) => void;
   onPrevious: () => void;
   onNext: () => void;
+  onRefreshStatus: () => void;
+  onDismissUncertain: () => void;
   onRespond: Props['onRespond'];
 }) {
   const [answers, setAnswers] = createSignal<Record<string, ElicitationAnswer>>(props.initialAnswers);
   const [validation, setValidation] = createSignal('');
   const [expanded, setExpanded] = createSignal(true);
   const bodyId = `elicitation-body-${createUniqueId()}`;
-  const locked = () => props.busy || props.readOnly;
+  const submitting = () => props.delivery?.phase === 'pending';
+  const confirmed = () => props.delivery?.phase === 'confirmed';
+  const uncertain = () => props.delivery?.phase === 'failed'
+    || props.delivery?.phase === 'uncertain'
+    || props.delivery?.phase === 'delivery_unknown';
+  const locked = () => !!props.delivery || props.elicitation.status === 'responding' || props.readOnly;
   const update = (id: string, value: ElicitationAnswer) => {
     setAnswers((current) => {
       const next = { ...current, [id]: value };
@@ -84,7 +96,7 @@ function AskUserQuestionDialog(props: {
     <form
       class="elicitation-card scroll-mt-12 mb-12 overflow-hidden rounded-16 border border-border-strong bg-surface shadow-float"
       data-elicitation-id={props.elicitation.elicitationId}
-      aria-busy={props.busy ? 'true' : undefined}
+      aria-busy={submitting() ? 'true' : undefined}
       noValidate
       onSubmit={submit}
     >
@@ -153,12 +165,21 @@ function AskUserQuestionDialog(props: {
           }}</For>
         </div>
         <Show when={validation()}><p class="mt-9 text-11 leading-15 text-danger" role="alert">{validation()}</p></Show>
-        <Show when={props.busy}><p class="mt-9 text-11 leading-15 text-text-muted" role="status">Submitting…</p></Show>
+        <Show when={submitting()}><p class="mt-9 text-11 leading-15 text-text-muted" role="status">Submitting…</p></Show>
+        <Show when={confirmed()}><p class="mt-9 text-11 leading-15 text-text-muted" role="status">Answer received. Waiting for server status…</p></Show>
+        <Show when={uncertain()}><div class="mt-10 rounded-10 border border-warning-border bg-surface-muted p-10 text-11 leading-15 text-text-secondary" role="alert">
+          <strong class="block text-warning">{props.delivery?.phase === 'failed' ? 'Answer was not accepted' : 'Answer delivery not confirmed'}</strong>
+          <p class="my-4">Refresh the server status, or hide this question locally. The original answer cannot be sent again.</p>
+          <div class="flex flex-wrap gap-5 pt-3">
+            <Button type="button" size="compact" variant="primary" class="pointer-coarse:min-h-44!" onClick={props.onRefreshStatus}>Refresh status</Button>
+            <Button type="button" size="compact" variant="secondary" class="pointer-coarse:min-h-44!" onClick={props.onDismissUncertain}>Hide question</Button>
+          </div>
+        </div></Show>
         <Show when={props.readOnly}><p class="mt-9 text-11 leading-15 text-text-muted">Read only</p></Show>
       </div>
       <div class="flex items-center justify-end gap-5 px-14 py-10 max-narrow:px-12">
         <Button class="min-h-32! px-10! text-12 max-narrow:min-h-44!" type="button" variant="ghost" disabled={locked()} onClick={() => props.onRespond(props.elicitation.elicitationId, 'decline')}>Skip</Button>
-        <Button class="min-h-32! px-12! rounded-full text-12 max-narrow:min-h-44!" type="submit" variant="primary" busy={props.busy} disabled={locked()}>Continue</Button>
+        <Button class="min-h-32! px-12! rounded-full text-12 max-narrow:min-h-44!" type="submit" variant="primary" busy={submitting()} disabled={locked()}>Continue</Button>
       </div>
       </Show>
     </form>

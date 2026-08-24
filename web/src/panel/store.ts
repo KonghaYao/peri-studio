@@ -35,9 +35,10 @@ import { clearPromptRecoverySelection, handlePromptStatus, promptRecoveryOwnsErr
 import { connectionReady, disconnect, forgetRememberedSession, installConnection, readRememberedSession, rememberSession, resetConnectionState, sendFrame } from './lib/connection';
 import { ERROR_REASONS, persistActionProblem, reportTransportIssue, type PersistentError } from './lib/panel-errors';
 import { sendMessage, type SessionConfigMutation } from './lib/user-actions';
-import { installChatSubscription, reconcileCurrentRuntimeControl, selectChat, sendSubscribe } from './lib/chat-subscription';
+import { installChatSubscription, reconcileCurrentRuntimeControl, refreshCurrentControlProjection, selectChat, sendSubscribe } from './lib/chat-subscription';
 import { installStoreWiring } from './lib/store-installs';
 import { installStoreProjection, type RuntimeDocsState } from './lib/store-projection';
+import { elicitationResponses, resetElicitationResponses } from './lib/elicitation-delivery';
 import {
   handleResourceResult,
   handleResourceUpdate,
@@ -53,7 +54,7 @@ export const [chatEntries, setChatEntries] = createSignal<ChatEntry[]>([]);
 export const [chatHead, setChatHead] = createSignal<ControlView | null>(null);
 export const [permissions, setPermissions] = createSignal<ControlView['pendingPermissions']>([]);
 export const [elicitations, setElicitations] = createSignal<NonNullable<ControlView['pendingElicitations']>>([]);
-export const [elicitationResponses, setElicitationResponses] = createSignal<Record<string, string>>({});
+export { elicitationResponses };
 export const [projects, setProjects] = createSignal<ProjectInfo[]>([]);
 export const [registryHydrated, setRegistryHydrated] = createSignal(false);
 export const [projectSessions, setProjectSessions] = createSignal<ProjectSessionInfo[]>([]);
@@ -124,7 +125,6 @@ installChatSubscription({
   setChatHead,
   setPermissions,
   setElicitations,
-  setElicitationResponses,
   setRuntimeDocsState,
 });
 
@@ -177,8 +177,6 @@ installStoreWiring({
   chatHead,
   sessionConfigMutation,
   setSessionConfigMutation,
-  elicitationResponses,
-  setElicitationResponses,
   sendAction,
   reconcileCurrentRuntimeControl,
   acknowledge: (ack) => commands.acknowledge(ack),
@@ -293,7 +291,7 @@ function clearCurrentSelection(): void {
   setChatHead(null);
   setPermissions([]);
   setElicitations([]);
-  setElicitationResponses({});
+  resetElicitationResponses();
   setRuntimeDocsState({ chat: false, control: false });
   resetMcpState();
   resetRewindState();
@@ -344,7 +342,6 @@ installStoreProjection(
     setChatHead,
     setPermissions,
     setElicitations,
-    setElicitationResponses,
     setProjects,
     setRegistryHydrated,
     setProjectSessions,
@@ -420,7 +417,7 @@ export function resetAuthenticatedSession(): void {
   setChatHead(null);
   setPermissions([]);
   setElicitations([]);
-  setElicitationResponses({});
+  resetElicitationResponses();
   setRuntimeDocsState({ chat: false, control: false });
   setChatStatusSignal({});
   setProjects([]);
@@ -456,7 +453,7 @@ export function navigateProjectSession(sessionId: string, callbacks: OpenSession
 
 // P1 拆分：以下符号迁至 lib/panel-errors 与 lib/user-actions，此处
 // re-export 保持组件与旧调用点的导入路径不变。
-export { selectChat };
+export { refreshCurrentControlProjection, selectChat };
 export {
   dismissPersistentError,
   reportTransportIssue,

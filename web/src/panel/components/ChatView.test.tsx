@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   permissions: vi.fn<() => PendingPermission[]>(() => []),
   projects: vi.fn<() => ProjectInfo[]>(() => []),
   readOnly: vi.fn(() => false),
+  refreshCurrentControlProjection: vi.fn(),
   registryHydrated: vi.fn(() => true),
   respondElicitation: vi.fn(),
   restoringSessionId: vi.fn(() => null as string | null),

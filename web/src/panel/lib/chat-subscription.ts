@@ -12,6 +12,7 @@
 // 生命周期约定：切换/清理时先退订后 drop（WebSocket 顺序保证），释放
 // 旧 doc 的 Y.Doc；registry doc 常驻，永不 drop。
 
+import type { Setter } from 'solid-js';
 import * as H from './protocol';
 import type { DocStore } from './doc-store';
 import { reconcileRuntimeControl } from './runtime-control';
@@ -20,6 +21,7 @@ import { resetMcpState } from './mcp';
 import { resetRewindState } from './rewind-assembly';
 import type { ChatEntry } from './chat-view';
 import type { ControlView } from './control-view';
+import { resetElicitationResponses } from './elicitation-delivery';
 
 export interface ChatSubscriptionDeps {
   /** 选中对话（重连后恢复订阅）；状态归 store 组合根所有。 */
@@ -38,8 +40,7 @@ export interface ChatSubscriptionDeps {
   setChatHead: (head: ControlView | null) => void;
   setPermissions: (permissions: ControlView['pendingPermissions']) => void;
   setElicitations: (items: NonNullable<ControlView['pendingElicitations']>) => void;
-  setElicitationResponses: (responses: Record<string, string>) => void;
-  setRuntimeDocsState: (state: { chat: boolean; control: boolean }) => void;
+  setRuntimeDocsState: Setter<{ chat: boolean; control: boolean }>;
 }
 
 let deps: ChatSubscriptionDeps | null = null;
@@ -95,8 +96,24 @@ export function selectChat(cid: string): void {
   deps!.setChatHead(null);
   deps!.setPermissions([]);
   deps!.setElicitations([]);
-  deps!.setElicitationResponses({});
+  resetElicitationResponses();
   deps!.setRuntimeDocsState({ chat: false, control: false });
   resetMcpState();
   resetRewindState();
+}
+
+/** 丢弃并重取当前 Control Doc；只对账原回答，不创建新业务命令。 */
+export function refreshCurrentControlProjection(): boolean {
+  const currentCid = deps!.getCurrentCid();
+  if (!currentCid) return false;
+  const docId = H.sessionDoc(currentCid);
+  deps!.sendFrame(H.unsubscribe([docId]));
+  deps!.docStore.drop(docId);
+  deps!.setChatHead(null);
+  deps!.setPermissions([]);
+  deps!.setElicitations([]);
+  deps!.setRuntimeDocsState((state) => ({ ...state, control: false }));
+  const sent = deps!.sendFrame(H.subscribe([docId]));
+  if (!sent) deps!.toast('Connection not ready, question status will refresh after reconnect');
+  return sent;
 }

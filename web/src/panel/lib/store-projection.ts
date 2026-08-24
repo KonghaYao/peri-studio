@@ -12,6 +12,7 @@ import { retainLiveRuntimeHints } from './recovery-state';
 import { reconcileMessageProjection } from './message-delivery';
 import { reconcileRuntimeControl } from './runtime-control';
 import { retainProjectedPermissions } from './permission-delivery';
+import { retainProjectedElicitations } from './elicitation-delivery';
 
 export interface RuntimeDocsState { chat: boolean; control: boolean }
 
@@ -20,7 +21,6 @@ interface ProjectionSignals {
   setChatHead: Setter<ControlView | null>;
   setPermissions: Setter<ControlView['pendingPermissions']>;
   setElicitations: Setter<NonNullable<ControlView['pendingElicitations']>>;
-  setElicitationResponses: Setter<Record<string, string>>;
   setProjects: Setter<ProjectInfo[]>;
   setRegistryHydrated: Setter<boolean>;
   setProjectSessions: Setter<ProjectSessionInfo[]>;
@@ -100,10 +100,7 @@ export function installStoreProjection(
       signals.setPermissions(control.pendingPermissions);
       const elicitations = control.pendingElicitations ?? [];
       signals.setElicitations(elicitations);
-      const visible = new Set(elicitations.map((item) => item.elicitationId));
-      signals.setElicitationResponses((current) => Object.fromEntries(
-        Object.entries(current).filter(([id]) => visible.has(id)),
-      ));
+      retainProjectedElicitations(elicitations);
       signals.setRuntimeDocsState((state) => ({ ...state, control: true }));
       retainProjectedPermissions(new Set(control.pendingPermissions
         .map((item) => item.permissionId)

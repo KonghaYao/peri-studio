@@ -13,7 +13,7 @@ import { ChatHeader } from './ChatHeader';
 import { Composer } from './Composer';
 import { MessageList } from './MessageList';
 import { createSignal, onCleanup, onMount, Show } from 'solid-js';
-import { chatHead, elicitationResponses, elicitations, permissions, registryHydrated, respondElicitation, restoringSessionId, selectedSessionId } from '../store';
+import { chatHead, elicitationResponses, elicitations, permissions, refreshCurrentControlProjection, registryHydrated, respondElicitation, restoringSessionId, selectedSessionId } from '../store';
 import { readOnly } from '../lib/auth-state';
 import { LoadingState } from '../../components/ui';
 import { ConnectionProblem } from './ConnectionProblem';
@@ -22,6 +22,7 @@ import { LaunchWorkspace } from './LaunchWorkspace';
 import { AgentActivityRail } from './AgentActivityRail';
 import { AgentPlanPanel } from './AgentPlanPanel';
 import { ElicitationQueue } from './ElicitationQueue';
+import { dismissUncertainElicitation, visibleElicitations } from '../lib/elicitation-delivery';
 
 type ChatViewProps = {
   onOpenNavigation?: () => void;
@@ -66,9 +67,11 @@ export function ChatView(props: ChatViewProps) {
           <div ref={composerStack} class="composer-stack composer-stack--overlay pointer-events-none absolute right-0 bottom-0 left-0 z-20 bg-app-bg [&>*]:pointer-events-auto">
             <Show when={!hasPendingPermission()}>
               <ElicitationQueue
-                elicitations={elicitations()}
-                responding={elicitationResponses()}
+                elicitations={visibleElicitations(elicitations())}
+                responses={elicitationResponses()}
                 readOnly={readOnly()}
+                onRefreshStatus={refreshCurrentControlProjection}
+                onDismissUncertain={dismissUncertainElicitation}
                 onRespond={respondElicitation}
               />
             </Show>

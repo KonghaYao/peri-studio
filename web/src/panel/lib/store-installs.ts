@@ -37,8 +37,6 @@ export interface StoreWiringDeps {
   chatHead: () => ControlView | null;
   sessionConfigMutation: () => SessionConfigMutation | null;
   setSessionConfigMutation: Setter<SessionConfigMutation | null>;
-  elicitationResponses: () => Record<string, string>;
-  setElicitationResponses: Setter<Record<string, string>>;
   sendAction: (frame: ActionFrame, label: string, options?: ActionOptions) => boolean;
   reconcileCurrentRuntimeControl: () => void;
   acknowledge: (ack: Ack) => void;
@@ -68,8 +66,6 @@ export function installStoreWiring(d: StoreWiringDeps): void {
     chatHead: deps.chatHead,
     sessionConfigMutation: deps.sessionConfigMutation,
     setSessionConfigMutation: deps.setSessionConfigMutation,
-    elicitationResponses: deps.elicitationResponses,
-    setElicitationResponses: deps.setElicitationResponses,
     toast: deps.toast,
     sendAction: deps.sendAction,
     hasUncertain: deps.hasUncertain,

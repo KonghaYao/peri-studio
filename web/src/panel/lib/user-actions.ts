@@ -41,6 +41,14 @@ import {
   startPermissionDecision,
   type PermissionDecision,
 } from './permission-delivery';
+import {
+  completeElicitationResponse,
+  elicitationResponses,
+  failElicitationResponse,
+  markElicitationResponseUncertain,
+  rollbackElicitationResponse,
+  startElicitationResponse,
+} from './elicitation-delivery';
 import { persistActionProblem, retryPersistentAction } from './panel-errors';
 import type { DispatchResult } from './command-tracker';
 
@@ -64,8 +72,6 @@ export interface UserActionsDeps {
   chatHead: () => ControlView | null;
   sessionConfigMutation: () => SessionConfigMutation | null;
   setSessionConfigMutation: Setter<SessionConfigMutation | null>;
-  elicitationResponses: () => Record<string, string>;
-  setElicitationResponses: Setter<Record<string, string>>;
   toast: (msg: string) => void;
   sendAction: (frame: ActionFrame, label: string, options?: ActionOptions) => boolean;
   hasUncertain: (commandId: string) => boolean;
@@ -254,28 +260,23 @@ export function respondElicitation(
     return;
   }
   const chatId = deps!.currentCid();
-  if (!chatId || deps!.elicitationResponses()[elicitationId]) return;
+  if (!chatId || elicitationResponses()[elicitationId]) return;
   const frame = H.respondElicitation(chatId, elicitationId, action, answers);
-  deps!.setElicitationResponses((current) => ({ ...current, [elicitationId]: frame.commandId }));
-  deps!.sendAction(frame, 'Answer Peri', {
-    cb: () => deps!.setElicitationResponses((current) => {
-      const next = { ...current };
-      delete next[elicitationId];
-      return next;
-    }),
+  if (!startElicitationResponse(elicitationId, frame.commandId)) return;
+  const sent = deps!.sendAction(frame, 'Answer Peri', {
+    cb: (ack) => completeElicitationResponse(ack.commandId || frame.commandId),
     onError: (error) => {
-      if (error.code !== 'DELIVERY_UNKNOWN') {
-        deps!.setElicitationResponses((current) => {
-          const next = { ...current };
-          delete next[elicitationId];
-          return next;
-        });
-      }
+      if (error.code === 'DELIVERY_UNKNOWN') markElicitationResponseUncertain(frame.commandId, 'delivery_unknown');
+      else failElicitationResponse(frame.commandId);
     },
-    onTimeout: () => persistActionProblem(
-      'Answer result not yet confirmed',
-      'Peri may have already received this answer. The form stays locked to avoid duplicate or contradictory answers; wait for state sync.',
-      frame.commandId,
-    ),
+    onTimeout: () => {
+      markElicitationResponseUncertain(frame.commandId, 'uncertain');
+      persistActionProblem(
+        'Answer result not yet confirmed',
+        'Peri may have already received this answer. Refresh the question status; never submit the answer again.',
+        frame.commandId,
+      );
+    },
   });
+  if (!sent) rollbackElicitationResponse(frame.commandId);
 }
