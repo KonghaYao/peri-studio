@@ -70,7 +70,7 @@ test('prompt recovery is owned by CommandTracker rather than an ad-hoc frame cac
   assert.match(actions, /deps!\.retry\(current\.commandId\)/);
   assert.match(store, /retry: \(commandId\) => commands\.retry\(commandId, sendFrame\)/);
   assert.doesNotMatch(store, /retryableMessageFrame|retryableQuickStartFrame/);
-  assert.match(delivery, /if \(currentSubmission\(\)\) return false/);
+  assert.match(delivery, /if \(messageSubmission\(sessionId\) \|\| messageSubmissionByCommand\(commandId\)\) return false/);
   assert.match(delivery, /sourceCommandIds\.has\(current\.commandId\)/);
   assert.doesNotMatch(delivery, /entry\.text\s*===\s*current\.text|current\.text\s*===\s*entry\.text/);
   assert.doesNotMatch(delivery, /export const composerDrafts/);
@@ -337,7 +337,7 @@ test('terminal action effects have one owner and late acknowledgements cannot re
   const prompt = actions.slice(actions.indexOf('export function sendMessage'), actions.indexOf('export function retryMessageSubmission'));
   assert.equal((activation.match(/failQuickStart\(frame\.commandId/g) || []).length, 1);
   assert.equal((prompt.match(/failMessageDelivery\(frame\.commandId/g) || []).length, 1);
-  assert.match(prompt, /startMessageDelivery\(frame\.commandId, text, sessionId, chatId\)/);
+  assert.match(prompt, /startMessageDelivery\(frame\.commandId, text, sessionId, chatId, draftOwner\)/);
   assert.doesNotMatch(store, /setMessageSubmission|setQuickStartSubmission|composerDrafts|restoreSubmissionDraft/);
 });
 

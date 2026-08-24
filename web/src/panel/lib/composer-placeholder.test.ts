@@ -10,9 +10,7 @@ function base(overrides: Partial<ComposerPlaceholderInput> = {}): ComposerPlaceh
     promptDeliveryReady: true,
     terminal: false,
     turnActive: false,
-    hasSubmission: false,
     submissionForSession: false,
-    submissionInAnotherSession: false,
     ...overrides,
   };
 }
@@ -59,15 +57,15 @@ describe('composerInputState', () => {
   });
 
   it('does not add placeholder copy for current-session confirmation', () => {
-    const state = composerInputState(base({ hasSubmission: true, submissionForSession: true }));
+    const state = composerInputState(base({ submissionForSession: true }));
     expect(state.disabled).toBe(true);
     expect(state.placeholder).toBe('');
   });
 
-  it('leaves cross-session confirmation explanation to its actionable notice', () => {
-    const state = composerInputState(base({ hasSubmission: true, submissionInAnotherSession: true }));
-    expect(state.disabled).toBe(true);
-    expect(state.placeholder).toBe('');
+  it('does not block the selected session for another session confirmation', () => {
+    const state = composerInputState(base());
+    expect(state.disabled).toBe(false);
+    expect(state.placeholder).toBe('Message Agent');
   });
 
   it('is enabled with the default placeholder when everything is ready', () => {

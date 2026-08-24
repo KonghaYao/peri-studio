@@ -12,6 +12,7 @@ const scenarios = [
 const viewports = [
   { width: 1280, height: 800 },
   { width: 1024, height: 768 },
+  { width: 768, height: 768 },
   { width: 390, height: 844 },
 ];
 
@@ -133,7 +134,7 @@ test('migrated surfaces retain their authored computed borders', async ({ page }
   });
 });
 
-test('runtime and recovery status labels use one visible word', async ({ page }) => {
+test('runtime status stays compact while recovery labels disclose trust', async ({ page }) => {
   await page.setViewportSize({ width: 631, height: 800 });
   await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
   await expect(page.locator('.runtime-status')).toHaveCount(0);
@@ -143,12 +144,13 @@ test('runtime and recovery status labels use one visible word', async ({ page })
   await page.goto('/visual-fixture.html?scenario=terminal-readonly', { waitUntil: 'networkidle' });
   await expect(page.locator('.runtime-status')).toHaveText('Crashed');
   const boundaries = await page.locator('.history-boundary > span').allTextContents();
-  expect(boundaries).toContain('Recovered');
-  expect(boundaries.every((label) => /^\S+$/.test(label))).toBe(true);
+  expect(boundaries).toContain('Verified history');
+  expect(boundaries.every((label) => /^(?:Verified|Unverified) history$/.test(label))).toBe(true);
 
   const visibleText = await page.locator('body').innerText();
   expect(visibleText).not.toContain('Run exited abnormally');
   expect(visibleText).not.toContain('Peri-verified recovered history');
+  expect(visibleText).not.toContain('Recovered');
   expect(visibleText).not.toContain('Local server connected');
 });
 
@@ -221,7 +223,7 @@ test('sidebar chrome and composer match the compact input shell', async ({ page 
   expect(geometry.overflowingIcons).toBe(0);
 });
 
-for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 768 }, { width: 390, height: 844 }]) {
+for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 768 }, { width: 768, height: 768 }, { width: 390, height: 844 }]) {
   test(`conversation surfaces share one content rail at ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
@@ -345,7 +347,7 @@ test('desktop sidebar visibly resizes and preserves project navigation', async (
   expect(browserErrors).toEqual([]);
 });
 
-test('mobile drawer preserves machine-bound project creation semantics and nested dialog inertness', async ({ page }) => {
+test('mobile drawer preserves instance-bound project creation semantics and nested dialog inertness', async ({ page }) => {
   const browserErrors = collectBrowserErrors(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
@@ -356,7 +358,7 @@ test('mobile drawer preserves machine-bound project creation semantics and neste
   await expect(page.locator('#app')).toHaveAttribute('aria-hidden');
   const newProject = drawer.getByRole('button', { name: /New project on local unavailable/ });
   await expect(newProject).toBeDisabled();
-  await expect(newProject).toHaveAttribute('aria-label', 'New project on local unavailable: choose a remote directory first; the current API cannot create by machine');
+  await expect(newProject).toHaveAttribute('aria-label', 'New project on local unavailable: choose a remote directory first; the current API cannot create by instance');
 
   await page.keyboard.press('Meta+K');
   const dialog = page.getByRole('dialog', { name: 'Search sessions' });

@@ -44,6 +44,7 @@ pub mod elicitation;
 pub mod factory;
 pub mod normalized;
 pub mod permission;
+mod permission_evidence;
 pub mod registry;
 mod registry_write;
 pub mod session_list;

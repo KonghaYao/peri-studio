@@ -42,8 +42,9 @@ test('authenticated-session cleanup is a complete identity boundary, not reconne
   const store = readFileSync(join(root, 'store.ts'), 'utf8');
   const hook = readFileSync(join(root, 'lib', 'auth-hook.ts'), 'utf8');
   const toastStore = readFileSync(join(root, 'lib', 'toast-store.ts'), 'utf8');
-  const disconnect = store.slice(store.indexOf('export function disconnect()'), store.indexOf('export function resetAuthenticatedSession()'));
-  const reset = store.slice(store.indexOf('export function resetAuthenticatedSession()'), store.indexOf('export function navigateProjectSession'));
+  const resetMarker = 'export function resetAuthenticatedSession';
+  const disconnect = store.slice(store.indexOf('export function disconnect()'), store.indexOf(resetMarker));
+  const reset = store.slice(store.indexOf(resetMarker), store.indexOf('export function navigateProjectSession'));
 
   assert.doesNotMatch(disconnect, /setProjects|setProjectSessions|setChats|store\.clear|toastStore\.clear/);
   for (const statement of [
@@ -68,7 +69,7 @@ test('authenticated-session cleanup is a complete identity boundary, not reconne
   // P0-2：resetAuthenticatedSession 经 deps 注入（lib 不反向依赖 store），
   // 契约断言跟随注入后的调用形式。
   assert.doesNotMatch(hook, /from '\.\.\/store'/);
-  assert.match(hook, /deps\.resetSession\(\);\s*installPrincipalRole\(role\)/);
+  assert.match(hook, /const principal = parsePrincipal\(parsed\.payload\);[\s\S]*?deps\.resetSession\(\{ preserveLocalDrafts: true \}\);\s*installPrincipalRole\(principal\.role, principal\.principalId\)/);
   assert.match(hook, /function handleInvalidation\(event: \{ reason: string \}\)[\s\S]*?deps\.resetSession\(\);[\s\S]*?setState\('signed-out'\)/);
   assert.match(hook, /createEffect\(\(\) => \{[\s\S]*?const event = authInvalidation\(\);[\s\S]*?handleInvalidation\(event\)/);
 });

@@ -265,6 +265,24 @@ pub(crate) fn permission_has_option_ids(pair: &DocPair, permission_id: &str) -> 
         .is_some_and(|permission| permission.get(&txn, "option_ids").is_some())
 }
 
+pub(crate) fn permission_string(
+    pair: &DocPair,
+    permission_id: &str,
+    field: &str,
+) -> Option<String> {
+    let txn = pair.session.transact();
+    chat_writer::root_map_read(&txn)?
+        .get(&txn, "pending_permissions")?
+        .cast::<yrs::MapRef>()
+        .ok()?
+        .get(&txn, permission_id)?
+        .cast::<yrs::MapRef>()
+        .ok()?
+        .get(&txn, field)?
+        .cast::<String>()
+        .ok()
+}
+
 pub(crate) fn active_turn_status(pair: &DocPair) -> Option<TurnStatus> {
     let txn = pair.session.transact();
     let sm = chat_writer::root_map_read(&txn)?

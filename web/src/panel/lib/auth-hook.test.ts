@@ -23,7 +23,7 @@ afterEach(() => {
   clearAuthInvalidation();
 });
 
-function okFetch(payload: unknown = { role: 'full' }, status = 200): ReturnType<typeof vi.fn> {
+function okFetch(payload: unknown = { role: 'full', principalId: 'principal-full-1' }, status = 200): ReturnType<typeof vi.fn> {
   return vi.fn(async () => ({ ok: status < 400, status, json: async () => payload }));
 }
 
@@ -48,6 +48,7 @@ describe('createAuthController', () => {
 
     expect(auth.state()).toBe('signed-in');
     expect(principalRole()).toBe('full');
+    expect(transport.resetAuthenticatedSession).toHaveBeenCalledWith({ preserveLocalDrafts: true });
     expect(transport.connectWithCookie).toHaveBeenCalledOnce();
   });
 
@@ -100,7 +101,7 @@ describe('createAuthController', () => {
 
   it('remembers a full token and connects after a successful login', async () => {
     vi.stubGlobal('fetch', vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      if (init?.method === 'POST') return { ok: true, json: async () => ({ role: 'full' }) };
+      if (init?.method === 'POST') return { ok: true, json: async () => ({ role: 'full', principalId: 'principal-full-1' }) };
       return { ok: false, status: 401 };
     }));
     const auth = makeAuth();
@@ -110,6 +111,7 @@ describe('createAuthController', () => {
     expect(auth.state()).toBe('signed-in');
     expect(auth.token()).toBe('');
     expect(localStorage.getItem('peri_studio_token')).toBe('saved-token');
+    expect(transport.resetAuthenticatedSession).toHaveBeenCalledWith({ preserveLocalDrafts: true });
     expect(transport.connectWithCookie).toHaveBeenCalledOnce();
     expect(authInvalidation()).toBeNull();
   });
@@ -134,7 +136,7 @@ describe('createAuthController', () => {
     expect(auth.state()).toBe('signed-out');
     expect(auth.problem()).toMatchObject({ kind: 'credential' });
 
-    resolveStatus({ ok: true, status: 200, json: async () => ({ role: 'full' }) });
+    resolveStatus({ ok: true, status: 200, json: async () => ({ role: 'full', principalId: 'principal-full-1' }) });
     await pending;
     await Promise.resolve();
 
@@ -146,7 +148,7 @@ describe('createAuthController', () => {
   it('replays a remembered token on init without asking for input', async () => {
     localStorage.setItem('peri_studio_token', 'saved-token');
     const fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      if (init?.method === 'POST') return { ok: true, json: async () => ({ role: 'full' }) };
+      if (init?.method === 'POST') return { ok: true, json: async () => ({ role: 'full', principalId: 'principal-full-1' }) };
       return { ok: false, status: 401 };
     });
     vi.stubGlobal('fetch', fetch);
@@ -163,7 +165,7 @@ describe('createAuthController', () => {
   });
 
   it('falls back to checking the cookie session when no token is remembered', async () => {
-    const fetch = vi.fn(async () => ({ ok: true, json: async () => ({ role: 'full' }) }));
+    const fetch = vi.fn(async () => ({ ok: true, json: async () => ({ role: 'full', principalId: 'principal-full-1' }) }));
     vi.stubGlobal('fetch', fetch);
     const auth = makeAuth();
 
@@ -175,7 +177,7 @@ describe('createAuthController', () => {
 
   it('replays the remembered token after invalidation instead of clearing it', async () => {
     localStorage.setItem('peri_studio_token', 'saved-token');
-    const post = vi.fn(async () => ({ ok: true, json: async () => ({ role: 'full' }) }));
+    const post = vi.fn(async () => ({ ok: true, json: async () => ({ role: 'full', principalId: 'principal-full-1' }) }));
     const fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === 'POST') return post();
       return { ok: false, status: 401 };
@@ -209,7 +211,7 @@ describe('createAuthController', () => {
     // 前在途的 status 响应）晚到：requestEpoch 已推进，不得把用户再次登出。
     let resolveStatus!: (value: { ok: boolean; status: number; json: () => Promise<{ role: string }> }) => void;
     vi.stubGlobal('fetch', vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
-      if (init?.method === 'POST') return Promise.resolve({ ok: true, status: 200, json: async () => ({ role: 'full' }) });
+      if (init?.method === 'POST') return Promise.resolve({ ok: true, status: 200, json: async () => ({ role: 'full', principalId: 'principal-full-1' }) });
       return new Promise((resolve) => { resolveStatus = resolve; });
     }));
     const auth = makeAuth();
@@ -221,7 +223,7 @@ describe('createAuthController', () => {
     await auth.submitToken('fresh-token');
     expect(auth.state()).toBe('signed-in');
 
-    resolveStatus({ ok: true, status: 200, json: async () => ({ role: 'full' }) });
+    resolveStatus({ ok: true, status: 200, json: async () => ({ role: 'full', principalId: 'principal-full-1' }) });
     await pending;
     await Promise.resolve();
 
@@ -234,7 +236,7 @@ describe('createAuthController', () => {
     localStorage.setItem('peri_studio_token', 'saved-token');
     vi.stubGlobal('fetch', vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === 'DELETE') return { ok: true };
-      return { ok: true, json: async () => ({ role: 'full' }) };
+      return { ok: true, json: async () => ({ role: 'full', principalId: 'principal-full-1' }) };
     }));
     const auth = makeAuth();
 

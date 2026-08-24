@@ -135,6 +135,10 @@ fn shell_single_quote(value: &str) -> String {
 }
 
 #[cfg(test)]
+#[path = "auth_principal_test.rs"]
+mod auth_principal_test;
+
+#[cfg(test)]
 #[path = "http_test.rs"]
 mod http_test;
 #[cfg(test)]

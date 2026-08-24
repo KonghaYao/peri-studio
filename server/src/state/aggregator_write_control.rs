@@ -19,6 +19,7 @@ use crate::state::doc_pair::DocPair;
 use crate::state::factory::ROOT;
 use crate::state::normalized::{EventBody, NormalizedEvent};
 use crate::state::permission::{self, CasOutcome};
+use crate::state::permission_evidence::summarize_tool_input;
 use crate::state::session_list;
 
 use super::aggregator::Aggregator;
@@ -112,6 +113,18 @@ impl Aggregator {
                 }
             }
             _ => {
+                let permission_evidence = match &ev.body {
+                    EventBody::PermissionRequested {
+                        tool_call_id: Some(tool_call_id),
+                        ..
+                    } => {
+                        let txn = pair.chat.transact();
+                        chat_writer::tool_call_projection(&txn, tool_call_id)
+                            .and_then(|tool| summarize_tool_input(tool.arguments.as_ref()))
+                            .map(|summary| (tool_call_id.clone(), summary))
+                    }
+                    _ => None,
+                };
                 let mut txn = pair.session_txn();
                 let root = txn.get_or_insert_map(ROOT);
                 match &ev.body {
@@ -154,6 +167,9 @@ impl Aggregator {
                             description.as_deref(),
                             options,
                             option_ids.as_deref(),
+                            permission_evidence.as_ref().map(|(tool_call_id, summary)| {
+                                (tool_call_id.as_str(), summary.as_str())
+                            }),
                             expires_at,
                         );
                         // §7.2 状态推进：权限请求发出 → 宿主等待决议

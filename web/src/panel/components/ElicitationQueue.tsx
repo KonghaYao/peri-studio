@@ -107,7 +107,7 @@ function AskUserQuestionDialog(props: {
             <IconButton type="button" label="Previous question" variant="ghost" size="compact" disabled={props.currentIndex === 0} onClick={props.onPrevious} class="size-26 min-h-26 border-0 bg-transparent text-text-muted hover:text-text-primary disabled:opacity-30">
               <Icon class="size-14!"><path d="m12.5 5-5 5 5 5" /></Icon>
             </IconButton>
-            <span class="min-w-28 text-center text-text-faint text-10 tabular-nums">{props.currentIndex + 1} / {props.total}</span>
+            <span class="min-w-28 text-center text-text-muted text-10 tabular-nums">{props.currentIndex + 1} / {props.total}</span>
             <IconButton type="button" label="Next question" variant="ghost" size="compact" disabled={props.currentIndex === props.total - 1} onClick={props.onNext} class="size-26 min-h-26 border-0 bg-transparent text-text-muted hover:text-text-primary disabled:opacity-30">
               <Icon class="size-14!"><path d="m7.5 5 5 5-5 5" /></Icon>
             </IconButton>

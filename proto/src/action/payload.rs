@@ -10,6 +10,12 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+/// 浏览器与 server 共同执行的 prompt UTF-8 字节上限。
+///
+/// server 在 ready 中回显本连接实际采用的预算；浏览器必须按回显值门禁，
+/// server 仍在 mutation/admission 之前独立复核，不能信任 UI。
+pub const MAX_PROMPT_BYTES: usize = 64 * 1024;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectCreatePayload {

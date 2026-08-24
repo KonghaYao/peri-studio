@@ -1,4 +1,5 @@
 import * as Y from 'yjs';
+import { parseStrictRfc3339 } from './rfc3339';
 import { asArray, asMap, getNum, getStr } from './yjs-values';
 
 export interface ChatHeadInfo {
@@ -86,6 +87,7 @@ export interface PendingPermission {
   permissionId: string | null;
   turnId: string | null;
   toolCallId: string | null;
+  toolInputSummary?: string | null;
   title: string | null;
   description: string | null;
   options: Array<'allowOnce' | 'allowSession' | 'deny'>;
@@ -97,8 +99,8 @@ export interface PendingPermission {
 
 export function parsePermissionExpiration(value: string | null | undefined): number | null {
   if (value === undefined) return null;
-  if (value === null || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) return Number.NaN;
-  return Date.parse(value);
+  if (value === null) return Number.NaN;
+  return parseStrictRfc3339(value) ?? Number.NaN;
 }
 export type ElicitationFieldKind = 'text' | 'single_select' | 'multi_select';
 export interface ElicitationOption {
@@ -282,11 +284,22 @@ export function renderControl(doc: Y.Doc): ControlView {
       return optionId ? [[kind, optionId]] : [];
     })) as PendingPermission['optionIds'] : undefined;
     const rawExpiresAt = permission.get('expires_at');
+    const toolCallId = getStr(permission, 'tool_call_id');
+    const evidenceToolCallId = getStr(permission, 'evidence_tool_call_id');
+    const rawToolInputSummary = getStr(permission, 'tool_input_summary');
+    const toolInputSummary = evidenceToolCallId === toolCallId
+      && rawToolInputSummary !== null
+      && rawToolInputSummary.length > 0
+      && rawToolInputSummary.length <= 512
+      && !/[\u0000-\u001f\u007f]/.test(rawToolInputSummary)
+      ? rawToolInputSummary
+      : null;
     result.pendingPermissions.push({
       queueKey,
       permissionId: getStr(permission, 'permission_id'),
       turnId: getStr(permission, 'turn_id'),
-      toolCallId: getStr(permission, 'tool_call_id'),
+      toolCallId,
+      toolInputSummary,
       title: getStr(permission, 'title'),
       description: getStr(permission, 'description'),
       options,

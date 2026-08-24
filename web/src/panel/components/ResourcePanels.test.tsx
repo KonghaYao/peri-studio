@@ -55,6 +55,48 @@ describe('VS Code-style resource panels', () => {
     expect(docFor).not.toHaveBeenCalled();
   });
 
+  it('releases a view when its lease expires before the first synchronized update', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime('2026-08-24T00:00:00Z');
+    const sent: Array<Record<string, unknown>> = [];
+    installResourceStore({ send: (frame) => { sent.push(frame as Record<string, unknown>); return true; }, ready: () => true, toast: vi.fn() });
+    activateResourceProject('project-lease');
+    const request = sent.find((frame) => frame.type === 'resource/open-view')!;
+    handleResourceResult({
+      t: 'resource_result', requestId: request.requestId as string,
+      result: { kind: 'view', data: { viewId: 'view-lease', docId: 'resource:view-lease', leaseExpiresAt: '2026-08-24T00:00:01Z' } },
+    });
+    expect(sent).toContainEqual({ t: 'ysync.subscribe', docs: ['resource:view-lease'], clientCapabilities: [] });
+
+    vi.advanceTimersByTime(1_000);
+    expect(sent).toContainEqual({ t: 'ysync.unsubscribe', docs: ['resource:view-lease'] });
+    expect(sent).toContainEqual(expect.objectContaining({ type: 'resource/release-view', payload: { viewId: 'view-lease' } }));
+    expect(resourceWorkspace().error).toMatch(/lease expired/i);
+    vi.useRealTimers();
+  });
+
+  it('rejects an expired first update even when the deadline callback is delayed', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime('2026-08-24T00:00:00Z');
+    const sent: Array<Record<string, unknown>> = [];
+    const docFor = vi.spyOn(DocStore.prototype, 'docFor');
+    installResourceStore({ send: (frame) => { sent.push(frame as Record<string, unknown>); return true; }, ready: () => true, toast: vi.fn() });
+    activateResourceProject('project-delayed-deadline');
+    const request = sent.find((frame) => frame.type === 'resource/open-view')!;
+    handleResourceResult({
+      t: 'resource_result', requestId: request.requestId as string,
+      result: { kind: 'view', data: { viewId: 'view-delayed', docId: 'resource:view-delayed', leaseExpiresAt: '2026-08-24T00:00:01Z' } },
+    });
+
+    vi.setSystemTime('2026-08-24T00:00:02Z');
+    expect(handleResourceUpdate({ doc: 'resource:view-delayed', update: 'AAAA' })).toBe(true);
+
+    expect(sent).toContainEqual({ t: 'ysync.unsubscribe', docs: ['resource:view-delayed'] });
+    expect(sent).toContainEqual(expect.objectContaining({ type: 'resource/release-view', payload: { viewId: 'view-delayed' } }));
+    expect(docFor).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
   it('navigates the Explorer as a single-tab-stop ARIA tree', async () => {
     installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
     setResourceWorkspace({
@@ -341,7 +383,7 @@ describe('VS Code-style resource panels', () => {
     const request = sent.find((frame) => frame.type === 'resource/open-view')!;
     handleResourceResult({
       t: 'resource_result', requestId: request.requestId as string,
-      result: { kind: 'view', data: { viewId: 'view-1', docId: 'resource:view-1', leaseExpiresAt: '2026-08-23T12:00:00Z' } },
+      result: { kind: 'view', data: { viewId: 'view-1', docId: 'resource:view-1', leaseExpiresAt: '2099-08-23T12:00:00Z' } },
     });
     sent.length = 0;
 

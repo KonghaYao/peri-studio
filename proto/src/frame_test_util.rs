@@ -313,6 +313,7 @@ pub(crate) fn all_frames() -> Vec<Frame> {
                 m
             },
             negotiated_capabilities: vec!["prompt-status-v1".into()],
+            max_prompt_bytes: Some(65_536),
         }),
         Frame::Auth(Auth {
             token: "tok".into(),

@@ -13,6 +13,7 @@ import {
   heartbeatCount,
   installConnection,
   promptDeliveryReady,
+  promptMaxBytes,
   readRememberedSession,
   rememberSession,
   resetConnectionState,
@@ -76,14 +77,23 @@ describe('connection lifecycle', () => {
     expect(busy()).toBe(true);
     expect(connectionProblem()).toBeNull();
 
-    emitStatus('ready', { negotiatedCapabilities: ['prompt-delivery-v2'] });
+    emitStatus('ready', { negotiatedCapabilities: ['prompt-delivery-v2'], maxPromptBytes: 65536 });
     expect(connectionReady()).toBe(true);
     expect(promptDeliveryReady()).toBe(true);
+    expect(promptMaxBytes()).toBe(65536);
     expect(connState()).toEqual({ text: 'Ready', kind: 'ok' });
     expect(deps.onReady).toHaveBeenCalled();
 
     emitStatus('heartbeat');
     expect(heartbeatCount()).toBe(1);
+  });
+
+  it('fails closed when the prompt capability has no negotiated byte budget', () => {
+    installTestDeps();
+    connectWithCookie();
+    emitStatus('ready', { negotiatedCapabilities: ['prompt-delivery-v2'] });
+    expect(promptDeliveryReady()).toBe(false);
+    expect(promptMaxBytes()).toBe(0);
   });
 
   it('replaces connections are isolated by epoch so stale callbacks cannot mutate the new state', () => {

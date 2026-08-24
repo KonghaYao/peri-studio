@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
-import { setPromptDeliveryReady } from '../lib/connection';
+import { setPromptDeliveryReady, setPromptMaxBytes } from '../lib/connection';
 import {
   setChatHead,
   setChatStatusSignal,
@@ -16,6 +16,8 @@ import { acknowledgeUnknownMessageDelivery, blockUnknownMessageDelivery, failMes
 import { markRuntimeControlUncertain, resetRuntimeControls, startRuntimeControl } from '../lib/runtime-control';
 import { Composer } from './Composer';
 
+const draftOwner = (sessionId = 'session-1') => ({ principalId: 'test-full', projectId: 'project-1', sessionId });
+
 function resetStore() {
   setSelectedCid(null);
   setSelectedSessionId(null);
@@ -28,11 +30,13 @@ function resetStore() {
   resetMessageDelivery();
   setProjectSessions([]);
   setPromptDeliveryReady(false);
+  setPromptMaxBytes(0);
 }
 
 function selectReadyChat() {
   setPrincipalRole('full');
   setPromptDeliveryReady(true);
+  setPromptMaxBytes(65_536);
   setSelectedSessionId('session-1');
   setSelectedCid('chat-1');
   setChatStatusSignal({ 'chat-1': 'active' });
@@ -57,6 +61,19 @@ function installPrediction(id = 'prediction:1:7', text = 'check failure test') {
 afterEach(resetStore);
 
 describe('Composer', () => {
+  it('counts UTF-8 bytes against the negotiated prompt budget', () => {
+    selectReadyChat();
+    setPromptMaxBytes(5);
+    render(() => <Composer />);
+    const input = screen.getByRole('textbox');
+    fireEvent.input(input, { target: { value: '你好' } });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('6 / 5 bytes');
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(input).toHaveValue('你好');
+  });
+
   it('does not imply that an unselected disabled editor can accept text', () => {
     setPrincipalRole('full');
     render(() => <Composer />);
@@ -101,7 +118,7 @@ describe('Composer', () => {
       isComposing: true,
     }));
 
-    expect(composerDraft('session-1')).toBe('');
+    expect(composerDraft(draftOwner())).toBe('');
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
 
     input.dispatchEvent(new InputEvent('input', {
@@ -110,7 +127,7 @@ describe('Composer', () => {
       inputType: 'insertText',
       isComposing: false,
     }));
-    expect(composerDraft('session-1')).toBe('你的 pwd 在哪里');
+    expect(composerDraft(draftOwner())).toBe('你的 pwd 在哪里');
   });
 
   it('enables send only after meaningful input', () => {
@@ -308,13 +325,13 @@ describe('Composer', () => {
     expect(retry).toBeEnabled();
   });
 
-  it('keeps an uncertain message out of the editor while exposing only same-request confirmation', async () => {
+  it('shows a persisted uncertain draft as locked while exposing only same-request confirmation', async () => {
     selectReadyChat();
-    setComposerDraft('session-1', 'preserved draft');
-    startMessageDelivery('cmd-1', 'preserved draft', 'session-1', 'chat-1');
+    setComposerDraft(draftOwner(), 'preserved draft');
+    startMessageDelivery('cmd-1', 'preserved draft', 'session-1', 'chat-1', draftOwner());
     markMessageDeliveryUncertain('cmd-1');
     render(() => <Composer />);
-    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue(''));
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('preserved draft'));
     expect(screen.getByRole('textbox')).toBeDisabled();
     expect(screen.getByText('Message result not confirmed')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Confirm with the same request' })).toBeEnabled();
@@ -323,7 +340,7 @@ describe('Composer', () => {
 
   it('marks an in-flight submission as busy without rendering redundant confirmation copy', () => {
     selectReadyChat();
-    startMessageDelivery('cmd-1', 'pending text', 'session-1', 'chat-1');
+    startMessageDelivery('cmd-1', 'pending text', 'session-1', 'chat-1', draftOwner());
     render(() => <Composer />);
 
     expect(document.querySelector('.composer-surface')).toHaveAttribute('aria-busy', 'true');
@@ -334,7 +351,7 @@ describe('Composer', () => {
 
   it('restores only a definitely failed submission to the current project session draft', async () => {
     selectReadyChat();
-    startMessageDelivery('cmd-1', 'restore this draft', 'session-1', 'chat-1');
+    startMessageDelivery('cmd-1', 'restore this draft', 'session-1', 'chat-1', draftOwner());
     failMessageDelivery('cmd-1', 'Message submission failed');
     render(() => <Composer />);
 
@@ -346,7 +363,7 @@ describe('Composer', () => {
 
   it('lets the user acknowledge delivery-unknown and continue without restoring the original text', () => {
     selectReadyChat();
-    startMessageDelivery('cmd-1', 'possibly executed', 'session-1', 'chat-1');
+    startMessageDelivery('cmd-1', 'possibly executed', 'session-1', 'chat-1', draftOwner());
     blockUnknownMessageDelivery('cmd-1');
     render(() => <Composer />);
 
@@ -368,7 +385,7 @@ describe('Composer', () => {
       acknowledgeUnknownMessageDelivery(commandId);
     }
     selectReadyChat();
-    startMessageDelivery('projected', 'already projected', 'session-1', 'chat-1');
+    startMessageDelivery('projected', 'already projected', 'session-1', 'chat-1', draftOwner());
     reconcileMessageProjection(new Set(['projected']));
     blockUnknownMessageDelivery('projected');
     render(() => <Composer />);
@@ -381,6 +398,10 @@ describe('Composer', () => {
 
   it('isolates drafts and recovery surfaces by persisted session identity', async () => {
     selectReadyChat();
+    setProjectSessions([
+      { id: 'session-1', projectId: 'project-1', acpSessionId: 'acp-1', title: 'Session A', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: 'chat-1' },
+      { id: 'session-2', projectId: 'project-1', acpSessionId: 'acp-2', title: 'Session B', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: 'chat-2' },
+    ]);
     render(() => <Composer />);
     const input = screen.getByRole('textbox');
     fireEvent.input(input, { target: { value: 'draft for session A' } });
@@ -396,21 +417,21 @@ describe('Composer', () => {
     await waitFor(() => expect(input).toHaveValue('draft for session A'));
   });
 
-  it('never exposes another session message while explaining the global safety gate', () => {
+  it('keeps another session private without blocking the selected session', () => {
     selectReadyChat();
     setProjectSessions([
       { id: 'session-1', projectId: 'project-1', acpSessionId: 'acp-1', title: 'Session A', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: 'chat-1' },
       { id: 'session-2', projectId: 'project-1', acpSessionId: 'acp-2', title: 'Session B', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: 'chat-2' },
     ]);
-    startMessageDelivery('cmd-a', 'private draft A', 'session-1', 'chat-1');
+    startMessageDelivery('cmd-a', 'private draft A', 'session-1', 'chat-1', draftOwner());
     markMessageDeliveryUncertain('cmd-a');
     setSelectedSessionId('session-2');
     setSelectedCid('chat-2');
     render(() => <Composer />);
 
-    expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', '');
-    expect(screen.getByText('Another session is still confirming')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', 'Message Agent');
+    expect(screen.getByRole('textbox')).toBeEnabled();
+    expect(screen.queryByText('Another session is still confirming')).not.toBeInTheDocument();
     expect(screen.queryByText('private draft A')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Back to that session' })).toBeInTheDocument();
   });
 });

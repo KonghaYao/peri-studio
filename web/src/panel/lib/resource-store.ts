@@ -1,55 +1,28 @@
 import { createSignal } from 'solid-js';
 import { DocStore } from './doc-store';
 import { openResourceFile, openResourceGitDiff, openResourceView, releaseResourceView, type GitActionKind, type GitGroupId, type ResourceResultFrame } from './resource-protocol';
-import { GitMutationController, type GitMutationState } from './resource-mutations';
-import { loadFilePreview, loadGitDiff, type ResourceDiffPreviewState, type ResourceFilePreviewState } from './resource-preview';
+import { GitMutationController } from './resource-mutations';
+import { downloadResourceUrl, loadFilePreview, loadGitDiff, type ResourceDiffPreviewState, type ResourceFilePreviewState } from './resource-preview';
 import { renderResourceView, type ResourceEntry, type ResourceView } from './resource-view';
-
-export interface DirectoryState { generation: string; entries: ResourceEntry[]; nextCursor?: string }
-export interface RepositoryState {
-  id: string;
-  root: string;
-  name: string;
-  generation?: string;
-  headName?: string;
-  upstream?: string;
-  detached?: boolean;
-  ahead?: number;
-  behind?: number;
-  groups: Record<string, { count: number; revision: string; changes: ResourceEntry[]; sourceGeneration?: string; nextCursor?: string }>;
-}
-export interface ResourceWorkspaceState {
-  projectId: string | null;
-  directories: Record<string, DirectoryState>;
-  repositories: RepositoryState[];
-  loading: string[];
-  error: string | null;
-  mutations?: Record<string, GitMutationState>;
-  repoMutations?: Record<string, GitMutationState>;
-}
-
-const initial = (): ResourceWorkspaceState => ({
-  projectId: null,
-  directories: {},
-  repositories: [],
-  loading: [],
-  error: null,
-  mutations: {},
-  repoMutations: {},
-});
+import { initialResourceWorkspace as initial, reduceResourceView, type ResourceWorkspaceState } from './resource-state';
+export type { DirectoryState, RepositoryState, ResourceWorkspaceState } from './resource-state';
 
 export const [resourceWorkspace, setResourceWorkspace] = createSignal<ResourceWorkspaceState>(initial());
 export const [resourceDiffPreview, setResourceDiffPreview] = createSignal<ResourceDiffPreviewState | null>(null);
 export const [resourceFilePreview, setResourceFilePreview] = createSignal<ResourceFilePreviewState | null>(null);
 const docs = new DocStore();
-const pending = new Map<string, string>();
+interface PendingResourceRequest { key: string; projectId: string; generation: number }
+interface OpenResourceLease { viewId: string; projectId: string; generation: number; expiresAt: number; timer?: number }
+
+const pending = new Map<string, PendingResourceRequest>();
 const pendingDiffs = new Map<string, ResourceDiffPreviewState>();
 const pendingFiles = new Map<string, ResourceFilePreviewState>();
 const ignoredRequests = new Set<string>();
 const gitMutations = new GitMutationController();
-const openViews = new Map<string, string>();
+const openViews = new Map<string, OpenResourceLease>();
 const openViewKeys = new Map<string, string>();
 const requested = new Set<string>();
+let resourceGeneration = 0;
 
 interface Transport { send: (frame: unknown) => boolean; ready: () => boolean; toast: (message: string) => void }
 let transport: Transport | null = null;
@@ -86,7 +59,7 @@ export function downloadResourceFile(path: string): void {
   if (!projectId || !transport?.ready()) return;
   const frame = openResourceFile(projectId, path);
   if (!transport.send(frame)) return;
-  pending.set(frame.requestId, `blob:${path}`);
+  trackRequest(frame.requestId, `blob:${path}`, projectId);
   setLoading(`blob:${path}`, true);
 }
 
@@ -96,7 +69,7 @@ export function openFilePreview(path: string): void {
   const frame = openResourceFile(projectId, path);
   if (!transport.send(frame)) return;
   const preview: ResourceFilePreviewState = { requestId: frame.requestId, path, loading: true };
-  pending.set(frame.requestId, `preview:${path}`);
+  trackRequest(frame.requestId, `preview:${path}`, projectId);
   pendingFiles.set(frame.requestId, preview);
   setResourceDiffPreview(null);
   setResourceFilePreview(preview);
@@ -132,7 +105,7 @@ export function openGitDiffPreview(repoId: string, groupId: GitGroupId, change: 
     status: typeof change.status === 'string' ? change.status : 'modified',
     loading: true,
   };
-  pending.set(frame.requestId, `diff:${path}`);
+  trackRequest(frame.requestId, `diff:${path}`, projectId);
   pendingDiffs.set(frame.requestId, preview);
   setResourceFilePreview(null);
   setResourceDiffPreview(preview);
@@ -183,7 +156,10 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
     if (frame.result?.kind === 'view') transport?.send(releaseResourceView(frame.result.data.viewId));
     return;
   }
-  const key = pending.get(frame.requestId);
+  const owner = pending.get(frame.requestId);
+  const ownerCurrent = owner?.generation === resourceGeneration
+    && owner.projectId === resourceWorkspace().projectId;
+  const key = ownerCurrent ? owner.key : undefined;
   const diffRequest = pendingDiffs.get(frame.requestId);
   const fileRequest = pendingFiles.get(frame.requestId);
   const mutationRequest = gitMutations.take(frame.requestId);
@@ -194,7 +170,7 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
   if (mutationRequest) setLoading(`mutation:${mutationRequest.repoId}`, false);
   // 只有本 session 明确登记过的 request 才能取得 view/blob/mutation 的
   // 所有权。切 project 或 reset 后的迟到 view 立即释放，绝不订阅。
-  if (!key && !diffRequest && !fileRequest && !mutationRequest) {
+  if ((!ownerCurrent && (diffRequest || fileRequest)) || (!key && !diffRequest && !fileRequest && !mutationRequest)) {
     if (frame.result?.kind === 'view') transport?.send(releaseResourceView(frame.result.data.viewId));
     return;
   }
@@ -220,9 +196,22 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
     return;
   }
   if (frame.result?.kind === 'view') {
-    openViews.set(frame.result.data.docId, frame.result.data.viewId);
+    const expiresAt = Date.parse(frame.result.data.leaseExpiresAt);
+    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now() || !owner) {
+      transport?.send(releaseResourceView(frame.result.data.viewId));
+      setResourceWorkspace((state) => ({ ...state, error: 'Resource view lease expired before it could be opened.' }));
+      return;
+    }
+    const lease: OpenResourceLease = {
+      viewId: frame.result.data.viewId,
+      projectId: owner.projectId,
+      generation: owner.generation,
+      expiresAt,
+    };
+    openViews.set(frame.result.data.docId, lease);
     if (key) openViewKeys.set(frame.result.data.docId, key);
     transport?.send({ t: 'ysync.subscribe', docs: [frame.result.data.docId], clientCapabilities: [] });
+    scheduleLeaseDeadline(frame.result.data.docId, lease);
   } else if (frame.result?.kind === 'blob') {
     if (diffRequest) {
       void loadGitDiff(frame.result.data.url, diffRequest, updateDiffPreview);
@@ -232,7 +221,7 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
       void loadFilePreview(frame.result.data.url, frame.result.data.etag, fileRequest, updateFilePreview);
       return;
     }
-    downloadUrl(frame.result.data.url, key?.startsWith('blob:') ? basename(key.slice(5)) : '');
+    downloadResourceUrl(frame.result.data.url, key?.startsWith('blob:') ? basename(key.slice(5)) : '');
   } else if (frame.result?.kind === 'mutated' && mutationRequest) {
     gitMutations.succeed(mutationRequest, setResourceWorkspace);
     refreshGitRepository(mutationRequest.repoId);
@@ -246,16 +235,19 @@ function refreshGitRepository(repoId: string): void {
   for (const key of [...requested]) {
     if (prefixes.some((prefix) => key.startsWith(prefix))) requested.delete(key);
   }
-  for (const [requestId, key] of [...pending]) {
-    if (!prefixes.some((prefix) => key.startsWith(prefix))) continue;
+  for (const [requestId, owner] of [...pending]) {
+    if (!prefixes.some((prefix) => owner.key.startsWith(prefix))) continue;
     pending.delete(requestId);
     ignoredRequests.add(requestId);
   }
   for (const [docId, key] of [...openViewKeys]) {
     if (!prefixes.some((prefix) => key.startsWith(prefix))) continue;
-    const viewId = openViews.get(docId);
+    const lease = openViews.get(docId);
     transport.send({ t: 'ysync.unsubscribe', docs: [docId] });
-    if (viewId) transport.send(releaseResourceView(viewId));
+    if (lease) {
+      if (lease.timer !== undefined) window.clearTimeout(lease.timer);
+      transport.send(releaseResourceView(lease.viewId));
+    }
     docs.drop(docId);
     openViews.delete(docId);
     openViewKeys.delete(docId);
@@ -271,9 +263,19 @@ function refreshGitRepository(repoId: string): void {
 
 export function handleResourceUpdate(frame: { doc: string; update: string }): boolean {
   if (!frame.doc.startsWith('resource:')) return false;
-  // 合法 docId 仍必须来自本 session 已接受的短租约；未知/迟到 update
-  // 只在总帧入口被消费，不得分配 DocStore 或污染当前 project。
-  if (!openViews.has(frame.doc)) return true;
+  const lease = openViews.get(frame.doc);
+  if (!lease || lease.generation !== resourceGeneration
+    || lease.projectId !== resourceWorkspace().projectId) return true;
+  // timeout callback 可能仍排在主线程队列中；首帧接受边界必须再次同步校时，
+  // 不能让已过期 update 通过后清掉 deadline。
+  if (Date.now() >= lease.expiresAt) {
+    expireLease(frame.doc, lease);
+    return true;
+  }
+  if (lease.timer !== undefined) {
+    window.clearTimeout(lease.timer);
+    lease.timer = undefined;
+  }
   docs.applyUpdateFrame(frame);
   return true;
 }
@@ -287,10 +289,12 @@ export function replayResourceSubscriptions(): void {
 }
 
 export function resetResourceProject(): void {
+  resourceGeneration += 1;
   if (transport) {
-    for (const [docId, viewId] of openViews) {
+    for (const [docId, lease] of openViews) {
+      if (lease.timer !== undefined) window.clearTimeout(lease.timer);
       transport.send({ t: 'ysync.unsubscribe', docs: [docId] });
-      transport.send(releaseResourceView(viewId));
+      transport.send(releaseResourceView(lease.viewId));
     }
   }
   docs.clear();
@@ -315,16 +319,6 @@ function updateFilePreview(requestId: string, patch: Partial<ResourceFilePreview
   setResourceFilePreview((current) => current?.requestId === requestId ? { ...current, ...patch } : current);
 }
 
-function downloadUrl(url: string, filename: string) {
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.rel = 'noopener';
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-}
-
 const basename = (path: string) => path.split('/').at(-1) || path;
 
 function request(projectId: string, key: string, payload: Parameters<typeof openResourceView>[1]) {
@@ -332,8 +326,35 @@ function request(projectId: string, key: string, payload: Parameters<typeof open
   const frame = openResourceView(projectId, payload);
   if (!transport.send(frame)) return;
   requested.add(key);
-  pending.set(frame.requestId, key);
+  trackRequest(frame.requestId, key, projectId);
   setLoading(key, true);
+}
+
+function trackRequest(requestId: string, key: string, projectId: string): void {
+  pending.set(requestId, { key, projectId, generation: resourceGeneration });
+}
+
+function scheduleLeaseDeadline(docId: string, lease: OpenResourceLease): void {
+  const schedule = () => {
+    const remaining = lease.expiresAt - Date.now();
+    if (remaining > 0) {
+      lease.timer = window.setTimeout(schedule, Math.min(remaining, 2_147_000_000));
+      return;
+    }
+    expireLease(docId, lease);
+  };
+  schedule();
+}
+
+function expireLease(docId: string, lease: OpenResourceLease): void {
+  if (openViews.get(docId) !== lease) return;
+  if (lease.timer !== undefined) window.clearTimeout(lease.timer);
+  transport?.send({ t: 'ysync.unsubscribe', docs: [docId] });
+  transport?.send(releaseResourceView(lease.viewId));
+  docs.drop(docId);
+  openViews.delete(docId);
+  openViewKeys.delete(docId);
+  setResourceWorkspace((state) => ({ ...state, error: 'Resource view lease expired before synchronization completed.' }));
 }
 
 function setLoading(key: string, loading: boolean) {
@@ -346,110 +367,7 @@ function setLoading(key: string, loading: boolean) {
 }
 
 function consume(view: ResourceView) {
-  if (view.projectId !== resourceWorkspace().projectId) return;
-  switch (view.viewType) {
-    case 'fs_directory_page': {
-      const path = view.path ?? '';
-      setResourceWorkspace((state) => ({
-        ...state,
-        directories: {
-          ...state.directories,
-          [path]: mergeDirectoryPage(state.directories[path], view),
-        },
-      }));
-      break;
-    }
-    case 'workspace_repositories_page': {
-      const repositories = view.entries.map((entry) => ({
-        id: String(entry.repo_id ?? entry.id),
-        root: String(entry.root ?? ''),
-        name: String(entry.name ?? 'Repository'),
-        groups: {},
-      }));
-      setResourceWorkspace((state) => ({ ...state, repositories }));
-      for (const repo of repositories) {
-        request(view.projectId, `repository:${repo.id}`, { kind: 'git-repository', repoId: repo.id });
-      }
-      break;
-    }
-    case 'git_repository': {
-      const repoId = view.repoId!;
-      setResourceWorkspace((state) => ({
-        ...state,
-        repositories: upsertRepo(state.repositories, repoId, {
-          root: String(view.meta.root ?? ''),
-          generation: view.sourceGeneration,
-          headName: stringOrUndefined(view.meta.head_name),
-          upstream: stringOrUndefined(view.meta.upstream),
-          detached: !!view.meta.detached,
-          ahead: numberOrZero(view.meta.ahead),
-          behind: numberOrZero(view.meta.behind),
-          groups: Object.fromEntries(view.entries.map((entry) => [entry.id, {
-            count: numberOrZero(entry.count), revision: String(entry.revision ?? ''), changes: [],
-          }])),
-        }),
-      }));
-      for (const group of view.entries) {
-        if (numberOrZero(group.count) > 0) request(view.projectId, `group:${repoId}:${group.id}`, {
-          kind: 'git-group-page', repoId, groupId: group.id as Parameters<typeof openResourceView>[1]['groupId'],
-        });
-      }
-      break;
-    }
-    case 'git_group_page': {
-      const repoId = view.repoId!;
-      const groupId = view.groupId!;
-      setResourceWorkspace((state) => ({
-        ...state,
-        repositories: state.repositories.map((repo) => repo.id === repoId ? {
-          ...repo,
-          groups: {
-            ...repo.groups,
-            [groupId]: mergeGitPage(repo.groups[groupId], view),
-          },
-        } : repo),
-      }));
-      break;
-    }
-  }
+  const result = reduceResourceView(resourceWorkspace(), view);
+  if (result.state !== resourceWorkspace()) setResourceWorkspace(result.state);
+  for (const followup of result.followups) request(view.projectId, followup.key, followup.payload);
 }
-
-function mergeDirectoryPage(current: DirectoryState | undefined, view: ResourceView): DirectoryState {
-  const generation = view.sourceGeneration ?? '';
-  const entries = current?.generation === generation
-    ? mergeEntries(current.entries, view.entries)
-    : view.entries;
-  return { generation, entries, nextCursor: view.nextCursor };
-}
-
-function mergeGitPage(
-  current: RepositoryState['groups'][string] | undefined,
-  view: ResourceView,
-): RepositoryState['groups'][string] {
-  const sourceGeneration = view.sourceGeneration ?? '';
-  const changes = current?.sourceGeneration === sourceGeneration
-    ? mergeEntries(current.changes, view.entries)
-    : view.entries;
-  return {
-    count: current?.count ?? changes.length,
-    revision: current?.revision ?? '',
-    changes,
-    sourceGeneration,
-    nextCursor: view.nextCursor,
-  };
-}
-
-function mergeEntries(current: ResourceEntry[], incoming: ResourceEntry[]): ResourceEntry[] {
-  const byId = new Map(current.map((entry) => [entry.id, entry]));
-  for (const entry of incoming) byId.set(entry.id, entry);
-  return [...byId.values()];
-}
-
-function upsertRepo(repositories: RepositoryState[], id: string, patch: Partial<RepositoryState>): RepositoryState[] {
-  const found = repositories.some((repo) => repo.id === id);
-  if (!found) return [...repositories, { id, root: '', name: 'Repository', groups: {}, ...patch }];
-  return repositories.map((repo) => repo.id === id ? { ...repo, ...patch } : repo);
-}
-
-const stringOrUndefined = (value: unknown) => typeof value === 'string' ? value : undefined;
-const numberOrZero = (value: unknown) => typeof value === 'number' ? value : Number(value) || 0;

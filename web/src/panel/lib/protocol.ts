@@ -194,7 +194,7 @@ export const respondElicitation = (
  * the browser message callback and silently stop processing that delivery. */
 export type DownstreamFrame =
   | { t: 'keep_alive' }
-  | { t: 'ready'; projectionVersions: Record<string, number>; negotiatedCapabilities?: string[] }
+  | { t: 'ready'; projectionVersions: Record<string, number>; negotiatedCapabilities?: string[]; maxPromptBytes?: number }
   | { t: 'ysync.update'; doc: string; update: string; projectionVersion?: number }
   | { t: 'action_ack'; commandId: string; status: 'accepted' | 'committed' | 'duplicate'; turnId?: string; chatId?: string; projectId?: string; sessionId?: string; acpSessionId?: string; committedProjectionVersion?: number }
   | { t: 'action_error'; commandId: string; code: string; message: string; retryable: boolean; retryAfterMs?: number }
@@ -233,6 +233,8 @@ function decodeKnownFrame(frame: Record<string, unknown>): DownstreamFrame | nul
       if (frame.negotiatedCapabilities !== undefined
         && (!Array.isArray(frame.negotiatedCapabilities)
           || !frame.negotiatedCapabilities.every(nonEmptyString))) return null;
+      if (frame.maxPromptBytes !== undefined
+        && (!Number.isSafeInteger(frame.maxPromptBytes) || Number(frame.maxPromptBytes) <= 0)) return null;
       return frame as DownstreamFrame;
     }
     case 'ysync.update':

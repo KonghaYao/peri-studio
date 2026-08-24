@@ -5,7 +5,7 @@ import { replayBoundaryAt } from './replay-boundary';
 function entry(origin: NonNullable<ChatEntry['origin']> | null, replayVerified: boolean | null): ChatEntry {
   return {
     id: crypto.randomUUID(), turnId: null, kind: 'message', role: 'assistant', status: 'completed', authorUserId: null,
-    sourceCommandId: null, origin, replayVerified, createdAt: '', completedAt: null, text: '', reasoning: [], toolCalls: [], resources: [], error: null,
+    sourceCommandId: null, origin, replayVerified, createdAt: '', completedAt: null, text: '', blocks: [], reasoning: [], toolCalls: [], resources: [], error: null,
   };
 }
 

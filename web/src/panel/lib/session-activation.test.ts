@@ -9,6 +9,9 @@ interface HarnessOverrides {
   messagePending?: boolean;
   creatingProjectId?: string | null;
   sessions?: Array<{ id: string; projectId: string; acpSessionId: string | null; title: string; lifecycle: string; updatedAt: string | null; lastOpenedAt: string | null; activeChatId: string | null; archivedAt?: string | null }>;
+  maxPromptBytes?: number;
+  sendFirstMessage?: boolean;
+  preserveFirstMessage?: boolean;
 }
 
 function harness(overrides: HarnessOverrides = {}) {
@@ -18,7 +21,8 @@ function harness(overrides: HarnessOverrides = {}) {
   const activate = vi.fn();
   const persistProblem = vi.fn();
   const toast = vi.fn();
-  const sendFirstMessage = vi.fn(() => true);
+  const sendFirstMessage = vi.fn(() => overrides.sendFirstMessage ?? true);
+  const preserveFirstMessage = vi.fn(() => overrides.preserveFirstMessage ?? true);
   const activation = new SessionActivation({
     isReady: () => overrides.ready ?? true,
     isReadOnly: () => overrides.readOnly ?? false,
@@ -36,6 +40,8 @@ function harness(overrides: HarnessOverrides = {}) {
     activate,
     forgetPreference: vi.fn(),
     sendFirstMessage,
+    preserveFirstMessage,
+    maxPromptBytes: () => overrides.maxPromptBytes ?? 65_536,
     onNavigationChange: vi.fn(),
     toast,
     persistProblem,
@@ -46,6 +52,7 @@ function harness(overrides: HarnessOverrides = {}) {
     persistProblem,
     toast,
     sendFirstMessage,
+    preserveFirstMessage,
     sentFrame: () => sentFrame as { commandId: string; payload: Record<string, unknown> } | null,
     options: () => sendOptions as ActivationSendOptions | null,
     creatingProjectId: () => creatingProjectId,
@@ -108,6 +115,23 @@ describe('SessionActivation', () => {
     subject.options()!.cb?.({ commandId: frame.commandId, status: 'duplicate', sessionId: 'logical', chatId: 'chat' });
     expect(subject.activate).toHaveBeenCalledWith('logical', 'chat');
     expect(subject.sendFirstMessage).toHaveBeenCalledWith('First line 🚀\nSecond line');
+  });
+
+  it('preserves the first message under the new durable session when Registry lags', () => {
+    const subject = harness({ sendFirstMessage: false });
+    expect(subject.activation.quickStart('project', 'Preserve me')).toBe(true);
+    const frame = subject.sentFrame()!;
+    subject.options()!.cb?.({ commandId: frame.commandId, status: 'committed', sessionId: 'logical', chatId: 'chat' });
+
+    expect(subject.preserveFirstMessage).toHaveBeenCalledWith('project', 'logical', 'Preserve me');
+    expect(subject.persistProblem).toHaveBeenCalledWith('First message not yet sent', expect.any(String), frame.commandId);
+  });
+
+  it('rejects an oversized first message before creating a session', () => {
+    const subject = harness({ maxPromptBytes: 4 });
+    expect(subject.activation.quickStart('project', '你好')).toBe(false);
+    expect(subject.sentFrame()).toBeNull();
+    expect(subject.toast).toHaveBeenCalledWith('First message exceeds the negotiated 4 byte limit');
   });
 
   it('uses projection-proven runtime locally in read-only mode without sending open', () => {

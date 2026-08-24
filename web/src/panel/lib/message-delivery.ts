@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
-import { createSingleSlotDelivery, type DeliveryPhase } from './delivery-state';
-import { clearComposerDraft, resetComposerDrafts, restoreComposerDraft } from './composer-draft';
+import type { DeliveryPhase } from './delivery-state';
+import { clearComposerDraft, composerDraft, resetComposerDrafts, restoreComposerDraft, type ComposerDraftOwner } from './composer-draft';
 
 export type MessageDeliveryPhase = Extract<
   DeliveryPhase,
@@ -12,6 +12,7 @@ export interface MessageSubmission {
   text: string;
   sessionId: string;
   chatId: string;
+  draftOwner: ComposerDraftOwner;
   phase: MessageDeliveryPhase;
   detail: string | null;
   retryable: boolean;
@@ -19,30 +20,65 @@ export interface MessageSubmission {
   projected: boolean;
 }
 
-const [currentSubmission, setCurrentSubmission] = createSignal<MessageSubmission | null>(null);
+const [submissionsBySession, setSubmissionsBySession] = createSignal<Record<string, MessageSubmission>>({});
 const [acknowledgedUnknown, setAcknowledgedUnknown] = createSignal<MessageSubmission[]>([]);
-const delivery = createSingleSlotDelivery(currentSubmission, setCurrentSubmission);
 const ACKNOWLEDGED_UNKNOWN_LIMIT = 20;
 
-export const messageSubmission = currentSubmission;
+export const messageSubmissions = () => Object.values(submissionsBySession());
+/** 按持久会话读取唯一未裁决提交；不再把其他会话变成全局输入门禁。 */
+export const messageSubmission = (sessionId?: string | null): MessageSubmission | null => {
+  if (sessionId) return submissionsBySession()[sessionId] ?? null;
+  return messageSubmissions()[0] ?? null;
+};
+export const messageSubmissionForChat = (chatId: string | null): MessageSubmission | null =>
+  chatId ? messageSubmissions().find((item) => item.chatId === chatId) ?? null : null;
+export const messageSubmissionByCommand = (commandId: string): MessageSubmission | null =>
+  messageSubmissions().find((item) => item.commandId === commandId) ?? null;
 /** 用户已确认继续工作、但仍须保留在会话中的不可重发证据。 */
 export const acknowledgedMessageDeliveries = acknowledgedUnknown;
-export const canAcknowledgeUnknownMessageDelivery = () => currentSubmission()?.projected === true
+export const canAcknowledgeUnknownMessageDelivery = (commandId: string): boolean =>
+  messageSubmissionByCommand(commandId)?.projected === true
   || acknowledgedUnknown().length < ACKNOWLEDGED_UNKNOWN_LIMIT;
 
-export function startMessageDelivery(commandId: string, text: string, sessionId: string, chatId: string): boolean {
-  if (currentSubmission()) return false;
-  setCurrentSubmission({ commandId, text, sessionId, chatId, phase: 'sending', detail: null, retryable: true, projected: false });
-  clearComposerDraft(sessionId);
+function replace(current: MessageSubmission, next: MessageSubmission | null): void {
+  setSubmissionsBySession((items) => {
+    if (items[current.sessionId]?.commandId !== current.commandId) return items;
+    const updated = { ...items };
+    if (next) updated[current.sessionId] = next;
+    else delete updated[current.sessionId];
+    return updated;
+  });
+}
+
+function transition(commandId: string, update: (current: MessageSubmission) => MessageSubmission): void {
+  const current = messageSubmissionByCommand(commandId);
+  if (current) replace(current, update(current));
+}
+
+export function startMessageDelivery(
+  commandId: string,
+  text: string,
+  sessionId: string,
+  chatId: string,
+  owner: ComposerDraftOwner = { principalId: 'test-principal', projectId: 'test-project', sessionId },
+): boolean {
+  if (messageSubmission(sessionId) || messageSubmissionByCommand(commandId)) return false;
+  setSubmissionsBySession((items) => ({
+    ...items,
+    [sessionId]: { commandId, text, sessionId, chatId, draftOwner: owner, phase: 'sending', detail: null, retryable: true, projected: false },
+  }));
+  clearComposerDraft(owner);
   return true;
 }
 
 export function acceptMessageDelivery(commandId: string): void {
-  delivery.transition(commandId, (current) => ({ ...current, phase: 'accepted', detail: null }));
+  transition(commandId, (current) => ({ ...current, phase: 'accepted', detail: null }));
 }
 
 export function markMessageDeliveryUncertain(commandId: string): void {
-  delivery.transition(commandId, (current) => ({
+  const current = messageSubmissionByCommand(commandId);
+  if (current) restoreComposerDraft(current.draftOwner, current.text);
+  transition(commandId, (current) => ({
     ...current,
     phase: 'uncertain',
     detail: 'The server has not confirmed the outcome. Reconfirming will not re-execute it.',
@@ -51,18 +87,22 @@ export function markMessageDeliveryUncertain(commandId: string): void {
 }
 
 export function failMessageDelivery(commandId: string, detail: string): void {
-  const current = currentSubmission();
-  if (!current || current.commandId !== commandId) return;
+  const current = messageSubmissionByCommand(commandId);
+  if (!current) return;
   if (current.projected) {
-    setCurrentSubmission(null);
-    return;
+    clearMatchingRestoredDraft(current);
+    replace(current, null);
+  } else {
+    restoreComposerDraft(current.draftOwner, current.text);
+    replace(current, { ...current, phase: 'failed', detail, retryable: false });
   }
-  setCurrentSubmission({ ...current, phase: 'failed', detail, retryable: false });
 }
 
 /** Server crossed the no-redelivery barrier but cannot prove the outcome. */
 export function blockUnknownMessageDelivery(commandId: string, detail?: string): void {
-  delivery.transition(commandId, (current) => ({
+  const current = messageSubmissionByCommand(commandId);
+  if (current) clearMatchingRestoredDraft(current);
+  transition(commandId, (current) => ({
     ...current,
     phase: 'delivery_unknown',
     detail: detail || 'This message may have already executed. To avoid duplicates, resending and editing are disabled.',
@@ -70,35 +110,30 @@ export function blockUnknownMessageDelivery(commandId: string, detail?: string):
   }));
 }
 
-/**
- * 只解除浏览器的全局单飞门禁，不恢复草稿、不重发原 command。
- * 原始证据移入只读历史，直到精确 server 投影到达或身份边界重置。
- */
+/** 只解除所属会话的单飞门禁；不可重放证据保留到精确投影到达。 */
 export function acknowledgeUnknownMessageDelivery(commandId: string): boolean {
-  const current = currentSubmission();
-  if (!current || current.commandId !== commandId || current.phase !== 'delivery_unknown') return false;
+  const current = messageSubmissionByCommand(commandId);
+  if (!current || current.phase !== 'delivery_unknown') return false;
   if (!current.projected) {
-    if (!canAcknowledgeUnknownMessageDelivery()) return false;
+    if (!canAcknowledgeUnknownMessageDelivery(commandId)) return false;
     setAcknowledgedUnknown((items) => items.some((item) => item.commandId === commandId)
       ? items
       : [...items, current]);
   }
-  setCurrentSubmission(null);
+  replace(current, null);
   return true;
 }
 
 export function retryMessageDelivery(commandId: string): void {
-  delivery.transition(commandId, (current) => ({ ...current, phase: 'sending', detail: null }));
+  transition(commandId, (current) => ({ ...current, phase: 'sending', detail: null }));
 }
 
 export function completeMessageDelivery(commandId: string, status: unknown): boolean {
-  const current = currentSubmission();
-  if (!current || current.commandId !== commandId || (status !== 'committed' && status !== 'duplicate')) return false;
-  if (current.projected) {
-    setCurrentSubmission(null);
-    return true;
-  }
-  setCurrentSubmission({
+  const current = messageSubmissionByCommand(commandId);
+  if (!current || (status !== 'committed' && status !== 'duplicate')) return false;
+  clearMatchingRestoredDraft(current);
+  if (current.projected) replace(current, null);
+  else replace(current, {
     ...current,
     phase: 'committed',
     detail: 'Confirmed by the server, syncing to the conversation log.',
@@ -107,28 +142,36 @@ export function completeMessageDelivery(commandId: string, status: unknown): boo
   return true;
 }
 
-/** Only the exact durable Yjs identity may replace the local outbox item. */
+function clearMatchingRestoredDraft(submission: MessageSubmission): void {
+  if (composerDraft(submission.draftOwner) === submission.text) {
+    clearComposerDraft(submission.draftOwner);
+  }
+}
+
+/** Only the exact durable Yjs identity may replace local outbox items. */
 export function reconcileMessageProjection(sourceCommandIds: ReadonlySet<string>): boolean {
   const archived = acknowledgedUnknown();
   const retained = archived.filter((item) => !sourceCommandIds.has(item.commandId));
-  const archivedReconciled = retained.length !== archived.length;
-  if (archivedReconciled) setAcknowledgedUnknown(retained);
-  const current = currentSubmission();
-  if (!current || !sourceCommandIds.has(current.commandId)) return archivedReconciled;
-  if (current.phase === 'committed') setCurrentSubmission(null);
-  else setCurrentSubmission({ ...current, projected: true });
-  return true;
+  let changed = retained.length !== archived.length;
+  if (changed) setAcknowledgedUnknown(retained);
+  for (const current of messageSubmissions()) {
+    if (!sourceCommandIds.has(current.commandId)) continue;
+    changed = true;
+    if (current.phase === 'committed') replace(current, null);
+    else replace(current, { ...current, projected: true });
+  }
+  return changed;
 }
 
-export function dismissFailedMessageDelivery(): void {
-  const current = currentSubmission();
+export function dismissFailedMessageDelivery(commandId: string): void {
+  const current = messageSubmissionByCommand(commandId);
   if (!current || current.phase !== 'failed') return;
-  restoreComposerDraft(current.sessionId, current.text);
-  setCurrentSubmission(null);
+  restoreComposerDraft(current.draftOwner, current.text);
+  replace(current, null);
 }
 
-export function resetMessageDelivery(): void {
-  setCurrentSubmission(null);
+export function resetMessageDelivery(preserveDrafts = false): void {
+  setSubmissionsBySession({});
   setAcknowledgedUnknown([]);
-  resetComposerDrafts();
+  if (!preserveDrafts) resetComposerDrafts();
 }

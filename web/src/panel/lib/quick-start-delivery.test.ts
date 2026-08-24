@@ -4,6 +4,7 @@ import {
   completeQuickStart,
   dismissFailedQuickStart,
   failQuickStart,
+  finishQuickStart,
   markQuickStartUncertain,
   quickStartSubmission,
   resetQuickStart,
@@ -32,8 +33,10 @@ describe('quick start delivery', () => {
     expect(completeQuickStart('create-1', 'accepted', 'session-1', 'chat-1')).toBeNull();
     expect(completeQuickStart('create-1', 'committed', 'session-1', undefined)).toBeNull();
     expect(completeQuickStart('create-1', 'duplicate', 'session-1', 'chat-1')).toEqual({
-      commandId: 'create-1', sessionId: 'session-1', chatId: 'chat-1', text: 'first prompt',
+      commandId: 'create-1', projectId: 'project-1', sessionId: 'session-1', chatId: 'chat-1', text: 'first prompt',
     });
+    expect(quickStartSubmission()).not.toBeNull();
+    expect(finishQuickStart('create-1')).toBe(true);
     expect(quickStartSubmission()).toBeNull();
   });
 

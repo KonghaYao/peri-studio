@@ -19,12 +19,12 @@ import {
 afterEach(resetMessageDelivery);
 
 describe('message delivery', () => {
-  it('keeps an uncertain message in the outbox instead of duplicating it into the editor', () => {
+  it('persists an uncertain message draft while keeping it locked in the outbox', () => {
     setComposerDraft('session-a', 'important work');
     startMessageDelivery('cmd-a', 'important work', 'session-a', 'chat-a');
     expect(composerDraft('session-a')).toBe('');
     markMessageDeliveryUncertain('cmd-a');
-    expect(composerDraft('session-a')).toBe('');
+    expect(composerDraft('session-a')).toBe('important work');
     expect(messageSubmission()).toMatchObject({ phase: 'uncertain', retryable: true });
   });
 
@@ -66,16 +66,40 @@ describe('message delivery', () => {
     failMessageDelivery('cmd-a', 'rejected');
     expect(composerDraft('session-a')).toBe('newer edit');
     expect(composerDraft('session-b')).toBe('private b');
-    dismissFailedMessageDelivery();
+    dismissFailedMessageDelivery('cmd-a');
     expect(messageSubmission()).toBeNull();
   });
 
-  it('restores a failed message only when the user explicitly returns to editing', () => {
+  it('can reset runtime delivery state without deleting a refresh-restorable draft', () => {
+    setComposerDraft('session-a', 'persist across cookie validation');
+    startMessageDelivery('cmd-b', 'pending elsewhere', 'session-b', 'chat-b');
+
+    resetMessageDelivery(true);
+
+    expect(messageSubmission('session-b')).toBeNull();
+    expect(composerDraft('session-a')).toBe('persist across cookie validation');
+  });
+
+  it('persists a failed message and returns it to editing only on explicit dismissal', () => {
     startMessageDelivery('cmd-failed', 'recover me', 'session-a', 'chat-a');
     failMessageDelivery('cmd-failed', 'rejected');
-    expect(composerDraft('session-a')).toBe('');
-    dismissFailedMessageDelivery();
     expect(composerDraft('session-a')).toBe('recover me');
+    dismissFailedMessageDelivery('cmd-failed');
+    expect(composerDraft('session-a')).toBe('recover me');
+  });
+
+  it('clears only the exact restored draft after a terminal message outcome', () => {
+    startMessageDelivery('cmd-a', 'original', 'session-a', 'chat-a');
+    markMessageDeliveryUncertain('cmd-a');
+    expect(composerDraft('session-a')).toBe('original');
+    completeMessageDelivery('cmd-a', 'committed');
+    expect(composerDraft('session-a')).toBe('');
+
+    startMessageDelivery('cmd-b', 'second', 'session-b', 'chat-b');
+    markMessageDeliveryUncertain('cmd-b');
+    setComposerDraft('session-b', 'newer local text');
+    completeMessageDelivery('cmd-b', 'duplicate');
+    expect(composerDraft('session-b')).toBe('newer local text');
   });
 
   it('never reconciles equal text without the exact command identity', () => {
@@ -100,7 +124,7 @@ describe('message delivery', () => {
       commandId: 'unknown', phase: 'delivery_unknown', retryable: false,
     });
     expect(composerDraft('session-a')).toBe('');
-    dismissFailedMessageDelivery();
+    dismissFailedMessageDelivery('unknown');
     expect(messageSubmission()?.phase).toBe('delivery_unknown');
     expect(composerDraft('session-a')).toBe('');
   });
@@ -159,9 +183,11 @@ describe('message delivery', () => {
     expect(acknowledgedMessageDeliveries()).toHaveLength(20);
   });
 
-  it('refuses to replace an unresolved delivery even when a caller forgets the guard', () => {
+  it('allows independent sessions while preserving one unresolved delivery per session', () => {
     expect(startMessageDelivery('first', 'one', 'session-a', 'chat-a')).toBe(true);
-    expect(startMessageDelivery('second', 'two', 'session-b', 'chat-b')).toBe(false);
-    expect(messageSubmission()).toMatchObject({ commandId: 'first', sessionId: 'session-a', text: 'one' });
+    expect(startMessageDelivery('second', 'two', 'session-b', 'chat-b')).toBe(true);
+    expect(startMessageDelivery('duplicate-slot', 'three', 'session-a', 'chat-a')).toBe(false);
+    expect(messageSubmission('session-a')).toMatchObject({ commandId: 'first', text: 'one' });
+    expect(messageSubmission('session-b')).toMatchObject({ commandId: 'second', text: 'two' });
   });
 });

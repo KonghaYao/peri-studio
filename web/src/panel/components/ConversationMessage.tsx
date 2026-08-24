@@ -1,5 +1,5 @@
 import { createMemo, For, Show, type Accessor } from 'solid-js';
-import type { ChatEntry } from '../lib/chat-view';
+import type { ChatBlock, ChatEntry } from '../lib/chat-view';
 import { messageTime } from '../lib/message-time.ts';
 import { splitSystemReminders } from '../lib/system-reminder';
 import { CopyButton, InlineNotice } from '../../components/ui';
@@ -11,15 +11,20 @@ type ChatEntrySource = ChatEntry | Accessor<ChatEntry>;
 /** Owns the visual and semantic hierarchy of one server-projected entry. */
 export function ConversationMessage(props: { entry: ChatEntrySource }) {
   const entry = () => typeof props.entry === 'function' ? props.entry() : props.entry;
-  const reasoningIds = createMemo(() => entry().reasoning.map((reasoning, index) => reasoning.id || `${entry().id}:reasoning:${index}`));
-  const reasoningById = createMemo(() => new Map(entry().reasoning.map((reasoning, index) => [reasoning.id || `${entry().id}:reasoning:${index}`, reasoning])));
-  const toolCallIds = createMemo(() => entry().toolCalls.map((toolCall, index) => toolCall.toolCallId || `${entry().id}:tool:${index}`));
-  const toolCallsById = createMemo(() => new Map(entry().toolCalls.map((toolCall, index) => [toolCall.toolCallId || `${entry().id}:tool:${index}`, toolCall])));
+  const legacyBlocks = (): ChatBlock[] => [
+    ...entry().reasoning.map((reasoning, index) => ({ kind: 'reasoning' as const, id: reasoning.id || `${entry().id}:reasoning:${index}`, reasoning })),
+    ...(entry().text ? [{ kind: 'text' as const, id: `${entry().id}:text`, text: entry().text }] : []),
+    ...entry().toolCalls.map((toolCall, index) => ({ kind: 'tool_call' as const, id: toolCall.toolCallId || `${entry().id}:tool:${index}`, toolCall })),
+    ...entry().resources.map((resource, index) => ({ kind: 'resource' as const, id: resource.resourceId || `${entry().id}:resource:${index}`, resource })),
+  ];
+  // 旧快照与开发 fixture 可能尚无 blocks；只在该兼容边界回退到旧分组模型。
+  const blocks = createMemo(() => entry().blocks?.length ? entry().blocks : legacyBlocks());
+  const blockIds = createMemo(() => blocks().map((block) => block.id));
+  const blocksById = createMemo(() => new Map(blocks().map((block) => [block.id, block])));
   // Replay timestamps are Hub observation time, not original message time.
   const timestamp = createMemo(() => entry().origin === 'session_replay' ? null : messageTime(entry().createdAt));
   const role = createMemo(() => entry().role === 'user' ? 'user' : entry().role === 'system' ? 'system' : 'assistant');
   const streaming = () => entry().status === 'streaming';
-  const userSegments = createMemo(() => splitSystemReminders(entry().text));
   const label = () => role() === 'user' ? 'Your message' : role() === 'system' ? 'System message' : 'Assistant message';
   const partialTerminal = createMemo(() => {
     if (role() !== 'assistant' || !(entry().text || entry().reasoning.length || entry().toolCalls.length || entry().resources.length)) return null;
@@ -42,26 +47,36 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
           <Show when={timestamp()}>{(time) => <time dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show>
         </header>
       </Show>
-      <For each={reasoningIds()}>{(id) => {
-        const reasoning = () => reasoningById().get(id)!;
-        return <details class="message-reasoning text-text-secondary text-13"><summary class="cursor-pointer select-none">Thinking</summary><pre class="mt-5 ml-12 pl-12 border-l-2 border-l-divider whitespace-pre-wrap wrap-anywhere text-text-secondary font-mono text-12 leading-20">{reasoning().text}</pre></details>;
+      <For each={blockIds()}>{(id) => {
+        const block = () => blocksById().get(id)!;
+        return <Show when={block().kind === 'reasoning'} fallback={
+          <Show when={block().kind === 'text'} fallback={
+            <Show when={block().kind === 'tool_call'} fallback={
+              <section class="message-resource p-10 px-12 rounded-10 bg-surface-muted" aria-label={(block() as Extract<ChatBlock, { kind: 'resource' }>).resource.name || 'Related resource'}>
+                {(() => {
+                  const resource = () => (block() as Extract<ChatBlock, { kind: 'resource' }>).resource;
+                  return <><div class="flex items-baseline gap-8"><strong class="text-text-primary text-13 font-semibold">{resource().name || resource().resourceId || 'Resource'}</strong><span class="text-text-muted text-12">{resource().mediaType || 'Unknown type'}</span></div><Show when={resource().resourceId}><code class="block mt-3 wrap-anywhere text-text-muted font-mono text-11 leading-145" title={resource().resourceId || undefined}>{resource().resourceId}</code></Show></>;
+                })()}
+              </section>
+            }>{<ToolCallCard toolCall={() => (block() as Extract<ChatBlock, { kind: 'tool_call' }>).toolCall} />}</Show>
+          }>{
+            <div class="conversation-message__text text-text-primary text-14 leading-22">
+              <Show when={role() === 'assistant'} fallback={<For each={splitSystemReminders((block() as Extract<ChatBlock, { kind: 'text' }>).text)}>{(segment) =>
+                <Show when={segment.kind === 'system_reminder'} fallback={<span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{segment.text}</span>}>
+                  <InlineNotice class="system-reminder-message my-8 max-w-full text-left!" tone="info" title="Untrusted system reminder" aria-label="Untrusted system reminder"><p class="whitespace-pre-wrap wrap-anywhere">{segment.text}</p></InlineNotice>
+                </Show>
+              }</For>}>
+                <Show when={!streaming()} fallback={<span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{(block() as Extract<ChatBlock, { kind: 'text' }>).text}</span>}>
+                  <Markdown source={() => (block() as Extract<ChatBlock, { kind: 'text' }>).text} />
+                </Show>
+              </Show>
+            </div>
+          }</Show>
+        }>{(() => {
+          const reasoning = () => (block() as Extract<ChatBlock, { kind: 'reasoning' }>).reasoning;
+          return <details class="message-reasoning text-text-secondary text-13"><summary class="cursor-pointer select-none">Thinking</summary><pre class="mt-5 ml-12 pl-12 border-l-2 border-l-divider whitespace-pre-wrap wrap-anywhere text-text-secondary font-mono text-12 leading-20">{reasoning().text}</pre></details>;
+        })()}</Show>;
       }}</For>
-      <div class="conversation-message__text text-text-primary text-14 leading-22">
-        <Show when={role() === 'assistant'} fallback={<For each={userSegments()}>{(segment) =>
-          <Show when={segment.kind === 'system_reminder'} fallback={<span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{segment.text}</span>}>
-            <InlineNotice class="system-reminder-message my-8 max-w-full text-left!" tone="info" title="Untrusted system reminder" aria-label="Untrusted system reminder">
-              <p class="whitespace-pre-wrap wrap-anywhere">{segment.text}</p>
-            </InlineNotice>
-          </Show>
-        }</For>}>
-          <Markdown source={() => entry().text} streaming={streaming()} />
-        </Show>
-      </div>
-      <For each={toolCallIds()}>{(id) => <ToolCallCard toolCall={() => toolCallsById().get(id)!} />}</For>
-      <For each={entry().resources}>{(resource) => <section class="message-resource p-10 px-12 rounded-10 bg-surface-muted" aria-label={resource.name || 'Related resource'}>
-        <div class="flex items-baseline gap-8"><strong class="text-text-primary text-13 font-semibold">{resource.name || resource.resourceId || 'Resource'}</strong><span class="text-text-muted text-12">{resource.mediaType || 'Unknown type'}</span></div>
-        <Show when={resource.resourceId}><code class="block mt-3 wrap-anywhere text-text-muted font-mono text-11 leading-145" title={resource.resourceId || undefined}>{resource.resourceId}</code></Show>
-      </section>}</For>
       <Show when={partialTerminal()}>{(terminal) => <InlineNotice tone={terminal().tone} role="status" title="Partial response">
         <span>{terminal().label}. The output above may be incomplete.</span>
       </InlineNotice>}</Show>

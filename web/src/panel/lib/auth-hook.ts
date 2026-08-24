@@ -25,8 +25,8 @@ export interface AuthActions {
 }
 
 export interface AuthControllerDeps {
-  /** 身份边界重置（store.resetAuthenticatedSession）：任何鉴权转换前清空旧身份状态。 */
-  resetSession: () => void;
+  /** 清空旧运行时；同一 principal 的成功重连可保留按身份隔离的持久草稿。 */
+  resetSession: (options?: { preserveLocalDrafts?: boolean }) => void;
 }
 
 export const AuthActionsContext = createContext<AuthActions>();
@@ -102,14 +102,14 @@ export function createAuthController(deps: AuthControllerDeps) {
         setProblem(authFeedback(res.status, 'status'));
         return setState('signed-out');
       }
-      const role = parsePrincipal(parsed.payload);
-      if (!role) {
+      const principal = parsePrincipal(parsed.payload);
+      if (!principal) {
         deps.resetSession();
         setProblem({ kind: 'server', message: 'The server returned an unrecognized access role; access to the app is blocked.', retryable: true });
         return setState('signed-out');
       }
-      deps.resetSession();
-      installPrincipalRole(role);
+      deps.resetSession({ preserveLocalDrafts: true });
+      installPrincipalRole(principal.role, principal.principalId);
       clearAuthInvalidation();
       setState('signed-in');
       connectWithCookie();
@@ -145,16 +145,16 @@ export function createAuthController(deps: AuthControllerDeps) {
         setProblem(authFeedback(res.status, 'login'));
         return setState('signed-out');
       }
-      const role = parsePrincipal(parsed.payload);
-      if (!role) {
+      const principal = parsePrincipal(parsed.payload);
+      if (!principal) {
         deps.resetSession();
         setProblem({ kind: 'server', message: 'The server returned an unrecognized access role; sign-in is blocked.', retryable: true });
         setState('signed-out');
         return;
       }
       rememberToken(raw);
-      deps.resetSession();
-      installPrincipalRole(role);
+      deps.resetSession({ preserveLocalDrafts: true });
+      installPrincipalRole(principal.role, principal.principalId);
       clearAuthInvalidation();
       setToken('');
       setState('signed-in');

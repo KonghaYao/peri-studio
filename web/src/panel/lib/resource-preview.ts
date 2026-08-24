@@ -28,6 +28,16 @@ export interface ResourceFilePreviewState {
   error?: string;
 }
 
+export function downloadResourceUrl(url: string, filename: string): void {
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.rel = 'noopener';
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
 type Update<T> = (requestId: string, patch: Partial<T>) => void;
 
 export async function loadGitDiff(

@@ -77,6 +77,14 @@ fn permission_first_atomically_synthesizes_reachable_tool_card() {
     assert_eq!(tool.permission_id.as_deref(), Some("p-first"));
     assert!(entry_has_tool_block(&p, "t1:assistant", "tc-first"));
     assert_eq!(active_turn_status(&p), Some(TurnStatus::AwaitingPermission));
+    assert_eq!(
+        permission_string(&p, "p-first", "evidence_tool_call_id").as_deref(),
+        Some("tc-first")
+    );
+    assert_eq!(
+        permission_string(&p, "p-first", "tool_input_summary").as_deref(),
+        Some("Command: cargo (+1 argument)")
+    );
 
     let official_start = EventBody::ToolCallStarted {
         turn_id: "t1".into(),
@@ -96,6 +104,45 @@ fn permission_first_atomically_synthesizes_reachable_tool_card() {
     assert_eq!(enriched.status, ToolCallStatus::AwaitingPermission);
     assert_eq!(enriched.permission_id.as_deref(), Some("p-first"));
     assert!(entry_has_tool_block(&p, "t1:assistant", "tc-first"));
+}
+
+#[test]
+fn permission_input_evidence_is_allowlisted_redacted_and_bounded() {
+    use crate::state::normalized::PermissionToolSnapshot;
+
+    let mut p = pair();
+    let mut agg = Aggregator;
+    seed_user_msg(&mut p, "t1", "t1:user", "a");
+    let permission = EventBody::PermissionRequested {
+        permission_id: "p-redacted".into(),
+        turn_id: "t1".into(),
+        tool_call_id: Some("tc-redacted".into()),
+        tool: Some(PermissionToolSnapshot {
+            tool_call_id: "tc-redacted".into(),
+            name: "shell".into(),
+            arguments: Some(json!({
+                "cmd": "API_TOKEN=secret curl https://example.test/private --header Bearer-secret",
+                "cwd": "/workspace/project",
+                "password": "must-not-escape",
+                "environment": { "SECRET": "must-not-escape" },
+                "unknown": "must-not-escape"
+            })),
+        }),
+        title: "允许执行".into(),
+        description: None,
+        options: vec![PermissionOptions::AllowOnce],
+        option_ids: Default::default(),
+        expires_at: "2026-08-07T00:05:00Z".into(),
+    };
+    assert!(agg.apply(&mut p, &ev("s1", 2, permission)).applied);
+
+    let summary = permission_string(&p, "p-redacted", "tool_input_summary").unwrap();
+    assert_eq!(
+        summary,
+        "Working directory: /workspace/project · Command: curl (+3 arguments)"
+    );
+    assert!(!summary.contains("secret"));
+    assert!(summary.len() <= 512);
 }
 
 #[test]

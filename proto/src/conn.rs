@@ -49,6 +49,10 @@ pub struct Ready {
     /// `ready` 帧可解码；空集合不下发，维持旧 JSON 形态。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub negotiated_capabilities: Vec<String>,
+    /// 本连接允许的 prompt 正文 UTF-8 字节数。仅在安全投递能力协商成功
+    /// 时下发；旧 server 缺失该字段时浏览器必须 fail closed。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_prompt_bytes: Option<u32>,
 }
 
 /// `keep_alive` 帧载荷：S→C 心跳（§4.7，载荷为 ping）。

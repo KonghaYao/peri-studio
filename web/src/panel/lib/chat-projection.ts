@@ -263,7 +263,16 @@ export class ChatProjection {
     }
     legacy.sort((left, right) => left.startedAt.localeCompare(right.startedAt) || left.id.localeCompare(right.id));
     if (!legacy.length) return entry;
-    return { ...entry, toolCalls: [...entry.toolCalls, ...legacy.map((tool) => readChatToolCall(tool.id, tool.map))] };
+    const legacyCalls = legacy.map((tool) => readChatToolCall(tool.id, tool.map));
+    return {
+      ...entry,
+      toolCalls: [...entry.toolCalls, ...legacyCalls],
+      blocks: [...entry.blocks, ...legacyCalls.map((toolCall) => ({
+        kind: 'tool_call' as const,
+        id: `legacy-tool:${toolCall.toolCallId}`,
+        toolCall,
+      }))],
+    };
   }
 
   private rebuildOrphanIndex(): void {

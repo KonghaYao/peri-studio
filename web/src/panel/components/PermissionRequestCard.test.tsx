@@ -7,6 +7,7 @@ const permission = {
   title: 'Run shell command', description: "Read the current project's Git status", options: ['allowOnce', 'allowSession', 'deny'] as Array<'allowOnce' | 'allowSession' | 'deny'>, status: 'pending',
   expiresAt: '2099-08-13T12:00:00Z', decision: null,
   optionIds: { allowOnce: 'allow-once', allowSession: 'allow-session', deny: 'reject-once' },
+  toolInputSummary: 'Command: git (+1 argument) · Working directory: /workspace/project',
 };
 
 describe('PermissionRequestCard', () => {
@@ -19,6 +20,7 @@ describe('PermissionRequestCard', () => {
     expect(screen.getByText("Read the current project's Git status")).toBeInTheDocument();
     expect(screen.queryByText('Permission needed')).not.toBeInTheDocument();
     expect(screen.getByText('tool tool-123…')).toHaveAttribute('title', 'tool-123456789');
+    expect(screen.getByText('Command: git (+1 argument) · Working directory: /workspace/project')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Allow once' }));
     expect(resolve).toHaveBeenCalledExactlyOnceWith('allow', 'allow-once');
     view.unmount();

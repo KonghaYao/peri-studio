@@ -94,19 +94,19 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
       </div>
       <Show when={repoMutation()?.error}>{(error) => <div role="alert" class="mt-5 flex min-h-28 items-center gap-6 border border-danger-border bg-danger-soft px-8 py-5 text-10 leading-14 text-danger">
         <span class="min-w-0 flex-1">{error()}</span>
-        <Show when={repoMutation()?.retryable}><button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline" onClick={retryRepoMutation}>Retry</button></Show>
+        <Show when={repoMutation()?.retryable}><button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={retryRepoMutation}>Retry</button></Show>
       </div>}</Show>
     </div>
     <For each={GROUPS}>{(group) => {
       const state = () => props.repo.groups[group.id];
       return <Show when={state()?.count}>
-        <div class="flex h-25 items-center px-8 text-10 font-650 uppercase tracking-4 text-text-secondary pointer-coarse:h-44"><span>{group.label}</span><span class="ml-auto tabular-nums text-text-muted">{state().count}</span></div>
+        <div class="resource-group-title flex h-25 items-center px-8 text-10 font-650 uppercase tracking-4 text-text-secondary pointer-coarse:h-44"><span>{group.label}</span><span class="ml-auto tabular-nums text-text-muted">{state().count}</span></div>
         <For each={state().changes}>{(change) => {
           const mutation = () => resourceWorkspace().mutations?.[change.id];
           const action = () => group.id === 'index' ? 'unstage' : 'stage';
           const path = () => String(change.path ?? '');
           return <div>
-          <div class="group flex h-24 items-center pr-5 text-12 hover:bg-hover pointer-coarse:h-44">
+          <div class="resource-change-row group flex h-24 items-center pr-5 text-12 hover:bg-hover pointer-coarse:h-44">
           <button
             type="button"
             class="flex h-full min-w-0 flex-1 items-center gap-5 border-0 bg-transparent pl-13 text-left text-inherit"
@@ -140,7 +140,7 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
           </div>
           <Show when={mutation()?.error}>{(message) => <div role="alert" class="flex min-h-28 items-center gap-6 border-y border-danger-border bg-danger-soft px-12 py-4 text-10 leading-14 text-danger">
             <span class="min-w-0 flex-1">{message()}</span>
-            <Show when={mutation()?.retryable}><button type="button" class="shrink-0 border-0 bg-transparent px-4 font-650 text-danger underline" aria-label={`Retry ${action()} ${path()}`} onClick={() => retryGitResourceMutation(change.id)}>Retry</button></Show>
+            <Show when={mutation()?.retryable}><button type="button" class="shrink-0 border-0 bg-transparent px-4 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" aria-label={`Retry ${action()} ${path()}`} onClick={() => retryGitResourceMutation(change.id)}>Retry</button></Show>
           </div>}</Show>
         </div>;
         }}</For>

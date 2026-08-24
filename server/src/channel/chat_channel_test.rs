@@ -10,81 +10,10 @@ use peri_studio_proto::conn::DocId;
 use peri_studio_proto::frame::Frame;
 use peri_studio_proto::ysync::{YsyncSubscribe, YsyncUnsubscribe};
 
-use crate::auth::{ConnectionCtx, TokenRole};
-use crate::channel::CommandCoordinator;
-use crate::channel::RelayEventHandler;
-use crate::channel::DEFAULT_ACP_CMD;
+use crate::auth::TokenRole;
 use crate::channel::{ChannelDeps, ChatChannel, DispatchOutcome};
-use crate::control::ChatRegistry;
-use crate::control::InstanceRegistry;
-use crate::control::StoreSink;
-use crate::persist::{PersistConfig, Store};
-use crate::state::doc_manager::{BatchConfig, DocManager};
 
-fn ctx(name: &str) -> ConnectionCtx {
-    ConnectionCtx {
-        token_id: format!("tok-{name}"),
-        role: TokenRole::Full,
-        name: name.to_string(),
-        peer: "127.0.0.1:1234".parse().unwrap(),
-        hostname: None,
-        established_at: chrono::Utc::now(),
-    }
-}
-
-/// 真实装配（复用 coordinator env 的依赖，但不 spawn 网络）。
-struct Env {
-    instance: Arc<InstanceRegistry>,
-    chats: ChatRegistry,
-    coordinator: Arc<CommandCoordinator>,
-    conns: Arc<crate::channel::ConnectionRegistry>,
-    broadcast: Arc<crate::channel::Broadcaster>,
-}
-
-async fn env() -> Env {
-    let tmp = tempfile::tempdir().unwrap();
-    let persist_cfg = PersistConfig {
-        data_dir: tmp.path().to_path_buf(),
-    };
-    let store = Arc::new(Store::open(&persist_cfg).unwrap());
-    let sink = Arc::new(StoreSink::new());
-    let doc = Arc::new(DocManager::new(BatchConfig::default(), sink.clone()));
-    let registry = doc.registry();
-    let chats = ChatRegistry::new(registry);
-    let instance = Arc::new(InstanceRegistry::new(
-        std::time::Duration::from_secs(30),
-        std::time::Duration::from_secs(1),
-        chats.clone(),
-    ));
-    let relay = Arc::new(RelayEventHandler::new(
-        doc.clone(),
-        chats.clone(),
-        instance.clone(),
-        doc.registry(),
-    ));
-    let coordinator = Arc::new(CommandCoordinator::with_l3_timeout(
-        store,
-        doc.clone(),
-        instance.clone(),
-        chats.clone(),
-        relay.clone(),
-        &BatchConfig::default(),
-        DEFAULT_ACP_CMD.iter().map(|s| s.to_string()).collect(),
-        std::time::Duration::from_secs(1),
-        std::time::Duration::from_secs(1),
-        std::time::Duration::from_secs(1),
-        std::time::Duration::from_secs(1),
-    ));
-    let conns = Arc::new(crate::channel::ConnectionRegistry::new(200));
-    let broadcast = Arc::new(crate::channel::Broadcaster::new(1_000_000, 2_000_000));
-    Env {
-        instance,
-        chats,
-        coordinator,
-        conns,
-        broadcast,
-    }
-}
+use super::chat_channel_test_support::{ctx, env};
 
 #[tokio::test]
 async fn first_frame_must_be_subscribe_or_action() {

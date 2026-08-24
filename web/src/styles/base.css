@@ -153,4 +153,26 @@ code {
     scroll-behavior: auto !important;
   }
 }
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline-color: Highlight;
+  }
+
+  button,
+  input,
+  textarea,
+  select,
+  [role='button'],
+  [role='treeitem'] {
+    forced-color-adjust: auto;
+  }
+
+  .conversation-message__surface,
+  .permission-request,
+  .tool-card,
+  .resource-workbench {
+    border-color: CanvasText;
+  }
+}
 }

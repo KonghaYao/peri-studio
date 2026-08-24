@@ -76,6 +76,7 @@ pub(crate) fn write_permission_request(
     description: Option<&str>,
     options: &[PermissionOptions],
     option_ids: Option<&std::collections::BTreeMap<String, String>>,
+    tool_input_evidence: Option<(&str, &str)>,
     expires_at: &str,
 ) {
     let perms = root.get_or_init::<_, yrs::MapRef>(txn, "pending_permissions");
@@ -109,6 +110,13 @@ pub(crate) fn write_permission_request(
         }
     } else {
         pm.remove(txn, "option_ids");
+    }
+    if let Some((tool_call_id, summary)) = tool_input_evidence {
+        pm.insert(txn, "evidence_tool_call_id", tool_call_id.to_string());
+        pm.insert(txn, "tool_input_summary", summary.to_string());
+    } else {
+        pm.remove(txn, "evidence_tool_call_id");
+        pm.remove(txn, "tool_input_summary");
     }
     pm.insert(
         txn,

@@ -8,6 +8,8 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use base64::Engine as _;
+use sha2::{Digest, Sha256};
 use tokio::io::AsyncReadExt;
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
@@ -16,6 +18,13 @@ use crate::auth::{AuthService, BROWSER_COOKIE, BROWSER_SESSION_TTL_SECS};
 use crate::web::http::{security_headers, write_http, BrowserLoginRequest, MAX_HTTP_BODY};
 use crate::web::parse::is_json_content_type;
 use crate::web::BrowserAuthSetup;
+
+/// 浏览器草稿等本地状态使用的稳定伪名。只暴露 token id 的单向摘要，既能
+/// 隔离同一浏览器中的不同 principal，也不泄露运维记录 id/name。
+fn browser_principal_id(token_id: &str) -> String {
+    let digest = Sha256::digest(format!("peri-studio-browser-principal-v1:{token_id}"));
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(&digest[..16])
+}
 
 /// 认证端点主体（方法面、body 读取与响应构造）。
 ///
@@ -208,7 +217,7 @@ pub(crate) async fn serve_auth_session(
                     Ok((sid, ctx)) => (
                     "200 OK",
                     serde_json::to_vec(
-                        &serde_json::json!({"authenticated":true,"role":ctx.role.as_str(),"setup":auth_setup}),
+                        &serde_json::json!({"authenticated":true,"role":ctx.role.as_str(),"principalId":browser_principal_id(&ctx.token_id),"setup":auth_setup}),
                     )
                     .unwrap(),
                     vec![(
@@ -237,7 +246,7 @@ pub(crate) async fn serve_auth_session(
                     Ok(ctx) => (
                         "200 OK",
                         serde_json::to_vec(
-                            &serde_json::json!({"authenticated":true,"role":ctx.role.as_str(),"setup":auth_setup}),
+                            &serde_json::json!({"authenticated":true,"role":ctx.role.as_str(),"principalId":browser_principal_id(&ctx.token_id),"setup":auth_setup}),
                         )
                         .unwrap(),
                         vec![],

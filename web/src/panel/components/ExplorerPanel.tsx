@@ -171,7 +171,7 @@ function FileRow(props: { entry: ResourceEntry; depth: number; index: number; se
     </button>
     <Show when={directory() && open()}>
       <div role="group">
-        <Show when={resourceWorkspace().directories[path()]} fallback={<div class="h-24 text-11 text-text-faint" style={{ 'padding-left': `${32 + props.depth * 13}px` }}>Loading…</div>}>
+        <Show when={resourceWorkspace().directories[path()]} fallback={<div class="h-24 text-11 text-text-muted" style={{ 'padding-left': `${32 + props.depth * 13}px` }}>Loading…</div>}>
           <FileLevel path={path()} depth={props.depth + 1} expanded={props.expanded} activePath={props.activePath} onActive={props.onActive} onToggle={props.onToggle} onPreviewIntent={props.onPreviewIntent} />
         </Show>
       </div>

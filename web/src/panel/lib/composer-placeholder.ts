@@ -12,10 +12,7 @@ export interface ComposerPlaceholderInput {
   promptDeliveryReady: boolean;
   terminal: boolean;
   turnActive: boolean;
-  /** 是否有任何（含其他会话的）消息投递在途 —— 控制 disabled。 */
-  hasSubmission: boolean;
   submissionForSession: boolean;
-  submissionInAnotherSession: boolean;
 }
 
 export interface ComposerInputState {
@@ -31,7 +28,7 @@ export function composerInputState(input: ComposerPlaceholderInput): ComposerInp
     || input.readOnly
     || !input.promptDeliveryReady
     || input.turnActive
-    || input.hasSubmission;
+    || input.submissionForSession;
   let placeholder: string;
   if (input.readOnly) {
     placeholder = '';
@@ -45,7 +42,7 @@ export function composerInputState(input: ComposerPlaceholderInput): ComposerInp
     placeholder = 'Server upgrade required to send messages safely';
   } else if (input.terminal) {
     placeholder = 'Conversation ended (history is read-only)';
-  } else if (input.turnActive || input.submissionForSession || input.submissionInAnotherSession) {
+  } else if (input.turnActive || input.submissionForSession) {
     placeholder = '';
   } else {
     placeholder = 'Message Agent';

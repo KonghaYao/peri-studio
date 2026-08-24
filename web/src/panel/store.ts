@@ -1,16 +1,4 @@
-// peri-studio Web 面板 —— 装配与编排（SolidJS 响应式 store）。
-//
-// 流程（M3 方案 §4，移植自原 main.js）：
-//   1. HttpOnly Cookie 鉴权 → ysync.subscribe ["hub:registry"]
-//      → 快照 + ready → UI 启用。
-//   2. registry 渲染 → 左栏实例/对话。
-//   3. 点击对话 → subscribe ["chat:{cid}","session:{cid}"] → 快照渲染历史
-//      → 增量实时更新（yjs 流式）。
-//   4. 发送消息 → chat/prompt（CommandTracker 跟踪 accepted→terminal）;
-//      用户消息依赖 server 投影，本地只保留可恢复的提交状态。
-//   5. create committed ack（带 chatId）→ 自动订阅 chat:{cid} 并选中。
-//   6. 断线：4500/4501/4502 停止并提示；1011/1013 指数退避重连（ws-client），
-//      重连后重放订阅（快照兜底）。
+// peri-studio Web 面板组合根：装配协议、投影与领域控制器。
 
 import { createSignal } from 'solid-js';
 import * as H from './lib/protocol';
@@ -21,8 +9,9 @@ import type { ChatInfo, InstanceInfo, ProjectInfo, ProjectSessionInfo, SessionSu
 import { isTerminal, isTurnActive } from './lib/action-state.ts';
 import { CommandTracker } from './lib/command-tracker';
 import { SessionActivation, type OpeningSession, type OpenSessionCallbacks } from './lib/session-activation';
-import { installPrincipalRole, publishAuthInvalidation, readOnly } from './lib/auth-state';
-import { completeMessageDelivery, messageSubmission, resetMessageDelivery } from './lib/message-delivery';
+import { installPrincipalRole, principalId, publishAuthInvalidation, readOnly } from './lib/auth-state';
+import { setComposerDraft } from './lib/composer-draft';
+import { completeMessageDelivery, messageSubmission, messageSubmissionByCommand, messageSubmissionForChat, resetMessageDelivery } from './lib/message-delivery';
 import { settleLateQuickStart } from './lib/quick-start-delivery';
 import { confirmRuntimeControl, resetRuntimeControls } from './lib/runtime-control';
 import { resetPermissionDecisions } from './lib/permission-delivery';
@@ -32,7 +21,7 @@ import { ACK_TIMEOUT_MS, type Ack, type ActionError, type ActionFrame, type Acti
 import { handleMcpOAuth, handleMcpOAuthAuthorization, handleMcpServers, resetMcpState } from './lib/mcp';
 import { handleRewindCandidates, handleRewindPreview, resetRewindState, rewindOwnsError } from './lib/rewind-assembly';
 import { clearPromptRecoverySelection, handlePromptStatus, promptRecoveryOwnsError, requestPromptRecovery, resetPromptRecoveryState } from './lib/prompt-recovery-assembly';
-import { connectionReady, disconnect, forgetRememberedSession, installConnection, readRememberedSession, rememberSession, resetConnectionState, sendFrame } from './lib/connection';
+import { connectionReady, disconnect, forgetRememberedSession, installConnection, promptMaxBytes, readRememberedSession, rememberSession, resetConnectionState, sendFrame } from './lib/connection';
 import { ERROR_REASONS, persistActionProblem, reportTransportIssue, type PersistentError } from './lib/panel-errors';
 import { sendMessage, type SessionConfigMutation } from './lib/user-actions';
 import { installChatSubscription, reconcileCurrentRuntimeControl, refreshCurrentControlProjection, selectChat, sendSubscribe } from './lib/chat-subscription';
@@ -46,8 +35,6 @@ import {
   replayResourceSubscriptions,
   resetResourceProject,
 } from './lib/resource-store';
-
-// ── UI 信号（组件消费）─────────────────────────────────────────────────
 
 export const [selectedCid, setSelectedCid] = createSignal<string | null>(null);
 export const [chatEntries, setChatEntries] = createSignal<ChatEntry[]>([]);
@@ -85,8 +72,6 @@ export const [discoveringSessionsProjectId, setDiscoveringSessionsProjectId] = c
 export type { PromptRecoveryView } from './lib/prompt-recovery';
 export const [sessionConfigMutation, setSessionConfigMutation] = createSignal<SessionConfigMutation | null>(null);
 
-// ── 内部状态 ────────────────────────────────────────────────────────────
-
 const store = new DocStore(); // docId → Y.Doc
 let currentCid: string | null = null; // 选中对话（重连后恢复订阅）
 const [uncertainMetadataCount, setUncertainMetadataCount] = createSignal(0);
@@ -102,8 +87,6 @@ const commands = new CommandTracker<ActionFrame, Ack, ActionError>({
     request.frame.commandId,
   ),
 });
-
-// ── toast ───────────────────────────────────────────────────────────────
 
 export function toast(msg: string): void {
   toastStore.show(msg);
@@ -132,8 +115,6 @@ installChatSubscription({
 // re-export 保持组件与旧调用点的导入路径兼容。
 export { isTerminal };
 
-// ── ack 表 ──────────────────────────────────────────────────────────────
-
 // 发送 action 并登记 ack 回调；ready 前不发（server 会缓冲，但面板
 // 以 ready 门控保证可预期）。
 function sendAction(frame: ActionFrame, label: string, options: ActionOptions = {}): boolean {
@@ -159,8 +140,6 @@ function sendAction(frame: ActionFrame, label: string, options: ActionOptions = 
   return true;
 }
 
-// 特性装配（P1 拆分）：面板错误/用户动作/MCP/Rewind/PromptRecovery
-// 五个 install 迁至 lib/store-installs，运行时依赖一次注入。
 installStoreWiring({
   setPersistentErrors,
   hasUncertain: (commandId) => commands.hasUncertain(commandId),
@@ -173,6 +152,12 @@ installStoreWiring({
   turnActive,
   currentCid: () => currentCid,
   selectedSessionId,
+  composerDraftOwner: () => {
+    const sessionId = selectedSessionId();
+    const identity = principalId();
+    const projectId = projectSessions().find((session) => session.id === sessionId)?.projectId;
+    return identity && projectId && sessionId ? { principalId: identity, projectId, sessionId } : null;
+  },
   chatStatusSignal,
   chatHead,
   sessionConfigMutation,
@@ -205,8 +190,6 @@ installConnection({
   onFrame,
   onProtocolIssue: reportTransportIssue,
 });
-
-// ── 下行帧分发 ──────────────────────────────────────────────────────────
 
 function onFrame(frame: H.DownstreamFrame): void {
   switch (frame.t) {
@@ -255,7 +238,7 @@ function onAck(ack: Ack): void {
   // A terminal acknowledgement that arrives after timeout/disconnect can
   // reconcile local uncertainty, but must not replay an expired continuation.
   if (disposition === 'late_terminal') {
-    const completedSubmission = messageSubmission();
+    const completedSubmission = ack.commandId ? messageSubmissionByCommand(ack.commandId) : null;
     if (completedSubmission && ack.commandId) completeMessageDelivery(ack.commandId, ack.status);
     if (ack.commandId) settleLateQuickStart(ack.commandId, ack.status, ack.sessionId, ack.chatId);
     if (ack.commandId && confirmRuntimeControl(ack.commandId, ack.status)) reconcileCurrentRuntimeControl();
@@ -309,7 +292,7 @@ const sessionActivation = new SessionActivation({
   isReady: connectionReady,
   isReadOnly: readOnly,
   hasUncertainMetadata: () => !!uncertainMetadataCount(),
-  hasMessageSubmission: () => !!messageSubmission(),
+  hasMessageSubmission: () => !!messageSubmission(selectedSessionId()),
   creatingProjectId: creatingSessionProjectId,
   setCreatingProjectId: setCreatingSessionProjectId,
   sessions: projectSessions,
@@ -322,6 +305,13 @@ const sessionActivation = new SessionActivation({
   activate: activateSession,
   forgetPreference: forgetRememberedSession,
   sendFirstMessage: (text) => sendMessage(text),
+  preserveFirstMessage: (projectId, sessionId, text) => {
+    const identity = principalId();
+    if (!identity) return false;
+    setComposerDraft({ principalId: identity, projectId, sessionId }, text);
+    return true;
+  },
+  maxPromptBytes: promptMaxBytes,
   onNavigationChange: (snapshot) => {
     setOpeningSession(snapshot.opening);
     setRestoringSessionId(snapshot.restoringSessionId);
@@ -356,7 +346,7 @@ installStoreProjection(
   reconcileSessionNavigation,
   reconcileCurrentRuntimeControl,
   (chatId) => {
-    const submission = messageSubmission();
+    const submission = messageSubmissionForChat(chatId);
     if (submission?.chatId === chatId) commands.touch(submission.commandId);
   },
 );
@@ -403,7 +393,7 @@ export const importProjectSession = (projectId: string, acpSessionId: string, on
 export const discoverProjectSessions = (projectId: string, onCommitted?: () => void, onFailed?: (message: string) => void) =>
   catalogActions.discoverSessions(projectId, onCommitted, onFailed);
 
-export function resetAuthenticatedSession(): void {
+export function resetAuthenticatedSession(options: { preserveLocalDrafts?: boolean } = {}): void {
   // Revoke mutation authority before settling callbacks from the old transport.
   // This function is intentionally idempotent: both the invalidation producer
   // and AuthGate consumer call it to make the identity boundary fail closed.
@@ -424,7 +414,7 @@ export function resetAuthenticatedSession(): void {
   setProjectSessions([]);
   setImportableSessions([]);
   resetPromptRecoveryState();
-  resetMessageDelivery();
+  resetMessageDelivery(options.preserveLocalDrafts === true);
   sessionActivation.reset();
   resetRuntimeControls();
   setSessionConfigMutation(null);
@@ -444,8 +434,6 @@ export function resetAuthenticatedSession(): void {
 export function navigateProjectSession(sessionId: string, callbacks: OpenSessionCallbacks = {}): boolean {
   return sessionActivation.navigate(sessionId, callbacks);
 }
-
-// ── 装配 ────────────────────────────────────────────────────────────────
 
 // Browser UI authenticates through AuthGate and an HttpOnly cookie. The
 // remembered token lives in localStorage (peri_studio_token) and is replayed by

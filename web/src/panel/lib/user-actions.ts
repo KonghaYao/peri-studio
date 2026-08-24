@@ -13,7 +13,8 @@
 import type { Setter } from 'solid-js';
 import * as H from './protocol';
 import { isTerminal } from './action-state';
-import { connectionReady, promptDeliveryReady } from './connection';
+import { connectionReady, promptDeliveryReady, promptMaxBytes } from './connection';
+import { promptFitsBudget } from './prompt-budget';
 import { readOnly } from './auth-state';
 import type { ControlView } from './control-view';
 import type { ActionFrame, ActionOptions } from './action-contract';
@@ -51,6 +52,7 @@ import {
 } from './elicitation-delivery';
 import { persistActionProblem, retryPersistentAction } from './panel-errors';
 import type { DispatchResult } from './command-tracker';
+import type { ComposerDraftOwner } from './composer-draft';
 
 /** 会话配置修改的运行时状态（SessionConfigDialog 消费）。 */
 export interface SessionConfigMutation {
@@ -68,6 +70,7 @@ export interface UserActionsDeps {
   turnActive: () => boolean;
   currentCid: () => string | null;
   selectedSessionId: () => string | null;
+  composerDraftOwner: () => ComposerDraftOwner | null;
   chatStatusSignal: () => Record<string, string>;
   chatHead: () => ControlView | null;
   sessionConfigMutation: () => SessionConfigMutation | null;
@@ -87,12 +90,13 @@ export function installUserActions(d: UserActionsDeps): void {
 }
 
 export function sendMessage(text: string, effort?: string): boolean {
-  if (!connectionReady() || !promptDeliveryReady() || readOnly() || deps!.openingSessionId() || deps!.turnActive() || messageSubmission()) {
+  const sessionId = deps!.selectedSessionId();
+  if (!connectionReady() || !promptDeliveryReady() || readOnly() || deps!.openingSessionId() || deps!.turnActive() || messageSubmission(sessionId)) {
     if (!promptDeliveryReady()) { deps!.toast('Secure message delivery is not enabled on the server; refresh or upgrade the server'); return false; }
     if (readOnly()) { deps!.toast('Read-only mode cannot send messages'); return false; }
     if (deps!.openingSessionId()) { deps!.toast('Session is opening'); return false; }
     if (deps!.turnActive()) { deps!.toast('Agent is working; stop the current task first'); return false; }
-    if (messageSubmission()) { deps!.toast('Previous message is still being confirmed'); return false; }
+    if (messageSubmission(sessionId)) { deps!.toast('This session message is still being confirmed'); return false; }
     deps!.toast('Connection not ready, try again later');
     return false;
   }
@@ -101,9 +105,17 @@ export function sendMessage(text: string, effort?: string): boolean {
     deps!.toast('Select a conversation first');
     return false;
   }
-  const sessionId = deps!.selectedSessionId();
   if (!sessionId) {
     deps!.toast('Persistent session is not ready');
+    return false;
+  }
+  const draftOwner = deps!.composerDraftOwner();
+  if (!draftOwner || draftOwner.sessionId !== sessionId) {
+    deps!.toast('Persistent draft identity is not ready');
+    return false;
+  }
+  if (!promptFitsBudget(text, promptMaxBytes())) {
+    deps!.toast(`Message exceeds the negotiated ${promptMaxBytes()} byte limit`);
     return false;
   }
   if (isTerminal(deps!.chatStatusSignal()[chatId])) {
@@ -111,7 +123,7 @@ export function sendMessage(text: string, effort?: string): boolean {
     return false;
   }
   const frame = H.prompt(chatId, text, effort);
-  if (!startMessageDelivery(frame.commandId, text, sessionId, chatId)) {
+  if (!startMessageDelivery(frame.commandId, text, sessionId, chatId, draftOwner)) {
     deps!.toast('Previous message is still being confirmed');
     return false;
   }
@@ -129,7 +141,8 @@ export function sendMessage(text: string, effort?: string): boolean {
 }
 
 export function retryMessageSubmission(): void {
-  const current = messageSubmission();
+  const sessionId = deps!.selectedSessionId();
+  const current = messageSubmission(sessionId);
   if (!current || current.phase !== 'uncertain' || !deps!.hasUncertain(current.commandId)) return;
   if (!connectionReady()) return deps!.toast('Connection not ready, cannot re-confirm now');
   const result = deps!.retry(current.commandId);

@@ -18,7 +18,9 @@ describe('respondElicitation delivery lifecycle', () => {
     sendResult = true;
     installUserActions({
       selectedCid: () => 'chat-1', openingSessionId: () => null, turnActive: () => false,
-      currentCid: () => 'chat-1', selectedSessionId: () => 'session-1', chatStatusSignal: () => ({}),
+      currentCid: () => 'chat-1', selectedSessionId: () => 'session-1',
+      composerDraftOwner: () => ({ principalId: 'principal-1', projectId: 'project-1', sessionId: 'session-1' }),
+      chatStatusSignal: () => ({}),
       chatHead: () => null, sessionConfigMutation: () => null, setSessionConfigMutation: vi.fn(),
       toast: vi.fn(), sendAction: (_frame, _label, next) => { options = next; return sendResult; },
       hasUncertain: () => false, retry: () => null, reconcileCurrentRuntimeControl: vi.fn(),

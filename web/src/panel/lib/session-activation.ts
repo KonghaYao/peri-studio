@@ -5,12 +5,14 @@ import {
   acceptQuickStart,
   completeQuickStart,
   failQuickStart,
+  finishQuickStart,
   markQuickStartUncertain,
   quickStartSubmission,
   resetQuickStart,
   retryQuickStartDelivery,
   startQuickStart,
 } from './quick-start-delivery';
+import { promptFitsBudget } from './prompt-budget';
 
 type ActionFrame = ReturnType<typeof H.action>;
 export interface ActivationAck {
@@ -50,6 +52,8 @@ export interface SessionActivationDependencies {
   activate: (sessionId: string, chatId: string) => void;
   forgetPreference: () => void;
   sendFirstMessage: (text: string) => boolean;
+  preserveFirstMessage: (projectId: string, sessionId: string, text: string) => boolean;
+  maxPromptBytes: () => number;
   onNavigationChange: (snapshot: SessionNavigationSnapshot) => void;
   toast: (message: string) => void;
   persistProblem: (title: string, detail: string, commandId?: string) => void;
@@ -108,6 +112,13 @@ export class SessionActivation {
       this.deps.toast(rejection);
       return false;
     }
+    if (!promptFitsBudget(source, this.deps.maxPromptBytes())) {
+      const maxBytes = this.deps.maxPromptBytes();
+      this.deps.toast(maxBytes > 0
+        ? `First message exceeds the negotiated ${maxBytes} byte limit`
+        : 'Secure message delivery is not enabled on the server');
+      return false;
+    }
     const firstLine = source.split(/\r?\n/, 1)[0];
     const title = [...firstLine].slice(0, 60).join('');
     const frame = H.persistedSessionCreate(projectId, title);
@@ -119,15 +130,19 @@ export class SessionActivation {
         const activation = completeQuickStart(frame.commandId, ack.status, ack.sessionId, ack.chatId);
         if (!activation) return;
         this.deps.activate(activation.sessionId, activation.chatId);
-        if (!this.deps.sendFirstMessage(activation.text)) {
+        if (this.deps.sendFirstMessage(activation.text)) {
+          finishQuickStart(activation.commandId);
+        } else if (this.deps.preserveFirstMessage(activation.projectId, activation.sessionId, activation.text)) {
+          finishQuickStart(activation.commandId);
           // 错误中心不落用户原文（原则 4：敏感信息不得进入日志/持久化）。
-          // 原文的恢复路径在 outbox / Composer 草稿（quick-start-delivery 保留 source），
-          // 因此这里只写引导文案，不注入 activation.text。
+          // 原文已进入 principal/project/session 复合键草稿；这里只写引导文案。
           this.deps.persistProblem(
             'First message not yet sent',
             'The session was created but the first message was not submitted. Reopen the session from the sidebar and resend.',
             activation.commandId,
           );
+        } else {
+          failQuickStart(activation.commandId, 'The session was created, but the first message could not be attached to its persistent draft identity. Copy it from this recovery card before continuing.');
         }
       },
       onTimeout: () => markQuickStartUncertain(frame.commandId),

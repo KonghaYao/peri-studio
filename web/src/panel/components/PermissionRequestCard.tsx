@@ -101,7 +101,12 @@ export function PermissionRequestCard(props: PermissionRequestCardProps) {
     <div class="permission-request__body min-w-0">
       <strong class="block text-text-primary text-14" id={`${statusId}-title`}>{props.permission.title || 'Permission request'}</strong>
       <Show when={props.permission.description}><p class="mt-4 text-text-secondary text-13 leading-15">{props.permission.description}</p></Show>
-      <Show when={props.permission.toolCallId}><code class="sr-only" title={props.permission.toolCallId || undefined}>tool {shortId(props.permission.toolCallId)}</code></Show>
+      <Show when={props.permission.toolInputSummary}>{(summary) => <div class="mt-8 rounded-8 border border-border-subtle bg-surface-raised px-9 py-7 text-12 leading-145 text-text-secondary">
+        <div class="mb-3 font-semibold text-text-primary">Requested input</div>
+        <code class="block whitespace-pre-wrap break-words">{summary()}</code>
+        <Show when={props.permission.toolCallId}><code class="mt-3 block text-11" title={props.permission.toolCallId || undefined}>tool {shortId(props.permission.toolCallId)}</code></Show>
+      </div>}</Show>
+      <Show when={!props.permission.toolInputSummary && props.permission.toolCallId}><code class="block mt-6 text-11 text-text-secondary" title={props.permission.toolCallId || undefined}>tool {shortId(props.permission.toolCallId)}</code></Show>
       <Show when={deadlineLabel()}><div id={deadlineId} class={`mt-7 text-11 leading-145 ${expirationBlocked() ? 'text-warning font-semibold' : 'text-text-secondary'}`}>
         <time dateTime={props.permission.expiresAt || undefined}>{deadlineLabel()}</time>
       </div></Show>

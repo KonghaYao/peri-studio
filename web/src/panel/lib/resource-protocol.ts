@@ -1,3 +1,5 @@
+import { isStrictRfc3339 } from './rfc3339';
+
 export type ResourceViewKind =
   | 'workspace-summary'
   | 'workspace-repositories-page'
@@ -111,7 +113,7 @@ export function isResourceResult(frame: Record<string, unknown>): frame is Recor
       const data = result.data as Record<string, unknown>;
       if (!data || typeof data.viewId !== 'string' || typeof data.docId !== 'string'
         || !isServerDocId(data.docId) || data.docId !== `resource:${data.viewId}`
-        || typeof data.leaseExpiresAt !== 'string') return false;
+        || typeof data.leaseExpiresAt !== 'string' || !isStrictRfc3339(data.leaseExpiresAt)) return false;
     } else if (result.kind === 'blob') {
       const data = result.data as Record<string, unknown>;
       if (!data || typeof data.blobId !== 'string' || typeof data.url !== 'string'

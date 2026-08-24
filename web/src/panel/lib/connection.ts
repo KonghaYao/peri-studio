@@ -26,6 +26,7 @@ export const [connState, setConnState] = createSignal<{ text: string; kind: 'idl
 });
 export const [heartbeatCount, setHeartbeatCount] = createSignal(0);
 export const [promptDeliveryReady, setPromptDeliveryReady] = createSignal(false);
+export const [promptMaxBytes, setPromptMaxBytes] = createSignal(0);
 export const [connectionProblem, setConnectionProblem] = createSignal<ConnectionProblem | null>(null);
 
 let ws: WsClient | null = null; // 当前 WsClient
@@ -85,6 +86,7 @@ export function disconnect(): void {
   connectionEpoch += 1;
   ready = false;
   setPromptDeliveryReady(false);
+  setPromptMaxBytes(0);
   deps!.onConnectionLost();
   if (ws) {
     ws.close();
@@ -98,6 +100,7 @@ export function resetConnectionState(): void {
   setConnState({ text: 'Disconnected', kind: 'idle' });
   setHeartbeatCount(0);
   setPromptDeliveryReady(false);
+  setPromptMaxBytes(0);
   setConnectionProblem(null);
 }
 
@@ -128,6 +131,7 @@ function handleStatus(state: ConnStatus, detail: ConnDetail): void {
   switch (state) {
     case 'connecting':
       setPromptDeliveryReady(false);
+      setPromptMaxBytes(0);
       break;
     case 'open':
       // 已发 auth；认证后首帧必须是 ysync.subscribe 或 action ——
@@ -135,9 +139,14 @@ function handleStatus(state: ConnStatus, detail: ConnDetail): void {
       deps!.sendSubscribe();
       break;
     case 'ready':
+      const maxPromptBytes = Number.isSafeInteger(detail.maxPromptBytes) && Number(detail.maxPromptBytes) > 0
+        ? Number(detail.maxPromptBytes)
+        : 0;
+      setPromptMaxBytes(maxPromptBytes);
       setPromptDeliveryReady(
         Array.isArray(detail.negotiatedCapabilities)
-          && detail.negotiatedCapabilities.includes(H.CAP_PROMPT_DELIVERY_V2),
+          && detail.negotiatedCapabilities.includes(H.CAP_PROMPT_DELIVERY_V2)
+          && maxPromptBytes > 0,
       );
       deps!.onReady();
       break;

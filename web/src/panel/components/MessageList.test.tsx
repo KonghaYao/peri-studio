@@ -9,7 +9,7 @@ function message(id: string, origin: ChatEntry['origin'], replayVerified: boolea
   return {
     id, turnId: id, kind: 'message', role: 'assistant', status: 'completed', authorUserId: null,
     sourceCommandId: null, origin, replayVerified, createdAt: '2026-08-15T00:00:00Z', completedAt: null,
-    text: id, reasoning: [], toolCalls: [], resources: [], error: null,
+    text: id, blocks: [], reasoning: [], toolCalls: [], resources: [], error: null,
   };
 }
 
@@ -295,6 +295,14 @@ describe('MessageList hydration', () => {
     render(() => <MessageList />);
     expect(screen.getAllByRole('separator')).toHaveLength(2);
     expect(screen.getByRole('separator', { name: 'Peri-verified recovered history' })).toBeInTheDocument();
+    expect(screen.getByRole('separator', { name: 'Peri-verified recovered history' })).toHaveTextContent('Verified history');
     expect(screen.getByRole('separator', { name: 'Current run' })).toBeInTheDocument();
+  });
+
+  it('visibly marks inferred replay as unverified', () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    setChatEntries([message('history-1', 'session_replay', false)]);
+    render(() => <MessageList />);
+    expect(screen.getByRole('separator', { name: 'Unverified recovered history' })).toHaveTextContent('Unverified history');
   });
 });

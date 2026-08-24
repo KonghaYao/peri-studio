@@ -8,7 +8,7 @@ import { Markdown } from './Markdown';
 function entry(overrides: Partial<ChatEntry> = {}): ChatEntry {
   return {
     id: 'entry-1', turnId: 'turn-1', kind: 'message', role: 'assistant', status: 'completed', authorUserId: null, sourceCommandId: null,
-    origin: 'live', replayVerified: null, createdAt: '2026-08-13T12:00:00Z', completedAt: '2026-08-13T12:00:01Z', text: '', reasoning: [], toolCalls: [], resources: [], error: null,
+    origin: 'live', replayVerified: null, createdAt: '2026-08-13T12:00:00Z', completedAt: '2026-08-13T12:00:01Z', text: '', blocks: [], reasoning: [], toolCalls: [], resources: [], error: null,
     ...overrides,
   };
 }
@@ -54,22 +54,23 @@ describe('ConversationMessage', () => {
     );
   });
 
-  it('renders streaming assistant Markdown without exposing incomplete syntax', () => {
+  it('keeps streaming assistant syntax as plain text until completion', () => {
     const view = render(() => <ConversationMessage entry={entry({ status: 'streaming', text: '**partial' })} />);
     const message = screen.getByLabelText('Assistant message');
-    expect(message).not.toHaveTextContent('**partial');
-    expect(message.querySelector('.markdown-body')).toBeInTheDocument();
+    expect(message).toHaveTextContent('**partial');
+    expect(message.querySelector('.markdown-body')).not.toBeInTheDocument();
+    expect(message.querySelector('.message-plain-text')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Copy answer' })).not.toBeInTheDocument();
     expect(document.querySelector('.message-loading')).toBeNull();
     view.unmount();
   });
 
-  it('keeps the Markdown surface mounted while streaming text grows', () => {
+  it('keeps the plain streaming surface mounted while text grows', () => {
     const [current, setCurrent] = createSignal(entry({ status: 'streaming', text: 'First' }));
     render(() => <ConversationMessage entry={current} />);
-    const surface = document.querySelector('.markdown-body');
+    const surface = document.querySelector('.message-plain-text');
     setCurrent(entry({ status: 'streaming', text: 'First second' }));
-    expect(document.querySelector('.markdown-body')).toBe(surface);
+    expect(document.querySelector('.message-plain-text')).toBe(surface);
     expect(surface).toHaveTextContent('First second');
   });
 
@@ -89,6 +90,34 @@ describe('ConversationMessage', () => {
     const image = screen.getByRole('img', { name: 'Diagram' });
     setSource('![Diagram](https://example.test/diagram.png)\n\nFirst second');
     expect(screen.getByRole('img', { name: 'Diagram' })).toBe(image);
+  });
+
+  it('shows the remote hostname before image consent', () => {
+    render(() => <Markdown source={'![Diagram](https://assets.example.test/diagram.png)'} />);
+    expect(screen.getByText(/assets\.example\.test/)).toBeInTheDocument();
+  });
+
+  it('renders assistant blocks in the server-projected order', () => {
+    const tool = {
+      toolCallId: 'tool-1', name: 'shell', status: 'completed', arguments: {}, result: null,
+      resultOmitted: false, resultBytes: 0, publicError: null, startedAt: null, completedAt: null,
+    };
+    render(() => <ConversationMessage entry={entry({
+      text: 'Before toolAfter tool',
+      toolCalls: [tool],
+      blocks: [
+        { kind: 'text', id: 'intro', text: 'Before tool' },
+        { kind: 'tool_call', id: 'tool-block', toolCall: tool },
+        { kind: 'text', id: 'outro', text: 'After tool' },
+      ],
+    })} />);
+
+    const message = screen.getByLabelText('Assistant message');
+    const before = screen.getByText('Before tool');
+    const toolCard = message.querySelector('.tool-card')!;
+    const after = screen.getByText('After tool');
+    expect(before.compareDocumentPosition(toolCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(toolCard.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('keeps untrusted HTML inert in assistant Markdown', () => {

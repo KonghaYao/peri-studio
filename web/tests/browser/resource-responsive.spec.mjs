@@ -185,6 +185,10 @@ test('coarse pointer keeps workspace header actions at least 44px', async ({ pag
   await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
+  const diffClose = await page.getByRole('button', { name: 'Close diff' }).boundingBox();
+  expect(diffClose?.width).toBeGreaterThanOrEqual(44);
+  expect(diffClose?.height).toBeGreaterThanOrEqual(44);
+  await page.getByRole('button', { name: 'Close diff' }).click();
   await page.getByRole('button', { name: 'Open workspace resources' }).click();
   expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
 
@@ -193,4 +197,88 @@ test('coarse pointer keeps workspace header actions at least 44px', async ({ pag
     expect(box?.width).toBeGreaterThanOrEqual(44);
     expect(box?.height).toBeGreaterThanOrEqual(44);
   }
+  expect(await page.evaluate(() => {
+    const bridge = window.__PERI_VISUAL_FIXTURE__;
+    if (!bridge) return false;
+    bridge.setFilePreview({
+      requestId: 'coarse-file', path: 'src/main.rs', loading: false, mode: 'text',
+      url: '/api/resource-blobs/coarse-file', contentType: 'text/plain', size: 13,
+      text: 'fn main() {}\n',
+    });
+    return true;
+  })).toBe(true);
+  for (const name of ['Close file', 'Download file']) {
+    const box = await page.getByRole('button', { name }).boundingBox();
+    expect(box?.width).toBeGreaterThanOrEqual(44);
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+  }
+});
+
+test('resource density tokens resolve to their authored desktop heights', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
+  await expect(page.locator('.resource-editor-tab')).toHaveCSS('height', '35px');
+  await expect(page.locator('.resource-editor-toolbar')).toHaveCSS('height', '34px');
+  await page.getByRole('button', { name: 'Close diff' }).click();
+  await page.getByRole('button', { name: 'Source Control' }).click();
+  await expect(page.locator('.resource-group-title').first()).toHaveCSS('height', '25px');
+  await expect(page.locator('.resource-change-row').first()).toHaveCSS('height', '24px');
+});
+
+test('768px resource workflow is keyboard-only and keeps a visible focus ring', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 768 });
+  await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
+  await page.keyboard.press('Escape');
+
+  let reachedStatusEntry = false;
+  for (let index = 0; index < 40; index += 1) {
+    await page.keyboard.press('Tab');
+    reachedStatusEntry = await page.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Open workspace resources');
+    if (reachedStatusEntry) break;
+  }
+  expect(reachedStatusEntry).toBe(true);
+  expect(await page.evaluate(() => getComputedStyle(document.activeElement).outlineStyle)).not.toBe('none');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog', { name: 'Workspace resources' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Explorer', exact: true })).toBeVisible();
+
+  let reachedTree = false;
+  for (let index = 0; index < 20; index += 1) {
+    await page.keyboard.press('Tab');
+    reachedTree = await page.evaluate(() => document.activeElement?.getAttribute('role') === 'treeitem');
+    if (reachedTree) break;
+  }
+  expect(reachedTree).toBe(true);
+  await expect(page.getByRole('treeitem', { name: 'src' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('treeitem', { name: 'main.rs' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  expect(await page.evaluate(() => {
+    const bridge = window.__PERI_VISUAL_FIXTURE__;
+    if (!bridge) return false;
+    bridge.setFilePreview({
+      requestId: 'keyboard-file', path: 'src/main.rs', loading: false, mode: 'text',
+      contentType: 'text/plain', size: 13, text: 'fn main() {}\n',
+    });
+    return true;
+  })).toBe(true);
+  await expect(page.getByRole('heading', { name: 'File preview: src/main.rs' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('treeitem', { name: 'main.rs' })).toBeFocused();
+});
+
+test('forced-colors keeps keyboard focus and security boundaries visible', async ({ page }) => {
+  await page.emulateMedia({ forcedColors: 'active' });
+  await page.setViewportSize({ width: 768, height: 768 });
+  await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
+  await page.keyboard.press('Tab');
+  const focus = await page.evaluate(() => {
+    const style = getComputedStyle(document.activeElement);
+    const permission = getComputedStyle(document.querySelector('.permission-request'));
+    return { outline: style.outlineStyle, width: style.outlineWidth, permissionBorder: permission.borderTopStyle };
+  });
+  expect(focus.outline).not.toBe('none');
+  expect(focus.width).not.toBe('0px');
+  expect(focus.permissionBorder).not.toBe('none');
 });

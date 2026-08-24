@@ -1,9 +1,9 @@
 # Peri Studio 架构设计（权威版）
 
-> 状态：v2.13（无状态投影恢复 + 远程资源工作台 + 长会话可靠 UI + 可恢复焦点）
+> 状态：v2.14（无状态投影恢复 + 远程资源工作台 + 长会话可靠 UI + 持久草稿与资源租约）
 > 日期：2026-08-24
 > 定位：peri-studio 独立项目的架构基准文档。与 peri 的唯一耦合点是 ACP 进程（协议线格式），本设计不依赖 peri 的任何 crate 与部署形态。
-> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界；v2.9 令 Web 权限裁决回传 Control Doc 投影的精确 ACP `optionId`，并在恢复证据与交付边界校验 ID 和 scope；v2.10 增加权限期限的可见倒计时与浏览器 fail-close 门控；v2.11 统一权限与询问队列的领域身份选择和删除回退；v2.12 为一次性 elicitation 回答增加不可重放的刷新与本地隐藏恢复面；v2.13 为移动端 FS/Git 预览增加稳定来源身份与编辑器焦点往返。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
+> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界；v2.9 令 Web 权限裁决回传 Control Doc 投影的精确 ACP `optionId`，并在恢复证据与交付边界校验 ID 和 scope；v2.10 增加权限期限的可见倒计时与浏览器 fail-close 门控；v2.11 统一权限与询问队列的领域身份选择和删除回退；v2.12 为一次性 elicitation 回答增加不可重放的刷新与本地隐藏恢复面；v2.13 为移动端 FS/Git 预览增加稳定来源身份与编辑器焦点往返；v2.14 完成有序 Chat blocks、回放信任标签、按 session 消息投递、协商 prompt 字节预算、principal 作用域持久草稿、权限输入证据、资源租约/代际与高对比浏览器矩阵。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
 > 约定：引用 chat-channel 处标注其文档章节号（如「chat §5.2」），实现时以该仓库为对照基线。协议事实（帧 tag、action 面、schema 版本、默认值）以 `peri-studio-proto` / `server/src/config` 实现为真相来源，本文与实现不一致时以实现为准并回改本文。
 
 ---
@@ -82,6 +82,8 @@ Registry 视图无独立日志/快照：`registry.log`/`registry.snapshot` 及�
 
 浏览器认证通过同源 `POST/GET/DELETE /api/auth/session` 建立内存 opaque session，并下发 `HttpOnly; SameSite=Strict; Path=/; Max-Age=28800` Cookie，与服务端 8 小时 TTL 对齐。会话本身始终是 HttpOnly cookie，WebSocket 帧与 URL 不携带 bearer；为免去每次重开登录，Web 把 full token 存入 localStorage（`peri_studio_token`），仅在下一次打开时自动重放 `POST /api/auth/session`——token 是登录界面的本地便利凭据，不是会话事实源，登出、server 判定 token 失效（`auth_error`/认证终态关闭码）或浏览器存储不可用时立即清除并退回手动输入。Cookie attach 与存量连接按心跳重新校验 token id、撤销状态和当前 role；instance HMAC 与旧 CLI wire-token 流程保持兼容。
 
+认证成功响应额外返回由 server 对内部 token id 做单向 SHA-256 后截断编码的 `principalId`。该值只作为浏览器本地持久状态的隔离键，不是 bearer、不可用于恢复 token id，也不进入 WebSocket URL 或业务日志；role 或 principalId 缺失/畸形时 Web 必须 fail closed。
+
 server 启动时确保名为 `local` 的 instance token 存在，并把对应凭据原子发布到 `<data_dir>/instance.token`（`0600`）；启动路径不打印或返回 token 本体。本地 supervisor 只把该受限文件路径交给 `connect` 子进程，不解析 `tokens.toml`，也不依赖日志抓取。运维显式执行 `token generate` 时仍遵守 stdout 一次性显示或 `--output-file` 私密落盘语义。
 
 登录帮助由 server 的权威运行时 `Config` 派生，不得由 Web 猜测 XDG 默认值。`GET/POST /api/auth/session` 的成功与 401 响应可附带 credential-free `setup { tokenFile, generateCommand }`；字段只描述当前进程实际使用的 token 文件和带精确 config-dir/可执行文件的生成命令，不得包含 token 内容、token id、名称或文件数据。浏览器严格解析这两个非空字符串，畸形/缺失时只显示无路径的通用命令。AuthService `try_lock` 竞争在 GET/POST 上返回 `503 auth_busy` 与 `Retry-After`，不得坍缩成 401 并归罪正确凭证。
@@ -114,9 +116,11 @@ Web 下行 JSON 边界同时保持形状安全与协议前向兼容：只有**�
 
 Web 的 Yjs 边界按文档身份拆分。`DocStore` 只拥有 doc identity、v1 update 应用和 rAF 合帧；`registry-view`、`chat-view`、`control-view` 分别且唯一解释 `hub:registry`、`chat:{id}`、`session:{id}`，共享 helper 只做无领域语义的 Yjs 值读取。兼容 barrel 不得包含解析实现，feature 应直接依赖其所属领域类型。`DocStore.clear()` 是连接世代屏障：注销、认证失效或连接替换后，旧世代已排队的 rAF callback 不得渲染新 doc，也不得消费新世代相同 doc id 的待渲染标记。
 
-Registry 的低频目录与高频 instance heartbeat 必须经过 `RegistryProjection` 按领域 ID 结构共享：只替换投影字段真实变化的 instance/chat/project/session 对象，无关 `projects` / `project_sessions` 数组保持引用稳定。侧栏 machine 分组按 machine id 复用对象，machine 与 project 两层渲染均按稳定 ID 键控，避免元数据变化重挂 session 子树；用户正在输入的 rename draft、焦点、Popover 和 DOM identity 不得因 `last_heartbeat`、hostname/status 或 project 字段变化而丢失。DocStore drop/clear 同时释放 projection 世代，旧身份缓存不得跨 principal 保留。
+Registry 的低频目录与高频 instance heartbeat 必须经过 `RegistryProjection` 按领域 ID 结构共享：只替换投影字段真实变化的 instance/chat/project/session 对象，无关 `projects` / `project_sessions` 数组保持引用稳定。侧栏 instance 分组按 instance id 复用对象，instance 与 project 两层渲染均按稳定 ID 键控，避免元数据变化重挂 session 子树；用户正在输入的 rename draft、焦点、Popover 和 DOM identity 不得因 `last_heartbeat`、hostname/status 或 project 字段变化而丢失。DocStore drop/clear 同时释放 projection 世代，旧身份缓存不得跨 principal 保留。
 
 Web 权限面必须完整呈现同一 Control Doc 中全部 `pending_permissions`，不能只显示迭代顺序中的第一项。请求按有效 `expires_at` 升序、再按 `permission_id` 稳定排序；界面一次聚焦一个决策并显示当前位置/总数，用户切换查看不得隐式提交。当前项以 `pending_permissions` 的外层 Y.Map key 保持显示身份（正常投影中等于 `permission_id`），只有内部 `permission_id` 可用于裁决动作；投影插入其他请求时不跳题，当前项消失后才选择同位置的下一项。每个 `permission_id` 的 pending/uncertain 锁相互独立，缺失内部 id 的畸形投影仍可稳定显示但必须 fail closed，禁止发送空 id 决议。有效 `expires_at` 必须在当前卡显示秒级倒计时；浏览器时间到达期限后立即禁用新裁决与原命令重试，等待 server 权威投影移除请求。显式但无法解析的期限按畸形投影 fail closed；缺省期限只为旧投影兼容而保持可操作。明确未送达且 server 标记 retryable 的失败只允许在原权限卡使用保存的原 `commandId` 与原 decision 重试；超时、断线或 `dispatched` 后结果未知必须继续锁定且不得出现重试按钮。
+
+权限请求还必须投影与同一 `tool_call_id` 绑定的公开输入证据。server 只从权威 tool arguments 的顶层白名单生成至多 512 字符摘要：路径/工作目录/操作等受限标量可见，URL 仅公开 origin，命令只公开可执行文件与参数个数，未知/嵌套/环境变量/凭据字段默认拒绝。Control Doc 同时写 `evidence_tool_call_id`；Web 仅在其与请求的 `tool_call_id` 精确相等且摘要长度/控制字符校验通过时展示，否则按“证据不可用”处理，绝不回退显示原始 arguments。
 
 Permission 与 Elicitation Queue 必须通过同一 identity-selection 模块分别按 `pending_permissions` 外层 Y.Map key / `elicitation_id` 保存当前选择，而不是保存数组下标或投影对象引用。远端重建对象、在当前项之前插入或重排其他请求时，当前卡片、草稿、焦点和 DOM 身份保持不变；仅当当前身份消失时，才选择原位置上仍存在的下一项或末项。导航只改变本地选择，不得隐式提交任何裁决或答案。
 
@@ -124,11 +128,13 @@ Elicitation 回答交付由独立 `elicitation-delivery` 模块按 `elicitation_
 
 ResourceWorkbench 打开文件或 Git diff 时必须把来源 view 与资源稳定键作为一次导航意图交给 AppShell，不得把临时 DOM 引用当成恢复身份。移动端预览出现后，资源 Dialog 关闭并由包含完整路径/比较上下文的 editor heading 接管焦点，不能让 modal 的默认 focus restore 把焦点送回状态栏入口。关闭预览必须重新打开原 Explorer/Source Control view，并把焦点恢复到同一稳定资源键。Explorer 的展开项、roving active path、内部滚动位置，以及按 project/repository 隔离的 commit draft 与在途 requestId/提交快照，都由 Workbench 持有，不能因 Dialog Portal 卸载而丢失；目录投影删除 active row 或 project 身份变化时，active path 必须归一到最近存活祖先或首项，保证文件树始终只有一个 Tab 入口。commit draft 只有精确 mutation 成功且用户未在途改写时才清空，失败、请求被另一 mutation 取代或 project 身份切换都必须保留。桌面端若来源在预览期间被权威投影删除，则退回同一资源 view 的活动按钮，不能把焦点遗留在 `body`。该契约同时覆盖 Enter 打开与 Escape 关闭。
 
-Web 消息阅读器把滚动/跟随策略与单条消息语义分离：`MessageList` 只拥有文档水合、权限队列、自动吸底与完成播报；`ConversationMessage` 统一拥有 user/system/assistant 角色层级以及 reasoning、Markdown、tool、resource、error、copy 证据层。用户和流式正文保持纯文本，只有已终态的 assistant 正文进入安全 Markdown 渲染；流式动画对辅助技术隐藏，完成状态由列表级原子播报一次。错误证据使用可命名 alert，reasoning 默认折叠，资源只展示 server 投影事实，不推断链接或可执行行为。
+Resource Web session 为每次 project 激活分配单调 generation；所有 open-view/blob 请求与已接受 view 均绑定精确 `{projectId,generation}`，迟到或孤立结果只可 release。`leaseExpiresAt` 必须是有效 RFC3339；首个 Yjs update 到达前浏览器持有期限 timer，过期即 unsubscribe、release、drop Doc 并显示可恢复错误。首帧到达代表订阅已登记，可取消本地 deadline；后续 update 仍须同时命中当前 generation、project 与已接受 doc/view owner。该边界与 server 的 principal-bound 短租约共同阻止旧 project 污染与无界 DocStore 分配。
+
+Web 消息阅读器把滚动/跟随策略与单条消息语义分离：`MessageList` 只拥有文档水合、权限队列、自动吸底与完成播报；`ConversationMessage` 统一拥有 user/system/assistant 角色层级以及 reasoning、Markdown、tool、resource、error、copy 证据层。Chat reader 必须按 server `block_order` 生成稳定 discriminated `blocks[]`，正文、reasoning、tool 与 resource 不得再按类型重排；legacy orphan tool 只能以稳定尾部 block 兼容。用户和流式正文保持纯文本，只有已终态的 assistant 正文进入安全 Markdown 渲染；流式动画对辅助技术隐藏，完成状态由列表级原子播报一次。verified replay 与 inferred replay 必须分别显示“Verified history”与“Unverified history”，不能共用模糊 Recovered 标签。远程图片在用户同意前展示规范化 hostname，且不得提前请求网络。错误证据使用可命名 alert，reasoning 默认折叠，资源只展示 server 投影事实，不推断链接或可执行行为。
 
 长会话的读取与呈现由两个深模块分界：`ChatProjection` 长期观察当前 Chat Doc，以 entry/tool 身份维护索引和结构共享；单条流式更新只重读直接关联的 entry，并保持其他 `ChatEntry` 对象身份稳定。`TranscriptWindow` 只接收稳定 entry id 序列，统一拥有变量高度测量、overscan、异步增高和历史前插后的可见 ID 锚点恢复；`MessageList` 只挂载窗口内行，同时以 `aria-posinset`/`aria-setsize` 暴露全局顺序。上滚阅读时不得因远端前插或 ResizeObserver 测量跳位，吸底状态下则必须随尾部高度变化保持最新内容可见；不得重新引入每帧全文拼接、全量 Markdown 解析或全量消息 DOM。
 
-Web 消息投递恢复由 `message-delivery` module 单一所有：它原子维护一个全局未裁决 submission、按 durable session id 隔离的草稿，以及用户已确认继续但仍未取得精确投影的只读 unknown 证据。接口只暴露单 session 草稿读写以及 command-correlated 的 start/accepted/uncertain/failed/retrying/terminal/acknowledge/reset 领域动作。`start` 必须在模块内部拒绝覆盖未裁决提交；uncertain/failed 只在目标草稿为空时恢复原文，不覆盖用户更新；committed/duplicate 只清除仍等于原文的恢复草稿。`acknowledge` 仅可把 `delivery_unknown` 移入只读证据并释放新消息单飞槽，不得恢复、编辑或重发原 command；精确 `source_command_id` 投影到达后才移除证据。浏览器内只读证据上限为 20 条；容量耗尽时必须 fail-closed，拒绝继续 acknowledge 并保留当前单飞门禁，直到精确投影清除旧证据或身份重置，禁止静默淘汰可能已执行的正文。Composer 不读取整张草稿表，store 不维护第二套 signal/setter 或重实现 correlation。
+Web 消息投递恢复由 `message-delivery` module 单一所有：它按 durable session id 维护至多一个未裁决 submission，因此同一 session 保持 single-flight，互不相关的 session 可以并行；用户已确认继续但仍未取得精确投影的只读 unknown 证据仍按 command 关联。接口暴露 session/chat/command 精确查询以及 command-correlated 的 start/accepted/uncertain/failed/retrying/terminal/acknowledge/reset 领域动作。`start` 必须在模块内部拒绝覆盖同 session 未裁决提交；uncertain/failed 只在目标草稿为空时恢复原文，不覆盖用户更新；committed/duplicate 只清除仍等于原文的恢复草稿。`acknowledge` 仅可把 `delivery_unknown` 移入只读证据并释放该 session 单飞槽，不得恢复、编辑或重发原 command；精确 `source_command_id` 投影到达后才移除证据。浏览器内只读证据上限为 20 条；容量耗尽时必须 fail-closed，拒绝继续 acknowledge 并保留目标 session 门禁，直到精确投影清除旧证据或身份重置，禁止静默淘汰可能已执行的正文。Composer 不读取整张投递表，store 不维护第二套 signal/setter 或重实现 correlation。
 
 Web 的逻辑会话导航由 `SessionNavigator` 状态机唯一裁决。Registry catalog、连接 ready、只读策略、用户打开请求、终态 Ack、失败/超时和本地 runtime 复用都必须作为事件进入该模块；它只输出 `request-open`、`activate`、`forget-preference` 三类效果。只有与当前 `session/open` command 精确匹配的 `committed`/`duplicate` Ack 可以切换 logical session 与 runtime chat；超时后的晚到 Ack仍交给 `CommandTracker` 完成对账，但不得移动 UI。组件不自行分支“只读复用 vs. 可写打开”，localStorage 也只作为恢复偏好而非会话事实源。
 
@@ -142,7 +148,9 @@ Web 组件库以 `src/components/ui/index.ts` 为唯一公共代码入口，以 
 
 选中 runtime 后，Web 必须分别确认 `chat:{chat_id}` 与 `session:{chat_id}` 两份 server-authoritative Y.Doc 已至少应用一帧，才可以宣称“可输入”并开放 Composer。切换 runtime 会清空该 hydration 证据；断线不会抹掉已渲染历史，但任何新 runtime 都不得把初始空数组误当成空会话。控制文档已经投影出的待决权限高于普通载入文案；两份文档都到齐且消息确认为空后，UI 才显示首次消息引导。
 
-Composer 草稿以持久 `project_session_id` 隔离，而不是跟随临时 `chat_id` 或组件实例。切换会话时不得把源会话文本带入目标会话，返回源会话必须恢复原稿；登出或认证失效则清空全部草稿与本地 unknown 证据。消息提交状态同时携带 `command_id`、`project_session_id` 与 `chat_id`：发送失败或连接结果未知时只把原文恢复到所属会话，其他会话只能看到不含原文的全局单飞提示；`uncertain` 状态不可被直接关闭或以新 command 重发。`delivery_unknown` 只能经明确的 acknowledge-and-continue 转为只读证据后释放单飞槽，晚到精确投影仍按原 command 清除该证据。
+Composer 草稿由独立 IndexedDB store 以 `{principalId,projectId,project_session_id}` 复合键持久化，而不是跟随临时 `chat_id` 或组件实例。同步内存 signal 提供输入体验，异步 hydration 受 revision fence 保护，晚到旧草稿不得覆盖用户已经输入的新文本。切换会话、项目或 principal 不得串稿，刷新后返回同一复合身份必须恢复；登出或认证失效清空当前浏览器全部草稿与本地 unknown 证据。消息提交状态同时携带 `command_id`、草稿 owner、`project_session_id` 与 `chat_id`：发送失败或连接结果未知时只把原文恢复到所属会话，其他会话不被阻塞；`uncertain` 状态不可被直接关闭或以新 command 重发。`delivery_unknown` 只能经明确的 acknowledge-and-continue 转为只读证据后释放目标 session 单飞槽，晚到精确投影仍按原 command 清除该证据。
+
+`ready` 在协商 `prompt-delivery-v2` 时必须携带正安全整数 `maxPromptBytes`；server 与 Web 都按 UTF-8 字节数而不是 UTF-16 code unit 执行同一上限。缺少 capability 或上限时 prompt 门控保持关闭；Composer 显示当前字节数/预算并禁用发送，非 Composer 的 quick-start/领域入口仍须在 action 边界重复验证。server 必须在 coordinator admission 前以 `PAYLOAD_TOO_LARGE` 拒绝超限正文。
 
 ### 3.1 拓扑
 
@@ -1155,7 +1163,7 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 | `AuthGate` + `lib/auth-state` | `/api/auth/session` | 浏览器认证门（principal、read-only policy、失效事件；§3.0） |
 | `ProjectSidebar` + `lib/catalog-actions` | Registry Doc `projects`/`project_sessions`/`chats` | 左栏目录（§3.0：只展示 hub/imported 来源） |
 | `MessageList` / `ConversationMessage` + `lib/ChatProjection` / `TranscriptWindow` | Chat Doc `entries`/`tool_calls` + Control Doc `active_turn` | keyed 增量投影、变量高度窗口化消息视图与工具卡片；订阅经 `ysync.subscribe`（§4.2）；双 Doc 水合后才开放输入（§3.0） |
-| `Composer` + `lib/message-delivery` | Chat Doc + command tracker | 草稿按 `project_session_id` 隔离；投递恢复状态机（§3.0） |
+| `Composer` + `lib/message-delivery` + `lib/composer-draft` | Chat Doc + command tracker + IndexedDB | 草稿按 principal/project/session 持久隔离；投递按 session single-flight（§3.0） |
 | `PermissionQueue` / `ElicitationQueue` | Control Doc `pending_permissions` + elicitation 投影 | 权限队列（§3.0 排序/聚焦契约）、结构化追问表单 |
 | `RewindDialog` / `McpPanel` / `TopologyView` / `SessionSearch` / `SettingsDialog` | Control Doc / 查询帧 | rewind 三步流程（§6.2）、MCP 快照、实例拓扑、会话搜索 |
 | `lib/connection-state` + `ErrorCenter` | ws 生命周期 | 连接世代/身份世代、动作门控、持久错误中心（§3.0） |

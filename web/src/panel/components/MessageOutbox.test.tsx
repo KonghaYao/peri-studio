@@ -8,6 +8,7 @@ const submission = (phase: MessageSubmission['phase']): MessageSubmission => ({
   text: 'do not lose this work',
   sessionId: 'session-1',
   chatId: 'chat-1',
+  draftOwner: { principalId: 'principal-1', projectId: 'project-1', sessionId: 'session-1' },
   phase,
   detail: phase === 'uncertain' ? 'The server has not confirmed the result yet.' : null,
   retryable: phase === 'uncertain',

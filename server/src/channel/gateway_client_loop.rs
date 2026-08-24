@@ -335,6 +335,9 @@ impl Gateway {
                     let ready = Frame::Ready(peri_studio_proto::conn::Ready {
                         projection_versions: versions,
                         negotiated_capabilities: channel.negotiated_capabilities(),
+                        max_prompt_bytes: channel
+                            .supports_prompt_delivery_v2()
+                            .then_some(peri_studio_proto::action::MAX_PROMPT_BYTES as u32),
                     });
                     if out_tx.send(OutboundMsg::Frame(ready)).await.is_err() {
                         return Some(1011);

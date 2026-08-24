@@ -13,7 +13,7 @@ import { selectActiveProjects } from '../lib/project-catalog';
 import { ArchivedSection } from './shared/ArchivedSection';
 import { ConfirmDialog } from './shared/ConfirmDialog';
 import { SidebarChrome } from './SidebarChrome';
-import { reconcileMachineGroups, type MachineGroup } from '../lib/machine-groups';
+import { reconcileInstanceGroups, type InstanceGroup } from '../lib/instance-groups';
 
 function PlusIcon() { return <Icon><path d="M10 4v12M4 10h12" /></Icon>; }
 function ImportIcon() { return <Icon class="size-17!"><path d="M10 3v9m0 0 3-3m-3 3L7 9M4 14.5h12v2H4z" /></Icon>; }
@@ -56,12 +56,12 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
     return session.id !== selectedSessionId() || !isTerminal(chatStatusSignal()[session.activeChatId]);
   };
   const projectHasRunningSession = (projectId: string) => projectSessions().some((session) => session.projectId === projectId && sessionHasRunningRuntime(session));
-  const machines = createMemo<MachineGroup[]>((previous = []) => reconcileMachineGroups(
+  const instanceGroups = createMemo<InstanceGroup[]>((previous = []) => reconcileInstanceGroups(
     instances(),
     activeProjects(),
     previous,
   ));
-  const machineIds = createMemo(() => machines().map((machine) => machine.id));
+  const instanceIds = createMemo(() => instanceGroups().map((instance) => instance.id));
   const setProjectCollapsed = (projectId: string, collapsed: boolean) => setCollapsedProjects((current) => {
     const next = new Set(current);
     if (collapsed) next.add(projectId); else next.delete(projectId);
@@ -135,24 +135,24 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
           fallback={<LoadingState label="Loading projects" class="sidebar-loading mx-8 p-8! text-left!" />}
         >
           <Show
-            when={machines().length > 0}
+            when={instanceGroups().length > 0}
             fallback={<EmptyState
               variant="inline"
               class="sidebar-empty mx-8 p-8! text-left!"
               title={projects().length ? 'No active projects' : 'No projects yet'}
-              description={projects().length ? 'Restore an archived project to continue.' : 'No connected machines or projects are available.'}
+              description={projects().length ? 'Restore an archived project to continue.' : 'No connected instances or projects are available.'}
             />}
           >
-            <For each={machineIds()}>{(machineId) => {
-              const machine = () => machines().find((item) => item.id === machineId)!;
-              return <section class="machine-group mb-10">
-              <div class="machine-row group flex min-h-26 items-center gap-8 px-8 text-10 font-normal uppercase tracking-6 text-text-muted">
-                <span class="machine-name min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{machine().name}</span>
-                <Show when={machine().offline}><span class="machine-offline-dot size-7 shrink-0 rounded-full bg-danger" role="img" aria-label="Machine offline" /></Show>
-                <IconButton class="row-create-action machine-create-action ml-auto size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 disabled:cursor-not-allowed pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" label={`New project on ${machine().name} unavailable: choose a remote directory first; the current API cannot create by machine`} disabled><PlusIcon /></IconButton>
+            <For each={instanceIds()}>{(instanceId) => {
+              const instance = () => instanceGroups().find((item) => item.id === instanceId)!;
+              return <section class="instance-group mb-10">
+              <div class="instance-row group flex min-h-26 items-center gap-8 px-8 text-10 font-normal uppercase tracking-6 text-text-muted">
+                <span class="instance-name min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{instance().name}</span>
+                <Show when={instance().offline}><span class="instance-offline-dot size-7 shrink-0 rounded-full bg-danger" role="img" aria-label="Instance offline" /></Show>
+                <IconButton class="row-create-action instance-create-action ml-auto size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 disabled:cursor-not-allowed pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" label={`New project on ${instance().name} unavailable: choose a remote directory first; the current API cannot create by instance`} disabled><PlusIcon /></IconButton>
               </div>
-              <For each={machine().projects.map((project) => project.id)}>{(projectId) => {
-            const project = () => machine().projects.find((item) => item.id === projectId)!;
+              <For each={instance().projects.map((project) => project.id)}>{(projectId) => {
+            const project = () => instance().projects.find((item) => item.id === projectId)!;
             const sessions = () => projectSessions().filter((s) => s.projectId === projectId && !s.archivedAt);
             const archivedSessions = () => projectSessions().filter((s) => s.projectId === projectId && !!s.archivedAt);
             const collapsed = () => collapsedProjects().has(projectId);

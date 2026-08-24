@@ -14,6 +14,7 @@ export interface QuickStartSubmission {
 
 export interface QuickStartActivation {
   commandId: string;
+  projectId: string;
   sessionId: string;
   chatId: string;
   text: string;
@@ -54,8 +55,15 @@ export function retryQuickStartDelivery(commandId: string): void {
 export function completeQuickStart(commandId: string, status: unknown, sessionId: unknown, chatId: unknown): QuickStartActivation | null {
   const current = currentSubmission();
   if (!current || !canActivate(current, commandId, status, sessionId, chatId)) return null;
+  return { commandId, projectId: current.projectId, sessionId: sessionId as string, chatId: chatId as string, text: current.text };
+}
+
+/** 首条正文已进入 message outbox 或持久 draft 后，才允许释放原始 source。 */
+export function finishQuickStart(commandId: string): boolean {
+  const current = currentSubmission();
+  if (!current || current.commandId !== commandId) return false;
   setCurrentSubmission(null);
-  return { commandId, sessionId: sessionId as string, chatId: chatId as string, text: current.text };
+  return true;
 }
 
 export function settleLateQuickStart(commandId: string, status: unknown, sessionId: unknown, chatId: unknown): boolean {

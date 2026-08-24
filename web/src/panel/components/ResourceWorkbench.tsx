@@ -121,7 +121,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
         <Show when={project()} fallback={<div class="p-14 text-12 text-text-muted">Select or create a project to browse its workspace.</div>}>
           <Show when={resourceWorkspace().error}>{(message) => <div role="alert" class="m-8 flex items-start gap-6 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">
             <span class="min-w-0 flex-1">{message()}</span>
-            <button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline" onClick={refreshResourceProject}>Retry</button>
+            <button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={refreshResourceProject}>Retry</button>
           </div>}</Show>
           <Show when={view() === 'explorer'}><ExplorerPanel expanded={explorerExpanded()} onExpandedChange={setExplorerExpanded} activePath={explorerActivePath()} onActivePathChange={setExplorerActivePath} scrollTop={explorerScrollTop()} onScrollTopChange={(scrollTop) => { if (!props.compact || props.open) setExplorerScrollTop(scrollTop); }} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'explorer', key })} /></Show>
           <Show when={view() === 'scm'}><SourceControlPanel commitMessages={visibleCommitMessages()} onCommitMessageChange={setCommitMessage} onCommitSubmitted={recordSubmittedCommit} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'scm', key })} /></Show>

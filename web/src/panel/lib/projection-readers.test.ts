@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as Y from 'yjs';
 import { renderChat } from './chat-view';
-import { renderControl } from './control-view';
+import { parsePermissionExpiration, renderControl } from './control-view';
 import { renderRegistry } from './registry-view';
 
 describe('renderRegistry project session catalog', () => {
@@ -34,7 +34,38 @@ describe('renderControl chat loading projection', () => {
   });
 });
 
+describe('permission deadline parsing', () => {
+  it.each(['2026-02-30T00:00:00Z', '2026-08-24T24:00:00Z'])(
+    'fails closed for a normalized but invalid RFC3339 value: %s',
+    (value) => expect(parsePermissionExpiration(value)).toBeNaN(),
+  );
+});
+
 describe('renderChat tool projection', () => {
+  it('preserves the authoritative interleaving from block_order', () => {
+    const doc = new Y.Doc();
+    const root = doc.getMap<unknown>('root');
+    const order = new Y.Array<string>(); const entries = new Y.Map<unknown>(); const calls = new Y.Map<unknown>();
+    const entry = new Y.Map<unknown>(); const blockOrder = new Y.Array<string>(); const blocks = new Y.Map<unknown>();
+    root.set('entry_order', order); root.set('entries', entries); root.set('tool_calls', calls);
+    entries.set('assistant', entry); order.push(['assistant']);
+    entry.set('role', 'assistant'); entry.set('created_at', 'now'); entry.set('block_order', blockOrder); entry.set('blocks', blocks);
+
+    const addText = (id: string, value: string) => {
+      const block = new Y.Map<unknown>(); const text = new Y.Text();
+      blocks.set(id, block); blockOrder.push([id]); block.set('kind', 'text'); block.set('text', text); text.insert(0, value);
+    };
+    addText('intro', 'Before tool');
+    const toolBlock = new Y.Map<unknown>();
+    blocks.set('tool-block', toolBlock); blockOrder.push(['tool-block']); toolBlock.set('kind', 'tool_call'); toolBlock.set('tool_call_id', 'tool-1');
+    calls.set('tool-1', new Y.Map<unknown>());
+    addText('outro', 'After tool');
+
+    expect(renderChat(doc).entries[0].blocks.map((block) => [block.kind, block.id])).toEqual([
+      ['text', 'intro'], ['tool_call', 'tool-block'], ['text', 'outro'],
+    ]);
+  });
+
   it('fails closed for hidden and unknown reasoning visibility', () => {
     const doc = new Y.Doc();
     const root = doc.getMap<unknown>('root');
@@ -248,6 +279,24 @@ describe('renderControl permission projection', () => {
       allowSession: 'opaque-session',
       deny: 'opaque-reject',
     });
+  });
+
+  it('accepts tool input evidence only when it is bound to the same tool call', () => {
+    const doc = new Y.Doc();
+    const permissions = new Y.Map<unknown>();
+    const permission = new Y.Map<unknown>();
+    doc.getMap<unknown>('root').set('pending_permissions', permissions);
+    permissions.set('p1', permission);
+    permission.set('permission_id', 'p1');
+    permission.set('status', 'pending');
+    permission.set('tool_call_id', 'tool-1');
+    permission.set('evidence_tool_call_id', 'tool-1');
+    permission.set('tool_input_summary', 'Command: cargo (+1 argument)');
+
+    expect(renderControl(doc).pendingPermissions[0].toolInputSummary)
+      .toBe('Command: cargo (+1 argument)');
+    permission.set('evidence_tool_call_id', 'tool-other');
+    expect(renderControl(doc).pendingPermissions[0].toolInputSummary).toBeNull();
   });
 });
 

@@ -15,6 +15,11 @@ export interface ToolCallInfo {
   completedAt: string | null;
 }
 export interface ResourceInfo { resourceId: string | null; mediaType: string | null; name: string | null }
+export type ChatBlock =
+  | { kind: 'text'; id: string; text: string }
+  | { kind: 'reasoning'; id: string; reasoning: ReasoningBlock }
+  | { kind: 'tool_call'; id: string; toolCall: ToolCallInfo }
+  | { kind: 'resource'; id: string; resource: ResourceInfo };
 export interface ChatEntry {
   id: string;
   turnId: string | null;
@@ -32,6 +37,7 @@ export interface ChatEntry {
   createdAt: string;
   completedAt: string | null;
   text: string;
+  blocks: ChatBlock[];
   reasoning: ReasoningBlock[];
   toolCalls: ToolCallInfo[];
   resources: ResourceInfo[];
@@ -91,6 +97,7 @@ export function readChatEntry(
     createdAt: safeTime(map.get('created_at')),
     completedAt: getStr(map, 'completed_at'),
     text: '',
+    blocks: [],
     reasoning: [],
     toolCalls: [],
     resources: [],
@@ -109,7 +116,10 @@ export function readChatEntry(
     switch (block.get('kind')) {
       case 'text': {
         const text = yText(block.get('text'));
-        if (text !== null) entry.text += text;
+        if (text !== null) {
+          entry.text += text;
+          entry.blocks.push({ kind: 'text', id: blockIdValue, text });
+        }
         break;
       }
       case 'reasoning': {
@@ -117,23 +127,30 @@ export function readChatEntry(
         // 才属于用户可见内容；hidden、缺失与未来未知值一律 fail closed。
         const visibility = getStr(block, 'visibility');
         if (visibility === 'summary') {
-          entry.reasoning.push({ id: blockIdValue, text: yText(block.get('text')) || '', visibility });
+          const reasoning = { id: blockIdValue, text: yText(block.get('text')) || '', visibility };
+          entry.reasoning.push(reasoning);
+          entry.blocks.push({ kind: 'reasoning', id: blockIdValue, reasoning });
         }
         break;
       }
       case 'tool_call': {
         const id = getStr(block, 'tool_call_id');
         if (id) referencedToolIds.add(id);
-        entry.toolCalls.push(readChatToolCall(id || '', asMap(id ? toolCalls?.get(id) : null)));
+        const toolCall = readChatToolCall(id || '', asMap(id ? toolCalls?.get(id) : null));
+        entry.toolCalls.push(toolCall);
+        entry.blocks.push({ kind: 'tool_call', id: blockIdValue, toolCall });
         break;
       }
-      case 'resource':
-        entry.resources.push({
+      case 'resource': {
+        const resource = {
           resourceId: getStr(block, 'resource_id'),
           mediaType: getStr(block, 'media_type'),
           name: getStr(block, 'name'),
-        });
+        };
+        entry.resources.push(resource);
+        entry.blocks.push({ kind: 'resource', id: blockIdValue, resource });
         break;
+      }
       default:
         break;
     }
@@ -171,7 +188,13 @@ export function renderChat(doc: Y.Doc): ChatView {
   });
   legacyOrphans
     .sort((left, right) => left.startedAt.localeCompare(right.startedAt) || left.id.localeCompare(right.id))
-    .forEach((orphan) => assistantByTurn.get(orphan.turnId)?.toolCalls.push(readChatToolCall(orphan.id, orphan.map)));
+    .forEach((orphan) => {
+      const entry = assistantByTurn.get(orphan.turnId);
+      if (!entry) return;
+      const toolCall = readChatToolCall(orphan.id, orphan.map);
+      entry.toolCalls.push(toolCall);
+      entry.blocks.push({ kind: 'tool_call', id: `legacy-tool:${orphan.id}`, toolCall });
+    });
 
   return {
     schemaVersion: root.get('schema_version'),

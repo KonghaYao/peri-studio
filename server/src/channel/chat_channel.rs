@@ -204,6 +204,28 @@ impl ChatChannel {
                 "read-only token cannot send actions",
             ))]);
         }
+        // 硬字节上限与 capability 协商无关；必须在 ready 前队列之前执行，
+        // 防止 action-first 连接用 64 个任意大 prompt 长期占住内存。
+        if let ActionEnvelope::Prompt {
+            command_id,
+            payload,
+        } = &action
+        {
+            if payload.message.len() > peri_studio_proto::action::MAX_PROMPT_BYTES {
+                return DispatchOutcome::Send(vec![OutboundMsg::Frame(Frame::ActionError(
+                    ActionError {
+                        command_id: command_id.clone(),
+                        code: ErrorCode::PayloadTooLarge,
+                        message: format!(
+                            "prompt exceeds the negotiated {} byte limit",
+                            peri_studio_proto::action::MAX_PROMPT_BYTES,
+                        ),
+                        retryable: false,
+                        retry_after_ms: None,
+                    },
+                ))]);
+            }
+        }
         if !self.relay_ready {
             if self.pending.len() >= PENDING_ACTION_LIMIT {
                 let command_id = extract_command_id(&action).unwrap_or_default();
@@ -299,6 +321,14 @@ fn unsupported_frame(message: &str) -> Frame {
         retry_after_ms: None,
     })
 }
+
+#[cfg(test)]
+#[path = "chat_channel_test_support.rs"]
+mod chat_channel_test_support;
+
+#[cfg(test)]
+#[path = "chat_channel_prompt_budget_test.rs"]
+mod chat_channel_prompt_budget_test;
 
 #[cfg(test)]
 #[path = "chat_channel_test.rs"]

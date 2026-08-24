@@ -44,6 +44,12 @@ describe('downstream protocol envelope parsing', () => {
       .toBeNull();
     expect(parse('{"t":"resource_result","requestId":"q1","result":{"kind":"view","data":{"viewId":"v1","docId":"resource:other","leaseExpiresAt":"x"}}}'))
       .toBeNull();
+    expect(parse('{"t":"resource_result","requestId":"q1","result":{"kind":"view","data":{"viewId":"v1","docId":"resource:v1","leaseExpiresAt":"not-a-time"}}}'))
+      .toBeNull();
+    expect(parse('{"t":"resource_result","requestId":"q1","result":{"kind":"view","data":{"viewId":"v1","docId":"resource:v1","leaseExpiresAt":"2026-02-30T00:00:00Z"}}}'))
+      .toBeNull();
+    expect(parse('{"t":"resource_result","requestId":"q1","result":{"kind":"view","data":{"viewId":"v1","docId":"resource:v1","leaseExpiresAt":"2026-08-24T24:00:00Z"}}}'))
+      .toBeNull();
     expect(parse('{"t":"resource_result","requestId":"q1","result":{"kind":"blob","data":{"blobId":"b1","url":"https://evil.example/file","expiresAt":"x"}}}'))
       .toBeNull();
     expect(parse('{"t":"resource_result","requestId":"q1","result":{"kind":"future"}}'))
@@ -85,9 +91,11 @@ describe('downstream protocol envelope parsing', () => {
       docs: ['hub:registry'],
       clientCapabilities: [CAP_PROMPT_DELIVERY_V2],
     });
-    expect(parse('{"t":"ready","projectionVersions":{},"negotiatedCapabilities":["prompt-delivery-v2"]}'))
-      .toMatchObject({ negotiatedCapabilities: [CAP_PROMPT_DELIVERY_V2] });
+    expect(parse('{"t":"ready","projectionVersions":{},"negotiatedCapabilities":["prompt-delivery-v2"],"maxPromptBytes":65536}'))
+      .toMatchObject({ negotiatedCapabilities: [CAP_PROMPT_DELIVERY_V2], maxPromptBytes: 65536 });
     expect(parse('{"t":"ready","projectionVersions":{},"negotiatedCapabilities":[7]}')).toBeNull();
+    expect(parse('{"t":"ready","projectionVersions":{},"maxPromptBytes":0}')).toBeNull();
+    expect(parse('{"t":"ready","projectionVersions":{},"maxPromptBytes":1.5}')).toBeNull();
   });
 
   it('sends the exact projected option ID while keeping legacy omission compatible', () => {

@@ -14,7 +14,7 @@ import {
 import { ProjectSidebar } from './ProjectSidebar';
 
 const instance = (heartbeat: string) => ({
-  id: 'local', hostname: 'Local machine', status: 'online', tokenId: null,
+  id: 'local', hostname: 'Local instance', status: 'online', tokenId: null,
   registeredAt: null, lastHeartbeat: heartbeat, chatCount: 0,
 });
 
@@ -44,7 +44,7 @@ describe('ProjectSidebar structural identity', () => {
     setRegistryHydrated(false);
   });
 
-  it('preserves a focused rename draft across machine and project metadata updates', async () => {
+  it('preserves a focused rename draft across instance and project metadata updates', async () => {
     render(() => <ProjectSidebar />);
     const row = document.querySelector('[data-session-id="session-1"]')!;
     const menu = screen.getByRole('button', { name: 'Session actions: Architecture refactor' });
@@ -64,15 +64,15 @@ describe('ProjectSidebar structural identity', () => {
     expect(screen.getByRole('textbox', { name: 'Session name' })).toBe(input);
     expect(document.activeElement).toBe(input);
 
-    setInstances([{ ...instance('third'), hostname: 'Renamed machine', status: 'offline' }]);
+    setInstances([{ ...instance('third'), hostname: 'Renamed instance', status: 'offline' }]);
     setProjects([{
       id: 'project-1', name: 'Peri renamed', cwd: '/workspace/peri', instanceId: 'local',
       createdAt: null, updatedAt: 'third', archivedAt: null,
     }]);
 
     await waitFor(() => expect(screen.getByText('Peri renamed')).toBeInTheDocument());
-    expect(screen.getByText('Renamed machine')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Machine offline' })).toBeInTheDocument();
+    expect(screen.getByText('Renamed instance')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Instance offline' })).toBeInTheDocument();
     expect(document.querySelector('[data-session-id="session-1"]')).toBe(row);
     expect(screen.getByRole('textbox', { name: 'Session name' })).toBe(input);
     expect(input).toHaveValue('Unsubmitted draft');

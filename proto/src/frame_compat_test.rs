@@ -91,6 +91,7 @@ fn capability_negotiation_fields_are_backward_compatible() {
         panic!("expected ready");
     };
     assert!(old_ready.negotiated_capabilities.is_empty());
+    assert_eq!(old_ready.max_prompt_bytes, None);
     let old_ready_json = serde_json::to_value(Frame::Ready(old_ready)).unwrap();
     assert!(old_ready_json.get("negotiatedCapabilities").is_none());
 
@@ -108,9 +109,11 @@ fn capability_negotiation_fields_are_backward_compatible() {
     let ready = Frame::Ready(Ready {
         projection_versions: HashMap::new(),
         negotiated_capabilities: vec!["prompt-status-v1".into()],
+        max_prompt_bytes: Some(65_536),
     });
     let ready_json = serde_json::to_value(&ready).unwrap();
     assert_eq!(ready_json["negotiatedCapabilities"][0], "prompt-status-v1");
+    assert_eq!(ready_json["maxPromptBytes"], 65_536);
     assert_eq!(
         Frame::parse(&serde_json::to_string(&ready).unwrap()).unwrap(),
         ready

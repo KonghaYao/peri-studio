@@ -12,12 +12,12 @@
 // lib/composer-placeholder；inputPrediction 展示在 lib/composer-prediction。
 // 本组件保留编排：信号装配、textarea 聚焦与草稿读写、提交/取消状态机。
 
-import { createSignal, createUniqueId, Show } from 'solid-js';
-import { cancelTurn, chatHead, chatStatusSignal, navigateProjectSession, openingSessionId, projectSessions, retryMessageSubmission, retryPersistentAction, runtimeDocsHydrated, selectedCid, selectedSessionId, sendMessage, turnActive } from '../store';
+import { createEffect, createSignal, createUniqueId, Show } from 'solid-js';
+import { cancelTurn, chatHead, chatStatusSignal, openingSessionId, projectSessions, retryMessageSubmission, retryPersistentAction, runtimeDocsHydrated, selectedCid, selectedSessionId, sendMessage, turnActive } from '../store';
 import { isTerminal } from '../lib/action-state';
-import { promptDeliveryReady } from '../lib/connection';
-import { readOnly } from '../lib/auth-state';
-import { composerDraft, setComposerDraft } from '../lib/composer-draft';
+import { promptDeliveryReady, promptMaxBytes } from '../lib/connection';
+import { principalId, readOnly } from '../lib/auth-state';
+import { composerDraft, hydrateComposerDraft, setComposerDraft, type ComposerDraftOwner } from '../lib/composer-draft';
 import { acknowledgeUnknownMessageDelivery, canAcknowledgeUnknownMessageDelivery, dismissFailedMessageDelivery, messageSubmission } from '../lib/message-delivery';
 import { runtimeControlFor } from '../lib/runtime-control';
 import { composerInputState } from '../lib/composer-placeholder';
@@ -27,6 +27,7 @@ import { Button, Icon, IconButton, InlineNotice, Textarea } from '../../componen
 import { SlashMenu } from './SlashMenu';
 import { SessionModelMenu } from './SessionConfigDialog';
 import { TokenUsageMeter, tokenUsageLabel } from './TokenUsageMeter';
+import { promptByteLength, promptFitsBudget } from '../lib/prompt-budget';
 
 /** tokens 数值 → "12k"/"200k" 缩写（>=1000 取 k；非法值 → null）。 */
 function fmtTokens(n: number | null): string | null {
@@ -53,9 +54,16 @@ export function Composer() {
   const slashMenuId = 'composer-slash-menu';
   const modelMenuId = 'composer-model-menu';
   const submissionStatusId = `composer-submission-${createUniqueId()}`;
+  const promptBudgetStatusId = `composer-prompt-budget-${createUniqueId()}`;
   const [modelMenuOpen, setModelMenuOpen] = createSignal(false);
-  const submissionForSession = () => messageSubmission()?.sessionId === selectedSessionId() ? messageSubmission() : null;
-  const submissionInAnotherSession = () => messageSubmission() && !submissionForSession() ? messageSubmission() : null;
+  const draftOwner = (): ComposerDraftOwner | null => {
+    const sessionId = selectedSessionId();
+    const identity = principalId();
+    const projectId = projectSessions().find((session) => session.id === sessionId)?.projectId;
+    return identity && projectId && sessionId ? { principalId: identity, projectId, sessionId } : null;
+  };
+  createEffect(() => { void hydrateComposerDraft(draftOwner()); });
+  const submissionForSession = () => messageSubmission(selectedSessionId());
   const submissionIsInFlight = () => ['sending', 'accepted', 'committed'].includes(submissionForSession()?.phase ?? '');
   const submissionNeedsAttention = () => ['uncertain', 'delivery_unknown', 'failed'].includes(submissionForSession()?.phase ?? '');
   const submissionTitle = () => {
@@ -69,7 +77,7 @@ export function Composer() {
   const submissionDetail = () => {
     switch (submissionForSession()?.phase) {
       case 'uncertain': return 'Re-confirming uses the original request and does not create a second message.';
-      case 'delivery_unknown': return canAcknowledgeUnknownMessageDelivery()
+      case 'delivery_unknown': return canAcknowledgeUnknownMessageDelivery(submissionForSession()?.commandId ?? '')
         ? 'This message may already have executed. Resending and editing remain disabled to avoid duplicates.'
         : 'Twenty earlier deliveries are still unresolved. This message stays locked until an exact server projection clears one.';
       case 'failed': return 'Return to editing restores the text only to this project session draft.';
@@ -81,18 +89,15 @@ export function Composer() {
     return phase === 'failed' ? 'danger' : phase === 'uncertain' || phase === 'delivery_unknown' ? 'warning' : 'info';
   };
   const restoreFailedDraft = () => {
-    dismissFailedMessageDelivery();
+    const commandId = submissionForSession()?.commandId;
+    if (!commandId) return;
+    dismissFailedMessageDelivery(commandId);
     queueMicrotask(() => {
       taRef?.focus();
       const cursor = taRef?.value.length ?? 0;
       taRef?.setSelectionRange(cursor, cursor);
     });
   };
-  const pendingSessionTitle = () => {
-    const submission = submissionInAnotherSession();
-    return projectSessions().find((session) => session.id === submission?.sessionId)?.title || 'another session';
-  };
-
   const terminal = () => isTerminal(chatStatusSignal()[selectedCid() ?? '']);
   const cancelControl = () => {
     const control = runtimeControlFor(selectedCid());
@@ -127,16 +132,18 @@ export function Composer() {
     promptDeliveryReady: promptDeliveryReady(),
     terminal: terminal(),
     turnActive: turnActive(),
-    hasSubmission: !!messageSubmission(),
     submissionForSession: !!submissionForSession(),
-    submissionInAnotherSession: !!submissionInAnotherSession(),
   });
   const inputDisabled = () => inputState().disabled;
   const inputPlaceholder = () => inputState().placeholder;
   const inputDescribedBy = () => [
     prediction.activePrediction() ? 'composer-prediction-description' : null,
     submissionNeedsAttention() ? submissionStatusId : null,
+    promptOverBudget() ? promptBudgetStatusId : null,
   ].filter(Boolean).join(' ') || undefined;
+  const draftBytes = () => promptByteLength(composerDraft(draftOwner()));
+  const promptOverBudget = () => !!composerDraft(draftOwner())
+    && !promptFitsBudget(composerDraft(draftOwner()), promptMaxBytes());
 
   // 信息行三个真实值（agent map，server 写入；缺失 → —）。
   const model = () => chatHead()?.agent?.model || '—';
@@ -179,37 +186,37 @@ export function Composer() {
 
   // slash 菜单交互（lib/composer-slash）。
   const slash = useComposerSlash({
-    draft: () => composerDraft(selectedSessionId()),
+    draft: () => composerDraft(draftOwner()),
     catalog: commandCatalog,
     enabled: () => !inputDisabled(),
     canBrowseSkills,
     onInsert: (text, caret) => {
-      setComposerDraft(selectedSessionId(), text);
+      setComposerDraft(draftOwner(), text);
       slash.setCaret(caret);
       focusAt(caret);
     },
   });
   const commitInputValue = (el: HTMLTextAreaElement) => {
-    setComposerDraft(selectedSessionId(), el.value);
+    setComposerDraft(draftOwner(), el.value);
     slash.onInputValue(el);
   };
 
   // inputPrediction 展示（lib/composer-prediction）。
   const prediction = useComposerPrediction({
     agent: () => chatHead()?.agent ?? null,
-    draft: () => composerDraft(selectedSessionId()),
+    draft: () => composerDraft(draftOwner()),
     sessionId: selectedSessionId,
     inputDisabled,
     onAccept: (text) => {
-      setComposerDraft(selectedSessionId(), text);
+      setComposerDraft(draftOwner(), text);
       slash.setCaret(text.length);
       focusAt(text.length);
     },
   });
 
   function submit() {
-    const text = composerDraft(selectedSessionId()).trim();
-    if (!text) return;
+    const text = composerDraft(draftOwner()).trim();
+    if (!text || !promptFitsBudget(text, promptMaxBytes())) return;
     if (!sendMessage(text)) return;
     if (taRef) {
       // 先同步清空 DOM 值再测量：value 绑定是延迟 effect，若在
@@ -248,7 +255,7 @@ export function Composer() {
           ref={taRef}
           autoResize
           maxHeight={180}
-          value={composerDraft(selectedSessionId())}
+          value={composerDraft(draftOwner())}
           onInput={(e) => {
             // 中文 IME 组合期间 DOM value 只是候选中间态。若此时写回受控
             // state，浏览器会重置输入法维护的组合范围，最终提交可能再次追加
@@ -289,6 +296,11 @@ export function Composer() {
           class="composer-input ui-scrollbar relative z-1 block w-full h-52 min-h-52 max-h-180 pt-14 px-16 pb-4 border-0 outline-0 resize-none overflow-y-auto bg-transparent text-text-primary text-14 leading-22 placeholder:text-text-muted disabled:bg-transparent disabled:text-text-secondary focus-visible:outline-0 max-narrow:px-15"
           />
         </div>
+        <Show when={promptOverBudget()}>
+          <InlineNotice id={promptBudgetStatusId} class="mx-10 mb-8" tone="danger" role="alert" title="Message is too large">
+            <span>{draftBytes()} / {promptMaxBytes()} bytes. Shorten the message before sending.</span>
+          </InlineNotice>
+        </Show>
         <Show when={submissionNeedsAttention() ? submissionForSession() : null}>{(submission) =>
           <InlineNotice
             id={submissionStatusId}
@@ -306,7 +318,7 @@ export function Composer() {
                 <Button size="compact" class="pointer-coarse:min-h-44" onClick={restoreFailedDraft}>Back to edit</Button>
               </Show>
               <Show when={submission().phase === 'delivery_unknown'}>
-                <Button size="compact" variant="secondary" class="pointer-coarse:min-h-44" disabled={!canAcknowledgeUnknownMessageDelivery()} onClick={() => {
+                <Button size="compact" variant="secondary" class="pointer-coarse:min-h-44" disabled={!canAcknowledgeUnknownMessageDelivery(submission().commandId)} onClick={() => {
                   if (!acknowledgeUnknownMessageDelivery(submission().commandId)) return;
                   queueMicrotask(() => taRef?.focus());
                 }}>Acknowledge and continue</Button>
@@ -362,7 +374,7 @@ export function Composer() {
             </IconButton>
           </span>
           <Show when={turnActive()} fallback={
-            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || !composerDraft(selectedSessionId()).trim()} label="Send" class="composer-action flex size-36 min-h-36 shrink-0 items-center justify-center border-0 rounded-full bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:size-40 max-narrow:min-h-40">
+            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || !composerDraft(draftOwner()).trim() || promptOverBudget()} label="Send" class="composer-action flex size-36 min-h-36 shrink-0 items-center justify-center border-0 rounded-full bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:size-40 max-narrow:min-h-40">
               <Icon class="size-20"><path d="M10 16V4" /><path d="M5 9l5-5 5 5" /></Icon>
             </IconButton></span>
           }>
@@ -373,12 +385,6 @@ export function Composer() {
           </div>
         </div>
       </section>
-      <Show when={submissionInAnotherSession()}>{(submission) =>
-        <InlineNotice class="submission-state submission-state--foreign mt-10 mx-4 min-w-0 bg-surface-muted shadow-none max-narrow:flex-col" role="status" title="Another session is still confirming" tone="warning">
-          <div class="submission-state__body min-w-0"><p class="mt-3">&quot;{pendingSessionTitle()}&quot; has a message awaiting a final server state. To avoid duplicate execution, no new messages are sent until it is confirmed.</p></div>
-          <div class="submission-state__actions flex shrink-0 gap-4 max-narrow:w-full"><Button size="compact" class="max-narrow:first:flex-1" onClick={() => navigateProjectSession(submission().sessionId)}>Back to that session</Button></div>
-        </InlineNotice>
-      }</Show>
     </div>
   );
 }

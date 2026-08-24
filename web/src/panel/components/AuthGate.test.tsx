@@ -78,7 +78,7 @@ describe('AuthGate rendering', () => {
   it('replays a remembered token on mount without asking for input', async () => {
     localStorage.setItem('peri_studio_token', 'saved-token');
     const fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      if (init?.method === 'POST') return { ok: true, json: async () => ({ role: 'full' }) };
+      if (init?.method === 'POST') return { ok: true, json: async () => ({ role: 'full', principalId: 'principal-full-1' }) };
       return { ok: false, status: 401 };
     });
     vi.stubGlobal('fetch', fetch);
@@ -112,7 +112,7 @@ describe('AuthGate rendering', () => {
 
   it('replays the remembered token after websocket invalidation instead of clearing it', async () => {
     localStorage.setItem('peri_studio_token', 'saved-token');
-    const post = vi.fn(async () => ({ ok: true, json: async () => ({ role: 'full' }) }));
+    const post = vi.fn(async () => ({ ok: true, json: async () => ({ role: 'full', principalId: 'principal-full-1' }) }));
     const fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === 'POST') return post();
       return { ok: false, status: 401 };
@@ -136,7 +136,7 @@ describe('AuthGate rendering', () => {
     localStorage.setItem('peri_studio_token', 'saved-token');
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === 'DELETE') return { ok: true };
-      if (init?.method === 'POST') return { ok: true, json: async () => ({ role: 'full' }) };
+      if (init?.method === 'POST') return { ok: true, json: async () => ({ role: 'full', principalId: 'principal-full-1' }) };
       return { ok: false, status: 401 };
     }));
 

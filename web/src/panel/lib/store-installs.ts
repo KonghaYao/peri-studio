@@ -20,6 +20,7 @@ import { connectionReady } from './connection';
 import type { DispatchResult } from './command-tracker';
 import type { ControlView } from './control-view';
 import type { Ack, ActionError, ActionFrame, ActionOptions } from './action-contract';
+import type { ComposerDraftOwner } from './composer-draft';
 
 export interface StoreWiringDeps {
   setPersistentErrors: (updater: (items: PersistentError[]) => PersistentError[]) => void;
@@ -33,6 +34,7 @@ export interface StoreWiringDeps {
   turnActive: () => boolean;
   currentCid: () => string | null;
   selectedSessionId: () => string | null;
+  composerDraftOwner: () => ComposerDraftOwner | null;
   chatStatusSignal: () => Record<string, string>;
   chatHead: () => ControlView | null;
   sessionConfigMutation: () => SessionConfigMutation | null;
@@ -62,6 +64,7 @@ export function installStoreWiring(d: StoreWiringDeps): void {
     turnActive: deps.turnActive,
     currentCid: deps.currentCid,
     selectedSessionId: deps.selectedSessionId,
+    composerDraftOwner: deps.composerDraftOwner,
     chatStatusSignal: deps.chatStatusSignal,
     chatHead: deps.chatHead,
     sessionConfigMutation: deps.sessionConfigMutation,

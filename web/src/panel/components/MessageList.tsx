@@ -19,7 +19,7 @@ import { Button, EmptyState, LoadingState } from '../../components/ui';
 import { PermissionQueue } from './PermissionQueue';
 import { ConversationMessage } from './ConversationMessage';
 import { permissionDecisions } from '../lib/permission-delivery';
-import { acknowledgeUnknownMessageDelivery, acknowledgedMessageDeliveries, canAcknowledgeUnknownMessageDelivery, dismissFailedMessageDelivery, messageSubmission } from '../lib/message-delivery';
+import { acknowledgeUnknownMessageDelivery, acknowledgedMessageDeliveries, canAcknowledgeUnknownMessageDelivery, dismissFailedMessageDelivery, messageSubmissionForChat } from '../lib/message-delivery';
 import { MessageOutbox } from './MessageOutbox';
 import { replayBoundaryAt, type ReplayBoundary } from '../lib/replay-boundary';
 import { TranscriptWindow } from '../lib/transcript-window';
@@ -42,12 +42,16 @@ function PermissionBar() {
 }
 
 function HistoryBoundary(props: { kind: Exclude<ReplayBoundary, null> }) {
-  const label = () => props.kind === 'live_runtime' ? 'Current' : 'Recovered';
+  const label = () => props.kind === 'live_runtime'
+    ? 'Current'
+    : props.kind === 'verified_history'
+      ? 'Verified history'
+      : 'Unverified history';
   const accessibleLabel = () => props.kind === 'live_runtime'
     ? 'Current run'
     : props.kind === 'verified_history'
       ? 'Peri-verified recovered history'
-      : 'Recovered history';
+      : 'Unverified recovered history';
   const detail = () => props.kind === 'inferred_history'
     ? 'Identified from the session load window; some sources are marked unverifiable'
     : null;
@@ -118,8 +122,8 @@ export function MessageList(props: { bottomInset?: number }) {
   const [viewport, setViewport] = createSignal({ top: 0, height: 800 });
   const [windowRevision, setWindowRevision] = createSignal(0);
   const outboxForChat = () => {
-    const submission = messageSubmission();
-    return submission?.chatId === selectedCid() && !submission.projected ? submission : null;
+    const submission = messageSubmissionForChat(selectedCid());
+    return submission && !submission.projected ? submission : null;
   };
   const acknowledgedForChat = () => acknowledgedMessageDeliveries()
     .filter((submission) => submission.chatId === selectedCid());
@@ -319,7 +323,7 @@ export function MessageList(props: { bottomInset?: number }) {
           <MessageOutbox submission={submission} acknowledged onRetry={() => {}} onEdit={() => {}} />
         }</For>
         <Show when={outboxForChat()}>{(submission) =>
-          <MessageOutbox submission={submission()} onRetry={retryMessageSubmission} onEdit={dismissFailedMessageDelivery} acknowledgeDisabled={!canAcknowledgeUnknownMessageDelivery()} onAcknowledge={() => acknowledgeUnknownMessageDelivery(submission().commandId)} />
+          <MessageOutbox submission={submission()} onRetry={retryMessageSubmission} onEdit={() => dismissFailedMessageDelivery(submission().commandId)} acknowledgeDisabled={!canAcknowledgeUnknownMessageDelivery(submission().commandId)} onAcknowledge={() => acknowledgeUnknownMessageDelivery(submission().commandId)} />
         }</Show>
       </div>
     </section>

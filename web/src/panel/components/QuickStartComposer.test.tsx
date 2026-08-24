@@ -4,10 +4,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { installPrincipalRole } from '../lib/auth-state';
 import { failQuickStart, markQuickStartUncertain, resetQuickStart, startQuickStart } from '../lib/quick-start-delivery';
 import { QuickStartComposer } from './QuickStartComposer';
+import { setPromptMaxBytes } from '../lib/connection';
 
 afterEach(() => {
   installPrincipalRole(null);
   resetQuickStart();
+  setPromptMaxBytes(0);
 });
 
 describe('QuickStartComposer', () => {
@@ -76,5 +78,16 @@ describe('QuickStartComposer', () => {
     expect(screen.getByRole('textbox', { name: 'First message' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Back to edit' })).toBeEnabled();
     expect(screen.queryByText('first prompt')).not.toBeInTheDocument();
+  });
+
+  it('shows the negotiated UTF-8 budget and blocks an oversized first message', () => {
+    installPrincipalRole('full');
+    setPromptMaxBytes(4);
+    render(() => <QuickStartComposer projects={[{ id: 'alpha', name: 'Alpha' }]} />);
+
+    fireEvent.input(screen.getByRole('textbox', { name: 'First message' }), { target: { value: '你好' } });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('6 / 4 bytes');
+    expect(screen.getByRole('button', { name: 'Start session' })).toBeDisabled();
   });
 });
