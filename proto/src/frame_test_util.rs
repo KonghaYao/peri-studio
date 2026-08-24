@@ -174,6 +174,7 @@ pub(crate) fn all_frames() -> Vec<Frame> {
                 chat_id: "s1".into(),
                 permission_id: "p1".into(),
                 decision: PermissionDecision::Allow,
+                option_id: Some("allow-once".into()),
             },
         }),
         Frame::Action(ActionEnvelope::RespondElicitation {

@@ -32,6 +32,7 @@ fn permission_recovery_clears_after_confirmed_delivery() {
         request_id: serde_json::json!(42),
         options: vec![],
         decision: peri_studio_proto::action::PermissionDecision::Deny,
+        option_id: None,
     };
     let mut ob = test_outbox();
     ob.insert(rec.clone()).unwrap();
@@ -53,6 +54,7 @@ fn permission_dispatch_barrier_only_clears_with_recovery_evidence() {
         request_id: serde_json::json!(42),
         options: vec![],
         decision: peri_studio_proto::action::PermissionDecision::Allow,
+        option_id: None,
     };
     let mut ob = test_outbox();
     ob.insert(rec.clone()).unwrap();

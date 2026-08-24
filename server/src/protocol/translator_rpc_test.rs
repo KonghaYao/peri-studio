@@ -26,6 +26,7 @@ fn permission_response_rpc_allow_selects_allow_option() {
     let v = t.permission_response_rpc(
         &json!(5),
         PermissionDecision::Allow,
+        None,
         options.as_array().unwrap(),
     );
     assert_eq!(v["jsonrpc"], json!("2.0"));
@@ -45,9 +46,56 @@ fn permission_response_rpc_allow_prefers_once_over_session_order() {
     let v = t.permission_response_rpc(
         &json!(7),
         PermissionDecision::Allow,
+        None,
         options.as_array().unwrap(),
     );
     assert_eq!(v["result"]["outcome"]["optionId"], json!("allow-once"));
+}
+
+#[test]
+fn permission_response_rpc_honors_exact_session_scope() {
+    let t = Translator::new();
+    let options = json!([
+        {"optionId": "allow-once", "name": "仅允许一次", "kind": "allow_once"},
+        {"optionId": "allow-session", "name": "允许本会话", "kind": "allowSession"}
+    ]);
+    let v = t.permission_response_rpc(
+        &json!(7),
+        PermissionDecision::Allow,
+        Some("allow-session"),
+        options.as_array().unwrap(),
+    );
+    assert_eq!(v["result"]["outcome"]["optionId"], json!("allow-session"));
+}
+
+#[test]
+fn permission_response_rpc_rejects_unknown_exact_option() {
+    let t = Translator::new();
+    let options = json!([
+        {"optionId": "allow-once", "name": "仅允许一次", "kind": "allow_once"}
+    ]);
+    let v = t.permission_response_rpc(
+        &json!(7),
+        PermissionDecision::Allow,
+        Some("forged-option"),
+        options.as_array().unwrap(),
+    );
+    assert_eq!(v["result"]["outcome"]["outcome"], json!("cancelled"));
+}
+
+#[test]
+fn permission_response_rpc_rejects_scope_mismatch() {
+    let t = Translator::new();
+    let options = json!([
+        {"optionId": "reject-once", "name": "拒绝一次", "kind": "reject_once"}
+    ]);
+    let v = t.permission_response_rpc(
+        &json!(7),
+        PermissionDecision::Allow,
+        Some("reject-once"),
+        options.as_array().unwrap(),
+    );
+    assert_eq!(v["result"]["outcome"]["outcome"], json!("cancelled"));
 }
 
 #[test]
@@ -59,6 +107,7 @@ fn permission_response_rpc_allow_does_not_fallback_to_unrelated_option() {
     let v = t.permission_response_rpc(
         &json!(8),
         PermissionDecision::Allow,
+        None,
         options.as_array().unwrap(),
     );
     assert_eq!(v["result"]["outcome"]["outcome"], json!("cancelled"));
@@ -74,6 +123,7 @@ fn permission_response_rpc_deny_without_reject_cancelled() {
     let v = t.permission_response_rpc(
         &json!("req-9"),
         PermissionDecision::Deny,
+        None,
         options.as_array().unwrap(),
     );
     assert_eq!(v["id"], json!("req-9"));
@@ -93,6 +143,7 @@ fn permission_response_rpc_deny_selects_reject_option() {
     let v = t.permission_response_rpc(
         &json!(5),
         PermissionDecision::Deny,
+        None,
         options.as_array().unwrap(),
     );
     assert_eq!(v["result"]["outcome"]["outcome"], json!("selected"));
@@ -104,7 +155,7 @@ fn permission_response_rpc_deny_selects_reject_option() {
 #[test]
 fn permission_response_rpc_allow_empty_options_cancelled() {
     let t = Translator::new();
-    let v = t.permission_response_rpc(&json!(5), PermissionDecision::Allow, &[]);
+    let v = t.permission_response_rpc(&json!(5), PermissionDecision::Allow, None, &[]);
     assert_eq!(v["id"], json!(5));
     assert_eq!(v["result"]["outcome"]["outcome"], json!("cancelled"));
     assert!(

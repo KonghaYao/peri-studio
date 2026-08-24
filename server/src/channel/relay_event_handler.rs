@@ -123,6 +123,8 @@ pub struct PendingPermissionReq {
     pub(super) resolving_command_id: Option<String>,
     /// 与 `resolving_command_id` 绑定的原始决策。
     pub(super) resolving_decision: Option<PermissionDecision>,
+    /// 与命令绑定的精确 ACP optionId；legacy 请求可能缺失。
+    pub(super) resolving_option_id: Option<String>,
 }
 
 #[derive(Debug, Clone)]

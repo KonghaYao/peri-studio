@@ -146,8 +146,9 @@ test('the permission surface exposes a queue and never resolves an empty identit
   const card = readFileSync(join(components, 'PermissionRequestCard.tsx'), 'utf8');
   assert.match(messageList, /<PermissionQueue/);
   assert.doesNotMatch(messageList, /permissions\(\)\[0\]/);
-  assert.match(queue, /if \(id\) props\.onResolve\(id, decision\)/);
-  assert.match(card, /disabled=\{props\.readOnly \|\| locked\(\) \|\| !actionable\(\)\}/);
+  assert.match(queue, /if \(id\) props\.onResolve\(id, decision, optionId\)/);
+  assert.match(card, /disabled=\{props\.readOnly \|\| locked\(\) \|\| !allowActionable\(\)\}/);
+  assert.match(card, /disabled=\{props\.readOnly \|\| locked\(\) \|\| !denyActionable\(\)\}/);
 });
 
 test('the shared Button defaults to non-submitting behavior', () => {

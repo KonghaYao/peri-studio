@@ -31,6 +31,7 @@ async fn seed_permission_recovery(env: &TestEnv, command_id: Uuid) -> ActionEnve
                 request_id: serde_json::json!("request-race"),
                 options: Vec::new(),
                 decision: PermissionDecision::Allow,
+                option_id: None,
             },
         )
         .unwrap();
@@ -42,6 +43,7 @@ async fn seed_permission_recovery(env: &TestEnv, command_id: Uuid) -> ActionEnve
             chat_id: env.chat_id.to_string(),
             permission_id,
             decision: PermissionDecision::Allow,
+            option_id: None,
         },
     }
 }

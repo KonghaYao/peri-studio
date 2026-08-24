@@ -171,6 +171,7 @@ fn resolve_translation() {
             chat_id: "hub-s1".into(),
             permission_id: "p1".into(),
             decision: PermissionDecision::Allow,
+            option_id: None,
         },
     };
     match t.translate(&action, &ctx()).unwrap() {

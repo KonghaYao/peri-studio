@@ -12,7 +12,7 @@ export interface PermissionRequestCardProps {
   permission: PendingPermission;
   decision?: PermissionDecisionState;
   readOnly: boolean;
-  onResolve: (decision: 'allow' | 'deny') => void;
+  onResolve: (decision: 'allow' | 'deny', optionId?: string) => void;
   onRetry?: (commandId: string) => void;
 }
 
@@ -24,6 +24,14 @@ export function PermissionRequestCard(props: PermissionRequestCardProps) {
   const allowLabel = () => props.permission.options.includes('allowOnce')
     ? 'Allow once'
     : props.permission.options.includes('allowSession') ? 'Allow for this session' : null;
+  const allowOptionId = () => props.permission.options.includes('allowOnce')
+    ? props.permission.optionIds?.allowOnce
+    : props.permission.optionIds?.allowSession;
+  const hasDeny = () => props.permission.options.includes('deny');
+  const exactOptionRequired = () => props.permission.optionIds !== undefined;
+  const allowActionable = () => actionable() && (!exactOptionRequired() || !!allowOptionId());
+  const denyActionable = () => actionable()
+    && (!hasDeny() || !exactOptionRequired() || !!props.permission.optionIds?.deny);
   const locked = () => !!props.decision;
   const uncertain = () => props.decision?.phase === 'uncertain';
   const retryable = () => uncertain() && props.decision?.retryable === true;
@@ -33,6 +41,9 @@ export function PermissionRequestCard(props: PermissionRequestCardProps) {
     if (locked()) return `${action()}ing…`;
     if (!actionable()) return 'Unavailable';
     if (props.readOnly) return 'Read only';
+    if ((!!allowLabel() && !allowActionable()) || (hasDeny() && !denyActionable())) {
+      return 'Some permission options unavailable';
+    }
     return '';
   };
   const statusId = `permission-status-${domId}`;
@@ -51,10 +62,10 @@ export function PermissionRequestCard(props: PermissionRequestCardProps) {
       <Show when={status()}><div id={statusId} class={`permission-request__status mt-7 text-11 leading-145 ${uncertain() ? 'text-warning font-semibold' : 'text-text-secondary'}`} role={uncertain() ? 'alert' : 'status'} aria-live="polite">{status()}</div></Show>
     </div>
     <div class="permission-request__actions flex justify-end gap-7 self-center max-middle:col-span-full max-middle:w-full max-middle:pt-2">
-      <Show when={allowLabel()}>{(label) => <Button variant="primary" class="min-h-36! min-w-72 max-narrow:min-h-44!" disabled={props.readOnly || locked() || !actionable()} busy={props.decision?.phase === 'pending' && props.decision.decision === 'allow'} onClick={() => actionable() && props.onResolve('allow')}>
+      <Show when={allowLabel()}>{(label) => <Button variant="primary" class="min-h-36! min-w-72 max-narrow:min-h-44!" disabled={props.readOnly || locked() || !allowActionable()} busy={props.decision?.phase === 'pending' && props.decision.decision === 'allow'} onClick={() => allowActionable() && props.onResolve('allow', allowOptionId())}>
         {props.decision?.decision === 'allow' ? `${label()}…` : label()}
       </Button>}</Show>
-      <Button variant="secondary" class="min-h-36! min-w-72 max-narrow:min-h-44!" disabled={props.readOnly || locked() || !actionable()} busy={props.decision?.phase === 'pending' && props.decision.decision === 'deny'} onClick={() => actionable() && props.onResolve('deny')}>
+      <Button variant="secondary" class="min-h-36! min-w-72 max-narrow:min-h-44!" disabled={props.readOnly || locked() || !denyActionable()} busy={props.decision?.phase === 'pending' && props.decision.decision === 'deny'} onClick={() => denyActionable() && props.onResolve('deny', props.permission.optionIds?.deny)}>
         {props.decision?.decision === 'deny' ? 'Denying…' : 'Deny'}
       </Button>
       <Show when={retryable() && props.decision}>

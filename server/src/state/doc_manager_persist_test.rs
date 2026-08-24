@@ -44,6 +44,7 @@ async fn expire_pending_permissions_batch_expires_all() {
                 title: "允许".to_string(),
                 description: None,
                 options: vec![],
+                option_ids: Default::default(),
                 expires_at: "2026-08-07T00:05:00Z".to_string(),
             },
         };

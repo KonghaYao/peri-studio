@@ -35,6 +35,7 @@ async fn missing_durable_fallback_preempts_permission_recovery() {
                     request_id: serde_json::json!("request-1"),
                     options: Vec::new(),
                     decision: PermissionDecision::Allow,
+                    option_id: None,
                 },
             )
             .unwrap();
@@ -61,6 +62,7 @@ async fn missing_durable_fallback_preempts_permission_recovery() {
             chat_id: env.chat_id.to_string(),
             permission_id,
             decision: PermissionDecision::Allow,
+            option_id: None,
         },
     };
     let (retry_tx, _retry_rx) = mpsc::channel(2);

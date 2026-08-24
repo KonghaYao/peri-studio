@@ -218,6 +218,7 @@ impl CommandCoordinator {
                 chat_id: chat_id.to_string(),
                 permission_id: payload.permission_id.clone(),
                 decision: payload.decision,
+                option_id: payload.option_id.clone(),
             })
             .await;
         match result {

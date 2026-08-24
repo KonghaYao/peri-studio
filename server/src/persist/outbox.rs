@@ -234,6 +234,9 @@ pub enum CommandRecovery {
         options: Vec<serde_json::Value>,
         /// 首次裁决；必须与重试 action 完全一致。
         decision: PermissionDecision,
+        /// 首次裁决精确选择的 ACP optionId；旧记录可能缺失。
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        option_id: Option<String>,
     },
     /// Body-free evidence for an ACP `elicitation/create` response.
     ElicitationResponse {

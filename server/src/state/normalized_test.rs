@@ -89,6 +89,7 @@ fn serde_roundtrip_all_variants() {
             title: "x".into(),
             description: None,
             options: vec![PermissionOptions::AllowOnce],
+            option_ids: Default::default(),
             expires_at: "2026-08-07T00:00:00Z".into(),
         },
         EventBody::PermissionResolved {

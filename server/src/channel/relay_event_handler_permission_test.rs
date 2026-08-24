@@ -15,7 +15,9 @@ use super::*;
 
 /// 读 session doc 镜像 `pending_permissions`：返回 `(permission_id,
 /// turn_id)` 列表（镜像断言写法对齐 327-342 的 session map 读法）。
-async fn mirror_pending_permissions(env: &Env) -> Vec<(String, String)> {
+async fn mirror_pending_permissions(
+    env: &Env,
+) -> Vec<(String, String, std::collections::BTreeMap<String, String>)> {
     let (snapshot, _) = env
         .sink
         .snapshot(&peri_studio_proto::conn::DocId::session(S1))
@@ -35,12 +37,26 @@ async fn mirror_pending_permissions(env: &Env) -> Vec<(String, String)> {
     let mut out = Vec::new();
     for (k, v) in perms.iter(&txn) {
         let turn = v
+            .clone()
             .cast::<yrs::MapRef>()
             .ok()
             .and_then(|m| m.get(&txn, "turn_id"))
             .and_then(|t| t.cast::<String>().ok())
             .unwrap_or_default();
-        out.push((k.to_string(), turn));
+        let option_ids = v
+            .cast::<yrs::MapRef>()
+            .ok()
+            .and_then(|m| m.get(&txn, "option_ids"))
+            .and_then(|value| value.cast::<yrs::MapRef>().ok())
+            .map(|ids| {
+                ids.iter(&txn)
+                    .filter_map(|(kind, value)| {
+                        value.cast::<String>().ok().map(|id| (kind.to_string(), id))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        out.push((k.to_string(), turn, option_ids));
     }
     out
 }
@@ -80,6 +96,11 @@ async fn request_permission_registered_and_delivered() {
     let perms = mirror_pending_permissions(&env).await;
     assert_eq!(perms.len(), 1, "权限投影写入 control doc");
     let pid = perms[0].0.clone();
+    assert_eq!(
+        perms[0].2.get("allowOnce").map(String::as_str),
+        Some("allow-once"),
+        "opaque optionId 按公开 scope 投影"
+    );
     // 回读命中且一致；确认 delivery 前必须可重复读取。
     let taken = env.relay.pending_permission(&pid).await.expect("read 命中");
     assert_eq!(taken.request_id, json!(5), "agent request id 原样");

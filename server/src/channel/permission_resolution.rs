@@ -50,6 +50,7 @@ pub(super) struct PermissionResolutionRequest {
     pub chat_id: String,
     pub permission_id: String,
     pub decision: PermissionDecision,
+    pub option_id: Option<String>,
 }
 
 pub(super) enum PermissionResolutionOutcome {
@@ -112,6 +113,47 @@ impl PermissionResolution {
             .outbox_get(request.command_id)
             .await
             .and_then(|record| record.recovery.map(|recovery| *recovery));
+        let live_option_valid = self
+            .relay
+            .permission_option_valid(
+                &request.permission_id,
+                &request.chat_id,
+                request.decision,
+                request.option_id.as_deref(),
+            )
+            .await;
+        let recovery_option_valid = match (&persisted_recovery, request.option_id.as_deref()) {
+            (_, None) => true,
+            (
+                Some(CommandRecovery::PermissionResponse {
+                    permission_id,
+                    options,
+                    decision,
+                    option_id,
+                    ..
+                }),
+                Some(selected),
+            ) => {
+                permission_id == &request.permission_id
+                    && *decision == request.decision
+                    && option_id.as_deref() == Some(selected)
+                    && crate::protocol::permission_option_matches(
+                        options,
+                        request.decision,
+                        selected,
+                    )
+            }
+            _ => false,
+        };
+        if !live_option_valid.unwrap_or(recovery_option_valid) {
+            return Err(failure(
+                ErrorCode::InvalidState,
+                "permission optionId does not match the pending request",
+                false,
+                "invalid_option_id",
+            ));
+        }
+
         if persisted_recovery.is_none()
             && store
                 .outbox()
@@ -148,7 +190,13 @@ impl PermissionResolution {
 
         let live_permission = self
             .relay
-            .claim_pending_permission(&request.permission_id, &command_id_text, request.decision)
+            .claim_pending_permission(
+                &request.permission_id,
+                &request.chat_id,
+                &command_id_text,
+                request.decision,
+                request.option_id.as_deref(),
+            )
             .await;
         let recovery = live_permission
             .as_ref()
@@ -157,6 +205,7 @@ impl PermissionResolution {
                 request_id: permission.request_id.clone(),
                 options: permission.options.clone(),
                 decision: request.decision,
+                option_id: request.option_id.clone(),
             })
             .or(persisted_recovery);
         if let Some(evidence) = recovery.clone() {
@@ -312,8 +361,12 @@ impl PermissionResolution {
                 request_id,
                 options,
                 decision,
+                option_id,
             }) => {
-                if permission_id != request.permission_id || decision != request.decision {
+                if permission_id != request.permission_id
+                    || decision != request.decision
+                    || option_id != request.option_id
+                {
                     return self
                         .terminal_failed(
                             &store,
@@ -324,9 +377,12 @@ impl PermissionResolution {
                         )
                         .await;
                 }
-                let message =
-                    self.translator
-                        .permission_response_rpc(&request_id, decision, &options);
+                let message = self.translator.permission_response_rpc(
+                    &request_id,
+                    decision,
+                    option_id.as_deref(),
+                    &options,
+                );
                 match self
                     .instance
                     .forward_rpc(&entry.instance_id, &request.chat_id, &message)

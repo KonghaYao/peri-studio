@@ -75,6 +75,7 @@ impl PermissionResolution {
                 chat_id: request.chat_id.clone(),
                 permission_id: request.permission_id.clone(),
                 decision: request.decision,
+                option_id: request.option_id.clone(),
             },
         };
         let message = match self.translator.translate(

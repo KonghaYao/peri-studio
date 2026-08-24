@@ -172,9 +172,9 @@ export const sessionNew = (chatId: string) => action('chat/session-new', { chatI
 /** 关闭对话。 */
 export const close = (chatId: string) => action('chat/close', { chatId });
 
-/** 权限裁决：decision 仅 "allow" | "deny"。 */
-export const resolvePermission = (chatId: string, permissionId: string, decision: string) =>
-  action('permission/resolve', { chatId, permissionId, decision });
+/** 权限裁决：官方请求回显 Control Doc 投影的精确 ACP optionId。 */
+export const resolvePermission = (chatId: string, permissionId: string, decision: string, optionId?: string) =>
+  action('permission/resolve', { chatId, permissionId, decision, ...(optionId ? { optionId } : {}) });
 
 export type ElicitationAnswer = string | string[];
 export const respondElicitation = (

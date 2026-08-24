@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CAP_PROMPT_DELIVERY_V2, parse, rewind, rewindCandidates, rewindPreview, subscribe, type PromptStatusItem } from './protocol';
+import { CAP_PROMPT_DELIVERY_V2, parse, resolvePermission, rewind, rewindCandidates, rewindPreview, subscribe, type PromptStatusItem } from './protocol';
 
 describe('downstream protocol envelope parsing', () => {
   it('accepts a structurally valid known frame', () => {
@@ -88,6 +88,19 @@ describe('downstream protocol envelope parsing', () => {
     expect(parse('{"t":"ready","projectionVersions":{},"negotiatedCapabilities":["prompt-delivery-v2"]}'))
       .toMatchObject({ negotiatedCapabilities: [CAP_PROMPT_DELIVERY_V2] });
     expect(parse('{"t":"ready","projectionVersions":{},"negotiatedCapabilities":[7]}')).toBeNull();
+  });
+
+  it('sends the exact projected option ID while keeping legacy omission compatible', () => {
+    expect(resolvePermission('chat-1', 'permission-1', 'allow', 'opaque-session')).toMatchObject({
+      type: 'permission/resolve',
+      payload: {
+        chatId: 'chat-1',
+        permissionId: 'permission-1',
+        decision: 'allow',
+        optionId: 'opaque-session',
+      },
+    });
+    expect(resolvePermission('chat-1', 'permission-1', 'deny').payload).not.toHaveProperty('optionId');
   });
 
   it('constructs the preview-bound rewind flow and strictly decodes safe results', () => {

@@ -58,6 +58,7 @@ async fn resolve_duplicate_and_unknown() {
             chat_id: S4.into(),
             permission_id: "p1".into(),
             decision: peri_studio_proto::action::PermissionDecision::Allow,
+            option_id: None,
         },
     };
     // 第一次 resolve：CAS Migrated → forward（instance 在线收 InstanceForward）。
@@ -151,6 +152,7 @@ async fn resolve_official_permission_sends_response() {
             chat_id: S1.into(),
             permission_id: pid.clone(),
             decision: peri_studio_proto::action::PermissionDecision::Allow,
+            option_id: Some("allow-once".into()),
         },
     };
     let r = env.coordinator.submit(&ctx("c"), resolve, tx.clone()).await;
@@ -201,6 +203,90 @@ async fn resolve_official_permission_sends_response() {
     }
 }
 
+#[tokio::test]
+async fn resolve_official_permission_rejects_tampered_option_scope() {
+    let mut env = env().await;
+    bound_session(&env, S1, "acp-1").await;
+    setup_active_turn(&env, S1).await;
+    let permission_id = register_official_permission(&env, S1, "acp-1", 1).await;
+    let (tx, mut rx) = mpsc::channel(16);
+    let action = ActionEnvelope::ResolvePermission {
+        command_id: uuid::Uuid::new_v4().to_string(),
+        payload: ResolvePermissionPayload {
+            chat_id: S1.into(),
+            permission_id: permission_id.clone(),
+            decision: peri_studio_proto::action::PermissionDecision::Deny,
+            option_id: Some("allow-once".into()),
+        },
+    };
+
+    assert!(matches!(
+        env.coordinator.submit(&ctx("c"), action, tx).await,
+        SubmitAck::Accepted { .. }
+    ));
+    match tokio::time::timeout(Duration::from_secs(2), rx.recv()).await {
+        Ok(Some(OutboundMsg::Frame(Frame::ActionError(error)))) => {
+            assert_eq!(error.code, ErrorCode::InvalidState);
+            assert!(!error.retryable);
+        }
+        other => panic!("expected invalid option error, got {other:?}"),
+    }
+    assert!(
+        tokio::time::timeout(Duration::from_millis(300), env.instance_rx.recv())
+            .await
+            .is_err(),
+        "篡改的 optionId 不得发送到 ACP"
+    );
+    assert!(
+        env.relay.pending_permission(&permission_id).await.is_some(),
+        "拒绝篡改不得消费待处理权限"
+    );
+}
+
+#[tokio::test]
+async fn resolve_official_permission_rejects_cross_chat_identity() {
+    let mut env = env().await;
+    bound_session(&env, S1, "acp-1").await;
+    bound_session(&env, S2, "acp-2").await;
+    setup_active_turn(&env, S2).await;
+    let permission_id = register_official_permission(&env, S2, "acp-2", 1).await;
+    let (tx, mut rx) = mpsc::channel(16);
+    let action = ActionEnvelope::ResolvePermission {
+        command_id: uuid::Uuid::new_v4().to_string(),
+        payload: ResolvePermissionPayload {
+            chat_id: S1.into(),
+            permission_id: permission_id.clone(),
+            decision: peri_studio_proto::action::PermissionDecision::Allow,
+            option_id: Some("allow-once".into()),
+        },
+    };
+
+    assert!(matches!(
+        env.coordinator.submit(&ctx("c"), action, tx).await,
+        SubmitAck::Accepted { .. }
+    ));
+    match tokio::time::timeout(Duration::from_secs(2), rx.recv()).await {
+        Ok(Some(OutboundMsg::Frame(Frame::ActionError(error)))) => {
+            assert_eq!(error.code, ErrorCode::InvalidState);
+            assert!(!error.retryable);
+        }
+        other => panic!("expected cross-chat rejection, got {other:?}"),
+    }
+    let pending = env
+        .relay
+        .pending_permission(&permission_id)
+        .await
+        .expect("目标 chat 的权限仍待处理");
+    assert!(
+        pending.resolving_command_id.is_none(),
+        "跨 chat 请求不得抢占裁决权"
+    );
+    assert!(
+        env.instance_rx.try_recv().is_err(),
+        "跨 chat 请求不得发送到 ACP"
+    );
+}
+
 /// [回归测试] 官方 permission response 已进入 instance writer、但
 /// forward_ack 丢失时，server 无法证明 ACP 未消费裁决。必须持久化
 /// DELIVERY_UNKNOWN，且同一 commandId 重试不得产生第二个 forward。
@@ -218,6 +304,7 @@ async fn resolve_official_ack_loss_is_unknown_and_never_redelivers() {
             chat_id: S1.into(),
             permission_id,
             decision: peri_studio_proto::action::PermissionDecision::Allow,
+            option_id: Some("allow-once".into()),
         },
     };
     assert!(matches!(

@@ -31,6 +31,7 @@ async fn resolve_official_forward_failure_retryable() {
             chat_id: S2.into(),
             permission_id: pid.clone(),
             decision: peri_studio_proto::action::PermissionDecision::Allow,
+            option_id: Some("allow-once".into()),
         },
     };
     let r = env.coordinator.submit(&ctx("c"), resolve, tx.clone()).await;
@@ -66,6 +67,7 @@ async fn resolve_official_forward_failure_retryable() {
             chat_id: S2.into(),
             permission_id: pid.clone(),
             decision: peri_studio_proto::action::PermissionDecision::Deny,
+            option_id: None,
         },
     };
     let r = env
@@ -94,6 +96,7 @@ async fn resolve_official_forward_failure_retryable() {
             chat_id: S2.into(),
             permission_id: pid.clone(),
             decision: peri_studio_proto::action::PermissionDecision::Allow,
+            option_id: Some("allow-once".into()),
         },
     };
     let r = env
@@ -140,6 +143,7 @@ async fn resolve_official_forward_failure_retryable() {
             chat_id: S2.into(),
             permission_id: pid.clone(),
             decision: peri_studio_proto::action::PermissionDecision::Allow,
+            option_id: Some("allow-once".into()),
         },
     };
     let r = env.coordinator.submit(&ctx("c"), retry, tx.clone()).await;
@@ -197,6 +201,7 @@ async fn persisted_permission_recovery_without_runtime_fails_closed() {
             chat_id: S2.into(),
             permission_id: pid,
             decision: peri_studio_proto::action::PermissionDecision::Allow,
+            option_id: Some("allow-once".into()),
         },
     };
     assert!(matches!(

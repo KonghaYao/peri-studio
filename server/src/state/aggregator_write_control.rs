@@ -140,6 +140,7 @@ impl Aggregator {
                         title,
                         description,
                         options,
+                        option_ids,
                         expires_at,
                         ..
                     } => {
@@ -152,6 +153,7 @@ impl Aggregator {
                             title,
                             description.as_deref(),
                             options,
+                            option_ids.as_deref(),
                             expires_at,
                         );
                         // §7.2 状态推进：权限请求发出 → 宿主等待决议

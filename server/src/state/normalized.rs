@@ -152,6 +152,9 @@ pub enum EventBody {
         title: String,
         description: Option<String>,
         options: Vec<PermissionOptions>,
+        /// 浏览器裁决必须原样回显的 ACP optionId（key 为 camelCase kind）。
+        #[serde(default)]
+        option_ids: Option<Box<std::collections::BTreeMap<String, String>>>,
         /// server 权威时钟（§4.7）；RFC3339。
         expires_at: String,
     },

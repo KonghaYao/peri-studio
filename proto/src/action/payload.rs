@@ -163,6 +163,9 @@ pub struct ResolvePermissionPayload {
     pub chat_id: String,
     pub permission_id: String,
     pub decision: PermissionDecision,
+    /// 官方 ACP optionId；旧 legacy producer 无此身份时缺省。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub option_id: Option<String>,
 }
 
 /// `elicitation/respond` payload。`answers` 的 key 必须与 server 投影字段精确

@@ -64,6 +64,7 @@ fn permission_first_atomically_synthesizes_reachable_tool_card() {
         title: "允许执行".into(),
         description: None,
         options: vec![PermissionOptions::AllowOnce],
+        option_ids: Default::default(),
         expires_at: "2026-08-07T00:05:00Z".into(),
     };
     assert!(agg.apply(&mut p, &ev("s1", 2, permission)).applied);
@@ -168,6 +169,7 @@ fn linked_permission_deny_cancels_tool_and_turn() {
         title: "允许执行".into(),
         description: None,
         options: vec![PermissionOptions::AllowOnce],
+        option_ids: Default::default(),
         expires_at: "2026-08-07T00:05:00Z".into(),
     };
     assert!(agg.apply(&mut p, &ev("s1", 3, request)).applied);
@@ -198,6 +200,7 @@ fn tool_waits_until_its_last_linked_permission_is_allowed() {
             title: "允许执行".into(),
             description: None,
             options: vec![PermissionOptions::AllowOnce],
+            option_ids: Default::default(),
             expires_at: "2026-08-07T00:05:00Z".into(),
         };
         assert!(agg.apply(&mut p, &ev("s1", seq, request)).applied);

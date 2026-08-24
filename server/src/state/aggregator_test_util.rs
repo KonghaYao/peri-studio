@@ -194,6 +194,7 @@ pub(crate) fn permission_requested(id: &str, turn: &str) -> EventBody {
         title: "允许执行".to_string(),
         description: None,
         options: vec![PermissionOptions::AllowOnce],
+        option_ids: Default::default(),
         expires_at: "2026-08-07T00:05:00Z".to_string(),
     }
 }
@@ -252,6 +253,16 @@ pub(crate) fn permission_count(pair: &DocPair) -> usize {
         .and_then(|v| v.cast::<yrs::MapRef>().ok())
         .map(|m| m.len(&txn) as usize)
         .unwrap_or(0)
+}
+
+pub(crate) fn permission_has_option_ids(pair: &DocPair, permission_id: &str) -> bool {
+    let txn = pair.session.transact();
+    chat_writer::root_map_read(&txn)
+        .and_then(|root| root.get(&txn, "pending_permissions"))
+        .and_then(|value| value.cast::<yrs::MapRef>().ok())
+        .and_then(|permissions| permissions.get(&txn, permission_id))
+        .and_then(|value| value.cast::<yrs::MapRef>().ok())
+        .is_some_and(|permission| permission.get(&txn, "option_ids").is_some())
 }
 
 pub(crate) fn active_turn_status(pair: &DocPair) -> Option<TurnStatus> {

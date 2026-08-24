@@ -53,6 +53,7 @@ impl RelayEventHandler {
                     expires_at: expires_at(now),
                     resolving_command_id: None,
                     resolving_decision: None,
+                    resolving_option_id: None,
                 },
             );
         }
@@ -76,6 +77,7 @@ impl RelayEventHandler {
                 title: req.title.clone(),
                 description: req.description.clone(),
                 options: permission_option_kinds(&req.options),
+                option_ids: Some(Box::new(permission_option_ids(&req.options))),
                 expires_at: expires_at(now),
             },
         };
@@ -232,21 +234,51 @@ impl RelayEventHandler {
     pub async fn claim_pending_permission(
         &self,
         permission_id: &str,
+        chat_id: &str,
         command_id: &str,
         decision: PermissionDecision,
+        option_id: Option<&str>,
     ) -> Option<PendingPermissionReq> {
         let mut pending = self.inner.pending_permissions.write().await;
         let request = pending.get_mut(permission_id)?;
-        match (&request.resolving_command_id, request.resolving_decision) {
-            (None, None) => {
+        if request.chat_id != chat_id {
+            return None;
+        }
+        match (
+            &request.resolving_command_id,
+            request.resolving_decision,
+            request.resolving_option_id.as_deref(),
+        ) {
+            (None, None, None) => {
                 request.resolving_command_id = Some(command_id.to_string());
                 request.resolving_decision = Some(decision);
+                request.resolving_option_id = option_id.map(str::to_string);
             }
-            (Some(existing_id), Some(existing_decision))
-                if existing_id == command_id && existing_decision == decision => {}
+            (Some(existing_id), Some(existing_decision), existing_option_id)
+                if existing_id == command_id
+                    && existing_decision == decision
+                    && existing_option_id == option_id => {}
             _ => return None,
         }
         Some(request.clone())
+    }
+
+    /// 若该 id 属于官方 pending request，则验证 optionId 与 allow/deny scope。
+    pub async fn permission_option_valid(
+        &self,
+        permission_id: &str,
+        chat_id: &str,
+        decision: PermissionDecision,
+        option_id: Option<&str>,
+    ) -> Option<bool> {
+        let pending = self.inner.pending_permissions.read().await;
+        let request = pending.get(permission_id)?;
+        if request.chat_id != chat_id {
+            return Some(false);
+        }
+        Some(option_id.is_none_or(|selected| {
+            crate::protocol::permission_option_matches(&request.options, decision, selected)
+        }))
     }
 
     /// 投递确认后移除表项；幂等无害。未确认前必须保留，
@@ -317,6 +349,31 @@ fn permission_option_kinds(options: &[serde_json::Value]) -> Vec<PermissionOptio
             })
         })
         .collect()
+}
+
+/// 官方 option 的公开 scope → opaque optionId；每个 scope 只投影首个合法值。
+fn permission_option_ids(
+    options: &[serde_json::Value],
+) -> std::collections::BTreeMap<String, String> {
+    let mut result = std::collections::BTreeMap::new();
+    for option in options {
+        let Some(option_id) = option.get("optionId").and_then(serde_json::Value::as_str) else {
+            continue;
+        };
+        let Some(kind) = option.get("kind").and_then(serde_json::Value::as_str) else {
+            continue;
+        };
+        let public_kind = match kind {
+            "allow_once" | "allowOnce" => "allowOnce",
+            "allow_always" | "allowSession" => "allowSession",
+            "reject_once" | "rejectOnce" | "reject_always" | "rejectAlways" => "deny",
+            _ => continue,
+        };
+        result
+            .entry(public_kind.to_string())
+            .or_insert_with(|| option_id.to_string());
+    }
+    result
 }
 
 /// 权限请求过期时刻（#1：#1 复用 acp_channel.rs `PERMISSION_TIMEOUT`（5min）

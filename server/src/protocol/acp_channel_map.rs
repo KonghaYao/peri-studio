@@ -352,6 +352,7 @@ impl AcpChannel {
                     title: string_field(payload, "title", "title").unwrap_or_default(),
                     description: string_field(payload, "description", "description"),
                     options: permission_options(payload),
+                    option_ids: None,
                     expires_at,
                 }
             }

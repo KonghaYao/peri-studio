@@ -6,7 +6,7 @@ import type { PermissionDecisionState } from '../lib/permission-delivery';
 import { PermissionQueue } from './PermissionQueue';
 
 function permission(id: string, title: string): PendingPermission {
-  return { permissionId: id, turnId: 'turn-1', toolCallId: `tool-${id}`, title, description: null, options: ['allowOnce', 'deny'], status: 'pending', expiresAt: null, decision: null };
+  return { permissionId: id, turnId: 'turn-1', toolCallId: `tool-${id}`, title, description: null, options: ['allowOnce', 'deny'], optionIds: { allowOnce: `${id}-allow`, deny: `${id}-reject` }, status: 'pending', expiresAt: null, decision: null };
 }
 
 describe('PermissionQueue', () => {
@@ -51,6 +51,6 @@ describe('PermissionQueue', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next permission' }));
     expect(screen.getByRole('button', { name: 'Allow once' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: 'Deny' }));
-    expect(resolve).toHaveBeenCalledExactlyOnceWith('p2', 'deny');
+    expect(resolve).toHaveBeenCalledExactlyOnceWith('p2', 'deny', 'p2-reject');
   });
 });

@@ -8,7 +8,7 @@ export interface PermissionQueueProps {
   permissions: PendingPermission[];
   decisions: Map<string, PermissionDecisionState>;
   readOnly: boolean;
-  onResolve: (permissionId: string, decision: 'allow' | 'deny') => void;
+  onResolve: (permissionId: string, decision: 'allow' | 'deny', optionId?: string) => void;
   onRetry?: (commandId: string) => void;
 }
 
@@ -62,9 +62,9 @@ export function PermissionQueue(props: PermissionQueueProps) {
         permission={permission()}
         decision={permissionId() ? props.decisions.get(permissionId()!) : undefined}
         readOnly={props.readOnly}
-        onResolve={(decision) => {
+        onResolve={(decision, optionId) => {
           const id = permissionId();
-          if (id) props.onResolve(id, decision);
+          if (id) props.onResolve(id, decision, optionId);
         }}
         onRetry={props.onRetry}
       />

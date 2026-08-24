@@ -1,9 +1,9 @@
 # Peri Studio 架构设计（权威版）
 
-> 状态：v2.8（无状态投影恢复 + 远程资源工作台 + 长会话可靠 UI）
+> 状态：v2.9（无状态投影恢复 + 远程资源工作台 + 长会话可靠 UI + 精确权限选项）
 > 日期：2026-08-24
 > 定位：peri-studio 独立项目的架构基准文档。与 peri 的唯一耦合点是 ACP 进程（协议线格式），本设计不依赖 peri 的任何 crate 与部署形态。
-> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
+> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界；v2.9 令 Web 权限裁决回传 Control Doc 投影的精确 ACP `optionId`，并在恢复证据与交付边界校验 ID 和 scope。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
 > 约定：引用 chat-channel 处标注其文档章节号（如「chat §5.2」），实现时以该仓库为对照基线。协议事实（帧 tag、action 面、schema 版本、默认值）以 `peri-studio-proto` / `server/src/config` 实现为真相来源，本文与实现不一致时以实现为准并回改本文。
 
 ---
@@ -933,7 +933,7 @@ chat/create 或 load ──► accepting ──► ... （turn 状态机驱动�
 2. 默认每 chat**仅一个活动 turn**；若未来支持并行 turn，必须先引入独立 branch/thread 聚合，不能直接放宽约束。
 3. `commandId` 去重记录在内存 outbox（§4.4），覆盖客户端进程内重试窗口；**不覆盖 server 重启**（重启即空，命令不重发，§8.4.1）。
 4. **Permission resolution 使用 compare-and-set**：仅 `pending → resolved` 原子迁移一次，重复或过期回答返回幂等结果（`duplicate` ack）；迁移成功后才向 ACP 进程发 `permission.resolve`。官方 request 在首次裁决时同时申领 `(commandId, decision)` 唯一投递权；明确未送达只能以同一 commandId 和同一 decision 在同一存活 runtime 恢复，新 commandId 即使决策相同也不得重放安全副作用。`dispatched` 之后没有确认的结果属于 delivery unknown；server 重启后旧 runtime 按§8.3 终止，因此恢复证据不授权自动重放，只供运维对账。
-   兼容旧 `Allow` 决策时，translator 只允许选择投影中的 `allow_once`，不存在该选项则最多选择明确的 `allow_always`，不得按数组顺序选择或回退到无关 option。Web 必须把实际范围显示为 `Allow once` / `Allow for this session`；后续协议升级由客户端传精确 optionId，删除兼容猜测。
+   Control Doc 将官方 ACP option 的 opaque ID 按 `allowOnce` / `allowSession` / `deny` scope 投影；现代 Web 必须显示实际范围，并在 `permission/resolve` 回传用户所选的精确 `optionId`。server 在 CAS 和投递前验证 permission 与 optionId 属于 action 指定的同一 chat、同一原 pending request，且 scope 与 Allow/Deny 一致；恢复证据绑定同一 ID。未知、跨 chat、跨 scope 或脱离 pending/recovery 的 ID fail closed。若官方请求未提供 reject option，Deny 仍必须可用，并按 ACP 契约发送 `cancelled`（无 optionId）。只有旧客户端缺省 `optionId` 时，translator 才保留 Allow 的兼容选档：优先 `allow_once`、不存在时最多选择明确的 `allow_always`，不得按数组顺序选择或回退到无关 option。
 5. 标题更新等非 Agent 操作可独立排队，但仍经服务端命令写入；不能借 YJS client update 绕过授权。
 
 **每 chat 单写者（Y.Doc 写入串行化）**【审查：开发 P0-2】：

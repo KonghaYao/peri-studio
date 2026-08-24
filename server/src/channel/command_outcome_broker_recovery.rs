@@ -127,8 +127,11 @@ pub(super) fn permission_recovery_payload_matches(
         Some(CommandRecovery::PermissionResponse {
             permission_id,
             decision,
+            option_id,
             ..
-        }) if permission_id == &payload.permission_id && decision == &payload.decision
+        }) if permission_id == &payload.permission_id
+            && decision == &payload.decision
+            && option_id == &payload.option_id
     )
 }
 

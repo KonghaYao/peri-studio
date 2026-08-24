@@ -11,7 +11,7 @@
 1. `resource:*` Yjs update 通过严格 DocId 解码；resource result 同时校验 `docId === resource:{viewId}`。
 2. Resource session 只接受已登记且仍存活的请求；旧 project 的迟到 view 仅 release，不 subscribe；未租赁 update 不创建 Doc。
 3. `hidden` reasoning 不再写入浏览器共享 Chat Doc；Web 仅渲染明确的 `summary`，未知值 fail closed。
-4. 权限卡展示 `Allow once` / `Allow for this session`；旧 `Allow` wire 语义强制优先 allow-once，且不再回退到无关 option。
+4. 权限卡展示 `Allow once` / `Allow for this session`，并回传 Control Doc 投影的精确 opaque optionId；server 对 chat、原请求身份与 scope 三重校验，篡改、跨 chat 抢占和恢复证据失配均 fail closed。无 reject option 时仍可按 ACP `cancelled` 拒绝；旧客户端缺省 ID 时才保留最小权限兼容选档。
 5. 1024px 状态栏资源入口改为受控 Workbench view，点击能真实打开 Explorer。
 6. 补齐缺失的 19/25/35/90/100/210/360/420 数字 token，并新增静态契约，防止 `h-35` 回退为 140px。
 7. coarse pointer 下 Resource/SCM/StatusBar 主要目标达到 44px；状态栏行高与抽屉底边同步。
@@ -57,7 +57,7 @@
 
 | 优先级 | 发现 | 决策 |
 |---|---|---|
-| P0 | allow-once/session 被压成无范围的 Allow | 本轮先完成范围披露与最小权限选择；下一版 wire 传精确 optionId |
+| P0 | allow-once/session 被压成无范围的 Allow | 已完成范围披露、精确 optionId 回传、服务端 scope 校验与恢复绑定；旧客户端缺省 ID 时保留最小权限兼容 |
 | P1 | 权限卡缺少与 toolCallId 绑定的可核验证据 | server 投影脱敏 tool input 摘要 |
 | P1 | `expiresAt` 只排序，UI 不显示或本地禁用 | 增加倒计时与到期 fail-close |
 | P1 | Elicitation Queue 按数组 index，前插会静默换题 | 按 elicitationId 保存选择身份 |
@@ -118,11 +118,10 @@
 
 复审固定点为 `888778e`，同时检查仓库 `CLAUDE.md`、权威架构、术语表与本报告。两个独立只读审查均无遗留 P0 或功能阻断；复审发现的未知 reasoning visibility 降级、资源协议模块环、三个遗漏的 coarse 触控目标、未租赁 update 测试缺口、浏览器测试文件超限与报告计数均已闭环。`aggregator.rs` 482 行、`protocol.ts` 457 行、`resource-store.ts` 455 行接近拆分阈值，作为结构预警保留。
 
-最终门禁：Rust workspace 781 项全绿，`cargo fmt --all --check` 与 workspace 全 target Clippy `-D warnings` 通过；Web TypeScript、63 项 Node 契约、550 项 Vitest、production build/boundary 全绿；真实 Chromium 43/43（含 2,000 条有界 transcript、1024 入口、390×430 短视口和真实 coarse pointer 44px）通过；`git diff --check` 通过。Vitest 早期轮次曾出现一次 Dialog inert 时序抖动，隔离复跑与后续完整复跑均通过，未观察到产品回归。
+最终门禁：Rust workspace 786 项全绿，`cargo fmt --all --check` 与 workspace 全 target Clippy `-D warnings` 通过；Web TypeScript、63 项 Node 契约、554 项 Vitest、production build/boundary 全绿；真实 Chromium 43/43（含 2,000 条有界 transcript、1024 入口、390×430 短视口和真实 coarse pointer 44px）通过；`git diff --check` 通过。Vitest 早期轮次曾出现一次 Dialog inert 时序抖动，隔离复跑与后续完整复跑均通过，未观察到产品回归。
 
 后续双轴复审又闭环三项：metadata `accepted` 不再误续墙钟 timeout，只有显式 prompt inactivity lease 可由 runtime progress 续租；acknowledged `delivery_unknown` 证据上限为 20 条，满额后 fail-closed 而不静默淘汰；已确认继续的历史证据改用普通 group 语义，不再作为新 alert 重复打断读屏。
 
 ## 推荐路线
 
-1. Permission wire v3：`permission/resolve` 传 server 投影的精确 optionId，移除 translator 猜测。
-2. 完成可访问性矩阵：焦点往返、forced-colors、768、coarse pointer、短视口。
+1. 完成可访问性矩阵：焦点往返、forced-colors、768、coarse pointer、短视口。

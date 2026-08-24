@@ -222,7 +222,7 @@ export function closeChat(onFinished?: () => void): boolean {
   });
 }
 
-export function resolvePermission(permissionId: string, decision: PermissionDecision): void {
+export function resolvePermission(permissionId: string, decision: PermissionDecision, optionId?: string): void {
   if (!connectionReady() || readOnly()) {
     if (readOnly()) return deps!.toast('Read-only mode cannot handle permission requests');
     deps!.toast('Connection not ready, try again later');
@@ -230,7 +230,7 @@ export function resolvePermission(permissionId: string, decision: PermissionDeci
   }
   const chatId = deps!.currentCid();
   if (!chatId) return;
-  const frame = H.resolvePermission(chatId, permissionId, decision);
+  const frame = H.resolvePermission(chatId, permissionId, decision, optionId);
   if (!startPermissionDecision(frame.commandId, permissionId, decision)) return;
   deps!.sendAction(frame, 'resolve', {
     retryOnError: true,

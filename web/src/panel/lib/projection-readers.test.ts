@@ -208,6 +208,28 @@ describe('renderControl permission projection', () => {
 
     expect(renderControl(doc).pendingPermissions.map((item) => item.permissionId)).toEqual(['same-a', 'same-b', 'late', 'unknown']);
   });
+
+  it('retains opaque option IDs by their public permission scope', () => {
+    const doc = new Y.Doc();
+    const permission = new Y.Map<unknown>();
+    const optionIds = new Y.Map<unknown>();
+    const permissions = new Y.Map<unknown>();
+    doc.getMap<unknown>('root').set('pending_permissions', permissions);
+    permissions.set('p1', permission);
+    permission.set('permission_id', 'p1');
+    permission.set('status', 'pending');
+    permission.set('option_ids', optionIds);
+    optionIds.set('allowOnce', 'opaque-once');
+    optionIds.set('allowSession', 'opaque-session');
+    optionIds.set('deny', 'opaque-reject');
+    optionIds.set('unknown', 'must-not-escape');
+
+    expect(renderControl(doc).pendingPermissions[0].optionIds).toEqual({
+      allowOnce: 'opaque-once',
+      allowSession: 'opaque-session',
+      deny: 'opaque-reject',
+    });
+  });
 });
 
 describe('renderControl elicitation projection', () => {

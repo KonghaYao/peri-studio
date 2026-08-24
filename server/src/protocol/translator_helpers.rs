@@ -5,6 +5,8 @@
 
 use serde_json::Value;
 
+use peri_studio_proto::action::PermissionDecision;
+
 use super::{TranslateError, CWD_MAX_BYTES};
 
 /// 第一个 `kind` 命中 `kinds`（含 camelCase 别名）的 `optionId`。
@@ -21,6 +23,30 @@ pub(super) fn pick_option_id(options: &[Value], kinds: &[&str]) -> Option<String
                 .map(str::to_string)
         } else {
             None
+        }
+    })
+}
+
+/// 精确 optionId 必须同时属于原请求，且 scope 与用户决策一致。
+pub(crate) fn permission_option_matches(
+    options: &[Value],
+    decision: PermissionDecision,
+    selected: &str,
+) -> bool {
+    options.iter().any(|option| {
+        if option.get("optionId").and_then(Value::as_str) != Some(selected) {
+            return false;
+        }
+        let kind = option.get("kind").and_then(Value::as_str);
+        match decision {
+            PermissionDecision::Allow => matches!(
+                kind,
+                Some("allow_once" | "allowOnce" | "allow_always" | "allowSession")
+            ),
+            PermissionDecision::Deny => matches!(
+                kind,
+                Some("reject_once" | "rejectOnce" | "reject_always" | "rejectAlways")
+            ),
         }
     })
 }

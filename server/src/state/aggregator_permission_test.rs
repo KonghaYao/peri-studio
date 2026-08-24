@@ -30,6 +30,10 @@ fn permission_requested_advances_turn_to_awaiting_permission() {
             .applied
     );
     assert_eq!(active_turn_status(&p), Some(TurnStatus::AwaitingPermission));
+    assert!(
+        !permission_has_option_ids(&p, "p1"),
+        "legacy 权限投影不得伪装成需要精确 optionId 的官方请求"
+    );
     // 无关 turn 的权限请求被拒绝（防御：judge 终态守卫按 active_turn 校验），
     // 状态不受影响。
     let r = agg.apply(&mut p, &ev("s1", 3, permission_requested("p9", "t9")));
@@ -121,6 +125,7 @@ fn linked_tool_lifecycle_is_monotonic_across_updates_and_permission() {
         title: "允许执行".into(),
         description: None,
         options: vec![PermissionOptions::AllowOnce],
+        option_ids: Default::default(),
         expires_at: "2026-08-07T00:05:00Z".into(),
     };
     assert!(agg.apply(&mut p, &ev("s1", 5, permission)).applied);
@@ -185,6 +190,7 @@ fn tool_evidence_is_monotonic_across_sparse_and_late_frames() {
         title: "允许执行".into(),
         description: None,
         options: vec![PermissionOptions::AllowOnce],
+        option_ids: Default::default(),
         expires_at: "2026-08-07T00:05:00Z".into(),
     };
     assert!(agg.apply(&mut p, &ev("s1", 4, permission)).applied);

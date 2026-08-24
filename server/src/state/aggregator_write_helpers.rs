@@ -75,6 +75,7 @@ pub(crate) fn write_permission_request(
     title: &str,
     description: Option<&str>,
     options: &[PermissionOptions],
+    option_ids: Option<&std::collections::BTreeMap<String, String>>,
     expires_at: &str,
 ) {
     let perms = root.get_or_init::<_, yrs::MapRef>(txn, "pending_permissions");
@@ -93,6 +94,21 @@ pub(crate) fn write_permission_request(
     let opts = pm.get_or_init::<_, yrs::ArrayRef>(txn, "options");
     for o in options {
         opts.push_back(txn, crate::state::permission::option_str(*o).to_string());
+    }
+    if let Some(option_ids) = option_ids {
+        let option_ids_map = pm.get_or_init::<_, yrs::MapRef>(txn, "option_ids");
+        let stale: Vec<String> = option_ids_map
+            .iter(txn)
+            .map(|(key, _)| key.to_string())
+            .collect();
+        for key in stale {
+            option_ids_map.remove(txn, key.as_str());
+        }
+        for (kind, option_id) in option_ids {
+            option_ids_map.insert(txn, kind.as_str(), option_id.clone());
+        }
+    } else {
+        pm.remove(txn, "option_ids");
     }
     pm.insert(
         txn,

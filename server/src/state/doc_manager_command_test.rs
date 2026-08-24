@@ -79,6 +79,7 @@ async fn command_permission_resolve_cas() {
             title: "允许".to_string(),
             description: None,
             options: vec![],
+            option_ids: Default::default(),
             expires_at: "2026-08-07T00:05:00Z".to_string(),
         },
     };
@@ -143,6 +144,7 @@ async fn command_permission_resolution_updates_linked_tool_projection() {
             title: "允许".into(),
             description: None,
             options: vec![],
+            option_ids: Default::default(),
             expires_at: "2026-08-07T00:05:00Z".into(),
         },
     };

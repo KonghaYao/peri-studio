@@ -88,6 +88,7 @@ export interface PendingPermission {
   title: string | null;
   description: string | null;
   options: Array<'allowOnce' | 'allowSession' | 'deny'>;
+  optionIds?: Partial<Record<'allowOnce' | 'allowSession' | 'deny', string>>;
   status: string | null;
   expiresAt: string | null;
   decision: string | null;
@@ -268,6 +269,11 @@ export function renderControl(doc: Y.Doc): ControlView {
     const options = (asArray(permission.get('options'))?.toArray() ?? [])
       .filter((option): option is 'allowOnce' | 'allowSession' | 'deny' =>
         option === 'allowOnce' || option === 'allowSession' || option === 'deny');
+    const optionIdsMap = asMap(permission.get('option_ids'));
+    const optionIds = optionIdsMap ? Object.fromEntries(['allowOnce', 'allowSession', 'deny'].flatMap((kind) => {
+      const optionId = getStr(optionIdsMap, kind);
+      return optionId ? [[kind, optionId]] : [];
+    })) as PendingPermission['optionIds'] : undefined;
     result.pendingPermissions.push({
       permissionId: getStr(permission, 'permission_id'),
       turnId: getStr(permission, 'turn_id'),
@@ -275,6 +281,7 @@ export function renderControl(doc: Y.Doc): ControlView {
       title: getStr(permission, 'title'),
       description: getStr(permission, 'description'),
       options,
+      optionIds,
       status: getStr(permission, 'status'),
       expiresAt: getStr(permission, 'expires_at'),
       decision: getStr(permission, 'decision'),

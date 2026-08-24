@@ -16,6 +16,7 @@ use peri_studio_proto::action::ActionEnvelope;
 
 #[path = "translator_helpers.rs"]
 mod translator_helpers;
+pub(crate) use translator_helpers::permission_option_matches;
 use translator_helpers::pick_option_id;
 // validate_cwd 为公开 API（coordinator / metadata 校验等消费），经
 // helpers 模块实现后在此 re-export 保持 `protocol::validate_cwd` 路径。
@@ -281,40 +282,36 @@ impl Translator {
     /// id = agent request id 原样回显。响应帧不回 L3（JSON-RPC response 无
     /// 回执，§4.4 以 forward_ack 为确认点）。
     ///
-    /// 选档规则：`Allow` → 优先最小权限 `allow_once`，仅在不存在时选择
-    /// `allow_always`；没有 allow 选项则 fail closed 为 cancelled。`Deny` → 第一
-    /// 个 `kind ∈ {reject_once, reject_always}` 的 `optionId`（有则
-    /// `selected`+optionId；无 → `cancelled`）。kind 兼容 camelCase 别名
-    /// （`allowOnce`/`allowSession`，对齐 relay 投影层 P2-e 兼容先例）。
+    /// 现代客户端带 optionId 时只接受原请求中 scope 匹配的精确选项；无效值
+    /// fail closed 为 cancelled。旧客户端缺省 optionId 时才执行最小权限兼容
+    /// 选档：Allow 优先 allow_once，Deny 选择首个 reject 类选项。
     pub fn permission_response_rpc(
         &self,
         request_id: &serde_json::Value,
         decision: peri_studio_proto::action::PermissionDecision,
+        selected_option_id: Option<&str>,
         options: &[serde_json::Value],
     ) -> serde_json::Value {
-        let outcome = match decision {
-            peri_studio_proto::action::PermissionDecision::Allow => {
-                match pick_option_id(options, &["allow_once"])
-                    .or_else(|| pick_option_id(options, &["allow_always"]))
-                {
-                    Some(option_id) => {
-                        json!({ "outcome": "selected", "optionId": option_id })
-                    }
-                    // 入站校验允许空 options 数组（评审 P2-1）：无任何
-                    // optionId 可回显时不得写 `"optionId": null`（官方契约
-                    // selected 分支 optionId 必须为 string）——回落 cancelled，
-                    // 与 Deny 分支一致。
-                    None => json!({ "outcome": "cancelled" }),
-                }
+        let option_id = match selected_option_id {
+            Some(selected) if permission_option_matches(options, decision, selected) => {
+                Some(selected.to_string())
             }
-            peri_studio_proto::action::PermissionDecision::Deny => {
-                match pick_option_id(options, &["reject_once", "reject_always"]) {
-                    Some(option_id) => {
-                        json!({ "outcome": "selected", "optionId": option_id })
-                    }
-                    None => json!({ "outcome": "cancelled" }),
+            Some(_) => None,
+            None => match decision {
+                peri_studio_proto::action::PermissionDecision::Allow => {
+                    pick_option_id(options, &["allow_once"])
+                        .or_else(|| pick_option_id(options, &["allow_always"]))
                 }
-            }
+                peri_studio_proto::action::PermissionDecision::Deny => {
+                    pick_option_id(options, &["reject_once", "reject_always"])
+                }
+            },
+        };
+        let outcome = match option_id {
+            Some(option_id) => json!({ "outcome": "selected", "optionId": option_id }),
+            // 入站校验允许空 options 数组；selected 分支 optionId 必须为
+            // string，因此无可用精确选项时不得序列化 null。
+            None => json!({ "outcome": "cancelled" }),
         };
         json!({
             "jsonrpc": "2.0",
