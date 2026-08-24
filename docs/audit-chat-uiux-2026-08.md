@@ -37,7 +37,7 @@
 
 | 优先级 | 发现 | 后续接口 |
 |---|---|---|
-| P1 | active turn 无正文时视觉上没有 working 状态 | visible、reduced-motion-safe 的工作状态行 |
+| P1 | active turn 无正文时视觉上没有 working 状态 | 已增加仅在无可见内容时出现、reduced-motion-safe 的工作状态行 |
 | P1 | cancelled/interrupted/failed 的部分回答无终态标记 | 尾部显示 partial terminal state，复制文案同步 |
 | P1 | 长对话全量 DOM + 每次 update 全量 Markdown 解析 | 已由 `TranscriptWindow` + keyed `ChatProjection` 闭环 |
 | P2 | 大代码块仍生成无限 token DOM | 字节/行预算，超限纯文本窗口化，完整下载保留 |

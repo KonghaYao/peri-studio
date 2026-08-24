@@ -248,7 +248,7 @@ describe('MessageList hydration', () => {
     expect(screen.queryByText('Loading session')).not.toBeInTheDocument();
   });
 
-  it('renders one chat-level loading indicator from the control projection', () => {
+  it('renders one visible working state until the active turn has content', () => {
     setRuntimeDocsState({ chat: true, control: true });
     setChatEntries([message('assistant-1', 'live', null)]);
     setChatHead({
@@ -262,10 +262,13 @@ describe('MessageList hydration', () => {
 
     const loading = document.querySelector('.message-loading')!;
     expect(loading).toHaveClass('message-loading');
-    expect(loading).toHaveClass('sr-only');
+    expect(loading).not.toHaveClass('sr-only');
     expect(loading).toHaveAttribute('aria-live', 'polite');
-    expect(loading).toHaveTextContent('Agent working');
+    expect(loading).toHaveTextContent('Peri is working');
     expect(document.querySelectorAll('.message-loading')).toHaveLength(1);
+
+    setChatEntries([message('turn-1', 'live', null)]);
+    expect(document.querySelector('.message-loading')).toBeNull();
   });
 
   it('exposes every simultaneous permission request in one navigable queue', () => {

@@ -56,7 +56,12 @@ function HistoryBoundary(props: { kind: Exclude<ReplayBoundary, null> }) {
 }
 
 function ChatLoading() {
-  return <span class="chat-loading message-loading sr-only" role="status" aria-live="polite">Agent working</span>;
+  return <div class="chat-loading message-loading mb-12 flex min-h-32 items-center gap-8 text-12 text-text-muted" role="status" aria-live="polite">
+    <span class="grid size-18 shrink-0 place-items-center rounded-6 border border-border-subtle bg-surface-muted" aria-hidden="true">
+      <i class="h-10 w-2 rounded-full bg-text-muted animate-pulse motion-reduce:animate-none" />
+    </span>
+    <span><strong class="font-650 text-text-primary">Peri</strong> is working</span>
+  </div>;
 }
 
 function TranscriptRow(props: {
@@ -117,6 +122,13 @@ export function MessageList(props: { bottomInset?: number }) {
   };
   const acknowledgedForChat = () => acknowledgedMessageDeliveries()
     .filter((submission) => submission.chatId === selectedCid());
+  const showChatLoading = () => {
+    if (!chatHead()?.chat?.loading) return false;
+    const turnId = chatHead()?.activeTurn?.turnId || chatHead()?.chat?.activeTurnId;
+    if (!turnId) return true;
+    const entry = chatEntries().find((item) => item.role === 'assistant' && item.turnId === turnId);
+    return !entry || !(entry.text.trim() || entry.reasoning.length || entry.toolCalls.length || entry.resources.length || entry.error);
+  };
 
   // Composer 绝对覆盖在滚动区上方：动态高度 + 最小安全留白，保证最后一条消息不被贴住或遮挡。
   const contentBottomInset = () => `${Math.max(props.bottomInset ?? 0, 64) + 40}px`;
@@ -301,7 +313,7 @@ export function MessageList(props: { bottomInset?: number }) {
           </For>
           <div class="transcript-spacer" aria-hidden="true" style={{ height: `${visibleTranscript().afterHeight}px` }} />
         </div>
-        <Show when={chatHead()?.chat?.loading}><ChatLoading /></Show>
+        <Show when={showChatLoading()}><ChatLoading /></Show>
         <For each={acknowledgedForChat()}>{(submission) =>
           <MessageOutbox submission={submission} acknowledged onRetry={() => {}} onEdit={() => {}} />
         }</For>
