@@ -1,15 +1,17 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PermissionRequestCard } from './PermissionRequestCard';
 
 const permission = {
   permissionId: 'permission-123456789', turnId: 'turn-1', toolCallId: 'tool-123456789',
   title: 'Run shell command', description: "Read the current project's Git status", options: ['allowOnce', 'allowSession', 'deny'] as Array<'allowOnce' | 'allowSession' | 'deny'>, status: 'pending',
-  expiresAt: '2026-08-13T12:00:00Z', decision: null,
+  expiresAt: '2099-08-13T12:00:00Z', decision: null,
   optionIds: { allowOnce: 'allow-once', allowSession: 'allow-session', deny: 'reject-once' },
 };
 
 describe('PermissionRequestCard', () => {
+  afterEach(() => vi.useRealTimers());
+
   it('submits only the first security decision and exposes known request facts', () => {
     const resolve = vi.fn();
     const view = render(() => <PermissionRequestCard permission={permission} readOnly={false} onResolve={resolve} />);
@@ -94,5 +96,69 @@ describe('PermissionRequestCard', () => {
     expect(screen.getByRole('button', { name: 'Deny' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: 'Deny' }));
     expect(resolve).toHaveBeenCalledExactlyOnceWith('deny', undefined);
+  });
+
+  it('shows a live countdown and fails closed at the projected deadline', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime('2026-08-13T12:00:00.000Z');
+    const resolve = vi.fn();
+    const view = render(() => <PermissionRequestCard
+      permission={{ ...permission, expiresAt: '2026-08-13T12:01:05.000Z' }}
+      readOnly={false}
+      onResolve={resolve}
+    />);
+
+    expect(screen.getByText('Expires in 1m 5s')).toBeInTheDocument();
+    vi.advanceTimersByTime(6_000);
+    expect(screen.getByText('Expires in 59s')).toBeInTheDocument();
+    vi.advanceTimersByTime(59_000);
+    expect(screen.getByText('Expired')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Allow once' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Deny' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Allow once' }));
+    expect(resolve).not.toHaveBeenCalled();
+    view.unmount();
+
+    render(() => <PermissionRequestCard
+      permission={{ ...permission, expiresAt: '2026-08-13T12:01:05.000Z' }}
+      decision={{ commandId: 'cmd-expired', permissionId: permission.permissionId, decision: 'allow', phase: 'uncertain', retryable: true }}
+      readOnly={false}
+      onResolve={vi.fn()}
+      onRetry={vi.fn()}
+    />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Allow not confirmed · Request expired');
+    expect(screen.getByRole('button', { name: 'Retry with original request' })).toBeDisabled();
+    expect(screen.queryByText('Retry available')).not.toBeInTheDocument();
+  });
+
+  it('fails closed for explicitly malformed expirations while preserving legacy absence', () => {
+    const malformed = render(() => <PermissionRequestCard
+      permission={{ ...permission, expiresAt: '123' }}
+      readOnly={false}
+      onResolve={vi.fn()}
+    />);
+    expect(screen.getByText('Expiration unavailable')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Allow once' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Deny' })).toBeDisabled();
+    malformed.unmount();
+
+    const wrongType = render(() => <PermissionRequestCard
+      permission={{ ...permission, expiresAt: null }}
+      readOnly={false}
+      onResolve={vi.fn()}
+    />);
+    expect(screen.getByText('Expiration unavailable')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Allow once' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Deny' })).toBeDisabled();
+    wrongType.unmount();
+
+    render(() => <PermissionRequestCard
+      permission={{ ...permission, expiresAt: undefined }}
+      readOnly={false}
+      onResolve={vi.fn()}
+    />);
+    expect(screen.queryByText(/Expir/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Allow once' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Deny' })).toBeEnabled();
   });
 });

@@ -6,7 +6,7 @@ import type { PermissionDecisionState } from '../lib/permission-delivery';
 import { PermissionQueue } from './PermissionQueue';
 
 function permission(id: string, title: string): PendingPermission {
-  return { permissionId: id, turnId: 'turn-1', toolCallId: `tool-${id}`, title, description: null, options: ['allowOnce', 'deny'], optionIds: { allowOnce: `${id}-allow`, deny: `${id}-reject` }, status: 'pending', expiresAt: null, decision: null };
+  return { permissionId: id, turnId: 'turn-1', toolCallId: `tool-${id}`, title, description: null, options: ['allowOnce', 'deny'], optionIds: { allowOnce: `${id}-allow`, deny: `${id}-reject` }, status: 'pending', decision: null };
 }
 
 describe('PermissionQueue', () => {

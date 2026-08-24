@@ -1,9 +1,9 @@
 # Peri Studio 架构设计（权威版）
 
-> 状态：v2.9（无状态投影恢复 + 远程资源工作台 + 长会话可靠 UI + 精确权限选项）
+> 状态：v2.10（无状态投影恢复 + 远程资源工作台 + 长会话可靠 UI + 权限期限门控）
 > 日期：2026-08-24
 > 定位：peri-studio 独立项目的架构基准文档。与 peri 的唯一耦合点是 ACP 进程（协议线格式），本设计不依赖 peri 的任何 crate 与部署形态。
-> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界；v2.9 令 Web 权限裁决回传 Control Doc 投影的精确 ACP `optionId`，并在恢复证据与交付边界校验 ID 和 scope。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
+> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界；v2.9 令 Web 权限裁决回传 Control Doc 投影的精确 ACP `optionId`，并在恢复证据与交付边界校验 ID 和 scope；v2.10 增加权限期限的可见倒计时与浏览器 fail-close 门控。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
 > 约定：引用 chat-channel 处标注其文档章节号（如「chat §5.2」），实现时以该仓库为对照基线。协议事实（帧 tag、action 面、schema 版本、默认值）以 `peri-studio-proto` / `server/src/config` 实现为真相来源，本文与实现不一致时以实现为准并回改本文。
 
 ---
@@ -116,7 +116,7 @@ Web 的 Yjs 边界按文档身份拆分。`DocStore` 只拥有 doc identity、v1
 
 Registry 的低频目录与高频 instance heartbeat 必须经过 `RegistryProjection` 按领域 ID 结构共享：只替换投影字段真实变化的 instance/chat/project/session 对象，无关 `projects` / `project_sessions` 数组保持引用稳定。侧栏 machine 分组按 machine id 复用对象，machine 与 project 两层渲染均按稳定 ID 键控，避免元数据变化重挂 session 子树；用户正在输入的 rename draft、焦点、Popover 和 DOM identity 不得因 `last_heartbeat`、hostname/status 或 project 字段变化而丢失。DocStore drop/clear 同时释放 projection 世代，旧身份缓存不得跨 principal 保留。
 
-Web 权限面必须完整呈现同一 Control Doc 中全部 `pending_permissions`，不能只显示迭代顺序中的第一项。请求按有效 `expires_at` 升序、再按 `permission_id` 稳定排序；界面一次聚焦一个决策并显示当前位置/总数，用户切换查看不得隐式提交。当前项以 `permission_id` 保持身份，投影插入其他请求时不跳题；当前项消失后才选择同位置的下一项。每个 `permission_id` 的 pending/uncertain 锁相互独立，缺失 id 的畸形投影必须 fail closed，禁止发送空 id 决议。明确未送达且 server 标记 retryable 的失败只允许在原权限卡使用保存的原 `commandId` 与原 decision 重试；超时、断线或 `dispatched` 后结果未知必须继续锁定且不得出现重试按钮。
+Web 权限面必须完整呈现同一 Control Doc 中全部 `pending_permissions`，不能只显示迭代顺序中的第一项。请求按有效 `expires_at` 升序、再按 `permission_id` 稳定排序；界面一次聚焦一个决策并显示当前位置/总数，用户切换查看不得隐式提交。当前项以 `permission_id` 保持身份，投影插入其他请求时不跳题；当前项消失后才选择同位置的下一项。每个 `permission_id` 的 pending/uncertain 锁相互独立，缺失 id 的畸形投影必须 fail closed，禁止发送空 id 决议。有效 `expires_at` 必须在当前卡显示秒级倒计时；浏览器时间到达期限后立即禁用新裁决与原命令重试，等待 server 权威投影移除请求。显式但无法解析的期限按畸形投影 fail closed；缺省期限只为旧投影兼容而保持可操作。明确未送达且 server 标记 retryable 的失败只允许在原权限卡使用保存的原 `commandId` 与原 decision 重试；超时、断线或 `dispatched` 后结果未知必须继续锁定且不得出现重试按钮。
 
 Web 消息阅读器把滚动/跟随策略与单条消息语义分离：`MessageList` 只拥有文档水合、权限队列、自动吸底与完成播报；`ConversationMessage` 统一拥有 user/system/assistant 角色层级以及 reasoning、Markdown、tool、resource、error、copy 证据层。用户和流式正文保持纯文本，只有已终态的 assistant 正文进入安全 Markdown 渲染；流式动画对辅助技术隐藏，完成状态由列表级原子播报一次。错误证据使用可命名 alert，reasoning 默认折叠，资源只展示 server 投影事实，不推断链接或可执行行为。
 

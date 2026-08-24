@@ -104,7 +104,7 @@ describe('ChatHeader runtime truth', () => {
       activeTurn: { turnId: 'turn-1', turnStatus: 'running', updatedAt: null },
       pendingPermissions: [],
     });
-    setPermissions([{ permissionId: 'permission-1', turnId: 'turn-1', toolCallId: 'tool-1', title: 'Shell', description: null, options: ['allowOnce', 'deny'], status: 'pending', expiresAt: null, decision: null }]);
+    setPermissions([{ permissionId: 'permission-1', turnId: 'turn-1', toolCallId: 'tool-1', title: 'Shell', description: null, options: ['allowOnce', 'deny'], status: 'pending', decision: null }]);
     setConnState({ text: 'Ready', kind: 'ok' });
     render(() => <ChatHeader />);
 

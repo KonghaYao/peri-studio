@@ -90,8 +90,14 @@ export interface PendingPermission {
   options: Array<'allowOnce' | 'allowSession' | 'deny'>;
   optionIds?: Partial<Record<'allowOnce' | 'allowSession' | 'deny', string>>;
   status: string | null;
-  expiresAt: string | null;
+  expiresAt?: string | null;
   decision: string | null;
+}
+
+export function parsePermissionExpiration(value: string | null | undefined): number | null {
+  if (value === undefined) return null;
+  if (value === null || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) return Number.NaN;
+  return Date.parse(value);
 }
 export type ElicitationFieldKind = 'text' | 'single_select' | 'multi_select';
 export interface ElicitationOption {
@@ -274,6 +280,7 @@ export function renderControl(doc: Y.Doc): ControlView {
       const optionId = getStr(optionIdsMap, kind);
       return optionId ? [[kind, optionId]] : [];
     })) as PendingPermission['optionIds'] : undefined;
+    const rawExpiresAt = permission.get('expires_at');
     result.pendingPermissions.push({
       permissionId: getStr(permission, 'permission_id'),
       turnId: getStr(permission, 'turn_id'),
@@ -283,15 +290,17 @@ export function renderControl(doc: Y.Doc): ControlView {
       options,
       optionIds,
       status: getStr(permission, 'status'),
-      expiresAt: getStr(permission, 'expires_at'),
+      expiresAt: !permission.has('expires_at')
+        ? undefined
+        : typeof rawExpiresAt === 'string' ? rawExpiresAt : null,
       decision: getStr(permission, 'decision'),
     });
   });
   result.pendingPermissions.sort((left, right) => {
-    const leftExpiry = Date.parse(left.expiresAt || '');
-    const rightExpiry = Date.parse(right.expiresAt || '');
-    const expiryOrder = (Number.isFinite(leftExpiry) ? leftExpiry : Number.POSITIVE_INFINITY)
-      - (Number.isFinite(rightExpiry) ? rightExpiry : Number.POSITIVE_INFINITY);
+    const leftExpiry = parsePermissionExpiration(left.expiresAt);
+    const rightExpiry = parsePermissionExpiration(right.expiresAt);
+    const expiryOrder = (leftExpiry !== null && Number.isFinite(leftExpiry) ? leftExpiry : Number.POSITIVE_INFINITY)
+      - (rightExpiry !== null && Number.isFinite(rightExpiry) ? rightExpiry : Number.POSITIVE_INFINITY);
     if (expiryOrder) return expiryOrder;
     return (left.permissionId || '').localeCompare(right.permissionId || '');
   });

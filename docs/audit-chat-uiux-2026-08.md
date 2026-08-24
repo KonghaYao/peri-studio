@@ -4,7 +4,7 @@
 
 ## 结论
 
-本轮确认 3 个 P0、26 个 P1、17 个 P2。随本报告已闭环 hidden reasoning、资源传输数据边界与 6 个高频 UI/UX P1，并补充协议、Rust 投影、组件、触屏、短视口和浏览器回归。余项按深模块切片列入后续路线，不用局部视觉补丁掩盖状态模型问题。
+本轮确认 3 个 P0、26 个 P1、17 个 P2。随本报告已闭环 hidden reasoning、资源传输数据边界与高频 UI/UX P1，并补充协议、Rust 投影、组件、触屏、短视口和浏览器回归。余项按深模块切片列入后续路线，不用局部视觉补丁掩盖状态模型问题。
 
 ### 本轮已修复
 
@@ -12,16 +12,17 @@
 2. Resource session 只接受已登记且仍存活的请求；旧 project 的迟到 view 仅 release，不 subscribe；未租赁 update 不创建 Doc。
 3. `hidden` reasoning 不再写入浏览器共享 Chat Doc；Web 仅渲染明确的 `summary`，未知值 fail closed。
 4. 权限卡展示 `Allow once` / `Allow for this session`，并回传 Control Doc 投影的精确 opaque optionId；server 对 chat、原请求身份与 scope 三重校验，篡改、跨 chat 抢占和恢复证据失配均 fail closed。无 reject option 时仍可按 ACP `cancelled` 拒绝；旧客户端缺省 ID 时才保留最小权限兼容选档。
-5. 1024px 状态栏资源入口改为受控 Workbench view，点击能真实打开 Explorer。
-6. 补齐缺失的 19/25/35/90/100/210/360/420 数字 token，并新增静态契约，防止 `h-35` 回退为 140px。
-7. coarse pointer 下 Resource/SCM/StatusBar 主要目标达到 44px；状态栏行高与抽屉底边同步。
-8. modal 打开时 diff 不再消费同一次 Escape。
-9. 390×430 启动页转为流式可滚动布局，避免 prompt 与 composer 重叠。
-10. 主按钮文字对比修复为白色；关键机器名与文件目录从 faint 提升至 muted。
-11. `delivery_unknown` 增加 acknowledge-and-continue：不恢复或重发原文，保留只读证据，同时解除全局 Composer 单飞锁。
-12. accepted prompt 改用 Chat/Control 投影进度续租 30 秒 inactivity lease，正常长回复不再按固定墙钟误报 uncertain。
-13. 2,000 条长会话改为 keyed `ChatProjection` 与变量高度 `TranscriptWindow`：流式尾部只重读关联 entry/tool，DOM/Markdown 仅挂载有界窗口，异步增高与历史前插保持可见 ID 锚点；兼容数组视图的轻量 O(n) 顺序装配仍保留，后续 keyed store 可继续消除。
-14. Registry heartbeat 改经 `RegistryProjection` 与 keyed machine 分组结构共享；仅 `last_heartbeat` 变化时 project/session slice、rename row/input DOM、草稿与焦点均保持稳定。
+5. 权限卡显示 server 投影期限的秒级倒计时；本地到期后禁用裁决与重试，显式无效时间戳 fail closed，旧投影缺省期限仍兼容。
+6. 1024px 状态栏资源入口改为受控 Workbench view，点击能真实打开 Explorer。
+7. 补齐缺失的 19/25/35/90/100/210/360/420 数字 token，并新增静态契约，防止 `h-35` 回退为 140px。
+8. coarse pointer 下 Resource/SCM/StatusBar 主要目标达到 44px；状态栏行高与抽屉底边同步。
+9. modal 打开时 diff 不再消费同一次 Escape。
+10. 390×430 启动页转为流式可滚动布局，避免 prompt 与 composer 重叠。
+11. 主按钮文字对比修复为白色；关键机器名与文件目录从 faint 提升至 muted。
+12. `delivery_unknown` 增加 acknowledge-and-continue：不恢复或重发原文，保留只读证据，同时解除全局 Composer 单飞锁。
+13. accepted prompt 改用 Chat/Control 投影进度续租 30 秒 inactivity lease，正常长回复不再按固定墙钟误报 uncertain。
+14. 2,000 条长会话改为 keyed `ChatProjection` 与变量高度 `TranscriptWindow`：流式尾部只重读关联 entry/tool，DOM/Markdown 仅挂载有界窗口，异步增高与历史前插保持可见 ID 锚点；兼容数组视图的轻量 O(n) 顺序装配仍保留，后续 keyed store 可继续消除。
+15. Registry heartbeat 改经 `RegistryProjection` 与 keyed machine 分组结构共享；仅 `last_heartbeat` 变化时 project/session slice、rename row/input DOM、草稿与焦点均保持稳定。
 
 ## Round 1 — Chat 信息架构与可信度
 
@@ -59,7 +60,7 @@
 |---|---|---|
 | P0 | allow-once/session 被压成无范围的 Allow | 已完成范围披露、精确 optionId 回传、服务端 scope 校验与恢复绑定；旧客户端缺省 ID 时保留最小权限兼容 |
 | P1 | 权限卡缺少与 toolCallId 绑定的可核验证据 | server 投影脱敏 tool input 摘要 |
-| P1 | `expiresAt` 只排序，UI 不显示或本地禁用 | 增加倒计时与到期 fail-close |
+| P1 | `expiresAt` 只排序，UI 不显示或本地禁用 | 已增加秒级倒计时与到期 fail-close；显式畸形期限同样禁用，缺省期限兼容旧投影 |
 | P1 | Elicitation Queue 按数组 index，前插会静默换题 | 按 elicitationId 保存选择身份 |
 | P1 | Elicitation `DELIVERY_UNKNOWN` 形成不可恢复锁 | refresh-status + local dismiss，禁止重发原答案 |
 

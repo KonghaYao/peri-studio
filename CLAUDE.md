@@ -26,7 +26,7 @@ Peri Studio 是 ACP agent 的持久 Web 工作台（仓库名 peri-studio，产�
 - `server/`（peri-studio-server library）：中心控制面运行时，模块按职责拆分：`auth`（token/审计）、`channel`（命令协调、runtime 生命周期、catalog 同步）、`control`（registry、心跳）、`persist`（SQLite、outbox）、`protocol`（ACP 通道）、`state`、`web`；`build.rs` 编译期内嵌 `web/dist` 产物
 - `instance/`（peri-instance library）：运行 ACP 子进程的宿主运行时；仅测试辅助二进制 `test-child` 独立存在
 - `web/`：SolidJS 单页面板（`src/panel`）+ 可复用 UI 组件库（`src/components/ui`）
-- `docs/`：`architecture.md`（权威架构基准，v2.9 与实现对齐）、`terminology.md`（唯一权威术语表）、`topology.md`、`adr/`、`design/`（设计决策与验证证据）
+- `docs/`：`architecture.md`（权威架构基准，v2.10 与实现对齐）、`terminology.md`（唯一权威术语表）、`topology.md`、`adr/`、`design/`（设计决策与验证证据）
 - `scripts/`：契约测试与端到端验证脚本（含 release 打包）
 - `dev.sh`：一键启动 server + instance 并校验就绪
 

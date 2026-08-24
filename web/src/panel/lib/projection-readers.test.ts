@@ -198,7 +198,7 @@ describe('renderControl permission projection', () => {
     const doc = new Y.Doc();
     const permissions = new Y.Map<unknown>();
     doc.getMap<unknown>('root').set('pending_permissions', permissions);
-    for (const [id, expiresAt] of [['late', '2026-08-13T12:02:00Z'], ['same-b', '2026-08-13T12:01:00Z'], ['unknown', 'bad'], ['same-a', '2026-08-13T12:01:00Z']] as const) {
+    for (const [id, expiresAt] of [['late', '2026-08-13T12:02:00Z'], ['same-b', '2026-08-13T12:01:00Z'], ['unknown', 'bad'], ['permissive', '123'], ['same-a', '2026-08-13T12:01:00Z']] as const) {
       const permission = new Y.Map<unknown>();
       permission.set('permission_id', id);
       permission.set('status', 'pending');
@@ -206,7 +206,26 @@ describe('renderControl permission projection', () => {
       permissions.set(id, permission);
     }
 
-    expect(renderControl(doc).pendingPermissions.map((item) => item.permissionId)).toEqual(['same-a', 'same-b', 'late', 'unknown']);
+    expect(renderControl(doc).pendingPermissions.map((item) => item.permissionId)).toEqual(['same-a', 'same-b', 'late', 'permissive', 'unknown']);
+  });
+
+  it('preserves absent, malformed, and textual permission expirations as distinct states', () => {
+    const doc = new Y.Doc();
+    const permissions = new Y.Map<unknown>();
+    doc.getMap<unknown>('root').set('pending_permissions', permissions);
+    for (const [id, expiresAt] of [['absent', undefined], ['null', null], ['number', 123], ['text', '2026-08-13T12:01:00Z']] as const) {
+      const permission = new Y.Map<unknown>();
+      permission.set('permission_id', id);
+      permission.set('status', 'pending');
+      if (expiresAt !== undefined) permission.set('expires_at', expiresAt);
+      permissions.set(id, permission);
+    }
+
+    const byId = new Map(renderControl(doc).pendingPermissions.map((item) => [item.permissionId, item.expiresAt]));
+    expect(byId.get('absent')).toBeUndefined();
+    expect(byId.get('null')).toBeNull();
+    expect(byId.get('number')).toBeNull();
+    expect(byId.get('text')).toBe('2026-08-13T12:01:00Z');
   });
 
   it('retains opaque option IDs by their public permission scope', () => {
