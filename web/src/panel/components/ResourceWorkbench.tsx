@@ -5,6 +5,10 @@ import { ExplorerPanel } from './ExplorerPanel';
 import { SourceControlPanel } from './SourceControlPanel';
 
 export type WorkbenchView = 'explorer' | 'scm' | null;
+export type ResourcePreviewOrigin = {
+  view: Exclude<WorkbenchView, null>;
+  key: string;
+};
 function FilesIcon() { return <Icon><path d="M4 3h8l4 4v10H4z" /><path d="M12 3v4h4M7 10h6M7 13h6" /></Icon>; }
 function GitIcon() { return <Icon><circle cx="5" cy="4" r="1.5" /><circle cx="5" cy="16" r="1.5" /><circle cx="15" cy="7" r="1.5" /><path d="M5 5.5v9M6.5 13c5 0 8.5-1.5 8.5-4.5" /></Icon>; }
 function RefreshIcon() { return <Icon size="small"><path d="M15.5 7A6 6 0 0 0 5 5.5L3.5 7M4.5 13A6 6 0 0 0 15 14.5l1.5-1.5" /><path d="M3.5 3.5V7h3.5M16.5 16.5V13H13" /></Icon>; }
@@ -17,10 +21,18 @@ type ResourceWorkbenchProps = {
   onOpenChange?: (open: boolean) => void;
   view?: WorkbenchView;
   onViewChange?: (view: WorkbenchView) => void;
+  onPreviewIntent?: (origin: ResourcePreviewOrigin) => void;
+  onCompactOpenAutoFocus?: (event: Event) => void;
+  onCompactCloseAutoFocus?: (event: Event) => void;
 };
 
 export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   const [localView, setLocalView] = createSignal<WorkbenchView>('explorer');
+  const [explorerExpanded, setExplorerExpanded] = createSignal(new Set<string>(['']));
+  const [explorerActivePath, setExplorerActivePath] = createSignal('');
+  const [explorerScrollTop, setExplorerScrollTop] = createSignal(0);
+  const [commitMessages, setCommitMessages] = createSignal<Record<string, string>>({});
+  const submittedCommits = new Map<string, { projectId: string; repoId: string; requestId: string; message: string }>();
   const view = () => props.view === undefined ? localView() : props.view;
   const setView = (next: WorkbenchView | ((current: WorkbenchView) => WorkbenchView)) => {
     const resolved = typeof next === 'function' ? next(view()) : next;
@@ -33,6 +45,46 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
     return projects().find((item) => item.id === session?.projectId && !item.archivedAt)
       ?? projects().find((item) => !item.archivedAt)
       ?? null;
+  });
+  const activeProjectId = () => resourceWorkspace().projectId ?? project()?.id ?? '';
+  const commitKey = (projectId: string, repoId: string) => `${projectId}\0${repoId}`;
+  const visibleCommitMessages = createMemo(() => Object.fromEntries(resourceWorkspace().repositories.map((repo) => [
+    repo.id,
+    commitMessages()[commitKey(activeProjectId(), repo.id)] ?? '',
+  ])));
+  const setCommitMessage = (repoId: string, message: string) => {
+    const projectId = activeProjectId();
+    if (projectId) setCommitMessages((current) => ({ ...current, [commitKey(projectId, repoId)]: message }));
+  };
+  const recordSubmittedCommit = (repoId: string, requestId: string, message: string) => {
+    const projectId = activeProjectId();
+    if (projectId) submittedCommits.set(commitKey(projectId, repoId), { projectId, repoId, requestId, message });
+  };
+  createEffect(() => {
+    const workspace = resourceWorkspace();
+    for (const [key, submitted] of submittedCommits) {
+      if (submitted.projectId !== workspace.projectId) {
+        submittedCommits.delete(key);
+        continue;
+      }
+      const current = workspace.repoMutations?.[submitted.repoId];
+      if (current?.requestId === submitted.requestId) {
+        if (!current.pending) submittedCommits.delete(key);
+        continue;
+      }
+      // 另一个 mutation 取代精确请求时结果不明确，必须保留草稿。
+      if (current) {
+        submittedCommits.delete(key);
+        continue;
+      }
+      setCommitMessages((messages) => {
+        if ((messages[key] ?? '').trim() !== submitted.message) return messages;
+        const next = { ...messages };
+        delete next[key];
+        return next;
+      });
+      submittedCommits.delete(key);
+    }
   });
   createEffect(() => {
     const selected = project();
@@ -54,13 +106,13 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
     else setView((current) => current === next ? null : next);
   };
   const close = () => props.compact ? props.onOpenChange?.(false) : setView(null);
-  const surface = () => <aside class={`resource-workbench relative flex h-full min-h-0 border-l border-r border-divider bg-sidebar-bg ${props.compact ? 'w-full' : view() ? 'w-[46px] wide:w-[310px]' : 'w-[46px]'}`} aria-label="Workspace resources">
+  const surface = () => <aside class={`resource-workbench flex h-full min-h-0 border-l border-r border-divider bg-sidebar-bg ${props.compact ? 'absolute inset-0 w-full' : view() ? 'relative w-[46px] wide:w-[310px]' : 'relative w-[46px]'}`} aria-label="Workspace resources">
     <nav class="flex w-46 shrink-0 flex-col items-center border-r border-divider py-7" aria-label="Resource views">
       <ActivityButton label="Explorer" active={view() === 'explorer'} onClick={() => toggle('explorer')}><FilesIcon /></ActivityButton>
       <ActivityButton label="Source Control" active={view() === 'scm'} badge={resourceWorkspace().repositories.reduce((sum, repo) => sum + Object.values(repo.groups).reduce((count, group) => count + group.count, 0), 0)} onClick={() => toggle('scm')}><GitIcon /></ActivityButton>
     </nav>
     <Show when={view()}>
-      <div class={`flex min-w-0 flex-1 flex-col bg-sidebar-bg ${props.compact ? '' : 'desk:max-wide:absolute desk:max-wide:inset-y-0 desk:max-wide:left-46 desk:max-wide:z-30 desk:max-wide:w-[264px] desk:max-wide:border-r desk:max-wide:border-divider desk:max-wide:shadow-popover'}`}>
+      <div class={`flex min-h-0 min-w-0 flex-1 flex-col bg-sidebar-bg ${props.compact ? '' : 'desk:max-wide:absolute desk:max-wide:inset-y-0 desk:max-wide:left-46 desk:max-wide:z-30 desk:max-wide:w-[264px] desk:max-wide:border-r desk:max-wide:border-divider desk:max-wide:shadow-popover'}`}>
         <header class="flex h-40 shrink-0 items-center gap-5 border-b border-divider px-10">
           <strong class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-11 font-650 uppercase tracking-5 text-text-secondary">{project()?.name ?? 'Workspace'}</strong>
           <IconButton label="Refresh resources" onClick={refreshResourceProject} class="size-26 min-h-26 border-0 bg-transparent text-text-muted pointer-coarse:size-44 pointer-coarse:min-h-44"><RefreshIcon /></IconButton>
@@ -71,15 +123,19 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
             <span class="min-w-0 flex-1">{message()}</span>
             <button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline" onClick={refreshResourceProject}>Retry</button>
           </div>}</Show>
-          <Show when={view() === 'explorer'}><ExplorerPanel /></Show>
-          <Show when={view() === 'scm'}><SourceControlPanel /></Show>
+          <Show when={view() === 'explorer'}><ExplorerPanel expanded={explorerExpanded()} onExpandedChange={setExplorerExpanded} activePath={explorerActivePath()} onActivePathChange={setExplorerActivePath} scrollTop={explorerScrollTop()} onScrollTopChange={(scrollTop) => { if (!props.compact || props.open) setExplorerScrollTop(scrollTop); }} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'explorer', key })} /></Show>
+          <Show when={view() === 'scm'}><SourceControlPanel commitMessages={visibleCommitMessages()} onCommitMessageChange={setCommitMessage} onCommitSubmitted={recordSubmittedCommit} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'scm', key })} /></Show>
         </Show>
       </div>
     </Show>
   </aside>;
   return <Show when={props.compact} fallback={surface()}>
     <Dialog open={!!props.open} onOpenChange={(open) => props.onOpenChange?.(open)}>
-      <DialogContent class="top-0 right-0 bottom-22 left-auto h-auto max-h-none w-[min(92vw,360px)] translate-x-0 translate-y-0 overflow-hidden rounded-none border-y-0 border-r-0 p-0 pointer-coarse:bottom-44">
+      <DialogContent
+        class="top-0 right-0 bottom-22 left-auto h-auto max-h-none w-[min(92vw,360px)] translate-x-0 translate-y-0 overflow-hidden rounded-none border-y-0 border-r-0 p-0 pointer-coarse:bottom-44"
+        onOpenAutoFocus={props.onCompactOpenAutoFocus}
+        onCloseAutoFocus={props.onCompactCloseAutoFocus}
+      >
         <DialogTitle class="sr-only">Workspace resources</DialogTitle>
         {surface()}
       </DialogContent>

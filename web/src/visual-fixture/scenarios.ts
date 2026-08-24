@@ -21,7 +21,7 @@ import {
 import { installPrincipalRole } from '../panel/lib/auth-state';
 import { acquireFixtureClock } from './fixture-clock';
 import { setResourceDiffPreview, setResourceFilePreview, setResourceWorkspace } from '../panel/lib/resource-store';
-import type { ResourceFilePreviewState } from '../panel/lib/resource-preview';
+import type { ResourceDiffPreviewState, ResourceFilePreviewState } from '../panel/lib/resource-preview';
 import { markElicitationResponseUncertain, startElicitationResponse } from '../panel/lib/elicitation-delivery';
 
 export const VISUAL_NOW = Date.parse('2026-08-14T08:00:00+08:00');
@@ -31,6 +31,47 @@ export const VISUAL_SCENARIO_IDS = ['catalog', 'conversation', 'resources', 'mar
 /** Browser acceptance bridge; this module shares the fixture's live store graph. */
 export function setVisualFilePreview(preview: ResourceFilePreviewState): void {
   setResourceFilePreview(preview);
+}
+
+/** 浏览器验收桥：模拟 server 返回 Git diff blob 后的权威预览。 */
+export function setVisualDiffPreview(preview: ResourceDiffPreviewState): void {
+  setResourceFilePreview(null);
+  setResourceDiffPreview(preview);
+}
+
+/** 浏览器验收桥：模拟资源预览期间权威文件树删除来源行。 */
+export function removeVisualResourceEntry(path: string): void {
+  setResourceWorkspace((state) => ({
+    ...state,
+    directories: Object.fromEntries(Object.entries(state.directories).map(([directory, page]) => [
+      directory,
+      { ...page, entries: page.entries.filter((entry) => entry.path !== path) },
+    ])),
+  }));
+}
+
+/** 浏览器验收桥：为移动抽屉构造可滚动的深文件列表。 */
+export function appendVisualResourceEntries(count: number): void {
+  if (!Number.isInteger(count) || count < 0 || count > 100) throw new Error('Invalid resource entry count');
+  setResourceWorkspace((state) => {
+    const root = state.directories[''];
+    if (!root) return state;
+    return {
+      ...state,
+      directories: {
+        ...state.directories,
+        '': {
+          ...root,
+          entries: [...root.entries, ...Array.from({ length: count }, (_, index) => ({
+            id: `fixture-${index}`,
+            name: `fixture-${index}.ts`,
+            path: `fixtures/fixture-${index}.ts`,
+            kind: 'file' as const,
+          }))],
+        },
+      },
+    };
+  });
 }
 
 /** 浏览器验收桥：只用于验证长会话的有界窗口。 */

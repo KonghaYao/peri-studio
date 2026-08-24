@@ -4,12 +4,15 @@ import '../styles.css';
 import './fixture.css';
 import { AppShell } from '../panel/components/AppShell';
 import { Toasts } from '../panel/components/Toasts';
-import { DEFAULT_VISUAL_SCENARIO, installVisualScenario, setVisualElicitationUnknown, setVisualFilePreview, setVisualTranscriptCount, visualScenarios } from './scenarios';
+import { appendVisualResourceEntries, DEFAULT_VISUAL_SCENARIO, installVisualScenario, removeVisualResourceEntry, setVisualDiffPreview, setVisualElicitationUnknown, setVisualFilePreview, setVisualTranscriptCount, visualScenarios } from './scenarios';
 
 declare global {
   interface Window {
     __PERI_VISUAL_FIXTURE__?: {
       setFilePreview: typeof setVisualFilePreview;
+      setDiffPreview: typeof setVisualDiffPreview;
+      removeResourceEntry: typeof removeVisualResourceEntry;
+      appendResourceEntries: typeof appendVisualResourceEntries;
       setTranscriptCount: typeof setVisualTranscriptCount;
       setElicitationUnknown: typeof setVisualElicitationUnknown;
     };
@@ -22,6 +25,9 @@ function VisualFixture() {
   const installed = installVisualScenario(selected);
   window.__PERI_VISUAL_FIXTURE__ = {
     setFilePreview: setVisualFilePreview,
+    setDiffPreview: setVisualDiffPreview,
+    removeResourceEntry: removeVisualResourceEntry,
+    appendResourceEntries: appendVisualResourceEntries,
     setTranscriptCount: setVisualTranscriptCount,
     setElicitationUnknown: setVisualElicitationUnknown,
   };

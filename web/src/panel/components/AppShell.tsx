@@ -4,8 +4,8 @@ import { ChatView } from './ChatView';
 import { compactViewportQuery, mediumViewportQuery } from '../lib/breakpoints';
 import { ProjectDrawer } from './shared/ProjectDrawer';
 import { SettingsDialog } from './SettingsDialog';
-import { ResourceWorkbench, type WorkbenchView } from './ResourceWorkbench';
-import { resourceDiffPreview, resourceFilePreview } from '../store';
+import { ResourceWorkbench, type ResourcePreviewOrigin, type WorkbenchView } from './ResourceWorkbench';
+import { closeResourceDiffPreview, closeResourceFilePreview, resourceDiffPreview, resourceFilePreview } from '../store';
 import { ResourceDiffEditor } from './ResourceDiffEditor';
 import { ResourceFileEditor } from './ResourceFileEditor';
 import { WorkbenchStatusBar } from './WorkbenchStatusBar';
@@ -31,6 +31,8 @@ export function AppShell() {
   const [sidebarIntent, setSidebarIntent] = createSignal<{ kind: 'create-project' | 'import'; projectId?: string; nonce: number } | null>(null);
   let drawer: HTMLElement | undefined;
   let main: HTMLElement | undefined;
+  let resourceFocusOrigin: ResourcePreviewOrigin | null = null;
+  let restoreResourceFocus = false;
 
   const setClampedSidebarWidth = (width: number) => setSidebarWidth(clampSidebarWidth(width));
   const stopSidebarResize = () => {
@@ -88,6 +90,52 @@ export function AppShell() {
     setResourceView('explorer');
     if (mobile()) setResourcesOpen(true);
   };
+  const focusPreviewEditor = () => {
+    main?.querySelector<HTMLElement>('[data-resource-preview-focus]')?.focus();
+  };
+  const findResourceOrigin = (key: string) => Array.from(document.querySelectorAll<HTMLElement>('[data-resource-focus-key]'))
+    .find((element) => element.dataset.resourceFocusKey === key);
+  const findResourceViewFallback = (view: ResourcePreviewOrigin['view']) => document
+    .querySelector<HTMLElement>(`.resource-workbench [aria-label="${view === 'explorer' ? 'Explorer' : 'Source Control'}"]`);
+  const restorePreviewOrigin = (event: Event) => {
+    if (!restoreResourceFocus || !resourceFocusOrigin) return;
+    const origin = resourceFocusOrigin;
+    const target = findResourceOrigin(origin.key);
+    if (!target) {
+      resourceFocusOrigin = null;
+      restoreResourceFocus = false;
+      return;
+    }
+    event.preventDefault();
+    queueMicrotask(() => {
+      if (target.isConnected) target.focus();
+      resourceFocusOrigin = null;
+      restoreResourceFocus = false;
+    });
+  };
+  const overrideDialogFocusRestore = (event: Event) => {
+    if (mobile() && resourceFocusOrigin && (resourceFilePreview() || resourceDiffPreview())) {
+      // 先阻止默认恢复；微任务再等待 modal 清理完成后让编辑器接管。
+      event.preventDefault();
+      queueMicrotask(focusPreviewEditor);
+    }
+  };
+  const closePreview = (kind: 'file' | 'diff') => {
+    if (kind === 'file') closeResourceFilePreview();
+    else closeResourceDiffPreview();
+    if (!resourceFocusOrigin) return;
+    if (mobile()) {
+      restoreResourceFocus = true;
+      setResourceView(resourceFocusOrigin.view);
+      setResourcesOpen(true);
+    } else {
+      const origin = resourceFocusOrigin;
+      queueMicrotask(() => {
+        (findResourceOrigin(origin.key) ?? findResourceViewFallback(origin.view))?.focus();
+        resourceFocusOrigin = null;
+      });
+    }
+  };
   createEffect(() => {
     if (mobile() && (resourceFilePreview() || resourceDiffPreview())) setResourcesOpen(false);
   });
@@ -118,12 +166,22 @@ export function AppShell() {
         onPointerDown={startSidebarResize}
         onKeyDown={resizeSidebarWithKeyboard}
       ><span aria-hidden="true" class="absolute top-0 bottom-0 left-5 w-2 rounded-full bg-transparent transition-colors group-hover:bg-accent group-focus-visible:bg-accent" /></div>
-      <ResourceWorkbench compact={mobile()} overlay={medium() && !mobile()} open={resourcesOpen()} onOpenChange={setResourcesOpen} view={resourceView()} onViewChange={setResourceView} />
+      <ResourceWorkbench
+        compact={mobile()}
+        overlay={medium() && !mobile()}
+        open={resourcesOpen()}
+        onOpenChange={setResourcesOpen}
+        view={resourceView()}
+        onViewChange={setResourceView}
+        onPreviewIntent={(origin) => { resourceFocusOrigin = origin; }}
+        onCompactOpenAutoFocus={restorePreviewOrigin}
+        onCompactCloseAutoFocus={overrideDialogFocusRestore}
+      />
       <main ref={main} class="conversation-pane min-w-0 min-h-0 overflow-hidden">
         <Show when={resourceFilePreview()} fallback={<Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenSystem={() => setSystemOpen(true)} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
-          <ResourceDiffEditor />
+          <ResourceDiffEditor onClose={() => closePreview('diff')} />
         </Show>}>
-          <ResourceFileEditor />
+          <ResourceFileEditor onClose={() => closePreview('file')} />
         </Show>
       </main>
       <WorkbenchStatusBar onOpenResources={openResources} />

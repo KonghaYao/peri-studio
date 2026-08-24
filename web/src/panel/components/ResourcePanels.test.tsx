@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ExplorerPanel } from './ExplorerPanel';
+import { ResourceWorkbench } from './ResourceWorkbench';
 import { SourceControlPanel } from './SourceControlPanel';
 import {
   activateResourceProject,
@@ -17,8 +18,17 @@ import {
 } from '../lib/resource-store';
 import { installPrincipalRole } from '../lib/auth-state';
 import { DocStore } from '../lib/doc-store';
+import { setProjects, setProjectSessions, setSelectedSessionId } from '../store';
 
-afterEach(() => { cleanup(); resetResourceProject(); installPrincipalRole(null); vi.unstubAllGlobals(); });
+afterEach(() => {
+  cleanup();
+  resetResourceProject();
+  installPrincipalRole(null);
+  setProjects([]);
+  setProjectSessions([]);
+  setSelectedSessionId(null);
+  vi.unstubAllGlobals();
+});
 
 describe('VS Code-style resource panels', () => {
   it('releases a stale project view without subscribing to it', () => {
@@ -69,6 +79,24 @@ describe('VS Code-style resource panels', () => {
     await fireEvent.keyDown(file, { key: 'ArrowLeft' });
     expect(src).toHaveFocus();
     expect(screen.getByRole('group')).toContainElement(file);
+
+    setResourceWorkspace((current) => ({
+      ...current,
+      directories: {
+        '': { generation: 'g3', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory' }] },
+        src: { generation: 'g4', entries: [] },
+      },
+    }));
+    await waitFor(() => expect(src).toHaveAttribute('tabindex', '0'));
+
+    setResourceWorkspace((current) => ({
+      ...current,
+      projectId: 'project-2',
+      directories: { '': { generation: 'g5', entries: [{ id: 'readme', name: 'README.md', path: 'README.md', kind: 'file' }] } },
+    }));
+    const readme = await screen.findByRole('treeitem', { name: /README\.md/i });
+    await waitFor(() => expect(readme).toHaveAttribute('tabindex', '0'));
+    expect(document.querySelectorAll('[role="treeitem"][tabindex="0"]')).toHaveLength(1);
   });
 
   it('lazy-loads a directory when its tree row expands', async () => {
@@ -178,20 +206,26 @@ describe('VS Code-style resource panels', () => {
     }));
   });
 
-  it('commits staged changes with a bounded non-empty message and keeps failures at the repository', async () => {
+  it('keeps commit identity across panel unmount and clears only an exact successful draft', async () => {
     const sent: unknown[] = [];
     installResourceStore({ send: (frame) => { sent.push(frame); return true; }, ready: () => true, toast: vi.fn() });
     installPrincipalRole('full');
+    const repository = {
+      id: 'repo-1', root: '', name: 'peri-studio', headName: 'main', upstream: 'origin/main', generation: 'g1', ahead: 1, behind: 2,
+      groups: { index: { count: 1, revision: 'r1', changes: [{ id: 'c1', path: 'src/main.ts', status: 'modified' }] } },
+    };
+    setProjects([{ id: 'project-1', name: 'Peri', cwd: '/workspace/peri', instanceId: 'local', createdAt: null, updatedAt: null, archivedAt: null }]);
+    setProjectSessions([{ id: 'session-1', projectId: 'project-1', acpSessionId: 'acp-1', title: 'Work', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: null, archivedAt: null }]);
+    setSelectedSessionId('session-1');
     setResourceWorkspace({
       projectId: 'project-1', directories: {}, loading: [], error: null,
-      repositories: [{
-        id: 'repo-1', root: '', name: 'peri-studio', headName: 'main', upstream: 'origin/main', generation: 'g1', ahead: 1, behind: 2,
-        groups: { index: { count: 1, revision: 'r1', changes: [{ id: 'c1', path: 'src/main.ts', status: 'modified' }] } },
-      }],
+      repositories: [repository],
     });
-    render(() => <SourceControlPanel />);
+    render(() => <ResourceWorkbench />);
+    await fireEvent.click(screen.getByRole('button', { name: 'Source Control' }));
+    setResourceWorkspace({ projectId: 'project-1', directories: {}, loading: [], error: null, repositories: [repository] });
 
-    const message = screen.getByRole('textbox', { name: 'Commit message' });
+    const message = await screen.findByRole('textbox', { name: 'Commit message' });
     const commit = screen.getByRole('button', { name: 'Commit staged changes' });
     expect(commit).toBeDisabled();
     await fireEvent.input(message, { target: { value: '界'.repeat(1_366) } });
@@ -212,6 +246,23 @@ describe('VS Code-style resource panels', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Commit failed');
     expect(screen.getByText('peri-studio')).toBeInTheDocument();
     expect(message).toHaveValue('  Ship remote SCM  ');
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Pull from upstream' }));
+    const pull = sent.filter((frame) => (frame as { payload?: { action?: string } }).payload?.action === 'pull').at(-1) as { requestId: string };
+    handleResourceResult({ t: 'resource_result', requestId: pull.requestId, result: { kind: 'mutated' } });
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Commit message' })).toHaveValue('  Ship remote SCM  '));
+
+    setResourceWorkspace((current) => ({ ...current, repositories: [repository] }));
+    const reviewedMessage = screen.getByRole('textbox', { name: 'Commit message' });
+    await fireEvent.input(reviewedMessage, { target: { value: 'Ship after review' } });
+    await fireEvent.click(screen.getByRole('button', { name: 'Commit staged changes' }));
+    const successful = sent.filter((frame) => (frame as { type?: string }).type === 'resource/git-action').at(-1) as { requestId: string };
+    await fireEvent.click(screen.getByRole('button', { name: 'Explorer' }));
+    handleResourceResult({
+      t: 'resource_result', requestId: successful.requestId, result: { kind: 'mutated' },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Source Control' }));
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Commit message' })).toHaveValue(''));
   });
 
   it('requires confirmation before discarding a change', async () => {

@@ -11,24 +11,28 @@ function CloseIcon() {
   return <Icon size="small"><path d="m5 5 10 10M15 5 5 15" /></Icon>;
 }
 
-export function ResourceFileEditor() {
+type ResourceFileEditorProps = { onClose?: () => void };
+
+export function ResourceFileEditor(props: ResourceFileEditorProps = {}) {
   const preview = resourceFilePreview;
+  const accessibleTitle = () => `File preview: ${preview()?.path ?? 'file'}`;
+  const close = () => props.onClose ? props.onClose() : closeResourceFilePreview();
   const allLines = createMemo(() => (preview()?.text ?? '').replaceAll('\r\n', '\n').split('\n'));
   const lines = createMemo(() => allLines().slice(0, MAX_RENDERED_FILE_LINES));
 
   onMount(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && resourceFilePreview()) closeResourceFilePreview();
+      if (event.key === 'Escape' && resourceFilePreview()) close();
     };
     window.addEventListener('keydown', closeOnEscape);
     onCleanup(() => window.removeEventListener('keydown', closeOnEscape));
   });
 
-  return <section class="flex h-full min-h-0 flex-col bg-surface" aria-label="File preview">
+  return <section class="flex h-full min-h-0 flex-col bg-surface" aria-label={accessibleTitle()}>
     <header class="flex h-35 shrink-0 items-center border-b border-divider bg-sidebar-bg">
       <div class="flex h-full min-w-0 items-center gap-7 border-r border-divider border-t-2 border-t-accent bg-surface pl-12 pr-5 text-12">
-        <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-550 text-text-primary">{basename(preview()?.path ?? '')}</span>
-        <IconButton label="Close file" onClick={closeResourceFilePreview} class="size-24 min-h-24 border-0 bg-transparent text-text-muted"><CloseIcon /></IconButton>
+        <h1 data-resource-preview-focus tabIndex={-1} aria-label={accessibleTitle()} class="m-0 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-550 text-text-primary outline-none">{basename(preview()?.path ?? '')}</h1>
+        <IconButton label="Close file" onClick={close} class="size-24 min-h-24 border-0 bg-transparent text-text-muted"><CloseIcon /></IconButton>
       </div>
     </header>
     <div class="flex h-34 shrink-0 items-center gap-8 border-b border-divider px-12 text-11">
@@ -45,7 +49,7 @@ export function ResourceFileEditor() {
           <p role="alert" class="m-0 text-12 leading-18 text-danger">{preview()?.error}</p>
           <div class="mt-12 flex justify-center gap-7">
             <Button size="compact" variant="secondary" onClick={retryResourceFilePreview}>Try again</Button>
-            <Button size="compact" onClick={closeResourceFilePreview}>Close</Button>
+            <Button size="compact" onClick={close}>Close</Button>
           </div>
         </div>
       }>

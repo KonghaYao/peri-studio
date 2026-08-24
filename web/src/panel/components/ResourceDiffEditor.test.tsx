@@ -15,7 +15,8 @@ describe('VS Code-style Git diff editor', () => {
 
     render(() => <ResourceDiffEditor />);
 
-    expect(screen.getByLabelText('Git diff preview')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Git diff: src/main.ts, Index ↔ Working Tree' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Git diff: src/main.ts, Index ↔ Working Tree' })).toBeInTheDocument();
     expect(screen.getByText('Index ↔ Working Tree')).toBeInTheDocument();
     expect(screen.getByRole('table', { name: 'Changes in src/main.ts' })).toBeInTheDocument();
     expect(screen.getByText('before')).toBeInTheDocument();

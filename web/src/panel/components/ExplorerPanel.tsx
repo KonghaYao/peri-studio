@@ -1,4 +1,4 @@
-import { For, Show, createSignal } from 'solid-js';
+import { For, Show, createEffect, createMemo, createSignal, onCleanup } from 'solid-js';
 import { Icon, IconButton, LoadingState } from '../../components/ui';
 import { openFilePreview, openResourceDirectory, refreshResourceProject, resourceWorkspace } from '../store';
 import type { ResourceEntry } from '../lib/resource-view';
@@ -8,10 +8,57 @@ function FolderIcon() { return <Icon size="small"><path d="M3 5.5h5l1.5 2H17v8.5
 function FileIcon() { return <Icon size="small"><path d="M5 2.8h6l4 4V17H5z" /><path d="M11 2.8V7h4" /></Icon>; }
 function RefreshIcon() { return <Icon size="small"><path d="M15.5 6.5V3.8l-2 2A6 6 0 1 0 16 10" /></Icon>; }
 
-export function ExplorerPanel() {
-  const [expanded, setExpanded] = createSignal(new Set<string>(['']));
-  const [activePath, setActivePath] = createSignal('');
+type ExplorerPanelProps = {
+  expanded?: Set<string>;
+  onExpandedChange?: (expanded: Set<string>) => void;
+  activePath?: string;
+  onActivePathChange?: (path: string) => void;
+  scrollTop?: number;
+  onScrollTopChange?: (scrollTop: number) => void;
+  onPreviewIntent?: (key: string) => void;
+};
+
+export function ExplorerPanel(props: ExplorerPanelProps = {}) {
+  const [localExpanded, setLocalExpanded] = createSignal(new Set<string>(['']));
+  const expanded = () => props.expanded ?? localExpanded();
+  const setExpanded = (update: (current: Set<string>) => Set<string>) => {
+    const next = update(expanded());
+    if (props.expanded === undefined) setLocalExpanded(next);
+    props.onExpandedChange?.(next);
+  };
+  const [localActivePath, setLocalActivePath] = createSignal('');
+  const activePath = () => props.activePath ?? localActivePath();
+  const setActivePath = (path: string) => {
+    if (props.activePath === undefined) setLocalActivePath(path);
+    props.onActivePathChange?.(path);
+  };
+  const visiblePaths = createMemo(() => {
+    const paths: string[] = [];
+    const visit = (parent: string) => {
+      for (const entry of resourceWorkspace().directories[parent]?.entries ?? []) {
+        const path = String(entry.path ?? '');
+        paths.push(path);
+        if (entry.kind === 'directory' && expanded().has(path)) visit(path);
+      }
+    };
+    visit('');
+    return paths;
+  });
+  createEffect(() => {
+    const paths = visiblePaths();
+    const current = activePath();
+    if (paths.includes(current)) return;
+    let fallback = current;
+    while (fallback.includes('/')) {
+      fallback = fallback.slice(0, fallback.lastIndexOf('/'));
+      if (paths.includes(fallback)) break;
+    }
+    setActivePath(paths.includes(fallback) ? fallback : (paths[0] ?? ''));
+  });
   let tree: HTMLDivElement | undefined;
+  let acceptingScroll = false;
+  let restoreFrame: number | undefined;
+  onCleanup(() => { if (restoreFrame !== undefined) cancelAnimationFrame(restoreFrame); });
   const toggle = (path: string) => {
     setActivePath(path);
     setExpanded((current) => {
@@ -55,24 +102,41 @@ export function ExplorerPanel() {
     <div class="resource-section-title flex h-28 items-center border-b border-divider px-8 text-10 font-650 uppercase tracking-6 text-text-secondary pointer-coarse:h-44">
       <span>Files</span><IconButton label="Refresh Explorer" onClick={refreshResourceProject} class="ml-auto size-24 min-h-24 border-0 bg-transparent text-text-muted pointer-coarse:size-44 pointer-coarse:min-h-44"><RefreshIcon /></IconButton>
     </div>
-    <div ref={tree} class="ui-scrollbar min-h-0 flex-1 overflow-auto py-3" role="tree" aria-label="Workspace files" onKeyDown={navigateTree}>
+    <div
+      ref={(element) => {
+        tree = element;
+        // 新滚动容器挂载时可能先报告 scrollTop=0；必须先快照旧位置，
+        // 避免该初始事件反向覆盖 Workbench 中等待恢复的值。
+        const savedScrollTop = props.scrollTop ?? 0;
+        queueMicrotask(() => {
+          if (!element.isConnected) return;
+          element.scrollTop = savedScrollTop;
+          restoreFrame = requestAnimationFrame(() => { acceptingScroll = true; });
+        });
+      }}
+      class="ui-scrollbar min-h-0 flex-1 overflow-auto py-3"
+      role="tree"
+      aria-label="Workspace files"
+      onKeyDown={navigateTree}
+      onScroll={(event) => { if (acceptingScroll) props.onScrollTopChange?.(event.currentTarget.scrollTop); }}
+    >
       <Show when={resourceWorkspace().directories['']} fallback={<LoadingState label="Loading files" class="m-8 p-8! text-left!" />}>
-        <FileLevel path="" depth={0} expanded={expanded()} activePath={activePath()} onActive={setActivePath} onToggle={toggle} />
+        <FileLevel path="" depth={0} expanded={expanded()} activePath={activePath()} onActive={setActivePath} onToggle={toggle} onPreviewIntent={props.onPreviewIntent} />
       </Show>
     </div>
   </section>;
 }
 
-function FileLevel(props: { path: string; depth: number; expanded: Set<string>; activePath: string; onActive: (path: string) => void; onToggle: (path: string) => void }) {
+function FileLevel(props: { path: string; depth: number; expanded: Set<string>; activePath: string; onActive: (path: string) => void; onToggle: (path: string) => void; onPreviewIntent?: (key: string) => void }) {
   const entries = () => resourceWorkspace().directories[props.path]?.entries ?? [];
   const nextCursor = () => resourceWorkspace().directories[props.path]?.nextCursor;
   return <>
-    <For each={entries()}>{(entry, index) => <FileRow entry={entry} depth={props.depth} index={index()} setSize={entries().length} expanded={props.expanded} activePath={props.activePath} onActive={props.onActive} onToggle={props.onToggle} />}</For>
+    <For each={entries()}>{(entry, index) => <FileRow entry={entry} depth={props.depth} index={index()} setSize={entries().length} expanded={props.expanded} activePath={props.activePath} onActive={props.onActive} onToggle={props.onToggle} onPreviewIntent={props.onPreviewIntent} />}</For>
     <Show when={nextCursor()}>{(cursor) => <button type="button" class="h-24 w-full border-0 bg-transparent text-left text-11 text-accent hover:bg-hover pointer-coarse:h-44" style={{ 'padding-left': `${26 + props.depth * 13}px` }} onClick={() => openResourceDirectory(props.path, cursor())}>Load more…</button>}</Show>
   </>;
 }
 
-function FileRow(props: { entry: ResourceEntry; depth: number; index: number; setSize: number; expanded: Set<string>; activePath: string; onActive: (path: string) => void; onToggle: (path: string) => void }) {
+function FileRow(props: { entry: ResourceEntry; depth: number; index: number; setSize: number; expanded: Set<string>; activePath: string; onActive: (path: string) => void; onToggle: (path: string) => void; onPreviewIntent?: (key: string) => void }) {
   const path = () => String(props.entry.path ?? '');
   const directory = () => props.entry.kind === 'directory';
   const open = () => props.expanded.has(path());
@@ -86,10 +150,18 @@ function FileRow(props: { entry: ResourceEntry; depth: number; index: number; se
       aria-setsize={props.setSize}
       data-path={path()}
       data-directory={directory() ? 'true' : 'false'}
+      data-resource-focus-key={directory() ? undefined : `file:${path()}`}
+      data-resource-focus-view={directory() ? undefined : 'explorer'}
       tabIndex={props.activePath === path() || (!props.activePath && props.depth === 0 && props.index === 0) ? 0 : -1}
       class="group flex h-24 w-full items-center border-0 bg-transparent pr-6 text-left text-12 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44"
       style={{ 'padding-left': `${6 + props.depth * 13}px` }}
-      onClick={() => directory() ? props.onToggle(path()) : openFilePreview(path())}
+      onClick={() => {
+        if (directory()) props.onToggle(path());
+        else {
+          props.onPreviewIntent?.(`file:${path()}`);
+          openFilePreview(path());
+        }
+      }}
       onFocus={() => props.onActive(path())}
       title={path()}
     >
@@ -100,7 +172,7 @@ function FileRow(props: { entry: ResourceEntry; depth: number; index: number; se
     <Show when={directory() && open()}>
       <div role="group">
         <Show when={resourceWorkspace().directories[path()]} fallback={<div class="h-24 text-11 text-text-faint" style={{ 'padding-left': `${32 + props.depth * 13}px` }}>Loading…</div>}>
-          <FileLevel path={path()} depth={props.depth + 1} expanded={props.expanded} activePath={props.activePath} onActive={props.onActive} onToggle={props.onToggle} />
+          <FileLevel path={path()} depth={props.depth + 1} expanded={props.expanded} activePath={props.activePath} onActive={props.onActive} onToggle={props.onToggle} onPreviewIntent={props.onPreviewIntent} />
         </Show>
       </div>
     </Show>

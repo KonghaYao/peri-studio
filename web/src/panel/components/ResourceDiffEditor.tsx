@@ -7,8 +7,11 @@ function CloseIcon() {
   return <Icon size="small"><path d="m5 5 10 10M15 5 5 15" /></Icon>;
 }
 
-export function ResourceDiffEditor() {
+type ResourceDiffEditorProps = { onClose?: () => void };
+
+export function ResourceDiffEditor(props: ResourceDiffEditorProps = {}) {
   const preview = resourceDiffPreview;
+  const close = () => props.onClose ? props.onClose() : closeResourceDiffPreview();
   const parsed = createMemo(() => parseUnifiedDiff(preview()?.text ?? ''));
   const comparison = createMemo(() => ({
     conflicts: 'Merge changes',
@@ -16,23 +19,24 @@ export function ResourceDiffEditor() {
     working_tree: 'Index ↔ Working Tree',
     untracked: 'New file',
   }[preview()?.groupId ?? 'working_tree']));
+  const accessibleTitle = () => `Git diff: ${preview()?.path ?? 'file'}, ${comparison()}`;
 
   onMount(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       // Escape 只关闭最上层交互。确认弹窗由 Dialog 自己消费第一次 Escape；
       // 底层 diff 必须保持，等待用户再次明确关闭。
-      if (event.key === 'Escape' && resourceDiffPreview() && !document.querySelector('[data-dialog-overlay]')) closeResourceDiffPreview();
+      if (event.key === 'Escape' && resourceDiffPreview() && !document.querySelector('[data-dialog-overlay]')) close();
     };
     window.addEventListener('keydown', closeOnEscape);
     onCleanup(() => window.removeEventListener('keydown', closeOnEscape));
   });
 
-  return <section class="flex h-full min-h-0 flex-col bg-surface" aria-label="Git diff preview">
+  return <section class="flex h-full min-h-0 flex-col bg-surface" aria-label={accessibleTitle()}>
     <header class="flex h-35 shrink-0 items-center border-b border-divider bg-sidebar-bg">
       <div class="flex h-full min-w-0 items-center gap-7 border-r border-divider border-t-2 border-t-accent bg-surface pl-12 pr-5 text-12">
-        <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-550 text-text-primary">{basename(preview()?.path ?? '')}</span>
+        <h1 data-resource-preview-focus tabIndex={-1} aria-label={accessibleTitle()} class="m-0 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-550 text-text-primary outline-none">{basename(preview()?.path ?? '')}</h1>
         <span class="font-mono text-10 font-650 text-warning">{statusLetter(preview()?.status ?? '')}</span>
-        <IconButton label="Close diff" onClick={closeResourceDiffPreview} class="size-24 min-h-24 border-0 bg-transparent text-text-muted"><CloseIcon /></IconButton>
+        <IconButton label="Close diff" onClick={close} class="size-24 min-h-24 border-0 bg-transparent text-text-muted"><CloseIcon /></IconButton>
       </div>
     </header>
     <div class="flex h-34 shrink-0 items-center gap-8 border-b border-divider px-12 text-11">
@@ -51,7 +55,7 @@ export function ResourceDiffEditor() {
             }>
               <Button size="compact" variant="secondary" onClick={refreshResourceProject}>Refresh Source Control</Button>
             </Show>
-            <Button size="compact" onClick={closeResourceDiffPreview}>Close</Button>
+            <Button size="compact" onClick={close}>Close</Button>
           </div>
         </div>
       }>

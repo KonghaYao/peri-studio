@@ -25,6 +25,7 @@
 15. Registry heartbeat 改经 `RegistryProjection` 与 keyed machine 分组结构共享；仅 `last_heartbeat` 变化时 project/session slice、rename row/input DOM、草稿与焦点均保持稳定。
 16. Permission/Elicitation Queue 共用 identity-selection；远端前插请求不再静默换题，当前请求消失才按原位置回退，草稿、焦点和 DOM 身份保持稳定。
 17. Elicitation 一次性回答改由独立 delivery 状态机持有；terminal ACK、已写入后的 action error、超时、断线、`DELIVERY_UNKNOWN` 与刷新后仍为 `responding` 均保持不可重放门禁，用户可重取 Control Doc 或在保留证据后仅本地隐藏；只有 transport 明确未接受 frame 才回滚本地占位。
+18. Explorer/Source Control 以稳定资源键记录预览来源；移动端文件或 diff 打开后焦点进入带完整路径/比较上下文的 editor heading，Escape 关闭后重开原资源视图并恢复原行焦点。Explorer 展开项、active path、滚动位置，以及按 project/repository 隔离的 commit draft 与在途提交身份跨 Dialog 卸载保留；active row 被删除或切 project 时回退到存活祖先/首项，始终保留唯一 Tab 入口；commit 失败保留草稿，精确成功才清空未改写草稿；桌面来源被远端删除时回退到同 view 活动按钮。
 
 ## Round 1 — Chat 信息架构与可信度
 
@@ -82,7 +83,7 @@
 |---|---|---|
 | P1 | Resource/SCM/StatusBar 触控目标 22–38px | 主要路径已提升至 coarse 44px |
 | P1 | Escape 同时关闭 modal 与底层 diff | 已修复层级消费 |
-| P1 | 移动端打开文件后焦点仍回到旧触发器 | 后续增加 editor heading 焦点往返 |
+| P1 | 移动端打开文件后焦点仍回到旧触发器 | 已覆盖文件与 Git diff 的 Enter/Escape 焦点往返 |
 | P2 | Explorer 当前项被删除后可能无 tabindex=0 | entries 更新时归位父项或首项 |
 | P2 | forced-colors 下连接状态可能只剩色点 | 显示文字/系统色边框并加入矩阵 |
 
@@ -114,17 +115,17 @@
 | P1 | 正式矩阵缺 768、coarse、forced-colors、keyboard-only | 扩充为操作矩阵，不只做渲染断言 |
 | P1 | visual contract 只看 shell/横向溢出，漏掉 140px header | 已加主按钮与 token 契约；继续增加关键区域高度 |
 | P1 | 390×430 prompt/composer 重叠 104px | 已改短视口流式布局 |
-| P2 | Resource 交互只在 1280 执行 | 参数化到 1024/768/390，并测焦点与 Escape |
+| P2 | Resource 交互只在 1280 执行 | 已增加 390px Explorer/SCM 键盘焦点与 Escape 往返；768 操作矩阵后续补齐 |
 | P2 | 缺本地化、相同前缀、长错误压力场景 | 新增 stress-copy fixture 与稳定截图基线 |
 
 ## Round 10 — Standards / Spec 复审
 
 复审固定点为 `888778e`，同时检查仓库 `CLAUDE.md`、权威架构、术语表与本报告。两个独立只读审查均无遗留 P0 或功能阻断；复审发现的未知 reasoning visibility 降级、资源协议模块环、三个遗漏的 coarse 触控目标、未租赁 update 测试缺口、浏览器测试文件超限与报告计数均已闭环。`aggregator.rs` 482 行、`protocol.ts` 457 行、`resource-store.ts` 455 行接近拆分阈值，作为结构预警保留。
 
-最终门禁：Rust workspace 786 项全绿，`cargo fmt --all --check` 与 workspace 全 target Clippy `-D warnings` 通过；Web TypeScript、63 项 Node 契约、554 项 Vitest、production build/boundary 全绿；真实 Chromium 43/43（含 2,000 条有界 transcript、1024 入口、390×430 短视口和真实 coarse pointer 44px）通过；`git diff --check` 通过。Vitest 早期轮次曾出现一次 Dialog inert 时序抖动，隔离复跑与后续完整复跑均通过，未观察到产品回归。
+最终门禁：Rust workspace 786 项全绿，`cargo fmt --all --check` 与 workspace 全 target Clippy `-D warnings` 通过；Web TypeScript、63 项 Node 契约、570 项 Vitest、production build/boundary 全绿；真实 Chromium 47/47（含 2,000 条有界 transcript、1024 入口、390×430 短视口、真实 coarse pointer 44px、移动端 FS/Git 键盘焦点往返和桌面来源删除回退）通过；`git diff --check` 通过。Vitest 早期轮次曾出现一次 Dialog inert 时序抖动，隔离复跑与后续完整复跑均通过，未观察到产品回归。
 
 后续双轴复审又闭环三项：metadata `accepted` 不再误续墙钟 timeout，只有显式 prompt inactivity lease 可由 runtime progress 续租；acknowledged `delivery_unknown` 证据上限为 20 条，满额后 fail-closed 而不静默淘汰；已确认继续的历史证据改用普通 group 语义，不再作为新 alert 重复打断读屏。
 
 ## 推荐路线
 
-1. 完成可访问性矩阵：焦点往返、forced-colors、768、coarse pointer、短视口。
+1. 完成可访问性矩阵：forced-colors、768 操作路径与剩余短视口压力场景。

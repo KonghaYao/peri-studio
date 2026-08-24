@@ -19,29 +19,52 @@ function PlusIcon() { return <Icon size="small"><path d="M10 4v12M4 10h12" /></I
 function MinusIcon() { return <Icon size="small"><path d="M4 10h12" /></Icon>; }
 function TrashIcon() { return <Icon size="small"><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11M9 9v5M11 9v5" /></Icon>; }
 
-export function SourceControlPanel() {
+type SourceControlPanelProps = {
+  commitMessages?: Record<string, string>;
+  onCommitMessageChange?: (repoId: string, message: string) => void;
+  onCommitSubmitted?: (repoId: string, requestId: string, message: string) => void;
+  onPreviewIntent?: (key: string) => void;
+};
+
+export function SourceControlPanel(props: SourceControlPanelProps = {}) {
   return <section class="flex min-h-0 flex-1 flex-col" aria-label="Source Control">
     <div class="resource-section-title flex h-28 items-center border-b border-divider px-8 text-10 font-650 uppercase tracking-6 text-text-secondary pointer-coarse:h-44">Source Control</div>
     <div class="ui-scrollbar min-h-0 flex-1 overflow-auto pb-12">
       <Show when={!resourceWorkspace().loading.includes('repositories')} fallback={<LoadingState label="Reading repositories" class="m-8 p-8! text-left!" />}>
         <Show when={resourceWorkspace().repositories.length} fallback={<div class="px-14 py-18 text-12 leading-18 text-text-muted">No Git repository was found in this workspace.</div>}>
-          <For each={resourceWorkspace().repositories}>{(repo) => <Repository repo={repo} />}</For>
+          <For each={resourceWorkspace().repositories}>{(repo) => <Repository repo={repo} commitMessage={props.commitMessages?.[repo.id]} onCommitMessageChange={props.onCommitMessageChange} onCommitSubmitted={props.onCommitSubmitted} onPreviewIntent={props.onPreviewIntent} />}</For>
         </Show>
       </Show>
     </div>
   </section>;
 }
 
-function Repository(props: { repo: RepositoryState }) {
-  const [message, setMessage] = createSignal('');
+function Repository(props: { repo: RepositoryState; commitMessage?: string; onCommitMessageChange?: (repoId: string, message: string) => void; onCommitSubmitted?: (repoId: string, requestId: string, message: string) => void; onPreviewIntent?: (key: string) => void }) {
+  const [localMessage, setLocalMessage] = createSignal('');
+  const message = () => props.commitMessage ?? localMessage();
+  const setMessage = (value: string) => {
+    setLocalMessage(value);
+    props.onCommitMessageChange?.(props.repo.id, value);
+  };
   const [discard, setDiscard] = createSignal<{ id: string; path: string } | null>(null);
   const branch = () => props.repo.detached ? 'detached HEAD' : props.repo.headName || 'No commits yet';
   const repoMutation = () => resourceWorkspace().repoMutations?.[props.repo.id];
   const repoBusy = () => !!repoMutation()?.pending || Object.values(resourceWorkspace().mutations ?? {}).some((mutation) => mutation.repoId === props.repo.id && mutation.pending);
   const staged = () => props.repo.groups.index?.count ?? 0;
   const messageTooLarge = createMemo(() => new TextEncoder().encode(message().trim()).byteLength > MAX_COMMIT_MESSAGE_BYTES);
-  const commit = () => mutateGitResource(props.repo.id, 'commit', [], message());
+  const commit = () => {
+    const submitted = message().trim();
+    if (!mutateGitResource(props.repo.id, 'commit', [], submitted)) return;
+    const mutation = repoMutation();
+    if (mutation?.action === 'commit' && mutation.pending) props.onCommitSubmitted?.(props.repo.id, mutation.requestId, submitted);
+  };
   const runRepoAction = (action: 'pull' | 'push' | 'sync') => mutateGitResource(props.repo.id, action);
+  const retryRepoMutation = () => {
+    const failed = repoMutation();
+    if (!failed || !retryGitRepositoryMutation(props.repo.id)) return;
+    const retried = repoMutation();
+    if (retried?.action === 'commit' && retried.pending) props.onCommitSubmitted?.(props.repo.id, retried.requestId, failed.message ?? message().trim());
+  };
   return <><section class="border-b border-divider pb-6">
     <div class="flex h-32 items-center gap-6 px-8 text-12 font-550 text-text-primary" title={props.repo.root}>
       <BranchIcon /><span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{props.repo.name}</span>
@@ -71,7 +94,7 @@ function Repository(props: { repo: RepositoryState }) {
       </div>
       <Show when={repoMutation()?.error}>{(error) => <div role="alert" class="mt-5 flex min-h-28 items-center gap-6 border border-danger-border bg-danger-soft px-8 py-5 text-10 leading-14 text-danger">
         <span class="min-w-0 flex-1">{error()}</span>
-        <Show when={repoMutation()?.retryable}><button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline" onClick={() => retryGitRepositoryMutation(props.repo.id)}>Retry</button></Show>
+        <Show when={repoMutation()?.retryable}><button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline" onClick={retryRepoMutation}>Retry</button></Show>
       </div>}</Show>
     </div>
     <For each={GROUPS}>{(group) => {
@@ -89,7 +112,12 @@ function Repository(props: { repo: RepositoryState }) {
             class="flex h-full min-w-0 flex-1 items-center gap-5 border-0 bg-transparent pl-13 text-left text-inherit"
             aria-label={`Open changes for ${path()}`}
             title={`Open changes for ${path()}`}
-            onClick={() => openGitDiffPreview(props.repo.id, group.id, change)}
+            data-resource-focus-key={`diff:${props.repo.id}:${group.id}:${change.id}`}
+            data-resource-focus-view="scm"
+            onClick={() => {
+              props.onPreviewIntent?.(`diff:${props.repo.id}:${group.id}:${change.id}`);
+              openGitDiffPreview(props.repo.id, group.id, change);
+            }}
           >
             <span class="text-text-muted"><FileIcon /></span>
             <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{basename(path())}</span>

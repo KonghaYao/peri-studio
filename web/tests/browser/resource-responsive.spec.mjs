@@ -22,12 +22,12 @@ test('resource workbench matches Explorer and Source Control interaction contrac
   await expect(page.getByText('UNTRACKED CHANGES')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Unstage server/src/control/resource_service.rs' })).toBeAttached();
   await expect(page.getByRole('button', { name: 'Stage web/src/panel/lib/resource-view.ts' })).toBeAttached();
-  await expect(page.getByRole('region', { name: 'Git diff preview' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Git diff: web/src/panel/components/ResourceWorkbench.tsx, Index ↔ Working Tree' })).toBeVisible();
   await expect(page.getByRole('table', { name: 'Changes in web/src/panel/components/ResourceWorkbench.tsx' })).toBeVisible();
   await expect(page.getByText('const width = view() ? 300 : 46;')).toBeVisible();
   await expect(page.getByText('const width = view() ? 310 : 46;')).toBeVisible();
   await page.getByRole('button', { name: 'Close diff' }).click();
-  await expect(page.getByRole('region', { name: 'Git diff preview' })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: /^Git diff:/ })).toHaveCount(0);
   const previewInjected = await page.evaluate(() => {
     const bridge = window.__PERI_VISUAL_FIXTURE__;
     if (!bridge) return false;
@@ -39,11 +39,11 @@ test('resource workbench matches Explorer and Source Control interaction contrac
     return true;
   });
   expect(previewInjected).toBe(true);
-  await expect(page.getByRole('region', { name: 'File preview' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'File preview: src/main.rs' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Contents of src/main.rs' })).toContainText('println!("ready")');
   await expect(page.getByText('Read-only', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Close file' }).click();
-  await expect(page.getByRole('region', { name: 'File preview' })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: /^File preview:/ })).toHaveCount(0);
   expect(browserErrors).toEqual([]);
 });
 
@@ -54,6 +54,107 @@ test('medium status entry reopens the Explorer view', async ({ page }) => {
   await page.getByRole('button', { name: 'Open workspace resources' }).click();
   await expect(page.getByRole('button', { name: 'Explorer', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('region', { name: 'Explorer' })).toBeVisible();
+});
+
+test('mobile resource previews hand focus to the editor and restore their source rows', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Close diff' }).click();
+  await page.getByRole('button', { name: 'Open workspace resources' }).click();
+  expect(await page.evaluate(() => {
+    const bridge = window.__PERI_VISUAL_FIXTURE__;
+    if (!bridge) return false;
+    bridge.appendResourceEntries(30);
+    return true;
+  })).toBe(true);
+  await page.getByRole('treeitem', { name: 'src' }).click();
+  await expect(page.getByRole('treeitem', { name: 'main.rs' })).toBeVisible();
+  const origin = page.getByRole('treeitem', { name: 'fixture-24.ts' });
+  await origin.focus();
+  const explorerScrollTop = await page.getByRole('tree', { name: 'Workspace files' }).evaluate((tree) => {
+    tree.scrollTop = 100;
+    tree.dispatchEvent(new Event('scroll'));
+    return tree.scrollTop;
+  });
+  expect(explorerScrollTop).toBeGreaterThan(0);
+  await page.keyboard.press('Enter');
+  await page.evaluate(() => {
+    window.__resourceFocusHistory = [];
+    document.addEventListener('focusin', (event) => {
+      const target = event.target;
+      if (target instanceof HTMLElement) window.__resourceFocusHistory.push(target.getAttribute('aria-label') || target.textContent?.trim() || target.tagName);
+    });
+  });
+
+  const previewInjected = await page.evaluate(() => {
+    const bridge = window.__PERI_VISUAL_FIXTURE__;
+    if (!bridge) return false;
+    bridge.setFilePreview({
+      requestId: 'mobile-file', path: 'fixtures/fixture-24.ts', loading: false, mode: 'text',
+      url: '/api/resource-blobs/mobile-file', contentType: 'text/plain', size: 13,
+      text: 'fn main() {}\n',
+    });
+    return true;
+  });
+  expect(previewInjected).toBe(true);
+
+  await expect(page.getByRole('heading', { name: 'File preview: fixtures/fixture-24.ts' })).toBeFocused();
+  expect(await page.evaluate(() => window.__resourceFocusHistory)).not.toContain('Open workspace resources');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Workspace resources' })).toBeVisible();
+  await expect(page.getByRole('treeitem', { name: 'fixture-24.ts' })).toBeFocused();
+  await expect(page.getByRole('treeitem', { name: 'main.rs' })).toBeVisible();
+  expect(await page.getByRole('tree', { name: 'Workspace files' }).evaluate((tree) => tree.scrollTop)).toBe(explorerScrollTop);
+
+  await page.getByRole('button', { name: 'Source Control' }).click();
+  await page.getByRole('textbox', { name: 'Commit message' }).fill('Preserve this draft across preview');
+  const diffOrigin = page.getByRole('button', { name: 'Open changes for web/src/panel/components/ResourceWorkbench.tsx' });
+  await diffOrigin.focus();
+  await page.keyboard.press('Enter');
+  const diffInjected = await page.evaluate(() => {
+    const bridge = window.__PERI_VISUAL_FIXTURE__;
+    if (!bridge) return false;
+    bridge.setDiffPreview({
+      requestId: 'mobile-diff', repoId: 'repo-1', groupId: 'working_tree', changeId: 'c2',
+      path: 'web/src/panel/components/ResourceWorkbench.tsx', status: 'modified', loading: false,
+      text: '--- a/file\n+++ b/file\n@@ -1 +1 @@\n-old\n+new\n',
+    });
+    return true;
+  });
+  expect(diffInjected).toBe(true);
+
+  await expect(page.getByRole('heading', { name: 'Git diff: web/src/panel/components/ResourceWorkbench.tsx, Index ↔ Working Tree' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Workspace resources' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open changes for web/src/panel/components/ResourceWorkbench.tsx' })).toBeFocused();
+  await expect(page.getByRole('textbox', { name: 'Commit message' })).toHaveValue('Preserve this draft across preview');
+});
+
+test('desktop preview falls back to its resource view when the source row is deleted', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Close diff' }).click();
+  await page.getByRole('treeitem', { name: 'src' }).click();
+  const origin = page.getByRole('treeitem', { name: 'main.rs' });
+  await origin.focus();
+  await page.keyboard.press('Enter');
+
+  const fixtureReady = await page.evaluate(() => {
+    const bridge = window.__PERI_VISUAL_FIXTURE__;
+    if (!bridge) return false;
+    bridge.setFilePreview({
+      requestId: 'deleted-origin', path: 'src/main.rs', loading: false, mode: 'text',
+      contentType: 'text/plain', size: 13, text: 'fn main() {}\n',
+    });
+    bridge.removeResourceEntry('src/main.rs');
+    return true;
+  });
+  expect(fixtureReady).toBe(true);
+  await expect(origin).toHaveCount(0);
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('region', { name: /^File preview:/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Explorer', exact: true })).toBeFocused();
 });
 
 test('short mobile launch layout keeps prompt and composer separated', async ({ page }) => {

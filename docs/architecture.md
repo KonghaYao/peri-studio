@@ -1,9 +1,9 @@
 # Peri Studio 架构设计（权威版）
 
-> 状态：v2.12（无状态投影恢复 + 远程资源工作台 + 长会话可靠 UI + 一次性回答恢复）
+> 状态：v2.13（无状态投影恢复 + 远程资源工作台 + 长会话可靠 UI + 可恢复焦点）
 > 日期：2026-08-24
 > 定位：peri-studio 独立项目的架构基准文档。与 peri 的唯一耦合点是 ACP 进程（协议线格式），本设计不依赖 peri 的任何 crate 与部署形态。
-> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界；v2.9 令 Web 权限裁决回传 Control Doc 投影的精确 ACP `optionId`，并在恢复证据与交付边界校验 ID 和 scope；v2.10 增加权限期限的可见倒计时与浏览器 fail-close 门控；v2.11 统一权限与询问队列的领域身份选择和删除回退；v2.12 为一次性 elicitation 回答增加不可重放的刷新与本地隐藏恢复面。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
+> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界；v2.9 令 Web 权限裁决回传 Control Doc 投影的精确 ACP `optionId`，并在恢复证据与交付边界校验 ID 和 scope；v2.10 增加权限期限的可见倒计时与浏览器 fail-close 门控；v2.11 统一权限与询问队列的领域身份选择和删除回退；v2.12 为一次性 elicitation 回答增加不可重放的刷新与本地隐藏恢复面；v2.13 为移动端 FS/Git 预览增加稳定来源身份与编辑器焦点往返。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
 > 约定：引用 chat-channel 处标注其文档章节号（如「chat §5.2」），实现时以该仓库为对照基线。协议事实（帧 tag、action 面、schema 版本、默认值）以 `peri-studio-proto` / `server/src/config` 实现为真相来源，本文与实现不一致时以实现为准并回改本文。
 
 ---
@@ -121,6 +121,8 @@ Web 权限面必须完整呈现同一 Control Doc 中全部 `pending_permissions
 Permission 与 Elicitation Queue 必须通过同一 identity-selection 模块分别按 `pending_permissions` 外层 Y.Map key / `elicitation_id` 保存当前选择，而不是保存数组下标或投影对象引用。远端重建对象、在当前项之前插入或重排其他请求时，当前卡片、草稿、焦点和 DOM 身份保持不变；仅当当前身份消失时，才选择原位置上仍存在的下一项或末项。导航只改变本地选择，不得隐式提交任何裁决或答案。
 
 Elicitation 回答交付由独立 `elicitation-delivery` 模块按 `elicitation_id + command_id` 拥有 pending/confirmed/failed/uncertain/delivery_unknown 与本地隐藏状态。同一 elicitation 在权威投影移除前绝不允许第二个回答命令；terminal ACK 或已写入后的 action error 都只改变锁态，不能自行释放。只有 transport 明确拒绝写入 frame 时可以撤销尚未发送的本地占位。浏览器刷新后若 Control Doc 仍投影 `responding`，必须恢复为未知交付而不是重新开放表单。未知或失败卡提供“重取当前 Control Doc”与“仅本地隐藏”两条恢复路径：刷新只 unsubscribe/drop/re-subscribe Control Doc，不创建业务 action；隐藏保留原交付证据和不可重放门禁，直到权威投影移除该 elicitation 才释放。
+
+ResourceWorkbench 打开文件或 Git diff 时必须把来源 view 与资源稳定键作为一次导航意图交给 AppShell，不得把临时 DOM 引用当成恢复身份。移动端预览出现后，资源 Dialog 关闭并由包含完整路径/比较上下文的 editor heading 接管焦点，不能让 modal 的默认 focus restore 把焦点送回状态栏入口。关闭预览必须重新打开原 Explorer/Source Control view，并把焦点恢复到同一稳定资源键。Explorer 的展开项、roving active path、内部滚动位置，以及按 project/repository 隔离的 commit draft 与在途 requestId/提交快照，都由 Workbench 持有，不能因 Dialog Portal 卸载而丢失；目录投影删除 active row 或 project 身份变化时，active path 必须归一到最近存活祖先或首项，保证文件树始终只有一个 Tab 入口。commit draft 只有精确 mutation 成功且用户未在途改写时才清空，失败、请求被另一 mutation 取代或 project 身份切换都必须保留。桌面端若来源在预览期间被权威投影删除，则退回同一资源 view 的活动按钮，不能把焦点遗留在 `body`。该契约同时覆盖 Enter 打开与 Escape 关闭。
 
 Web 消息阅读器把滚动/跟随策略与单条消息语义分离：`MessageList` 只拥有文档水合、权限队列、自动吸底与完成播报；`ConversationMessage` 统一拥有 user/system/assistant 角色层级以及 reasoning、Markdown、tool、resource、error、copy 证据层。用户和流式正文保持纯文本，只有已终态的 assistant 正文进入安全 Markdown 渲染；流式动画对辅助技术隐藏，完成状态由列表级原子播报一次。错误证据使用可命名 alert，reasoning 默认折叠，资源只展示 server 投影事实，不推断链接或可执行行为。
 
