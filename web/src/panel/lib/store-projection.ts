@@ -4,7 +4,8 @@ import type { DocStore } from './doc-store';
 import type { ChatEntry } from './chat-view';
 import { ChatProjection } from './chat-projection';
 import { renderControl, type ControlView } from './control-view';
-import { renderRegistry, type ChatInfo, type InstanceInfo, type ProjectInfo, type ProjectSessionInfo, type SessionSummaryInfo } from './registry-view';
+import type { ChatInfo, InstanceInfo, ProjectInfo, ProjectSessionInfo, SessionSummaryInfo } from './registry-view';
+import { RegistryProjection } from './registry-projection';
 import { unimportedSessions } from './session-import';
 import { isTerminal } from './action-state';
 import { retainLiveRuntimeHints } from './recovery-state';
@@ -41,8 +42,14 @@ export function installStoreProjection(
   onRuntimeProgress: (chatId: string) => void,
 ): void {
   const chatProjection = new ChatProjection();
+  const registryProjection = new RegistryProjection();
   let projectedChatDocId: string | null = null;
+  let projectedProjectSessions: ProjectSessionInfo[] = [];
   store.observeRemoval((docId) => {
+    if (docId === null || docId === H.DOC_REGISTRY) {
+      registryProjection.dispose();
+      projectedProjectSessions = [];
+    }
     if (docId === null || docId === projectedChatDocId) {
       chatProjection.dispose();
       projectedChatDocId = null;
@@ -50,7 +57,7 @@ export function installStoreProjection(
   });
   store.onUpdate = (docId: string): void => {
     if (docId === H.DOC_REGISTRY) {
-      const registry = renderRegistry(store.docFor(docId));
+      const registry = registryProjection.project(store.docFor(docId));
       const statusMap: Record<string, string> = {};
       registry.chats.forEach((chat) => {
         statusMap[chat.id] = chat.status || '';
@@ -62,7 +69,12 @@ export function installStoreProjection(
       signals.setGlobalStatus(registry.globalStatus);
       signals.setSchemaVersion(registry.schemaVersion);
       signals.setProjects(registry.projects);
-      const sessions = retainLiveRuntimeHints(registry.projectSessions, registry.chats) as ProjectSessionInfo[];
+      const sessions = retainLiveRuntimeHints(
+        registry.projectSessions,
+        registry.chats,
+        projectedProjectSessions,
+      ) as ProjectSessionInfo[];
+      projectedProjectSessions = sessions;
       signals.setProjectSessions(sessions);
       signals.setImportableSessions(unimportedSessions(registry.sessions, registry.projectSessions));
       signals.setRegistryHydrated(true);

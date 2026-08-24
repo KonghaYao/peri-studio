@@ -56,4 +56,37 @@ describe('store projection progress seam', () => {
     expect(updated[1]).not.toBe(initial[1]);
     expect(updated[1].text).toBe('two streamed');
   });
+
+  it('does not republish project and session slices for an instance heartbeat', () => {
+    const store = new DocStore();
+    const projected = signals();
+    installStoreProjection(store, () => null, projected, vi.fn(), vi.fn(), vi.fn());
+    const root = store.docFor('hub:registry').getMap<unknown>('root');
+    for (const section of ['instances', 'chats', 'sessions', 'workspaces', 'projects', 'project_sessions']) {
+      root.set(section, new Y.Map<unknown>());
+    }
+    const instance = new Y.Map<unknown>();
+    instance.set('hostname', 'local'); instance.set('status', 'online'); instance.set('last_heartbeat', 'first');
+    (root.get('instances') as Y.Map<unknown>).set('local', instance);
+    const project = new Y.Map<unknown>();
+    project.set('name', 'Peri'); project.set('cwd', '/workspace'); project.set('instance_id', 'local');
+    (root.get('projects') as Y.Map<unknown>).set('project-1', project);
+    const session = new Y.Map<unknown>();
+    session.set('project_id', 'project-1'); session.set('title', 'Draft'); session.set('lifecycle', 'ready');
+    session.set('active_chat_id', 'chat-ended');
+    (root.get('project_sessions') as Y.Map<unknown>).set('session-1', session);
+    const chat = new Y.Map<unknown>();
+    chat.set('status', 'ended');
+    (root.get('chats') as Y.Map<unknown>).set('chat-ended', chat);
+    store.onUpdate?.('hub:registry');
+    const initialProjects = projected.setProjects.mock.calls[0]?.[0];
+    const initialSessions = projected.setProjectSessions.mock.calls[0]?.[0];
+    expect(initialSessions[0].activeChatId).toBeNull();
+
+    instance.set('last_heartbeat', 'second');
+    store.onUpdate?.('hub:registry');
+
+    expect(projected.setProjects.mock.calls[1]?.[0]).toBe(initialProjects);
+    expect(projected.setProjectSessions.mock.calls[1]?.[0]).toBe(initialSessions);
+  });
 });

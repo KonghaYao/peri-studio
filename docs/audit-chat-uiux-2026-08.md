@@ -21,6 +21,7 @@
 11. `delivery_unknown` 增加 acknowledge-and-continue：不恢复或重发原文，保留只读证据，同时解除全局 Composer 单飞锁。
 12. accepted prompt 改用 Chat/Control 投影进度续租 30 秒 inactivity lease，正常长回复不再按固定墙钟误报 uncertain。
 13. 2,000 条长会话改为 keyed `ChatProjection` 与变量高度 `TranscriptWindow`：流式尾部只重读关联 entry/tool，DOM/Markdown 仅挂载有界窗口，异步增高与历史前插保持可见 ID 锚点；兼容数组视图的轻量 O(n) 顺序装配仍保留，后续 keyed store 可继续消除。
+14. Registry heartbeat 改经 `RegistryProjection` 与 keyed machine 分组结构共享；仅 `last_heartbeat` 变化时 project/session slice、rename row/input DOM、草稿与焦点均保持稳定。
 
 ## Round 1 — Chat 信息架构与可信度
 
@@ -97,7 +98,7 @@
 | 优先级 | 发现 | 推荐深模块 |
 |---|---|---|
 | P1 | Resource project 切换无 request generation/lease fence | `ResourceProjectionSession`；本轮已封住 orphan/update 污染 |
-| P1 | 每次 heartbeat 全量重建 Sidebar，可擦掉 rename draft | keyed `RegistryProjection` 结构共享 |
+| P1 | 每次 heartbeat 全量重建 Sidebar，可擦掉 rename draft | keyed `RegistryProjection` + machine group 结构共享已闭环 |
 | P1 | 2,000 条 transcript 的流式尾部导致近 O(n²) 解析与 DOM 工作 | keyed `ChatProjection` + `TranscriptWindow` 已消除全量 Yjs/Markdown/DOM；数组顺序装配列为后续 P2 |
 | P1 | prompt 固定 30s wall timeout 与 server activity lease 冲突 | 已由 `CommandTracker.touch()` 接入 runtime projection inactivity lease |
 | P2 | async cache 的旧 rejection 可删掉同 key 新任务 | identity-checked delete + weighted LRU |
@@ -117,12 +118,11 @@
 
 复审固定点为 `888778e`，同时检查仓库 `CLAUDE.md`、权威架构、术语表与本报告。两个独立只读审查均无遗留 P0 或功能阻断；复审发现的未知 reasoning visibility 降级、资源协议模块环、三个遗漏的 coarse 触控目标、未租赁 update 测试缺口、浏览器测试文件超限与报告计数均已闭环。`aggregator.rs` 482 行、`protocol.ts` 457 行、`resource-store.ts` 455 行接近拆分阈值，作为结构预警保留。
 
-最终门禁：Rust workspace 781 项全绿，`cargo fmt --all --check` 与 workspace 全 target Clippy `-D warnings` 通过；Web TypeScript、63 项 Node 契约、542 项 Vitest、production build/boundary 全绿；真实 Chromium 44/44（含 2,000 条有界 transcript、1024 入口、390×430 短视口和真实 coarse pointer 44px）通过；`git diff --check` 通过。Vitest 早期轮次曾出现一次 Dialog inert 时序抖动，隔离复跑与后续完整复跑均通过，未观察到产品回归。
+最终门禁：Rust workspace 781 项全绿，`cargo fmt --all --check` 与 workspace 全 target Clippy `-D warnings` 通过；Web TypeScript、63 项 Node 契约、547 项 Vitest、production build/boundary 全绿；真实 Chromium 43/43（含 2,000 条有界 transcript、1024 入口、390×430 短视口和真实 coarse pointer 44px）通过；`git diff --check` 通过。Vitest 早期轮次曾出现一次 Dialog inert 时序抖动，隔离复跑与后续完整复跑均通过，未观察到产品回归。
 
 后续双轴复审又闭环三项：metadata `accepted` 不再误续墙钟 timeout，只有显式 prompt inactivity lease 可由 runtime progress 续租；acknowledged `delivery_unknown` 证据上限为 20 条，满额后 fail-closed 而不静默淘汰；已确认继续的历史证据改用普通 group 语义，不再作为新 alert 重复打断读屏。
 
 ## 推荐路线
 
-1. `RegistryProjection`：让 heartbeat 只更新 instance slice，保住 rename draft 与 DOM identity。
-2. Permission wire v3：`permission/resolve` 传 server 投影的精确 optionId，移除 translator 猜测。
-3. 完成可访问性矩阵：焦点往返、forced-colors、768、coarse pointer、短视口。
+1. Permission wire v3：`permission/resolve` 传 server 投影的精确 optionId，移除 translator 猜测。
+2. 完成可访问性矩阵：焦点往返、forced-colors、768、coarse pointer、短视口。

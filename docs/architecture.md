@@ -114,6 +114,8 @@ Web 下行 JSON 边界同时保持形状安全与协议前向兼容：只有**�
 
 Web 的 Yjs 边界按文档身份拆分。`DocStore` 只拥有 doc identity、v1 update 应用和 rAF 合帧；`registry-view`、`chat-view`、`control-view` 分别且唯一解释 `hub:registry`、`chat:{id}`、`session:{id}`，共享 helper 只做无领域语义的 Yjs 值读取。兼容 barrel 不得包含解析实现，feature 应直接依赖其所属领域类型。`DocStore.clear()` 是连接世代屏障：注销、认证失效或连接替换后，旧世代已排队的 rAF callback 不得渲染新 doc，也不得消费新世代相同 doc id 的待渲染标记。
 
+Registry 的低频目录与高频 instance heartbeat 必须经过 `RegistryProjection` 按领域 ID 结构共享：只替换投影字段真实变化的 instance/chat/project/session 对象，无关 `projects` / `project_sessions` 数组保持引用稳定。侧栏 machine 分组按 machine id 复用对象，machine 与 project 两层渲染均按稳定 ID 键控，避免元数据变化重挂 session 子树；用户正在输入的 rename draft、焦点、Popover 和 DOM identity 不得因 `last_heartbeat`、hostname/status 或 project 字段变化而丢失。DocStore drop/clear 同时释放 projection 世代，旧身份缓存不得跨 principal 保留。
+
 Web 权限面必须完整呈现同一 Control Doc 中全部 `pending_permissions`，不能只显示迭代顺序中的第一项。请求按有效 `expires_at` 升序、再按 `permission_id` 稳定排序；界面一次聚焦一个决策并显示当前位置/总数，用户切换查看不得隐式提交。当前项以 `permission_id` 保持身份，投影插入其他请求时不跳题；当前项消失后才选择同位置的下一项。每个 `permission_id` 的 pending/uncertain 锁相互独立，缺失 id 的畸形投影必须 fail closed，禁止发送空 id 决议。明确未送达且 server 标记 retryable 的失败只允许在原权限卡使用保存的原 `commandId` 与原 decision 重试；超时、断线或 `dispatched` 后结果未知必须继续锁定且不得出现重试按钮。
 
 Web 消息阅读器把滚动/跟随策略与单条消息语义分离：`MessageList` 只拥有文档水合、权限队列、自动吸底与完成播报；`ConversationMessage` 统一拥有 user/system/assistant 角色层级以及 reasoning、Markdown、tool、resource、error、copy 证据层。用户和流式正文保持纯文本，只有已终态的 assistant 正文进入安全 Markdown 渲染；流式动画对辅助技术隐藏，完成状态由列表级原子播报一次。错误证据使用可命名 alert，reasoning 默认折叠，资源只展示 server 投影事实，不推断链接或可执行行为。
@@ -1153,7 +1155,7 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 | `lib/connection-state` + `ErrorCenter` | ws 生命周期 | 连接世代/身份世代、动作门控、持久错误中心（§3.0） |
 | 状态栏 | `keep_alive` / 连接状态 | 连接状态、重连中指示、校准中指示（projection_version，§4.6） |
 
-关键 lib 模块（深模块裁决，§3.0）：`doc-store`（Yjs 边界与连接世代屏障）、`chat-projection`（按 entry/tool 身份增量读取）、`transcript-window`（变量高度窗口与锚点）、`command-tracker`（连接期命令生命周期）、`message-delivery`（投递恢复）、`session-navigator`（逻辑会话导航状态机）、`session-activation`（create/open/restore/quick-start façade）、`catalog-actions`（目录动作策略）、`ws-client`/`protocol`（传输与 wire 解码边界）。
+关键 lib 模块（深模块裁决，§3.0）：`doc-store`（Yjs 边界与连接世代屏障）、`registry-projection`（目录对象结构共享）、`chat-projection`（按 entry/tool 身份增量读取）、`transcript-window`（变量高度窗口与锚点）、`command-tracker`（连接期命令生命周期）、`message-delivery`（投递恢复）、`session-navigator`（逻辑会话导航状态机）、`session-activation`（create/open/restore/quick-start façade）、`catalog-actions`（目录动作策略）、`ws-client`/`protocol`（传输与 wire 解码边界）。
 
 ### 10.3 断线恢复
 

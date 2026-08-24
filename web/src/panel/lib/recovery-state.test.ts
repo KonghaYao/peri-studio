@@ -38,4 +38,14 @@ describe('retainLiveRuntimeHints', () => {
     const result = retainLiveRuntimeHints([session('chat-unknown')], [chat('chat-unknown', null)]);
     expect(result[0].activeChatId).toBe('chat-unknown');
   });
+
+  it('reuses a terminal projection while the source session stays unchanged', () => {
+    const source = [session('chat-ended')];
+    const first = retainLiveRuntimeHints(source, [chat('chat-ended', 'ended')]);
+    const second = retainLiveRuntimeHints(source, [chat('chat-ended', 'ended')], first);
+
+    expect(first[0].activeChatId).toBeNull();
+    expect(second).toBe(first);
+    expect(second[0]).toBe(first[0]);
+  });
 });

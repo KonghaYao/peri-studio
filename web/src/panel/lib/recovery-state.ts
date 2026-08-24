@@ -4,15 +4,30 @@
 // hint；否则重启后残留 last_chat_id 的会话会一直显示「运行中」。
 const TERMINAL_RUNTIME = new Set(['ended', 'closed', 'crashed', 'gap']);
 
-export const retainLiveRuntimeHints = <S extends { activeChatId: string | null }>(
+export const retainLiveRuntimeHints = <S extends { id: string; activeChatId: string | null }>(
   sessions: S[],
   chats: Array<{ id: string; status: string | null }>,
+  previous: readonly S[] = [],
 ): S[] => {
   const live = new Set(chats.filter((chat) => !TERMINAL_RUNTIME.has(String(chat.status || ''))).map((chat) => chat.id));
-  return sessions.map((session) => ({
-    ...session,
-    activeChatId: session.activeChatId && live.has(session.activeChatId) ? session.activeChatId : null,
-  }));
+  const previousById = new Map(previous.map((session) => [session.id, session]));
+  const filtered = sessions.map((session) => {
+    const activeChatId = session.activeChatId && live.has(session.activeChatId) ? session.activeChatId : null;
+    const projected = activeChatId === session.activeChatId ? session : { ...session, activeChatId };
+    const prior = previousById.get(session.id);
+    if (!prior) return projected;
+    const keys = Object.keys(projected) as Array<keyof S>;
+    return keys.length === Object.keys(prior).length && keys.every((key) => projected[key] === prior[key])
+      ? prior
+      : projected;
+  });
+  if (filtered.length === previous.length && filtered.every((session, index) => session === previous[index])) {
+    return previous as S[];
+  }
+  if (filtered.length === sessions.length && filtered.every((session, index) => session === sessions[index])) {
+    return sessions;
+  }
+  return filtered;
 };
 
 export const cleanSessionTitle = (title: unknown): string => {

@@ -13,6 +13,7 @@ import { selectActiveProjects } from '../lib/project-catalog';
 import { ArchivedSection } from './shared/ArchivedSection';
 import { ConfirmDialog } from './shared/ConfirmDialog';
 import { SidebarChrome } from './SidebarChrome';
+import { reconcileMachineGroups, type MachineGroup } from '../lib/machine-groups';
 
 function PlusIcon() { return <Icon><path d="M10 4v12M4 10h12" /></Icon>; }
 function ImportIcon() { return <Icon class="size-17!"><path d="M10 3v9m0 0 3-3m-3 3L7 9M4 14.5h12v2H4z" /></Icon>; }
@@ -55,28 +56,12 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
     return session.id !== selectedSessionId() || !isTerminal(chatStatusSignal()[session.activeChatId]);
   };
   const projectHasRunningSession = (projectId: string) => projectSessions().some((session) => session.projectId === projectId && sessionHasRunningRuntime(session));
-  const machines = () => {
-    const grouped = new Map<string, { id: string; name: string; offline: boolean; projects: ReturnType<typeof activeProjects> }>();
-    for (const instance of instances()) {
-      grouped.set(instance.id, {
-        id: instance.id,
-        name: instance.hostname || instance.id,
-        offline: instance.status === 'offline',
-        projects: [],
-      });
-    }
-    for (const project of activeProjects()) {
-      const machine = grouped.get(project.instanceId) || {
-        id: project.instanceId,
-        name: project.instanceId || 'Machine',
-        offline: false,
-        projects: [],
-      };
-      machine.projects.push(project);
-      grouped.set(project.instanceId, machine);
-    }
-    return [...grouped.values()];
-  };
+  const machines = createMemo<MachineGroup[]>((previous = []) => reconcileMachineGroups(
+    instances(),
+    activeProjects(),
+    previous,
+  ));
+  const machineIds = createMemo(() => machines().map((machine) => machine.id));
   const setProjectCollapsed = (projectId: string, collapsed: boolean) => setCollapsedProjects((current) => {
     const next = new Set(current);
     if (collapsed) next.add(projectId); else next.delete(projectId);
@@ -158,32 +143,35 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
               description={projects().length ? 'Restore an archived project to continue.' : 'No connected machines or projects are available.'}
             />}
           >
-            <For each={machines()}>{(machine) => <section class="machine-group mb-10">
+            <For each={machineIds()}>{(machineId) => {
+              const machine = () => machines().find((item) => item.id === machineId)!;
+              return <section class="machine-group mb-10">
               <div class="machine-row group flex min-h-26 items-center gap-8 px-8 text-10 font-normal uppercase tracking-6 text-text-muted">
-                <span class="machine-name min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{machine.name}</span>
-                <Show when={machine.offline}><span class="machine-offline-dot size-7 shrink-0 rounded-full bg-danger" role="img" aria-label="Machine offline" /></Show>
-                <IconButton class="row-create-action machine-create-action ml-auto size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 disabled:cursor-not-allowed pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" label={`New project on ${machine.name} unavailable: choose a remote directory first; the current API cannot create by machine`} disabled><PlusIcon /></IconButton>
+                <span class="machine-name min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{machine().name}</span>
+                <Show when={machine().offline}><span class="machine-offline-dot size-7 shrink-0 rounded-full bg-danger" role="img" aria-label="Machine offline" /></Show>
+                <IconButton class="row-create-action machine-create-action ml-auto size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 disabled:cursor-not-allowed pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" label={`New project on ${machine().name} unavailable: choose a remote directory first; the current API cannot create by machine`} disabled><PlusIcon /></IconButton>
               </div>
-              <For each={machine.projects}>{(project) => {
-            const sessions = () => projectSessions().filter((s) => s.projectId === project.id && !s.archivedAt);
-            const archivedSessions = () => projectSessions().filter((s) => s.projectId === project.id && !!s.archivedAt);
-            const collapsed = () => collapsedProjects().has(project.id);
-            const projectMenuId = `project-menu-${project.id}`;
-            return <Collapsible as="section" class="project-group" open={!collapsed()} onOpenChange={(open) => setProjectCollapsed(project.id, !open)}>
+              <For each={machine().projects.map((project) => project.id)}>{(projectId) => {
+            const project = () => machine().projects.find((item) => item.id === projectId)!;
+            const sessions = () => projectSessions().filter((s) => s.projectId === projectId && !s.archivedAt);
+            const archivedSessions = () => projectSessions().filter((s) => s.projectId === projectId && !!s.archivedAt);
+            const collapsed = () => collapsedProjects().has(projectId);
+            const projectMenuId = `project-menu-${projectId}`;
+            return <Collapsible as="section" class="project-group" open={!collapsed()} onOpenChange={(open) => setProjectCollapsed(projectId, !open)}>
               <div class="project-heading group flex min-h-36 items-center rounded-8 hover:bg-hover focus-within:bg-hover pointer-coarse:min-h-52">
-                <CollapsibleTrigger class="project-disclosure flex min-h-36 min-w-0 flex-1 items-center gap-7 rounded-8 border-0 bg-transparent px-8 text-left text-13 font-normal text-text-primary cursor-pointer pointer-coarse:min-h-44"><ChevronIcon class="size-12! transition-transform duration-150 group-data-[expanded]:rotate-90" /><FolderIcon /><span class="block overflow-hidden text-ellipsis whitespace-nowrap">{project.name}</span></CollapsibleTrigger>
-                <IconButton class="row-create-action ml-auto size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" tooltipPlacement="end" label={`New session in ${project.name}`} busy={creatingSessionProjectId() === project.id} disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(project.id)}><PlusIcon /></IconButton>
-                <DropdownMenu open={projectMenu() === project.id} onOpenChange={(open) => setProjectMenu(open ? project.id : null)} placement="bottom-end">
-                  <DropdownMenuTrigger as={IconButton} class="project-menu-trigger size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" tooltipPlacement="end" label={`${project.name} actions`} disabled={readOnly()}><MoreIcon /></DropdownMenuTrigger>
-                  <DropdownMenuContent id={projectMenuId} aria-label={`${project.name} actions`} class="ui-menu">
-                    <DropdownMenuItem onSelect={() => { setProjectNameDraft(project.name); setRenamingProject(project.id); }}><RenameIcon />Rename project</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setImportingProject(project.id)}><ImportIcon />Import existing session</DropdownMenuItem>
-                    <DropdownMenuItem class="text-danger focus:text-danger" disabled={projectHasRunningSession(project.id)} title={projectHasRunningSession(project.id) ? 'Close the running sessions in this project first' : undefined} onSelect={() => setArchiveCandidate(project.id)}><ArchiveIcon />Archive project</DropdownMenuItem>
+                <CollapsibleTrigger class="project-disclosure flex min-h-36 min-w-0 flex-1 items-center gap-7 rounded-8 border-0 bg-transparent px-8 text-left text-13 font-normal text-text-primary cursor-pointer pointer-coarse:min-h-44"><ChevronIcon class="size-12! transition-transform duration-150 group-data-[expanded]:rotate-90" /><FolderIcon /><span class="block overflow-hidden text-ellipsis whitespace-nowrap">{project().name}</span></CollapsibleTrigger>
+                <IconButton class="row-create-action ml-auto size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" tooltipPlacement="end" label={`New session in ${project().name}`} busy={creatingSessionProjectId() === projectId} disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(projectId)}><PlusIcon /></IconButton>
+                <DropdownMenu open={projectMenu() === projectId} onOpenChange={(open) => setProjectMenu(open ? projectId : null)} placement="bottom-end">
+                  <DropdownMenuTrigger as={IconButton} class="project-menu-trigger size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" tooltipPlacement="end" label={`${project().name} actions`} disabled={readOnly()}><MoreIcon /></DropdownMenuTrigger>
+                  <DropdownMenuContent id={projectMenuId} aria-label={`${project().name} actions`} class="ui-menu">
+                    <DropdownMenuItem onSelect={() => { setProjectNameDraft(project().name); setRenamingProject(projectId); }}><RenameIcon />Rename project</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setImportingProject(projectId)}><ImportIcon />Import existing session</DropdownMenuItem>
+                    <DropdownMenuItem class="text-danger focus:text-danger" disabled={projectHasRunningSession(projectId)} title={projectHasRunningSession(projectId) ? 'Close the running sessions in this project first' : undefined} onSelect={() => setArchiveCandidate(projectId)}><ArchiveIcon />Archive project</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <CollapsibleContent id={`project-sessions-${project.id}`} class="session-list flex flex-col pl-16 border-l border-divider">
-                <For each={sessions()} fallback={<Button busy={creatingSessionProjectId() === project.id} disabled={readOnly() || !!creatingSessionProjectId()} class="session-empty mx-8 cursor-pointer rounded-8 p-8 text-left text-12 text-text-muted hover:bg-hover hover:text-text-secondary" onClick={() => createProjectSession(project.id)}>Start your first conversation</Button>}>
+              <CollapsibleContent id={`project-sessions-${projectId}`} class="session-list flex flex-col pl-16 border-l border-divider">
+                <For each={sessions()} fallback={<Button busy={creatingSessionProjectId() === projectId} disabled={readOnly() || !!creatingSessionProjectId()} class="session-empty mx-8 cursor-pointer rounded-8 p-8 text-left text-12 text-text-muted hover:bg-hover hover:text-text-secondary" onClick={() => createProjectSession(projectId)}>Start your first conversation</Button>}>
                   {(session) => {
                     const selected = () => selectedSessionId() === session.id;
                     const state = () => runtimeState({
@@ -207,14 +195,14 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                       renameOpen={editing() === session.id}
                       menuOpen={sessionMenu() === session.id}
                       runtimeActive={sessionHasRunningRuntime(session)}
-                      replacementBusy={creatingSessionProjectId() === project.id}
+                      replacementBusy={creatingSessionProjectId() === projectId}
                       onNavigate={() => props.onNavigate?.()}
                       onOpen={(sessionId, onCommitted) => { navigateProjectSession(sessionId, { onCommitted }); }}
                       onSelectRuntime={(sessionId) => { navigateProjectSession(sessionId); }}
                       onRenameOpenChange={(open) => setEditing(open ? session.id : null)}
                       onMenuOpenChange={(open) => setSessionMenu(open ? session.id : null)}
                       onRename={renameProjectSession}
-                      onCreateReplacement={(title) => { createProjectSession(project.id, title); }}
+                      onCreateReplacement={(title) => { createProjectSession(projectId, title); }}
                       onArchiveRequest={setArchiveSessionCandidate}
                     />;
                   }}
@@ -224,9 +212,9 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                     toggleClass="archived-sessions__toggle flex w-full min-h-34 cursor-pointer items-center gap-6 mt-4 rounded-8 border-0 bg-transparent px-8 text-left text-11 text-text-muted hover:bg-hover hover:text-text-secondary pointer-coarse:min-h-44"
                     label="Archived sessions"
                     count={archivedSessions().length}
-                    open={archivedSessionsOpen().has(project.id)}
-                    onOpenChange={(open) => setArchivedSessionsExpanded(project.id, open)}
-                    listId={`archived-sessions-${project.id}`}
+                    open={archivedSessionsOpen().has(projectId)}
+                    onOpenChange={(open) => setArchivedSessionsExpanded(projectId, open)}
+                    listId={`archived-sessions-${projectId}`}
                     listClass="archived-session-list flex flex-col gap-2 pt-2 pr-3 pb-5 pl-16"
                   >
                     <For each={archivedSessions()}>{(session) => <div class="archived-session-row flex min-h-42 items-center gap-8 rounded-8 py-3 pr-4 pl-8 hover:bg-hover"><span class="flex min-w-0 flex-1 flex-col gap-2"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12 font-550">{sessionDisplayTitle(session.title, session.acpSessionId || session.id)}</strong><small class="text-10 text-text-muted">{session.lifecycle === 'ready' ? 'Session saved' : session.lifecycle}</small></span><Button size="compact" class="min-h-30! px-8! text-11! pointer-coarse:min-h-44!" busy={sessionLifecycleBusy() === session.id} disabled={readOnly() || !!sessionLifecycleBusy()} onClick={() => runConfirmedMutation(() => setSessionLifecycleBusy(session.id), () => setSessionLifecycleBusy(null), (committed, failed) => restoreProjectSession(session.id, committed, failed), () => {})}>Restore</Button></div>}</For>
@@ -235,7 +223,8 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
               </CollapsibleContent>
             </Collapsible>;
               }}</For>
-            </section>}</For>
+            </section>;
+            }}</For>
           </Show>
         </Show>
       </div>

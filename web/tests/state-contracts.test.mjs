@@ -272,7 +272,7 @@ test('all empty-session creation entry points share one store-level single-fligh
   const launchWorkspace = readFileSync(join(root, 'panel', 'components', 'LaunchWorkspace.tsx'), 'utf8');
   assert.match(activation, /this\.deps\.creatingProjectId\(\)/);
   assert.match(activation, /this\.deps\.setCreatingProjectId\(projectId\)/);
-  assert.match(sidebar, /busy=\{creatingSessionProjectId\(\) === project\.id\}/);
+  assert.match(sidebar, /busy=\{creatingSessionProjectId\(\) === projectId\}/);
   assert.match(launchWorkspace, /busy=\{creatingSessionProjectId\(\) === activeProjects\(\)\[0\]\.id\}/);
 });
 
