@@ -71,8 +71,10 @@ bunx wrangler deploy
 
 ## 相关
 
-- 规范：[`MCPP.md`](../../../MCPP.md)（第 3.7–3.7.1 monorepo 聚合与 Server Catalog、3.1 承载、3.4 skills 双通道）
+- 规范入口：[`MCPP/index.md`](../../../MCPP/index.md)
+- 插件承载与 Skills 双通道：[Agent Plugin](../../../MCPP/agent-plugin.md)
+- monorepo 聚合与 Server Catalog：[MCP Mono Server](../../../MCPP/mcp-mono-server.md)
 - 规范包：`@peri-code/mcpp`（`packages/mcpp`，`createGateway` 实现）
 - 承载约定：[agent-plugins.org](https://agent-plugins.org/plugin-authors/manifest)（manifest 规范）
 
-[MCPP 3.7]: ../../../MCPP.md
+[MCPP 3.7]: ../../../MCPP/mcp-mono-server.md

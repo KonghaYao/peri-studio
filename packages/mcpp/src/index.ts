@@ -1,12 +1,12 @@
 /**
  * @peri-code/mcpp —— MCPP (MCP Plus) 规范行为的参考实现（Server 侧）。
  *
- * 对应 MCPP 规范（仓库根 MCPP.md）：
- *  - skills：resource 挂载、skill:// URI、frontmatter、digest（第 5 章）
- *  - agents：agent.md 校验与 agent:// Resource 挂载（5.10）
- *  - server：双模式启动（3.1 承载）
- *  - gateway：monorepo 多 server 聚合 HTTP 路径路由（3.7）
- *  - plugin：plugin.json / mcp.json 校验（3.2 / 3.3）
+ * 对应 MCPP 规范文档库（MCPP/）：
+ *  - skills：resource 挂载、skill:// URI、frontmatter、digest（mcp-skills.md）
+ *  - agents：agent.md 校验与 agent:// Resource 挂载（mcp-skills.md）
+ *  - server：双模式启动（agent-plugin.md）
+ *  - gateway：monorepo 多 server 聚合 HTTP 路径路由（mcp-mono-server.md）
+ *  - plugin：plugin.json / mcp.json 校验（agent-plugin.md）
  */
 export * from "./cache.ts";
 export * from "./types.ts";

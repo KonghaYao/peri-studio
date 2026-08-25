@@ -26,7 +26,7 @@ MCPP（MCP Plus）的 Server 侧 TypeScript 参考实现。该包基于 MCP SDK�
 - **Serverless 路由**：提供标准 `fetch(Request): Promise<Response>` handler，可嵌入 Worker 或其他 Web Standard 运行时。
 - **插件清单校验**：使用 Zod 校验 Agent Plugin 的 `plugin.json` 与 `mcp.json`。
 
-完整规范见仓库根目录的 [`MCPP.md`](../../MCPP.md)。
+完整规范见 [`MCPP/index.md`](../../MCPP/index.md)。相关主题包括 [Agent Plugin](../../MCPP/agent-plugin.md)、[MCP Mono Server](../../MCPP/mcp-mono-server.md)、[MCP Channel](../../MCPP/mcp-channel.md) 和 [Channel SDK 接口](../../MCPP/channel-sdk.md)。
 
 ## 运行要求
 
