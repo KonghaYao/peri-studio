@@ -1,1 +1,0 @@
-/tmp/mcpp-demo-outside.sh
