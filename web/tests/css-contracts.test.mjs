@@ -142,9 +142,12 @@ test('MessageList delegates entry semantics through stable entry-id slots to one
 test('the permission surface exposes a queue and never resolves an empty identity', () => {
   const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
   const messageList = readFileSync(join(components, 'MessageList.tsx'), 'utf8');
+  const chatView = readFileSync(join(components, 'ChatView.tsx'), 'utf8');
   const queue = readFileSync(join(components, 'PermissionQueue.tsx'), 'utf8');
   const card = readFileSync(join(components, 'PermissionRequestCard.tsx'), 'utf8');
-  assert.match(messageList, /<PermissionQueue/);
+  assert.doesNotMatch(messageList, /<PermissionQueue/);
+  assert.match(chatView, /<PermissionQueue/);
+  assert.ok(chatView.indexOf('<PermissionQueue') < chatView.indexOf('<Composer />'));
   assert.doesNotMatch(messageList, /permissions\(\)\[0\]/);
   assert.match(queue, /if \(id\) props\.onResolve\(id, decision, optionId\)/);
   assert.match(card, /disabled=\{props\.readOnly \|\| locked\(\) \|\| !allowActionable\(\)\}/);
@@ -253,7 +256,8 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
   assert.doesNotMatch(composer, />\s*上下文：/);
   assert.doesNotMatch(composer, /focus-within:border-focus-ring/);
   assert.doesNotMatch(composer, /has-\[\.composer-input:focus-visible\]:shadow-/);
-  assert.match(composer, /composer-toolbar flex min-h-44 items-center/);
+  assert.match(composer, /composer-toolbar flex min-h-38 items-center/);
+  assert.match(composer, /rounded-\(--composer-radius\)/);
   assert.match(base, /:focus-visible\s*\{\s*outline:\s*2px solid var\(--focus-ring\)/);
 });
 

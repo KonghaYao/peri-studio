@@ -3,12 +3,10 @@ import { ProjectSidebar } from './ProjectSidebar';
 import { ChatView } from './ChatView';
 import { compactViewportQuery, mediumViewportQuery } from '../lib/breakpoints';
 import { ProjectDrawer } from './shared/ProjectDrawer';
-import { SettingsDialog } from './SettingsDialog';
 import { ResourceWorkbench, type ResourcePreviewOrigin, type WorkbenchView } from './ResourceWorkbench';
 import { closeResourceDiffPreview, closeResourceFilePreview, resourceDiffPreview, resourceFilePreview } from '../store';
 import { ResourceDiffEditor } from './ResourceDiffEditor';
 import { ResourceFileEditor } from './ResourceFileEditor';
-import { WorkbenchStatusBar } from './WorkbenchStatusBar';
 
 const SIDEBAR_MIN_WIDTH = 220;
 const SIDEBAR_MAX_WIDTH = 480;
@@ -19,11 +17,10 @@ function clampSidebarWidth(width: number) {
   return Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, width));
 }
 
-export function AppShell() {
+export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
   const [open, setOpen] = createSignal(false);
-  const [systemOpen, setSystemOpen] = createSignal(false);
   const [resourcesOpen, setResourcesOpen] = createSignal(false);
-  const [resourceView, setResourceView] = createSignal<WorkbenchView>('explorer');
+  const [resourceView, setResourceView] = createSignal<WorkbenchView>(props.initialResourceView ?? null);
   const [mobile, setMobile] = createSignal(false);
   const [medium, setMedium] = createSignal(false);
   const [sidebarWidth, setSidebarWidth] = createSignal(SIDEBAR_DEFAULT_WIDTH);
@@ -33,6 +30,7 @@ export function AppShell() {
   let main: HTMLElement | undefined;
   let resourceFocusOrigin: ResourcePreviewOrigin | null = null;
   let restoreResourceFocus = false;
+  let resourceViewBeforePreview: Exclude<WorkbenchView, null> | null = null;
 
   const setClampedSidebarWidth = (width: number) => setSidebarWidth(clampSidebarWidth(width));
   const stopSidebarResize = () => {
@@ -85,11 +83,12 @@ export function AppShell() {
     setSidebarIntent({ kind, projectId, nonce: Date.now() });
     if (mobile()) openDrawer();
   };
-  const openResources = () => {
+  const openWorkbench = (view: Exclude<WorkbenchView, null>) => {
     setOpen(false);
-    setResourceView('explorer');
+    setResourceView(view);
     if (mobile()) setResourcesOpen(true);
   };
+  const openResources = () => openWorkbench('explorer');
   const focusPreviewEditor = () => {
     main?.querySelector<HTMLElement>('[data-resource-preview-focus]')?.focus();
   };
@@ -139,16 +138,31 @@ export function AppShell() {
   createEffect(() => {
     if (mobile() && (resourceFilePreview() || resourceDiffPreview())) setResourcesOpen(false);
   });
+  createEffect(() => {
+    if (mobile()) return;
+    const previewOpen = !!(resourceFilePreview() || resourceDiffPreview());
+    const currentView = resourceView();
+    if (previewOpen && currentView) {
+      resourceViewBeforePreview = currentView;
+      setResourceView(null);
+      return;
+    }
+    if (!previewOpen && !currentView && resourceViewBeforePreview) {
+      const restore = resourceViewBeforePreview;
+      resourceViewBeforePreview = null;
+      setResourceView(restore);
+    }
+  });
   const sidebarGridTemplate = () => mobile()
     ? 'minmax(0, 1fr)'
     : `${sidebarWidth()}px auto minmax(0, 1fr)`;
 
   return (
-    <div class="app-shell relative grid h-dvh grid-rows-[minmax(0,1fr)_22px] overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide pointer-coarse:grid-rows-[minmax(0,1fr)_44px]" style={{ 'grid-template-columns': sidebarGridTemplate() }}>
+    <div class="app-shell relative grid h-dvh grid-rows-[minmax(0,1fr)] overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide" style={{ 'grid-template-columns': sidebarGridTemplate() }}>
       <ProjectDrawer ref={(element) => { drawer = element; }} open={open()} modal={mobile()} onOpenChange={setOpen}>
         <ProjectSidebar
           onNavigate={() => setOpen(false)}
-          onOpenSystem={() => setSystemOpen(true)}
+          onOpenSystem={() => openWorkbench('machines')}
           intent={sidebarIntent()}
         />
       </ProjectDrawer>
@@ -168,7 +182,7 @@ export function AppShell() {
       ><span aria-hidden="true" class="absolute top-0 bottom-0 left-5 w-2 rounded-full bg-transparent transition-colors group-hover:bg-accent group-focus-visible:bg-accent" /></div>
       <ResourceWorkbench
         compact={mobile()}
-        overlay={medium() && !mobile()}
+        autoCollapse={medium() && !mobile()}
         open={resourcesOpen()}
         onOpenChange={setResourcesOpen}
         view={resourceView()}
@@ -178,14 +192,12 @@ export function AppShell() {
         onCompactCloseAutoFocus={overrideDialogFocusRestore}
       />
       <main ref={main} class="conversation-pane min-w-0 min-h-0 overflow-hidden">
-        <Show when={resourceFilePreview()} fallback={<Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenSystem={() => setSystemOpen(true)} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
+        <Show when={resourceFilePreview()} fallback={<Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenSystem={() => openWorkbench('machines')} onOpenResources={openResources} onOpenMcp={() => openWorkbench('mcp')} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
           <ResourceDiffEditor onClose={() => closePreview('diff')} />
         </Show>}>
           <ResourceFileEditor onClose={() => closePreview('file')} />
         </Show>
       </main>
-      <WorkbenchStatusBar onOpenResources={openResources} />
-      <SettingsDialog open={systemOpen()} onClose={() => setSystemOpen(false)} />
     </div>
   );
 }

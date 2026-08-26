@@ -1,4 +1,4 @@
-import { render, screen } from '@solidjs/testing-library';
+import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { describe, expect, it } from 'vitest';
 import { observedDuration, ToolCallCard } from './ToolCallCard';
 
@@ -20,9 +20,11 @@ describe('ToolCallCard', () => {
     expect(screen.getByRole('button', { name: 'Copy Output' })).toBeInTheDocument();
   });
 
-  it('opens public errors without rendering payload markup as HTML', () => {
+  it('keeps public errors compact until requested and never renders payload markup as HTML', () => {
     render(() => <ToolCallCard toolCall={{ ...base, status: 'error', result: null, publicError: { code: 'DENIED', message: '<img src=x onerror=alert(1)>' } }} />);
     expect(screen.getByText('Failed')).toBeInTheDocument();
+    expect(document.querySelector('details')?.open).toBe(false);
+    fireEvent.click(document.querySelector('summary')!);
     expect(screen.getByText(/<img src=x onerror=alert\(1\)>/)).toBeInTheDocument();
     expect(document.querySelector('img')).toBeNull();
     expect(document.querySelector('details')?.open).toBe(true);

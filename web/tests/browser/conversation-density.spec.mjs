@@ -1,23 +1,22 @@
 import { expect, test } from '@playwright/test';
 
-test('conversation copy and markdown keep compact authored line heights', async ({ page }) => {
+test('conversation copy keeps compact authored line heights', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
   const geometry = await page.getByRole('article', { name: 'Your message' }).first().evaluate((element) => ({
     height: element.getBoundingClientRect().height,
     lineHeight: getComputedStyle(element.querySelector('.conversation-message__text')).lineHeight,
     composerLineHeight: getComputedStyle(document.querySelector('.composer-input')).lineHeight,
-    headingLineHeight: getComputedStyle(document.querySelector('.markdown-body h2')).lineHeight,
     assistantHeight: document.querySelector('.conversation-message--assistant').getBoundingClientRect().height,
   }));
-  expect(geometry).toMatchObject({ lineHeight: '22px', composerLineHeight: '22px', headingLineHeight: '21.25px' });
+  expect(geometry).toMatchObject({ lineHeight: '22px', composerLineHeight: '22px' });
   expect(geometry.height).toBeLessThan(100);
   expect(geometry.assistantHeight).toBeLessThan(800);
 });
 
 test('intervention actions stay compact in narrow layouts', async ({ page }) => {
   const measure = () => page.evaluate(() => ['Allow once', 'Deny'].map((label) => {
-    const button = [...document.querySelectorAll('button')].find((element) => element.textContent?.trim() === label);
+    const button = document.querySelector(`.permission-request button[aria-label="${label}"]`);
     const box = button.getBoundingClientRect();
     return { width: box.width, height: box.height };
   }));

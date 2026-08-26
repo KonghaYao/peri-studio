@@ -3,20 +3,24 @@ import { Dialog, DialogContent, DialogTitle, Icon, IconButton } from '../../comp
 import { activateResourceProject, projectSessions, projects, refreshResourceProject, resourceWorkspace, selectedSessionId } from '../store';
 import { ExplorerPanel } from './ExplorerPanel';
 import { SourceControlPanel } from './SourceControlPanel';
+import { McpPanelContent } from './McpPanel';
+import { MachinePanel } from './MachinePanel';
 
-export type WorkbenchView = 'explorer' | 'scm' | null;
+export type WorkbenchView = 'explorer' | 'scm' | 'mcp' | 'machines' | null;
 export type ResourcePreviewOrigin = {
-  view: Exclude<WorkbenchView, null>;
+  view: 'explorer' | 'scm';
   key: string;
 };
 function FilesIcon() { return <Icon><path d="M4 3h8l4 4v10H4z" /><path d="M12 3v4h4M7 10h6M7 13h6" /></Icon>; }
 function GitIcon() { return <Icon><circle cx="5" cy="4" r="1.5" /><circle cx="5" cy="16" r="1.5" /><circle cx="15" cy="7" r="1.5" /><path d="M5 5.5v9M6.5 13c5 0 8.5-1.5 8.5-4.5" /></Icon>; }
+function McpIcon() { return <Icon><path d="M7 4v4M13 4v4M5 8h10v2a5 5 0 0 1-10 0zM10 15v3" /></Icon>; }
+function MachinesIcon() { return <Icon><rect x="3.5" y="4" width="13" height="5" rx="1.5" /><rect x="3.5" y="11" width="13" height="5" rx="1.5" /><path d="M6.5 6.5h.01M6.5 13.5h.01M9 6.5h4M9 13.5h4" /></Icon>; }
 function RefreshIcon() { return <Icon size="small"><path d="M15.5 7A6 6 0 0 0 5 5.5L3.5 7M4.5 13A6 6 0 0 0 15 14.5l1.5-1.5" /><path d="M3.5 3.5V7h3.5M16.5 16.5V13H13" /></Icon>; }
 function CloseIcon() { return <Icon size="small"><path d="m5 5 10 10M15 5 5 15" /></Icon>; }
 
 type ResourceWorkbenchProps = {
   compact?: boolean;
-  overlay?: boolean;
+  autoCollapse?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   view?: WorkbenchView;
@@ -39,7 +43,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
     if (props.view === undefined) setLocalView(resolved);
     props.onViewChange?.(resolved);
   };
-  let wasOverlay = false;
+  let wasAutoCollapsed = false;
   const project = createMemo(() => {
     const session = projectSessions().find((item) => item.id === selectedSessionId());
     return projects().find((item) => item.id === session?.projectId && !item.archivedAt)
@@ -88,7 +92,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   });
   createEffect(() => {
     const selected = project();
-    if (selected && view() && (!props.compact || props.open)) {
+    if (selected && (view() === 'explorer' || view() === 'scm') && (!props.compact || props.open)) {
       untrack(() => activateResourceProject(selected.id));
     }
   });
@@ -96,35 +100,42 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
     if (props.compact && props.open && !view()) setView('explorer');
   });
   createEffect(() => {
-    const overlay = !!props.overlay;
-    if (overlay && !wasOverlay) setView(null);
-    if (!overlay && wasOverlay && !view()) setView('explorer');
-    wasOverlay = overlay;
+    const autoCollapse = !!props.autoCollapse;
+    if (autoCollapse && !wasAutoCollapsed) setView(null);
+    if (!autoCollapse && wasAutoCollapsed && !view()) setView('explorer');
+    wasAutoCollapsed = autoCollapse;
   });
   const toggle = (next: Exclude<WorkbenchView, null>) => {
     if (props.compact) setView(next);
     else setView((current) => current === next ? null : next);
   };
   const close = () => props.compact ? props.onOpenChange?.(false) : setView(null);
-  const surface = () => <aside class={`resource-workbench flex h-full min-h-0 border-l border-r border-divider bg-sidebar-bg ${props.compact ? 'absolute inset-0 w-full' : view() ? 'relative w-[46px] wide:w-[310px]' : 'relative w-[46px]'}`} aria-label="Workspace resources">
+  const panelTitle = () => view() === 'mcp' ? 'MCP' : view() === 'machines' ? 'Machines' : project()?.name ?? 'Workspace';
+  const surface = () => <aside class={`resource-workbench flex h-full min-h-0 border-l border-r border-divider bg-sidebar-bg ${props.compact ? 'absolute inset-0 w-full' : 'relative w-[46px] shrink-0'}`} aria-label="Workspace resources">
     <nav class="flex w-46 shrink-0 flex-col items-center border-r border-divider py-7" aria-label="Resource views">
       <ActivityButton label="Explorer" active={view() === 'explorer'} onClick={() => toggle('explorer')}><FilesIcon /></ActivityButton>
       <ActivityButton label="Source Control" active={view() === 'scm'} badge={resourceWorkspace().repositories.reduce((sum, repo) => sum + Object.values(repo.groups).reduce((count, group) => count + group.count, 0), 0)} onClick={() => toggle('scm')}><GitIcon /></ActivityButton>
+      <ActivityButton label="MCP" active={view() === 'mcp'} onClick={() => toggle('mcp')}><McpIcon /></ActivityButton>
+      <ActivityButton label="Machines" active={view() === 'machines'} onClick={() => toggle('machines')}><MachinesIcon /></ActivityButton>
     </nav>
     <Show when={view()}>
-      <div class={`flex min-h-0 min-w-0 flex-1 flex-col bg-sidebar-bg ${props.compact ? '' : 'desk:max-wide:absolute desk:max-wide:inset-y-0 desk:max-wide:left-46 desk:max-wide:z-30 desk:max-wide:w-[264px] desk:max-wide:border-r desk:max-wide:border-divider desk:max-wide:shadow-popover'}`}>
+      <div class={`resource-workbench__panel flex min-h-0 min-w-0 flex-1 flex-col bg-sidebar-bg ${props.compact ? '' : 'absolute inset-y-8 left-52 z-30 w-[264px] overflow-hidden rounded-14 border border-border-subtle shadow-popover wide:w-[310px]'}`}>
         <header class="flex h-40 shrink-0 items-center gap-5 border-b border-divider px-10">
-          <strong class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-11 font-650 uppercase tracking-5 text-text-secondary">{project()?.name ?? 'Workspace'}</strong>
-          <IconButton label="Refresh resources" onClick={refreshResourceProject} class="size-26 min-h-26 border-0 bg-transparent text-text-muted pointer-coarse:size-44 pointer-coarse:min-h-44"><RefreshIcon /></IconButton>
+          <strong class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-11 font-650 uppercase tracking-5 text-text-secondary">{panelTitle()}</strong>
+          <Show when={view() === 'explorer' || view() === 'scm'}><IconButton label="Refresh resources" onClick={refreshResourceProject} class="size-26 min-h-26 border-0 bg-transparent text-text-muted pointer-coarse:size-44 pointer-coarse:min-h-44"><RefreshIcon /></IconButton></Show>
           <IconButton label="Close resource panel" onClick={close} class="size-26 min-h-26 border-0 bg-transparent text-text-muted pointer-coarse:size-44 pointer-coarse:min-h-44"><CloseIcon /></IconButton>
         </header>
-        <Show when={project()} fallback={<div class="p-14 text-12 text-text-muted">Select or create a project to browse its workspace.</div>}>
-          <Show when={resourceWorkspace().error}>{(message) => <div role="alert" class="m-8 flex items-start gap-6 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">
-            <span class="min-w-0 flex-1">{message()}</span>
-            <button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={refreshResourceProject}>Retry</button>
-          </div>}</Show>
-          <Show when={view() === 'explorer'}><ExplorerPanel expanded={explorerExpanded()} onExpandedChange={setExplorerExpanded} activePath={explorerActivePath()} onActivePathChange={setExplorerActivePath} scrollTop={explorerScrollTop()} onScrollTopChange={(scrollTop) => { if (!props.compact || props.open) setExplorerScrollTop(scrollTop); }} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'explorer', key })} /></Show>
-          <Show when={view() === 'scm'}><SourceControlPanel commitMessages={visibleCommitMessages()} onCommitMessageChange={setCommitMessage} onCommitSubmitted={recordSubmittedCommit} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'scm', key })} /></Show>
+        <Show when={view() === 'mcp'}><McpPanelContent embedded /></Show>
+        <Show when={view() === 'machines'}><MachinePanel /></Show>
+        <Show when={view() === 'explorer' || view() === 'scm'}>
+          <Show when={project()} fallback={<div class="p-14 text-12 text-text-muted">Select or create a project to browse its workspace.</div>}>
+            <Show when={resourceWorkspace().error}>{(message) => <div role="alert" class="m-8 flex items-start gap-6 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">
+              <span class="min-w-0 flex-1">{message()}</span>
+              <button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={refreshResourceProject}>Retry</button>
+            </div>}</Show>
+            <Show when={view() === 'explorer'}><ExplorerPanel expanded={explorerExpanded()} onExpandedChange={setExplorerExpanded} activePath={explorerActivePath()} onActivePathChange={setExplorerActivePath} scrollTop={explorerScrollTop()} onScrollTopChange={(scrollTop) => { if (!props.compact || props.open) setExplorerScrollTop(scrollTop); }} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'explorer', key })} /></Show>
+            <Show when={view() === 'scm'}><SourceControlPanel commitMessages={visibleCommitMessages()} onCommitMessageChange={setCommitMessage} onCommitSubmitted={recordSubmittedCommit} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'scm', key })} /></Show>
+          </Show>
         </Show>
       </div>
     </Show>
@@ -132,7 +143,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   return <Show when={props.compact} fallback={surface()}>
     <Dialog open={!!props.open} onOpenChange={(open) => props.onOpenChange?.(open)}>
       <DialogContent
-        class="top-0 right-0 bottom-22 left-auto h-auto max-h-none w-[min(92vw,360px)] translate-x-0 translate-y-0 overflow-hidden rounded-none border-y-0 border-r-0 p-0 pointer-coarse:bottom-44"
+        class="top-0 right-0 bottom-0 left-auto h-auto max-h-none w-[min(92vw,360px)] translate-x-0 translate-y-0 overflow-hidden rounded-none border-y-0 border-r-0 p-0"
         onOpenAutoFocus={props.onCompactOpenAutoFocus}
         onCloseAutoFocus={props.onCompactCloseAutoFocus}
       >

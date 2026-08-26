@@ -1,4 +1,4 @@
-import { createEffect, For, Show } from 'solid-js';
+import { createEffect, For, onCleanup, Show } from 'solid-js';
 import { Badge, Button, Dialog, DialogContent, DialogTitle, EmptyState, InlineNotice, LoadingState } from '../../components/ui';
 import { readOnly } from '../lib/auth-state';
 import {
@@ -14,28 +14,33 @@ import {
 } from '../lib/mcp';
 
 export function McpPanel(props: { open: boolean; onClose: () => void }) {
+  return <Dialog open={props.open} onOpenChange={(open) => { if (!open) props.onClose(); }}><DialogContent size="mcp"><DialogTitle class="sr-only">MCP connections</DialogTitle>
+    <McpPanelContent />
+  </DialogContent></Dialog>;
+}
+
+export function McpPanelContent(props: { embedded?: boolean } = {}) {
   createEffect(() => {
-    if (props.open) refreshMcpServers();
-    else clearMcpAuthorization();
+    refreshMcpServers();
   });
+  onCleanup(clearMcpAuthorization);
   const flowFor = (flowId?: string) => flowId ? mcpOAuthEvents()[flowId] : undefined;
   const connectionLabel = (status: string) => ({ connected: 'Connected', failed: 'Connection failed', disconnected: 'Disconnected', disabled: 'Disabled', uninitialized: 'Uninitialized' }[status] || status);
 
-  return <Dialog open={props.open} onOpenChange={(open) => { if (!open) props.onClose(); }}><DialogContent size="mcp"><DialogTitle class="sr-only">MCP connections</DialogTitle>
-    <section class="w-[min(620px,calc(100vw-40px))] max-h-[min(76dvh,680px)] overflow-auto p-22 max-[640px]:w-[calc(100vw-24px)] max-[640px]:p-17" aria-labelledby="mcp-panel-title">
+  return <section class={props.embedded ? 'ui-scrollbar min-h-0 flex-1 overflow-auto p-10' : 'w-[min(620px,calc(100vw-40px))] max-h-[min(76dvh,680px)] overflow-auto p-22 max-[640px]:w-[calc(100vw-24px)] max-[640px]:p-17'} aria-labelledby="mcp-panel-title">
       <div class="flex items-start justify-between gap-20 max-[640px]:gap-10">
-        <div><h2 id="mcp-panel-title" class="m-0 text-text-primary text-[19px] tracking-[-.02em]">MCP connections</h2><p class="mt-5 mb-0 text-text-secondary text-13 leading-[1.5]">View the MCP services of the current Peri runtime and complete authorization as needed.</p></div>
+        <div><h2 id="mcp-panel-title" class={`m-0 text-text-primary tracking-[-.02em] ${props.embedded ? 'text-13' : 'text-[19px]'}`}>MCP connections</h2><Show when={!props.embedded}><p class="mt-5 mb-0 text-text-secondary text-13 leading-[1.5]">View the MCP services of the current Peri runtime and complete authorization as needed.</p></Show></div>
         <Button size="compact" busy={mcpLoading()} class="min-w-58 shrink-0 whitespace-nowrap max-[640px]:min-h-44" onClick={refreshMcpServers}>Refresh</Button>
       </div>
       <Show when={mcpServers().length} fallback={<Show when={mcpLoading()} fallback={<EmptyState title="No MCP servers" description="The current runtime has no MCP servers to manage." />}><LoadingState class="mt-20" label="Reading MCP servers" description="Reading Peri’s secure connection snapshot…" /></Show>}>
-        <div class="mt-20 grid gap-10">
+        <div class={`${props.embedded ? 'mt-10 gap-7' : 'mt-20 gap-10'} grid`}>
           <For each={mcpServers()}>{(server) => {
             const flow = () => flowFor(server.activeFlowId);
             const exactAuthorization = () => {
               const grant = mcpAuthorization();
               return grant && grant.flowId === server.activeFlowId ? grant : null;
             };
-            return <article class="rounded-14 border border-divider bg-surface-muted p-15">
+            return <article class={`rounded-12 border border-divider bg-surface ${props.embedded ? 'p-10' : 'p-15'}`}>
               <div class="flex items-start justify-between gap-12">
                 <div class="grid min-w-0 gap-2"><strong class="overflow-hidden text-text-primary text-14 text-ellipsis whitespace-nowrap">{server.name}</strong><span class="text-text-secondary text-12">{server.transport}</span></div>
                 <Badge tone={server.connectionStatus === 'connected' ? 'ok' : server.connectionStatus === 'failed' ? 'err' : 'neutral'}>{connectionLabel(server.connectionStatus)}</Badge>
@@ -61,6 +66,5 @@ export function McpPanel(props: { open: boolean; onClose: () => void }) {
         </div>
       </Show>
       <Show when={readOnly()}><InlineNotice class="mt-16" tone="info">Read-only sign-in can view MCP status but cannot start, read or cancel authorizations.</InlineNotice></Show>
-    </section>
-  </DialogContent></Dialog>;
+    </section>;
 }

@@ -1,9 +1,7 @@
 // 可折叠详情面板（P4 公共组件）：details 折叠面板的结构契约。
 //
-// 收敛 AgentActivityRail / AgentPlanPanel / ToolCallCard 三处手写的
-// `details > summary（mark + copy + meta + chevron）+ body` 模板，防止
-// 样式镜像漂移。所有类名由调用方传入（feature 视觉保持在 feature CSS
-// 中），本组件只保证结构一致。
+// 承载 ToolCallCard 的 `details > summary + body` 结构契约。所有类名由
+// 调用方传入（feature 视觉保持在 feature CSS 中），本组件只保证语义结构。
 
 import type { JSX } from 'solid-js';
 
@@ -24,6 +22,8 @@ export interface CollapsibleSectionProps {
   meta?: JSX.Element;
   /** chevron 类名（旋转动画由 feature CSS 的 `[open]` 规则驱动）。 */
   chevronClass: string;
+  /** 可选尾部图标；未提供时沿用原生展开箭头。 */
+  chevron?: JSX.Element;
   /** 展开后的内容。 */
   children: JSX.Element;
 }
@@ -35,7 +35,7 @@ export function CollapsibleSection(props: CollapsibleSectionProps) {
         {props.mark}
         {props.copy}
         {props.meta}
-        <span class={props.chevronClass} aria-hidden="true">›</span>
+        <span class={props.chevronClass} aria-hidden="true">{props.chevron ?? '›'}</span>
       </summary>
       {props.children}
     </details>

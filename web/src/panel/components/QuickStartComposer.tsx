@@ -1,4 +1,4 @@
-import { createEffect, createSignal, createUniqueId, For, Show } from 'solid-js';
+import { createEffect, createSignal, createUniqueId, Show } from 'solid-js';
 import { Button, Icon, IconButton, InlineNotice, Textarea } from '../../components/ui';
 import { createSessionWithFirstMessage, creatingSessionProjectId, retryQuickStart } from '../store';
 import { readOnly } from '../lib/auth-state';
@@ -10,7 +10,6 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
   const [draft, setDraft] = createSignal('');
   const statusId = `quick-start-status-${createUniqueId()}`;
   const budgetId = `quick-start-budget-${createUniqueId()}`;
-  const projectSelectId = `quick-start-project-${createUniqueId()}`;
   const [projectId, setProjectId] = createSignal(props.initialProjectId || props.projects[0]?.id || '');
   const pending = () => quickStartSubmission();
   const pendingIsInFlight = () => pending()?.phase === 'creating' || pending()?.phase === 'accepted';
@@ -29,16 +28,6 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
   };
 
   return <section class="quick-start quick-start--docked w-full text-left" aria-label="Start new session">
-    <div class="quick-start__context flex min-h-40 items-center gap-9 rounded-t-18 bg-surface-muted px-16 text-12 text-text-secondary">
-      <Icon class="size-17!"><path d="M3.5 6.5h5l1.5 2h6.5v7H3.5z" /><path d="M3.5 6.5v-2h5l1.5 2" /></Icon>
-      <Show when={props.projects.length > 1} fallback={<span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{project()?.name}</span>}>
-        <label class="sr-only" for={projectSelectId}>Save to project</label>
-        <select id={projectSelectId} aria-label="Save to project" class="quick-start__project h-30 min-w-0 appearance-auto border-0 bg-transparent pr-24 text-12 text-text-primary outline-none" value={projectId()} disabled={locked()} onChange={(event) => setProjectId(event.currentTarget.value)}>
-          <For each={props.projects}>{(item) => <option value={item.id} selected={item.id === projectId()}>{item.name}</option>}</For>
-        </select>
-      </Show>
-      <span class="ml-auto flex items-center gap-8 text-text-muted"><Icon class="size-16!"><path d="M4 5h12v8H4zM7 16h6M10 13v3" /></Icon>Local</span>
-    </div>
     <div class="quick-start__surface overflow-hidden border border-composer-border rounded-18 bg-surface shadow-composer-overlay focus-within:border-focus-ring focus-within:shadow-composer-overlay has-[.ui-textarea:focus-visible]:shadow-[var(--shadow-composer-overlay),0_0_0_1px_var(--surface),0_0_0_3px_var(--focus-ring)]" aria-busy={pendingIsInFlight() || undefined}>
       <Textarea
         autoResize
@@ -50,7 +39,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
           if (event.isComposing || event.keyCode === 229) return;
           if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); submit(); }
         }}
-        placeholder={project() ? `Ask ${project()!.name}…` : 'Type a message…'}
+        placeholder="Message Agent…"
         aria-label="First message"
         aria-describedby={[pendingNeedsAttention() ? statusId : '', promptOverBudget() ? budgetId : ''].filter(Boolean).join(' ') || undefined}
         variant="bare"

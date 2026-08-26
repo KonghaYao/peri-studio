@@ -15,10 +15,12 @@ import { composerDraft, setComposerDraft } from '../lib/composer-draft';
 import { acknowledgeUnknownMessageDelivery, blockUnknownMessageDelivery, failMessageDelivery, markMessageDeliveryUncertain, messageSubmission, reconcileMessageProjection, resetMessageDelivery, startMessageDelivery } from '../lib/message-delivery';
 import { markRuntimeControlUncertain, resetRuntimeControls, startRuntimeControl } from '../lib/runtime-control';
 import { Composer } from './Composer';
+import { requestComposerQuote, resetComposerQuoteRequest } from '../lib/composer-quote';
 
 const draftOwner = (sessionId = 'session-1') => ({ principalId: 'test-full', projectId: 'project-1', sessionId });
 
 function resetStore() {
+  resetComposerQuoteRequest();
   setSelectedCid(null);
   setSelectedSessionId(null);
   setOpeningSession(null);
@@ -61,6 +63,16 @@ function installPrediction(id = 'prediction:1:7', text = 'check failure test') {
 afterEach(resetStore);
 
 describe('Composer', () => {
+  it('adds a quoted answer to the current draft without replacing existing text', async () => {
+    selectReadyChat();
+    setComposerDraft(draftOwner(), 'My note');
+    render(() => <Composer />);
+
+    requestComposerQuote('First line\nSecond line', 'Peri');
+
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('My note\n\n> Peri\n> First line\n> Second line\n\n'));
+  });
+
   it('counts UTF-8 bytes against the negotiated prompt budget', () => {
     selectReadyChat();
     setPromptMaxBytes(5);

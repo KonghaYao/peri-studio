@@ -13,18 +13,17 @@ afterEach(() => {
 });
 
 describe('QuickStartComposer', () => {
-  it('keeps the first message while changing durable project ownership', () => {
+  it('uses the provided project without exposing folder or machine selectors', () => {
     installPrincipalRole('full');
-    render(() => <QuickStartComposer projects={[{ id: 'alpha', name: 'Alpha' }, { id: 'beta', name: 'Beta' }]} />);
+    render(() => <QuickStartComposer projects={[{ id: 'alpha', name: 'Alpha' }, { id: 'beta', name: 'Beta' }]} initialProjectId="beta" />);
 
     const message = screen.getByRole('textbox', { name: 'First message' });
-    const project = screen.getByRole('combobox', { name: 'Save to project' });
     fireEvent.input(message, { target: { value: 'Please review this project' } });
-    fireEvent.change(project, { target: { value: 'beta' } });
 
     expect(message).toHaveValue('Please review this project');
-    expect(project).toHaveValue('beta');
-    expect(message).toHaveAttribute('placeholder', 'Ask Beta…');
+    expect(screen.queryByRole('combobox', { name: 'Save to project' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Local')).not.toBeInTheDocument();
+    expect(message).toHaveAttribute('placeholder', 'Message Agent…');
   });
 
   it('falls back when the selected active project disappears before submit', async () => {
@@ -36,11 +35,10 @@ describe('QuickStartComposer', () => {
       return <QuickStartComposer projects={projects()} />;
     }
     render(() => <Harness />);
-    fireEvent.change(screen.getByRole('combobox', { name: 'Save to project' }), { target: { value: 'beta' } });
     setProjects([{ id: 'alpha', name: 'Alpha' }]);
 
     await waitFor(() => expect(screen.queryByRole('combobox', { name: 'Save to project' })).not.toBeInTheDocument());
-    expect(screen.getByRole('textbox', { name: 'First message' })).toHaveAttribute('placeholder', 'Ask Alpha…');
+    expect(screen.getByRole('textbox', { name: 'First message' })).toHaveAttribute('placeholder', 'Message Agent…');
   });
 
   it('announces creation as busy without constructing a local session or message', () => {

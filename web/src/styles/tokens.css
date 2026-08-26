@@ -10,47 +10,47 @@
   --app-bg: #ffffff;
   --sidebar-bg: #ffffff;
   --surface: #ffffff;
-  --surface-muted: #fcfcfb;
-  --empty-mark-bg: #fbfbfa;
+  --surface-muted: #fbfcfb;
+  --empty-mark-bg: #fbfcfb;
   --empty-mark-fg: #30302e;
   --scrim: rgb(20 20 19 / 18%);
 
   /* Borders */
-  --border-subtle: #e9e9e6;
-  --border-strong: #cececa;
-  --divider: #eeeeeb;
+  --border-subtle: #ecefeb;
+  --border-strong: #d4dad6;
+  --divider: #f0f2f0;
   --danger-border: rgb(190 60 60 / 30%);
   --warning-border: rgb(146 93 23 / 32%);
-  --composer-border: #dbdbd7;
+  --composer-border: #e1e5e2;
 
   /* Text */
-  --text-primary: #1f1f1d;
-  --text-secondary: #5f5f5b;
-  --text-muted: #767671;
-  --text-faint: #b5b5af;
+  --text-primary: #202522;
+  --text-secondary: #5d6861;
+  --text-muted: #7f8983;
+  --text-faint: #b8c0bb;
   --link: #245b92;
   --link-decoration: rgb(36 91 146 / 28%);
 
   /* Interaction and feedback */
-  --accent: #2a2a27;
-  --hover: #f8f8f7;
-  --selected: #f5f6f5;
-  --focus-ring: #35698f;
-  --success: #25865a;
-  --success-soft: #f0f8f3;
-  --warning: #98601a;
-  --warning-strong: #70420e;
-  --warning-soft: #fff8e9;
-  --danger: #b83f3f;
-  --danger-soft: #fff3f2;
-  --btn-primary: #242422;
-  --btn-primary-hover: #0d0d0c;
+  --accent: #16865a;
+  --hover: #f6faf8;
+  --selected: #eff8f3;
+  --focus-ring: #2e7d5a;
+  --success: #16a36a;
+  --success-soft: #f3fbf7;
+  --warning: #d48816;
+  --warning-strong: #a76008;
+  --warning-soft: #fffaf0;
+  --danger: #d84b4b;
+  --danger-soft: #fffafa;
+  --btn-primary: var(--accent);
+  --btn-primary-hover: #11734c;
   --scrollbar-thumb: rgb(42 42 39 / 18%);
   --scrollbar-thumb-hover: rgb(42 42 39 / 34%);
 
   /* Elevation: use only for layers that leave the canvas. */
   --shadow-popover: 0 14px 34px rgb(25 25 24 / 10%), 0 2px 5px rgb(25 25 24 / 5%);
-  --shadow-float: 0 5px 16px rgb(25 25 24 / 5%), 0 1px 2px rgb(25 25 24 / 4%);
+  --shadow-float: 0 5px 18px rgb(35 55 43 / 4%), 0 1px 2px rgb(35 55 43 / 3%);
   --shadow-composer-overlay: 0 8px 24px rgb(25 25 24 / 7%), 0 1px 3px rgb(25 25 24 / 5%);
   --shadow-recovery: 0 4px 12px rgb(25 25 24 / 5%);
   /* Status halo rings: exact arbitrary-shadow equivalents used by
@@ -132,6 +132,17 @@
   --radius-16: 16px;
   --radius-18: 18px;
   --radius-full: 999px;
+
+  /* 组件几何：设计示例和生产模块共用同一组语义尺寸，避免 fixture 漂移。 */
+  --control-height-compact: 28px;
+  --control-height-default: 34px;
+  --pattern-row-height: 28px;
+  --tree-row-height: 24px;
+  --asset-tile-size: 68px;
+  --status-panel-max-height: 132px;
+  --composer-radius: 18px;
+  --decision-radius: 14px;
+  --tool-activity-max: 740px;
 
   /* Layout */
   --composer-max: 864px;

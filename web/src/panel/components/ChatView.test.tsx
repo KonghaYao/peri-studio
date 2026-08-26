@@ -13,20 +13,22 @@ const state = vi.hoisted(() => ({
   projects: vi.fn<() => ProjectInfo[]>(() => []),
   readOnly: vi.fn(() => false),
   refreshCurrentControlProjection: vi.fn(),
+  resolvePermission: vi.fn(),
   registryHydrated: vi.fn(() => true),
   respondElicitation: vi.fn(),
+  retryPersistentAction: vi.fn(),
   restoringSessionId: vi.fn(() => null as string | null),
   selectedSessionId: vi.fn(() => 'session-1' as string | null),
 }));
 
 vi.mock('../store', () => state);
 vi.mock('../lib/auth-state', () => ({ readOnly: state.readOnly }));
-vi.mock('./AgentActivityRail', () => ({ AgentActivityRail: () => null }));
-vi.mock('./AgentPlanPanel', () => ({ AgentPlanPanel: () => null }));
+vi.mock('./StatusArea', () => ({ StatusArea: () => null }));
 vi.mock('./ChatHeader', () => ({ ChatHeader: () => null }));
 vi.mock('./Composer', () => ({ Composer: () => null }));
 vi.mock('./ConnectionProblem', () => ({ ConnectionProblem: () => null }));
 vi.mock('./ElicitationQueue', () => ({ ElicitationQueue: () => <section aria-label="Agent question" /> }));
+vi.mock('./PermissionQueue', () => ({ PermissionQueue: () => <section aria-label="Permissions" /> }));
 vi.mock('./ErrorCenter', () => ({ ErrorCenter: () => null }));
 vi.mock('./MessageList', () => ({ MessageList: () => null }));
 vi.mock('./QuickStartComposer', () => ({ QuickStartComposer: () => <section aria-label="Start new session" class="quick-start quick-start--docked" /> }));
@@ -118,5 +120,6 @@ describe('ChatView feedback', () => {
     render(() => <ChatView />);
 
     expect(screen.queryByRole('region', { name: 'Agent question' })).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Permissions' })).toBeInTheDocument();
   });
 });

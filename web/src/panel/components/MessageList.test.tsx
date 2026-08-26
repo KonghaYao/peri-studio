@@ -271,7 +271,7 @@ describe('MessageList hydration', () => {
     expect(document.querySelector('.message-loading')).toBeNull();
   });
 
-  it('exposes every simultaneous permission request in one navigable queue', () => {
+  it('keeps pending permissions out of the transcript surface', () => {
     setRuntimeDocsState({ chat: true, control: true });
     setPermissions([
       { queueKey: 'p1', permissionId: 'p1', turnId: 't1', toolCallId: 'tool-1', title: 'Read file', description: null, options: ['allowOnce', 'deny'], status: 'pending', decision: null },
@@ -279,10 +279,9 @@ describe('MessageList hydration', () => {
     ]);
     render(() => <MessageList />);
 
-    expect(screen.getByLabelText('Pending permission requests, 2 total')).toBeInTheDocument();
-    expect(screen.getByText('Read file')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Next permission' }));
-    expect(screen.getByText('Run command')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Pending permission requests, 2 total')).not.toBeInTheDocument();
+    expect(screen.queryByText('Read file')).not.toBeInTheDocument();
+    expect(screen.queryByText('Run command')).not.toBeInTheDocument();
   });
 
   it('shows one provenance chapter boundary and one live-runtime transition', () => {

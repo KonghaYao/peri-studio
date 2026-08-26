@@ -1,45 +1,26 @@
-// 消息区：权限条 + 消息列表（自动吸底滚动）。
+// 消息区：消息列表（自动吸底滚动）。
 //
 // 由 ChatView 拆出（中间区三块之一）；气泡内 reasoning 在前、正文在后，
 // loading feedback uses the shared LoadingState primitive.
 //
 // F4（ui.md §四.6 / §3.8）：滚动区为 flex-1 + min-h-0 独立滚动，内部为
 // 居中正文列（max-w 820px，pt-6 / pb-6，底部 156px 留白随 F7 Composer
-// 悬浮再调）；PermissionBar 位于正文列顶部 sticky（top 12px）；消息按
-// role/状态呈现八类视觉。消息模型、顺序、Yjs 读取、自动吸底算法与
-// permission decision 值（allow/deny、按钮顺序）均不变。
+// 悬浮再调）；消息按 role/状态呈现八类视觉。消息模型、顺序、Yjs 读取、自动吸底算法与
+// permission decision 值（allow/deny、按钮顺序）由 Composer 上方的决策槽位承载。
 
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, type JSX } from 'solid-js';
-import { chatEntries, chatHead, elicitations, permissions, resolvePermission, retryMessageSubmission, retryPersistentAction, runtimeDocsHydrated, selectedCid } from '../store';
-import { readOnly } from '../lib/auth-state';
+import { chatEntries, chatHead, elicitations, permissions, retryMessageSubmission, runtimeDocsHydrated, selectedCid } from '../store';
 import { nextFollowState } from '../lib/message-follow.ts';
 import { messageTime } from '../lib/message-time.ts';
 import type { ChatEntry } from '../lib/chat-view';
 import { Button, EmptyState, LoadingState } from '../../components/ui';
-import { PermissionQueue } from './PermissionQueue';
 import { ConversationMessage } from './ConversationMessage';
-import { permissionDecisions } from '../lib/permission-delivery';
 import { acknowledgeUnknownMessageDelivery, acknowledgedMessageDeliveries, canAcknowledgeUnknownMessageDelivery, dismissFailedMessageDelivery, messageSubmissionForChat } from '../lib/message-delivery';
 import { MessageOutbox } from './MessageOutbox';
 import { replayBoundaryAt, type ReplayBoundary } from '../lib/replay-boundary';
 import { TranscriptWindow } from '../lib/transcript-window';
 import { visibleElicitations } from '../lib/elicitation-delivery';
 
-
-// ── 权限条 ──────────────────────────────────────────────────────────────
-
-// 位于正文列顶部 sticky（§3.8）：warning-soft 背景、1px 淡化 warning 边框、
-// 16px 圆角；「允许」深灰实心、「拒绝」outline/ghost，避免把安全决策设计
-// 成绿色诱导操作；不加阴影（§3.5 阴影只用于真正浮起的层级）。
-function PermissionBar() {
-  return <PermissionQueue
-    permissions={permissions()}
-    decisions={permissionDecisions()}
-    readOnly={readOnly()}
-    onResolve={resolvePermission}
-    onRetry={retryPersistentAction}
-  />;
-}
 
 function HistoryBoundary(props: { kind: Exclude<ReplayBoundary, null> }) {
   const label = () => props.kind === 'live_runtime'
@@ -297,7 +278,6 @@ export function MessageList(props: { bottomInset?: number }) {
       {/* Composer 覆盖在时间线底部；动态 inset 让最后一条消息始终完整可读。 */}
       <div class="message-list-content box-border w-full max-w-(--container-chat) mx-auto pt-32 px-20 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 max-desk:max-w-(--container-chat-narrow) max-narrow:px-10" style={{ 'padding-bottom': contentBottomInset() }}>
         <div ref={prefixRef} class="transcript-prefix">
-          <PermissionBar />
           <Show when={!runtimeDocsHydrated()}>
             <LoadingState label="Loading session" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />
           </Show>

@@ -9,6 +9,31 @@ function collectBrowserErrors(page) {
   return errors;
 }
 
+async function injectFixtureDiff(page) {
+  const injected = await page.evaluate(() => {
+    const bridge = window.__PERI_VISUAL_FIXTURE__;
+    if (!bridge) return false;
+    bridge.setDiffPreview({
+      requestId: 'fixture-diff', repoId: 'repo-1', groupId: 'working_tree', changeId: 'c2',
+      path: 'web/src/panel/components/ResourceWorkbench.tsx', status: 'modified', loading: false,
+      text: [
+        'diff --git a/web/src/panel/components/ResourceWorkbench.tsx b/web/src/panel/components/ResourceWorkbench.tsx',
+        '--- a/web/src/panel/components/ResourceWorkbench.tsx',
+        '+++ b/web/src/panel/components/ResourceWorkbench.tsx',
+        '@@ -12,3 +12,4 @@ export function ResourceWorkbench() {',
+        "   const [view, setView] = createSignal<WorkbenchView>('explorer');",
+        '-  const width = view() ? 300 : 46;',
+        '+  const width = view() ? 310 : 46;',
+        "+  const label = view() === 'scm' ? 'Source Control' : 'Explorer';",
+        '   return <aside style={{ width: `${width}px` }} />;',
+        '',
+      ].join('\n'),
+    });
+    return true;
+  });
+  expect(injected).toBe(true);
+}
+
 test('resource workbench matches Explorer and Source Control interaction contracts', async ({ page }) => {
   const browserErrors = collectBrowserErrors(page);
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -22,6 +47,7 @@ test('resource workbench matches Explorer and Source Control interaction contrac
   await expect(page.getByText('UNTRACKED CHANGES')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Unstage server/src/control/resource_service.rs' })).toBeAttached();
   await expect(page.getByRole('button', { name: 'Stage web/src/panel/lib/resource-view.ts' })).toBeAttached();
+  await injectFixtureDiff(page);
   await expect(page.getByRole('region', { name: 'Git diff: web/src/panel/components/ResourceWorkbench.tsx, Index ↔ Working Tree' })).toBeVisible();
   await expect(page.getByRole('table', { name: 'Changes in web/src/panel/components/ResourceWorkbench.tsx' })).toBeVisible();
   await expect(page.getByText('const width = view() ? 300 : 46;')).toBeVisible();
@@ -47,19 +73,45 @@ test('resource workbench matches Explorer and Source Control interaction contrac
   expect(browserErrors).toEqual([]);
 });
 
-test('medium status entry reopens the Explorer view', async ({ page }) => {
+test('medium resource rail reopens the Explorer view', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 820 });
   await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
   await expect(page.getByRole('button', { name: 'Explorer', exact: true })).toHaveAttribute('aria-pressed', 'false');
-  await page.getByRole('button', { name: 'Open workspace resources' }).click();
+  await page.getByRole('button', { name: 'Explorer', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Explorer', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('region', { name: 'Explorer' })).toBeVisible();
+});
+
+test('desktop resource expansion floats without reflowing the conversation pane', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
+
+  const pane = page.locator('.conversation-pane');
+  const panel = page.locator('.resource-workbench__panel');
+  const expanded = await page.evaluate(() => {
+    const conversation = document.querySelector('.conversation-pane').getBoundingClientRect();
+    const resources = document.querySelector('.resource-workbench__panel').getBoundingClientRect();
+    return {
+      conversation: { left: conversation.left, width: conversation.width },
+      resources: { left: resources.left, right: resources.right },
+    };
+  });
+  expect(expanded.resources.left).toBeGreaterThanOrEqual(expanded.conversation.left);
+  expect(expanded.resources.right).toBeLessThan(expanded.conversation.left + expanded.conversation.width);
+
+  await page.getByRole('button', { name: 'Close resource panel' }).click();
+  await expect(panel).toHaveCount(0);
+  await expect(pane).toHaveCSS('width', `${expanded.conversation.width}px`);
+
+  await page.getByRole('button', { name: 'Explorer', exact: true }).click();
+  await expect(panel).toBeVisible();
+  const reopened = await pane.evaluate((element) => ({ left: element.getBoundingClientRect().left, width: element.getBoundingClientRect().width }));
+  expect(reopened).toEqual(expanded.conversation);
 });
 
 test('mobile resource previews hand focus to the editor and restore their source rows', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Close diff' }).click();
   await page.getByRole('button', { name: 'Open workspace resources' }).click();
   expect(await page.evaluate(() => {
     const bridge = window.__PERI_VISUAL_FIXTURE__;
@@ -133,7 +185,6 @@ test('mobile resource previews hand focus to the editor and restore their source
 test('desktop preview falls back to its resource view when the source row is deleted', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Close diff' }).click();
   await page.getByRole('treeitem', { name: 'src' }).click();
   const origin = page.getByRole('treeitem', { name: 'main.rs' });
   await origin.focus();
@@ -177,7 +228,7 @@ test('primary action labels retain readable contrast', async ({ page }) => {
     const style = getComputedStyle(button);
     return { foreground: style.color, background: style.backgroundColor };
   });
-  expect(colors).toEqual({ foreground: 'rgb(255, 255, 255)', background: 'rgb(36, 36, 34)' });
+  expect(colors).toEqual({ foreground: 'rgb(255, 255, 255)', background: 'rgb(32, 37, 34)' });
 });
 
 test('coarse pointer keeps workspace header actions at least 44px', async ({ page }) => {
@@ -185,6 +236,7 @@ test('coarse pointer keeps workspace header actions at least 44px', async ({ pag
   await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
+  await injectFixtureDiff(page);
   const diffClose = await page.getByRole('button', { name: 'Close diff' }).boundingBox();
   expect(diffClose?.width).toBeGreaterThanOrEqual(44);
   expect(diffClose?.height).toBeGreaterThanOrEqual(44);
@@ -217,11 +269,12 @@ test('coarse pointer keeps workspace header actions at least 44px', async ({ pag
 test('resource density tokens resolve to their authored desktop heights', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
+  await injectFixtureDiff(page);
   await expect(page.locator('.resource-editor-tab')).toHaveCSS('height', '35px');
   await expect(page.locator('.resource-editor-toolbar')).toHaveCSS('height', '34px');
   await page.getByRole('button', { name: 'Close diff' }).click();
   await page.getByRole('button', { name: 'Source Control' }).click();
-  await expect(page.locator('.resource-group-title').first()).toHaveCSS('height', '25px');
+  await expect(page.locator('.resource-group-title').first()).toHaveCSS('height', '24px');
   await expect(page.locator('.resource-change-row').first()).toHaveCSS('height', '24px');
 });
 

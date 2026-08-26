@@ -120,7 +120,7 @@ describe('ChatHeader runtime truth', () => {
     render(() => <ChatHeader />);
 
     const status = screen.getByText('Crashed');
-    expect(status).toHaveClass('runtime-status--danger');
+    expect(status.closest('.runtime-status')).toHaveClass('runtime-status--danger');
   });
 
   it('does not announce input readiness before runtime hydration completes', () => {
@@ -145,7 +145,7 @@ describe('ChatHeader runtime truth', () => {
     setConnState({ text: 'Stopped (4501)', kind: 'err' });
     render(() => <ChatHeader />);
 
-    expect(screen.getByText('Offline', { selector: '.runtime-status' })).toHaveClass('runtime-status--danger');
+    expect(screen.getByText('Offline', { selector: '.runtime-status .sr-only' }).closest('.runtime-status')).toHaveClass('runtime-status--danger');
     expect(screen.queryByText('Ready')).not.toBeInTheDocument();
   });
 

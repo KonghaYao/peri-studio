@@ -29,7 +29,7 @@ export function MessageOutbox(props: {
     aria-busy={inFlight() ? 'true' : undefined}
   >
     <div class={`conversation-message__surface min-w-0 max-w-72p p-12 px-16 rounded-16 border border-dashed bg-surface [&>*+*]:mt-10 ${props.submission.phase === 'uncertain' ? 'border-warning-border' : props.submission.phase === 'failed' ? 'border-danger-border' : 'border-strong'}`}>
-      <div class="conversation-message__text text-text-primary text-14 leading-22"><span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{props.submission.text}</span></div>
+      <div class="conversation-message__text text-text-primary text-13 leading-20"><span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{props.submission.text}</span></div>
       <Show when={actionable() || props.acknowledged}>
         <footer class="message-outbox__status flex items-center gap-7 text-text-secondary text-12 leading-14">
           <span class={`message-outbox__indicator w-7 h-7 shrink-0 rounded-full ${props.submission.phase === 'uncertain' ? 'bg-warning-strong' : props.submission.phase === 'failed' ? 'bg-danger' : 'bg-text-muted'}`} aria-hidden="true" />

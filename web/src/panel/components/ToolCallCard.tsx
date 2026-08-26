@@ -2,6 +2,7 @@ import { createMemo, Show, type Accessor } from 'solid-js';
 import type { ToolCallInfo } from '../lib/chat-view';
 import { CopyButton } from '../../components/ui';
 import { CollapsibleSection } from './shared/CollapsibleSection';
+import { Check, Circle, CodeXml, X } from 'lucide-solid';
 
 const STATUS: Record<string, { label: string; tone: string }> = {
   pending: { label: 'Queued', tone: 'pending' },
@@ -40,12 +41,28 @@ export function readableBytes(value: number | null): string | null {
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function compactToolInput(value: unknown): string {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return typeof value === 'string' ? value : '';
+  const record = value as Record<string, unknown>;
+  const preferred = ['path', 'command', 'query', 'file', 'url'].map((key) => record[key]).find((item) => typeof item === 'string');
+  if (typeof preferred === 'string') return preferred;
+  const first = Object.values(record).find((item) => typeof item === 'string' || typeof item === 'number');
+  return first === undefined ? '' : String(first);
+}
+
+function ToolStateIcon(props: { tone: string }) {
+  if (props.tone === 'success') return <Check size={13} strokeWidth={2.4} class="text-success" aria-hidden="true" />;
+  if (props.tone === 'error') return <X size={12} strokeWidth={2.2} class="text-danger" aria-hidden="true" />;
+  const color = props.tone === 'permission' ? 'text-warning' : props.tone === 'running' ? 'text-success' : 'text-text-faint';
+  return <Circle size={10} strokeWidth={2} class={color} aria-hidden="true" />;
+}
+
 function DataSection(props: { label: string; value: unknown; tone?: 'error' }) {
   const text = createMemo(() => readableToolValue(props.value));
   const lines = createMemo(() => text() ? text().split('\n').length : 0);
   return (
     <section class={`tool-data min-w-0 overflow-hidden border rounded-9 ${props.tone === 'error' ? 'tool-data--error border-danger-border bg-surface' : 'border-divider bg-sidebar-bg'}`}>
-      <header class="flex min-h-34 items-center gap-8 pr-7 pl-10 border-b border-divider"><strong class="text-text-secondary text-11 font-650">{props.label}</strong><span class="flex-1 text-text-muted text-10">{lines()} lines</span><CopyButton text={text()} label={`Copy ${props.label}`} size="compact" class="min-h-28 border-0 bg-transparent text-text-secondary" /></header>
+      <header class="flex min-h-34 items-center gap-8 pr-7 pl-10 border-b border-divider"><strong class="text-text-secondary text-11 font-650">{props.label}</strong><span class="flex-1 text-text-muted text-10 tabular-nums" aria-label={`${lines()} lines`} title={`${lines()} lines`}>{lines()}</span><CopyButton text={text()} label={`Copy ${props.label}`} size="compact" class="min-h-28 border-0 bg-transparent text-text-secondary" /></header>
       <pre class={`max-h-300 m-0 px-11 py-10 overflow-auto whitespace-pre-wrap wrap-anywhere font-mono text-12 leading-155 ${props.tone === 'error' ? 'text-danger' : 'text-text-primary'}`}><code>{text()}</code></pre>
     </section>
   );
@@ -59,24 +76,19 @@ export function ToolCallCard(props: { toolCall: ToolCallSource }) {
   const duration = createMemo(() => observedDuration(tool().startedAt, tool().completedAt));
   const errorText = createMemo(() => [tool().publicError?.code, tool().publicError?.message].filter(Boolean).join(': '));
   const omittedSize = createMemo(() => readableBytes(tool().resultBytes));
-  const markTone = () => {
-    const tone = state().tone;
-    if (tone === 'success') return 'bg-success';
-    if (tone === 'error') return 'bg-danger';
-    if (tone === 'running' || tone === 'pending' || tone === 'permission') return 'bg-warning';
-    return 'bg-text-muted';
-  };
+  const inputSummary = createMemo(() => compactToolInput(tool().arguments));
   return (
     <CollapsibleSection
-      detailsClass={`tool-card tool-card--${state().tone} group overflow-hidden border rounded-12 bg-surface-muted ${state().tone === 'error' ? 'border-danger-border' : 'border-border-subtle'}`}
-      summaryClass="tool-card__summary flex min-h-42 items-center gap-9 px-10 py-6 cursor-pointer list-none focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2"
-      open={state().tone === 'error'}
-      mark={<span class={`tool-card__mark size-8 flex-none rounded-full ${markTone()}`} aria-hidden="true" />}
-      copy={<span class="tool-card__identity min-w-0 flex-1"><strong class="block overflow-hidden text-text-primary text-12 font-semibold text-ellipsis whitespace-nowrap" title={tool().toolCallId || undefined}>{tool().name || 'Tool call'}</strong><code class="sr-only">{tool().toolCallId || 'No call ID'}</code></span>}
-      meta={<><span class={`tool-card__status flex-none text-10 ${state().tone === 'error' ? 'text-danger' : 'text-text-secondary'}`}>{state().label}</span><Show when={duration()}>{(value) => <span class="tool-card__duration flex-none pl-7 border-l border-divider text-text-muted text-10" title="Time between start and completion events as observed by Hub">{value()}</span>}</Show></>}
-      chevronClass="tool-card__chevron text-text-muted text-18 transition-transform duration-140 group-open:rotate-90"
+      detailsClass={`tool-card tool-card--${state().tone} group w-full max-w-(--tool-activity-max) overflow-hidden border-0 bg-surface ${state().tone === 'error' ? 'text-danger' : 'text-text-primary'}`}
+      summaryClass="tool-card__summary grid min-h-(--pattern-row-height) grid-cols-[15px_minmax(0,1fr)_auto_18px] items-center gap-6 px-4 py-2 cursor-pointer list-none rounded-7 hover:bg-hover focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-1"
+      open={false}
+      mark={<span class="tool-card__mark grid size-14 place-items-center"><ToolStateIcon tone={state().tone} /></span>}
+      copy={<span class="tool-card__identity flex min-w-0 items-baseline gap-6"><strong class="shrink-0 overflow-hidden text-11 font-semibold text-ellipsis whitespace-nowrap" title={tool().toolCallId || undefined}>{tool().name || 'Tool call'}</strong><Show when={inputSummary()}>{(input) => <code class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-9 text-text-muted">{input()}</code>}</Show><code class="sr-only">{tool().toolCallId || 'No call ID'}</code></span>}
+      meta={<span class="tool-card__status text-9 text-text-muted"><span>{state().label}</span><Show when={duration()}>{(value) => <span class="tool-card__duration ml-4 tabular-nums" aria-label={`Observed duration ${value()}`}>{value()}</span>}</Show></span>}
+      chevronClass="tool-card__chevron grid size-20 place-items-center text-text-muted"
+      chevron={<CodeXml size={13} strokeWidth={1.8} />}
     >
-      <div class="tool-card__body flex flex-col gap-10 p-11 border-t border-divider bg-surface">
+      <div class="tool-card__body ml-22 flex flex-col gap-8 border-l border-divider py-7 pl-10 bg-surface">
         <Show when={tool().arguments !== undefined && tool().arguments !== null}><DataSection label="Input" value={tool().arguments} /></Show>
         <Show when={tool().result !== undefined && tool().result !== null}><DataSection label="Output" value={tool().result} /></Show>
         <Show when={errorText()}><DataSection label="Public error" value={errorText()} tone="error" /></Show>

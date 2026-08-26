@@ -11,7 +11,8 @@ test('visual fixture isolation and overlay geometry remain part of the default g
   const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
   const fixtureCss = readFileSync(join(root, 'src', 'visual-fixture', 'fixture.css'), 'utf8');
   assert.match(pkg.scripts.test, /verify-production-boundary\.mjs/);
-  assert.match(fixtureCss, /\.visual-fixture-rail\s*\{[^}]*z-index:20/s);
+  assert.match(fixtureCss, /\.visual-fixture-rail\s*\{[^}]*z-index:40/s);
+  assert.match(fixtureCss, /\.visual-scenario-sidebar\s*\{[^}]*width:242px/s);
   assert.match(fixtureCss, /@media\(max-width:640px\)[\s\S]*\.visual-fixture-root~\.ui-toast-viewport\{top:54px\}/);
   assert.match(readFileSync(join(root, 'src', 'visual-fixture', 'main.tsx'), 'utf8'), /authenticated-app visual-fixture-root/);
 });
@@ -35,7 +36,7 @@ test('the visual fixture is a development-only entry and cannot bypass productio
   for (const source of [productionMain, authGate]) {
     assert.doesNotMatch(source, /visual-fixture|fixtureScenario|VITE_.*FIXTURE|scenario=.*auth/i);
   }
-  assert.doesNotMatch(fixtureMain, /AuthGate|connectWithCookie|api\/auth\/session|token/i);
+  assert.doesNotMatch(fixtureMain, /AuthGate|connectWithCookie|api\/auth\/session|(?:auth|access|refresh)[_-]?token|token(?:file|value|credential)/i);
   assert.match(fixtureMain, /installVisualScenario/);
   for (const id of ['catalog', 'conversation', 'markdown', 'permission-streaming', 'terminal-readonly']) {
     assert.match(scenarios, new RegExp(`['"]${id}['"]`));

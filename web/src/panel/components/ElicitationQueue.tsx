@@ -94,14 +94,14 @@ function AskUserQuestionDialog(props: {
     aria-label="Agent question"
   >
     <form
-      class="elicitation-card scroll-mt-12 mb-12 overflow-hidden rounded-16 border border-border-strong bg-surface shadow-float"
+      class="elicitation-card scroll-mt-12 mb-12 overflow-hidden rounded-(--decision-radius) border border-border-subtle bg-surface shadow-float"
       data-elicitation-id={props.elicitation.elicitationId}
       aria-busy={submitting() ? 'true' : undefined}
       noValidate
       onSubmit={submit}
     >
-      <header class="elicitation-card__header flex min-h-42 items-center gap-7 px-14 border-b border-divider">
-        <span class="text-text-secondary text-12 font-600">Questions</span>
+      <header class="elicitation-card__header flex min-h-38 items-center gap-6 px-12 border-b border-divider">
+        <span class="text-text-secondary text-11 font-650">Questions</span>
         <Show when={props.total > 1}>
           <span class="flex items-center gap-1">
             <IconButton type="button" label="Previous question" variant="ghost" size="compact" disabled={props.currentIndex === 0} onClick={props.onPrevious} class="size-26 min-h-26 border-0 bg-transparent text-text-muted hover:text-text-primary disabled:opacity-30">
@@ -123,8 +123,8 @@ function AskUserQuestionDialog(props: {
         </span>
       </header>
       <Show when={expanded()}>
-      <div id={bodyId} class="ui-scrollbar elicitation-card__body max-h-300 overflow-y-auto px-14 pt-13 pb-5 max-narrow:px-12">
-        <p class="mt-0 mb-11 text-text-primary text-14 font-550 leading-155">{props.elicitation.message}</p>
+      <div id={bodyId} class="ui-scrollbar elicitation-card__body max-h-300 overflow-y-auto px-12 pt-10 pb-4 max-narrow:px-10">
+        <p class="mt-0 mb-8 text-text-primary text-12 font-550 leading-18">{props.elicitation.message}</p>
         <div class="grid">
           <For each={props.elicitation.fields.map((field) => field.id)}>{(fieldId) => {
             const field = () => props.elicitation.fields.find((candidate) => candidate.id === fieldId)!;
@@ -139,9 +139,9 @@ function AskUserQuestionDialog(props: {
                 <RadioGroup aria-label={field().title} value={typeof answers()[fieldId] === 'string' ? answers()[fieldId] as string : ''} required={field().required} disabled={locked()} onChange={(value) => update(fieldId, value)} class="elicitation-options grid gap-2 mt-6">
                   <For each={field().options.map((option) => option.value)}>{(optionValue, index) => {
                     const option = () => field().options.find((candidate) => candidate.value === optionValue)!;
-                    return <RadioGroupItem value={optionValue} class="elicitation-option group flex min-h-36 items-center gap-9 px-7 py-6 border-0 rounded-8 bg-transparent cursor-pointer hover:bg-hover data-[checked]:bg-selected pointer-coarse:min-h-44">
+                    return <RadioGroupItem value={optionValue} class="elicitation-option group flex min-h-34 items-center gap-7 px-6 py-4 border-0 rounded-7 bg-transparent cursor-pointer hover:bg-hover data-[checked]:bg-selected pointer-coarse:min-h-44">
                     <RadioGroupItemInput />
-                    <RadioGroupItemLabel class="flex min-w-0 flex-1 items-baseline gap-8 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-18 shrink-0 items-center justify-center rounded-5 bg-surface-muted text-text-muted text-10 font-650 group-data-[checked]:bg-text-primary group-data-[checked]:text-surface">{String.fromCharCode(65 + index())}</span><span class="min-w-0 text-12 leading-17"><strong class="font-550 text-text-primary">{option().label}</strong><Show when={option().description}><small class="text-text-muted"> — {option().description}</small></Show></span></RadioGroupItemLabel>
+                    <RadioGroupItemLabel class="flex min-w-0 flex-1 items-baseline gap-8 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-18 shrink-0 items-center justify-center rounded-5 bg-surface-muted text-text-muted text-10 font-650 group-data-[checked]:bg-success group-data-[checked]:text-surface">{String.fromCharCode(65 + index())}</span><span class="min-w-0 text-12 leading-17"><strong class="font-550 text-text-primary">{option().label}</strong><Show when={option().description}><small class="text-text-muted"> — {option().description}</small></Show></span></RadioGroupItemLabel>
                     <RadioGroupItemControl class="ui-radio-control size-14!" />
                   </RadioGroupItem>;
                   }}</For>
@@ -152,9 +152,9 @@ function AskUserQuestionDialog(props: {
                   <For each={field().options.map((option) => option.value)}>{(optionValue, index) => {
                     const option = () => field().options.find((candidate) => candidate.value === optionValue)!;
                     const selected = () => Array.isArray(answers()[fieldId]) ? answers()[fieldId] as string[] : [];
-                    return <Checkbox checked={selected().includes(optionValue)} disabled={locked()} onChange={(checked) => update(fieldId, checked ? [...selected(), optionValue] : selected().filter((value) => value !== optionValue))} class="elicitation-option group flex min-h-36 items-center gap-9 px-7 py-6 border-0 rounded-8 bg-transparent cursor-pointer hover:bg-hover data-[checked]:bg-selected pointer-coarse:min-h-44">
+                    return <Checkbox checked={selected().includes(optionValue)} disabled={locked()} onChange={(checked) => update(fieldId, checked ? [...selected(), optionValue] : selected().filter((value) => value !== optionValue))} class="elicitation-option group flex min-h-34 items-center gap-7 px-6 py-4 border-0 rounded-7 bg-transparent cursor-pointer hover:bg-hover data-[checked]:bg-selected pointer-coarse:min-h-44">
                       <CheckboxInput />
-                      <CheckboxLabel class="flex min-w-0 flex-1 items-baseline gap-8 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-18 shrink-0 items-center justify-center rounded-5 bg-surface-muted text-text-muted text-10 font-650 group-data-[checked]:bg-text-primary group-data-[checked]:text-surface">{String.fromCharCode(65 + index())}</span><span class="min-w-0 text-12 leading-17"><strong class="font-550 text-text-primary">{option().label}</strong><Show when={option().description}><small class="text-text-muted"> — {option().description}</small></Show></span></CheckboxLabel>
+                      <CheckboxLabel class="flex min-w-0 flex-1 items-baseline gap-8 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-18 shrink-0 items-center justify-center rounded-5 bg-surface-muted text-text-muted text-10 font-650 group-data-[checked]:bg-success group-data-[checked]:text-surface">{String.fromCharCode(65 + index())}</span><span class="min-w-0 text-12 leading-17"><strong class="font-550 text-text-primary">{option().label}</strong><Show when={option().description}><small class="text-text-muted"> — {option().description}</small></Show></span></CheckboxLabel>
                       <CheckboxControl class="ui-checkbox-control size-14!" />
                     </Checkbox>;
                   }}</For>
@@ -177,9 +177,9 @@ function AskUserQuestionDialog(props: {
         </div></Show>
         <Show when={props.readOnly}><p class="mt-9 text-11 leading-15 text-text-muted">Read only</p></Show>
       </div>
-      <div class="flex items-center justify-end gap-5 px-14 py-10 max-narrow:px-12">
-        <Button class="min-h-32! px-10! text-12 max-narrow:min-h-44!" type="button" variant="ghost" disabled={locked()} onClick={() => props.onRespond(props.elicitation.elicitationId, 'decline')}>Skip</Button>
-        <Button class="min-h-32! px-12! rounded-full text-12 max-narrow:min-h-44!" type="submit" variant="primary" busy={submitting()} disabled={locked()}>Continue</Button>
+      <div class="flex items-center justify-end gap-4 px-12 py-7 max-narrow:px-10">
+        <Button class="px-9! max-narrow:min-h-44!" type="button" variant="ghost" disabled={locked()} onClick={() => props.onRespond(props.elicitation.elicitationId, 'decline')}>Skip</Button>
+        <Button class="px-11! rounded-8 border-success bg-success text-surface hover:bg-success max-narrow:min-h-44!" type="submit" variant="primary" busy={submitting()} disabled={locked()}>Continue</Button>
       </div>
       </Show>
     </form>

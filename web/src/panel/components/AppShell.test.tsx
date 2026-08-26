@@ -5,8 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('./ProjectSidebar', () => ({
   ProjectSidebar: () => <div data-testid="project-sidebar" />,
 }));
-vi.mock('./ChatView', () => ({ ChatView: () => <div /> }));
-vi.mock('./SettingsDialog', () => ({ SettingsDialog: () => null }));
+vi.mock('./ChatView', () => ({ ChatView: (props: { onOpenResources?: () => void; onOpenMcp?: () => void; onOpenSystem?: () => void }) => <><button type="button" onClick={props.onOpenResources}>Open workspace resources</button><button type="button" onClick={props.onOpenMcp}>Open MCP resources</button><button type="button" onClick={props.onOpenSystem}>Open machine resources</button></> }));
 vi.mock('./shared/ProjectDrawer', () => ({
   ProjectDrawer: (props: { children: JSX.Element; ref?: (element: HTMLElement) => void }) => <aside ref={props.ref}>{props.children}</aside>,
 }));
@@ -56,7 +55,7 @@ describe('AppShell desktop sidebar', () => {
     expect(screen.getByRole('complementary', { name: 'Workspace resources' })).toBeInTheDocument();
   });
 
-  it('opens filesystem and Git resources from the compact status bar', async () => {
+  it('opens filesystem and Git resources from the compact chat header', async () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({
       matches: true,
       addEventListener: vi.fn(),
@@ -70,9 +69,24 @@ describe('AppShell desktop sidebar', () => {
     expect(screen.getByRole('dialog', { name: 'Workspace resources' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Explorer' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Source Control' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'MCP' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Machines' })).toBeInTheDocument();
   });
 
-  it('opens Explorer from the medium rail status entry', async () => {
+  it('opens MCP and machine control in the shared compact resource workbench', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })));
+    render(() => <AppShell />);
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Open machine resources' }));
+    expect(screen.getByRole('dialog', { name: 'Workspace resources' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Machines' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('opens Explorer from the medium resource rail', async () => {
     vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
       matches: query.includes('1199'),
       addEventListener: vi.fn(),
@@ -81,7 +95,7 @@ describe('AppShell desktop sidebar', () => {
     render(() => <AppShell />);
 
     expect(screen.getByRole('button', { name: 'Explorer' })).toHaveAttribute('aria-pressed', 'false');
-    await fireEvent.click(screen.getByRole('button', { name: 'Open workspace resources' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Explorer' }));
     expect(screen.getByRole('button', { name: 'Explorer' })).toHaveAttribute('aria-pressed', 'true');
   });
 });

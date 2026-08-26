@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ChatEntry } from '../lib/chat-view';
 import { ConversationMessage } from './ConversationMessage';
 import { Markdown } from './Markdown';
+import { composerQuoteRequest, resetComposerQuoteRequest } from '../lib/composer-quote';
 
 function entry(overrides: Partial<ChatEntry> = {}): ChatEntry {
   return {
@@ -34,6 +35,40 @@ describe('ConversationMessage', () => {
     expect(screen.getByText('cargo test')).toHaveClass('md-inline-code');
     fireEvent.click(screen.getByRole('button', { name: 'Copy answer' }));
     expect(writeText).toHaveBeenCalledWith('## Result\n\n`cargo test` passed.');
+  });
+
+  it('offers a quote action beside copy and sends the exact answer to the composer', () => {
+    resetComposerQuoteRequest();
+    render(() => <ConversationMessage entry={entry({ text: 'Use the focused boundary.' })} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quote answer' }));
+
+    expect(composerQuoteRequest()).toMatchObject({ text: 'Use the focused boundary.', source: 'Peri' });
+  });
+
+  it('offers an add-to-conversation action for selected message text', () => {
+    resetComposerQuoteRequest();
+    render(() => <ConversationMessage entry={entry({ text: 'Select only this sentence.' })} />);
+    const message = screen.getByLabelText('Assistant message');
+    const selectedNode = screen.getByText('Select only this sentence.').firstChild!;
+    const removeAllRanges = vi.fn();
+    const getSelection = vi.spyOn(window, 'getSelection').mockReturnValue({
+      isCollapsed: false,
+      rangeCount: 1,
+      toString: () => 'only this sentence',
+      getRangeAt: () => ({
+        commonAncestorContainer: selectedNode,
+        getBoundingClientRect: () => ({ left: 100, top: 80, width: 120, height: 18 }),
+      }),
+      removeAllRanges,
+    } as unknown as Selection);
+
+    fireEvent.mouseUp(message);
+    fireEvent.click(screen.getByRole('button', { name: 'Add selection to conversation' }));
+
+    expect(composerQuoteRequest()).toMatchObject({ text: 'only this sentence', source: 'Peri' });
+    expect(removeAllRanges).toHaveBeenCalled();
+    getSelection.mockRestore();
   });
 
   it('marks interrupted output as partial in both the reader and clipboard evidence', () => {

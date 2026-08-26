@@ -1,15 +1,22 @@
-import { createMemo, For, Show, type Accessor } from 'solid-js';
+import { createMemo, createSignal, For, Show, type Accessor } from 'solid-js';
 import type { ChatBlock, ChatEntry } from '../lib/chat-view';
 import { messageTime } from '../lib/message-time.ts';
 import { splitSystemReminders } from '../lib/system-reminder';
-import { CopyButton, InlineNotice } from '../../components/ui';
+import { CopyButton, Icon, IconButton, InlineNotice } from '../../components/ui';
 import { Markdown } from './Markdown';
 import { ToolCallCard } from './ToolCallCard';
+import { requestComposerQuote } from '../lib/composer-quote';
 
 type ChatEntrySource = ChatEntry | Accessor<ChatEntry>;
 
+function QuoteIcon() {
+  return <Icon><path d="M5 5.5h10v7H9l-3.5 3v-3H5z" /><path d="M8 8h2M12 8h.01" /></Icon>;
+}
+
 /** Owns the visual and semantic hierarchy of one server-projected entry. */
 export function ConversationMessage(props: { entry: ChatEntrySource }) {
+  let articleRef: HTMLElement | undefined;
+  const [selectionAction, setSelectionAction] = createSignal<{ text: string; left: number; top: number } | null>(null);
   const entry = () => typeof props.entry === 'function' ? props.entry() : props.entry;
   const legacyBlocks = (): ChatBlock[] => [
     ...entry().reasoning.map((reasoning, index) => ({ kind: 'reasoning' as const, id: reasoning.id || `${entry().id}:reasoning:${index}`, reasoning })),
@@ -37,13 +44,41 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
   const copyText = () => partialTerminal()
     ? `${entry().text}\n\n[Partial response: ${partialTerminal()!.state}]`
     : entry().text;
+  const quoteSource = () => role() === 'user' ? 'You' : role() === 'system' ? 'System' : 'Peri';
+  const captureSelection = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.rangeCount || !articleRef) {
+      setSelectionAction(null);
+      return;
+    }
+    const range = selection.getRangeAt(0);
+    if (!articleRef.contains(range.commonAncestorContainer)) {
+      setSelectionAction(null);
+      return;
+    }
+    const text = selection.toString().trim();
+    if (!text) {
+      setSelectionAction(null);
+      return;
+    }
+    const rect = range.getBoundingClientRect();
+    setSelectionAction({
+      text,
+      left: Math.max(12, Math.min(window.innerWidth - 12, rect.left + rect.width / 2)),
+      top: Math.max(12, rect.top - 8),
+    });
+  };
+  const addQuote = (text: string) => {
+    if (!requestComposerQuote(text, quoteSource())) return;
+    setSelectionAction(null);
+    window.getSelection()?.removeAllRanges();
+  };
 
-  return <article class={`conversation-message conversation-message--${role()} ${role() === 'assistant' ? 'conversation-message--timeline relative pl-0 before:hidden' : ''} flex mb-12 group ${role() === 'user' ? 'justify-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
+  return <article ref={articleRef} onMouseUp={captureSelection} onKeyUp={captureSelection} class={`conversation-message conversation-message--${role()} ${role() === 'assistant' ? 'conversation-message--timeline relative pl-0 before:hidden' : ''} flex mb-12 group ${role() === 'user' ? 'justify-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
     <Show when={role() === 'assistant'}><span class="conversation-message__timeline-mark hidden" aria-hidden="true" /></Show>
     <div class={`conversation-message__surface min-w-0 ${role() === 'user' ? 'max-w-72p border border-border-subtle p-12 px-16 rounded-14 bg-surface-muted' : role() === 'system' ? 'max-w-[70%] py-4 px-12 rounded-full bg-surface-muted text-text-secondary text-12' : 'w-full'} [&>*+*]:mt-10`}>
-      <Show when={role() !== 'system'}>
-        <header class={`conversation-message__meta flex items-center gap-6 text-text-muted text-12 transition-opacity duration-150 ${role() === 'assistant' ? 'conversation-message__meta--assistant min-h-18 opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'}`}>
-          <Show when={role() === 'assistant'}><span class="conversation-message__author text-text-primary text-11 font-680 tracking-2">Peri</span></Show>
+      <Show when={role() === 'user'}>
+        <header class={`conversation-message__meta flex items-center gap-7 text-text-muted text-12 transition-opacity duration-150 ${role() === 'assistant' ? 'conversation-message__meta--assistant min-h-20 opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'}`}>
           <Show when={timestamp()}>{(time) => <time dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show>
         </header>
       </Show>
@@ -60,7 +95,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
               </section>
             }>{<ToolCallCard toolCall={() => (block() as Extract<ChatBlock, { kind: 'tool_call' }>).toolCall} />}</Show>
           }>{
-            <div class="conversation-message__text text-text-primary text-14 leading-22">
+            <div class="conversation-message__text text-text-primary text-13 leading-20">
               <Show when={role() === 'assistant'} fallback={<For each={splitSystemReminders((block() as Extract<ChatBlock, { kind: 'text' }>).text)}>{(segment) =>
                 <Show when={segment.kind === 'system_reminder'} fallback={<span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{segment.text}</span>}>
                   <InlineNotice class="system-reminder-message my-8 max-w-full text-left!" tone="info" title="Untrusted system reminder" aria-label="Untrusted system reminder"><p class="whitespace-pre-wrap wrap-anywhere">{segment.text}</p></InlineNotice>
@@ -74,7 +109,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
           }</Show>
         }>{(() => {
           const reasoning = () => (block() as Extract<ChatBlock, { kind: 'reasoning' }>).reasoning;
-          return <details class="message-reasoning text-text-secondary text-13"><summary class="cursor-pointer select-none">Thinking</summary><pre class="mt-5 ml-12 pl-12 border-l-2 border-l-divider whitespace-pre-wrap wrap-anywhere text-text-secondary font-mono text-12 leading-20">{reasoning().text}</pre></details>;
+          return <details class="message-reasoning max-w-[680px] text-text-secondary"><summary class="inline-flex min-h-24 cursor-pointer list-none items-center select-none text-11 font-650 tracking-2 text-text-muted hover:text-text-secondary [&::-webkit-details-marker]:hidden">Thinking</summary><p class="m-0 mt-3 whitespace-pre-wrap wrap-anywhere text-12 leading-19 text-text-secondary">{reasoning().text}</p></details>;
         })()}</Show>;
       }}</For>
       <Show when={partialTerminal()}>{(terminal) => <InlineNotice tone={terminal().tone} role="status" title="Partial response">
@@ -91,7 +126,15 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
           <span>The server confirmed ACP did not run this message. Copy it and resend.</span>
         </InlineNotice>
       </Show>
-      <Show when={role() === 'assistant' && entry().text && !streaming()}><div class="flex items-center"><CopyButton size="compact" text={copyText()} label="Copy answer" /></div></Show>
+      <Show when={role() === 'assistant' && entry().text && !streaming()}><div class="flex min-h-28 items-center gap-2 pt-1"><CopyButton size="compact" text={copyText()} label="Copy answer" class="size-28 min-h-28 border-0 bg-transparent px-0 text-text-secondary hover:bg-hover" /><IconButton label="Quote answer" size="compact" variant="ghost" class="size-28 min-h-28 border-0 bg-transparent p-0 text-text-secondary hover:bg-hover" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-5 text-11 font-650 text-text-secondary">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-text-muted" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div></Show>
     </div>
+    <Show when={selectionAction()}>{(action) => <IconButton
+      label="Add selection to conversation"
+      variant="primary"
+      class="fixed z-50 size-32 min-h-32 -translate-x-1/2 -translate-y-full rounded-full border-0 bg-btn-primary p-0 text-surface shadow-popover"
+      style={{ left: `${action().left}px`, top: `${action().top}px` }}
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={() => addQuote(action().text)}
+    ><QuoteIcon /></IconButton>}</Show>
   </article>;
 }

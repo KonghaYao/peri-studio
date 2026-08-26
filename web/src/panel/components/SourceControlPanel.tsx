@@ -1,10 +1,11 @@
 import { For, Show, createMemo, createSignal } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogTitle, Icon, IconButton, LoadingState, Textarea } from '../../components/ui';
+import { Button, Dialog, DialogContent, DialogTitle, IconButton, LoadingState, Textarea } from '../../components/ui';
 import { mutateGitResource, openGitDiffPreview, openMoreGitChanges, resourceWorkspace, retryGitRepositoryMutation, retryGitResourceMutation } from '../store';
 import type { RepositoryState } from '../lib/resource-store';
 import { readOnly } from '../lib/auth-state';
 import { ConfirmDialog } from './shared/ConfirmDialog';
 import { MAX_COMMIT_MESSAGE_BYTES } from '../lib/resource-mutations';
+import { ChevronDown, File, GitBranch, Minus, Plus, Trash2 } from 'lucide-solid';
 
 const GROUPS = [
   { id: 'conflicts', label: 'Merge Changes' },
@@ -12,12 +13,6 @@ const GROUPS = [
   { id: 'working_tree', label: 'Changes' },
   { id: 'untracked', label: 'Untracked Changes' },
 ] as const;
-
-function BranchIcon() { return <Icon size="small"><circle cx="5" cy="4" r="1.5" /><circle cx="5" cy="16" r="1.5" /><circle cx="15" cy="6" r="1.5" /><path d="M5 5.5v9M6.5 14c5 0 8.5-2.5 8.5-6.5" /></Icon>; }
-function FileIcon() { return <Icon size="small"><path d="M5 2.8h6l4 4V17H5z" /><path d="M11 2.8V7h4" /></Icon>; }
-function PlusIcon() { return <Icon size="small"><path d="M10 4v12M4 10h12" /></Icon>; }
-function MinusIcon() { return <Icon size="small"><path d="M4 10h12" /></Icon>; }
-function TrashIcon() { return <Icon size="small"><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11M9 9v5M11 9v5" /></Icon>; }
 
 type SourceControlPanelProps = {
   commitMessages?: Record<string, string>;
@@ -67,7 +62,7 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
   };
   return <><section class="border-b border-divider pb-6">
     <div class="flex h-32 items-center gap-6 px-8 text-12 font-550 text-text-primary" title={props.repo.root}>
-      <BranchIcon /><span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{props.repo.name}</span>
+      <GitBranch size={14} strokeWidth={1.8} /><span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{props.repo.name}</span>
       <span class="max-w-100 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-10 font-normal text-text-muted">{branch()}</span>
     </div>
     <Show when={(props.repo.ahead ?? 0) + (props.repo.behind ?? 0) > 0}>
@@ -100,13 +95,13 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
     <For each={GROUPS}>{(group) => {
       const state = () => props.repo.groups[group.id];
       return <Show when={state()?.count}>
-        <div class="resource-group-title flex h-25 items-center px-8 text-10 font-650 uppercase tracking-4 text-text-secondary pointer-coarse:h-44"><span>{group.label}</span><span class="ml-auto tabular-nums text-text-muted">{state().count}</span></div>
+        <div class="resource-group-title flex h-24 items-center gap-4 px-7 text-10 font-650 uppercase tracking-4 text-text-secondary pointer-coarse:h-44"><ChevronDown size={13} strokeWidth={1.8} /><span>{group.label}</span><span class="ml-auto tabular-nums text-text-muted">{state().count}</span></div>
         <For each={state().changes}>{(change) => {
           const mutation = () => resourceWorkspace().mutations?.[change.id];
           const action = () => group.id === 'index' ? 'unstage' : 'stage';
           const path = () => String(change.path ?? '');
           return <div>
-          <div class="resource-change-row group flex h-24 items-center pr-5 text-12 hover:bg-hover pointer-coarse:h-44">
+          <div class="resource-change-row group flex h-(--tree-row-height) items-center pr-5 text-11 hover:bg-hover pointer-coarse:h-44">
           <button
             type="button"
             class="flex h-full min-w-0 flex-1 items-center gap-5 border-0 bg-transparent pl-13 text-left text-inherit"
@@ -119,7 +114,7 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
               openGitDiffPreview(props.repo.id, group.id, change);
             }}
           >
-            <span class="text-text-muted"><FileIcon /></span>
+            <span class="grid size-14 place-items-center text-text-muted"><File size={14} strokeWidth={1.7} /></span>
             <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{basename(path())}</span>
             <span class="max-w-90 overflow-hidden text-ellipsis whitespace-nowrap text-10 text-text-muted">{dirname(path())}</span>
             <span class={`w-14 text-center font-mono text-11 font-650 ${statusColor(String(change.status ?? ''))}`}>{statusLetter(String(change.status ?? ''))}</span>
@@ -130,13 +125,13 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
             disabled={readOnly() || repoBusy() || mutation()?.pending}
             onClick={(event) => { event.stopPropagation(); mutateGitResource(props.repo.id, action(), [change.id]); }}
             class="size-22 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44"
-          >{group.id === 'index' ? <MinusIcon /> : <PlusIcon />}</IconButton>
+          >{group.id === 'index' ? <Minus size={13} strokeWidth={1.8} /> : <Plus size={13} strokeWidth={1.8} />}</IconButton>
           <Show when={group.id === 'working_tree' || group.id === 'untracked'}><IconButton
             label={`Discard ${path()}`}
             disabled={readOnly() || repoBusy() || mutation()?.pending}
             onClick={(event) => { event.stopPropagation(); setDiscard({ id: change.id, path: path() }); }}
             class="size-22 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-danger pointer-coarse:size-44 pointer-coarse:min-h-44"
-          ><TrashIcon /></IconButton></Show>
+          ><Trash2 size={13} strokeWidth={1.8} /></IconButton></Show>
           </div>
           <Show when={mutation()?.error}>{(message) => <div role="alert" class="flex min-h-28 items-center gap-6 border-y border-danger-border bg-danger-soft px-12 py-4 text-10 leading-14 text-danger">
             <span class="min-w-0 flex-1">{message()}</span>

@@ -23,10 +23,25 @@ import { acquireFixtureClock } from './fixture-clock';
 import { setResourceDiffPreview, setResourceFilePreview, setResourceWorkspace } from '../panel/lib/resource-store';
 import type { ResourceDiffPreviewState, ResourceFilePreviewState } from '../panel/lib/resource-preview';
 import { markElicitationResponseUncertain, startElicitationResponse } from '../panel/lib/elicitation-delivery';
+import { setComposerAssets } from '../panel/lib/composer-assets';
+import { createLongConversationEntries } from './long-conversation';
 
 export const VISUAL_NOW = Date.parse('2026-08-14T08:00:00+08:00');
 export const DEFAULT_VISUAL_SCENARIO = 'conversation';
-export const VISUAL_SCENARIO_IDS = ['catalog', 'conversation', 'resources', 'markdown', 'elicitation', 'permission-streaming', 'terminal-readonly'] as const;
+export const VISUAL_SCENARIO_IDS = [
+  'conversation',
+  'long-conversation',
+  'markdown',
+  'tools',
+  'permission-streaming',
+  'elicitation',
+  'subtasks',
+  'resources',
+  'assets',
+  'terminal-readonly',
+  'catalog',
+  'design-tokens',
+] as const;
 
 /** Browser acceptance bridge; this module shares the fixture's live store graph. */
 export function setVisualFilePreview(preview: ResourceFilePreviewState): void {
@@ -113,13 +128,18 @@ export interface VisualScenarioDefinition {
 }
 
 export const visualScenarios: readonly VisualScenarioDefinition[] = [
-  { id: 'catalog', label: 'Catalog & Quick Start', description: 'Multiple projects, empty state, and no session selected.', controls: 'locally-interactive' },
-  { id: 'conversation', label: 'Full Conversation', description: 'Markdown, tools, resources, and long content.', controls: 'locally-interactive' },
-  { id: 'resources', label: 'Explorer & Git', description: 'Remote file tree and Source Control resource projections.', controls: 'locally-interactive' },
-  { id: 'markdown', label: 'Markdown Lab', description: 'GFM, code, math, diagrams, and remote media safety.', controls: 'locally-interactive' },
-  { id: 'elicitation', label: 'Questions', description: 'Agent questions, mixed answer fields, and compact response controls.', controls: 'locally-interactive' },
-  { id: 'permission-streaming', label: 'Permissions & Streaming', description: 'Active turn, permission queue, and stop control.', controls: 'production-gated' },
-  { id: 'terminal-readonly', label: 'Terminal Read-only', description: 'Crashed runtime, archived sessions, and read-only role.', controls: 'locally-interactive' },
+  { id: 'conversation', label: 'Basic conversation', description: 'Message rhythm and assistant response.', controls: 'locally-interactive' },
+  { id: 'long-conversation', label: 'Long conversation', description: 'Windowed history and return to latest.', controls: 'display-only' },
+  { id: 'markdown', label: 'Markdown', description: 'Headings, tables, code, math, and diagrams.', controls: 'locally-interactive' },
+  { id: 'tools', label: 'Tool calls', description: 'Running, completed, and failed operations.', controls: 'display-only' },
+  { id: 'permission-streaming', label: 'Permissions', description: 'Risk details and decision boundaries.', controls: 'production-gated' },
+  { id: 'elicitation', label: 'Questions', description: 'Choice navigation and structured answers.', controls: 'locally-interactive' },
+  { id: 'subtasks', label: 'Subtasks', description: 'Parallel agent progress and summary.', controls: 'display-only' },
+  { id: 'resources', label: 'Files & references', description: 'Explorer, Git changes, and cited files.', controls: 'locally-interactive' },
+  { id: 'assets', label: 'Assets & components', description: 'Images, diagrams, and embedded previews.', controls: 'locally-interactive' },
+  { id: 'terminal-readonly', label: 'Error recovery', description: 'Interrupted runtime and verified history.', controls: 'locally-interactive' },
+  { id: 'catalog', label: 'Empty state', description: 'First action with no active conversation.', controls: 'locally-interactive' },
+  { id: 'design-tokens', label: 'Design tokens', description: 'Palette, primitives, patterns, and modules.', controls: 'display-only' },
 ] as const;
 
 const projects: ProjectInfo[] = [
@@ -190,6 +210,46 @@ Footnotes remain compact.[^security]
 [^security]: Generated content is treated as untrusted input.`,
 };
 
+const basicEntries: ChatEntry[] = [
+  { ...entries[0], id: 'entry-basic-user', turnId: 'turn-basic', text: 'Review the login page build failure and verify the smallest safe fix.', toolCalls: [], resources: [] },
+  { ...entries[1], id: 'entry-basic-assistant', turnId: 'turn-basic', text: 'The failure comes from a browser-only import crossing the build boundary. I isolated the import and verified the production bundle.', reasoning: [{ text: 'Check the build entry first, then constrain the fix to the browser adapter.', visibility: 'user' }], toolCalls: [], resources: [] },
+];
+
+const longConversationEntries = createLongConversationEntries([entries[0], entries[1]]);
+
+const toolEntries: ChatEntry[] = [
+  { ...entries[0], id: 'entry-tools-user', turnId: 'turn-tools', text: 'Inspect the build boundary, update the adapter, and run the focused checks.', toolCalls: [], resources: [] },
+  { ...entries[1], id: 'entry-tools-assistant', turnId: 'turn-tools', status: 'streaming', completedAt: null, text: 'The browser entry is isolated. The production build is still running.', reasoning: [], resources: [], error: null, toolCalls: [
+    tool({ toolCallId: 'tool-read-config', name: 'Read build configuration', arguments: { path: 'vite.config.ts' }, result: { lines: 84 }, resultBytes: 74 }),
+    tool({ toolCallId: 'tool-search-import', name: 'Search unsafe import', arguments: { query: 'node:crypto', path: 'web/src' }, result: { matches: 3 }, resultBytes: 96 }),
+    tool({ toolCallId: 'tool-build-running', name: 'Run production build', status: 'running', arguments: { command: 'bun run build:web' }, result: null, resultOmitted: null, resultBytes: null, completedAt: null }),
+    tool({ toolCallId: 'tool-old-failure', name: 'Previous build attempt', status: 'failed', arguments: { command: 'bun run build:web' }, result: null, publicError: { code: 'BUILD_IMPORT_ERROR', message: 'Browser bundle imported a Node-only module' }, completedAt: '2026-08-14T00:01:30Z' }),
+  ] },
+];
+
+const assetEntry: ChatEntry = {
+  ...markdownEntry,
+  id: 'entry-assets',
+  turnId: 'turn-assets',
+  text: `## Interface assets
+
+The diagram stays interactive while remote images wait for explicit approval.
+
+\`\`\`mermaid
+flowchart LR
+  Prompt --> Component --> Preview
+\`\`\`
+
+![Workspace preview](https://example.test/workspace-preview.png)
+
+| Asset | Delivery |
+| --- | --- |
+| Diagram | Inline SVG |
+| Preview image | Consent gated |
+| Component spec | Attached resource |`,
+  resources: [{ resourceId: 'resource://component-spec', mediaType: 'text/markdown', name: 'Composer component specification' }],
+};
+
 for (const entry of entries.slice(0, 2)) {
   entry.origin = 'session_replay';
   entry.replayVerified = true;
@@ -244,7 +304,7 @@ const importable: SessionSummaryInfo[] = [
 function control(active = false): ControlView {
   return {
     chat: { chatId: 'chat-current', title: 'Refactor ACP session recovery and projection boundaries', status: 'active', activeTurnId: active ? 'turn-stream' : null, createdAt: '2026-08-14T00:00:00Z', updatedAt: '2026-08-14T00:10:00Z' },
-    agent: { instanceId: 'local', sessionId: 'acp-thread-01J5WORLDCLASSCURRENT', status: active ? 'running' : 'ready', lastActivityAt: '2026-08-14T00:10:00Z', availableCommands: ['compact', 'auto-issue-fixer', 'mcp__docs__search'], commandCatalog: [{ name: 'compact', description: 'Compacts the current context', kind: 'command' }, { name: 'auto-issue-fixer', description: 'Tracks and fixes an engineering issue', kind: 'skill' }, { name: 'mcp__docs__search', description: 'Searches project docs', kind: 'mcp_skill' }], extensions: ['peri.tokenStats', 'peri.skillNames', 'peri.agentActivity', 'peri.prediction', 'peri.oauth'], activities: [{ id: 'compact:fixture-compact', kind: 'compact', status: 'completed', label: 'Context compacted intelligently', isBackground: false, metrics: { token_before: 88_000, token_after: 34_500, duration_ms: 1840 }, attributes: { strategy: 'smart', trigger: 'auto' }, createdAt: '2026-08-14T00:08:00Z', updatedAt: '2026-08-14T00:08:02Z' }, { id: 'subagent:fixture-review', kind: 'subagent', status: active ? 'running' : 'completed', label: 'Reviewing recovery path', isBackground: true, metrics: { tool_count: 4 }, attributes: { task_kind: 'agent' }, createdAt: '2026-08-14T00:09:00Z', updatedAt: '2026-08-14T00:10:00Z' }], inputPrediction: { id: 'prediction:7:42', text: 'Check the next high-risk boundary', createdAt: '2026-08-14T00:10:01Z' }, latestUsage: { inputTokens: 12_400, outputTokens: 860, cacheCreationTokens: 320, cacheReadTokens: 9_800, requestId: 'fixture-request', model: 'gpt-5.6', stopReason: 'end_turn' }, model: 'gpt-5.6', effort: 'high', configOptions: [{ id: 'mode', name: 'Permission mode', description: 'Controls whether each tool run asks for permission before executing.', category: 'mode', currentValue: 'default', options: [{ value: 'default', name: 'Default', description: 'Dangerous operations ask for confirmation' }, { value: 'bypassPermissions', name: 'Bypass permission prompts', description: 'Skips per-action confirmation in trusted projects' }] }, { id: 'model', name: 'Model', description: null, category: 'model', currentValue: 'gpt-5.6', options: [{ value: 'gpt-5.6', name: 'GPT-5.6', description: 'Good for complex engineering tasks' }, { value: 'gpt-5.6-fast', name: 'GPT-5.6 Fast', description: 'Lower latency' }] }, { id: 'thinking_effort', name: 'Thinking effort', description: null, category: 'thought_level', currentValue: 'high', options: [{ value: 'medium', name: 'Medium', description: null }, { value: 'high', name: 'High', description: null }] }], contextWindow: 200_000, contextUsed: 34_500 },
+    agent: { instanceId: 'local', sessionId: 'acp-thread-01J5WORLDCLASSCURRENT', status: active ? 'running' : 'ready', lastActivityAt: '2026-08-14T00:10:00Z', availableCommands: ['compact', 'auto-issue-fixer', 'mcp__docs__search'], commandCatalog: [{ name: 'compact', description: 'Compacts the current context', kind: 'command' }, { name: 'auto-issue-fixer', description: 'Tracks and fixes an engineering issue', kind: 'skill' }, { name: 'mcp__docs__search', description: 'Searches project docs', kind: 'mcp_skill' }], extensions: ['peri.tokenStats', 'peri.skillNames', 'peri.agentActivity', 'peri.prediction', 'peri.oauth'], activities: [{ id: 'compact:fixture-compact', kind: 'compact', status: 'completed', label: 'Context compacted intelligently', isBackground: false, metrics: { token_before: 88_000, token_after: 34_500, duration_ms: 1840 }, attributes: { strategy: 'smart', trigger: 'auto' }, createdAt: '2026-08-14T00:08:00Z', updatedAt: '2026-08-14T00:08:02Z' }, { id: 'subagent:fixture-review', kind: 'subagent', status: active ? 'running' : 'completed', label: 'Reviewing recovery path', isBackground: true, metrics: { tool_count: 4 }, attributes: { task_kind: 'agent' }, createdAt: '2026-08-14T00:09:00Z', updatedAt: '2026-08-14T00:10:00Z' }], plan: [{ id: 'plan-1', content: 'Locate the recovery boundary', status: 'completed', activeForm: null }, { id: 'plan-2', content: 'Verify browser projection', status: active ? 'in_progress' : 'completed', activeForm: active ? 'Verifying browser projection' : null }, { id: 'plan-3', content: 'Summarize focused checks', status: active ? 'pending' : 'completed', activeForm: null }], inputPrediction: { id: 'prediction:7:42', text: 'Check the next high-risk boundary', createdAt: '2026-08-14T00:10:01Z' }, latestUsage: { inputTokens: 12_400, outputTokens: 860, cacheCreationTokens: 320, cacheReadTokens: 9_800, requestId: 'fixture-request', model: 'gpt-5.6', stopReason: 'end_turn' }, model: 'gpt-5.6', effort: 'high', configOptions: [{ id: 'mode', name: 'Permission mode', description: 'Controls whether each tool run asks for permission before executing.', category: 'mode', currentValue: 'default', options: [{ value: 'default', name: 'Default', description: 'Dangerous operations ask for confirmation' }, { value: 'bypassPermissions', name: 'Bypass permission prompts', description: 'Skips per-action confirmation in trusted projects' }] }, { id: 'model', name: 'Model', description: null, category: 'model', currentValue: 'gpt-5.6', options: [{ value: 'gpt-5.6', name: 'GPT-5.6', description: 'Good for complex engineering tasks' }, { value: 'gpt-5.6-fast', name: 'GPT-5.6 Fast', description: 'Lower latency' }] }, { id: 'thinking_effort', name: 'Thinking effort', description: null, category: 'thought_level', currentValue: 'high', options: [{ value: 'medium', name: 'Medium', description: null }, { value: 'high', name: 'High', description: null }] }], contextWindow: 200_000, contextUsed: 34_500 },
     activeTurn: active ? { turnId: 'turn-stream', turnStatus: 'awaitingPermission', updatedAt: '2026-08-14T00:10:00Z' } : null,
     pendingPermissions: active ? permissions : [],
   };
@@ -259,6 +319,7 @@ function seedCatalog(): void {
   setConnState({ text: 'Local server connected', kind: 'ok' });
   setPromptDeliveryReady(true);
   setChatStatusSignal({ 'chat-current': 'active' });
+  setComposerAssets([]);
 }
 
 function selectConversation(currentEntries = entries, head = control(false)): void {
@@ -285,13 +346,25 @@ export function installVisualScenario(value: string | null | undefined): { scena
     seedCatalog();
 
   if (id === 'conversation') {
-    selectConversation();
+    selectConversation(basicEntries);
     setMcpServers([
       { name: 'github', transport: 'streamable-http', connectionStatus: 'disconnected', oauthStatus: 'needs_authorization', activeFlowId: 'flow-fixture', toolsCount: 8, resourcesCount: 2 },
       { name: 'local-docs', transport: 'stdio', connectionStatus: 'connected', oauthStatus: 'authorized', toolsCount: 4, resourcesCount: 12 },
     ]);
     setMcpOAuthEvents({ 'flow-fixture': { chatId: 'chat-current', flowId: 'flow-fixture', serverName: 'github', status: 'authorization_needed', updatedAt: '2026-08-14T00:10:00Z' } });
     setMcpAuthorization({ commandId: 'fixture-auth', chatId: 'chat-current', flowId: 'flow-fixture', authorizationUrl: 'https://example.test/oauth?state=fixture-opaque', expiresAt: '2026-08-14T00:12:00Z' });
+  }
+  if (id === 'long-conversation') {
+    const longControl = control(true);
+    selectConversation(longConversationEntries, { ...longControl, pendingPermissions: [], activeTurn: longControl.activeTurn ? { ...longControl.activeTurn, turnStatus: 'running' } : null });
+    setResourceWorkspace({ projectId: 'project-perihelion', loading: [], error: null, directories: {}, repositories: [{
+      id: 'repo-long', root: '', name: 'peri-studio', headName: 'main', generation: 'long-1', ahead: 0, behind: 0,
+      groups: {
+        index: { count: 1, revision: 'index-long', changes: [{ id: 'long-a', path: 'web/src/panel/components/StatusArea.tsx', status: 'modified' }] },
+        working_tree: { count: 2, revision: 'work-long', changes: [{ id: 'long-b', path: 'web/src/panel/components/ToolCallCard.tsx', status: 'modified' }, { id: 'long-c', path: 'web/src/visual-fixture/long-conversation.ts', status: 'untracked' }] },
+        untracked: { count: 0, revision: 'new-long', changes: [] },
+      },
+    }] });
   }
   if (id === 'resources') {
     selectConversation();
@@ -323,25 +396,17 @@ export function installVisualScenario(value: string | null | undefined): { scena
         },
       }],
     });
-    setResourceDiffPreview({
-      requestId: 'fixture-diff', repoId: 'repo-1', groupId: 'working_tree', changeId: 'c2',
-      path: 'web/src/panel/components/ResourceWorkbench.tsx', status: 'modified', loading: false,
-      text: [
-        'diff --git a/web/src/panel/components/ResourceWorkbench.tsx b/web/src/panel/components/ResourceWorkbench.tsx',
-        '--- a/web/src/panel/components/ResourceWorkbench.tsx',
-        '+++ b/web/src/panel/components/ResourceWorkbench.tsx',
-        '@@ -12,3 +12,4 @@ export function ResourceWorkbench() {',
-        '   const [view, setView] = createSignal<WorkbenchView>(\'explorer\');',
-        '-  const width = view() ? 300 : 46;',
-        '+  const width = view() ? 310 : 46;',
-        '+  const label = view() === \'scm\' ? \'Source Control\' : \'Explorer\';',
-        '   return <aside style={{ width: `${width}px` }} />;',
-        '',
-      ].join('\n'),
-    });
   }
   if (id === 'markdown') {
     selectConversation([markdownEntry]);
+  }
+  if (id === 'tools') {
+    const toolsControl = control(true);
+    selectConversation(toolEntries, {
+      ...toolsControl,
+      activeTurn: toolsControl.activeTurn ? { ...toolsControl.activeTurn, turnStatus: 'running' } : null,
+      pendingPermissions: [],
+    });
   }
   if (id === 'elicitation') {
     selectConversation(entries, control(false));
@@ -351,6 +416,30 @@ export function installVisualScenario(value: string | null | undefined): { scena
     const streaming = [...entries, { ...entries[1], id: 'entry-stream', turnId: 'turn-stream', status: 'streaming', origin: 'live' as const, replayVerified: null, text: 'Checking permission boundaries and tool call order…', completedAt: null, reasoning: [], toolCalls: [tool({ toolCallId: 'tool-stream', name: 'Apply patch', status: 'awaitingPermission', result: null, resultOmitted: null })], resources: [], error: null }];
     selectConversation(streaming, control(true));
     setElicitations(elicitations.slice(0, 1));
+  }
+  if (id === 'subtasks') {
+    const subtaskControl = control(true);
+    selectConversation(basicEntries, {
+      ...subtaskControl,
+      agent: subtaskControl.agent ? {
+        ...subtaskControl.agent,
+        activities: [
+          { id: 'subagent:fixture-research', kind: 'subagent', status: 'completed', label: 'Mapped the login build boundary', isBackground: true, metrics: { tool_count: 5 }, attributes: { task_kind: 'research' }, createdAt: '2026-08-14T00:07:00Z', updatedAt: '2026-08-14T00:08:00Z' },
+          { id: 'workflow:fixture-implementation', kind: 'workflow', status: 'running', label: 'Isolating the browser adapter', isBackground: true, metrics: { tool_count: 3 }, attributes: { task_kind: 'implementation' }, createdAt: '2026-08-14T00:08:00Z', updatedAt: '2026-08-14T00:10:00Z' },
+          { id: 'subagent:fixture-review', kind: 'subagent', status: 'info', label: 'Review queued for the production boundary', isBackground: true, metrics: {}, attributes: { task_kind: 'review' }, createdAt: '2026-08-14T00:09:00Z', updatedAt: '2026-08-14T00:09:00Z' },
+        ],
+      } : null,
+      activeTurn: subtaskControl.activeTurn ? { ...subtaskControl.activeTurn, turnStatus: 'running' } : null,
+      pendingPermissions: [],
+    });
+  }
+  if (id === 'assets') {
+    selectConversation([assetEntry]);
+    setComposerAssets([
+      { id: 'asset-layout', name: 'chat-layout-reference-final.png', kind: 'image', detail: 'UI reference image', previewUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%2280%22 viewBox=%220 0 120 80%22%3E%3Crect width=%22120%22 height=%2280%22 fill=%22%23f8faf9%22/%3E%3Crect x=%227%22 y=%228%22 width=%2232%22 height=%2264%22 rx=%224%22 fill=%22%23e8f0eb%22/%3E%3Crect x=%2245%22 y=%228%22 width=%2268%22 height=%2210%22 rx=%223%22 fill=%22%23d8e6dd%22/%3E%3Crect x=%2245%22 y=%2225%22 width=%2254%22 height=%224%22 rx=%222%22 fill=%22%2395aa9d%22/%3E%3Crect x=%2245%22 y=%2234%22 width=%2262%22 height=%224%22 rx=%222%22 fill=%22%23c2cec6%22/%3E%3C/svg%3E' },
+      { id: 'asset-spec', name: 'status-area.md', kind: 'file', detail: 'Component specification' },
+      { id: 'asset-reference', name: 'Reference 1', kind: 'reference', detail: 'Linked conversation context' },
+    ]);
   }
   if (id === 'terminal-readonly') {
     selectConversation(entries.slice(0, 2), { ...control(false), chat: { ...control(false).chat!, status: 'crashed' }, agent: { ...control(false).agent!, status: 'offline' } });

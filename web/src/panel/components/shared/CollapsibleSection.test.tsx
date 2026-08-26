@@ -1,6 +1,5 @@
 // CollapsibleSection 行为测试：details 折叠契约（结构 + 原生展开交互）。
-// 三个使用方（AgentActivityRail / AgentPlanPanel / ToolCallCard）的
-// 折叠行为断言自此统一在此验证；各 feature 测试保留内容级断言。
+// 折叠行为在此验证；各 feature 测试只保留内容级断言。
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';

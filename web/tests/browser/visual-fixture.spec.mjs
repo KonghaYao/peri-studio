@@ -3,7 +3,7 @@ import { assertVisualContract, visualContract } from '../../scripts/visual-contr
 
 const scenarios = [
   ['catalog', { projects: 2, sessions: 4 }],
-  ['conversation', { messages: 4, markdown: true }],
+  ['conversation', { messages: 2 }],
   ['resources', { projects: 2, sessions: 4 }],
   ['markdown', { messages: 1 }],
   ['permission-streaming', { permissions: 1, permissionQueueLabel: 'Pending permission requests, 2 total' }],
@@ -83,6 +83,60 @@ test('markdown conversation uses the available desktop content track', async ({ 
   expect(geometry.markdownWidth).toBeGreaterThanOrEqual(geometry.trackInnerWidth - 1);
 });
 
+test('long conversation combines rich markdown, dense tool calls, and the status area', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/visual-fixture.html?scenario=long-conversation', { waitUntil: 'networkidle' });
+
+  await expect(page.getByRole('region', { name: 'Status area' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /Todo/ })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /Async/ })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /Changes/ })).toBeVisible();
+  await page.getByRole('tab', { name: /Async/ }).click();
+  await expect(page.getByRole('tabpanel')).toContainText('Agent');
+  await expect(page.locator('.tool-card')).toHaveCount(4);
+  await expect(page.locator('.markdown-body table')).toBeVisible();
+  await expect(page.locator('.markdown-body pre')).toBeVisible();
+  await expect(page.locator('.workbench-status-bar')).toHaveCount(0);
+});
+
+test('assets scenario stages visual references above the composer input', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=assets', { waitUntil: 'networkidle' });
+
+  const assets = page.getByLabel('Staged assets');
+  await expect(assets).toBeVisible();
+  await expect(assets.locator('article')).toHaveCount(3);
+  await expect(assets.locator('article').first()).toHaveCSS('width', '68px');
+  await expect(assets.locator('article').first()).toHaveCSS('height', '68px');
+  await expect(assets).toContainText('chat-layout-reference-final.png');
+  await expect(assets).toContainText('status-area.md');
+  await expect(assets.locator('img')).toHaveCount(1);
+  await page.getByRole('button', { name: /Remove chat-layout-reference-final\.png/ }).click();
+  await expect(assets.locator('article')).toHaveCount(2);
+});
+
+test('subtasks identify agent and workflow task sources', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/visual-fixture.html?scenario=subtasks', { waitUntil: 'networkidle' });
+
+  await page.getByRole('tab', { name: /Async/ }).click();
+  const asyncTasks = page.getByRole('tabpanel');
+  await expect(asyncTasks).toContainText('Agent');
+  await expect(asyncTasks).toContainText('Workflow');
+});
+
+test('design token page documents foundations, primitives, patterns, and modules', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/visual-fixture.html?scenario=design-tokens', { waitUntil: 'networkidle' });
+
+  await expect(page.getByRole('heading', { name: 'Peri Studio · Design tokens' })).toBeVisible();
+  await expect(page.locator('.token-swatch')).toHaveCount(7);
+  await expect(page.getByText('Lucide icon family')).toBeVisible();
+  await expect(page.getByText('Tool activity · max 740px')).toBeVisible();
+  await expect(page.getByText('Composer shell')).toBeVisible();
+  await expect(page.locator('.design-token-page')).toHaveCSS('overflow-x', 'visible');
+});
+
 for (const [scenario, expected] of scenarios) {
   for (const viewport of viewports) {
     test(`${scenario} satisfies the browser contract at ${viewport.width}x${viewport.height}`, async ({ page }) => {
@@ -108,29 +162,31 @@ for (const [scenario, expected] of scenarios) {
 
 test('migrated surfaces retain their authored computed borders', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
+  await page.goto('/visual-fixture.html?scenario=tools&sidebar=projects', { waitUntil: 'networkidle' });
 
   const borders = await page.evaluate(() => {
     const style = (selector) => getComputedStyle(document.querySelector(selector));
     return {
-      search: style('.session-search-button').borderWidth,
-      shortcut: style('.session-search-button kbd').borderWidth,
+      sidebar: style('.project-sidebar').borderRightWidth,
+      brand: style('.brand-row > span').borderWidth,
+      headerAction: style('.sidebar-workspace-header button[aria-label="Search sessions"]').borderWidth,
       sessionGuide: style('.session-list').borderLeftWidth,
       selectedSession: style('[data-session-id="session-current"]').borderLeftWidth,
-      userMessage: style('.conversation-message--user .conversation-message__surface').borderWidth,
+      statusArea: style('.status-area > div').borderWidth,
       composer: style('.composer-surface').borderWidth,
       toolCard: style('.tool-card').borderWidth,
     };
   });
 
   expect(borders).toEqual({
-    search: '1px',
-    shortcut: '1px',
+    sidebar: '1px',
+    brand: '1px',
+    headerAction: '0px',
     sessionGuide: '1px',
     selectedSession: '2px',
-    userMessage: '1px',
+    statusArea: '1px',
     composer: '1px',
-    toolCard: '1px',
+    toolCard: '0px',
   });
 });
 
@@ -281,7 +337,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
 
 test('sidebar session labels retain space beside action and status slots', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
+  await page.goto('/visual-fixture.html?scenario=conversation&sidebar=projects', { waitUntil: 'networkidle' });
 
   const sessionRow = page.locator('[data-session-id="session-current"]');
   const sessionCopy = sessionRow.locator('.session-copy');
@@ -307,7 +363,7 @@ test('sidebar session labels retain space beside action and status slots', async
 
 test('wide topology dialog owns its viewport width without child overflow', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
+  await page.goto('/visual-fixture.html?scenario=conversation&sidebar=projects', { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Open system information' }).click();
   const dialog = page.getByRole('dialog', { name: 'System' });
   await expect(dialog).toBeVisible();
@@ -325,7 +381,7 @@ test('wide topology dialog owns its viewport width without child overflow', asyn
 test('desktop sidebar visibly resizes and preserves project navigation', async ({ page }) => {
   const browserErrors = collectBrowserErrors(page);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
+  await page.goto('/visual-fixture.html?scenario=conversation&sidebar=projects', { waitUntil: 'networkidle' });
 
   const resize = page.getByRole('separator', { name: 'Resize sidebar' });
   await expect(resize).toHaveAttribute('aria-valuenow', '242');

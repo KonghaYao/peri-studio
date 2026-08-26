@@ -12,7 +12,7 @@
 // lib/composer-placeholder；inputPrediction 展示在 lib/composer-prediction。
 // 本组件保留编排：信号装配、textarea 聚焦与草稿读写、提交/取消状态机。
 
-import { createEffect, createSignal, createUniqueId, Show } from 'solid-js';
+import { createEffect, createSignal, createUniqueId, For, Show } from 'solid-js';
 import { cancelTurn, chatHead, chatStatusSignal, openingSessionId, projectSessions, retryMessageSubmission, retryPersistentAction, runtimeDocsHydrated, selectedCid, selectedSessionId, sendMessage, turnActive } from '../store';
 import { isTerminal } from '../lib/action-state';
 import { promptDeliveryReady, promptMaxBytes } from '../lib/connection';
@@ -28,6 +28,9 @@ import { SlashMenu } from './SlashMenu';
 import { SessionModelMenu } from './SessionConfigDialog';
 import { TokenUsageMeter, tokenUsageLabel } from './TokenUsageMeter';
 import { promptByteLength, promptFitsBudget } from '../lib/prompt-budget';
+import { composerAssets, removeComposerAsset, type ComposerAssetKind } from '../lib/composer-assets';
+import { composerQuoteRequest, consumeComposerQuoteRequest, formatComposerQuote } from '../lib/composer-quote';
+import { FileText, Image as ImageIcon, Link2, X } from 'lucide-solid';
 
 /** tokens 数值 → "12k"/"200k" 缩写（>=1000 取 k；非法值 → null）。 */
 function fmtTokens(n: number | null): string | null {
@@ -48,6 +51,16 @@ function MicrophoneIcon() {
   return <Icon><rect x="7" y="3" width="6" height="10" rx="3" /><path d="M4.5 10.5a5.5 5.5 0 0 0 11 0M10 16v2M7.5 18h5" /></Icon>;
 }
 
+function ModelIcon() {
+  return <Icon class="size-17!"><path d="M10 3.5 11.7 8l4.8 2-4.8 2L10 16.5 8.3 12l-4.8-2 4.8-2z" /></Icon>;
+}
+
+function AssetIcon(props: { kind: ComposerAssetKind }) {
+  if (props.kind === 'image') return <ImageIcon size={21} strokeWidth={1.7} />;
+  if (props.kind === 'reference') return <Link2 size={21} strokeWidth={1.7} />;
+  return <FileText size={21} strokeWidth={1.7} />;
+}
+
 export function Composer() {
   let taRef: HTMLTextAreaElement | undefined;
   let modelTrigger: HTMLButtonElement | undefined;
@@ -56,6 +69,7 @@ export function Composer() {
   const submissionStatusId = `composer-submission-${createUniqueId()}`;
   const promptBudgetStatusId = `composer-prompt-budget-${createUniqueId()}`;
   const [modelMenuOpen, setModelMenuOpen] = createSignal(false);
+  let consumedQuoteId = 0;
   const draftOwner = (): ComposerDraftOwner | null => {
     const sessionId = selectedSessionId();
     const identity = principalId();
@@ -183,6 +197,17 @@ export function Composer() {
       taRef?.setSelectionRange(cursor, cursor);
     });
   };
+  createEffect(() => {
+    const request = composerQuoteRequest();
+    const owner = draftOwner();
+    if (!request || !owner || request.id === consumedQuoteId) return;
+    const current = composerDraft(owner).trimEnd();
+    const quote = formatComposerQuote(request);
+    setComposerDraft(owner, current ? `${current}\n\n${quote}\n\n` : `${quote}\n\n`);
+    consumedQuoteId = request.id;
+    consumeComposerQuoteRequest(request.id);
+    focusAt(composerDraft(owner).length);
+  });
 
   // slash 菜单交互（lib/composer-slash）。
   const slash = useComposerSlash({
@@ -242,8 +267,19 @@ export function Composer() {
       <section
         aria-busy={submissionIsInFlight() || undefined}
         aria-disabled={inputDisabled()}
-        class="composer-surface overflow-hidden border border-composer-border rounded-[20px] bg-surface shadow-float max-narrow:rounded-16"
+        class="composer-surface overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface shadow-float max-narrow:rounded-16"
       >
+        <Show when={composerAssets().length > 0}>
+          <div class="composer-assets ui-scrollbar flex gap-7 overflow-x-auto px-10 pt-10 pb-5" aria-label="Staged assets">
+            <For each={composerAssets()}>{(asset) => <article class="group relative grid size-(--asset-tile-size) shrink-0 grid-rows-[1fr_auto] overflow-hidden rounded-10 border border-border-subtle bg-surface p-6 hover:border-border-strong hover:bg-hover" title={asset.detail || asset.name}>
+              <Show when={asset.kind === 'image' && asset.previewUrl} fallback={<span class="grid place-items-center text-text-secondary"><AssetIcon kind={asset.kind} /></span>}>
+                    <img src={asset.previewUrl} alt="" class="h-[39px] w-full rounded-5 object-cover" />
+                  </Show>
+                  <IconButton label={`Remove ${asset.name}`} title={`Remove ${asset.name}`} class="absolute right-2 top-2 size-18 min-h-18 rounded-full border border-border-subtle bg-white/95 p-0 text-text-secondary opacity-75 shadow-sm transition-opacity hover:text-text-primary group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100" onClick={() => removeComposerAsset(asset.id)}><X size={11} strokeWidth={2} /></IconButton>
+              <strong class="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-9 font-600 text-text-secondary">{asset.name}</strong>
+            </article>}</For>
+          </div>
+        </Show>
         <div class="composer-editor relative">
           <Show when={prediction.activePrediction()}>{(prediction) => <>
             <span class="composer-prediction absolute z-0 top-14 right-16 left-16 overflow-hidden text-text-faint text-15 leading-22 pointer-events-none text-ellipsis whitespace-nowrap max-narrow:right-15 max-narrow:left-15" aria-hidden="true">{prediction().text}</span>
@@ -293,7 +329,7 @@ export function Composer() {
           aria-activedescendant={slash.slashMenuOpen() ? `${slashMenuId}-option-${slash.boundedActiveIndex()}` : undefined}
           aria-describedby={inputDescribedBy()}
           spellcheck={false}
-          class="composer-input ui-scrollbar relative z-1 block w-full h-52 min-h-52 max-h-180 pt-14 px-16 pb-4 border-0 outline-0 resize-none overflow-y-auto bg-transparent text-text-primary text-14 leading-22 placeholder:text-text-muted disabled:bg-transparent disabled:text-text-secondary focus-visible:outline-0 max-narrow:px-15"
+          class="composer-input ui-scrollbar relative z-1 block w-full h-48 min-h-48 max-h-180 pt-12 px-15 pb-4 border-0 outline-0 resize-none overflow-y-auto bg-transparent text-text-primary text-13 leading-20 placeholder:text-text-muted disabled:bg-transparent disabled:text-text-secondary focus-visible:outline-0 max-narrow:px-14"
           />
         </div>
         <Show when={promptOverBudget()}>
@@ -326,7 +362,7 @@ export function Composer() {
             </div>
           </InlineNotice>
         }</Show>
-        <div class="composer-toolbar flex min-h-44 items-center gap-5 px-10 pb-8 max-narrow:px-8">
+        <div class="composer-toolbar flex min-h-38 items-center gap-4 px-9 pb-7 max-narrow:px-8">
           <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="composer-attachment size-32 min-h-32 shrink-0 border-0 bg-transparent text-text-primary disabled:opacity-55">
             <AttachmentIcon />
           </IconButton>
@@ -359,14 +395,13 @@ export function Composer() {
             <TokenUsageMeter usage={usage()} />
           }</Show>
           <SessionModelMenu open={modelMenuOpen()} id={modelMenuId} onOpenChange={setModelMenuOpen} trigger={
-            <Button
-              size="compact"
-              class="composer-runtime flex min-w-0 shrink items-center gap-6 overflow-hidden border-0 bg-transparent px-7 text-text-secondary text-11 leading-none text-ellipsis whitespace-nowrap"
+            <IconButton
+              class="composer-runtime relative size-32 min-h-32 shrink-0 border-0 bg-transparent p-0 text-text-secondary"
               ref={modelTrigger}
               title={runtimeSummary()}
-              aria-label={`${runtimeSummary()}, choose model`}
+              label="Choose model"
               disabled={!selectedCid() || !runtimeDocsHydrated()}
-            ><span aria-hidden="true" class="size-6 flex-none rounded-full bg-success" />{model()}</Button>
+            ><ModelIcon /><span aria-hidden="true" class="absolute right-4 bottom-4 size-5 rounded-full bg-success ring-2 ring-surface" /></IconButton>
           } />
           <span class="composer-voice-slot flex size-32 shrink-0 items-center justify-center">
             <IconButton label="Voice input" title="Voice input is not connected yet" disabled class="composer-voice size-32 min-h-32 shrink-0 border-0 bg-transparent text-text-primary disabled:opacity-55">

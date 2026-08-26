@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { chatEntries, chatHead, elicitations, permissions, projects, projectSessions, registryHydrated, selectedCid, selectedSessionId } from '../panel/store';
 import { principalRole } from '../panel/lib/auth-state';
+import { composerAssets } from '../panel/lib/composer-assets';
 import * as store from '../panel/store';
 import { DEFAULT_VISUAL_SCENARIO, installVisualScenario, resolveVisualScenario, VISUAL_NOW, visualScenarios } from './scenarios';
 
@@ -19,14 +20,17 @@ describe('visual fixture scenarios', () => {
     expect(registryHydrated()).toBe(true);
     expect(selectedSessionId()).toBe('session-current');
     expect(selectedCid()).toBe('chat-current');
-    expect(chatEntries().some((entry) => entry.text.includes('```rust'))).toBe(true);
-    expect(chatEntries().flatMap((entry) => entry.toolCalls).some((tool) => tool.resultOmitted)).toBe(true);
+    expect(chatEntries()).toHaveLength(2);
+    expect(chatEntries()[0].text).toContain('login page build failure');
     installed.dispose(); dispose = null;
     expect(Date.now).toBe(originalNow);
   });
 
   it('covers permissions and closed-by-default read-only state', () => {
-    expect(visualScenarios.map((item) => item.id)).toEqual(['catalog', 'conversation', 'resources', 'markdown', 'elicitation', 'permission-streaming', 'terminal-readonly']);
+    expect(visualScenarios.map((item) => item.id)).toEqual([
+      'conversation', 'long-conversation', 'markdown', 'tools', 'permission-streaming',
+      'elicitation', 'subtasks', 'resources', 'assets', 'terminal-readonly', 'catalog', 'design-tokens',
+    ]);
     let installed = installVisualScenario('terminal-readonly');
     dispose = installed.dispose;
     expect(principalRole()).toBe('read-only');
@@ -39,6 +43,30 @@ describe('visual fixture scenarios', () => {
     const serialized = JSON.stringify({ projects: projects(), sessions: projectSessions(), entries: chatEntries() });
     expect(serialized).not.toMatch(/bearer|access[_ -]?token|cookie|tokens\.toml|\/Users\//i);
     expect(new Set(projectSessions().map((item) => item.id)).size).toBe(projectSessions().length);
+  });
+
+  it('installs concrete examples for the added capability catalog', () => {
+    let installed = installVisualScenario('long-conversation');
+    expect(chatEntries()).toHaveLength(36);
+    expect(chatEntries().flatMap((entry) => entry.toolCalls)).toHaveLength(72);
+    expect(chatEntries().filter((entry) => entry.role === 'assistant').every((entry) => entry.text.includes('| Boundary |'))).toBe(true);
+    installed.dispose();
+
+    installed = installVisualScenario('tools');
+    expect(chatEntries().flatMap((entry) => entry.toolCalls)).toHaveLength(4);
+    expect(chatEntries().flatMap((entry) => entry.toolCalls).map((tool) => tool.status)).toEqual(['completed', 'completed', 'running', 'failed']);
+    installed.dispose();
+
+    installed = installVisualScenario('subtasks');
+    expect(chatHead()?.agent?.activities).toHaveLength(3);
+    expect(chatHead()?.agent?.activities.map((activity) => activity.status)).toEqual(['completed', 'running', 'info']);
+    installed.dispose();
+
+    installed = installVisualScenario('assets');
+    expect(chatEntries()[0].text).toContain('```mermaid');
+    expect(chatEntries()[0].resources).toHaveLength(1);
+    expect(composerAssets()).toHaveLength(3);
+    installed.dispose();
   });
 
   it('always releases the fixture clock when scenario cleanup is repeated', () => {

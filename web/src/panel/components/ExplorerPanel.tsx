@@ -1,12 +1,10 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup } from 'solid-js';
-import { Icon, IconButton, LoadingState } from '../../components/ui';
+import { IconButton, LoadingState } from '../../components/ui';
 import { openFilePreview, openResourceDirectory, refreshResourceProject, resourceWorkspace } from '../store';
 import type { ResourceEntry } from '../lib/resource-view';
+import { ChevronRight, File, Folder, FolderOpen, RefreshCw } from 'lucide-solid';
 
-function ChevronIcon() { return <Icon size="small"><path d="m7 4 6 6-6 6" /></Icon>; }
-function FolderIcon() { return <Icon size="small"><path d="M3 5.5h5l1.5 2H17v8.5H3z" /></Icon>; }
-function FileIcon() { return <Icon size="small"><path d="M5 2.8h6l4 4V17H5z" /><path d="M11 2.8V7h4" /></Icon>; }
-function RefreshIcon() { return <Icon size="small"><path d="M15.5 6.5V3.8l-2 2A6 6 0 1 0 16 10" /></Icon>; }
+function RefreshIcon() { return <RefreshCw size={14} strokeWidth={1.8} />; }
 
 type ExplorerPanelProps = {
   expanded?: Set<string>;
@@ -114,7 +112,7 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
           restoreFrame = requestAnimationFrame(() => { acceptingScroll = true; });
         });
       }}
-      class="ui-scrollbar min-h-0 flex-1 overflow-auto py-3"
+      class="ui-scrollbar min-h-0 flex-1 overflow-auto py-2"
       role="tree"
       aria-label="Workspace files"
       onKeyDown={navigateTree}
@@ -153,8 +151,8 @@ function FileRow(props: { entry: ResourceEntry; depth: number; index: number; se
       data-resource-focus-key={directory() ? undefined : `file:${path()}`}
       data-resource-focus-view={directory() ? undefined : 'explorer'}
       tabIndex={props.activePath === path() || (!props.activePath && props.depth === 0 && props.index === 0) ? 0 : -1}
-      class="group flex h-24 w-full items-center border-0 bg-transparent pr-6 text-left text-12 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44"
-      style={{ 'padding-left': `${6 + props.depth * 13}px` }}
+      class="group flex h-(--tree-row-height) w-full items-center border-0 bg-transparent pr-6 text-left text-11 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44"
+      style={{ 'padding-left': `${7 + props.depth * 12}px` }}
       onClick={() => {
         if (directory()) props.onToggle(path());
         else {
@@ -165,13 +163,13 @@ function FileRow(props: { entry: ResourceEntry; depth: number; index: number; se
       onFocus={() => props.onActive(path())}
       title={path()}
     >
-      <span class={`mr-1 grid size-14 place-items-center text-text-muted transition-transform ${directory() ? '' : 'opacity-0'} ${open() ? 'rotate-90' : ''}`}><ChevronIcon /></span>
-      <span class="mr-5 text-text-muted">{directory() ? <FolderIcon /> : <FileIcon />}</span>
+      <span class={`mr-1 grid size-14 place-items-center text-text-muted ${directory() ? '' : 'opacity-0'}`}><ChevronRight size={14} strokeWidth={1.8} class={open() ? 'rotate-90' : ''} /></span>
+      <span class="mr-5 grid size-15 place-items-center text-text-muted">{directory() ? open() ? <FolderOpen size={15} strokeWidth={1.7} /> : <Folder size={15} strokeWidth={1.7} /> : <File size={14} strokeWidth={1.7} />}</span>
       <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{String(props.entry.name ?? path())}</span>
     </button>
     <Show when={directory() && open()}>
       <div role="group">
-        <Show when={resourceWorkspace().directories[path()]} fallback={<div class="h-24 text-11 text-text-muted" style={{ 'padding-left': `${32 + props.depth * 13}px` }}>Loading…</div>}>
+        <Show when={resourceWorkspace().directories[path()]} fallback={<div class="h-(--tree-row-height) text-11 text-text-muted" style={{ 'padding-left': `${32 + props.depth * 12}px` }}>Loading…</div>}>
           <FileLevel path={path()} depth={props.depth + 1} expanded={props.expanded} activePath={props.activePath} onActive={props.onActive} onToggle={props.onToggle} onPreviewIntent={props.onPreviewIntent} />
         </Show>
       </div>

@@ -13,22 +13,25 @@ import { ChatHeader } from './ChatHeader';
 import { Composer } from './Composer';
 import { MessageList } from './MessageList';
 import { createSignal, onCleanup, onMount, Show } from 'solid-js';
-import { chatHead, elicitationResponses, elicitations, permissions, refreshCurrentControlProjection, registryHydrated, respondElicitation, restoringSessionId, selectedSessionId } from '../store';
+import { chatHead, elicitationResponses, elicitations, permissions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, restoringSessionId, retryPersistentAction, selectedSessionId, turnActive } from '../store';
 import { readOnly } from '../lib/auth-state';
 import { LoadingState } from '../../components/ui';
 import { ConnectionProblem } from './ConnectionProblem';
 import { ErrorCenter } from './ErrorCenter';
 import { LaunchWorkspace } from './LaunchWorkspace';
-import { AgentActivityRail } from './AgentActivityRail';
-import { AgentPlanPanel } from './AgentPlanPanel';
+import { StatusArea } from './StatusArea';
 import { ElicitationQueue } from './ElicitationQueue';
 import { dismissUncertainElicitation, visibleElicitations } from '../lib/elicitation-delivery';
+import { PermissionQueue } from './PermissionQueue';
+import { permissionDecisions } from '../lib/permission-delivery';
 
 type ChatViewProps = {
   onOpenNavigation?: () => void;
   onOpenSystem?: () => void;
   onCreateProject?: () => void;
   onImport?: (projectId: string) => void;
+  onOpenResources?: () => void;
+  onOpenMcp?: () => void;
 };
 
 export function ChatView(props: ChatViewProps) {
@@ -36,6 +39,7 @@ export function ChatView(props: ChatViewProps) {
   let composerStack: HTMLDivElement | undefined;
   let composerObserver: ResizeObserver | undefined;
   const hasPendingPermission = () => permissions().some((permission) => permission.status === 'pending');
+  const hasPendingElicitation = () => visibleElicitations(elicitations()).length > 0;
   onMount(() => {
     if (!composerStack || typeof ResizeObserver === 'undefined') return;
     const updateHeight = () => setComposerHeight(composerStack?.getBoundingClientRect().height ?? 0);
@@ -50,6 +54,8 @@ export function ChatView(props: ChatViewProps) {
         launch={!selectedSessionId()}
         onOpenNavigation={props.onOpenNavigation}
         onOpenSystem={props.onOpenSystem}
+        onOpenResources={props.onOpenResources}
+        onOpenMcp={props.onOpenMcp}
       />
       <ConnectionProblem />
       <ErrorCenter />
@@ -61,10 +67,17 @@ export function ChatView(props: ChatViewProps) {
         <LaunchWorkspace onOpenNavigation={props.onOpenNavigation} onCreateProject={props.onCreateProject} onImport={props.onImport} />
       </Show>}>
         <div class="chat-workspace relative flex min-h-0 flex-1 flex-col">
-          <AgentActivityRail activities={chatHead()?.agent?.activities ?? []} />
-          <AgentPlanPanel entries={chatHead()?.agent?.plan ?? []} />
           <MessageList bottomInset={composerHeight()} />
           <div ref={composerStack} class="composer-stack composer-stack--overlay pointer-events-none absolute right-0 bottom-0 left-0 z-20 bg-app-bg [&>*]:pointer-events-auto">
+            <Show when={hasPendingPermission()}>
+              <PermissionQueue
+                permissions={permissions().filter((permission) => permission.status === 'pending')}
+                decisions={permissionDecisions()}
+                readOnly={readOnly()}
+                onResolve={resolvePermission}
+                onRetry={retryPersistentAction}
+              />
+            </Show>
             <Show when={!hasPendingPermission()}>
               <ElicitationQueue
                 elicitations={visibleElicitations(elicitations())}
@@ -74,6 +87,9 @@ export function ChatView(props: ChatViewProps) {
                 onDismissUncertain={dismissUncertainElicitation}
                 onRespond={respondElicitation}
               />
+            </Show>
+            <Show when={!hasPendingPermission() && !hasPendingElicitation()}>
+              <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} />
             </Show>
             <Composer />
           </div>
