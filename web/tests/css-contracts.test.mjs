@@ -215,8 +215,8 @@ test('responsive behavior has compact, medium and wide layout contracts', () => 
   assert.match(drawer, /<aside[^>]*class=\{drawerClass\}/);
   assert.match(drawer, /<Dialog open=\{props\.open\}/);
   assert.match(drawer, /max-desk:fixed[^']*max-desk:w-\(--container-drawer\)/);
-  // 中宽布局的内容宽度：chat 列表 760px、composer 使用同一布局 token。
-  assert.match(messageList, /desk:max-wide:max-w-\(--container-chat-narrow\)/);
+  // 正文拥有独立阅读宽度，composer 与决策面保持较宽的操作轨道。
+  assert.match(messageList, /max-w-\(--container-chat-content\)/);
   assert.match(composer, /max-w-\(--container-chat\)/);
   assert.match(composer, /desk:max-wide:max-w-\(--container-chat-narrow\)/);
   assert.match(composer, /max-narrow:px-10/);

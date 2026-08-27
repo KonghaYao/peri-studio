@@ -215,6 +215,7 @@
 
   /* Containers: max-w-/max-h-/w- utilities resolve to these */
   --container-chat: var(--container-chat);
+  --container-chat-content: var(--container-chat-content);
   --container-chat-narrow: var(--container-chat-narrow);
   --container-composer-launch: var(--container-composer-launch);
   --container-auth-card: var(--container-auth-card);

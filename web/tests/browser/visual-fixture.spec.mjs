@@ -81,6 +81,7 @@ test('markdown conversation uses the available desktop content track', async ({ 
     };
   });
   expect(geometry.markdownWidth).toBeGreaterThanOrEqual(geometry.trackInnerWidth - 1);
+  expect(geometry.trackInnerWidth).toBeLessThanOrEqual(880);
 });
 
 test('long conversation combines rich markdown, dense tool calls, and the status area', async ({ page }) => {
@@ -282,7 +283,7 @@ test('sidebar chrome and composer match the compact input shell', async ({ page 
 });
 
 for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 768 }, { width: 768, height: 768 }, { width: 390, height: 844 }]) {
-  test(`conversation surfaces share one content rail at ${viewport.width}px`, async ({ page }) => {
+  test(`conversation body keeps a centered reading inset at ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
 
@@ -295,14 +296,19 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 768
         message: rect('.conversation-message--assistant'),
         permission: rect('.permission-queue__surface'),
         composer: rect('.composer-surface'),
+        scrollbarReserve: document.querySelector('.message-list-scroll').offsetWidth
+          - document.querySelector('.message-list-scroll').clientWidth,
       };
     });
 
     expect(geometry.permission.left).toBe(geometry.composer.left);
     expect(geometry.permission.right).toBe(geometry.composer.right);
-    expect(geometry.message.left).toBe(geometry.composer.left);
-    expect(geometry.composer.right - geometry.message.right).toBeGreaterThanOrEqual(0);
-    expect(geometry.composer.right - geometry.message.right).toBeLessThanOrEqual(16);
+    const leftInset = geometry.message.left - geometry.composer.left;
+    const rightInset = geometry.composer.right - geometry.message.right;
+    expect(leftInset).toBeGreaterThanOrEqual(0);
+    expect(rightInset).toBeGreaterThanOrEqual(0);
+    expect(Math.abs(leftInset - rightInset)).toBeLessThanOrEqual(geometry.scrollbarReserve + 1);
+    expect(leftInset).toBeLessThanOrEqual(20);
     await expect(page.locator('.elicitation-card')).toHaveCount(0);
   });
 }

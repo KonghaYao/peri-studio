@@ -82,7 +82,7 @@ function TranscriptRow(props: {
 
 // ── 消息滚动区 ──────────────────────────────────────────────────────────
 
-export function MessageList(props: { bottomInset?: number }) {
+export function MessageList(props: { footerHeight?: number }) {
   const [stick, setStick] = createSignal(true);
   const [hasNewContent, setHasNewContent] = createSignal(false);
   const [completionAnnouncement, setCompletionAnnouncement] = createSignal('');
@@ -97,7 +97,7 @@ export function MessageList(props: { bottomInset?: number }) {
   let entryProjectionRevision = 0;
   let transcriptChatId = selectedCid();
   let completionBaselineReady = false;
-  let observedBottomInset = props.bottomInset ?? 0;
+  let observedFooterHeight = props.footerHeight ?? 0;
   let announcementChatId: string | null | undefined;
   let announcedCompletionKey: string | null = null;
   const transcript = new TranscriptWindow({ estimatedHeight: 80, overscan: 320 });
@@ -151,16 +151,12 @@ export function MessageList(props: { bottomInset?: number }) {
   // 泛化 loading 只填补真正的 thinking gap；工具行和决策面板已经承担可见状态，不能重复。
   const showChatLoading = () => agentActivityAnnouncement() === 'Peri is working';
 
-  // Composer 绝对覆盖在滚动区上方：动态高度 + 最小安全留白，保证最后一条消息不被贴住或遮挡。
-  const contentBottomInset = () => `${Math.max(props.bottomInset ?? 0, 64) + 40}px`;
-  const jumpBottomInset = () => `${Math.max(props.bottomInset ?? 0, 0) + 12}px`;
-
-  // 浮层（状态区、问题、权限或 Composer）变高时，旧的“已吸底”位置会落到
-  // 新浮层下面。高度变化后重新读取真实 scrollHeight，保持尾部完整可见。
+  // 底部状态区变高会压缩滚动视口。跟随最新消息时重新吸底；用户上滚时
+  // 保持阅读位置，不让布局变化夺走控制权。
   createEffect(() => {
-    const nextInset = props.bottomInset ?? 0;
-    if (nextInset === observedBottomInset) return;
-    observedBottomInset = nextInset;
+    const nextHeight = props.footerHeight ?? 0;
+    if (nextHeight === observedFooterHeight) return;
+    observedFooterHeight = nextHeight;
     if (!areaRef || !stick()) return;
     queueMicrotask(() => {
       if (mounted && stick()) scrollToBottom();
@@ -319,12 +315,11 @@ export function MessageList(props: { bottomInset?: number }) {
         setStick(el.scrollHeight - el.scrollTop - el.clientHeight < 40);
         updateViewport(el.scrollTop);
       }}
-      class="ui-scrollbar message-list-scroll min-h-0 flex-1 overflow-y-auto [overflow-anchor:none]"
+      class="ui-scrollbar message-list-scroll min-h-0 flex-1 overflow-y-auto [overflow-anchor:none] [overscroll-behavior:contain] [scrollbar-gutter:stable]"
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
       <div class="sr-only" role="status" aria-label="Agent activity" aria-live="polite" aria-atomic="true">{agentActivityAnnouncement()}</div>
-      {/* Composer 覆盖在时间线底部；动态 inset 让最后一条消息始终完整可读。 */}
-      <div class="message-list-content box-border w-full max-w-(--container-chat) mx-auto pt-32 px-20 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 max-desk:max-w-(--container-chat-narrow) max-narrow:px-10" style={{ 'padding-bottom': contentBottomInset() }}>
+      <div class="message-list-content box-border w-full max-w-(--container-chat-content) mx-auto px-20 pt-32 pb-32 desk:max-wide:px-18 max-narrow:px-10">
         <div ref={prefixRef} class="transcript-prefix">
           <Show when={!runtimeDocsHydrated()}>
             <LoadingState label="Loading session" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />
@@ -355,7 +350,7 @@ export function MessageList(props: { bottomInset?: number }) {
         }</Show>
       </div>
     </section>
-    <Show when={(!stick() || hasNewContent()) && permissions().length === 0 && visibleElicitations(elicitations()).length === 0}><Button type="button" size="compact" class="jump-latest absolute z-12 left-1/2 -translate-x-1/2 min-h-36 px-13 border border-border-subtle rounded-full bg-surface-translucent text-text-secondary shadow-popover cursor-pointer text-12 backdrop-blur-sm hover:text-text-primary pointer-coarse:min-h-44 pointer-coarse:px-16" style={{ bottom: jumpBottomInset() }} onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button></Show>
+    <Show when={(!stick() || hasNewContent()) && permissions().length === 0 && visibleElicitations(elicitations()).length === 0}><Button type="button" size="compact" class="jump-latest absolute bottom-12 z-12 left-1/2 -translate-x-1/2 min-h-36 px-13 border border-border-subtle rounded-full bg-surface-translucent text-text-secondary shadow-popover cursor-pointer text-12 backdrop-blur-sm hover:text-text-primary pointer-coarse:min-h-44 pointer-coarse:px-16" onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button></Show>
     </div>
   );
 }

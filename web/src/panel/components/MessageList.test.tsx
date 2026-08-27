@@ -145,20 +145,21 @@ describe('MessageList timeline follow', () => {
   });
 });
 
-describe('MessageList overlay inset', () => {
-  it('keeps the last message and jump action above an overlay composer', () => {
+describe('MessageList footer resize', () => {
+  it('keeps a compact reading margin at the end of the in-flow timeline', () => {
     setRuntimeDocsState({ chat: true, control: true });
     setChatEntries([message('assistant-1', 'live', null)]);
-    const { container } = render(() => <MessageList bottomInset={160} />);
+    const { container } = render(() => <MessageList footerHeight={160} />);
 
-    expect(container.querySelector('.message-list-content')).toHaveStyle({ 'padding-bottom': '200px' });
+    expect(container.querySelector('.message-list-content')).toHaveClass('pb-32');
+    expect(screen.getByRole('region', { name: 'Conversation messages' })).toHaveClass('[scrollbar-gutter:stable]');
   });
 
-  it('keeps following the true bottom when the overlay composer grows', async () => {
+  it('keeps following the true bottom when the in-flow footer grows', async () => {
     setRuntimeDocsState({ chat: true, control: true });
     setChatEntries([message('assistant-1', 'live', null)]);
-    const [bottomInset, setBottomInset] = createSignal(120);
-    render(() => <MessageList bottomInset={bottomInset()} />);
+    const [footerHeight, setFooterHeight] = createSignal(120);
+    render(() => <MessageList footerHeight={footerHeight()} />);
     const area = screen.getByRole('region', { name: 'Conversation messages' });
     Object.defineProperties(area, {
       clientHeight: { configurable: true, value: 600 },
@@ -168,7 +169,7 @@ describe('MessageList overlay inset', () => {
     const scrollTo = vi.mocked(area.scrollTo);
     scrollTo.mockClear();
 
-    setBottomInset(260);
+    setFooterHeight(260);
     await Promise.resolve();
 
     expect(scrollTo).toHaveBeenLastCalledWith({ top: 1_400, behavior: 'auto' });

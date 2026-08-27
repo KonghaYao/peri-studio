@@ -132,3 +132,31 @@ test('expanded output at the tail remains fully visible above the composer and s
   expect(geometry.tailBottom).toBeLessThanOrEqual(geometry.overlayTop - 8);
   expect(geometry.scrollBottomGap).toBeLessThanOrEqual(2);
 });
+
+for (const viewport of [{ width: 1600, height: 900 }, { width: 1280, height: 900 }, { width: 768, height: 768 }, { width: 390, height: 844 }]) {
+  test(`the conversation scrollbar ends above the composer at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/visual-fixture.html?scenario=long-conversation', { waitUntil: 'networkidle' });
+
+    const geometry = await page.evaluate(() => {
+      const area = document.querySelector('.message-list-scroll');
+      const composer = document.querySelector('.composer-stack');
+      if (!area || !composer) throw new Error('Scroll geometry missing');
+      area.scrollTo({ top: area.scrollHeight });
+      return {
+        scrollBottom: area.getBoundingClientRect().bottom,
+        composerTop: composer.getBoundingClientRect().top,
+        gutter: getComputedStyle(area).scrollbarGutter,
+        bottomGap: area.scrollHeight - area.clientHeight - area.scrollTop,
+        horizontalOverflow: area.scrollWidth - area.clientWidth,
+        pageOverflow: document.documentElement.scrollHeight - document.documentElement.clientHeight,
+      };
+    });
+
+    expect(geometry.scrollBottom).toBeLessThanOrEqual(geometry.composerTop + 1);
+    expect(geometry.gutter).toBe('stable');
+    expect(geometry.bottomGap).toBeLessThanOrEqual(2);
+    expect(geometry.horizontalOverflow).toBeLessThanOrEqual(1);
+    expect(geometry.pageOverflow).toBeLessThanOrEqual(1);
+  });
+}

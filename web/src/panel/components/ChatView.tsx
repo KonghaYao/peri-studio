@@ -65,8 +65,8 @@ export function ChatView(props: ChatViewProps) {
         <LaunchWorkspace onOpenNavigation={props.onOpenNavigation} onCreateProject={props.onCreateProject} onImport={props.onImport} />
       </Show>}>
         <div class="chat-workspace relative flex min-h-0 flex-1 flex-col">
-          <MessageList bottomInset={composerHeight()} />
-          <div ref={composerStack} class="composer-stack composer-stack--overlay pointer-events-none absolute right-0 bottom-0 left-0 z-20 bg-app-bg [&>*]:pointer-events-auto">
+          <MessageList footerHeight={composerHeight()} />
+          <div ref={composerStack} class="composer-stack relative z-20 flex-none bg-app-bg">
             <Show when={hasPendingPermission()}>
               <PermissionQueue
                 permissions={permissions().filter((permission) => permission.status === 'pending')}

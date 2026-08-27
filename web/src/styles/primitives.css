@@ -35,6 +35,9 @@
 .ui-scrollbar {
   scrollbar-gutter: auto;
 }
+.message-list-scroll {
+  scrollbar-gutter: stable;
+}
 
 /* 软键盘或横屏会把手机可用高度压到 520px 以下。启动页此时必须回到
    正常文档流，否则绝对定位的提示会与 composer 大面积重叠。 */

@@ -226,6 +226,7 @@
 
   /* Containers (bounded surfaces; used by max-w-/max-h-/w- utilities) */
   --container-chat: 960px;
+  --container-chat-content: 920px;
   --container-chat-narrow: 840px;
   --container-composer-launch: var(--composer-launch-max);
   --container-auth-card: min(440px, 100%);
