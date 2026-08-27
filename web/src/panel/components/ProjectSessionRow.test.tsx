@@ -47,7 +47,7 @@ describe('ProjectSessionRow', () => {
 
     expect(screen.getByRole('img', { name: 'Runtime status: Agent is working' })).toHaveClass('session-status-dot--busy');
     expect(screen.getByRole('button', { name: 'Session actions: Architecture refactor' })).toHaveClass('session-menu');
-    expect(screen.getByText('Architecture refactor').closest('.session-copy')).toBeInTheDocument();
+    expect(screen.getByText('Architecture refactor')).toHaveClass('font-600', 'text-text-primary');
   });
 
   it('delegates server-authoritative opening without navigating early', () => {

@@ -16,6 +16,7 @@ LISTEN_ADDR="${PERI_STUDIO_LISTEN_ADDR:-127.0.0.1}"
 LISTEN_PORT="${PERI_STUDIO_LISTEN_PORT:-8456}"
 LOG_DIR="$(pwd)/.tmp"
 APP_LOG="${LOG_DIR}/peri-studio.${$}.log"
+DEV_LOG_FILTER="${PERI_STUDIO_DEV_LOG:-info}"
 
 if lsof -nP -iTCP:"${LISTEN_PORT}" -sTCP:LISTEN >/dev/null 2>&1; then
     echo "!! TCP ${LISTEN_PORT} 已被占用；若 Peri Studio 已运行，请直接打开 http://${LISTEN_ADDR}:${LISTEN_PORT}/。" >&2
@@ -46,7 +47,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 echo "==> 启动 peri-studio local（日志: ${APP_LOG}）"
-cargo run -q -p peri-studio -- local \
+RUST_LOG="${DEV_LOG_FILTER}" cargo run -q -p peri-studio -- local \
     --listen "${LISTEN_ADDR}" \
     --listen-port "${LISTEN_PORT}" \
     --config-dir "${CONFIG_DIR}" \

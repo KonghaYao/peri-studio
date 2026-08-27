@@ -113,6 +113,25 @@ pub enum ToolCallStatus {
     Cancelled,
 }
 
+/// ACP 工具种类的稳定投影。未知或旧数据必须降级为 `Other`，不得由 UI
+/// 根据展示名称猜测工具语义。
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ToolCallKind {
+    Read,
+    Edit,
+    Delete,
+    Move,
+    Search,
+    Execute,
+    Think,
+    Fetch,
+    SwitchMode,
+    #[default]
+    #[serde(other)]
+    Other,
+}
+
 /// 权限请求选项（§5.4）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

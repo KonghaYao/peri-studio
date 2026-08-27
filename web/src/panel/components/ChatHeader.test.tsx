@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   setChatHead,
   setChatStatusSignal,
@@ -174,10 +174,8 @@ describe('ChatHeader runtime truth', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it('delegates the system information entry to the application shell', () => {
-    const onOpenSystem = vi.fn();
-    render(() => <ChatHeader onOpenSystem={onOpenSystem} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Open system information' }));
-    expect(onOpenSystem).toHaveBeenCalledOnce();
+  it('keeps system information out of the per-conversation header', () => {
+    render(() => <ChatHeader />);
+    expect(screen.queryByRole('button', { name: 'Open system information' })).not.toBeInTheDocument();
   });
 });

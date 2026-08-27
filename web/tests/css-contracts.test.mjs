@@ -243,6 +243,7 @@ test('P0 interaction architecture cannot regress to hidden cancel or viewport-br
   assert.match(composer, /Confirm stop with original request/);
   assert.match(dialog, /DialogPrimitive\.Portal/);
   assert.match(sidebarChrome, /sidebar-footer/);
+  assert.doesNotMatch(sidebarChrome, /Pull requests|Sites are not connected|Scheduled tasks|Plugin management|label="Voice"/);
   assert.doesNotMatch(styles, /logout-button[^}]*position\s*:\s*fixed/s);
 });
 
@@ -256,7 +257,7 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
   assert.doesNotMatch(composer, />\s*上下文：/);
   assert.doesNotMatch(composer, /focus-within:border-focus-ring/);
   assert.doesNotMatch(composer, /has-\[\.composer-input:focus-visible\]:shadow-/);
-  assert.match(composer, /composer-toolbar flex min-h-38 items-center/);
+  assert.match(composer, /composer-toolbar flex min-h-36 items-center/);
   assert.match(composer, /rounded-\(--composer-radius\)/);
   assert.match(base, /:focus-visible\s*\{\s*outline:\s*2px solid var\(--focus-ring\)/);
 });

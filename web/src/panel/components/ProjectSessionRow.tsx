@@ -1,6 +1,7 @@
 import { createEffect, createSignal, Show } from 'solid-js';
 import type { ProjectSessionInfo } from '../lib/registry-view';
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Icon, IconButton, Popover, PopoverContent, PopoverTrigger, Spinner, TextField } from '../../components/ui';
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, IconButton, Popover, PopoverContent, PopoverTrigger, Spinner, TextField } from '../../components/ui';
+import { Archive, MessageSquare, MoreHorizontal, Pencil } from 'lucide-solid';
 import { sessionDisplayTitle } from '../lib/recovery-state.ts';
 import { runConfirmedMutation } from '../lib/form-mutation';
 
@@ -37,12 +38,12 @@ export interface ProjectSessionRowProps {
 }
 
 function ChatIcon() {
-  return <Icon><path d="M4 4.5h12v9H8l-4 3v-12Z" /></Icon>;
+  return <MessageSquare size={16} strokeWidth={1.7} />;
 }
 
-function MoreIcon() { return <Icon class="size-17!"><circle cx="4" cy="10" r="1" /><circle cx="10" cy="10" r="1" /><circle cx="16" cy="10" r="1" /></Icon>; }
-function RenameIcon() { return <Icon class="size-16!"><path d="m5 14-1 3 3-1 8.5-8.5-2-2L5 14Z" /><path d="m12.5 6.5 2 2" /></Icon>; }
-function ArchiveIcon() { return <Icon class="size-16!"><path d="M3.5 6.5h13v10h-13zM2.5 3.5h15v3h-15zM8 10h4" /></Icon>; }
+function MoreIcon() { return <MoreHorizontal size={17} strokeWidth={1.7} />; }
+function RenameIcon() { return <Pencil size={16} strokeWidth={1.7} />; }
+function ArchiveIcon() { return <Archive size={16} strokeWidth={1.7} />; }
 
 export function ProjectSessionRow(props: ProjectSessionRowProps) {
   const [draft, setDraft] = createSignal(props.session.title);
@@ -93,7 +94,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
       disabled={(props.readOnly && !props.session.activeChatId) || props.session.lifecycle !== 'ready' || props.navigationBusy}
     >
       <ChatIcon />
-      <span class="session-copy min-w-0 flex-1"><strong class="block overflow-hidden text-ellipsis whitespace-nowrap text-13 font-normal text-inherit">{displayTitle()}</strong></span>
+      <span class="session-copy min-w-0 flex-1"><strong class="block overflow-hidden text-ellipsis whitespace-nowrap text-13 font-600 text-text-primary">{displayTitle()}</strong></span>
       <span class="absolute right-[10px] grid size-7 place-items-center"><Show when={props.opening || ['activating', 'pending'].includes(props.session.lifecycle)} fallback={<span class={`session-status-dot session-status-dot--${props.state.tone} size-7 shrink-0 rounded-full ${props.state.tone === 'idle' ? 'bg-text-faint' : props.state.tone === 'attention' ? 'bg-warning' : props.state.tone === 'danger' ? 'bg-danger' : 'bg-success'}`} role="img" aria-label={`Runtime status: ${props.state.detail || props.state.label}`} />}><Spinner label="Opening…" /></Show></span>
     </Button>
     <DropdownMenu open={props.menuOpen} onOpenChange={props.onMenuOpenChange} placement="bottom-end">

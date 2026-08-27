@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createSignal } from 'solid-js';
 import { setChatEntries, setChatHead, setElicitations, setPermissions, setRuntimeDocsState, setSelectedCid } from '../store';
 import { MessageList } from './MessageList';
 import type { ChatEntry } from '../lib/chat-view';
@@ -152,6 +153,26 @@ describe('MessageList overlay inset', () => {
 
     expect(container.querySelector('.message-list-content')).toHaveStyle({ 'padding-bottom': '200px' });
   });
+
+  it('keeps following the true bottom when the overlay composer grows', async () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    setChatEntries([message('assistant-1', 'live', null)]);
+    const [bottomInset, setBottomInset] = createSignal(120);
+    render(() => <MessageList bottomInset={bottomInset()} />);
+    const area = screen.getByRole('region', { name: 'Conversation messages' });
+    Object.defineProperties(area, {
+      clientHeight: { configurable: true, value: 600 },
+      scrollHeight: { configurable: true, value: 1_400 },
+      scrollTop: { configurable: true, writable: true, value: 800 },
+    });
+    const scrollTo = vi.mocked(area.scrollTo);
+    scrollTo.mockClear();
+
+    setBottomInset(260);
+    await Promise.resolve();
+
+    expect(scrollTo).toHaveBeenLastCalledWith({ top: 1_400, behavior: 'auto' });
+  });
 });
 
 describe('MessageList completion announcement', () => {
@@ -248,7 +269,7 @@ describe('MessageList hydration', () => {
     expect(screen.queryByText('Loading session')).not.toBeInTheDocument();
   });
 
-  it('renders one visible working state until the active turn has content', () => {
+  it('keeps one generic working state through the gap after completed tool output', () => {
     setRuntimeDocsState({ chat: true, control: true });
     setChatEntries([message('assistant-1', 'live', null)]);
     setChatHead({
@@ -263,12 +284,113 @@ describe('MessageList hydration', () => {
     const loading = document.querySelector('.message-loading')!;
     expect(loading).toHaveClass('message-loading');
     expect(loading).not.toHaveClass('sr-only');
-    expect(loading).toHaveAttribute('aria-live', 'polite');
     expect(loading).toHaveTextContent('Peri is working');
     expect(document.querySelectorAll('.message-loading')).toHaveLength(1);
 
-    setChatEntries([message('turn-1', 'live', null)]);
+    setChatEntries([{
+      ...message('turn-1', 'live', null),
+      text: '',
+      blocks: [{ kind: 'tool_call', id: 'tool-block', toolCall: {
+        toolCallId: 'tool-1', name: 'Bash', kind: 'execute', status: 'completed', arguments: { command: 'pwd' }, result: { stdout: '/repo' },
+        resultOmitted: false, resultBytes: 5, publicError: null, startedAt: null, completedAt: null,
+      }}],
+      toolCalls: [{ toolCallId: 'tool-1', name: 'Bash', kind: 'execute', status: 'completed', arguments: { command: 'pwd' }, result: { stdout: '/repo' }, resultOmitted: false, resultBytes: 5, publicError: null, startedAt: null, completedAt: null }],
+    }]);
+    expect(document.querySelector('.message-loading')).toHaveTextContent('Peri is working');
+    expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('Peri is working');
+
+    setChatEntries([{
+      ...message('turn-1', 'live', null),
+      text: 'Next answer delta',
+      blocks: [{ kind: 'text', id: 'text-block', text: 'Next answer delta' }],
+      toolCalls: [{
+        toolCallId: 'tool-1', name: 'Bash', kind: 'execute', status: 'completed', arguments: { command: 'pwd' }, result: { stdout: '/repo' },
+        resultOmitted: false, resultBytes: 5, publicError: null, startedAt: null, completedAt: null,
+      }],
+    }]);
     expect(document.querySelector('.message-loading')).toBeNull();
+  });
+
+  it('uses one aggregate live status without duplicating a running tool or permission surface', () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    setChatHead({
+      chat: { chatId: 'chat-1', title: null, status: 'active', activeTurnId: 'turn-1', loading: true, createdAt: null, updatedAt: null },
+      agent: null,
+      activeTurn: { turnId: 'turn-1', turnStatus: 'running', updatedAt: null },
+      pendingPermissions: [],
+    });
+    setChatEntries([{
+      ...message('turn-1', 'live', null),
+      toolCalls: [{
+        toolCallId: 'tool-1', name: 'Bash', kind: 'execute', status: 'running', arguments: { command: 'pwd' }, result: null,
+        resultOmitted: false, resultBytes: null, publicError: null, startedAt: null, completedAt: null,
+      }],
+    }]);
+    const view = render(() => <MessageList />);
+
+    expect(document.querySelector('.message-loading')).toBeNull();
+    expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('Bash running');
+
+    setPermissions([{ queueKey: 'p1', permissionId: 'p1', turnId: 'turn-1', toolCallId: null, title: 'Run command', description: null, options: ['allowOnce', 'deny'], status: 'pending', decision: null }]);
+    setChatEntries([]);
+    expect(document.querySelector('.message-loading')).toBeNull();
+    expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('Waiting for permission');
+
+    setPermissions([]);
+    setElicitations([{ elicitationId: 'e1', message: 'Choose a path', status: 'pending', responseAction: null, fields: [], createdAt: null }]);
+    expect(document.querySelector('.message-loading')).toBeNull();
+    expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('Waiting for your answer');
+    view.unmount();
+  });
+
+  it('reduces every assistant segment in the active turn using the latest authoritative activity', () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    setChatHead({
+      chat: { chatId: 'chat-1', title: null, status: 'active', activeTurnId: 'turn-1', loading: true, createdAt: null, updatedAt: null },
+      agent: null,
+      activeTurn: { turnId: 'turn-1', turnStatus: 'running', updatedAt: null },
+      pendingPermissions: [],
+    });
+    const runningTool = {
+      toolCallId: 'tool-segment', name: 'Bash', kind: 'execute' as const, status: 'running', arguments: { command: 'test' }, result: null,
+      resultOmitted: false, resultBytes: null, publicError: null, startedAt: null, completedAt: null,
+    };
+    const firstText = { ...message('segment-text', 'live', null), turnId: 'turn-1', text: 'First delta', blocks: [{ kind: 'text' as const, id: 'text-1', text: 'First delta' }] };
+    const toolSegment = { ...message('segment-tool', 'live', null), turnId: 'turn-1', text: '', status: 'streaming', blocks: [{ kind: 'tool_call' as const, id: 'tool-1', toolCall: runningTool }], toolCalls: [runningTool] };
+    render(() => <MessageList />);
+
+    setChatEntries([firstText, toolSegment]);
+    expect(document.querySelector('.message-loading')).toBeNull();
+    expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('Bash running');
+
+    const completedTool = { ...runningTool, status: 'completed', result: { exitCode: 0 }, completedAt: '2026-08-15T00:00:01Z' };
+    setChatEntries([firstText, { ...toolSegment, toolCalls: [completedTool], blocks: [{ kind: 'tool_call', id: 'tool-1', toolCall: completedTool }] }]);
+    expect(document.querySelector('.message-loading')).toHaveTextContent('Peri is working');
+
+    const finalText = { ...message('segment-final', 'live', null), turnId: 'turn-1', text: 'Final delta', blocks: [{ kind: 'text' as const, id: 'text-2', text: 'Final delta' }] };
+    setChatEntries([firstText, { ...toolSegment, toolCalls: [completedTool], blocks: [{ kind: 'tool_call', id: 'tool-1', toolCall: completedTool }] }, finalText]);
+    expect(document.querySelector('.message-loading')).toBeNull();
+    expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('');
+  });
+
+  it('does not add generic loading while any earlier tool in the active turn remains nonterminal', () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    setChatHead({
+      chat: { chatId: 'chat-1', title: null, status: 'active', activeTurnId: 'turn-1', loading: true, createdAt: null, updatedAt: null },
+      agent: null,
+      activeTurn: { turnId: 'turn-1', turnStatus: 'running', updatedAt: null },
+      pendingPermissions: [],
+    });
+    const running = { toolCallId: 'parallel-running', name: 'Bash', kind: 'execute' as const, status: 'running', arguments: {}, result: null, resultOmitted: false, resultBytes: null, publicError: null, startedAt: null, completedAt: null };
+    const completed = { ...running, toolCallId: 'parallel-completed', name: 'Read', kind: 'read' as const, status: 'completed', result: {}, completedAt: '2026-08-15T00:00:01Z' };
+    setChatEntries([
+      { ...message('segment-running', 'live', null), turnId: 'turn-1', text: '', status: 'streaming', blocks: [{ kind: 'tool_call', id: 'running', toolCall: running }], toolCalls: [running] },
+      { ...message('segment-completed', 'live', null), turnId: 'turn-1', text: '', status: 'streaming', blocks: [{ kind: 'tool_call', id: 'completed', toolCall: completed }], toolCalls: [completed] },
+    ]);
+
+    render(() => <MessageList />);
+    expect(document.querySelector('.message-loading')).toBeNull();
+    expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('Bash running');
   });
 
   it('keeps pending permissions out of the transcript surface', () => {

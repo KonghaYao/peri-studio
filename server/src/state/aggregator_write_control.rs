@@ -390,6 +390,19 @@ impl Aggregator {
                             chat_writer::bump_projection_version(&mut txn, &root);
                         }
                     }
+                    EventBody::ToolCallPatched { patch, .. } => {
+                        if !replay_active
+                            && patch.status == Some(ToolCallStatus::Running)
+                            && chat_writer::set_active_turn_status_if(
+                                &mut txn,
+                                &root,
+                                "accepting",
+                                "running",
+                            )
+                        {
+                            chat_writer::bump_projection_version(&mut txn, &root);
+                        }
+                    }
                     EventBody::ToolCallCompleted { .. }
                     | EventBody::PermissionResolved { .. }
                     | EventBody::PermissionExpired { .. } => {

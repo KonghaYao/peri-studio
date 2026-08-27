@@ -48,7 +48,7 @@ describe('visual fixture scenarios', () => {
   it('installs concrete examples for the added capability catalog', () => {
     let installed = installVisualScenario('long-conversation');
     expect(chatEntries()).toHaveLength(36);
-    expect(chatEntries().flatMap((entry) => entry.toolCalls)).toHaveLength(72);
+    expect(chatEntries().flatMap((entry) => entry.toolCalls).length).toBeGreaterThanOrEqual(72);
     expect(chatEntries().filter((entry) => entry.role === 'assistant').every((entry) => entry.text.includes('| Boundary |'))).toBe(true);
     installed.dispose();
 

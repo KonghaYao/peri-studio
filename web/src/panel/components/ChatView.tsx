@@ -13,7 +13,7 @@ import { ChatHeader } from './ChatHeader';
 import { Composer } from './Composer';
 import { MessageList } from './MessageList';
 import { createSignal, onCleanup, onMount, Show } from 'solid-js';
-import { chatHead, elicitationResponses, elicitations, permissions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, restoringSessionId, retryPersistentAction, selectedSessionId, turnActive } from '../store';
+import { chatEntries, chatHead, elicitationResponses, elicitations, permissions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, restoringSessionId, retryPersistentAction, selectedSessionId, turnActive } from '../store';
 import { readOnly } from '../lib/auth-state';
 import { LoadingState } from '../../components/ui';
 import { ConnectionProblem } from './ConnectionProblem';
@@ -27,7 +27,6 @@ import { permissionDecisions } from '../lib/permission-delivery';
 
 type ChatViewProps = {
   onOpenNavigation?: () => void;
-  onOpenSystem?: () => void;
   onCreateProject?: () => void;
   onImport?: (projectId: string) => void;
   onOpenResources?: () => void;
@@ -53,7 +52,6 @@ export function ChatView(props: ChatViewProps) {
       <ChatHeader
         launch={!selectedSessionId()}
         onOpenNavigation={props.onOpenNavigation}
-        onOpenSystem={props.onOpenSystem}
         onOpenResources={props.onOpenResources}
         onOpenMcp={props.onOpenMcp}
       />
@@ -89,7 +87,7 @@ export function ChatView(props: ChatViewProps) {
               />
             </Show>
             <Show when={!hasPendingPermission() && !hasPendingElicitation()}>
-              <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} />
+              <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} entries={chatEntries()} />
             </Show>
             <Composer />
           </div>

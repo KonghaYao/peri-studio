@@ -142,6 +142,10 @@
   --status-panel-max-height: 132px;
   --composer-radius: 18px;
   --decision-radius: 14px;
+  --permission-card-min-height: 96px;
+  --model-badge-max: 112px;
+  --runtime-label-max: 120px;
+  --tree-depth-chat: 43px;
   --tool-activity-max: 740px;
 
   /* Layout */
@@ -221,8 +225,8 @@
   --grid-cols-slash: minmax(150px, 0.8fr) minmax(0, 1.2fr);
 
   /* Containers (bounded surfaces; used by max-w-/max-h-/w- utilities) */
-  --container-chat: 820px;
-  --container-chat-narrow: 760px;
+  --container-chat: 960px;
+  --container-chat-narrow: 840px;
   --container-composer-launch: var(--composer-launch-max);
   --container-auth-card: min(440px, 100%);
   --container-drawer: min(88vw, 320px);

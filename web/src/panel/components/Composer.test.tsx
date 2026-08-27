@@ -63,6 +63,25 @@ function installPrediction(id = 'prediction:1:7', text = 'check failure test') {
 afterEach(resetStore);
 
 describe('Composer', () => {
+  it('uses the shared compact composer geometry in the production surface', () => {
+    selectReadyChat();
+    setChatHead({
+      chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
+      agent: {
+        instanceId: 'local', sessionId: 'acp-1', status: 'ready', lastActivityAt: null,
+        availableCommands: [], commandCatalog: [], extensions: [], activities: [], inputPrediction: null, latestUsage: null,
+        model: 'Nova 4.1', effort: 'high', contextWindow: 200_000, contextUsed: 42_000,
+      },
+      activeTurn: null, pendingPermissions: [],
+    });
+    render(() => <Composer />);
+
+    expect(document.querySelector('.composer-surface')).toHaveClass('rounded-(--composer-radius)', 'p-9');
+    expect(screen.getByRole('textbox')).toHaveClass('min-h-52', 'text-12', 'leading-18');
+    expect(screen.getByRole('button', { name: 'Choose model' })).toHaveTextContent('Nova 4.1');
+    expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('size-32', 'rounded-8');
+  });
+
   it('adds a quoted answer to the current draft without replacing existing text', async () => {
     selectReadyChat();
     setComposerDraft(draftOwner(), 'My note');
@@ -402,10 +421,9 @@ describe('Composer', () => {
     blockUnknownMessageDelivery('projected');
     render(() => <Composer />);
 
-    const acknowledge = screen.getByRole('button', { name: 'Acknowledge and continue' });
-    expect(acknowledge).toBeEnabled();
-    fireEvent.click(acknowledge);
     expect(messageSubmission()).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Acknowledge and continue' })).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toBeEnabled();
   });
 
   it('isolates drafts and recovery surfaces by persisted session identity', async () => {

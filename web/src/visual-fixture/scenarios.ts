@@ -25,6 +25,10 @@ import type { ResourceDiffPreviewState, ResourceFilePreviewState } from '../pane
 import { markElicitationResponseUncertain, startElicitationResponse } from '../panel/lib/elicitation-delivery';
 import { setComposerAssets } from '../panel/lib/composer-assets';
 import { createLongConversationEntries } from './long-conversation';
+import {
+  setVisualToolAcceptancePhase as installToolAcceptancePhase,
+  type VisualToolAcceptancePhase,
+} from './tool-acceptance';
 
 export const VISUAL_NOW = Date.parse('2026-08-14T08:00:00+08:00');
 export const DEFAULT_VISUAL_SCENARIO = 'conversation';
@@ -117,6 +121,10 @@ export function setVisualElicitationUnknown(elicitationId: string): void {
   startElicitationResponse(elicitationId, commandId);
   markElicitationResponseUncertain(commandId, 'delivery_unknown');
 }
+
+export function setVisualToolAcceptancePhase(phase: VisualToolAcceptancePhase): void {
+  installToolAcceptancePhase(phase, { control, entries, permissions, tool });
+}
 export type VisualScenarioId = typeof VISUAL_SCENARIO_IDS[number];
 export type FixtureControlMode = 'display-only' | 'locally-interactive' | 'production-gated';
 
@@ -157,12 +165,12 @@ const sessions: ProjectSessionInfo[] = [
 ];
 
 const tool = (overrides: Partial<ToolCallInfo>): ToolCallInfo => ({
-  toolCallId: 'tool-01J5READ', name: 'Read', status: 'completed', arguments: { path: 'peri-studio/server/src/control/hub.rs' }, result: { lines: 184, note: 'startup restores metadata before accepting connections' }, resultOmitted: false, resultBytes: 118, publicError: null, startedAt: '2026-08-14T00:02:00Z', completedAt: '2026-08-14T00:02:01.480Z', ...overrides,
+  toolCallId: 'tool-01J5READ', name: 'Read', kind: 'read', status: 'completed', arguments: { path: 'peri-studio/server/src/control/hub.rs' }, result: { lines: 184, note: 'startup restores metadata before accepting connections' }, resultOmitted: false, resultBytes: 118, publicError: null, startedAt: '2026-08-14T00:02:00Z', completedAt: '2026-08-14T00:02:01.480Z', ...overrides,
 });
 
 const entries: ChatEntry[] = [
   { id: 'entry-user-1', turnId: 'turn-1', kind: 'message', role: 'user', status: 'completed', authorUserId: 'local-user', sourceCommandId: 'command-user-1', createdAt: '2026-08-14T00:01:00Z', completedAt: '2026-08-14T00:01:00Z', text: 'Check the session recovery path so a restart never treats an old runtime as still alive.', blocks: [], reasoning: [], toolCalls: [], resources: [], error: null },
-  { id: 'entry-assistant-1', turnId: 'turn-1', kind: 'message', role: 'assistant', status: 'completed', authorUserId: null, sourceCommandId: null, createdAt: '2026-08-14T00:01:02Z', completedAt: '2026-08-14T00:03:30Z', text: '## Conclusion\n\nThe recovery model needs three distinct concepts:\n\n- `project session`: persistent entry\n- `ACP session`: loadable thread\n- `runtime chat`: one process activation\n\n```rust\nif binding.is_stale() {\n    activate_with_session_load(acp_session_id).await?;\n}\n```\n\nFull constraints are recorded in [architecture.md](https://example.test/architecture).', blocks: [], reasoning: [{ text: 'First verify the metadata authority, then check the Registry read-only projection and session/load ordering.', visibility: 'user' }], toolCalls: [tool({}), tool({ toolCallId: 'tool-01J5LARGE', name: 'cargo test', result: null, resultOmitted: true, resultBytes: 2_451_880, arguments: { package: 'peri-studio-server', test: 'restart_restores_project_session' } })], resources: [{ resourceId: 'resource://architecture-contract', mediaType: 'text/markdown', name: 'Session recovery architecture contract' }], error: null },
+  { id: 'entry-assistant-1', turnId: 'turn-1', kind: 'message', role: 'assistant', status: 'completed', authorUserId: null, sourceCommandId: null, createdAt: '2026-08-14T00:01:02Z', completedAt: '2026-08-14T00:03:30Z', text: '## Conclusion\n\nThe recovery model needs three distinct concepts:\n\n- `project session`: persistent entry\n- `ACP session`: loadable thread\n- `runtime chat`: one process activation\n\n```rust\nif binding.is_stale() {\n    activate_with_session_load(acp_session_id).await?;\n}\n```\n\nFull constraints are recorded in [architecture.md](https://example.test/architecture).', blocks: [], reasoning: [{ text: 'First verify the metadata authority, then check the Registry read-only projection and session/load ordering.', visibility: 'user' }], toolCalls: [tool({}), tool({ toolCallId: 'tool-01J5LARGE', name: 'cargo test', kind: 'execute', result: null, resultOmitted: true, resultBytes: 2_451_880, arguments: { package: 'peri-studio-server', test: 'restart_restores_project_session' } })], resources: [{ resourceId: 'resource://architecture-contract', mediaType: 'text/markdown', name: 'Session recovery architecture contract' }], error: null },
   { id: 'entry-user-2', turnId: 'turn-2', kind: 'message', role: 'user', status: 'completed', authorUserId: 'local-user', sourceCommandId: 'command-user-2', createdAt: '2026-08-14T00:05:00Z', completedAt: '2026-08-14T00:05:00Z', text: 'Continue verifying failure paths and public errors.', blocks: [], reasoning: [], toolCalls: [], resources: [], error: null },
   { id: 'entry-assistant-2', turnId: 'turn-2', kind: 'message', role: 'assistant', status: 'failed', authorUserId: null, sourceCommandId: null, createdAt: '2026-08-14T00:05:02Z', completedAt: '2026-08-14T00:05:20Z', text: 'A failed database write never sends a committed Ack.', blocks: [], reasoning: [], toolCalls: [tool({ toolCallId: 'tool-01J5FAIL', name: 'Finalize metadata', status: 'failed', result: null, resultOmitted: false, publicError: { code: 'METADATA_UNAVAILABLE', message: 'metadata transaction could not be committed' } })], resources: [], error: { code: 'METADATA_UNAVAILABLE', message: 'Session metadata is temporarily unavailable; reconciliation state is preserved.' } },
 ];
@@ -220,10 +228,10 @@ const longConversationEntries = createLongConversationEntries([entries[0], entri
 const toolEntries: ChatEntry[] = [
   { ...entries[0], id: 'entry-tools-user', turnId: 'turn-tools', text: 'Inspect the build boundary, update the adapter, and run the focused checks.', toolCalls: [], resources: [] },
   { ...entries[1], id: 'entry-tools-assistant', turnId: 'turn-tools', status: 'streaming', completedAt: null, text: 'The browser entry is isolated. The production build is still running.', reasoning: [], resources: [], error: null, toolCalls: [
-    tool({ toolCallId: 'tool-read-config', name: 'Read build configuration', arguments: { path: 'vite.config.ts' }, result: { lines: 84 }, resultBytes: 74 }),
-    tool({ toolCallId: 'tool-search-import', name: 'Search unsafe import', arguments: { query: 'node:crypto', path: 'web/src' }, result: { matches: 3 }, resultBytes: 96 }),
-    tool({ toolCallId: 'tool-build-running', name: 'Run production build', status: 'running', arguments: { command: 'bun run build:web' }, result: null, resultOmitted: null, resultBytes: null, completedAt: null }),
-    tool({ toolCallId: 'tool-old-failure', name: 'Previous build attempt', status: 'failed', arguments: { command: 'bun run build:web' }, result: null, publicError: { code: 'BUILD_IMPORT_ERROR', message: 'Browser bundle imported a Node-only module' }, completedAt: '2026-08-14T00:01:30Z' }),
+    tool({ toolCallId: 'tool-read-config', name: 'Read build configuration', kind: 'read', arguments: { path: 'vite.config.ts' }, result: { lines: 84 }, resultBytes: 74 }),
+    tool({ toolCallId: 'tool-search-import', name: 'Search unsafe import', kind: 'search', arguments: { query: 'node:crypto', path: 'web/src' }, result: { matches: 3 }, resultBytes: 96 }),
+    tool({ toolCallId: 'tool-build-running', name: 'Run production build', kind: 'execute', status: 'running', arguments: { command: 'bun run build:web' }, result: null, resultOmitted: null, resultBytes: null, completedAt: null }),
+    tool({ toolCallId: 'tool-old-failure', name: 'Previous build attempt', kind: 'execute', status: 'failed', arguments: { command: 'bun run build:web' }, result: null, publicError: { code: 'BUILD_IMPORT_ERROR', message: 'Browser bundle imported a Node-only module' }, completedAt: '2026-08-14T00:01:30Z' }),
   ] },
 ];
 

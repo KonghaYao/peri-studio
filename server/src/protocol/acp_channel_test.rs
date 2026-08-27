@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 
 use serde_json::{json, Value};
 
+use crate::state::normalized::ToolJsonPatch;
 use peri_studio_proto::schema::{BlockVisibility, ToolCallStatus, TurnStatus};
 
 use super::*;

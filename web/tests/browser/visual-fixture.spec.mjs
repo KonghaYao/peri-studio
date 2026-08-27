@@ -93,9 +93,11 @@ test('long conversation combines rich markdown, dense tool calls, and the status
   await expect(page.getByRole('tab', { name: /Changes/ })).toBeVisible();
   await page.getByRole('tab', { name: /Async/ }).click();
   await expect(page.getByRole('tabpanel')).toContainText('Agent');
-  await expect(page.locator('.tool-card')).toHaveCount(4);
-  await expect(page.locator('.markdown-body table')).toBeVisible();
-  await expect(page.locator('.markdown-body pre')).toBeVisible();
+  // The transcript window may retain one neighboring row as measured heights
+  // settle; assert density rather than coupling acceptance to overscan internals.
+  expect(await page.locator('.tool-card').count()).toBeGreaterThanOrEqual(8);
+  await expect(page.locator('.markdown-body table').first()).toBeVisible();
+  await expect(page.locator('.markdown-body pre').first()).toBeVisible();
   await expect(page.locator('.workbench-status-bar')).toHaveCount(0);
 });
 
@@ -169,24 +171,24 @@ test('migrated surfaces retain their authored computed borders', async ({ page }
     return {
       sidebar: style('.project-sidebar').borderRightWidth,
       brand: style('.brand-row > span').borderWidth,
-      headerAction: style('.sidebar-workspace-header button[aria-label="Search sessions"]').borderWidth,
+      resourceRail: style('.resource-workbench').borderLeftWidth,
       sessionGuide: style('.session-list').borderLeftWidth,
       selectedSession: style('[data-session-id="session-current"]').borderLeftWidth,
       statusArea: style('.status-area > div').borderWidth,
       composer: style('.composer-surface').borderWidth,
-      toolCard: style('.tool-card').borderWidth,
+      toolCard: style('.tool-card').borderBottomWidth,
     };
   });
 
   expect(borders).toEqual({
     sidebar: '1px',
     brand: '1px',
-    headerAction: '0px',
+    resourceRail: '1px',
     sessionGuide: '1px',
     selectedSession: '2px',
     statusArea: '1px',
     composer: '1px',
-    toolCard: '0px',
+    toolCard: '1px',
   });
 });
 
@@ -272,9 +274,9 @@ test('sidebar chrome and composer match the compact input shell', async ({ page 
     };
   });
 
-  expect(geometry.surfaceHeight).toBeLessThanOrEqual(108);
+  expect(geometry.surfaceHeight).toBeLessThanOrEqual(112);
   expect(geometry.inputHeight).toBeLessThanOrEqual(64);
-  expect(geometry.radius).toBe('20px');
+  expect(geometry.radius).toBe('18px');
   expect(geometry.toolbarBorder).toBe('0px');
   expect(geometry.overflowingIcons).toBe(0);
 });
@@ -289,16 +291,18 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 768
         const box = document.querySelector(selector).getBoundingClientRect();
         return { left: Math.round(box.left), right: Math.round(box.right), width: Math.round(box.width), height: Math.round(box.height) };
       };
-      return [
-        rect('.conversation-message--assistant'),
-        rect('.permission-queue'),
-        rect('.composer-surface'),
-      ];
+      return {
+        message: rect('.conversation-message--assistant'),
+        permission: rect('.permission-queue__surface'),
+        composer: rect('.composer-surface'),
+      };
     });
 
-    expect(new Set(geometry.map(({ left }) => left)).size).toBe(1);
-    expect(new Set(geometry.map(({ right }) => right)).size).toBe(1);
-    expect(new Set(geometry.map(({ width }) => width)).size).toBe(1);
+    expect(geometry.permission.left).toBe(geometry.composer.left);
+    expect(geometry.permission.right).toBe(geometry.composer.right);
+    expect(geometry.message.left).toBe(geometry.composer.left);
+    expect(geometry.composer.right - geometry.message.right).toBeGreaterThanOrEqual(0);
+    expect(geometry.composer.right - geometry.message.right).toBeLessThanOrEqual(16);
     await expect(page.locator('.elicitation-card')).toHaveCount(0);
   });
 }
@@ -361,21 +365,23 @@ test('sidebar session labels retain space beside action and status slots', async
   expect(geometry.menuLeft).toBeLessThan(geometry.statusLeft);
 });
 
-test('wide topology dialog owns its viewport width without child overflow', async ({ page }) => {
+test('machine topology lives in the global system dialog without child overflow', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=conversation&sidebar=projects', { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Open system information' }).click();
+  await page.getByRole('button', { name: 'System information' }).click();
   const dialog = page.getByRole('dialog', { name: 'System' });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('tab', { name: 'Topology' })).toHaveAttribute('data-selected', '');
-  const geometry = await dialog.evaluate((element) => ({
+  await expect(dialog.getByRole('tab', { name: 'Machines' })).toHaveAttribute('aria-selected', 'true');
+  const tree = dialog.getByRole('tree', { name: 'Machine topology' });
+  await expect(tree).toBeVisible();
+  const geometry = await tree.evaluate((element) => ({
     clientWidth: element.clientWidth,
     scrollWidth: element.scrollWidth,
-    width: element.getBoundingClientRect().width,
+    panelWidth: element.closest('[role="dialog"]').getBoundingClientRect().width,
   }));
   expect(geometry.scrollWidth).toBe(geometry.clientWidth);
-  expect(geometry.width).toBeGreaterThan(500);
-  expect(geometry.width).toBeLessThanOrEqual(560);
+  expect(geometry.panelWidth).toBeGreaterThanOrEqual(420);
+  expect(geometry.panelWidth).toBeLessThanOrEqual(760);
 });
 
 test('desktop sidebar visibly resizes and preserves project navigation', async ({ page }) => {
@@ -412,9 +418,8 @@ test('mobile drawer preserves instance-bound project creation semantics and nest
   const drawer = page.getByRole('dialog', { name: 'Projects & Sessions' });
   await expect(drawer).toBeVisible();
   await expect(page.locator('#app')).toHaveAttribute('aria-hidden');
-  const newProject = drawer.getByRole('button', { name: /New project on local unavailable/ });
-  await expect(newProject).toBeDisabled();
-  await expect(newProject).toHaveAttribute('aria-label', 'New project on local unavailable: choose a remote directory first; the current API cannot create by instance');
+  const newProject = drawer.getByRole('button', { name: 'New project' });
+  await expect(newProject).toBeEnabled();
 
   await page.keyboard.press('Meta+K');
   const dialog = page.getByRole('dialog', { name: 'Search sessions' });

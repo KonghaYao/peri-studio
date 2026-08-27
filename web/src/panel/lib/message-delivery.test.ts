@@ -10,9 +10,11 @@ import {
   failMessageDelivery,
   markMessageDeliveryUncertain,
   messageSubmission,
+  ownsMessageDeliveryError,
   reconcileMessageProjection,
   resetMessageDelivery,
   retryMessageDelivery,
+  settleProjectedMessageDelivery,
   startMessageDelivery,
 } from './message-delivery';
 
@@ -157,9 +159,108 @@ describe('message delivery', () => {
     reconcileMessageProjection(new Set(['unknown']));
     blockUnknownMessageDelivery('unknown');
 
-    expect(acknowledgeUnknownMessageDelivery('unknown')).toBe(true);
+    expect(acknowledgeUnknownMessageDelivery('unknown')).toBe(false);
     expect(messageSubmission()).toBeNull();
     expect(acknowledgedMessageDeliveries()).toEqual([]);
+  });
+
+  it('releases a delivery-unknown gate when its exact projection arrives afterward', () => {
+    startMessageDelivery('unknown-late-projection', 'recoverable text', 'session-a', 'chat-a');
+    markMessageDeliveryUncertain('unknown-late-projection');
+    blockUnknownMessageDelivery('unknown-late-projection');
+    // 模拟刷新恢复出的同属草稿；精确投影必须一并清除，避免重复发送。
+    setComposerDraft('session-a', 'recoverable text');
+
+    expect(reconcileMessageProjection(new Set(['unknown-late-projection']))).toBe(true);
+    expect(messageSubmission('session-a')).toBeNull();
+    expect(composerDraft('session-a')).toBe('');
+  });
+
+  it('releases an uncertain gate directly when the exact projection wins the race', () => {
+    startMessageDelivery('uncertain-late-projection', 'recoverable text', 'session-a', 'chat-a');
+    markMessageDeliveryUncertain('uncertain-late-projection');
+
+    expect(reconcileMessageProjection(new Set(['uncertain-late-projection']))).toBe(true);
+    expect(messageSubmission('session-a')).toBeNull();
+    expect(composerDraft('session-a')).toBe('');
+  });
+
+  it('does not lock the composer when exact durable projection already proves delivery', () => {
+    startMessageDelivery('projected', 'already visible', 'session-a', 'chat-a');
+    reconcileMessageProjection(new Set(['projected']));
+
+    expect(ownsMessageDeliveryError('projected', 'DELIVERY_UNKNOWN')).toBe(true);
+    blockUnknownMessageDelivery('projected');
+
+    expect(messageSubmission()).toBeNull();
+    expect(acknowledgedMessageDeliveries()).toEqual([]);
+  });
+
+  it('continues to own a delivery-unknown that arrives after projected uncertainty was released', () => {
+    startMessageDelivery('projected-after-timeout', 'already visible', 'session-a', 'chat-a');
+    markMessageDeliveryUncertain('projected-after-timeout');
+    reconcileMessageProjection(new Set(['projected-after-timeout']));
+
+    expect(messageSubmission()).toBeNull();
+    expect(ownsMessageDeliveryError('projected-after-timeout', 'DELIVERY_UNKNOWN')).toBe(true);
+    blockUnknownMessageDelivery('projected-after-timeout');
+    expect(messageSubmission()).toBeNull();
+  });
+
+  it('bounds projected command ownership without retaining stale identities forever', () => {
+    for (let index = 0; index < 65; index += 1) {
+      const commandId = `projected-${index}`;
+      startMessageDelivery(commandId, 'visible', `session-${index}`, `chat-${index}`);
+      markMessageDeliveryUncertain(commandId);
+      reconcileMessageProjection(new Set([commandId]));
+    }
+
+    expect(ownsMessageDeliveryError('projected-0', 'DELIVERY_UNKNOWN')).toBe(false);
+    expect(ownsMessageDeliveryError('projected-1', 'DELIVERY_UNKNOWN')).toBe(true);
+    expect(ownsMessageDeliveryError('projected-64', 'DELIVERY_UNKNOWN')).toBe(true);
+  });
+
+  it('does not let completed projected commands evict unresolved ownership', () => {
+    startMessageDelivery('unresolved', 'visible', 'session-unresolved', 'chat-unresolved');
+    markMessageDeliveryUncertain('unresolved');
+    reconcileMessageProjection(new Set(['unresolved']));
+
+    for (let index = 0; index < 64; index += 1) {
+      const commandId = `completed-${index}`;
+      startMessageDelivery(commandId, 'done', `session-completed-${index}`, `chat-completed-${index}`);
+      reconcileMessageProjection(new Set([commandId]));
+      completeMessageDelivery(commandId, 'committed');
+    }
+
+    expect(ownsMessageDeliveryError('unresolved', 'DELIVERY_UNKNOWN')).toBe(true);
+  });
+
+  it('settles projected ownership when a late terminal result finally arrives', () => {
+    startMessageDelivery('late-terminal', 'visible', 'session-a', 'chat-a');
+    markMessageDeliveryUncertain('late-terminal');
+    reconcileMessageProjection(new Set(['late-terminal']));
+
+    expect(ownsMessageDeliveryError('late-terminal', 'DELIVERY_UNKNOWN')).toBe(true);
+    expect(completeMessageDelivery('late-terminal', 'committed')).toBe(false);
+    expect(ownsMessageDeliveryError('late-terminal', 'DELIVERY_UNKNOWN')).toBe(false);
+  });
+
+  it('does not let resolved timeout flows evict a currently unresolved command', () => {
+    startMessageDelivery('still-unresolved', 'visible', 'session-unresolved', 'chat-unresolved');
+    markMessageDeliveryUncertain('still-unresolved');
+    reconcileMessageProjection(new Set(['still-unresolved']));
+
+    for (let index = 0; index < 64; index += 1) {
+      const commandId = `resolved-timeout-${index}`;
+      startMessageDelivery(commandId, 'visible', `session-${index}`, `chat-${index}`);
+      markMessageDeliveryUncertain(commandId);
+      reconcileMessageProjection(new Set([commandId]));
+      completeMessageDelivery(commandId, 'duplicate');
+    }
+
+    expect(ownsMessageDeliveryError('still-unresolved', 'DELIVERY_UNKNOWN')).toBe(true);
+    settleProjectedMessageDelivery('still-unresolved');
+    expect(ownsMessageDeliveryError('still-unresolved', 'DELIVERY_UNKNOWN')).toBe(false);
   });
 
   it('fails closed instead of evicting unresolved evidence after twenty deliveries', () => {
@@ -178,7 +279,7 @@ describe('message delivery', () => {
     expect(acknowledgedMessageDeliveries()[19]?.commandId).toBe('unknown-19');
     expect(messageSubmission()?.commandId).toBe('unknown-20');
     reconcileMessageProjection(new Set(['unknown-20']));
-    expect(acknowledgeUnknownMessageDelivery('unknown-20')).toBe(true);
+    expect(acknowledgeUnknownMessageDelivery('unknown-20')).toBe(false);
     expect(messageSubmission()).toBeNull();
     expect(acknowledgedMessageDeliveries()).toHaveLength(20);
   });

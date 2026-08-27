@@ -14,6 +14,13 @@ function entry(overrides: Partial<ChatEntry> = {}): ChatEntry {
   };
 }
 
+function baseTool(toolCallId: string) {
+  return {
+    toolCallId, name: 'shell', status: 'completed', arguments: {}, result: null,
+    resultOmitted: false, resultBytes: 0, publicError: null, startedAt: null, completedAt: null,
+  };
+}
+
 describe('ConversationMessage', () => {
   it('keeps user text plain and visually separate from assistant Markdown', () => {
     const view = render(() => <ConversationMessage entry={entry({ role: 'user', text: '**literal user input**' })} />);
@@ -21,6 +28,8 @@ describe('ConversationMessage', () => {
     expect(message).toHaveClass('conversation-message--user');
     expect(message).toHaveTextContent('**literal user input**');
     expect(message.querySelector('strong')).toBeNull();
+    expect(message.querySelector('.conversation-message__meta')).toHaveClass('absolute');
+    expect(message.querySelector('.conversation-message__surface')).toHaveClass('py-8', 'px-12');
     expect(screen.queryByRole('button', { name: 'Copy answer' })).not.toBeInTheDocument();
     view.unmount();
   });
@@ -33,6 +42,7 @@ describe('ConversationMessage', () => {
     expect(screen.getByLabelText('Assistant message')).toHaveClass('conversation-message--assistant');
     expect(screen.getByRole('heading', { name: 'Result' })).toBeInTheDocument();
     expect(screen.getByText('cargo test')).toHaveClass('md-inline-code');
+    expect(screen.getByRole('button', { name: 'Copy answer' }).closest('.conversation-message__actions')).toHaveClass('text-text-muted');
     fireEvent.click(screen.getByRole('button', { name: 'Copy answer' }));
     expect(writeText).toHaveBeenCalledWith('## Result\n\n`cargo test` passed.');
   });
@@ -89,23 +99,33 @@ describe('ConversationMessage', () => {
     );
   });
 
-  it('keeps streaming assistant syntax as plain text until completion', () => {
+  it('keeps incomplete streaming syntax readable until completion', () => {
     const view = render(() => <ConversationMessage entry={entry({ status: 'streaming', text: '**partial' })} />);
     const message = screen.getByLabelText('Assistant message');
-    expect(message).toHaveTextContent('**partial');
-    expect(message.querySelector('.markdown-body')).not.toBeInTheDocument();
-    expect(message.querySelector('.message-plain-text')).toBeInTheDocument();
+    expect(message).toHaveTextContent('partial');
+    expect(message.querySelector('.markdown-body')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Copy answer' })).not.toBeInTheDocument();
     expect(document.querySelector('.message-loading')).toBeNull();
     view.unmount();
   });
 
-  it('keeps the plain streaming surface mounted while text grows', () => {
+  it('renders complete Markdown constructs before the assistant turn finishes', () => {
+    render(() => <ConversationMessage entry={entry({
+      status: 'streaming',
+      text: '## Changes\n\n**Done** with `cargo test`.',
+    })} />);
+
+    expect(screen.getByRole('heading', { name: 'Changes' })).toBeInTheDocument();
+    expect(screen.getByText('Done')).toHaveProperty('tagName', 'STRONG');
+    expect(screen.getByText('cargo test')).toHaveClass('md-inline-code');
+  });
+
+  it('keeps the streaming Markdown surface mounted while text grows', () => {
     const [current, setCurrent] = createSignal(entry({ status: 'streaming', text: 'First' }));
     render(() => <ConversationMessage entry={current} />);
-    const surface = document.querySelector('.message-plain-text');
+    const surface = document.querySelector('.markdown-body');
     setCurrent(entry({ status: 'streaming', text: 'First second' }));
-    expect(document.querySelector('.message-plain-text')).toBe(surface);
+    expect(document.querySelector('.markdown-body')).toBe(surface);
     expect(surface).toHaveTextContent('First second');
   });
 
@@ -153,6 +173,20 @@ describe('ConversationMessage', () => {
     const after = screen.getByText('After tool');
     expect(before.compareDocumentPosition(toolCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(toolCard.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('removes generic message spacing between adjacent tool activity rows', () => {
+    const first = { ...baseTool('tool-1'), name: 'Read config' };
+    const second = { ...baseTool('tool-2'), name: 'Run checks' };
+    render(() => <ConversationMessage entry={entry({
+      toolCalls: [first, second],
+      blocks: [
+        { kind: 'tool_call', id: 'tool-1', toolCall: first },
+        { kind: 'tool_call', id: 'tool-2', toolCall: second },
+      ],
+    })} />);
+
+    expect(screen.getByLabelText('Assistant message').querySelector('.conversation-message__surface')).toHaveClass('[&>.tool-card+.tool-card]:mt-0');
   });
 
   it('keeps untrusted HTML inert in assistant Markdown', () => {

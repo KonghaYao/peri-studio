@@ -2,7 +2,8 @@ import { createMemo, createSignal, For, Show, type Accessor } from 'solid-js';
 import type { ChatBlock, ChatEntry } from '../lib/chat-view';
 import { messageTime } from '../lib/message-time.ts';
 import { splitSystemReminders } from '../lib/system-reminder';
-import { CopyButton, Icon, IconButton, InlineNotice } from '../../components/ui';
+import { CopyButton, IconButton, InlineNotice } from '../../components/ui';
+import { MessageSquareQuote } from 'lucide-solid';
 import { Markdown } from './Markdown';
 import { ToolCallCard } from './ToolCallCard';
 import { requestComposerQuote } from '../lib/composer-quote';
@@ -10,7 +11,7 @@ import { requestComposerQuote } from '../lib/composer-quote';
 type ChatEntrySource = ChatEntry | Accessor<ChatEntry>;
 
 function QuoteIcon() {
-  return <Icon><path d="M5 5.5h10v7H9l-3.5 3v-3H5z" /><path d="M8 8h2M12 8h.01" /></Icon>;
+  return <MessageSquareQuote size={16} strokeWidth={1.7} />;
 }
 
 /** Owns the visual and semantic hierarchy of one server-projected entry. */
@@ -74,11 +75,11 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
     window.getSelection()?.removeAllRanges();
   };
 
-  return <article ref={articleRef} onMouseUp={captureSelection} onKeyUp={captureSelection} class={`conversation-message conversation-message--${role()} ${role() === 'assistant' ? 'conversation-message--timeline relative pl-0 before:hidden' : ''} flex mb-12 group ${role() === 'user' ? 'justify-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
+  return <article ref={articleRef} onMouseUp={captureSelection} onKeyUp={captureSelection} class={`conversation-message conversation-message--${role()} relative flex mb-12 group ${role() === 'assistant' ? 'conversation-message--timeline pl-0 before:hidden' : ''} ${role() === 'user' ? 'justify-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
     <Show when={role() === 'assistant'}><span class="conversation-message__timeline-mark hidden" aria-hidden="true" /></Show>
-    <div class={`conversation-message__surface min-w-0 ${role() === 'user' ? 'max-w-72p border border-border-subtle p-12 px-16 rounded-14 bg-surface-muted' : role() === 'system' ? 'max-w-[70%] py-4 px-12 rounded-full bg-surface-muted text-text-secondary text-12' : 'w-full'} [&>*+*]:mt-10`}>
+    <div class={`conversation-message__surface min-w-0 ${role() === 'user' ? 'max-w-72p border border-border-subtle py-8 px-12 rounded-12 bg-surface-muted' : role() === 'system' ? 'max-w-[70%] py-4 px-12 rounded-full bg-surface-muted text-text-secondary text-12' : 'w-full'} [&>*+*]:mt-10 [&>.tool-card+.tool-card]:mt-0`}>
       <Show when={role() === 'user'}>
-        <header class={`conversation-message__meta flex items-center gap-7 text-text-muted text-12 transition-opacity duration-150 ${role() === 'assistant' ? 'conversation-message__meta--assistant min-h-20 opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'}`}>
+        <header class="conversation-message__meta pointer-events-none absolute -top-17 right-0 flex items-center gap-7 text-10 text-text-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
           <Show when={timestamp()}>{(time) => <time dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show>
         </header>
       </Show>
@@ -101,9 +102,10 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
                   <InlineNotice class="system-reminder-message my-8 max-w-full text-left!" tone="info" title="Untrusted system reminder" aria-label="Untrusted system reminder"><p class="whitespace-pre-wrap wrap-anywhere">{segment.text}</p></InlineNotice>
                 </Show>
               }</For>}>
-                <Show when={!streaming()} fallback={<span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{(block() as Extract<ChatBlock, { kind: 'text' }>).text}</span>}>
-                  <Markdown source={() => (block() as Extract<ChatBlock, { kind: 'text' }>).text} />
-                </Show>
+                <Markdown
+                  source={() => (block() as Extract<ChatBlock, { kind: 'text' }>).text}
+                  streaming={streaming()}
+                />
               </Show>
             </div>
           }</Show>
@@ -126,7 +128,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
           <span>The server confirmed ACP did not run this message. Copy it and resend.</span>
         </InlineNotice>
       </Show>
-      <Show when={role() === 'assistant' && entry().text && !streaming()}><div class="flex min-h-28 items-center gap-2 pt-1"><CopyButton size="compact" text={copyText()} label="Copy answer" class="size-28 min-h-28 border-0 bg-transparent px-0 text-text-secondary hover:bg-hover" /><IconButton label="Quote answer" size="compact" variant="ghost" class="size-28 min-h-28 border-0 bg-transparent p-0 text-text-secondary hover:bg-hover" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-5 text-11 font-650 text-text-secondary">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-text-muted" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div></Show>
+      <Show when={role() === 'assistant' && entry().text && !streaming()}><div class="conversation-message__actions flex min-h-28 items-center gap-2 pt-1 text-text-muted"><CopyButton size="compact" text={copyText()} label="Copy answer" class="size-28 min-h-28 border-0 bg-transparent px-0 text-text-muted hover:bg-hover" /><IconButton label="Quote answer" size="compact" variant="ghost" class="size-28 min-h-28 border-0 bg-transparent p-0 text-text-muted hover:bg-hover" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-5 text-11 font-600 text-text-muted">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-text-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div></Show>
     </div>
     <Show when={selectionAction()}>{(action) => <IconButton
       label="Add selection to conversation"

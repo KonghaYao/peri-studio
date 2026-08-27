@@ -22,7 +22,9 @@ export interface MessageSubmission {
 
 const [submissionsBySession, setSubmissionsBySession] = createSignal<Record<string, MessageSubmission>>({});
 const [acknowledgedUnknown, setAcknowledgedUnknown] = createSignal<MessageSubmission[]>([]);
+const [projectedCommands, setProjectedCommands] = createSignal<string[]>([]);
 const ACKNOWLEDGED_UNKNOWN_LIMIT = 20;
+const PROJECTED_COMMAND_LIMIT = 64;
 
 export const messageSubmissions = () => Object.values(submissionsBySession());
 /** 按持久会话读取唯一未裁决提交；不再把其他会话变成全局输入门禁。 */
@@ -53,6 +55,21 @@ function replace(current: MessageSubmission, next: MessageSubmission | null): vo
 function transition(commandId: string, update: (current: MessageSubmission) => MessageSubmission): void {
   const current = messageSubmissionByCommand(commandId);
   if (current) replace(current, update(current));
+}
+
+function rememberProjectedCommand(commandId: string): void {
+  setProjectedCommands((items) => {
+    if (items.includes(commandId)) return items;
+    const next = [...items, commandId];
+    return next.length > PROJECTED_COMMAND_LIMIT ? next.slice(-PROJECTED_COMMAND_LIMIT) : next;
+  });
+}
+
+export function settleProjectedMessageDelivery(commandId: string | undefined): void {
+  if (!commandId) return;
+  setProjectedCommands((items) => items.includes(commandId)
+    ? items.filter((item) => item !== commandId)
+    : items);
 }
 
 export function startMessageDelivery(
@@ -101,6 +118,13 @@ export function failMessageDelivery(commandId: string, detail: string): void {
 /** Server crossed the no-redelivery barrier but cannot prove the outcome. */
 export function blockUnknownMessageDelivery(commandId: string, detail?: string): void {
   const current = messageSubmissionByCommand(commandId);
+  // 精确 source_command_id 已进入权威 Chat Doc，消息投递本身已经被证明。
+  // 后到的 ACP 终态不确定不能再把 Composer 锁回去。
+  if (current?.projected) {
+    clearMatchingRestoredDraft(current);
+    replace(current, null);
+    return;
+  }
   if (current) clearMatchingRestoredDraft(current);
   transition(commandId, (current) => ({
     ...current,
@@ -108,6 +132,13 @@ export function blockUnknownMessageDelivery(commandId: string, detail?: string):
     detail: detail || 'This message may have already executed. To avoid duplicates, resending and editing are disabled.',
     retryable: false,
   }));
+}
+
+/** Prompt 的 delivery-unknown 由消息投递面接管，避免再生成一张全局重复错误卡。 */
+export function ownsMessageDeliveryError(commandId: string | undefined, code: string | undefined): boolean {
+  return code === 'DELIVERY_UNKNOWN' && Boolean(commandId && (
+    messageSubmissionByCommand(commandId) || projectedCommands().includes(commandId)
+  ));
 }
 
 /** 只解除所属会话的单飞门禁；不可重放证据保留到精确投影到达。 */
@@ -129,10 +160,14 @@ export function retryMessageDelivery(commandId: string): void {
 }
 
 export function completeMessageDelivery(commandId: string, status: unknown): boolean {
+  if (status !== 'committed' && status !== 'duplicate') return false;
+  settleProjectedMessageDelivery(commandId);
   const current = messageSubmissionByCommand(commandId);
-  if (!current || (status !== 'committed' && status !== 'duplicate')) return false;
+  if (!current) return false;
   clearMatchingRestoredDraft(current);
-  if (current.projected) replace(current, null);
+  if (current.projected) {
+    replace(current, null);
+  }
   else replace(current, {
     ...current,
     phase: 'committed',
@@ -157,7 +192,13 @@ export function reconcileMessageProjection(sourceCommandIds: ReadonlySet<string>
   for (const current of messageSubmissions()) {
     if (!sourceCommandIds.has(current.commandId)) continue;
     changed = true;
-    if (current.phase === 'committed') replace(current, null);
+    if (current.phase === 'committed' || current.phase === 'uncertain' || current.phase === 'delivery_unknown') {
+      // 仅 timeout 后尚未收到终态的命令需要保留乱序 ownership；
+      // 已裁决命令不得污染这个有界集合。
+      if (current.phase === 'uncertain') rememberProjectedCommand(current.commandId);
+      clearMatchingRestoredDraft(current);
+      replace(current, null);
+    }
     else replace(current, { ...current, projected: true });
   }
   return changed;
@@ -173,5 +214,6 @@ export function dismissFailedMessageDelivery(commandId: string): void {
 export function resetMessageDelivery(preserveDrafts = false): void {
   setSubmissionsBySession({});
   setAcknowledgedUnknown([]);
+  setProjectedCommands([]);
   if (!preserveDrafts) resetComposerDrafts();
 }

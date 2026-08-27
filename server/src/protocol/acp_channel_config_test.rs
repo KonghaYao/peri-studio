@@ -18,13 +18,9 @@ fn map_tool_call_update_failed_terminal() {
     });
     match norm(f) {
         NormalizeOutcome::Event(ev) => match ev.body {
-            EventBody::ToolCallCompleted {
-                result,
-                public_error,
-                ..
-            } => {
-                assert_eq!(result, None);
-                let pe = public_error.unwrap();
+            EventBody::ToolCallPatched { patch, .. } => {
+                assert_eq!(patch.result, ToolJsonPatch::Unchanged);
+                let pe = patch.public_error.unwrap();
                 assert_eq!(pe.code, "agent_error");
                 assert_eq!(pe.message, "Tool call failed");
             }
@@ -42,7 +38,7 @@ fn map_tool_call_update_failed_terminal() {
         }
     });
     match norm(g) {
-        NormalizeOutcome::Event(ev) => assert_eq!(ev.body.kind(), "tool_call_completed"),
+        NormalizeOutcome::Event(ev) => assert_eq!(ev.body.kind(), "tool_call_patched"),
         other => panic!("expected event, got {other:?}"),
     }
 }

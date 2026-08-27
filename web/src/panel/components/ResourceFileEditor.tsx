@@ -1,5 +1,6 @@
 import { For, Match, Show, Switch, createMemo, onCleanup, onMount } from 'solid-js';
-import { Button, DownloadIcon, Icon, IconButton, LoadingState } from '../../components/ui';
+import { Button, DownloadIcon, IconButton, LoadingState } from '../../components/ui';
+import { X } from 'lucide-solid';
 import {
   closeResourceFilePreview,
   downloadPreviewedFile,
@@ -8,7 +9,7 @@ import {
 } from '../store';
 
 function CloseIcon() {
-  return <Icon size="small"><path d="m5 5 10 10M15 5 5 15" /></Icon>;
+  return <X size={15} strokeWidth={1.7} />;
 }
 
 type ResourceFileEditorProps = { onClose?: () => void };

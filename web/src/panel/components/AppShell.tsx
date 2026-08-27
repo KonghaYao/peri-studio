@@ -7,6 +7,7 @@ import { ResourceWorkbench, type ResourcePreviewOrigin, type WorkbenchView } fro
 import { closeResourceDiffPreview, closeResourceFilePreview, resourceDiffPreview, resourceFilePreview } from '../store';
 import { ResourceDiffEditor } from './ResourceDiffEditor';
 import { ResourceFileEditor } from './ResourceFileEditor';
+import { SettingsDialog } from './SettingsDialog';
 
 const SIDEBAR_MIN_WIDTH = 220;
 const SIDEBAR_MAX_WIDTH = 480;
@@ -20,6 +21,7 @@ function clampSidebarWidth(width: number) {
 export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
   const [open, setOpen] = createSignal(false);
   const [resourcesOpen, setResourcesOpen] = createSignal(false);
+  const [systemOpen, setSystemOpen] = createSignal(false);
   const [resourceView, setResourceView] = createSignal<WorkbenchView>(props.initialResourceView ?? null);
   const [mobile, setMobile] = createSignal(false);
   const [medium, setMedium] = createSignal(false);
@@ -88,7 +90,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
     setResourceView(view);
     if (mobile()) setResourcesOpen(true);
   };
-  const openResources = () => openWorkbench('explorer');
+  const openResources = () => openWorkbench(resourceView() ?? 'explorer');
   const focusPreviewEditor = () => {
     main?.querySelector<HTMLElement>('[data-resource-preview-focus]')?.focus();
   };
@@ -155,14 +157,14 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
   });
   const sidebarGridTemplate = () => mobile()
     ? 'minmax(0, 1fr)'
-    : `${sidebarWidth()}px auto minmax(0, 1fr)`;
+    : `${sidebarWidth()}px minmax(0, 1fr) auto`;
 
   return (
     <div class="app-shell relative grid h-dvh grid-rows-[minmax(0,1fr)] overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide" style={{ 'grid-template-columns': sidebarGridTemplate() }}>
       <ProjectDrawer ref={(element) => { drawer = element; }} open={open()} modal={mobile()} onOpenChange={setOpen}>
         <ProjectSidebar
           onNavigate={() => setOpen(false)}
-          onOpenSystem={() => openWorkbench('machines')}
+          onOpenSystem={() => setSystemOpen(true)}
           intent={sidebarIntent()}
         />
       </ProjectDrawer>
@@ -180,6 +182,13 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
         onPointerDown={startSidebarResize}
         onKeyDown={resizeSidebarWithKeyboard}
       ><span aria-hidden="true" class="absolute top-0 bottom-0 left-5 w-2 rounded-full bg-transparent transition-colors group-hover:bg-accent group-focus-visible:bg-accent" /></div>
+      <main ref={main} class="conversation-pane min-w-0 min-h-0 overflow-hidden">
+        <Show when={resourceFilePreview()} fallback={<Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenResources={openResources} onOpenMcp={() => openWorkbench('mcp')} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
+          <ResourceDiffEditor onClose={() => closePreview('diff')} />
+        </Show>}>
+          <ResourceFileEditor onClose={() => closePreview('file')} />
+        </Show>
+      </main>
       <ResourceWorkbench
         compact={mobile()}
         autoCollapse={medium() && !mobile()}
@@ -191,13 +200,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
         onCompactOpenAutoFocus={restorePreviewOrigin}
         onCompactCloseAutoFocus={overrideDialogFocusRestore}
       />
-      <main ref={main} class="conversation-pane min-w-0 min-h-0 overflow-hidden">
-        <Show when={resourceFilePreview()} fallback={<Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenSystem={() => openWorkbench('machines')} onOpenResources={openResources} onOpenMcp={() => openWorkbench('mcp')} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
-          <ResourceDiffEditor onClose={() => closePreview('diff')} />
-        </Show>}>
-          <ResourceFileEditor onClose={() => closePreview('file')} />
-        </Show>
-      </main>
+      <SettingsDialog open={systemOpen()} onClose={() => setSystemOpen(false)} />
     </div>
   );
 }

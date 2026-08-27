@@ -3,9 +3,9 @@ import type { JSX } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./ProjectSidebar', () => ({
-  ProjectSidebar: () => <div data-testid="project-sidebar" />,
+  ProjectSidebar: (props: { onOpenSystem?: () => void }) => <div data-testid="project-sidebar"><button type="button" onClick={props.onOpenSystem}>System information</button></div>,
 }));
-vi.mock('./ChatView', () => ({ ChatView: (props: { onOpenResources?: () => void; onOpenMcp?: () => void; onOpenSystem?: () => void }) => <><button type="button" onClick={props.onOpenResources}>Open workspace resources</button><button type="button" onClick={props.onOpenMcp}>Open MCP resources</button><button type="button" onClick={props.onOpenSystem}>Open machine resources</button></> }));
+vi.mock('./ChatView', () => ({ ChatView: (props: { onOpenResources?: () => void; onOpenMcp?: () => void }) => <><button type="button" onClick={props.onOpenResources}>Open workspace resources</button><button type="button" onClick={props.onOpenMcp}>Open MCP resources</button></> }));
 vi.mock('./shared/ProjectDrawer', () => ({
   ProjectDrawer: (props: { children: JSX.Element; ref?: (element: HTMLElement) => void }) => <aside ref={props.ref}>{props.children}</aside>,
 }));
@@ -43,7 +43,7 @@ describe('AppShell desktop sidebar', () => {
     expect(handle).toHaveAttribute('aria-valuenow', '480');
     fireEvent.pointerUp(window);
     expect(document.body).not.toHaveClass('sidebar-resizing');
-    expect(shell().style.gridTemplateColumns).toBe('480px auto minmax(0, 1fr)');
+    expect(shell().style.gridTemplateColumns).toBe('480px minmax(0, 1fr) auto');
   });
 
   it('keeps the desktop sidebar at its current width', () => {
@@ -51,11 +51,21 @@ describe('AppShell desktop sidebar', () => {
 
     expect(screen.getByTestId('project-sidebar')).toBeInTheDocument();
     expect(screen.getByRole('separator', { name: 'Resize sidebar' })).toBeInTheDocument();
-    expect(shell().style.gridTemplateColumns).toBe('242px auto minmax(0, 1fr)');
-    expect(screen.getByRole('complementary', { name: 'Workspace resources' })).toBeInTheDocument();
+    expect(shell().style.gridTemplateColumns).toBe('242px minmax(0, 1fr) auto');
+    const conversation = document.querySelector('.conversation-pane')!;
+    const resources = screen.getByRole('complementary', { name: 'Workspace resources' });
+    expect(resources).toBeInTheDocument();
+    expect(conversation.compareDocumentPosition(resources) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('opens filesystem and Git resources from the compact chat header', async () => {
+  it('opens global machine information from the sidebar footer entry', async () => {
+    render(() => <AppShell />);
+    await fireEvent.click(screen.getByRole('button', { name: 'System information' }));
+    expect(screen.getByRole('dialog', { name: 'System' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Machines' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('opens only chat-scoped filesystem and MCP resources from the compact chat header', async () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({
       matches: true,
       addEventListener: vi.fn(),
@@ -68,22 +78,9 @@ describe('AppShell desktop sidebar', () => {
 
     expect(screen.getByRole('dialog', { name: 'Workspace resources' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Explorer' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Source Control' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'MCP' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Machines' })).toBeInTheDocument();
-  });
-
-  it('opens MCP and machine control in the shared compact resource workbench', async () => {
-    vi.stubGlobal('matchMedia', vi.fn(() => ({
-      matches: true,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    })));
-    render(() => <AppShell />);
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Open machine resources' }));
-    expect(screen.getByRole('dialog', { name: 'Workspace resources' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Machines' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Source Control' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Machines' })).not.toBeInTheDocument();
   });
 
   it('opens Explorer from the medium resource rail', async () => {

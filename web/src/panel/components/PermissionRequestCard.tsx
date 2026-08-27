@@ -1,7 +1,8 @@
 import { createEffect, createSignal, createUniqueId, onCleanup, Show } from 'solid-js';
 import { parsePermissionExpiration, type PendingPermission } from '../lib/control-view';
 import type { PermissionDecisionState } from '../lib/permission-delivery';
-import { CheckIcon, Icon, IconButton, RefreshIcon } from '../../components/ui';
+import { IconButton } from '../../components/ui';
+import { Check, CircleAlert, Clock3, RefreshCw, ShieldAlert, X } from 'lucide-solid';
 
 function shortId(id: string | null | undefined, length = 8): string {
   if (!id) return '';
@@ -93,35 +94,35 @@ export function PermissionRequestCard(props: PermissionRequestCardProps) {
   const describedBy = () => [deadlineLabel() ? deadlineId : '', status() ? statusId : ''].filter(Boolean).join(' ') || undefined;
 
   return <section
-    class={`permission-request ${uncertain() ? 'permission-request--uncertain' : ''} grid grid-cols-permission gap-8 items-start m-0 bg-surface max-middle:grid-cols-[24px_minmax(0,1fr)] ${props.embedded ? 'rounded-0 border-0 p-12 shadow-none max-middle:p-10' : `rounded-(--decision-radius) border p-12 max-middle:p-10 ${uncertain() ? 'border-warning shadow-none' : 'border-border-subtle shadow-float'}`}`}
+    class={`permission-request ${uncertain() ? 'permission-request--uncertain' : ''} grid min-h-(--permission-card-min-height) grid-cols-permission gap-8 items-start m-0 bg-surface max-middle:grid-cols-[24px_minmax(0,1fr)] ${props.embedded ? 'rounded-0 border-0 p-12 shadow-none max-middle:p-10' : `rounded-(--decision-radius) border p-12 max-middle:p-10 ${uncertain() ? 'border-warning shadow-none' : 'border-border-subtle shadow-float'}`}`}
     aria-labelledby={`${statusId}-title`}
     aria-describedby={describedBy()}
     aria-busy={locked() && !uncertain() ? 'true' : undefined}
   >
-    <div class="permission-request__mark grid size-24 place-items-center rounded-full border border-warning-border bg-surface text-warning" aria-hidden="true"><Icon class="size-14!"><path d="M10 3.5 16 6v4.5c0 3.5-2.4 5.6-6 6.8-3.6-1.2-6-3.3-6-6.8V6z" /><path d="M10 7.5v3M10 13h.01" /></Icon></div>
+    <div class="permission-request__mark grid size-24 place-items-center rounded-full border border-border-subtle bg-surface text-warning" aria-hidden="true"><ShieldAlert size={15} strokeWidth={1.8} /></div>
     <div class="permission-request__body min-w-0">
       <strong class="block text-text-primary text-12" id={`${statusId}-title`}>{props.permission.title || 'Permission request'}</strong>
       <Show when={props.permission.description}><p class="mt-3 text-text-secondary text-11 leading-15">{props.permission.description}</p></Show>
-      <Show when={props.permission.toolInputSummary}>{(summary) => <div class="mt-8 rounded-8 border border-border-subtle bg-surface px-9 py-7 text-12 leading-145 text-text-secondary">
+      <Show when={props.permission.toolInputSummary}>{(summary) => <div class="mt-6 min-w-0 text-10 leading-14 text-text-muted">
         <span class="sr-only">Requested input</span>
-        <code class="block whitespace-pre-wrap break-words">{summary()}</code>
-        <Show when={props.permission.toolCallId}><code class="mt-3 block text-11" title={props.permission.toolCallId || undefined}>tool {shortId(props.permission.toolCallId)}</code></Show>
+        <code class="block overflow-hidden text-ellipsis whitespace-nowrap" title={summary()}>{summary()}</code>
+        <Show when={props.permission.toolCallId}><code class="sr-only" title={props.permission.toolCallId || undefined}>tool {shortId(props.permission.toolCallId)}</code></Show>
       </div>}</Show>
-      <Show when={!props.permission.toolInputSummary && props.permission.toolCallId}><code class="block mt-6 text-11 text-text-secondary" title={props.permission.toolCallId || undefined}>tool {shortId(props.permission.toolCallId)}</code></Show>
+      <Show when={!props.permission.toolInputSummary && props.permission.toolCallId}><code class="block mt-5 overflow-hidden text-ellipsis whitespace-nowrap text-10 text-text-muted" title={props.permission.toolCallId || undefined}>tool {shortId(props.permission.toolCallId)}</code></Show>
       <Show when={deadlineLabel()}><div id={deadlineId} class={`mt-7 flex items-center gap-5 text-11 leading-145 ${expirationBlocked() ? 'text-warning font-semibold' : 'text-text-muted'}`}>
-        <Icon class="size-13!"><circle cx="10" cy="10" r="6.5" /><path d="M10 6.5v4l2.5 1.5" /></Icon><time dateTime={props.permission.expiresAt || undefined}>{deadlineLabel()}</time>
+        <Clock3 size={13} strokeWidth={1.8} aria-hidden="true" /><time dateTime={props.permission.expiresAt || undefined}>{deadlineLabel()}</time>
       </div></Show>
-      <Show when={status()}><div id={statusId} title={status()} class={`permission-request__status mt-7 inline-flex size-22 items-center justify-center rounded-full border ${uncertain() ? 'border-warning-border text-warning' : 'border-border-subtle text-text-muted'}`} role={uncertain() ? 'alert' : 'status'} aria-live="polite"><Icon class="size-13!"><circle cx="10" cy="10" r="6.5" /><path d="M10 7v3.5M10 13.5h.01" /></Icon><span class="sr-only">{status()}</span></div></Show>
+      <Show when={status()}><div id={statusId} title={status()} class={`permission-request__status mt-7 inline-flex size-22 items-center justify-center rounded-full border ${uncertain() ? 'border-warning-border text-warning' : 'border-border-subtle text-text-muted'}`} role={uncertain() ? 'alert' : 'status'} aria-live="polite"><CircleAlert size={13} strokeWidth={1.8} aria-hidden="true" /><span class="sr-only">{status()}</span></div></Show>
     </div>
     <div class="permission-request__actions flex justify-end gap-5 self-center max-middle:col-span-full max-middle:w-full max-middle:pt-2">
-      <Show when={allowLabel()}>{(label) => <IconButton tooltipPlacement="end" variant="primary" label={props.decision?.decision === 'allow' ? `${label()}…` : label()} class="size-32 min-h-32 rounded-full border-0 bg-success text-surface hover:bg-success max-narrow:size-44 max-narrow:min-h-44" disabled={props.readOnly || locked() || !allowActionable()} busy={props.decision?.phase === 'pending' && props.decision.decision === 'allow'} onClick={() => allowActionable() && props.onResolve('allow', allowOptionId())}>
-        <CheckIcon />
+      <Show when={allowLabel()}>{(label) => <IconButton tooltipPlacement="end" variant="primary" label={props.decision?.decision === 'allow' ? `${label()}…` : label()} class="size-30 min-h-30 rounded-full border-0 bg-success text-surface hover:bg-success max-narrow:size-44 max-narrow:min-h-44" disabled={props.readOnly || locked() || !allowActionable()} busy={props.decision?.phase === 'pending' && props.decision.decision === 'allow'} onClick={() => allowActionable() && props.onResolve('allow', allowOptionId())}>
+        <Check size={15} strokeWidth={1.9} />
       </IconButton>}</Show>
-      <IconButton tooltipPlacement="end" variant="secondary" label={props.decision?.decision === 'deny' ? 'Denying…' : 'Deny'} class="size-32 min-h-32 rounded-full border-danger bg-danger text-surface hover:bg-danger max-narrow:size-44 max-narrow:min-h-44" disabled={props.readOnly || locked() || !denyActionable()} busy={props.decision?.phase === 'pending' && props.decision.decision === 'deny'} onClick={() => denyActionable() && props.onResolve('deny', props.permission.optionIds?.deny)}>
-        <Icon><path d="m6 6 8 8M14 6l-8 8" /></Icon>
+      <IconButton tooltipPlacement="end" variant="secondary" label={props.decision?.decision === 'deny' ? 'Denying…' : 'Deny'} class="size-30 min-h-30 rounded-full border-danger bg-danger text-surface hover:bg-danger max-narrow:size-44 max-narrow:min-h-44" disabled={props.readOnly || locked() || !denyActionable()} busy={props.decision?.phase === 'pending' && props.decision.decision === 'deny'} onClick={() => denyActionable() && props.onResolve('deny', props.permission.optionIds?.deny)}>
+        <X size={15} strokeWidth={1.9} />
       </IconButton>
       <Show when={retryable() && props.decision}>
-        {(decision) => <IconButton tooltipPlacement="end" variant="primary" label="Retry with original request" class="size-36 min-h-36 rounded-full border-0 bg-btn-primary text-surface max-narrow:size-44 max-narrow:min-h-44" disabled={props.readOnly || expirationBlocked()} onClick={() => !expirationBlocked() && props.onRetry?.(decision().commandId)}><RefreshIcon /></IconButton>}
+        {(decision) => <IconButton tooltipPlacement="end" variant="primary" label="Retry with original request" class="size-30 min-h-30 rounded-full border-0 bg-success text-surface hover:bg-success max-narrow:size-44 max-narrow:min-h-44" disabled={props.readOnly || expirationBlocked()} onClick={() => !expirationBlocked() && props.onRetry?.(decision().commandId)}><RefreshCw size={14} strokeWidth={1.8} /></IconButton>}
       </Show>
     </div>
   </section>;

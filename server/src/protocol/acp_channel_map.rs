@@ -15,7 +15,7 @@ use chrono::DateTime;
 use serde_json::Value;
 
 use peri_studio_proto::action::PermissionDecision;
-use peri_studio_proto::schema::{BlockVisibility, ChatStatus, PublicError, TurnStatus};
+use peri_studio_proto::schema::{BlockVisibility, ChatStatus, TurnStatus};
 
 use crate::state::normalized::EventBody;
 
@@ -24,8 +24,8 @@ use super::acp_channel_config::{
     normalize_agent_config, parse_agent_plan, parse_available_commands,
 };
 use super::acp_channel_parse::{
-    nonterminal_tool_status, number_field, opt_json, permission_options, public_error, required,
-    string_field, truncate_identifier, truncate_text, MapError,
+    number_field, permission_options, public_error, required, string_field, truncate_identifier,
+    truncate_text, MapError,
 };
 
 impl AcpChannel {
@@ -69,80 +69,10 @@ impl AcpChannel {
                 author_user_id: None,
                 created_at: now_rfc3339.to_string(),
             },
-            // tool_call / tool_call_update 按 status 细分终态
-            // （resolveToolCallType：running→started；completed/complete/done→
-            // completed；failed/error→failed；缺省 running。官方 ToolCallStatus
-            // 值域 pending/in_progress/completed/failed（#2），兼容别名
-            // complete/done/error；pending/in_progress 归入 started 非终态）。
             "tool_call" | "tool_call_update" => {
-                let tool_call_id = update
-                    .get("toolCallId")
-                    .and_then(Value::as_str)
-                    .map(str::to_string)
-                    .or_else(|| {
-                        update
-                            .get("content")
-                            .and_then(|v| v.get("id"))
-                            .and_then(Value::as_str)
-                            .map(str::to_string)
-                    })
-                    .unwrap_or_default();
-                if tool_call_id.is_empty() {
-                    return Err(MapError::MissingField);
-                }
-                match string_field(update, "status", "status").as_deref() {
-                    Some("completed") | Some("complete") | Some("done") => B::ToolCallCompleted {
-                        turn_id: String::new(),
-                        tool_call_id,
-                        result: update
-                            .get("rawOutput")
-                            .or_else(|| update.get("output"))
-                            .cloned(),
-                        public_error: None,
-                        completed_at: now_rfc3339.to_string(),
-                    },
-                    // #2：官方 failed 终态（ToolCallStatus 值域
-                    // pending/in_progress/completed/failed）；error 为兼容
-                    // 别名（同为 ToolCallCompleted + public_error）。
-                    Some("failed") | Some("error") => B::ToolCallCompleted {
-                        turn_id: String::new(),
-                        tool_call_id,
-                        result: None,
-                        public_error: Some(PublicError {
-                            code: "agent_error".to_string(),
-                            message: string_field(update, "title", "title")
-                                .unwrap_or_else(|| "Tool call failed".to_string()),
-                        }),
-                        completed_at: now_rfc3339.to_string(),
-                    },
-                    status => {
-                        let status = nonterminal_tool_status(status);
-                        if kind == "tool_call_update" {
-                            B::ToolCallUpdated {
-                                turn_id: String::new(),
-                                tool_call_id,
-                                status: Some(status),
-                                arguments: update
-                                    .get("rawInput")
-                                    .and_then(|v| self.normalize_tool_arguments(v)),
-                            }
-                        } else {
-                            B::ToolCallStarted {
-                                turn_id: String::new(),
-                                tool_call_id,
-                                name: string_field(update, "title", "title")
-                                    .or_else(|| string_field(update, "name", "name"))
-                                    .unwrap_or_default(),
-                                status,
-                                arguments: update
-                                    .get("rawInput")
-                                    .and_then(|v| self.normalize_tool_arguments(v)),
-                                created_at: now_rfc3339.to_string(),
-                            }
-                        }
-                    }
-                }
+                self.map_acp_tool_patch(update, &kind, now_rfc3339)?
             }
+            "tool_call_content_chunk" => self.map_acp_tool_content_chunk(update)?,
             // session 元信息（title 等；peri 实测仅 updatedAt，其余缺省不覆盖）。
             "session_info_update" | "session_update" => B::SessionInfo {
                 title: string_field(update, "title", "title"),
@@ -298,39 +228,8 @@ impl AcpChannel {
                 public_error: public_error(payload),
             },
             // ---- 工具调用（§5.3 tool_calls）----
-            "tool_call" => B::ToolCallStarted {
-                turn_id: required(payload, "turnId", "turn_id")?,
-                tool_call_id: required(payload, "toolCallId", "tool_call_id")?,
-                name: string_field(payload, "name", "name").unwrap_or_default(),
-                status: nonterminal_tool_status(
-                    string_field(payload, "status", "status").as_deref(),
-                ),
-                arguments: opt_json(payload, "arguments")
-                    .and_then(|v| self.normalize_tool_arguments(&v)),
-                created_at: string_field(payload, "createdAt", "created_at")
-                    .unwrap_or_else(|| now_rfc3339.to_string()),
-            },
-            "tool_call_update" => {
-                let status = string_field(payload, "status", "status").unwrap_or_default();
-                let tool_call_id = required(payload, "toolCallId", "tool_call_id")?;
-                if matches!(status.as_str(), "completed" | "error" | "failed") {
-                    B::ToolCallCompleted {
-                        turn_id: string_field(payload, "turnId", "turn_id").unwrap_or_default(),
-                        tool_call_id,
-                        result: opt_json(payload, "result"),
-                        public_error: public_error(payload),
-                        completed_at: now_rfc3339.to_string(),
-                    }
-                } else {
-                    // running / streaming / 其余：M1 arguments 全量覆盖（§6.1 表）。
-                    B::ToolCallUpdated {
-                        turn_id: string_field(payload, "turnId", "turn_id").unwrap_or_default(),
-                        tool_call_id,
-                        status: Some(nonterminal_tool_status(Some(status.as_str()))),
-                        arguments: opt_json(payload, "arguments")
-                            .and_then(|v| self.normalize_tool_arguments(&v)),
-                    }
-                }
+            "tool_call" | "tool_call_update" => {
+                self.map_raw_tool_patch(payload, kind, now_rfc3339)?
             }
             // ---- 权限（§5.4 pending_permissions）----
             "permission_request" => {
@@ -344,10 +243,12 @@ impl AcpChannel {
                     // 保持 pending 窗口完整。
                     Err(_) => (chrono::Utc::now() + self.permission_timeout).to_rfc3339(),
                 };
+                let tool_call_id =
+                    super::acp_channel_tool::optional_validated_tool_call_id(payload)?;
                 B::PermissionRequested {
                     permission_id: required(payload, "permissionId", "permission_id")?,
                     turn_id: required(payload, "turnId", "turn_id")?,
-                    tool_call_id: string_field(payload, "toolCallId", "tool_call_id"),
+                    tool_call_id,
                     tool: None,
                     title: string_field(payload, "title", "title").unwrap_or_default(),
                     description: string_field(payload, "description", "description"),

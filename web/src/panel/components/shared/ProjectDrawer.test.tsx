@@ -19,7 +19,7 @@ describe('ProjectDrawer', () => {
     render(() => <Harness />);
     const drawer = await screen.findByRole('dialog', { name: 'Projects & Sessions' });
     await waitFor(() => expect(screen.getByRole('button', { name: 'First project' })).toHaveFocus());
-    expect(background).toHaveAttribute('aria-hidden', 'true');
+    await waitFor(() => expect(background).toHaveAttribute('aria-hidden', 'true'));
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
     expect(drawer).toContainElement(document.activeElement as HTMLElement);
     fireEvent.keyDown(document, { key: 'Escape' });

@@ -125,7 +125,7 @@ pub(crate) async fn chat_writer_loop(
                 Some(ChatMsg::Event(ev, reply)) => {
                     if is_batchable(&ev.body) {
                         batch_bytes += estimate_bytes(&ev);
-                        batch.push((ev, reply));
+                        batch.push((*ev, reply));
                         if batch_bytes >= cfg.batch_bytes {
                             flush_batch(&chat_id, &mut pair, &mut agg, &mut batch, &mut batch_bytes,
                                 &mut chat_updates, &mut control_updates, &sink, &broadcast, &registry,

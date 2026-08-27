@@ -42,7 +42,7 @@ function HistoryBoundary(props: { kind: Exclude<ReplayBoundary, null> }) {
 }
 
 function ChatLoading() {
-  return <div class="chat-loading message-loading mb-12 flex min-h-32 items-center gap-8 text-12 text-text-muted" role="status" aria-live="polite">
+  return <div class="chat-loading message-loading mb-12 flex min-h-32 items-center gap-8 text-12 text-text-muted" aria-hidden="true">
     <span class="grid size-18 shrink-0 place-items-center rounded-6 border border-border-subtle bg-surface-muted" aria-hidden="true">
       <i class="h-10 w-2 rounded-full bg-text-muted animate-pulse motion-reduce:animate-none" />
     </span>
@@ -97,6 +97,7 @@ export function MessageList(props: { bottomInset?: number }) {
   let entryProjectionRevision = 0;
   let transcriptChatId = selectedCid();
   let completionBaselineReady = false;
+  let observedBottomInset = props.bottomInset ?? 0;
   let announcementChatId: string | null | undefined;
   let announcedCompletionKey: string | null = null;
   const transcript = new TranscriptWindow({ estimatedHeight: 80, overscan: 320 });
@@ -108,17 +109,63 @@ export function MessageList(props: { bottomInset?: number }) {
   };
   const acknowledgedForChat = () => acknowledgedMessageDeliveries()
     .filter((submission) => submission.chatId === selectedCid());
-  const showChatLoading = () => {
-    if (!chatHead()?.chat?.loading) return false;
+  const activeTurnEntries = () => {
     const turnId = chatHead()?.activeTurn?.turnId || chatHead()?.chat?.activeTurnId;
-    if (!turnId) return true;
-    const entry = chatEntries().find((item) => item.role === 'assistant' && item.turnId === turnId);
-    return !entry || !(entry.text.trim() || entry.reasoning.length || entry.toolCalls.length || entry.resources.length || entry.error);
+    return turnId ? chatEntries().filter((item) => item.role === 'assistant' && item.turnId === turnId) : [];
   };
+  const isNonterminalTool = (status: string | null) => ['pending', 'running', 'in_progress', 'awaiting_permission', 'awaitingPermission'].includes(status ?? '');
+  const latestTurnActivity = () => {
+    const entries = activeTurnEntries();
+    // 并行工具可能分散在多个 assistant 分段；任何仍未终结的工具都优先拥有状态面。
+    for (let entryIndex = entries.length - 1; entryIndex >= 0; entryIndex -= 1) {
+      const entry = entries[entryIndex];
+      const blockTools = entry.blocks.filter((block) => block.kind === 'tool_call').map((block) => block.toolCall);
+      const tools = blockTools.length ? blockTools : entry.toolCalls;
+      for (let toolIndex = tools.length - 1; toolIndex >= 0; toolIndex -= 1) {
+        if (isNonterminalTool(tools[toolIndex].status)) return { kind: 'tool', tool: tools[toolIndex] } as const;
+      }
+    }
+    for (let index = entries.length - 1; index >= 0; index -= 1) {
+      const entry = entries[index];
+      const lastBlock = entry.blocks.at(-1);
+      if (lastBlock?.kind === 'tool_call') return { kind: isNonterminalTool(lastBlock.toolCall.status) ? 'tool' : 'terminal_tool', tool: lastBlock.toolCall } as const;
+      if (lastBlock) return { kind: 'content' } as const;
+
+      // 旧投影没有块顺序；同一分段内运行工具优先，正文优先于已结束工具。
+      const lastTool = entry.toolCalls.at(-1);
+      if (lastTool && isNonterminalTool(lastTool.status)) return { kind: 'tool', tool: lastTool } as const;
+      if (entry.text.trim() || entry.reasoning.length || entry.resources.length || entry.error) return { kind: 'content' } as const;
+      if (lastTool) return { kind: 'terminal_tool', tool: lastTool } as const;
+    }
+    return null;
+  };
+  const agentActivityAnnouncement = createMemo(() => {
+    if (!runtimeDocsHydrated() || !chatHead()?.chat?.loading) return '';
+    if (permissions().some((permission) => permission.status === 'pending')) return 'Waiting for permission';
+    if (visibleElicitations(elicitations()).length > 0) return 'Waiting for your answer';
+    const activity = latestTurnActivity();
+    if (activity?.kind === 'tool') return `${activity.tool.name?.trim() || 'Tool'} ${activity.tool.status === 'awaiting_permission' || activity.tool.status === 'awaitingPermission' ? 'waiting for permission' : 'running'}`;
+    if (activity?.kind === 'content') return '';
+    return 'Peri is working';
+  });
+  // 泛化 loading 只填补真正的 thinking gap；工具行和决策面板已经承担可见状态，不能重复。
+  const showChatLoading = () => agentActivityAnnouncement() === 'Peri is working';
 
   // Composer 绝对覆盖在滚动区上方：动态高度 + 最小安全留白，保证最后一条消息不被贴住或遮挡。
   const contentBottomInset = () => `${Math.max(props.bottomInset ?? 0, 64) + 40}px`;
   const jumpBottomInset = () => `${Math.max(props.bottomInset ?? 0, 0) + 12}px`;
+
+  // 浮层（状态区、问题、权限或 Composer）变高时，旧的“已吸底”位置会落到
+  // 新浮层下面。高度变化后重新读取真实 scrollHeight，保持尾部完整可见。
+  createEffect(() => {
+    const nextInset = props.bottomInset ?? 0;
+    if (nextInset === observedBottomInset) return;
+    observedBottomInset = nextInset;
+    if (!areaRef || !stick()) return;
+    queueMicrotask(() => {
+      if (mounted && stick()) scrollToBottom();
+    });
+  });
 
   // 稳定槽位与按 id 索引（见下方 <For> 注释：等效显式 itemKey）。
   // id 字符串序列供外层 <For> diff；Map 供稳定槽位读取最新投影。
@@ -275,6 +322,7 @@ export function MessageList(props: { bottomInset?: number }) {
       class="ui-scrollbar message-list-scroll min-h-0 flex-1 overflow-y-auto [overflow-anchor:none]"
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
+      <div class="sr-only" role="status" aria-label="Agent activity" aria-live="polite" aria-atomic="true">{agentActivityAnnouncement()}</div>
       {/* Composer 覆盖在时间线底部；动态 inset 让最后一条消息始终完整可读。 */}
       <div class="message-list-content box-border w-full max-w-(--container-chat) mx-auto pt-32 px-20 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 max-desk:max-w-(--container-chat-narrow) max-narrow:px-10" style={{ 'padding-bottom': contentBottomInset() }}>
         <div ref={prefixRef} class="transcript-prefix">

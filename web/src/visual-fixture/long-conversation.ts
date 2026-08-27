@@ -4,6 +4,7 @@ function tool(turn: number, step: number, overrides: Partial<ToolCallInfo>): Too
   return {
     toolCallId: `long-tool-${turn}-${step}`,
     name: 'Read source',
+    kind: 'read',
     status: 'completed',
     arguments: { path: 'web/src/panel/store.ts' },
     result: { lines: 312 },
@@ -52,11 +53,19 @@ export function createLongConversationEntries(base: [ChatEntry, ChatEntry]): Cha
       reasoning: assistant ? [{ text: 'Compare the new observation with the previous checkpoint before moving forward.', visibility: 'user' }] : [],
       toolCalls: assistant ? [
         tool(turn, 1, { name: 'Read recovery projection', arguments: { path: 'web/src/panel/lib/chat-projection.ts' } }),
-        tool(turn, 2, { name: 'Search runtime binding', arguments: { query: 'activeChatId', path: 'server/src' }, result: { matches: 4 } }),
-        tool(turn, 3, { name: 'Update boundary', arguments: { path: 'web/src/panel/store.ts' }, result: { changed: true } }),
+        tool(turn, 2, { name: 'Search runtime binding', kind: 'search', arguments: { query: 'activeChatId', path: 'server/src' }, result: { matches: 4 } }),
+        tool(turn, 3, { name: 'Update boundary', kind: 'edit', arguments: { path: 'web/src/panel/store.ts' }, result: { changed: true } }),
         tool(turn, 4, turn === 18
-          ? { name: 'Run focused checks', status: 'running', arguments: { command: 'bun run test' }, result: null, resultOmitted: null, resultBytes: null, completedAt: null }
-          : { name: 'Run focused checks', arguments: { command: 'bun run test' }, result: { passed: 23 } }),
+          ? { name: 'Run focused checks', kind: 'execute', status: 'running', arguments: { command: 'bun run test' }, result: null, resultOmitted: null, resultBytes: null, completedAt: null }
+          : { name: 'Run focused checks', kind: 'execute', arguments: { command: 'bun run test' }, result: { passed: 23 } }),
+        ...(turn === 18 ? [tool(turn, 5, {
+          name: 'Final diagnostics',
+          kind: 'execute',
+          arguments: { command: 'bun run test:browser -- --grep tool-call' },
+          result: { stdout: `diagnostic output sentinel\n${Array.from({ length: 24 }, (_, line) => `line ${line + 1}: browser acceptance passed`).join('\n')}\nfinal diagnostic tail sentinel`, stderr: '', exitCode: 0 },
+          resultOmitted: false,
+          resultBytes: 1_024,
+        })] : []),
       ] : [],
       resources: assistant && turn % 3 === 0 ? [{ resourceId: `resource://checkpoint-${turn}`, mediaType: 'text/markdown', name: `Checkpoint ${turn} notes` }] : [],
       error: null,

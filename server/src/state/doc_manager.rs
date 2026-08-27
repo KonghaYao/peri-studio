@@ -146,7 +146,7 @@ struct ChatHandle {
 /// 写者通道消息（§8.2）。
 pub(crate) enum ChatMsg {
     /// 事件（聚合路径）；挂 oneshot 的调用方 await 投递确认（§8.2 提交点纪律）。
-    Event(NormalizedEvent, Option<oneshot::Sender<SubmitResult>>),
+    Event(Box<NormalizedEvent>, Option<oneshot::Sender<SubmitResult>>),
     /// 命令（控制路径）。
     Command(DocCommand, Option<oneshot::Sender<SubmitResult>>),
     /// 关闭：writer 完成在途批次后退出。
@@ -339,7 +339,12 @@ impl DocManager {
         // delta 类：入队即返回（§8.2 微批次不逐事件应答；挂 reply 会使调用方
         // 在窗口内阻塞至 flush，破坏流式语义）。
         if is_batchable(&ev.body) {
-            if handle.tx.send(ChatMsg::Event(ev, None)).await.is_err() {
+            if handle
+                .tx
+                .send(ChatMsg::Event(Box::new(ev), None))
+                .await
+                .is_err()
+            {
                 return SubmitResult::Rejected(SubmitError::ChannelClosed);
             }
             return SubmitResult::Applied(ApplyResult {
@@ -350,7 +355,7 @@ impl DocManager {
         let (reply, rx) = oneshot::channel();
         if handle
             .tx
-            .send(ChatMsg::Event(ev, Some(reply)))
+            .send(ChatMsg::Event(Box::new(ev), Some(reply)))
             .await
             .is_err()
         {

@@ -156,11 +156,17 @@ describe('renderChat tool projection', () => {
     const result = new Y.Map<unknown>();
     const error = new Y.Map<unknown>();
     calls.set('tc-1', call);
-    call.set('name', 'shell'); call.set('status', 'error'); call.set('arguments', args); call.set('result', result); call.set('public_error', error);
+    call.set('name', 'shell'); call.set('kind', 'execute'); call.set('status', 'error'); call.set('arguments', args); call.set('result', result); call.set('public_error', error);
     call.set('started_at', '2026-08-13T00:00:00.000Z'); call.set('completed_at', '2026-08-13T00:00:01.250Z'); call.set('result_omitted', false); call.set('result_bytes', 14);
+    call.set('arguments_omitted', true); call.set('arguments_bytes', 2048);
+    call.set('content', [{ type: 'text', text: 'progress' }]);
+    call.set('locations', [{ path: '/workspace/src/main.rs', line: 7 }]);
+    call.set('content_omitted', true); call.set('content_bytes', 4096);
+    call.set('locations_omitted', true); call.set('locations_bytes', 1024);
     args.set('command', 'pwd'); result.set('exitCode', 1); error.set('code', 'FAILED'); error.set('message', 'safe public message');
 
     const [tool] = renderChat(doc).entries[0].toolCalls;
+    expect(tool.kind).toBe('execute');
     expect(tool.arguments).toEqual({ command: 'pwd' });
     expect(tool.result).toEqual({ exitCode: 1 });
     expect(tool.publicError).toEqual({ code: 'FAILED', message: 'safe public message' });
@@ -168,6 +174,14 @@ describe('renderChat tool projection', () => {
     expect(tool.completedAt).toBe('2026-08-13T00:00:01.250Z');
     expect(tool.resultOmitted).toBe(false);
     expect(tool.resultBytes).toBe(14);
+    expect(tool.argumentsOmitted).toBe(true);
+    expect(tool.argumentsBytes).toBe(2048);
+    expect(tool.content).toEqual([{ type: 'text', text: 'progress' }]);
+    expect(tool.locations).toEqual([{ path: '/workspace/src/main.rs', line: 7 }]);
+    expect(tool.contentOmitted).toBe(true);
+    expect(tool.contentBytes).toBe(4096);
+    expect(tool.locationsOmitted).toBe(true);
+    expect(tool.locationsBytes).toBe(1024);
   });
 
   it('keeps timestamps optional for legacy snapshots', () => {

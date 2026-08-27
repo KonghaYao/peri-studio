@@ -4,6 +4,8 @@
     "": {
       "name": "peri-studio-web",
       "dependencies": {
+        "@iconify-icon/solid": "3.0.3",
+        "@iconify-icons/vscode-icons": "2.0.2",
         "@kobalte/core": "^0.13.13",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -107,6 +109,10 @@
     "@floating-ui/dom": ["@floating-ui/dom@1.8.0", "", { "dependencies": { "@floating-ui/core": "^1.8.0", "@floating-ui/utils": "^0.2.12" } }, "sha512-yXSrzeHZBTZadLOlfyhCkJHNeLJnHRnRInwdZ40L7ZiaAtrBwoYlsDrX3v5zB1Utk7CLfzcOVnVVWoXEky7Ceg=="],
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.12", "", {}, "sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww=="],
+
+    "@iconify-icon/solid": ["@iconify-icon/solid@3.0.3", "", { "dependencies": { "iconify-icon": "^3.0.2" }, "peerDependencies": { "solid-js": ">=1.0.0" } }, "sha512-VUM8/gscfrU0e6dUWjitdsJrNzYoY1bGTp1+gfZIAbvo+tIGcP9bD3WAvFb6pHaCYL/5X6erZUUn8pL0c0xX9Q=="],
+
+    "@iconify-icons/vscode-icons": ["@iconify-icons/vscode-icons@2.0.2", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-GgdjitdZgCZ9k2GIzEj9XHVjleU2DhiTLHEpBTxv7Uj06ZRAxYeo8kuaHPlP+p4iSUpf0rEERztGARQAgQ3pSw=="],
 
     "@iconify/types": ["@iconify/types@2.0.0", "", {}, "sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg=="],
 
@@ -565,6 +571,8 @@
     "html-entities": ["html-entities@2.3.3", "", {}, "sha512-DV5Ln36z34NNTDgnz0EWGBLZENelNAtkiFA4kyNOG2tDI6Mz1uSWiq1wAKdyjnJwyDiDO7Fa2SO1CTxPXL8VxA=="],
 
     "html-void-elements": ["html-void-elements@3.0.0", "", {}, "sha512-bEqo66MRXsUGxWHV5IP0PUiAWwoEjba4VCzg0LjFJBpchPaTfyfCKTG6bc5F8ucKec3q5y6qOdGyYTSBEvhCrg=="],
+
+    "iconify-icon": ["iconify-icon@3.0.2", "", { "dependencies": { "@iconify/types": "^2.0.0" } }, "sha512-DYPAumiUeUeT/GHT8x2wrAVKn1FqZJqFH0Y5pBefapWRreV1BBvqBVMb0020YQ2njmbR59r/IathL2d2OrDrxA=="],
 
     "iconv-lite": ["iconv-lite@0.6.3", "", { "dependencies": { "safer-buffer": ">= 2.1.2 < 3.0.0" } }, "sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw=="],
 

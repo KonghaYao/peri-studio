@@ -256,8 +256,23 @@ pub fn upsert_tool_call(
     cm.insert(txn, "tool_call_id", tc.tool_call_id.clone());
     cm.insert(txn, "turn_id", tc.turn_id.clone());
     cm.insert(txn, "name", tc.name.clone());
+    cm.insert(txn, "kind", tool_call_kind_str(tc.kind));
     cm.insert(txn, "status", tool_call_status_str(tc.status));
     insert_opt_json(txn, &cm, "arguments", tc.arguments.as_ref());
+    match tc.arguments_omitted {
+        Some(value) => cm.insert(txn, "arguments_omitted", value),
+        None => cm.insert(txn, "arguments_omitted", yrs::Any::Null),
+    };
+    match tc.arguments_bytes {
+        Some(value) => cm.insert(txn, "arguments_bytes", value as f64),
+        None => cm.insert(txn, "arguments_bytes", yrs::Any::Null),
+    };
+    insert_opt_json(txn, &cm, "content", tc.content.as_ref());
+    insert_opt_bool(txn, &cm, "content_omitted", tc.content_omitted);
+    insert_opt_u64(txn, &cm, "content_bytes", tc.content_bytes);
+    insert_opt_json(txn, &cm, "locations", tc.locations.as_ref());
+    insert_opt_bool(txn, &cm, "locations_omitted", tc.locations_omitted);
+    insert_opt_u64(txn, &cm, "locations_bytes", tc.locations_bytes);
     insert_opt_json(txn, &cm, "result", tc.result.as_ref());
     match tc.result_omitted {
         Some(value) => cm.insert(txn, "result_omitted", value),
@@ -286,6 +301,41 @@ pub fn upsert_tool_call(
         None => cm.insert(txn, "completed_at", yrs::Any::Null),
     };
     created
+}
+
+fn tool_call_kind_str(kind: peri_studio_proto::schema::ToolCallKind) -> &'static str {
+    use peri_studio_proto::schema::ToolCallKind;
+    match kind {
+        ToolCallKind::Read => "read",
+        ToolCallKind::Edit => "edit",
+        ToolCallKind::Delete => "delete",
+        ToolCallKind::Move => "move",
+        ToolCallKind::Search => "search",
+        ToolCallKind::Execute => "execute",
+        ToolCallKind::Think => "think",
+        ToolCallKind::Fetch => "fetch",
+        ToolCallKind::SwitchMode => "switch_mode",
+        ToolCallKind::Other => "other",
+    }
+}
+
+fn insert_opt_bool(
+    txn: &mut TransactionCtx<'_>,
+    map: &yrs::MapRef,
+    key: &str,
+    value: Option<bool>,
+) {
+    match value {
+        Some(value) => map.insert(txn, key, value),
+        None => map.insert(txn, key, yrs::Any::Null),
+    };
+}
+
+fn insert_opt_u64(txn: &mut TransactionCtx<'_>, map: &yrs::MapRef, key: &str, value: Option<u64>) {
+    match value {
+        Some(value) => map.insert(txn, key, value as f64),
+        None => map.insert(txn, key, yrs::Any::Null),
+    };
 }
 
 /// Cancel every non-terminal tool belonging to a turn. Used only when the turn itself reaches
@@ -320,6 +370,40 @@ pub fn cancel_nonterminal_tools_for_turn(
                 "status",
                 tool_call_status_str(ToolCallStatus::Cancelled),
             );
+            migrated += 1;
+        }
+    }
+    migrated
+}
+
+/// turn 已终态时收敛所有未终态工具，避免缺失最后一帧造成永久 Running。
+pub fn settle_nonterminal_tools_for_turn(
+    txn: &mut TransactionCtx<'_>,
+    root: &yrs::MapRef,
+    turn_id: &str,
+    status: ToolCallStatus,
+) -> usize {
+    let calls = root.get_or_init::<_, yrs::MapRef>(txn, "tool_calls");
+    let ids: Vec<String> = calls.iter(txn).map(|(id, _)| id.to_string()).collect();
+    let mut migrated = 0;
+    for id in ids {
+        let Some(tool) = calls
+            .get(txn, id.as_str())
+            .and_then(|value| value.cast::<yrs::MapRef>().ok())
+        else {
+            continue;
+        };
+        let linked_turn = tool
+            .get(txn, "turn_id")
+            .and_then(|value| value.cast::<String>().ok());
+        let current = tool
+            .get(txn, "status")
+            .and_then(|value| value.cast::<String>().ok())
+            .unwrap_or_default();
+        if linked_turn.as_deref() == Some(turn_id)
+            && !matches!(current.as_str(), "completed" | "error" | "cancelled")
+        {
+            tool.insert(txn, "status", tool_call_status_str(status));
             migrated += 1;
         }
     }

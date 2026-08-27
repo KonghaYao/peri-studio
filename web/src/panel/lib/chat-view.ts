@@ -2,14 +2,25 @@ import * as Y from 'yjs';
 import { asArray, asMap, getNum, getStr, safeTime, yText, yValue } from './yjs-values';
 
 export interface ReasoningBlock { id?: string; text: string; visibility: string | null }
+export type ToolCallKind = 'read' | 'edit' | 'delete' | 'move' | 'search' | 'execute' | 'think' | 'fetch' | 'switch_mode' | 'other';
 export interface ToolCallInfo {
   toolCallId: string | null;
   name: string | null;
+  /** ACP 1.6 的服务端规范化类别；缺失表示旧投影，UI 必须按 other 处理。 */
+  kind?: ToolCallKind | null;
   status: string | null;
   arguments: unknown;
+  argumentsOmitted?: boolean | null;
+  argumentsBytes?: number | null;
   result: unknown;
   resultOmitted: boolean | null;
   resultBytes: number | null;
+  content?: unknown;
+  contentOmitted?: boolean | null;
+  contentBytes?: number | null;
+  locations?: unknown;
+  locationsOmitted?: boolean | null;
+  locationsBytes?: number | null;
   publicError: { code: string | null; message: string | null } | null;
   startedAt: string | null;
   completedAt: string | null;
@@ -51,14 +62,27 @@ export interface ChatEntryRead {
 }
 
 export function readChatToolCall(id: string, map: Y.Map<unknown> | null): ToolCallInfo {
+  const projectedKind = getStr(map, 'kind');
+  const kind: ToolCallKind = ['read', 'edit', 'delete', 'move', 'search', 'execute', 'think', 'fetch', 'switch_mode', 'other'].includes(projectedKind ?? '')
+    ? projectedKind as ToolCallKind
+    : 'other';
   return {
     toolCallId: id,
     name: getStr(map, 'name'),
+    kind,
     status: getStr(map, 'status'),
     arguments: yValue(map?.get('arguments')),
+    argumentsOmitted: map?.has('arguments_omitted') ? map.get('arguments_omitted') === true : null,
+    argumentsBytes: getNum(map, 'arguments_bytes'),
     result: yValue(map?.get('result')),
     resultOmitted: map?.has('result_omitted') ? map.get('result_omitted') === true : null,
     resultBytes: getNum(map, 'result_bytes'),
+    content: yValue(map?.get('content')),
+    contentOmitted: map?.has('content_omitted') ? map.get('content_omitted') === true : null,
+    contentBytes: getNum(map, 'content_bytes'),
+    locations: yValue(map?.get('locations')),
+    locationsOmitted: map?.has('locations_omitted') ? map.get('locations_omitted') === true : null,
+    locationsBytes: getNum(map, 'locations_bytes'),
     publicError: (() => {
       const error = asMap(map?.get('public_error'));
       return error ? { code: getStr(error, 'code'), message: getStr(error, 'message') } : null;

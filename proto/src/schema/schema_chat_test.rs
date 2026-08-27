@@ -43,6 +43,9 @@ fn tool_call_observation_times_are_additive_camel_case_fields() {
     assert_eq!(value["completedAt"], "2026-08-07T00:00:01Z");
     assert_eq!(value["resultOmitted"], false);
     assert_eq!(value["resultBytes"], 14);
+    assert_eq!(value["kind"], "execute");
+    assert_eq!(value["argumentsOmitted"], false);
+    assert_eq!(value["argumentsBytes"], 12);
 
     let legacy = serde_json::json!({
         "toolCallId": "tc-old", "turnId": "t", "name": "shell", "status": "pending",
@@ -53,6 +56,9 @@ fn tool_call_observation_times_are_additive_camel_case_fields() {
     assert_eq!(decoded.completed_at, None);
     assert_eq!(decoded.result_omitted, None);
     assert_eq!(decoded.result_bytes, None);
+    assert_eq!(decoded.kind, crate::schema::ToolCallKind::Other);
+    assert_eq!(decoded.arguments_omitted, None);
+    assert_eq!(decoded.arguments_bytes, None);
 
     let reencoded = serde_json::to_value(decoded).unwrap();
     assert_eq!(reencoded["resultOmitted"], serde_json::Value::Null);

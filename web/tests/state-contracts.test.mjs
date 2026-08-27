@@ -329,6 +329,8 @@ test('terminal action effects have one owner and late acknowledgements cannot re
   assert.ok(ackHandler.indexOf('commands.acknowledge(ack)') < ackHandler.indexOf("if (disposition === 'late_terminal')"));
   assert.doesNotMatch(lateBranch, /selectChat\(|sendMessage\(/);
   assert.match(lateBranch, /settleLateQuickStart/);
+  assert.match(lateBranch, /if \(ack\.commandId\) completeMessageDelivery\(ack\.commandId, ack\.status\)/);
+  assert.doesNotMatch(lateBranch, /messageSubmissionByCommand/);
   assert.match(errorHandler, /commands\.fail\(err\)/);
   assert.doesNotMatch(errorHandler, /failMessageSubmission|failQuickStart|failPermissionDecision/);
   assert.doesNotMatch(store, /permissionCommands/);

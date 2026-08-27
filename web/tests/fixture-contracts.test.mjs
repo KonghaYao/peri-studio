@@ -51,3 +51,34 @@ test('the visual fixture is a development-only entry and cannot bypass productio
   assert.match(visualContract, /messageTotal/);
   assert.match(visualContract, /connectionStatus/);
 });
+
+test('design-token modules are implemented by production components', () => {
+  const root = join(import.meta.dirname, '..', 'src');
+  const read = (...parts) => readFileSync(join(root, ...parts), 'utf8');
+  const tokens = read('styles', 'tokens.css');
+  const board = read('visual-fixture', 'DesignTokenBoard.tsx');
+  const fixtureCss = read('visual-fixture', 'fixture.css');
+  const composer = read('panel', 'components', 'Composer.tsx');
+  const tool = read('panel', 'components', 'ToolCallCard.tsx');
+  const status = read('panel', 'components', 'StatusArea.tsx');
+  const questions = read('panel', 'components', 'ElicitationQueue.tsx');
+  const permissions = read('panel', 'components', 'PermissionQueue.tsx');
+  const explorer = read('panel', 'components', 'ExplorerPanel.tsx');
+  const sourceControl = read('panel', 'components', 'SourceControlPanel.tsx');
+
+  for (const token of [
+    'control-height-compact', 'pattern-row-height', 'tree-row-height',
+    'asset-tile-size', 'status-panel-max-height', 'composer-radius',
+    'decision-radius', 'permission-card-min-height', 'tool-activity-max',
+  ]) {
+    assert.match(tokens, new RegExp(`--${token}:`));
+    assert.match(`${fixtureCss}\n${composer}\n${tool}\n${status}\n${questions}\n${permissions}\n${explorer}\n${sourceControl}`, new RegExp(`--${token}`));
+  }
+  assert.match(board, /Tool activity · max 740px/);
+  assert.match(board, /Status Area/);
+  assert.match(board, /VS Code-like file tree/);
+  assert.match(board, /Composer shell/);
+  assert.match(board, /Decision surfaces/);
+  assert.doesNotMatch(composer, /token-composer|design-token/);
+  assert.doesNotMatch(tool, /token-tool|design-token/);
+});

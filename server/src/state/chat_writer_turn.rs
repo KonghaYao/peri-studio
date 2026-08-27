@@ -47,6 +47,42 @@ pub fn migrate_entry_terminal(
     true
 }
 
+/// 将同一 turn 的全部 assistant 分段一次性终态化，避免 tool/agent 交替产生的
+/// `assistant:2+` 永久保持 streaming。
+pub fn migrate_assistant_segments_terminal(
+    txn: &mut TransactionCtx<'_>,
+    root: &yrs::MapRef,
+    turn_id: &str,
+    status: EntryStatus,
+    completed_at: &str,
+    error: Option<&PublicError>,
+) -> usize {
+    let entries = root.get_or_init::<_, yrs::MapRef>(txn, "entries");
+    let ids: Vec<String> = entries.iter(txn).map(|(id, _)| id.to_string()).collect();
+    let mut migrated = 0;
+    for id in ids {
+        let belongs = entries
+            .get(txn, id.as_str())
+            .and_then(|value| value.cast::<yrs::MapRef>().ok())
+            .is_some_and(|entry| {
+                entry
+                    .get(txn, "turn_id")
+                    .and_then(|value| value.cast::<String>().ok())
+                    .as_deref()
+                    == Some(turn_id)
+                    && entry
+                        .get(txn, "role")
+                        .and_then(|value| value.cast::<String>().ok())
+                        .as_deref()
+                        == Some("assistant")
+            });
+        if belongs && migrate_entry_terminal(txn, root, &id, status, completed_at, error) {
+            migrated += 1;
+        }
+    }
+    migrated
+}
+
 /// active_turn 更新（Session Doc `session` map 内嵌字段；§7.2 权威投影）。
 ///
 /// 对齐 Chat/Session 双 Doc：active turn 不是独立根键，而是 `session` map 的

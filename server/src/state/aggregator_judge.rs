@@ -212,6 +212,9 @@ impl Aggregator {
                 Err(ApplyReason::UnknownTurn)
             }
             EventBody::ToolCallStarted { tool_call_id, .. } => {
+                if tool_call_id.is_empty() {
+                    return Err(ApplyReason::UnknownToolCall);
+                }
                 // 普通重复 start 幂等跳过。唯一例外是 permission-first：官方
                 // request 已用同 id 合成 awaitingPermission 工具，稍后正式
                 // tool_call 可补全 name/arguments，但不得回退状态或覆盖终态。
@@ -229,6 +232,9 @@ impl Aggregator {
                 Ok(())
             }
             EventBody::ToolCallUpdated { tool_call_id, .. } => {
+                if tool_call_id.is_empty() {
+                    return Err(ApplyReason::UnknownToolCall);
+                }
                 if !pair.stream.replay_active {
                     self.judge_turn_guard(active, &ev.body)?;
                 }
@@ -250,6 +256,9 @@ impl Aggregator {
                 Ok(())
             }
             EventBody::ToolCallCompleted { tool_call_id, .. } => {
+                if tool_call_id.is_empty() {
+                    return Err(ApplyReason::UnknownToolCall);
+                }
                 if !pair.stream.replay_active {
                     self.judge_turn_guard(active, &ev.body)?;
                 }
@@ -273,6 +282,11 @@ impl Aggregator {
                 }
                 Ok(())
             }
+            EventBody::ToolCallPatched {
+                turn_id,
+                tool_call_id,
+                patch,
+            } => self.judge_tool_patch(pair, active, turn_id, tool_call_id, patch),
             EventBody::PermissionRequested { permission_id, .. } => {
                 // 幂等：permission_id 已存在 → 跳过。
                 let txn = pair.session.transact();
@@ -342,7 +356,7 @@ impl Aggregator {
     /// 终态守卫（§6.3）：active_turn 非活动（cancelling/不可逆终态/interrupted）
     /// 时拒绝带 turn_id 的非终态事件；interrupted 时拒绝一切非终态事件。
     /// 供批次快照路径（不重读 control doc）。
-    pub(crate) fn judge_turn_guard(
+    pub(super) fn judge_turn_guard(
         &self,
         active: Option<&ActiveTurnProjection>,
         body: &EventBody,
@@ -353,6 +367,7 @@ impl Aggregator {
             | EventBody::ToolCallStarted { turn_id, .. }
             | EventBody::ToolCallUpdated { turn_id, .. }
             | EventBody::ToolCallCompleted { turn_id, .. }
+            | EventBody::ToolCallPatched { turn_id, .. }
             | EventBody::PermissionRequested { turn_id, .. } => Some(turn_id.as_str()),
             _ => None,
         };

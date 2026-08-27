@@ -4,14 +4,15 @@ import { isTerminal } from '../lib/action-state';
 import { connState } from '../lib/connection';
 import { canRewindCurrentChat, openRewindFlow } from '../lib/rewind-assembly';
 import { readOnly } from '../lib/auth-state';
-import { Dialog, DialogContent, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Icon, IconButton, Status } from '../../components/ui';
+import { Dialog, DialogContent, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, IconButton, Status } from '../../components/ui';
 import { connectedRuntimeState } from '../lib/runtime-state.ts';
 import { sessionDisplayTitle } from '../lib/recovery-state.ts';
 import { runtimeControlFor } from '../lib/runtime-control';
 import { RewindDialog } from './RewindDialog';
 import { ConfirmDialog } from './shared/ConfirmDialog';
+import { FileText, Menu, MoreHorizontal, PanelRight } from 'lucide-solid';
 
-export type ChatHeaderProps = { launch?: boolean; onOpenNavigation?: () => void; onOpenSystem?: () => void; onOpenResources?: () => void; onOpenMcp?: () => void };
+export type ChatHeaderProps = { launch?: boolean; onOpenNavigation?: () => void; onOpenResources?: () => void; onOpenMcp?: () => void };
 
 export function ChatHeader(props: ChatHeaderProps) {
   const [menuOpen, setMenuOpen] = createSignal(false);
@@ -52,24 +53,24 @@ export function ChatHeader(props: ChatHeaderProps) {
   const showRuntimeStatus = () => runtime().label && !['Ready', 'Working', 'Approval'].includes(runtime().label);
   return <header class={`chat-header relative flex items-center gap-8 h-54 px-18 bg-surface desk:max-wide:h-52 desk:max-wide:px-16 max-desk:h-52 max-desk:px-12 ${props.launch ? 'chat-header--launch justify-end' : 'border-b border-divider'}`}>
     <IconButton tooltipPlacement="start" label="Open navigation" class="mobile-nav-button hidden max-desk:inline-flex" onClick={props.onOpenNavigation}>
-      <Icon><path d="M3 5h14M3 10h14M3 15h14" /></Icon>
+      <Menu size={18} strokeWidth={1.7} />
     </IconButton>
     <Show when={!props.launch}><IconButton tooltipPlacement="end" label="Open workspace resources" class="hidden max-desk:inline-flex" onClick={props.onOpenResources}>
-      <Icon><path d="M4 3h8l4 4v10H4z" /><path d="M12 3v4h4M7 10h6M7 13h6" /></Icon>
+      <FileText size={18} strokeWidth={1.7} />
     </IconButton></Show>
     <Show when={!props.launch} fallback={<Status live labelHidden tone={connState().kind || 'idle'} title={connection().detail} aria-label={connection().detail} class="connection-pill mr-2 [&_.ui-status__dot]:size-7">{connection().label}</Status>}>
       <strong class="chat-title min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-14 leading-115">{title()}</strong>
       <Show when={showRuntimeStatus()}><span title={runtime().detail} aria-label={runtime().detail || runtime().label} class={`runtime-status runtime-status--${runtime().tone} inline-flex size-28 items-center justify-center rounded-full hover:bg-hover ${runtime().tone === 'busy' ? '[&_i]:bg-accent [&_i]:animate-pulse' : runtime().tone === 'attention' ? '[&_i]:bg-warning' : runtime().tone === 'danger' ? '[&_i]:bg-danger' : '[&_i]:bg-text-faint'}`}><i aria-hidden="true" class="size-7 rounded-full bg-text-faint" /><span class="sr-only">{runtime().label}</span></span></Show>
       <Status live labelHidden tone={connState().kind || 'idle'} title={connection().detail} aria-label={connection().detail} class="connection-pill [&_.ui-status__dot]:size-7">{connection().label}</Status>
     </Show>
-    <Show when={props.launch} fallback={<IconButton tooltipPlacement="end" label="Open system information" onClick={props.onOpenSystem}><Icon><circle cx="10" cy="10" r="2.6" /><path d="M10 3.4v2M10 14.6v2M3.4 10h2M14.6 10h2M5.3 5.3l1.4 1.4M13.3 13.3l1.4 1.4M14.7 5.3l-1.4 1.4M6.7 13.3l-1.4 1.4" /></Icon></IconButton>}>
-      <IconButton tooltipPlacement="end" label="Toggle side panel" title="Side panel is not connected yet" disabled class="disabled:opacity-100"><Icon><rect x="4" y="4" width="12" height="12" rx="2" /><path d="M12.5 4v12" /></Icon></IconButton>
+    <Show when={props.launch}>
+      <IconButton tooltipPlacement="end" label="Toggle side panel" title="Side panel is not connected yet" disabled class="disabled:opacity-100"><PanelRight size={18} strokeWidth={1.7} /></IconButton>
     </Show>
     <Show when={logical() && selectedCid()}>
       <div class="chat-actions relative">
         <DropdownMenu open={menuOpen()} onOpenChange={setMenuOpen} placement="bottom-end">
           <DropdownMenuTrigger as={IconButton} tooltipPlacement="end" label="Conversation actions">
-            <Icon><circle cx="4" cy="10" r="1" /><circle cx="10" cy="10" r="1" /><circle cx="16" cy="10" r="1" /></Icon>
+            <MoreHorizontal size={18} strokeWidth={1.7} />
           </DropdownMenuTrigger>
           <DropdownMenuContent id={menuId} aria-label="Conversation actions" class="ui-menu min-w-[190px]">
             <Show when={chatHead()?.agent?.extensions?.includes('peri.oauth')}>

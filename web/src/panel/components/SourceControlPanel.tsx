@@ -5,7 +5,8 @@ import type { RepositoryState } from '../lib/resource-store';
 import { readOnly } from '../lib/auth-state';
 import { ConfirmDialog } from './shared/ConfirmDialog';
 import { MAX_COMMIT_MESSAGE_BYTES } from '../lib/resource-mutations';
-import { ChevronDown, File, GitBranch, Minus, Plus, Trash2 } from 'lucide-solid';
+import { ChevronDown, GitBranch, Minus, Plus, Trash2 } from 'lucide-solid';
+import { VSCodeFileIcon } from './VSCodeFileIcon';
 
 const GROUPS = [
   { id: 'conflicts', label: 'Merge Changes' },
@@ -95,7 +96,7 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
     <For each={GROUPS}>{(group) => {
       const state = () => props.repo.groups[group.id];
       return <Show when={state()?.count}>
-        <div class="resource-group-title flex h-24 items-center gap-4 px-7 text-10 font-650 uppercase tracking-4 text-text-secondary pointer-coarse:h-44"><ChevronDown size={13} strokeWidth={1.8} /><span>{group.label}</span><span class="ml-auto tabular-nums text-text-muted">{state().count}</span></div>
+        <div class="resource-group-title flex h-(--tree-row-height) items-center gap-4 px-7 text-10 font-650 uppercase tracking-4 text-text-secondary pointer-coarse:h-44"><ChevronDown size={13} strokeWidth={1.7} /><span>{group.label}</span><span class="ml-auto tabular-nums text-text-muted">{state().count}</span></div>
         <For each={state().changes}>{(change) => {
           const mutation = () => resourceWorkspace().mutations?.[change.id];
           const action = () => group.id === 'index' ? 'unstage' : 'stage';
@@ -104,7 +105,7 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
           <div class="resource-change-row group flex h-(--tree-row-height) items-center pr-5 text-11 hover:bg-hover pointer-coarse:h-44">
           <button
             type="button"
-            class="flex h-full min-w-0 flex-1 items-center gap-5 border-0 bg-transparent pl-13 text-left text-inherit"
+            class="flex h-full min-w-0 flex-1 items-center gap-5 rounded-4 border-0 bg-transparent pl-13 text-left text-inherit focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2"
             aria-label={`Open changes for ${path()}`}
             title={`Open changes for ${path()}`}
             data-resource-focus-key={`diff:${props.repo.id}:${group.id}:${change.id}`}
@@ -114,7 +115,7 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
               openGitDiffPreview(props.repo.id, group.id, change);
             }}
           >
-            <span class="grid size-14 place-items-center text-text-muted"><File size={14} strokeWidth={1.7} /></span>
+            <VSCodeFileIcon path={path()} size={15} class="size-14" />
             <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{basename(path())}</span>
             <span class="max-w-90 overflow-hidden text-ellipsis whitespace-nowrap text-10 text-text-muted">{dirname(path())}</span>
             <span class={`w-14 text-center font-mono text-11 font-650 ${statusColor(String(change.status ?? ''))}`}>{statusLetter(String(change.status ?? ''))}</span>
@@ -139,7 +140,7 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
           </div>}</Show>
         </div>;
         }}</For>
-        <Show when={state().nextCursor}>{(cursor) => <button type="button" class="h-24 w-full border-0 bg-transparent pl-28 text-left text-11 text-accent hover:bg-hover pointer-coarse:h-44" onClick={() => openMoreGitChanges(props.repo.id, group.id, cursor())}>Load more…</button>}</Show>
+        <Show when={state().nextCursor}>{(cursor) => <button type="button" class="h-(--tree-row-height) w-full border-0 bg-transparent pl-28 text-left text-11 text-accent hover:bg-hover pointer-coarse:h-44" onClick={() => openMoreGitChanges(props.repo.id, group.id, cursor())}>Load more…</button>}</Show>
       </Show>;
     }}</For>
   </section>

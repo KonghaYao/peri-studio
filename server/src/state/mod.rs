@@ -24,11 +24,13 @@
 
 pub mod aggregator;
 mod aggregator_judge;
+mod aggregator_judge_tool;
 mod aggregator_write;
 mod aggregator_write_catalog;
 mod aggregator_write_control;
 mod aggregator_write_helpers;
 mod aggregator_write_tool;
+mod aggregator_write_tool_patch;
 pub mod chat_writer;
 mod chat_writer_blocks;
 mod chat_writer_entries;

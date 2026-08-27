@@ -1,10 +1,11 @@
 import { For, Show, createMemo, onCleanup, onMount } from 'solid-js';
-import { Button, Icon, IconButton, LoadingState } from '../../components/ui';
+import { Button, IconButton, LoadingState } from '../../components/ui';
+import { X } from 'lucide-solid';
 import { closeResourceDiffPreview, refreshResourceProject, resourceDiffPreview, retryGitDiffPreview } from '../store';
 import { MAX_RENDERED_DIFF_ROWS, parseUnifiedDiff, type DiffRow } from '../lib/resource-diff';
 
 function CloseIcon() {
-  return <Icon size="small"><path d="m5 5 10 10M15 5 5 15" /></Icon>;
+  return <X size={15} strokeWidth={1.7} />;
 }
 
 type ResourceDiffEditorProps = { onClose?: () => void };

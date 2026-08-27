@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@solidjs/testing-library';
+import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const store = vi.hoisted(() => ({
@@ -73,8 +73,7 @@ describe('ProjectSidebar registry hydration', () => {
 
     expect(screen.getByRole('status', { name: 'Loading projects' })).toBeInTheDocument();
     expect(screen.queryByText('No projects yet')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /New project on/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Search sessions/ })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /Search sessions/ })).not.toBeInTheDocument();
   });
 
   it('shows connected instances without inventing an empty project directory', () => {
@@ -83,7 +82,7 @@ describe('ProjectSidebar registry hydration', () => {
     render(() => <ProjectSidebar />);
 
     expect(screen.getByText('Local instance')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /New project on Local instance unavailable: choose a remote directory first/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'New project' })).toBeEnabled();
     expect(screen.queryByText('No projects yet')).not.toBeInTheDocument();
     expect(screen.queryByText('Root workspace')).not.toBeInTheDocument();
     expect(screen.queryByRole('status', { name: 'Loading projects' })).not.toBeInTheDocument();
@@ -106,7 +105,7 @@ describe('ProjectSidebar registry hydration', () => {
 
     expect(screen.getByText('Remote instance')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Instance offline' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /New project on Remote instance unavailable: choose a remote directory first/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'New project' })).toBeEnabled();
   });
 
   beforeEach(() => {
@@ -114,6 +113,7 @@ describe('ProjectSidebar registry hydration', () => {
     store.projects.mockReturnValue([{ id: 'p1', name: 'Perihelion', cwd: '/repo', instanceId: 'local', createdAt: '2026-08-13T10:00:00Z', updatedAt: '2026-08-13T10:00:00Z', archivedAt: null }]);
     store.navigateProjectSession.mockReset();
     store.openingSessionId.mockReturnValue(null);
+    store.instances.mockReturnValue([{ id: 'local', hostname: 'Local instance', status: 'online' }]);
     store.readOnly.mockReturnValue(false);
     store.selectedSessionId.mockReturnValue(null);
     store.selectedCid.mockReturnValue(null);
@@ -136,6 +136,27 @@ describe('ProjectSidebar registry hydration', () => {
     expect(disclosure).toHaveAttribute('aria-expanded', 'true');
     fireEvent.click(disclosure);
     expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('button', { name: /^Architecture refactor/ })).not.toBeInTheDocument();
+    expect(disclosure.querySelector('svg')).toHaveClass('group-data-[expanded]/disclosure:rotate-90');
+  });
+
+  it('lets the selected project stay collapsed after the user closes it', async () => {
+    store.selectedSessionId.mockReturnValue('hub-abcdef12');
+    render(() => <ProjectSidebar />);
+    const disclosure = screen.getByRole('button', { name: 'Perihelion' });
+
+    fireEvent.click(disclosure);
+
+    await waitFor(() => expect(disclosure).toHaveAttribute('aria-expanded', 'false'));
+  });
+
+  it('removes redundant sidebar chrome while retaining project creation', () => {
+    render(() => <ProjectSidebar />);
+    expect(screen.queryByRole('button', { name: 'New session' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Search sessions' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Notifications' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Projects')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'New project' })).toHaveLength(1);
   });
 
   it('waits for the exact open command to commit before navigating', () => {

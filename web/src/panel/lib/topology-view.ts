@@ -21,7 +21,7 @@ export function buildTopologyTree(
     .map((instance) => ({
       ...instance,
       chats: chats
-        .filter((chat) => chat.instanceId === instance.id)
+        .filter((chat) => chat.instanceId === instance.id && chat.status !== 'gap')
         .sort((left, right) => String(left.id).localeCompare(String(right.id))),
     }))
     .sort((left, right) => String(left.id).localeCompare(String(right.id)));

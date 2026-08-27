@@ -1,6 +1,7 @@
 import { createEffect, createMemo, createSignal, Show, untrack } from 'solid-js';
 import type { ProjectInfo, SessionSummaryInfo } from '../lib/registry-view';
-import { Button, Dialog, DialogContent, DialogTitle, EmptyState, Icon, InlineNotice, Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel, LoadingState, TextField } from '../../components/ui';
+import { Button, Dialog, DialogContent, DialogTitle, EmptyState, InlineNotice, Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel, LoadingState, TextField } from '../../components/ui';
+import { MessageSquare } from 'lucide-solid';
 import { importCandidates } from '../lib/session-import.ts';
 import { cleanSessionTitle, formatRelativeTime, shortSessionId } from '../lib/recovery-state.ts';
 
@@ -20,7 +21,7 @@ export interface SessionImportDialogProps {
 }
 
 function ChatIcon() {
-  return <Icon class="h-18 w-18 fill-none stroke-current stroke-[1.6]"><path d="M4 4.5h12v9H8l-4 3v-12Z" /></Icon>;
+  return <MessageSquare size={18} strokeWidth={1.7} />;
 }
 
 export function SessionImportDialog(props: SessionImportDialogProps) {

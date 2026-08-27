@@ -14,13 +14,14 @@ fn map_tool_call_update_completed() {
     });
     match norm(f) {
         NormalizeOutcome::Event(ev) => match ev.body {
-            EventBody::ToolCallCompleted {
-                result,
-                completed_at,
-                ..
-            } => {
-                assert_eq!(result, Some(json!({"ok": true})));
-                assert_eq!(completed_at, "2026-08-07T00:00:00Z");
+            EventBody::ToolCallPatched { patch, .. } => {
+                assert_eq!(
+                    patch.result,
+                    ToolJsonPatch::Set {
+                        value: json!({"ok": true})
+                    }
+                );
+                assert_eq!(patch.completed_at.as_deref(), Some("2026-08-07T00:00:00Z"));
             }
             _ => panic!("expected tool call completed"),
         },
@@ -137,4 +138,37 @@ fn map_request_permission_official() {
         }
         other => panic!("expected permission request, got {other:?}"),
     }
+}
+
+#[test]
+fn permission_rejects_the_same_overlong_tool_id_as_updates() {
+    let f = json!({
+        "jsonrpc": "2.0",
+        "id": 9,
+        "method": "session/request_permission",
+        "params": {
+            "sessionId": "acp-1",
+            "toolCall": {"toolCallId": "x".repeat(257)},
+            "options": [{"optionId": "o1", "name": "x", "kind": "allow_once"}]
+        }
+    });
+    assert!(matches!(
+        norm(f),
+        NormalizeOutcome::Dropped(DropReason::MissingField)
+    ));
+
+    let raw = json!({
+        "type": "permission_request",
+        "payload": {
+            "permissionId": "p-overlong",
+            "turnId": "t1",
+            "toolCallId": "x".repeat(257),
+            "title": "run",
+            "options": ["allow_once"]
+        }
+    });
+    assert!(matches!(
+        norm(raw),
+        NormalizeOutcome::Dropped(DropReason::MissingField)
+    ));
 }

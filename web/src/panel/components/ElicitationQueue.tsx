@@ -3,7 +3,8 @@ import type { PendingElicitation } from '../lib/control-view';
 import { createIdentitySelection } from '../lib/identity-selection';
 import type { ElicitationDeliveryState } from '../lib/elicitation-delivery';
 import type { ElicitationAnswer } from '../lib/protocol';
-import { Button, Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel, Icon, IconButton, RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel, Textarea } from '../../components/ui';
+import { Button, Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel, IconButton, RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel, Textarea } from '../../components/ui';
+import { ChevronDown, ChevronLeft, ChevronRight, Clock3, LockKeyhole, X } from 'lucide-solid';
 
 interface Props {
   elicitations: PendingElicitation[];
@@ -104,21 +105,21 @@ function AskUserQuestionDialog(props: {
         <span class="text-text-secondary text-11 font-650">Questions</span>
         <Show when={props.total > 1}>
           <span class="flex items-center gap-1">
-            <IconButton type="button" label="Previous question" variant="ghost" size="compact" disabled={props.currentIndex === 0} onClick={props.onPrevious} class="size-26 min-h-26 border-0 bg-transparent text-text-muted hover:text-text-primary disabled:opacity-30">
-              <Icon class="size-14!"><path d="m12.5 5-5 5 5 5" /></Icon>
+            <IconButton type="button" label="Previous question" variant="ghost" size="compact" disabled={props.currentIndex === 0} onClick={props.onPrevious} class="size-24 min-h-24 border-0 bg-transparent text-text-muted hover:text-text-primary disabled:opacity-30">
+              <ChevronLeft size={13} strokeWidth={1.8} />
             </IconButton>
-            <span class="min-w-28 text-center text-text-muted text-10 tabular-nums">{props.currentIndex + 1} / {props.total}</span>
-            <IconButton type="button" label="Next question" variant="ghost" size="compact" disabled={props.currentIndex === props.total - 1} onClick={props.onNext} class="size-26 min-h-26 border-0 bg-transparent text-text-muted hover:text-text-primary disabled:opacity-30">
-              <Icon class="size-14!"><path d="m7.5 5 5 5-5 5" /></Icon>
+            <span class="min-w-26 text-center text-text-muted text-9 tabular-nums">{props.currentIndex + 1} / {props.total}</span>
+            <IconButton type="button" label="Next question" variant="ghost" size="compact" disabled={props.currentIndex === props.total - 1} onClick={props.onNext} class="size-24 min-h-24 border-0 bg-transparent text-text-muted hover:text-text-primary disabled:opacity-30">
+              <ChevronRight size={13} strokeWidth={1.8} />
             </IconButton>
           </span>
         </Show>
         <span class="ml-auto flex items-center gap-1">
-          <IconButton type="button" label="Cancel question" variant="ghost" size="compact" disabled={locked()} onClick={cancel} class="size-28 min-h-28 border-0 bg-transparent text-text-muted hover:text-text-primary">
-            <Icon class="size-14!"><path d="m5 5 10 10M15 5 5 15" /></Icon>
+          <IconButton type="button" label="Cancel question" variant="ghost" size="compact" disabled={locked()} onClick={cancel} class="size-24 min-h-24 border-0 bg-transparent text-text-muted hover:text-danger">
+            <X size={13} strokeWidth={1.8} />
           </IconButton>
-          <IconButton type="button" label={expanded() ? 'Collapse questions' : 'Expand questions'} variant="ghost" size="compact" aria-expanded={expanded()} aria-controls={bodyId} onClick={() => setExpanded((value) => !value)} class="size-28 min-h-28 border-0 bg-transparent text-text-muted hover:text-text-primary">
-            <Icon class={`size-15! transition-transform ${expanded() ? '' : 'rotate-180'}`}><path d="m5 8 5 5 5-5" /></Icon>
+          <IconButton type="button" label={expanded() ? 'Collapse questions' : 'Expand questions'} variant="ghost" size="compact" aria-expanded={expanded()} aria-controls={bodyId} onClick={() => setExpanded((value) => !value)} class="size-24 min-h-24 border-0 bg-transparent text-text-muted hover:text-text-primary">
+            <ChevronDown size={14} strokeWidth={1.8} class={`transition-transform ${expanded() ? '' : 'rotate-180'}`} />
           </IconButton>
         </span>
       </header>
@@ -141,7 +142,7 @@ function AskUserQuestionDialog(props: {
                     const option = () => field().options.find((candidate) => candidate.value === optionValue)!;
                     return <RadioGroupItem value={optionValue} class="elicitation-option group flex min-h-34 items-center gap-7 px-6 py-4 border-0 rounded-7 bg-transparent cursor-pointer hover:bg-hover data-[checked]:bg-selected pointer-coarse:min-h-44">
                     <RadioGroupItemInput />
-                    <RadioGroupItemLabel class="flex min-w-0 flex-1 items-baseline gap-8 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-18 shrink-0 items-center justify-center rounded-5 bg-surface-muted text-text-muted text-10 font-650 group-data-[checked]:bg-success group-data-[checked]:text-surface">{String.fromCharCode(65 + index())}</span><span class="min-w-0 text-12 leading-17"><strong class="font-550 text-text-primary">{option().label}</strong><Show when={option().description}><small class="text-text-muted"> — {option().description}</small></Show></span></RadioGroupItemLabel>
+                    <RadioGroupItemLabel class="flex min-w-0 flex-1 items-center gap-8 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-18 shrink-0 items-center justify-center rounded-5 bg-surface-muted text-text-muted text-9 font-650 group-data-[checked]:bg-success group-data-[checked]:text-surface">{String.fromCharCode(65 + index())}</span><span class="flex min-w-0 flex-col"><strong class="text-10 leading-15 font-620 text-text-primary">{option().label}</strong><Show when={option().description}><small class="overflow-hidden text-ellipsis whitespace-nowrap text-9 leading-13 text-text-muted">{option().description}</small></Show></span></RadioGroupItemLabel>
                     <RadioGroupItemControl class="ui-radio-control size-14!" />
                   </RadioGroupItem>;
                   }}</For>
@@ -154,7 +155,7 @@ function AskUserQuestionDialog(props: {
                     const selected = () => Array.isArray(answers()[fieldId]) ? answers()[fieldId] as string[] : [];
                     return <Checkbox checked={selected().includes(optionValue)} disabled={locked()} onChange={(checked) => update(fieldId, checked ? [...selected(), optionValue] : selected().filter((value) => value !== optionValue))} class="elicitation-option group flex min-h-34 items-center gap-7 px-6 py-4 border-0 rounded-7 bg-transparent cursor-pointer hover:bg-hover data-[checked]:bg-selected pointer-coarse:min-h-44">
                       <CheckboxInput />
-                      <CheckboxLabel class="flex min-w-0 flex-1 items-baseline gap-8 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-18 shrink-0 items-center justify-center rounded-5 bg-surface-muted text-text-muted text-10 font-650 group-data-[checked]:bg-success group-data-[checked]:text-surface">{String.fromCharCode(65 + index())}</span><span class="min-w-0 text-12 leading-17"><strong class="font-550 text-text-primary">{option().label}</strong><Show when={option().description}><small class="text-text-muted"> — {option().description}</small></Show></span></CheckboxLabel>
+                      <CheckboxLabel class="flex min-w-0 flex-1 items-center gap-8 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-18 shrink-0 items-center justify-center rounded-5 bg-surface-muted text-text-muted text-9 font-650 group-data-[checked]:bg-success group-data-[checked]:text-surface">{String.fromCharCode(65 + index())}</span><span class="flex min-w-0 flex-col"><strong class="text-10 leading-15 font-620 text-text-primary">{option().label}</strong><Show when={option().description}><small class="overflow-hidden text-ellipsis whitespace-nowrap text-9 leading-13 text-text-muted">{option().description}</small></Show></span></CheckboxLabel>
                       <CheckboxControl class="ui-checkbox-control size-14!" />
                     </Checkbox>;
                   }}</For>
@@ -165,8 +166,8 @@ function AskUserQuestionDialog(props: {
           }}</For>
         </div>
         <Show when={validation()}><p class="mt-9 text-11 leading-15 text-danger" role="alert">{validation()}</p></Show>
-        <Show when={submitting()}><p class="mt-9 text-11 leading-15 text-text-muted" role="status">Submitting…</p></Show>
-        <Show when={confirmed()}><p class="mt-9 text-11 leading-15 text-text-muted" role="status">Answer received. Waiting for server status…</p></Show>
+        <Show when={submitting()}><span class="mt-8 inline-grid size-22 place-items-center rounded-full border border-border-subtle text-text-muted" role="status" title="Submitting answer"><Clock3 size={12} strokeWidth={1.8} aria-hidden="true" /><span class="sr-only">Submitting answer</span></span></Show>
+        <Show when={confirmed()}><span class="mt-8 inline-grid size-22 place-items-center rounded-full border border-border-subtle text-success" role="status" title="Answer received"><Clock3 size={12} strokeWidth={1.8} aria-hidden="true" /><span class="sr-only">Answer received. Waiting for server status.</span></span></Show>
         <Show when={uncertain()}><div class="mt-10 rounded-10 border border-warning-border bg-surface-muted p-10 text-11 leading-15 text-text-secondary" role="alert">
           <strong class="block text-warning">{props.delivery?.phase === 'failed' ? 'Answer was not accepted' : 'Answer delivery not confirmed'}</strong>
           <p class="my-4">Refresh the server status, or hide this question locally. The original answer cannot be sent again.</p>
@@ -175,11 +176,11 @@ function AskUserQuestionDialog(props: {
             <Button type="button" size="compact" variant="secondary" class="pointer-coarse:min-h-44!" onClick={props.onDismissUncertain}>Hide question</Button>
           </div>
         </div></Show>
-        <Show when={props.readOnly}><p class="mt-9 text-11 leading-15 text-text-muted">Read only</p></Show>
+        <Show when={props.readOnly}><span class="mt-8 inline-grid size-22 place-items-center rounded-full border border-border-subtle text-text-muted" role="status" title="Read only"><LockKeyhole size={12} strokeWidth={1.8} aria-hidden="true" /><span class="sr-only">Read only</span></span></Show>
       </div>
-      <div class="flex items-center justify-end gap-4 px-12 py-7 max-narrow:px-10">
-        <Button class="px-9! max-narrow:min-h-44!" type="button" variant="ghost" disabled={locked()} onClick={() => props.onRespond(props.elicitation.elicitationId, 'decline')}>Skip</Button>
-        <Button class="px-11! rounded-8 border-success bg-success text-surface hover:bg-success max-narrow:min-h-44!" type="submit" variant="primary" busy={submitting()} disabled={locked()}>Continue</Button>
+      <div class="flex min-h-38 items-center justify-end gap-4 border-t border-divider px-12 py-5 max-narrow:px-10">
+        <Button class="px-9!" type="button" variant="ghost" disabled={locked()} onClick={() => props.onRespond(props.elicitation.elicitationId, 'decline')}>Skip</Button>
+        <Button class="px-11! rounded-8 border-success bg-success text-surface hover:bg-success" type="submit" variant="primary" busy={submitting()} disabled={locked()}>Continue</Button>
       </div>
       </Show>
     </form>

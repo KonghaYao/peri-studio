@@ -276,7 +276,7 @@ async fn test_backpressure_disconnect_buffers_then_resyncs() {
         // 收集全部 buffer_sync 补推帧（多批）与转实时后的 event 帧。
         let mut synced: Vec<u64> = Vec::new();
         let mut live: Vec<u64> = Vec::new();
-        while live.len() < 5 {
+        while live.last().copied().unwrap_or_default() < 69 {
             match next_frame_skipping_hb(&mut s2).await {
                 Frame::InstanceBufferSync(b) => {
                     assert_eq!(b.chat_id, "s1");

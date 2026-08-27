@@ -33,6 +33,7 @@ impl Aggregator {
                 EventBody::MessageDelta { .. }
                     | EventBody::ReasoningDelta { .. }
                     | EventBody::ToolCallStarted { .. }
+                    | EventBody::ToolCallPatched { .. }
             ) {
             let t = format!("load:{}", ev.seq);
             pair.stream.replay_turn = Some(t.clone());
@@ -188,7 +189,8 @@ impl Aggregator {
                 }
                 EventBody::ToolCallStarted { .. }
                 | EventBody::ToolCallUpdated { .. }
-                | EventBody::ToolCallCompleted { .. } => self.write_tool_chat_event(
+                | EventBody::ToolCallCompleted { .. }
+                | EventBody::ToolCallPatched { .. } => self.write_tool_chat_event(
                     &mut txn,
                     &root,
                     ev,
@@ -201,24 +203,36 @@ impl Aggregator {
                     public_error,
                 } => {
                     // Chat 侧：assistant entry 终态迁移（§7.2）。
-                    let entry_id = format!("{turn_id}:assistant");
                     let entry_status = match status {
                         TurnStatus::Completed => EntryStatus::Completed,
                         TurnStatus::Failed => EntryStatus::Error,
                         TurnStatus::Cancelled | TurnStatus::Interrupted => EntryStatus::Cancelled,
                         _ => unreachable!("judge 已拒绝非终态"),
                     };
-                    chat_writer::migrate_entry_terminal(
+                    chat_writer::migrate_assistant_segments_terminal(
                         &mut txn,
                         &root,
-                        &entry_id,
+                        turn_id,
                         entry_status,
                         completed_at,
                         public_error.as_ref(),
                     );
-                    if matches!(status, TurnStatus::Cancelled | TurnStatus::Interrupted) {
-                        chat_writer::cancel_nonterminal_tools_for_turn(&mut txn, &root, turn_id);
-                    }
+                    let tool_status = match status {
+                        TurnStatus::Completed => {
+                            peri_studio_proto::schema::ToolCallStatus::Completed
+                        }
+                        TurnStatus::Failed => peri_studio_proto::schema::ToolCallStatus::Error,
+                        TurnStatus::Cancelled | TurnStatus::Interrupted => {
+                            peri_studio_proto::schema::ToolCallStatus::Cancelled
+                        }
+                        _ => unreachable!("judge 已拒绝非终态"),
+                    };
+                    chat_writer::settle_nonterminal_tools_for_turn(
+                        &mut txn,
+                        &root,
+                        turn_id,
+                        tool_status,
+                    );
                     chat_writer::bump_projection_version(&mut txn, &root);
                 }
                 EventBody::PermissionRequested { .. }

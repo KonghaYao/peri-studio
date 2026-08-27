@@ -49,6 +49,14 @@ describe('buildTopologyTree', () => {
     expect(tree).toHaveLength(1);
     expect(tree[0].chats).toEqual([]);
   });
+
+  it('omits projection gaps from the operator topology', () => {
+    const tree = buildTopologyTree(
+      [instance('local')],
+      [chat('live', 'local', 'accepting'), chat('stale', 'local', 'gap')],
+    );
+    expect(tree[0].chats.map((item) => item.id)).toEqual(['live']);
+  });
 });
 
 describe('status labels', () => {

@@ -2,7 +2,7 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show }
 import { archiveProject, archiveProjectSession, chatStatusSignal, createProject, createProjectSession, creatingSessionProjectId, discoverProjectSessions, discoveringSessionsProjectId, importableSessions, importProjectSession, instances, navigateProjectSession, openingSessionId, permissions, projects, projectSessions, registryHydrated, renameProject, renameProjectSession, restoreProject, restoreProjectSession, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '../store';
 import { isTerminal } from '../lib/action-state';
 import { readOnly } from '../lib/auth-state';
-import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, Dialog, DialogContent, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, EmptyState, Icon, IconButton, LoadingState, TextField } from '../../components/ui';
+import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, Dialog, DialogContent, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, EmptyState, IconButton, LoadingState, TextField } from '../../components/ui';
 import { SessionSearch } from './SessionSearch';
 import { SessionImportDialog } from './SessionImportDialog';
 import { ProjectSessionRow } from './ProjectSessionRow';
@@ -14,14 +14,15 @@ import { ArchivedSection } from './shared/ArchivedSection';
 import { ConfirmDialog } from './shared/ConfirmDialog';
 import { SidebarChrome } from './SidebarChrome';
 import { reconcileInstanceGroups, type InstanceGroup } from '../lib/instance-groups';
+import { Archive, ChevronRight, Download, Folder, MoreHorizontal, Pencil, Plus } from 'lucide-solid';
 
-function PlusIcon() { return <Icon><path d="M10 4v12M4 10h12" /></Icon>; }
-function ImportIcon() { return <Icon class="size-17!"><path d="M10 3v9m0 0 3-3m-3 3L7 9M4 14.5h12v2H4z" /></Icon>; }
-function ChevronIcon(props: { class?: string }) { return <Icon size="small" class={`size-16 flex-none text-text-muted ${props.class ?? ''}`}><path d="m7 5 5 5-5 5" /></Icon>; }
-function MoreIcon() { return <Icon><circle cx="4" cy="10" r="1" /><circle cx="10" cy="10" r="1" /><circle cx="16" cy="10" r="1" /></Icon>; }
-function FolderIcon() { return <Icon class="size-17!"><path d="M3 6h5l1.5 2H17l-1.2 7.5H3.5z" /><path d="M3 6V4.5h5l1.5 1.5" /></Icon>; }
-function RenameIcon() { return <Icon class="size-16!"><path d="m5 14-1 3 3-1 8.5-8.5-2-2L5 14Z" /><path d="m12.5 6.5 2 2" /></Icon>; }
-function ArchiveIcon() { return <Icon class="size-16!"><path d="M3.5 6.5h13v10h-13zM2.5 3.5h15v3h-15zM8 10h4" /></Icon>; }
+function PlusIcon() { return <Plus size={17} strokeWidth={1.7} />; }
+function ImportIcon() { return <Download size={16} strokeWidth={1.7} />; }
+function ChevronIcon(props: { class?: string }) { return <ChevronRight size={16} strokeWidth={1.7} class={`flex-none text-text-muted ${props.class ?? ''}`} />; }
+function MoreIcon() { return <MoreHorizontal size={17} strokeWidth={1.7} />; }
+function FolderIcon() { return <Folder size={17} strokeWidth={1.7} />; }
+function RenameIcon() { return <Pencil size={16} strokeWidth={1.7} />; }
+function ArchiveIcon() { return <Archive size={16} strokeWidth={1.7} />; }
 
 interface ProjectSidebarProps {
   onNavigate?: () => void;
@@ -50,6 +51,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
   const [projectNameDraft, setProjectNameDraft] = createSignal('');
   const [projectRenameSubmitting, setProjectRenameSubmitting] = createSignal(false);
   const [searchOpen, setSearchOpen] = createSignal(false);
+  let observedSelectedSessionId: string | null | undefined;
   const activeProjects = createMemo(() => selectActiveProjects(projects()));
   const sessionHasRunningRuntime = (session: { id: string; activeChatId?: string | null }) => {
     if (!session.activeChatId) return false;
@@ -95,6 +97,8 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
 
   createEffect(() => {
     const selectedId = selectedSessionId();
+    if (selectedId === observedSelectedSessionId) return;
+    observedSelectedSessionId = selectedId;
     if (!selectedId) return;
     const projectId = projectSessions().find((session) => session.id === selectedId)?.projectId;
     if (!projectId || !collapsedProjects().has(projectId)) return;
@@ -103,7 +107,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
       next.delete(projectId);
       return next;
     });
-    queueMicrotask(() => document.querySelector<HTMLElement>(`[data-session-id="${CSS.escape(selectedId)}"]`)?.scrollIntoView({ block: 'nearest' }));
+    queueMicrotask(() => document.querySelector<HTMLElement>(`[data-session-id="${CSS.escape(selectedId)}"]`)?.scrollIntoView?.({ block: 'nearest' }));
   });
 
   const submitProject = (e: SubmitEvent) => {
@@ -118,7 +122,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
   };
 
   return (
-    <SidebarChrome onSearch={() => setSearchOpen(true)} onOpenSystem={props.onOpenSystem}>
+    <SidebarChrome onOpenSystem={props.onOpenSystem}>
       <SessionSearch open={searchOpen()} onClose={() => setSearchOpen(false)} onSelected={props.onNavigate} />
       <Show when={readOnly()}><div class="readonly-label -mt-8 mx-8 mb-12 text-11 font-semibold text-warning">Read-only mode</div></Show>
       <Dialog open={creating()} onOpenChange={(open) => { if (!open && !projectCreateSubmitting()) setCreating(false); }}><DialogContent dismissible={!projectCreateSubmitting()}><DialogTitle class="sr-only">New project</DialogTitle>
@@ -129,7 +133,6 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
         </form>
       </DialogContent></Dialog>
       <div class="project-scroll ui-scrollbar min-h-0 flex-1 overflow-auto pt-4 pb-16">
-        <div class="mb-7 flex h-28 items-center px-8 text-12 font-550 text-text-muted"><span>Projects</span><Button size="compact" class="new-project-button ml-auto size-28 min-h-28 border-0 p-0 text-text-muted" disabled={readOnly()} onClick={() => setCreating(true)} aria-label="New project"><PlusIcon /></Button></div>
         <Show
           when={registryHydrated()}
           fallback={<LoadingState label="Loading projects" class="sidebar-loading mx-8 p-8! text-left!" />}
@@ -149,7 +152,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
               <div class="instance-row group flex min-h-26 items-center gap-8 px-8 text-10 font-normal uppercase tracking-6 text-text-muted">
                 <span class="instance-name min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{instance().name}</span>
                 <Show when={instance().offline}><span class="instance-offline-dot size-7 shrink-0 rounded-full bg-danger" role="img" aria-label="Instance offline" /></Show>
-                <IconButton class="row-create-action instance-create-action ml-auto size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 disabled:cursor-not-allowed pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" label={`New project on ${instance().name} unavailable: choose a remote directory first; the current API cannot create by instance`} disabled><PlusIcon /></IconButton>
+                <IconButton class="new-project-button row-create-action instance-create-action ml-auto size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" label="New project" disabled={readOnly()} onClick={() => setCreating(true)}><PlusIcon /></IconButton>
               </div>
               <For each={instance().projects.map((project) => project.id)}>{(projectId) => {
             const project = () => instance().projects.find((item) => item.id === projectId)!;
@@ -159,7 +162,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
             const projectMenuId = `project-menu-${projectId}`;
             return <Collapsible as="section" class="project-group" open={!collapsed()} onOpenChange={(open) => setProjectCollapsed(projectId, !open)}>
               <div class="project-heading group flex min-h-36 items-center rounded-8 hover:bg-hover focus-within:bg-hover pointer-coarse:min-h-52">
-                <CollapsibleTrigger class="project-disclosure flex min-h-36 min-w-0 flex-1 items-center gap-7 rounded-8 border-0 bg-transparent px-8 text-left text-13 font-normal text-text-primary cursor-pointer pointer-coarse:min-h-44"><ChevronIcon class="size-12! transition-transform duration-150 group-data-[expanded]:rotate-90" /><FolderIcon /><span class="block overflow-hidden text-ellipsis whitespace-nowrap">{project().name}</span></CollapsibleTrigger>
+                <CollapsibleTrigger class="project-disclosure group/disclosure flex min-h-36 min-w-0 flex-1 items-center gap-7 rounded-8 border-0 bg-transparent px-8 text-left text-13 font-normal text-text-primary cursor-pointer pointer-coarse:min-h-44"><ChevronIcon class="size-12! rotate-0 transition-transform duration-150 group-data-[expanded]/disclosure:rotate-90" /><FolderIcon /><span class="block overflow-hidden text-ellipsis whitespace-nowrap">{project().name}</span></CollapsibleTrigger>
                 <IconButton class="row-create-action ml-auto size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" tooltipPlacement="end" label={`New session in ${project().name}`} busy={creatingSessionProjectId() === projectId} disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(projectId)}><PlusIcon /></IconButton>
                 <DropdownMenu open={projectMenu() === projectId} onOpenChange={(open) => setProjectMenu(open ? projectId : null)} placement="bottom-end">
                   <DropdownMenuTrigger as={IconButton} class="project-menu-trigger size-32 min-h-32 border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100" tooltipPlacement="end" label={`${project().name} actions`} disabled={readOnly()}><MoreIcon /></DropdownMenuTrigger>

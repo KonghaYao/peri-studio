@@ -1,9 +1,9 @@
 # Peri Studio 架构设计（权威版）
 
-> 状态：v2.14（无状态投影恢复 + 远程资源工作台 + 长会话可靠 UI + 持久草稿与资源租约）
-> 日期：2026-08-24
+> 状态：v2.15（ACP 工具证据无损规范化 + 单调生命周期 + 权威工具类型）
+> 日期：2026-08-27
 > 定位：peri-studio 独立项目的架构基准文档。与 peri 的唯一耦合点是 ACP 进程（协议线格式），本设计不依赖 peri 的任何 crate 与部署形态。
-> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界；v2.9 令 Web 权限裁决回传 Control Doc 投影的精确 ACP `optionId`，并在恢复证据与交付边界校验 ID 和 scope；v2.10 增加权限期限的可见倒计时与浏览器 fail-close 门控；v2.11 统一权限与询问队列的领域身份选择和删除回退；v2.12 为一次性 elicitation 回答增加不可重放的刷新与本地隐藏恢复面；v2.13 为移动端 FS/Git 预览增加稳定来源身份与编辑器焦点往返；v2.14 完成有序 Chat blocks、回放信任标签、按 session 消息投递、协商 prompt 字节预算、principal 作用域持久草稿、权限输入证据、资源租约/代际与高对比浏览器矩阵。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
+> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界；v2.9 令 Web 权限裁决回传 Control Doc 投影的精确 ACP `optionId`，并在恢复证据与交付边界校验 ID 和 scope；v2.10 增加权限期限的可见倒计时与浏览器 fail-close 门控；v2.11 统一权限与询问队列的领域身份选择和删除回退；v2.12 为一次性 elicitation 回答增加不可重放的刷新与本地隐藏恢复面；v2.13 为移动端 FS/Git 预览增加稳定来源身份与编辑器焦点往返；v2.14 完成有序 Chat blocks、回放信任标签、按 session 消息投递、协商 prompt 字节预算、principal 作用域持久草稿、权限输入证据、资源租约/代际与高对比浏览器矩阵；v2.15 将 ACP 工具 kind、content、locations、raw output 与 content chunk 统一为有界 tri-state patch，允许终态后只补证据但不重开生命周期，并令 turn 终态收敛全部消息分段和非终态工具。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
 > 约定：引用 chat-channel 处标注其文档章节号（如「chat §5.2」），实现时以该仓库为对照基线。协议事实（帧 tag、action 面、schema 版本、默认值）以 `peri-studio-proto` / `server/src/config` 实现为真相来源，本文与实现不一致时以实现为准并回改本文。
 
 ---
@@ -584,8 +584,17 @@ struct ToolCallProjection {
     tool_call_id: String,
     turn_id: String,
     name: String,
+    kind: Read | Edit | Delete | Move | Search | Execute | Think | Fetch | SwitchMode | Other,
     status: Pending | AwaitingPermission | Running | Completed | Error | Cancelled,
     arguments: Option<Value>,       // 过滤内部/敏感字段后投影
+    arguments_omitted: Option<bool>,
+    arguments_bytes: Option<u64>,
+    content: Option<Value>,         // ACP 可展示 content；增量 chunk 有界追加
+    content_omitted: Option<bool>,
+    content_bytes: Option<u64>,
+    locations: Option<Value>,       // ACP 权威位置证据
+    locations_omitted: Option<bool>,
+    locations_bytes: Option<u64>,
     result: Option<Value>,          // 仅在公开投影预算内保留
     result_omitted: Option<bool>,   // true=省略，false=明确未省略，None=旧记录未知
     result_bytes: Option<u64>,      // Hub 观测到的紧凑 JSON 字节数；不含内容
@@ -836,7 +845,7 @@ Composer 草稿为 `/name `，不得自动发送、不得增加 ACP prompt 私�
 |-----------|---------------|---------|
 | 文本增量 | Chat Doc entry block | 追加（微批次合并，§6.4） |
 | 思考/推理增量 | Chat Doc reasoning block | 仅写 `summary`；`hidden` 只推进流序号，不进入浏览器共享投影 |
-| 工具调用开始/更新/完成 | Chat Doc `tool_calls` | 按 `toolCallId` upsert；状态与证据均单调迁移：缺省 arguments 不清空旧输入，普通更新/完成不可越过权限等待，首个终态拥有 result/error/completedAt 且不可被晚到帧覆盖；超大结果只记录省略事实与字节数 |
+| 工具调用开始/更新/完成/content chunk | Chat Doc `tool_calls` | 按 `toolCallId` upsert；ACP `kind` 是 UI 语义的唯一事实源，未知值降级 `other`，浏览器不得按标题猜类型。arguments/content/locations/result 使用 `unchanged/clear/set/omitted(bytes)` tri-state patch：缺省不清空旧证据，content chunk 有界追加。生命周期单调且不可越过权限等待；首个终态固定状态/error/completedAt，晚到帧只允许补齐缺失证据，不得重开终态。恢复首帧为 update/terminal 时在活动或回放 turn 下合成可达工具记录。turn 任一终态必须终态化该 turn 的全部 assistant 分段并收敛所有非终态工具，防止永久 streaming/running。超预算字段明确记录 omitted 与字节数，不得伪装为空。 |
 | 权限请求/决议/过期 | Control Doc `pending_permissions` + Chat Doc `tool_calls` | 官方 permission request 保留完整 `toolCall` 快照；即使先于普通 tool 通知到达，也在同一 seq 原子创建可达工具卡并进入 awaitingPermission。稍后正式通知只补全字段，不越过等待或重开终态；allow 恢复 running，deny/expire 进入 cancelled；旧事件缺快照或未知可选关联时仍不抑制权限请求 |
 | 权限请求/解决/过期 | Control Doc `pending_permissions` | 按 `permissionId` upsert；决议写 `decision`（CAS，§7.4） |
 | Agent status/extensions/commands/session info | Control Doc `agent`/`session` | extension 仅接受 initialize 白名单回显；commands 是独立运行时目录；未确认能力保持不可用 |

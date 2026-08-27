@@ -140,7 +140,7 @@
 .token-decision>footer { display:flex; min-height:38px; align-items:center; justify-content:flex-end; gap:4px; border-top:1px solid var(--divider); padding:5px 10px; }
 .token-decision>footer [data-slot="button"] { min-height:28px; font-size:10px; }
 .token-decision>footer [data-slot="button"]:last-child { border-color:var(--success); background:var(--success); color:var(--surface); }
-.token-permission { display:grid; min-height:96px; grid-template-columns:24px minmax(0,1fr) auto; align-items:start; gap:8px; padding:12px; }
+.token-permission { display:grid; min-height:var(--permission-card-min-height); grid-template-columns:24px minmax(0,1fr) auto; align-items:start; gap:8px; padding:12px; }
 .token-permission__mark { display:grid; width:24px; height:24px; place-items:center; border:1px solid var(--border-subtle); border-radius:50%; color:var(--warning); }
 .token-permission strong { font-size:11px; }
 .token-permission p { overflow:hidden; margin:4px 0 0; color:var(--text-muted); font:9px/13px var(--font-mono); text-overflow:ellipsis; white-space:nowrap; }

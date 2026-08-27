@@ -2,7 +2,8 @@ import { For, Show, createEffect, createMemo, createSignal, onCleanup } from 'so
 import { IconButton, LoadingState } from '../../components/ui';
 import { openFilePreview, openResourceDirectory, refreshResourceProject, resourceWorkspace } from '../store';
 import type { ResourceEntry } from '../lib/resource-view';
-import { ChevronRight, File, Folder, FolderOpen, RefreshCw } from 'lucide-solid';
+import { ChevronRight, RefreshCw } from 'lucide-solid';
+import { VSCodeFileIcon } from './VSCodeFileIcon';
 
 function RefreshIcon() { return <RefreshCw size={14} strokeWidth={1.8} />; }
 
@@ -130,7 +131,7 @@ function FileLevel(props: { path: string; depth: number; expanded: Set<string>; 
   const nextCursor = () => resourceWorkspace().directories[props.path]?.nextCursor;
   return <>
     <For each={entries()}>{(entry, index) => <FileRow entry={entry} depth={props.depth} index={index()} setSize={entries().length} expanded={props.expanded} activePath={props.activePath} onActive={props.onActive} onToggle={props.onToggle} onPreviewIntent={props.onPreviewIntent} />}</For>
-    <Show when={nextCursor()}>{(cursor) => <button type="button" class="h-24 w-full border-0 bg-transparent text-left text-11 text-accent hover:bg-hover pointer-coarse:h-44" style={{ 'padding-left': `${26 + props.depth * 13}px` }} onClick={() => openResourceDirectory(props.path, cursor())}>Load more…</button>}</Show>
+    <Show when={nextCursor()}>{(cursor) => <button type="button" class="h-(--tree-row-height) w-full border-0 bg-transparent text-left text-11 text-accent hover:bg-hover pointer-coarse:h-44" style={{ 'padding-left': `${26 + props.depth * 13}px` }} onClick={() => openResourceDirectory(props.path, cursor())}>Load more…</button>}</Show>
   </>;
 }
 
@@ -151,7 +152,7 @@ function FileRow(props: { entry: ResourceEntry; depth: number; index: number; se
       data-resource-focus-key={directory() ? undefined : `file:${path()}`}
       data-resource-focus-view={directory() ? undefined : 'explorer'}
       tabIndex={props.activePath === path() || (!props.activePath && props.depth === 0 && props.index === 0) ? 0 : -1}
-      class="group flex h-(--tree-row-height) w-full items-center border-0 bg-transparent pr-6 text-left text-11 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44"
+      class={`group flex h-(--tree-row-height) w-full items-center rounded-4 border-0 pr-6 text-left text-11 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44 ${props.activePath === path() ? 'bg-selected' : 'bg-transparent'}`}
       style={{ 'padding-left': `${7 + props.depth * 12}px` }}
       onClick={() => {
         if (directory()) props.onToggle(path());
@@ -164,12 +165,12 @@ function FileRow(props: { entry: ResourceEntry; depth: number; index: number; se
       title={path()}
     >
       <span class={`mr-1 grid size-14 place-items-center text-text-muted ${directory() ? '' : 'opacity-0'}`}><ChevronRight size={14} strokeWidth={1.8} class={open() ? 'rotate-90' : ''} /></span>
-      <span class="mr-5 grid size-15 place-items-center text-text-muted">{directory() ? open() ? <FolderOpen size={15} strokeWidth={1.7} /> : <Folder size={15} strokeWidth={1.7} /> : <File size={14} strokeWidth={1.7} />}</span>
-      <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{String(props.entry.name ?? path())}</span>
+      <VSCodeFileIcon path={path()} directory={directory()} open={open()} size={16} class="mr-4 size-16" />
+      <span class={`min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap ${directory() ? 'font-600' : ''}`}>{String(props.entry.name ?? path())}</span>
     </button>
     <Show when={directory() && open()}>
       <div role="group">
-        <Show when={resourceWorkspace().directories[path()]} fallback={<div class="h-(--tree-row-height) text-11 text-text-muted" style={{ 'padding-left': `${32 + props.depth * 12}px` }}>Loading…</div>}>
+        <Show when={resourceWorkspace().directories[path()]} fallback={<div class="flex h-(--tree-row-height) items-center text-11 text-text-muted" style={{ 'padding-left': `${32 + props.depth * 12}px` }}>Loading…</div>}>
           <FileLevel path={path()} depth={props.depth + 1} expanded={props.expanded} activePath={props.activePath} onActive={props.onActive} onToggle={props.onToggle} onPreviewIntent={props.onPreviewIntent} />
         </Show>
       </div>

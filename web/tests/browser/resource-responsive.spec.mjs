@@ -34,7 +34,7 @@ async function injectFixtureDiff(page) {
   expect(injected).toBe(true);
 }
 
-test('resource workbench matches Explorer and Source Control interaction contracts', async ({ page }) => {
+test('resource workbench keeps Explorer and Source Control directly reachable', async ({ page }) => {
   const browserErrors = collectBrowserErrors(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
@@ -158,7 +158,8 @@ test('mobile resource previews hand focus to the editor and restore their source
   await expect(page.getByRole('treeitem', { name: 'main.rs' })).toBeVisible();
   expect(await page.getByRole('tree', { name: 'Workspace files' }).evaluate((tree) => tree.scrollTop)).toBe(explorerScrollTop);
 
-  await page.getByRole('button', { name: 'Source Control' }).click();
+  await page.goto('/visual-fixture.html?scenario=resources&resource=scm', { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Open workspace resources' }).click();
   await page.getByRole('textbox', { name: 'Commit message' }).fill('Preserve this draft across preview');
   const diffOrigin = page.getByRole('button', { name: 'Open changes for web/src/panel/components/ResourceWorkbench.tsx' });
   await diffOrigin.focus();
@@ -228,7 +229,7 @@ test('primary action labels retain readable contrast', async ({ page }) => {
     const style = getComputedStyle(button);
     return { foreground: style.color, background: style.backgroundColor };
   });
-  expect(colors).toEqual({ foreground: 'rgb(255, 255, 255)', background: 'rgb(32, 37, 34)' });
+  expect(colors).toEqual({ foreground: 'rgb(255, 255, 255)', background: 'rgb(22, 163, 106)' });
 });
 
 test('coarse pointer keeps workspace header actions at least 44px', async ({ page }) => {
@@ -268,12 +269,11 @@ test('coarse pointer keeps workspace header actions at least 44px', async ({ pag
 
 test('resource density tokens resolve to their authored desktop heights', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
+  await page.goto('/visual-fixture.html?scenario=resources&resource=scm', { waitUntil: 'networkidle' });
   await injectFixtureDiff(page);
   await expect(page.locator('.resource-editor-tab')).toHaveCSS('height', '35px');
   await expect(page.locator('.resource-editor-toolbar')).toHaveCSS('height', '34px');
   await page.getByRole('button', { name: 'Close diff' }).click();
-  await page.getByRole('button', { name: 'Source Control' }).click();
   await expect(page.locator('.resource-group-title').first()).toHaveCSS('height', '24px');
   await expect(page.locator('.resource-change-row').first()).toHaveCSS('height', '24px');
 });

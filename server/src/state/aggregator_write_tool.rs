@@ -21,6 +21,7 @@ use crate::state::{
 use super::{
     aggregator::{Aggregator, TOOL_RESULT_MAX_BYTES},
     aggregator_write_helpers::{advance_tool_status, default_tool_call},
+    aggregator_write_tool_patch::{apply_projection_patch, tool_terminal},
 };
 
 /// 一次 tool/permission Chat Doc 写入所需的稳定预读快照。
@@ -47,6 +48,7 @@ impl Aggregator {
             EventBody::ToolCallStarted { .. }
                 | EventBody::ToolCallUpdated { .. }
                 | EventBody::ToolCallCompleted { .. }
+                | EventBody::ToolCallPatched { .. }
                 | EventBody::PermissionRequested { .. }
                 | EventBody::PermissionResolved { .. }
                 | EventBody::PermissionExpired { .. }
@@ -69,7 +71,8 @@ impl Aggregator {
         let pre_read = match &ev.body {
             EventBody::ToolCallStarted { tool_call_id, .. }
             | EventBody::ToolCallUpdated { tool_call_id, .. }
-            | EventBody::ToolCallCompleted { tool_call_id, .. } => {
+            | EventBody::ToolCallCompleted { tool_call_id, .. }
+            | EventBody::ToolCallPatched { tool_call_id, .. } => {
                 let txn = pair.chat.transact();
                 chat_writer::tool_call_projection(&txn, tool_call_id)
             }
@@ -89,21 +92,42 @@ impl Aggregator {
             }
             _ => None,
         };
-        let resolved_tool = match &ev.body {
-            EventBody::ToolCallStarted { turn_id, .. } if turn_id.is_empty() => {
-                let turn_id = pair
-                    .stream
-                    .replay_turn
-                    .clone()
-                    .or_else(|| self.read_active_turn(pair).map(|active| active.turn_id))
-                    .unwrap_or_default();
-                let entry_id = Self::projection_segment_entry(&mut pair.stream, &turn_id, "tools");
-                (turn_id, entry_id)
+        let resolved_tool = if pre_read.is_some() {
+            // 既有工具保留原 entry；晚到 patch 不应推进新的 tools segment。
+            (String::new(), String::new())
+        } else {
+            match &ev.body {
+                EventBody::ToolCallStarted { turn_id, .. }
+                | EventBody::ToolCallPatched { turn_id, .. }
+                    if turn_id.is_empty() =>
+                {
+                    let turn_id = pair
+                        .stream
+                        .replay_turn
+                        .clone()
+                        .or_else(|| self.read_active_turn(pair).map(|active| active.turn_id))
+                        .unwrap_or_default();
+                    let entry_id =
+                        Self::projection_segment_entry(&mut pair.stream, &turn_id, "tools");
+                    (turn_id, entry_id)
+                }
+                EventBody::ToolCallStarted { turn_id, .. }
+                | EventBody::ToolCallPatched { turn_id, .. } => {
+                    let entry_id =
+                        Self::projection_segment_entry(&mut pair.stream, turn_id, "tools");
+                    (turn_id.clone(), entry_id)
+                }
+                EventBody::PermissionRequested {
+                    turn_id,
+                    tool_call_id: Some(_),
+                    ..
+                } => {
+                    let entry_id =
+                        Self::projection_segment_entry(&mut pair.stream, turn_id, "tools");
+                    (turn_id.clone(), entry_id)
+                }
+                _ => (String::new(), String::new()),
             }
-            EventBody::ToolCallStarted { turn_id, .. } => {
-                (turn_id.clone(), format!("{turn_id}:assistant"))
-            }
-            _ => (String::new(), String::new()),
         };
         Some(ToolChatWriteContext {
             pre_read,
@@ -145,8 +169,20 @@ impl Aggregator {
                         tool_call_id: tool_call_id.clone(),
                         turn_id: turn_id.clone(),
                         name: name.clone(),
+                        kind: Default::default(),
                         status: *status,
                         arguments: arguments.clone(),
+                        arguments_omitted: Some(false),
+                        arguments_bytes: arguments
+                            .as_ref()
+                            .and_then(|value| serde_json::to_vec(value).ok())
+                            .and_then(|bytes| u64::try_from(bytes.len()).ok()),
+                        content: None,
+                        content_omitted: None,
+                        content_bytes: None,
+                        locations: None,
+                        locations_omitted: None,
+                        locations_bytes: None,
                         result: None,
                         result_omitted: Some(false),
                         result_bytes: None,
@@ -158,31 +194,9 @@ impl Aggregator {
                     }
                 };
                 chat_writer::upsert_tool_call(txn, root, &tc);
-                chat_writer::ensure_entry_with_blocks(
-                    txn,
-                    root,
-                    entry_id,
-                    EntryKind::Message,
-                    EntryRole::Assistant,
-                    Some(turn_id),
-                    &ev.ts,
-                );
-                chat_writer::append_block(
-                    txn,
-                    root,
-                    entry_id,
-                    peri_studio_proto::schema::ContentBlock::ToolCall {
-                        block_id: format!("tool:{tool_call_id}"),
-                        tool_call_id: tool_call_id.clone(),
-                    },
-                );
-                chat_writer::record_entry_origin(
-                    txn,
-                    root,
-                    entry_id,
-                    context.replay_active,
-                    context.replay_producer_verified,
-                );
+                if context.pre_read.is_none() {
+                    write_new_tool_block(txn, root, turn_id, entry_id, tool_call_id, ev, context);
+                }
                 chat_writer::bump_projection_version(txn, root);
             }
             EventBody::ToolCallUpdated {
@@ -247,6 +261,35 @@ impl Aggregator {
                     chat_writer::bump_projection_version(txn, root);
                 }
             }
+            EventBody::ToolCallPatched {
+                tool_call_id,
+                patch,
+                ..
+            } => {
+                let (turn_id, entry_id) = &context.resolved_tool;
+                let mut tc = context.pre_read.clone().unwrap_or_else(default_tool_call);
+                let was_terminal = tool_terminal(tc.status);
+                if tc.tool_call_id.is_empty() {
+                    tc.tool_call_id = tool_call_id.clone();
+                    tc.turn_id = turn_id.clone();
+                }
+                if !was_terminal || tc.name.is_empty() {
+                    if let Some(name) = &patch.name {
+                        tc.name = name.clone();
+                    }
+                }
+                if !was_terminal || tc.kind == Default::default() {
+                    if let Some(kind) = patch.kind {
+                        tc.kind = kind;
+                    }
+                }
+                apply_projection_patch(&mut tc, patch, was_terminal);
+                chat_writer::upsert_tool_call(txn, root, &tc);
+                if context.pre_read.is_none() {
+                    write_new_tool_block(txn, root, turn_id, entry_id, tool_call_id, ev, context);
+                }
+                chat_writer::bump_projection_version(txn, root);
+            }
             EventBody::PermissionRequested {
                 permission_id,
                 tool_call_id,
@@ -261,11 +304,20 @@ impl Aggregator {
                                 tool_call_id: tool_call_id.clone(),
                                 turn_id: turn_id.clone(),
                                 name: snapshot.name.clone(),
+                                kind: snapshot.kind.unwrap_or_default(),
                                 status: ToolCallStatus::AwaitingPermission,
                                 arguments: snapshot.arguments.clone(),
-                                result: None,
-                                result_omitted: Some(false),
-                                result_bytes: None,
+                                arguments_omitted: snapshot.arguments_omitted,
+                                arguments_bytes: snapshot.arguments_bytes,
+                                content: snapshot.content.clone(),
+                                content_omitted: snapshot.content_omitted,
+                                content_bytes: snapshot.content_bytes,
+                                locations: snapshot.locations.clone(),
+                                locations_omitted: snapshot.locations_omitted,
+                                locations_bytes: snapshot.locations_bytes,
+                                result: snapshot.result.clone(),
+                                result_omitted: snapshot.result_omitted,
+                                result_bytes: snapshot.result_bytes,
                                 public_error: None,
                                 permission_id: Some(permission_id.clone()),
                                 started_at: (!context.replay_active).then(|| ev.ts.clone()),
@@ -281,32 +333,18 @@ impl Aggregator {
                         );
                         tc.permission_id = Some(permission_id.clone());
                         chat_writer::upsert_tool_call(txn, root, &tc);
-                        let entry_id = format!("{}:assistant", tc.turn_id);
-                        chat_writer::ensure_entry_with_blocks(
-                            txn,
-                            root,
-                            &entry_id,
-                            EntryKind::Message,
-                            EntryRole::Assistant,
-                            Some(&tc.turn_id),
-                            &ev.ts,
-                        );
-                        chat_writer::append_block(
-                            txn,
-                            root,
-                            &entry_id,
-                            peri_studio_proto::schema::ContentBlock::ToolCall {
-                                block_id: format!("tool:{tool_call_id}"),
-                                tool_call_id: tool_call_id.clone(),
-                            },
-                        );
-                        chat_writer::record_entry_origin(
-                            txn,
-                            root,
-                            &entry_id,
-                            context.replay_active,
-                            context.replay_producer_verified,
-                        );
+                        if context.pre_read.is_none() {
+                            let entry_id = context.resolved_tool.1.as_str();
+                            write_new_tool_block(
+                                txn,
+                                root,
+                                &tc.turn_id,
+                                entry_id,
+                                tool_call_id,
+                                ev,
+                                context,
+                            );
+                        }
                         chat_writer::bump_projection_version(txn, root);
                     }
                 }
@@ -347,4 +385,40 @@ impl Aggregator {
             _ => unreachable!("tool chat context only accepts tool/permission events"),
         }
     }
+}
+
+fn write_new_tool_block(
+    txn: &mut TransactionCtx<'_>,
+    root: &MapRef,
+    turn_id: &str,
+    entry_id: &str,
+    tool_call_id: &str,
+    ev: &NormalizedEvent,
+    context: &ToolChatWriteContext,
+) {
+    chat_writer::ensure_entry_with_blocks(
+        txn,
+        root,
+        entry_id,
+        EntryKind::Message,
+        EntryRole::Assistant,
+        Some(turn_id),
+        &ev.ts,
+    );
+    chat_writer::append_block(
+        txn,
+        root,
+        entry_id,
+        peri_studio_proto::schema::ContentBlock::ToolCall {
+            block_id: format!("tool:{tool_call_id}"),
+            tool_call_id: tool_call_id.to_string(),
+        },
+    );
+    chat_writer::record_entry_origin(
+        txn,
+        root,
+        entry_id,
+        context.replay_active,
+        context.replay_producer_verified,
+    );
 }

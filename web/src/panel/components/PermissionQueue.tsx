@@ -2,7 +2,8 @@ import { Show } from 'solid-js';
 import type { PendingPermission } from '../lib/control-view';
 import { createIdentitySelection } from '../lib/identity-selection';
 import type { PermissionDecisionState } from '../lib/permission-delivery';
-import { Icon, IconButton } from '../../components/ui';
+import { IconButton } from '../../components/ui';
+import { ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-solid';
 import { PermissionRequestCard } from './PermissionRequestCard';
 
 export interface PermissionQueueProps {
@@ -25,12 +26,12 @@ export function PermissionQueue(props: PermissionQueueProps) {
           <span class="text-11 font-650 text-text-secondary">Permissions</span>
           <Show when={props.permissions.length > 1}>
             <span class="flex items-center gap-1 text-text-muted text-10 tabular-nums">
-              <IconButton label="Previous permission" variant="ghost" size="compact" class="size-26 min-h-26 border-0 bg-transparent text-text-muted disabled:opacity-30" disabled={selection.index() <= 0} onClick={() => selection.select(selection.index() - 1)}><Icon class="size-14!"><path d="m12.5 5-5 5 5 5" /></Icon></IconButton>
-              <span class="min-w-28 text-center" aria-live="polite">{selection.index() + 1} / {props.permissions.length}</span>
-              <IconButton label="Next permission" variant="ghost" size="compact" class="size-26 min-h-26 border-0 bg-transparent text-text-muted disabled:opacity-30" disabled={selection.index() >= props.permissions.length - 1} onClick={() => selection.select(selection.index() + 1)}><Icon class="size-14!"><path d="m7.5 5 5 5-5 5" /></Icon></IconButton>
+              <IconButton label="Previous permission" variant="ghost" size="compact" class="size-24 min-h-24 border-0 bg-transparent text-text-muted disabled:opacity-30" disabled={selection.index() <= 0} onClick={() => selection.select(selection.index() - 1)}><ChevronLeft size={13} strokeWidth={1.8} /></IconButton>
+              <span class="min-w-26 text-center text-9" aria-live="polite">{selection.index() + 1} / {props.permissions.length}</span>
+              <IconButton label="Next permission" variant="ghost" size="compact" class="size-24 min-h-24 border-0 bg-transparent text-text-muted disabled:opacity-30" disabled={selection.index() >= props.permissions.length - 1} onClick={() => selection.select(selection.index() + 1)}><ChevronRight size={13} strokeWidth={1.8} /></IconButton>
             </span>
           </Show>
-          <span class="ml-auto grid size-28 place-items-center rounded-full border border-border-subtle text-warning" aria-hidden="true"><Icon class="size-14!"><path d="M10 3.5 16 6v4.5c0 3.5-2.4 5.6-6 6.8-3.6-1.2-6-3.3-6-6.8V6z" /></Icon></span>
+          <ShieldCheck size={14} strokeWidth={1.8} class="ml-auto text-warning" aria-hidden="true" />
         </header>
         <PermissionRequestCard
           embedded

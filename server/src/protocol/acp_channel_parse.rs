@@ -15,7 +15,7 @@ use std::collections::BTreeMap;
 
 use serde_json::Value;
 
-use peri_studio_proto::schema::{PublicError, ToolCallStatus};
+use peri_studio_proto::schema::PublicError;
 
 use crate::state::normalized::EventProvenance;
 
@@ -240,16 +240,6 @@ pub(crate) fn parse_activity_attributes(
     Ok(result)
 }
 
-/// Normalize ACP's non-terminal aliases. Terminal values are handled by callers before this
-/// helper; unknown or absent values remain pending for backward compatibility.
-pub(crate) fn nonterminal_tool_status(status: Option<&str>) -> ToolCallStatus {
-    match status {
-        Some("in_progress" | "running" | "streaming") => ToolCallStatus::Running,
-        Some("awaiting_permission" | "awaitingPermission") => ToolCallStatus::AwaitingPermission,
-        _ => ToolCallStatus::Pending,
-    }
-}
-
 /// 非负整数提取（camelCase 优先，snake_case 回退）：负数/超 u32 上限 →
 /// None（缺省语义，不整体拒绝——§6.3 仅必填字段缺失才 MissingField）。
 pub(crate) fn number_field(
@@ -270,10 +260,6 @@ pub(crate) fn required(
     snake: &str,
 ) -> Result<String, MapError> {
     string_field(obj, camel, snake).ok_or(MapError::MissingField)
-}
-
-pub(crate) fn opt_json(obj: &serde_json::Map<String, Value>, name: &str) -> Option<Value> {
-    obj.get(name).cloned()
 }
 
 /// map_raw 内部错误（私有；调用方统一收敛为 [`DropReason`]，与外部

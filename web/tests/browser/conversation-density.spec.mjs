@@ -9,7 +9,7 @@ test('conversation copy keeps compact authored line heights', async ({ page }) =
     composerLineHeight: getComputedStyle(document.querySelector('.composer-input')).lineHeight,
     assistantHeight: document.querySelector('.conversation-message--assistant').getBoundingClientRect().height,
   }));
-  expect(geometry).toMatchObject({ lineHeight: '22px', composerLineHeight: '22px' });
+  expect(geometry).toMatchObject({ lineHeight: '20px', composerLineHeight: '18px' });
   expect(geometry.height).toBeLessThan(100);
   expect(geometry.assistantHeight).toBeLessThan(800);
 });
@@ -24,7 +24,7 @@ test('intervention actions stay compact in narrow layouts', async ({ page }) => 
   await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
   const desktop = await measure();
   expect(Math.max(...desktop.map(({ width }) => width))).toBeLessThan(160);
-  expect(new Set(desktop.map(({ height }) => height))).toEqual(new Set([36]));
+  expect(new Set(desktop.map(({ height }) => height))).toEqual(new Set([30]));
   await expect(page.locator('.elicitation-card')).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(new Set((await measure()).map(({ height }) => height))).toEqual(new Set([44]));
@@ -46,7 +46,7 @@ test('conversation typography and permission surfaces stay dense and neutral', a
       text: document.body.innerText,
     };
   });
-  expect(facts).toMatchObject({ body: '14px', message: ['14px', '22px'], button: '13px', heading: '17px' });
+  expect(facts).toMatchObject({ body: '13px', message: ['13px', '20px'], button: '12px', heading: '17px' });
   expect(facts.permission).toBe(facts.page);
   expect(facts.mark).toBe(facts.page);
   for (const copy of ['Locks immediately once selected', 'Waiting for your permission', 'Hub observed', 'shows only redacted run summaries']) {

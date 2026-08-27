@@ -4,7 +4,7 @@ import '../styles.css';
 import './fixture.css';
 import { AppShell } from '../panel/components/AppShell';
 import { Toasts } from '../panel/components/Toasts';
-import { appendVisualResourceEntries, DEFAULT_VISUAL_SCENARIO, installVisualScenario, removeVisualResourceEntry, setVisualDiffPreview, setVisualElicitationUnknown, setVisualFilePreview, setVisualTranscriptCount, visualScenarios } from './scenarios';
+import { appendVisualResourceEntries, DEFAULT_VISUAL_SCENARIO, installVisualScenario, removeVisualResourceEntry, setVisualDiffPreview, setVisualElicitationUnknown, setVisualFilePreview, setVisualToolAcceptancePhase, setVisualTranscriptCount, visualScenarios } from './scenarios';
 import { VisualScenarioSidebar } from './VisualScenarioSidebar';
 import { DesignTokenBoard } from './DesignTokenBoard';
 
@@ -17,6 +17,7 @@ declare global {
       appendResourceEntries: typeof appendVisualResourceEntries;
       setTranscriptCount: typeof setVisualTranscriptCount;
       setElicitationUnknown: typeof setVisualElicitationUnknown;
+      setToolAcceptancePhase: typeof setVisualToolAcceptancePhase;
     };
   }
 }
@@ -24,6 +25,7 @@ declare global {
 const search = new URLSearchParams(window.location.search);
 const selected = search.get('scenario') || DEFAULT_VISUAL_SCENARIO;
 const projectSidebarMode = search.get('sidebar') === 'projects';
+const initialResourceView = search.get('resource') === 'scm' ? 'scm' : 'explorer';
 
 function VisualFixture() {
   const installed = installVisualScenario(selected);
@@ -35,6 +37,7 @@ function VisualFixture() {
     appendResourceEntries: appendVisualResourceEntries,
     setTranscriptCount: setVisualTranscriptCount,
     setElicitationUnknown: setVisualElicitationUnknown,
+    setToolAcceptancePhase: setVisualToolAcceptancePhase,
   };
   onCleanup(() => {
     delete window.__PERI_VISUAL_FIXTURE__;
@@ -50,7 +53,7 @@ function VisualFixture() {
       </aside>
       {!projectSidebarMode && <VisualScenarioSidebar scenarios={visualScenarios} current={installed.scenario.id} />}
       <div class={`visual-fixture-stage ${foundationMode ? 'visual-fixture-stage--foundation' : ''}`}>
-        {foundationMode ? <DesignTokenBoard /> : <AppShell initialResourceView={installed.scenario.id === 'resources' ? 'explorer' : null} />}
+        {foundationMode ? <DesignTokenBoard /> : <AppShell initialResourceView={installed.scenario.id === 'resources' ? initialResourceView : null} />}
       </div>
     </div>
     <Toasts />

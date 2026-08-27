@@ -165,15 +165,19 @@ fn map_tool_call_started() {
     });
     match norm(f) {
         NormalizeOutcome::Event(ev) => match ev.body {
-            EventBody::ToolCallStarted {
+            EventBody::ToolCallPatched {
                 tool_call_id,
-                name,
-                arguments,
+                patch,
                 ..
             } => {
                 assert_eq!(tool_call_id, "tc1");
-                assert_eq!(name, "bash");
-                assert_eq!(arguments, Some(json!({"cmd": "ls"})));
+                assert_eq!(patch.name.as_deref(), Some("bash"));
+                assert_eq!(
+                    patch.arguments,
+                    ToolJsonPatch::Set {
+                        value: json!({"cmd": "ls"})
+                    }
+                );
             }
             _ => panic!("expected tool call started"),
         },
@@ -189,11 +193,14 @@ fn map_tool_call_update_running() {
     });
     match norm(f) {
         NormalizeOutcome::Event(ev) => match ev.body {
-            EventBody::ToolCallUpdated {
-                arguments, status, ..
-            } => {
-                assert_eq!(arguments, Some(json!({"x": 1})));
-                assert_eq!(status, Some(ToolCallStatus::Running));
+            EventBody::ToolCallPatched { patch, .. } => {
+                assert_eq!(
+                    patch.arguments,
+                    ToolJsonPatch::Set {
+                        value: json!({"x": 1})
+                    }
+                );
+                assert_eq!(patch.status, Some(ToolCallStatus::Running));
             }
             _ => panic!("expected tool call updated"),
         },
@@ -217,15 +224,120 @@ fn map_official_tool_call_update_in_progress_is_update_not_duplicate_start() {
     });
     match norm(f) {
         NormalizeOutcome::Event(ev) => match ev.body {
-            EventBody::ToolCallUpdated {
-                status, arguments, ..
-            } => {
-                assert_eq!(status, Some(ToolCallStatus::Running));
-                assert_eq!(arguments, Some(json!({"cmd": "pwd"})));
+            EventBody::ToolCallPatched { patch, .. } => {
+                assert_eq!(patch.status, Some(ToolCallStatus::Running));
+                assert_eq!(
+                    patch.arguments,
+                    ToolJsonPatch::Set {
+                        value: json!({"cmd": "pwd"})
+                    }
+                );
             }
             other => panic!("expected tool call update, got {other:?}"),
         },
         other => panic!("expected event, got {other:?}"),
+    }
+}
+
+#[test]
+fn official_tool_patch_preserves_kind_content_locations_and_failed_output() {
+    let frame = json!({
+        "jsonrpc": "2.0", "method": "session/update",
+        "params": {"sessionId": "acp-1", "update": {
+            "sessionUpdate": "tool_call_update", "toolCallId": "tc-rich",
+            "title": "Run tests", "kind": "execute", "status": "failed",
+            "rawInput": {"cmd": "cargo test"},
+            "content": [{"type": "terminal", "terminalId": "term-1"}],
+            "locations": [{"path": "server/src/lib.rs", "line": 7}],
+            "rawOutput": {"exitCode": 1, "stderr": "failed assertion"}
+        }}
+    });
+    let NormalizeOutcome::Event(event) = norm(frame) else {
+        panic!("expected normalized event");
+    };
+    let EventBody::ToolCallPatched {
+        tool_call_id,
+        patch,
+        ..
+    } = event.body
+    else {
+        panic!("expected tool patch");
+    };
+    assert_eq!(tool_call_id, "tc-rich");
+    assert_eq!(
+        patch.kind,
+        Some(peri_studio_proto::schema::ToolCallKind::Execute)
+    );
+    assert_eq!(patch.status, Some(ToolCallStatus::Error));
+    assert!(matches!(patch.arguments, ToolJsonPatch::Set { .. }));
+    assert!(matches!(patch.content, ToolJsonPatch::Set { .. }));
+    assert!(matches!(patch.locations, ToolJsonPatch::Set { .. }));
+    assert_eq!(
+        patch.result,
+        ToolJsonPatch::Set {
+            value: json!({"exitCode": 1, "stderr": "failed assertion"})
+        }
+    );
+    assert_eq!(patch.public_error.unwrap().code, "agent_error");
+}
+
+#[test]
+fn official_tool_content_chunk_is_an_append_patch() {
+    let frame = json!({
+        "jsonrpc": "2.0", "method": "session/update",
+        "params": {"sessionId": "acp-1", "update": {
+            "sessionUpdate": "tool_call_content_chunk", "toolCallId": "tc-stream",
+            "content": {"type": "content", "content": {"type": "text", "text": "part"}}
+        }}
+    });
+    let NormalizeOutcome::Event(event) = norm(frame) else {
+        panic!("expected normalized event");
+    };
+    let EventBody::ToolCallPatched { patch, .. } = event.body else {
+        panic!("expected tool patch");
+    };
+    assert!(patch.append_content);
+    assert!(matches!(patch.content, ToolJsonPatch::Set { .. }));
+}
+
+#[test]
+fn oversized_official_arguments_are_explicitly_omitted_with_bytes() {
+    let huge = "x".repeat(5000);
+    let frame = json!({
+        "jsonrpc": "2.0", "method": "session/update",
+        "params": {"sessionId": "acp-1", "update": {
+            "sessionUpdate": "tool_call_update", "toolCallId": "tc-large",
+            "rawInput": {"text": huge}
+        }}
+    });
+    let NormalizeOutcome::Event(event) = norm(frame) else {
+        panic!("expected normalized event");
+    };
+    let EventBody::ToolCallPatched { patch, .. } = event.body else {
+        panic!("expected tool patch");
+    };
+    assert!(matches!(patch.arguments, ToolJsonPatch::Omitted { bytes } if bytes > 4096));
+}
+
+#[test]
+fn raw_terminal_aliases_map_to_exact_terminal_statuses() {
+    for (wire, expected) in [
+        ("complete", ToolCallStatus::Completed),
+        ("done", ToolCallStatus::Completed),
+        ("cancelled", ToolCallStatus::Cancelled),
+    ] {
+        let frame = json!({
+            "type": "tool_call_update",
+            "payload": {"turnId": "t1", "toolCallId": format!("tc-{wire}"), "status": wire}
+        });
+        let NormalizeOutcome::Event(event) = norm(frame) else {
+            panic!("expected normalized event");
+        };
+        let EventBody::ToolCallPatched { patch, .. } = event.body else {
+            panic!("expected tool patch");
+        };
+        assert_eq!(patch.status, Some(expected));
+        assert!(patch.completed_at.is_some());
     }
 }
 
@@ -277,4 +389,23 @@ fn request_permission_missing_fields_dropped() {
         norm(no_id),
         NormalizeOutcome::Dropped(DropReason::MissingField)
     ));
+}
+
+#[test]
+fn overlong_authoritative_tool_ids_are_rejected_instead_of_truncated() {
+    let shared = "x".repeat(256);
+    for suffix in ["a", "b"] {
+        let frame = json!({
+            "jsonrpc": "2.0", "method": "session/update",
+            "params": {"sessionId": "acp-1", "update": {
+                "sessionUpdate": "tool_call_update",
+                "toolCallId": format!("{shared}{suffix}"),
+                "status": "running"
+            }}
+        });
+        assert!(matches!(
+            norm(frame),
+            NormalizeOutcome::Dropped(DropReason::MissingField)
+        ));
+    }
 }

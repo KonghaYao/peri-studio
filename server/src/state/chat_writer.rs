@@ -37,15 +37,15 @@ use crate::state::view_store::TransactionCtx;
 
 pub(crate) use super::chat_writer_blocks::{
     append_block, append_text_delta, cancel_nonterminal_tools_for_turn, ensure_entry_with_blocks,
-    set_reasoning_visibility, upsert_tool_call,
+    set_reasoning_visibility, settle_nonterminal_tools_for_turn, upsert_tool_call,
 };
 pub(crate) use super::chat_writer_entries::{
     clear_input_prediction, create_pending_prompt_entry, create_user_entry, prompt_entry_turn_id,
     record_entry_origin, set_prompt_entry_delivery,
 };
 pub(crate) use super::chat_writer_turn::{
-    bump_projection_version, migrate_entry_terminal, set_active_turn, set_active_turn_status_if,
-    turn_status_str,
+    bump_projection_version, migrate_assistant_segments_terminal, migrate_entry_terminal,
+    set_active_turn, set_active_turn_status_if, turn_status_str,
 };
 
 /// 内容块种类（`append_text_delta` 的目标块类型）。
@@ -265,6 +265,10 @@ fn proj_from_map<T: ReadTxn>(txn: &T, map: &yrs::MapRef) -> ToolCallProjection {
         tool_call_id: str_or("tool_call_id").unwrap_or_default(),
         turn_id: str_or("turn_id").unwrap_or_default(),
         name: str_or("name").unwrap_or_default(),
+        kind: str_or("kind")
+            .as_deref()
+            .map(tool_kind_from_str)
+            .unwrap_or_default(),
         status: str_or("status")
             .as_deref()
             .map(status_from_str)
@@ -273,6 +277,35 @@ fn proj_from_map<T: ReadTxn>(txn: &T, map: &yrs::MapRef) -> ToolCallProjection {
             .get(txn, "arguments")
             .and_then(out_any)
             .and_then(non_null_json),
+        arguments_omitted: map
+            .get(txn, "arguments_omitted")
+            .and_then(|value| value.cast::<bool>().ok()),
+        arguments_bytes: map
+            .get(txn, "arguments_bytes")
+            .and_then(|value| value.cast::<f64>().ok())
+            .and_then(|value| (value >= 0.0 && value <= u64::MAX as f64).then_some(value as u64)),
+        content: map
+            .get(txn, "content")
+            .and_then(out_any)
+            .and_then(non_null_json),
+        content_omitted: map
+            .get(txn, "content_omitted")
+            .and_then(|value| value.cast::<bool>().ok()),
+        content_bytes: map
+            .get(txn, "content_bytes")
+            .and_then(|value| value.cast::<f64>().ok())
+            .and_then(|value| (value >= 0.0 && value <= u64::MAX as f64).then_some(value as u64)),
+        locations: map
+            .get(txn, "locations")
+            .and_then(out_any)
+            .and_then(non_null_json),
+        locations_omitted: map
+            .get(txn, "locations_omitted")
+            .and_then(|value| value.cast::<bool>().ok()),
+        locations_bytes: map
+            .get(txn, "locations_bytes")
+            .and_then(|value| value.cast::<f64>().ok())
+            .and_then(|value| (value >= 0.0 && value <= u64::MAX as f64).then_some(value as u64)),
         result: map
             .get(txn, "result")
             .and_then(out_any)
@@ -300,6 +333,22 @@ fn proj_from_map<T: ReadTxn>(txn: &T, map: &yrs::MapRef) -> ToolCallProjection {
         permission_id: str_or("permission_id"),
         started_at: str_or("started_at"),
         completed_at: str_or("completed_at"),
+    }
+}
+
+fn tool_kind_from_str(value: &str) -> peri_studio_proto::schema::ToolCallKind {
+    use peri_studio_proto::schema::ToolCallKind;
+    match value {
+        "read" => ToolCallKind::Read,
+        "edit" => ToolCallKind::Edit,
+        "delete" => ToolCallKind::Delete,
+        "move" => ToolCallKind::Move,
+        "search" => ToolCallKind::Search,
+        "execute" => ToolCallKind::Execute,
+        "think" => ToolCallKind::Think,
+        "fetch" => ToolCallKind::Fetch,
+        "switch_mode" => ToolCallKind::SwitchMode,
+        _ => ToolCallKind::Other,
     }
 }
 

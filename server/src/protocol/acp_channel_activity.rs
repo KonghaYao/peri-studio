@@ -164,8 +164,7 @@ impl AcpChannel {
             .get("toolCall")
             .and_then(Value::as_object)
             .ok_or(MapError::MissingField)?;
-        let tool_call_id =
-            string_field(tool_call, "toolCallId", "tool_call_id").ok_or(MapError::MissingField)?;
+        let tool_call_id = super::acp_channel_tool::validated_tool_call_id(tool_call)?;
         let options = params
             .get("options")
             .and_then(Value::as_array)
@@ -178,6 +177,19 @@ impl AcpChannel {
         }
         let title =
             string_field(tool_call, "title", "title").unwrap_or_else(|| tool_call_id.clone());
+        let argument_bytes = tool_call
+            .get("rawInput")
+            .and_then(|value| serde_json::to_vec(value).ok())
+            .and_then(|bytes| u64::try_from(bytes.len()).ok());
+        let arguments = tool_call
+            .get("rawInput")
+            .and_then(|value| self.normalize_tool_arguments(value));
+        let (content, content_omitted, content_bytes) =
+            bounded_tool_evidence(tool_call.get("content"));
+        let (locations, locations_omitted, locations_bytes) =
+            bounded_tool_evidence(tool_call.get("locations"));
+        let (result, result_omitted, result_bytes) =
+            bounded_tool_evidence(tool_call.get("rawOutput"));
         Ok(PermissionRequestFields {
             request_id: request_id.clone(),
             permission_id: uuid::Uuid::new_v4().to_string(),
@@ -185,9 +197,22 @@ impl AcpChannel {
             tool: PermissionToolSnapshot {
                 tool_call_id,
                 name: title.clone(),
-                arguments: tool_call
-                    .get("rawInput")
-                    .and_then(|v| self.normalize_tool_arguments(v)),
+                arguments,
+                arguments_omitted: argument_bytes
+                    .map(|bytes| bytes > TOOL_ARGUMENTS_MAX_BYTES as u64),
+                arguments_bytes: argument_bytes,
+                kind: string_field(tool_call, "kind", "kind")
+                    .as_deref()
+                    .map(super::acp_channel_tool::tool_kind),
+                content,
+                content_omitted,
+                content_bytes,
+                locations,
+                locations_omitted,
+                locations_bytes,
+                result,
+                result_omitted,
+                result_bytes,
             },
             title,
             description: None,
@@ -195,4 +220,15 @@ impl AcpChannel {
             session_id,
         })
     }
+}
+
+fn bounded_tool_evidence(value: Option<&Value>) -> (Option<Value>, Option<bool>, Option<u64>) {
+    let Some(value) = value else {
+        return (None, None, None);
+    };
+    let bytes = serde_json::to_vec(value)
+        .ok()
+        .and_then(|bytes| u64::try_from(bytes.len()).ok());
+    let omitted = bytes.is_none_or(|bytes| bytes > TOOL_ARGUMENTS_MAX_BYTES as u64);
+    ((!omitted).then(|| value.clone()), Some(omitted), bytes)
 }

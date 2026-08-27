@@ -5,7 +5,8 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    BlockVisibility, EntryKind, EntryOrigin, EntryRole, EntryStatus, PublicError, ToolCallStatus,
+    BlockVisibility, EntryKind, EntryOrigin, EntryRole, EntryStatus, PublicError, ToolCallKind,
+    ToolCallStatus,
 };
 
 /// Chat Doc 根对象（§5.3）。
@@ -91,9 +92,31 @@ pub struct ToolCallProjection {
     pub tool_call_id: String,
     pub turn_id: String,
     pub name: String,
+    /// ACP 权威 kind；旧快照缺失时安全降级为 other。
+    #[serde(default)]
+    pub kind: ToolCallKind,
     pub status: ToolCallStatus,
     /// 过滤内部/敏感字段后投影。
     pub arguments: Option<serde_json::Value>,
+    /// Hub 有意省略了超过公开预算的参数。
+    #[serde(default)]
+    pub arguments_omitted: Option<bool>,
+    /// 省略/保留前观测到的紧凑 JSON 字节长度。
+    #[serde(default)]
+    pub arguments_bytes: Option<u64>,
+    /// ACP 工具展示内容与位置；均为已验证、受预算约束的 JSON 投影。
+    #[serde(default)]
+    pub content: Option<serde_json::Value>,
+    #[serde(default)]
+    pub content_omitted: Option<bool>,
+    #[serde(default)]
+    pub content_bytes: Option<u64>,
+    #[serde(default)]
+    pub locations: Option<serde_json::Value>,
+    #[serde(default)]
+    pub locations_omitted: Option<bool>,
+    #[serde(default)]
+    pub locations_bytes: Option<u64>,
     /// 超大结果仅保留受授权资源引用。
     pub result: Option<serde_json::Value>,
     /// Hub 有意省略了结果：其序列化投影超过公开 tool-result 预算。

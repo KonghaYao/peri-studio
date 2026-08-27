@@ -3,7 +3,7 @@
 // 由 ChatView 拆出（右区三区之一）：悬浮大圆角卡片，textarea 自动增高
 // （max 180px 后内部滚动），Enter 发送 / Shift+Enter 换行（含 IME
 // 组合态防护）；底部工具行显示模型 / effort / 上下文占用（均来自 agent
-// map，server 写入的真实配置）收进一个安静的运行标识，完整值
+// map，server 写入的真实配置）收进一个安静的模型标签，完整运行信息
 // 通过 title 可发现；发送 / 停止主动作始终保留。
 // 对话操作（新建/新会话/取消/关闭）已收敛到左侧对话列表区。
 //
@@ -23,14 +23,14 @@ import { runtimeControlFor } from '../lib/runtime-control';
 import { composerInputState } from '../lib/composer-placeholder';
 import { useComposerPrediction } from '../lib/composer-prediction';
 import { useComposerSlash } from '../lib/composer-slash';
-import { Button, Icon, IconButton, InlineNotice, Textarea } from '../../components/ui';
+import { Button, IconButton, InlineNotice, Textarea } from '../../components/ui';
 import { SlashMenu } from './SlashMenu';
 import { SessionModelMenu } from './SessionConfigDialog';
 import { TokenUsageMeter, tokenUsageLabel } from './TokenUsageMeter';
 import { promptByteLength, promptFitsBudget } from '../lib/prompt-budget';
 import { composerAssets, removeComposerAsset, type ComposerAssetKind } from '../lib/composer-assets';
 import { composerQuoteRequest, consumeComposerQuoteRequest, formatComposerQuote } from '../lib/composer-quote';
-import { FileText, Image as ImageIcon, Link2, X } from 'lucide-solid';
+import { Check, FileText, Image as ImageIcon, Link2, Mic, Plus, ScanLine, SendHorizontal, ShieldCheck, X } from 'lucide-solid';
 
 /** tokens 数值 → "12k"/"200k" 缩写（>=1000 取 k；非法值 → null）。 */
 function fmtTokens(n: number | null): string | null {
@@ -40,19 +40,15 @@ function fmtTokens(n: number | null): string | null {
 }
 
 function AttachmentIcon() {
-  return <Icon class="size-18!"><path d="M10 4v12M4 10h12" /></Icon>;
+  return <Plus size={18} strokeWidth={1.7} />;
 }
 
 function ApprovalIcon() {
-  return <Icon class="size-18!"><path d="M10 3.5 16 6v4.5c0 3.5-2.4 5.6-6 6.8-3.6-1.2-6-3.3-6-6.8V6z" /><path d="m7.5 10.5 1.7 1.7 3.5-4" /></Icon>;
+  return <ShieldCheck size={18} strokeWidth={1.7} />;
 }
 
 function MicrophoneIcon() {
-  return <Icon><rect x="7" y="3" width="6" height="10" rx="3" /><path d="M4.5 10.5a5.5 5.5 0 0 0 11 0M10 16v2M7.5 18h5" /></Icon>;
-}
-
-function ModelIcon() {
-  return <Icon class="size-17!"><path d="M10 3.5 11.7 8l4.8 2-4.8 2L10 16.5 8.3 12l-4.8-2 4.8-2z" /></Icon>;
+  return <Mic size={18} strokeWidth={1.7} />;
 }
 
 function AssetIcon(props: { kind: ComposerAssetKind }) {
@@ -267,10 +263,10 @@ export function Composer() {
       <section
         aria-busy={submissionIsInFlight() || undefined}
         aria-disabled={inputDisabled()}
-        class="composer-surface overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface shadow-float max-narrow:rounded-16"
+        class="composer-surface overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface p-9 shadow-float max-narrow:rounded-16"
       >
         <Show when={composerAssets().length > 0}>
-          <div class="composer-assets ui-scrollbar flex gap-7 overflow-x-auto px-10 pt-10 pb-5" aria-label="Staged assets">
+          <div class="composer-assets ui-scrollbar flex gap-7 overflow-x-auto pb-7" aria-label="Staged assets">
             <For each={composerAssets()}>{(asset) => <article class="group relative grid size-(--asset-tile-size) shrink-0 grid-rows-[1fr_auto] overflow-hidden rounded-10 border border-border-subtle bg-surface p-6 hover:border-border-strong hover:bg-hover" title={asset.detail || asset.name}>
               <Show when={asset.kind === 'image' && asset.previewUrl} fallback={<span class="grid place-items-center text-text-secondary"><AssetIcon kind={asset.kind} /></span>}>
                     <img src={asset.previewUrl} alt="" class="h-[39px] w-full rounded-5 object-cover" />
@@ -282,7 +278,7 @@ export function Composer() {
         </Show>
         <div class="composer-editor relative">
           <Show when={prediction.activePrediction()}>{(prediction) => <>
-            <span class="composer-prediction absolute z-0 top-14 right-16 left-16 overflow-hidden text-text-faint text-15 leading-22 pointer-events-none text-ellipsis whitespace-nowrap max-narrow:right-15 max-narrow:left-15" aria-hidden="true">{prediction().text}</span>
+            <span class="composer-prediction absolute z-0 top-10 right-8 left-8 overflow-hidden text-text-faint text-12 leading-18 pointer-events-none text-ellipsis whitespace-nowrap" aria-hidden="true">{prediction().text}</span>
             <span id="composer-prediction-description" class="sr-only">
               Peri suggests: {prediction().text}. Press Tab to use it, or Escape to ignore.
             </span>
@@ -329,18 +325,18 @@ export function Composer() {
           aria-activedescendant={slash.slashMenuOpen() ? `${slashMenuId}-option-${slash.boundedActiveIndex()}` : undefined}
           aria-describedby={inputDescribedBy()}
           spellcheck={false}
-          class="composer-input ui-scrollbar relative z-1 block w-full h-48 min-h-48 max-h-180 pt-12 px-15 pb-4 border-0 outline-0 resize-none overflow-y-auto bg-transparent text-text-primary text-13 leading-20 placeholder:text-text-muted disabled:bg-transparent disabled:text-text-secondary focus-visible:outline-0 max-narrow:px-14"
+          class="composer-input ui-scrollbar relative z-1 block h-52 min-h-52 max-h-180 w-full resize-none overflow-y-auto border-0 bg-transparent px-8 py-10 text-12 leading-18 text-text-primary outline-0 placeholder:text-text-muted disabled:bg-transparent disabled:text-text-secondary focus-visible:outline-0"
           />
         </div>
         <Show when={promptOverBudget()}>
-          <InlineNotice id={promptBudgetStatusId} class="mx-10 mb-8" tone="danger" role="alert" title="Message is too large">
+          <InlineNotice id={promptBudgetStatusId} class="mb-8" tone="danger" role="alert" title="Message is too large">
             <span>{draftBytes()} / {promptMaxBytes()} bytes. Shorten the message before sending.</span>
           </InlineNotice>
         </Show>
         <Show when={submissionNeedsAttention() ? submissionForSession() : null}>{(submission) =>
           <InlineNotice
             id={submissionStatusId}
-            class={`composer-submission composer-submission--${submission().phase} mt-2 mx-10 mb-8 border-dashed max-narrow:mx-8`}
+            class={`composer-submission composer-submission--${submission().phase} mt-2 mb-8 border-dashed`}
             title={submissionTitle()}
             tone={submissionTone()}
             role="note"
@@ -362,7 +358,7 @@ export function Composer() {
             </div>
           </InlineNotice>
         }</Show>
-        <div class="composer-toolbar flex min-h-38 items-center gap-4 px-9 pb-7 max-narrow:px-8">
+        <div class="composer-toolbar flex min-h-36 items-center gap-4">
           <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="composer-attachment size-32 min-h-32 shrink-0 border-0 bg-transparent text-text-primary disabled:opacity-55">
             <AttachmentIcon />
           </IconButton>
@@ -371,7 +367,7 @@ export function Composer() {
           </IconButton>
           <Show when={prediction.activePrediction()}>
             <Button size="compact" variant="secondary" class="composer-prediction-action inline-flex min-h-30 items-center justify-center px-9 border-border-subtle bg-surface-muted text-text-secondary text-11 pointer-coarse:min-h-44 max-narrow:min-h-44" onClick={prediction.accept} aria-label="Use suggestion" title="Use suggestion (Tab)">
-              <Icon class="size-16!"><path d="m4 10 3.5 3.5L16 5" /></Icon><kbd class="ml-3 px-4 py-2 border border-border-subtle rounded-4 bg-surface text-9 max-narrow:hidden">Tab</kbd>
+              <Check size={16} strokeWidth={1.7} /><kbd class="ml-3 px-4 py-2 border border-border-subtle rounded-4 bg-surface text-9 max-narrow:hidden">Tab</kbd>
             </Button>
           </Show>
           <Show when={canBrowseSkills()}>
@@ -387,7 +383,7 @@ export function Composer() {
                 queueMicrotask(() => taRef?.focus());
               }}
               disabled={inputDisabled()}
-            ><Icon class="size-17! max-tight:hidden" aria-hidden="true"><path d="M7 4H4v3M13 4h3v3M7 16H4v-3M13 16h3v-3" /><path d="M7 10h6M10 7v6" /></Icon><span class="composer-skills__count sr-only">{skillCount()}</span></Button>
+            ><ScanLine size={17} strokeWidth={1.7} class="max-tight:hidden" aria-hidden="true" /><span class="composer-skills__count sr-only">{skillCount()}</span></Button>
           </Show>
           <span class="composer-shortcut sr-only" aria-hidden="true">Enter to send · Shift + Enter for newline</span>
           <div class="composer-toolbar__right ml-auto flex min-w-0 items-center gap-5">
@@ -395,13 +391,14 @@ export function Composer() {
             <TokenUsageMeter usage={usage()} />
           }</Show>
           <SessionModelMenu open={modelMenuOpen()} id={modelMenuId} onOpenChange={setModelMenuOpen} trigger={
-            <IconButton
-              class="composer-runtime relative size-32 min-h-32 shrink-0 border-0 bg-transparent p-0 text-text-secondary"
+            <Button
+              size="compact"
+              class="composer-runtime min-h-28 max-w-(--model-badge-max) shrink-0 gap-5 overflow-hidden border-0 bg-selected px-8 text-10 text-success hover:bg-selected"
               ref={modelTrigger}
               title={runtimeSummary()}
-              label="Choose model"
+              aria-label="Choose model"
               disabled={!selectedCid() || !runtimeDocsHydrated()}
-            ><ModelIcon /><span aria-hidden="true" class="absolute right-4 bottom-4 size-5 rounded-full bg-success ring-2 ring-surface" /></IconButton>
+            ><span class="overflow-hidden text-ellipsis whitespace-nowrap">{model()}</span></Button>
           } />
           <span class="composer-voice-slot flex size-32 shrink-0 items-center justify-center">
             <IconButton label="Voice input" title="Voice input is not connected yet" disabled class="composer-voice size-32 min-h-32 shrink-0 border-0 bg-transparent text-text-primary disabled:opacity-55">
@@ -409,11 +406,11 @@ export function Composer() {
             </IconButton>
           </span>
           <Show when={turnActive()} fallback={
-            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || !composerDraft(draftOwner()).trim() || promptOverBudget()} label="Send" class="composer-action flex size-36 min-h-36 shrink-0 items-center justify-center border-0 rounded-full bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:size-40 max-narrow:min-h-40">
-              <Icon class="size-20"><path d="M10 16V4" /><path d="M5 9l5-5 5 5" /></Icon>
+            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || !composerDraft(draftOwner()).trim() || promptOverBudget()} label="Send" class="composer-action flex size-32 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:size-44 max-narrow:min-h-44">
+              <SendHorizontal size={18} strokeWidth={1.7} />
             </IconButton></span>
           }>
-            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={requestCancel} disabled={cancelLocked() || readOnly()} busy={cancelControl()?.phase === 'sending' || cancelControl()?.phase === 'accepted'} label={cancelLabel()} class={`composer-action composer-action--stop flex size-36 min-h-36 shrink-0 items-center justify-center border-0 rounded-full bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:size-40 max-narrow:min-h-40 ${cancelControl()?.phase === 'uncertain' ? 'bg-warning hover:bg-warning-strong' : ''}`}>
+            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={requestCancel} disabled={cancelLocked() || readOnly()} busy={cancelControl()?.phase === 'sending' || cancelControl()?.phase === 'accepted'} label={cancelLabel()} class={`composer-action composer-action--stop flex size-32 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:size-44 max-narrow:min-h-44 ${cancelControl()?.phase === 'uncertain' ? 'bg-warning hover:bg-warning-strong' : ''}`}>
               <Show when={!cancelControl() || cancelControl()?.phase === 'uncertain' || cancelControl()?.phase === 'confirmed'}><span aria-hidden="true" class="size-10 rounded-2 bg-current" /></Show>
             </IconButton></span>
           </Show>

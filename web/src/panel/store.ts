@@ -11,7 +11,7 @@ import { CommandTracker } from './lib/command-tracker';
 import { SessionActivation, type OpeningSession, type OpenSessionCallbacks } from './lib/session-activation';
 import { installPrincipalRole, principalId, publishAuthInvalidation, readOnly } from './lib/auth-state';
 import { setComposerDraft } from './lib/composer-draft';
-import { completeMessageDelivery, messageSubmission, messageSubmissionByCommand, messageSubmissionForChat, resetMessageDelivery } from './lib/message-delivery';
+import { completeMessageDelivery, messageSubmission, messageSubmissionForChat, ownsMessageDeliveryError, resetMessageDelivery, settleProjectedMessageDelivery } from './lib/message-delivery';
 import { settleLateQuickStart } from './lib/quick-start-delivery';
 import { confirmRuntimeControl, resetRuntimeControls } from './lib/runtime-control';
 import { resetPermissionDecisions } from './lib/permission-delivery';
@@ -238,8 +238,7 @@ function onAck(ack: Ack): void {
   // A terminal acknowledgement that arrives after timeout/disconnect can
   // reconcile local uncertainty, but must not replay an expired continuation.
   if (disposition === 'late_terminal') {
-    const completedSubmission = ack.commandId ? messageSubmissionByCommand(ack.commandId) : null;
-    if (completedSubmission && ack.commandId) completeMessageDelivery(ack.commandId, ack.status);
+    if (ack.commandId) completeMessageDelivery(ack.commandId, ack.status);
     if (ack.commandId) settleLateQuickStart(ack.commandId, ack.status, ack.sessionId, ack.chatId);
     if (ack.commandId && confirmRuntimeControl(ack.commandId, ack.status)) reconcileCurrentRuntimeControl();
   }
@@ -252,7 +251,10 @@ function onActionError(err: ActionError): void {
   if (promptRecoveryOwnsError(err)) return;
   if (rewindOwnsError(err)) return;
   console.error(`[panel] action error code=${err.code || 'UNKNOWN'} command=${err.commandId ? 'present' : 'absent'}`);
+  const messageDeliveryOwnsError = ownsMessageDeliveryError(err.commandId, err.code);
   commands.fail(err);
+  settleProjectedMessageDelivery(err.commandId);
+  if (messageDeliveryOwnsError) return;
   const reason = err.code ? ERROR_REASONS[err.code] : undefined;
   persistActionProblem(reason || err.code || 'Operation failed', err.message || 'The server provided no further information.', err.commandId);
 }

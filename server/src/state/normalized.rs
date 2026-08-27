@@ -15,7 +15,7 @@ use peri_studio_proto::action::PermissionDecision;
 use peri_studio_proto::schema::{
     AgentActivityKind, AgentActivityStatus, AgentPlanEntryProjection, BlockVisibility, ChatStatus,
     PermissionOptions, PublicError, SessionConfigOptionProjection, SessionSummaryProjection,
-    ToolCallStatus, TurnStatus,
+    ToolCallKind, ToolCallStatus, TurnStatus,
 };
 
 /// 规范化事件（§6.1）：ACPChannel 产物的统一形态。
@@ -69,6 +69,75 @@ pub struct PermissionToolSnapshot {
     pub name: String,
     #[serde(default)]
     pub arguments: Option<serde_json::Value>,
+    #[serde(default)]
+    pub arguments_omitted: Option<bool>,
+    #[serde(default)]
+    pub arguments_bytes: Option<u64>,
+    #[serde(default)]
+    pub kind: Option<ToolCallKind>,
+    #[serde(default)]
+    pub content: Option<serde_json::Value>,
+    #[serde(default)]
+    pub content_omitted: Option<bool>,
+    #[serde(default)]
+    pub content_bytes: Option<u64>,
+    #[serde(default)]
+    pub locations: Option<serde_json::Value>,
+    #[serde(default)]
+    pub locations_omitted: Option<bool>,
+    #[serde(default)]
+    pub locations_bytes: Option<u64>,
+    #[serde(default)]
+    pub result: Option<serde_json::Value>,
+    #[serde(default)]
+    pub result_omitted: Option<bool>,
+    #[serde(default)]
+    pub result_bytes: Option<u64>,
+}
+
+/// 一个 JSON 字段的 ACP patch 语义。`Unchanged` 与显式 `Clear` 必须分开，
+/// 否则流式更新会误清除已经投影的证据。
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "op", rename_all = "snake_case")]
+pub enum ToolJsonPatch {
+    #[default]
+    Unchanged,
+    Clear,
+    Set {
+        value: serde_json::Value,
+    },
+    Omitted {
+        bytes: u64,
+    },
+}
+
+/// ACP 1.6 工具快照/patch 的无损规范化形态。
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolCallPatch {
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub kind: Option<ToolCallKind>,
+    #[serde(default)]
+    pub status: Option<ToolCallStatus>,
+    #[serde(default)]
+    pub arguments: ToolJsonPatch,
+    #[serde(default)]
+    pub content: ToolJsonPatch,
+    /// `tool_call_content_chunk` 为追加；普通 update 为替换。
+    #[serde(default)]
+    pub append_content: bool,
+    #[serde(default)]
+    pub locations: ToolJsonPatch,
+    #[serde(default)]
+    pub result: ToolJsonPatch,
+    #[serde(default)]
+    pub public_error: Option<PublicError>,
+    #[serde(default)]
+    pub created_at: Option<String>,
+    #[serde(default)]
+    pub completed_at: Option<String>,
 }
 
 impl NormalizedEvent {
@@ -139,6 +208,13 @@ pub enum EventBody {
         public_error: Option<PublicError>,
         /// Hub observation time; paired with the start observation for UI duration.
         completed_at: String,
+    },
+    /// ACP 1.6 权威工具 patch。可在 start 丢失、回放 update-first 或终态快照
+    /// 场景创建记录，并保留 content/locations/raw output。
+    ToolCallPatched {
+        turn_id: String,
+        tool_call_id: String,
+        patch: ToolCallPatch,
     },
     /// 权限请求 → Control Doc pending_permissions（按 permission_id upsert）。
     PermissionRequested {
@@ -298,6 +374,7 @@ impl EventBody {
             EventBody::ToolCallStarted { .. } => "tool_call_started",
             EventBody::ToolCallUpdated { .. } => "tool_call_updated",
             EventBody::ToolCallCompleted { .. } => "tool_call_completed",
+            EventBody::ToolCallPatched { .. } => "tool_call_patched",
             EventBody::PermissionRequested { .. } => "permission_requested",
             EventBody::PermissionResolved { .. } => "permission_resolved",
             EventBody::PermissionExpired { .. } => "permission_expired",

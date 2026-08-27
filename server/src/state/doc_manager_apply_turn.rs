@@ -48,10 +48,10 @@ pub(crate) fn apply_turn_group(
                 // chat 侧：assistant entry 置 cancelled（§7.2 中断收敛）。
                 let mut txn = pair.chat_txn();
                 let root = txn.get_or_insert_map(crate::state::factory::ROOT);
-                chat_writer::migrate_entry_terminal(
+                chat_writer::migrate_assistant_segments_terminal(
                     &mut txn,
                     &root,
-                    &format!("{turn_id}:assistant"),
+                    turn_id,
                     EntryStatus::Cancelled,
                     &chrono::Utc::now().to_rfc3339(),
                     None,
@@ -127,17 +127,28 @@ pub(crate) fn apply_turn_group(
                 };
                 let mut txn = pair.chat_txn();
                 let root = txn.get_or_insert_map(crate::state::factory::ROOT);
-                chat_writer::migrate_entry_terminal(
+                chat_writer::migrate_assistant_segments_terminal(
                     &mut txn,
                     &root,
-                    &format!("{turn_id}:assistant"),
+                    turn_id,
                     entry_status,
                     completed_at,
                     None,
                 );
-                if matches!(status, TurnStatus::Cancelled | TurnStatus::Interrupted) {
-                    chat_writer::cancel_nonterminal_tools_for_turn(&mut txn, &root, turn_id);
-                }
+                let tool_status = match status {
+                    TurnStatus::Completed => peri_studio_proto::schema::ToolCallStatus::Completed,
+                    TurnStatus::Failed => peri_studio_proto::schema::ToolCallStatus::Error,
+                    TurnStatus::Cancelled | TurnStatus::Interrupted => {
+                        peri_studio_proto::schema::ToolCallStatus::Cancelled
+                    }
+                    _ => peri_studio_proto::schema::ToolCallStatus::Completed,
+                };
+                chat_writer::settle_nonterminal_tools_for_turn(
+                    &mut txn,
+                    &root,
+                    turn_id,
+                    tool_status,
+                );
                 chat_writer::bump_projection_version(&mut txn, &root);
                 ApplyResult {
                     applied: true,
@@ -252,13 +263,19 @@ pub(crate) fn apply_turn_group(
                 let mut txn = pair.chat_txn();
                 let root = txn.get_or_insert_map(crate::state::factory::ROOT);
                 for turn_id in &turns {
-                    chat_writer::migrate_entry_terminal(
+                    chat_writer::migrate_assistant_segments_terminal(
                         &mut txn,
                         &root,
-                        &format!("{turn_id}:assistant"),
+                        turn_id,
                         EntryStatus::Completed,
                         &completed_at,
                         None,
+                    );
+                    chat_writer::settle_nonterminal_tools_for_turn(
+                        &mut txn,
+                        &root,
+                        turn_id,
+                        peri_studio_proto::schema::ToolCallStatus::Completed,
                     );
                 }
                 chat_writer::bump_projection_version(&mut txn, &root);

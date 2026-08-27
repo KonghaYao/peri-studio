@@ -15,14 +15,14 @@ function resetStore() {
 afterEach(resetStore);
 
 describe('SettingsDialog', () => {
-  it('opens on the topology tab by default and renders the server node', () => {
+  it('opens on the machines tab by default and renders the compact machine tree', () => {
     setInstances([{ id: 'local', hostname: 'macbook.local', status: 'online', tokenId: 'token-1', registeredAt: null, lastHeartbeat: null, chatCount: 0 }]);
     render(() => <SettingsDialog open onClose={() => undefined} />);
 
     expect(screen.getByRole('dialog', { name: 'System' })).toBeInTheDocument();
-    const topologyTab = screen.getByRole('tab', { name: 'Topology' });
-    expect(topologyTab).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByText('Peri Studio server')).toBeInTheDocument();
+    const machinesTab = screen.getByRole('tab', { name: 'Machines' });
+    expect(machinesTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tree', { name: 'Machine topology' })).toBeInTheDocument();
     expect(screen.getByText('macbook.local')).toBeInTheDocument();
   });
 

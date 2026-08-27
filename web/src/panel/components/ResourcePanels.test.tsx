@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createSignal } from 'solid-js';
 import { ExplorerPanel } from './ExplorerPanel';
+import { MachinePanel } from './MachinePanel';
 import { ResourceWorkbench } from './ResourceWorkbench';
 import { SourceControlPanel } from './SourceControlPanel';
 import {
@@ -18,7 +20,7 @@ import {
 } from '../lib/resource-store';
 import { installPrincipalRole } from '../lib/auth-state';
 import { DocStore } from '../lib/doc-store';
-import { setProjects, setProjectSessions, setSelectedSessionId } from '../store';
+import { setChatCatalog, setGlobalStatus, setInstances, setProjects, setProjectSessions, setSchemaVersion, setSelectedSessionId } from '../store';
 
 afterEach(() => {
   cleanup();
@@ -27,10 +29,59 @@ afterEach(() => {
   setProjects([]);
   setProjectSessions([]);
   setSelectedSessionId(null);
+  setInstances([]);
+  setChatCatalog([]);
+  setGlobalStatus('unknown');
+  setSchemaVersion(null);
   vi.unstubAllGlobals();
 });
 
 describe('VS Code-style resource panels', () => {
+  it('uses the shared compact tree geometry for selected files', () => {
+    installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
+    setResourceWorkspace({
+      projectId: 'project-1', repositories: [], loading: [], error: null,
+      directories: { '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory' }] } },
+    });
+    render(() => <ExplorerPanel />);
+
+    const row = screen.getByRole('treeitem', { name: /src/i });
+    expect(row).toHaveClass('h-(--tree-row-height)', 'bg-selected');
+    expect(row.querySelector('span:last-child')).toHaveClass('font-600');
+    expect(row.querySelector('[data-file-icon="folder-src"]')).toBeInTheDocument();
+  });
+
+  it('renders machines as the same compact tree instead of a separate card stack', () => {
+    setGlobalStatus('healthy');
+    setSchemaVersion(7);
+    setInstances([{ id: 'local', hostname: 'dev-machine', status: 'online', tokenId: 'token-1', registeredAt: null, lastHeartbeat: null, chatCount: 1 }]);
+    setChatCatalog([{ id: 'chat-1', instanceId: 'local', title: 'Build UI', status: 'active', gap: null, updatedAt: null, cwd: null, workspaceId: null }]);
+    render(() => <MachinePanel />);
+
+    expect(screen.getByRole('tree', { name: 'Machine topology' })).toBeInTheDocument();
+    expect(screen.getByRole('treeitem', { name: /Peri Studio.*Healthy/i })).toHaveClass('h-(--tree-row-height)');
+    expect(screen.getByRole('treeitem', { name: /dev-machine.*Online/i })).toHaveAttribute('aria-level', '2');
+    expect(screen.getByRole('treeitem', { name: /Build UI.*Running/i })).toHaveAttribute('aria-level', '3');
+  });
+
+  it('keeps Source Control reachable from the workbench rail with its change badge', async () => {
+    installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
+    setProjects([{ id: 'project-1', name: 'Peri', cwd: '/workspace/peri', instanceId: 'local', createdAt: null, updatedAt: null, archivedAt: null }]);
+    setProjectSessions([{ id: 'session-1', projectId: 'project-1', acpSessionId: 'acp-1', title: 'Work', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: null, archivedAt: null }]);
+    setSelectedSessionId('session-1');
+    setResourceWorkspace({
+      projectId: 'project-1', directories: {}, loading: [], error: null,
+      repositories: [{ id: 'repo-1', root: '', name: 'peri-studio', generation: 'g1', groups: { working_tree: { count: 2, revision: 'r1', changes: [{ id: 'c1', path: 'a.ts' }, { id: 'c2', path: 'b.ts' }] } } }],
+    });
+    render(() => <ResourceWorkbench />);
+
+    const sourceControl = screen.getByRole('button', { name: 'Source Control' });
+    expect(sourceControl).toHaveTextContent('2');
+    await fireEvent.click(sourceControl);
+    expect(sourceControl).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('region', { name: 'Source Control' })).toBeInTheDocument();
+  });
+
   it('releases a stale project view without subscribing to it', () => {
     const sent: Array<Record<string, unknown>> = [];
     installResourceStore({ send: (frame) => { sent.push(frame as Record<string, unknown>); return true; }, ready: () => true, toast: vi.fn() });
@@ -115,6 +166,7 @@ describe('VS Code-style resource panels', () => {
     expect(src).toHaveAttribute('aria-expanded', 'true');
     const file = screen.getByRole('treeitem', { name: /main\.ts/i });
     expect(file).toHaveAttribute('tabindex', '-1');
+    expect(file.querySelector('[data-file-icon="typescript"]')).toBeInTheDocument();
 
     await fireEvent.keyDown(src, { key: 'ArrowDown' });
     expect(file).toHaveFocus();
@@ -209,6 +261,7 @@ describe('VS Code-style resource panels', () => {
     expect(screen.getByText('main')).toBeInTheDocument();
     expect(screen.getByText('Changes')).toBeInTheDocument();
     expect(screen.getByText('main.ts')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Open changes for src\/main\.ts/i }).querySelector('[data-file-icon="typescript"]')).toBeInTheDocument();
     expect(screen.getByText('M')).toBeInTheDocument();
     await fireEvent.click(screen.getByRole('button', { name: /Open changes for src\/main\.ts/i }));
     expect(sent).toContainEqual(expect.objectContaining({
@@ -263,8 +316,8 @@ describe('VS Code-style resource panels', () => {
       projectId: 'project-1', directories: {}, loading: [], error: null,
       repositories: [repository],
     });
-    render(() => <ResourceWorkbench />);
-    await fireEvent.click(screen.getByRole('button', { name: 'Source Control' }));
+    const [view, setView] = createSignal<'explorer' | 'scm'>('scm');
+    render(() => <ResourceWorkbench view={view()} onViewChange={(next) => { if (next === 'explorer' || next === 'scm') setView(next); }} />);
     setResourceWorkspace({ projectId: 'project-1', directories: {}, loading: [], error: null, repositories: [repository] });
 
     const message = await screen.findByRole('textbox', { name: 'Commit message' });
@@ -303,7 +356,7 @@ describe('VS Code-style resource panels', () => {
     handleResourceResult({
       t: 'resource_result', requestId: successful.requestId, result: { kind: 'mutated' },
     });
-    await fireEvent.click(screen.getByRole('button', { name: 'Source Control' }));
+    setView('scm');
     await waitFor(() => expect(screen.getByRole('textbox', { name: 'Commit message' })).toHaveValue(''));
   });
 
