@@ -36,7 +36,7 @@ function HistoryBoundary(props: { kind: Exclude<ReplayBoundary, null> }) {
   const detail = () => props.kind === 'inferred_history'
     ? 'Identified from the session load window; some sources are marked unverifiable'
     : null;
-  return <div class="history-boundary grid grid-cols-boundary items-center gap-8 mt-14 mb-10 text-text-muted text-10 tracking-25 text-center before:h-px before:bg-divider before:content-[''] after:h-px after:bg-divider after:content-['']" role="separator" aria-label={accessibleLabel()} title={detail() || accessibleLabel()}>
+  return <div class="history-boundary grid grid-cols-boundary items-center gap-8 mt-4 mb-4 text-text-muted text-10 tracking-25 text-center before:h-px before:bg-divider before:content-[''] after:h-px after:bg-divider after:content-['']" role="separator" aria-label={accessibleLabel()} title={detail() || accessibleLabel()}>
     <span class="whitespace-nowrap">{label()}</span>
   </div>;
 }

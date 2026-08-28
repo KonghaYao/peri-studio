@@ -2,7 +2,7 @@ import { createMemo, createSignal, For, Show, type Accessor } from 'solid-js';
 import type { ChatBlock, ChatEntry } from '../lib/chat-view';
 import { messageTime } from '../lib/message-time.ts';
 import { splitSystemReminders } from '../lib/system-reminder';
-import { CopyButton, IconButton, InlineNotice } from '../../components/ui';
+import { CopyButton, IconButton, InlineNotice, Popover, PopoverContent, PopoverTrigger } from '../../components/ui';
 import { MessageSquareQuote, MoreHorizontal } from 'lucide-solid';
 import { Markdown } from './Markdown';
 import { ToolCallCard } from './ToolCallCard';
@@ -12,6 +12,19 @@ type ChatEntrySource = ChatEntry | Accessor<ChatEntry>;
 
 function QuoteIcon() {
   return <MessageSquareQuote size={16} strokeWidth={1.7} />;
+}
+
+function SystemReminderBadge(props: { reminders: string[] }) {
+  return <Popover placement="bottom-start">
+    <PopoverTrigger type="button" class="system-reminder-badge inline-flex h-20 cursor-pointer items-center rounded-6 border border-border-subtle bg-surface-muted px-7 text-11 font-600 text-text-secondary hover:bg-hover pointer-coarse:min-h-44" aria-label="System message">
+      System
+    </PopoverTrigger>
+    <PopoverContent class="system-reminder-popover max-h-[min(420px,calc(100vh-32px))] w-[min(520px,calc(100vw-32px))] overflow-auto" aria-label="System message">
+      <For each={props.reminders}>{(reminder, index) =>
+        <p class={`${index() === 0 ? 'm-0' : 'm-0 mt-10'} whitespace-pre-wrap wrap-anywhere text-12 leading-19 text-text-secondary`}>{reminder}</p>
+      }</For>
+    </PopoverContent>
+  </Popover>;
 }
 
 /** Owns the visual and semantic hierarchy of one server-projected entry. */
@@ -30,6 +43,9 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
   const blocks = createMemo(() => entry().blocks?.length ? entry().blocks : legacyBlocks());
   const blockIds = createMemo(() => blocks().map((block) => block.id));
   const blocksById = createMemo(() => new Map(blocks().map((block) => [block.id, block])));
+  const systemReminders = createMemo(() => blocks().flatMap((block) => block.kind === 'text'
+    ? splitSystemReminders(block.text).flatMap((segment) => segment.kind === 'system_reminder' ? [segment.text] : [])
+    : []));
   // Replay timestamps are Hub observation time, not original message time.
   const timestamp = createMemo(() => entry().origin === 'session_replay' ? null : messageTime(entry().createdAt));
   const role = createMemo(() => entry().role === 'user' ? 'user' : entry().role === 'system' ? 'system' : 'assistant');
@@ -102,8 +118,8 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
           }>{
             <div class="conversation-message__text text-text-primary text-13 leading-20">
               <Show when={role() === 'assistant'} fallback={<For each={splitSystemReminders((block() as Extract<ChatBlock, { kind: 'text' }>).text)}>{(segment) =>
-                <Show when={segment.kind === 'system_reminder'} fallback={<span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{segment.text}</span>}>
-                  <InlineNotice class="system-reminder-message my-8 max-w-full text-left!" tone="info" title="Untrusted system reminder" aria-label="Untrusted system reminder"><p class="whitespace-pre-wrap wrap-anywhere">{segment.text}</p></InlineNotice>
+                <Show when={segment.kind === 'text'}>
+                  <span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{segment.text}</span>
                 </Show>
               }</For>}>
                 <Markdown
@@ -118,6 +134,9 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
           return <details class="message-reasoning max-w-[680px] text-text-secondary"><summary class="inline-flex min-h-24 cursor-pointer list-none items-center select-none text-11 font-650 tracking-2 text-text-muted hover:text-text-secondary [&::-webkit-details-marker]:hidden">Thinking</summary><p class="m-0 mt-3 whitespace-pre-wrap wrap-anywhere text-12 leading-19 text-text-secondary">{reasoning().text}</p></details>;
         })()}</Show>;
       }}</For>
+      <Show when={role() === 'user' && systemReminders().length > 0}>
+        <SystemReminderBadge reminders={systemReminders()} />
+      </Show>
       <Show when={partialTerminal()}>{(terminal) => <InlineNotice tone={terminal().tone} role="status" title="Partial response">
         <span>{terminal().label}. The output above may be incomplete.</span>
       </InlineNotice>}</Show>

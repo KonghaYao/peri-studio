@@ -295,6 +295,11 @@ test('runtime status stays compact while recovery labels disclose trust', async 
   const boundaries = await page.locator('.history-boundary > span').allTextContents();
   expect(boundaries).toContain('Verified history');
   expect(boundaries.every((label) => /^(?:Verified|Unverified) history$/.test(label))).toBe(true);
+  const boundaryGap = await page.locator('.history-boundary').first().evaluate((element) => {
+    const message = element.nextElementSibling;
+    return message.getBoundingClientRect().top - element.getBoundingClientRect().bottom;
+  });
+  expect(boundaryGap).toBeLessThanOrEqual(4);
 
   const visibleText = await page.locator('body').innerText();
   expect(visibleText).not.toContain('Run exited abnormally');
