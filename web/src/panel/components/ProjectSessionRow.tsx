@@ -1,7 +1,7 @@
 import { createEffect, createSignal, Show } from 'solid-js';
 import type { ProjectSessionInfo } from '../lib/registry-view';
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, IconButton, Popover, PopoverContent, PopoverTrigger, Spinner, TextField } from '../../components/ui';
-import { Archive, MessageSquare, MoreHorizontal, Pencil } from 'lucide-solid';
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, IconButton, Popover, PopoverContent, PopoverTrigger, TextField } from '../../components/ui';
+import { Archive, MoreHorizontal, Pencil } from 'lucide-solid';
 import { sessionDisplayTitle } from '../lib/recovery-state.ts';
 import { runConfirmedMutation } from '../lib/form-mutation';
 
@@ -37,10 +37,6 @@ export interface ProjectSessionRowProps {
   onArchiveRequest: (sessionId: string) => void;
 }
 
-function ChatIcon() {
-  return <MessageSquare size={16} strokeWidth={1.7} />;
-}
-
 function MoreIcon() { return <MoreHorizontal size={17} strokeWidth={1.7} />; }
 function RenameIcon() { return <Pencil size={16} strokeWidth={1.7} />; }
 function ArchiveIcon() { return <Archive size={16} strokeWidth={1.7} />; }
@@ -55,6 +51,9 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     props.session.acpSessionId || props.session.id,
   );
   const renameValid = () => !!draft().trim();
+  const loading = () => props.opening
+    || ['activating', 'pending'].includes(props.session.lifecycle)
+    || props.state.tone === 'busy';
 
   createEffect(() => {
     if (props.renameOpen) setDraft(props.session.title);
@@ -85,7 +84,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     );
   };
 
-  return <div data-session-id={props.session.id} class={`session-row group relative rounded-8 border-l-2 border-transparent hover:bg-selected ${props.selected ? 'is-selected border-accent bg-selected' : ''}`}>
+  return <div data-session-id={props.session.id} class={`session-row group relative rounded-8 hover:bg-selected ${props.selected ? 'is-selected bg-selected' : ''}`}>
     <Button
       class="session-main relative flex min-h-32 w-full min-w-0 items-center justify-start gap-8 rounded-8 border-0 bg-transparent px-8 pr-[68px] text-left text-13 font-normal text-text-secondary cursor-pointer disabled:cursor-wait pointer-coarse:min-h-52 pointer-coarse:pr-[68px]"
       aria-current={props.selected ? 'page' : undefined}
@@ -93,9 +92,8 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
       onClick={open}
       disabled={(props.readOnly && !props.session.activeChatId) || props.session.lifecycle !== 'ready' || props.navigationBusy}
     >
-      <ChatIcon />
       <span class="session-copy min-w-0 flex-1"><strong class="block overflow-hidden text-ellipsis whitespace-nowrap text-13 font-600 text-text-primary">{displayTitle()}</strong></span>
-      <span class="absolute right-[10px] grid size-7 place-items-center"><Show when={props.opening || ['activating', 'pending'].includes(props.session.lifecycle)} fallback={<span class={`session-status-dot session-status-dot--${props.state.tone} size-7 shrink-0 rounded-full ${props.state.tone === 'idle' ? 'bg-text-faint' : props.state.tone === 'attention' ? 'bg-warning' : props.state.tone === 'danger' ? 'bg-danger' : 'bg-success'}`} role="img" aria-label={`Runtime status: ${props.state.detail || props.state.label}`} />}><Spinner label="Opening…" /></Show></span>
+      <Show when={loading()}><span class="session-loading-wave absolute right-[10px] grid size-12 place-items-center" role="status" aria-label={props.state.detail || props.state.label}><span class="session-loading-wave__halo absolute size-12 rounded-full bg-success/35 animate-ping motion-reduce:animate-none" aria-hidden="true" /><span class="session-loading-wave__core relative size-6 rounded-full bg-success" aria-hidden="true" /></span></Show>
     </Button>
     <DropdownMenu open={props.menuOpen} onOpenChange={props.onMenuOpenChange} placement="bottom-end">
       <DropdownMenuTrigger as={IconButton}
@@ -134,10 +132,10 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
       </PopoverContent>
     </Popover>
     <Show when={props.session.lifecycle === 'failed'}>
-      <div class="session-problem px-9 pb-7 pl-36 text-11 text-danger">Failed to open · <Button size="compact" class="cursor-pointer border-0! bg-transparent p-0! text-inherit underline" busy={props.replacementBusy} disabled={props.readOnly || props.replacementBusy} onClick={() => props.onCreateReplacement(props.session.title)}>Create replacement session</Button></div>
+      <div class="session-problem px-9 pb-7 text-11 text-danger">Failed to open · <Button size="compact" class="cursor-pointer border-0! bg-transparent p-0! text-inherit underline" busy={props.replacementBusy} disabled={props.readOnly || props.replacementBusy} onClick={() => props.onCreateReplacement(props.session.title)}>Create replacement session</Button></div>
     </Show>
     <Show when={props.session.lifecycle === 'reconciliation_required'}>
-      <div class="session-problem session-problem--warn px-9 pb-7 pl-36 text-11 text-warning">Server-side reconciliation required, retry not available</div>
+      <div class="session-problem session-problem--warn px-9 pb-7 text-11 text-warning">Server-side reconciliation required, retry not available</div>
     </Show>
   </div>;
 }

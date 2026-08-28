@@ -173,7 +173,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <CollapsibleContent id={`project-sessions-${projectId}`} class="session-list flex flex-col pl-16 border-l border-divider">
+              <CollapsibleContent id={`project-sessions-${projectId}`} class="session-list flex flex-col pl-16">
                 <For each={sessions()} fallback={<Button busy={creatingSessionProjectId() === projectId} disabled={readOnly() || !!creatingSessionProjectId()} class="session-empty mx-8 cursor-pointer rounded-8 p-8 text-left text-12 text-text-muted hover:bg-hover hover:text-text-secondary" onClick={() => createProjectSession(projectId)}>Start your first conversation</Button>}>
                   {(session) => {
                     const selected = () => selectedSessionId() === session.id;

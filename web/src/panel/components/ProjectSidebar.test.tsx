@@ -133,6 +133,7 @@ describe('ProjectSidebar registry hydration', () => {
   it('uses a controlled disclosure for project sessions', () => {
     render(() => <ProjectSidebar />);
     const disclosure = screen.getByRole('button', { name: 'Perihelion' });
+    expect(document.querySelector('.session-list')).not.toHaveClass('border-l', 'border-divider');
     expect(disclosure).toHaveAttribute('aria-expanded', 'true');
     fireEvent.click(disclosure);
     expect(disclosure).toHaveAttribute('aria-expanded', 'false');
@@ -211,7 +212,7 @@ describe('ProjectSidebar registry hydration', () => {
     expect(navigate).toHaveBeenCalledOnce();
   });
 
-  it('describes an unselected live runtime as switchable, not input-ready', () => {
+  it('keeps an unselected live runtime switchable without adding a persistent status dot', () => {
     store.projectSessions.mockReturnValue([{
       id: 'hub-abcdef12',
       projectId: 'p1',
@@ -226,7 +227,8 @@ describe('ProjectSidebar registry hydration', () => {
 
     render(() => <ProjectSidebar />);
 
-    expect(screen.getByRole('img', { name: 'Runtime status: Running · click to switch' })).toBeInTheDocument();
+    expect(document.querySelector('.session-status-dot')).toBeNull();
+    expect(document.querySelector('.session-loading-wave')).toBeNull();
     expect(screen.queryByText(/Ready/)).not.toBeInTheDocument();
   });
 

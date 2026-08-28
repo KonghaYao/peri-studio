@@ -42,12 +42,26 @@ function props(overrides: Partial<ProjectSessionRowProps> = {}): ProjectSessionR
 describe('ProjectSessionRow', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('reserves separate menu and runtime-status slots without changing the runtime hint', () => {
+  it('shows only a breathing loading signal and keeps the session title icon-free', () => {
     render(() => <ProjectSessionRow {...props({ state: { label: 'Agent is working', tone: 'busy' } })} />);
 
-    expect(screen.getByRole('img', { name: 'Runtime status: Agent is working' })).toHaveClass('session-status-dot--busy');
+    const loading = screen.getByRole('status', { name: 'Agent is working' });
+    expect(loading).toHaveClass('session-loading-wave');
+    expect(loading.querySelector('.session-loading-wave__halo')).toHaveClass('animate-ping', 'motion-reduce:animate-none');
+    expect(screen.getByRole('button', { name: /^Architecture refactor/ }).querySelector(':scope > svg')).toBeNull();
     expect(screen.getByRole('button', { name: 'Session actions: Architecture refactor' })).toHaveClass('session-menu');
     expect(screen.getByText('Architecture refactor')).toHaveClass('font-600', 'text-text-primary');
+  });
+
+  it('does not render status dots for idle, ready, warning, or failed sessions', () => {
+    const { unmount } = render(() => <ProjectSessionRow {...props({ state: { label: 'Ready', tone: 'ready' } })} />);
+    expect(document.querySelector('.session-status-dot')).toBeNull();
+    expect(document.querySelector('.session-loading-wave')).toBeNull();
+    unmount();
+
+    render(() => <ProjectSessionRow {...props({ state: { label: 'Failed', tone: 'danger' } })} />);
+    expect(document.querySelector('.session-status-dot')).toBeNull();
+    expect(document.querySelector('.session-loading-wave')).toBeNull();
   });
 
   it('delegates server-authoritative opening without navigating early', () => {
