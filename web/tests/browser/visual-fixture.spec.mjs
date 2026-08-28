@@ -440,7 +440,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
   });
 }
 
-test('sidebar session labels retain space beside action and status slots', async ({ page }) => {
+test('sidebar sessions stay icon-free and quiet unless the selected session is loading', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=conversation&sidebar=projects', { waitUntil: 'networkidle' });
 
@@ -452,18 +452,33 @@ test('sidebar session labels retain space beside action and status slots', async
     const rect = (selector) => row.querySelector(selector)?.getBoundingClientRect();
     const copy = rect('.session-copy');
     const menu = rect('.session-menu');
-    const status = rect('.session-status-dot');
     return {
       copyWidth: copy?.width ?? 0,
       copyRight: copy?.right ?? 0,
       menuLeft: menu?.left ?? 0,
-      statusLeft: status?.left ?? 0,
+      titleIconCount: row.querySelectorAll('.session-main > svg').length,
+      statusCount: row.querySelectorAll('.session-status-dot, .session-loading-wave').length,
+      sessionListBorder: getComputedStyle(row.closest('.session-list')).borderLeftWidth,
     };
   });
 
   expect(geometry.copyWidth).toBeGreaterThan(20);
   expect(geometry.copyRight).toBeLessThanOrEqual(geometry.menuLeft);
-  expect(geometry.menuLeft).toBeLessThan(geometry.statusLeft);
+  expect(geometry.titleIconCount).toBe(0);
+  expect(geometry.statusCount).toBe(0);
+  expect(geometry.sessionListBorder).toBe('0px');
+
+  await page.goto('/visual-fixture.html?scenario=long-conversation&sidebar=projects', { waitUntil: 'networkidle' });
+  const busyRow = page.locator('[data-session-id="session-current"]');
+  const loading = busyRow.locator('.session-loading-wave');
+  await expect(loading).toBeVisible();
+  await expect(loading.locator('.session-loading-wave__core')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  const busyGeometry = await busyRow.evaluate((row) => {
+    const menu = row.querySelector('.session-menu').getBoundingClientRect();
+    const wave = row.querySelector('.session-loading-wave').getBoundingClientRect();
+    return { menuRight: menu.right, waveLeft: wave.left };
+  });
+  expect(busyGeometry.menuRight).toBeLessThanOrEqual(busyGeometry.waveLeft);
 });
 
 test('machine topology lives in the global system dialog without child overflow', async ({ page }) => {

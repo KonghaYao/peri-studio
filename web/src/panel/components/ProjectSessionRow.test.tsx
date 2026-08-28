@@ -20,7 +20,6 @@ function props(overrides: Partial<ProjectSessionRowProps> = {}): ProjectSessionR
     session,
     state: { label: 'Not started · session saved', tone: 'idle' },
     selected: false,
-    opening: false,
     navigationBusy: false,
     readOnly: false,
     renameOpen: false,
@@ -48,6 +47,7 @@ describe('ProjectSessionRow', () => {
     const loading = screen.getByRole('status', { name: 'Agent is working' });
     expect(loading).toHaveClass('session-loading-wave');
     expect(loading.querySelector('.session-loading-wave__halo')).toHaveClass('animate-ping', 'motion-reduce:animate-none');
+    expect(loading.querySelector('.session-loading-wave__core')).toHaveClass('border', 'border-success', 'bg-surface');
     expect(screen.getByRole('button', { name: /^Architecture refactor/ }).querySelector(':scope > svg')).toBeNull();
     expect(screen.getByRole('button', { name: 'Session actions: Architecture refactor' })).toHaveClass('session-menu');
     expect(screen.getByText('Architecture refactor')).toHaveClass('font-600', 'text-text-primary');

@@ -15,7 +15,6 @@ export interface ProjectSessionRowProps {
   session: ProjectSessionInfo;
   state: SessionRowState;
   selected: boolean;
-  opening: boolean;
   navigationBusy: boolean;
   readOnly: boolean;
   renameOpen: boolean;
@@ -51,9 +50,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     props.session.acpSessionId || props.session.id,
   );
   const renameValid = () => !!draft().trim();
-  const loading = () => props.opening
-    || ['activating', 'pending'].includes(props.session.lifecycle)
-    || props.state.tone === 'busy';
+  const loading = () => props.state.tone === 'busy';
 
   createEffect(() => {
     if (props.renameOpen) setDraft(props.session.title);
@@ -93,7 +90,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
       disabled={(props.readOnly && !props.session.activeChatId) || props.session.lifecycle !== 'ready' || props.navigationBusy}
     >
       <span class="session-copy min-w-0 flex-1"><strong class="block overflow-hidden text-ellipsis whitespace-nowrap text-13 font-600 text-text-primary">{displayTitle()}</strong></span>
-      <Show when={loading()}><span class="session-loading-wave absolute right-[10px] grid size-12 place-items-center" role="status" aria-label={props.state.detail || props.state.label}><span class="session-loading-wave__halo absolute size-12 rounded-full bg-success/35 animate-ping motion-reduce:animate-none" aria-hidden="true" /><span class="session-loading-wave__core relative size-6 rounded-full bg-success" aria-hidden="true" /></span></Show>
+      <Show when={loading()}><span class="session-loading-wave absolute right-[6px] grid size-12 place-items-center" role="status" aria-label={props.state.detail || props.state.label}><span class="session-loading-wave__halo absolute size-10 rounded-full border border-success/45 animate-ping motion-reduce:animate-none" aria-hidden="true" /><span class="session-loading-wave__core relative size-6 rounded-full border border-success bg-surface" aria-hidden="true" /></span></Show>
     </Button>
     <DropdownMenu open={props.menuOpen} onOpenChange={props.onMenuOpenChange} placement="bottom-end">
       <DropdownMenuTrigger as={IconButton}

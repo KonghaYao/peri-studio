@@ -192,7 +192,6 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                       session={session}
                       state={state()}
                       selected={selected()}
-                      opening={openingSessionId() === session.id}
                       navigationBusy={!!openingSessionId()}
                       readOnly={readOnly()}
                       renameOpen={editing() === session.id}
