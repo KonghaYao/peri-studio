@@ -205,7 +205,27 @@ describe('ConversationMessage', () => {
       ],
     })} />);
 
-    expect(screen.getByLabelText('Assistant message').querySelector('.conversation-message__surface')).toHaveClass('[&>.tool-card+.tool-card]:mt-0');
+    const surface = screen.getByLabelText('Assistant message').querySelector('.conversation-message__surface')!;
+    expect(surface).toHaveClass('[&>.conversation-message__activity-item+.conversation-message__activity-item]:mt-0');
+    expect(surface.querySelectorAll('.conversation-message__activity-item')).toHaveLength(2);
+  });
+
+  it('renders reasoning and tool calls as one vertical activity timeline', () => {
+    const tool = { ...baseTool('tool-1'), name: 'Bash', arguments: { command: 'pwd' } };
+    render(() => <ConversationMessage entry={entry({
+      reasoning: [{ id: 'reasoning-1', text: 'Inspect the repository', visibility: 'visible' }],
+      toolCalls: [tool],
+      blocks: [
+        { kind: 'reasoning', id: 'reasoning-1', reasoning: { id: 'reasoning-1', text: 'Inspect the repository', visibility: 'visible' } },
+        { kind: 'tool_call', id: 'tool-1', toolCall: tool },
+      ],
+    })} />);
+
+    const items = screen.getByLabelText('Assistant message').querySelectorAll('.conversation-message__activity-item');
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveClass('before:left-7', 'before:bg-border-subtle', 'before:top-12', 'before:-bottom-10');
+    expect(items[1]).toHaveClass('before:-top-10', 'before:bottom-12');
+    expect(items[1].querySelector('.tool-card__mark')).toBeInTheDocument();
   });
 
   it('keeps untrusted HTML inert in assistant Markdown', () => {

@@ -10,6 +10,10 @@ import { requestComposerQuote } from '../lib/composer-quote';
 
 type ChatEntrySource = ChatEntry | Accessor<ChatEntry>;
 
+function isActivityBlock(block: ChatBlock | undefined): boolean {
+  return block?.kind === 'reasoning' || block?.kind === 'tool_call';
+}
+
 function QuoteIcon() {
   return <MessageSquareQuote size={16} strokeWidth={1.7} />;
 }
@@ -101,15 +105,18 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setActionsOpen(false);
   }} class={`conversation-message conversation-message--${role()} group/message relative mb-12 flex ${role() === 'assistant' ? 'conversation-message--timeline pl-0 before:hidden' : ''} ${role() === 'user' ? 'flex-col items-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
     <Show when={role() === 'assistant'}><span class="conversation-message__timeline-mark hidden" aria-hidden="true" /></Show>
-    <Show when={userHasVisibleSurface()}><div class={`conversation-message__surface min-w-0 ${role() === 'user' ? 'max-w-72p border border-border-subtle py-8 px-12 rounded-12 bg-surface' : role() === 'system' ? 'max-w-[70%] py-4 px-12 rounded-full bg-surface-muted text-text-secondary text-12' : 'w-full'} [&>*+*]:mt-10 [&>.tool-card+.tool-card]:mt-0`}>
+    <Show when={userHasVisibleSurface()}><div class={`conversation-message__surface min-w-0 ${role() === 'user' ? 'max-w-72p border border-border-subtle py-8 px-12 rounded-12 bg-surface' : role() === 'system' ? 'max-w-[70%] py-4 px-12 rounded-full bg-surface-muted text-text-secondary text-12' : 'w-full'} [&>*+*]:mt-10 [&>.conversation-message__activity-item+.conversation-message__activity-item]:mt-0`}>
       <Show when={role() === 'user'}>
         <header class="conversation-message__meta pointer-events-none absolute -top-17 right-0 flex items-center gap-7 text-10 text-text-muted opacity-0 transition-opacity duration-150 group-hover/message:opacity-100 group-focus-within/message:opacity-100">
           <Show when={timestamp()}>{(time) => <time dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show>
         </header>
       </Show>
-      <For each={blockIds()}>{(id) => {
+      <For each={blockIds()}>{(id, blockIndex) => {
         const block = () => blocksById().get(id)!;
-        return <Show when={block().kind === 'reasoning'} fallback={
+        const activity = () => isActivityBlock(block());
+        const startsActivity = () => activity() && !isActivityBlock(blocksById().get(blockIds()[blockIndex() - 1]));
+        const endsActivity = () => activity() && !isActivityBlock(blocksById().get(blockIds()[blockIndex() + 1]));
+        return <div class={`conversation-message__block ${activity() ? `conversation-message__activity-item relative pl-18 before:absolute before:left-7 before:w-px before:bg-border-subtle before:content-[''] ${startsActivity() ? 'before:top-12' : 'before:-top-10'} ${endsActivity() ? 'before:bottom-12' : 'before:-bottom-10'}` : ''}`}><Show when={block().kind === 'reasoning'} fallback={
           <Show when={block().kind === 'text'} fallback={
             <Show when={block().kind === 'tool_call'} fallback={
               <section class="message-resource p-10 px-12 rounded-10 bg-surface-muted" aria-label={(block() as Extract<ChatBlock, { kind: 'resource' }>).resource.name || 'Related resource'}>
@@ -136,7 +143,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
         }>{(() => {
           const reasoning = () => (block() as Extract<ChatBlock, { kind: 'reasoning' }>).reasoning;
           return <details class="message-reasoning max-w-[680px] text-text-secondary"><summary class="inline-flex min-h-24 cursor-pointer list-none items-center select-none text-11 font-650 tracking-2 text-text-muted hover:text-text-secondary [&::-webkit-details-marker]:hidden">Thinking</summary><p class="m-0 mt-3 whitespace-pre-wrap wrap-anywhere text-12 leading-19 text-text-secondary">{reasoning().text}</p></details>;
-        })()}</Show>;
+        })()}</Show></div>;
       }}</For>
       <Show when={partialTerminal()}>{(terminal) => <InlineNotice tone={terminal().tone} role="status" title="Partial response">
         <span>{terminal().label}. The output above may be incomplete.</span>

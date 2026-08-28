@@ -79,11 +79,21 @@ describe('ToolCallCard', () => {
     expect(active).toHaveClass('min-h-(--pattern-row-height)', 'bg-selected');
     expect(document.querySelector('.tool-card')).toHaveClass('border-0');
     expect(document.querySelector('.tool-card')).not.toHaveClass('border-b', 'border-divider');
-    expect(active?.querySelector('.tool-card__identity')).toHaveClass('grid-cols-[minmax(0,1fr)_minmax(0,1fr)]');
+    expect(active).toHaveClass('grid-cols-[minmax(0,1fr)_auto_18px]', 'px-0');
+    expect(active?.querySelector('.tool-card__identity')).toHaveClass('inline-flex', 'items-baseline', 'gap-6');
+    expect(active?.querySelector('.tool-card__mark')).toHaveClass('absolute', '-left-18', 'top-1/2', '-translate-y-1/2');
     unmount();
 
     render(() => <ToolCallCard toolCall={base} />);
     expect(document.querySelector('.tool-card__summary')).not.toHaveClass('bg-selected');
+  });
+
+  it('keeps the compact input immediately after the tool title', () => {
+    render(() => <ToolCallCard toolCall={{ ...base, name: 'Bash', arguments: { command: 'pwd && git status' } }} />);
+    const identity = document.querySelector('.tool-card__identity')!;
+    expect(identity.children[0]).toHaveTextContent('Bash');
+    expect(identity.children[1]).toHaveTextContent('pwd && git status');
+    expect(identity).toHaveClass('inline-flex');
   });
 
   it('prefers the Read file path over pagination arguments in the compact row', () => {

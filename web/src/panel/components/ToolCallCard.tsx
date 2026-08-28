@@ -106,20 +106,20 @@ export function ToolCallCard(props: { toolCall: ToolCallSource }) {
   const evidence = createMemo(() => toolEvidence(tool().kind, tool().arguments, tool().result));
   return (
     <details
-      class={`tool-card tool-card--${state().tone} group w-full max-w-(--tool-activity-max) overflow-hidden border-0 bg-surface ${state().tone === 'error' ? 'text-danger' : 'text-text-primary'}`}
+      class={`tool-card tool-card--${state().tone} group w-full max-w-(--tool-activity-max) overflow-visible border-0 bg-surface ${state().tone === 'error' ? 'text-danger' : 'text-text-primary'}`}
       onToggle={(event) => { if (event.currentTarget.open) setEvidenceLoaded(true); }}
     >
       <summary
-        class={`tool-card__summary grid min-h-(--pattern-row-height) grid-cols-[15px_minmax(0,1fr)_auto_18px] items-center gap-6 px-5 cursor-pointer list-none rounded-7 hover:bg-hover focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-1 ${state().tone === 'running' ? 'bg-selected' : ''}`}
+        class={`tool-card__summary relative grid min-h-(--pattern-row-height) grid-cols-[minmax(0,1fr)_auto_18px] items-center gap-6 px-0 cursor-pointer list-none rounded-7 hover:bg-hover focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-1 ${state().tone === 'running' ? 'bg-selected' : ''}`}
         onClick={() => setEvidenceLoaded(true)}
       >
-        <span class="tool-card__mark grid size-14 place-items-center"><ToolStateIcon tone={state().tone} /></span>
-        <span class="tool-card__identity grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-baseline gap-6"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-11 font-semibold" title={tool().toolCallId || undefined}>{tool().name || 'Tool call'}</strong><Show when={inputSummary()}>{(input) => <code class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-9 text-text-muted">{input()}</code>}</Show><code class="sr-only">{tool().toolCallId || 'No call ID'}</code></span>
+        <span class="tool-card__mark absolute -left-18 top-1/2 z-1 grid size-14 -translate-y-1/2 place-items-center bg-surface"><ToolStateIcon tone={state().tone} /></span>
+        <span class="tool-card__identity inline-flex min-w-0 items-baseline gap-6"><strong class="shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-11 font-semibold" title={tool().toolCallId || undefined}>{tool().name || 'Tool call'}</strong><Show when={inputSummary()}>{(input) => <code class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-9 text-text-muted">{input()}</code>}</Show><code class="sr-only">{tool().toolCallId || 'No call ID'}</code></span>
         <span class="tool-card__status text-9 text-text-muted"><span>{state().label}</span><Show when={duration()}>{(value) => <span class="tool-card__duration ml-4 tabular-nums" aria-label={`Observed duration ${value()}`}>{value()}</span>}</Show></span>
         <span class="tool-card__chevron grid size-20 place-items-center text-text-muted" aria-hidden="true"><CodeXml size={13} strokeWidth={1.8} /></span>
       </summary>
       <Show when={evidenceLoaded()}>
-      <div class="tool-card__body ml-22 flex flex-col gap-8 border-l border-divider py-7 pl-10 bg-surface">
+      <div class="tool-card__body mt-3 flex flex-col gap-8 bg-surface py-7">
         <Show when={tool().arguments !== undefined && tool().arguments !== null}><DataSection label={evidence().inputLabel} value={evidence().input} /></Show>
         <Show when={tool().argumentsOmitted}><OmittedEvidence label="Input not loaded" size={tool().argumentsBytes} noun="input" /></Show>
         <Show when={tool().result !== undefined && tool().result !== null}><DataSection label={evidence().outputLabel} value={evidence().output} /></Show>
