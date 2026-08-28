@@ -7,6 +7,7 @@ import { McpPanelContent } from './McpPanel';
 import { ResourceRailButton } from './ResourceRailButton';
 import { SessionRailActions } from './SessionRailActions';
 import { Files, GitBranch, PlugZap, RefreshCw, X } from 'lucide-solid';
+import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_SURFACE_CLASS, RESOURCE_PANEL_TITLE_CLASS } from './resource-panel-layout';
 
 export type WorkbenchView = 'explorer' | 'scm' | 'mcp' | null;
 export type ResourcePreviewOrigin = {
@@ -118,9 +119,9 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
       <SessionRailActions />
     </nav>
     <Show when={view()}>
-      <div class={`resource-workbench__panel flex min-h-0 min-w-0 flex-1 flex-col bg-surface ${props.compact ? '' : 'absolute inset-y-8 right-52 z-30 w-[264px] overflow-hidden rounded-14 border border-border-subtle shadow-popover wide:w-[310px]'}`}>
-        <header class="flex h-40 shrink-0 items-center gap-5 border-b border-divider px-10">
-          <strong class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-11 font-650 uppercase tracking-5 text-text-secondary">{panelTitle()}</strong>
+      <div class={`resource-workbench__panel flex min-h-0 min-w-0 flex-1 flex-col bg-surface ${props.compact ? '' : `absolute z-30 ${RESOURCE_PANEL_SURFACE_CLASS}`}`}>
+        <header class={RESOURCE_PANEL_HEADER_CLASS}>
+          <strong class={RESOURCE_PANEL_TITLE_CLASS}>{panelTitle()}</strong>
           <Show when={view() === 'explorer' || view() === 'scm'}><IconButton label="Refresh resources" size="compact" onClick={refreshResourceProject} class="border-0 bg-transparent text-text-muted"><RefreshCw size={14} strokeWidth={1.7} /></IconButton></Show>
           <IconButton label="Close resource panel" size="compact" onClick={close} class="border-0 bg-transparent text-text-muted"><X size={14} strokeWidth={1.7} /></IconButton>
         </header>

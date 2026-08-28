@@ -1,6 +1,8 @@
 import { For, Match, Show, Switch } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, Listbox, ListboxItem, LoadingState } from '../../components/ui';
+import { Button, Dialog, DialogContent, DialogTitle, EmptyState, IconButton, Listbox, ListboxItem, LoadingState } from '../../components/ui';
 import { closeRewindFlow, executeRewind, openRewindFlow, previewRewind, rewindFlow } from '../lib/rewind-assembly';
+import { X } from 'lucide-solid';
+import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_SURFACE_CLASS, RESOURCE_PANEL_TITLE_CLASS } from './resource-panel-layout';
 
 export function RewindDialog(props: { open: boolean; onClose: () => void }) {
   const state = rewindFlow;
@@ -15,8 +17,13 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
     openRewindFlow();
   };
 
-  return <Dialog open={props.open} onOpenChange={(open) => { if (!open && !executing()) close(); }}><DialogContent size="rewind" dismissible={!executing()}><DialogHeader><DialogTitle>Rewind session</DialogTitle></DialogHeader>
-    <section class="box-border w-[min(640px,calc(100vw-40px))] max-h-[min(76dvh,700px)] overflow-auto px-22 pt-4 pb-22 max-[640px]:w-[calc(100vw-24px)] max-[640px]:max-h-[82dvh] max-[640px]:px-16 max-[640px]:pt-2 max-[640px]:pb-17">
+  return <Dialog open={props.open} onOpenChange={(open) => { if (!open && !executing()) close(); }}><DialogContent
+    data-resource-panel="rewind"
+    dismissible={!executing()}
+    overlayClass="bg-transparent max-[959px]:bg-scrim"
+    class={`fixed left-auto z-61 flex h-auto max-h-none translate-x-0 translate-y-0 flex-col p-0 ${RESOURCE_PANEL_SURFACE_CLASS} max-[959px]:inset-y-0 max-[959px]:right-0 max-[959px]:h-auto max-[959px]:w-[min(92vw,360px)] max-[959px]:rounded-none max-[959px]:border-y-0 max-[959px]:border-r-0`}
+  ><header class={RESOURCE_PANEL_HEADER_CLASS}><DialogTitle class={RESOURCE_PANEL_TITLE_CLASS}>Rewind session</DialogTitle><IconButton label="Close rewind panel" size="compact" disabled={executing()} onClick={close} class="border-0 bg-transparent text-text-muted"><X size={14} strokeWidth={1.7} /></IconButton></header>
+    <section class="box-border min-h-0 flex-1 overflow-auto px-10 py-10">
       <Switch>
         <Match when={state().kind === 'loading_candidates'}>
           <LoadingState class="grid min-h-180 place-content-center justify-items-center p-24 text-center max-[640px]:px-8 max-[640px]:py-20 [&_.ui-spinner]:mb-12 [&_.ui-spinner]:h-22 [&_.ui-spinner]:w-22" label="Reading rewindable messages" description="Reading user messages from the Peri session history." />

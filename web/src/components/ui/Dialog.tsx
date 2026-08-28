@@ -23,25 +23,25 @@ export function DialogOverlay<T extends ValidComponent = 'div'>(props: Polymorph
   return <DialogPrimitive.Overlay data-dialog-overlay class={cn('fixed inset-0 z-60 bg-scrim', local.class)} {...rest} />;
 }
 
-type DialogSize = 'default' | 'search' | 'settings' | 'mcp' | 'rewind';
+type DialogSize = 'default' | 'search' | 'settings' | 'mcp';
 
 type ContentProps<T extends ValidComponent = 'div'> = DialogPrimitive.DialogContentProps<T> & {
   class?: string;
   children?: JSX.Element;
   dismissible?: boolean;
+  overlayClass?: string;
   size?: DialogSize;
 };
 export function DialogContent<T extends ValidComponent = 'div'>(props: PolymorphicProps<T, ContentProps<T>>) {
-  const [local, rest] = splitProps(props as ContentProps, ['class', 'children', 'dismissible', 'size']);
+  const [local, rest] = splitProps(props as ContentProps, ['class', 'children', 'dismissible', 'overlayClass', 'size']);
   const preventWhenLocked = (event: Event) => { if (local.dismissible === false) event.preventDefault(); };
   return <DialogPortal>
-    <DialogOverlay />
+    <DialogOverlay class={local.overlayClass} />
     <DialogPrimitive.Content
       class={cn('fixed top-1/2 left-1/2 z-61 max-h-[calc(100dvh-2*var(--space-20))] w-[min(400px,calc(100vw-2*var(--space-20)))] -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-14 border border-border-strong bg-surface shadow-popover', {
         'w-(--container-search)': local.size === 'search',
         'w-(--container-settings) max-h-(--container-settings-tall)': local.size === 'settings',
         'w-(--container-mcp) max-h-(--container-settings-tall)': local.size === 'mcp',
-        'w-(--container-rewind) max-h-(--container-rewind-tall)': local.size === 'rewind',
       }, local.class)}
       onEscapeKeyDown={preventWhenLocked}
       onPointerDownOutside={preventWhenLocked}

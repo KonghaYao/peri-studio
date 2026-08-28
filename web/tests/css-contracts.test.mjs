@@ -70,7 +70,10 @@ test('source stylesheets are structurally valid and consume only declared design
 test('Kobalte dialog composes an independently layered portal overlay and content', () => {
   const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Dialog.tsx'), 'utf8');
   assert.match(dialog, /return <DialogPrimitive\.Portal \{\.\.\.props\} \/>;/);
-  assert.match(dialog, /<DialogOverlay \/>\s*<DialogPrimitive\.Content/s);
+  assert.match(
+    dialog,
+    /<DialogOverlay class=\{local\.overlayClass\} \/>\s*<DialogPrimitive\.Content/s,
+  );
   assert.match(dialog, /DialogPrimitive\.Overlay data-dialog-overlay class=\{cn\('fixed inset-0 z-60 bg-scrim'/);
   assert.match(dialog, /DialogPrimitive\.Content\s+class=\{cn\('fixed top-1\/2 left-1\/2 z-61/);
   assert.match(dialog, /onEscapeKeyDown=\{preventWhenLocked\}/);
@@ -85,7 +88,7 @@ test('dialog size belongs to DialogContent rather than an overflowing child', ()
     .filter((file) => file.endsWith('.tsx'))
     .map((file) => [file, readFileSync(join(components, file), 'utf8')])
     .filter(([, code]) => code.includes('<DialogContent'));
-  assert.match(dialog, /type DialogSize = 'default' \| 'search' \| 'settings' \| 'mcp' \| 'rewind'/);
+  assert.match(dialog, /type DialogSize = 'default' \| 'search' \| 'settings' \| 'mcp'/);
   for (const [file, code] of dialogConsumers) {
     assert.doesNotMatch(code, /<DialogContent[\s\S]{0,300}(?:w-|min-w-)\(--container-/, `${file} puts viewport width inside DialogContent`);
   }
