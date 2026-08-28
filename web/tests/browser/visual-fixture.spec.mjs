@@ -144,10 +144,16 @@ test('assistant actions stay contextual and tool rows have no divider', async ({
   const message = page.getByRole('article', { name: 'Assistant message' }).first();
   const actions = message.locator('.conversation-message__actions');
   expect(await actions.evaluate((element) => getComputedStyle(element).opacity)).toBe('0');
+  expect(await actions.evaluate((element) => getComputedStyle(element).position)).toBe('absolute');
+  const layout = await message.evaluate((element) => ({
+    messageHeight: element.getBoundingClientRect().height,
+    surfaceHeight: element.querySelector('.conversation-message__surface').getBoundingClientRect().height,
+  }));
+  expect(Math.abs(layout.messageHeight - layout.surfaceHeight)).toBeLessThanOrEqual(1);
   await actions.getByRole('button', { name: 'Copy answer' }).focus();
-  expect(await actions.evaluate((element) => getComputedStyle(element).opacity)).toBe('1');
+  await expect(actions).toHaveCSS('opacity', '1');
   expect(await page.evaluate(() => [...document.styleSheets].some((sheet) => {
-    try { return [...sheet.cssRules].some((rule) => rule.cssText.includes('.conversation-message:has(.conversation-message__text:hover)')); }
+    try { return [...sheet.cssRules].some((rule) => rule.cssText.includes('.conversation-message--assistant:hover')); }
     catch { return false; }
   }))).toBe(true);
   await expect(message.locator('.tool-card').first()).toHaveCSS('border-bottom-width', '0px');

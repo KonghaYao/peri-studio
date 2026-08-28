@@ -3,7 +3,7 @@ import type { ChatBlock, ChatEntry } from '../lib/chat-view';
 import { messageTime } from '../lib/message-time.ts';
 import { splitSystemReminders } from '../lib/system-reminder';
 import { CopyButton, IconButton, InlineNotice } from '../../components/ui';
-import { MessageSquareQuote } from 'lucide-solid';
+import { MessageSquareQuote, MoreHorizontal } from 'lucide-solid';
 import { Markdown } from './Markdown';
 import { ToolCallCard } from './ToolCallCard';
 import { requestComposerQuote } from '../lib/composer-quote';
@@ -18,6 +18,7 @@ function QuoteIcon() {
 export function ConversationMessage(props: { entry: ChatEntrySource }) {
   let articleRef: HTMLElement | undefined;
   const [selectionAction, setSelectionAction] = createSignal<{ text: string; left: number; top: number } | null>(null);
+  const [actionsOpen, setActionsOpen] = createSignal(false);
   const entry = () => typeof props.entry === 'function' ? props.entry() : props.entry;
   const legacyBlocks = (): ChatBlock[] => [
     ...entry().reasoning.map((reasoning, index) => ({ kind: 'reasoning' as const, id: reasoning.id || `${entry().id}:reasoning:${index}`, reasoning })),
@@ -33,6 +34,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
   const timestamp = createMemo(() => entry().origin === 'session_replay' ? null : messageTime(entry().createdAt));
   const role = createMemo(() => entry().role === 'user' ? 'user' : entry().role === 'system' ? 'system' : 'assistant');
   const streaming = () => entry().status === 'streaming';
+  const actionsId = () => `message-actions-${entry().id}`;
   const label = () => role() === 'user' ? 'Your message' : role() === 'system' ? 'System message' : 'Assistant message';
   const partialTerminal = createMemo(() => {
     if (role() !== 'assistant' || !(entry().text || entry().reasoning.length || entry().toolCalls.length || entry().resources.length)) return null;
@@ -75,7 +77,9 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
     window.getSelection()?.removeAllRanges();
   };
 
-  return <article ref={articleRef} onMouseUp={captureSelection} onKeyUp={captureSelection} class={`conversation-message conversation-message--${role()} group/message relative mb-12 flex ${role() === 'assistant' ? 'conversation-message--timeline pl-0 before:hidden' : ''} ${role() === 'user' ? 'justify-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
+  return <article ref={articleRef} onMouseUp={captureSelection} onKeyUp={captureSelection} onFocusOut={(event) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setActionsOpen(false);
+  }} class={`conversation-message conversation-message--${role()} group/message relative mb-12 flex ${role() === 'assistant' ? 'conversation-message--timeline pl-0 before:hidden' : ''} ${role() === 'user' ? 'justify-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
     <Show when={role() === 'assistant'}><span class="conversation-message__timeline-mark hidden" aria-hidden="true" /></Show>
     <div class={`conversation-message__surface min-w-0 ${role() === 'user' ? 'max-w-72p border border-border-subtle py-8 px-12 rounded-12 bg-surface-muted' : role() === 'system' ? 'max-w-[70%] py-4 px-12 rounded-full bg-surface-muted text-text-secondary text-12' : 'w-full'} [&>*+*]:mt-10 [&>.tool-card+.tool-card]:mt-0`}>
       <Show when={role() === 'user'}>
@@ -128,7 +132,10 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
           <span>The server confirmed ACP did not run this message. Copy it and resend.</span>
         </InlineNotice>
       </Show>
-      <Show when={role() === 'assistant' && entry().text && !streaming()}><div class="conversation-message__actions pointer-events-none flex min-h-28 items-center gap-2 pt-1 text-text-muted opacity-0"><CopyButton size="compact" text={copyText()} label="Copy answer" class="border-0 bg-transparent text-text-muted hover:bg-hover" /><IconButton label="Quote answer" size="compact" variant="ghost" class="border-0 bg-transparent text-text-muted hover:bg-hover" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-5 text-11 font-600 text-text-muted">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-text-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div></Show>
+      <Show when={role() === 'assistant' && entry().text && !streaming()}><>
+        <IconButton label="Message actions" size="compact" variant="ghost" class="conversation-message__actions-trigger absolute top-0 right-0 z-10 hidden min-h-44 min-w-44 border-0 bg-surface text-text-muted shadow-subtle pointer-coarse:inline-flex" aria-expanded={actionsOpen()} aria-controls={actionsId()} onClick={() => setActionsOpen((open) => !open)}><MoreHorizontal size={17} strokeWidth={1.7} /></IconButton>
+        <div id={actionsId()} class={`conversation-message__actions absolute top-full left-0 z-20 flex min-h-30 items-center gap-2 rounded-8 border border-border-subtle bg-surface px-4 py-1 text-text-muted shadow-popover transition-opacity duration-150 ${actionsOpen() ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}><CopyButton size="compact" text={copyText()} label="Copy answer" class="border-0 bg-transparent text-text-muted hover:bg-hover pointer-coarse:min-h-44" /><IconButton label="Quote answer" size="compact" variant="ghost" class="border-0 bg-transparent text-text-muted hover:bg-hover pointer-coarse:min-h-44 pointer-coarse:min-w-44" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-5 text-11 font-600 text-text-muted">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-text-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div>
+      </></Show>
     </div>
     <Show when={selectionAction()}>{(action) => <IconButton
       label="Add selection to conversation"

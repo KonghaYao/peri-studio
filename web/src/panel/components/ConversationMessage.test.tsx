@@ -42,7 +42,9 @@ describe('ConversationMessage', () => {
     expect(screen.getByLabelText('Assistant message')).toHaveClass('conversation-message--assistant');
     expect(screen.getByRole('heading', { name: 'Result' })).toBeInTheDocument();
     expect(screen.getByText('cargo test')).toHaveClass('md-inline-code');
-    expect(screen.getByRole('button', { name: 'Copy answer' }).closest('.conversation-message__actions')).toHaveClass('text-text-muted');
+    expect(screen.getByRole('button', { name: 'Copy answer' }).closest('.conversation-message__actions')).toHaveClass(
+      'absolute', 'border', 'bg-surface', 'shadow-popover', 'text-text-muted',
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Copy answer' }));
     expect(writeText).toHaveBeenCalledWith('## Result\n\n`cargo test` passed.');
   });
@@ -54,6 +56,23 @@ describe('ConversationMessage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Quote answer' }));
 
     expect(composerQuoteRequest()).toMatchObject({ text: 'Use the focused boundary.', source: 'Peri' });
+  });
+
+  it('opens the same floating actions from a touch-sized coarse-pointer trigger', () => {
+    render(() => <ConversationMessage entry={entry({ text: 'Touch actions.' })} />);
+    const trigger = screen.getByRole('button', { name: 'Message actions' });
+    const actions = screen.getByRole('button', { name: 'Copy answer' }).closest('.conversation-message__actions');
+
+    expect(trigger).toHaveClass('hidden', 'pointer-coarse:inline-flex', 'min-h-44', 'min-w-44');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveAttribute('aria-controls', actions?.id);
+    expect(actions).toHaveClass('pointer-events-none', 'opacity-0');
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(actions).toHaveClass('pointer-events-auto', 'opacity-100');
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(actions).toHaveClass('pointer-events-none', 'opacity-0');
   });
 
   it('offers an add-to-conversation action for selected message text', () => {
