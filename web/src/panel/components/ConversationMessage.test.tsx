@@ -29,7 +29,7 @@ describe('ConversationMessage', () => {
     expect(message).toHaveTextContent('**literal user input**');
     expect(message.querySelector('strong')).toBeNull();
     expect(message.querySelector('.conversation-message__meta')).toHaveClass('absolute');
-    expect(message.querySelector('.conversation-message__surface')).toHaveClass('py-8', 'px-12');
+    expect(message.querySelector('.conversation-message__surface')).toHaveClass('py-8', 'px-12', 'bg-surface');
     expect(screen.queryByRole('button', { name: 'Copy answer' })).not.toBeInTheDocument();
     view.unmount();
   });
@@ -247,7 +247,8 @@ describe('ConversationMessage', () => {
     expect(screen.queryByText('MCP status is internal')).not.toBeInTheDocument();
     const badges = screen.getAllByRole('button', { name: 'System message' });
     expect(badges).toHaveLength(1);
-    expect(badges[0]).toHaveClass('h-20', 'pointer-coarse:min-h-44');
+    expect(badges[0]).toHaveClass('h-20', 'self-start', 'border-0', 'pointer-coarse:min-h-44');
+    expect(badges[0].closest('.conversation-message__surface')).toBeNull();
     fireEvent.click(badges[0]);
     const reminder = await screen.findByRole('dialog', { name: 'System message' });
     expect(reminder).toHaveClass('system-reminder-popover');
@@ -256,6 +257,19 @@ describe('ConversationMessage', () => {
     expect(reminder.querySelector('script')).toBeNull();
     expect(screen.getByLabelText('Your message')).toHaveTextContent('Please continue.');
     expect(screen.getByLabelText('Your message')).toHaveTextContent('Thanks.');
+  });
+
+  it('renders a reminder-only entry without an empty user bubble', () => {
+    render(() => <ConversationMessage entry={entry({
+      role: 'user',
+      text: '<system-reminder>MCP is connected</system-reminder>',
+    })} />);
+
+    const badge = screen.getByRole('button', { name: 'System message' });
+    const message = badge.closest('.conversation-message');
+    expect(message).toHaveClass('flex-col', 'items-end');
+    expect(message?.querySelector('.conversation-message__surface')).toBeNull();
+    expect(badge).toHaveClass('self-start', 'border-0');
   });
 
   it('keeps a reloaded unknown user delivery visibly blocked from retry', () => {

@@ -16,7 +16,7 @@ function QuoteIcon() {
 
 function SystemReminderBadge(props: { reminders: string[] }) {
   return <Popover placement="bottom-start">
-    <PopoverTrigger type="button" class="system-reminder-badge inline-flex h-20 cursor-pointer items-center rounded-6 border border-border-subtle bg-surface-muted px-7 text-11 font-600 text-text-secondary hover:bg-hover pointer-coarse:min-h-44" aria-label="System message">
+    <PopoverTrigger type="button" class="system-reminder-badge self-start inline-flex h-20 cursor-pointer items-center rounded-6 border-0 bg-surface-muted px-7 text-11 font-600 text-text-secondary hover:bg-hover pointer-coarse:min-h-44" aria-label="System message">
       System
     </PopoverTrigger>
     <PopoverContent class="system-reminder-popover max-h-[min(420px,calc(100vh-32px))] w-[min(520px,calc(100vw-32px))] overflow-auto" aria-label="System message">
@@ -41,14 +41,18 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
   ];
   // 旧快照与开发 fixture 可能尚无 blocks；只在该兼容边界回退到旧分组模型。
   const blocks = createMemo(() => entry().blocks?.length ? entry().blocks : legacyBlocks());
+  const role = createMemo(() => entry().role === 'user' ? 'user' : entry().role === 'system' ? 'system' : 'assistant');
   const blockIds = createMemo(() => blocks().map((block) => block.id));
   const blocksById = createMemo(() => new Map(blocks().map((block) => [block.id, block])));
   const systemReminders = createMemo(() => blocks().flatMap((block) => block.kind === 'text'
     ? splitSystemReminders(block.text).flatMap((segment) => segment.kind === 'system_reminder' ? [segment.text] : [])
     : []));
+  const userHasVisibleSurface = createMemo(() => role() !== 'user'
+    || Boolean(entry().error || entry().deliveryState === 'delivery_unknown' || entry().deliveryState === 'failed_not_delivered')
+    || blocks().some((block) => block.kind !== 'text'
+      || splitSystemReminders(block.text).some((segment) => segment.kind === 'text' && segment.text.trim().length > 0)));
   // Replay timestamps are Hub observation time, not original message time.
   const timestamp = createMemo(() => entry().origin === 'session_replay' ? null : messageTime(entry().createdAt));
-  const role = createMemo(() => entry().role === 'user' ? 'user' : entry().role === 'system' ? 'system' : 'assistant');
   const streaming = () => entry().status === 'streaming';
   const actionsId = () => `message-actions-${entry().id}`;
   const label = () => role() === 'user' ? 'Your message' : role() === 'system' ? 'System message' : 'Assistant message';
@@ -95,9 +99,9 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
 
   return <article ref={articleRef} onMouseUp={captureSelection} onKeyUp={captureSelection} onFocusOut={(event) => {
     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setActionsOpen(false);
-  }} class={`conversation-message conversation-message--${role()} group/message relative mb-12 flex ${role() === 'assistant' ? 'conversation-message--timeline pl-0 before:hidden' : ''} ${role() === 'user' ? 'justify-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
+  }} class={`conversation-message conversation-message--${role()} group/message relative mb-12 flex ${role() === 'assistant' ? 'conversation-message--timeline pl-0 before:hidden' : ''} ${role() === 'user' ? 'flex-col items-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
     <Show when={role() === 'assistant'}><span class="conversation-message__timeline-mark hidden" aria-hidden="true" /></Show>
-    <div class={`conversation-message__surface min-w-0 ${role() === 'user' ? 'max-w-72p border border-border-subtle py-8 px-12 rounded-12 bg-surface-muted' : role() === 'system' ? 'max-w-[70%] py-4 px-12 rounded-full bg-surface-muted text-text-secondary text-12' : 'w-full'} [&>*+*]:mt-10 [&>.tool-card+.tool-card]:mt-0`}>
+    <Show when={userHasVisibleSurface()}><div class={`conversation-message__surface min-w-0 ${role() === 'user' ? 'max-w-72p border border-border-subtle py-8 px-12 rounded-12 bg-surface' : role() === 'system' ? 'max-w-[70%] py-4 px-12 rounded-full bg-surface-muted text-text-secondary text-12' : 'w-full'} [&>*+*]:mt-10 [&>.tool-card+.tool-card]:mt-0`}>
       <Show when={role() === 'user'}>
         <header class="conversation-message__meta pointer-events-none absolute -top-17 right-0 flex items-center gap-7 text-10 text-text-muted opacity-0 transition-opacity duration-150 group-hover/message:opacity-100 group-focus-within/message:opacity-100">
           <Show when={timestamp()}>{(time) => <time dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show>
@@ -134,9 +138,6 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
           return <details class="message-reasoning max-w-[680px] text-text-secondary"><summary class="inline-flex min-h-24 cursor-pointer list-none items-center select-none text-11 font-650 tracking-2 text-text-muted hover:text-text-secondary [&::-webkit-details-marker]:hidden">Thinking</summary><p class="m-0 mt-3 whitespace-pre-wrap wrap-anywhere text-12 leading-19 text-text-secondary">{reasoning().text}</p></details>;
         })()}</Show>;
       }}</For>
-      <Show when={role() === 'user' && systemReminders().length > 0}>
-        <SystemReminderBadge reminders={systemReminders()} />
-      </Show>
       <Show when={partialTerminal()}>{(terminal) => <InlineNotice tone={terminal().tone} role="status" title="Partial response">
         <span>{terminal().label}. The output above may be incomplete.</span>
       </InlineNotice>}</Show>
@@ -155,7 +156,10 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
         <IconButton label="Message actions" size="compact" variant="ghost" class="conversation-message__actions-trigger absolute top-0 right-0 z-10 hidden min-h-44 min-w-44 border-0 bg-surface text-text-muted shadow-subtle pointer-coarse:inline-flex" aria-expanded={actionsOpen()} aria-controls={actionsId()} onClick={() => setActionsOpen((open) => !open)}><MoreHorizontal size={17} strokeWidth={1.7} /></IconButton>
         <div id={actionsId()} class={`conversation-message__actions absolute top-full left-0 z-20 flex min-h-30 items-center gap-2 rounded-8 border border-border-subtle bg-surface px-4 py-1 text-text-muted shadow-popover transition-opacity duration-150 ${actionsOpen() ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}><CopyButton size="compact" text={copyText()} label="Copy answer" class="border-0 bg-transparent text-text-muted hover:bg-hover pointer-coarse:min-h-44" /><IconButton label="Quote answer" size="compact" variant="ghost" class="border-0 bg-transparent text-text-muted hover:bg-hover pointer-coarse:min-h-44 pointer-coarse:min-w-44" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-5 text-11 font-600 text-text-muted">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-text-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div>
       </></Show>
-    </div>
+    </div></Show>
+    <Show when={role() === 'user' && systemReminders().length > 0}>
+      <SystemReminderBadge reminders={systemReminders()} />
+    </Show>
     <Show when={selectionAction()}>{(action) => <IconButton
       label="Add selection to conversation"
       variant="primary"
