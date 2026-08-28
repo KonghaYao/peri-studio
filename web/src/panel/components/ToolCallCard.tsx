@@ -114,7 +114,7 @@ export function ToolCallCard(props: { toolCall: ToolCallSource }) {
         onClick={() => setEvidenceLoaded(true)}
       >
         <span class="tool-card__mark absolute -left-18 top-1/2 z-1 grid size-14 -translate-y-1/2 place-items-center bg-surface"><ToolStateIcon tone={state().tone} /></span>
-        <span class="tool-card__identity inline-flex min-w-0 items-baseline gap-6"><strong class="shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-11 font-semibold" title={tool().toolCallId || undefined}>{tool().name || 'Tool call'}</strong><Show when={inputSummary()}>{(input) => <code class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-9 text-text-muted">{input()}</code>}</Show><code class="sr-only">{tool().toolCallId || 'No call ID'}</code></span>
+        <span class="tool-card__identity inline-flex min-w-0 overflow-hidden items-baseline gap-6"><strong class="max-w-[40%] shrink overflow-hidden text-ellipsis whitespace-nowrap text-11 font-semibold" title={tool().toolCallId || undefined}>{tool().name || 'Tool call'}</strong><Show when={inputSummary()}>{(input) => <code class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-9 text-text-muted">{input()}</code>}</Show><code class="sr-only">{tool().toolCallId || 'No call ID'}</code></span>
         <span class="tool-card__status text-9 text-text-muted"><span>{state().label}</span><Show when={duration()}>{(value) => <span class="tool-card__duration ml-4 tabular-nums" aria-label={`Observed duration ${value()}`}>{value()}</span>}</Show></span>
         <span class="tool-card__chevron grid size-20 place-items-center text-text-muted" aria-hidden="true"><CodeXml size={13} strokeWidth={1.8} /></span>
       </summary>

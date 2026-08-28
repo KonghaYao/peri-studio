@@ -96,6 +96,15 @@ describe('ToolCallCard', () => {
     expect(identity).toHaveClass('inline-flex');
   });
 
+  it('keeps long tool names from displacing the compact input and status', () => {
+    render(() => <ToolCallCard toolCall={{ ...base, name: 'An unexpectedly long namespaced tool implementation', arguments: { command: 'pwd' } }} />);
+    const identity = document.querySelector('.tool-card__identity')!;
+    expect(identity).toHaveClass('overflow-hidden');
+    expect(identity.children[0]).toHaveClass('max-w-[40%]', 'shrink', 'text-ellipsis');
+    expect(identity.children[1]).toHaveClass('flex-1', 'min-w-0', 'text-ellipsis');
+    expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
   it('prefers the Read file path over pagination arguments in the compact row', () => {
     render(() => <ToolCallCard toolCall={{
       ...base,
