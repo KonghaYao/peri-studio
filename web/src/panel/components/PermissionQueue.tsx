@@ -26,9 +26,9 @@ export function PermissionQueue(props: PermissionQueueProps) {
           <span class="text-11 font-650 text-text-secondary">Permissions</span>
           <Show when={props.permissions.length > 1}>
             <span class="flex items-center gap-1 text-text-muted text-10 tabular-nums">
-              <IconButton label="Previous permission" variant="ghost" size="compact" class="size-24 min-h-24 border-0 bg-transparent text-text-muted disabled:opacity-30" disabled={selection.index() <= 0} onClick={() => selection.select(selection.index() - 1)}><ChevronLeft size={13} strokeWidth={1.8} /></IconButton>
+              <IconButton label="Previous permission" variant="ghost" size="compact" class="border-0 bg-transparent text-text-muted disabled:opacity-30" disabled={selection.index() <= 0} onClick={() => selection.select(selection.index() - 1)}><ChevronLeft size={13} strokeWidth={1.8} /></IconButton>
               <span class="min-w-26 text-center text-9" aria-live="polite">{selection.index() + 1} / {props.permissions.length}</span>
-              <IconButton label="Next permission" variant="ghost" size="compact" class="size-24 min-h-24 border-0 bg-transparent text-text-muted disabled:opacity-30" disabled={selection.index() >= props.permissions.length - 1} onClick={() => selection.select(selection.index() + 1)}><ChevronRight size={13} strokeWidth={1.8} /></IconButton>
+              <IconButton label="Next permission" variant="ghost" size="compact" class="border-0 bg-transparent text-text-muted disabled:opacity-30" disabled={selection.index() >= props.permissions.length - 1} onClick={() => selection.select(selection.index() + 1)}><ChevronRight size={13} strokeWidth={1.8} /></IconButton>
             </span>
           </Show>
           <ShieldCheck size={14} strokeWidth={1.8} class="ml-auto text-warning" aria-hidden="true" />

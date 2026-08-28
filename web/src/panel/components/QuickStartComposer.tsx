@@ -54,10 +54,10 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
         </InlineNotice>
       </Show>
       <div class="quick-start__footer flex min-h-52 items-center gap-7 px-10 pb-8">
-        <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="size-34 min-h-34 border-0 bg-transparent text-text-primary"><Plus size={18} strokeWidth={1.7} /></IconButton>
-        <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled class="size-34 min-h-34 border-0 bg-transparent text-text-muted"><ShieldCheck size={17} strokeWidth={1.7} /></IconButton>
+        <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="border-0 bg-transparent text-text-primary"><Plus size={18} strokeWidth={1.7} /></IconButton>
+        <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled class="border-0 bg-transparent text-text-muted"><ShieldCheck size={17} strokeWidth={1.7} /></IconButton>
         <span class="ml-auto" />
-        <IconButton variant="primary" label="Start session" busy={pending()?.phase === 'creating' || pending()?.phase === 'accepted'} disabled={readOnly() || locked() || !!pending() || !draft().trim() || promptOverBudget()} onClick={submit} class="size-40 min-h-40 rounded-full border-0 bg-btn-primary text-surface hover:bg-btn-primary-hover"><SendHorizontal size={20} strokeWidth={1.7} /></IconButton>
+        <IconButton variant="primary" label="Start session" busy={pending()?.phase === 'creating' || pending()?.phase === 'accepted'} disabled={readOnly() || locked() || !!pending() || !draft().trim() || promptOverBudget()} onClick={submit} class="w-44 min-h-38 rounded-9 border-0 bg-btn-primary text-surface hover:bg-btn-primary-hover"><SendHorizontal size={20} strokeWidth={1.7} /></IconButton>
       </div>
     </div>
     <Show when={pendingNeedsAttention() ? pending() : null}>{(submission) => <InlineNotice id={statusId} class="quick-start__state mt-8 [&_small]:min-w-0" tone={submission().phase === 'failed' ? 'danger' : 'warning'} role="alert" title={submission().phase === 'uncertain' ? 'Creation result not confirmed yet' : 'Failed to create session'}>

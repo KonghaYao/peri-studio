@@ -86,6 +86,13 @@ describe('Button', () => {
     expect(repeated).not.toHaveAttribute('aria-describedby');
   });
 
+  it('uses rounded rectangular geometry for icon-only actions', () => {
+    render(() => <><IconButton label="Default action">×</IconButton><IconButton label="Compact action" size="compact">×</IconButton></>);
+    expect(screen.getByRole('button', { name: 'Default action' })).toHaveClass('w-34', 'min-h-30', 'rounded-7');
+    expect(screen.getByRole('button', { name: 'Compact action' })).toHaveClass('w-28', 'min-h-24', 'rounded-6');
+    expect(screen.getByRole('button', { name: 'Default action' })).not.toHaveClass('rounded-full');
+  });
+
   it('never submits a surrounding form unless submit is explicit', () => {
     const submit = vi.fn((event: SubmitEvent) => event.preventDefault());
     render(() => <form onSubmit={submit}><Button>Cancel</Button><Button type="submit">Save</Button></form>);

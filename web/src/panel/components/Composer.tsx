@@ -271,7 +271,7 @@ export function Composer() {
               <Show when={asset.kind === 'image' && asset.previewUrl} fallback={<span class="grid place-items-center text-text-secondary"><AssetIcon kind={asset.kind} /></span>}>
                     <img src={asset.previewUrl} alt="" class="h-[39px] w-full rounded-5 object-cover" />
                   </Show>
-                  <IconButton label={`Remove ${asset.name}`} title={`Remove ${asset.name}`} class="absolute right-2 top-2 size-18 min-h-18 rounded-full border border-border-subtle bg-white/95 p-0 text-text-secondary opacity-75 shadow-sm transition-opacity hover:text-text-primary group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100" onClick={() => removeComposerAsset(asset.id)}><X size={11} strokeWidth={2} /></IconButton>
+                  <IconButton label={`Remove ${asset.name}`} title={`Remove ${asset.name}`} size="compact" class="absolute right-2 top-2 w-22 min-h-18 rounded-5 border border-border-subtle bg-white/95 p-0 text-text-secondary opacity-75 shadow-sm transition-opacity hover:text-text-primary group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100" onClick={() => removeComposerAsset(asset.id)}><X size={11} strokeWidth={2} /></IconButton>
               <strong class="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-9 font-600 text-text-secondary">{asset.name}</strong>
             </article>}</For>
           </div>
@@ -359,10 +359,10 @@ export function Composer() {
           </InlineNotice>
         }</Show>
         <div class="composer-toolbar flex min-h-36 items-center gap-4">
-          <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="composer-attachment size-32 min-h-32 shrink-0 border-0 bg-transparent text-text-primary disabled:opacity-55">
+          <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="composer-attachment shrink-0 border-0 bg-transparent text-text-primary disabled:opacity-55">
             <AttachmentIcon />
           </IconButton>
-          <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled class="composer-approval size-32 min-h-32 shrink-0 border-0 bg-transparent text-text-muted disabled:opacity-55">
+          <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled class="composer-approval shrink-0 border-0 bg-transparent text-text-muted disabled:opacity-55">
             <ApprovalIcon />
           </IconButton>
           <Show when={prediction.activePrediction()}>
@@ -373,7 +373,7 @@ export function Composer() {
           <Show when={canBrowseSkills()}>
             <Button
               size="compact"
-              class="composer-skills relative inline-flex size-32 min-h-32 items-center justify-center gap-0 border-0 bg-transparent p-0 text-text-primary text-11 font-normal pointer-coarse:size-40 pointer-coarse:min-h-40 max-tight:before:content-['/'] max-tight:before:font-mono max-tight:before:text-15 max-tight:before:leading-none max-tight:before:font-bold"
+              class="composer-skills relative inline-flex w-34 min-h-30 items-center justify-center gap-0 rounded-7 border-0 bg-transparent p-0 text-text-primary text-11 font-normal pointer-coarse:w-48 pointer-coarse:min-h-44 max-tight:before:content-['/'] max-tight:before:font-mono max-tight:before:text-15 max-tight:before:leading-none max-tight:before:font-bold"
               aria-expanded={slash.browseSkills() && slash.slashMenuOpen()}
               aria-controls={slashMenuId}
               aria-label={`Browse skills (${skillCount()})`}
@@ -400,17 +400,17 @@ export function Composer() {
               disabled={!selectedCid() || !runtimeDocsHydrated()}
             ><span class="overflow-hidden text-ellipsis whitespace-nowrap">{model()}</span></Button>
           } />
-          <span class="composer-voice-slot flex size-32 shrink-0 items-center justify-center">
-            <IconButton label="Voice input" title="Voice input is not connected yet" disabled class="composer-voice size-32 min-h-32 shrink-0 border-0 bg-transparent text-text-primary disabled:opacity-55">
+          <span class="composer-voice-slot flex w-34 min-h-30 shrink-0 items-center justify-center">
+            <IconButton label="Voice input" title="Voice input is not connected yet" disabled class="composer-voice shrink-0 border-0 bg-transparent text-text-primary disabled:opacity-55">
               <MicrophoneIcon />
             </IconButton>
           </span>
           <Show when={turnActive()} fallback={
-            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || !composerDraft(draftOwner()).trim() || promptOverBudget()} label="Send" class="composer-action flex size-32 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:size-44 max-narrow:min-h-44">
+            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || !composerDraft(draftOwner()).trim() || promptOverBudget()} label="Send" class="composer-action flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:w-48 max-narrow:min-h-44">
               <SendHorizontal size={18} strokeWidth={1.7} />
             </IconButton></span>
           }>
-            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={requestCancel} disabled={cancelLocked() || readOnly()} busy={cancelControl()?.phase === 'sending' || cancelControl()?.phase === 'accepted'} label={cancelLabel()} class={`composer-action composer-action--stop flex size-32 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:size-44 max-narrow:min-h-44 ${cancelControl()?.phase === 'uncertain' ? 'bg-warning hover:bg-warning-strong' : ''}`}>
+            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={requestCancel} disabled={cancelLocked() || readOnly()} busy={cancelControl()?.phase === 'sending' || cancelControl()?.phase === 'accepted'} label={cancelLabel()} class={`composer-action composer-action--stop flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:w-48 max-narrow:min-h-44 ${cancelControl()?.phase === 'uncertain' ? 'bg-warning hover:bg-warning-strong' : ''}`}>
               <Show when={!cancelControl() || cancelControl()?.phase === 'uncertain' || cancelControl()?.phase === 'confirmed'}><span aria-hidden="true" class="size-10 rounded-2 bg-current" /></Show>
             </IconButton></span>
           </Show>

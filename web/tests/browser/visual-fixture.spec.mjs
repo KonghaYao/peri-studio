@@ -140,6 +140,22 @@ test('design token page documents foundations, primitives, patterns, and modules
   await expect(page.locator('.design-token-page')).toHaveCSS('overflow-x', 'visible');
 });
 
+for (const scenario of ['conversation', 'permission-streaming', 'elicitation', 'markdown', 'resources', 'assets', 'design-tokens']) {
+  test(`${scenario} keeps icon actions rectangular`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(`/visual-fixture.html?scenario=${scenario}`, { waitUntil: 'networkidle' });
+    const geometry = await page.locator('[data-icon-button]:visible').evaluateAll((buttons) => buttons.map((button) => {
+      const rect = button.getBoundingClientRect();
+      return { label: button.getAttribute('aria-label'), width: rect.width, height: rect.height, radius: getComputedStyle(button).borderRadius };
+    }));
+    expect(geometry.length).toBeGreaterThan(0);
+    for (const button of geometry) {
+      expect(button.width, button.label ?? 'icon action').toBeGreaterThan(button.height);
+      expect(button.radius, button.label ?? 'icon action').not.toBe('50%');
+    }
+  });
+}
+
 for (const [scenario, expected] of scenarios) {
   for (const viewport of viewports) {
     test(`${scenario} satisfies the browser contract at ${viewport.width}x${viewport.height}`, async ({ page }) => {

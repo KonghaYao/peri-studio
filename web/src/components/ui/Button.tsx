@@ -16,6 +16,11 @@ const buttonSizeClasses = {
   default: '',
 } as const;
 
+const iconButtonSizeClasses = {
+  compact: 'w-28 min-h-24 rounded-6 p-0 pointer-coarse:w-48 pointer-coarse:min-h-44',
+  default: 'w-34 min-h-30 rounded-7 p-0 pointer-coarse:w-48 pointer-coarse:min-h-44',
+} as const;
+
 // 不在 base 设置 text-*：Tailwind 的 utility 排序与 class 字符串顺序无关，
 // base 的 text-inherit 会覆盖 primary 的前景色，形成深色字叠深色按钮。
 // 未声明文字色的 ghost 按钮天然继承父级，其他 variant 各自拥有明确颜色。
@@ -47,12 +52,12 @@ export function Button(props: Props) {
 }
 
 export function IconButton(props: Props & { label: string; tooltipPlacement?: 'start' | 'center' | 'end' }) {
-  const [local, button] = splitProps(props, ['label', 'title', 'class', 'tooltipPlacement']);
+  const [local, button] = splitProps(props, ['label', 'title', 'class', 'tooltipPlacement', 'size']);
   const helpId = `icon-help-${createUniqueId()}`;
   const customHelp = () => !!local.title && local.title !== local.label;
   return <Tooltip placement={local.tooltipPlacement === 'start' ? 'bottom-start' : local.tooltipPlacement === 'end' ? 'bottom-end' : 'bottom'}>
     <TooltipTrigger as="span" class="ui-tooltip-anchor">
-      <Button {...button} aria-label={local.label} aria-description={customHelp() ? local.title : undefined} aria-describedby={customHelp() ? helpId : undefined} class={cn('w-(--control-height-default) min-h-(--control-height-default) p-0 pointer-coarse:w-44 pointer-coarse:min-h-44', local.class)} />
+      <Button {...button} size={local.size} data-icon-button="" aria-label={local.label} aria-description={customHelp() ? local.title : undefined} aria-describedby={customHelp() ? helpId : undefined} class={cn(iconButtonSizeClasses[local.size ?? 'default'], local.class)} />
     </TooltipTrigger>
     <TooltipContent id={customHelp() ? helpId : undefined}>{local.title ?? local.label}</TooltipContent>
   </Tooltip>;

@@ -10,7 +10,7 @@ export const DialogTrigger = DialogPrimitive.Trigger;
 type CloseProps<T extends ValidComponent = 'button'> = DialogPrimitive.DialogCloseButtonProps<T> & { class?: string };
 export function DialogClose<T extends ValidComponent = 'button'>(props: PolymorphicProps<T, CloseProps<T>>) {
   const [local, rest] = splitProps(props as CloseProps, ['class']);
-  return <DialogPrimitive.CloseButton class={cn('grid size-36 place-items-center rounded-9 border-0 bg-transparent text-22 font-300 text-text-muted cursor-pointer hover:bg-hover hover:text-text-primary pointer-coarse:size-44', local.class)} {...rest} />;
+  return <DialogPrimitive.CloseButton data-icon-button="" class={cn('grid w-34 min-h-30 place-items-center rounded-7 border-0 bg-transparent text-22 font-300 text-text-muted cursor-pointer hover:bg-hover hover:text-text-primary pointer-coarse:w-48 pointer-coarse:min-h-44', local.class)} {...rest} />;
 }
 
 export function DialogPortal(props: DialogPrimitive.DialogPortalProps) {

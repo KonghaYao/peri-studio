@@ -128,12 +128,12 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
           <span>The server confirmed ACP did not run this message. Copy it and resend.</span>
         </InlineNotice>
       </Show>
-      <Show when={role() === 'assistant' && entry().text && !streaming()}><div class="conversation-message__actions flex min-h-28 items-center gap-2 pt-1 text-text-muted"><CopyButton size="compact" text={copyText()} label="Copy answer" class="size-28 min-h-28 border-0 bg-transparent px-0 text-text-muted hover:bg-hover" /><IconButton label="Quote answer" size="compact" variant="ghost" class="size-28 min-h-28 border-0 bg-transparent p-0 text-text-muted hover:bg-hover" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-5 text-11 font-600 text-text-muted">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-text-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div></Show>
+      <Show when={role() === 'assistant' && entry().text && !streaming()}><div class="conversation-message__actions flex min-h-28 items-center gap-2 pt-1 text-text-muted"><CopyButton size="compact" text={copyText()} label="Copy answer" class="border-0 bg-transparent text-text-muted hover:bg-hover" /><IconButton label="Quote answer" size="compact" variant="ghost" class="border-0 bg-transparent text-text-muted hover:bg-hover" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-5 text-11 font-600 text-text-muted">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-text-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div></Show>
     </div>
     <Show when={selectionAction()}>{(action) => <IconButton
       label="Add selection to conversation"
       variant="primary"
-      class="fixed z-50 size-32 min-h-32 -translate-x-1/2 -translate-y-full rounded-full border-0 bg-btn-primary p-0 text-surface shadow-popover"
+      class="fixed z-50 w-36 min-h-30 -translate-x-1/2 -translate-y-full rounded-7 border-0 bg-btn-primary p-0 text-surface shadow-popover"
       style={{ left: `${action().left}px`, top: `${action().top}px` }}
       onMouseDown={(event) => event.preventDefault()}
       onClick={() => addQuote(action().text)}

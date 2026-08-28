@@ -118,8 +118,8 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
       <div class={`resource-workbench__panel flex min-h-0 min-w-0 flex-1 flex-col bg-surface ${props.compact ? '' : 'absolute inset-y-8 right-52 z-30 w-[264px] overflow-hidden rounded-14 border border-border-subtle shadow-popover wide:w-[310px]'}`}>
         <header class="flex h-40 shrink-0 items-center gap-5 border-b border-divider px-10">
           <strong class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-11 font-650 uppercase tracking-5 text-text-secondary">{panelTitle()}</strong>
-          <Show when={view() === 'explorer' || view() === 'scm'}><IconButton label="Refresh resources" onClick={refreshResourceProject} class="size-26 min-h-26 border-0 bg-transparent text-text-muted pointer-coarse:size-44 pointer-coarse:min-h-44"><RefreshCw size={14} strokeWidth={1.7} /></IconButton></Show>
-          <IconButton label="Close resource panel" onClick={close} class="size-26 min-h-26 border-0 bg-transparent text-text-muted pointer-coarse:size-44 pointer-coarse:min-h-44"><X size={14} strokeWidth={1.7} /></IconButton>
+          <Show when={view() === 'explorer' || view() === 'scm'}><IconButton label="Refresh resources" size="compact" onClick={refreshResourceProject} class="border-0 bg-transparent text-text-muted"><RefreshCw size={14} strokeWidth={1.7} /></IconButton></Show>
+          <IconButton label="Close resource panel" size="compact" onClick={close} class="border-0 bg-transparent text-text-muted"><X size={14} strokeWidth={1.7} /></IconButton>
         </header>
         <Show when={view() === 'mcp'}><McpPanelContent embedded /></Show>
         <Show when={view() === 'explorer' || view() === 'scm'}>
@@ -150,7 +150,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
 }
 
 function ActivityButton(props: { label: string; active: boolean; badge?: number; onClick: () => void; children: unknown }) {
-  return <button type="button" title={props.label} aria-label={props.label} aria-pressed={props.active} onClick={props.onClick} class={`relative grid size-36 place-items-center rounded-6 border-0 bg-transparent text-text-muted hover:bg-hover hover:text-text-primary focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-1 pointer-coarse:size-44 ${props.active ? 'bg-selected text-text-primary before:absolute before:top-6 before:bottom-6 before:left-[-5px] before:w-2 before:rounded-full before:bg-accent' : ''}`}>
+  return <button type="button" title={props.label} aria-label={props.label} aria-pressed={props.active} onClick={props.onClick} class={`relative grid w-40 min-h-34 place-items-center rounded-7 border-0 bg-transparent text-text-muted hover:bg-hover hover:text-text-primary focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-1 pointer-coarse:w-48 pointer-coarse:min-h-44 ${props.active ? 'bg-selected text-text-primary before:absolute before:top-6 before:bottom-6 before:left-[-5px] before:w-2 before:rounded-full before:bg-accent' : ''}`}>
     {props.children as never}<Show when={(props.badge ?? 0) > 0}><span class="absolute right-1 bottom-1 min-w-14 rounded-full bg-accent px-3 text-center text-9 leading-14 text-white">{props.badge! > 99 ? '99+' : props.badge}</span></Show>
   </button>;
 }

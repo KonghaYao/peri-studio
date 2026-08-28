@@ -125,13 +125,15 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
             busy={mutation()?.pending}
             disabled={readOnly() || repoBusy() || mutation()?.pending}
             onClick={(event) => { event.stopPropagation(); mutateGitResource(props.repo.id, action(), [change.id]); }}
-            class="size-22 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44"
+            size="compact"
+            class="w-28 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100"
           >{group.id === 'index' ? <Minus size={13} strokeWidth={1.8} /> : <Plus size={13} strokeWidth={1.8} />}</IconButton>
           <Show when={group.id === 'working_tree' || group.id === 'untracked'}><IconButton
             label={`Discard ${path()}`}
             disabled={readOnly() || repoBusy() || mutation()?.pending}
             onClick={(event) => { event.stopPropagation(); setDiscard({ id: change.id, path: path() }); }}
-            class="size-22 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-danger pointer-coarse:size-44 pointer-coarse:min-h-44"
+            size="compact"
+            class="w-28 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-danger pointer-coarse:opacity-100"
           ><Trash2 size={13} strokeWidth={1.8} /></IconButton></Show>
           </div>
           <Show when={mutation()?.error}>{(message) => <div role="alert" class="flex min-h-28 items-center gap-6 border-y border-danger-border bg-danger-soft px-12 py-4 text-10 leading-14 text-danger">

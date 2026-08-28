@@ -99,7 +99,7 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
   };
   return <section class="flex min-h-0 flex-1 flex-col" aria-label="Explorer">
     <div class="resource-section-title flex h-28 items-center border-b border-divider px-8 text-10 font-650 uppercase tracking-6 text-text-secondary pointer-coarse:h-44">
-      <span>Files</span><IconButton label="Refresh Explorer" onClick={refreshResourceProject} class="ml-auto size-24 min-h-24 border-0 bg-transparent text-text-muted pointer-coarse:size-44 pointer-coarse:min-h-44"><RefreshIcon /></IconButton>
+      <span>Files</span><IconButton label="Refresh Explorer" size="compact" onClick={refreshResourceProject} class="ml-auto border-0 bg-transparent text-text-muted"><RefreshIcon /></IconButton>
     </div>
     <div
       ref={(element) => {

@@ -19,6 +19,10 @@ const cssFiles = () => {
   return [...entry.matchAll(/@import\s+'([^']+)';/g)].map((match) => match[1].replace(/^\.\//, ''));
 };
 const featureCss = () => cssFiles().map((file) => readFileSync(join(import.meta.dirname, '..', 'src', file), 'utf8')).join('\n');
+const allFiles = (directory) => readdirSync(directory, { withFileTypes: true }).flatMap((item) => {
+  const path = join(directory, item.name);
+  return item.isDirectory() ? allFiles(path) : [path];
+});
 
 test('numeric Tailwind spacing utilities resolve to an explicit product token', () => {
   const source = join(import.meta.dirname, '..', 'src');
@@ -225,10 +229,12 @@ test('responsive behavior has compact, medium and wide layout contracts', () => 
 
 test('coarse pointers expose sidebar actions without hover and keep controls touch-sized', () => {
   const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'components', 'ProjectSessionRow.tsx'), 'utf8');
+  const button = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Button.tsx'), 'utf8');
   const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Dialog.tsx'), 'utf8');
-  assert.match(sessionRow, /group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100/);
+  assert.match(sessionRow, /group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100/);
   assert.match(sessionRow, /pointer-coarse:min-h-52 pointer-coarse:pr-\[68px\]/);
-  assert.match(dialog, /pointer-coarse:size-44/);
+  assert.match(button, /pointer-coarse:w-48 pointer-coarse:min-h-44/);
+  assert.match(dialog, /pointer-coarse:w-48 pointer-coarse:min-h-44/);
 });
 
 test('P0 interaction architecture cannot regress to hidden cancel or viewport-breaking overlays', () => {
@@ -380,6 +386,19 @@ test('icon-only controls receive visible help from the shared Tooltip', () => {
   const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'components', 'ProjectSessionRow.tsx'), 'utf8');
   assert.match(sessionRow, /<DropdownMenuTrigger as=\{IconButton\}[\s\S]*?class="session-menu(?:\s|[^"]*?")/);
   assert.doesNotMatch(sessionRow, /<button[^>]*class="session-menu"/);
+});
+
+test('icon-only actions use one rounded rectangular geometry and never circular buttons', () => {
+  const sourceRoot = join(import.meta.dirname, '..', 'src');
+  const button = readFileSync(join(sourceRoot, 'components', 'ui', 'Button.tsx'), 'utf8');
+  assert.match(button, /compact: 'w-28 min-h-24 rounded-6/);
+  assert.match(button, /default: 'w-34 min-h-30 rounded-7/);
+  for (const file of allFiles(sourceRoot).filter((path) => path.endsWith('.tsx'))) {
+    const source = readFileSync(file, 'utf8');
+    for (const match of source.matchAll(/<IconButton\b[\s\S]*?(?:\/>|<\/IconButton>)/g)) {
+      assert.doesNotMatch(match[0], /rounded-full/, `${file} must not render a circular icon action`);
+    }
+  }
 });
 
 test('responsive navigation uses structural desktop layout and Kobalte modal behavior', () => {

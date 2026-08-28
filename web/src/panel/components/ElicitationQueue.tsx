@@ -105,20 +105,20 @@ function AskUserQuestionDialog(props: {
         <span class="text-text-secondary text-11 font-650">Questions</span>
         <Show when={props.total > 1}>
           <span class="flex items-center gap-1">
-            <IconButton type="button" label="Previous question" variant="ghost" size="compact" disabled={props.currentIndex === 0} onClick={props.onPrevious} class="size-24 min-h-24 border-0 bg-transparent text-text-muted hover:text-text-primary disabled:opacity-30">
+            <IconButton type="button" label="Previous question" variant="ghost" size="compact" disabled={props.currentIndex === 0} onClick={props.onPrevious} class="border-0 bg-transparent text-text-muted hover:text-text-primary disabled:opacity-30">
               <ChevronLeft size={13} strokeWidth={1.8} />
             </IconButton>
             <span class="min-w-26 text-center text-text-muted text-9 tabular-nums">{props.currentIndex + 1} / {props.total}</span>
-            <IconButton type="button" label="Next question" variant="ghost" size="compact" disabled={props.currentIndex === props.total - 1} onClick={props.onNext} class="size-24 min-h-24 border-0 bg-transparent text-text-muted hover:text-text-primary disabled:opacity-30">
+            <IconButton type="button" label="Next question" variant="ghost" size="compact" disabled={props.currentIndex === props.total - 1} onClick={props.onNext} class="border-0 bg-transparent text-text-muted hover:text-text-primary disabled:opacity-30">
               <ChevronRight size={13} strokeWidth={1.8} />
             </IconButton>
           </span>
         </Show>
         <span class="ml-auto flex items-center gap-1">
-          <IconButton type="button" label="Cancel question" variant="ghost" size="compact" disabled={locked()} onClick={cancel} class="size-24 min-h-24 border-0 bg-transparent text-text-muted hover:text-danger">
+          <IconButton type="button" label="Cancel question" variant="ghost" size="compact" disabled={locked()} onClick={cancel} class="border-0 bg-transparent text-text-muted hover:text-danger">
             <X size={13} strokeWidth={1.8} />
           </IconButton>
-          <IconButton type="button" label={expanded() ? 'Collapse questions' : 'Expand questions'} variant="ghost" size="compact" aria-expanded={expanded()} aria-controls={bodyId} onClick={() => setExpanded((value) => !value)} class="size-24 min-h-24 border-0 bg-transparent text-text-muted hover:text-text-primary">
+          <IconButton type="button" label={expanded() ? 'Collapse questions' : 'Expand questions'} variant="ghost" size="compact" aria-expanded={expanded()} aria-controls={bodyId} onClick={() => setExpanded((value) => !value)} class="border-0 bg-transparent text-text-muted hover:text-text-primary">
             <ChevronDown size={14} strokeWidth={1.8} class={`transition-transform ${expanded() ? '' : 'rotate-180'}`} />
           </IconButton>
         </span>

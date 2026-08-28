@@ -79,7 +79,7 @@ describe('Composer', () => {
     expect(document.querySelector('.composer-surface')).toHaveClass('rounded-(--composer-radius)', 'p-9');
     expect(screen.getByRole('textbox')).toHaveClass('min-h-52', 'text-12', 'leading-18');
     expect(screen.getByRole('button', { name: 'Choose model' })).toHaveTextContent('Nova 4.1');
-    expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('size-32', 'rounded-8');
+    expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('w-36', 'min-h-32', 'rounded-8');
   });
 
   it('adds a quoted answer to the current draft without replacing existing text', async () => {

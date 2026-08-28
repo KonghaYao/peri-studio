@@ -100,7 +100,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     <DropdownMenu open={props.menuOpen} onOpenChange={props.onMenuOpenChange} placement="bottom-end">
       <DropdownMenuTrigger as={IconButton}
         tooltipPlacement="end"
-        class="session-menu absolute top-0 right-[20px] size-32 min-h-32 border-0 bg-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 pointer-coarse:size-44 pointer-coarse:min-h-44 pointer-coarse:opacity-100"
+        class="session-menu absolute top-1 right-[20px] border-0 bg-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100"
         ref={menuTrigger}
         disabled={props.readOnly || submitting()}
         label={`Session actions: ${displayTitle()}`}
