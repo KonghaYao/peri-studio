@@ -421,12 +421,11 @@ describe('MessageList hydration', () => {
     expect(screen.getByRole('separator', { name: 'Current run' })).toBeInTheDocument();
   });
 
-  it('visibly marks inferred replay as unverified', () => {
+  it('keeps inferred replay provenance out of the visible transcript', () => {
     setRuntimeDocsState({ chat: true, control: true });
     setChatEntries([message('history-1', 'session_replay', false)]);
     render(() => <MessageList />);
-    const boundary = screen.getByRole('separator', { name: 'Unverified recovered history' });
-    expect(boundary).toHaveTextContent('Unverified history');
-    expect(boundary).toHaveClass('mt-4', 'mb-4');
+    expect(screen.queryByText('Unverified history')).not.toBeInTheDocument();
+    expect(screen.queryByRole('separator', { name: 'Unverified recovered history' })).not.toBeInTheDocument();
   });
 });

@@ -22,21 +22,20 @@ import { TranscriptWindow } from '../lib/transcript-window';
 import { visibleElicitations } from '../lib/elicitation-delivery';
 
 
-function HistoryBoundary(props: { kind: Exclude<ReplayBoundary, null> }) {
+type VisibleHistoryBoundary = Exclude<ReplayBoundary, null | 'inferred_history'>;
+
+function visibleHistoryBoundary(kind: ReplayBoundary): VisibleHistoryBoundary | null {
+  return kind === 'verified_history' || kind === 'live_runtime' ? kind : null;
+}
+
+function HistoryBoundary(props: { kind: VisibleHistoryBoundary }) {
   const label = () => props.kind === 'live_runtime'
     ? 'Current'
-    : props.kind === 'verified_history'
-      ? 'Verified history'
-      : 'Unverified history';
+    : 'Verified history';
   const accessibleLabel = () => props.kind === 'live_runtime'
     ? 'Current run'
-    : props.kind === 'verified_history'
-      ? 'Peri-verified recovered history'
-      : 'Unverified recovered history';
-  const detail = () => props.kind === 'inferred_history'
-    ? 'Identified from the session load window; some sources are marked unverifiable'
-    : null;
-  return <div class="history-boundary grid grid-cols-boundary items-center gap-8 mt-4 mb-4 text-text-muted text-10 tracking-25 text-center before:h-px before:bg-divider before:content-[''] after:h-px after:bg-divider after:content-['']" role="separator" aria-label={accessibleLabel()} title={detail() || accessibleLabel()}>
+    : 'Peri-verified recovered history';
+  return <div class="history-boundary grid grid-cols-boundary items-center gap-8 mt-4 mb-4 text-text-muted text-10 tracking-25 text-center before:h-px before:bg-divider before:content-[''] after:h-px after:bg-divider after:content-['']" role="separator" aria-label={accessibleLabel()} title={accessibleLabel()}>
     <span class="whitespace-nowrap">{label()}</span>
   </div>;
 }
@@ -334,7 +333,7 @@ export function MessageList(props: { footerHeight?: number }) {
             {(id, localIndex) => {
               const globalIndex = () => visibleTranscript().start + localIndex();
               return <TranscriptRow id={id} position={globalIndex() + 1} size={chatEntryIds().length} onMeasure={measureTranscriptRow}>
-                <Show when={replayBoundaryAt(chatEntries(), globalIndex())}>{(kind) => <HistoryBoundary kind={kind()} />}</Show>
+                <Show when={visibleHistoryBoundary(replayBoundaryAt(chatEntries(), globalIndex()))}>{(kind) => <HistoryBoundary kind={kind()} />}</Show>
                 <Show when={chatEntries()[globalIndex()]}>{(entry) => <ConversationMessage entry={entry} />}</Show>
               </TranscriptRow>;
             }}
