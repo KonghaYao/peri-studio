@@ -30,7 +30,7 @@ test('authentication invalidation survives UI cleanup and reaches the login surf
   assert.match(gate, /auth\.problem\(\)/);
   assert.doesNotMatch(gate, /fetch\(|localStorage\./);
   assert.doesNotMatch(store, /export \{[^}]*authInvalidation/);
-  for (const file of ['ProjectSidebar.tsx', 'Composer.tsx', 'SessionSearch.tsx', 'ChatView.tsx', 'ChatHeader.tsx', 'QuickStartComposer.tsx']) {
+  for (const file of ['ProjectSidebar.tsx', 'Composer.tsx', 'SessionSearch.tsx', 'ChatView.tsx', 'QuickStartComposer.tsx', 'SessionRailActions.tsx']) {
     const feature = readFileSync(join(root, 'components', file), 'utf8');
     assert.match(feature, /from '\.\.\/lib\/auth-state'/, file);
     assert.doesNotMatch(feature, /import \{[^}]*\breadOnly\b[^}]*\} from '\.\.\/store'/, file);

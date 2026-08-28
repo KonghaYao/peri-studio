@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
+import { render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   setChatHead,
@@ -13,7 +13,7 @@ import {
 } from '../store';
 import { setConnState } from '../lib/connection';
 import { ChatHeader } from './ChatHeader';
-import { resetRuntimeControls, startRuntimeControl } from '../lib/runtime-control';
+import { resetRuntimeControls } from '../lib/runtime-control';
 import { setPrincipalRole } from '../lib/auth-state';
 
 const session = {
@@ -45,35 +45,6 @@ function resetStore() {
 afterEach(resetStore);
 
 describe('ChatHeader runtime truth', () => {
-  it('exposes rewind only when the active Agent negotiated the exact Peri capability', async () => {
-    setPrincipalRole('full');
-    setProjectSessions([session]);
-    setSelectedSessionId(session.id);
-    setSelectedCid('chat-1');
-    setChatStatusSignal({ 'chat-1': 'active' });
-    setConnState({ text: 'Ready', kind: 'ok' });
-    setChatHead({
-      chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
-      agent: {
-        instanceId: 'local', sessionId: 'acp-1', status: 'ready', lastActivityAt: null,
-        availableCommands: [], commandCatalog: [], extensions: [], activities: [], inputPrediction: null,
-        latestUsage: null, model: null, effort: null, contextWindow: null, contextUsed: null,
-      },
-      activeTurn: null, pendingPermissions: [],
-    });
-    render(() => <ChatHeader />);
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'Conversation actions' }));
-    expect(screen.queryByRole('menuitem', { name: 'Rewind session…' })).not.toBeInTheDocument();
-
-    setChatHead((current) => current?.agent ? {
-      ...current, agent: { ...current.agent, extensions: ['peri.rewind'] },
-    } : current);
-    if (!screen.queryByRole('menuitem', { name: 'Rewind session…' })) {
-      fireEvent.pointerDown(screen.getByRole('button', { name: 'Conversation actions' }));
-    }
-    await waitFor(() => expect(screen.getByRole('menuitem', { name: 'Rewind session…' })).toBeInTheDocument());
-  });
-
   it('keeps durable session identity separate from an absent runtime', () => {
     setProjectSessions([{ ...session, activeChatId: null }]);
     setSelectedSessionId(session.id);
@@ -147,31 +118,6 @@ describe('ChatHeader runtime truth', () => {
 
     expect(screen.getByText('Offline', { selector: '.runtime-status .sr-only' }).closest('.runtime-status')).toHaveClass('runtime-status--danger');
     expect(screen.queryByText('Ready')).not.toBeInTheDocument();
-  });
-
-  it('prevents close while another control owns the runtime', () => {
-    setProjectSessions([session]);
-    setSelectedSessionId(session.id);
-    setSelectedCid('chat-1');
-    setChatStatusSignal({ 'chat-1': 'active' });
-    startRuntimeControl('cancel-1', 'chat-1', 'cancel');
-    render(() => <ChatHeader />);
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'Conversation actions' }));
-    expect(screen.getByRole('menuitem', { name: 'Close running instance' })).toHaveAttribute('aria-disabled', 'true');
-  });
-
-  it('closes the confirmation when Registry proves the runtime is terminal', async () => {
-    setPrincipalRole('full');
-    setProjectSessions([session]);
-    setSelectedSessionId(session.id);
-    setSelectedCid('chat-1');
-    setChatStatusSignal({ 'chat-1': 'active' });
-    render(() => <ChatHeader />);
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'Conversation actions' }));
-    fireEvent.keyDown(screen.getByRole('menuitem', { name: 'Close running instance' }), { key: 'Enter' });
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    setChatStatusSignal({ 'chat-1': 'closed' });
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('keeps system information out of the per-conversation header', () => {

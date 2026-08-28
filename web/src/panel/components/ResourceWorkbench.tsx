@@ -4,6 +4,8 @@ import { activateResourceProject, projectSessions, projects, refreshResourceProj
 import { ExplorerPanel } from './ExplorerPanel';
 import { SourceControlPanel } from './SourceControlPanel';
 import { McpPanelContent } from './McpPanel';
+import { ResourceRailButton } from './ResourceRailButton';
+import { SessionRailActions } from './SessionRailActions';
 import { Files, GitBranch, PlugZap, RefreshCw, X } from 'lucide-solid';
 
 export type WorkbenchView = 'explorer' | 'scm' | 'mcp' | null;
@@ -110,9 +112,10 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   const panelTitle = () => view() === 'mcp' ? 'MCP' : project()?.name ?? 'Workspace';
   const surface = () => <aside class={`resource-workbench flex h-full min-h-0 border-l border-divider bg-surface ${props.compact ? 'absolute inset-0 w-full' : 'relative w-[46px] shrink-0'}`} aria-label="Workspace resources">
     <nav class="flex w-46 shrink-0 flex-col items-center gap-1 bg-surface py-6" aria-label="Resource views">
-      <ActivityButton label="Explorer" active={view() === 'explorer'} onClick={() => toggle('explorer')}><Files size={17} strokeWidth={1.7} /></ActivityButton>
-      <ActivityButton label="Source Control" active={view() === 'scm'} badge={sourceControlCount()} onClick={() => toggle('scm')}><GitBranch size={17} strokeWidth={1.7} /></ActivityButton>
-      <ActivityButton label="MCP" active={view() === 'mcp'} onClick={() => toggle('mcp')}><PlugZap size={17} strokeWidth={1.7} /></ActivityButton>
+      <ResourceRailButton label="Explorer" active={view() === 'explorer'} onClick={() => toggle('explorer')}><Files size={17} strokeWidth={1.7} /></ResourceRailButton>
+      <ResourceRailButton label="Source Control" active={view() === 'scm'} badge={sourceControlCount()} onClick={() => toggle('scm')}><GitBranch size={17} strokeWidth={1.7} /></ResourceRailButton>
+      <ResourceRailButton label="MCP" active={view() === 'mcp'} onClick={() => toggle('mcp')}><PlugZap size={17} strokeWidth={1.7} /></ResourceRailButton>
+      <SessionRailActions />
     </nav>
     <Show when={view()}>
       <div class={`resource-workbench__panel flex min-h-0 min-w-0 flex-1 flex-col bg-surface ${props.compact ? '' : 'absolute inset-y-8 right-52 z-30 w-[264px] overflow-hidden rounded-14 border border-border-subtle shadow-popover wide:w-[310px]'}`}>
@@ -147,10 +150,4 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
       </DialogContent>
     </Dialog>
   </Show>;
-}
-
-function ActivityButton(props: { label: string; active: boolean; badge?: number; onClick: () => void; children: unknown }) {
-  return <button type="button" title={props.label} aria-label={props.label} aria-pressed={props.active} onClick={props.onClick} class={`relative grid w-40 min-h-34 place-items-center rounded-7 border-0 bg-transparent text-text-muted hover:bg-hover hover:text-text-primary focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-1 pointer-coarse:w-48 pointer-coarse:min-h-44 ${props.active ? 'bg-selected text-text-primary before:absolute before:top-6 before:bottom-6 before:left-[-5px] before:w-2 before:rounded-full before:bg-accent' : ''}`}>
-    {props.children as never}<Show when={(props.badge ?? 0) > 0}><span class="absolute right-1 bottom-1 min-w-14 rounded-full bg-accent px-3 text-center text-9 leading-14 text-white">{props.badge! > 99 ? '99+' : props.badge}</span></Show>
-  </button>;
 }

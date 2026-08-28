@@ -75,11 +75,11 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
     window.getSelection()?.removeAllRanges();
   };
 
-  return <article ref={articleRef} onMouseUp={captureSelection} onKeyUp={captureSelection} class={`conversation-message conversation-message--${role()} relative flex mb-12 group ${role() === 'assistant' ? 'conversation-message--timeline pl-0 before:hidden' : ''} ${role() === 'user' ? 'justify-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
+  return <article ref={articleRef} onMouseUp={captureSelection} onKeyUp={captureSelection} class={`conversation-message conversation-message--${role()} group/message relative mb-12 flex ${role() === 'assistant' ? 'conversation-message--timeline pl-0 before:hidden' : ''} ${role() === 'user' ? 'justify-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
     <Show when={role() === 'assistant'}><span class="conversation-message__timeline-mark hidden" aria-hidden="true" /></Show>
     <div class={`conversation-message__surface min-w-0 ${role() === 'user' ? 'max-w-72p border border-border-subtle py-8 px-12 rounded-12 bg-surface-muted' : role() === 'system' ? 'max-w-[70%] py-4 px-12 rounded-full bg-surface-muted text-text-secondary text-12' : 'w-full'} [&>*+*]:mt-10 [&>.tool-card+.tool-card]:mt-0`}>
       <Show when={role() === 'user'}>
-        <header class="conversation-message__meta pointer-events-none absolute -top-17 right-0 flex items-center gap-7 text-10 text-text-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+        <header class="conversation-message__meta pointer-events-none absolute -top-17 right-0 flex items-center gap-7 text-10 text-text-muted opacity-0 transition-opacity duration-150 group-hover/message:opacity-100 group-focus-within/message:opacity-100">
           <Show when={timestamp()}>{(time) => <time dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show>
         </header>
       </Show>
@@ -128,7 +128,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
           <span>The server confirmed ACP did not run this message. Copy it and resend.</span>
         </InlineNotice>
       </Show>
-      <Show when={role() === 'assistant' && entry().text && !streaming()}><div class="conversation-message__actions flex min-h-28 items-center gap-2 pt-1 text-text-muted"><CopyButton size="compact" text={copyText()} label="Copy answer" class="border-0 bg-transparent text-text-muted hover:bg-hover" /><IconButton label="Quote answer" size="compact" variant="ghost" class="border-0 bg-transparent text-text-muted hover:bg-hover" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-5 text-11 font-600 text-text-muted">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-text-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div></Show>
+      <Show when={role() === 'assistant' && entry().text && !streaming()}><div class="conversation-message__actions pointer-events-none flex min-h-28 items-center gap-2 pt-1 text-text-muted opacity-0"><CopyButton size="compact" text={copyText()} label="Copy answer" class="border-0 bg-transparent text-text-muted hover:bg-hover" /><IconButton label="Quote answer" size="compact" variant="ghost" class="border-0 bg-transparent text-text-muted hover:bg-hover" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-5 text-11 font-600 text-text-muted">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-text-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div></Show>
     </div>
     <Show when={selectionAction()}>{(action) => <IconButton
       label="Add selection to conversation"

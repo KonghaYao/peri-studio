@@ -28,6 +28,20 @@
   background: var(--scrollbar-thumb);
   background-clip: padding-box;
 }
+
+@media (hover: none) {
+  .conversation-message__actions {
+    pointer-events: auto !important;
+    opacity: 1 !important;
+  }
+}
+
+/* 正文操作只在正文 hover 或整条消息获得键盘焦点时出现。 */
+.conversation-message:has(.conversation-message__text:hover) .conversation-message__actions,
+.conversation-message:focus-within .conversation-message__actions {
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}
 *:hover::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb-hover);
   background-clip: padding-box;

@@ -77,7 +77,8 @@ describe('ToolCallCard', () => {
     const { unmount } = render(() => <ToolCallCard toolCall={{ ...base, status: 'running', completedAt: null }} />);
     const active = document.querySelector('.tool-card__summary');
     expect(active).toHaveClass('min-h-(--pattern-row-height)', 'bg-selected');
-    expect(document.querySelector('.tool-card')).toHaveClass('border-b', 'border-divider');
+    expect(document.querySelector('.tool-card')).toHaveClass('border-0');
+    expect(document.querySelector('.tool-card')).not.toHaveClass('border-b', 'border-divider');
     expect(active?.querySelector('.tool-card__identity')).toHaveClass('grid-cols-[minmax(0,1fr)_minmax(0,1fr)]');
     unmount();
 

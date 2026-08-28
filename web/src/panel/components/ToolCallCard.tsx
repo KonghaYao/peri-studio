@@ -106,7 +106,7 @@ export function ToolCallCard(props: { toolCall: ToolCallSource }) {
   const evidence = createMemo(() => toolEvidence(tool().kind, tool().arguments, tool().result));
   return (
     <details
-      class={`tool-card tool-card--${state().tone} group w-full max-w-(--tool-activity-max) overflow-hidden border-0 border-b border-divider bg-surface ${state().tone === 'error' ? 'text-danger' : 'text-text-primary'}`}
+      class={`tool-card tool-card--${state().tone} group w-full max-w-(--tool-activity-max) overflow-hidden border-0 bg-surface ${state().tone === 'error' ? 'text-danger' : 'text-text-primary'}`}
       onToggle={(event) => { if (event.currentTarget.open) setEvidenceLoaded(true); }}
     >
       <summary

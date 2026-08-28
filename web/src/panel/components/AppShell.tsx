@@ -183,7 +183,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
         onKeyDown={resizeSidebarWithKeyboard}
       ><span aria-hidden="true" class="absolute top-0 bottom-0 left-5 w-2 rounded-full bg-transparent transition-colors group-hover:bg-accent group-focus-visible:bg-accent" /></div>
       <main ref={main} class="conversation-pane min-w-0 min-h-0 overflow-hidden">
-        <Show when={resourceFilePreview()} fallback={<Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenResources={openResources} onOpenMcp={() => openWorkbench('mcp')} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
+        <Show when={resourceFilePreview()} fallback={<Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenResources={openResources} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
           <ResourceDiffEditor onClose={() => closePreview('diff')} />
         </Show>}>
           <ResourceFileEditor onClose={() => closePreview('file')} />

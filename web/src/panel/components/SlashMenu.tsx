@@ -17,7 +17,7 @@ const kindLabel = (kind: AgentCommandInfo['kind']) => kind === 'skill'
 export function SlashMenu(props: Props) {
   const activeName = () => props.items[props.activeIndex]?.name;
   return (
-    <div class="slash-menu absolute z-35 right-20 bottom-[calc(100%+8px)] left-20 overflow-hidden border border-border-subtle rounded-17 bg-surface shadow-popover max-tight:right-10 max-tight:left-10">
+    <div class="slash-menu absolute z-35 right-20 bottom-[calc(100%+8px)] left-20 overflow-hidden rounded-14 border border-border-subtle bg-surface shadow-popover max-tight:right-10 max-tight:left-10">
       <div class="slash-menu__heading flex items-baseline justify-between gap-16 pt-12 pr-14 pb-9 pl-14 border-b border-divider"><strong class="text-12">Invoke capabilities</strong><span class="text-text-muted text-10 max-tight:hidden">Writes to the draft when selected; does not run immediately</span></div>
       <Listbox
         id={props.id}

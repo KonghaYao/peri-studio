@@ -102,6 +102,39 @@ test('long conversation combines rich markdown, dense tool calls, and the status
   await expect(page.locator('.workbench-status-bar')).toHaveCount(0);
 });
 
+test('assistant actions stay contextual and tool rows have no divider', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/visual-fixture.html?scenario=long-conversation', { waitUntil: 'networkidle' });
+
+  const message = page.getByRole('article', { name: 'Assistant message' }).first();
+  const actions = message.locator('.conversation-message__actions');
+  expect(await actions.evaluate((element) => getComputedStyle(element).opacity)).toBe('0');
+  await actions.getByRole('button', { name: 'Copy answer' }).focus();
+  expect(await actions.evaluate((element) => getComputedStyle(element).opacity)).toBe('1');
+  expect(await page.evaluate(() => [...document.styleSheets].some((sheet) => {
+    try { return [...sheet.cssRules].some((rule) => rule.cssText.includes('.conversation-message:has(.conversation-message__text:hover)')); }
+    catch { return false; }
+  }))).toBe(true);
+  await expect(message.locator('.tool-card').first()).toHaveCSS('border-bottom-width', '0px');
+});
+
+test('slash surface uses the shared overlay radius', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
+  await page.getByRole('textbox', { name: 'Message the agent' }).fill('/');
+  await expect(page.locator('.slash-menu')).toBeVisible();
+  await expect(page.locator('.slash-menu')).toHaveCSS('border-radius', '14px');
+});
+
+test('chat controls live in global workspace surfaces', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
+  await expect(page.getByRole('button', { name: 'Conversation actions' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'MCP' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Close running instance' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'System information' })).toBeVisible();
+});
+
 test('assets scenario stages visual references above the composer input', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=assets', { waitUntil: 'networkidle' });
@@ -205,7 +238,7 @@ test('migrated surfaces retain their authored computed borders', async ({ page }
     selectedSession: '2px',
     statusArea: '1px',
     composer: '1px',
-    toolCard: '1px',
+    toolCard: '0px',
   });
 });
 

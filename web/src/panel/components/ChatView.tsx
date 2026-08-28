@@ -30,7 +30,6 @@ type ChatViewProps = {
   onCreateProject?: () => void;
   onImport?: (projectId: string) => void;
   onOpenResources?: () => void;
-  onOpenMcp?: () => void;
 };
 
 export function ChatView(props: ChatViewProps) {
@@ -53,7 +52,6 @@ export function ChatView(props: ChatViewProps) {
         launch={!selectedSessionId()}
         onOpenNavigation={props.onOpenNavigation}
         onOpenResources={props.onOpenResources}
-        onOpenMcp={props.onOpenMcp}
       />
       <ConnectionProblem />
       <ErrorCenter />
