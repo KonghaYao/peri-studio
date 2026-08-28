@@ -16,7 +16,7 @@ function tableCsv(table: HTMLTableElement) {
 export function MarkdownTable(props: JSX.HTMLAttributes<HTMLTableElement>) {
   let table!: HTMLTableElement;
   const copyText = () => table ? tableText(table, '\t') : '';
-  return <div class="md-table my-12 overflow-hidden rounded-10 border border-border-subtle bg-surface">
+  return <div class="md-table my-(--markdown-rich-block-gap) overflow-hidden rounded-10 border border-border-subtle bg-surface">
     <div class="md-table__toolbar flex items-center justify-end gap-4 border-b border-divider px-7 py-5">
       <CopyButton text={copyText()} label="Copy table" size="compact" />
       <IconButton size="compact" onClick={() => downloadText(tableCsv(table), 'table.csv', 'text/csv;charset=utf-8')} label="Download table as CSV"><DownloadIcon /></IconButton>

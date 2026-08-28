@@ -114,11 +114,11 @@ export function CodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { streamin
   const label = () => LANGUAGE_LABELS[language()] || (details().language === 'text' ? 'Plain text' : details().language);
   const extension = () => EXTENSIONS[language()] || details().language || 'txt';
 
-  if (details().language === 'math' && locked()) return <div class="md-code-block my-12 overflow-hidden rounded-10 border border-border-subtle bg-surface" data-highlighted="false" data-incomplete="true"><pre class="m-0 overflow-auto bg-sidebar-bg px-14 py-13 text-12p5 leading-18"><code class="bg-transparent p-0 text-inherit">{details().text}</code></pre></div>;
+  if (details().language === 'math' && locked()) return <div class="md-code-block my-(--markdown-rich-block-gap) overflow-hidden rounded-10 border border-border-subtle bg-surface" data-highlighted="false" data-incomplete="true"><pre class="m-0 overflow-auto bg-sidebar-bg px-14 py-13 text-12p5 leading-18"><code class="bg-transparent p-0 text-inherit">{details().text}</code></pre></div>;
   if (details().language === 'math') return <MathExpression expression={details().text.trim()} block />;
-  if (details().language === 'mermaid') return <div class="md-code-block my-12 overflow-hidden rounded-10 border border-border-subtle bg-surface" data-incomplete={props.incomplete ? 'true' : undefined}><MermaidBlock code={details().text} incomplete={locked()} /></div>;
+  if (details().language === 'mermaid') return <div class="md-code-block my-(--markdown-rich-block-gap) overflow-hidden rounded-10 border border-border-subtle bg-surface" data-incomplete={props.incomplete ? 'true' : undefined}><MermaidBlock code={details().text} incomplete={locked()} /></div>;
 
-  return <div class="md-code-block my-12 overflow-hidden rounded-10 border border-border-subtle bg-surface" data-highlighted={highlighted()?.result ? 'true' : 'false'} data-incomplete={props.incomplete ? 'true' : undefined}>
+  return <div class="md-code-block my-(--markdown-rich-block-gap) overflow-hidden rounded-10 border border-border-subtle bg-surface" data-highlighted={highlighted()?.result ? 'true' : 'false'} data-incomplete={props.incomplete ? 'true' : undefined}>
     <div class="md-code-toolbar flex min-h-38 items-center gap-4 border-b border-divider px-8 py-5">
       <span class="mr-auto flex min-w-0 items-center gap-8 text-12 text-text-secondary"><strong class="font-600">{label()}</strong><Show when={details().filename}><span class="truncate text-text-tertiary">{details().filename}</span></Show></span>
       <Show when={highlighted()?.error}><IconButton size="compact" onClick={() => refetch()} label="Retry syntax highlighting"><RefreshIcon /></IconButton></Show>

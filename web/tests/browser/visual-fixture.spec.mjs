@@ -72,16 +72,51 @@ test('markdown conversation uses the available desktop content track', async ({ 
   const geometry = await page.evaluate(() => {
     const markdown = document.querySelector('.markdown-body');
     const track = markdown.closest('.message-list-content');
+    const viewport = track.parentElement;
+    const trackRect = track.getBoundingClientRect();
+    const viewportRect = viewport.getBoundingClientRect();
     const trackStyle = getComputedStyle(track);
     return {
       markdownWidth: markdown.getBoundingClientRect().width,
       trackInnerWidth: track.clientWidth
         - Number.parseFloat(trackStyle.paddingLeft)
         - Number.parseFloat(trackStyle.paddingRight),
+      leftGap: trackRect.left - viewportRect.left,
+      rightGap: viewportRect.left + viewport.clientWidth - trackRect.right,
     };
   });
   expect(geometry.markdownWidth).toBeGreaterThanOrEqual(geometry.trackInnerWidth - 1);
-  expect(geometry.trackInnerWidth).toBeLessThanOrEqual(880);
+  expect(geometry.trackInnerWidth).toBeLessThanOrEqual(820);
+  expect(Math.abs(geometry.leftGap - geometry.rightGap)).toBeLessThanOrEqual(1);
+});
+
+test('markdown keeps a readable vertical rhythm across rich blocks', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/visual-fixture.html?scenario=markdown', { waitUntil: 'networkidle' });
+
+  const rhythm = await page.evaluate(() => {
+    const style = (selector) => getComputedStyle(document.querySelector(selector));
+    return {
+      paragraph: [style('.markdown-body p').lineHeight, style('.markdown-body p').marginBottom],
+      heading: [style('.markdown-body h1').marginTop, style('.markdown-body h1').marginBottom],
+      list: style('.markdown-body ul').marginBottom,
+      quote: style('.markdown-body blockquote').marginBlock,
+      table: style('.markdown-body .md-table').marginBlock,
+      code: style('.markdown-body .md-code-block').marginBlock,
+      math: style('.markdown-body .md-math--block').marginBlock,
+      imageConsent: style('.markdown-body .md-image-consent').marginBlock,
+    };
+  });
+  expect(rhythm).toEqual({
+    paragraph: ['21px', '12px'],
+    heading: ['0px', '10px'],
+    list: '14px',
+    quote: '14px',
+    table: '16px',
+    code: '16px',
+    math: '16px',
+    imageConsent: '16px',
+  });
 });
 
 test('long conversation combines rich markdown, dense tool calls, and the status area', async ({ page }) => {

@@ -226,10 +226,13 @@
 
   /* Containers (bounded surfaces; used by max-w-/max-h-/w- utilities) */
   --container-chat: 960px;
-  --container-chat-content: 920px;
+  --container-chat-content: 860px;
   --container-chat-narrow: 840px;
   --container-composer-launch: var(--composer-launch-max);
   --container-auth-card: min(440px, 100%);
+
+  /* Markdown rhythm */
+  --markdown-rich-block-gap: 16px;
   --container-drawer: min(88vw, 320px);
   --container-settings: min(560px, calc(100vw - 40px));
   --container-settings-tall: min(76dvh, 680px);

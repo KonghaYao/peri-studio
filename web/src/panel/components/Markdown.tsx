@@ -84,23 +84,23 @@ export function Markdown(props: MarkdownProps) {
 
   return <div class="markdown-body min-w-0 text-text-primary
     [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
-    [&_p]:my-0 [&_p]:mb-10
-    [&_h1]:mb-8 [&_h1]:mt-22 [&_h1]:text-20 [&_h1]:font-650 [&_h1]:tracking-[-.025em]
-    [&_h2]:mb-7 [&_h2]:mt-20 [&_h2]:text-17 [&_h2]:font-650 [&_h2]:leading-125 [&_h2]:tracking-[-.018em]
-    [&_h3]:mb-7 [&_h3]:mt-18 [&_h3]:text-15 [&_h3]:font-650 [&_h3]:leading-125
-    [&_h4]:mb-7 [&_h4]:mt-18 [&_h4]:text-14 [&_h4]:font-650
-    [&_h5]:mb-6 [&_h5]:mt-16 [&_h5]:font-650 [&_h6]:mb-6 [&_h6]:mt-16 [&_h6]:font-650 [&_h6]:text-text-secondary
-    [&_ul]:my-7 [&_ul]:mb-12 [&_ul]:list-disc [&_ul]:pl-22
-    [&_ol]:my-7 [&_ol]:mb-12 [&_ol]:list-decimal [&_ol]:pl-22
-    [&_li]:my-3 [&_li]:pl-2 [&_li>ul]:mb-0 [&_li>ol]:mb-0
+    [&_p]:my-0 [&_p]:mb-12 [&_p]:leading-21
+    [&_h1]:mb-10 [&_h1]:mt-28 [&_h1]:text-20 [&_h1]:font-650 [&_h1]:leading-125 [&_h1]:tracking-[-.025em]
+    [&_h2]:mb-9 [&_h2]:mt-24 [&_h2]:text-17 [&_h2]:font-650 [&_h2]:leading-125 [&_h2]:tracking-[-.018em]
+    [&_h3]:mb-8 [&_h3]:mt-22 [&_h3]:text-15 [&_h3]:font-650 [&_h3]:leading-135
+    [&_h4]:mb-7 [&_h4]:mt-20 [&_h4]:text-14 [&_h4]:font-650 [&_h4]:leading-135
+    [&_h5]:mb-7 [&_h5]:mt-18 [&_h5]:font-650 [&_h6]:mb-7 [&_h6]:mt-18 [&_h6]:font-650 [&_h6]:text-text-secondary
+    [&_ul]:mt-8 [&_ul]:mb-14 [&_ul]:list-disc [&_ul]:pl-22 [&_ul]:leading-21
+    [&_ol]:mt-8 [&_ol]:mb-14 [&_ol]:list-decimal [&_ol]:pl-22 [&_ol]:leading-21
+    [&_li]:my-4 [&_li]:pl-2 [&_li>ul]:mt-5 [&_li>ul]:mb-0 [&_li>ol]:mt-5 [&_li>ol]:mb-0
     [&_li:has(>input[type=checkbox])]:list-none [&_li:has(>input[type=checkbox])]:pl-0
     [&_input[type=checkbox]]:mr-8 [&_input[type=checkbox]]:h-14 [&_input[type=checkbox]]:w-14 [&_input[type=checkbox]]:accent-text-primary
-    [&_blockquote]:my-10 [&_blockquote]:border-l-[3px] [&_blockquote]:border-border-strong [&_blockquote]:py-2 [&_blockquote]:pl-12 [&_blockquote]:text-text-secondary
-    [&_hr]:my-18 [&_hr]:h-px [&_hr]:border-0 [&_hr]:bg-divider
+    [&_blockquote]:my-14 [&_blockquote]:border-l-2 [&_blockquote]:border-border-strong [&_blockquote]:py-3 [&_blockquote]:pl-14 [&_blockquote]:leading-21 [&_blockquote]:text-text-secondary [&_blockquote_p:last-child]:mb-0
+    [&_hr]:my-24 [&_hr]:h-px [&_hr]:border-0 [&_hr]:bg-divider
     [&_a]:text-link [&_a]:underline [&_a]:decoration-link-decoration [&_a]:underline-offset-3 [&_a:hover]:decoration-current
-    [&_th]:border-b [&_th]:border-divider [&_th]:bg-sidebar-bg [&_th]:px-12 [&_th]:py-8 [&_th]:font-650
-    [&_td]:border-b [&_td]:border-divider [&_td]:px-12 [&_td]:py-8 [&_tbody_tr:last-child_td]:border-b-0
-    [&_del]:text-text-tertiary [&_footer]:mt-16 [&_footer]:border-t [&_footer]:border-divider [&_footer]:pt-10 [&_footer]:text-12 [&_footer]:text-text-secondary
+    [&_th]:border-b [&_th]:border-divider [&_th]:bg-sidebar-bg [&_th]:px-12 [&_th]:py-9 [&_th]:font-650 [&_th]:leading-19
+    [&_td]:border-b [&_td]:border-divider [&_td]:px-12 [&_td]:py-9 [&_td]:leading-19 [&_tbody_tr:last-child_td]:border-b-0
+    [&_del]:text-text-tertiary [&_footer]:mt-20 [&_footer]:border-t [&_footer]:border-divider [&_footer]:pt-12 [&_footer]:text-12 [&_footer]:leading-19 [&_footer]:text-text-secondary
     [&_sup]:text-10 [&_sup_a]:no-underline">
     <For each={document().blocks}>{(model) => <MarkdownAstBlock model={model} options={options()} />}</For>
     <Show when={document().references}>{footnotes()}</Show>
