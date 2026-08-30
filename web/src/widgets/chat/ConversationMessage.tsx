@@ -2,10 +2,10 @@ import { createEffect, createMemo, createSignal, For, Show, type Accessor } from
 import type { ChatBlock, ChatEntry } from '@/entities/chat/chat-view';
 import { messageTime } from '../../panel/lib/message-time.ts';
 import { splitSystemReminders } from '../../panel/lib/system-reminder';
-import { CopyButton, IconButton, InlineNotice, Popover, PopoverContent, PopoverTrigger } from '../../components/ui';
+import { CopyButton, IconButton, InlineNotice, Popover, PopoverContent, PopoverTrigger } from '@/shared/ui';
 import { MessageSquareQuote, MoreHorizontal } from 'lucide-solid';
 import { Markdown } from './Markdown';
-import { ToolCallCard } from './ToolCallCard';
+import { ToolCallCard } from './ToolActivityRow';
 import { ToolActivityGroup } from './ToolActivityRow';
 import { UserBubble } from './UserBubble';
 import { Reasoning } from './Reasoning';

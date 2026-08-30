@@ -3,7 +3,7 @@ import type { SessionConfigOptionInfo } from '@/entities/chat/control-view';
 import { readOnly } from '../../panel/lib/auth-state';
 import { connState } from '../../panel/lib/connection';
 import { chatHead, sessionConfigMutation, setSessionConfig, turnActive } from '../../panel/store';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../../components/ui';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/ui';
 
 export function SessionModelMenu(props: {
   open: boolean;

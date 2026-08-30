@@ -1,6 +1,6 @@
 import type { JSX } from 'solid-js';
 import { Show } from 'solid-js';
-import { cn } from '../../lib/cn';
+import { cn } from '@/shared/lib/cn';
 import { MoreHorizontal, Pin } from 'lucide-solid';
 
 export function SectionHeader(props: { title: string; icon?: JSX.Element; children?: JSX.Element }) {

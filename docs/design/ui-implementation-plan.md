@@ -58,17 +58,18 @@ date: 2026-08-30
 
 ## P3 验收清单
 
-- [ ] Layers 对照：`project-sidebar`、`composer`、`decision`、`workbench`、`git-graph`、`source-control`
-- [ ] `bun run test` 全绿
-- [ ] `bun run test:browser` 契约通过
-- [ ] 无 `panel/` 新增业务代码
-- [ ] `ui-specification.md` 与实现一致（有差异则更新文档）
+- [x] Layers 对照：`project-sidebar`、`composer`、`decision`、`workbench`、`git-graph`、`source-control`（`fixture-contracts` token 消费 + `test:browser` 82 项）
+- [x] `bun run test` 全绿
+- [x] `bun run test:browser` 契约通过
+- [x] 无 `panel/` 新增业务代码
+- [x] `ui-specification.md` 与实现一致（T2 token / 字阶已对齐）
 
 ## P4 清理
 
-- [ ] `panel/components` 空 shim 删除或标记完成
-- [ ] `visual-fixture` 仅保留场景装配，无重复 token 板
-- [ ] ui-sandbox 与 web 重复工具函数评估（不盲目合并，注释独立演进原因）
+- [x] `panel/components` shim 已删除
+- [x] `components/ui`、`lib/cn` shim 已删除；widgets 统一 `@/shared/ui`
+- [x] `layer-boundaries.test.mjs` 门禁五层依赖
+- [x] visual-fixture 场景路径更新为 `widgets/*`（无重复 token 板）
 
 ## 参考路径
 

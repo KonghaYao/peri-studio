@@ -1,5 +1,5 @@
 import type { JSX } from 'solid-js';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger, Icon } from '../../../components/ui';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger, Icon } from '@/shared/ui';
 
 export interface ArchivedSectionProps {
   toggleClass: string;

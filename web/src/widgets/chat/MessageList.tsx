@@ -13,7 +13,7 @@ import { chatEntries, chatHead, elicitations, permissions, retryMessageSubmissio
 import { nextFollowState } from '../../panel/lib/message-follow.ts';
 import { messageTime } from '../../panel/lib/message-time.ts';
 import type { ChatEntry } from '@/entities/chat/chat-view';
-import { Button, EmptyState, LoadingState } from '../../components/ui';
+import { Button, EmptyState, LoadingState } from '@/shared/ui';
 import { ConversationMessage } from './ConversationMessage';
 import { acknowledgeUnknownMessageDelivery, acknowledgedMessageDeliveries, canAcknowledgeUnknownMessageDelivery, dismissFailedMessageDelivery, messageSubmissionForChat } from '../../panel/lib/message-delivery';
 import { MessageOutbox } from './MessageOutbox';

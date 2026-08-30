@@ -1,5 +1,5 @@
 import { Show, type JSX } from 'solid-js';
-import { IconButton } from '../../components/ui';
+import { IconButton } from '@/shared/ui';
 
 type ResourceRailButtonProps = {
   label: string;

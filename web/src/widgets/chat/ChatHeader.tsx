@@ -1,7 +1,7 @@
 import { Show } from 'solid-js';
 import { chatHead, chatStatusSignal, openingSessionId, permissions, projectSessions, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '../../panel/store';
 import { connState } from '../../panel/lib/connection';
-import { IconButton, Status } from '../../components/ui';
+import { IconButton, Status } from '@/shared/ui';
 import { connectedRuntimeState } from '../../panel/lib/runtime-state.ts';
 import { sessionDisplayTitle } from '../../panel/lib/recovery-state.ts';
 import { FileText, Menu, PanelRight } from 'lucide-solid';

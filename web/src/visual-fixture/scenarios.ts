@@ -366,8 +366,8 @@ export function installVisualScenario(value: string | null | undefined): { scena
     setResourceWorkspace({ projectId: 'project-perihelion', loading: [], error: null, directories: {}, repositories: [{
       id: 'repo-long', root: '', name: 'peri-studio', headName: 'main', generation: 'long-1', ahead: 0, behind: 0,
       groups: {
-        index: { count: 1, revision: 'index-long', changes: [{ id: 'long-a', path: 'web/src/panel/components/StatusArea.tsx', status: 'modified' }] },
-        working_tree: { count: 2, revision: 'work-long', changes: [{ id: 'long-b', path: 'web/src/panel/components/ToolCallCard.tsx', status: 'modified' }, { id: 'long-c', path: 'web/src/visual-fixture/long-conversation.ts', status: 'untracked' }] },
+        index: { count: 1, revision: 'index-long', changes: [{ id: 'long-a', path: 'web/src/widgets/shell/StatusArea.tsx', status: 'modified' }] },
+        working_tree: { count: 2, revision: 'work-long', changes: [{ id: 'long-b', path: 'web/src/widgets/chat/ToolActivityRow.tsx', status: 'modified' }, { id: 'long-c', path: 'web/src/visual-fixture/long-conversation.ts', status: 'untracked' }] },
         untracked: { count: 0, revision: 'new-long', changes: [] },
       },
     }] });
@@ -395,7 +395,7 @@ export function installVisualScenario(value: string | null | undefined): { scena
         groups: {
           index: { count: 1, revision: 'index-1', changes: [{ id: 'c1', path: 'server/src/control/resource_service.rs', status: 'modified' }] },
           working_tree: { count: 2, revision: 'work-1', changes: [
-            { id: 'c2', path: 'web/src/panel/components/ResourceWorkbench.tsx', status: 'modified' },
+            { id: 'c2', path: 'web/src/widgets/resource/ResourceWorkbench.tsx', status: 'modified' },
             { id: 'c3', path: 'docs/design/remote-fs-git-protocol.md', status: 'modified' },
           ] },
           untracked: { count: 1, revision: 'new-1', changes: [{ id: 'c4', path: 'web/src/panel/lib/resource-view.ts', status: 'untracked' }] },

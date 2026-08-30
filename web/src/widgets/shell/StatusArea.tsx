@@ -3,7 +3,7 @@ import type { AgentActivityInfo, AgentPlanEntryInfo } from '@/entities/chat/cont
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { selectChatFileChanges } from '@/entities/chat/chat-file-changes';
 import { Ban, Bot, Check, Circle, CircleAlert, GitBranch, Info, ListTodo, Pause, Workflow, X } from 'lucide-solid';
-import { Badge } from '../../components/ui';
+import { Badge } from '@/shared/ui';
 import { VSCodeFileIcon } from '@/widgets/resource/VSCodeFileIcon';
 
 type StatusTab = 'todo' | 'async' | 'changes';

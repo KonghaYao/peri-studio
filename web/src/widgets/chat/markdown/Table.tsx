@@ -1,5 +1,5 @@
 import type { JSX } from 'solid-js';
-import { CopyButton, DownloadIcon, IconButton } from '../../../components/ui';
+import { CopyButton, DownloadIcon, IconButton } from '@/shared/ui';
 import { downloadText } from './download';
 
 function tableText(table: HTMLTableElement, separator: string) {

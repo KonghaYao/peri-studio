@@ -1,5 +1,5 @@
 import { For, Show, createMemo, createSignal } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogTitle, LoadingState, Textarea } from '../../components/ui';
+import { Button, Dialog, DialogContent, DialogTitle, LoadingState, Textarea } from '@/shared/ui';
 import { mutateGitResource, openGitDiffPreview, openMoreGitChanges, resourceWorkspace, retryGitRepositoryMutation, retryGitResourceMutation } from '../../panel/store';
 import type { RepositoryState } from '../../panel/lib/resource-store';
 import { readOnly } from '../../panel/lib/auth-state';

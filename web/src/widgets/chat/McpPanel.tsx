@@ -1,5 +1,5 @@
 import { createEffect, For, onCleanup, Show } from 'solid-js';
-import { Badge, Button, EmptyState, IconButton, InlineNotice, LoadingState } from '../../components/ui';
+import { Badge, Button, EmptyState, IconButton, InlineNotice, LoadingState } from '@/shared/ui';
 import { readOnly } from '../../panel/lib/auth-state';
 import {
   cancelMcpOAuth,

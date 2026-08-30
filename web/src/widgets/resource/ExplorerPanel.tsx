@@ -1,5 +1,5 @@
 import { Show, createEffect, createMemo, createSignal, onCleanup } from 'solid-js';
-import { IconButton, LoadingState } from '../../components/ui';
+import { IconButton, LoadingState } from '@/shared/ui';
 import { openFilePreview, openResourceDirectory, refreshResourceProject, resourceWorkspace } from '../../panel/store';
 import type { ResourceEntry } from '../../panel/lib/resource-view';
 import { RefreshCw } from 'lucide-solid';

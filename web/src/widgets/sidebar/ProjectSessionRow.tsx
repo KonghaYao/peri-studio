@@ -11,11 +11,11 @@ import {
   PopoverTrigger,
   TextField,
   Button,
-} from '../../components/ui';
+} from '@/shared/ui';
 import { Archive, Pencil } from 'lucide-solid';
 import { formatCompactRelativeTime, sessionDisplayTitle } from '../../panel/lib/recovery-state.ts';
 import { runConfirmedMutation } from '../../panel/lib/form-mutation';
-import { cn } from '../../lib/cn';
+import { cn } from '@/shared/lib/cn';
 import { SessionMenuIcon, SessionRowTail } from './sidebar-parts';
 
 export interface SessionRowState {

@@ -15,7 +15,7 @@ import { MessageList } from './MessageList';
 import { createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { chatEntries, chatHead, elicitationResponses, elicitations, permissions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, restoringSessionId, retryPersistentAction, selectedSessionId, turnActive } from '../../panel/store';
 import { readOnly } from '../../panel/lib/auth-state';
-import { LoadingState } from '../../components/ui';
+import { LoadingState } from '@/shared/ui';
 import { ConnectionProblem } from '@/widgets/shell/ConnectionProblem';
 import { ErrorCenter } from '@/widgets/shell/ErrorCenter';
 import { LaunchWorkspace } from '@/widgets/shell/LaunchWorkspace';

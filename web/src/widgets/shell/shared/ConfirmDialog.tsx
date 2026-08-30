@@ -6,7 +6,7 @@
 // 只渲染 runtime-dialog 内容，保证三处 DOM 结构一致。
 
 import { Show, type JSX } from 'solid-js';
-import { Button } from '../../../components/ui';
+import { Button } from '@/shared/ui';
 
 export interface ConfirmDialogProps {
   /** 顶部眉标（dialog-eyebrow）；缺省不渲染。 */

@@ -1,5 +1,5 @@
 import { createSignal, Show, type JSX } from 'solid-js';
-import { Button } from '../../../components/ui';
+import { Button } from '@/shared/ui';
 import { safeRemoteImageSource } from './source';
 
 export function SafeImage(props: JSX.ImgHTMLAttributes<HTMLImageElement>) {

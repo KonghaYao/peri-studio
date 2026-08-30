@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { describe, expect, it } from 'vitest';
-import { observedDuration, ToolCallCard } from './ToolCallCard';
+import { observedDuration, ToolCallCard } from './ToolActivityRow';
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
 
 const base: ToolCallInfo = {

@@ -1,6 +1,6 @@
 import type { JSX } from 'solid-js';
 import { Show } from 'solid-js';
-import { Button, IconButton } from '../../components/ui';
+import { Button, IconButton } from '@/shared/ui';
 import { useAuthActions } from '../../panel/lib/auth-hook';
 import { Settings } from 'lucide-solid';
 

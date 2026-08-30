@@ -45,7 +45,7 @@ import {
   IconButton,
   LoadingState,
   TextField,
-} from '../../components/ui';
+} from '@/shared/ui';
 import { SessionSearch } from './SessionSearch';
 import { SessionImportDialog } from '@/widgets/shell/SessionImportDialog';
 import { ProjectSessionRow } from './ProjectSessionRow';
@@ -62,7 +62,7 @@ import { ArchivedSection } from '@/widgets/shell/shared/ArchivedSection';
 import { ConfirmDialog } from '@/widgets/shell/shared/ConfirmDialog';
 import { SidebarChrome } from '@/widgets/shell/SidebarChrome';
 import { reconcileInstanceGroups, type InstanceGroup } from '../../panel/lib/instance-groups';
-import { cn } from '../../lib/cn';
+import { cn } from '@/shared/lib/cn';
 import {
   Archive,
   CloudOff,

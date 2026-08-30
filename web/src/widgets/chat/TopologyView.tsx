@@ -5,7 +5,7 @@
 // token_id 为脱敏标识，不展示 token 本体。
 
 import { For, Show } from 'solid-js';
-import { Badge, EmptyState, type BadgeTone } from '../../components/ui';
+import { Badge, EmptyState, type BadgeTone } from '@/shared/ui';
 import { chatCatalog, globalStatus, instances, schemaVersion } from '../../panel/store';
 import { messageTime } from '../../panel/lib/message-time';
 import {

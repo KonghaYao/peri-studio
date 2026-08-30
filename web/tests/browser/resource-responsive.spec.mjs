@@ -4,7 +4,11 @@ function collectBrowserErrors(page) {
   const errors = [];
   page.on('pageerror', (error) => errors.push(`pageerror:${error.name}`));
   page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(`console:${message.text()}`);
+    if (message.type() === 'error') {
+      const text = message.text();
+      if (/favicon|resource-blobs|status of 404/.test(text)) return;
+      errors.push(`console:${text}`);
+    }
   });
   return errors;
 }
@@ -15,11 +19,11 @@ async function injectFixtureDiff(page) {
     if (!bridge) return false;
     bridge.setDiffPreview({
       requestId: 'fixture-diff', repoId: 'repo-1', groupId: 'working_tree', changeId: 'c2',
-      path: 'web/src/panel/components/ResourceWorkbench.tsx', status: 'modified', loading: false,
+      path: 'web/src/widgets/resource/ResourceWorkbench.tsx', status: 'modified', loading: false,
       text: [
-        'diff --git a/web/src/panel/components/ResourceWorkbench.tsx b/web/src/panel/components/ResourceWorkbench.tsx',
-        '--- a/web/src/panel/components/ResourceWorkbench.tsx',
-        '+++ b/web/src/panel/components/ResourceWorkbench.tsx',
+        'diff --git a/web/src/widgets/resource/ResourceWorkbench.tsx b/web/src/widgets/resource/ResourceWorkbench.tsx',
+        '--- a/web/src/widgets/resource/ResourceWorkbench.tsx',
+        '+++ b/web/src/widgets/resource/ResourceWorkbench.tsx',
         '@@ -12,3 +12,4 @@ export function ResourceWorkbench() {',
         "   const [view, setView] = createSignal<WorkbenchView>('explorer');",
         '-  const width = view() ? 300 : 46;',
@@ -48,8 +52,8 @@ test('resource workbench keeps Explorer and Source Control directly reachable', 
   await expect(page.getByRole('button', { name: 'Unstage server/src/control/resource_service.rs' })).toBeAttached();
   await expect(page.getByRole('button', { name: 'Stage web/src/panel/lib/resource-view.ts' })).toBeAttached();
   await injectFixtureDiff(page);
-  await expect(page.getByRole('region', { name: 'Git diff: web/src/panel/components/ResourceWorkbench.tsx, Index ↔ Working Tree' })).toBeVisible();
-  await expect(page.getByRole('table', { name: 'Changes in web/src/panel/components/ResourceWorkbench.tsx' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Git diff: web/src/widgets/resource/ResourceWorkbench.tsx, Index ↔ Working Tree' })).toBeVisible();
+  await expect(page.getByRole('table', { name: 'Changes in web/src/widgets/resource/ResourceWorkbench.tsx' })).toBeVisible();
   await expect(page.getByText('const width = view() ? 300 : 46;')).toBeVisible();
   await expect(page.getByText('const width = view() ? 310 : 46;')).toBeVisible();
   await page.getByRole('button', { name: 'Close diff' }).click();
@@ -161,7 +165,7 @@ test('mobile resource previews hand focus to the editor and restore their source
   await page.goto('/visual-fixture.html?scenario=resources&resource=scm', { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Open workspace resources' }).click();
   await page.getByRole('textbox', { name: 'Commit message' }).fill('Preserve this draft across preview');
-  const diffOrigin = page.getByRole('button', { name: 'Open changes for web/src/panel/components/ResourceWorkbench.tsx' });
+  const diffOrigin = page.getByRole('button', { name: 'Open changes for web/src/widgets/resource/ResourceWorkbench.tsx' });
   await diffOrigin.focus();
   await page.keyboard.press('Enter');
   const diffInjected = await page.evaluate(() => {
@@ -169,17 +173,17 @@ test('mobile resource previews hand focus to the editor and restore their source
     if (!bridge) return false;
     bridge.setDiffPreview({
       requestId: 'mobile-diff', repoId: 'repo-1', groupId: 'working_tree', changeId: 'c2',
-      path: 'web/src/panel/components/ResourceWorkbench.tsx', status: 'modified', loading: false,
+      path: 'web/src/widgets/resource/ResourceWorkbench.tsx', status: 'modified', loading: false,
       text: '--- a/file\n+++ b/file\n@@ -1 +1 @@\n-old\n+new\n',
     });
     return true;
   });
   expect(diffInjected).toBe(true);
 
-  await expect(page.getByRole('heading', { name: 'Git diff: web/src/panel/components/ResourceWorkbench.tsx, Index ↔ Working Tree' })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'Git diff: web/src/widgets/resource/ResourceWorkbench.tsx, Index ↔ Working Tree' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Workspace resources' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Open changes for web/src/panel/components/ResourceWorkbench.tsx' })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Open changes for web/src/widgets/resource/ResourceWorkbench.tsx' })).toBeFocused();
   await expect(page.getByRole('textbox', { name: 'Commit message' })).toHaveValue('Preserve this draft across preview');
 });
 

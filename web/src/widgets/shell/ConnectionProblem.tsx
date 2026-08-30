@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import { busy, connectionProblem, reconnect } from '../../panel/lib/connection';
-import { Button, InlineNotice } from '../../components/ui';
+import { Button, InlineNotice } from '@/shared/ui';
 
 export function ConnectionProblem() {
   return <Show when={connectionProblem()}>{(problem) =>

@@ -24,7 +24,7 @@ import { composerInputState } from '@/features/composer/composer-placeholder';
 import { useComposerPrediction } from '@/features/composer/composer-prediction';
 import { useComposerSlash } from '@/features/composer/composer-slash';
 import { slashMenuOptionId } from '@/features/composer/slash-menu';
-import { Button, IconButton, InlineNotice, Textarea } from '../../components/ui';
+import { Button, IconButton, InlineNotice, Textarea } from '@/shared/ui';
 import { SlashMenu } from './SlashMenu';
 import { SessionModelMenu } from '@/widgets/shell/SessionConfigDialog';
 import { TokenUsageMeter, tokenUsageLabel } from '@/widgets/chat/TokenUsageMeter';

@@ -1,6 +1,6 @@
 import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { Maximize2, Minimize2 } from 'lucide-solid';
-import { IconButton } from '../../components/ui';
+import { IconButton } from '@/shared/ui';
 import { bindMcpAppHost } from '../../panel/lib/mcp-app-host';
 import { liveMcpApp, liveMcpAppHeight } from '../../panel/lib/mcp-apps';
 

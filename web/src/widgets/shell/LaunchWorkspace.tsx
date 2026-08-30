@@ -1,5 +1,5 @@
 import { createMemo, Show } from 'solid-js';
-import { Button, Icon } from '../../components/ui';
+import { Button, Icon } from '@/shared/ui';
 import { readOnly } from '../../panel/lib/auth-state';
 import { selectActiveProjects, selectArchivedProjects } from '../../features/catalog/project-catalog';
 import { createProjectSession, creatingSessionProjectId, projects } from '../../panel/store';

@@ -1,5 +1,5 @@
 import { Show, createEffect, createMemo, createSignal, untrack } from 'solid-js';
-import { Dialog, DialogContent, DialogTitle, IconButton } from '../../components/ui';
+import { Dialog, DialogContent, DialogTitle, IconButton } from '@/shared/ui';
 import { activateResourceProject, projectSessions, projects, refreshResourceProject, resourceWorkspace, selectedSessionId } from '../../panel/store';
 import { ExplorerPanel } from './ExplorerPanel';
 import { SourceControlPanel } from './SourceControlPanel';

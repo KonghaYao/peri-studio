@@ -4,7 +4,7 @@
 // “System”语义，避免把诊断信息伪装成 Settings。
 
 import { createSignal, For } from 'solid-js';
-import { Dialog, DialogContent, DialogTitle, Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui';
+import { Dialog, DialogContent, DialogTitle, Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
 import { connState } from '../../panel/lib/connection';
 import { globalStatus, schemaVersion } from '../../panel/store';
 import { serverStatusLabel } from '@/entities/topology/topology-view';

@@ -1,4 +1,4 @@
-import { Badge as UiBadge, type BadgeTone } from '../../components/ui';
+import { Badge as UiBadge, type BadgeTone } from '@/shared/ui';
 
 const OK = ['online', 'healthy', 'completed', 'accepting', 'allow'];
 const WARN = ['degraded', 'active', 'streaming', 'pending', 'awaitingPermission', 'running', 'deny'];
