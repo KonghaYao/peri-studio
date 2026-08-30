@@ -6,20 +6,26 @@ import {
   handleMcpAppResource,
   handleMcpAppSession,
   installMcpApps,
+  isPrimaryLiveMcpApp,
   liveMcpApp,
+  liveMcpAppHeight,
   maybeOpenCompletedMcpTool,
+  mcpAppInlineMaxHeight,
+  MCP_APP_DEFAULT_HEIGHT,
   mcpUiInitializeResult,
   asCallToolResult,
   asToolInputParams,
+  describeMcpAppPayload,
   openMcpApp,
   ownsMcpAppsError,
   resetMcpAppsState,
+  setMcpAppHeight,
   tearDownMcpAppsForChat,
 } from './mcp-apps';
 import { setPrincipalRole } from './auth-state';
 import type { ActionFrame, ActionOptions } from './action-contract';
 
-import type { ToolCallInfo } from './chat-view';
+import type { ToolCallInfo } from '@/entities/chat/chat-view';
 
 function minimalTool(overrides: Partial<ToolCallInfo> = {}): ToolCallInfo {
   return {
@@ -217,7 +223,64 @@ describe('mcpUiInitializeResult', () => {
     expect(result.protocolVersion).toBe('2026-01-26');
     expect(result.hostInfo).toEqual({ name: 'peri-studio', version: '0.2.0' });
     expect(result.hostCapabilities).toEqual({ openLinks: {}, serverTools: {} });
-    expect((result.hostContext as { theme: string }).theme).toBe('light');
+    const hostContext = result.hostContext as {
+      theme: string;
+      containerDimensions: { maxHeight: number; maxWidth: number };
+    };
+    expect(hostContext.theme).toBe('light');
+    expect(hostContext.containerDimensions.maxHeight).toBe(mcpAppInlineMaxHeight());
+    expect(hostContext.containerDimensions.maxWidth).toBe(720);
+  });
+});
+
+describe('live MCP App display', () => {
+  function attachHtml(lastCommandId: () => string, toolCallId: string, resourceUri: string, appSessionId: string): void {
+    openMcpApp('chat-1', toolCallId, {}, {});
+    handleMcpAppSession({
+      t: 'mcp_app_session',
+      commandId: lastCommandId(),
+      chatId: 'chat-1',
+      toolCallId,
+      appSessionId,
+      serverId: 'fixture',
+      resourceUri,
+    } as never);
+    handleMcpAppResource({
+      t: 'mcp_app_resource',
+      commandId: lastCommandId(),
+      chatId: 'chat-1',
+      appSessionId,
+      html: '<html></html>',
+      mimeType: 'text/html;profile=mcp-app',
+    } as never);
+  }
+
+  it('keeps a usable default height and caps size-changed against the inline max', () => {
+    const { lastCommandId } = installTestDeps();
+    attachHtml(lastCommandId, 'tool-1', 'ui://dashboard/app.html', 'app-1');
+    expect(liveMcpAppHeight('tool-1')).toBe(MCP_APP_DEFAULT_HEIGHT);
+    setMcpAppHeight('tool-1', 9_000);
+    expect(liveMcpAppHeight('tool-1')).toBe(mcpAppInlineMaxHeight());
+  });
+
+  it('treats the latest live session with the same resourceUri as primary', () => {
+    const { lastCommandId } = installTestDeps();
+    attachHtml(lastCommandId, 'tool-1', 'ui://dashboard/app.html', 'app-1');
+    attachHtml(lastCommandId, 'tool-2', 'ui://dashboard/app.html', 'app-2');
+    expect(isPrimaryLiveMcpApp('tool-1')).toBe(false);
+    expect(isPrimaryLiveMcpApp('tool-2')).toBe(true);
+  });
+
+  it('falls back to tool name when resourceUri is still empty', () => {
+    const { lastCommandId } = installTestDeps();
+    attachHtml(lastCommandId, 'tool-1', '', 'app-1');
+    attachHtml(lastCommandId, 'tool-2', '', 'app-2');
+    const tools = [
+      minimalTool({ toolCallId: 'tool-1', name: 'mcp__sales-dashboard__get_dashboard' }),
+      minimalTool({ toolCallId: 'tool-2', name: 'mcp__sales-dashboard__get_dashboard' }),
+    ];
+    expect(isPrimaryLiveMcpApp('tool-1', tools)).toBe(false);
+    expect(isPrimaryLiveMcpApp('tool-2', tools)).toBe(true);
   });
 });
 
@@ -230,6 +293,23 @@ describe('app bridge payloads', () => {
       structuredContent: { canvasId: 'c1', source: 'export default function App() { return null }' },
     });
     expect(asCallToolResult(null)).toEqual({ content: [] });
+  });
+
+  it('describeMcpAppPayload reports source length without dumping TSX', () => {
+    const source = 'export default function App() { return null }';
+    expect(describeMcpAppPayload({
+      content: [{ type: 'text', text: 'Canvas ready' }],
+      structuredContent: { canvasId: 'c1', source },
+    })).toMatchObject({
+      present: true,
+      hasStructuredContent: true,
+      sourceChars: source.length,
+      firstTextChars: 12,
+    });
+    expect(JSON.stringify(describeMcpAppPayload({
+      content: [{ type: 'text', text: 'Canvas ready' }],
+      structuredContent: { canvasId: 'c1', source },
+    }))).not.toContain('export default');
   });
 
   it('asToolInputParams always returns an arguments object', () => {

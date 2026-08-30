@@ -6,6 +6,7 @@ use peri_studio_proto::frame::Frame;
 use peri_studio_proto::mcp_apps::{McpAppCallResultFrame, McpAppResourceFrame, McpAppSessionFrame};
 use serde::Deserialize;
 
+use crate::channel::relay_event_handler::merge_mcp_app_tool_result;
 use super::{
     apps_error, delivery_unknown, silent_apps_error, LiveAppSession, McpAppsControl,
     OpenCommandState,
@@ -181,18 +182,44 @@ impl McpAppsControl {
         match self.rpc(target, "peri/mcp/resource", params).await {
             Ok(value) => match serde_json::from_value::<ResourceResult>(value) {
                 Ok(result) => match pick_html_resource(result.resources, &session.resource_uri) {
-                    Ok((html, mime_type, csp)) => Frame::McpAppResource(McpAppResourceFrame {
-                        command_id: command_id.to_string(),
-                        chat_id: payload.chat_id.clone(),
-                        app_session_id: payload.app_session_id.clone(),
-                        html,
-                        mime_type,
-                        csp,
-                        tool_result: self
-                            .relay
-                            .mcp_app_tool_result(&session.chat_id, &session.tool_call_id)
-                            .await,
-                    }),
+                    Ok((html, mime_type, csp)) => {
+                        let tool_result = merge_mcp_app_tool_result(
+                            self.relay
+                                .mcp_app_tool_result(&session.chat_id, &session.tool_call_id)
+                                .await,
+                            self.relay
+                                .mcp_app_tool_input(&session.chat_id, &session.tool_call_id)
+                                .await,
+                        );
+                        let source_chars = tool_result
+                            .as_ref()
+                            .and_then(|value| value.pointer("/structuredContent/source"))
+                            .and_then(serde_json::Value::as_str)
+                            .map(str::len)
+                            .unwrap_or(0);
+                        tracing::info!(
+                            target: "peri_studio::mcp_apps",
+                            chat_id = %session.chat_id,
+                            tool_call_id = %session.tool_call_id,
+                            app_session_id = %payload.app_session_id,
+                            html_chars = html.len(),
+                            attached = tool_result.is_some(),
+                            has_structured_content = tool_result
+                                .as_ref()
+                                .is_some_and(|value| value.get("structuredContent").is_some()),
+                            source_chars,
+                            "mcp app resource ready"
+                        );
+                        Frame::McpAppResource(McpAppResourceFrame {
+                            command_id: command_id.to_string(),
+                            chat_id: payload.chat_id.clone(),
+                            app_session_id: payload.app_session_id.clone(),
+                            html,
+                            mime_type,
+                            csp,
+                            tool_result,
+                        })
+                    }
                     Err(message) => Frame::ActionError(apps_error(
                         command_id,
                         ErrorCode::PayloadTooLarge,

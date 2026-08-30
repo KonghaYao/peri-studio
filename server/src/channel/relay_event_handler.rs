@@ -172,6 +172,8 @@ pub(super) struct RelayInner {
     /// MCP App 首屏 CallToolResult（chat_id → tool_call_id → result）。
     /// Chat Doc 4KB 会省略；随 chat tear-down 丢弃，不落盘。
     pub(super) mcp_app_tool_results: RwLock<HashMap<String, HashMap<String, serde_json::Value>>>,
+    /// MCP App 首屏 tool input（canvas 的 source 在 arguments 里，ACP 结果常只有 text fallback）。
+    pub(super) mcp_app_tool_inputs: RwLock<HashMap<String, HashMap<String, serde_json::Value>>>,
     /// 丢弃计数（§17.1 指标；**按原因分桶**，review #6：调用方传入的稳定
     /// 原因——`epoch_mismatch`/`binding_missing`/`oauth_replay_rejected` 等
     /// ——各自独立计数，运维可区分丢弃分布）。
@@ -198,6 +200,7 @@ impl RelayEventHandler {
                 pending_elicitations: RwLock::new(HashMap::new()),
                 oauth: OAuthControl::new(),
                 mcp_app_tool_results: RwLock::new(HashMap::new()),
+                mcp_app_tool_inputs: RwLock::new(HashMap::new()),
                 dropped: StdRwLock::new(HashMap::new()),
             }),
         }
@@ -413,16 +416,98 @@ impl RelayEventHandler {
     ) {
         let wrapped = as_mcp_app_call_tool_result(result);
         let Some(bytes) = serde_json::to_vec(&wrapped).ok().map(|body| body.len()) else {
+            tracing::warn!(
+                target: "peri_studio::mcp_apps",
+                chat_id,
+                tool_call_id,
+                "mcp app tool result skipped: not serializable"
+            );
             return;
         };
+        let shape = mcp_app_result_shape(&wrapped);
         if bytes == 0 || bytes > Self::MCP_APP_RESULT_MAX_BYTES {
+            tracing::warn!(
+                target: "peri_studio::mcp_apps",
+                chat_id,
+                tool_call_id,
+                bytes,
+                max = Self::MCP_APP_RESULT_MAX_BYTES,
+                has_structured_content = shape.has_structured_content,
+                source_chars = shape.source_chars,
+                "mcp app tool result skipped: empty or over 1MiB"
+            );
             return;
         }
+        tracing::info!(
+            target: "peri_studio::mcp_apps",
+            chat_id,
+            tool_call_id,
+            bytes,
+            has_structured_content = shape.has_structured_content,
+            source_chars = shape.source_chars,
+            content_blocks = shape.content_blocks,
+            "mcp app tool result cached"
+        );
         let mut by_chat = self.inner.mcp_app_tool_results.write().await;
         by_chat
             .entry(chat_id.to_string())
             .or_default()
             .insert(tool_call_id.to_string(), wrapped);
+    }
+
+    pub(super) async fn remember_mcp_app_tool_input(
+        &self,
+        chat_id: &str,
+        tool_call_id: &str,
+        arguments: serde_json::Value,
+    ) {
+        if !arguments.is_object() {
+            return;
+        }
+        let Some(bytes) = serde_json::to_vec(&arguments).ok().map(|body| body.len()) else {
+            return;
+        };
+        if bytes == 0 || bytes > Self::MCP_APP_RESULT_MAX_BYTES {
+            tracing::warn!(
+                target: "peri_studio::mcp_apps",
+                chat_id,
+                tool_call_id,
+                bytes,
+                "mcp app tool input skipped: empty or over 1MiB"
+            );
+            return;
+        }
+        let source_chars = arguments
+            .get("source")
+            .and_then(serde_json::Value::as_str)
+            .map(str::len)
+            .unwrap_or(0);
+        tracing::info!(
+            target: "peri_studio::mcp_apps",
+            chat_id,
+            tool_call_id,
+            bytes,
+            source_chars,
+            "mcp app tool input cached"
+        );
+        let mut by_chat = self.inner.mcp_app_tool_inputs.write().await;
+        by_chat
+            .entry(chat_id.to_string())
+            .or_default()
+            .insert(tool_call_id.to_string(), arguments);
+    }
+
+    pub(super) async fn mcp_app_tool_input(
+        &self,
+        chat_id: &str,
+        tool_call_id: &str,
+    ) -> Option<serde_json::Value> {
+        self.inner
+            .mcp_app_tool_inputs
+            .read()
+            .await
+            .get(chat_id)
+            .and_then(|by_tool| by_tool.get(tool_call_id).cloned())
     }
 
     pub(super) async fn mcp_app_tool_result(
@@ -440,6 +525,7 @@ impl RelayEventHandler {
 
     pub(super) async fn clear_mcp_app_tool_results(&self, chat_id: &str) {
         self.inner.mcp_app_tool_results.write().await.remove(chat_id);
+        self.inner.mcp_app_tool_inputs.write().await.remove(chat_id);
     }
 
     /// Exact, explicit retrieval of the transient authorization URL.
@@ -471,6 +557,49 @@ pub(super) fn as_mcp_app_call_tool_result(value: serde_json::Value) -> serde_jso
     serde_json::json!({
         "content": [{ "type": "text", "text": value.to_string() }],
     })
+}
+
+/// Peri ACP 的 rawOutput 经常只有 `content[]` 文本；canvas 的 TSX 在 arguments.source。
+pub(crate) fn merge_mcp_app_tool_result(
+    result: Option<serde_json::Value>,
+    input: Option<serde_json::Value>,
+) -> Option<serde_json::Value> {
+    match (result, input) {
+        (Some(result), input) => {
+            let mut wrapped = as_mcp_app_call_tool_result(result);
+            if wrapped.get("structuredContent").is_none() {
+                if let Some(input) = input.filter(|value| value.is_object()) {
+                    wrapped["structuredContent"] = input;
+                }
+            }
+            Some(wrapped)
+        }
+        (None, Some(input)) if input.is_object() => Some(as_mcp_app_call_tool_result(input)),
+        _ => None,
+    }
+}
+
+struct McpAppResultShape {
+    has_structured_content: bool,
+    source_chars: usize,
+    content_blocks: usize,
+}
+
+fn mcp_app_result_shape(value: &serde_json::Value) -> McpAppResultShape {
+    let source_chars = value
+        .pointer("/structuredContent/source")
+        .and_then(serde_json::Value::as_str)
+        .map(str::len)
+        .unwrap_or(0);
+    McpAppResultShape {
+        has_structured_content: value.get("structuredContent").is_some(),
+        source_chars,
+        content_blocks: value
+            .get("content")
+            .and_then(serde_json::Value::as_array)
+            .map(Vec::len)
+            .unwrap_or(0),
+    }
 }
 
 #[cfg(test)]

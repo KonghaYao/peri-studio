@@ -282,7 +282,9 @@ function decodeKnownFrame(frame: Record<string, unknown>): DownstreamFrame | nul
     case 'mcp_app_session':
       return isMcpAppSessionFrame(frame) ? frame as DownstreamFrame : null;
     case 'mcp_app_resource':
-      return isMcpAppResourceFrame(frame) ? frame as DownstreamFrame : null;
+      if (isMcpAppResourceFrame(frame)) return frame as DownstreamFrame;
+      console.warn('[mcp-apps] dropped mcp_app_resource', mcpAppResourceDropReason(frame));
+      return null;
     case 'mcp_app_call_result':
       return isMcpAppCallResultFrame(frame) ? frame as DownstreamFrame : null;
     case 'auth_error':
@@ -455,16 +457,37 @@ function isMcpAppSessionFrame(frame: Record<string, unknown>): boolean {
 }
 
 function isMcpAppResourceFrame(frame: Record<string, unknown>): boolean {
-  return !hasForbiddenAppsKeys(frame)
-    && nonEmptyString(frame.commandId)
-    && nonEmptyString(frame.chatId)
-    && nonEmptyString(frame.appSessionId)
-    && typeof frame.html === 'string'
-    && frame.html.length <= 1024 * 1024
-    && nonEmptyString(frame.mimeType)
-    && frame.mimeType === 'text/html;profile=mcp-app'
-    && (frame.csp == null || typeof frame.csp === 'string')
-    && (frame.toolResult == null || isBoundedJsonObject(frame.toolResult));
+  return mcpAppResourceDropReason(frame) == null;
+}
+
+function mcpAppResourceDropReason(frame: Record<string, unknown>): Record<string, unknown> | null {
+  if (hasForbiddenAppsKeys(frame)) {
+    return { reason: 'forbidden_top_level_key', keys: Object.keys(frame).filter((key) => forbiddenAppsKeys.includes(key)) };
+  }
+  if (!nonEmptyString(frame.commandId)) return { reason: 'commandId' };
+  if (!nonEmptyString(frame.chatId)) return { reason: 'chatId' };
+  if (!nonEmptyString(frame.appSessionId)) return { reason: 'appSessionId' };
+  if (typeof frame.html !== 'string') return { reason: 'html_type' };
+  if (frame.html.length > 1024 * 1024) return { reason: 'html_too_large', htmlChars: frame.html.length };
+  if (!nonEmptyString(frame.mimeType) || frame.mimeType !== 'text/html;profile=mcp-app') {
+    return { reason: 'mimeType', mimeType: frame.mimeType ?? null };
+  }
+  if (frame.csp != null && typeof frame.csp !== 'string') return { reason: 'csp_type' };
+  if (frame.toolResult == null) return null;
+  if (!isBoundedJsonObject(frame.toolResult)) {
+    let jsonChars = -1;
+    try {
+      jsonChars = JSON.stringify(frame.toolResult).length;
+    } catch {
+      jsonChars = -1;
+    }
+    return {
+      reason: 'toolResult_unbounded',
+      jsonChars,
+      kind: frame.toolResult && typeof frame.toolResult === 'object' ? (Array.isArray(frame.toolResult) ? 'array' : 'object') : typeof frame.toolResult,
+    };
+  }
+  return null;
 }
 
 function isBoundedJsonObject(value: unknown): boolean {

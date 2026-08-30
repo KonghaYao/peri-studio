@@ -47,7 +47,7 @@ impl RelayEventHandler {
             } => Some(options.clone()),
             _ => None,
         };
-        let app_result = mcp_app_result_snapshot(&nev.body);
+        let app_snapshot = mcp_app_patch_snapshot(&nev.body);
         match self.inner.doc.submit_event(nev).await {
             SubmitResult::Applied(r) => {
                 // #3 增量窗口续命（issue #3）：事件投递成功（聚合器接受）
@@ -59,9 +59,15 @@ impl RelayEventHandler {
                     if let Some(options) = config_catalog {
                         self.inner.chats.set_config_catalog(chat_id, options).await;
                     }
-                    if let Some((tool_call_id, result)) = app_result {
-                        self.remember_mcp_app_tool_result(chat_id, &tool_call_id, result)
-                            .await;
+                    if let Some((tool_call_id, result, arguments)) = app_snapshot {
+                        if let Some(result) = result {
+                            self.remember_mcp_app_tool_result(chat_id, &tool_call_id, result)
+                                .await;
+                        }
+                        if let Some(arguments) = arguments {
+                            self.remember_mcp_app_tool_input(chat_id, &tool_call_id, arguments)
+                                .await;
+                        }
                     }
                 }
                 ConsumeResult::Delivered {
@@ -119,21 +125,33 @@ impl RelayEventHandler {
     }
 }
 
-fn mcp_app_result_snapshot(body: &EventBody) -> Option<(String, serde_json::Value)> {
+fn mcp_app_patch_snapshot(
+    body: &EventBody,
+) -> Option<(String, Option<serde_json::Value>, Option<serde_json::Value>)> {
     match body {
         EventBody::ToolCallPatched {
             tool_call_id,
             patch,
             ..
-        } => match &patch.result {
-            ToolJsonPatch::Set { value } => Some((tool_call_id.clone(), value.clone())),
-            _ => None,
-        },
+        } => {
+            let result = match &patch.result {
+                ToolJsonPatch::Set { value } => Some(value.clone()),
+                _ => None,
+            };
+            let arguments = match &patch.arguments {
+                ToolJsonPatch::Set { value } => Some(value.clone()),
+                _ => None,
+            };
+            if result.is_none() && arguments.is_none() {
+                return None;
+            }
+            Some((tool_call_id.clone(), result, arguments))
+        }
         EventBody::ToolCallCompleted {
             tool_call_id,
             result: Some(value),
             ..
-        } => Some((tool_call_id.clone(), value.clone())),
+        } => Some((tool_call_id.clone(), Some(value.clone()), None)),
         _ => None,
     }
 }

@@ -104,7 +104,7 @@ hostCapabilities: expected object, received undefined
     "theme": "light",
     "displayMode": "inline",
     "platform": "web",
-    "containerDimensions": { "maxHeight": 480, "maxWidth": 720 }
+    "containerDimensions": { "maxHeight": 720, "maxWidth": 720 }
   }
 }
 ```
@@ -124,7 +124,7 @@ hostCapabilities: expected object, received undefined
 7. Host → View：先 `ui/notifications/tool-input`（`params.arguments` 为 object），再 `ui/notifications/tool-result`（`params` 必须是 **CallToolResult 对象**，`{ content: [...] }`）。首屏优先用 `mcp_app_resource.toolResult`；缺省才回落到 Chat Doc 里可能被 4KB 截断的 `tool.result`。用 **`addEventListener("initialized")`** 在每一次 handshake 上重推，不要赋值 `oninitialized`（setter 会覆盖并打 “handler replaced”）。canvas View 开了 React StrictMode，会二次 `ui/initialize`；`tool-result` 是一次性通知。**不要**把第一次 `initialized` 当成 `bind()` 的完成条件去 `await`。
 8. View `tools/call` → `mcp/app-call` → `peri/mcp/app`
 
-**不要**用 `Show keyed` 绑定整个 live session 对象，也**不要**在 `size-changed` 时改同一份 session 再重设 iframe `src`。高度必须独立信号。官方 basic-host 有 `if (iframe.src) return`：给已有 `src` 的 iframe 再赋值同一 URL 仍会整页重载，于是 `sandbox-proxy-ready` → `loadView` 循环。`McpAppFrame` **只在 iframe 挂载时** `bindMcpAppHost` 一次（`onMount`），session 用 getter 读取；Yjs / liveApps 对象换新不得 abort 重连。只有组件真正卸载才 `close` 并清 `src`。
+**不要**用 `Show keyed` 绑定整个 live session 对象，也**不要**在 `size-changed` 时改同一份 session 再重设 iframe `src`。高度必须独立信号。inline 默认 400px，上限 `min(720, 70vh)`；沙箱代理页内层 iframe 必须 `height: 100%`，超出时由 View 文档滚动，不能靠代理页 `overflow: hidden` 把卡片裁掉。官方 basic-host 有 `if (iframe.src) return`：给已有 `src` 的 iframe 再赋值同一 URL 仍会整页重载，于是 `sandbox-proxy-ready` → `loadView` 循环。`McpAppFrame` **只在 iframe 挂载时** `bindMcpAppHost` 一次（`onMount`），session 用 getter 读取；Yjs / liveApps 对象换新不得 abort 重连。只有组件真正卸载才 `close` 并清 `src`。全屏用 CSS `position: fixed` 放大同一 iframe，禁止再挂一个 sandbox。同一 chat 里相同 `resourceUri` 只渲染最新一份 live iframe，更早的调用退回 `ToolCallCard`。URI 尚未到达时，才退回同条消息里的同名 MCP 工具去重。
 
 沙箱只本地处理 `ui/notifications/sandbox-*`；其余 JSON-RPC 双向透传。`ui/open-link` 只允许 `https:`。
 
@@ -181,7 +181,7 @@ hostCapabilities: expected object, received undefined
 ## 8. 已知缺口（下次会再碰到）
 
 - Host 用 npm `@modelcontextprotocol/ext-apps/app-bridge`（`AppBridge` + `PostMessageTransport`，`client: null`）。不要引入 React `@mcp-ui/client`。View HTML 仍走官方 `App()`。
-- `ui/message`、`ui/update-model-context`、fullscreen/pip、任意 `resources/read` 首期不做。
+- `ui/message`、`ui/update-model-context`、协议级 `ui/request-display-mode`（pip）、任意 `resources/read` 首期不做。Host 侧 iframe 全屏（右上角按钮，不重绑 sandbox）已做。
 - 远程 TLS 下第二 sandbox origin 未做。
 - Chat Doc 不写 live `appSessionId`（刷新不复活）。可选公开字段曾考虑过，已删空 stub，避免假装落盘。
 - 重叠 `tools/call` 已按 id 关联；Hub `commandId` 与 View id 的映射依赖 call result 内层 `payload.id`。
@@ -193,6 +193,6 @@ hostCapabilities: expected object, received undefined
 | 不声明 `peri.mcpApps` | Peri 已删除该能力；只认 env |
 | 第三帧 `mcp_app_call_result` | 计划只写了 session/resource；iframe 需要把 `tools/call` 结果送回去 |
 | 官方 App Bridge + Solid，不引入 `@mcp-ui/client` | `./app-bridge` 无 React 依赖；React 只是可选 peer。Studio 不是 MCP client，`new AppBridge(null, …)` + `oncalltool` 回 Peri |
-| 首屏 CallToolResult 走 `mcp_app_resource.toolResult` | Chat Doc 4KB 会省略 canvas TSX；瞬时缓存上限 1 MiB，不进 Yjs。帧顶层禁止 `structuredContent` |
+| 首屏 CallToolResult 走 `mcp_app_resource.toolResult` | Chat Doc 4KB 会省略 canvas TSX；瞬时缓存上限 1 MiB，不进 Yjs。帧顶层禁止 `structuredContent`。Peri ACP `rawOutput` 常只有 `content[]` 文本，此时用缓存的 tool **arguments**（如 `source`）合成 `structuredContent`。 |
 | 沙箱独立最小 HTTP，不走面板 `serve_http` | 绝不能带认证 Cookie / 业务 API |
 | 分类 fail-closed 但禁止扫 `text` 键 | 漏判会把 HTML 写入 ring；误判会毁掉 transcript 重放 |

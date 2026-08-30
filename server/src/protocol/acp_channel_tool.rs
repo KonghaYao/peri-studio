@@ -44,7 +44,14 @@ impl AcpChannel {
                     .as_deref()
                     .map(tool_kind),
                 status,
-                arguments: self.argument_patch(payload, "arguments", "rawInput"),
+                arguments: self.argument_patch(
+                    payload,
+                    "arguments",
+                    "rawInput",
+                    mcp_fields_from_name(string_field(payload, "name", "name").as_deref())
+                        .mcp_tool_name
+                        .is_some(),
+                ),
                 content: json_patch(payload, "content", TOOL_ARGUMENTS_MAX_BYTES),
                 append_content: false,
                 locations: json_patch(payload, "locations", TOOL_ARGUMENTS_MAX_BYTES),
@@ -70,16 +77,21 @@ impl AcpChannel {
         let status = status_text.as_deref().map(tool_status);
         let terminal = status.is_some_and(is_terminal);
         let failed = matches!(status, Some(ToolCallStatus::Error));
+        let name = string_field(update, "title", "title")
+            .or_else(|| string_field(update, "name", "name"));
         let content = json_patch(update, "content", TOOL_ARGUMENTS_MAX_BYTES);
         let patch = ToolCallPatch {
-            name: string_field(update, "title", "title")
-                .or_else(|| string_field(update, "name", "name"))
-                .map(|name| truncate_text(&name)),
+            name: name.as_ref().map(|name| truncate_text(name)),
             kind: string_field(update, "kind", "kind")
                 .as_deref()
                 .map(tool_kind),
             status,
-            arguments: self.argument_patch(update, "rawInput", "input"),
+            arguments: self.argument_patch(
+                update,
+                "rawInput",
+                "input",
+                mcp_fields_from_name(name.as_deref()).mcp_tool_name.is_some(),
+            ),
             content,
             append_content: false,
             locations: json_patch(update, "locations", TOOL_ARGUMENTS_MAX_BYTES),
@@ -92,11 +104,7 @@ impl AcpChannel {
             }),
             created_at: (update_kind == "tool_call").then(|| now.to_string()),
             completed_at: terminal.then(|| now.to_string()),
-            ..mcp_fields_from_name(
-                string_field(update, "title", "title")
-                    .or_else(|| string_field(update, "name", "name"))
-                    .as_deref(),
-            )
+            ..mcp_fields_from_name(name.as_deref())
         };
         Ok(EventBody::ToolCallPatched {
             turn_id: String::new(),
@@ -130,6 +138,7 @@ impl AcpChannel {
         update: &Map<String, Value>,
         primary: &str,
         fallback: &str,
+        keep_oversized_for_mcp_app: bool,
     ) -> ToolJsonPatch {
         let Some(value) = update.get(primary).or_else(|| update.get(fallback)) else {
             return ToolJsonPatch::Unchanged;
@@ -138,6 +147,15 @@ impl AcpChannel {
         if bytes > TOOL_ARGUMENTS_MAX_BYTES {
             self.oversized_tool_arguments
                 .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            // MCP App 首屏需要 arguments（如 canvas source）；Chat Doc 仍由聚合器按 4KB 省略。
+            let keep = keep_oversized_for_mcp_app
+                || value
+                    .get("source")
+                    .and_then(Value::as_str)
+                    .is_some_and(|source| !source.is_empty());
+            if keep && bytes <= 1024 * 1024 {
+                return value_patch(value);
+            }
             return ToolJsonPatch::Omitted {
                 bytes: bytes as u64,
             };

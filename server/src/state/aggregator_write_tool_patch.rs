@@ -62,9 +62,11 @@ fn apply_arguments_patch(tc: &mut ToolCallProjection, patch: &ToolJsonPatch, ter
             tc.arguments_bytes = None;
         }
         ToolJsonPatch::Set { value } if !terminal || tc.arguments.is_none() => {
-            tc.arguments_bytes = json_len(value);
-            tc.arguments_omitted = Some(false);
-            tc.arguments = Some(value.clone());
+            let bytes = json_len(value);
+            let omitted = bytes.is_none_or(|size| size > TOOL_RESULT_MAX_BYTES as u64);
+            tc.arguments = (!omitted).then(|| value.clone());
+            tc.arguments_omitted = Some(omitted);
+            tc.arguments_bytes = bytes;
         }
         ToolJsonPatch::Omitted { bytes } if !terminal || tc.arguments.is_none() => {
             tc.arguments = None;

@@ -17,7 +17,7 @@
 - 浏览器直连 MCP / 第二条 MCP-over-WS
 - HTML / `structuredContent` 写入 Yjs 或 SQLite
 - 回放、rewind、server 重启后复活 live iframe
-- App 内任意 `resources/read`、fullscreen / pip、相机麦克风
+- App 内任意 `resources/read`、协议级 pip / `ui/request-display-mode`、相机麦克风
 - `ui/update-model-context` 写入模型（Peri 无对应 RPC）
 - 把 Apps 塞进 `McpPanel`
 
@@ -154,7 +154,7 @@ HTML 是瞬时、不可信代码。`peri/mcp/resource` 的响应不得进入 ins
 ### P2 — 沙箱 Host
 
 1. 第二 origin 的 `sandbox.html`。
-2. `McpAppFrame`：initialize → tool-input → tool-result；`size-changed` 限制 maxHeight，避免撑破 `TranscriptWindow`。
+2. `McpAppFrame`：initialize → tool-input → tool-result；`size-changed` 限制 inline maxHeight（默认 400、上限 min(720, 70vh)），超出时内层 iframe 自滚动；右上角 Host 全屏不重绑 iframe。同一 `resourceUri` 只展示最新一份 live iframe。
 3. 金丝雀：本地 `mcp-app` 的 `get_dashboard`。
 4. 浏览器端到端：主路径 + 空/错误/只读。
 

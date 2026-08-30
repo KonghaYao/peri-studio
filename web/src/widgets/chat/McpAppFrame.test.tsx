@@ -1,4 +1,4 @@
-import { render } from '@solidjs/testing-library';
+import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setPrincipalRole } from '../../panel/lib/auth-state';
 import {
@@ -63,7 +63,23 @@ describe('McpAppFrame', () => {
     expect(bindMcpAppHost).toHaveBeenCalledTimes(1);
     setMcpAppHeight('tool-1', 360);
     expect(bindMcpAppHost).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Open fullscreen' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Open fullscreen' }));
+    expect(screen.getByRole('dialog', { name: 'MCP App' })).toBeInTheDocument();
+    expect(bindMcpAppHost).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Exit fullscreen' }));
+    expect(screen.queryByRole('dialog', { name: 'MCP App' })).not.toBeInTheDocument();
+    expect(bindMcpAppHost).toHaveBeenCalledTimes(1);
     view.unmount();
+    expect(bindMcpAppHost).toHaveBeenCalledTimes(1);
+  });
+
+  it('exits fullscreen on Escape without rebinding', () => {
+    seedLiveApp();
+    render(() => <McpAppFrame toolCallId="tool-1" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open fullscreen' }));
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'MCP App' })).not.toBeInTheDocument();
     expect(bindMcpAppHost).toHaveBeenCalledTimes(1);
   });
 });

@@ -4,8 +4,9 @@ import {
   asCallToolResult,
   asToolInputParams,
   callMcpAppTool,
+  describeMcpAppPayload,
   MCP_APP_HOST_VERSION,
-  MCP_APP_MAX_HEIGHT,
+  mcpAppInlineMaxHeight,
   MCP_APP_MAX_WIDTH,
   sandboxOrigin,
   setMcpAppHeight,
@@ -36,9 +37,19 @@ export async function bindMcpAppHost(
   signal: AbortSignal,
 ): Promise<McpAppHostHandle | null> {
   const initial = session();
-  if (!initial?.html) return null;
+  if (!initial?.html) {
+    console.warn('[mcp-apps] bind skipped: no html', { hasSession: Boolean(initial) });
+    return null;
+  }
   const sandboxTarget = sandboxOrigin();
   const html = withCspMeta(initial.html, initial.csp);
+  console.info('[mcp-apps] bind', {
+    toolCallId: initial.toolCallId,
+    appSessionId: initial.appSessionId,
+    htmlChars: initial.html.length,
+    injectedCsp: html !== initial.html,
+    toolResult: describeMcpAppPayload(initial.toolResult),
+  });
 
   const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   const bridge = new AppBridge(
@@ -50,7 +61,7 @@ export async function bindMcpAppHost(
         theme,
         displayMode: 'inline',
         platform: 'web',
-        containerDimensions: { maxHeight: MCP_APP_MAX_HEIGHT, maxWidth: MCP_APP_MAX_WIDTH },
+        containerDimensions: { maxHeight: mcpAppInlineMaxHeight(), maxWidth: MCP_APP_MAX_WIDTH },
       },
     },
   );
@@ -78,17 +89,30 @@ export async function bindMcpAppHost(
     return {};
   };
 
+  let initializedCount = 0;
   const pushToolPayload = () => {
-    if (signal.aborted) return;
+    initializedCount += 1;
+    if (signal.aborted) {
+      console.warn('[mcp-apps] initialized ignored: bind aborted', { n: initializedCount });
+      return;
+    }
     const current = session();
-    if (!current) return;
+    if (!current) {
+      console.warn('[mcp-apps] initialized ignored: session gone', { n: initializedCount });
+      return;
+    }
+    const result = asCallToolResult(current.toolResult);
+    console.info('[mcp-apps] initialized → push', {
+      n: initializedCount,
+      toolCallId: current.toolCallId,
+      toolResult: describeMcpAppPayload(result),
+    });
     void (async () => {
       await bridge.sendToolInput(asToolInputParams(current.toolInput));
-      await bridge.sendToolResult(
-        asCallToolResult(current.toolResult) as Parameters<AppBridge['sendToolResult']>[0],
-      );
+      await bridge.sendToolResult(result as Parameters<AppBridge['sendToolResult']>[0]);
+      console.info('[mcp-apps] pushed tool-input + tool-result', { n: initializedCount });
     })().catch((error) => {
-      if (!isAbortError(error)) console.warn('MCP App host failed to push tool payload', error);
+      if (!isAbortError(error)) console.warn('[mcp-apps] push failed', { n: initializedCount, error });
     });
   };
   // 不用 oninitialized setter：会覆盖、会告警。canvas StrictMode 会多次 initialized，
@@ -97,12 +121,14 @@ export async function bindMcpAppHost(
 
   try {
     await loadSandboxProxy(iframe, sandboxTarget, signal);
+    console.info('[mcp-apps] sandbox-proxy-ready', { origin: sandboxTarget });
     if (signal.aborted || !iframe.contentWindow) {
       await bridge.close();
       return null;
     }
     await bridge.connect(new PostMessageTransport(iframe.contentWindow, iframe.contentWindow));
     await bridge.sendSandboxResourceReady({ html });
+    console.info('[mcp-apps] sandbox-resource-ready sent');
     if (signal.aborted) {
       await bridge.close();
       return null;
@@ -113,7 +139,7 @@ export async function bindMcpAppHost(
   } catch (error) {
     void bridge.close();
     if (signal.aborted || isAbortError(error)) return null;
-    console.warn('MCP App host failed to bind', error);
+    console.warn('[mcp-apps] bind failed', error);
     return null;
   }
 }

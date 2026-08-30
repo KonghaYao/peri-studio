@@ -74,7 +74,9 @@ fn gate_open_rejects_non_completed_and_non_mcp_tools() {
 
 #[test]
 fn as_mcp_app_call_tool_result_wraps_output_schema() {
-    use crate::channel::relay_event_handler::as_mcp_app_call_tool_result;
+    use crate::channel::relay_event_handler::{
+        as_mcp_app_call_tool_result, merge_mcp_app_tool_result,
+    };
     use serde_json::json;
 
     let output = json!({"canvasId": "c1", "source": "export default function App() { return null }"});
@@ -87,4 +89,10 @@ fn as_mcp_app_call_tool_result_wraps_output_schema() {
         "structuredContent": {"source": "tsx"}
     });
     assert_eq!(as_mcp_app_call_tool_result(already.clone()), already);
+
+    let content_only = json!({"content": [{"type": "text", "text": "Canvas ready"}]});
+    let input = json!({"canvasId": "c1", "source": "export default function App() { return null }"});
+    let merged = merge_mcp_app_tool_result(Some(content_only), Some(input.clone())).unwrap();
+    assert_eq!(merged["structuredContent"], input);
+    assert_eq!(merged["content"][0]["text"], "Canvas ready");
 }

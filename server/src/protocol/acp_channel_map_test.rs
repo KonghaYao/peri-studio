@@ -320,6 +320,32 @@ fn oversized_official_arguments_are_explicitly_omitted_with_bytes() {
 }
 
 #[test]
+fn oversized_mcp_app_arguments_with_source_stay_set_for_first_paint() {
+    let huge = "x".repeat(5000);
+    let frame = json!({
+        "jsonrpc": "2.0", "method": "session/update",
+        "params": {"sessionId": "acp-1", "update": {
+            "sessionUpdate": "tool_call_update",
+            "toolCallId": "tc-canvas",
+            "title": "mcp__cursor-canvas__show_canvas",
+            "rawInput": {"source": huge, "canvasId": "c1"}
+        }}
+    });
+    let NormalizeOutcome::Event(event) = norm(frame) else {
+        panic!("expected normalized event");
+    };
+    let EventBody::ToolCallPatched { patch, .. } = event.body else {
+        panic!("expected tool patch");
+    };
+    match patch.arguments {
+        ToolJsonPatch::Set { value } => {
+            assert_eq!(value["source"].as_str().unwrap().len(), 5000);
+        }
+        other => panic!("expected Set arguments, got {other:?}"),
+    }
+}
+
+#[test]
 fn raw_terminal_aliases_map_to_exact_terminal_statuses() {
     for (wire, expected) in [
         ("complete", ToolCallStatus::Completed),

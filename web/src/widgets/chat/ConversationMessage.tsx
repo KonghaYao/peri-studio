@@ -7,19 +7,27 @@ import { MessageSquareQuote, MoreHorizontal } from 'lucide-solid';
 import { Markdown } from './Markdown';
 import { ToolCallCard } from './ToolCallCard';
 import { McpAppFrame } from './McpAppFrame';
-import { liveMcpApp, maybeOpenCompletedMcpTool } from '../../panel/lib/mcp-apps';
+import { isPrimaryLiveMcpApp, maybeOpenCompletedMcpTool } from '../../panel/lib/mcp-apps';
 import { requestComposerQuote } from '../../panel/lib/composer-quote';
 
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
 
-function McpToolBlock(props: { toolCall: Accessor<ToolCallInfo>; origin: Accessor<'live' | 'replay' | null> }) {
+function McpToolBlock(props: {
+  toolCall: Accessor<ToolCallInfo>;
+  origin: Accessor<'live' | 'replay' | null>;
+  siblingTools: Accessor<ToolCallInfo[]>;
+  duplicate: boolean;
+}) {
   createEffect(() => {
+    if (props.duplicate) return;
     maybeOpenCompletedMcpTool(props.toolCall(), props.origin());
   });
   const toolCallId = () => props.toolCall().toolCallId || '';
   return (
-    <Show when={liveMcpApp(toolCallId())?.html} fallback={<ToolCallCard toolCall={props.toolCall} />}>
-      <McpAppFrame toolCallId={toolCallId()} />
+    <Show when={!props.duplicate}>
+      <Show when={isPrimaryLiveMcpApp(toolCallId(), props.siblingTools())} fallback={<ToolCallCard toolCall={props.toolCall} />}>
+        <McpAppFrame toolCallId={toolCallId()} />
+      </Show>
     </Show>
   );
 }
@@ -61,6 +69,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
   ];
   // 旧快照与开发 fixture 可能尚无 blocks；只在该兼容边界回退到旧分组模型。
   const blocks = createMemo(() => entry().blocks?.length ? entry().blocks : legacyBlocks());
+  const toolCallsInBlocks = createMemo(() => blocks().flatMap((block) => block.kind === 'tool_call' ? [block.toolCall] : []));
   const role = createMemo(() => entry().role === 'user' ? 'user' : entry().role === 'system' ? 'system' : 'assistant');
   const blockIds = createMemo(() => blocks().map((block) => block.id));
   const blocksById = createMemo(() => new Map(blocks().map((block) => [block.id, block])));
@@ -132,6 +141,18 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
         const activity = () => isActivityBlock(block());
         const startsActivity = () => activity() && !isActivityBlock(blocksById().get(blockIds()[blockIndex() - 1]));
         const endsActivity = () => activity() && !isActivityBlock(blocksById().get(blockIds()[blockIndex() + 1]));
+        const toolCall = () => block().kind === 'tool_call' ? block().toolCall : null;
+        const duplicateToolBlock = () => {
+          const id = toolCall()?.toolCallId || '';
+          if (!id) return false;
+          const ids = blockIds();
+          const byId = blocksById();
+          for (let index = 0; index < blockIndex(); index += 1) {
+            const previous = byId.get(ids[index]);
+            if (previous?.kind === 'tool_call' && (previous.toolCall.toolCallId || '') === id) return true;
+          }
+          return false;
+        };
         return <div class={`conversation-message__block ${activity() ? `conversation-message__activity-item relative pl-18 before:absolute before:left-7 before:w-px before:bg-border-subtle before:content-[''] ${startsActivity() ? 'before:top-12' : 'before:-top-10'} ${endsActivity() ? 'before:bottom-12' : 'before:-bottom-10'}` : ''}`}><Show when={block().kind === 'reasoning'} fallback={
           <Show when={block().kind === 'text'} fallback={
             <Show when={block().kind === 'tool_call'} fallback={
@@ -142,8 +163,10 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
                 })()}
               </section>
             }><McpToolBlock
-              toolCall={() => (block() as Extract<ChatBlock, { kind: 'tool_call' }>).toolCall}
+              toolCall={() => toolCall()!}
               origin={() => (entry().origin === 'session_replay' ? 'replay' as const : entry().origin === 'live' ? 'live' as const : null)}
+              siblingTools={toolCallsInBlocks}
+              duplicate={duplicateToolBlock()}
             /></Show>
           }>{
             <div class="conversation-message__text text-text-primary text-13 leading-20">

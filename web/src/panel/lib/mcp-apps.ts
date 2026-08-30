@@ -10,7 +10,7 @@ import type {
   McpAppSessionFrame,
 } from './protocol';
 import type { Ack, ActionError, ActionFrame, ActionOptions } from './action-contract';
-import type { ToolCallInfo } from './chat-view';
+import type { ToolCallInfo } from '@/entities/chat/chat-view';
 
 export interface LiveMcpAppSession {
   chatId: string;
@@ -96,7 +96,47 @@ export function liveMcpApp(toolCallId: string): LiveMcpAppSession | null {
 }
 
 export function liveMcpAppHeight(toolCallId: string): number {
-  return appHeights()[toolCallId] ?? 240;
+  return appHeights()[toolCallId] ?? MCP_APP_DEFAULT_HEIGHT;
+}
+
+/** 同一 resourceUri（或同名 MCP 工具）只展示最新一份 live iframe。 */
+export function mcpAppIdentity(
+  tool: Pick<ToolCallInfo, 'name' | 'toolCallId'>,
+  session: LiveMcpAppSession | null,
+): string {
+  const uri = session?.resourceUri?.trim();
+  if (uri) return `uri:${uri}`;
+  const name = tool.name?.trim();
+  if (name) return `name:${name}`;
+  return `id:${tool.toolCallId || ''}`;
+}
+
+export function isPrimaryLiveMcpApp(
+  toolCallId: string,
+  tools: ReadonlyArray<Pick<ToolCallInfo, 'name' | 'toolCallId'>> = [],
+): boolean {
+  if (!toolCallId) return false;
+  const session = liveMcpApp(toolCallId);
+  if (!session?.html) return false;
+  const uri = session.resourceUri.trim();
+  if (uri) {
+    let latest = '';
+    for (const [id, live] of Object.entries(liveApps())) {
+      if (live.chatId !== session.chatId || !live.html) continue;
+      if (live.resourceUri.trim() === uri) latest = id;
+    }
+    return latest === toolCallId;
+  }
+  const self = tools.find((tool) => (tool.toolCallId || '') === toolCallId);
+  const key = mcpAppIdentity(self ?? { name: null, toolCallId }, session);
+  let latest = '';
+  for (const tool of tools) {
+    const id = tool.toolCallId || '';
+    const live = liveMcpApp(id);
+    if (!live?.html) continue;
+    if (mcpAppIdentity(tool, live) === key) latest = id;
+  }
+  return latest === toolCallId;
 }
 
 export function sandboxOrigin(): string {
@@ -123,6 +163,11 @@ export function openMcpApp(chatId: string, toolCallId: string, toolInput: unknow
   });
   if (!sent) mcpAppsQueries.delete(frame.commandId);
   else {
+    console.info('[mcp-apps] open', {
+      chatId,
+      toolCallId,
+      snapshot: describeMcpAppPayload(toolResult),
+    });
     setLiveApps((apps) => ({
       ...apps,
       [toolCallId]: {
@@ -138,7 +183,7 @@ export function openMcpApp(chatId: string, toolCallId: string, toolInput: unknow
         toolResult,
       },
     }));
-    setAppHeights((heights) => ({ ...heights, [toolCallId]: 240 }));
+    setAppHeights((heights) => ({ ...heights, [toolCallId]: MCP_APP_DEFAULT_HEIGHT }));
   }
   return sent;
 }
@@ -186,9 +231,15 @@ export function callMcpAppTool(
 }
 
 export const MCP_APPS_PROTOCOL = '2026-01-26';
-export const MCP_APP_MAX_HEIGHT = 480;
+export const MCP_APP_DEFAULT_HEIGHT = 400;
+export const MCP_APP_MAX_HEIGHT = 720;
 export const MCP_APP_MAX_WIDTH = 720;
 export const MCP_APP_HOST_VERSION = '0.2.0';
+
+export function mcpAppInlineMaxHeight(): number {
+  if (typeof window === 'undefined') return MCP_APP_MAX_HEIGHT;
+  return Math.min(MCP_APP_MAX_HEIGHT, Math.max(MCP_APP_DEFAULT_HEIGHT, Math.round(window.innerHeight * 0.7)));
+}
 
 /** 官方 App Bridge 的 `McpUiInitializeResult`：hostInfo.version 与 hostCapabilities 必填。 */
 export function mcpUiInitializeResult(theme: 'light' | 'dark'): Record<string, unknown> {
@@ -203,13 +254,13 @@ export function mcpUiInitializeResult(theme: 'light' | 'dark'): Record<string, u
       theme,
       displayMode: 'inline',
       platform: 'web',
-      containerDimensions: { maxHeight: MCP_APP_MAX_HEIGHT, maxWidth: MCP_APP_MAX_WIDTH },
+      containerDimensions: { maxHeight: mcpAppInlineMaxHeight(), maxWidth: MCP_APP_MAX_WIDTH },
     },
   };
 }
 
 export function setMcpAppHeight(toolCallId: string, height: number): void {
-  const maxHeight = MCP_APP_MAX_HEIGHT;
+  const maxHeight = mcpAppInlineMaxHeight();
   setAppHeights((heights) => ({
     ...heights,
     [toolCallId]: Math.min(Math.max(height, 120), maxHeight),
@@ -222,6 +273,41 @@ export function asToolInputParams(value: unknown): { arguments: Record<string, u
     return { arguments: value as Record<string, unknown> };
   }
   return { arguments: {} };
+}
+
+/** 诊断用：只描述形状与长度，不打印 HTML / TSX / token。 */
+export function describeMcpAppPayload(value: unknown): Record<string, unknown> {
+  if (value == null) return { present: false };
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    return { present: true, kind: Array.isArray(value) ? 'array' : typeof value };
+  }
+  const record = value as Record<string, unknown>;
+  const structured = record.structuredContent;
+  const structuredRecord = structured && typeof structured === 'object' && !Array.isArray(structured)
+    ? structured as Record<string, unknown>
+    : null;
+  const source = structuredRecord && typeof structuredRecord.source === 'string' ? structuredRecord.source : null;
+  const content = Array.isArray(record.content) ? record.content : null;
+  const first = content?.[0];
+  const firstText = first && typeof first === 'object' && !Array.isArray(first) && typeof (first as { text?: unknown }).text === 'string'
+    ? (first as { text: string }).text
+    : '';
+  let jsonChars = -1;
+  try {
+    jsonChars = JSON.stringify(value).length;
+  } catch {
+    jsonChars = -1;
+  }
+  return {
+    present: true,
+    keys: Object.keys(record).slice(0, 16),
+    contentBlocks: content?.length ?? 0,
+    firstTextChars: firstText.length,
+    hasStructuredContent: structuredRecord != null,
+    structuredKeys: structuredRecord ? Object.keys(structuredRecord).slice(0, 16) : [],
+    sourceChars: source?.length ?? 0,
+    jsonChars,
+  };
 }
 
 /** App Bridge `ui/notifications/tool-result` params 必须是 CallToolResult 对象，不能是字符串。 */
@@ -262,12 +348,31 @@ export function handleMcpAppSession(frame: H.DownstreamFrame): void {
 export function handleMcpAppResource(frame: H.DownstreamFrame): void {
   const response = frame as unknown as McpAppResourceFrame;
   const query = mcpAppsQueries.get(response.commandId);
-  if (!query || query.kind !== 'resource' || query.chatId !== response.chatId || response.chatId !== deps!.selectedCid()) return;
+  if (!query || query.kind !== 'resource' || query.chatId !== response.chatId || response.chatId !== deps!.selectedCid()) {
+    console.warn('[mcp-apps] resource ignored', {
+      commandId: response.commandId,
+      frameChatId: response.chatId,
+      selectedChatId: deps?.selectedCid() ?? null,
+      queryKind: query?.kind ?? null,
+    });
+    return;
+  }
   mcpAppsQueries.delete(response.commandId);
   setLiveApps((apps) => {
     const entry = Object.entries(apps).find(([, session]) => session.appSessionId === response.appSessionId);
-    if (!entry) return apps;
+    if (!entry) {
+      console.warn('[mcp-apps] resource has no live session', { appSessionId: response.appSessionId });
+      return apps;
+    }
     const [toolCallId, session] = entry;
+    const toolResult = response.toolResult ?? session.toolResult;
+    console.info('[mcp-apps] resource', {
+      toolCallId,
+      appSessionId: response.appSessionId,
+      htmlChars: response.html.length,
+      usedEphemeralToolResult: response.toolResult != null,
+      toolResult: describeMcpAppPayload(toolResult),
+    });
     return {
       ...apps,
       [toolCallId]: {
@@ -275,7 +380,7 @@ export function handleMcpAppResource(frame: H.DownstreamFrame): void {
         html: response.html,
         mimeType: response.mimeType,
         csp: response.csp ?? null,
-        toolResult: response.toolResult ?? session.toolResult,
+        toolResult,
       },
     };
   });

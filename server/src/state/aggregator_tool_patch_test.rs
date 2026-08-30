@@ -194,6 +194,30 @@ fn omitted_arguments_and_failed_output_remain_explicit_in_projection() {
 }
 
 #[test]
+fn oversized_argument_set_is_omitted_from_chat_doc() {
+    let mut p = pair();
+    let mut agg = Aggregator;
+    seed_user_msg(&mut p, "t1", "t1:user", "a");
+    let patched = EventBody::ToolCallPatched {
+        turn_id: String::new(),
+        tool_call_id: "tc-canvas-args".into(),
+        patch: ToolCallPatch {
+            status: Some(ToolCallStatus::Completed),
+            arguments: ToolJsonPatch::Set {
+                value: json!({"source": "x".repeat(5000)}),
+            },
+            completed_at: Some("2026-08-07T00:00:02Z".into()),
+            ..Default::default()
+        },
+    };
+    assert!(agg.apply(&mut p, &ev("s1", 2, patched)).applied);
+    let tool = tool_call(&p, "tc-canvas-args");
+    assert_eq!(tool.arguments, None);
+    assert_eq!(tool.arguments_omitted, Some(true));
+    assert!(tool.arguments_bytes.unwrap() > 4096);
+}
+
+#[test]
 fn terminal_turn_settles_running_tool_and_late_terminal_can_fill_missing_output_once() {
     let mut p = pair();
     let mut agg = Aggregator;

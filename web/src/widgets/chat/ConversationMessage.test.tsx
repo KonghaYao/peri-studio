@@ -1,10 +1,22 @@
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { createSignal } from 'solid-js';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { ConversationMessage } from './ConversationMessage';
 import { Markdown } from './Markdown';
 import { composerQuoteRequest, resetComposerQuoteRequest } from '../../panel/lib/composer-quote';
+import { setPrincipalRole } from '../../panel/lib/auth-state';
+import {
+  handleMcpAppResource,
+  handleMcpAppSession,
+  installMcpApps,
+  openMcpApp,
+  resetMcpAppsState,
+} from '../../panel/lib/mcp-apps';
+
+vi.mock('../../panel/lib/mcp-app-host', () => ({
+  bindMcpAppHost: vi.fn(async () => ({ close: vi.fn(async () => undefined) })),
+}));
 
 function entry(overrides: Partial<ChatEntry> = {}): ChatEntry {
   return {
@@ -22,6 +34,10 @@ function baseTool(toolCallId: string) {
 }
 
 describe('ConversationMessage', () => {
+  afterEach(() => {
+    resetMcpAppsState();
+    setPrincipalRole(null);
+  });
   it('keeps user text plain and visually separate from assistant Markdown', () => {
     const view = render(() => <ConversationMessage entry={entry({ role: 'user', text: '**literal user input**' })} />);
     const message = screen.getByLabelText('Your message');
@@ -461,5 +477,54 @@ describe('Markdown', () => {
     expect(screen.queryByRole('button', { name: /Load image/ })).not.toBeInTheDocument();
     expect(document.querySelector('.markdown-body img')).not.toBeInTheDocument();
     expect(screen.getByText('Image unavailable: Unsafe')).toBeInTheDocument();
+  });
+
+  it('shows only the latest MCP App iframe when the same UI resource opens twice', () => {
+    setPrincipalRole('full');
+    let lastCommandId = '';
+    installMcpApps({
+      selectedCid: () => 'chat-1',
+      ready: () => true,
+      sendAction: (frame) => {
+        lastCommandId = frame.commandId;
+        return true;
+      },
+      acknowledge: () => undefined,
+    });
+    const attach = (toolCallId: string, appSessionId: string) => {
+      openMcpApp('chat-1', toolCallId, {}, {});
+      handleMcpAppSession({
+        t: 'mcp_app_session',
+        commandId: lastCommandId,
+        chatId: 'chat-1',
+        toolCallId,
+        appSessionId,
+        serverId: 'sales-dashboard',
+        resourceUri: 'ui://dashboard/app.html',
+      } as never);
+      handleMcpAppResource({
+        t: 'mcp_app_resource',
+        commandId: lastCommandId,
+        chatId: 'chat-1',
+        appSessionId,
+        html: '<html></html>',
+        mimeType: 'text/html;profile=mcp-app',
+      } as never);
+    };
+    attach('tool-1', 'app-1');
+    attach('tool-2', 'app-2');
+    const first = { ...baseTool('tool-1'), name: 'mcp__sales-dashboard__get_dashboard' };
+    const second = { ...baseTool('tool-2'), name: 'mcp__sales-dashboard__get_dashboard' };
+    render(() => <ConversationMessage entry={entry({
+      origin: 'live',
+      toolCalls: [first, second],
+      blocks: [
+        { kind: 'tool_call', id: 'tool-1', toolCall: first },
+        { kind: 'tool_call', id: 'tool-2', toolCall: second },
+      ],
+    })} />);
+    expect(screen.getAllByTitle('MCP App sandbox')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Open fullscreen' })).toBeInTheDocument();
+    expect(screen.getByText('mcp__sales-dashboard__get_dashboard')).toBeInTheDocument();
   });
 });
