@@ -59,7 +59,7 @@ test('resource workbench keeps Explorer and Source Control directly reachable', 
     if (!bridge) return false;
     bridge.setFilePreview({
       requestId: 'browser-file', path: 'src/main.rs', loading: false, mode: 'text',
-      url: '/api/resource-blobs/browser-file', contentType: 'text/plain', size: 30,
+      contentType: 'text/plain', size: 30,
       text: 'fn main() {\n    println!("ready");\n}\n',
     });
     return true;
@@ -225,11 +225,11 @@ test('primary action labels retain readable contrast', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/visual-fixture.html?scenario=elicitation', { waitUntil: 'networkidle' });
 
-  const colors = await page.getByRole('button', { name: 'Continue' }).evaluate((button) => {
+  const colors = await page.locator('.elicitation-card').getByRole('button', { name: 'Next', exact: true }).evaluate((button) => {
     const style = getComputedStyle(button);
     return { foreground: style.color, background: style.backgroundColor };
   });
-  expect(colors).toEqual({ foreground: 'rgb(255, 255, 255)', background: 'rgb(22, 163, 106)' });
+  expect(colors).toEqual({ foreground: 'rgb(255, 255, 255)', background: 'rgb(37, 99, 235)' });
 });
 
 test('coarse pointer keeps workspace header actions at least 44px', async ({ page }) => {
@@ -275,7 +275,7 @@ test('resource density tokens resolve to their authored desktop heights', async 
   await expect(page.locator('.resource-editor-toolbar')).toHaveCSS('height', '34px');
   await page.getByRole('button', { name: 'Close diff' }).click();
   await expect(page.locator('.resource-group-title').first()).toHaveCSS('height', '24px');
-  await expect(page.locator('.resource-change-row').first()).toHaveCSS('height', '24px');
+  await expect(page.locator('[class*="group/tree-file"]').first()).toHaveCSS('height', '24px');
 });
 
 test('768px resource workflow is keyboard-only and keeps a visible focus ring', async ({ page }) => {

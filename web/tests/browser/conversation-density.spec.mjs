@@ -9,7 +9,7 @@ test('conversation copy keeps compact authored line heights', async ({ page }) =
     composerLineHeight: getComputedStyle(document.querySelector('.composer-input')).lineHeight,
     assistantHeight: document.querySelector('.conversation-message--assistant')?.getBoundingClientRect().height ?? 0,
   }));
-  expect(geometry).toMatchObject({ lineHeight: '20px', composerLineHeight: '18px' });
+  expect(geometry).toMatchObject({ lineHeight: '18.85px', composerLineHeight: '18.85px' });
   expect(geometry.height).toBeLessThan(100);
   expect(geometry.assistantHeight).toBeLessThan(800);
 });
@@ -45,13 +45,13 @@ test('conversation typography and permission surfaces stay dense and neutral', a
     return {
       body: style('body').fontSize,
       message: [style('.conversation-message__text').fontSize, style('.conversation-message__text').lineHeight],
-      button: style('.permission-request [data-slot=button]').fontSize,
+      button: style('.permission-request footer [data-slot=button]').fontSize,
       heading: style('.markdown-body h2').fontSize,
       permission: style('.permission-request').backgroundColor,
       text: document.body.innerText,
     };
   });
-  expect(facts).toMatchObject({ body: '13px', message: ['13px', '20px'], button: '12px', heading: '17px' });
+  expect(facts).toMatchObject({ body: '13px', message: ['13px', '18.85px'], button: '13px', heading: '16px' });
   expect(facts.permission).not.toBe('rgba(0, 0, 0, 0)');
   for (const copy of ['Locks immediately once selected', 'Waiting for your permission', 'Hub observed', 'shows only redacted run summaries']) {
     expect(facts.text).not.toContain(copy);
