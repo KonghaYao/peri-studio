@@ -84,6 +84,7 @@ export function TokenUsageMeter(props: {
       <KPopover.Trigger
         as="button"
         type="button"
+        data-testid="composer-usage"
         aria-label={`Context usage ${Math.round(ratio() * 100)}% · ${STATE_LABEL[state()]} · ${breakdown()}`}
         class={cn(
           'composer-usage inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md',

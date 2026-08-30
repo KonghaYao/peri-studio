@@ -44,7 +44,7 @@ describe('ConversationMessage', () => {
     expect(message).toHaveClass('conversation-message--user');
     expect(message).toHaveTextContent('**literal user input**');
     expect(message.querySelector('strong')).toBeNull();
-    expect(message.querySelector('.conversation-message__meta')).toHaveClass('flex');
+    expect(message.querySelector('[data-testid="conversation-message-meta"]')).toHaveClass('flex');
     expect(message.querySelector('[class*="max-w-(--chat-bubble-max)"]')).toHaveClass('rounded-xl', 'bg-surface-overlay', 'text-content-primary');
     expect(screen.queryByRole('button', { name: 'Copy answer' })).not.toBeInTheDocument();
     view.unmount();
@@ -57,8 +57,8 @@ describe('ConversationMessage', () => {
 
     expect(screen.getByLabelText('Assistant message')).toHaveClass('conversation-message--assistant');
     expect(screen.getByRole('heading', { name: 'Result' })).toBeInTheDocument();
-    expect(screen.getByText('cargo test')).toHaveClass('md-inline-code');
-    expect(screen.getByRole('button', { name: 'Copy answer' }).closest('.conversation-message__actions')).toHaveClass(
+    expect(screen.getByText('cargo test')).toHaveAttribute('data-testid', 'md-inline-code');
+    expect(screen.getByRole('button', { name: 'Copy answer' }).closest('[data-testid="conversation-message-actions"]')).toHaveClass(
       'absolute', 'border', 'bg-surface-overlay', 'shadow-overlay', 'text-content-muted',
     );
     fireEvent.click(screen.getByRole('button', { name: 'Copy answer' }));
@@ -77,7 +77,7 @@ describe('ConversationMessage', () => {
   it('opens the same floating actions from a touch-sized coarse-pointer trigger', () => {
     render(() => <ConversationMessage entry={entry({ text: 'Touch actions.' })} />);
     const trigger = screen.getByRole('button', { name: 'Message actions' });
-    const actions = screen.getByRole('button', { name: 'Copy answer' }).closest('.conversation-message__actions');
+    const actions = screen.getByRole('button', { name: 'Copy answer' }).closest('[data-testid="conversation-message-actions"]');
 
     expect(trigger).toHaveClass('hidden', 'pointer-coarse:inline-flex');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
@@ -138,9 +138,9 @@ describe('ConversationMessage', () => {
     const view = render(() => <ConversationMessage entry={entry({ status: 'streaming', text: '**partial' })} />);
     const message = screen.getByLabelText('Assistant message');
     expect(message).toHaveTextContent('partial');
-    expect(message.querySelector('.markdown-body')).toBeInTheDocument();
+    expect(message.querySelector('[data-testid="markdown-body"]')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Copy answer' })).not.toBeInTheDocument();
-    expect(document.querySelector('.message-loading')).toBeNull();
+    expect(document.querySelector('[data-testid="message-loading"]')).toBeNull();
     view.unmount();
   });
 
@@ -152,25 +152,25 @@ describe('ConversationMessage', () => {
 
     expect(screen.getByRole('heading', { name: 'Changes' })).toBeInTheDocument();
     expect(screen.getByText('Done')).toHaveProperty('tagName', 'STRONG');
-    expect(screen.getByText('cargo test')).toHaveClass('md-inline-code');
+    expect(screen.getByText('cargo test')).toHaveAttribute('data-testid', 'md-inline-code');
   });
 
   it('keeps the streaming Markdown surface mounted while text grows', () => {
     const [current, setCurrent] = createSignal(entry({ status: 'streaming', text: 'First' }));
     render(() => <ConversationMessage entry={current} />);
-    const surface = document.querySelector('.markdown-body');
+    const surface = document.querySelector('[data-testid="markdown-body"]');
     setCurrent(entry({ status: 'streaming', text: 'First second' }));
-    expect(document.querySelector('.markdown-body')).toBe(surface);
+    expect(document.querySelector('[data-testid="markdown-body"]')).toBe(surface);
     expect(surface).toHaveTextContent('First second');
   });
 
   it('preserves completed Markdown block instances while the stream edge grows', async () => {
     const [source, setSource] = createSignal('```ts\nconst value = 1;\n```\n\nFirst');
     render(() => <Markdown source={source} streaming />);
-    await waitFor(() => expect(document.querySelector('.md-code-block')).toHaveAttribute('data-highlighted', 'true'));
-    const codeBlock = document.querySelector('.md-code-block');
+    await waitFor(() => expect(document.querySelector('[data-testid="md-code-block"]')).toHaveAttribute('data-highlighted', 'true'));
+    const codeBlock = document.querySelector('[data-testid="md-code-block"]');
     setSource('```ts\nconst value = 1;\n```\n\nFirst second');
-    expect(document.querySelector('.md-code-block')).toBe(codeBlock);
+    expect(document.querySelector('[data-testid="md-code-block"]')).toBe(codeBlock);
   });
 
   it('preserves remote image consent while later Markdown streams in', () => {
@@ -204,7 +204,7 @@ describe('ConversationMessage', () => {
 
     const message = screen.getByLabelText('Assistant message');
     const before = screen.getByText('Before tool');
-    const toolGroup = message.querySelector('.tool-activity-group')!;
+    const toolGroup = message.querySelector('[data-testid="tool-activity-group"]')!;
     const after = screen.getByText('After tool');
     expect(before.compareDocumentPosition(toolGroup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(toolGroup.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -221,9 +221,9 @@ describe('ConversationMessage', () => {
       ],
     })} />);
 
-    const group = screen.getByLabelText('Assistant message').querySelector('.tool-activity-group')!;
+    const group = screen.getByLabelText('Assistant message').querySelector('[data-testid="tool-activity-group"]')!;
     expect(group).toHaveClass('rounded-lg', 'border', 'bg-surface-overlay');
-    expect(group.querySelectorAll('.tool-activity-row')).toHaveLength(2);
+    expect(group.querySelectorAll('[data-testid="tool-activity-row"]')).toHaveLength(2);
   });
 
   it('renders reasoning before grouped tool activity', () => {
@@ -238,15 +238,15 @@ describe('ConversationMessage', () => {
     })} />);
 
     const message = screen.getByLabelText('Assistant message');
-    const reasoning = screen.getByText('Thinking').closest('.message-reasoning')!;
-    const toolRow = message.querySelector('.tool-activity-row__summary')!;
+    const reasoning = screen.getByTestId('message-reasoning');
+    const toolRow = message.querySelector('[data-testid="tool-activity-row-summary"]')!;
     expect(reasoning.compareDocumentPosition(toolRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('keeps untrusted HTML inert in assistant Markdown', () => {
     const view = render(() => <ConversationMessage entry={entry({ text: '<img src=x onerror="alert(1)"> safe' })} />);
     expect(screen.getByLabelText('Assistant message')).toHaveTextContent('<img src=x onerror="alert(1)"> safe');
-    expect(document.querySelector('.markdown-body img')).toBeNull();
+    expect(document.querySelector('[data-testid="markdown-body"] img')).toBeNull();
     view.unmount();
   });
 
@@ -269,7 +269,7 @@ describe('ConversationMessage', () => {
   it('does not render entry-level status or loading indicators', () => {
     render(() => <ConversationMessage entry={entry({ status: 'streaming', text: 'partial' })} />);
     expect(screen.queryByText('streaming')).not.toBeInTheDocument();
-    expect(document.querySelector('.message-loading')).toBeNull();
+    expect(document.querySelector('[data-testid="message-loading"]')).toBeNull();
   });
 
   it('keeps complete user system reminders behind a compact system badge', async () => {
@@ -283,7 +283,7 @@ describe('ConversationMessage', () => {
     const badges = screen.getAllByRole('button', { name: 'System message' });
     expect(badges).toHaveLength(1);
     expect(badges[0]).toHaveClass('h-20', 'self-start', 'border-0', 'pointer-coarse:min-h-44');
-    expect(badges[0].closest('.conversation-message__surface')).toBeNull();
+    expect(badges[0].closest('[data-testid="conversation-message-surface"]')).toBeNull();
     fireEvent.click(badges[0]);
     const reminder = await screen.findByRole('dialog', { name: 'System message' });
     expect(reminder).toHaveClass('system-reminder-popover');
@@ -301,9 +301,9 @@ describe('ConversationMessage', () => {
     })} />);
 
     const badge = screen.getByRole('button', { name: 'System message' });
-    const message = badge.closest('.conversation-message');
+    const message = badge.closest('[data-testid="conversation-message"]');
     expect(message).toHaveClass('flex-col', 'items-end');
-    expect(message?.querySelector('.conversation-message__surface')).toBeNull();
+    expect(message?.querySelector('[data-testid="conversation-message-surface"]')).toBeNull();
     expect(badge).toHaveClass('self-start', 'border-0');
   });
 
@@ -335,7 +335,7 @@ describe('Markdown', () => {
     expect(document.querySelector('script')).not.toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(screen.getByText('<script>alert(1)</script>')).toBeInTheDocument();
-    expect(document.querySelector('.markdown-body')).toHaveTextContent('unsafe');
+    expect(document.querySelector('[data-testid="markdown-body"]')).toHaveTextContent('unsafe');
   });
 
   it('isolates safe links and exposes copyable fenced code', () => {
@@ -356,7 +356,7 @@ describe('Markdown', () => {
     expect(screen.getAllByRole('checkbox')).toHaveLength(2);
     expect(screen.getAllByRole('checkbox')[0]).toBeChecked();
     expect(document.querySelector('del')).toHaveTextContent('obsolete');
-    expect(document.querySelector('.markdown-body footer')).toHaveTextContent('Verified');
+    expect(document.querySelector('[data-testid="markdown-body"] footer')).toHaveTextContent('Verified');
     expect(screen.getByText('1').closest('a')).toHaveAttribute('href', '#1');
   });
 
@@ -377,8 +377,8 @@ describe('Markdown', () => {
     render(() => <Markdown source={'Inline $x^2 + y^2$ formula.\n\n$$\nE = mc^2\n$$'} />);
 
     await waitFor(() => expect(document.querySelectorAll('.katex')).toHaveLength(2));
-    expect(document.querySelector('.md-math--inline')).toHaveAttribute('aria-label', 'x^2 + y^2');
-    expect(document.querySelector('.md-math--block')).toHaveAttribute('aria-label', 'E = mc^2');
+    expect(document.querySelector('[data-testid="md-math-inline"]')).toHaveAttribute('aria-label', 'x^2 + y^2');
+    expect(document.querySelector('[data-testid="md-math-block"]')).toHaveAttribute('aria-label', 'E = mc^2');
     expect(document.querySelectorAll('.katex-mathml').length).toBeGreaterThan(0);
   });
 
@@ -389,15 +389,15 @@ describe('Markdown', () => {
     expect(screen.getByText('answer.ts')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copy code' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Download code' })).toBeInTheDocument();
-    expect(screen.getByText('7')).toHaveClass('md-code-line__number');
-    expect(screen.getByText('8')).toHaveClass('md-code-line__number');
-    await waitFor(() => expect(document.querySelector('.md-code-block')).toHaveAttribute('data-highlighted', 'true'));
+    expect(screen.getByText('7')).toHaveAttribute('data-testid', 'md-code-line-number');
+    expect(screen.getByText('8')).toHaveAttribute('data-testid', 'md-code-line-number');
+    await waitFor(() => expect(document.querySelector('[data-testid="md-code-block"]')).toHaveAttribute('data-highlighted', 'true'));
   });
 
   it('supports code blocks without line numbers and leaves unmatched prices literal', () => {
     render(() => <Markdown source={'Price is $5.\n\n```sh noLineNumbers\necho safe\n```'} />);
     expect(screen.getByText(/Price is \$5/)).toBeInTheDocument();
-    expect(document.querySelector('.md-code-line__number')).not.toBeInTheDocument();
+    expect(document.querySelector('[data-testid="md-code-line-number"]')).not.toBeInTheDocument();
   });
 
   it('allows consumers to override individual Markdown components', () => {
@@ -414,29 +414,29 @@ describe('Markdown', () => {
   it('does not highlight an incomplete streaming code fence', async () => {
     render(() => <Markdown streaming source={'```ts\nconst value = 1'} />);
     await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(document.querySelector('.md-code-block')).toHaveAttribute('data-highlighted', 'false');
+    expect(document.querySelector('[data-testid="md-code-block"]')).toHaveAttribute('data-highlighted', 'false');
   });
 
   it('unlocks and highlights a fence when its closing marker streams in', async () => {
     const [source, setSource] = createSignal('```ts\nconst value = 1;');
     render(() => <Markdown streaming source={source} />);
-    expect(document.querySelector('.md-code-block')).toHaveAttribute('data-incomplete', 'true');
+    expect(document.querySelector('[data-testid="md-code-block"]')).toHaveAttribute('data-incomplete', 'true');
     setSource('```ts\nconst value = 1;\n```');
-    await waitFor(() => expect(document.querySelector('.md-code-block')).toHaveAttribute('data-highlighted', 'true'));
-    expect(document.querySelector('.md-code-block')).not.toHaveAttribute('data-incomplete');
+    await waitFor(() => expect(document.querySelector('[data-testid="md-code-block"]')).toHaveAttribute('data-highlighted', 'true'));
+    expect(document.querySelector('[data-testid="md-code-block"]')).not.toHaveAttribute('data-incomplete');
     expect(screen.getByRole('button', { name: 'Copy code' })).toBeEnabled();
   });
 
   it('highlights languages from the complete Shiki registry', async () => {
     render(() => <Markdown source={'```dockerfile\nFROM node:22\n```'} />);
-    await waitFor(() => expect(document.querySelector('.md-code-block')).toHaveAttribute('data-highlighted', 'true'));
+    await waitFor(() => expect(document.querySelector('[data-testid="md-code-block"]')).toHaveAttribute('data-highlighted', 'true'));
   });
 
   it('does not typeset incomplete streaming block math', async () => {
     render(() => <Markdown streaming source={'$$\nx +'} />);
     await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(document.querySelector('.md-code-block')).toHaveAttribute('data-incomplete', 'true');
-    expect(document.querySelector('.md-math')).not.toBeInTheDocument();
+    expect(document.querySelector('[data-testid="md-code-block"]')).toHaveAttribute('data-incomplete', 'true');
+    expect(document.querySelector('[data-testid="md-math-inline"], [data-testid="md-math-block"]')).not.toBeInTheDocument();
   });
 
   it('keeps incomplete streaming code stable and locks expensive controls', () => {
@@ -445,8 +445,8 @@ describe('Markdown', () => {
     expect(screen.getByText('Mermaid')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copy code' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Show source' })).not.toBeInTheDocument();
-    expect(document.querySelector('.md-mermaid code')).toHaveTextContent('graph TD');
-    expect(document.querySelector('.md-code-block')).toHaveAttribute('data-incomplete', 'true');
+    expect(document.querySelector('[data-testid="md-mermaid"] code')).toHaveTextContent('graph TD');
+    expect(document.querySelector('[data-testid="md-code-block"]')).toHaveAttribute('data-incomplete', 'true');
   });
 
   it('automatically starts completed Mermaid rendering', async () => {
@@ -454,17 +454,17 @@ describe('Markdown', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('getComputedTextLength'));
     expect(screen.getByRole('button', { name: 'Retry rendering' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Show source' })).toBeEnabled();
-    expect(document.querySelector('.md-mermaid code')).not.toBeInTheDocument();
+    expect(document.querySelector('[data-testid="md-mermaid"] code')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Show source' }));
     expect(screen.getByRole('button', { name: 'Show diagram' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Copy code' })).toBeEnabled();
-    expect(document.querySelector('.md-mermaid code')).toHaveTextContent('graph TD');
+    expect(document.querySelector('[data-testid="md-mermaid"] code')).toHaveTextContent('graph TD');
   });
 
   it('requires explicit consent before loading remote Markdown images', () => {
     render(() => <Markdown source={'![Architecture](https://example.com/architecture.png)'} />);
     expect(screen.getByRole('button', { name: 'Load image: Architecture' })).toBeInTheDocument();
-    expect(document.querySelector('.markdown-body img')).not.toBeInTheDocument();
+    expect(document.querySelector('[data-testid="markdown-body"] img')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Load image: Architecture' }));
     const image = screen.getByRole('img', { name: 'Architecture' });
     expect(image).toHaveAttribute('loading', 'lazy');
@@ -474,7 +474,7 @@ describe('Markdown', () => {
   it('never offers unsafe or malformed image protocols', () => {
     render(() => <Markdown source={'![Unsafe](javascript:alert(1))\n\n![Local](file:///etc/passwd)'} />);
     expect(screen.queryByRole('button', { name: /Load image/ })).not.toBeInTheDocument();
-    expect(document.querySelector('.markdown-body img')).not.toBeInTheDocument();
+    expect(document.querySelector('[data-testid="markdown-body"] img')).not.toBeInTheDocument();
     expect(screen.getByText('Image unavailable: Unsafe')).toBeInTheDocument();
   });
 

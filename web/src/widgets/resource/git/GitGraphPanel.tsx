@@ -134,6 +134,7 @@ export function GitGraphPanel(props: { commits: GitGraphCommit[] }) {
       <div class="git-graph-content ui-scrollbar min-h-0 flex-1 overflow-auto">
         <div class="git-graph-scroll relative" style={{ height: `${svgHeight()}px` }}>
           <svg
+            data-testid="git-graph-svg"
             class="git-graph-svg pointer-events-none absolute top-0 left-0 z-2"
             width={graphColWidth()}
             height={svgHeight()}
@@ -167,6 +168,7 @@ export function GitGraphPanel(props: { commits: GitGraphCommit[] }) {
 
           <table
             ref={tableRef}
+            data-testid="git-graph-table"
             class="git-graph-table w-full border-collapse"
             style={{ 'table-layout': 'fixed' }}
           >

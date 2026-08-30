@@ -90,11 +90,11 @@ test('desktop resource expansion floats without reflowing the conversation pane'
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
 
-  const pane = page.locator('.conversation-pane');
-  const panel = page.locator('.resource-workbench__panel');
+  const pane = page.getByTestId('conversation-pane');
+  const panel = page.getByTestId('resource-workbench-panel');
   const expanded = await page.evaluate(() => {
-    const conversation = document.querySelector('.conversation-pane').getBoundingClientRect();
-    const resources = document.querySelector('.resource-workbench__panel').getBoundingClientRect();
+    const conversation = document.querySelector('[data-testid="conversation-pane"]').getBoundingClientRect();
+    const resources = document.querySelector('[data-testid="resource-workbench-panel"]').getBoundingClientRect();
     return {
       conversation: { left: conversation.left, width: conversation.width },
       resources: { left: resources.left, right: resources.right },
@@ -217,8 +217,8 @@ test('short mobile launch layout keeps prompt and composer separated', async ({ 
   await page.setViewportSize({ width: 390, height: 430 });
   await page.goto('/visual-fixture.html?scenario=catalog', { waitUntil: 'networkidle' });
   const geometry = await page.evaluate(() => {
-    const prompt = document.querySelector('.launch-prompt').getBoundingClientRect();
-    const composer = document.querySelector('.launch-composer').getBoundingClientRect();
+    const prompt = document.querySelector('[data-testid="launch-prompt"]').getBoundingClientRect();
+    const composer = document.querySelector('[data-testid="launch-composer"]').getBoundingClientRect();
     return { promptBottom: prompt.bottom, composerTop: composer.top, pageWidth: document.documentElement.scrollWidth };
   });
   expect(geometry.promptBottom).toBeLessThanOrEqual(geometry.composerTop);
@@ -229,7 +229,7 @@ test('primary action labels retain readable contrast', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/visual-fixture.html?scenario=elicitation', { waitUntil: 'networkidle' });
 
-  const colors = await page.locator('.elicitation-card').getByRole('button', { name: 'Next', exact: true }).evaluate((button) => {
+  const colors = await page.getByTestId('elicitation-card').getByRole('button', { name: 'Next', exact: true }).evaluate((button) => {
     const style = getComputedStyle(button);
     return { foreground: style.color, background: style.backgroundColor };
   });
@@ -275,10 +275,10 @@ test('resource density tokens resolve to their authored desktop heights', async 
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=resources&resource=scm', { waitUntil: 'networkidle' });
   await injectFixtureDiff(page);
-  await expect(page.locator('.resource-editor-tab')).toHaveCSS('height', '35px');
-  await expect(page.locator('.resource-editor-toolbar')).toHaveCSS('height', '34px');
+  await expect(page.getByTestId('resource-editor-tab')).toHaveCSS('height', '35px');
+  await expect(page.getByTestId('resource-editor-toolbar')).toHaveCSS('height', '34px');
   await page.getByRole('button', { name: 'Close diff' }).click();
-  await expect(page.locator('.resource-group-title').first()).toHaveCSS('height', '24px');
+  await expect(page.getByTestId('resource-group-title').first()).toHaveCSS('height', '24px');
   await expect(page.locator('[class*="group/tree-file"]').first()).toHaveCSS('height', '24px');
 });
 
@@ -332,7 +332,7 @@ test('forced-colors keeps keyboard focus and security boundaries visible', async
   await page.keyboard.press('Tab');
   const focus = await page.evaluate(() => {
     const style = getComputedStyle(document.activeElement);
-    const permission = getComputedStyle(document.querySelector('.permission-request'));
+    const permission = getComputedStyle(document.querySelector('[data-testid="permission-request"]'));
     return { outline: style.outlineStyle, width: style.outlineWidth, permissionBorder: permission.borderTopStyle };
   });
   expect(focus.outline).not.toBe('none');

@@ -12,7 +12,7 @@ test('long transcripts mount a bounded accessible window in the real browser', a
   await expect(rows.last()).toHaveAttribute('aria-posinset', '2000');
   await expect(rows.last()).toHaveAttribute('aria-setsize', '2000');
 
-  await page.locator('.message-list-scroll').evaluate((element) => element.scrollTo({ top: 0 }));
+  await page.getByTestId('message-list-scroll').evaluate((element) => element.scrollTo({ top: 0 }));
   await expect(rows.first()).toHaveAttribute('data-transcript-id', 'visual-entry-0');
   expect(await rows.count()).toBeLessThanOrEqual(30);
 });

@@ -482,7 +482,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                       </ProjectRowActionGroup>
                     </ProjectRowAccessory>
                   </div>
-                  <CollapsibleContent id={`project-sessions-${projectId}`} class="session-list flex flex-col gap-2 pb-1">
+                  <CollapsibleContent id={`project-sessions-${projectId}`} data-testid="session-list" class="session-list flex flex-col gap-2 pb-1">
                     <Show
                       when={hasSessions()}
                       fallback={<Show

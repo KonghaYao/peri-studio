@@ -46,7 +46,7 @@ describe('QuickStartComposer', () => {
     startQuickStart('create-1', 'alpha', 'first prompt');
     render(() => <QuickStartComposer projects={[{ id: 'alpha', name: 'Alpha' }]} />);
 
-    expect(document.querySelector('.quick-start__surface')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByTestId('quick-start-surface')).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('textbox', { name: 'First message' })).toBeDisabled();
     expect(screen.queryByText('Creating and connecting session…')).not.toBeInTheDocument();
     expect(screen.queryByText(/Waiting for the server to confirm/)).not.toBeInTheDocument();

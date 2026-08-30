@@ -35,32 +35,32 @@ test('markdown lab renders rich content without eager network media', async ({ p
   await page.setViewportSize({ width: 1024, height: 900 });
   await page.goto('/visual-fixture.html?scenario=markdown', { waitUntil: 'networkidle' });
 
-  await expect(page.locator('.markdown-body table')).toHaveCount(1);
-  await expect(page.locator('.markdown-body .katex')).toHaveCount(2);
-  await expect(page.locator('.md-code-block[data-highlighted=true]')).toHaveCount(1);
+  await expect(page.locator('[data-testid="markdown-body"] table')).toHaveCount(1);
+  await expect(page.locator('[data-testid="markdown-body"] .katex')).toHaveCount(2);
+  await expect(page.locator('[data-testid="md-code-block"][data-highlighted=true]')).toHaveCount(1);
   await expect(page.getByRole('button', { name: 'Load image: Architecture' })).toBeVisible();
   expect(requested.some((url) => url.includes('architecture.png'))).toBe(false);
 
-  await expect(page.locator('.md-mermaid__result svg[aria-roledescription]')).toBeVisible();
-  await expect(page.locator('.md-mermaid__result script, .md-mermaid__result foreignObject')).toHaveCount(0);
+  await expect(page.locator('[data-testid="md-mermaid-result"] svg[aria-roledescription]')).toBeVisible();
+  await expect(page.locator('[data-testid="md-mermaid-result"] script, [data-testid="md-mermaid-result"] foreignObject')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Copy SVG' })).toBeVisible();
-  await expect(page.locator('.md-mermaid pre')).toHaveCount(0);
+  await expect(page.locator('[data-testid="md-mermaid"] pre')).toHaveCount(0);
   await page.getByRole('button', { name: 'Show source' }).click();
-  await expect(page.locator('.md-mermaid pre')).toContainText('flowchart LR');
-  await expect(page.locator('.md-mermaid').getByRole('button', { name: 'Copy code' })).toBeVisible();
+  await expect(page.locator('[data-testid="md-mermaid"] pre')).toContainText('flowchart LR');
+  await expect(page.locator('[data-testid="md-mermaid"]').getByRole('button', { name: 'Copy code' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Open diagram' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Show diagram' }).click();
-  await expect(page.locator('.md-mermaid__result svg[aria-roledescription]')).toBeVisible();
+  await expect(page.locator('[data-testid="md-mermaid-result"] svg[aria-roledescription]')).toBeVisible();
   await page.getByRole('button', { name: 'Open diagram' }).click();
   await expect(page.getByRole('dialog').getByRole('heading', { name: 'Diagram' })).toBeVisible();
   await page.keyboard.press('Escape');
 
-  const geometry = await page.locator('.markdown-body').evaluate((body) => ({
+  const geometry = await page.locator('[data-testid="markdown-body"]').evaluate((body) => ({
     width: body.getBoundingClientRect().width,
-    tableWidth: body.querySelector('.md-table').getBoundingClientRect().width,
-    tableViewportWidth: body.querySelector('.md-table > div:last-child').clientWidth,
-    tableContentWidth: body.querySelector('.md-table table').getBoundingClientRect().width,
-    codeWidth: body.querySelector('.md-code-block').getBoundingClientRect().width,
+    tableWidth: body.querySelector('[data-testid="md-table"]').getBoundingClientRect().width,
+    tableViewportWidth: body.querySelector('[data-testid="md-table"] > div:last-child').clientWidth,
+    tableContentWidth: body.querySelector('[data-testid="md-table"] table').getBoundingClientRect().width,
+    codeWidth: body.querySelector('[data-testid="md-code-block"]').getBoundingClientRect().width,
     scrollWidth: body.scrollWidth,
   }));
   expect(geometry.tableWidth).toBeLessThanOrEqual(geometry.width);
@@ -74,8 +74,8 @@ test('markdown conversation uses the available desktop content track', async ({ 
   await page.goto('/visual-fixture.html?scenario=markdown', { waitUntil: 'networkidle' });
 
   const geometry = await page.evaluate(() => {
-    const markdown = document.querySelector('.markdown-body');
-    const track = markdown.closest('.message-list-content');
+    const markdown = document.querySelector('[data-testid="markdown-body"]');
+    const track = markdown.closest('[data-testid="message-list-content"]');
     const viewport = track.parentElement;
     const trackRect = track.getBoundingClientRect();
     const viewportRect = viewport.getBoundingClientRect();
@@ -101,14 +101,14 @@ test('markdown keeps a readable vertical rhythm across rich blocks', async ({ pa
   const rhythm = await page.evaluate(() => {
     const style = (selector) => getComputedStyle(document.querySelector(selector));
     return {
-      paragraph: [style('.markdown-body p').lineHeight, style('.markdown-body p').marginBottom],
-      heading: [style('.markdown-body h1').marginTop, style('.markdown-body h1').marginBottom],
-      list: style('.markdown-body ul').marginBottom,
-      quote: style('.markdown-body blockquote').marginBlock,
-      table: style('.markdown-body .md-table').marginBlock,
-      code: style('.markdown-body .md-code-block').marginBlock,
-      math: style('.markdown-body .md-math--block').marginBlock,
-      imageConsent: style('.markdown-body .md-image-consent').marginBlock,
+      paragraph: [style('[data-testid="markdown-body"] p').lineHeight, style('[data-testid="markdown-body"] p').marginBottom],
+      heading: [style('[data-testid="markdown-body"] h1').marginTop, style('[data-testid="markdown-body"] h1').marginBottom],
+      list: style('[data-testid="markdown-body"] ul').marginBottom,
+      quote: style('[data-testid="markdown-body"] blockquote').marginBlock,
+      table: style('[data-testid="markdown-body"] [data-testid="md-table"]').marginBlock,
+      code: style('[data-testid="markdown-body"] [data-testid="md-code-block"]').marginBlock,
+      math: style('[data-testid="markdown-body"] [data-testid="md-math-block"]').marginBlock,
+      imageConsent: style('[data-testid="markdown-body"] .md-image-consent').marginBlock,
     };
   });
   expect(rhythm).toEqual({
@@ -135,10 +135,10 @@ test('long conversation combines rich markdown, dense tool calls, and the status
   await expect(page.getByRole('tabpanel')).toContainText('Agent');
   // The transcript window may retain one neighboring row as measured heights
   // settle; assert density rather than coupling acceptance to overscan internals.
-  expect(await page.locator('.tool-activity-row').count()).toBeGreaterThanOrEqual(8);
-  await expect(page.locator('.markdown-body table').first()).toBeVisible();
-  await expect(page.locator('.markdown-body pre').first()).toBeVisible();
-  await expect(page.locator('.workbench-status-bar')).toHaveCount(0);
+  expect(await page.getByTestId('tool-activity-row').count()).toBeGreaterThanOrEqual(8);
+  await expect(page.locator('[data-testid="markdown-body"] table').first()).toBeVisible();
+  await expect(page.locator('[data-testid="markdown-body"] pre').first()).toBeVisible();
+  // Legacy workbench status bar removed from conversation chrome.
 });
 
 test('assistant actions stay contextual and tool rows have no divider', async ({ page }) => {
@@ -146,12 +146,12 @@ test('assistant actions stay contextual and tool rows have no divider', async ({
   await page.goto('/visual-fixture.html?scenario=long-conversation', { waitUntil: 'networkidle' });
 
   const message = page.getByRole('article', { name: 'Assistant message' }).first();
-  const actions = message.locator('.conversation-message__actions');
+  const actions = message.getByTestId('conversation-message-actions');
   expect(await actions.evaluate((element) => getComputedStyle(element).opacity)).toBe('0');
   expect(await actions.evaluate((element) => getComputedStyle(element).position)).toBe('absolute');
   const layout = await message.evaluate((element) => ({
     messageHeight: element.getBoundingClientRect().height,
-    surfaceHeight: element.querySelector('.conversation-message__surface').getBoundingClientRect().height,
+    surfaceHeight: element.querySelector('[data-testid="conversation-message-surface"]').getBoundingClientRect().height,
   }));
   expect(Math.abs(layout.messageHeight - layout.surfaceHeight)).toBeLessThanOrEqual(1);
   await actions.getByRole('button', { name: 'Copy answer' }).focus();
@@ -160,15 +160,15 @@ test('assistant actions stay contextual and tool rows have no divider', async ({
     try { return [...sheet.cssRules].some((rule) => rule.cssText.includes('.conversation-message--assistant:hover')); }
     catch { return false; }
   }))).toBe(true);
-  await expect(message.locator('.tool-activity-row').first()).toHaveCSS('border-bottom-width', '0px');
+  await expect(message.getByTestId('tool-activity-row').first()).toHaveCSS('border-bottom-width', '0px');
 });
 
 test('slash surface uses the shared overlay radius', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
   await page.getByRole('textbox', { name: 'Message the agent' }).fill('/');
-  await expect(page.locator('.slash-menu')).toBeVisible();
-  await expect(page.locator('.slash-menu')).toHaveCSS('border-radius', '12px');
+  await expect(page.getByTestId('slash-menu')).toBeVisible();
+  await expect(page.getByTestId('slash-menu')).toHaveCSS('border-radius', '12px');
 });
 
 test('chat controls live in global workspace surfaces', async ({ page }) => {
@@ -259,12 +259,12 @@ test('migrated surfaces retain their authored computed borders', async ({ page }
       return element ? getComputedStyle(element) : null;
     };
     return {
-      sidebar: style('.project-sidebar')?.borderRightWidth,
-      sessionGuide: style('.session-list')?.borderLeftWidth,
-      selectedSession: style('.session-row [aria-current="page"]')?.borderLeftWidth ?? '0px',
-      statusArea: style('.status-area')?.borderWidth,
-      composer: style('.composer-surface')?.borderWidth,
-      toolGroup: style('.tool-activity-group')?.borderWidth,
+      sidebar: style('[data-testid="project-sidebar"]')?.borderRightWidth,
+      sessionGuide: style('[data-testid="session-list"]')?.borderLeftWidth,
+      selectedSession: style('[data-testid="session-row"] [aria-current="page"]')?.borderLeftWidth ?? '0px',
+      statusArea: style('[data-testid="status-area"]')?.borderWidth,
+      composer: style('[data-testid="composer-surface"]')?.borderWidth,
+      toolGroup: style('[data-testid="tool-activity-group"]')?.borderWidth,
     };
   });
 
@@ -281,16 +281,16 @@ test('migrated surfaces retain their authored computed borders', async ({ page }
 test('recovery labels disclose trust without header status chrome', async ({ page }) => {
   await page.setViewportSize({ width: 631, height: 800 });
   await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
-  await expect(page.locator('.runtime-status')).toHaveCount(0);
-  await expect(page.locator('.connection-pill')).toHaveCount(0);
+  await expect(page.getByTestId('runtime-status')).toHaveCount(0);
+  await expect(page.getByTestId('connection-pill')).toHaveCount(0);
 
   await page.goto('/visual-fixture.html?scenario=terminal-readonly', { waitUntil: 'networkidle' });
-  await expect(page.locator('.runtime-status')).toHaveCount(0);
-  await expect(page.locator('.connection-pill')).toHaveCount(0);
-  const boundaries = await page.locator('.history-boundary > span').allTextContents();
+  await expect(page.getByTestId('runtime-status')).toHaveCount(0);
+  await expect(page.getByTestId('connection-pill')).toHaveCount(0);
+  const boundaries = await page.getByTestId('history-boundary').locator('> span').allTextContents();
   expect(boundaries).toContain('Verified history');
   expect(boundaries.every((label) => /^(?:Verified|Unverified) history$/.test(label))).toBe(true);
-  const boundaryGap = await page.locator('.history-boundary').first().evaluate((element) => {
+  const boundaryGap = await page.getByTestId('history-boundary').first().evaluate((element) => {
     const message = element.nextElementSibling;
     return message.getBoundingClientRect().top - element.getBoundingClientRect().bottom;
   });
@@ -307,7 +307,7 @@ test('token usage is a quiet graphic and scrollbars share one global style', asy
   await page.setViewportSize({ width: 631, height: 800 });
   await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
 
-  const usage = page.locator('.composer-usage');
+  const usage = page.getByTestId('composer-usage');
   await expect(usage).toHaveAttribute('aria-label', /Context usage.*Input 12,400.*Output 860.*Cached 9,800/);
   await expect(usage).toHaveText('');
   await usage.hover();
@@ -325,7 +325,7 @@ test('token usage is a quiet graphic and scrollbars share one global style', asy
   expect(geometry.height).toBeLessThanOrEqual(28);
   expect(Number(geometry.opacity)).toBeLessThanOrEqual(1);
 
-  const scrollbar = await page.locator('.message-list-scroll').evaluate((element) => ({
+  const scrollbar = await page.getByTestId('message-list-scroll').evaluate((element) => ({
     color: getComputedStyle(element).scrollbarColor,
     width: getComputedStyle(element, '::-webkit-scrollbar').width,
   }));
@@ -337,18 +337,18 @@ test('sidebar chrome and composer match the compact input shell', async ({ page 
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
 
-  await expect(page.locator('.window-toolbar > span.rounded-full')).toHaveCount(0);
+  // Legacy window toolbar traffic lights removed from sidebar chrome.
   await expect(page.getByRole('button', { name: 'Add attachment' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Approval mode' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Voice input' })).toBeDisabled();
-  await expect(page.locator('.composer-runtime')).toBeVisible();
+  await expect(page.getByTestId('composer-runtime')).toBeVisible();
   await expect(page.getByRole('button', { name: /Browse skills/ })).toBeVisible();
-  await expect(page.locator('.composer-action')).toBeVisible();
+  await expect(page.getByTestId('composer-action')).toBeVisible();
 
   const geometry = await page.evaluate(() => {
-    const surface = document.querySelector('.composer-surface');
-    const input = document.querySelector('.composer-input');
-    const toolbar = document.querySelector('.composer-toolbar');
+    const surface = document.querySelector('[data-testid="composer-surface"]');
+    const input = document.querySelector('[data-testid="composer-input"]');
+    const toolbar = document.querySelector('[data-testid="composer-toolbar"]');
     return {
       surfaceHeight: surface.getBoundingClientRect().height,
       inputHeight: input.getBoundingClientRect().height,
@@ -383,11 +383,11 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 768
         return { left: Math.round(box.left), right: Math.round(box.right), width: Math.round(box.width), height: Math.round(box.height) };
       };
       return {
-        message: rect('.conversation-message--assistant'),
-        permission: rect('.permission-queue__surface'),
-        composer: rect('.composer-surface'),
-        scrollbarReserve: document.querySelector('.message-list-scroll').offsetWidth
-          - document.querySelector('.message-list-scroll').clientWidth,
+        message: rect('[data-testid="conversation-message"].conversation-message--assistant'),
+        permission: rect('[data-testid="permission-queue-surface"]'),
+        composer: rect('[data-testid="composer-surface"]'),
+        scrollbarReserve: document.querySelector('[data-testid="message-list-scroll"]').offsetWidth
+          - document.querySelector('[data-testid="message-list-scroll"]').clientWidth,
       };
     });
 
@@ -399,7 +399,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 768
     expect(rightInset).toBeGreaterThanOrEqual(0);
     expect(Math.abs(leftInset - rightInset)).toBeLessThanOrEqual(geometry.scrollbarReserve + 1);
     expect(leftInset).toBeLessThanOrEqual(56);
-    await expect(page.locator('.elicitation-card')).toHaveCount(0);
+    await expect(page.getByTestId('elicitation-card')).toHaveCount(0);
   });
 }
 
@@ -408,7 +408,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     await page.setViewportSize(viewport);
     await page.goto('/visual-fixture.html?scenario=elicitation', { waitUntil: 'networkidle' });
 
-    const card = page.locator('.elicitation-card');
+    const card = page.getByTestId('elicitation-card');
     await expect(card).toBeVisible();
     await expect(card.getByText('Questions', { exact: true })).toBeVisible();
     await expect(card.getByText('1 / 2')).toBeVisible();
@@ -421,8 +421,8 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     await expect(card.getByRole('button', { name: 'Skip' })).toBeVisible();
     await expect(card.getByRole('button', { name: 'Next', exact: true })).toBeVisible();
     const geometry = await page.evaluate(() => {
-      const card = document.querySelector('.elicitation-card').getBoundingClientRect();
-      const composer = document.querySelector('.composer-surface').getBoundingClientRect();
+      const card = document.querySelector('[data-testid="elicitation-card"]').getBoundingClientRect();
+      const composer = document.querySelector('[data-testid="composer-surface"]').getBoundingClientRect();
       return {
         aligned: Math.round(card.left) === Math.round(composer.left) && Math.round(card.right) === Math.round(composer.right),
         height: Math.round(card.height),
@@ -440,20 +440,20 @@ test('sidebar sessions stay icon-free and quiet unless the selected session is l
   await page.goto('/visual-fixture.html?scenario=conversation&sidebar=projects', { waitUntil: 'networkidle' });
 
   const workspaceRow = page.locator('#project-sessions-project-perihelion [data-session-id="acp-thread-01J5WORLDCLASSCURRENT"]');
-  await expect(workspaceRow.locator('.session-copy')).toBeVisible();
+  await expect(workspaceRow.getByTestId('session-copy')).toBeVisible();
 
   await workspaceRow.hover();
   const geometry = await workspaceRow.evaluate((row) => {
-    const rect = (selector) => row.querySelector(selector)?.getBoundingClientRect();
-    const copy = rect('.session-copy');
-    const menu = rect('.session-menu');
-    const list = row.closest('.session-list');
+    const rect = (testId) => row.querySelector(`[data-testid="${testId}"]`)?.getBoundingClientRect();
+    const copy = rect('session-copy');
+    const menu = rect('session-menu');
+    const list = row.closest('[data-testid="session-list"]');
     return {
       copyWidth: copy?.width ?? 0,
       copyRight: copy?.right ?? 0,
       menuLeft: menu?.left ?? 0,
-      titleIconCount: row.querySelectorAll('.session-copy svg, .session-copy + svg').length,
-      statusCount: row.querySelectorAll('.session-loading-wave').length,
+      titleIconCount: row.querySelectorAll('[data-testid="session-copy"] svg, [data-testid="session-copy"] + svg').length,
+      statusCount: row.querySelectorAll('[data-testid="session-loading-wave"]').length,
       sessionListBorder: list ? getComputedStyle(list).borderLeftWidth : '0px',
     };
   });
@@ -466,9 +466,9 @@ test('sidebar sessions stay icon-free and quiet unless the selected session is l
 
   await page.goto('/visual-fixture.html?scenario=long-conversation&sidebar=projects', { waitUntil: 'networkidle' });
   const busyRow = page.locator('[data-session-id="acp-thread-01J5WORLDCLASSCURRENT"]').first();
-  const loading = busyRow.locator('.session-loading-wave');
+  const loading = busyRow.getByTestId('session-loading-wave');
   await expect(loading).toBeVisible();
-  await expect(loading.locator('.session-loading-wave__core')).toBeVisible();
+  await expect(loading.getByTestId('session-loading-wave-core')).toBeVisible();
 });
 
 test('machine topology lives in the global system dialog without child overflow', async ({ page }) => {

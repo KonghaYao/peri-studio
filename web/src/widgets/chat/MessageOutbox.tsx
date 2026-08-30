@@ -31,7 +31,7 @@ export function MessageOutbox(props: {
     <div class={`message-outbox__surface conversation-message__surface min-w-0 max-w-72p rounded-14 border bg-surface-muted p-12 px-16 ${props.submission.phase === 'uncertain' ? 'border-warning-border' : props.submission.phase === 'failed' ? 'border-danger-border' : 'border-border-subtle'}`}>
       <div class="conversation-message__text text-text-primary text-13 leading-20"><span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{props.submission.text}</span></div>
       <Show when={actionable() || props.acknowledged}>
-        <footer class="message-outbox__status flex items-center gap-7 text-text-secondary text-12 leading-14">
+        <footer data-testid="message-outbox-status" class="message-outbox__status flex items-center gap-7 text-text-secondary text-12 leading-14">
           <span class={`message-outbox__indicator w-7 h-7 shrink-0 rounded-full ${props.submission.phase === 'uncertain' ? 'bg-warning-strong' : props.submission.phase === 'failed' ? 'bg-danger' : 'bg-text-muted'}`} aria-hidden="true" />
           <span><strong class="text-text-primary font-semibold">{props.acknowledged ? 'Unconfirmed delivery retained' : titleFor(props.submission.phase)}</strong><Show when={props.submission.detail}> · {props.submission.detail}</Show></span>
         </footer>

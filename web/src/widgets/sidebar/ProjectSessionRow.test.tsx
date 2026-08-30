@@ -45,24 +45,22 @@ describe('ProjectSessionRow', () => {
   it('shows only a breathing loading signal and keeps the session title icon-free', () => {
     render(() => <ProjectSessionRow {...props({ state: { label: 'Agent is working', tone: 'busy' } })} />);
 
-    const loading = screen.getByRole('status', { name: 'Agent is working' });
-    expect(loading).toHaveClass('session-loading-wave');
-    expect(loading.querySelector('.session-loading-wave__halo')).toHaveClass('animate-ping', 'motion-reduce:animate-none');
-    expect(loading.querySelector('.session-loading-wave__core')).toHaveClass('bg-success-solid');
+    const loading = screen.getByTestId('session-loading-wave');
+    expect(loading).toHaveAttribute('aria-label', 'Agent is working');
+    expect(loading.querySelector('[data-testid="session-loading-wave-halo"]')).toHaveClass('animate-ping', 'motion-reduce:animate-none');
+    expect(screen.getByTestId('session-loading-wave-core')).toHaveClass('bg-success-solid');
     expect(screen.getByRole('button', { name: /^Architecture refactor/ }).querySelector(':scope > svg')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Session actions' })).toHaveClass('session-menu');
+    expect(screen.getByTestId('session-menu')).toBeInTheDocument();
     expect(screen.getByText('Architecture refactor')).toHaveClass('text-13', 'text-content-primary');
   });
 
-  it('does not render status dots for idle, ready, warning, or failed sessions', () => {
+  it('does not render loading wave for idle, ready, warning, or failed sessions', () => {
     const { unmount } = render(() => <ProjectSessionRow {...props({ state: { label: 'Ready', tone: 'ready' } })} />);
-    expect(document.querySelector('.session-status-dot')).toBeNull();
-    expect(document.querySelector('.session-loading-wave')).toBeNull();
+    expect(screen.queryByTestId('session-loading-wave')).not.toBeInTheDocument();
     unmount();
 
     render(() => <ProjectSessionRow {...props({ state: { label: 'Failed', tone: 'danger' } })} />);
-    expect(document.querySelector('.session-status-dot')).toBeNull();
-    expect(document.querySelector('.session-loading-wave')).toBeNull();
+    expect(screen.queryByTestId('session-loading-wave')).not.toBeInTheDocument();
   });
 
   it('delegates server-authoritative opening without navigating early', () => {
@@ -92,7 +90,7 @@ describe('ProjectSessionRow', () => {
   it('uses the shared popover surface for a controlled rename form', () => {
     render(() => <ProjectSessionRow {...props({ renameOpen: true })} />);
     expect(screen.getByRole('dialog', { name: 'Rename Architecture refactor' })).toHaveClass('ui-popover');
-    expect(screen.getByRole('textbox', { name: 'Session name' }).closest('form')).toHaveClass('rename-popover');
+    expect(screen.getByTestId('rename-popover')).toBeInTheDocument();
   });
 
   it('submits a trimmed rename and closes only after committed', async () => {

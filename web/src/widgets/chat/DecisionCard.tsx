@@ -45,6 +45,7 @@ export function DecisionCard(props: {
   'aria-label'?: string;
   'aria-describedby'?: string;
   'aria-busy'?: boolean | 'true' | 'false';
+  'data-testid'?: string;
 }) {
   const [localExpanded, setLocalExpanded] = createSignal(true);
   const showPager = () => (props.total ?? 0) > 1;
@@ -59,6 +60,7 @@ export function DecisionCard(props: {
     <section
       class={cn('overflow-hidden bg-surface-overlay shadow-decision', props.class)}
       style={{ 'border-radius': 'var(--decision-radius)' }}
+      data-testid={props['data-testid']}
       aria-label={props['aria-label']}
       aria-labelledby={props.promptId}
       aria-describedby={props['aria-describedby']}

@@ -157,10 +157,11 @@ export function ToolActivityRow(props: {
   };
 
   return (
-    <div class="tool-activity-row min-w-0">
+    <div class="tool-activity-row min-w-0" data-testid="tool-activity-row">
       <button
         type="button"
         disabled={!hasEvidence()}
+        data-testid="tool-activity-row-summary"
         class={cn(
           'tool-activity-row__summary grid w-full min-h-(--pattern-row-height) grid-cols-tool-row items-center gap-8 rounded-md px-8 text-left transition-colors duration-(--duration-fast)',
           props.status === 'running' ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
@@ -190,7 +191,7 @@ export function ToolActivityRow(props: {
         </Show>
       </button>
       <Show when={open() && hasEvidence() && props.evidenceLoaded}>
-        <div class="tool-activity-row__body mt-4 flex flex-col gap-6 pb-4 pl-16 pr-8">
+        <div class="tool-activity-row__body mt-4 flex flex-col gap-6 pb-4 pl-16 pr-8" data-testid="tool-activity-row-body">
           <Show when={props.evidence.input !== undefined && props.evidence.input !== null}>
             <EvidenceBlock label={props.evidence.inputLabel} value={readableToolValue(props.evidence.input)} />
           </Show>
@@ -233,7 +234,7 @@ export function ToolActivityRow(props: {
 /** 聊天 transcript 里的工具活动组容器。 */
 export function ToolActivityGroup(props: { children: unknown }) {
   return (
-    <div class="tool-activity-group flex max-w-(--tool-activity-max) min-w-0 flex-col gap-2 rounded-lg border border-border-subtle bg-surface-overlay p-6">
+    <div class="tool-activity-group flex max-w-(--tool-activity-max) min-w-0 flex-col gap-2 rounded-lg border border-border-subtle bg-surface-overlay p-6" data-testid="tool-activity-group">
       {props.children as never}
     </div>
   );

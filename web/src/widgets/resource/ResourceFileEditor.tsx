@@ -30,13 +30,13 @@ export function ResourceFileEditor(props: ResourceFileEditorProps = {}) {
   });
 
   return <section class="flex h-full min-h-0 flex-col bg-surface" aria-label={accessibleTitle()}>
-    <header class="resource-editor-tab flex h-35 shrink-0 items-center border-b border-divider bg-sidebar-bg pointer-coarse:h-44">
+    <header data-testid="resource-editor-tab" class="resource-editor-tab flex h-35 shrink-0 items-center border-b border-divider bg-sidebar-bg pointer-coarse:h-44">
       <div class="flex h-full min-w-0 items-center gap-7 border-r border-divider border-t-2 border-t-accent bg-surface pl-12 pr-5 text-12">
         <h1 data-resource-preview-focus tabIndex={-1} aria-label={accessibleTitle()} class="m-0 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-550 text-text-primary outline-none">{basename(preview()?.path ?? '')}</h1>
         <IconButton label="Close file" size="compact" onClick={close} class="border-0 bg-transparent text-text-muted"><CloseIcon /></IconButton>
       </div>
     </header>
-    <div class="resource-editor-toolbar flex h-34 shrink-0 items-center gap-8 border-b border-divider px-12 text-11 pointer-coarse:h-44">
+    <div data-testid="resource-editor-toolbar" class="resource-editor-toolbar flex h-34 shrink-0 items-center gap-8 border-b border-divider px-12 text-11 pointer-coarse:h-44">
       <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-text-primary" title={preview()?.path}>{preview()?.path}</span>
       <span class="ml-auto shrink-0 text-text-muted">Read-only</span>
       <Show when={preview()?.url}>

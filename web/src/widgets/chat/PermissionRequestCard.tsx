@@ -154,6 +154,7 @@ export function PermissionRequestCard(props: PermissionRequestCardProps) {
 
   return (
     <DecisionCard
+      data-testid="permission-request"
       class={`permission-request min-h-(--permission-card-min-height) ${uncertain() ? 'permission-request--uncertain' : ''}`}
       title="Permissions"
       prompt={props.permission.title || 'Permission request'}

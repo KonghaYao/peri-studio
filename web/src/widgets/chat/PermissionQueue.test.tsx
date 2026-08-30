@@ -40,12 +40,12 @@ describe('PermissionQueue', () => {
     render(() => <PermissionQueue permissions={items()} decisions={new Map()} readOnly={false} onResolve={resolve} />);
     fireEvent.click(screen.getByRole('button', { name: 'Next permission' }));
 
-    const card = screen.getByText('Malformed request').closest('.permission-request');
+    const card = screen.getByText('Malformed request').closest('[data-testid="permission-request"]');
     expect(card).not.toBeNull();
     setItems([permission('p0', 'Prepended item'), permission('p1', 'First item'), { ...malformed }]);
 
     expect(screen.getByText('Malformed request')).toBeInTheDocument();
-    expect(screen.getByText('Malformed request').closest('.permission-request')).toBe(card);
+    expect(screen.getByText('Malformed request').closest('[data-testid="permission-request"]')).toBe(card);
     expect(screen.getByLabelText('Pending permission requests, 3 total')).toHaveTextContent('3 / 3');
     expect(screen.getByRole('button', { name: /Allow once/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Deny' })).toBeDisabled();

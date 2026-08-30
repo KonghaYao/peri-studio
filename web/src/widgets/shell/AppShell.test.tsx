@@ -15,7 +15,7 @@ vi.mock('./shared/ProjectDrawer', () => ({
 import { AppShell } from './AppShell';
 
 function shell() {
-  return document.querySelector<HTMLElement>('.app-shell')!;
+  return screen.getByTestId('app-shell');
 }
 
 describe('AppShell desktop sidebar', () => {
@@ -65,7 +65,7 @@ describe('AppShell desktop sidebar', () => {
     expect(screen.getByTestId('project-sidebar')).toBeInTheDocument();
     expect(screen.getByRole('separator', { name: 'Resize sidebar' })).toBeInTheDocument();
     expect(shell().style.gridTemplateColumns).toBe('242px minmax(0, 1fr) auto');
-    const conversation = document.querySelector('.conversation-pane')!;
+    const conversation = screen.getByTestId('conversation-pane');
     const resources = screen.getByRole('complementary', { name: 'Workspace resources' });
     expect(resources).toBeInTheDocument();
     expect(conversation.compareDocumentPosition(resources) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

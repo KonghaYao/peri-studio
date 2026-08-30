@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/widgets/shell/shared/ConfirmDialog';
 import { MAX_COMMIT_MESSAGE_BYTES } from '../../panel/lib/resource-mutations';
 import { GitBranch } from 'lucide-solid';
 import { GitChangeGroup, GitChangeTree } from './git';
+import { ResourceSectionTitle } from './ResourceSectionTitle';
 import type { GitChange, GitChangeGroupId } from './git/types';
 
 const GROUPS: Array<{ id: GitChangeGroupId; label: string }> = [
@@ -25,7 +26,7 @@ type SourceControlPanelProps = {
 
 export function SourceControlPanel(props: SourceControlPanelProps = {}) {
   return <section class="flex min-h-0 flex-1 flex-col" aria-label="Source Control">
-    <div class="resource-section-title flex h-32 items-center border-b border-border-subtle px-10 text-10 font-semibold uppercase tracking-wide text-content-muted pointer-coarse:h-44">Source Control</div>
+    <ResourceSectionTitle>Source Control</ResourceSectionTitle>
     <div class="ui-scrollbar min-h-0 flex-1 overflow-auto pb-12">
       <Show when={!resourceWorkspace().loading.includes('repositories')} fallback={<LoadingState label="Reading repositories" class="m-8 p-8! text-left!" />}>
         <Show when={resourceWorkspace().repositories.length} fallback={<div class="px-14 py-18 text-12 leading-18 text-content-muted">No Git repository was found in this workspace.</div>}>

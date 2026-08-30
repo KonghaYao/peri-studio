@@ -13,6 +13,7 @@ import {
   startMcpOAuth,
 } from '../../panel/lib/mcp';
 import { RefreshCw } from 'lucide-solid';
+import { ResourceSectionTitle } from '@/widgets/resource/ResourceSectionTitle';
 
 export function McpPanelContent(props: { embedded?: boolean } = {}) {
   createEffect(() => {
@@ -23,12 +24,19 @@ export function McpPanelContent(props: { embedded?: boolean } = {}) {
   const connectionLabel = (status: string) => ({ connected: 'Connected', failed: 'Connection failed', disconnected: 'Disconnected', disabled: 'Disabled', uninitialized: 'Uninitialized' }[status] || status);
 
   return <section class={props.embedded ? 'ui-scrollbar min-h-0 flex-1 overflow-auto bg-surface' : 'w-(--container-mcp) max-h-(--container-settings-tall) overflow-auto p-22 max-compact:w-(--container-mcp-compact) max-compact:p-17'} aria-labelledby="mcp-panel-title">
-      <div class={props.embedded ? 'resource-section-title flex h-28 items-center border-b border-divider px-8 text-10 font-650 uppercase tracking-6 text-text-secondary pointer-coarse:h-44' : 'flex items-start justify-between gap-20 max-compact:gap-10'}>
-        <div><h2 id="mcp-panel-title" class={props.embedded ? 'm-0 text-10 font-650 uppercase tracking-6 text-text-secondary' : 'm-0 text-19 text-text-primary -tracking-dialog'}>{props.embedded ? 'Connections' : 'MCP connections'}</h2><Show when={!props.embedded}><p class="mt-5 mb-0 text-text-secondary text-13 leading-15">View the MCP services of the current Peri runtime and complete authorization as needed.</p></Show></div>
-        <Show when={props.embedded} fallback={<Button size="compact" busy={mcpLoading()} class="min-w-58 shrink-0 whitespace-nowrap max-compact:min-h-44" onClick={refreshMcpServers}>Refresh</Button>}>
-          <IconButton label="Refresh MCP connections" size="compact" busy={mcpLoading()} onClick={refreshMcpServers} class="ml-auto border-0 bg-transparent text-text-muted"><RefreshCw size={14} strokeWidth={1.7} /></IconButton>
-        </Show>
-      </div>
+      <Show when={props.embedded} fallback={(
+        <div class="flex items-start justify-between gap-20 max-compact:gap-10">
+          <div><h2 id="mcp-panel-title" class="m-0 text-19 text-text-primary -tracking-dialog">MCP connections</h2><p class="mt-5 mb-0 text-text-secondary text-13 leading-15">View the MCP services of the current Peri runtime and complete authorization as needed.</p></div>
+          <Button size="compact" busy={mcpLoading()} class="min-w-58 shrink-0 whitespace-nowrap max-compact:min-h-44" onClick={refreshMcpServers}>Refresh</Button>
+        </div>
+      )}>
+        <ResourceSectionTitle compact>
+          <div class="flex min-w-0 flex-1 items-center justify-between gap-6">
+            <h2 id="mcp-panel-title" class="m-0 text-10 font-650 uppercase tracking-6 text-text-secondary">Connections</h2>
+            <IconButton label="Refresh MCP connections" size="compact" busy={mcpLoading()} onClick={refreshMcpServers} class="border-0 bg-transparent text-text-muted"><RefreshCw size={14} strokeWidth={1.7} /></IconButton>
+          </div>
+        </ResourceSectionTitle>
+      </Show>
       <Show when={mcpServers().length} fallback={<Show when={mcpLoading()} fallback={<Show when={props.embedded} fallback={<EmptyState title="No MCP servers" description="The current runtime has no MCP servers to manage." />}><p class="m-0 px-10 py-12 text-11 leading-16 text-text-muted">No MCP servers</p></Show>}><LoadingState class={props.embedded ? 'm-8 p-8! text-left!' : 'mt-20'} label="Reading MCP servers" description="Reading Peri’s secure connection snapshot…" /></Show>}>
         <div class={props.embedded ? 'grid' : 'mt-20 grid gap-10'}>
           <For each={mcpServers()}>{(server) => {

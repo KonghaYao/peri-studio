@@ -11,19 +11,16 @@ afterEach(cleanup);
 describe('ArchivedSection', () => {
   it('renders a toggle with label, count and chevron, collapsing the list initially', () => {
     render(() => <ArchivedSection
-      toggleClass="archived-sessions__toggle"
       label="Archived sessions"
       count={3}
       open={false}
       onOpenChange={vi.fn()}
       listId="archived-sessions-p1"
-      listClass="archived-session-list"
     >
-      <div class="archived-session-row">Row content</div>
+      <div>Row content</div>
     </ArchivedSection>);
 
-    const toggle = screen.getByRole('button', { name: /Archived sessions/ });
-    expect(toggle).toHaveClass('archived-sessions__toggle');
+    const toggle = screen.getByTestId('archived-section-toggle');
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(toggle).not.toHaveAttribute('aria-controls');
     expect(toggle.querySelector('small')).toHaveTextContent('3');
@@ -34,22 +31,19 @@ describe('ArchivedSection', () => {
   it('expands on toggle and exposes the list container', () => {
     const onOpenChange = vi.fn();
     render(() => <ArchivedSection
-      toggleClass="archived-projects__toggle"
       label="Archived"
       count={1}
       open
       onOpenChange={onOpenChange}
       listId="archived-project-list"
-      listClass="archived-project-list"
     >
-      <div class="archived-project-row">Project row</div>
+      <div>Project row</div>
     </ArchivedSection>);
 
-    const toggle = screen.getByRole('button', { name: /Archived/ });
+    const toggle = screen.getByTestId('archived-section-toggle');
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(toggle).toHaveAttribute('aria-controls', 'archived-project-list');
-    const list = screen.getByText('Project row').closest('#archived-project-list');
-    expect(list).toHaveClass('archived-project-list');
+    expect(screen.getByTestId('archived-section-list')).toContainElement(screen.getByText('Project row'));
 
     fireEvent.click(toggle);
     expect(onOpenChange).toHaveBeenCalledWith(false);

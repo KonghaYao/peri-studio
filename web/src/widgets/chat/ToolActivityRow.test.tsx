@@ -11,19 +11,19 @@ const base: ToolCallInfo = {
 };
 
 function summary() {
-  return document.querySelector('.tool-activity-row__summary') as HTMLButtonElement;
+  return document.querySelector('[data-testid="tool-activity-row-summary"]') as HTMLButtonElement;
 }
 
-describe('ToolCallCard', () => {
+describe('ToolActivityRow', () => {
   it('shows structured execution facts and honest observed duration', () => {
     render(() => <ToolCallCard toolCall={base} />);
     expect(screen.getByText('shell')).toBeInTheDocument();
     expect(screen.getByText('Done')).toBeInTheDocument();
     expect(screen.getByText('1.3 s')).toBeInTheDocument();
     expect(screen.getAllByText('pwd')).toHaveLength(1);
-    expect(document.querySelector('.tool-activity-row__body')).toBeNull();
+    expect(document.querySelector('[data-testid="tool-activity-row-body"]')).toBeNull();
     fireEvent.click(summary());
-    expect(document.querySelector('.tool-activity-row__body')).toBeInTheDocument();
+    expect(document.querySelector('[data-testid="tool-activity-row-body"]')).toBeInTheDocument();
     expect(screen.getAllByText(/pwd/)).toHaveLength(2);
     expect(screen.getByRole('button', { name: 'Copy Command' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copy Output' })).toBeInTheDocument();
@@ -32,7 +32,7 @@ describe('ToolCallCard', () => {
   it('keeps public errors compact until requested and never renders payload markup as HTML', () => {
     render(() => <ToolCallCard toolCall={{ ...base, status: 'error', result: null, publicError: { code: 'DENIED', message: '<img src=x onerror=alert(1)>' } }} />);
     expect(screen.getByText('Failed')).toBeInTheDocument();
-    expect(document.querySelector('.tool-activity-row__body')).toBeNull();
+    expect(document.querySelector('[data-testid="tool-activity-row-body"]')).toBeNull();
     fireEvent.click(summary());
     expect(screen.getByText(/<img src=x onerror=alert\(1\)>/)).toBeInTheDocument();
     expect(document.querySelector('img')).toBeNull();
@@ -90,14 +90,14 @@ describe('ToolCallCard', () => {
 
   it('keeps the compact input immediately after the tool title', () => {
     render(() => <ToolCallCard toolCall={{ ...base, name: 'Bash', arguments: { command: 'pwd && git status' } }} />);
-    const row = document.querySelector('.tool-activity-row__summary')!;
+    const row = document.querySelector('[data-testid="tool-activity-row-summary"]')!;
     expect(row).toHaveTextContent('Bash');
     expect(row).toHaveTextContent('pwd && git status');
   });
 
   it('keeps long tool names from displacing the compact input and status', () => {
     render(() => <ToolCallCard toolCall={{ ...base, name: 'An unexpectedly long namespaced tool implementation', arguments: { command: 'pwd' } }} />);
-    const row = document.querySelector('.tool-activity-row__summary span.truncate')!;
+    const row = document.querySelector('[data-testid="tool-activity-row-summary"] span.truncate')!;
     expect(row).toHaveClass('truncate');
     expect(screen.getByText('Done')).toBeInTheDocument();
   });

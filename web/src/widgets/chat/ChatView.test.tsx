@@ -31,7 +31,7 @@ vi.mock('./ElicitationQueue', () => ({ ElicitationQueue: () => <section aria-lab
 vi.mock('./PermissionQueue', () => ({ PermissionQueue: () => <section aria-label="Permissions" /> }));
 vi.mock('@/widgets/shell/ErrorCenter', () => ({ ErrorCenter: () => null }));
 vi.mock('./MessageList', () => ({ MessageList: () => null }));
-vi.mock('@/widgets/composer/QuickStartComposer', () => ({ QuickStartComposer: () => <section aria-label="Start new session" class="quick-start quick-start--docked" /> }));
+vi.mock('@/widgets/composer/QuickStartComposer', () => ({ QuickStartComposer: () => <section aria-label="Start new session" data-testid="quick-start-docked" class="quick-start quick-start--docked" /> }));
 
 import { ChatView } from './ChatView';
 
@@ -78,8 +78,8 @@ describe('ChatView project directory hydration', () => {
     render(() => <ChatView />);
 
     expect(screen.getByRole('heading', { name: 'What do you want to build in Peri Studio?' })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Start new session' })).toHaveClass('quick-start--docked');
-    expect(document.querySelector('.chat-view')).toHaveClass('chat-view--launch');
+    expect(screen.getByRole('region', { name: 'Start new session' })).toHaveAttribute('data-testid', 'quick-start-docked');
+    expect(screen.getByTestId('chat-view')).toHaveClass('chat-view--launch');
   });
 
   it('keeps an archived-only registry distinct from an empty directory', () => {
@@ -101,7 +101,7 @@ describe('ChatView feedback', () => {
     state.restoringSessionId.mockReturnValue('session-1');
     render(() => <ChatView />);
 
-    const status = screen.getByRole('status', { name: 'Restoring last session and ACP context…' });
+    const status = screen.getByTestId('restore-banner');
     expect(status).toHaveClass('restore-banner');
     expect(status).toHaveAttribute('aria-live', 'polite');
     expect(status).toHaveTextContent('Restoring last session and ACP context…');

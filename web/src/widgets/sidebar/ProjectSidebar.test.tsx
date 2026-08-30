@@ -192,7 +192,7 @@ describe('ProjectSidebar registry hydration', () => {
   it('uses folder disclosure for project sessions', () => {
     render(() => <ProjectSidebar />);
     const disclosure = screen.getByRole('button', { name: 'Perihelion' });
-    expect(document.querySelector('.session-list')).not.toHaveClass('border-l', 'border-divider');
+    expect(screen.getByTestId('session-list')).not.toHaveClass('border-l', 'border-divider');
     expect(disclosure).toHaveAttribute('aria-expanded', 'true');
     fireEvent.click(disclosure);
     expect(disclosure).toHaveAttribute('aria-expanded', 'false');
@@ -236,8 +236,8 @@ describe('ProjectSidebar registry hydration', () => {
   it('keeps sidebar controls free of tooltip wrappers and native title hints', () => {
     render(() => <ProjectSidebar />);
 
-    expect(document.querySelector('.project-sidebar .ui-tooltip-anchor')).toBeNull();
-    expect(document.querySelector('.project-sidebar [title]')).toBeNull();
+    expect(screen.getByTestId('project-sidebar').querySelector('.ui-tooltip-anchor')).toBeNull();
+    expect(screen.getByTestId('project-sidebar').querySelector('[title]')).toBeNull();
   });
 
   it('waits for the exact open command to commit before navigating', () => {
@@ -305,8 +305,7 @@ describe('ProjectSidebar registry hydration', () => {
 
     render(() => <ProjectSidebar />);
 
-    expect(document.querySelector('.session-status-dot')).toBeNull();
-    expect(document.querySelector('.session-loading-wave')).toBeNull();
+    expect(screen.queryByTestId('session-loading-wave')).not.toBeInTheDocument();
     expect(screen.queryByText(/Ready/)).not.toBeInTheDocument();
   });
 

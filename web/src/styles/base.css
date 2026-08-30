@@ -170,7 +170,6 @@ code {
 
   .conversation-message__surface,
   .permission-request,
-  .tool-card,
   .resource-workbench {
     border-color: CanvasText;
   }

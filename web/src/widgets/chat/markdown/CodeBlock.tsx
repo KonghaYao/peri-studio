@@ -114,11 +114,11 @@ export function CodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { streamin
   const label = () => LANGUAGE_LABELS[language()] || (details().language === 'text' ? 'Plain text' : details().language);
   const extension = () => EXTENSIONS[language()] || details().language || 'txt';
 
-  if (details().language === 'math' && locked()) return <div class="md-code-block my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-highlighted="false" data-incomplete="true"><pre class="m-0 overflow-auto bg-surface-sunken px-12 py-10 font-mono text-12 leading-relaxed"><code class="bg-transparent p-0 text-inherit">{details().text}</code></pre></div>;
+  if (details().language === 'math' && locked()) return <div class="md-code-block my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-testid="md-code-block" data-highlighted="false" data-incomplete="true"><pre class="m-0 overflow-auto bg-surface-sunken px-12 py-10 font-mono text-12 leading-relaxed"><code class="bg-transparent p-0 text-inherit">{details().text}</code></pre></div>;
   if (details().language === 'math') return <MathExpression expression={details().text.trim()} block />;
-  if (details().language === 'mermaid') return <div class="md-code-block my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-incomplete={props.incomplete ? 'true' : undefined}><MermaidBlock code={details().text} incomplete={locked()} /></div>;
+  if (details().language === 'mermaid') return <div class="md-code-block my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-testid="md-code-block" data-incomplete={props.incomplete ? 'true' : undefined}><MermaidBlock code={details().text} incomplete={locked()} /></div>;
 
-  return <div class="md-code-block my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-highlighted={highlighted()?.result ? 'true' : 'false'} data-incomplete={props.incomplete ? 'true' : undefined}>
+  return <div class="md-code-block my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-testid="md-code-block" data-highlighted={highlighted()?.result ? 'true' : 'false'} data-incomplete={props.incomplete ? 'true' : undefined}>
     <div class="md-code-toolbar flex min-h-32 items-center gap-8 border-b border-border-subtle px-8 py-4">
       <span class="mr-auto flex min-w-0 items-center gap-8 text-12 text-content-secondary"><strong class="font-medium">{label()}</strong><Show when={details().filename}><span class="truncate text-content-muted">{details().filename}</span></Show></span>
       <Show when={highlighted()?.error}><IconButton size="compact" onClick={() => refetch()} label="Retry syntax highlighting"><RefreshIcon /></IconButton></Show>
@@ -127,7 +127,7 @@ export function CodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { streamin
     </div>
     <pre class="m-0 max-h-520 overflow-auto bg-surface-sunken px-0 py-12 font-mono text-12 leading-relaxed text-content-primary"><code class="block min-w-max bg-transparent p-0 font-mono text-inherit">
       <For each={lines()}>{(line, index) => <span class="md-code-line grid min-h-18 grid-cols-code-line px-14">
-        <Show when={details().lineNumbers}><span class="md-code-line__number mr-14 min-w-20 select-none text-right text-content-faint" aria-hidden="true">{details().startLine + index()}</span></Show>
+        <Show when={details().lineNumbers}><span class="md-code-line__number mr-14 min-w-20 select-none text-right text-content-faint" data-testid="md-code-line-number" aria-hidden="true">{details().startLine + index()}</span></Show>
         <span class="whitespace-pre"><For each={line}>{(token) => <span style={tokenStyle(token)}>{token.content}</span>}</For>{index() < lines().length - 1 ? '\n' : ''}</span>
       </span>}</For>
     </code></pre>

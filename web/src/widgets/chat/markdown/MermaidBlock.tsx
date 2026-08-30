@@ -51,7 +51,7 @@ export function MermaidBlock(props: { code: string; incomplete?: boolean }) {
     if (!props.incomplete && code.trim()) void renderDiagram(code);
   });
 
-  return <div class="md-mermaid" data-incomplete={props.incomplete ? 'true' : undefined}>
+  return <div class="md-mermaid" data-testid="md-mermaid" data-incomplete={props.incomplete ? 'true' : undefined}>
     <div class="md-code-toolbar flex min-h-32 items-center gap-4 border-b border-border-subtle px-8 py-4">
       <span class="mr-auto text-12 font-medium text-content-secondary">Mermaid</span>
       <Show when={busy()}><span class="ui-spinner mx-8" aria-hidden="true" /><span class="sr-only">Rendering diagram</span></Show>
@@ -67,7 +67,7 @@ export function MermaidBlock(props: { code: string; incomplete?: boolean }) {
     </div>
     <Show when={showSource()}><pre class="m-0 max-h-360 overflow-auto bg-surface-sunken px-12 py-10 font-mono text-12 leading-relaxed"><code class="bg-transparent p-0 text-inherit">{props.code}</code></pre></Show>
     <Show when={error()}><div role="alert" class="border-t border-border-subtle px-12 py-8 text-12 text-danger-solid">{error()}</div></Show>
-    <Show when={!showSource() && svg()}>{(value) => <div class="md-mermaid__result bg-surface-overlay p-16">
+    <Show when={!showSource() && svg()}>{(value) => <div class="md-mermaid__result bg-surface-overlay p-16" data-testid="md-mermaid-result">
       <div class="md-mermaid__canvas overflow-auto" innerHTML={value()} />
       <Dialog open={expanded()} onOpenChange={setExpanded}><DialogContent class="w-(--container-mermaid) max-h-(--container-dialog-tall)">
         <DialogHeader><DialogTitle>Diagram</DialogTitle></DialogHeader>

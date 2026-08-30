@@ -122,7 +122,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
       <SessionRailActions />
     </nav>
     <Show when={view()}>
-      <div class={`resource-workbench__panel flex min-h-0 min-w-0 flex-1 flex-col bg-surface-overlay ${props.compact ? '' : `absolute z-30 ${RESOURCE_PANEL_SURFACE_CLASS}`}`}>
+      <div data-testid="resource-workbench-panel" class={`resource-workbench__panel flex min-h-0 min-w-0 flex-1 flex-col bg-surface-overlay ${props.compact ? '' : `absolute z-30 ${RESOURCE_PANEL_SURFACE_CLASS}`}`}>
         <header class={RESOURCE_PANEL_HEADER_CLASS}>
           <strong class={RESOURCE_PANEL_TITLE_CLASS}>{panelTitle()}</strong>
           <Show when={view() === 'explorer' || view() === 'scm'}><IconButton label="Refresh resources" size="compact" onClick={refreshResourceProject} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><RefreshCw size={14} strokeWidth={1.7} /></IconButton></Show>

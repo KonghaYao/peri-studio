@@ -3,15 +3,16 @@ import { ChevronDown, MessageSquare, Monitor, Server } from 'lucide-solid';
 import { connState } from '../../panel/lib/connection';
 import { buildTopologyTree, chatStatusLabel, instanceStatusLabel, serverStatusLabel } from '@/entities/topology/topology-view';
 import { chatCatalog, globalStatus, instances, schemaVersion } from '../../panel/store';
+import { ResourceSectionTitle } from './ResourceSectionTitle';
 
 /** 与 Files / Git 共用 24px 树行；机器拓扑只读，不再嵌入独立卡片面板。 */
 export function MachinePanel() {
   const nodes = () => buildTopologyTree(instances(), chatCatalog());
   return <section class="ui-scrollbar min-h-0 flex-1 overflow-auto bg-surface" aria-label="Machines">
-    <div class="resource-section-title flex h-28 items-center border-b border-divider px-8 text-10 font-650 uppercase tracking-6 text-text-secondary pointer-coarse:h-44">
+    <ResourceSectionTitle compact>
       <span>Runtime</span>
       <span class="ml-auto max-w-(--runtime-label-max) overflow-hidden text-ellipsis whitespace-nowrap font-mono text-9 font-normal normal-case tracking-normal text-text-muted" title={connState().text}>{connState().text}</span>
-    </div>
+    </ResourceSectionTitle>
     <div role="tree" aria-label="Machine topology" class="py-2 text-11">
       <div role="treeitem" aria-level="1" aria-expanded="true" class="flex h-(--tree-row-height) items-center gap-5 rounded-4 px-7 font-600 text-text-primary hover:bg-hover pointer-coarse:h-44" title={`Schema ${String(schemaVersion() ?? '—')}`}>
         <ChevronDown size={14} strokeWidth={1.7} class="text-text-muted" />

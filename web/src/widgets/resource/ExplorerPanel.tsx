@@ -4,6 +4,7 @@ import { openFilePreview, openResourceDirectory, refreshResourceProject, resourc
 import type { ResourceEntry } from '../../panel/lib/resource-view';
 import { RefreshCw } from 'lucide-solid';
 import { FileTree, type FileTreeNode } from './FileTree';
+import { ResourceSectionTitle } from './ResourceSectionTitle';
 
 function RefreshIcon() { return <RefreshCw size={14} strokeWidth={1.8} />; }
 
@@ -143,9 +144,9 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
   const nextCursor = () => resourceWorkspace().directories['']?.nextCursor;
 
   return <section class="flex min-h-0 flex-1 flex-col" aria-label="Explorer">
-    <div class="resource-section-title flex h-32 items-center border-b border-border-subtle px-10 text-10 font-semibold uppercase tracking-wide text-content-muted pointer-coarse:h-44">
+    <ResourceSectionTitle>
       <span>Files</span><IconButton label="Refresh Explorer" size="compact" onClick={refreshResourceProject} class="ml-auto border-0 bg-transparent text-content-muted hover:text-content-primary"><RefreshIcon /></IconButton>
-    </div>
+    </ResourceSectionTitle>
     <div
       ref={(element) => {
         tree = element;

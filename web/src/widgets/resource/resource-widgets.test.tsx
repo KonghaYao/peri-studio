@@ -61,7 +61,7 @@ describe('resource tree widgets', () => {
     expect(screen.getByText('Description')).toBeInTheDocument();
     expect(screen.getByText('feat: graph panel')).toBeInTheDocument();
     expect(screen.getByText('abc12345')).toBeInTheDocument();
-    expect(document.querySelector('.git-graph-table')).toBeInTheDocument();
-    expect(document.querySelector('.git-graph-svg')).toBeInTheDocument();
+    expect(screen.getByTestId('git-graph-table')).toBeInTheDocument();
+    expect(screen.getByTestId('git-graph-svg')).toBeInTheDocument();
   });
 });

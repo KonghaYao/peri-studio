@@ -28,8 +28,8 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
     createSessionWithFirstMessage(projectId(), text);
   };
 
-  return <section class="quick-start quick-start--docked w-full text-left" aria-label="Start new session">
-    <div class="quick-start__surface overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface-overlay p-2.5 max-narrow:rounded-16" aria-busy={pendingIsInFlight() || undefined}>
+  return <section data-testid="quick-start-docked" class="quick-start quick-start--docked w-full text-left" aria-label="Start new session">
+    <div data-testid="quick-start-surface" class="quick-start__surface overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface-overlay p-2.5 max-narrow:rounded-16" aria-busy={pendingIsInFlight() || undefined}>
       <Textarea
         autoResize
         maxHeight={180}
@@ -64,6 +64,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
           disabled={readOnly() || locked() || !!pending() || !draft().trim() || promptOverBudget()}
           onClick={submit}
           class="composer-action flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-accent-solid text-content-on-accent hover:bg-accent-hover max-narrow:w-48 max-narrow:min-h-44"
+          data-testid="composer-action"
         >
           <SendHorizontal size={16} strokeWidth={1.7} />
         </IconButton>

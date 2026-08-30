@@ -20,7 +20,7 @@ function InlineCode(props: JSX.HTMLAttributes<HTMLElement> & { resolveMath: (tok
   const expression = () => local.resolveMath(text());
   return expression()
     ? <MathExpression expression={expression()!} />
-    : <code {...rest} class={`md-inline-code rounded-sm border border-border-subtle bg-surface-muted px-4 py-2 text-11p5 text-content-primary ${local.class || ''}`}>{local.children}</code>;
+    : <code {...rest} data-testid="md-inline-code" class={`md-inline-code rounded-sm border border-border-subtle bg-surface-muted px-4 py-2 text-11p5 text-content-primary ${local.class || ''}`}>{local.children}</code>;
 }
 
 export interface MarkdownProps {
@@ -82,7 +82,7 @@ export function Markdown(props: MarkdownProps) {
   });
   const footnotes = createMemo(() => document().references ? astToJSX([document().references!], options()) : null);
 
-  return <div class="markdown-body min-w-0 text-13 leading-normal text-content-primary">
+  return <div class="markdown-body min-w-0 text-13 leading-normal text-content-primary" data-testid="markdown-body">
     <For each={document().blocks}>{(model) => <MarkdownAstBlock model={model} options={options()} />}</For>
     <Show when={document().references}>{footnotes()}</Show>
   </div>;

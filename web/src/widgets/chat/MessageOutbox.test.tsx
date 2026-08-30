@@ -41,7 +41,7 @@ describe('MessageOutbox', () => {
     expect(status).toHaveAttribute('aria-busy', 'true');
     expect(status).toHaveTextContent('do not lose this work');
     expect(status).not.toHaveTextContent('Sending');
-    expect(status.querySelector('.message-outbox__status')).not.toBeInTheDocument();
+    expect(status.querySelector('[data-testid="message-outbox-status"]')).not.toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 

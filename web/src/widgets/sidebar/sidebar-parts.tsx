@@ -126,9 +126,9 @@ export function SessionRowAccessory(props: {
       meta={(
         <span class="flex items-center gap-6 tabular-nums text-11 text-content-muted">
           <Show when={props.live}>
-            <span class="session-loading-wave relative flex size-6" role="status" aria-label={props.liveLabel}>
-              <span class="session-loading-wave__halo absolute inline-flex size-full animate-ping rounded-full bg-success-solid opacity-30 motion-reduce:animate-none" aria-hidden="true" />
-              <span class="session-loading-wave__core relative inline-flex size-6 rounded-full bg-success-solid" aria-hidden="true" />
+            <span data-testid="session-loading-wave" class="session-loading-wave relative flex size-6" role="status" aria-label={props.liveLabel}>
+              <span data-testid="session-loading-wave-halo" class="session-loading-wave__halo absolute inline-flex size-full animate-ping rounded-full bg-success-solid opacity-30 motion-reduce:animate-none" aria-hidden="true" />
+              <span data-testid="session-loading-wave-core" class="session-loading-wave__core relative inline-flex size-6 rounded-full bg-success-solid" aria-hidden="true" />
             </span>
           </Show>
           <span>{props.time}</span>
@@ -166,6 +166,7 @@ export function SessionRowAccessory(props: {
               as={IconButton}
               size="sm"
               showTooltip={false}
+              data-testid="session-menu"
               class={cn(buttonGroupItemClass, 'session-menu data-[expanded]:text-content-primary')}
               label="Session actions"
               onClick={(event) => event.stopPropagation()}

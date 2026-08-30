@@ -5,7 +5,7 @@ test('unknown question delivery can be hidden without exposing a second answer p
   await page.goto('/visual-fixture.html?scenario=elicitation', { waitUntil: 'networkidle' });
   await page.evaluate(() => window.__PERI_VISUAL_FIXTURE__.setElicitationUnknown('elicitation-safe-plan'));
 
-  const card = page.locator('.elicitation-card');
+  const card = page.getByTestId('elicitation-card');
   await expect(card.getByRole('alert')).toContainText('Answer delivery not confirmed');
   await expect(page.getByRole('button', { name: 'Refresh status' })).toBeVisible();
   await expect(card.getByRole('button', { name: 'Hide question' })).toBeVisible();

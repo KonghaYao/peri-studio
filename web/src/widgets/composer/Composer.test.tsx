@@ -76,7 +76,7 @@ describe('Composer', () => {
     });
     render(() => <Composer />);
 
-    expect(document.querySelector('.composer-surface')).toHaveClass('rounded-(--composer-radius)', 'p-2.5');
+    expect(screen.getByTestId('composer-surface')).toHaveClass('rounded-(--composer-radius)', 'p-2.5');
     expect(screen.getByRole('textbox')).toHaveClass('min-h-36', 'leading-normal', 'text-content-primary');
     expect(screen.getByRole('button', { name: 'Choose model' })).toHaveTextContent('Nova 4.1');
     expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('w-36', 'min-h-32', 'rounded-8');
@@ -177,11 +177,11 @@ describe('Composer', () => {
     installPrediction();
     render(() => <Composer />);
     const input = screen.getByRole('textbox', { name: 'Message the agent' });
-    expect(screen.getByText('check failure test', { selector: '.composer-prediction' })).toBeInTheDocument();
+    expect(screen.getByTestId('composer-prediction')).toHaveTextContent('check failure test');
     expect(input).toHaveAccessibleDescription(/Peri suggests: check failure test/);
     fireEvent.keyDown(input, { key: 'Tab' });
     expect(input).toHaveValue('check failure test');
-    expect(screen.queryByText('check failure test', { selector: '.composer-prediction' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('composer-prediction')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled();
     expect(messageSubmission()).toBeNull();
   });
@@ -254,7 +254,7 @@ describe('Composer', () => {
     });
     render(() => <Composer />);
     const usage = screen.getByRole('button', { name: /Context usage.*Input 1,200 · Output 345 · Cached 900/ });
-    expect(usage).toHaveClass('composer-usage');
+    expect(usage).toHaveAttribute('data-testid', 'composer-usage');
     expect(screen.queryByRole('button', { name: /Context usage/ })).toBeInTheDocument();
     setChatHead({
       chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
@@ -399,7 +399,7 @@ describe('Composer', () => {
     startMessageDelivery('cmd-1', 'pending text', 'session-1', 'chat-1', draftOwner());
     render(() => <Composer />);
 
-    expect(document.querySelector('.composer-surface')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByTestId('composer-surface')).toHaveAttribute('aria-busy', 'true');
     expect(screen.queryByText('Sending message')).not.toBeInTheDocument();
     expect(screen.queryByText('Message received by the server')).not.toBeInTheDocument();
     expect(screen.getByRole('textbox')).not.toHaveAccessibleDescription();
