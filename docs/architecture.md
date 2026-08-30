@@ -1191,7 +1191,9 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 
 ### 10.2 结构与数据源
 
-`web/src/panel` 分两层：`lib/`（领域逻辑，纯 TS，node --test / vitest 覆盖）与 `components/`（Solid 组件）；`web/src/components/ui` 是可复用基础组件库（Button/Dialog/Drawer/Field/Menu/Popover/Toast/Tooltip 等，以 `index.ts` 作为唯一公共代码入口）。
+**分层与目录的权威说明见 [frontend-architecture.md](design/frontend-architecture.md)**（app / pages / widgets / features / entities / shared）。迁移完成前，下列路径仍有效：
+
+`web/src/panel` 分两层：`lib/`（领域逻辑，纯 TS，node --test / vitest 覆盖）与 `components/`（Solid 组件）；`web/src/components/ui`（将迁入 `shared/ui`）是可复用基础组件库（Button/Dialog/Drawer/Field/Menu/Popover/Toast/Tooltip 等，以 `index.ts` 作为唯一公共代码入口）。
 
 | 区域 / 模块 | 数据源 | 说明 |
 |------|--------|------|
