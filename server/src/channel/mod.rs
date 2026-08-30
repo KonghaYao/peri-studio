@@ -27,6 +27,8 @@ mod gateway_instance_loop;
 mod instance_recovery;
 mod management_actions;
 mod mcp_control;
+mod mcp_apps_control;
+mod spawn_env;
 mod metadata_activation;
 mod metadata_command_processor;
 mod metadata_project_actions;

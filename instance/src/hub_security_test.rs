@@ -37,6 +37,42 @@ fn test_oauth_method_is_always_sensitive_ephemeral() {
 }
 
 #[test]
+fn test_mcp_apps_frames_are_sensitive_ephemeral() {
+    for frame in [
+        serde_json::json!({"jsonrpc":"2.0","method":"peri/mcp/open","params":{}}),
+        serde_json::json!({"jsonrpc":"2.0","method":"peri/mcp/resource","params":{}}),
+        serde_json::json!({"jsonrpc":"2.0","method":"peri/mcp/app","params":{}}),
+        serde_json::json!({"jsonrpc":"2.0","id":1,"result":{"resources":[{"mimeType":"text/html;profile=mcp-app","text":"<html></html>"}]}}),
+        serde_json::json!({"jsonrpc":"2.0","id":2,"result":{"resources":[{"uri":"ui://fixture/dashboard","text":"<html></html>"}]}}),
+        serde_json::json!({"jsonrpc":"2.0","id":3,"result":{"html":"<html></html>"}}),
+    ] {
+        assert_eq!(
+            super::forward::child_frame_delivery_class(&frame),
+            ChildFrameDeliveryClass::SensitiveEphemeral
+        );
+    }
+}
+
+#[test]
+fn test_session_update_text_chunk_is_replayable() {
+    let frame = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "session/update",
+        "params": {
+            "sessionId": "s1",
+            "update": {
+                "type": "agent_message_chunk",
+                "content": { "type": "text", "text": "hello world" }
+            }
+        }
+    });
+    assert_eq!(
+        super::forward::child_frame_delivery_class(&frame),
+        ChildFrameDeliveryClass::Replayable
+    );
+}
+
+#[test]
 fn test_instance_event_payload_wire_equals_proto() {
     // P1-2 wire 一致性守卫：在线转发改用借用信封序列化（免 clone），输出必须
     // 与 proto InstanceEvent 逐位一致（camelCase chatId/epoch/seq/frame）。

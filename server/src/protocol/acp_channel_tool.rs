@@ -10,6 +10,7 @@ use super::{
     acp_channel::{AcpChannel, TOOL_ARGUMENTS_MAX_BYTES},
     acp_channel_parse::{public_error, string_field, truncate_text, MapError},
 };
+use crate::protocol::mcp_name::parse_mcp_tool_name;
 
 const TOOL_CALL_ID_MAX_BYTES: usize = 256;
 
@@ -51,6 +52,9 @@ impl AcpChannel {
                 public_error: error,
                 created_at: (update_kind == "tool_call").then(|| now.to_string()),
                 completed_at: terminal.then(|| now.to_string()),
+                ..mcp_fields_from_name(
+                    string_field(payload, "name", "name").as_deref(),
+                )
             },
         })
     }
@@ -88,6 +92,11 @@ impl AcpChannel {
             }),
             created_at: (update_kind == "tool_call").then(|| now.to_string()),
             completed_at: terminal.then(|| now.to_string()),
+            ..mcp_fields_from_name(
+                string_field(update, "title", "title")
+                    .or_else(|| string_field(update, "name", "name"))
+                    .as_deref(),
+            )
         };
         Ok(EventBody::ToolCallPatched {
             turn_id: String::new(),
@@ -187,6 +196,17 @@ fn is_terminal(status: ToolCallStatus) -> bool {
         status,
         ToolCallStatus::Completed | ToolCallStatus::Error | ToolCallStatus::Cancelled
     )
+}
+
+fn mcp_fields_from_name(name: Option<&str>) -> ToolCallPatch {
+    let Some(parsed) = name.and_then(parse_mcp_tool_name) else {
+        return ToolCallPatch::default();
+    };
+    ToolCallPatch {
+        mcp_server_id: Some(parsed.server_id),
+        mcp_tool_name: Some(parsed.tool_name),
+        ..ToolCallPatch::default()
+    }
 }
 
 fn first_json_patch(update: &Map<String, Value>, keys: &[&str]) -> ToolJsonPatch {

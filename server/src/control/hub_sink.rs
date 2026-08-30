@@ -77,6 +77,18 @@ impl StoreSink {
         self.docs.write().await.remove(doc).is_some()
     }
 
+    /// 读取 Chat Doc 镜像中的 tool_call 投影（MCP Apps open 门禁用）。
+    pub async fn tool_call_projection(
+        &self,
+        chat_id: &str,
+        tool_call_id: &str,
+    ) -> Option<peri_studio_proto::schema::ToolCallProjection> {
+        let docs = self.docs.read().await;
+        let chat_doc = docs.get(&DocId::chat(chat_id))?;
+        let txn = chat_doc.transact();
+        crate::state::chat_writer::tool_call_projection(&txn, tool_call_id)
+    }
+
     /// Startup-only cross-store repair for a Hub-owned v2 prompt entry. The
     /// mirror is already reconstructed at this point; the generated delta is
     /// appended through the normal UpdateSink durability path before the

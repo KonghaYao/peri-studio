@@ -42,6 +42,7 @@ use crate::channel::command_outcome_broker::CommandOutcomeBroker;
 pub(super) use crate::channel::coordinator_helpers::{action_error, extract_command_id};
 use crate::channel::elicitation_response::ElicitationResponse;
 use crate::channel::mcp_control::McpControl;
+use crate::channel::mcp_apps_control::McpAppsControl;
 use crate::channel::metadata_command_processor::MetadataCommandProcessor;
 use crate::channel::permission_resolution::PermissionResolution;
 use crate::channel::prompt_delivery::PromptDelivery;
@@ -150,6 +151,7 @@ pub(super) struct CoordInner {
     pub(super) session_rewind: SessionRewindQueries,
     pub(super) rewind_execution: SessionRewindExecution,
     pub(super) mcp_control: McpControl,
+    pub(super) mcp_apps_control: McpAppsControl,
     pub(super) projects: Arc<RwLock<Option<ProjectService>>>,
     pub(super) history_sink: RwLock<Option<Arc<crate::control::StoreSink>>>,
     /// One owner for durable outcome replay, reconnect observers and the
@@ -226,6 +228,9 @@ impl CommandCoordinator {
                 | ActionEnvelope::McpOAuthStart { .. }
                 | ActionEnvelope::McpOAuthAuthorization { .. }
                 | ActionEnvelope::McpOAuthCancel { .. }
+                | ActionEnvelope::McpAppOpen { .. }
+                | ActionEnvelope::McpAppResource { .. }
+                | ActionEnvelope::McpAppCall { .. }
                 | ActionEnvelope::ConfigSet { .. }
                 | ActionEnvelope::Rewind { .. }
                 | ActionEnvelope::RewindCandidates { .. }

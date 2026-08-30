@@ -232,6 +232,24 @@ pub enum ActionEnvelope {
         command_id: String,
         payload: McpOAuthFlowPayload,
     },
+    /// 为已完成的 MCP App 工具消费 lease 并建立 app session。
+    #[serde(rename = "mcp/app-open", rename_all = "camelCase")]
+    McpAppOpen {
+        command_id: String,
+        payload: McpAppOpenPayload,
+    },
+    /// 读取 app session 绑定的 UI HTML（瞬时，不落盘）。
+    #[serde(rename = "mcp/app-resource", rename_all = "camelCase")]
+    McpAppResource {
+        command_id: String,
+        payload: McpAppResourcePayload,
+    },
+    /// 代理 App 内 `tools/call` 到 Peri `peri/mcp/app`。
+    #[serde(rename = "mcp/app-call", rename_all = "camelCase")]
+    McpAppCall {
+        command_id: String,
+        payload: McpAppCallPayload,
+    },
 }
 
 impl ActionEnvelope {
@@ -272,6 +290,9 @@ impl ActionEnvelope {
             ActionEnvelope::McpOAuthStart { .. } => "mcp/oauth-start",
             ActionEnvelope::McpOAuthAuthorization { .. } => "mcp/oauth-authorization",
             ActionEnvelope::McpOAuthCancel { .. } => "mcp/oauth-cancel",
+            ActionEnvelope::McpAppOpen { .. } => "mcp/app-open",
+            ActionEnvelope::McpAppResource { .. } => "mcp/app-resource",
+            ActionEnvelope::McpAppCall { .. } => "mcp/app-call",
         }
     }
 }

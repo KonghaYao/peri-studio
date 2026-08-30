@@ -21,6 +21,8 @@ export default defineConfig({
       input: {
         // 与 Rust 端路由保持的 URL 契约：`/` 即 Web 面板。
         index: resolve(rootDir, 'index.html'),
+        // MCP Apps 沙箱页：第二 loopback origin（server sandbox listener）。
+        sandbox: resolve(rootDir, 'sandbox.html'),
       },
       output: {
         manualChunks(id) {

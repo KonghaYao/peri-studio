@@ -15,6 +15,7 @@ use crate::channel::command_coordinator::{
 use crate::channel::command_outcome_broker::CommandOutcomeBroker;
 use crate::channel::elicitation_response::ElicitationResponse;
 use crate::channel::mcp_control::McpControl;
+use crate::channel::mcp_apps_control::McpAppsControl;
 use crate::channel::metadata_command_processor::MetadataCommandProcessor;
 use crate::channel::permission_resolution::PermissionResolution;
 use crate::channel::prompt_delivery::{PromptDelivery, PromptDeliveryDeps};
@@ -31,7 +32,7 @@ use crate::channel::session_rewind::{SessionRewindExecution, SessionRewindQuerie
 use crate::channel::session_runtime_operations::{SessionRuntimeConfig, SessionRuntimeOperations};
 use crate::channel::turn_cancellation::TurnCancellation;
 use crate::channel::workspace_compatibility::WorkspaceCompatibility;
-use crate::control::{ChatRegistry, InstanceRegistry, ProjectService, WorkspaceRegistry};
+use crate::control::{ChatRegistry, InstanceRegistry, ProjectService, WorkspaceRegistry, StoreSink};
 use crate::persist::Store;
 use crate::protocol::Translator;
 use crate::state::doc_manager::{BatchConfig, DocManager};
@@ -46,6 +47,7 @@ impl CommandCoordinator {
         instance: Arc<InstanceRegistry>,
         chats: ChatRegistry,
         relay: Arc<RelayEventHandler>,
+        sink: Arc<StoreSink>,
         cfg: &BatchConfig,
         acp_cmd: Vec<String>,
         spawn_timeout: Duration,
@@ -58,6 +60,7 @@ impl CommandCoordinator {
             instance,
             chats,
             relay,
+            sink,
             cfg,
             acp_cmd,
             spawn_timeout,
@@ -75,6 +78,7 @@ impl CommandCoordinator {
         instance: Arc<InstanceRegistry>,
         chats: ChatRegistry,
         relay: Arc<RelayEventHandler>,
+        sink: Arc<StoreSink>,
         cfg: &BatchConfig,
         acp_cmd: Vec<String>,
         spawn_timeout: Duration,
@@ -132,6 +136,14 @@ impl CommandCoordinator {
             instance.clone(),
             relay.clone(),
             translator.clone(),
+            SESSION_POLL_TIMEOUT,
+        );
+        let mcp_apps_control = McpAppsControl::new(
+            chats.clone(),
+            instance.clone(),
+            relay.clone(),
+            translator.clone(),
+            sink.clone(),
             SESSION_POLL_TIMEOUT,
         );
         let session_configuration = SessionConfiguration::new(
@@ -232,6 +244,7 @@ impl CommandCoordinator {
                 session_rewind,
                 rewind_execution,
                 mcp_control,
+                mcp_apps_control,
                 projects,
                 history_sink: RwLock::new(None),
                 outcome_broker,

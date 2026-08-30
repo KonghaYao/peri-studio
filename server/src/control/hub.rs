@@ -16,6 +16,7 @@
 //!   同源同 clientID，客户端应用无 CRDT 分叉。
 
 use std::collections::HashSet;
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 use tracing::{info, warn};
@@ -149,6 +150,7 @@ impl Hub {
             instance.clone(),
             chats.as_ref().clone(),
             relay.clone(),
+            sink.clone(),
             &batch,
             cfg.acp_cmd.clone(),
             cfg.spawn_timeout,
@@ -358,9 +360,27 @@ impl Hub {
 
         // 优雅关闭：停止 accept + 周期任务 → 连接自然关闭。
         let gateway = self.gateway.clone();
+        let sandbox_port = crate::web::sandbox::sandbox_port(addr.port());
+        let sandbox_addr = SocketAddr::new(addr.ip(), sandbox_port);
+        let sandbox_listener = match tokio::net::TcpListener::bind(sandbox_addr).await {
+            Ok(listener) => Some(listener),
+            Err(error) => {
+                warn!(%sandbox_addr, ?error, "MCP Apps sandbox listener failed; inline Apps disabled");
+                None
+            }
+        };
         tokio::select! {
             _ = gateway.run(listener) => {
                 warn!("gateway run exited unexpectedly");
+            }
+            _ = async {
+                if let Some(listener) = sandbox_listener {
+                    let _ = crate::web::sandbox::serve_sandbox(listener).await;
+                } else {
+                    std::future::pending::<()>().await;
+                }
+            } => {
+                warn!("sandbox server exited unexpectedly");
             }
             _ = signal => {
                 info!("shutdown signal received; closing connections");

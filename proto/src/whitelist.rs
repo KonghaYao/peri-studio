@@ -81,6 +81,9 @@ pub const M1_ACTION_TYPES: &[&str] = &[
     "mcp/oauth-start",
     "mcp/oauth-authorization",
     "mcp/oauth-cancel",
+    "mcp/app-open",
+    "mcp/app-resource",
+    "mcp/app-call",
 ];
 
 /// `action` 帧的 `type` 子集是否在 M1 白名单内。
@@ -132,6 +135,9 @@ pub fn m1_check(tag: FrameTag, role: Role, dir: Direction) -> M1Check {
             | "mcp_servers"
             | "mcp_oauth"
             | "mcp_oauth_authorization"
+            | "mcp_app_session"
+            | "mcp_app_resource"
+            | "mcp_app_call_result"
             | "rewind_candidates"
             | "rewind_preview"
             | "resource_query"
@@ -166,6 +172,9 @@ pub fn m1_check(tag: FrameTag, role: Role, dir: Direction) -> M1Check {
                     | "mcp_servers"
                     | "mcp_oauth"
                     | "mcp_oauth_authorization"
+                    | "mcp_app_session"
+                    | "mcp_app_resource"
+                    | "mcp_app_call_result"
                     | "rewind_candidates"
                     | "rewind_preview"
                     | "resource_result"

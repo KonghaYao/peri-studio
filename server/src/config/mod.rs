@@ -29,7 +29,7 @@ pub const DEFAULT_ACP_CMD: [&str; 2] = ["peri", "acp"];
 /// 是**增补**集合，键名匹配大小写敏感）。与 instance 侧基集
 /// （`instance/src/hub.rs` `ENV_BASE_ALLOWLIST`）保持**双端一致**
 /// （§9.6 双端校验对称，SHELL 为 §9.6 基集项）。
-pub const ENV_ALLOWLIST_BASE: [&str; 4] = ["PATH", "HOME", "LANG", "SHELL"];
+pub const ENV_ALLOWLIST_BASE: [&str; 5] = ["PATH", "HOME", "LANG", "SHELL", "PERI_MCP_APPS"];
 
 /// 默认配置文件相对路径（`~/.config/peri-studio/config.toml`，§16）。
 pub const CONFIG_FILE_NAME: &str = "config.toml";

@@ -40,12 +40,63 @@ pub(super) enum ChildFrameDeliveryClass {
 /// 漏判则会把 URL/state/token 写入 ring 或磁盘，故边界必须 fail-closed。
 pub(super) fn child_frame_delivery_class(frame: &serde_json::Value) -> ChildFrameDeliveryClass {
     if frame.get("method").and_then(serde_json::Value::as_str) == Some("peri/oauth")
+        || is_mcp_apps_sensitive(frame)
         || contains_oauth_secret(frame)
     {
         ChildFrameDeliveryClass::SensitiveEphemeral
     } else {
         ChildFrameDeliveryClass::Replayable
     }
+}
+
+fn is_mcp_apps_sensitive(frame: &serde_json::Value) -> bool {
+    let method = frame.get("method").and_then(serde_json::Value::as_str);
+    if matches!(
+        method,
+        Some("peri/mcp/open") | Some("peri/mcp/resource") | Some("peri/mcp/app")
+    ) {
+        return true;
+    }
+    contains_apps_html(frame)
+}
+
+fn contains_apps_html(value: &serde_json::Value) -> bool {
+    // Studio 瞬时帧或 JSON-RPC result 顶层的 html 字段。
+    if value.get("html").is_some() {
+        return true;
+    }
+    if let Some(result) = value.get("result") {
+        if result.get("html").is_some() {
+            return true;
+        }
+        if mcp_app_resource_arrays_sensitive(result) {
+            return true;
+        }
+    }
+    false
+}
+
+/// MCP Apps `resources/read` 或 `peri/mcp/resource` 响应形态：仅当条目带 mcp-app MIME 或 ui:// URI。
+fn mcp_app_resource_arrays_sensitive(value: &serde_json::Value) -> bool {
+    for key in ["resources", "contents"] {
+        let Some(items) = value.get(key).and_then(serde_json::Value::as_array) else {
+            continue;
+        };
+        if items.iter().any(mcp_app_resource_item_sensitive) {
+            return true;
+        }
+    }
+    false
+}
+
+fn mcp_app_resource_item_sensitive(item: &serde_json::Value) -> bool {
+    if item.get("mimeType").and_then(serde_json::Value::as_str) == Some("text/html;profile=mcp-app")
+    {
+        return true;
+    }
+    item.get("uri")
+        .and_then(serde_json::Value::as_str)
+        .is_some_and(|uri| uri.starts_with("ui://"))
 }
 
 fn contains_oauth_secret(value: &serde_json::Value) -> bool {

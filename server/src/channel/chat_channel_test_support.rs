@@ -56,6 +56,7 @@ pub(super) async fn env() -> Env {
         instance.clone(),
         chats.clone(),
         relay,
+        sink,
         &BatchConfig::default(),
         DEFAULT_ACP_CMD.iter().map(|s| s.to_string()).collect(),
         std::time::Duration::from_secs(1),

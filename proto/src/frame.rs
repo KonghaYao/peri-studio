@@ -29,6 +29,7 @@ use crate::instance::{
     InstanceHello, InstanceKill, InstanceKillAck, InstanceProcessExit, InstanceSpawn,
     InstanceSpawnAck,
 };
+use crate::mcp_apps::{McpAppCallResultFrame, McpAppResourceFrame, McpAppSessionFrame};
 use crate::oauth::{McpOAuthAuthorizationFrame, McpOAuthFrame, McpServersFrame};
 use crate::resource::{
     InstanceResourceQuery, InstanceResourceResult, ResourceQuery, ResourceResult,
@@ -74,6 +75,9 @@ pub static FRAME_TAGS: &[FrameTag] = &[
     FrameTag("mcp_servers"),
     FrameTag("mcp_oauth"),
     FrameTag("mcp_oauth_authorization"),
+    FrameTag("mcp_app_session"),
+    FrameTag("mcp_app_resource"),
+    FrameTag("mcp_app_call_result"),
     FrameTag("rewind_candidates"),
     FrameTag("rewind_preview"),
     FrameTag("resource_query"),
@@ -200,6 +204,15 @@ pub enum Frame {
     /// S→C full-role exact-flow 瞬时授权地址响应。
     #[serde(rename = "mcp_oauth_authorization")]
     McpOAuthAuthorization(McpOAuthAuthorizationFrame),
+    /// S→C MCP App open 结果（app session 元数据，不含 HTML）。
+    #[serde(rename = "mcp_app_session")]
+    McpAppSession(McpAppSessionFrame),
+    /// S→C MCP App UI HTML（瞬时，对标 oauth authorization）。
+    #[serde(rename = "mcp_app_resource")]
+    McpAppResource(McpAppResourceFrame),
+    /// S→C MCP App `tools/call` 结果（瞬时）。
+    #[serde(rename = "mcp_app_call_result")]
+    McpAppCallResult(McpAppCallResultFrame),
     /// S→C Peri rewind 目标目录。server 已对每个预览做有界与脱敏处理。
     #[serde(rename = "rewind_candidates")]
     RewindCandidates(RewindCandidatesFrame),
@@ -285,6 +298,9 @@ impl Frame {
             Frame::McpServers(_) => FrameTag("mcp_servers"),
             Frame::McpOAuth(_) => FrameTag("mcp_oauth"),
             Frame::McpOAuthAuthorization(_) => FrameTag("mcp_oauth_authorization"),
+            Frame::McpAppSession(_) => FrameTag("mcp_app_session"),
+            Frame::McpAppResource(_) => FrameTag("mcp_app_resource"),
+            Frame::McpAppCallResult(_) => FrameTag("mcp_app_call_result"),
             Frame::RewindCandidates(_) => FrameTag("rewind_candidates"),
             Frame::RewindPreview(_) => FrameTag("rewind_preview"),
             Frame::ResourceQuery(_) => FrameTag("resource_query"),

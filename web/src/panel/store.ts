@@ -19,6 +19,13 @@ import { CatalogActions } from './lib/catalog-actions';
 import { ToastStore } from './lib/toast-store';
 import { ACK_TIMEOUT_MS, type Ack, type ActionError, type ActionFrame, type ActionOptions } from './lib/action-contract';
 import { handleMcpOAuth, handleMcpOAuthAuthorization, handleMcpServers, resetMcpState } from './lib/mcp';
+import {
+  handleMcpAppCallResult,
+  handleMcpAppResource,
+  handleMcpAppSession,
+  ownsMcpAppsError,
+  resetMcpAppsState,
+} from './lib/mcp-apps';
 import { handleRewindCandidates, handleRewindPreview, resetRewindState, rewindOwnsError } from './lib/rewind-assembly';
 import { clearPromptRecoverySelection, handlePromptStatus, promptRecoveryOwnsError, requestPromptRecovery, resetPromptRecoveryState } from './lib/prompt-recovery-assembly';
 import { connectionReady, disconnect, forgetRememberedSession, installConnection, promptMaxBytes, readRememberedSession, rememberSession, resetConnectionState, sendFrame } from './lib/connection';
@@ -225,6 +232,15 @@ function onFrame(frame: H.DownstreamFrame): void {
     case 'mcp_oauth_authorization':
       handleMcpOAuthAuthorization(frame);
       break;
+    case 'mcp_app_session':
+      handleMcpAppSession(frame);
+      break;
+    case 'mcp_app_resource':
+      handleMcpAppResource(frame);
+      break;
+    case 'mcp_app_call_result':
+      handleMcpAppCallResult(frame);
+      break;
     case 'auth_error':
       invalidateAuthentication('Access token is invalid, revoked, or the server restarted. Please sign in again.');
       break;
@@ -250,6 +266,7 @@ function onAck(ack: Ack): void {
 function onActionError(err: ActionError): void {
   if (promptRecoveryOwnsError(err)) return;
   if (rewindOwnsError(err)) return;
+  if (ownsMcpAppsError(err)) return;
   console.error(`[panel] action error code=${err.code || 'UNKNOWN'} command=${err.commandId ? 'present' : 'absent'}`);
   const messageDeliveryOwnsError = ownsMessageDeliveryError(err.commandId, err.code);
   commands.fail(err);
@@ -279,6 +296,7 @@ function clearCurrentSelection(): void {
   resetElicitationResponses();
   setRuntimeDocsState({ chat: false, control: false });
   resetMcpState();
+  resetMcpAppsState();
   resetRewindState();
   forgetRememberedSession();
 }

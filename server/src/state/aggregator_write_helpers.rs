@@ -47,6 +47,10 @@ pub(crate) fn default_tool_call() -> ToolCallProjection {
         permission_id: None,
         started_at: None,
         completed_at: None,
+        mcp_server_id: None,
+        mcp_tool_name: None,
+        mcp_resource_uri: None,
+        mcp_app_session_id: None,
     }
 }
 

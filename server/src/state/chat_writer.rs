@@ -333,6 +333,10 @@ fn proj_from_map<T: ReadTxn>(txn: &T, map: &yrs::MapRef) -> ToolCallProjection {
         permission_id: str_or("permission_id"),
         started_at: str_or("started_at"),
         completed_at: str_or("completed_at"),
+        mcp_server_id: str_or("mcp_server_id"),
+        mcp_tool_name: str_or("mcp_tool_name"),
+        mcp_resource_uri: str_or("mcp_resource_uri"),
+        mcp_app_session_id: str_or("mcp_app_session_id"),
     }
 }
 

@@ -48,6 +48,10 @@ fn mcp_oauth_actions_use_exact_camel_case_contract() {
             r#"{"t":"action","commandId":"q4","type":"mcp/oauth-cancel","payload":{"chatId":"chat-1","flowId":"flow-1"}}"#,
             "mcp/oauth-cancel",
         ),
+        (
+            r#"{"t":"action","commandId":"q5","type":"mcp/app-open","payload":{"chatId":"chat-1","toolCallId":"tool-1"}}"#,
+            "mcp/app-open",
+        ),
     ];
     for (raw, expected_type) in cases {
         let frame = Frame::parse(raw).unwrap();

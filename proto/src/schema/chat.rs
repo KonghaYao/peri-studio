@@ -134,4 +134,16 @@ pub struct ToolCallProjection {
     /// Hub 观测到的结束时间。这不是 ACP 上报的执行指标。
     #[serde(default)]
     pub completed_at: Option<String>,
+    /// MCP Apps：从 effective 名 `mcp__{serverId}__{toolName}` 拆出的 server 键。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_server_id: Option<String>,
+    /// MCP Apps：MCP 本地 tool 名（非 effective 名）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_tool_name: Option<String>,
+    /// MCP Apps：成功 open 后的 `ui://` resource URI（有界公开字段）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_resource_uri: Option<String>,
+    /// MCP Apps：当前 live app session（刷新后不复活；仅在线消费）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_app_session_id: Option<String>,
 }

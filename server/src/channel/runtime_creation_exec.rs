@@ -19,6 +19,7 @@ use chrono::Utc;
 use peri_studio_proto::ack::ErrorCode;
 use peri_studio_proto::action::ActionEnvelope;
 use peri_studio_proto::instance::InstanceSpawn;
+use crate::channel::spawn_env::default_acp_spawn_env;
 use tracing::warn;
 use uuid::Uuid;
 
@@ -139,7 +140,7 @@ impl RuntimeCreation {
             chat_id: chat_id.clone(),
             cmd: self.acp_cmd.clone(),
             cwd: cwd.clone(),
-            env: None,
+            env: default_acp_spawn_env(),
         };
         let spawn_ack = match tokio::time::timeout(
             self.spawn_timeout,

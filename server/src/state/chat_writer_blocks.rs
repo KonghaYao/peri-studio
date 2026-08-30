@@ -300,7 +300,23 @@ pub fn upsert_tool_call(
         Some(value) => cm.insert(txn, "completed_at", value.clone()),
         None => cm.insert(txn, "completed_at", yrs::Any::Null),
     };
+    insert_opt_string(txn, &cm, "mcp_server_id", tc.mcp_server_id.as_deref());
+    insert_opt_string(txn, &cm, "mcp_tool_name", tc.mcp_tool_name.as_deref());
+    insert_opt_string(txn, &cm, "mcp_resource_uri", tc.mcp_resource_uri.as_deref());
+    insert_opt_string(txn, &cm, "mcp_app_session_id", tc.mcp_app_session_id.as_deref());
     created
+}
+
+fn insert_opt_string(
+    txn: &mut TransactionCtx<'_>,
+    map: &yrs::MapRef,
+    key: &str,
+    value: Option<&str>,
+) {
+    match value {
+        Some(value) => map.insert(txn, key, value),
+        None => map.insert(txn, key, yrs::Any::Null),
+    };
 }
 
 fn tool_call_kind_str(kind: peri_studio_proto::schema::ToolCallKind) -> &'static str {

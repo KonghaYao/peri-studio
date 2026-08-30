@@ -42,6 +42,9 @@ fn client_outbound_m1_set() {
         "mcp_servers",
         "mcp_oauth",
         "mcp_oauth_authorization",
+        "mcp_app_session",
+        "mcp_app_resource",
+        "mcp_app_call_result",
         "rewind_candidates",
         "rewind_preview",
         "resource_result",
@@ -152,7 +155,7 @@ fn client_frames_rejected_on_instance_role() {
     }
 }
 
-/// action `type` 子集收窄（§9.2）：M1 共 31 种（含 workspace 管理面、
+/// action `type` 子集收窄（§9.2）：M1 共 34 种（含 workspace 管理面、
 /// session/list 按需查询、§8.5 启用的 chat/load 会话切换与 chat/session-new
 /// 当前对话内新建会话）；M3 类型白名单外。
 #[test]
@@ -189,21 +192,24 @@ fn m1_action_type_subset() {
         "mcp/oauth-start",
         "mcp/oauth-authorization",
         "mcp/oauth-cancel",
+        "mcp/app-open",
+        "mcp/app-resource",
+        "mcp/app-call",
     ] {
         assert!(m1_allows_action_type(t), "{t} 应在 M1");
     }
     for t in ["events/subscribe", "events/unsubscribe"] {
         assert!(!m1_allows_action_type(t), "{t} 应不在 M1");
     }
-    assert_eq!(crate::whitelist::M1_ACTION_TYPES.len(), 31);
+    assert_eq!(crate::whitelist::M1_ACTION_TYPES.len(), 34);
 }
 
-/// 全量注册表：36 个 tag 且与 §3.2 表一致（含 M2/M3 保留帧与
+/// 全量注册表：39 个 tag 且与 §3.2 表一致（含 M2/M3 保留帧与
 /// instance/forward 系，冲突 1 裁决）。
 #[test]
 fn frame_tag_registry_completeness() {
     let tags: Vec<&str> = crate::frame::FRAME_TAGS.iter().map(|t| t.0).collect();
-    assert_eq!(tags.len(), 36);
+    assert_eq!(tags.len(), 39);
     for expected in [
         "action",
         "action_ack",
@@ -235,6 +241,9 @@ fn frame_tag_registry_completeness() {
         "mcp_servers",
         "mcp_oauth",
         "mcp_oauth_authorization",
+        "mcp_app_session",
+        "mcp_app_resource",
+        "mcp_app_call_result",
         "rewind_candidates",
         "rewind_preview",
         "resource_query",

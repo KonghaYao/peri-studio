@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Peri Studio MCP App Sandbox</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+      iframe { border: 0; width: 100%; min-height: 120px; }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      // 异源沙箱代理：sandbox-proxy-ready ↔ sandbox-resource-ready 在本地处理；
+      // 其余 View↔Host JSON-RPC 双向透传。
+      const hostOrigin = new URLSearchParams(location.search).get('host');
+      let viewFrame = null;
+
+      const DEFAULT_CSP = [
+        "default-src 'none'",
+        "script-src 'self' 'unsafe-inline'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data:",
+        "media-src 'self' data:",
+        "connect-src 'none'",
+      ].join('; ');
+
+      function postToHost(message) {
+        if (!hostOrigin) return;
+        window.parent.postMessage(message, hostOrigin);
+      }
+
+      function injectCsp(html, csp) {
+        const meta = `<meta http-equiv="Content-Security-Policy" content="${csp.replace(/"/g, '&quot;')}">`;
+        if (/<head[^>]*>/i.test(html)) {
+          return html.replace(/<head[^>]*>/i, (head) => `${head}${meta}`);
+        }
+        return `<!DOCTYPE html><html><head>${meta}</head><body>${html}</body></html>`;
+      }
+
+      function loadView(html, csp) {
+        const iframe = document.createElement('iframe');
+        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+        iframe.srcdoc = injectCsp(html, csp || DEFAULT_CSP);
+        document.body.replaceChildren(iframe);
+        viewFrame = iframe;
+      }
+
+      window.addEventListener('message', (event) => {
+        if (!hostOrigin) return;
+
+        if (event.source === viewFrame?.contentWindow) {
+          postToHost(event.data);
+          return;
+        }
+
+        if (event.source !== window.parent || event.origin !== hostOrigin) return;
+        const data = event.data;
+        if (!data || typeof data !== 'object') return;
+
+        const method = data.method;
+        if (typeof method === 'string' && method.startsWith('ui/notifications/sandbox-')) {
+          if (method === 'ui/notifications/sandbox-resource-ready') {
+            const params = data.params || {};
+            loadView(params.html || '', params.csp);
+          }
+          return;
+        }
+
+        viewFrame?.contentWindow?.postMessage(data, location.origin);
+      });
+
+      postToHost({ jsonrpc: '2.0', method: 'ui/notifications/sandbox-proxy-ready' });
+    </script>
+  </body>
+</html>

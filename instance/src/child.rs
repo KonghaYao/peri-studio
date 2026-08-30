@@ -93,7 +93,7 @@ const OVERSIZE_LINE_LOG_INTERVAL: Duration = Duration::from_secs(5);
 
 /// 白名单基集（§9.6：默认空 = 仅继承白名单基集；hub 侧 `validate_env` 用
 /// 同一常量做双端校验）。值在 spawn 时取自 daemon 环境。
-pub(crate) const ENV_BASE_ALLOWLIST: [&str; 4] = ["PATH", "HOME", "LANG", "SHELL"];
+pub(crate) const ENV_BASE_ALLOWLIST: [&str; 5] = ["PATH", "HOME", "LANG", "SHELL", "PERI_MCP_APPS"];
 
 /// 内部共享态（spawn 返回的 [`AcpProcess`] 为 Arc 封装）。
 struct AcpInner {

@@ -275,3 +275,25 @@ pub struct McpOAuthFlowPayload {
     pub chat_id: String,
     pub flow_id: String,
 }
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct McpAppOpenPayload {
+    pub chat_id: String,
+    pub tool_call_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct McpAppResourcePayload {
+    pub chat_id: String,
+    pub app_session_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct McpAppCallPayload {
+    pub chat_id: String,
+    pub app_session_id: String,
+    pub payload: serde_json::Value,
+}

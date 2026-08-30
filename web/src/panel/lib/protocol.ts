@@ -135,6 +135,13 @@ export const mcpOAuthAuthorization = (chatId: string, flowId: string) =>
 export const mcpOAuthCancel = (chatId: string, flowId: string) =>
   action('mcp/oauth-cancel', { chatId, flowId });
 
+export const mcpAppOpen = (chatId: string, toolCallId: string) =>
+  action('mcp/app-open', { chatId, toolCallId });
+export const mcpAppResource = (chatId: string, appSessionId: string) =>
+  action('mcp/app-resource', { chatId, appSessionId });
+export const mcpAppCall = (chatId: string, appSessionId: string, payload: Record<string, unknown>) =>
+  action('mcp/app-call', { chatId, appSessionId, payload });
+
 /** §8.5 会话切换：在当前对话（其 ACP 进程）内 load 目标历史会话——
  *  不新建对话/进程（会话是进程内实体；点击 SessionList 历史会话即切换）。 */
 export const loadChat = (chatId: string, acpSessionId: string) =>
@@ -204,6 +211,9 @@ export type DownstreamFrame =
   | ({ t: 'mcp_servers' } & McpServersFrame)
   | ({ t: 'mcp_oauth' } & McpOAuthFrame)
   | ({ t: 'mcp_oauth_authorization' } & McpOAuthAuthorizationFrame)
+  | ({ t: 'mcp_app_session' } & McpAppSessionFrame)
+  | ({ t: 'mcp_app_resource' } & McpAppResourceFrame)
+  | ({ t: 'mcp_app_call_result' } & McpAppCallResultFrame)
   | { t: 'auth_error'; [key: string]: unknown }
   | ResourceResultFrame
   | { t: string; [key: string]: unknown };
@@ -269,6 +279,12 @@ function decodeKnownFrame(frame: Record<string, unknown>): DownstreamFrame | nul
       return isMcpOAuthFrame(frame) ? frame as DownstreamFrame : null;
     case 'mcp_oauth_authorization':
       return isMcpOAuthAuthorizationFrame(frame) ? frame as DownstreamFrame : null;
+    case 'mcp_app_session':
+      return isMcpAppSessionFrame(frame) ? frame as DownstreamFrame : null;
+    case 'mcp_app_resource':
+      return isMcpAppResourceFrame(frame) ? frame as DownstreamFrame : null;
+    case 'mcp_app_call_result':
+      return isMcpAppCallResultFrame(frame) ? frame as DownstreamFrame : null;
     case 'auth_error':
       return frame as DownstreamFrame;
     case 'resource_result':
@@ -356,6 +372,32 @@ export interface McpOAuthAuthorizationFrame {
   expiresAt: string;
 }
 
+export interface McpAppSessionFrame {
+  commandId: string;
+  chatId: string;
+  toolCallId: string;
+  appSessionId: string;
+  serverId: string;
+  resourceUri: string;
+}
+
+export interface McpAppResourceFrame {
+  commandId: string;
+  chatId: string;
+  appSessionId: string;
+  html: string;
+  mimeType: string;
+  csp?: string;
+}
+
+export interface McpAppCallResultFrame {
+  commandId: string;
+  chatId: string;
+  appSessionId: string;
+  result: unknown;
+}
+
+const forbiddenAppsKeys = ['invocationToken', 'ownerSessionId', 'structuredContent'];
 const forbiddenOAuthKeys = ['callbackCode', 'code', 'state', 'rawError', 'headers', 'token'];
 function hasForbiddenOAuthKeys(value: Record<string, unknown>): boolean {
   return forbiddenOAuthKeys.some((key) => key in value);
@@ -393,6 +435,41 @@ function isMcpOAuthAuthorizationFrame(frame: Record<string, unknown>): boolean {
     const loopback = url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
     return (url.protocol === 'https:' || loopback) && !url.username && !url.password && !url.hash;
   } catch { return false; }
+}
+
+function hasForbiddenAppsKeys(frame: Record<string, unknown>): boolean {
+  return forbiddenAppsKeys.some((key) => key in frame);
+}
+
+function isMcpAppSessionFrame(frame: Record<string, unknown>): boolean {
+  return !hasForbiddenAppsKeys(frame)
+    && nonEmptyString(frame.commandId)
+    && nonEmptyString(frame.chatId)
+    && nonEmptyString(frame.toolCallId)
+    && nonEmptyString(frame.appSessionId)
+    && nonEmptyString(frame.serverId)
+    && nonEmptyString(frame.resourceUri)
+    && frame.resourceUri.startsWith('ui://');
+}
+
+function isMcpAppResourceFrame(frame: Record<string, unknown>): boolean {
+  return !hasForbiddenAppsKeys(frame)
+    && nonEmptyString(frame.commandId)
+    && nonEmptyString(frame.chatId)
+    && nonEmptyString(frame.appSessionId)
+    && typeof frame.html === 'string'
+    && frame.html.length <= 1024 * 1024
+    && nonEmptyString(frame.mimeType)
+    && frame.mimeType === 'text/html;profile=mcp-app'
+    && (frame.csp == null || typeof frame.csp === 'string');
+}
+
+function isMcpAppCallResultFrame(frame: Record<string, unknown>): boolean {
+  return !hasForbiddenAppsKeys(frame)
+    && nonEmptyString(frame.commandId)
+    && nonEmptyString(frame.chatId)
+    && nonEmptyString(frame.appSessionId)
+    && 'result' in frame;
 }
 
 function isPromptStatusItem(value: unknown): value is PromptStatusItem {

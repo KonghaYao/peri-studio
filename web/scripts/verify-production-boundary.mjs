@@ -30,13 +30,13 @@ try {
     build: { outDir, emptyOutDir: true, manifest: true },
   });
   const paths = files(outDir);
-  assert.deepEqual(paths.filter((path) => path.endsWith('.html')), ['index.html']);
+  assert.deepEqual(paths.filter((path) => path.endsWith('.html')).sort(), ['index.html', 'sandbox.html']);
   const source = paths.map((path) => readFileSync(join(outDir, path), 'utf8')).join('\n');
   assert.doesNotMatch(source, /visual-fixture|State Acceptance Bench|fixture-/);
   const manifestPath = paths.find((path) => path.endsWith('manifest.json'));
   assert.ok(manifestPath, 'production manifest must exist');
   const manifest = JSON.parse(readFileSync(join(outDir, manifestPath), 'utf8'));
-  assert.deepEqual(Object.keys(manifest).filter((key) => key.endsWith('.html')), ['index.html']);
+  assert.deepEqual(Object.keys(manifest).filter((key) => key.endsWith('.html')).sort(), ['index.html', 'sandbox.html']);
   assert.ok(Object.keys(manifest).every((key) => !key.includes('visual-fixture')));
   assert.ok(productionModules.size > 0, 'production module graph must be captured');
   assert.ok([...productionModules].every((id) => !id.includes('/src/visual-fixture/')), 'production module graph must exclude fixture modules');

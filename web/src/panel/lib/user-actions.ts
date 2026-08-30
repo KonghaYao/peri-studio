@@ -28,6 +28,7 @@ import {
   retryMessageDelivery,
   startMessageDelivery,
 } from './message-delivery';
+import { tearDownMcpAppsForChat } from './mcp-apps';
 import {
   acceptRuntimeControl,
   confirmRuntimeControl,
@@ -122,6 +123,7 @@ export function sendMessage(text: string, effort?: string): boolean {
     deps!.toast('Conversation ended, cannot send messages');
     return false;
   }
+  tearDownMcpAppsForChat(chatId);
   const frame = H.prompt(chatId, text, effort);
   if (!startMessageDelivery(frame.commandId, text, sessionId, chatId, draftOwner)) {
     deps!.toast('Previous message is still being confirmed');

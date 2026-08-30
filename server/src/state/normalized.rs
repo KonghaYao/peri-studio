@@ -138,6 +138,15 @@ pub struct ToolCallPatch {
     pub created_at: Option<String>,
     #[serde(default)]
     pub completed_at: Option<String>,
+    /// MCP Apps 公开字段（从 effective 名解析；不含 HTML/token）。
+    #[serde(default)]
+    pub mcp_server_id: Option<String>,
+    #[serde(default)]
+    pub mcp_tool_name: Option<String>,
+    #[serde(default)]
+    pub mcp_resource_uri: Option<String>,
+    #[serde(default)]
+    pub mcp_app_session_id: Option<String>,
 }
 
 impl NormalizedEvent {

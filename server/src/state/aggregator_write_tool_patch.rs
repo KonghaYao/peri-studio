@@ -39,6 +39,18 @@ pub(super) fn apply_projection_patch(
     if tc.completed_at.is_none() && tool_terminal(tc.status) {
         tc.completed_at = patch.completed_at.clone();
     }
+    if patch.mcp_server_id.is_some() {
+        tc.mcp_server_id = patch.mcp_server_id.clone();
+    }
+    if patch.mcp_tool_name.is_some() {
+        tc.mcp_tool_name = patch.mcp_tool_name.clone();
+    }
+    if patch.mcp_resource_uri.is_some() {
+        tc.mcp_resource_uri = patch.mcp_resource_uri.clone();
+    }
+    if patch.mcp_app_session_id.is_some() {
+        tc.mcp_app_session_id = patch.mcp_app_session_id.clone();
+    }
 }
 
 fn apply_arguments_patch(tc: &mut ToolCallProjection, patch: &ToolJsonPatch, terminal: bool) {

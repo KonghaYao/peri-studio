@@ -31,6 +31,7 @@ pub mod conn;
 pub mod event;
 pub mod frame;
 pub mod hmac;
+pub mod mcp_apps;
 pub mod instance;
 pub mod oauth;
 pub mod protocol;
@@ -58,6 +59,10 @@ pub use oauth::{
     EphemeralAuthorizationUrl, McpConnectionStatus, McpOAuthAuthorizationFrame,
     McpOAuthEventStatus, McpOAuthFailureClass, McpOAuthFrame, McpOAuthStatus, McpServerInfo,
     McpServersFrame,
+};
+pub use mcp_apps::{
+    McpAppCallPayload, McpAppOpenPayload, McpAppResourceFrame, McpAppResourcePayload,
+    McpAppCallResultFrame, McpAppSessionFrame,
 };
 pub use resource::{ResourceQuery, ResourceResult};
 pub use rewind::{

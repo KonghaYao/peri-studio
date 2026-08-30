@@ -116,6 +116,7 @@ Web 项目模型额外遵守：一个 project → 多个 project session；一�
 | **ACP extension capability**（ACP 扩展能力） | client 在 `initialize.clientCapabilities._meta` 声明能够正确消费、agent 在 `agentCapabilities._meta` 回显确认的扩展 wire 契约；请求与协商成功不是同一事实 | available command、浏览器 feature flag |
 | **available command**（可用命令） | agent 在会话内广播、可由用户触发的命令条目；它是运行时操作目录，不代表客户端理解某种协议扩展 | capability、extension |
 | **Skill classification**（Skill 分类） | `available command` 的附加类别；`skill` 表示经 `peri.skillNames` 协商确认的 Peri 本地 Skill，`mcp_skill` 表示 MCP Skill；分类不会改变 prompt 投递语义 | extension、Skill 正文、自动执行 |
+| **MCP App**（MCP 应用 UI） | 经 `PERI_MCP_APPS` 环境开关与 `peri/mcp/open|resource|app` ACP 方法暴露的 MCP 工具内联 UI；Hub 只投影 `mcp__{serverId}__{toolName}` 公开元数据，HTML 经瞬时 `mcp_app_resource` 帧穿过、不落 Chat Doc | OAuth flow、`mcp_skill` 正文、第二套 MCP-over-WS |
 | **negotiated extension**（已协商扩展） | 同一个 ACP 连接上由 client 请求、agent 明确回显且 Hub 白名单支持的扩展能力 | requested extension、Hub 自己支持的能力 |
 | **Agent activity**（Agent 活动） | 经 `peri.agentActivity` 双向协商、在 ACP 边界脱敏后的 Peri 独占运行摘要；是有界只读状态投影 | raw `peri.agentEvent`、聊天消息、工具输出、可执行 action |
 | **Input prediction**（输入预测） | 经 `peri.prediction` 双向协商的下一条用户输入建议；Hub 只投影一个安全 placeholder，用户显式采纳后仍只是草稿 | 自动 prompt、Peri title/tag/summary action、模型输出 |

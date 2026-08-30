@@ -65,6 +65,10 @@ pub(crate) fn chat_root() -> ChatDocRoot {
             permission_id: None,
             started_at: Some("2026-08-07T00:00:00Z".into()),
             completed_at: Some("2026-08-07T00:00:01Z".into()),
+            mcp_server_id: None,
+            mcp_tool_name: None,
+            mcp_resource_uri: None,
+            mcp_app_session_id: None,
         },
     );
     ChatDocRoot {

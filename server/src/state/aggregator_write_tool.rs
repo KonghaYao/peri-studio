@@ -191,6 +191,10 @@ impl Aggregator {
                         // 回放通知不携带原始执行时间，不能用传输耗时伪造。
                         started_at: (!context.replay_active).then(|| created_at.clone()),
                         completed_at: None,
+                        mcp_server_id: None,
+                        mcp_tool_name: None,
+                        mcp_resource_uri: None,
+                        mcp_app_session_id: None,
                     }
                 };
                 chat_writer::upsert_tool_call(txn, root, &tc);
@@ -322,6 +326,10 @@ impl Aggregator {
                                 permission_id: Some(permission_id.clone()),
                                 started_at: (!context.replay_active).then(|| ev.ts.clone()),
                                 completed_at: None,
+                                mcp_server_id: None,
+                                mcp_tool_name: None,
+                                mcp_resource_uri: None,
+                                mcp_app_session_id: None,
                             }
                         })
                     });

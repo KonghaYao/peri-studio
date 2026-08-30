@@ -18,6 +18,7 @@ import type { DocStore } from './doc-store';
 import { reconcileRuntimeControl } from './runtime-control';
 import { isTerminal, isTurnActive } from './action-state';
 import { resetMcpState } from './mcp';
+import { tearDownMcpAppsForChat } from './mcp-apps';
 import { resetRewindState } from './rewind-assembly';
 import type { ChatEntry } from './chat-view';
 import type { ControlView } from './control-view';
@@ -99,6 +100,7 @@ export function selectChat(cid: string): void {
   resetElicitationResponses();
   deps!.setRuntimeDocsState({ chat: false, control: false });
   resetMcpState();
+  tearDownMcpAppsForChat(previousCid);
   resetRewindState();
 }
 

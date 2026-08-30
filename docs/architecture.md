@@ -261,6 +261,9 @@ instance 是 **dumb pipe**，但「不做协议理解」需精确化——缓冲
 | `mcp_servers` | S→C | `mcp/list` 查询回投 | 当前 runtime 安全 MCP 连接快照（无 URL/headers/raw error） |
 | `mcp_oauth` | S→C | OAuth flow 状态 | `mcp/oauth-start`/`mcp/oauth-cancel` 结果通知（§6.2 `peri.oauth`） |
 | `mcp_oauth_authorization` | S→C | 瞬时授权 URL | `mcp/oauth-authorization` 的短 TTL 回投（URL 只在线穿过，不落盘，§6.2） |
+| `mcp_app_session` | S→C | MCP App open 元数据 | `mcp/app-open` 回投（appSessionId/resourceUri；HTML 不落盘） |
+| `mcp_app_resource` | S→C | 瞬时 App HTML | `mcp/app-resource` 回投（对标 oauth authorization；不进 Yjs/SQLite/ring） |
+| `mcp_app_call_result` | S→C | App `tools/call` 结果 | `mcp/app-call` 回投（瞬时 CallToolResult） |
 | `rewind_candidates` | S→C | rewind 候选列表 | `chat/rewind-candidates` 回投（§6.2 rewind） |
 | `rewind_preview` | S→C | 影响预览 + 确认指纹 | `chat/rewind-preview` 回投（§6.2 rewind） |
 | `instance.*` | S↔M | instance 协议帧（§4.5） | server ↔ instance 专用（hello/heartbeat/event/buffer_sync/spawn/kill/forward/spawn_ack/kill_ack/forward_ack/process_exit） |
@@ -1146,7 +1149,7 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 
 `instance/spawn` 的 `env` 参数（客户端 `chat/create` 可间接传递）**不开放任意键**：
 
-- server 维护 **env 白名单**（默认空 = 仅继承白名单基集，如 `PATH`/`HOME`/`LANG`；配置可增补键名，§16）；
+- server 维护 **env 白名单**（默认空 = 仅继承白名单基集，如 `PATH`/`HOME`/`LANG`/`SHELL`；Hub 对 ACP spawn **固定注入** `PERI_MCP_APPS=`（空串启用 MCP Apps relay）；配置可增补键名，§16）；
 - 白名单外的键一律拒绝（`INVALID_STATE` 错误，非静默丢弃）——防止经 env 注入 `PERI_*`/`LD_PRELOAD` 等敏感覆盖；
 - 白名单仅约束键名，值仍按 §9.3 不可信输入校验（长度上限、编码）；
 - instance 侧对 spawn 指令携带的 env 再校验一次白名单（双端校验，防 server 配置漂移）。

@@ -61,8 +61,13 @@ impl CommandCoordinator {
                 | ActionEnvelope::McpOAuthStart { .. }
                 | ActionEnvelope::McpOAuthAuthorization { .. }
                 | ActionEnvelope::McpOAuthCancel { .. }
+                | ActionEnvelope::McpAppOpen { .. }
+                | ActionEnvelope::McpAppResource { .. }
+                | ActionEnvelope::McpAppCall { .. }
         ) {
-            return self.exec_mcp_control(&action, tx, command_id_str).await;
+            return self
+                .exec_mcp_control(&action, tx, command_id_str, !ctx.can_send_action())
+                .await;
         }
 
         if let ActionEnvelope::ConfigSet { payload, .. } = &action {
@@ -199,6 +204,7 @@ impl CommandCoordinator {
         action: &ActionEnvelope,
         tx: mpsc::Sender<OutboundMsg>,
         command_id: &str,
+        read_only: bool,
     ) -> SubmitAck {
         let result = match action {
             ActionEnvelope::McpList { payload, .. } => {
@@ -218,6 +224,24 @@ impl CommandCoordinator {
             }
             ActionEnvelope::McpOAuthCancel { payload, .. } => {
                 self.inner.mcp_control.cancel(command_id, payload, tx).await
+            }
+            ActionEnvelope::McpAppOpen { payload, .. } => {
+                self.inner
+                    .mcp_apps_control
+                    .open(command_id, payload, tx, read_only)
+                    .await
+            }
+            ActionEnvelope::McpAppResource { payload, .. } => {
+                self.inner
+                    .mcp_apps_control
+                    .resource(command_id, payload, tx, read_only)
+                    .await
+            }
+            ActionEnvelope::McpAppCall { payload, .. } => {
+                self.inner
+                    .mcp_apps_control
+                    .call(command_id, payload, tx, read_only)
+                    .await
             }
             _ => unreachable!("dispatch guarantees MCP control action"),
         };

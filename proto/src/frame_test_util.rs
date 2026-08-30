@@ -6,7 +6,8 @@ use std::collections::HashMap;
 use crate::ack::{AckStatus, ActionAck, ActionError, ErrorCode};
 use crate::action::{
     ActionEnvelope, CancelChatPayload, CloseChatPayload, ConfigSetPayload, CreateChatPayload,
-    ElicitationAnswer, ElicitationResponseAction, LoadChatPayload, PermissionDecision,
+    ElicitationAnswer, ElicitationResponseAction, LoadChatPayload, McpAppCallPayload,
+    McpAppOpenPayload, McpAppResourcePayload, PermissionDecision,
     PersistedSessionCreatePayload, PersistedSessionImportPayload, PersistedSessionOpenPayload,
     PersistedSessionRenamePayload, ProjectArchivePayload, ProjectCreatePayload,
     ProjectRenamePayload, PromptChatPayload, ResolvePermissionPayload, RespondElicitationPayload,
@@ -18,6 +19,9 @@ use crate::frame::Frame;
 use crate::instance::{
     BufferedFrame, InstanceBufferSync, InstanceEvent, InstanceHeartbeat, InstanceHello,
     InstanceKill, InstanceKillAck, InstanceProcessExit, InstanceSpawn, InstanceSpawnAck,
+};
+use crate::mcp_apps::{
+    McpAppCallResultFrame, McpAppResourceFrame, McpAppSessionFrame,
 };
 use crate::oauth::{
     EphemeralAuthorizationUrl, McpConnectionStatus, McpOAuthAuthorizationFrame,
@@ -278,6 +282,55 @@ pub(crate) fn all_frames() -> Vec<Frame> {
                 "https://auth.example.test/authorize?state=opaque".into(),
             ),
             expires_at: "2026-08-15T00:00:30Z".into(),
+        }),
+        Frame::McpAppSession(McpAppSessionFrame {
+            command_id: "mcp-app-open-1".into(),
+            chat_id: "s1".into(),
+            tool_call_id: "tool-1".into(),
+            app_session_id: "app-1".into(),
+            server_id: "fixture".into(),
+            resource_uri: "ui://fixture/dashboard".into(),
+        }),
+        Frame::McpAppResource(McpAppResourceFrame {
+            command_id: "mcp-app-resource-1".into(),
+            chat_id: "s1".into(),
+            app_session_id: "app-1".into(),
+            html: "<html><body>app</body></html>".into(),
+            mime_type: "text/html;profile=mcp-app".into(),
+            csp: Some("default-src 'none'".into()),
+        }),
+        Frame::McpAppCallResult(McpAppCallResultFrame {
+            command_id: "mcp-app-call-1".into(),
+            chat_id: "s1".into(),
+            app_session_id: "app-1".into(),
+            result: serde_json::json!({"content": [{"type": "text", "text": "ok"}]}),
+        }),
+        Frame::Action(ActionEnvelope::McpAppOpen {
+            command_id: "mcp-app-open-action".into(),
+            payload: McpAppOpenPayload {
+                chat_id: "s1".into(),
+                tool_call_id: "tool-1".into(),
+            },
+        }),
+        Frame::Action(ActionEnvelope::McpAppResource {
+            command_id: "mcp-app-resource-action".into(),
+            payload: McpAppResourcePayload {
+                chat_id: "s1".into(),
+                app_session_id: "app-1".into(),
+            },
+        }),
+        Frame::Action(ActionEnvelope::McpAppCall {
+            command_id: "mcp-app-call-action".into(),
+            payload: McpAppCallPayload {
+                chat_id: "s1".into(),
+                app_session_id: "app-1".into(),
+                payload: serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "tools/call",
+                    "params": {"name": "refresh", "arguments": {}}
+                }),
+            },
         }),
         Frame::RewindCandidates(RewindCandidatesFrame {
             command_id: "rewind-candidates-1".into(),

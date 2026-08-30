@@ -58,6 +58,7 @@ impl CommandCoordinator {
 
     /// Execute one prompt through the dedicated durable delivery module.
     pub(super) async fn run_prompt_delivery(&self, chat_id: &str, cmd: &ExecCmd) {
+        self.inner.mcp_apps_control.tear_down_chat(chat_id).await;
         let command_id_text = extract_command_id(&cmd.action).unwrap_or_default();
         let command_id = match Uuid::parse_str(&command_id_text) {
             Ok(command_id) => command_id,
@@ -103,6 +104,7 @@ impl CommandCoordinator {
     }
     /// Cancel through a durable writer-acknowledged notification lifecycle.
     pub(super) async fn exec_cancel(&self, chat_id: &str, cmd: &ExecCmd) {
+        self.inner.mcp_apps_control.tear_down_chat(chat_id).await;
         let command_id_text = extract_command_id(&cmd.action).unwrap_or_default();
         let command_id = match Uuid::parse_str(&command_id_text) {
             Ok(command_id) => command_id,
@@ -149,6 +151,7 @@ impl CommandCoordinator {
     }
     /// close 执行（§4.3「关闭并 kill 对应 ACP 进程」；offline 语义 §7.6）。
     pub(super) async fn exec_close(&self, chat_id: &str, cmd: &ExecCmd) {
+        self.inner.mcp_apps_control.tear_down_chat(chat_id).await;
         let command_id_str = extract_command_id(&cmd.action).unwrap_or_default();
         let command_id = match Uuid::parse_str(&command_id_str) {
             Ok(id) => id,

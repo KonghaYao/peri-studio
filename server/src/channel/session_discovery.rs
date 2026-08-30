@@ -9,6 +9,7 @@ use std::sync::{Arc, Mutex as StdMutex};
 use std::time::Duration;
 
 use peri_studio_proto::instance::{InstanceKill, InstanceSpawn};
+use crate::channel::spawn_env::default_acp_spawn_env;
 use thiserror::Error;
 use tokio::sync::RwLock;
 use tracing::warn;
@@ -178,7 +179,7 @@ impl SessionDiscovery {
             chat_id: chat_id.to_string(),
             cmd: self.acp_cmd.clone(),
             cwd: cwd.to_string(),
-            env: None,
+            env: default_acp_spawn_env(),
         };
         match tokio::time::timeout(
             self.spawn_timeout,
