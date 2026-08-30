@@ -52,6 +52,7 @@ date: 2026-08-30
 
 ### P2-C · Resource + Git
 - `widgets/resource/*` ← FileTree、FilePreview、SCM 树、GitGraphPanel（大面板）、Workbench 布局
+- **Git Graph 数据面**（非 UI）：wire 与投影契约见 [`git-graph-protocol.md`](git-graph-protocol.md)；视觉已落地，待接 `git-log-page` 替换 mock
 
 ### P2-D · Decision + Status
 - Questions/Permissions `DecisionCard`、Status area

@@ -13,6 +13,7 @@
 | **Web 目录、分层、依赖方向、新代码放哪** | **`docs/design/frontend-architecture.md`（权威）** |
 | **Web 视觉、token、组件、微文案、a11y** | **`docs/design/ui-specification.md`（权威）** |
 | **设计稿 → 生产落地计划与映射表** | **`docs/design/ui-implementation-plan.md`** |
+| **Git Graph 数据面（machine → server → web）** | **`docs/design/git-graph-protocol.md`（权威）** |
 | Web 分层 ADR | `docs/adr/0004-web-frontend-layered-architecture.md` |
 | MCP Apps 宿主 | `docs/design/mcp-apps-host.md` |
 
