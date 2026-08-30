@@ -1,6 +1,6 @@
 # Peri Studio 术语集合（定制版）
 
-> 状态：v1.2 定稿（2026-08-21，单二进制运行模型）
+> 状态：v1.3 定稿（2026-08-30，SSH 机器挂载产品面）
 > 定位：本仓库**唯一权威术语表**。代码标识符、ws 协议帧、磁盘持久化格式、
 > 文档一律以本表为准。旧术语仅在「历史数据/迁移说明」中出现。
 > 原则：**session 一词特指 ACP 进程内的会话**，其余原 session 概念全部更名。
@@ -33,6 +33,23 @@ Web 项目模型额外遵守：一个 project → 多个 project session；一�
 | **local 模式** | 在同一台机器启动 server 角色，再以同一可执行文件启动独立 instance 进程，通过真实 `/instance` ws + HMAC 回连 | 绕过网络协议的进程内直调 |
 | **connect 模式** | 只启动 instance 角色，连接用户明确指定的 server URL | 打开 Web 面板；新建 server |
 | **Web 面板** | 由 server 托管内嵌静态资产、在浏览器运行的视图客户端 | `connect` 模式；instance |
+
+### 1.2 机器管理（产品面）
+
+协议与代码身份仍是 `instance_id`，禁止复活 `machine_id`。以下只用于 Web 文案、
+设计文档与 SQLite `machines` 表的产品语义。可开工契约见
+[`docs/design/ssh-machine-mount.md`](design/ssh-machine-mount.md) 与
+[ADR-0002](adr/0002-ssh-machine-provisioner.md)。
+
+| 术语 | 定义 | 不是 |
+| --- | --- | --- |
+| **machine**（机器） | 用户可管理的一台能运行 ACP 的计算机；SQLite `machines` 行 + 可选 live instance | 第四种与 `instance_id` 并列的协议身份；浏览器里的 SSH 会话 |
+| **This computer** | `instance_id = "local"` 的本机 instance | 可 SSH 添加或移除的条目；协议副标题 `local` 不得作为产品文案 |
+| **SSH / remote computer** | `kind = ssh` 的记录 | 手工 `connect <公网 URL>` 的另一种协议 |
+| **供应管道** | 探测/安装 peri-studio、签发 token、建立反向隧道、等待 hello | UI 动词 Mount；SSHFS |
+| **Disconnect tunnel** | 只拆本机 `ssh -R` | 停远端 ACP |
+| **Stop agents** | 经 SSH exec 关闭远端 connect 并结束 ACP | 只拆隧道 |
+| **machine record** | SQLite 挂载意图（目标、展示名、phase），离线仍保留 | InstanceRegistry 的 hello 条目（仅 live） |
 
 在指代产品运行角色时，“client”一词不得单独使用：它可能指 Web 面板，也可能
 指以 WebSocket 主动连接 server 的 instance。必须使用“Web 面板”或“instance
@@ -73,6 +90,7 @@ Web 项目模型额外遵守：一个 project → 多个 project session；一�
 | registry.log `machines` map / `machine_id` 字段 | `instances` map / `instance_id` 字段 |
 | `machine.token` 文件 | `instance.token` |
 | `tokens.toml` 中 `role = "machine"` | `role = "instance"` |
+| （无；v2.16） | `machines` 表：SSH 挂载意图；PK 仍为 `instance_id`，不是 `machine_id` |
 
 ### 2.4 工程/部署
 
@@ -106,8 +124,11 @@ Web 项目模型额外遵守：一个 project → 多个 project session；一�
 - `chat_id`：server 容器 UUID（原 session_id）；`chats/` 目录、`chat:` Doc 前缀
 - `session_id`：ACP 进程内会话（原 acp_session_id 所指）；仅 ACP 侧代码允许
 - `project_session_id`：SQLite/Registry 中的持久 Web 会话身份；wire action/ack 为兼容 Web API 使用 `sessionId`
-- `instance_id`：ws 注册的 machine（原 machine_id）
-- UI 中文文案：会话列表 → **对话**列表；机器 → **实例**
+- `instance_id`：ws 注册的 instance（原 machine_id）；`local` 为本机，SSH 挂载为 `ssh_<ulid>`
+- UI 中文文案：会话列表 → **对话**列表；已 hello 的运行角色 → **实例**
+- Web 英文管理页标题与页签：**Machines**（侧栏入口须带可见短标签，不是帮助图标）；
+  动词为 Add computer / Connect / Disconnect tunnel / Stop agents / Remove from Peri。
+  协议身份 `instance_id` 放溢出 Copy ID，不得当副标题，不得改成 `machine_id`
 
 ## 5. ACP 能力语言
 

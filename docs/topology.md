@@ -73,6 +73,7 @@ flowchart TB
 - **连接方向**：instance **主动 outbound** 连接 server（`ws://127.0.0.1:8456/instance`，NAT 友好、server 零入站依赖）；浏览器经同源 HTTP/ws 连接 server（静态面板 + `/api` 端点）。
 - **发布物 ≠ 故障域**：发布包仅有 `peri-studio`，但 local 的 server 与 instance 是两个 OS 进程。server crash 不得级联终止 instance/ACP。
 - **本地与远程同路**：默认/`local` 和 `serve --local` 拉起同一二进制的 `connect` 子进程；不设进程内快速路径，同样经过 `/instance` ws、版本校验、HMAC、重连与补推。
+- **SSH 挂载（可开工，实现未开始）**：远端 instance 仍 outbound 连 `/instance`；`app/` 经 OpenSSH 反向隧道把远端 `127.0.0.1` 转到 server listener。SSH 不是第二套 instance 传输。全局 Restarting 只等 local。见 `docs/design/ssh-machine-mount.md` 与 ADR-0002。
 - **单 ws 多路复用**：server ↔ instance、server ↔ 浏览器均为单连接按 `Frame` 枚举区分控制帧（Action/Ack）与状态帧（y-sync），见 `architecture.md §4`。
 - **instance 是 dumb pipe**：不解析事件语义、不聚合、不落盘业务状态，只做 sessionId 提取、按 chat 分桶 + seq、进程管理与断线缓冲（`architecture.md §3.3`）。
 - **规范化只在 server 侧**：`protocol::ACPChannel` 把 ACP 原始事件流规范化为 `NormalizedEvent`，经 `state` 层投影到 Y.Doc 视图。
@@ -82,9 +83,9 @@ flowchart TB
 
 | 目录 | 角色 | 形态 | 关键职责 | 对外接口 |
 | --- | --- | --- | --- | --- |
-| `app/` | `peri-studio` | **唯一发布二进制** | CLI 角色选择、信号/就绪契约、local 子进程监督 | `local`、`serve [--local]`、`connect <URL>`、`token`、`status` |
+| `app/` | `peri-studio` | **唯一发布二进制** | CLI 角色选择、信号/就绪契约、local 子进程监督、【v2.16】SshBackend | `local`、`serve [--local]`、`connect <URL>`、`token`、`status` |
 | `proto/` | `peri-studio-proto` | 纯协议 crate（无异步依赖） | 帧模型、Action/Ack 信封、instance 协议 9 帧、连接生命周期、y-sync envelope、M1 帧集白名单、HMAC 双向认证原语、Y.Doc schema 类型镜像 | server / instance 编译期共享 |
-| `server/` | server 角色库 | 运行时模块 | 认证/授权、控制面（Hub）、ACPChannel 规范化、Y.Doc 聚合投影、命令协调（mcp/oauth/prompt/rewind）、唯一持久化 `metadata.sqlite3`、内嵌 Web 面板 | ws `/`（浏览器）、ws `/instance`（instance）、HTTP `/api/health`、`/api/auth/session` |
+| `server/` | server 角色库 | 运行时模块 | 认证/授权、控制面（Hub）、ACPChannel 规范化、Y.Doc 聚合投影、命令协调（mcp/oauth/prompt/rewind）、唯一业务权威 `metadata.sqlite3`、内嵌 Web 面板、【v2.16】MachineService | ws `/`（浏览器）、ws `/instance`（instance）、HTTP `/api/health`、`/api/auth/session` |
 | `instance/` | instance 角色库 | 运行时模块 | outbound 连 server、收 spawn/kill 指令、管理 ACP 进程树（进程组信号）、透明转发 + 断线缓冲 + 补推、心跳 | ws outbound `/instance`；stdio 对接 ACP 进程 |
 | `web/` | Web 面板 | 前端源码（Vite + SolidJS + TS，Bun 构建） | 面板 UI；构建产物 `dist/` 内嵌进 `peri-studio`，只消费 server 事实 | 仅经 server 角色暴露 |
 | `deploy/` | 部署模板 | systemd unit / launchd plist / logrotate 配置 | 同一可执行文件以两个 service 分别托管 `serve` 与 `connect`，保持故障隔离 | 面向运维，不内嵌 token |

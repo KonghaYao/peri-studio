@@ -1,10 +1,10 @@
 # Peri Studio 架构设计（权威版）
 
-> 状态：v2.15（ACP 工具证据无损规范化 + 单调生命周期 + 权威工具类型）
-> 日期：2026-08-27
+> 状态：v2.16（SSH 机器挂载可开工契约；实现未开始）
+> 日期：2026-08-30
 > 定位：peri-studio 独立项目的架构基准文档。与 peri 的唯一耦合点是 ACP 进程（协议线格式），本设计不依赖 peri 的任何 crate 与部署形态。
-> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界；v2.9 令 Web 权限裁决回传 Control Doc 投影的精确 ACP `optionId`，并在恢复证据与交付边界校验 ID 和 scope；v2.10 增加权限期限的可见倒计时与浏览器 fail-close 门控；v2.11 统一权限与询问队列的领域身份选择和删除回退；v2.12 为一次性 elicitation 回答增加不可重放的刷新与本地隐藏恢复面；v2.13 为移动端 FS/Git 预览增加稳定来源身份与编辑器焦点往返；v2.14 完成有序 Chat blocks、回放信任标签、按 session 消息投递、协商 prompt 字节预算、principal 作用域持久草稿、权限输入证据、资源租约/代际与高对比浏览器矩阵；v2.15 将 ACP 工具 kind、content、locations、raw output 与 content chunk 统一为有界 tri-state patch，允许终态后只补证据但不重开生命周期，并令 turn 终态收敛全部消息分段和非终态工具。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
-> 约定：引用 chat-channel 处标注其文档章节号（如「chat §5.2」），实现时以该仓库为对照基线。协议事实（帧 tag、action 面、schema 版本、默认值）以 `peri-studio-proto` / `server/src/config` 实现为真相来源，本文与实现不一致时以实现为准并回改本文。
+> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界；v2.9 令 Web 权限裁决回传 Control Doc 投影的精确 ACP `optionId`，并在恢复证据与交付边界校验 ID 和 scope；v2.10 增加权限期限的可见倒计时与浏览器 fail-close 门控；v2.11 统一权限与询问队列的领域身份选择和删除回退；v2.12 为一次性 elicitation 回答增加不可重放的刷新与本地隐藏恢复面；v2.13 为移动端 FS/Git 预览增加稳定来源身份与编辑器焦点往返；v2.14 完成有序 Chat blocks、回放信任标签、按 session 消息投递、协商 prompt 字节预算、principal 作用域持久草稿、权限输入证据、资源租约/代际与高对比浏览器矩阵；v2.15 将 ACP 工具 kind、content、locations、raw output 与 content chunk 统一为有界 tri-state patch，允许终态后只补证据但不重开生命周期，并令 turn 终态收敛全部消息分段和非终态工具；**v2.16 将 M2 跨机接入定为 SSH 供应器 + 反向隧道（对抗审查后可开工：SSH 不进全局 Restarting、Disconnect≠Stop、监督在 app/）**（见 §3.1、§8.3 步骤 5a 与 [ssh-machine-mount.md](design/ssh-machine-mount.md)，[ADR-0002](adr/0002-ssh-machine-provisioner.md)）。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
+> 约定：引用 chat-channel 处标注其文档章节号（如「chat §5.2」），实现时以该仓库为对照基线。协议事实（帧 tag、action 面、schema 版本、默认值）以 `peri-studio-proto` / `server/src/config` 实现为真相来源，本文与实现不一致时以实现为准并回改本文。【v2.16】`machine/*` 在进入 proto+whitelist 之前，以 [ssh-machine-mount.md](design/ssh-machine-mount.md) 为开工契约，禁止只改文档不改白名单。
 
 ---
 
@@ -42,7 +42,7 @@
 |---|------|---------|
 | P1 | 视图客户端崩溃/重启不影响正在运行的 agent | 关闭/刷新 Web 面板后 agent 继续跑完，重开面板秒级恢复视图【v2.6：视图层 = Web 面板】 |
 | P2 | 多客户端可同时 attach 同一 server | 两个浏览器面板看到一致状态；任一面板可发控制指令 |
-| P3 | server 崩溃/重启不中断 agent | 重启 server 后 instance 自动重连，agent 产出**在缓冲有界承诺内不丢**（缓冲上限内不丢；超限按 §8.5 丢弃策略丢弃并以 gap 呈现，不假装完整）【顾问：P0-3】 |
+| P3 | server 崩溃/重启不中断 agent | 重启 server 后 **其控制面仍由本进程监督的** instance 自动重连，agent 产出**在缓冲有界承诺内不丢**（缓冲上限内不丢；超限按 §8.5 丢弃策略丢弃并以 gap 呈现，不假装完整）【顾问：P0-3】【v2.16】SSH 机器的控制面是本机 `ssh -R`，随 studio 进程退出；远端 ACP 不被 SIGKILL。全局 Restarting 只等待 `local`。已 Trust 的 SSH 机器在 Healthy **之后** best-effort 重建隧道（可关）。接上之前允许 interrupted 与缓冲溢出。见 [ssh-machine-mount.md](design/ssh-machine-mount.md) §4–§5 |
 | P4 | instance 断线时活动 turn 明确中断，chat 可恢复 | 断线瞬间活动 turn 呈现 `interrupted`；补推完成后 chat 恢复可用、可开新 turn（见 §7.3 分区恢复裁决） |
 | P5 | 新建 chat 显式指定 instance（默认本机） | 路由可预测、可调试 |
 | P6 | 客户端操作（发消息/cancel/新建/关闭）有请求-响应确认 | 两阶段 Ack（accepted→committed），失败有稳定错误码，不静默 |
@@ -184,6 +184,7 @@ Composer 草稿由独立 IndexedDB store 以 `{principalId,projectId,project_ses
 - **浏览器认证走同源 HTTP**：`/api/auth/session` 建立 HttpOnly cookie 会话后升 ws（§3.0 浏览器认证契约），与 instance 的 HMAC 双向认证（§9.2）是两条独立认证路径。
 - **一个发布物，两个进程角色**：默认命令/`local` 与 `serve --local` 在 server 就绪后，以 `current_exe` 拉起独立 `connect` 子进程。不得改为进程内 instance task，否则 server crash 会同时中断 ACP，违反 P3。
 - **本地/远程同路**：本地 instance 也必须走 `/instance` ws、版本校验、HMAC 和补推协议；禁止增加仅本地可用的直调 adapter。
+- **SSH 挂载（v2.16 可开工，实现未开始）**：SSH 只做探测、安装/对齐二进制、落盘 instance token、以及本机 `ssh -R` 隧道。远端仍 `connect ws://127.0.0.1:<allocated>/instance`（无 `--allow-insecure`）。OpenSSH 由 **`app/` `SshBackend`** 监督并随 studio 退出；`server/` 禁止 spawn ssh。`kind=ssh` 的 instance **不得**进入全局 `recovery_instances`。已 Trust 且 `auto_reconnect` 的行在 Healthy 之后自动重建隧道。浏览器不持有私钥、不收集口令。Web 动词为 Add computer / Connect / Disconnect tunnel / Stop agents / Remove from Peri。权威契约见 [ssh-machine-mount.md](design/ssh-machine-mount.md)；[ADR-0002](adr/0002-ssh-machine-provisioner.md)。
 
 ### 3.2 模块与单二进制
 
@@ -191,8 +192,8 @@ Composer 草稿由独立 IndexedDB store 以 `{principalId,projectId,project_ses
 
 | 模块 / 角色 | crate / 位置 | 职责 | 备注 |
 |--------|------|------|------|
-| `peri-studio` 应用 | `app/` | 唯一 CLI 与发布入口；选择 `local`/`serve`/`connect`，持有信号、就绪与子进程监督契约 | 发布包仅有 `bin/peri-studio`；默认命令 = `local` |
-| server 角色 | `server/`（库） | 认证、HTTP 面与静态托管、控制面、ACPChannel 规范化、聚合器、DocManager、instance 注册表、SQLite 元数据 | `peri-studio serve`；`--local` 要求同时拉起本地 instance |
+| `peri-studio` 应用 | `app/` | 唯一 CLI 与发布入口；选择 `local`/`serve`/`connect`；持有信号、就绪、本地 `connect` 监督与【v2.16】`SshBackend`（OpenSSH 隧道，随 studio 退出） | 发布包仅有 `bin/peri-studio`；默认命令 = `local`；server 库禁止 spawn ssh |
+| server 角色 | `server/`（库） | 认证、HTTP 面与静态托管、控制面、ACPChannel 规范化、聚合器、DocManager、instance 注册表、SQLite 元数据、【v2.16】`MachineService` | `peri-studio serve`；`--local` 要求同时拉起本地 instance |
 | instance 角色 | `instance/`（库） | outbound 连 server（`/instance`）、收 spawn/kill/forward 指令、管理 ACP 进程树、透明转发 + 断线缓冲 | `peri-studio connect <URL>`；child 进程组 + fingerprint 孤儿清理（§3.3） |
 | Web 面板 | `web/`（`src/panel` + `src/components/ui`） | SolidJS 视图层：yjs 只读投影渲染 + Action/Ack 操作；`src/components/ui` 为可复用组件库 | 构建产物经 Vite 生成 `web/dist`，**不单独部署**；原规划 `peri-studio-tui` 未实现 |
 
@@ -262,7 +263,7 @@ instance 是 **dumb pipe**，但「不做协议理解」需精确化——缓冲
 | `mcp_oauth` | S→C | OAuth flow 状态 | `mcp/oauth-start`/`mcp/oauth-cancel` 结果通知（§6.2 `peri.oauth`） |
 | `mcp_oauth_authorization` | S→C | 瞬时授权 URL | `mcp/oauth-authorization` 的短 TTL 回投（URL 只在线穿过，不落盘，§6.2） |
 | `mcp_app_session` | S→C | MCP App open 元数据 | `mcp/app-open` 回投（appSessionId/resourceUri；HTML 不落盘） |
-| `mcp_app_resource` | S→C | 瞬时 App HTML | `mcp/app-resource` 回投（对标 oauth authorization；不进 Yjs/SQLite/ring） |
+| `mcp_app_resource` | S→C | 瞬时 App HTML + 可选首屏 CallToolResult | `mcp/app-resource` 回投（对标 oauth authorization；不进 Yjs/SQLite/ring；`toolResult` 嵌套 `structuredContent`，禁止顶层键） |
 | `mcp_app_call_result` | S→C | App `tools/call` 结果 | `mcp/app-call` 回投（瞬时 CallToolResult） |
 | `rewind_candidates` | S→C | rewind 候选列表 | `chat/rewind-candidates` 回投（§6.2 rewind） |
 | `rewind_preview` | S→C | 影响预览 + 确认指纹 | `chat/rewind-preview` 回投（§6.2 rewind） |
@@ -305,7 +306,7 @@ Action 方法面（Server 对客户端；【v2.6】按 `proto` crate `ActionEnve
 
 | type | payload | 说明 |
 |------|---------|------|
-| `project/create` | `{ name?, cwd, instance_id? }` | 创建持久化 project（workspace 的后继） |
+| `project/create` | `{ name?, cwd, instance_id? }` | 创建持久化 project。`cwd` 是 **该 instance 上的路径**。绑定 `kind=ssh` 时 `instance_id` 必填且该 instance 必须 Online；缺省仍表示 `local`（兼容）。SSH 目标禁止使用本机目录选择器 |
 | `project/archive` / `project/restore` | `{ project_id }` | project 的可逆归档/恢复（`archived_at`） |
 | `project/rename` | `{ project_id, name }` | 只更新展示名，不改变 id/cwd/instance binding |
 | `session/create` | `{ project_id, ... }` | 在 project 下创建持久化 logical session 并激活 ACP runtime |
@@ -315,6 +316,22 @@ Action 方法面（Server 对客户端；【v2.6】按 `proto` crate `ActionEnve
 | `session/import` | `{ sessionId?, project_id, acp_session_id, ... }` | 将 ACP 历史会话显式加入某 project 的持久侧边栏 |
 | `session/discover` | `{ project_id }` | 刷新某 project 的 ACP 历史会话候选（冷启动入口，§3.0 discovery） |
 | `session/prompt-status` | `{ sessionId }` | 读取持久 logical session 的安全 prompt delivery 摘要（§5.3.1） |
+
+**machine 域**（【v2.16 可开工，实现未开始】SQLite `machines` 权威；live 连接仍只来自 hello。`committed` 与 `project/*` 同为 SQLite+Registry 屏障，**不是** ACP stdin。域错误在投影 `machines.errorCode`；wire `action_error.code` **只**用 §4.4 既有 `ErrorCode`。完整契约见 [ssh-machine-mount.md](design/ssh-machine-mount.md)。**本表与 `ActionEnvelope`+whitelist 必须同 PR 落地。**）：
+
+| type | payload | 说明 |
+|------|---------|------|
+| `machine/add` | `{ destination, displayName?, port?, identityFile? }` | 未归档 destination+port 唯一；`committed` 带 `instanceId`，不表示 Online |
+| `machine/connect` | `{ instanceId }` | 重建 `-R :0` 隧道；远端已有 owner lock 则不得再 start |
+| `machine/disconnect` | `{ instanceId }` | 只拆本机隧道；远端 connect/ACP 保留 |
+| `machine/stop` | `{ instanceId }` | SSH exec owner shutdown + kill ACP；结果不清 → `DELIVERY_UNKNOWN` |
+| `machine/cancel` | `{ instanceId }` | 未 start 则停管道；已 start → `DELIVERY_UNKNOWN` |
+| `machine/retry` | `{ instanceId }` | 仅 `failed`；新 commandId；同 `instance_id` |
+| `machine/trust-host` | `{ instanceId, fingerprint }` | 与 pending 指纹逐字节相等后写入 Peri known_hosts |
+| `machine/rename` | `{ instanceId, name }` | 展示名 |
+| `machine/set-auto-reconnect` | `{ instanceId, enabled }` | 默认 true；false 则 studio 启动不自动建隧道 |
+| `machine/remove` | `{ instanceId }` | 必须已 Stop 且无非终态 runtime；然后归档并吊销 token |
+| `machine/restore` | `{ instanceId }` | 墓碑恢复同一 `instance_id` 并新签发 token |
 
 **权限 / 追问 / 查询 / MCP / 兼容域**：
 
@@ -340,7 +357,12 @@ Action 方法面（Server 对客户端；【v2.6】按 `proto` crate `ActionEnve
 
 ### 4.4 Ack 与错误码
 
-参照 chat §7.1：`accepted` 只表示进入有界处理队列，`committed` 才表示业务事实已建立（**命令已写入 ACP stdin 且 ACP 已确认接收**；无持久化屏障，见 §8.4）。
+参照 chat §7.1：`accepted` 只表示进入有界处理队列。`committed` 的业务事实因域而异：
+
+- **chat / ACP 域**（prompt、spawn 路径上的 session/new 等）：命令已写入 ACP stdin 且 ACP 已确认接收（无投影落盘屏障，见 §8.4）。
+- **元数据域**（`project/*`、持久 `session/*` 目录、【v2.16】`machine/*` 的 admit/rename/remove 等）：SQLite 提交与 Registry 投影屏障已越过。`machine/add` 的 committed **不**表示远端 instance Online；管道进度只走 `machines.phase`。
+
+越过非幂等外部副作用（远端 `connect` start、ACP stdin）且无法证明未发生时，仍必须 `DELIVERY_UNKNOWN`，禁止自动重放。
 
 ```jsonc
 // action_ack
@@ -668,20 +690,22 @@ struct PermissionProjection {
 
 ### 5.5 Registry Doc schema（peri-studio 特有）
 
-【v2.6】schema v2（`REGISTRY_DOC_SCHEMA_VERSION = 2`）：在 v1 基础上增加 `projects` / `project_sessions` / `workspaces`（SQLite 的只读广播投影，§3.0）：
+【v2.6】schema v2：`projects` / `project_sessions` / `workspaces`。【v2.16】schema v3 增加 `machines`（SQLite 挂载意图的只读广播；`instances` 仍只反映 live hello/心跳）。旧客户端忽略未知键。
 
 ```rust
 struct RegistryDocRoot {
-    schema_version: u32,           // = 2
+    schema_version: u32,           // = 3（v2.16；实现前代码仍为 2）
     instances: Map<String, InstanceView>,   // id/hostname/status(online|offline|unknown)/token_id
                                           // /registered_at/last_heartbeat/chat_count
-    chats: Map<String, ChatSummary>,// 活跃 chat 摘要（id/instance_id/title/status/gap/updated_at）
-                                          // —— 唯一权威源，server 状态源单写（§5.2 裁决）
-    projects: Map<String, ProjectSummary>,           // id/name/cwd/instance_id/created_at/updated_at/archived_at
-    project_sessions: Map<String, ProjectSessionSummary>, // id/project_id/acp_session_id/title/lifecycle/
-                                          // updated_at/last_opened_at/active_chat_id/archived_at
-    workspaces: Map<String, WorkspaceSummary>, // legacy workspace 兼容 mirror（§3.0 WorkspaceCompatibility）
-    global: { status: Healthy | Degraded | Restarting },  // Degraded 判定规则见 §17
+    chats: Map<String, ChatSummary>,
+    projects: Map<String, ProjectSummary>,
+    project_sessions: Map<String, ProjectSessionSummary>,
+    workspaces: Map<String, WorkspaceSummary>,
+    machines: Map<String, MachineSummary>, // instance_id 键；kind/displayName/sshDestination/sshPort/
+                                          // phase/errorCode/hasIdentityFile/autoReconnect/
+                                          // hostKeySha256（仅 awaiting_host_key）/updatedAt/archivedAt
+                                          // 禁止：identity 路径、token、known_hosts 行
+    global: { status: Healthy | Degraded | Restarting },
 }
 ```
 
@@ -689,7 +713,7 @@ struct RegistryDocRoot {
 
 - **唯一提交边界 = DocManager**【审查：架构 P1-3 + 开发 P0-2】：所有 Y.Doc 写入（聚合器投影、控制面状态迁移如 cancelling/interrupted/decision/标题、定时器 CAS）都必须经 DocManager 的进程内单写通道（§7.4 每 chat 单写者）；任何路径不得绕过 DocManager 直写 yrs。去重记录**不进** Doc（§4.4 outbox）。
 - **server-authoritative 写入权限**【顾问：P0-4】：Y.Doc 的写权限**只存在于 server 进程内**，客户端（Web 面板）是纯 reader。据此：`ysync.update` 是 S→C 单向广播（§4.2）；**客户端上行 update / state vector 一律拒绝**（连接级计数 + 日志，不参与合并、不视为同步提示）；不采用 y-sync 双向增量握手——多 reader 场景下客户端无需贡献任何 CRDT 写入，同步 = server 快照 + 增量广播，天然规避客户端写冲突面（与 chat 的 YJS 双向模式不同，此为架构差异的正当理由）。
-- **敏感信息不进 Y.Doc**（chat §5.3 同源）：密钥、内部错误、原始凭证、instance 连接信息、组织上下文不得进入文档；租户/角色上下文由服务端连接绑定提供，不由文档字段声明。
+- **敏感信息不进 Y.Doc**（chat §5.3 同源）：密钥、内部错误、原始凭证、token、SSH Identity **路径**、known_hosts 公钥行、组织上下文不得进入文档。【v2.16】`machines` 只投影 §5.5 白名单字段；`sshDestination` 按不可信字符串校验后再写。租户/角色由连接绑定提供。
 - **schemaVersion 与 projectionVersion 分离**（chat §5.4）：前者描述结构，后者描述镜像进度；服务端升级 schema 时对存活 chat 以幂等结构初始化补齐（旧客户端忽略未知字段仍安全）。
 - **ViewStore 隔离范围**【审查：架构 P2-1】：`ViewStore` trait 只隔离聚合器；UpdateSink（内存镜像应用，§8.4）、gateway（快照推送）、broadcaster（`Y.mergeUpdates`）直接接触 yrs 类型。§14「yrs 生态风险可控」承诺**限于聚合器与 doc 生命周期管理**；其余接触点以封装函数（如 `encode_state_as_update`/`merge_updates_v1` 薄包装）收敛，不承诺 API 级隔离。
 
@@ -1015,33 +1039,34 @@ chat/create 或 load ──► accepting ──► ... （turn 状态机驱动�
 2. instance 上的 ACP 进程**继续运行**；daemon 将原始 ACP 帧写入本地缓冲（内存，超限溢出到磁盘；上限默认 10MB/万条，可配置）。**「产出不丢」是有界承诺**【顾问：P0-3】：缓冲上限内不丢；超限按 §8.5 丢弃策略丢弃（delta 优先、控制帧最后），并以 `gap` 结构化呈现缺口——**不承诺无限缓冲**，避免「10MB 与产出不丢」矛盾表述。
 3. instance 以指数退避重连 server。
 4. server 重启后：**无快照重建**——不加载任何投影/命令状态（§8.4：StoreSink 启动即空，outbox 重启即空；命令从不重新发送，以 ACP 现场为准）。live chat 视图先由 `Hub::rebuild_chat_views` 从 metadata.sqlite3 `session_runtime_history`（retired_at IS NULL 的活跃 runtime）重建为 accepting 且 `runtime_confirmed=false`。各 instance 的 `instance/hello` 只完成认证、连接 fencing、capability 与 `stream_epochs` 登记；hello **没有** authoritative `alive_sessions`，不得触发对账、resume 或清除 Restarting。
-5. **首份权威心跳恢复屏障**：每个待恢复 instance 的首份 `instance/heartbeat`（空集合也有效）由 `RecoveryCoordinator` 的 per-instance 串行 lane 依次执行 `alive_sessions` 对账 → 仅对 confirmed runtime 批量 `session/resume` 并等待 RPC 终态 → 完成该 instance barrier。相邻快照按连接 epoch fencing，未开始的快照 latest-wins；旧连接不能确认 runtime、发送 resume 或完成 barrier。任一恢复失败报告 `RestoreInvariant` 并进入 Degraded；所有待恢复 instance 完成后才能清除 Restarting。
+5. **首份权威心跳恢复屏障**：每个 **进入全局 pending 的** instance 的首份 `instance/heartbeat`（空集合也有效）由 `RecoveryCoordinator` 的 per-instance 串行 lane 依次执行 `alive_sessions` 对账 → 仅对 confirmed runtime 批量 `session/resume` 并等待 RPC 终态 → 完成该 instance barrier。相邻快照按连接 epoch fencing，未开始的快照 latest-wins；旧连接不能确认 runtime、发送 resume 或完成 barrier。任一 **全局 pending** 恢复失败报告 `RestoreInvariant` 并进入 Degraded；**全局 pending 集合**全部完成后才能清除 Restarting。
+5a. **【v2.16】SSH 机器不进入全局 pending。** `rebuild_chat_views` 仍重建 SSH 上的未确认 chat，但 `recovery_instances` **只含本进程保证能拉起控制面的 id**（当前：`kind=local`）。`kind=ssh` 不得加入，否则 studio 会在 Restarting 中等待一台尚未建隧道的机器，连 `machine/connect` 也被拒（自锁）。SSH hello 之后只跑该 id 的 per-instance lane，不挡 Healthy。已 Trust 且 `auto_reconnect` 的隧道由 `app` 在 Healthy **之后** best-effort 重建。
 6. **runtime 存活确认与补推**：心跳命中的 chat 才置 `runtime_confirmed=true`，missing chat 清除确认并置 gap；未确认 chat 打开时一律 spawn 新 ACP 进程 + `session/load`。恢复确认后，**epoch 相同**的 chat 按 `instance/buffer_sync` 补推；**epoch 变化**判不可校准缺口（§4.5.1）。已结束会话不重建视图；面板断线期间自行退避重连，重连后经 §4.6 时序恢复。
 
 ### 8.4 Y.Doc 持久化规范【无状态投影重构修订：无落盘契约】
 
-yrs CRDT docs 与 command outbox **均不落盘**（§无状态投影重构；【v2.6】原引用的 `docs/design/peri-studio-stateless-projections.md` 未随仓库迁移保留，规范以本节为准）；唯一持久化产物是 `<data_dir>/metadata.sqlite3`（§3.0：关联关系权威）。
+yrs CRDT docs 与 command outbox **均不落盘**（§无状态投影重构；【v2.6】原引用的 `docs/design/peri-studio-stateless-projections.md` 未随仓库迁移保留，规范以本节为准）；**业务权威**落盘是 `<data_dir>/metadata.sqlite3`（§3.0）。【v2.16】另允许 `<data_dir>/ssh/known_hosts` 仅作 OpenSSH Trust，不是第二份领域事实。
 
 - **UpdateSink = 内存镜像 + 广播流**：`UpdateSink` trait 保留（§5.6），`persist_update` 把 update 投递到 StoreSink 的内存镜像（应用 + 广播），**不写磁盘**；gateway 快照与 broadcaster 增量同源（同 clientID），客户端应用无 CRDT 分叉。
-- **【v2.6】SQLite schema（migrations V1–V6，唯一落盘面）**：V1 建表 `schema_migrations` / `projects` / `project_sessions` / `metadata_commands`（metadata 命令去重账本）/ `session_activations` / `metadata_imports` / `projection_state`；V2 加 `project_sessions.origin`（hub|imported|legacy_hidden，§3.0）；V3 加 `hub_title`（§3.0 展示名分层）；V4 加 `archived_at` 与归档索引（§3.0 可逆归档）；V5 建 `session_runtime_history`（§5.3.1 身份历史）；V6 建 `oauth_commands`（§6.2 `peri.oauth` 副作用账本）。
+- **【v2.6】SQLite schema（migrations V1–V6，唯一业务权威落盘面）**：V1 建表 `schema_migrations` / `projects` / `project_sessions` / `metadata_commands`（metadata 命令去重账本）/ `session_activations` / `metadata_imports` / `projection_state`；V2 加 `project_sessions.origin`（hub|imported|legacy_hidden，§3.0）；V3 加 `hub_title`（§3.0 展示名分层）；V4 加 `archived_at` 与归档索引（§3.0 可逆归档）；V5 建 `session_runtime_history`（§5.3.1 身份历史）；V6 建 `oauth_commands`（§6.2 `peri.oauth` 副作用账本）。**【v2.16】V7 建 `machines`（SSH 挂载意图；PK `instance_id`；未归档 `(ssh_destination, ssh_port)` 唯一）。** 另允许 `<data_dir>/ssh/known_hosts`（`0600`）作为 OpenSSH Trust 文件，**不是**第二份业务权威；禁止写入 token/私钥。
+- 持久化路径：`~/.local/share/peri-studio/`（或平台对应目录）用于 metadata.sqlite3、instance token 发布文件与【v2.16】`ssh/known_hosts`，凭据类文件 `0600`。
 - **已删除**：`chats/<id>/updates.log`、`updates.snapshot`、`outbox.log`、`watermark.json`、registry log/snapshot、compact 机制（8MB/64MB 阈值）、`closed_at` 归档标记；启动不重放任何日志。`committed` Ack 与落盘/fsync **解绑**（§4.4：无持久化屏障）。
 - **视图重建完全由 ACP 重放提供**：live chat 走 `session/resume`（§8.3），已结束会话走重启进程 + `session/load`；registry 从 metadata.sqlite3 全量重建（`ProjectService::reproject`）。
 - **degraded 触发点**：无投影落盘路径；原「落盘失败」语义由 **UpdateSink 投递失败 / 终态无法建立**取代（§17.2）。
-- 持久化路径：`~/.local/share/peri-studio/`（或平台对应目录）仅用于定位 metadata.sqlite3，`0600` 权限。
 - 注意：Y.Doc 是实时镜像（内存态），不是持久化真相；ACP 进程（权威）断链后不依赖旧 Doc 继续写入（§8.1 原则 5）。
 
 #### 8.4.1 原子性边界与恢复不变量【无状态投影重构修订】【顾问：P0-5】
 
 **原子性边界**：
 
-- 唯一持久化产物是 metadata.sqlite3（§3.0），其原子性由 SQLite 事务保证；chat/control/registry 投影均为**进程内内存态**（StoreSink 镜像），不存在跨文件持久化原子性问题（chat→control 双 Doc 投影同理：内存态，不承诺跨 Doc 原子事务）。
+- 唯一业务权威落盘是 metadata.sqlite3（§3.0），其原子性由 SQLite 事务保证；【v2.16】`ssh/known_hosts` 与 token 文件不参与领域事务。chat/control/registry 投影均为**进程内内存态**（StoreSink 镜像），不存在跨文件持久化原子性问题（chat→control 双 Doc 投影同理：内存态，不承诺跨 Doc 原子事务）。
 
 **恢复不变量（M1 启动逻辑的契约，按序执行）**：
 
 1. **outbox 纯内存、重启即空**：启动不重放任何 outbox 日志（无日志）；命令**从不重新发送**，命令状态以 ACP 现场为准（客户端手动重试 prompt 可能重复执行为已接受边缘风险）。`reconcile_*_after_restart` 在空索引上执行为 **no-op**；
 2. **无 last_seq 持久化**：`(epoch, last_seq)` 为内存态（§4.5.1）；缓冲补推起点由 instance 给出（§8.5），无日志核对；
 3. **视图从零重建**：StoreSink 启动即空；live chat 视图由 `Hub::rebuild_chat_views` 从 SQLite `session_runtime_history`（retired_at IS NULL）重建为 accepting（绑定 acp_session_id），registry 由 `ProjectService::reproject` 从 metadata.sqlite3 全量重建；schema_version 判空幂等补结构（§5.6）仍适用；
-4. **instance 对账后开门**：装配后 Registry 置 `Restarting`；hello 只登记连接，首份 authoritative heartbeat 由 `RecoveryCoordinator` 对账并等待 `resume_instance_chats` 终态。多 instance barrier 全部完成后才 `clear_restarting`（§8.3）——Restarting 期间拒绝 Action 与 Git mutation 等新 committed 承诺；
+4. **instance 对账后开门**：装配后 Registry 置 `Restarting`；hello 只登记连接，首份 authoritative heartbeat 由 `RecoveryCoordinator` 对账并等待 `resume_instance_chats` 终态。**全局 pending**（§8.3 步骤 5a：当前仅 local）全部完成后才 `clear_restarting`——Restarting 期间拒绝 Action 与 Git mutation 等新 committed 承诺；SSH 机器的自动重连发生在 Healthy 之后，其 `machine/*` 不得被 Restarting 自锁；
 5. **任一不变量失败**：进入 `degraded`（§17.2），可继续服务只读视图，拒绝新 committed 承诺。
 
 **降级行为**：chat 与 control 双 Doc 中仅一个成功写入内存镜像时，允许视图短暂不一致（chat 有内容、control 无 agent 状态），**下一个控制事件 flush 时收敛**（§6.4 控制类先 flush），不允许恢复逻辑把两个 Doc 当原子对处理。
@@ -1270,7 +1295,7 @@ peri-studio/
 | 里程碑 | 范围 | 验收 | 状态【v2.6】 |
 |--------|------|------|------|
 | **M1 本机闭环** | server + instance 同机 + 视图客户端 + 三 Doc + token（含双向认证）+ 断线韧性 + **部署包** | P1–P9 全绿；客户端崩溃重启不影响 agent；双面板 attach 一致；**kill -9 server / kill -9 instance daemon 演练**【审查：运维 P1-1】；**§4.8 测试向量 1–12 全绿**【顾问2】 | **已实现**（视图层为 Web 面板而非 TUI；`dev.sh` 本机闭环 + `scripts/` 验证链可用） |
-| **M2 局域网** | instance 部署到第二台机器、心跳/离线/重连、实例列表 UI、显式调度、**可观测性指标落地** | 断网 → turn interrupted 呈现 → 重连缓冲补推校准 → chat 恢复可用；gap 计数可见 | 部分（心跳/离线/重连/缓冲补推/Topology 已实现并演练；跨机部署与指标聚合未落地） |
+| **M2 局域网** | instance 部署到第二台机器、心跳/离线/重连、实例列表 UI、显式调度、**可观测性指标落地** | 断网 → turn interrupted 呈现 → 重连缓冲补推校准 → chat 恢复可用；gap 计数可见 | 部分（心跳/离线/重连/缓冲补推已实现；跨机部署可开工契约见 [ssh-machine-mount.md](design/ssh-machine-mount.md)，**实现未开始**；指标聚合未落地） |
 | **M3 多端** | 多端视图一致（原规划 Web 只读面板） | 多面板视图一致 | **已实现并超出**：Web 面板为可写客户端；`events/subscribe`/awareness 仍为保留帧面 |
 | **M4 公网** | wss、token 管理/轮换 UI、限流 | 公网远程连接安全基线 | 未开始（当前仅支持 loopback 单机部署，远程部署为后置里程碑） |
 
@@ -1466,3 +1491,4 @@ peri-studio/
 | 35 | delivery_unknown runbook【顾问3】 | 裁决入口/权限/依据状态/三种迁移结果/审计记录；可查询可持久化可展示，不静默丢弃（§4.4） |
 | 36 | HMAC 线格式精度【顾问3】 | HMAC-SHA256 + 固定字节序 MAC 输入 + 常量时间比较 + HKDF 派生；字节级测试向量（§9.2） |
 | 37 | 单发布物、双进程角色【v2.7】 | 发布仅 `peri-studio`；server/instance 仍为独立故障域，local 通过同一可执行文件的 `connect` 子进程走真实 `/instance` ws + HMAC（ADR-0001） |
+| 38 | SSH 机器供应器【v2.16】 | SSH = 安装/token/`ssh -R`；监督在 `app/`；SSH 不进全局 Restarting；Disconnect≠Stop；destination 唯一；cwd 在目标机器上选；wire 只用既有 ErrorCode（ADR-0002，[设计](design/ssh-machine-mount.md)） |
