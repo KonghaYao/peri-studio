@@ -1,5 +1,5 @@
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
-import { archiveProject, archiveProjectSession, chatStatusSignal, createProject, createProjectSession, creatingSessionProjectId, discoverProjectSessions, discoveringSessionsProjectId, importableSessions, importProjectSession, instances, navigateProjectSession, openingSessionId, permissions, projects, projectSessions, registryHydrated, renameProject, renameProjectSession, restoreProject, restoreProjectSession, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '../../panel/store';
+import { archiveProject, archiveProjectSession, chatStatusSignal, createProject, createProjectSession, creatingSessionProjectId, discoverProjectSessions, discoveringSessionsProjectId, importableSessions, importProjectSession, instances, isProjectCatalogBootstrapPending, navigateProjectSession, openingSessionId, permissions, projects, projectSessions, registryHydrated, renameProject, renameProjectSession, restoreProject, restoreProjectSession, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '../../panel/store';
 import { isTerminal } from '../../panel/lib/action-state';
 import { readOnly } from '../../panel/lib/auth-state';
 import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, Dialog, DialogContent, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, EmptyState, IconButton, LoadingState, TextField } from '../../components/ui';
@@ -201,6 +201,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
             const project = () => instance().projects.find((item) => item.id === projectId)!;
             const sessions = () => projectSessions().filter((s) => s.projectId === projectId && !s.archivedAt);
             const archivedSessions = () => projectSessions().filter((s) => s.projectId === projectId && !!s.archivedAt);
+            const sessionsLoading = () => discoveringSessionsProjectId() === projectId || isProjectCatalogBootstrapPending(projectId);
             const collapsed = () => collapsedProjects().has(projectId);
             const projectMenuId = `project-menu-${projectId}`;
             return <Collapsible as="section" class="project-group" open={!collapsed()} onOpenChange={(open) => setProjectCollapsed(projectId, !open)}>
@@ -217,7 +218,14 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                 </DropdownMenu>
               </div>
               <CollapsibleContent id={`project-sessions-${projectId}`} class="session-list flex flex-col pl-16">
-                <For each={sessions()} fallback={<Button busy={creatingSessionProjectId() === projectId} disabled={readOnly() || !!creatingSessionProjectId()} class="session-empty mx-8 cursor-pointer rounded-8 p-8 text-left text-12 text-text-muted hover:bg-hover hover:text-text-secondary" onClick={() => createProjectSession(projectId)}>Start your first conversation</Button>}>
+                <For each={sessions()} fallback={
+                  <Show
+                    when={sessionsLoading()}
+                    fallback={<Button busy={creatingSessionProjectId() === projectId} disabled={readOnly() || !!creatingSessionProjectId()} class="session-empty mx-8 cursor-pointer rounded-8 p-8 text-left text-12 text-text-muted hover:bg-hover hover:text-text-secondary" onClick={() => createProjectSession(projectId)}>Start your first conversation</Button>}
+                  >
+                    <LoadingState label="Loading sessions" class="session-empty mx-8 p-8! text-left!" />
+                  </Show>
+                }>
                   {(session) => {
                     const selected = () => selectedSessionId() === session.id;
                     const state = () => runtimeState({

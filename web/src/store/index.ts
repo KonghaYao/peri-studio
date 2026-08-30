@@ -1,6 +1,6 @@
 // peri-studio Web 面板组合根：装配协议、投影与领域控制器。
 
-import { createSignal } from 'solid-js';
+import { createSignal, createEffect } from 'solid-js';
 import * as H from '../panel/lib/protocol';
 import { DocStore } from '../panel/lib/doc-store';
 import type { ChatEntry } from '@/entities/chat/chat-view';
@@ -16,6 +16,8 @@ import { settleLateQuickStart } from '../panel/lib/quick-start-delivery';
 import { confirmRuntimeControl, resetRuntimeControls } from '../panel/lib/runtime-control';
 import { resetPermissionDecisions } from '../panel/lib/permission-delivery';
 import { CatalogActions } from '@/features/catalog/catalog-actions';
+import { createSessionCatalogBootstrap } from '@/features/catalog/session-catalog-bootstrap';
+import { selectActiveProjects } from '@/features/catalog/project-catalog';
 import { applySessionPreferences, resolveSessionPreferenceKey } from '@/features/session/session-preference-merge';
 import {
   hydrateSessionPreferences,
@@ -94,6 +96,11 @@ export const turnActive = () => isTurnActive(chatHead()?.activeTurn);
 export const [restoringSessionId, setRestoringSessionId] = createSignal<string | null>(null);
 export const [creatingSessionProjectId, setCreatingSessionProjectId] = createSignal<string | null>(null);
 export const [discoveringSessionsProjectId, setDiscoveringSessionsProjectId] = createSignal<string | null>(null);
+let scheduleSessionCatalogBootstrap: () => void = () => {};
+let sessionCatalogBootstrap: ReturnType<typeof createSessionCatalogBootstrap> | null = null;
+export function isProjectCatalogBootstrapPending(projectId: string): boolean {
+  return sessionCatalogBootstrap?.pending().has(projectId) ?? false;
+}
 export type { PromptRecoveryView } from '../panel/lib/prompt-recovery';
 export const [sessionConfigMutation, setSessionConfigMutation] = createSignal<SessionConfigMutation | null>(null);
 
@@ -203,7 +210,10 @@ function invalidateAuthentication(reason: string): void {
 // 回调经 installConnection 注入回组合根。
 installConnection({
   settleConnectionLoss: () => commands.settleConnectionLoss(),
-  onConnectionLost: () => sessionActivation.connectionLost(),
+  onConnectionLost: () => {
+    sessionCatalogBootstrap?.reset();
+    sessionActivation.connectionLost();
+  },
   onAuthInvalidation: invalidateAuthentication,
   toast,
   sendSubscribe,
@@ -214,6 +224,7 @@ installConnection({
     // or resume the correct runtime chat instead of accepting prompts on a stale id.
     sessionActivation.reactivateAfterReconnect();
     if (!selectedSessionId() && registryHydrated()) reconcileSessionNavigation(projectSessions());
+    scheduleSessionCatalogBootstrap();
     const sessionId = selectedSessionId();
     if (sessionId) requestPromptRecovery(sessionId);
   },
@@ -419,6 +430,20 @@ const catalogActions = new CatalogActions({
   onSessionPreferencesChanged: refreshProjectSessionsFromPreferences,
 });
 
+sessionCatalogBootstrap = createSessionCatalogBootstrap({
+  isReady: connectionReady,
+  isReadOnly: readOnly,
+  activeProjectIds: () => selectActiveProjects(projects()).map((project) => project.id),
+  discover: (projectId, onSettled) => {
+    return catalogActions.discoverSessions(projectId, onSettled, onSettled);
+  },
+});
+scheduleSessionCatalogBootstrap = () => sessionCatalogBootstrap?.schedule();
+
+createEffect(() => {
+  if (connectionReady() && registryHydrated()) scheduleSessionCatalogBootstrap();
+});
+
 export const createProject = (name: string, cwd: string, onCommitted?: () => void, onFailed?: () => void) =>
   catalogActions.createProject(name, cwd, { onCommitted, onFailed });
 export const archiveProject = (projectId: string, onCommitted?: () => void, onFailed?: () => void) =>
@@ -473,6 +498,7 @@ export function resetAuthenticatedSession(options: { preserveLocalDrafts?: boole
   setSessionConfigMutation(null);
   resetRewindState();
   setDiscoveringSessionsProjectId(null);
+  sessionCatalogBootstrap?.reset();
   setPersistentErrors([]);
   commands.reset();
   resetPermissionDecisions();

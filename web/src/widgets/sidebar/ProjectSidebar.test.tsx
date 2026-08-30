@@ -11,6 +11,7 @@ const store = vi.hoisted(() => ({
   creatingSessionProjectId: vi.fn(() => null as string | null),
   discoverProjectSessions: vi.fn(() => true),
   discoveringSessionsProjectId: vi.fn(() => null as string | null),
+  isProjectCatalogBootstrapPending: vi.fn(() => false),
   importableSessions: vi.fn(() => []),
   importProjectSession: vi.fn(),
   instances: vi.fn(() => [{ id: 'local', hostname: 'Local instance', status: 'online' }]),
