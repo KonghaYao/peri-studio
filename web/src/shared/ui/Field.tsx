@@ -5,8 +5,8 @@ const fieldControlClasses = (invalid?: boolean, className?: string) => cn(
   'box-border h-32 w-full rounded-6 border bg-surface px-12 text-13 text-text-primary outline-none ui-control-transition',
   'placeholder:text-text-faint',
   invalid
-    ? 'border-danger focus:border-danger focus:shadow-(--shadow-focus-danger)'
-    : 'border-border-strong hover:border-accent-border-hover focus:border-focus-ring focus:shadow-accent-ring',
+    ? 'border-danger focus:border-danger'
+    : 'border-border-strong hover:border-accent-border-hover focus:border-focus-ring',
   'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-text-muted',
   className,
 );

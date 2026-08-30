@@ -11,7 +11,7 @@ export function Textarea(props: JSX.TextareaHTMLAttributes<HTMLTextAreaElement> 
         'placeholder:text-content-faint',
         local.invalid
           ? 'border-danger-solid focus:border-danger-solid'
-          : 'border-border-strong hover:border-accent-border-hover focus:border-border-focus focus:shadow-(--shadow-focus-ring)',
+          : 'border-border-strong hover:border-accent-border-hover focus:border-border-focus',
         'disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:text-content-muted',
         local.class,
       )}

@@ -346,7 +346,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
             <div class="flex items-center gap-6">
               <input
                 id="project-directory"
-                class="box-border h-34 min-w-0 flex-1 rounded-9 border border-border-strong bg-surface px-11 text-text-primary outline-none focus:border-focus-ring focus:shadow-(--shadow-focus-ring-input) focus-visible:outline-0"
+                class="box-border h-34 min-w-0 flex-1 rounded-9 border border-border-strong bg-surface px-11 text-text-primary outline-none focus:border-focus-ring focus-visible:outline-0"
                 value={cwd()}
                 onInput={(e) => { setCwd(e.currentTarget.value); setPickDirectoryError(null); }}
                 placeholder="/absolute/path"

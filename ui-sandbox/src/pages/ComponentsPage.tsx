@@ -103,10 +103,10 @@ export function ComponentsPage() {
         </Row>
       </Demo>
 
-      <Demo id="input" title="Input & Textarea" description="灰边 → hover 浅主色边 → focus 主色边 + 浅光晕；错误态走红族。">
+      <Demo id="input" title="Input & Textarea" description="灰边 → hover 浅主色边 → focus 主色边；错误态走红族。">
         <div class="grid max-w-xl grid-cols-2 gap-3">
           <Input placeholder="Message the agent" />
-          <Input value="Focused value" readOnly class="border-border-focus shadow-(--shadow-focus-ring)" />
+          <Input value="Focused value" readOnly class="border-border-focus" />
           <Input placeholder="Error state" invalid />
           <Input placeholder="Disabled" disabled />
         </div>

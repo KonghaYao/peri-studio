@@ -15,8 +15,8 @@ const textareaControlClasses = (invalid?: boolean, autoResize?: boolean, classNa
   'placeholder:text-text-faint',
   autoResize ? 'min-h-32 resize-none' : 'min-h-32 resize-y',
   invalid
-    ? 'border-danger focus:border-danger focus:shadow-(--shadow-focus-danger)'
-    : 'border-border-strong hover:border-accent-border-hover focus:border-focus-ring focus:shadow-accent-ring',
+    ? 'border-danger focus:border-danger'
+    : 'border-border-strong hover:border-accent-border-hover focus:border-focus-ring',
   'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-text-muted',
   className,
 );
