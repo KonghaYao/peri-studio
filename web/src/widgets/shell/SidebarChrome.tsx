@@ -21,8 +21,8 @@ export function SidebarChrome(props: SidebarChromeProps) {
       </div>
     </div>
     {props.children}
-    <div class="sidebar-footer -mx-12 flex h-54 items-center gap-5 border-t border-divider px-16 text-text-muted desk:-mx-10 wide:-mx-12">
-      <IconButton label="Account" title="Account controls are not connected yet" disabled class="account-entry mr-auto border-0 bg-transparent"><span class="account-avatar grid size-24 place-items-center rounded-6 border border-border-subtle bg-surface text-11 font-550 text-text-secondary" aria-hidden="true">A</span></IconButton>
+    <div class="sidebar-footer -mx-12 flex h-48 shrink-0 items-center gap-6 border-t border-divider px-12 text-text-muted desk:-mx-10 wide:-mx-12">
+      <IconButton label="Account" title="Account controls are not connected yet" disabled class="account-entry mr-auto border-0 bg-transparent opacity-60"><span class="account-avatar grid size-24 place-items-center rounded-6 border border-border-subtle bg-surface text-11 font-550 text-text-secondary" aria-hidden="true">A</span></IconButton>
       <IconButton label="System information" disabled={!props.onOpenSystem} onClick={props.onOpenSystem} class="border-0 bg-transparent text-text-muted"><CircleHelp size={17} strokeWidth={1.7} /></IconButton>
       <Button class="account-logout sr-only" onClick={auth?.logout}>Log out</Button>
     </div>

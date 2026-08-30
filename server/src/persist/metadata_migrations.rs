@@ -6,7 +6,7 @@
 
 use super::*;
 
-const SCHEMA_VERSION: i64 = 7;
+const SCHEMA_VERSION: i64 = 8;
 
 const MIGRATION_V1: &str = r#"
 CREATE TABLE IF NOT EXISTS schema_migrations(
@@ -134,6 +134,19 @@ DROP TABLE IF EXISTS session_runtime_history;
 DROP TABLE IF EXISTS project_sessions;
 "#;
 
+const MIGRATION_V8: &str = r#"
+CREATE TABLE catalog_session_prefs(
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  acp_session_id TEXT NOT NULL,
+  custom_name TEXT,
+  archived_at TEXT,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (project_id, acp_session_id)
+);
+CREATE INDEX catalog_session_prefs_archived_idx
+  ON catalog_session_prefs(project_id, archived_at);
+"#;
+
 impl MetadataStore {
     pub(super) async fn migrate(&self) -> Result<()> {
         let mut tx = self.pool.begin().await?;
@@ -236,6 +249,19 @@ impl MetadataStore {
                 sqlx::query(statement).execute(&mut *tx).await?;
             }
             sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(7,?)")
+                .bind(now())
+                .execute(&mut *tx)
+                .await?;
+        }
+        if found < 8 {
+            for statement in MIGRATION_V8
+                .split(';')
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                sqlx::query(statement).execute(&mut *tx).await?;
+            }
+            sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(8,?)")
                 .bind(now())
                 .execute(&mut *tx)
                 .await?;

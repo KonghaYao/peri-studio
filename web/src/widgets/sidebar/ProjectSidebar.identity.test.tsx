@@ -47,7 +47,7 @@ describe('ProjectSidebar structural identity', () => {
   it('preserves a focused rename draft across instance and project metadata updates', async () => {
     render(() => <ProjectSidebar />);
     const row = document.querySelector('[data-session-id="session-1"]')!;
-    const menu = screen.getByRole('button', { name: 'Session actions: Architecture refactor' });
+    const menu = screen.getByRole('button', { name: 'Session actions' });
     fireEvent.pointerDown(menu, { button: 0 });
     fireEvent.click(menu);
     const rename = await screen.findByText('Rename session');

@@ -7,9 +7,6 @@ function harness(overrides: Partial<CatalogActionsDependencies> = {}) {
   let uncertain = false;
   let discovering: string | null = null;
   const sent: Array<{ frame: Record<string, unknown>; label: string; options: CatalogSendOptions }> = [];
-  const setSessionArchivedPreference = vi.fn();
-  const setSessionCustomNamePreference = vi.fn();
-  const onSessionPreferencesChanged = vi.fn();
   const deps: CatalogActionsDependencies = {
     isReady: () => ready,
     isReadOnly: () => readOnly,
@@ -21,13 +18,6 @@ function harness(overrides: Partial<CatalogActionsDependencies> = {}) {
     onSessionArchived: vi.fn(),
     discoveringProjectId: () => discovering,
     setDiscoveringProjectId: (value) => { discovering = value; },
-    principalId: () => 'principal-1',
-    resolveSessionKey: (sessionId) => sessionId === 's1'
-      ? { principalId: 'principal-1', projectId: 'p1', acpSessionId: 's1' }
-      : null,
-    setSessionArchivedPreference,
-    setSessionCustomNamePreference,
-    onSessionPreferencesChanged,
     ...overrides,
   };
   return {
@@ -36,9 +26,6 @@ function harness(overrides: Partial<CatalogActionsDependencies> = {}) {
     setReadOnly: (value: boolean) => { readOnly = value; },
     setUncertain: (value: boolean) => { uncertain = value; },
     discovering: () => discovering,
-    setSessionArchivedPreference,
-    setSessionCustomNamePreference,
-    onSessionPreferencesChanged,
   };
 }
 
@@ -61,31 +48,27 @@ describe('CatalogActions', () => {
     expect(h.sent).toHaveLength(0);
   });
 
-  it('stores session archive locally without server mutation', () => {
+  it('archives sessions through server metadata mutation', () => {
     const h = harness();
     const onCommitted = vi.fn();
     expect(h.actions.setSessionArchived('s1', true, { onCommitted })).toBe(true);
-    expect(h.sent).toHaveLength(0);
-    expect(h.setSessionArchivedPreference).toHaveBeenCalledWith(
-      { principalId: 'principal-1', projectId: 'p1', acpSessionId: 's1' },
-      true,
-    );
+    expect(h.sent).toHaveLength(1);
+    expect(h.sent[0]?.frame).toMatchObject({ type: 'session/archive', payload: { sessionId: 's1' } });
+    h.sent[0]?.options.cb?.({ status: 'committed', sessionId: 's1' });
     expect(h.deps.onSessionArchived).toHaveBeenCalledWith('s1');
     expect(onCommitted).toHaveBeenCalledOnce();
     expect(h.deps.toast).toHaveBeenCalledWith('Session archived');
-    expect(h.onSessionPreferencesChanged).toHaveBeenCalledOnce();
   });
 
-  it('stores session rename locally without server mutation', () => {
+  it('renames sessions through server metadata mutation', () => {
     const h = harness();
-    expect(h.actions.renameSession('s1', '  New name  ')).toBe(true);
-    expect(h.sent).toHaveLength(0);
-    expect(h.setSessionCustomNamePreference).toHaveBeenCalledWith(
-      { principalId: 'principal-1', projectId: 'p1', acpSessionId: 's1' },
-      'New name',
-    );
+    const onCommitted = vi.fn();
+    expect(h.actions.renameSession('s1', '  New name  ', { onCommitted })).toBe(true);
+    expect(h.sent).toHaveLength(1);
+    expect(h.sent[0]?.frame).toMatchObject({ type: 'session/rename', payload: { sessionId: 's1', name: 'New name' } });
+    h.sent[0]?.options.cb?.({ status: 'committed', sessionId: 's1' });
+    expect(onCommitted).toHaveBeenCalledOnce();
     expect(h.deps.toast).toHaveBeenCalledWith('Session renamed');
-    expect(h.onSessionPreferencesChanged).toHaveBeenCalledOnce();
   });
 
   it('retains exact command identity and recovery copy on uncertain mutation', () => {

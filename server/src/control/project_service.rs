@@ -6,7 +6,7 @@ use peri_studio_proto::schema::{ProjectSummary, SessionSummaryProjection, Worksp
 use thiserror::Error;
 
 use crate::control::{CatalogSession, ChatRegistry, SessionCatalog};
-use crate::persist::metadata::{MetadataError, MetadataStore, ProjectRecord};
+use crate::persist::metadata::{catalog_session_pref_map, MetadataError, MetadataStore, ProjectRecord};
 use crate::state::registry::{RegistryError, RegistryState};
 
 #[derive(Debug, Error)]
@@ -123,6 +123,40 @@ impl ProjectService {
         self.reproject().await
     }
 
+    pub async fn archive_session_metadata(
+        &self,
+        project_id: &str,
+        acp_session_id: &str,
+    ) -> Result<(), ProjectServiceError> {
+        Ok(self
+            .metadata
+            .archive_catalog_session(project_id, acp_session_id)
+            .await?)
+    }
+
+    pub async fn restore_session_metadata(
+        &self,
+        project_id: &str,
+        acp_session_id: &str,
+    ) -> Result<(), ProjectServiceError> {
+        Ok(self
+            .metadata
+            .restore_catalog_session(project_id, acp_session_id)
+            .await?)
+    }
+
+    pub async fn rename_session_metadata(
+        &self,
+        project_id: &str,
+        acp_session_id: &str,
+        name: &str,
+    ) -> Result<(), ProjectServiceError> {
+        Ok(self
+            .metadata
+            .rename_catalog_session(project_id, acp_session_id, name)
+            .await?)
+    }
+
     /// Refreshes the in-memory ACP catalog for one project and reprojects when
     /// list facts changed.
     pub async fn refresh_project_catalog(
@@ -154,9 +188,14 @@ impl ProjectService {
 
     pub async fn reproject(&self) -> Result<(), ProjectServiceError> {
         let snapshot = self.metadata.snapshot().await?;
+        let prefs = catalog_session_pref_map(self.metadata.list_catalog_session_prefs().await?);
         let projects = snapshot.projects.into_iter().map(project_summary).collect();
-        let sessions =
-            SessionCatalog::project_summaries(self.catalog.list_all().await, &self.chats).await;
+        let sessions = SessionCatalog::project_summaries(
+            self.catalog.list_all().await,
+            &self.chats,
+            &prefs,
+        )
+        .await;
         self.registry.replace_projects(projects, sessions).await?;
         self.metadata.mark_projected(snapshot.generation).await?;
         Ok(())

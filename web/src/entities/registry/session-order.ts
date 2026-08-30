@@ -60,35 +60,25 @@ function reconcileProjectSessionsForProject(
   const incomingById = new Map(incoming.map((session) => [session.id, session]));
   const previousById = new Map(previous.map((session) => [session.id, session]));
 
-  const bumped = incoming
-    .filter((session) => {
-      const prior = previousById.get(session.id);
-      return prior && (session.lastOpenedAt || '') > (prior.lastOpenedAt || '');
-    })
-    .map((session) => reconcileSession(previousById.get(session.id), session))
-    .sort(compareSessionsForSidebar);
-
-  const bumpedIds = new Set(bumped.map((session) => session.id));
   const stable: ProjectSessionInfo[] = [];
   for (const prior of previous) {
-    if (bumpedIds.has(prior.id)) continue;
     const next = incomingById.get(prior.id);
     if (!next) continue;
     stable.push(reconcileSession(prior, next));
   }
 
-  const placed = new Set([...bumped, ...stable].map((session) => session.id));
+  const placed = new Set(stable.map((session) => session.id));
   const newcomers = incoming
     .filter((session) => !placed.has(session.id))
     .map((session) => reconcileSession(previousById.get(session.id), session))
     .sort(compareSessionsForSidebar);
 
-  return [...bumped, ...newcomers, ...stable];
+  return [...newcomers, ...stable];
 }
 
 /**
  * Keeps sidebar session order stable across registry polls that reshuffle by
- * volatile ACP `updatedAt`, while still surfacing newly opened sessions.
+ * volatile ACP `updatedAt` / `lastOpenedAt`, while still prepending new sessions.
  */
 export function stabilizeProjectSessionOrder(
   previous: readonly ProjectSessionInfo[],

@@ -33,7 +33,7 @@ describe('stabilizeProjectSessionOrder', () => {
     expect(result[1]?.updatedAt).toBe('2026-08-13T12:00:00Z');
   });
 
-  it('moves a session to the top when lastOpenedAt advances', () => {
+  it('keeps sidebar session order when lastOpenedAt advances', () => {
     const previous = [
       session('new', 'p1', { lastOpenedAt: '2026-08-13T12:00:00Z' }),
       session('old', 'p1', { lastOpenedAt: '2026-08-13T10:00:00Z' }),
@@ -43,7 +43,7 @@ describe('stabilizeProjectSessionOrder', () => {
       session('new', 'p1', { lastOpenedAt: '2026-08-13T12:00:00Z' }),
     ];
 
-    expect(stabilizeProjectSessionOrder(previous, incoming).map((item) => item.id)).toEqual(['old', 'new']);
+    expect(stabilizeProjectSessionOrder(previous, incoming).map((item) => item.id)).toEqual(['new', 'old']);
   });
 
   it('prepends brand-new sessions ahead of the stable tail', () => {

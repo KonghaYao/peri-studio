@@ -153,6 +153,7 @@ export function renderRegistry(doc: Y.Doc): RegistryView {
       updatedAt: getStr(map, 'updated_at'),
       lastOpenedAt: getStr(map, 'last_opened_at'),
       activeChatId: getStr(map, 'active_chat_id'),
+      archivedAt: getStr(map, 'archived_at'),
     });
   });
   projectSessions.sort(compareSessionsForSidebar);

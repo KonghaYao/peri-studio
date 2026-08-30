@@ -43,7 +43,7 @@ pub struct ProjectSummary {
 /// `id` 与 `acp_session_id` 同义，均为 ACP durable `session_id`；Registry
 /// `project_sessions` map 键与此 `id` 一致。hub 不再生成独立 logical id。
 /// `active_chat_id` 来自 ChatRegistry 运行态投影，非 SQLite 持久字段。
-/// `archived_at` 已废弃：归档由 Web IndexedDB 用户偏好承载，hub 不再写入。
+/// `archived_at` 来自 SQLite `catalog_session_prefs` 导航归档标记。
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectSessionSummary {

@@ -18,15 +18,15 @@ use crate::persist::metadata::ProjectRecord;
 use super::command_coordinator::{action_error, SubmitAck};
 
 impl MetadataCommandProcessor {
-    /// PersistedSessionRename：客户端偏好由 Web IndexedDB 持有；server 仅
-    /// committed ack 以保持 wire 兼容。
+    /// PersistedSessionRename：自定义名称写入 SQLite `catalog_session_prefs`，
+    /// 经 Registry 投影广播给所有客户端。
     pub(super) async fn submit_session_rename(
         &self,
         cmd: &MetadataCommand,
         projects: &ProjectService,
         command_id: &str,
         session_id: &str,
-        _name: &str,
+        name: &str,
     ) -> SubmitAck {
         let Some(session) = projects.catalog().get(session_id).await else {
             return SubmitAck::Failed(action_error(
@@ -36,6 +36,55 @@ impl MetadataCommandProcessor {
                 false,
             ));
         };
+        if projects
+            .rename_session_metadata(&session.project_id, session_id, name)
+            .await
+            .is_err()
+            || projects
+                .metadata()
+                .update_command(
+                    command_id,
+                    "projection_pending",
+                    Some(&session.project_id),
+                    Some(session_id),
+                    None,
+                    Some(session_id),
+                    None,
+                )
+                .await
+                .is_err()
+        {
+            let _ = projects
+                .metadata()
+                .update_command(
+                    command_id,
+                    "reconciliation_required",
+                    Some(&session.project_id),
+                    Some(session_id),
+                    None,
+                    Some(session_id),
+                    Some("session_rename_projection_failed"),
+                )
+                .await;
+            self.send_error(
+                cmd,
+                ErrorCode::AgentUnavailable,
+                "session rename requires reconciliation",
+                false,
+            )
+            .await;
+            return SubmitAck::Handled;
+        }
+        if projects.reproject().await.is_err() {
+            self.send_error(
+                cmd,
+                ErrorCode::AgentUnavailable,
+                "session rename projection pending",
+                true,
+            )
+            .await;
+            return SubmitAck::Handled;
+        }
         if projects
             .metadata()
             .update_command(
@@ -69,15 +118,15 @@ impl MetadataCommandProcessor {
         SubmitAck::Handled
     }
 
-    /// PersistedSessionArchive/Restore：归档/恢复偏好不落 server；committed
-    /// ack 供客户端合并 IndexedDB 覆盖。
+    /// PersistedSessionArchive/Restore：导航归档写入 SQLite，Registry 投影
+    /// `archived_at`；不触碰 ACP durable thread。
     pub(super) async fn submit_session_archive_or_restore(
         &self,
         cmd: &MetadataCommand,
         projects: &ProjectService,
         command_id: &str,
         session_id: &str,
-        _archive: bool,
+        archive: bool,
     ) -> SubmitAck {
         let Some(session) = projects.catalog().get(session_id).await else {
             return SubmitAck::Failed(action_error(
@@ -87,6 +136,61 @@ impl MetadataCommandProcessor {
                 false,
             ));
         };
+        let persist = if archive {
+            projects
+                .archive_session_metadata(&session.project_id, session_id)
+                .await
+        } else {
+            projects
+                .restore_session_metadata(&session.project_id, session_id)
+                .await
+        };
+        if persist.is_err()
+            || projects
+                .metadata()
+                .update_command(
+                    command_id,
+                    "projection_pending",
+                    Some(&session.project_id),
+                    Some(session_id),
+                    None,
+                    Some(session_id),
+                    None,
+                )
+                .await
+                .is_err()
+        {
+            let _ = projects
+                .metadata()
+                .update_command(
+                    command_id,
+                    "reconciliation_required",
+                    Some(&session.project_id),
+                    Some(session_id),
+                    None,
+                    Some(session_id),
+                    Some("session_lifecycle_projection_failed"),
+                )
+                .await;
+            self.send_error(
+                cmd,
+                ErrorCode::AgentUnavailable,
+                "session lifecycle command requires reconciliation",
+                false,
+            )
+            .await;
+            return SubmitAck::Handled;
+        }
+        if projects.reproject().await.is_err() {
+            self.send_error(
+                cmd,
+                ErrorCode::AgentUnavailable,
+                "session lifecycle projection pending",
+                true,
+            )
+            .await;
+            return SubmitAck::Handled;
+        }
         if projects
             .metadata()
             .update_command(

@@ -19,7 +19,6 @@ export interface ProjectSessionRowProps {
   readOnly: boolean;
   renameOpen: boolean;
   menuOpen: boolean;
-  runtimeActive: boolean;
   replacementBusy: boolean;
   onNavigate: () => void;
   onOpen: (sessionId: string, onCommitted: () => void) => void;
@@ -81,9 +80,9 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     );
   };
 
-  return <div data-session-id={props.session.id} class={`session-row group relative rounded-8 hover:bg-selected ${props.selected ? 'is-selected bg-selected' : ''}`}>
+  return <div data-session-id={props.session.id} class={`session-row group relative rounded-8 hover:bg-hover ${props.selected ? 'is-selected bg-selected' : ''}`}>
     <Button
-      class="session-main relative flex min-h-32 w-full min-w-0 items-center justify-start gap-8 rounded-8 border-0 bg-transparent px-8 pr-[68px] text-left text-13 font-normal text-text-secondary cursor-pointer disabled:cursor-wait pointer-coarse:min-h-52 pointer-coarse:pr-[68px]"
+      class="session-main relative flex min-h-34 w-full min-w-0 items-center justify-start gap-8 rounded-8 border-0 bg-transparent px-8 pr-36 text-left text-13 font-normal text-text-secondary cursor-pointer disabled:cursor-wait pointer-coarse:min-h-44 pointer-coarse:pr-36"
       aria-current={props.selected ? 'page' : undefined}
       title={props.readOnly && !props.session.activeChatId ? 'Full permission required to start this session' : undefined}
       onClick={open}
@@ -95,16 +94,16 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     <DropdownMenu open={props.menuOpen} onOpenChange={props.onMenuOpenChange} placement="bottom-end">
       <DropdownMenuTrigger as={IconButton}
         tooltipPlacement="end"
-        class="session-menu absolute top-1 right-[20px] border-0 bg-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100"
+        class="session-menu absolute top-1/2 right-6 -translate-y-1/2 border-0 bg-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 data-[expanded]:opacity-100"
         ref={menuTrigger}
         disabled={props.readOnly || submitting()}
-        label={`Session actions: ${displayTitle()}`}
+        label="Session actions"
       >
         <MoreIcon />
       </DropdownMenuTrigger>
       <DropdownMenuContent id={`${renameId()}-menu`} aria-label={`Session actions: ${displayTitle()}`} class="ui-menu">
         <DropdownMenuItem onSelect={() => props.onRenameOpenChange(true)}><RenameIcon />Rename session</DropdownMenuItem>
-        <DropdownMenuItem class="text-danger focus:text-danger" disabled={props.runtimeActive} title={props.runtimeActive ? 'Close this session’s running instance first' : undefined} onClick={() => {
+        <DropdownMenuItem class="text-danger focus:text-danger" onClick={() => {
           props.onMenuOpenChange(false);
           props.onArchiveRequest(props.session.id);
         }}><ArchiveIcon />Archive session</DropdownMenuItem>

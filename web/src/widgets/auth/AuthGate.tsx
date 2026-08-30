@@ -6,13 +6,12 @@
 
 import { Show, type JSX } from 'solid-js';
 import { AuthActionsContext, useAuth } from '../../panel/lib/auth-hook';
-import { resetAuthenticatedSession, reconcileStoredSessionPreferences } from '../../panel/store';
+import { resetAuthenticatedSession } from '../../panel/store';
 import { Button, CopyButton, InlineNotice, LoadingState, TextField } from '../../components/ui';
 
 export function AuthGate(props: { children: JSX.Element }) {
   const auth = useAuth({
     resetSession: resetAuthenticatedSession,
-    onPrincipalInstalled: (principalId) => { void reconcileStoredSessionPreferences(principalId); },
   });
 
   function signIn(e: SubmitEvent) {

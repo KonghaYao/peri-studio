@@ -12,6 +12,7 @@ use peri_studio_proto::schema::{ProjectSessionSummary, SessionSummaryProjection}
 use tokio::sync::RwLock;
 
 use super::ChatRegistry;
+use crate::persist::metadata::CatalogSessionPrefMap;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CatalogSession {
@@ -183,11 +184,17 @@ impl SessionCatalog {
     pub async fn project_summaries(
         sessions: Vec<CatalogSession>,
         chats: &ChatRegistry,
+        prefs: &CatalogSessionPrefMap,
     ) -> Vec<ProjectSessionSummary> {
         let mut out = Vec::with_capacity(sessions.len());
         for session in sessions {
             let active_chat_id = active_chat_for(chats, &session.acp_session_id).await;
-            let title = display_title(&session);
+            let pref = prefs.get(&(session.project_id.clone(), session.acp_session_id.clone()));
+            let title = pref
+                .and_then(|value| value.custom_name.as_deref())
+                .filter(|name| !name.trim().is_empty())
+                .map(str::to_string)
+                .unwrap_or_else(|| display_title(&session));
             out.push(ProjectSessionSummary {
                 id: session.acp_session_id.clone(),
                 project_id: session.project_id,
@@ -197,7 +204,7 @@ impl SessionCatalog {
                 updated_at: session.updated_at,
                 last_opened_at: session.last_opened_at,
                 active_chat_id,
-                archived_at: None,
+                archived_at: pref.and_then(|value| value.archived_at.clone()),
             });
         }
         out

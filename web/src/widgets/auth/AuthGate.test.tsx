@@ -14,7 +14,6 @@ const transport = vi.hoisted(() => ({
 
 vi.mock('../../panel/store', () => ({
   resetAuthenticatedSession: transport.resetAuthenticatedSession,
-  reconcileStoredSessionPreferences: vi.fn(),
 }));
 vi.mock('../../panel/lib/connection', () => ({ connectWithCookie: transport.connectWithCookie }));
 

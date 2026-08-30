@@ -190,6 +190,65 @@ async fn project_archive_rejects_a_live_runtime() {
 }
 
 #[tokio::test]
+async fn session_archive_restore_persists_archived_at_in_registry() {
+    let env = env().await;
+    env.metadata
+        .create_project("p1", "Demo", env._tmp.path().to_str().unwrap(), "local")
+        .await
+        .unwrap();
+    seed_catalog_session(&env.projects, "p1", "acp-1", "Saved").await;
+
+    let (tx, mut rx) = mpsc::channel(4);
+    let result = env
+        .coordinator
+        .submit(
+            &ctx("catalog"),
+            ActionEnvelope::PersistedSessionArchive {
+                command_id: uuid::Uuid::new_v4().to_string(),
+                payload: peri_studio_proto::action::PersistedSessionOpenPayload {
+                    session_id: "acp-1".into(),
+                },
+            },
+            tx,
+        )
+        .await;
+    assert!(matches!(result, SubmitAck::Handled));
+    assert!(
+        matches!(rx.recv().await, Some(OutboundMsg::Frame(Frame::ActionAck(ref ack))) if ack.status == AckStatus::Accepted)
+    );
+    assert!(
+        matches!(rx.recv().await, Some(OutboundMsg::Frame(Frame::ActionAck(ref ack))) if ack.status == AckStatus::Committed)
+    );
+    let prefs = env.metadata.list_catalog_session_prefs().await.unwrap();
+    assert_eq!(prefs.len(), 1);
+    assert_eq!(prefs[0].acp_session_id, "acp-1");
+    assert!(prefs[0].archived_at.is_some());
+
+    let (tx, mut rx) = mpsc::channel(4);
+    let result = env
+        .coordinator
+        .submit(
+            &ctx("catalog"),
+            ActionEnvelope::PersistedSessionRestore {
+                command_id: uuid::Uuid::new_v4().to_string(),
+                payload: peri_studio_proto::action::PersistedSessionOpenPayload {
+                    session_id: "acp-1".into(),
+                },
+            },
+            tx,
+        )
+        .await;
+    assert!(matches!(result, SubmitAck::Handled));
+    assert!(
+        matches!(rx.recv().await, Some(OutboundMsg::Frame(Frame::ActionAck(ref ack))) if ack.status == AckStatus::Accepted)
+    );
+    assert!(
+        matches!(rx.recv().await, Some(OutboundMsg::Frame(Frame::ActionAck(ref ack))) if ack.status == AckStatus::Committed)
+    );
+    assert!(env.metadata.list_catalog_session_prefs().await.unwrap().is_empty());
+}
+
+#[tokio::test]
 async fn session_archive_restore_commits_without_changing_lifecycle() {
     let env = env().await;
     env.metadata

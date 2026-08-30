@@ -23,7 +23,6 @@ function props(overrides: Partial<ProjectSessionRowProps> = {}): ProjectSessionR
     readOnly: false,
     renameOpen: false,
     menuOpen: false,
-    runtimeActive: false,
     replacementBusy: false,
     onNavigate: vi.fn(),
     onOpen: vi.fn(),
@@ -48,7 +47,7 @@ describe('ProjectSessionRow', () => {
     expect(loading.querySelector('.session-loading-wave__halo')).toHaveClass('animate-ping', 'motion-reduce:animate-none');
     expect(loading.querySelector('.session-loading-wave__core')).toHaveClass('border', 'border-success', 'bg-surface');
     expect(screen.getByRole('button', { name: /^Architecture refactor/ }).querySelector(':scope > svg')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Session actions: Architecture refactor' })).toHaveClass('session-menu');
+    expect(screen.getByRole('button', { name: 'Session actions' })).toHaveClass('session-menu');
     expect(screen.getByText('Architecture refactor')).toHaveClass('font-600', 'text-text-primary');
   });
 
@@ -123,15 +122,16 @@ describe('ProjectSessionRow', () => {
     expect(value.onArchiveRequest).toHaveBeenCalledWith('acp-12345678');
   });
 
-  it('does not allow a live runtime to be hidden from the sidebar', () => {
+  it('allows archiving a session with a live runtime through server metadata', () => {
     const value = props({
       menuOpen: true,
-      runtimeActive: true,
       session: { ...session, activeChatId: 'chat-live' },
     });
     render(() => <ProjectSessionRow {...value} />);
 
-    expect(screen.getByRole('menuitem', { name: 'Archive session' })).toHaveAttribute('aria-disabled', 'true');
-    expect(screen.getByRole('menuitem', { name: 'Archive session' })).toHaveAttribute('title', 'Close this session’s running instance first');
+    const archive = screen.getByRole('menuitem', { name: 'Archive session' });
+    expect(archive).not.toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(archive);
+    expect(value.onArchiveRequest).toHaveBeenCalledWith('acp-12345678');
   });
 });

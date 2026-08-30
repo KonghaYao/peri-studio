@@ -28,6 +28,10 @@ mod metadata_migrations;
 mod metadata_recovery;
 #[path = "metadata_sessions.rs"]
 mod metadata_sessions;
+#[path = "metadata_catalog_sessions.rs"]
+mod metadata_catalog_sessions;
+
+pub use metadata_catalog_sessions::{CatalogSessionPref, CatalogSessionPrefMap, catalog_session_pref_map};
 
 pub const METADATA_DB_FILE: &str = "metadata.sqlite3";
 #[derive(Debug, Error)]

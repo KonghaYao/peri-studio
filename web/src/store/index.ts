@@ -18,14 +18,6 @@ import { resetPermissionDecisions } from '../panel/lib/permission-delivery';
 import { CatalogActions } from '@/features/catalog/catalog-actions';
 import { createSessionCatalogBootstrap } from '@/features/catalog/session-catalog-bootstrap';
 import { selectActiveProjects } from '@/features/catalog/project-catalog';
-import { applySessionPreferences, resolveSessionPreferenceKey } from '@/features/session/session-preference-merge';
-import {
-  hydrateSessionPreferences,
-  resetSessionPreferences,
-  unloadSessionPreferences,
-  setSessionArchivedPreference,
-  setSessionCustomNamePreference,
-} from '@/features/session/session-preferences';
 import { ToastStore } from '../panel/lib/toast-store';
 import { ACK_TIMEOUT_MS, type Ack, type ActionError, type ActionFrame, type ActionOptions } from '../panel/lib/action-contract';
 import { handleMcpOAuth, handleMcpOAuthAuthorization, handleMcpServers, resetMcpState } from '../panel/lib/mcp';
@@ -62,16 +54,6 @@ export { elicitationResponses };
 export const [projects, setProjects] = createSignal<ProjectInfo[]>([]);
 export const [registryHydrated, setRegistryHydrated] = createSignal(false);
 export const [projectSessions, setProjectSessions] = createSignal<ProjectSessionInfo[]>([]);
-let rawProjectSessions: ProjectSessionInfo[] = [];
-
-function publishProjectSessions(sessions: ProjectSessionInfo[]): void {
-  rawProjectSessions = sessions;
-  setProjectSessions(applySessionPreferences(sessions, principalId()));
-}
-
-function refreshProjectSessionsFromPreferences(): void {
-  setProjectSessions(applySessionPreferences(rawProjectSessions, principalId()));
-}
 export const [importableSessions, setImportableSessions] = createSignal<SessionSummaryInfo[]>([]);
 /** registry 投影的实例清单（拓扑面板只读消费；由 server 权威维护状态）。 */
 export const [instances, setInstances] = createSignal<InstanceInfo[]>([]);
@@ -388,9 +370,7 @@ installStoreProjection(
     setElicitations,
     setProjects,
     setRegistryHydrated,
-    setProjectSessions: (value) => {
-      publishProjectSessions(typeof value === 'function' ? value(projectSessions()) : value);
-    },
+    setProjectSessions,
     setImportableSessions,
     setInstances,
     setChatCatalog,
@@ -423,11 +403,6 @@ const catalogActions = new CatalogActions({
   },
   discoveringProjectId: discoveringSessionsProjectId,
   setDiscoveringProjectId: setDiscoveringSessionsProjectId,
-  principalId,
-  resolveSessionKey: (sessionId) => resolveSessionPreferenceKey(sessionId, rawProjectSessions, principalId()),
-  setSessionArchivedPreference,
-  setSessionCustomNamePreference,
-  onSessionPreferencesChanged: refreshProjectSessionsFromPreferences,
 });
 
 sessionCatalogBootstrap = createSessionCatalogBootstrap({
@@ -486,10 +461,7 @@ export function resetAuthenticatedSession(options: { preserveLocalDrafts?: boole
   setRuntimeDocsState({ chat: false, control: false });
   setChatStatusSignal({});
   setProjects([]);
-  rawProjectSessions = [];
   setProjectSessions([]);
-  if (options.preserveLocalDrafts) unloadSessionPreferences();
-  else resetSessionPreferences();
   setImportableSessions([]);
   resetPromptRecoveryState();
   resetMessageDelivery(options.preserveLocalDrafts === true);
@@ -512,11 +484,6 @@ export function resetAuthenticatedSession(options: { preserveLocalDrafts?: boole
 
 export function navigateProjectSession(sessionId: string, callbacks: OpenSessionCallbacks = {}): boolean {
   return sessionActivation.navigate(sessionId, callbacks);
-}
-
-export async function reconcileStoredSessionPreferences(principalId: string): Promise<void> {
-  await hydrateSessionPreferences(principalId);
-  refreshProjectSessionsFromPreferences();
 }
 
 // Browser UI authenticates through AuthGate and an HttpOnly cookie. The

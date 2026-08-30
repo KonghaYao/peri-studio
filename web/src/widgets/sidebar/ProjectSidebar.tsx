@@ -205,8 +205,8 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
             const collapsed = () => collapsedProjects().has(projectId);
             const projectMenuId = `project-menu-${projectId}`;
             return <Collapsible as="section" class="project-group" open={!collapsed()} onOpenChange={(open) => setProjectCollapsed(projectId, !open)}>
-              <div class="project-heading group flex min-h-36 items-center rounded-8 hover:bg-hover focus-within:bg-hover pointer-coarse:min-h-52">
-                <CollapsibleTrigger class="project-disclosure group/disclosure flex min-h-36 min-w-0 flex-1 items-center gap-7 rounded-8 border-0 bg-transparent px-8 text-left text-13 font-normal text-text-primary cursor-pointer pointer-coarse:min-h-44"><ChevronIcon class="size-12! rotate-0 transition-transform duration-150 group-data-[expanded]/disclosure:rotate-90" /><FolderIcon /><span class="block overflow-hidden text-ellipsis whitespace-nowrap">{project().name}</span></CollapsibleTrigger>
+              <div class="project-heading group flex min-h-34 items-center rounded-8 hover:bg-hover focus-within:bg-hover pointer-coarse:min-h-44">
+                <CollapsibleTrigger class="project-disclosure group/disclosure flex min-h-34 min-w-0 flex-1 items-center gap-7 rounded-8 border-0 bg-transparent px-8 text-left text-13 font-normal text-text-primary cursor-pointer pointer-coarse:min-h-44"><ChevronIcon class="size-12! shrink-0 rotate-0 transition-transform duration-150 group-data-[expanded]/disclosure:rotate-90" /><FolderIcon /><span class="block min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{project().name}</span></CollapsibleTrigger>
                 <IconButton class="row-create-action ml-auto border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100" tooltipPlacement="end" label={`New session in ${project().name}`} busy={creatingSessionProjectId() === projectId} disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(projectId)}><PlusIcon /></IconButton>
                 <DropdownMenu open={projectMenu() === projectId} onOpenChange={(open) => setProjectMenu(open ? projectId : null)} placement="bottom-end">
                   <DropdownMenuTrigger as={IconButton} class="project-menu-trigger border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100" tooltipPlacement="end" label={`${project().name} actions`} disabled={readOnly()}><MoreIcon /></DropdownMenuTrigger>
@@ -217,8 +217,8 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <CollapsibleContent id={`project-sessions-${projectId}`} class="session-list flex flex-col pl-16">
-                <For each={sessions()} fallback={
+              <CollapsibleContent id={`project-sessions-${projectId}`} class="session-list flex flex-col gap-1 pl-12">
+                <For each={sessions().map((item) => item.id)} fallback={
                   <Show
                     when={sessionsLoading()}
                     fallback={<Button busy={creatingSessionProjectId() === projectId} disabled={readOnly() || !!creatingSessionProjectId()} class="session-empty mx-8 cursor-pointer rounded-8 p-8 text-left text-12 text-text-muted hover:bg-hover hover:text-text-secondary" onClick={() => createProjectSession(projectId)}>Start your first conversation</Button>}
@@ -226,13 +226,14 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                     <LoadingState label="Loading sessions" class="session-empty mx-8 p-8! text-left!" />
                   </Show>
                 }>
-                  {(session) => {
-                    const selected = () => selectedSessionId() === session.id;
+                  {(sessionId) => {
+                    const session = () => sessions().find((item) => item.id === sessionId)!;
+                    const selected = () => selectedSessionId() === sessionId;
                     const state = () => runtimeState({
                       hasSession: true,
-                      lifecycle: session.lifecycle,
-                      isOpening: openingSessionId() === session.id,
-                      hasRuntime: !!session.activeChatId,
+                      lifecycle: session().lifecycle,
+                      isOpening: openingSessionId() === sessionId,
+                      hasRuntime: !!session().activeChatId,
                       isSelected: selected(),
                       isHydrated: selected() ? runtimeDocsHydrated() : undefined,
                       chatStatus: selected() ? chatStatusSignal()[selectedCid() ?? ''] : null,
@@ -240,20 +241,19 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                       turnActive: selected() && turnActive(),
                     });
                     return <ProjectSessionRow
-                      session={session}
+                      session={session()}
                       state={state()}
                       selected={selected()}
                       navigationBusy={!!openingSessionId()}
                       readOnly={readOnly()}
-                      renameOpen={editing() === session.id}
-                      menuOpen={sessionMenu() === session.id}
-                      runtimeActive={sessionHasRunningRuntime(session)}
+                      renameOpen={editing() === sessionId}
+                      menuOpen={sessionMenu() === sessionId}
                       replacementBusy={creatingSessionProjectId() === projectId}
                       onNavigate={() => props.onNavigate?.()}
-                      onOpen={(sessionId, onCommitted) => { navigateProjectSession(sessionId, { onCommitted }); }}
-                      onSelectRuntime={(sessionId) => { navigateProjectSession(sessionId); }}
-                      onRenameOpenChange={(open) => setEditing(open ? session.id : null)}
-                      onMenuOpenChange={(open) => setSessionMenu(open ? session.id : null)}
+                      onOpen={(id, onCommitted) => { navigateProjectSession(id, { onCommitted }); }}
+                      onSelectRuntime={(id) => { navigateProjectSession(id); }}
+                      onRenameOpenChange={(open) => setEditing(open ? sessionId : null)}
+                      onMenuOpenChange={(open) => setSessionMenu(open ? sessionId : null)}
                       onRename={renameProjectSession}
                       onCreateReplacement={(title) => { createProjectSession(projectId, title); }}
                       onArchiveRequest={setArchiveSessionCandidate}
@@ -335,15 +335,12 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
         {(() => {
           const session = () => projectSessions().find((item) => item.id === archiveSessionCandidate());
           const displayTitle = () => sessionDisplayTitle(session()?.title, session()?.id);
-          const running = () => !!session() && sessionHasRunningRuntime(session()!);
           return <ConfirmDialog
             eyebrow="Session cleanup"
             title={`Archive “${displayTitle()}”?`}
             description="The session will be hidden from the current project list, but the ACP thread, message history, and local project files are not deleted. You can restore it later under “Archived sessions”."
-            warning={running() ? 'This session still has a running instance. Close the running instance from the menu at the top of the session first.' : undefined}
             cancelDisabled={!!sessionLifecycleBusy()}
             confirmLabel="Archive session"
-            confirmDisabled={running()}
             confirmBusy={!!sessionLifecycleBusy()}
             onCancel={() => setArchiveSessionCandidate(null)}
             onConfirm={() => { const id = archiveSessionCandidate(); if (!id) return; runConfirmedMutation(() => setSessionLifecycleBusy(id), () => setSessionLifecycleBusy(null), (committed, failed) => archiveProjectSession(id, committed, failed), () => setArchiveSessionCandidate(null)); }}
