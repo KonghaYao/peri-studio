@@ -1,5 +1,6 @@
 // 连接生命周期模块行为测试：状态回调驱动、epoch 隔离、重置与会话记忆。
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createEffect, createRoot, createSignal } from 'solid-js';
 import { WsClient } from './ws-client';
 import type { ConnDetail, ConnStatus, WsClientOpts } from './ws-client';
 import {
@@ -88,6 +89,30 @@ describe('connection lifecycle', () => {
     expect(heartbeatCount()).toBe(1);
   });
 
+  it('notifies startup effects when readiness changes after the initial render', async () => {
+    installTestDeps();
+    const [hydrated, setHydrated] = createSignal(false);
+    const schedule = vi.fn();
+    let dispose = () => {};
+    createRoot((rootDispose) => {
+      dispose = rootDispose;
+      createEffect(() => {
+        const ready = connectionReady();
+        const registryHydrated = hydrated();
+        if (ready && registryHydrated) schedule();
+      });
+    });
+    await Promise.resolve();
+
+    connectWithCookie();
+    emitStatus('ready');
+    setHydrated(true);
+    await Promise.resolve();
+
+    expect(schedule).toHaveBeenCalledOnce();
+    dispose();
+  });
+
   it('fails closed when the prompt capability has no negotiated byte budget', () => {
     installTestDeps();
     connectWithCookie();
@@ -169,10 +194,12 @@ describe('connection lifecycle', () => {
     setConnectionProblem({ code: 4501, title: 't', detail: 'd', action: 'reconnect' });
     emitStatus('heartbeat');
     emitStatus('heartbeat');
+    emitStatus('ready');
     resetConnectionState();
     expect(connState()).toEqual({ text: 'Disconnected', kind: 'idle' });
     expect(heartbeatCount()).toBe(0);
     expect(promptDeliveryReady()).toBe(false);
+    expect(connectionReady()).toBe(false);
     expect(connectionProblem()).toBeNull();
   });
 });

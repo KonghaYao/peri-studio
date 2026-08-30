@@ -332,7 +332,7 @@ export function Composer() {
             : undefined}
           aria-describedby={inputDescribedBy()}
           spellcheck={false}
-          class="composer-input ui-scrollbar relative z-1 block min-h-9 max-h-180 w-full resize-none overflow-y-auto border-0 bg-transparent px-1 py-2 text-13 leading-normal text-content-primary outline-0 placeholder:text-content-muted disabled:bg-transparent disabled:text-content-secondary focus-visible:outline-0"
+          class="composer-input ui-scrollbar relative z-1 block min-h-36 max-h-180 w-full resize-none overflow-y-auto border-0 bg-transparent px-1 py-8 text-13 leading-normal text-content-primary outline-0 placeholder:text-content-muted disabled:bg-transparent disabled:text-content-secondary focus-visible:outline-0"
           />
         </div>
         <Show when={promptOverBudget()}>
@@ -365,7 +365,7 @@ export function Composer() {
             </div>
           </InlineNotice>
         }</Show>
-        <div class="composer-toolbar flex min-h-36 items-center gap-1">
+        <div class="composer-toolbar flex min-h-36 items-center gap-4">
           <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="composer-attachment shrink-0 border-0 bg-transparent text-content-primary disabled:opacity-55">
             <AttachmentIcon />
           </IconButton>
@@ -393,14 +393,14 @@ export function Composer() {
             ><ScanLine size={17} strokeWidth={1.7} class="max-tight:hidden" aria-hidden="true" /><span class="composer-skills__count sr-only">{skillCount()}</span></Button>
           </Show>
           <span class="composer-shortcut sr-only" aria-hidden="true">Enter to send · Shift + Enter for newline</span>
-          <div class="composer-toolbar__right ml-auto flex min-w-0 items-center gap-1">
+          <div class="composer-toolbar__right ml-auto flex min-w-0 items-center gap-4">
           <Show when={latestUsage()}>{(usage) =>
             <TokenUsageMeter usage={usage()} contextWindow={chatHead()?.agent?.contextWindow ?? null} />
           }</Show>
           <SessionModelMenu open={modelMenuOpen()} id={modelMenuId} onOpenChange={setModelMenuOpen} trigger={
             <Button
               size="compact"
-              class="composer-runtime min-h-7 max-w-(--model-badge-max) shrink-0 gap-1 overflow-hidden border-0 bg-sidebar-selected px-2 text-10 text-success-solid hover:bg-sidebar-selected"
+              class="composer-runtime min-h-28 max-w-(--model-badge-max) shrink-0 gap-4 overflow-hidden border-0 bg-sidebar-selected px-8 text-10 text-success-solid hover:bg-sidebar-selected"
               ref={modelTrigger}
               title={runtimeSummary()}
               aria-label="Choose model"
@@ -413,7 +413,7 @@ export function Composer() {
             </IconButton>
           </span>
           <Show when={turnActive()} fallback={
-            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || !composerDraft(draftOwner()).trim() || promptOverBudget()} label="Send" class="composer-action flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:w-48 max-narrow:min-h-44">
+            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || !composerDraft(draftOwner()).trim() || promptOverBudget()} label="Send" class="composer-action flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-accent-solid text-content-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:w-48 max-narrow:min-h-44">
               <SendHorizontal size={18} strokeWidth={1.7} />
             </IconButton></span>
           }>

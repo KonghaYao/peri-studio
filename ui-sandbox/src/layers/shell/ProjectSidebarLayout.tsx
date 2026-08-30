@@ -147,6 +147,7 @@ function RowTail(props: {
         <IconButton
           size="sm"
           label={props.moreLabel!}
+          showTooltip={false}
           class="absolute right-0 size-6 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm transition-opacity duration-(--duration-fast) group-hover/row:opacity-100"
         >
           <MoreHorizontal size={14} />
@@ -249,10 +250,10 @@ export function ProjectSidebarLayout() {
         </div>
 
         <SectionHeader title="Workspaces">
-          <IconButton size="sm" label="Filter workspaces" class="size-7 shrink-0 text-content-muted">
+          <IconButton size="sm" showTooltip={false} label="Filter workspaces" class="size-7 shrink-0 text-content-muted">
             <ListFilter size={15} strokeWidth={1.7} />
           </IconButton>
-          <IconButton size="sm" label="New workspace" class="size-7 shrink-0 text-content-muted">
+          <IconButton size="sm" showTooltip={false} label="New workspace" class="size-7 shrink-0 text-content-muted">
             <Folder size={15} strokeWidth={1.7} />
           </IconButton>
         </SectionHeader>
@@ -312,6 +313,7 @@ export function ProjectSidebarLayout() {
                         <IconButton
                           size="sm"
                           label={`New session in ${workspace.name}`}
+                          showTooltip={false}
                           class="absolute right-1 top-1 z-1 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm pointer-events-none transition-opacity duration-(--duration-fast) group-hover/workspace:pointer-events-auto group-hover/workspace:opacity-100 group-focus-within/workspace:pointer-events-auto group-focus-within/workspace:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
                         >
                           <Plus size={15} strokeWidth={1.7} />
@@ -357,7 +359,7 @@ export function ProjectSidebarLayout() {
       <div class="flex h-12 shrink-0 items-center gap-2 px-2.5">
         <span class="grid size-7 shrink-0 place-items-center rounded-full bg-surface-muted text-11 font-medium text-content-secondary">C</span>
         <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Christopher13</span>
-        <IconButton size="sm" label="Settings" class="shrink-0 text-content-muted">
+        <IconButton size="sm" showTooltip={false} label="Settings" class="shrink-0 text-content-muted">
           <Settings size={16} strokeWidth={1.7} />
         </IconButton>
       </div>

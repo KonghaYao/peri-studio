@@ -108,10 +108,9 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     >
       <button
         type="button"
-        class="flex min-h-8 min-w-0 flex-1 items-center rounded-md px-2.5 pr-12 text-left pointer-coarse:min-h-44"
+        class="flex min-h-32 min-w-0 flex-1 items-center rounded-md px-10 pr-48 text-left pointer-coarse:min-h-44"
         aria-current={props.selected ? 'page' : undefined}
         aria-label={displayTitle()}
-        title={props.readOnly && !props.session.activeChatId ? 'Full permission required to start this session' : undefined}
         onClick={open}
         disabled={(props.readOnly && !props.session.activeChatId) || props.session.lifecycle !== 'ready' || props.navigationBusy}
       >
@@ -127,8 +126,9 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
         <DropdownMenu open={props.menuOpen} onOpenChange={props.onMenuOpenChange} placement="bottom-end">
           <DropdownMenuTrigger
             as={IconButton}
-            tooltipPlacement="end"
-            class="session-menu absolute top-1/2 right-1.5 -translate-y-1/2 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm transition-opacity duration-(--duration-fast) group-hover/row:opacity-100 group-focus-within/row:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 data-[expanded]:opacity-100"
+            size="sm"
+            showTooltip={false}
+            class="session-menu absolute top-1/2 right-4 -translate-y-1/2 size-24 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm transition-opacity duration-(--duration-fast) group-hover/row:opacity-100 group-focus-within/row:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 data-[expanded]:opacity-100"
             disabled={props.readOnly || submitting()}
             label="Session actions"
           >
@@ -162,10 +162,10 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
         </PopoverContent>
       </Popover>
       <Show when={props.session.lifecycle === 'failed'}>
-        <div class="session-problem basis-full px-2.5 pb-1 text-11 text-danger">Failed to open · <Button size="compact" class="cursor-pointer border-0! bg-transparent p-0! text-inherit underline" busy={props.replacementBusy} disabled={props.readOnly || props.replacementBusy} onClick={() => props.onCreateReplacement(props.session.title)}>Create replacement session</Button></div>
+        <div class="session-problem basis-full px-10 pb-4 text-11 text-danger">Failed to open · <Button size="compact" class="cursor-pointer border-0! bg-transparent p-0! text-inherit underline" busy={props.replacementBusy} disabled={props.readOnly || props.replacementBusy} onClick={() => props.onCreateReplacement(props.session.title)}>Create replacement session</Button></div>
       </Show>
       <Show when={props.session.lifecycle === 'reconciliation_required'}>
-        <div class="session-problem session-problem--warn basis-full px-2.5 pb-1 text-11 text-warning">Server-side reconciliation required, retry not available</div>
+        <div class="session-problem session-problem--warn basis-full px-10 pb-4 text-11 text-warning">Server-side reconciliation required, retry not available</div>
       </Show>
     </div>
   );

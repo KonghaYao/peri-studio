@@ -17,10 +17,9 @@ cd peri-studio
 
 `dev.sh` 每次都会重新构建 Web 和 Rust workspace，随后启动 loopback server 和本地
 instance；只有 listener 就绪且 instance 完成认证注册后才会打印“已就绪”。脚本
-只清理自己启动的 `peri-studio local` 进程组，不会用进程名终止其他
-Peri Studio。
-如果目标端口已有 listener，脚本会在构建前停止并直接提示打开现有页面或先释放端口；
-它不会尝试接管、覆盖或终止那个进程。
+会在构建前识别并优雅停止占用目标端口的旧 `peri-studio` listener，再启动新的
+`local` 实例；不会按进程名批量终止其他程序。若端口仍由非 Peri Studio 进程占用，
+脚本会拒绝启动并提示先释放端口。
 默认页面是 <http://127.0.0.1:8456/>；每次运行使用独立的
 `.tmp/peri-studio.<pid>.log`，避免旧 daemon 输出污染新一轮 readiness 判定。
 日志、instance token 和运行时目录以私有 umask 创建。按 `Ctrl+C` 停止本次开发进程。

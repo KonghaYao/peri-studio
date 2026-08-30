@@ -108,12 +108,12 @@ function QuoteIcon() {
 
 function SystemReminderBadge(props: { reminders: string[] }) {
   return <Popover placement="bottom-start">
-    <PopoverTrigger type="button" class="system-reminder-badge self-start inline-flex h-20 cursor-pointer items-center rounded-6 border-0 bg-surface-muted px-7 text-11 font-600 text-text-secondary hover:bg-hover pointer-coarse:min-h-44" aria-label="System message">
+    <PopoverTrigger type="button" class="system-reminder-badge self-start inline-flex h-20 cursor-pointer items-center rounded-6 border-0 bg-surface-sunken px-8 text-11 font-medium text-content-secondary hover:bg-interaction-hover pointer-coarse:min-h-44" aria-label="System message">
       System
     </PopoverTrigger>
     <PopoverContent class="system-reminder-popover max-h-[min(420px,calc(100vh-32px))] w-[min(520px,calc(100vw-32px))] overflow-auto" aria-label="System message">
       <For each={props.reminders}>{(reminder, index) =>
-        <p class={`${index() === 0 ? 'm-0' : 'm-0 mt-10'} whitespace-pre-wrap wrap-anywhere text-12 leading-19 text-text-secondary`}>{reminder}</p>
+        <p class={`${index() === 0 ? 'm-0' : 'm-0 mt-10'} whitespace-pre-wrap wrap-anywhere text-12 leading-19 text-content-secondary`}>{reminder}</p>
       }</For>
     </PopoverContent>
   </Popover>;
@@ -192,10 +192,10 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
 
   return <article ref={articleRef} onMouseUp={captureSelection} onKeyUp={captureSelection} onFocusOut={(event) => {
     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setActionsOpen(false);
-  }} class={`conversation-message conversation-message--${role()} group/message relative mb-4 flex flex-col gap-4 ${role() === 'user' ? 'items-end' : role() === 'system' ? 'items-center' : ''}`} aria-label={label()}>
+  }} class={`conversation-message conversation-message--${role()} group/message relative mb-8 flex min-w-0 flex-col gap-8 ${role() === 'user' ? 'items-end' : role() === 'system' ? 'items-center' : ''}`} aria-label={label()}>
     <Show when={userHasVisibleSurface()}>
       <Show when={role() === 'user'} fallback={
-        <div class={`conversation-message__surface flex max-w-(--chat-content-max) min-w-0 flex-col gap-4 ${role() === 'system' ? 'max-w-[70%] rounded-full bg-surface-muted px-3 py-1 text-12 text-content-secondary' : 'w-full'}`}>
+        <div class={`conversation-message__surface flex max-w-(--chat-content-max) min-w-0 flex-col gap-8 ${role() === 'system' ? 'max-w-[70%] rounded-full bg-surface-muted px-12 py-4 text-12 text-content-secondary' : 'w-full'}`}>
           <For each={blockIds()}>{(id, blockIndex) => {
             const block = () => blocksById().get(id)!;
             const startsToolRun = () => block().kind === 'tool_call' && !isToolCallBlock(blocksById().get(blockIds()[blockIndex() - 1]));
@@ -255,11 +255,11 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
           <Show when={entry().error}>{(error) => <InlineNotice tone="danger" role="alert" aria-label="Message error"><code class="whitespace-pre-wrap wrap-anywhere font-mono text-12 leading-normal">{error().code || 'UNKNOWN'}{error().message ? `: ${error().message}` : ''}</code></InlineNotice>}</Show>
           <Show when={role() === 'assistant' && entry().text && !streaming()}><>
             <IconButton label="Message actions" size="sm" variant="ghost" class="conversation-message__actions-trigger absolute top-0 right-0 z-10 hidden border-0 bg-surface-overlay text-content-muted shadow-subtle pointer-coarse:inline-flex" aria-expanded={actionsOpen()} aria-controls={actionsId()} onClick={() => setActionsOpen((open) => !open)}><MoreHorizontal size={17} strokeWidth={1.7} /></IconButton>
-            <div id={actionsId()} class={`conversation-message__actions absolute top-full left-0 z-20 flex min-h-7 items-center gap-2 rounded-lg border border-border-subtle bg-surface-overlay px-2 py-1 text-content-muted shadow-overlay transition-opacity duration-150 ${actionsOpen() ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}><CopyButton text={copyText()} label="Copy answer" class="border-0 bg-transparent text-content-muted hover:bg-interaction-hover pointer-coarse:min-h-44" /><IconButton label="Quote answer" size="sm" variant="ghost" class="border-0 bg-transparent text-content-muted hover:bg-interaction-hover pointer-coarse:min-h-44 pointer-coarse:min-w-44" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-1 text-11 font-medium text-content-muted">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-content-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div>
+            <div id={actionsId()} class={`conversation-message__actions absolute top-full left-0 z-20 flex min-h-28 items-center gap-8 rounded-lg border border-border-subtle bg-surface-overlay px-8 py-4 text-content-muted shadow-overlay transition-opacity duration-150 ${actionsOpen() ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}><CopyButton text={copyText()} label="Copy answer" class="border-0 bg-transparent text-content-muted hover:bg-interaction-hover pointer-coarse:min-h-44" /><IconButton label="Quote answer" size="sm" variant="ghost" class="border-0 bg-transparent text-content-muted hover:bg-interaction-hover pointer-coarse:min-h-44 pointer-coarse:min-w-44" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-4 text-11 font-medium text-content-muted">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-content-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div>
           </></Show>
         </div>
       }>
-        <header class="conversation-message__meta pointer-events-none flex items-center gap-2 text-10 text-content-muted opacity-0 transition-opacity duration-150 group-hover/message:opacity-100 group-focus-within/message:opacity-100">
+        <header class="conversation-message__meta pointer-events-none flex items-center gap-8 text-10 text-content-muted opacity-0 transition-opacity duration-150 group-hover/message:opacity-100 group-focus-within/message:opacity-100">
           <Show when={timestamp()}>{(time) => <time dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show>
         </header>
         <UserBubble>
@@ -292,7 +292,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
     <Show when={selectionAction()}>{(action) => <IconButton
       label="Add selection to conversation"
       variant="primary"
-      class="fixed z-50 w-36 min-h-30 -translate-x-1/2 -translate-y-full rounded-7 border-0 bg-btn-primary p-0 text-surface shadow-popover"
+      class="fixed z-50 w-36 min-h-30 -translate-x-1/2 -translate-y-full rounded-md border-0 bg-accent-solid p-0 text-content-on-accent shadow-overlay"
       style={{ left: `${action().left}px`, top: `${action().top}px` }}
       onMouseDown={(event) => event.preventDefault()}
       onClick={() => addQuote(action().text)}

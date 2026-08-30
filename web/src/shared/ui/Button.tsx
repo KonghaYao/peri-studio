@@ -12,13 +12,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          'border border-transparent bg-btn-primary [color:var(--surface)]! hover:bg-btn-primary-hover active:bg-accent',
+          'border border-transparent bg-accent-solid [color:var(--content-on-accent)]! hover:bg-accent-hover active:bg-accent-active',
         default:
-          'border border-border-strong bg-surface text-text-primary hover:border-accent hover:text-accent active:border-accent active:text-accent',
+          'border border-border-strong bg-surface-overlay text-content-primary hover:border-accent-solid hover:text-accent-solid active:border-accent-active active:text-accent-active',
         secondary:
-          'border border-border-strong bg-surface text-text-primary hover:border-accent hover:text-accent active:border-accent active:text-accent',
+          'border border-border-strong bg-surface-overlay text-content-primary hover:border-accent-solid hover:text-accent-solid active:border-accent-active active:text-accent-active',
         ghost:
-          'border border-transparent bg-transparent text-text-secondary hover:bg-hover hover:text-text-primary',
+          'border border-transparent bg-transparent text-content-secondary hover:bg-interaction-hover hover:text-content-primary',
         danger:
           'border border-danger-border bg-surface text-danger hover:border-danger hover:text-danger active:border-danger',
       },
@@ -93,6 +93,7 @@ export function IconButton(
   props: Props & {
     label: string;
     title?: string;
+    showTooltip?: boolean;
     tooltipPlacement?: 'start' | 'center' | 'end';
   },
 ) {
@@ -100,6 +101,7 @@ export function IconButton(
     'label',
     'title',
     'class',
+    'showTooltip',
     'tooltipPlacement',
     'size',
     'variant',
@@ -108,6 +110,7 @@ export function IconButton(
   ]);
   const helpId = `icon-help-${createUniqueId()}`;
   const customHelp = () => !!local.title && local.title !== local.label;
+  const tooltipEnabled = () => local.showTooltip !== false;
   const sizeKey = () => local.size ?? 'md';
   const iconButton = (
     <button
@@ -138,20 +141,22 @@ export function IconButton(
   );
 
   return (
-    <Tooltip placement={
-        local.tooltipPlacement === 'start'
-          ? 'bottom-start'
-          : local.tooltipPlacement === 'end'
-            ? 'bottom-end'
-            : 'bottom'
-      }
-    >
-      <TooltipTrigger as="span" class="ui-tooltip-anchor">
-        {iconButton}
-      </TooltipTrigger>
-      <TooltipContent id={customHelp() ? helpId : undefined}>
-        {local.title ?? local.label}
-      </TooltipContent>
-    </Tooltip>
+    <Show when={tooltipEnabled()} fallback={iconButton}>
+      <Tooltip placement={
+          local.tooltipPlacement === 'start'
+            ? 'bottom-start'
+            : local.tooltipPlacement === 'end'
+              ? 'bottom-end'
+              : 'bottom'
+        }
+      >
+        <TooltipTrigger as="span" class="ui-tooltip-anchor">
+          {iconButton}
+        </TooltipTrigger>
+        <TooltipContent id={customHelp() ? helpId : undefined}>
+          {local.title ?? local.label}
+        </TooltipContent>
+      </Tooltip>
+    </Show>
   );
 }

@@ -77,7 +77,7 @@ describe('Composer', () => {
     render(() => <Composer />);
 
     expect(document.querySelector('.composer-surface')).toHaveClass('rounded-(--composer-radius)', 'p-2.5');
-    expect(screen.getByRole('textbox')).toHaveClass('min-h-9', 'leading-normal', 'text-content-primary');
+    expect(screen.getByRole('textbox')).toHaveClass('min-h-36', 'leading-normal', 'text-content-primary');
     expect(screen.getByRole('button', { name: 'Choose model' })).toHaveTextContent('Nova 4.1');
     expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('w-36', 'min-h-32', 'rounded-8');
   });
@@ -166,7 +166,7 @@ describe('Composer', () => {
     render(() => <Composer />);
     const input = screen.getByRole('textbox');
     const send = screen.getByRole('button', { name: 'Send' });
-    expect(input).toHaveAttribute('placeholder', 'Message Agent');
+    expect(input).toHaveAttribute('placeholder', 'Message the agent');
     expect(send).toBeDisabled();
     fireEvent.input(input, { target: { value: '  inspect the state  ' } });
     expect(send).toBeEnabled();
@@ -484,7 +484,7 @@ describe('Composer', () => {
     setSelectedCid('chat-2');
     render(() => <Composer />);
 
-    expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', 'Message Agent');
+    expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', 'Message the agent');
     expect(screen.getByRole('textbox')).toBeEnabled();
     expect(screen.queryByText('Another session is still confirming')).not.toBeInTheDocument();
     expect(screen.queryByText('private draft A')).not.toBeInTheDocument();

@@ -15,14 +15,22 @@ function tableCsv(table: HTMLTableElement) {
 
 export function MarkdownTable(props: JSX.HTMLAttributes<HTMLTableElement>) {
   let table!: HTMLTableElement;
-  const copyText = () => table ? tableText(table, '\t') : '';
-  return <div class="md-table my-(--markdown-rich-block-gap) overflow-hidden rounded-10 border border-border-subtle bg-surface">
-    <div class="md-table__toolbar flex items-center justify-end gap-4 border-b border-divider px-7 py-5">
-      <CopyButton text={copyText()} label="Copy table" size="compact" />
-      <IconButton size="compact" onClick={() => downloadText(tableCsv(table), 'table.csv', 'text/csv;charset=utf-8')} label="Download table as CSV"><DownloadIcon /></IconButton>
+  const copyText = () => (table ? tableText(table, '\t') : '');
+  return (
+    <div class="md-table group/md-table relative my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay">
+      <div
+        class="absolute top-6 right-6 z-10 flex gap-2 rounded-md border border-border-subtle bg-surface-overlay/95 p-2 opacity-0 shadow-raised transition-opacity duration-(--duration-fast) group-hover/md-table:opacity-100 group-focus-within/md-table:opacity-100"
+        role="toolbar"
+        aria-label="Table actions"
+      >
+        <CopyButton text={copyText()} label="Copy table" size="compact" />
+        <IconButton size="compact" label="Download table as CSV" onClick={() => downloadText(tableCsv(table), 'table.csv', 'text/csv;charset=utf-8')}>
+          <DownloadIcon />
+        </IconButton>
+      </div>
+      <div class="overflow-x-auto">
+        <table {...props} ref={table} class="w-full border-collapse text-left text-13" />
+      </div>
     </div>
-    <div class="overflow-x-auto">
-      <table {...props} ref={table} class="w-full min-w-[420px] border-collapse text-left text-13" />
-    </div>
-  </div>;
+  );
 }

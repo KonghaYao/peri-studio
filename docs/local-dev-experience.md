@@ -106,13 +106,14 @@ rustc --version   # 确认 ≥ 1.95，实测 1.98.0 可正常编译
 **常见原因**
 
 - 上一次 `cargo run` 实际编译失败，server 未真正就绪（多与 Rust 版本过旧有关）
-- 8456 端口被占用（`dev.sh` 会直接退出并提示）
+- 旧的 `peri-studio` listener 未能优雅退出（`dev.sh` 会先尝试清理；非 Peri Studio 进程不会被接管）
 
 **排查**
 
 1. 确认 `rustc --version` 满足要求
-2. 确认端口空闲：`lsof -nP -iTCP:8456 -sTCP:LISTEN`
-3. 查看 `.tmp/peri-studio.*.log` 中是否有 `instance connected` 与 `resync complete, all sessions live`
+2. 查看端口占用者：`lsof -nP -iTCP:8456 -sTCP:LISTEN`
+3. 若占用者是旧 `peri-studio`，重新执行 `./dev.sh` 会先发送优雅停止信号
+4. 查看 `.tmp/peri-studio.*.log` 中是否有 `instance connected` 与 `resync complete, all sessions live`
 
 ---
 

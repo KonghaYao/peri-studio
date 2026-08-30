@@ -73,6 +73,12 @@
   --surface-canvas: var(--palette-neutral-0);
   --surface-sunken: var(--palette-neutral-25);
   --surface-overlay: var(--palette-neutral-0);
+  --scrim: rgb(20 20 20 / 45%);
+
+  /* 边框 */
+  --border-subtle: var(--palette-neutral-100);
+  --border-strong: var(--palette-neutral-200);
+  --divider: var(--palette-neutral-100);
 
   /* 文字 */
   --content-primary: var(--palette-neutral-900);
@@ -212,59 +218,53 @@
   --git-graph-row-height: var(--resource-tree-row);
 
   /* ------------------------------------------------------------------
-     Legacy production tokens（现有 widget 消费；值不变）
+     Legacy production tokens（widget 消费；别名指向 Tier 1，与 sandbox 对齐）
      ------------------------------------------------------------------ */
 
-  /* Surfaces: white is the canvas; hierarchy comes from spacing and hairlines. */
-  --app-bg: #ffffff;
-  --sidebar-bg: #ffffff;
-  --surface: #ffffff;
-  --surface-muted: #fbfcfb;
-  --empty-mark-bg: #fbfcfb;
-  --empty-mark-fg: #30302e;
-  --scrim: rgb(20 20 19 / 18%);
+  /* Surfaces */
+  --app-bg: var(--surface-canvas);
+  --sidebar-bg: var(--surface-canvas);
+  --surface: var(--surface-canvas);
+  --surface-muted: var(--surface-sunken);
+  --empty-mark-bg: var(--surface-muted);
+  --empty-mark-fg: var(--content-primary);
 
   /* Borders */
-  --border-subtle: #ecefeb;
-  --border-strong: #d4dad6;
-  --divider: #f0f2f0;
-  --danger-border: rgb(190 60 60 / 30%);
-  --warning-border: rgb(146 93 23 / 32%);
-  --composer-border: #e1e5e2;
+  --danger-border: var(--feedback-danger-border);
+  --warning-border: var(--feedback-warning-border);
+  --composer-border: var(--border-subtle);
 
   /* Text */
-  --text-primary: #202522;
-  --text-secondary: #5d6861;
-  --text-muted: #7f8983;
-  --text-faint: #b8c0bb;
-  --link: #245b92;
-  --link-decoration: rgb(36 91 146 / 28%);
+  --text-primary: var(--content-primary);
+  --text-secondary: var(--content-secondary);
+  --text-muted: var(--content-muted);
+  --text-faint: var(--content-faint);
+  --link: var(--content-link);
+  --link-decoration: color-mix(in srgb, var(--content-link) 28%, transparent);
 
   /* Interaction and feedback */
-  --accent: #16865a;
-  --hover: #f6faf8;
-  --selected: #eff8f3;
-  --focus-ring: #2e7d5a;
-  --success: #16a36a;
-  --success-soft: #f3fbf7;
-  --warning: #d48816;
-  --warning-strong: #a76008;
-  --warning-soft: #fffaf0;
-  --danger: #d84b4b;
-  --danger-soft: #fffafa;
-  --btn-primary: var(--accent);
-  --btn-primary-hover: #11734c;
-  --scrollbar-thumb: rgb(42 42 39 / 18%);
-  --scrollbar-thumb-hover: rgb(42 42 39 / 34%);
+  --accent: var(--accent-solid);
+  --hover: var(--interaction-hover);
+  --selected: var(--sidebar-selected-bg);
+  --focus-ring: var(--border-focus);
+  --success: var(--feedback-success-strong);
+  --success-soft: var(--feedback-success-soft);
+  --warning: var(--feedback-warning-solid);
+  --warning-strong: var(--feedback-warning-strong);
+  --warning-soft: var(--feedback-warning-soft);
+  --danger: var(--feedback-danger-solid);
+  --danger-soft: var(--feedback-danger-soft);
+  --btn-primary: var(--accent-solid);
+  --btn-primary-hover: var(--accent-hover);
+  --scrollbar-thumb: rgb(0 0 0 / 18%);
+  --scrollbar-thumb-hover: rgb(0 0 0 / 32%);
 
-  /* Elevation: use only for layers that leave the canvas. */
-  --shadow-popover: 0 4px 12px rgb(25 25 24 / 6%), 0 1px 3px rgb(25 25 24 / 4%);
-  --shadow-float: 0 2px 8px rgb(35 55 43 / 4%), 0 1px 2px rgb(35 55 43 / 3%);
-  --shadow-composer-overlay: 0 2px 10px rgb(25 25 24 / 5%), 0 1px 2px rgb(25 25 24 / 4%);
-  --shadow-recovery: 0 2px 8px rgb(25 25 24 / 4%);
-  /* Status halo rings: exact arbitrary-shadow equivalents used by
-     running/done activity states (color-mix over accent/success). */
-  --shadow-accent-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+  /* Elevation */
+  --shadow-popover: var(--shadow-overlay);
+  --shadow-float: var(--shadow-raised);
+  --shadow-composer-overlay: var(--shadow-raised);
+  --shadow-recovery: var(--shadow-raised);
+  --shadow-accent-ring: var(--shadow-focus-ring);
 
   /* Spacing scale. Feature and primitive styles consume these for every
      padding/gap/margin value; each step is an exact pixel value, so the
@@ -349,7 +349,7 @@
   --tree-row-height: 24px;
   --asset-tile-size: 68px;
   --status-panel-max-height: 132px;
-  --composer-radius: 18px;
+  --composer-radius: var(--radius-xl);
   --decision-radius: 14px;
   --permission-card-min-height: 96px;
   --model-badge-max: 112px;

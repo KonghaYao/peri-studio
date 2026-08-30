@@ -18,8 +18,50 @@ LOG_DIR="$(pwd)/.tmp"
 APP_LOG="${LOG_DIR}/peri-studio.${$}.log"
 DEV_LOG_FILTER="${PERI_STUDIO_DEV_LOG:-info}"
 
+stale_local_listener_pids() {
+    local records
+    records="$(lsof -F pc -nP -iTCP:"${LISTEN_PORT}" -sTCP:LISTEN 2>/dev/null || true)"
+    printf '%s\n' "${records}" | awk '
+        /^p/ {
+            if (pid != "" && command == "peri-studio") print pid
+            pid = substr($0, 2)
+            command = ""
+            next
+        }
+        /^c/ { command = substr($0, 2) }
+        END {
+            if (pid != "" && command == "peri-studio") print pid
+        }
+    '
+}
+
+cleanup_stale_local_instance() {
+    local old_pids pid
+    old_pids="$(stale_local_listener_pids)"
+    [ -z "${old_pids}" ] && return 0
+
+    echo "==> 清理旧 peri-studio 实例 ..."
+    while IFS= read -r pid; do
+        [ -z "${pid}" ] && continue
+        echo "    发送 SIGTERM 到 PID ${pid}"
+        kill -TERM "${pid}" 2>/dev/null || true
+    done <<< "${old_pids}"
+
+    for _ in $(seq 1 100); do
+        if [ -z "$(stale_local_listener_pids)" ]; then
+            return 0
+        fi
+        sleep 0.1
+    done
+
+    echo "!! 旧 peri-studio 实例未能在 10 秒内退出，拒绝启动" >&2
+    return 1
+}
+
+cleanup_stale_local_instance
+
 if lsof -nP -iTCP:"${LISTEN_PORT}" -sTCP:LISTEN >/dev/null 2>&1; then
-    echo "!! TCP ${LISTEN_PORT} 已被占用；若 Peri Studio 已运行，请直接打开 http://${LISTEN_ADDR}:${LISTEN_PORT}/。" >&2
+    echo "!! TCP ${LISTEN_PORT} 仍被其他进程占用；仅自动清理 peri-studio 实例，请先释放该端口。" >&2
     exit 1
 fi
 

@@ -30,6 +30,11 @@ Peri Studio 是 ACP agent 的持久 Web 工作台（仓库名 peri-studio，产�
 - `scripts/`：契约测试与端到端验证脚本（含 release 打包）
 - `dev.sh`：一键启动 server + instance 并校验就绪
 
+**本地启动权限**：`dev.sh` 只能由用户在本地终端手动执行。Agent 不得调用
+`./dev.sh`、重启其进程或通过后台 shell 代执行；需要运行时验证时应停止并请用户执行。
+Agent 可以阅读或修改脚本，以及运行不启动 server/instance 的静态检查，但不得启动
+本地 server 或 instance。
+
 ## 技术栈
 
 - 后端：Rust 2021 workspace + tokio + sqlx(SQLite) + yrs(Yjs) + tracing + clap；依赖版本单一事实源在根 `Cargo.toml` 的 `[workspace.dependencies]`

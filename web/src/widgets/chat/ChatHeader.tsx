@@ -33,7 +33,7 @@ export function ChatHeader(props: ChatHeaderProps) {
     return { label: 'Offline', detail: current.text };
   };
   const showRuntimeStatus = () => runtime().label && !['Ready', 'Working', 'Approval'].includes(runtime().label);
-  return <header class={`chat-header relative flex h-13 items-center gap-2 border-b border-border-subtle bg-surface-overlay px-4 ${props.launch ? 'chat-header--launch justify-end' : ''}`}>
+  return <header class={`chat-header relative flex h-52 items-center gap-8 border-b border-border-subtle bg-surface-overlay px-16 ${props.launch ? 'chat-header--launch justify-end' : ''}`}>
     <IconButton tooltipPlacement="start" label="Open navigation" size="sm" class="mobile-nav-button hidden max-desk:inline-flex" onClick={props.onOpenNavigation}>
       <Menu size={16} strokeWidth={1.7} />
     </IconButton>

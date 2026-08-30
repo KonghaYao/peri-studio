@@ -111,23 +111,23 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   };
   const close = () => props.compact ? props.onOpenChange?.(false) : setView(null);
   const panelTitle = () => view() === 'mcp' ? 'MCP' : project()?.name ?? 'Workspace';
-  const surface = () => <aside class={`resource-workbench flex h-full min-h-0 border-l border-divider bg-surface ${props.compact ? 'absolute inset-0 w-full' : 'relative w-[46px] shrink-0'}`} aria-label="Workspace resources">
-    <nav class="flex w-46 shrink-0 flex-col items-center gap-1 bg-surface py-6" aria-label="Resource views">
+  const surface = () => <aside class={`resource-workbench flex h-full min-h-0 border-l border-border-subtle bg-surface-overlay ${props.compact ? 'absolute inset-0 w-full' : 'relative w-[46px] shrink-0'}`} aria-label="Workspace resources">
+    <nav class="flex w-46 shrink-0 flex-col items-center gap-4 bg-surface-overlay py-8" aria-label="Resource views">
       <ResourceRailButton label="Explorer" active={view() === 'explorer'} onClick={() => toggle('explorer')}><Files size={17} strokeWidth={1.7} /></ResourceRailButton>
       <ResourceRailButton label="Source Control" active={view() === 'scm'} badge={sourceControlCount()} onClick={() => toggle('scm')}><GitBranch size={17} strokeWidth={1.7} /></ResourceRailButton>
       <ResourceRailButton label="MCP" active={view() === 'mcp'} onClick={() => toggle('mcp')}><PlugZap size={17} strokeWidth={1.7} /></ResourceRailButton>
       <SessionRailActions />
     </nav>
     <Show when={view()}>
-      <div class={`resource-workbench__panel flex min-h-0 min-w-0 flex-1 flex-col bg-surface ${props.compact ? '' : `absolute z-30 ${RESOURCE_PANEL_SURFACE_CLASS}`}`}>
+      <div class={`resource-workbench__panel flex min-h-0 min-w-0 flex-1 flex-col bg-surface-overlay ${props.compact ? '' : `absolute z-30 ${RESOURCE_PANEL_SURFACE_CLASS}`}`}>
         <header class={RESOURCE_PANEL_HEADER_CLASS}>
           <strong class={RESOURCE_PANEL_TITLE_CLASS}>{panelTitle()}</strong>
-          <Show when={view() === 'explorer' || view() === 'scm'}><IconButton label="Refresh resources" size="compact" onClick={refreshResourceProject} class="border-0 bg-transparent text-text-muted"><RefreshCw size={14} strokeWidth={1.7} /></IconButton></Show>
-          <IconButton label="Close resource panel" size="compact" onClick={close} class="border-0 bg-transparent text-text-muted"><X size={14} strokeWidth={1.7} /></IconButton>
+          <Show when={view() === 'explorer' || view() === 'scm'}><IconButton label="Refresh resources" size="compact" onClick={refreshResourceProject} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><RefreshCw size={14} strokeWidth={1.7} /></IconButton></Show>
+          <IconButton label="Close resource panel" size="compact" onClick={close} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><X size={14} strokeWidth={1.7} /></IconButton>
         </header>
         <Show when={view() === 'mcp'}><McpPanelContent embedded /></Show>
         <Show when={view() === 'explorer' || view() === 'scm'}>
-          <Show when={project()} fallback={<div class="p-14 text-12 text-text-muted">Select or create a project to browse its workspace.</div>}>
+          <Show when={project()} fallback={<div class="p-16 text-12 text-content-muted">Select or create a project to browse its workspace.</div>}>
             <Show when={resourceWorkspace().error}>{(message) => <div role="alert" class="m-8 flex items-start gap-6 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">
               <span class="min-w-0 flex-1">{message()}</span>
               <button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={refreshResourceProject}>Retry</button>

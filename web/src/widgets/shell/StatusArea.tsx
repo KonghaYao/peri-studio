@@ -72,14 +72,14 @@ export function StatusArea(props: StatusAreaProps) {
         </div>
         <div class="ui-scrollbar max-h-(--status-panel-max-height) overflow-auto px-8 py-6 text-11" role="tabpanel" id={`status-panel-${visibleTab()}`}>
           <Show when={visibleTab() === 'todo'}>
-            <ol class="m-0 grid list-none gap-1 p-0"><For each={props.plan}>{(entry) => <li class="grid min-h-24 grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-7 rounded-7 px-6 py-4">
+            <ol class="m-0 grid list-none gap-4 p-0"><For each={props.plan}>{(entry) => <li class="grid min-h-24 grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-7 rounded-7 px-6 py-4">
               <span class="grid size-14 place-items-center"><StateIcon status={entry.status} /></span>
               <span class="overflow-hidden text-ellipsis whitespace-nowrap text-text-primary">{entry.status === 'in_progress' && entry.activeForm ? entry.activeForm : entry.content}</span>
               <Badge tone={stateTone(entry.status)}>{stateLabel(entry.status)}</Badge>
             </li>}</For></ol>
           </Show>
           <Show when={visibleTab() === 'async'}>
-            <ol class="m-0 grid list-none gap-1 p-0"><For each={taskActivities()}>{(activity) => <li class="grid min-h-24 grid-cols-[14px_54px_minmax(0,1fr)_auto] items-center gap-7 rounded-7 px-6 py-4">
+            <ol class="m-0 grid list-none gap-4 p-0"><For each={taskActivities()}>{(activity) => <li class="grid min-h-24 grid-cols-[14px_54px_minmax(0,1fr)_auto] items-center gap-7 rounded-7 px-6 py-4">
               <span class="grid size-14 place-items-center"><StateIcon status={activity.status} /></span>
               <span class="inline-flex items-center gap-4 text-9 font-650 uppercase tracking-4 text-text-muted">
                 <Show when={activity.kind === 'subagent'} fallback={<Workflow size={12} strokeWidth={1.8} />}><Bot size={12} strokeWidth={1.8} /></Show>
@@ -93,7 +93,7 @@ export function StatusArea(props: StatusAreaProps) {
             </li>}</For></ol>
           </Show>
           <Show when={visibleTab() === 'changes'}>
-            <ol class="m-0 grid list-none gap-1 p-0 font-mono"><For each={changes()}>{(change) => <li class="grid min-h-24 grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-7 rounded-7 px-6 py-4">
+            <ol class="m-0 grid list-none gap-4 p-0 font-mono"><For each={changes()}>{(change) => <li class="grid min-h-24 grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-7 rounded-7 px-6 py-4">
               <VSCodeFileIcon path={change.path} size={15} class="size-14" />
               <span class="overflow-hidden text-ellipsis whitespace-nowrap text-text-primary">{change.path}</span>
               <span class="uppercase text-9 tracking-4 text-text-muted">{change.operation}</span>

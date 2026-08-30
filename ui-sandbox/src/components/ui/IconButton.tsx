@@ -6,14 +6,16 @@ import { Tooltip } from './Tooltip';
 export function IconButton(props: JSX.ButtonHTMLAttributes<HTMLButtonElement> & {
   label: string;
   tooltip?: string;
+  showTooltip?: boolean;
   size?: 'sm' | 'md';
 }) {
-  const [local, rest] = splitProps(props, ['class', 'label', 'tooltip', 'size', 'children']);
+  const [local, rest] = splitProps(props, ['class', 'label', 'tooltip', 'showTooltip', 'size', 'children']);
+  const tooltipEnabled = () => local.showTooltip !== false;
   const button = (
     <button
       type="button"
       aria-label={local.label}
-      title={local.tooltip ? undefined : local.label}
+      title={tooltipEnabled() ? (local.tooltip ? undefined : local.label) : undefined}
       class={cn(
         'inline-flex cursor-pointer items-center justify-center rounded-md text-content-secondary transition-colors duration-(--duration-fast)',
         'hover:bg-interaction-hover hover:text-content-primary',
@@ -28,7 +30,7 @@ export function IconButton(props: JSX.ButtonHTMLAttributes<HTMLButtonElement> & 
     </button>
   );
   return (
-    <Show when={local.tooltip} fallback={button}>
+    <Show when={tooltipEnabled() && local.tooltip} fallback={button}>
       <Tooltip content={local.tooltip!}>{button}</Tooltip>
     </Show>
   );

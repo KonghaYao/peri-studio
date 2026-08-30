@@ -23,7 +23,7 @@ export function MessageOutbox(props: {
   const inFlight = () => ['sending', 'accepted', 'committed'].includes(props.submission.phase);
 
   return <article
-    class={`conversation-message conversation-message--user message-outbox message-outbox--${props.submission.phase} flex mb-12 justify-end`}
+    class={`conversation-message conversation-message--user message-outbox message-outbox--${props.submission.phase} flex min-w-0 mb-12 justify-end`}
     aria-label={props.acknowledged ? 'Your unresolved message' : 'Your pending-confirmation message'}
     role={props.acknowledged ? 'group' : actionable() ? 'alert' : 'status'}
     aria-busy={inFlight() ? 'true' : undefined}

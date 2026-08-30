@@ -308,7 +308,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
       >
         <Show when={pinnedSessions().length > 0}>
           <SectionHeader title="Pinned" icon={<Pin size={14} strokeWidth={1.7} />} />
-          <div class="flex flex-col gap-0.5 pb-1">
+          <div class="flex flex-col gap-2 pb-1">
             <For each={pinnedSessions().map((session) => session.id)}>
               {(sessionId) => {
                 const session = () => pinnedSessions().find((item) => item.id === sessionId)!;
@@ -319,10 +319,10 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
         </Show>
 
         <SectionHeader title="Workspaces">
-          <IconButton size="sm" label="Filter workspaces" class="size-7 shrink-0 text-content-muted" onClick={() => setSearchOpen(true)}>
+          <IconButton size="sm" showTooltip={false} label="Filter workspaces" class="size-28 shrink-0 text-content-muted" onClick={() => setSearchOpen(true)}>
             <ListFilter size={15} strokeWidth={1.7} />
           </IconButton>
-          <IconButton size="sm" label="New workspace" class="new-project-button size-7 shrink-0 text-content-muted" disabled={readOnly()} onClick={() => setCreating(true)}>
+          <IconButton size="sm" showTooltip={false} label="New workspace" class="new-project-button size-28 shrink-0 text-content-muted" disabled={readOnly()} onClick={() => setCreating(true)}>
             <Folder size={15} strokeWidth={1.7} />
           </IconButton>
         </SectionHeader>
@@ -339,16 +339,18 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
           <For each={instanceIds()}>{(instanceId) => {
             const instance = () => instanceGroups().find((item) => item.id === instanceId)!;
             return <section class="instance-group group/instance pb-1">
-              <div class="instance-row flex min-h-7 items-center gap-2 px-2.5 text-11 text-content-muted">
+              <div class="instance-row flex min-h-28 items-center gap-8 px-2.5 text-11 text-content-muted">
                 <span class="instance-name min-w-0 flex-1 truncate">{instance().name}</span>
                 <Show when={instance().offline}>
-                  <span class="instance-offline flex shrink-0 items-center gap-1 text-danger-solid" role="img" aria-label="Instance offline">
+                  <span class="instance-offline flex shrink-0 items-center gap-4 text-danger-solid" role="img" aria-label="Instance offline">
                     <CloudOff size={13} strokeWidth={1.8} aria-hidden="true" />
                     <span>Offline</span>
                   </span>
                 </Show>
                 <IconButton
-                  class="new-project-button instance-create-action ml-auto size-7 shrink-0 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:pointer-events-auto group-hover/instance:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100"
+                  size="sm"
+                  showTooltip={false}
+                  class="new-project-button instance-create-action ml-auto size-24 shrink-0 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:opacity-100 focus-visible:opacity-100 pointer-coarse:size-32 pointer-coarse:opacity-100"
                   label="New project"
                   disabled={readOnly()}
                   onClick={() => setCreating(true)}
@@ -368,14 +370,14 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                 const projectMenuId = `project-menu-${projectId}`;
                 return <Collapsible as="section" class="project-group min-w-0" open={open()} onOpenChange={(next) => setProjectCollapsed(projectId, !next)}>
                   <div class="group/workspace relative min-w-0 rounded-md hover:bg-interaction-hover focus-within:bg-interaction-hover">
-                    <CollapsibleTrigger class="flex w-full min-w-0 items-start gap-2 px-2.5 py-1 text-left" aria-label={project().name}>
+                    <CollapsibleTrigger class="flex w-full min-w-0 items-start gap-8 px-2.5 py-4 text-left" aria-label={project().name}>
                       <span class="mt-0.5 shrink-0 text-content-muted">
                         <Show when={open()} fallback={<Folder size={15} strokeWidth={1.7} />}>
                           <FolderOpen size={15} strokeWidth={1.7} />
                         </Show>
                       </span>
                       <span class="min-w-0 flex-1 py-0.5 pr-14">
-                        <span class="flex min-w-0 items-center gap-2">
+                        <span class="flex min-w-0 items-center gap-8">
                           <span class="min-w-0 flex-1 truncate text-13 text-content-primary">{project().name}</span>
                           <Show when={hasSessions()}>
                             <span
@@ -394,41 +396,45 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                         </Show>
                       </span>
                     </CollapsibleTrigger>
-                    <IconButton
-                      class="row-create-action absolute right-1 top-1 z-1 size-7 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm pointer-events-none transition-opacity duration-(--duration-fast) group-hover/workspace:pointer-events-auto group-hover/workspace:opacity-100 group-focus-within/workspace:pointer-events-auto group-focus-within/workspace:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100"
-                      tooltipPlacement="end"
-                      label={`New session in ${project().name}`}
-                      busy={creatingSessionProjectId() === projectId}
-                      disabled={readOnly() || !!creatingSessionProjectId()}
-                      onClick={() => createProjectSession(projectId)}
-                    >
-                      <PlusIcon />
-                    </IconButton>
-                    <DropdownMenu open={projectMenu() === projectId} onOpenChange={(next) => setProjectMenu(next ? projectId : null)} placement="bottom-end">
-                      <DropdownMenuTrigger
-                        as={IconButton}
-                        class="project-menu-trigger absolute right-8 top-1 z-1 size-7 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm pointer-events-none transition-opacity duration-(--duration-fast) group-hover/workspace:pointer-events-auto group-hover/workspace:opacity-100 group-focus-within/workspace:pointer-events-auto group-focus-within/workspace:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100"
-                        tooltipPlacement="end"
-                        label={`${project().name} actions`}
-                        disabled={readOnly()}
+                    <div class="row-actions absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 transition-opacity duration-(--duration-fast) group-hover/workspace:opacity-100 group-focus-within/workspace:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100">
+                      <DropdownMenu open={projectMenu() === projectId} onOpenChange={(next) => setProjectMenu(next ? projectId : null)} placement="bottom-end">
+                        <DropdownMenuTrigger
+                          as={IconButton}
+                          size="sm"
+                          showTooltip={false}
+                          class="project-menu-trigger size-24 border-0 bg-surface-overlay/90 text-content-muted shadow-sm hover:text-content-primary pointer-coarse:size-32"
+                          label={`${project().name} actions`}
+                          disabled={readOnly()}
+                        >
+                          <MoreIcon />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent id={projectMenuId} aria-label={`${project().name} actions`} class="ui-menu">
+                          <DropdownMenuItem onSelect={() => { setProjectNameDraft(project().name); setRenamingProject(projectId); }}><RenameIcon />Rename project</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => setImportingProject(projectId)}><ImportIcon />Import existing session</DropdownMenuItem>
+                          <DropdownMenuItem class="text-danger focus:text-danger" disabled={projectHasRunningSession(projectId)} onSelect={() => setArchiveCandidate(projectId)}><ArchiveIcon />Archive project</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <IconButton
+                        size="sm"
+                        showTooltip={false}
+                        class="row-create-action size-24 border-0 bg-surface-overlay/90 text-content-muted shadow-sm hover:text-content-primary pointer-coarse:size-32"
+                        label={`New session in ${project().name}`}
+                        busy={creatingSessionProjectId() === projectId}
+                        disabled={readOnly() || !!creatingSessionProjectId()}
+                        onClick={() => createProjectSession(projectId)}
                       >
-                        <MoreIcon />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent id={projectMenuId} aria-label={`${project().name} actions`} class="ui-menu">
-                        <DropdownMenuItem onSelect={() => { setProjectNameDraft(project().name); setRenamingProject(projectId); }}><RenameIcon />Rename project</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => setImportingProject(projectId)}><ImportIcon />Import existing session</DropdownMenuItem>
-                        <DropdownMenuItem class="text-danger focus:text-danger" disabled={projectHasRunningSession(projectId)} title={projectHasRunningSession(projectId) ? 'Close the running sessions in this project first' : undefined} onSelect={() => setArchiveCandidate(projectId)}><ArchiveIcon />Archive project</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                        <PlusIcon />
+                      </IconButton>
+                    </div>
                   </div>
-                  <CollapsibleContent id={`project-sessions-${projectId}`} class="session-list flex flex-col gap-0.5 pb-1">
+                  <CollapsibleContent id={`project-sessions-${projectId}`} class="session-list flex flex-col gap-2 pb-1">
                     <Show
                       when={hasSessions()}
                       fallback={<Show
                         when={sessionsLoading()}
-                        fallback={<button type="button" class="session-empty sidebar-mist-hint px-2.5 py-1 pl-9 text-left text-11 hover:text-content-muted" disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(projectId)}>Start your first conversation</button>}
+                        fallback={<button type="button" class="session-empty sidebar-mist-hint px-2.5 py-4 pl-36 text-left text-11 hover:text-content-muted" disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(projectId)}>Start your first conversation</button>}
                       >
-                        <LoadingState label="Loading sessions" class="session-empty px-2.5 py-1 pl-9 text-left!" />
+                        <LoadingState label="Loading sessions" class="session-empty px-2.5 py-4 pl-36 text-left!" />
                       </Show>}
                     >
                       <For each={sessions().map((item) => item.id)}>
@@ -440,15 +446,15 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                     </Show>
                     <Show when={archivedSessions().length > 0}>
                       <ArchivedSection
-                        toggleClass="archived-sessions__toggle flex w-full min-h-8 cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent px-2.5 py-1 pl-9 text-left text-11 text-content-muted hover:bg-interaction-hover hover:text-content-secondary pointer-coarse:min-h-11"
+                        toggleClass="archived-sessions__toggle flex w-full min-h-32 cursor-pointer items-center gap-6 rounded-md border-0 bg-transparent px-2.5 py-4 pl-36 text-left text-11 text-content-muted hover:bg-interaction-hover hover:text-content-secondary pointer-coarse:min-h-44"
                         label="Archived sessions"
                         count={archivedSessions().length}
                         open={archivedSessionsOpen().has(projectId)}
                         onOpenChange={(next) => setArchivedSessionsExpanded(projectId, next)}
                         listId={`archived-sessions-${projectId}`}
-                        listClass="archived-session-list flex flex-col gap-0.5 pb-1 pl-9"
+                        listClass="archived-session-list flex flex-col gap-2 pb-1 pl-36"
                       >
-                        <For each={archivedSessions()}>{(session) => <div class="archived-session-row flex min-h-8 items-center gap-2 rounded-md px-2.5 py-1 hover:bg-interaction-hover pointer-coarse:min-h-11"><span class="flex min-w-0 flex-1 flex-col gap-0.5"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12 font-medium text-content-primary">{sessionDisplayTitle(session.title, session.id)}</strong><small class="text-10 text-content-muted">{session.lifecycle === 'ready' ? 'Session saved' : session.lifecycle}</small></span><Button size="compact" class="min-h-30! px-8! text-11! pointer-coarse:min-h-44!" busy={sessionLifecycleBusy() === session.id} disabled={readOnly() || !!sessionLifecycleBusy()} onClick={() => runConfirmedMutation(() => setSessionLifecycleBusy(session.id), () => setSessionLifecycleBusy(null), (committed, failed) => restoreProjectSession(session.id, committed, failed), () => {})}>Restore</Button></div>}</For>
+                        <For each={archivedSessions()}>{(session) => <div class="archived-session-row flex min-h-32 items-center gap-8 rounded-md px-2.5 py-4 hover:bg-interaction-hover pointer-coarse:min-h-44"><span class="flex min-w-0 flex-1 flex-col gap-2"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12 font-medium text-content-primary">{sessionDisplayTitle(session.title, session.id)}</strong><small class="text-10 text-content-muted">{session.lifecycle === 'ready' ? 'Session saved' : session.lifecycle}</small></span><Button size="compact" class="min-h-30! px-8! text-11! pointer-coarse:min-h-44!" busy={sessionLifecycleBusy() === session.id} disabled={readOnly() || !!sessionLifecycleBusy()} onClick={() => runConfirmedMutation(() => setSessionLifecycleBusy(session.id), () => setSessionLifecycleBusy(null), (committed, failed) => restoreProjectSession(session.id, committed, failed), () => {})}>Restore</Button></div>}</For>
                       </ArchivedSection>
                     </Show>
                   </CollapsibleContent>
@@ -462,15 +468,15 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
       <Show when={registryHydrated() && projects().some((project) => !!project.archivedAt)}>
         <section class="archived-projects border-t border-border-subtle px-1.5 pt-2">
           <ArchivedSection
-            toggleClass="archived-projects__toggle flex w-full min-h-8 cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent px-2.5 text-left text-11 text-content-muted hover:bg-interaction-hover hover:text-content-secondary pointer-coarse:min-h-11"
+            toggleClass="archived-projects__toggle flex w-full min-h-32 cursor-pointer items-center gap-6 rounded-md border-0 bg-transparent px-2.5 text-left text-11 text-content-muted hover:bg-interaction-hover hover:text-content-secondary pointer-coarse:min-h-44"
             label="Archived"
             count={projects().filter((project) => !!project.archivedAt).length}
             open={archivedOpen()}
             onOpenChange={setArchivedOpen}
             listId="archived-project-list"
-            listClass="archived-project-list flex max-h-180 flex-col gap-1 overflow-auto py-1"
+            listClass="archived-project-list flex max-h-180 flex-col gap-4 overflow-auto py-4"
           >
-            <For each={projects().filter((project) => !!project.archivedAt)}>{(project) => <div class="archived-project-row flex min-h-8 items-center gap-2 rounded-md px-2.5 py-1 hover:bg-interaction-hover pointer-coarse:min-h-11"><span class="flex min-w-0 flex-1 flex-col gap-0.5"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12 font-medium text-content-primary">{project.name}</strong><small class="text-10 text-content-muted">{projectSessions().filter((session) => session.projectId === project.id).length} sessions</small></span><Button class="min-h-30! px-8! text-11! pointer-coarse:min-h-44!" busy={restoringProject() === project.id} disabled={readOnly() || !!restoringProject()} onClick={() => runConfirmedMutation(() => setRestoringProject(project.id), () => setRestoringProject(null), (committed, failed) => restoreProject(project.id, committed, failed), () => {})}>Restore</Button></div>}</For>
+            <For each={projects().filter((project) => !!project.archivedAt)}>{(project) => <div class="archived-project-row flex min-h-32 items-center gap-8 rounded-md px-2.5 py-4 hover:bg-interaction-hover pointer-coarse:min-h-44"><span class="flex min-w-0 flex-1 flex-col gap-2"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12 font-medium text-content-primary">{project.name}</strong><small class="text-10 text-content-muted">{projectSessions().filter((session) => session.projectId === project.id).length} sessions</small></span><Button class="min-h-30! px-8! text-11! pointer-coarse:min-h-44!" busy={restoringProject() === project.id} disabled={readOnly() || !!restoringProject()} onClick={() => runConfirmedMutation(() => setRestoringProject(project.id), () => setRestoringProject(null), (committed, failed) => restoreProject(project.id, committed, failed), () => {})}>Restore</Button></div>}</For>
           </ArchivedSection>
         </section>
       </Show>

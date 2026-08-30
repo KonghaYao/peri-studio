@@ -67,6 +67,13 @@ web/src/
 | 协议 / 状态契约 | `web/tests/*.test.mjs` | node --test |
 | 浏览器契约 | `web/tests/browser/*` | `bun run test:browser` |
 
+### 本地启动权限
+
+- `dev.sh` 只能由用户在本地终端手动执行。
+- Agent 不得调用 `./dev.sh`、重启或停止其进程，也不得通过后台 shell 代执行。
+- 需要运行时验证时，Agent 应停止并请用户执行；Agent 只能运行不启动
+  server/instance 的静态检查、类型检查和单元/协议测试。
+
 ### 前端改动检查清单
 
 - [ ] 新文件落在正确层，未违反依赖表
@@ -83,7 +90,8 @@ web/src/
 - Rust 模块单一职责；注释中文，**log 英文**；`cargo clippy --workspace --all-targets -- -D warnings` 零告警。
 - 术语以 `terminology.md` 为准；四层身份（`project_id` / `project_session_id` / ACP `session_id` / `chat_id`）不可混用。
 - 副作用与 `commandId` 幂等见 `architecture.md` §3.0；token 不得进代码、日志或 issue。
-- 常用验证：`cargo test -p peri-studio-server --lib`、`cd web && bun run test`、`./dev.sh`。
+- 常用验证：`cargo test -p peri-studio-server --lib`、`cd web && bun run test`；
+  `./dev.sh` 仅由用户手动执行。
 
 ## Commit 与文档
 

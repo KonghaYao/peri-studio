@@ -51,9 +51,31 @@ describe('SessionNavigator', () => {
     expect(navigator.transition(catalog)).toEqual([]);
   });
 
+  it('waits for discovery before consuming the restore attempt', () => {
+    const navigator = new SessionNavigator();
+    const emptyCatalog = {
+      type: 'catalog' as const, ready: true, readOnly: false, preferredId: 'ready', selectedSessionId: null,
+      sessions: [] as { id: string; lifecycle: string }[],
+    };
+
+    expect(navigator.transition(emptyCatalog)).toEqual([]);
+    expect(navigator.snapshot().restoreAttempted).toBe(false);
+    expect(navigator.transition({
+      ...emptyCatalog,
+      sessions: [{ id: 'ready', lifecycle: 'ready' }],
+    })).toEqual([{ type: 'request-open', sessionId: 'ready' }]);
+  });
+
   it('forgets a stale preference exactly once', () => {
     const navigator = new SessionNavigator();
-    const event = { type: 'catalog' as const, ready: true, readOnly: false, preferredId: 'missing', selectedSessionId: null, sessions: [] };
+    const event = {
+      type: 'catalog' as const,
+      ready: true,
+      readOnly: false,
+      preferredId: 'missing',
+      selectedSessionId: null,
+      sessions: [{ id: 'other', lifecycle: 'ready' }],
+    };
     expect(navigator.transition(event)).toEqual([{ type: 'forget-preference' }]);
     expect(navigator.transition(event)).toEqual([]);
   });

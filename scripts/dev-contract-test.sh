@@ -26,7 +26,11 @@ forbid() {
 
 bash -n "${DEV}"
 require 'LISTEN_PORT="${PERI_STUDIO_LISTEN_PORT:-8456}"' 'listen port must have one authoritative shell value'
-require 'lsof -nP -iTCP:"${LISTEN_PORT}" -sTCP:LISTEN' 'occupied ports must fail before rebuilding or spawning'
+require 'stale_local_listener_pids()' 'stale local listeners must be identified by their exact port owner'
+require 'cleanup_stale_local_instance()' 'stale local listeners must be cleaned before startup'
+require 'kill -TERM "${pid}"' 'cleanup must signal only the exact stale listener pid'
+require 'lsof -nP -iTCP:"${LISTEN_PORT}" -sTCP:LISTEN' 'non-Peri listeners must still block startup before rebuilding or spawning'
+require '仍被其他进程占用' 'the port guard must explain why an unrelated listener was not taken over'
 require 'cargo run -q -p peri-studio -- local' 'development must launch the unified local mode'
 require '--listen "${LISTEN_ADDR}"' 'local mode must receive the authoritative listen address'
 require '--listen-port "${LISTEN_PORT}"' 'local mode must receive the authoritative listen port'

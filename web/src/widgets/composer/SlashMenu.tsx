@@ -57,7 +57,7 @@ export function SlashMenu(props: Props) {
           const index = props.items.findIndex((item) => item.name === name);
           if (index >= 0) props.onActiveIndex(index);
         }}
-        class="slash-menu__items ui-scrollbar max-h-60 overflow-auto py-1.5 max-tight:max-h-(--container-slash-tight)"
+        class="slash-menu__items ui-scrollbar max-h-(--container-slash) overflow-auto py-6 max-tight:max-h-(--container-slash-tight)"
         renderItem={(item) => {
           const command = item.rawValue;
           const index = () => props.items.findIndex((candidate) => candidate.name === command.name);
@@ -69,15 +69,15 @@ export function SlashMenu(props: Props) {
               item={item}
               aria-selected={active()}
               class={cn(
-                'slash-menu__item mx-1.5 cursor-pointer rounded-lg border-0 bg-transparent px-2.5 py-1.5 text-left transition-colors duration-(--duration-fast) data-[selected]:bg-sidebar-selected data-[highlighted]:bg-sidebar-selected pointer-coarse:min-h-44',
+                'slash-menu__item mx-6 cursor-pointer rounded-lg border-0 bg-transparent px-10 py-6 text-left transition-colors duration-(--duration-fast) data-[selected]:bg-sidebar-selected data-[highlighted]:bg-sidebar-selected pointer-coarse:min-h-44',
                 active() && 'bg-sidebar-selected',
               )}
               onPointerMove={() => props.onActiveIndex(index())}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => props.onSelect(command)}
             >
-              <div class="flex min-w-0 items-center gap-2.5">
-                <span class="grid size-4 shrink-0 place-items-center">
+              <div class="flex min-w-0 items-center gap-10">
+                <span class="grid size-16 shrink-0 place-items-center">
                   <SlashIcon kind={command.kind} />
                 </span>
                 <p class="min-w-0 truncate text-13 leading-snug">
@@ -91,7 +91,7 @@ export function SlashMenu(props: Props) {
               </div>
             </ListboxItem>
             <Show when={kindDividerAfter(command, next())}>
-              <div class="mx-3 my-1 border-t border-border-subtle" role="presentation" />
+              <div class="mx-12 my-4 border-t border-border-subtle" role="presentation" />
             </Show>
           </>;
         }}

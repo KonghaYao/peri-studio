@@ -81,14 +81,14 @@ function StatusMark(props: { tone: ToolCallStatus }) {
 
 function EvidenceBlock(props: { label: string; value: string; tone?: 'error' }) {
   return (
-    <div class="min-w-0 rounded-md bg-surface-sunken px-2.5 py-2">
-      <div class="mb-1 flex items-center gap-2">
+    <div class="min-w-0 rounded-md bg-surface-sunken px-10 py-8">
+      <div class="mb-4 flex items-center gap-8">
         <span class="text-10 font-medium text-content-muted">{props.label}</span>
         <span class="flex-1" />
         <CopyButton text={props.value} label={`Copy ${props.label}`} />
       </div>
       <pre class={cn(
-        'm-0 max-h-40 overflow-auto font-mono text-11 leading-relaxed whitespace-pre-wrap',
+        'm-0 max-h-180 overflow-auto font-mono text-11 leading-relaxed whitespace-pre-wrap',
         props.tone === 'error' ? 'text-danger-solid' : 'text-content-primary',
       )}>
         <code>{props.value}</code>
@@ -100,7 +100,7 @@ function EvidenceBlock(props: { label: string; value: string; tone?: 'error' }) 
 function OmittedEvidence(props: { label: string; size: number | null | undefined; noun: string }) {
   const size = () => readableBytes(props.size ?? null);
   return (
-    <aside class="flex flex-col gap-1 rounded-md border border-warning-border bg-surface-overlay px-2.5 py-2 text-11 leading-normal text-content-secondary" role="note">
+    <aside class="flex flex-col gap-4 rounded-md border border-warning-border bg-surface-overlay px-10 py-8 text-11 leading-normal text-content-secondary" role="note">
       <strong class="text-11 text-warning-solid">{props.label}</strong>
       <span>Hub observed {props.noun}{size() ? ` of about ${size()}` : ''} that exceeds the page projection limit. The content was not written to this session view.</span>
     </aside>
@@ -162,20 +162,20 @@ export function ToolActivityRow(props: {
         type="button"
         disabled={!hasEvidence()}
         class={cn(
-          'tool-activity-row__summary grid w-full min-h-(--pattern-row-height) grid-cols-[16px_minmax(0,1fr)_auto_14px] items-center gap-2 rounded-md px-2 text-left transition-colors duration-(--duration-fast)',
+          'tool-activity-row__summary grid w-full min-h-(--pattern-row-height) grid-cols-[16px_minmax(0,1fr)_auto_14px] items-center gap-8 rounded-md px-8 text-left transition-colors duration-(--duration-fast)',
           props.status === 'running' ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
           !hasEvidence() && 'cursor-default',
         )}
         aria-expanded={open()}
         onClick={toggle}
       >
-        <span class="grid size-4 place-items-center">
+        <span class="grid size-16 place-items-center">
           <StatusMark tone={props.status} />
         </span>
         <span class="min-w-0 truncate text-12 text-content-primary">
           <span class="font-medium">{props.name}</span>
           <Show when={props.inputSummary}>
-            <code class="ml-1.5 font-mono text-10 text-content-muted">{props.inputSummary}</code>
+            <code class="ml-4 font-mono text-10 text-content-muted">{props.inputSummary}</code>
           </Show>
           <Show when={props.toolCallId}>
             <code class="sr-only">{props.toolCallId}</code>
@@ -183,14 +183,14 @@ export function ToolActivityRow(props: {
         </span>
         <span class="flex-none text-10 text-content-muted tabular-nums">
           {props.statusLabel}
-          <Show when={props.duration}><span class="ml-1">{props.duration}</span></Show>
+          <Show when={props.duration}><span class="ml-4">{props.duration}</span></Show>
         </span>
         <Show when={hasEvidence()}>
           <ChevronRight size={13} class={cn('text-content-faint transition-transform duration-(--duration-fast)', open() && 'rotate-90')} />
         </Show>
       </button>
       <Show when={open() && hasEvidence() && props.evidenceLoaded}>
-        <div class="tool-activity-row__body mt-1 flex flex-col gap-1.5 pb-1 pl-6 pr-2">
+        <div class="tool-activity-row__body mt-4 flex flex-col gap-6 pb-4 pl-16 pr-8">
           <Show when={props.evidence.input !== undefined && props.evidence.input !== null}>
             <EvidenceBlock label={props.evidence.inputLabel} value={readableToolValue(props.evidence.input)} />
           </Show>
@@ -233,7 +233,7 @@ export function ToolActivityRow(props: {
 /** 聊天 transcript 里的工具活动组容器。 */
 export function ToolActivityGroup(props: { children: unknown }) {
   return (
-    <div class="tool-activity-group flex max-w-(--tool-activity-max) flex-col gap-0.5 rounded-lg border border-border-subtle bg-surface-overlay p-1.5">
+    <div class="tool-activity-group flex max-w-(--tool-activity-max) min-w-0 flex-col gap-2 rounded-lg border border-border-subtle bg-surface-overlay p-6">
       {props.children as never}
     </div>
   );

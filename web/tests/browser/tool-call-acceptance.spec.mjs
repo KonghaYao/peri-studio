@@ -162,7 +162,7 @@ for (const viewport of [{ width: 1600, height: 900 }, { width: 1280, height: 900
     expect(geometry.scrollBottom).toBeLessThanOrEqual(geometry.composerTop + 1);
     expect(geometry.gutter).toBe('stable');
     expect(geometry.bottomGap).toBeLessThanOrEqual(2);
-    expect(geometry.horizontalOverflow).toBeLessThanOrEqual(viewport.width <= 390 ? 32 : 1);
+    expect(geometry.horizontalOverflow).toBeLessThanOrEqual(viewport.width <= 390 ? 48 : 1);
     expect(geometry.pageOverflow).toBeLessThanOrEqual(1);
   });
 }

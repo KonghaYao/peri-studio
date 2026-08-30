@@ -149,26 +149,26 @@ function AskUserQuestionDialog(props: {
                   <Textarea variant="bare" class="mt-7 min-h-58! w-full resize-y rounded-10 border border-divider bg-surface-muted px-10 py-8 text-12 leading-18 text-text-primary outline-none focus-visible:border-border-strong focus-visible:outline-none" rows={2} maxlength={4096} aria-label={field().title} required={field().required} disabled={locked()} value={typeof answers()[fieldId] === 'string' ? answers()[fieldId] as string : ''} onInput={(event) => update(fieldId, event.currentTarget.value)} />
                 </Show>
                 <Show when={field().kind === 'single_select'}>
-                  <RadioGroup aria-label={field().title} value={typeof answers()[fieldId] === 'string' ? answers()[fieldId] as string : ''} required={field().required} disabled={locked()} onChange={(value) => update(fieldId, value)} class="elicitation-options grid gap-1 mt-6">
+                  <RadioGroup aria-label={field().title} value={typeof answers()[fieldId] === 'string' ? answers()[fieldId] as string : ''} required={field().required} disabled={locked()} onChange={(value) => update(fieldId, value)} class="elicitation-options grid gap-2 mt-12">
                     <For each={field().options.map((option) => option.value)}>{(optionValue, index) => {
                       const option = () => field().options.find((candidate) => candidate.value === optionValue)!;
-                      return <RadioGroupItem value={optionValue} class="elicitation-option group flex min-h-34 items-center gap-7 px-6 py-4 border-0 rounded-7 bg-transparent cursor-pointer hover:bg-interaction-hover data-[checked]:bg-accent-soft pointer-coarse:min-h-44">
+                      return <RadioGroupItem value={optionValue} class="elicitation-option group flex min-h-36 items-center gap-12 rounded-md px-8 py-6 border-0 bg-transparent cursor-pointer hover:bg-interaction-hover data-[checked]:bg-accent-soft pointer-coarse:min-h-44">
                       <RadioGroupItemInput />
-                      <RadioGroupItemLabel class="flex min-w-0 flex-1 items-center gap-8 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-18 shrink-0 items-center justify-center rounded-5 bg-surface-sunken text-text-muted text-9 font-650 group-data-[checked]:bg-accent-solid group-data-[checked]:text-content-on-accent">{String.fromCharCode(65 + index())}</span><span class="flex min-w-0 flex-col"><strong class="text-10 leading-15 font-620 text-text-primary">{option().label}</strong><Show when={option().description}><small class="overflow-hidden text-ellipsis whitespace-nowrap text-9 leading-13 text-text-muted">{option().description}</small></Show></span></RadioGroupItemLabel>
-                      <RadioGroupItemControl class="ui-radio-control size-14!" />
+                      <RadioGroupItemLabel class="flex min-w-0 flex-1 items-center gap-12 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-20 shrink-0 items-center justify-center rounded-sm bg-surface-sunken text-content-muted text-10 font-semibold group-data-[checked]:bg-accent-solid group-data-[checked]:text-content-on-accent">{String.fromCharCode(65 + index())}</span><span class="flex min-w-0 flex-col"><strong class="text-12 leading-snug font-medium text-content-primary">{option().label}</strong><Show when={option().description}><small class="overflow-hidden text-ellipsis whitespace-nowrap text-10 text-content-muted">{option().description}</small></Show></span></RadioGroupItemLabel>
+                      <RadioGroupItemControl class="ui-radio-control size-16!" />
                     </RadioGroupItem>;
                     }}</For>
                   </RadioGroup>
                 </Show>
                 <Show when={field().kind === 'multi_select'}>
-                  <div class="elicitation-options grid gap-1 mt-6">
+                  <div class="elicitation-options grid gap-2 mt-12">
                     <For each={field().options.map((option) => option.value)}>{(optionValue, index) => {
                       const option = () => field().options.find((candidate) => candidate.value === optionValue)!;
                       const selected = () => Array.isArray(answers()[fieldId]) ? answers()[fieldId] as string[] : [];
-                      return <Checkbox checked={selected().includes(optionValue)} disabled={locked()} onChange={(checked) => update(fieldId, checked ? [...selected(), optionValue] : selected().filter((value) => value !== optionValue))} class="elicitation-option group flex min-h-34 items-center gap-7 px-6 py-4 border-0 rounded-7 bg-transparent cursor-pointer hover:bg-interaction-hover data-[checked]:bg-accent-soft pointer-coarse:min-h-44">
+                      return <Checkbox checked={selected().includes(optionValue)} disabled={locked()} onChange={(checked) => update(fieldId, checked ? [...selected(), optionValue] : selected().filter((value) => value !== optionValue))} class="elicitation-option group flex min-h-36 items-center gap-12 rounded-md px-8 py-6 border-0 bg-transparent cursor-pointer hover:bg-interaction-hover data-[checked]:bg-accent-soft pointer-coarse:min-h-44">
                         <CheckboxInput />
-                        <CheckboxLabel class="flex min-w-0 flex-1 items-center gap-8 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-18 shrink-0 items-center justify-center rounded-5 bg-surface-sunken text-text-muted text-9 font-650 group-data-[checked]:bg-accent-solid group-data-[checked]:text-content-on-accent">{String.fromCharCode(65 + index())}</span><span class="flex min-w-0 flex-col"><strong class="text-10 leading-15 font-620 text-text-primary">{option().label}</strong><Show when={option().description}><small class="overflow-hidden text-ellipsis whitespace-nowrap text-9 leading-13 text-text-muted">{option().description}</small></Show></span></CheckboxLabel>
-                        <CheckboxControl class="ui-checkbox-control size-14!" />
+                        <CheckboxLabel class="flex min-w-0 flex-1 items-center gap-12 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-20 shrink-0 items-center justify-center rounded-sm bg-surface-sunken text-content-muted text-10 font-semibold group-data-[checked]:bg-accent-solid group-data-[checked]:text-content-on-accent">{String.fromCharCode(65 + index())}</span><span class="flex min-w-0 flex-col"><strong class="text-12 leading-snug font-medium text-content-primary">{option().label}</strong><Show when={option().description}><small class="overflow-hidden text-ellipsis whitespace-nowrap text-10 text-content-muted">{option().description}</small></Show></span></CheckboxLabel>
+                        <CheckboxControl class="ui-checkbox-control size-16!" />
                       </Checkbox>;
                     }}</For>
                   </div>

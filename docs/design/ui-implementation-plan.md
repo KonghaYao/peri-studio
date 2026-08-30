@@ -59,6 +59,8 @@ date: 2026-08-30
 ## P3 验收清单
 
 - [x] Layers 对照：`project-sidebar`、`composer`、`decision`、`workbench`、`git-graph`、`source-control`（`fixture-contracts` token 消费 + `test:browser` 82 项）
+- [x] Legacy token 别名桥接至 Tier 1 语义（蓝 accent / AntD 冷灰；修复 legacy 段覆盖 semantic 导致的绿色漂移）
+- [x] P2 间距修复：sandbox 迁移 widget 须用生产像素刻度（`gap-8`=8px），不可混用 Tailwind ×4 语义（`gap-2`=8px in sandbox but `gap-2`=2px in prod）
 - [x] `bun run test` 全绿
 - [x] `bun run test:browser` 契约通过
 - [x] 无 `panel/` 新增业务代码

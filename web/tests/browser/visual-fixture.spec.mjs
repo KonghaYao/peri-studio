@@ -367,7 +367,7 @@ test('sidebar chrome and composer match the compact input shell', async ({ page 
 
   expect(geometry.surfaceHeight).toBeLessThanOrEqual(112);
   expect(geometry.inputHeight).toBeLessThanOrEqual(64);
-  expect(geometry.radius).toBe('18px');
+  expect(geometry.radius).toBe('12px');
   expect(geometry.toolbarBorder).toBe('0px');
   expect(geometry.overflowingIcons).toBe(0);
 });

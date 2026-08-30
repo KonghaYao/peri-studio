@@ -20,7 +20,7 @@ function InlineCode(props: JSX.HTMLAttributes<HTMLElement> & { resolveMath: (tok
   const expression = () => local.resolveMath(text());
   return expression()
     ? <MathExpression expression={expression()!} />
-    : <code {...rest} class={`md-inline-code rounded-sm border border-border-subtle bg-surface-muted px-1 py-0.5 text-[.88em] text-content-primary ${local.class || ''}`}>{local.children}</code>;
+    : <code {...rest} class={`md-inline-code rounded-sm border border-border-subtle bg-surface-muted px-4 py-2 text-[.88em] text-content-primary ${local.class || ''}`}>{local.children}</code>;
 }
 
 export interface MarkdownProps {
@@ -85,22 +85,22 @@ export function Markdown(props: MarkdownProps) {
   return <div class="markdown-body min-w-0 text-13 leading-normal text-content-primary
     [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
     [&_p]:my-0 [&_p]:mb-3
-    [&_h1]:mb-2.5 [&_h1]:mt-7 [&_h1]:text-18 [&_h1]:font-semibold [&_h1]:tracking-tight
-    [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-16 [&_h2]:font-semibold
-    [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-15 [&_h3]:font-semibold
-    [&_h4]:mb-1.5 [&_h4]:mt-5 [&_h4]:text-14 [&_h4]:font-semibold
-    [&_h5]:mb-1.5 [&_h5]:mt-4 [&_h5]:font-semibold [&_h6]:mb-1.5 [&_h6]:mt-4 [&_h6]:font-semibold [&_h6]:text-content-secondary
-    [&_ul]:mt-2 [&_ul]:mb-3.5 [&_ul]:list-disc [&_ul]:pl-5.5
-    [&_ol]:mt-2 [&_ol]:mb-3.5 [&_ol]:list-decimal [&_ol]:pl-5.5
-    [&_li]:my-1 [&_li>ul]:mt-1 [&_li>ul]:mb-0 [&_li>ol]:mt-1 [&_li>ol]:mb-0
+    [&_h1]:mb-10 [&_h1]:mt-28 [&_h1]:text-18 [&_h1]:font-semibold [&_h1]:tracking-tight
+    [&_h2]:mb-8 [&_h2]:mt-24 [&_h2]:text-16 [&_h2]:font-semibold
+    [&_h3]:mb-8 [&_h3]:mt-20 [&_h3]:text-15 [&_h3]:font-semibold
+    [&_h4]:mb-6 [&_h4]:mt-20 [&_h4]:text-14 [&_h4]:font-semibold
+    [&_h5]:mb-6 [&_h5]:mt-16 [&_h5]:font-semibold [&_h6]:mb-6 [&_h6]:mt-16 [&_h6]:font-semibold [&_h6]:text-content-secondary
+    [&_ul]:mt-8 [&_ul]:mb-14 [&_ul]:list-disc [&_ul]:pl-22
+    [&_ol]:mt-8 [&_ol]:mb-14 [&_ol]:list-decimal [&_ol]:pl-22
+    [&_li]:my-4 [&_li>ul]:mt-4 [&_li>ul]:mb-0 [&_li>ol]:mt-4 [&_li>ol]:mb-0
     [&_li:has(>input[type=checkbox])]:list-none [&_li:has(>input[type=checkbox])]:pl-0
-    [&_input[type=checkbox]]:mr-2 [&_input[type=checkbox]]:accent-accent-solid
-    [&_blockquote]:my-3.5 [&_blockquote]:border-l-2 [&_blockquote]:border-border-strong [&_blockquote]:py-0.5 [&_blockquote]:pl-3.5 [&_blockquote]:text-content-secondary [&_blockquote_p:last-child]:mb-0
-    [&_hr]:my-6 [&_hr]:h-px [&_hr]:border-0 [&_hr]:bg-border-subtle
+    [&_input[type=checkbox]]:mr-8 [&_input[type=checkbox]]:accent-accent-solid
+    [&_blockquote]:my-14 [&_blockquote]:border-l-2 [&_blockquote]:border-border-strong [&_blockquote]:py-2 [&_blockquote]:pl-14 [&_blockquote]:text-content-secondary [&_blockquote_p:last-child]:mb-0
+    [&_hr]:my-24 [&_hr]:h-px [&_hr]:border-0 [&_hr]:bg-border-subtle
     [&_a]:text-content-link [&_a]:underline [&_a]:underline-offset-2
-    [&_th]:border-b [&_th]:border-border-subtle [&_th]:bg-surface-muted [&_th]:px-3 [&_th]:py-2 [&_th]:font-semibold
-    [&_td]:border-b [&_td]:border-border-subtle [&_td]:px-3 [&_td]:py-2 [&_tbody_tr:last-child_td]:border-b-0
-    [&_del]:text-content-muted [&_footer]:mt-5 [&_footer]:border-t [&_footer]:border-border-subtle [&_footer]:pt-3 [&_footer]:text-12 [&_footer]:text-content-secondary
+    [&_th]:border-b [&_th]:border-border-subtle [&_th]:bg-surface-muted [&_th]:px-12 [&_th]:py-8 [&_th]:font-semibold
+    [&_td]:border-b [&_td]:border-border-subtle [&_td]:px-12 [&_td]:py-8 [&_tbody_tr:last-child_td]:border-b-0
+    [&_del]:text-content-muted [&_footer]:mt-20 [&_footer]:border-t [&_footer]:border-border-subtle [&_footer]:pt-12 [&_footer]:text-12 [&_footer]:text-content-secondary
     [&_sup]:text-10 [&_sup_a]:no-underline [&_.md-math--block]:text-center">
     <For each={document().blocks}>{(model) => <MarkdownAstBlock model={model} options={options()} />}</For>
     <Show when={document().references}>{footnotes()}</Show>

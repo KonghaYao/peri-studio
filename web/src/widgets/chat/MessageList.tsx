@@ -318,7 +318,7 @@ export function MessageList(props: { footerHeight?: number }) {
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
       <div class="sr-only" role="status" aria-label="Agent activity" aria-live="polite" aria-atomic="true">{agentActivityAnnouncement()}</div>
-      <div class="message-list-content box-border w-full max-w-(--container-chat-content) mx-auto px-20 pt-32 pb-32 desk:max-wide:px-18 max-narrow:px-10">
+      <div class="message-list-content box-border w-full max-w-(--container-chat-content) min-w-0 mx-auto px-20 pt-32 pb-32 desk:max-wide:px-18 max-narrow:px-10">
         <div ref={prefixRef} class="transcript-prefix">
           <Show when={!runtimeDocsHydrated()}>
             <LoadingState label="Loading session" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />

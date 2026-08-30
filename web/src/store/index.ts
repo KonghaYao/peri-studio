@@ -416,7 +416,9 @@ sessionCatalogBootstrap = createSessionCatalogBootstrap({
 scheduleSessionCatalogBootstrap = () => sessionCatalogBootstrap?.schedule();
 
 createEffect(() => {
-  if (connectionReady() && registryHydrated()) scheduleSessionCatalogBootstrap();
+  const ready = connectionReady();
+  const hydrated = registryHydrated();
+  if (ready && hydrated) scheduleSessionCatalogBootstrap();
 });
 
 export const createProject = (name: string, cwd: string, onCommitted?: () => void, onFailed?: () => void) =>

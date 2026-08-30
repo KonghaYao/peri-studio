@@ -19,7 +19,7 @@ date: 2026-08-30
 | [`../arch/workspace-ui-concept.html`](../arch/workspace-ui-concept.html) | **概念稿** | Workspace/Project/Session 信息架构讨论用；颜色与组件均非生产规范 |
 | 任意截图 / Figma 未回写 token | **无效** | 必须以 `tokens.css` 与 `shared/ui` 为准 |
 
-**现行视觉身份**：白底画布 + 发丝线分割 + **绿色 accent**（`#16865a`），层次靠间距与边框而非大面积灰底块。深色主题尚未在产品中启用（`style-demo` 中的 `.dark` 仅为历史探索）。
+**现行视觉身份**：白底画布 + AntD 冷灰发丝线 + **湛蓝 accent**（`#2563eb`，`--palette-accent-600`），层次靠间距与边框而非大面积灰底块。权威 token 与 `ui-sandbox` Layers 对齐。深色主题尚未在产品中启用（`style-demo` 中的 `.dark` 仅为历史探索）。
 
 ---
 
@@ -87,7 +87,7 @@ widgets/*           ← 业务组合；禁止深层 import 单个 ui 文件，�
 
 | 维度 | style-demo（废止） | 现行产品 |
 |------|-------------------|----------|
-| Accent | 暖橙 `#c4571f` | 绿 `#16865a` |
+| Accent | 暖橙 `#c4571f` | 湛蓝 `#2563eb` |
 | 背景 | 暖灰 `#faf9f7` | 纯白 `#ffffff` |
 | 侧栏 | 灰底 `#f3f2ee` | 白底 + 线框 |
 | 深色主题 | 有 `.dark` 草稿 | **未启用** |
@@ -159,7 +159,7 @@ widgets/*           ← 业务组合；禁止深层 import 单个 ui 文件，�
 | `Dialog` | 模态确认、设置、导入 | `DialogFooter` 右对齐主/次按钮 |
 | `Popover` / `DropdownMenu` / `Listbox` | 菜单、slash 补全 | Listbox 键盘导航；slash 高亮 `bg-selected` |
 | `Tabs` | 设置/面板分区 | 指示器用 accent |
-| `Tooltip` | Icon-only 说明 | `IconButton` 内置 |
+| `Tooltip` | Icon-only 说明 | `IconButton` 默认内置；侧栏已有可见语义的动作使用 `showTooltip={false}` |
 | `Toast` | 全局短暂反馈 | `showToast` / `dismissToast` |
 | `Badge` | 紧凑标签 | `neutral` / `ok` / `warn` / `err` |
 | `Status` | 连接/运行点 + 文案 | `live` → `aria-live` |

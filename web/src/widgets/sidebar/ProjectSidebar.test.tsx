@@ -159,6 +159,13 @@ describe('ProjectSidebar registry hydration', () => {
     expect(screen.getByRole('button', { name: 'New workspace' })).toBeInTheDocument();
   });
 
+  it('keeps sidebar controls free of tooltip wrappers and native title hints', () => {
+    render(() => <ProjectSidebar />);
+
+    expect(document.querySelector('.project-sidebar .ui-tooltip-anchor')).toBeNull();
+    expect(document.querySelector('.project-sidebar [title]')).toBeNull();
+  });
+
   it('waits for the exact open command to commit before navigating', () => {
     const navigate = vi.fn();
     let callbacks: { onCommitted?: () => void; onFailed?: (message: string) => void } = {};

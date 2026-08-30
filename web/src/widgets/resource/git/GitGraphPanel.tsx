@@ -95,7 +95,7 @@ export function GitGraphPanel(props: { commits: GitGraphCommit[] }) {
     headHash(props.commits),
     {
       colors: GIT_GRAPH_COLORS,
-      bgColor: 'var(--surface)',
+      bgColor: 'var(--surface-overlay)',
       headerHeight: metrics().headerHeight,
       rowHeight: metrics().rowHeight,
     },
@@ -112,9 +112,9 @@ export function GitGraphPanel(props: { commits: GitGraphCommit[] }) {
   };
 
   return (
-    <div class="git-graph-panel flex h-full min-h-0 flex-col bg-surface" aria-label="Git Graph">
-      <div class="git-graph-controls flex h-32 shrink-0 items-center border-b border-divider px-10">
-        <span class="text-13 text-text-primary">Git Graph</span>
+    <div class="git-graph-panel flex h-full min-h-0 flex-col bg-surface-overlay" aria-label="Git Graph">
+      <div class="git-graph-controls flex h-32 shrink-0 items-center border-b border-border-subtle px-10">
+        <span class="text-13 text-content-primary">Git Graph</span>
         <div class="ml-auto flex items-center">
           <IconButton size="compact" label="Find" class="git-graph-control-btn">
             <Search size={16} strokeWidth={1.8} />
@@ -154,7 +154,7 @@ export function GitGraphPanel(props: { commits: GitGraphCommit[] }) {
                   cx={node.cx}
                   cy={nodeCy(node.index)}
                   r={node.isStash ? 4.5 : 4}
-                  fill={node.isCurrent ? 'var(--surface)' : node.color}
+                  fill={node.isCurrent ? 'var(--surface-overlay)' : node.color}
                   stroke={node.color}
                   stroke-width={node.isCurrent ? 2 : 1}
                   stroke-opacity={node.isCurrent ? 1 : 0.75}
@@ -232,9 +232,9 @@ export function GitGraphPanel(props: { commits: GitGraphCommit[] }) {
                           <span class="git-graph-message">{commit.message}</span>
                         </span>
                       </td>
-                      <td class="git-graph-td git-graph-date-col text-text-muted">{commit.date ?? commit.time}</td>
-                      <td class="git-graph-td git-graph-author-col text-text-muted">{commit.author}</td>
-                      <td class="git-graph-td git-graph-commit-col font-mono text-text-muted">
+                      <td class="git-graph-td git-graph-date-col text-content-muted">{commit.date ?? commit.time}</td>
+                      <td class="git-graph-td git-graph-author-col text-content-muted">{commit.author}</td>
+                      <td class="git-graph-td git-graph-commit-col font-mono text-content-muted">
                         {commit.hash ?? commit.id.slice(0, 8)}
                       </td>
                     </tr>

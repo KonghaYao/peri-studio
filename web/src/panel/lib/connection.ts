@@ -28,10 +28,11 @@ export const [heartbeatCount, setHeartbeatCount] = createSignal(0);
 export const [promptDeliveryReady, setPromptDeliveryReady] = createSignal(false);
 export const [promptMaxBytes, setPromptMaxBytes] = createSignal(0);
 export const [connectionProblem, setConnectionProblem] = createSignal<ConnectionProblem | null>(null);
+const [connectionReady, setConnectionReady] = createSignal(false);
+export { connectionReady };
 
 let ws: WsClient | null = null; // 当前 WsClient
 let connectionEpoch = 0; // 隔离被替换连接的延迟 status/frame 回调
-let ready = false; // ready 门控：就绪后才发 action
 const LAST_SESSION_KEY = 'peri-studio:last-session';
 
 interface ConnectionDeps {
@@ -52,9 +53,6 @@ export function installConnection(d: ConnectionDeps): void {
   deps = d;
 }
 
-/** 连接就绪门控（组合根的 action/订阅/装配模块共用）。 */
-export function connectionReady(): boolean { return ready; }
-
 /** 通过当前连接发送任意帧（订阅/取消订阅/action 共用；未连接时返回 false）。 */
 export function sendFrame(frame: unknown): boolean { return !!ws?.send(frame); }
 
@@ -65,6 +63,7 @@ function wsUrl(): string {
 
 export function connectWithCookie(): void {
   deps!.settleConnectionLoss();
+  setConnectionReady(false);
   const epoch = ++connectionEpoch;
   if (ws) ws.close();
   const client = new WsClient({
@@ -84,7 +83,7 @@ export function reconnect(): void { connectWithCookie(); }
 export function disconnect(): void {
   deps!.settleConnectionLoss();
   connectionEpoch += 1;
-  ready = false;
+  setConnectionReady(false);
   setPromptDeliveryReady(false);
   setPromptMaxBytes(0);
   deps!.onConnectionLost();
@@ -97,6 +96,7 @@ export function disconnect(): void {
 
 /** 身份边界重置（resetAuthenticatedSession 调用）：连接信号回到初始态。 */
 export function resetConnectionState(): void {
+  setConnectionReady(false);
   setConnState({ text: 'Disconnected', kind: 'idle' });
   setHeartbeatCount(0);
   setPromptDeliveryReady(false);
@@ -123,7 +123,7 @@ export function forgetRememberedSession(): void {
 function handleStatus(state: ConnStatus, detail: ConnDetail): void {
   const transition = connectionTransition(state, detail, !!principalRole());
   if (transition) {
-    ready = transition.ready;
+    setConnectionReady(transition.ready);
     setBusy(transition.busy);
     setConnState(transition.status);
     setConnectionProblem(transition.problem);

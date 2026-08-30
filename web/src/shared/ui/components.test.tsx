@@ -63,7 +63,8 @@ describe('Button', () => {
     expect(button).not.toHaveAttribute('busy');
     expect(button).not.toHaveAttribute('size');
     expect(button).toHaveTextContent('Processing');
-    expect(button).toHaveClass('bg-btn-primary', '[color:var(--surface)]!');
+    expect(button).toHaveClass('bg-accent-solid', 'hover:bg-accent-hover');
+    expect(button.className).toContain('content-on-accent');
     expect(button).not.toHaveClass('text-inherit');
   });
 
@@ -84,6 +85,15 @@ describe('Button', () => {
     const repeated = screen.getByRole('button', { name: 'Create session' });
     fireEvent.focusIn(repeated);
     expect(repeated).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('can keep sidebar icon actions accessible without rendering a tooltip', () => {
+    const { container } = render(() => <IconButton label="Sidebar action" showTooltip={false}>×</IconButton>);
+    const button = screen.getByRole('button', { name: 'Sidebar action' });
+    expect(button).toBeVisible();
+    expect(button).not.toHaveAttribute('title');
+    expect(container.querySelector('.ui-tooltip-anchor')).toBeNull();
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
 
   it('uses rounded rectangular geometry for icon-only actions', () => {

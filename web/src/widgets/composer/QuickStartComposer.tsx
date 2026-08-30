@@ -29,7 +29,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
   };
 
   return <section class="quick-start quick-start--docked w-full text-left" aria-label="Start new session">
-    <div class="quick-start__surface overflow-hidden border border-composer-border rounded-18 bg-surface shadow-composer-overlay focus-within:border-focus-ring focus-within:shadow-composer-overlay has-[.ui-textarea:focus-visible]:shadow-[var(--shadow-composer-overlay),0_0_0_1px_var(--surface),0_0_0_3px_var(--focus-ring)]" aria-busy={pendingIsInFlight() || undefined}>
+    <div class="quick-start__surface overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface-overlay p-2.5 shadow-float max-narrow:rounded-16" aria-busy={pendingIsInFlight() || undefined}>
       <Textarea
         autoResize
         maxHeight={180}
@@ -40,24 +40,33 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
           if (event.isComposing || event.keyCode === 229) return;
           if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); submit(); }
         }}
-        placeholder="Message Agent…"
+        placeholder="Message the agent"
         aria-label="First message"
         aria-describedby={[pendingNeedsAttention() ? statusId : '', promptOverBudget() ? budgetId : ''].filter(Boolean).join(' ') || undefined}
         variant="bare"
-        class="quick-start__textarea w-full min-h-36 px-18 pt-10 pb-6 border-0 outline-0 resize-none bg-transparent text-14 leading-22 text-text-primary"
+        class="quick-start__textarea w-full min-h-36 border-0 outline-0 resize-none bg-transparent px-1 text-14 leading-22 text-text-primary shadow-none"
       />
       <Show when={promptOverBudget()}>
-        <InlineNotice id={budgetId} class="mx-10 mb-8" tone="danger" role="alert" title="First message is too large">
+        <InlineNotice id={budgetId} class="mb-8" tone="danger" role="alert" title="First message is too large">
           <span>{promptMaxBytes() > 0
             ? `${draftBytes()} / ${promptMaxBytes()} bytes. Shorten the message before starting a session.`
             : 'Secure message delivery is not enabled on the server. Refresh or upgrade the server before starting a session.'}</span>
         </InlineNotice>
       </Show>
-      <div class="quick-start__footer flex min-h-44 items-center gap-7 px-10 pb-8">
-        <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="border-0 bg-transparent text-text-primary"><Plus size={18} strokeWidth={1.7} /></IconButton>
-        <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled class="border-0 bg-transparent text-text-muted"><ShieldCheck size={17} strokeWidth={1.7} /></IconButton>
-        <span class="ml-auto" />
-        <IconButton variant="primary" label="Start session" busy={pending()?.phase === 'creating' || pending()?.phase === 'accepted'} disabled={readOnly() || locked() || !!pending() || !draft().trim() || promptOverBudget()} onClick={submit} class="w-44 min-h-38 rounded-9 border-0 bg-btn-primary text-surface hover:bg-btn-primary-hover"><SendHorizontal size={20} strokeWidth={1.7} /></IconButton>
+      <div class="quick-start__footer composer-toolbar flex min-h-36 items-center gap-4">
+        <IconButton label="Add attachment" title="Attachments are not connected yet" disabled><Plus size={16} strokeWidth={1.7} /></IconButton>
+        <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled><ShieldCheck size={16} strokeWidth={1.7} /></IconButton>
+        <span class="flex-1" />
+        <IconButton
+          variant="primary"
+          label="Start session"
+          busy={pending()?.phase === 'creating' || pending()?.phase === 'accepted'}
+          disabled={readOnly() || locked() || !!pending() || !draft().trim() || promptOverBudget()}
+          onClick={submit}
+          class="composer-action flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-accent-solid text-content-on-accent hover:bg-accent-hover max-narrow:w-48 max-narrow:min-h-44"
+        >
+          <SendHorizontal size={16} strokeWidth={1.7} />
+        </IconButton>
       </div>
     </div>
     <Show when={pendingNeedsAttention() ? pending() : null}>{(submission) => <InlineNotice id={statusId} class="quick-start__state mt-8 [&_small]:min-w-0" tone={submission().phase === 'failed' ? 'danger' : 'warning'} role="alert" title={submission().phase === 'uncertain' ? 'Creation result not confirmed yet' : 'Failed to create session'}>

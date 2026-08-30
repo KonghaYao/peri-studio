@@ -97,6 +97,9 @@ export class SessionNavigator {
 
   private reconcileCatalog(event: Extract<SessionNavigationEvent, { type: 'catalog' }>): SessionNavigationEffect[] {
     if (!event.ready || this.state.restoreAttempted || event.selectedSessionId || this.state.opening) return [];
+    // Registry 首帧可能只有 project；discovery 完成前的空目录不是最终事实，
+    // 不能在此时消耗恢复机会或清除记忆中的 session 偏好。
+    if (!event.sessions.length) return [];
     const preferred = event.preferredId
       ? event.sessions.find((session) => session.id === event.preferredId && session.lifecycle === 'ready')
       : null;

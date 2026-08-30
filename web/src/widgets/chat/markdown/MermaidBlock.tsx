@@ -52,8 +52,8 @@ export function MermaidBlock(props: { code: string; incomplete?: boolean }) {
   });
 
   return <div class="md-mermaid" data-incomplete={props.incomplete ? 'true' : undefined}>
-    <div class="md-code-toolbar flex min-h-38 items-center gap-4 border-b border-divider px-8 py-5">
-      <span class="mr-auto text-12 font-600 text-text-secondary">Mermaid</span>
+    <div class="md-code-toolbar flex min-h-32 items-center gap-4 border-b border-border-subtle px-8 py-4">
+      <span class="mr-auto text-12 font-medium text-content-secondary">Mermaid</span>
       <Show when={busy()}><span class="ui-spinner mx-8" aria-hidden="true" /><span class="sr-only">Rendering diagram</span></Show>
       <Show when={!props.incomplete}>
         <IconButton size="compact" onClick={() => setSourceVisible((visible) => !visible)} label={showSource() ? 'Show diagram' : 'Show source'} aria-pressed={sourceVisible()}><CodeIcon /></IconButton>
@@ -65,13 +65,13 @@ export function MermaidBlock(props: { code: string; incomplete?: boolean }) {
         <IconButton size="compact" onClick={() => downloadText(svg(), 'diagram.svg', 'image/svg+xml')} label="Download SVG"><DownloadIcon /></IconButton>
       </Show>
     </div>
-    <Show when={showSource()}><pre class="m-0 max-h-360 overflow-auto bg-sidebar-bg px-14 py-13 text-12p5 leading-18"><code class="bg-transparent p-0 text-inherit">{props.code}</code></pre></Show>
-    <Show when={error()}><div role="alert" class="border-t border-divider px-14 py-10 text-12 text-danger">{error()}</div></Show>
-    <Show when={!showSource() && svg()}>{(value) => <div class="md-mermaid__result bg-surface p-16">
+    <Show when={showSource()}><pre class="m-0 max-h-360 overflow-auto bg-surface-sunken px-12 py-10 font-mono text-12 leading-relaxed"><code class="bg-transparent p-0 text-inherit">{props.code}</code></pre></Show>
+    <Show when={error()}><div role="alert" class="border-t border-border-subtle px-12 py-8 text-12 text-danger-solid">{error()}</div></Show>
+    <Show when={!showSource() && svg()}>{(value) => <div class="md-mermaid__result bg-surface-overlay p-16">
       <div class="overflow-auto [&_svg]:mx-auto [&_svg]:max-w-full" innerHTML={value()} />
       <Dialog open={expanded()} onOpenChange={setExpanded}><DialogContent class="w-[min(920px,calc(100vw-40px))] max-h-[calc(100dvh-40px)]">
         <DialogHeader><DialogTitle>Diagram</DialogTitle></DialogHeader>
-        <div class="max-h-[calc(100dvh-110px)] overflow-auto border-t border-divider bg-surface p-20 [&_svg]:mx-auto [&_svg]:max-w-full" innerHTML={value()} />
+        <div class="max-h-[calc(100dvh-110px)] overflow-auto border-t border-border-subtle bg-surface-overlay p-20 [&_svg]:mx-auto [&_svg]:max-w-full" innerHTML={value()} />
       </DialogContent></Dialog>
     </div>}</Show>
   </div>;
