@@ -1,9 +1,9 @@
-import { For, Show, createEffect, createMemo, createSignal, onCleanup } from 'solid-js';
+import { Show, createEffect, createMemo, createSignal, onCleanup } from 'solid-js';
 import { IconButton, LoadingState } from '../../components/ui';
 import { openFilePreview, openResourceDirectory, refreshResourceProject, resourceWorkspace } from '../../panel/store';
 import type { ResourceEntry } from '../../panel/lib/resource-view';
-import { ChevronRight, RefreshCw } from 'lucide-solid';
-import { VSCodeFileIcon } from './VSCodeFileIcon';
+import { RefreshCw } from 'lucide-solid';
+import { FileTree, type FileTreeNode } from './FileTree';
 
 function RefreshIcon() { return <RefreshCw size={14} strokeWidth={1.8} />; }
 
@@ -16,6 +16,33 @@ type ExplorerPanelProps = {
   onScrollTopChange?: (scrollTop: number) => void;
   onPreviewIntent?: (key: string) => void;
 };
+
+function entryToNode(entry: ResourceEntry, expanded: Set<string>, cache: Map<string, FileTreeNode>): FileTreeNode {
+  const path = String(entry.path ?? '');
+  const directory = entry.kind === 'directory';
+  const cached = cache.get(path);
+  const node: FileTreeNode = cached ?? {
+    id: String(entry.id ?? path),
+    name: String(entry.name ?? path),
+    path,
+    kind: directory ? 'folder' : 'file',
+  };
+  node.name = String(entry.name ?? path);
+  node.kind = directory ? 'folder' : 'file';
+  node.children = directory && expanded.has(path)
+    ? (resourceWorkspace().directories[path]?.entries ?? []).map((child) => entryToNode(child, expanded, cache))
+    : undefined;
+  cache.set(path, node);
+  return node;
+}
+
+function folderLoadingPaths(expanded: Set<string>) {
+  const loading = new Set<string>();
+  for (const path of expanded) {
+    if (path && !resourceWorkspace().directories[path]) loading.add(path);
+  }
+  return loading;
+}
 
 export function ExplorerPanel(props: ExplorerPanelProps = {}) {
   const [localExpanded, setLocalExpanded] = createSignal(new Set<string>(['']));
@@ -31,16 +58,17 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
     if (props.activePath === undefined) setLocalActivePath(path);
     props.onActivePathChange?.(path);
   };
+  const nodeCache = new Map<string, FileTreeNode>();
+  const nodes = createMemo(() => (resourceWorkspace().directories['']?.entries ?? []).map((entry) => entryToNode(entry, expanded(), nodeCache)));
   const visiblePaths = createMemo(() => {
     const paths: string[] = [];
-    const visit = (parent: string) => {
-      for (const entry of resourceWorkspace().directories[parent]?.entries ?? []) {
-        const path = String(entry.path ?? '');
-        paths.push(path);
-        if (entry.kind === 'directory' && expanded().has(path)) visit(path);
+    const visit = (items: FileTreeNode[]) => {
+      for (const node of items) {
+        paths.push(node.path);
+        if (node.kind === 'folder' && expanded().has(node.path) && node.children) visit(node.children);
       }
     };
-    visit('');
+    visit(nodes());
     return paths;
   });
   createEffect(() => {
@@ -58,14 +86,28 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
   let acceptingScroll = false;
   let restoreFrame: number | undefined;
   onCleanup(() => { if (restoreFrame !== undefined) cancelAnimationFrame(restoreFrame); });
-  const toggle = (path: string) => {
+  const expandFolder = (path: string) => {
     setActivePath(path);
     setExpanded((current) => {
+      if (current.has(path)) return current;
       const next = new Set(current);
-      if (next.has(path)) next.delete(path);
-      else { next.add(path); openResourceDirectory(path); }
+      next.add(path);
+      openResourceDirectory(path);
       return next;
     });
+  };
+  const collapseFolder = (path: string) => {
+    setActivePath(path);
+    setExpanded((current) => {
+      if (!current.has(path)) return current;
+      const next = new Set(current);
+      next.delete(path);
+      return next;
+    });
+  };
+  const toggleFolder = (path: string) => {
+    if (expanded().has(path)) collapseFolder(path);
+    else expandFolder(path);
   };
   const focusItem = (item: HTMLElement | undefined) => {
     if (!item) return;
@@ -84,12 +126,13 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
     else if (event.key === 'Home') focusItem(items[0]);
     else if (event.key === 'End') focusItem(items.at(-1));
     else if (event.key === 'ArrowRight' && directory) {
-      if (!expandedNow) target.click();
+      const path = target.dataset.path ?? '';
+      if (!expandedNow) expandFolder(path);
       else if (Number(items[index + 1]?.getAttribute('aria-level')) > Number(target.getAttribute('aria-level'))) focusItem(items[index + 1]);
     } else if (event.key === 'ArrowLeft') {
-      if (directory && expandedNow) target.click();
+      const path = target.dataset.path ?? '';
+      if (directory && expandedNow) collapseFolder(path);
       else {
-        const path = target.dataset.path ?? '';
         const parent = path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '';
         focusItem(items.find((item) => item.dataset.path === parent));
       }
@@ -97,6 +140,8 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
     else return;
     event.preventDefault();
   };
+  const nextCursor = () => resourceWorkspace().directories['']?.nextCursor;
+
   return <section class="flex min-h-0 flex-1 flex-col" aria-label="Explorer">
     <div class="resource-section-title flex h-28 items-center border-b border-divider px-8 text-10 font-650 uppercase tracking-6 text-text-secondary pointer-coarse:h-44">
       <span>Files</span><IconButton label="Refresh Explorer" size="compact" onClick={refreshResourceProject} class="ml-auto border-0 bg-transparent text-text-muted"><RefreshIcon /></IconButton>
@@ -104,8 +149,6 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
     <div
       ref={(element) => {
         tree = element;
-        // 新滚动容器挂载时可能先报告 scrollTop=0；必须先快照旧位置，
-        // 避免该初始事件反向覆盖 Workbench 中等待恢复的值。
         const savedScrollTop = props.scrollTop ?? 0;
         queueMicrotask(() => {
           if (!element.isConnected) return;
@@ -120,60 +163,24 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
       onScroll={(event) => { if (acceptingScroll) props.onScrollTopChange?.(event.currentTarget.scrollTop); }}
     >
       <Show when={resourceWorkspace().directories['']} fallback={<LoadingState label="Loading files" class="m-8 p-8! text-left!" />}>
-        <FileLevel path="" depth={0} expanded={expanded()} activePath={activePath()} onActive={setActivePath} onToggle={toggle} onPreviewIntent={props.onPreviewIntent} />
+        <FileTree
+          nodes={nodes()}
+          expandedPaths={expanded()}
+          onToggleFolder={toggleFolder}
+          activePath={activePath()}
+          onActivePathChange={setActivePath}
+          folderLoadingPaths={folderLoadingPaths(expanded())}
+          onSelect={(node) => {
+            props.onPreviewIntent?.(`file:${node.path}`);
+            openFilePreview(node.path);
+          }}
+          getFileDataAttrs={(node) => ({
+            'data-resource-focus-key': `file:${node.path}`,
+            'data-resource-focus-view': 'explorer',
+          })}
+        />
+        <Show when={nextCursor()}>{(cursor) => <button type="button" class="h-(--tree-row-height) w-full border-0 bg-transparent text-left text-11 text-accent hover:bg-hover pointer-coarse:h-44" style={{ 'padding-left': '26px' }} onClick={() => openResourceDirectory('', cursor())}>Load more…</button>}</Show>
       </Show>
     </div>
   </section>;
-}
-
-function FileLevel(props: { path: string; depth: number; expanded: Set<string>; activePath: string; onActive: (path: string) => void; onToggle: (path: string) => void; onPreviewIntent?: (key: string) => void }) {
-  const entries = () => resourceWorkspace().directories[props.path]?.entries ?? [];
-  const nextCursor = () => resourceWorkspace().directories[props.path]?.nextCursor;
-  return <>
-    <For each={entries()}>{(entry, index) => <FileRow entry={entry} depth={props.depth} index={index()} setSize={entries().length} expanded={props.expanded} activePath={props.activePath} onActive={props.onActive} onToggle={props.onToggle} onPreviewIntent={props.onPreviewIntent} />}</For>
-    <Show when={nextCursor()}>{(cursor) => <button type="button" class="h-(--tree-row-height) w-full border-0 bg-transparent text-left text-11 text-accent hover:bg-hover pointer-coarse:h-44" style={{ 'padding-left': `${26 + props.depth * 13}px` }} onClick={() => openResourceDirectory(props.path, cursor())}>Load more…</button>}</Show>
-  </>;
-}
-
-function FileRow(props: { entry: ResourceEntry; depth: number; index: number; setSize: number; expanded: Set<string>; activePath: string; onActive: (path: string) => void; onToggle: (path: string) => void; onPreviewIntent?: (key: string) => void }) {
-  const path = () => String(props.entry.path ?? '');
-  const directory = () => props.entry.kind === 'directory';
-  const open = () => props.expanded.has(path());
-  return <>
-    <button
-      type="button"
-      role="treeitem"
-      aria-expanded={directory() ? open() : undefined}
-      aria-level={props.depth + 1}
-      aria-posinset={props.index + 1}
-      aria-setsize={props.setSize}
-      data-path={path()}
-      data-directory={directory() ? 'true' : 'false'}
-      data-resource-focus-key={directory() ? undefined : `file:${path()}`}
-      data-resource-focus-view={directory() ? undefined : 'explorer'}
-      tabIndex={props.activePath === path() || (!props.activePath && props.depth === 0 && props.index === 0) ? 0 : -1}
-      class={`group flex h-(--tree-row-height) w-full items-center rounded-4 border-0 pr-6 text-left text-11 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44 ${props.activePath === path() ? 'bg-selected' : 'bg-transparent'}`}
-      style={{ 'padding-left': `${7 + props.depth * 12}px` }}
-      onClick={() => {
-        if (directory()) props.onToggle(path());
-        else {
-          props.onPreviewIntent?.(`file:${path()}`);
-          openFilePreview(path());
-        }
-      }}
-      onFocus={() => props.onActive(path())}
-      title={path()}
-    >
-      <span class={`mr-1 grid size-14 place-items-center text-text-muted ${directory() ? '' : 'opacity-0'}`}><ChevronRight size={14} strokeWidth={1.8} class={open() ? 'rotate-90' : ''} /></span>
-      <VSCodeFileIcon path={path()} directory={directory()} open={open()} size={16} class="mr-4 size-16" />
-      <span class={`min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap ${directory() ? 'font-600' : ''}`}>{String(props.entry.name ?? path())}</span>
-    </button>
-    <Show when={directory() && open()}>
-      <div role="group">
-        <Show when={resourceWorkspace().directories[path()]} fallback={<div class="flex h-(--tree-row-height) items-center text-11 text-text-muted" style={{ 'padding-left': `${32 + props.depth * 12}px` }}>Loading…</div>}>
-          <FileLevel path={path()} depth={props.depth + 1} expanded={props.expanded} activePath={props.activePath} onActive={props.onActive} onToggle={props.onToggle} onPreviewIntent={props.onPreviewIntent} />
-        </Show>
-      </div>
-    </Show>
-  </>;
 }

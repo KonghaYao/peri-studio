@@ -1,19 +1,20 @@
 import { For, Show, createMemo, createSignal } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogTitle, IconButton, LoadingState, Textarea } from '../../components/ui';
+import { Button, Dialog, DialogContent, DialogTitle, LoadingState, Textarea } from '../../components/ui';
 import { mutateGitResource, openGitDiffPreview, openMoreGitChanges, resourceWorkspace, retryGitRepositoryMutation, retryGitResourceMutation } from '../../panel/store';
 import type { RepositoryState } from '../../panel/lib/resource-store';
 import { readOnly } from '../../panel/lib/auth-state';
 import { ConfirmDialog } from '@/widgets/shell/shared/ConfirmDialog';
 import { MAX_COMMIT_MESSAGE_BYTES } from '../../panel/lib/resource-mutations';
-import { ChevronDown, GitBranch, Minus, Plus, Trash2 } from 'lucide-solid';
-import { VSCodeFileIcon } from './VSCodeFileIcon';
+import { GitBranch } from 'lucide-solid';
+import { GitChangeGroup, GitChangeTree } from './git';
+import type { GitChange, GitChangeGroupId } from './git/types';
 
-const GROUPS = [
+const GROUPS: Array<{ id: GitChangeGroupId; label: string }> = [
   { id: 'conflicts', label: 'Merge Changes' },
   { id: 'index', label: 'Staged Changes' },
   { id: 'working_tree', label: 'Changes' },
   { id: 'untracked', label: 'Untracked Changes' },
-] as const;
+];
 
 type SourceControlPanelProps = {
   commitMessages?: Record<string, string>;
@@ -42,7 +43,7 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
     setLocalMessage(value);
     props.onCommitMessageChange?.(props.repo.id, value);
   };
-  const [discard, setDiscard] = createSignal<{ id: string; path: string } | null>(null);
+  const [discard, setDiscard] = createSignal<GitChange | null>(null);
   const branch = () => props.repo.detached ? 'detached HEAD' : props.repo.headName || 'No commits yet';
   const repoMutation = () => resourceWorkspace().repoMutations?.[props.repo.id];
   const repoBusy = () => !!repoMutation()?.pending || Object.values(resourceWorkspace().mutations ?? {}).some((mutation) => mutation.repoId === props.repo.id && mutation.pending);
@@ -61,6 +62,15 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
     const retried = repoMutation();
     if (retried?.action === 'commit' && retried.pending) props.onCommitSubmitted?.(props.repo.id, retried.requestId, failed.message ?? message().trim());
   };
+  const previewChange = (groupId: GitChangeGroupId, change: GitChange) => {
+    props.onPreviewIntent?.(`diff:${props.repo.id}:${groupId}:${change.id}`);
+    openGitDiffPreview(props.repo.id, groupId, change);
+  };
+  const toggleStage = (groupId: GitChangeGroupId, change: GitChange) => {
+    const action = groupId === 'index' ? 'unstage' : 'stage';
+    mutateGitResource(props.repo.id, action, [change.id]);
+  };
+
   return <><section class="border-b border-divider pb-6">
     <div class="flex h-32 items-center gap-6 px-8 text-12 font-550 text-text-primary" title={props.repo.root}>
       <GitBranch size={14} strokeWidth={1.8} /><span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{props.repo.name}</span>
@@ -96,53 +106,27 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
     <For each={GROUPS}>{(group) => {
       const state = () => props.repo.groups[group.id];
       return <Show when={state()?.count}>
-        <div class="resource-group-title flex h-(--tree-row-height) items-center gap-4 px-7 text-10 font-650 uppercase tracking-4 text-text-secondary pointer-coarse:h-44"><ChevronDown size={13} strokeWidth={1.7} /><span>{group.label}</span><span class="ml-auto tabular-nums text-text-muted">{state().count}</span></div>
+        <GitChangeGroup label={group.label} count={state().count}>
+          <GitChangeTree
+            repoId={props.repo.id}
+            changes={state().changes as GitChange[]}
+            groupId={group.id}
+            readOnly={readOnly()}
+            repoBusy={repoBusy()}
+            onFileSelect={(change) => previewChange(group.id, change)}
+            onStageToggle={(change) => toggleStage(group.id, change)}
+            onDiscard={(change) => setDiscard(change)}
+          />
+        </GitChangeGroup>
+        <Show when={state().nextCursor}>{(cursor) => <button type="button" class="h-(--tree-row-height) w-full border-0 bg-transparent pl-28 text-left text-11 text-accent hover:bg-hover pointer-coarse:h-44" onClick={() => openMoreGitChanges(props.repo.id, group.id, cursor())}>Load more…</button>}</Show>
         <For each={state().changes}>{(change) => {
           const mutation = () => resourceWorkspace().mutations?.[change.id];
           const action = () => group.id === 'index' ? 'unstage' : 'stage';
-          const path = () => String(change.path ?? '');
-          return <div>
-          <div class="resource-change-row group flex h-(--tree-row-height) items-center pr-5 text-11 hover:bg-hover pointer-coarse:h-44">
-          <button
-            type="button"
-            class="flex h-full min-w-0 flex-1 items-center gap-5 rounded-4 border-0 bg-transparent pl-13 text-left text-inherit focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2"
-            aria-label={`Open changes for ${path()}`}
-            title={`Open changes for ${path()}`}
-            data-resource-focus-key={`diff:${props.repo.id}:${group.id}:${change.id}`}
-            data-resource-focus-view="scm"
-            onClick={() => {
-              props.onPreviewIntent?.(`diff:${props.repo.id}:${group.id}:${change.id}`);
-              openGitDiffPreview(props.repo.id, group.id, change);
-            }}
-          >
-            <VSCodeFileIcon path={path()} size={15} class="size-14" />
-            <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{basename(path())}</span>
-            <span class="max-w-90 overflow-hidden text-ellipsis whitespace-nowrap text-10 text-text-muted">{dirname(path())}</span>
-            <span class={`w-14 text-center font-mono text-11 font-650 ${statusColor(String(change.status ?? ''))}`}>{statusLetter(String(change.status ?? ''))}</span>
-          </button>
-          <IconButton
-            label={`${action() === 'unstage' ? 'Unstage' : 'Stage'} ${path()}`}
-            busy={mutation()?.pending}
-            disabled={readOnly() || repoBusy() || mutation()?.pending}
-            onClick={(event) => { event.stopPropagation(); mutateGitResource(props.repo.id, action(), [change.id]); }}
-            size="compact"
-            class="w-28 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100"
-          >{group.id === 'index' ? <Minus size={13} strokeWidth={1.8} /> : <Plus size={13} strokeWidth={1.8} />}</IconButton>
-          <Show when={group.id === 'working_tree' || group.id === 'untracked'}><IconButton
-            label={`Discard ${path()}`}
-            disabled={readOnly() || repoBusy() || mutation()?.pending}
-            onClick={(event) => { event.stopPropagation(); setDiscard({ id: change.id, path: path() }); }}
-            size="compact"
-            class="w-28 min-h-22 border-0 bg-transparent p-0 text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-danger pointer-coarse:opacity-100"
-          ><Trash2 size={13} strokeWidth={1.8} /></IconButton></Show>
-          </div>
-          <Show when={mutation()?.error}>{(message) => <div role="alert" class="flex min-h-28 items-center gap-6 border-y border-danger-border bg-danger-soft px-12 py-4 text-10 leading-14 text-danger">
+          return <Show when={mutation()?.error}>{(message) => <div role="alert" class="flex min-h-28 items-center gap-6 border-y border-danger-border bg-danger-soft px-12 py-4 text-10 leading-14 text-danger">
             <span class="min-w-0 flex-1">{message()}</span>
-            <Show when={mutation()?.retryable}><button type="button" class="shrink-0 border-0 bg-transparent px-4 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" aria-label={`Retry ${action()} ${path()}`} onClick={() => retryGitResourceMutation(change.id)}>Retry</button></Show>
-          </div>}</Show>
-        </div>;
+            <Show when={mutation()?.retryable}><button type="button" class="shrink-0 border-0 bg-transparent px-4 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" aria-label={`Retry ${action()} ${String(change.path ?? '')}`} onClick={() => retryGitResourceMutation(change.id)}>Retry</button></Show>
+          </div>}</Show>;
         }}</For>
-        <Show when={state().nextCursor}>{(cursor) => <button type="button" class="h-(--tree-row-height) w-full border-0 bg-transparent pl-28 text-left text-11 text-accent hover:bg-hover pointer-coarse:h-44" onClick={() => openMoreGitChanges(props.repo.id, group.id, cursor())}>Load more…</button>}</Show>
       </Show>;
     }}</For>
   </section>
@@ -160,8 +144,3 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
     />
   </DialogContent></Dialog></>;
 }
-
-const basename = (path: string) => path.split('/').at(-1) || path;
-const dirname = (path: string) => path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '';
-const statusLetter = (status: string) => ({ added: 'A', modified: 'M', deleted: 'D', renamed: 'R', copied: 'C', untracked: 'U', conflict: '!' }[status] ?? 'M');
-const statusColor = (status: string) => status === 'deleted' || status === 'conflict' ? 'text-danger' : status === 'untracked' || status === 'added' ? 'text-success' : 'text-warning';

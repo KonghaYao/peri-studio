@@ -1,28 +1,88 @@
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
-import { archiveProject, archiveProjectSession, chatStatusSignal, createProject, createProjectSession, creatingSessionProjectId, discoverProjectSessions, discoveringSessionsProjectId, importableSessions, importProjectSession, instances, isProjectCatalogBootstrapPending, navigateProjectSession, openingSessionId, permissions, projects, projectSessions, registryHydrated, renameProject, renameProjectSession, restoreProject, restoreProjectSession, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '../../panel/store';
+import {
+  archiveProject,
+  archiveProjectSession,
+  chatStatusSignal,
+  createProject,
+  createProjectSession,
+  creatingSessionProjectId,
+  discoverProjectSessions,
+  discoveringSessionsProjectId,
+  importableSessions,
+  importProjectSession,
+  instances,
+  isProjectCatalogBootstrapPending,
+  navigateProjectSession,
+  openingSessionId,
+  permissions,
+  projects,
+  projectSessions,
+  registryHydrated,
+  renameProject,
+  renameProjectSession,
+  restoreProject,
+  restoreProjectSession,
+  runtimeDocsHydrated,
+  selectedCid,
+  selectedSessionId,
+  turnActive,
+} from '../../panel/store';
 import { isTerminal } from '../../panel/lib/action-state';
 import { readOnly } from '../../panel/lib/auth-state';
-import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, Dialog, DialogContent, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, EmptyState, IconButton, LoadingState, TextField } from '../../components/ui';
+import {
+  Button,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  EmptyState,
+  IconButton,
+  LoadingState,
+  TextField,
+} from '../../components/ui';
 import { SessionSearch } from './SessionSearch';
 import { SessionImportDialog } from '@/widgets/shell/SessionImportDialog';
 import { ProjectSessionRow } from './ProjectSessionRow';
+import { NavAction, SectionHeader } from './sidebar-parts';
 import { runConfirmedMutation } from '../../panel/lib/form-mutation';
 import { pickProjectDirectory } from '../../panel/lib/pick-directory';
 import { projectNameFromPath } from '../../panel/lib/project-path';
 import { runtimeState } from '../../panel/lib/runtime-state.ts';
 import { sessionDisplayTitle } from '../../panel/lib/recovery-state.ts';
 import { selectActiveProjects } from '../../features/catalog/project-catalog';
+import { compareSessionsForSidebar } from '@/entities/registry/session-order';
+import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
 import { ArchivedSection } from '@/widgets/shell/shared/ArchivedSection';
 import { ConfirmDialog } from '@/widgets/shell/shared/ConfirmDialog';
 import { SidebarChrome } from '@/widgets/shell/SidebarChrome';
 import { reconcileInstanceGroups, type InstanceGroup } from '../../panel/lib/instance-groups';
-import { Archive, ChevronRight, Download, Folder, MoreHorizontal, Pencil, Plus } from 'lucide-solid';
+import { cn } from '../../lib/cn';
+import {
+  Archive,
+  CloudOff,
+  Download,
+  Folder,
+  FolderOpen,
+  ListFilter,
+  MessageSquarePlus,
+  MoreHorizontal,
+  Pencil,
+  Pin,
+  Plus,
+  Search,
+} from 'lucide-solid';
 
-function PlusIcon() { return <Plus size={17} strokeWidth={1.7} />; }
+const PINNED_LIMIT = 5;
+
+function PlusIcon() { return <Plus size={15} strokeWidth={1.7} />; }
 function ImportIcon() { return <Download size={16} strokeWidth={1.7} />; }
-function ChevronIcon(props: { class?: string }) { return <ChevronRight size={16} strokeWidth={1.7} class={`flex-none text-text-muted ${props.class ?? ''}`} />; }
-function MoreIcon() { return <MoreHorizontal size={17} strokeWidth={1.7} />; }
-function FolderIcon() { return <Folder size={17} strokeWidth={1.7} />; }
+function MoreIcon() { return <MoreHorizontal size={14} strokeWidth={1.7} />; }
 function RenameIcon() { return <Pencil size={16} strokeWidth={1.7} />; }
 function ArchiveIcon() { return <Archive size={16} strokeWidth={1.7} />; }
 
@@ -56,6 +116,10 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
   const [searchOpen, setSearchOpen] = createSignal(false);
   let observedSelectedSessionId: string | null | undefined;
   const activeProjects = createMemo(() => selectActiveProjects(projects()));
+  const pinnedSessions = createMemo(() => projectSessions()
+    .filter((session) => !session.archivedAt && session.lastOpenedAt)
+    .sort(compareSessionsForSidebar)
+    .slice(0, PINNED_LIMIT));
   const sessionHasRunningRuntime = (session: { id: string; activeChatId?: string | null }) => {
     if (!session.activeChatId) return false;
     return session.id !== selectedSessionId() || !isTerminal(chatStatusSignal()[session.activeChatId]);
@@ -67,6 +131,14 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
     previous,
   ));
   const instanceIds = createMemo(() => instanceGroups().map((instance) => instance.id));
+  const defaultProjectId = () => {
+    const selected = selectedSessionId();
+    if (selected) {
+      const projectId = projectSessions().find((session) => session.id === selected)?.projectId;
+      if (projectId) return projectId;
+    }
+    return activeProjects()[0]?.id ?? null;
+  };
   const setProjectCollapsed = (projectId: string, collapsed: boolean) => setCollapsedProjects((current) => {
     const next = new Set(current);
     if (collapsed) next.add(projectId); else next.delete(projectId);
@@ -150,10 +222,64 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
     }
   };
 
+  const handleNewSession = () => {
+    const projectId = defaultProjectId();
+    if (projectId) createProjectSession(projectId);
+    else setCreating(true);
+  };
+
+  const renderSessionRow = (
+    session: ProjectSessionInfo,
+    projectId: string,
+    options: { pinned?: boolean; indent?: number } = {},
+  ) => {
+    const sessionId = session.id;
+    const selected = () => selectedSessionId() === sessionId;
+    const state = () => runtimeState({
+      hasSession: true,
+      lifecycle: session.lifecycle,
+      isOpening: openingSessionId() === sessionId,
+      hasRuntime: !!session.activeChatId,
+      isSelected: selected(),
+      isHydrated: selected() ? runtimeDocsHydrated() : undefined,
+      chatStatus: selected() ? chatStatusSignal()[selectedCid() ?? ''] : null,
+      hasPendingPermission: selected() && permissions().some((permission) => permission.status === 'pending'),
+      turnActive: selected() && turnActive(),
+    });
+    return (
+      <ProjectSessionRow
+        session={session}
+        state={state()}
+        selected={selected()}
+        navigationBusy={!!openingSessionId()}
+        readOnly={readOnly()}
+        renameOpen={editing() === sessionId}
+        menuOpen={sessionMenu() === sessionId}
+        replacementBusy={creatingSessionProjectId() === projectId}
+        pinned={options.pinned}
+        indent={options.indent}
+        onNavigate={() => props.onNavigate?.()}
+        onOpen={(sessionId, onCommitted) => { navigateProjectSession(sessionId, { onCommitted }); }}
+        onSelectRuntime={(id) => { navigateProjectSession(id); }}
+        onRenameOpenChange={(open) => setEditing(open ? sessionId : null)}
+        onMenuOpenChange={(open) => setSessionMenu(open ? sessionId : null)}
+        onRename={renameProjectSession}
+        onCreateReplacement={(title) => { createProjectSession(projectId, title); }}
+        onArchiveRequest={setArchiveSessionCandidate}
+      />
+    );
+  };
+
   return (
-    <SidebarChrome onOpenSystem={props.onOpenSystem}>
+    <SidebarChrome
+      onOpenSystem={props.onOpenSystem}
+      nav={<>
+        <NavAction icon={<MessageSquarePlus size={16} strokeWidth={1.7} />} label="New session" disabled={readOnly()} onClick={handleNewSession} />
+        <NavAction icon={<Search size={16} strokeWidth={1.7} />} label="Search" onClick={() => setSearchOpen(true)} />
+      </>}
+    >
       <SessionSearch open={searchOpen()} onClose={() => setSearchOpen(false)} onSelected={props.onNavigate} />
-      <Show when={readOnly()}><div class="readonly-label -mt-8 mx-8 mb-12 text-11 font-semibold text-warning">Read-only mode</div></Show>
+      <Show when={readOnly()}><div class="readonly-label px-2.5 pb-2 text-11 font-semibold text-warning">Read-only mode</div></Show>
       <Dialog open={creating()} onOpenChange={(open) => { if (!open && !projectCreateSubmitting()) { setCreating(false); setPickDirectoryError(null); } }}><DialogContent dismissible={!projectCreateSubmitting() && !pickingDirectory()}><DialogTitle class="sr-only">New project</DialogTitle>
         <form class="m-0 rounded-12 border-0 bg-surface p-18 shadow-none" onSubmit={submitProject}>
           <div class="mb-9 flex flex-col gap-6">
@@ -175,127 +301,180 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
           <div class="mt-10 flex justify-end gap-6"><Button type="button" disabled={projectCreateSubmitting() || pickingDirectory()} onClick={() => setCreating(false)}>Cancel</Button><Button variant="primary" type="submit" busy={projectCreateSubmitting()} disabled={!cwd().trim() || pickingDirectory()}>Create</Button></div>
         </form>
       </DialogContent></Dialog>
-      <div class="project-scroll ui-scrollbar min-h-0 flex-1 overflow-auto pt-4 pb-16">
+
+      <Show
+        when={registryHydrated()}
+        fallback={<LoadingState label="Loading projects" class="sidebar-loading px-2.5 py-2 text-left!" />}
+      >
+        <Show when={pinnedSessions().length > 0}>
+          <SectionHeader title="Pinned" icon={<Pin size={14} strokeWidth={1.7} />} />
+          <div class="flex flex-col gap-0.5 pb-1">
+            <For each={pinnedSessions().map((session) => session.id)}>
+              {(sessionId) => {
+                const session = () => pinnedSessions().find((item) => item.id === sessionId)!;
+                return renderSessionRow(session(), session().projectId, { pinned: true });
+              }}
+            </For>
+          </div>
+        </Show>
+
+        <SectionHeader title="Workspaces">
+          <IconButton size="sm" label="Filter workspaces" class="size-7 shrink-0 text-content-muted" onClick={() => setSearchOpen(true)}>
+            <ListFilter size={15} strokeWidth={1.7} />
+          </IconButton>
+          <IconButton size="sm" label="New workspace" class="new-project-button size-7 shrink-0 text-content-muted" disabled={readOnly()} onClick={() => setCreating(true)}>
+            <Folder size={15} strokeWidth={1.7} />
+          </IconButton>
+        </SectionHeader>
+
         <Show
-          when={registryHydrated()}
-          fallback={<LoadingState label="Loading projects" class="sidebar-loading mx-8 p-8! text-left!" />}
+          when={instanceGroups().length > 0}
+          fallback={<EmptyState
+            variant="inline"
+            class="sidebar-empty px-2.5 py-2 text-left!"
+            title={projects().length ? 'No active projects' : 'No projects yet'}
+            description={projects().length ? 'Restore an archived project to continue.' : 'No connected instances or projects are available.'}
+          />}
         >
-          <Show
-            when={instanceGroups().length > 0}
-            fallback={<EmptyState
-              variant="inline"
-              class="sidebar-empty mx-8 p-8! text-left!"
-              title={projects().length ? 'No active projects' : 'No projects yet'}
-              description={projects().length ? 'Restore an archived project to continue.' : 'No connected instances or projects are available.'}
-            />}
-          >
-            <For each={instanceIds()}>{(instanceId) => {
-              const instance = () => instanceGroups().find((item) => item.id === instanceId)!;
-              return <section class="instance-group mb-10">
-              <div class="instance-row group flex min-h-26 items-center gap-8 px-8 text-10 font-normal uppercase tracking-6 text-text-muted">
-                <span class="instance-name min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{instance().name}</span>
-                <Show when={instance().offline}><span class="instance-offline-dot size-7 shrink-0 rounded-full bg-danger" role="img" aria-label="Instance offline" /></Show>
-                <IconButton class="new-project-button row-create-action instance-create-action ml-auto border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100" label="New project" disabled={readOnly()} onClick={() => setCreating(true)}><PlusIcon /></IconButton>
+          <For each={instanceIds()}>{(instanceId) => {
+            const instance = () => instanceGroups().find((item) => item.id === instanceId)!;
+            return <section class="instance-group group/instance pb-1">
+              <div class="instance-row flex min-h-7 items-center gap-2 px-2.5 text-11 text-content-muted">
+                <span class="instance-name min-w-0 flex-1 truncate">{instance().name}</span>
+                <Show when={instance().offline}>
+                  <span class="instance-offline flex shrink-0 items-center gap-1 text-danger-solid" role="img" aria-label="Instance offline">
+                    <CloudOff size={13} strokeWidth={1.8} aria-hidden="true" />
+                    <span>Offline</span>
+                  </span>
+                </Show>
+                <IconButton
+                  class="new-project-button instance-create-action ml-auto size-7 shrink-0 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:pointer-events-auto group-hover/instance:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100"
+                  label="New project"
+                  disabled={readOnly()}
+                  onClick={() => setCreating(true)}
+                >
+                  <PlusIcon />
+                </IconButton>
               </div>
               <For each={instance().projects.map((project) => project.id)}>{(projectId) => {
-            const project = () => instance().projects.find((item) => item.id === projectId)!;
-            const sessions = () => projectSessions().filter((s) => s.projectId === projectId && !s.archivedAt);
-            const archivedSessions = () => projectSessions().filter((s) => s.projectId === projectId && !!s.archivedAt);
-            const sessionsLoading = () => discoveringSessionsProjectId() === projectId || isProjectCatalogBootstrapPending(projectId);
-            const collapsed = () => collapsedProjects().has(projectId);
-            const projectMenuId = `project-menu-${projectId}`;
-            return <Collapsible as="section" class="project-group" open={!collapsed()} onOpenChange={(open) => setProjectCollapsed(projectId, !open)}>
-              <div class="project-heading group flex min-h-34 items-center rounded-8 hover:bg-hover focus-within:bg-hover pointer-coarse:min-h-44">
-                <CollapsibleTrigger class="project-disclosure group/disclosure flex min-h-34 min-w-0 flex-1 items-center gap-7 rounded-8 border-0 bg-transparent px-8 text-left text-13 font-normal text-text-primary cursor-pointer pointer-coarse:min-h-44"><ChevronIcon class="size-12! shrink-0 rotate-0 transition-transform duration-150 group-data-[expanded]/disclosure:rotate-90" /><FolderIcon /><span class="block min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{project().name}</span></CollapsibleTrigger>
-                <IconButton class="row-create-action ml-auto border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100" tooltipPlacement="end" label={`New session in ${project().name}`} busy={creatingSessionProjectId() === projectId} disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(projectId)}><PlusIcon /></IconButton>
-                <DropdownMenu open={projectMenu() === projectId} onOpenChange={(open) => setProjectMenu(open ? projectId : null)} placement="bottom-end">
-                  <DropdownMenuTrigger as={IconButton} class="project-menu-trigger border-0 bg-transparent text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100" tooltipPlacement="end" label={`${project().name} actions`} disabled={readOnly()}><MoreIcon /></DropdownMenuTrigger>
-                  <DropdownMenuContent id={projectMenuId} aria-label={`${project().name} actions`} class="ui-menu">
-                    <DropdownMenuItem onSelect={() => { setProjectNameDraft(project().name); setRenamingProject(projectId); }}><RenameIcon />Rename project</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setImportingProject(projectId)}><ImportIcon />Import existing session</DropdownMenuItem>
-                    <DropdownMenuItem class="text-danger focus:text-danger" disabled={projectHasRunningSession(projectId)} title={projectHasRunningSession(projectId) ? 'Close the running sessions in this project first' : undefined} onSelect={() => setArchiveCandidate(projectId)}><ArchiveIcon />Archive project</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <CollapsibleContent id={`project-sessions-${projectId}`} class="session-list flex flex-col gap-1 pl-12">
-                <For each={sessions().map((item) => item.id)} fallback={
-                  <Show
-                    when={sessionsLoading()}
-                    fallback={<Button busy={creatingSessionProjectId() === projectId} disabled={readOnly() || !!creatingSessionProjectId()} class="session-empty mx-8 cursor-pointer rounded-8 p-8 text-left text-12 text-text-muted hover:bg-hover hover:text-text-secondary" onClick={() => createProjectSession(projectId)}>Start your first conversation</Button>}
-                  >
-                    <LoadingState label="Loading sessions" class="session-empty mx-8 p-8! text-left!" />
-                  </Show>
-                }>
-                  {(sessionId) => {
-                    const session = () => sessions().find((item) => item.id === sessionId)!;
-                    const selected = () => selectedSessionId() === sessionId;
-                    const state = () => runtimeState({
-                      hasSession: true,
-                      lifecycle: session().lifecycle,
-                      isOpening: openingSessionId() === sessionId,
-                      hasRuntime: !!session().activeChatId,
-                      isSelected: selected(),
-                      isHydrated: selected() ? runtimeDocsHydrated() : undefined,
-                      chatStatus: selected() ? chatStatusSignal()[selectedCid() ?? ''] : null,
-                      hasPendingPermission: selected() && permissions().some((permission) => permission.status === 'pending'),
-                      turnActive: selected() && turnActive(),
-                    });
-                    return <ProjectSessionRow
-                      session={session()}
-                      state={state()}
-                      selected={selected()}
-                      navigationBusy={!!openingSessionId()}
-                      readOnly={readOnly()}
-                      renameOpen={editing() === sessionId}
-                      menuOpen={sessionMenu() === sessionId}
-                      replacementBusy={creatingSessionProjectId() === projectId}
-                      onNavigate={() => props.onNavigate?.()}
-                      onOpen={(sessionId, onCommitted) => { navigateProjectSession(sessionId, { onCommitted }); }}
-                      onSelectRuntime={(id) => { navigateProjectSession(id); }}
-                      onRenameOpenChange={(open) => setEditing(open ? sessionId : null)}
-                      onMenuOpenChange={(open) => setSessionMenu(open ? sessionId : null)}
-                      onRename={renameProjectSession}
-                      onCreateReplacement={(title) => { createProjectSession(projectId, title); }}
-                      onArchiveRequest={setArchiveSessionCandidate}
-                    />;
-                  }}
-                </For>
-                <Show when={archivedSessions().length > 0}>
-                  <ArchivedSection
-                    toggleClass="archived-sessions__toggle flex w-full min-h-34 cursor-pointer items-center gap-6 mt-4 rounded-8 border-0 bg-transparent px-8 text-left text-11 text-text-muted hover:bg-hover hover:text-text-secondary pointer-coarse:min-h-44"
-                    label="Archived sessions"
-                    count={archivedSessions().length}
-                    open={archivedSessionsOpen().has(projectId)}
-                    onOpenChange={(open) => setArchivedSessionsExpanded(projectId, open)}
-                    listId={`archived-sessions-${projectId}`}
-                    listClass="archived-session-list flex flex-col gap-2 pt-2 pr-3 pb-5 pl-16"
-                  >
-                    <For each={archivedSessions()}>{(session) => <div class="archived-session-row flex min-h-42 items-center gap-8 rounded-8 py-3 pr-4 pl-8 hover:bg-hover"><span class="flex min-w-0 flex-1 flex-col gap-2"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12 font-550">{sessionDisplayTitle(session.title, session.id)}</strong><small class="text-10 text-text-muted">{session.lifecycle === 'ready' ? 'Session saved' : session.lifecycle}</small></span><Button size="compact" class="min-h-30! px-8! text-11! pointer-coarse:min-h-44!" busy={sessionLifecycleBusy() === session.id} disabled={readOnly() || !!sessionLifecycleBusy()} onClick={() => runConfirmedMutation(() => setSessionLifecycleBusy(session.id), () => setSessionLifecycleBusy(null), (committed, failed) => restoreProjectSession(session.id, committed, failed), () => {})}>Restore</Button></div>}</For>
-                  </ArchivedSection>
-                </Show>
-              </CollapsibleContent>
-            </Collapsible>;
+                const project = () => instance().projects.find((item) => item.id === projectId)!;
+                const sessions = () => projectSessions().filter((s) => s.projectId === projectId && !s.archivedAt);
+                const archivedSessions = () => projectSessions().filter((s) => s.projectId === projectId && !!s.archivedAt);
+                const sessionsLoading = () => discoveringSessionsProjectId() === projectId || isProjectCatalogBootstrapPending(projectId);
+                const collapsed = () => collapsedProjects().has(projectId);
+                const open = () => !collapsed();
+                const hasSessions = () => sessions().length > 0;
+                const emptyHint = () => (sessionsLoading() ? null : 'No sessions yet');
+                const projectMenuId = `project-menu-${projectId}`;
+                return <Collapsible as="section" class="project-group min-w-0" open={open()} onOpenChange={(next) => setProjectCollapsed(projectId, !next)}>
+                  <div class="group/workspace relative min-w-0 rounded-md hover:bg-interaction-hover focus-within:bg-interaction-hover">
+                    <CollapsibleTrigger class="flex w-full min-w-0 items-start gap-2 px-2.5 py-1 text-left" aria-label={project().name}>
+                      <span class="mt-0.5 shrink-0 text-content-muted">
+                        <Show when={open()} fallback={<Folder size={15} strokeWidth={1.7} />}>
+                          <FolderOpen size={15} strokeWidth={1.7} />
+                        </Show>
+                      </span>
+                      <span class="min-w-0 flex-1 py-0.5 pr-14">
+                        <span class="flex min-w-0 items-center gap-2">
+                          <span class="min-w-0 flex-1 truncate text-13 text-content-primary">{project().name}</span>
+                          <Show when={hasSessions()}>
+                            <span
+                              class={cn(
+                                'shrink-0 tabular-nums text-11 text-content-muted transition-opacity duration-(--duration-fast)',
+                                'group-hover/workspace:opacity-0 group-focus-within/workspace:opacity-0 pointer-coarse:opacity-100',
+                              )}
+                              aria-hidden="true"
+                            >
+                              {sessions().length}
+                            </span>
+                          </Show>
+                        </span>
+                        <Show when={emptyHint() && !open()}>
+                          <span class="sidebar-mist-hint mt-0.5 block truncate text-11">{emptyHint()}</span>
+                        </Show>
+                      </span>
+                    </CollapsibleTrigger>
+                    <IconButton
+                      class="row-create-action absolute right-1 top-1 z-1 size-7 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm pointer-events-none transition-opacity duration-(--duration-fast) group-hover/workspace:pointer-events-auto group-hover/workspace:opacity-100 group-focus-within/workspace:pointer-events-auto group-focus-within/workspace:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100"
+                      tooltipPlacement="end"
+                      label={`New session in ${project().name}`}
+                      busy={creatingSessionProjectId() === projectId}
+                      disabled={readOnly() || !!creatingSessionProjectId()}
+                      onClick={() => createProjectSession(projectId)}
+                    >
+                      <PlusIcon />
+                    </IconButton>
+                    <DropdownMenu open={projectMenu() === projectId} onOpenChange={(next) => setProjectMenu(next ? projectId : null)} placement="bottom-end">
+                      <DropdownMenuTrigger
+                        as={IconButton}
+                        class="project-menu-trigger absolute right-8 top-1 z-1 size-7 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm pointer-events-none transition-opacity duration-(--duration-fast) group-hover/workspace:pointer-events-auto group-hover/workspace:opacity-100 group-focus-within/workspace:pointer-events-auto group-focus-within/workspace:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100"
+                        tooltipPlacement="end"
+                        label={`${project().name} actions`}
+                        disabled={readOnly()}
+                      >
+                        <MoreIcon />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent id={projectMenuId} aria-label={`${project().name} actions`} class="ui-menu">
+                        <DropdownMenuItem onSelect={() => { setProjectNameDraft(project().name); setRenamingProject(projectId); }}><RenameIcon />Rename project</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setImportingProject(projectId)}><ImportIcon />Import existing session</DropdownMenuItem>
+                        <DropdownMenuItem class="text-danger focus:text-danger" disabled={projectHasRunningSession(projectId)} title={projectHasRunningSession(projectId) ? 'Close the running sessions in this project first' : undefined} onSelect={() => setArchiveCandidate(projectId)}><ArchiveIcon />Archive project</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <CollapsibleContent id={`project-sessions-${projectId}`} class="session-list flex flex-col gap-0.5 pb-1">
+                    <Show
+                      when={hasSessions()}
+                      fallback={<Show
+                        when={sessionsLoading()}
+                        fallback={<button type="button" class="session-empty sidebar-mist-hint px-2.5 py-1 pl-9 text-left text-11 hover:text-content-muted" disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(projectId)}>Start your first conversation</button>}
+                      >
+                        <LoadingState label="Loading sessions" class="session-empty px-2.5 py-1 pl-9 text-left!" />
+                      </Show>}
+                    >
+                      <For each={sessions().map((item) => item.id)}>
+                        {(sessionId) => {
+                          const session = () => sessions().find((item) => item.id === sessionId)!;
+                          return renderSessionRow(session(), projectId, { indent: 16 });
+                        }}
+                      </For>
+                    </Show>
+                    <Show when={archivedSessions().length > 0}>
+                      <ArchivedSection
+                        toggleClass="archived-sessions__toggle flex w-full min-h-8 cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent px-2.5 py-1 pl-9 text-left text-11 text-content-muted hover:bg-interaction-hover hover:text-content-secondary pointer-coarse:min-h-11"
+                        label="Archived sessions"
+                        count={archivedSessions().length}
+                        open={archivedSessionsOpen().has(projectId)}
+                        onOpenChange={(next) => setArchivedSessionsExpanded(projectId, next)}
+                        listId={`archived-sessions-${projectId}`}
+                        listClass="archived-session-list flex flex-col gap-0.5 pb-1 pl-9"
+                      >
+                        <For each={archivedSessions()}>{(session) => <div class="archived-session-row flex min-h-8 items-center gap-2 rounded-md px-2.5 py-1 hover:bg-interaction-hover pointer-coarse:min-h-11"><span class="flex min-w-0 flex-1 flex-col gap-0.5"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12 font-medium text-content-primary">{sessionDisplayTitle(session.title, session.id)}</strong><small class="text-10 text-content-muted">{session.lifecycle === 'ready' ? 'Session saved' : session.lifecycle}</small></span><Button size="compact" class="min-h-30! px-8! text-11! pointer-coarse:min-h-44!" busy={sessionLifecycleBusy() === session.id} disabled={readOnly() || !!sessionLifecycleBusy()} onClick={() => runConfirmedMutation(() => setSessionLifecycleBusy(session.id), () => setSessionLifecycleBusy(null), (committed, failed) => restoreProjectSession(session.id, committed, failed), () => {})}>Restore</Button></div>}</For>
+                      </ArchivedSection>
+                    </Show>
+                  </CollapsibleContent>
+                </Collapsible>;
               }}</For>
             </section>;
-            }}</For>
-          </Show>
+          }}</For>
         </Show>
-      </div>
+      </Show>
+
       <Show when={registryHydrated() && projects().some((project) => !!project.archivedAt)}>
-        <section class="archived-projects mx-2 mb-8 border-t border-divider pt-7">
+        <section class="archived-projects border-t border-border-subtle px-1.5 pt-2">
           <ArchivedSection
-            toggleClass="archived-projects__toggle flex w-full min-h-34 cursor-pointer items-center gap-6 rounded-8 border-0 bg-transparent px-7 text-left text-11 text-text-muted hover:bg-hover hover:text-text-secondary pointer-coarse:min-h-44"
+            toggleClass="archived-projects__toggle flex w-full min-h-8 cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent px-2.5 text-left text-11 text-content-muted hover:bg-interaction-hover hover:text-content-secondary pointer-coarse:min-h-11"
             label="Archived"
             count={projects().filter((project) => !!project.archivedAt).length}
             open={archivedOpen()}
             onOpenChange={setArchivedOpen}
             listId="archived-project-list"
-            listClass="archived-project-list flex max-h-180 flex-col gap-2 overflow-auto p-3"
+            listClass="archived-project-list flex max-h-180 flex-col gap-1 overflow-auto py-1"
           >
-            <For each={projects().filter((project) => !!project.archivedAt)}>{(project) => <div class="archived-project-row flex min-h-46 items-center gap-8 rounded-8 py-4 pr-5 pl-9 hover:bg-hover"><span class="flex min-w-0 flex-1 flex-col gap-2"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12 font-550">{project.name}</strong><small class="text-10 text-text-muted">{projectSessions().filter((session) => session.projectId === project.id).length} sessions</small></span><Button class="min-h-30! px-8! text-11! pointer-coarse:min-h-44!" busy={restoringProject() === project.id} disabled={readOnly() || !!restoringProject()} onClick={() => runConfirmedMutation(() => setRestoringProject(project.id), () => setRestoringProject(null), (committed, failed) => restoreProject(project.id, committed, failed), () => {})}>Restore</Button></div>}</For>
+            <For each={projects().filter((project) => !!project.archivedAt)}>{(project) => <div class="archived-project-row flex min-h-8 items-center gap-2 rounded-md px-2.5 py-1 hover:bg-interaction-hover pointer-coarse:min-h-11"><span class="flex min-w-0 flex-1 flex-col gap-0.5"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12 font-medium text-content-primary">{project.name}</strong><small class="text-10 text-content-muted">{projectSessions().filter((session) => session.projectId === project.id).length} sessions</small></span><Button class="min-h-30! px-8! text-11! pointer-coarse:min-h-44!" busy={restoringProject() === project.id} disabled={readOnly() || !!restoringProject()} onClick={() => runConfirmedMutation(() => setRestoringProject(project.id), () => setRestoringProject(null), (committed, failed) => restoreProject(project.id, committed, failed), () => {})}>Restore</Button></div>}</For>
           </ArchivedSection>
         </section>
       </Show>
+
       <SessionImportDialog
         open={!!importingProject()}
         project={projects().find((item) => item.id === importingProject()) || null}

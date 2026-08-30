@@ -210,11 +210,11 @@ describe('MessageList entry updates', () => {
 
     const messageRow = screen.getByLabelText('Assistant message');
     const reasoning = screen.getByText('Thinking').closest('details')!;
-    const tool = messageRow.querySelector<HTMLDetailsElement>('.tool-card')!;
+    const tool = messageRow.querySelector<HTMLButtonElement>('.tool-activity-row__summary')!;
     fireEvent.click(reasoning.querySelector('summary')!);
-    fireEvent.click(tool.querySelector('summary')!);
+    fireEvent.click(tool);
     expect(reasoning).toHaveAttribute('open');
-    expect(tool).toHaveAttribute('open');
+    expect(tool).toHaveAttribute('aria-expanded', 'true');
 
     setChatEntries([{
       ...initial,
@@ -225,15 +225,15 @@ describe('MessageList entry updates', () => {
 
     const updatedMessageRow = screen.getByLabelText('Assistant message');
     const updatedReasoning = screen.getByText('Thinking').closest('details')!;
-    const updatedTool = updatedMessageRow.querySelector<HTMLDetailsElement>('.tool-card')!;
+    const updatedTool = updatedMessageRow.querySelector<HTMLButtonElement>('.tool-activity-row__summary')!;
     expect(updatedMessageRow).toBe(messageRow);
     expect(updatedReasoning).toBe(reasoning);
-    expect(updatedTool).toBe(tool);
     expect(updatedReasoning).toHaveAttribute('open');
-    expect(updatedTool).toHaveAttribute('open');
+    fireEvent.click(updatedTool);
+    expect(updatedTool).toHaveAttribute('aria-expanded', 'true');
     expect(updatedMessageRow).toHaveTextContent('Updated answer');
     expect(updatedMessageRow).toHaveTextContent('Updated reasoning');
-    expect(updatedTool).toHaveTextContent('"exitCode": 1');
+    expect(updatedMessageRow).toHaveTextContent('"exitCode": 1');
   });
 });
 

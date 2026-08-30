@@ -33,17 +33,17 @@ export function ChatHeader(props: ChatHeaderProps) {
     return { label: 'Offline', detail: current.text };
   };
   const showRuntimeStatus = () => runtime().label && !['Ready', 'Working', 'Approval'].includes(runtime().label);
-  return <header class={`chat-header relative flex items-center gap-8 h-54 px-18 bg-surface desk:max-wide:h-52 desk:max-wide:px-16 max-desk:h-52 max-desk:px-12 ${props.launch ? 'chat-header--launch justify-end' : 'border-b border-divider'}`}>
-    <IconButton tooltipPlacement="start" label="Open navigation" class="mobile-nav-button hidden max-desk:inline-flex" onClick={props.onOpenNavigation}>
-      <Menu size={18} strokeWidth={1.7} />
+  return <header class={`chat-header relative flex h-13 items-center gap-2 border-b border-border-subtle bg-surface-overlay px-4 ${props.launch ? 'chat-header--launch justify-end' : ''}`}>
+    <IconButton tooltipPlacement="start" label="Open navigation" size="sm" class="mobile-nav-button hidden max-desk:inline-flex" onClick={props.onOpenNavigation}>
+      <Menu size={16} strokeWidth={1.7} />
     </IconButton>
-    <Show when={!props.launch}><IconButton tooltipPlacement="end" label="Open workspace resources" class="hidden max-desk:inline-flex" onClick={props.onOpenResources}>
-      <FileText size={18} strokeWidth={1.7} />
+    <Show when={!props.launch}><IconButton tooltipPlacement="end" label="Open workspace resources" size="sm" class="hidden max-desk:inline-flex" onClick={props.onOpenResources}>
+      <FileText size={16} strokeWidth={1.7} />
     </IconButton></Show>
-    <Show when={!props.launch} fallback={<Status live labelHidden tone={connState().kind || 'idle'} title={connection().detail} aria-label={connection().detail} class="connection-pill mr-2 [&_.ui-status__dot]:size-7">{connection().label}</Status>}>
-      <strong class="chat-title min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-14 leading-115">{title()}</strong>
-      <Show when={showRuntimeStatus()}><span title={runtime().detail} aria-label={runtime().detail || runtime().label} class={`runtime-status runtime-status--${runtime().tone} inline-flex size-28 items-center justify-center rounded-full hover:bg-hover ${runtime().tone === 'busy' ? '[&_i]:bg-accent [&_i]:animate-pulse' : runtime().tone === 'attention' ? '[&_i]:bg-warning' : runtime().tone === 'danger' ? '[&_i]:bg-danger' : '[&_i]:bg-text-faint'}`}><i aria-hidden="true" class="size-7 rounded-full bg-text-faint" /><span class="sr-only">{runtime().label}</span></span></Show>
-      <Status live labelHidden tone={connState().kind || 'idle'} title={connection().detail} aria-label={connection().detail} class="connection-pill [&_.ui-status__dot]:size-7">{connection().label}</Status>
+    <Show when={!props.launch} fallback={<Status live labelHidden tone={connState().kind || 'idle'} title={connection().detail} aria-label={connection().detail} class="connection-pill mr-2">{connection().label}</Status>}>
+      <strong class="chat-title min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-14 font-semibold text-content-primary">{title()}</strong>
+      <Show when={showRuntimeStatus()}><span title={runtime().detail} aria-label={runtime().detail || runtime().label} class={`runtime-status runtime-status--${runtime().tone} inline-flex size-7 items-center justify-center rounded-full hover:bg-interaction-hover ${runtime().tone === 'busy' ? '[&_i]:bg-accent-solid [&_i]:animate-pulse' : runtime().tone === 'attention' ? '[&_i]:bg-warning-solid' : runtime().tone === 'danger' ? '[&_i]:bg-danger-solid' : '[&_i]:bg-content-faint'}`}><i aria-hidden="true" class="size-1.5 rounded-full bg-content-faint" /><span class="sr-only">{runtime().label}</span></span></Show>
+      <Status live labelHidden tone={connState().kind || 'idle'} title={connection().detail} aria-label={connection().detail} class="connection-pill">{connection().label}</Status>
     </Show>
     <Show when={props.launch}>
       <IconButton tooltipPlacement="end" label="Toggle side panel" title="Side panel is not connected yet" disabled class="disabled:opacity-100"><PanelRight size={18} strokeWidth={1.7} /></IconButton>

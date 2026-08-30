@@ -6,6 +6,10 @@ import { CopyButton, IconButton, InlineNotice, Popover, PopoverContent, PopoverT
 import { MessageSquareQuote, MoreHorizontal } from 'lucide-solid';
 import { Markdown } from './Markdown';
 import { ToolCallCard } from './ToolCallCard';
+import { ToolActivityGroup } from './ToolActivityRow';
+import { UserBubble } from './UserBubble';
+import { Reasoning } from './Reasoning';
+import { ResourceCite } from './ResourceCite';
 import { McpAppFrame } from './McpAppFrame';
 import { isPrimaryLiveMcpApp, maybeOpenCompletedMcpTool } from '../../panel/lib/mcp-apps';
 import { requestComposerQuote } from '../../panel/lib/composer-quote';
@@ -34,8 +38,68 @@ function McpToolBlock(props: {
 
 type ChatEntrySource = ChatEntry | Accessor<ChatEntry>;
 
-function isActivityBlock(block: ChatBlock | undefined): boolean {
-  return block?.kind === 'reasoning' || block?.kind === 'tool_call';
+function isToolCallBlock(block: ChatBlock | undefined): boolean {
+  return block?.kind === 'tool_call';
+}
+
+function MessageBlock(props: {
+  block: () => ChatBlock;
+  blockIndex: () => number;
+  role: () => 'user' | 'assistant' | 'system';
+  streaming: () => boolean;
+  entry: () => ChatEntry;
+  toolCallsInBlocks: () => ToolCallInfo[];
+  blockIds: () => string[];
+  blocksById: () => Map<string, ChatBlock>;
+}) {
+  const toolCall = () => {
+    const current = props.block();
+    return current.kind === 'tool_call' ? current.toolCall : null;
+  };
+  const duplicateToolBlock = () => {
+    const id = toolCall()?.toolCallId || '';
+    if (!id) return false;
+    const ids = props.blockIds();
+    const byId = props.blocksById();
+    for (let index = 0; index < props.blockIndex(); index += 1) {
+      const previous = byId.get(ids[index]);
+      if (previous?.kind === 'tool_call' && (previous.toolCall.toolCallId || '') === id) return true;
+    }
+    return false;
+  };
+
+  return <Show when={props.block().kind === 'reasoning'} fallback={
+    <Show when={props.block().kind === 'text'} fallback={
+      <Show when={props.block().kind === 'tool_call'} fallback={
+        <ResourceCite
+          name={(props.block() as Extract<ChatBlock, { kind: 'resource' }>).resource.name || (props.block() as Extract<ChatBlock, { kind: 'resource' }>).resource.resourceId || 'Resource'}
+          mediaType={(props.block() as Extract<ChatBlock, { kind: 'resource' }>).resource.mediaType || undefined}
+          resourceId={(props.block() as Extract<ChatBlock, { kind: 'resource' }>).resource.resourceId || undefined}
+        />
+      }><McpToolBlock
+        toolCall={() => toolCall()!}
+        origin={() => (props.entry().origin === 'session_replay' ? 'replay' as const : props.entry().origin === 'live' ? 'live' as const : null)}
+        siblingTools={props.toolCallsInBlocks}
+        duplicate={duplicateToolBlock()}
+      /></Show>
+    }>{
+      <div class="conversation-message__text text-13 leading-normal text-content-primary">
+        <Show when={props.role() === 'assistant'} fallback={<For each={splitSystemReminders((props.block() as Extract<ChatBlock, { kind: 'text' }>).text)}>{(segment) =>
+          <Show when={segment.kind === 'text'}>
+            <span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{segment.text}</span>
+          </Show>
+        }</For>}>
+          <Markdown
+            source={() => (props.block() as Extract<ChatBlock, { kind: 'text' }>).text}
+            streaming={props.streaming()}
+          />
+        </Show>
+      </div>
+    }</Show>
+  }>{(() => {
+    const reasoning = () => (props.block() as Extract<ChatBlock, { kind: 'reasoning' }>).reasoning;
+    return <Reasoning>{reasoning().text}</Reasoning>;
+  })()}</Show>;
 }
 
 function QuoteIcon() {
@@ -128,87 +192,100 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
 
   return <article ref={articleRef} onMouseUp={captureSelection} onKeyUp={captureSelection} onFocusOut={(event) => {
     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setActionsOpen(false);
-  }} class={`conversation-message conversation-message--${role()} group/message relative mb-12 flex ${role() === 'assistant' ? 'conversation-message--timeline pl-0 before:hidden' : ''} ${role() === 'user' ? 'flex-col items-end' : role() === 'system' ? 'justify-center' : ''}`} aria-label={label()}>
-    <Show when={role() === 'assistant'}><span class="conversation-message__timeline-mark hidden" aria-hidden="true" /></Show>
-    <Show when={userHasVisibleSurface()}><div class={`conversation-message__surface min-w-0 ${role() === 'user' ? 'max-w-72p border border-border-subtle py-8 px-12 rounded-12 bg-surface' : role() === 'system' ? 'max-w-[70%] py-4 px-12 rounded-full bg-surface-muted text-text-secondary text-12' : 'w-full'} [&>*+*]:mt-10 [&>.conversation-message__activity-item+.conversation-message__activity-item]:mt-0`}>
-      <Show when={role() === 'user'}>
-        <header class="conversation-message__meta pointer-events-none absolute -top-17 right-0 flex items-center gap-7 text-10 text-text-muted opacity-0 transition-opacity duration-150 group-hover/message:opacity-100 group-focus-within/message:opacity-100">
+  }} class={`conversation-message conversation-message--${role()} group/message relative mb-4 flex flex-col gap-4 ${role() === 'user' ? 'items-end' : role() === 'system' ? 'items-center' : ''}`} aria-label={label()}>
+    <Show when={userHasVisibleSurface()}>
+      <Show when={role() === 'user'} fallback={
+        <div class={`conversation-message__surface flex max-w-(--chat-content-max) min-w-0 flex-col gap-4 ${role() === 'system' ? 'max-w-[70%] rounded-full bg-surface-muted px-3 py-1 text-12 text-content-secondary' : 'w-full'}`}>
+          <For each={blockIds()}>{(id, blockIndex) => {
+            const block = () => blocksById().get(id)!;
+            const startsToolRun = () => block().kind === 'tool_call' && !isToolCallBlock(blocksById().get(blockIds()[blockIndex() - 1]));
+            const toolRun = (): Extract<ChatBlock, { kind: 'tool_call' }>[] => {
+              if (!startsToolRun()) return [];
+              const ids = blockIds();
+              const byId = blocksById();
+              const run: Extract<ChatBlock, { kind: 'tool_call' }>[] = [];
+              for (let index = blockIndex(); index < ids.length; index += 1) {
+                const current = byId.get(ids[index]);
+                if (current?.kind !== 'tool_call') break;
+                run.push(current);
+              }
+              return run;
+            };
+            return <Show when={block().kind !== 'tool_call' || startsToolRun()} fallback={null}>
+              <Show when={block().kind === 'tool_call'} fallback={
+                <div class="conversation-message__block">
+                  <MessageBlock
+                    block={block}
+                    blockIndex={() => blockIndex()}
+                    role={role}
+                    streaming={streaming}
+                    entry={entry}
+                    toolCallsInBlocks={toolCallsInBlocks}
+                    blockIds={blockIds}
+                    blocksById={blocksById}
+                  />
+                </div>
+              }>
+                <ToolActivityGroup>
+                  <For each={toolRun()}>{(toolBlock) => {
+                    const toolCall = () => toolBlock.toolCall;
+                    const duplicateToolBlock = () => {
+                      const toolId = toolCall().toolCallId || '';
+                      if (!toolId) return false;
+                      const ids = blockIds();
+                      const byId = blocksById();
+                      const firstIndex = ids.findIndex((candidate) => byId.get(candidate)?.kind === 'tool_call' && (byId.get(candidate) as Extract<ChatBlock, { kind: 'tool_call' }>).toolCall.toolCallId === toolId);
+                      const currentIndex = ids.findIndex((candidate) => candidate === toolBlock.id);
+                      return firstIndex >= 0 && currentIndex > firstIndex;
+                    };
+                    return <McpToolBlock
+                      toolCall={toolCall}
+                      origin={() => (entry().origin === 'session_replay' ? 'replay' as const : entry().origin === 'live' ? 'live' as const : null)}
+                      siblingTools={toolCallsInBlocks}
+                      duplicate={duplicateToolBlock()}
+                    />;
+                  }}</For>
+                </ToolActivityGroup>
+              </Show>
+            </Show>;
+          }}</For>
+          <Show when={partialTerminal()}>{(terminal) => <InlineNotice tone={terminal().tone} role="status" title="Partial response">
+            <span>{terminal().label}. The output above may be incomplete.</span>
+          </InlineNotice>}</Show>
+          <Show when={entry().error}>{(error) => <InlineNotice tone="danger" role="alert" aria-label="Message error"><code class="whitespace-pre-wrap wrap-anywhere font-mono text-12 leading-normal">{error().code || 'UNKNOWN'}{error().message ? `: ${error().message}` : ''}</code></InlineNotice>}</Show>
+          <Show when={role() === 'assistant' && entry().text && !streaming()}><>
+            <IconButton label="Message actions" size="sm" variant="ghost" class="conversation-message__actions-trigger absolute top-0 right-0 z-10 hidden border-0 bg-surface-overlay text-content-muted shadow-subtle pointer-coarse:inline-flex" aria-expanded={actionsOpen()} aria-controls={actionsId()} onClick={() => setActionsOpen((open) => !open)}><MoreHorizontal size={17} strokeWidth={1.7} /></IconButton>
+            <div id={actionsId()} class={`conversation-message__actions absolute top-full left-0 z-20 flex min-h-7 items-center gap-2 rounded-lg border border-border-subtle bg-surface-overlay px-2 py-1 text-content-muted shadow-overlay transition-opacity duration-150 ${actionsOpen() ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}><CopyButton text={copyText()} label="Copy answer" class="border-0 bg-transparent text-content-muted hover:bg-interaction-hover pointer-coarse:min-h-44" /><IconButton label="Quote answer" size="sm" variant="ghost" class="border-0 bg-transparent text-content-muted hover:bg-interaction-hover pointer-coarse:min-h-44 pointer-coarse:min-w-44" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-1 text-11 font-medium text-content-muted">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-content-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div>
+          </></Show>
+        </div>
+      }>
+        <header class="conversation-message__meta pointer-events-none flex items-center gap-2 text-10 text-content-muted opacity-0 transition-opacity duration-150 group-hover/message:opacity-100 group-focus-within/message:opacity-100">
           <Show when={timestamp()}>{(time) => <time dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show>
         </header>
-      </Show>
-      <For each={blockIds()}>{(id, blockIndex) => {
-        const block = () => blocksById().get(id)!;
-        const activity = () => isActivityBlock(block());
-        const startsActivity = () => activity() && !isActivityBlock(blocksById().get(blockIds()[blockIndex() - 1]));
-        const endsActivity = () => activity() && !isActivityBlock(blocksById().get(blockIds()[blockIndex() + 1]));
-        const toolCall = () => {
-          const current = block();
-          return current.kind === 'tool_call' ? current.toolCall : null;
-        };
-        const duplicateToolBlock = () => {
-          const id = toolCall()?.toolCallId || '';
-          if (!id) return false;
-          const ids = blockIds();
-          const byId = blocksById();
-          for (let index = 0; index < blockIndex(); index += 1) {
-            const previous = byId.get(ids[index]);
-            if (previous?.kind === 'tool_call' && (previous.toolCall.toolCallId || '') === id) return true;
-          }
-          return false;
-        };
-        return <div class={`conversation-message__block ${activity() ? `conversation-message__activity-item relative pl-18 before:absolute before:left-7 before:w-px before:bg-border-subtle before:content-[''] ${startsActivity() ? 'before:top-12' : 'before:-top-10'} ${endsActivity() ? 'before:bottom-12' : 'before:-bottom-10'}` : ''}`}><Show when={block().kind === 'reasoning'} fallback={
-          <Show when={block().kind === 'text'} fallback={
-            <Show when={block().kind === 'tool_call'} fallback={
-              <section class="message-resource p-10 px-12 rounded-10 bg-surface-muted" aria-label={(block() as Extract<ChatBlock, { kind: 'resource' }>).resource.name || 'Related resource'}>
-                {(() => {
-                  const resource = () => (block() as Extract<ChatBlock, { kind: 'resource' }>).resource;
-                  return <><div class="flex items-baseline gap-8"><strong class="text-text-primary text-13 font-semibold">{resource().name || resource().resourceId || 'Resource'}</strong><span class="text-text-muted text-12">{resource().mediaType || 'Unknown type'}</span></div><Show when={resource().resourceId}><code class="block mt-3 wrap-anywhere text-text-muted font-mono text-11 leading-145" title={resource().resourceId || undefined}>{resource().resourceId}</code></Show></>;
-                })()}
-              </section>
-            }><McpToolBlock
-              toolCall={() => toolCall()!}
-              origin={() => (entry().origin === 'session_replay' ? 'replay' as const : entry().origin === 'live' ? 'live' as const : null)}
-              siblingTools={toolCallsInBlocks}
-              duplicate={duplicateToolBlock()}
-            /></Show>
-          }>{
-            <div class="conversation-message__text text-text-primary text-13 leading-20">
-              <Show when={role() === 'assistant'} fallback={<For each={splitSystemReminders((block() as Extract<ChatBlock, { kind: 'text' }>).text)}>{(segment) =>
+        <UserBubble>
+          <For each={blockIds()}>{(id) => {
+            const block = () => blocksById().get(id)!;
+            return <Show when={block().kind === 'text'}>
+              <For each={splitSystemReminders((block() as Extract<ChatBlock, { kind: 'text' }>).text)}>{(segment) =>
                 <Show when={segment.kind === 'text'}>
                   <span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{segment.text}</span>
                 </Show>
-              }</For>}>
-                <Markdown
-                  source={() => (block() as Extract<ChatBlock, { kind: 'text' }>).text}
-                  streaming={streaming()}
-                />
-              </Show>
-            </div>
-          }</Show>
-        }>{(() => {
-          const reasoning = () => (block() as Extract<ChatBlock, { kind: 'reasoning' }>).reasoning;
-          return <details class="message-reasoning max-w-[680px] text-text-secondary"><summary class="inline-flex min-h-24 cursor-pointer list-none items-center select-none text-11 font-650 tracking-2 text-text-muted hover:text-text-secondary [&::-webkit-details-marker]:hidden">Thinking</summary><p class="m-0 mt-3 whitespace-pre-wrap wrap-anywhere text-12 leading-19 text-text-secondary">{reasoning().text}</p></details>;
-        })()}</Show></div>;
-      }}</For>
-      <Show when={partialTerminal()}>{(terminal) => <InlineNotice tone={terminal().tone} role="status" title="Partial response">
-        <span>{terminal().label}. The output above may be incomplete.</span>
-      </InlineNotice>}</Show>
-      <Show when={entry().error}>{(error) => <InlineNotice tone="danger" role="alert" aria-label="Message error"><code class="whitespace-pre-wrap wrap-anywhere font-mono text-12 leading-15">{error().code || 'UNKNOWN'}{error().message ? `: ${error().message}` : ''}</code></InlineNotice>}</Show>
-      <Show when={role() === 'user' && entry().deliveryState === 'delivery_unknown'}>
-        <InlineNotice tone="warning" role="alert" title="Delivery result unknown">
-          <span>This message may have already run. To avoid duplicate actions, it is not resent automatically.</span>
-        </InlineNotice>
+              }</For>
+            </Show>;
+          }}</For>
+        </UserBubble>
+        <Show when={entry().deliveryState === 'delivery_unknown'}>
+          <InlineNotice tone="warning" role="alert" title="Delivery result unknown">
+            <span>This message may have already run. To avoid duplicate actions, it is not resent automatically.</span>
+          </InlineNotice>
+        </Show>
+        <Show when={entry().deliveryState === 'failed_not_delivered'}>
+          <InlineNotice tone="warning" role="status" title="Message not delivered">
+            <span>The server confirmed ACP did not run this message. Copy it and resend.</span>
+          </InlineNotice>
+        </Show>
       </Show>
-      <Show when={role() === 'user' && entry().deliveryState === 'failed_not_delivered'}>
-        <InlineNotice tone="warning" role="status" title="Message not delivered">
-          <span>The server confirmed ACP did not run this message. Copy it and resend.</span>
-        </InlineNotice>
-      </Show>
-      <Show when={role() === 'assistant' && entry().text && !streaming()}><>
-        <IconButton label="Message actions" size="compact" variant="ghost" class="conversation-message__actions-trigger absolute top-0 right-0 z-10 hidden min-h-44 min-w-44 border-0 bg-surface text-text-muted shadow-subtle pointer-coarse:inline-flex" aria-expanded={actionsOpen()} aria-controls={actionsId()} onClick={() => setActionsOpen((open) => !open)}><MoreHorizontal size={17} strokeWidth={1.7} /></IconButton>
-        <div id={actionsId()} class={`conversation-message__actions absolute top-full left-0 z-20 flex min-h-30 items-center gap-2 rounded-8 border border-border-subtle bg-surface px-4 py-1 text-text-muted shadow-popover transition-opacity duration-150 ${actionsOpen() ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}><CopyButton size="compact" text={copyText()} label="Copy answer" class="border-0 bg-transparent text-text-muted hover:bg-hover pointer-coarse:min-h-44" /><IconButton label="Quote answer" size="compact" variant="ghost" class="border-0 bg-transparent text-text-muted hover:bg-hover pointer-coarse:min-h-44 pointer-coarse:min-w-44" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-5 text-11 font-600 text-text-muted">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-text-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div>
-      </></Show>
-    </div></Show>
+    </Show>
     <Show when={role() === 'user' && systemReminders().length > 0}>
       <SystemReminderBadge reminders={systemReminders()} />
     </Show>

@@ -265,16 +265,16 @@ export function Composer() {
       <section
         aria-busy={submissionIsInFlight() || undefined}
         aria-disabled={inputDisabled()}
-        class="composer-surface overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface p-9 shadow-float max-narrow:rounded-16"
+        class="composer-surface overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface-overlay p-2.5 shadow-float max-narrow:rounded-16"
       >
         <Show when={composerAssets().length > 0}>
           <div class="composer-assets ui-scrollbar flex gap-7 overflow-x-auto pb-7" aria-label="Staged assets">
-            <For each={composerAssets()}>{(asset) => <article class="group relative grid size-(--asset-tile-size) shrink-0 grid-rows-[1fr_auto] overflow-hidden rounded-10 border border-border-subtle bg-surface p-6 hover:border-border-strong hover:bg-hover" title={asset.detail || asset.name}>
-              <Show when={asset.kind === 'image' && asset.previewUrl} fallback={<span class="grid place-items-center text-text-secondary"><AssetIcon kind={asset.kind} /></span>}>
-                    <img src={asset.previewUrl} alt="" class="h-[39px] w-full rounded-5 object-cover" />
+            <For each={composerAssets()}>{(asset) => <article class="group relative grid shrink-0 grid-rows-[1fr_auto] overflow-hidden rounded-md border border-border-subtle bg-surface-canvas p-1.5" style={{ width: 'var(--asset-tile-size)', height: 'var(--asset-tile-size)' }} title={asset.detail || asset.name}>
+              <Show when={asset.kind === 'image' && asset.previewUrl} fallback={<span class="grid place-items-center text-content-muted"><AssetIcon kind={asset.kind} /></span>}>
+                    <img src={asset.previewUrl} alt="" class="h-full w-full rounded-sm object-cover" />
                   </Show>
-                  <IconButton label={`Remove ${asset.name}`} title={`Remove ${asset.name}`} size="compact" class="absolute right-2 top-2 w-22 min-h-18 rounded-5 border border-border-subtle bg-white/95 p-0 text-text-secondary opacity-75 shadow-sm transition-opacity hover:text-text-primary group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100" onClick={() => removeComposerAsset(asset.id)}><X size={11} strokeWidth={2} /></IconButton>
-              <strong class="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-9 font-600 text-text-secondary">{asset.name}</strong>
+                  <IconButton label={`Remove ${asset.name}`} title={`Remove ${asset.name}`} size="sm" class="absolute top-0.5 right-0.5 size-5 bg-surface-overlay/90 p-0" onClick={() => removeComposerAsset(asset.id)}><X size={11} strokeWidth={2} /></IconButton>
+              <strong class="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-9 font-medium text-content-secondary">{asset.name}</strong>
             </article>}</For>
           </div>
         </Show>
@@ -332,7 +332,7 @@ export function Composer() {
             : undefined}
           aria-describedby={inputDescribedBy()}
           spellcheck={false}
-          class="composer-input ui-scrollbar relative z-1 block min-h-36 max-h-180 w-full resize-none overflow-y-auto border-0 bg-transparent px-8 py-8 text-(length:--text-12) leading-18 text-text-primary outline-0 placeholder:text-text-muted disabled:bg-transparent disabled:text-text-secondary focus-visible:outline-0"
+          class="composer-input ui-scrollbar relative z-1 block min-h-9 max-h-180 w-full resize-none overflow-y-auto border-0 bg-transparent px-1 py-2 text-13 leading-normal text-content-primary outline-0 placeholder:text-content-muted disabled:bg-transparent disabled:text-content-secondary focus-visible:outline-0"
           />
         </div>
         <Show when={promptOverBudget()}>
@@ -365,11 +365,11 @@ export function Composer() {
             </div>
           </InlineNotice>
         }</Show>
-        <div class="composer-toolbar flex min-h-36 items-center gap-4">
-          <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="composer-attachment shrink-0 border-0 bg-transparent text-text-primary disabled:opacity-55">
+        <div class="composer-toolbar flex min-h-36 items-center gap-1">
+          <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="composer-attachment shrink-0 border-0 bg-transparent text-content-primary disabled:opacity-55">
             <AttachmentIcon />
           </IconButton>
-          <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled class="composer-approval shrink-0 border-0 bg-transparent text-text-muted disabled:opacity-55">
+          <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled class="composer-approval shrink-0 border-0 bg-transparent text-content-muted disabled:opacity-55">
             <ApprovalIcon />
           </IconButton>
           <Show when={prediction.activePrediction()}>
@@ -393,14 +393,14 @@ export function Composer() {
             ><ScanLine size={17} strokeWidth={1.7} class="max-tight:hidden" aria-hidden="true" /><span class="composer-skills__count sr-only">{skillCount()}</span></Button>
           </Show>
           <span class="composer-shortcut sr-only" aria-hidden="true">Enter to send · Shift + Enter for newline</span>
-          <div class="composer-toolbar__right ml-auto flex min-w-0 items-center gap-5">
+          <div class="composer-toolbar__right ml-auto flex min-w-0 items-center gap-1">
           <Show when={latestUsage()}>{(usage) =>
-            <TokenUsageMeter usage={usage()} />
+            <TokenUsageMeter usage={usage()} contextWindow={chatHead()?.agent?.contextWindow ?? null} />
           }</Show>
           <SessionModelMenu open={modelMenuOpen()} id={modelMenuId} onOpenChange={setModelMenuOpen} trigger={
             <Button
               size="compact"
-              class="composer-runtime min-h-28 max-w-(--model-badge-max) shrink-0 gap-5 overflow-hidden border-0 bg-selected px-8 text-10 text-success hover:bg-selected"
+              class="composer-runtime min-h-7 max-w-(--model-badge-max) shrink-0 gap-1 overflow-hidden border-0 bg-sidebar-selected px-2 text-10 text-success-solid hover:bg-sidebar-selected"
               ref={modelTrigger}
               title={runtimeSummary()}
               aria-label="Choose model"

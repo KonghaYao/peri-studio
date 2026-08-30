@@ -15,8 +15,8 @@ describe('SlashMenu', () => {
     render(() => <SlashMenu id="composer-slash-menu" items={items} activeIndex={0} onActiveIndex={vi.fn()} onSelect={vi.fn()} />);
 
     expect(screen.getByRole('listbox', { name: 'Available commands and skills' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /review.*Peri Skill/ })).toHaveAttribute('id', slashMenuOptionId('composer-slash-menu', 'review'));
-    expect(screen.getByText('Writes to the draft when selected; does not run immediately')).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /review.*Review the current change/ })).toHaveAttribute('id', slashMenuOptionId('composer-slash-menu', 'review'));
+    expect(screen.getByText('/review')).toBeInTheDocument();
   });
 
   it('highlights the active index for external keyboard navigation', () => {
@@ -28,10 +28,10 @@ describe('SlashMenu', () => {
       </>;
     }
     render(() => <Harness />);
-    expect(screen.getByRole('option', { name: /review.*Peri Skill/ })).toHaveClass('bg-selected');
-    expect(screen.getByRole('option', { name: /compact.*Command/ })).not.toHaveClass('bg-selected');
+    expect(screen.getByRole('option', { name: /review.*Review the current change/ })).toHaveClass('bg-sidebar-selected');
+    expect(screen.getByRole('option', { name: /compact.*Compress the context/ })).not.toHaveClass('bg-sidebar-selected');
     screen.getByRole('button', { name: 'Next' }).click();
-    expect(screen.getByRole('option', { name: /compact.*Command/ })).toHaveClass('bg-selected');
+    expect(screen.getByRole('option', { name: /compact.*Compress the context/ })).toHaveClass('bg-sidebar-selected');
   });
 
   it('forwards arrow keys to the host when the listbox receives focus', () => {
@@ -46,7 +46,7 @@ describe('SlashMenu', () => {
     const onSelect = vi.fn();
     render(() => <SlashMenu id="composer-slash-menu" items={items} activeIndex={0} onActiveIndex={vi.fn()} onSelect={onSelect} />);
 
-    fireEvent.click(screen.getByRole('option', { name: /compact.*Command/ }));
+    fireEvent.click(screen.getByRole('option', { name: /compact.*Compress the context/ }));
 
     expect(onSelect).toHaveBeenCalledExactlyOnceWith(items[1]);
   });

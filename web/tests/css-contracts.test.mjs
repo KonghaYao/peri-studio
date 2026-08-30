@@ -170,8 +170,8 @@ test('the permission surface exposes a queue and never resolves an empty identit
   assert.ok(chatView.indexOf('<PermissionQueue') < chatView.indexOf('<Composer />'));
   assert.doesNotMatch(messageList, /permissions\(\)\[0\]/);
   assert.match(queue, /if \(id\) props\.onResolve\(id, decision, optionId\)/);
-  assert.match(card, /disabled=\{props\.readOnly \|\| locked\(\) \|\| !allowActionable\(\)\}/);
-  assert.match(card, /disabled=\{props\.readOnly \|\| locked\(\) \|\| !denyActionable\(\)\}/);
+  assert.match(card, /primaryDisabled=\{primaryDisabled\(\)\}/);
+  assert.match(card, /const unavailable = !actionable\(\)/);
 });
 
 test('the shared Button defaults to non-submitting behavior', () => {
@@ -202,7 +202,7 @@ test('large semantic status surfaces stay white', () => {
     'widgets/chat/PermissionQueue.tsx',
     'widgets/chat/PermissionRequestCard.tsx',
     'widgets/chat/RewindDialog.tsx',
-    'widgets/chat/ToolCallCard.tsx',
+    'widgets/chat/ToolActivityRow.tsx',
     'widgets/shell/shared/ConfirmDialog.tsx',
   ];
   for (const file of files) {
@@ -244,7 +244,7 @@ test('coarse pointers expose sidebar actions without hover and keep controls tou
   const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'ProjectSessionRow.tsx'), 'utf8');
   const button = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Button.tsx'), 'utf8');
   const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Dialog.tsx'), 'utf8');
-  assert.match(sessionRow, /group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100/);
+  assert.match(sessionRow, /group-hover\/row:opacity-100 group-focus-within\/row:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100/);
   assert.match(sessionRow, /pointer-coarse:min-h-44/);
   assert.match(button, /pointer-coarse:min-h-44/);
   assert.match(dialog, /pointer-coarse:w-48 pointer-coarse:min-h-44/);
@@ -397,8 +397,7 @@ test('icon-only controls receive visible help from the shared Tooltip', () => {
   assert.match(tooltip, /@kobalte\/core\/tooltip/);
   assert.match(tooltip, /TooltipPrimitive\.Content/);
   const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'ProjectSessionRow.tsx'), 'utf8');
-  assert.match(sessionRow, /<DropdownMenuTrigger as=\{IconButton\}[\s\S]*?class="session-menu(?:\s|[^"]*?")/);
-  assert.doesNotMatch(sessionRow, /<button[^>]*class="session-menu"/);
+  assert.match(sessionRow, /<DropdownMenuTrigger[\s\S]*?as=\{IconButton\}[\s\S]*?class="session-menu/);
 });
 
 test('icon-only actions use one rounded rectangular geometry and never circular buttons', () => {

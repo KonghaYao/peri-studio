@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@solidjs/testing-library';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, cleanup } from '@solidjs/testing-library';
+import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
 import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
 import { ProjectSessionRow, type ProjectSessionRowProps } from './ProjectSessionRow';
 
@@ -38,6 +38,7 @@ function props(overrides: Partial<ProjectSessionRowProps> = {}): ProjectSessionR
 
 describe('ProjectSessionRow', () => {
   beforeEach(() => vi.clearAllMocks());
+  afterEach(() => cleanup());
 
   it('shows only a breathing loading signal and keeps the session title icon-free', () => {
     render(() => <ProjectSessionRow {...props({ state: { label: 'Agent is working', tone: 'busy' } })} />);
@@ -45,10 +46,10 @@ describe('ProjectSessionRow', () => {
     const loading = screen.getByRole('status', { name: 'Agent is working' });
     expect(loading).toHaveClass('session-loading-wave');
     expect(loading.querySelector('.session-loading-wave__halo')).toHaveClass('animate-ping', 'motion-reduce:animate-none');
-    expect(loading.querySelector('.session-loading-wave__core')).toHaveClass('border', 'border-success', 'bg-surface');
+    expect(loading.querySelector('.session-loading-wave__core')).toHaveClass('bg-success-solid');
     expect(screen.getByRole('button', { name: /^Architecture refactor/ }).querySelector(':scope > svg')).toBeNull();
     expect(screen.getByRole('button', { name: 'Session actions' })).toHaveClass('session-menu');
-    expect(screen.getByText('Architecture refactor')).toHaveClass('font-600', 'text-text-primary');
+    expect(screen.getByText('Architecture refactor')).toHaveClass('text-13', 'text-content-primary');
   });
 
   it('does not render status dots for idle, ready, warning, or failed sessions', () => {

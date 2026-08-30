@@ -70,6 +70,7 @@ describe('PermissionQueue', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next permission' }));
     expect(screen.getByRole('button', { name: 'Allow once' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: 'Deny' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(resolve).toHaveBeenCalledExactlyOnceWith('p2', 'deny', 'p2-reject');
   });
 });

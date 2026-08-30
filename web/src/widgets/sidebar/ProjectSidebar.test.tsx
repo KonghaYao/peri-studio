@@ -129,7 +129,7 @@ describe('ProjectSidebar registry hydration', () => {
     }]);
   });
 
-  it('uses a controlled disclosure for project sessions', () => {
+  it('uses folder disclosure for project sessions', () => {
     render(() => <ProjectSidebar />);
     const disclosure = screen.getByRole('button', { name: 'Perihelion' });
     expect(document.querySelector('.session-list')).not.toHaveClass('border-l', 'border-divider');
@@ -137,7 +137,6 @@ describe('ProjectSidebar registry hydration', () => {
     fireEvent.click(disclosure);
     expect(disclosure).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('button', { name: /^Architecture refactor/ })).not.toBeInTheDocument();
-    expect(disclosure.querySelector('svg')).toHaveClass('group-data-[expanded]/disclosure:rotate-90');
   });
 
   it('lets the selected project stay collapsed after the user closes it', async () => {
@@ -150,13 +149,14 @@ describe('ProjectSidebar registry hydration', () => {
     await waitFor(() => expect(disclosure).toHaveAttribute('aria-expanded', 'false'));
   });
 
-  it('removes redundant sidebar chrome while retaining project creation', () => {
+  it('exposes sandbox-aligned nav actions while retaining project creation', () => {
     render(() => <ProjectSidebar />);
-    expect(screen.queryByRole('button', { name: 'New session' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Search sessions' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'New session' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Search' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Notifications' })).not.toBeInTheDocument();
     expect(screen.queryByText('Projects')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'New project' })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'New workspace' })).toBeInTheDocument();
   });
 
   it('waits for the exact open command to commit before navigating', () => {

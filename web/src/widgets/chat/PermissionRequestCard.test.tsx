@@ -10,26 +10,32 @@ const permission = {
   toolInputSummary: 'Command: git (+1 argument) · Working directory: /workspace/project',
 };
 
+async function submitDecision(optionLabel: string) {
+  fireEvent.click(screen.getByRole('button', { name: optionLabel }));
+  await fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+}
+
 describe('PermissionRequestCard', () => {
   afterEach(() => vi.useRealTimers());
 
-  it('submits only the first security decision and exposes known request facts', () => {
+  it('submits only the first security decision and exposes known request facts', async () => {
     const resolve = vi.fn();
     const view = render(() => <PermissionRequestCard permission={permission} readOnly={false} onResolve={resolve} />);
     expect(screen.getByText('Run shell command')).toBeInTheDocument();
-    expect(screen.getByText("Read the current project's Git status")).toBeInTheDocument();
+    expect(screen.getByText(/Read the current project's Git status/)).toBeInTheDocument();
     expect(screen.queryByText('Permission needed')).not.toBeInTheDocument();
     expect(screen.getByText('tool tool-123…')).toHaveAttribute('title', 'tool-123456789');
-    expect(screen.getByText('Command: git (+1 argument) · Working directory: /workspace/project')).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'Allow once' }));
+    expect(screen.getByText(/Command: git \(\+1 argument\)/)).toBeVisible();
+    await submitDecision('Allow once');
     expect(resolve).toHaveBeenCalledExactlyOnceWith('allow', 'allow-once');
     view.unmount();
   });
 
   it('locks both opposing decisions while delivery is pending', () => {
     render(() => <PermissionRequestCard permission={permission} decision={{ commandId: 'cmd-1', permissionId: permission.permissionId, decision: 'allow', phase: 'pending', retryable: false }} readOnly={false} onResolve={vi.fn()} />);
-    expect(screen.getByRole('button', { name: /Allow once/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Allow once' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Deny' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Next/ })).toBeDisabled();
     expect(screen.getByLabelText('Run shell command')).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('status')).toHaveTextContent('Allowing');
   });
@@ -38,16 +44,16 @@ describe('PermissionRequestCard', () => {
     render(() => <PermissionRequestCard permission={permission} decision={{ commandId: 'cmd-1', permissionId: permission.permissionId, decision: 'deny', phase: 'uncertain', retryable: false }} readOnly={false} onResolve={vi.fn()} />);
     expect(screen.getByRole('alert')).toHaveTextContent('Deny not confirmed');
     expect(screen.getByRole('button', { name: 'Allow once' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Denying/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Deny' })).toBeDisabled();
     expect(screen.getByLabelText('Run shell command')).not.toHaveAttribute('aria-busy');
     expect(screen.queryByRole('button', { name: 'Retry with original request' })).not.toBeInTheDocument();
   });
 
-  it('offers the original command only after a definitely retryable delivery failure', () => {
+  it('offers the original command only after a definitely retryable delivery failure', async () => {
     const retry = vi.fn();
     render(() => <PermissionRequestCard permission={permission} decision={{ commandId: 'cmd-1', permissionId: permission.permissionId, decision: 'allow', phase: 'uncertain', retryable: true }} readOnly={false} onResolve={vi.fn()} onRetry={retry} />);
     expect(screen.getByRole('alert')).toHaveTextContent('Retry available');
-    fireEvent.click(screen.getByRole('button', { name: 'Retry with original request' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Retry with original request' }));
     expect(retry).toHaveBeenCalledExactlyOnceWith('cmd-1');
   });
 
@@ -56,51 +62,55 @@ describe('PermissionRequestCard', () => {
     expect(screen.getByText('Read only')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Allow once' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Deny' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Next/ })).toBeDisabled();
   });
 
-  it('fails closed when a malformed projection has no permission identity', () => {
+  it('fails closed when a malformed projection has no permission identity', async () => {
     const resolve = vi.fn();
     render(() => <PermissionRequestCard permission={{ ...permission, permissionId: null }} readOnly={false} onResolve={resolve} />);
     expect(screen.getByText('Unavailable')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Allow once' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Deny' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Allow once' }));
+    await submitDecision('Allow once');
     expect(resolve).not.toHaveBeenCalled();
   });
 
-  it('discloses when the only available grant lasts for the session', () => {
+  it('discloses when the only available grant lasts for the session', async () => {
     const resolve = vi.fn();
     render(() => <PermissionRequestCard permission={{ ...permission, options: ['allowSession', 'deny'] }} readOnly={false} onResolve={resolve} />);
     expect(screen.getByRole('button', { name: 'Allow for this session' })).toBeEnabled();
     expect(screen.queryByRole('button', { name: 'Allow once' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Allow for this session' }));
+    await submitDecision('Allow for this session');
     expect(resolve).toHaveBeenCalledWith('allow', 'allow-session');
   });
 
-  it('fails closed when the projection has no recognized allow scope', () => {
-    render(() => <PermissionRequestCard permission={{ ...permission, options: ['deny'] }} readOnly={false} onResolve={vi.fn()} />);
+  it('fails closed when the projection has no recognized allow scope', async () => {
+    const resolve = vi.fn();
+    render(() => <PermissionRequestCard permission={{ ...permission, options: ['deny'] }} readOnly={false} onResolve={resolve} />);
     expect(screen.queryByRole('button', { name: /Allow/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Deny' })).toBeEnabled();
+    await submitDecision('Deny');
+    expect(resolve).toHaveBeenCalledWith('deny', 'reject-once');
   });
 
-  it('fails closed when a modern projection omits an opaque option identity', () => {
+  it('fails closed when a modern projection omits an opaque option identity', async () => {
     const resolve = vi.fn();
     render(() => <PermissionRequestCard permission={{ ...permission, optionIds: {} }} readOnly={false} onResolve={resolve} />);
     expect(screen.getByText('Some permission options unavailable')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Allow once' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Deny' })).toBeDisabled();
+    await submitDecision('Allow once');
     expect(resolve).not.toHaveBeenCalled();
   });
 
-  it('keeps cancellation available when ACP offers no reject option', () => {
+  it('keeps cancellation available when ACP offers no reject option', async () => {
     const resolve = vi.fn();
     render(() => <PermissionRequestCard permission={{ ...permission, options: ['allowOnce'], optionIds: { allowOnce: 'allow-once' } }} readOnly={false} onResolve={resolve} />);
     expect(screen.getByRole('button', { name: 'Deny' })).toBeEnabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Deny' }));
+    await submitDecision('Deny');
     expect(resolve).toHaveBeenCalledExactlyOnceWith('deny', undefined);
   });
 
-  it('shows a live countdown and fails closed at the projected deadline', () => {
+  it('shows a live countdown and fails closed at the projected deadline', async () => {
     vi.useFakeTimers();
     vi.setSystemTime('2026-08-13T12:00:00.000Z');
     const resolve = vi.fn();
@@ -117,7 +127,7 @@ describe('PermissionRequestCard', () => {
     expect(screen.getByText('Expired')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Allow once' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Deny' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Allow once' }));
+    await submitDecision('Allow once');
     expect(resolve).not.toHaveBeenCalled();
     view.unmount();
 

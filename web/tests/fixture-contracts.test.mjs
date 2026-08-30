@@ -57,11 +57,14 @@ test('component geometry tokens are declared once and consumed by production wid
   const read = (...parts) => readFileSync(join(root, ...parts), 'utf8');
   const tokens = read('styles', 'tokens.css');
   const composer = read('widgets', 'composer', 'Composer.tsx');
-  const tool = read('widgets', 'chat', 'ToolCallCard.tsx');
+  const tool = read('widgets', 'chat', 'ToolActivityRow.tsx');
+  const toolActivity = read('widgets', 'chat', 'ToolActivityRow.tsx');
+  const mcpApp = read('widgets', 'chat', 'McpAppFrame.tsx');
   const status = read('widgets', 'shell', 'StatusArea.tsx');
   const questions = read('widgets', 'chat', 'ElicitationQueue.tsx');
   const permissions = read('widgets', 'chat', 'PermissionQueue.tsx');
   const permissionCard = read('widgets', 'chat', 'PermissionRequestCard.tsx');
+  const decisionCard = read('widgets', 'chat', 'DecisionCard.tsx');
   const explorer = read('widgets', 'resource', 'ExplorerPanel.tsx');
   const sourceControl = read('widgets', 'resource', 'SourceControlPanel.tsx');
   const button = read('shared', 'ui', 'Button.tsx');
@@ -72,7 +75,7 @@ test('component geometry tokens are declared once and consumed by production wid
     'decision-radius', 'permission-card-min-height', 'tool-activity-max',
   ]) {
     assert.match(tokens, new RegExp(`--${token}:`));
-    assert.match(`${composer}\n${tool}\n${status}\n${questions}\n${permissions}\n${permissionCard}\n${explorer}\n${sourceControl}\n${button}`, new RegExp(`--${token}`));
+    assert.match(`${composer}\n${tool}\n${toolActivity}\n${mcpApp}\n${status}\n${questions}\n${permissions}\n${permissionCard}\n${decisionCard}\n${explorer}\n${sourceControl}\n${button}`, new RegExp(`--${token}`));
   }
   assert.doesNotMatch(composer, /token-composer|design-token/);
   assert.doesNotMatch(tool, /token-tool|design-token/);

@@ -76,8 +76,8 @@ describe('Composer', () => {
     });
     render(() => <Composer />);
 
-    expect(document.querySelector('.composer-surface')).toHaveClass('rounded-(--composer-radius)', 'p-9');
-    expect(screen.getByRole('textbox')).toHaveClass('min-h-36', 'text-(length:--text-12)', 'leading-18');
+    expect(document.querySelector('.composer-surface')).toHaveClass('rounded-(--composer-radius)', 'p-2.5');
+    expect(screen.getByRole('textbox')).toHaveClass('min-h-9', 'leading-normal', 'text-content-primary');
     expect(screen.getByRole('button', { name: 'Choose model' })).toHaveTextContent('Nova 4.1');
     expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('w-36', 'min-h-32', 'rounded-8');
   });
@@ -253,10 +253,9 @@ describe('Composer', () => {
       activeTurn: null, pendingPermissions: [],
     });
     render(() => <Composer />);
-    const usage = screen.getByRole('img', { name: 'Input 1,200 · Output 345 · Cached 900' });
-    expect(usage).toBeInTheDocument();
-    expect(usage.querySelectorAll('.composer-usage__segment')).toHaveLength(3);
-    expect(usage).not.toHaveTextContent('Input');
+    const usage = screen.getByRole('button', { name: /Context usage.*Input 1,200 · Output 345 · Cached 900/ });
+    expect(usage).toHaveClass('composer-usage');
+    expect(screen.queryByRole('button', { name: /Context usage/ })).toBeInTheDocument();
     setChatHead({
       chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
       agent: {
@@ -266,7 +265,7 @@ describe('Composer', () => {
       },
       activeTurn: null, pendingPermissions: [],
     });
-    expect(screen.queryByRole('img', { name: /Input/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Context usage/ })).not.toBeInTheDocument();
   });
 
   it('navigates skills with arrow keys from the composer input', async () => {
@@ -290,7 +289,7 @@ describe('Composer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Browse skills (2)' }));
     const input = screen.getByRole('textbox');
     fireEvent.keyDown(input, { key: 'ArrowDown' });
-    expect(screen.getByRole('option', { name: /mcp__docs__search.*MCP Skill/ })).toHaveClass('bg-selected');
+    expect(screen.getByRole('option', { name: /mcp__docs__search.*Search docs/ })).toHaveClass('bg-sidebar-selected');
     fireEvent.keyDown(input, { key: 'Enter' });
     await waitFor(() => expect(input).toHaveValue('/mcp__docs__search '));
   });
@@ -340,7 +339,7 @@ describe('Composer', () => {
     expect(screen.queryByRole('button', { name: /Skills/ })).not.toBeInTheDocument();
     const input = screen.getByRole('textbox', { name: 'Message the agent' });
     fireEvent.input(input, { target: { value: '/' } });
-    expect(screen.getByRole('option', { name: /auto-issue-fixer.*Command/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /auto-issue-fixer.*Fix an issue/ })).toBeInTheDocument();
     fireEvent.keyDown(input, { key: 'Escape' });
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     expect(input).toHaveValue('/');

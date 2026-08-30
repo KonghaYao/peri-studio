@@ -10,6 +10,10 @@ const base: ToolCallInfo = {
   startedAt: '2026-08-13T00:00:00.000Z', completedAt: '2026-08-13T00:00:01.250Z',
 };
 
+function summary() {
+  return document.querySelector('.tool-activity-row__summary') as HTMLButtonElement;
+}
+
 describe('ToolCallCard', () => {
   it('shows structured execution facts and honest observed duration', () => {
     render(() => <ToolCallCard toolCall={base} />);
@@ -17,9 +21,9 @@ describe('ToolCallCard', () => {
     expect(screen.getByText('Done')).toBeInTheDocument();
     expect(screen.getByText('1.3 s')).toBeInTheDocument();
     expect(screen.getAllByText('pwd')).toHaveLength(1);
-    expect(document.querySelector('.tool-card__body')).toBeNull();
-    fireEvent.click(document.querySelector('summary')!);
-    expect(document.querySelector('.tool-card__body')).toBeInTheDocument();
+    expect(document.querySelector('.tool-activity-row__body')).toBeNull();
+    fireEvent.click(summary());
+    expect(document.querySelector('.tool-activity-row__body')).toBeInTheDocument();
     expect(screen.getAllByText(/pwd/)).toHaveLength(2);
     expect(screen.getByRole('button', { name: 'Copy Command' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copy Output' })).toBeInTheDocument();
@@ -28,11 +32,11 @@ describe('ToolCallCard', () => {
   it('keeps public errors compact until requested and never renders payload markup as HTML', () => {
     render(() => <ToolCallCard toolCall={{ ...base, status: 'error', result: null, publicError: { code: 'DENIED', message: '<img src=x onerror=alert(1)>' } }} />);
     expect(screen.getByText('Failed')).toBeInTheDocument();
-    expect(document.querySelector('details')?.open).toBe(false);
-    fireEvent.click(document.querySelector('summary')!);
+    expect(document.querySelector('.tool-activity-row__body')).toBeNull();
+    fireEvent.click(summary());
     expect(screen.getByText(/<img src=x onerror=alert\(1\)>/)).toBeInTheDocument();
     expect(document.querySelector('img')).toBeNull();
-    expect(document.querySelector('details')?.open).toBe(true);
+    expect(summary()).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('suppresses absent, invalid, and negative timing', () => {
@@ -43,26 +47,26 @@ describe('ToolCallCard', () => {
 
   it('distinguishes an explicitly omitted result from an empty result', () => {
     const { unmount } = render(() => <ToolCallCard toolCall={{ ...base, result: null, resultOmitted: true, resultBytes: 8192 }} />);
-    fireEvent.click(document.querySelector('summary')!);
+    fireEvent.click(summary());
     expect(screen.getByText('Output not loaded')).toBeInTheDocument();
     expect(screen.getByText(/of about 8.0 KB/)).toBeInTheDocument();
     expect(screen.queryByText('The tool returned no displayable output.')).not.toBeInTheDocument();
     unmount();
     render(() => <ToolCallCard toolCall={{ ...base, result: null, resultOmitted: false, resultBytes: null }} />);
-    fireEvent.click(document.querySelector('summary')!);
+    fireEvent.click(summary());
     expect(screen.getByText('The tool returned no displayable output.')).toBeInTheDocument();
   });
 
   it('shows a public error and omission provenance independently', () => {
     render(() => <ToolCallCard toolCall={{ ...base, status: 'error', result: null, resultOmitted: true, resultBytes: 5000, publicError: { code: 'TOO_LARGE', message: 'safe failure' } }} />);
-    fireEvent.click(document.querySelector('summary')!);
+    fireEvent.click(summary());
     expect(screen.getByText(/TOO_LARGE: safe failure/)).toBeInTheDocument();
     expect(screen.getByText('Output not loaded')).toBeInTheDocument();
   });
 
   it('does not interpret missing legacy provenance as an explicit empty result', () => {
     render(() => <ToolCallCard toolCall={{ ...base, result: null, resultOmitted: null, resultBytes: null }} />);
-    fireEvent.click(document.querySelector('summary')!);
+    fireEvent.click(summary());
     expect(screen.getByText(/legacy projection did not record/)).toBeInTheDocument();
     expect(screen.queryByText('The tool returned no displayable output.')).not.toBeInTheDocument();
   });
@@ -75,33 +79,26 @@ describe('ToolCallCard', () => {
 
   it('uses the production token geometry and highlights only active work', () => {
     const { unmount } = render(() => <ToolCallCard toolCall={{ ...base, status: 'running', completedAt: null }} />);
-    const active = document.querySelector('.tool-card__summary');
-    expect(active).toHaveClass('min-h-(--pattern-row-height)', 'bg-selected');
-    expect(document.querySelector('.tool-card')).toHaveClass('border-0');
-    expect(document.querySelector('.tool-card')).not.toHaveClass('border-b', 'border-divider');
-    expect(active).toHaveClass('grid-cols-[minmax(0,1fr)_auto_18px]', 'px-0');
-    expect(active?.querySelector('.tool-card__identity')).toHaveClass('inline-flex', 'items-baseline', 'gap-6');
-    expect(active?.querySelector('.tool-card__mark')).toHaveClass('absolute', '-left-18', 'top-1/2', '-translate-y-1/2');
+    const active = summary();
+    expect(active).toHaveClass('min-h-(--pattern-row-height)', 'bg-sidebar-selected');
+    expect(active).toHaveClass('grid-cols-[16px_minmax(0,1fr)_auto_14px]');
     unmount();
 
     render(() => <ToolCallCard toolCall={base} />);
-    expect(document.querySelector('.tool-card__summary')).not.toHaveClass('bg-selected');
+    expect(summary()).not.toHaveClass('bg-sidebar-selected');
   });
 
   it('keeps the compact input immediately after the tool title', () => {
     render(() => <ToolCallCard toolCall={{ ...base, name: 'Bash', arguments: { command: 'pwd && git status' } }} />);
-    const identity = document.querySelector('.tool-card__identity')!;
-    expect(identity.children[0]).toHaveTextContent('Bash');
-    expect(identity.children[1]).toHaveTextContent('pwd && git status');
-    expect(identity).toHaveClass('inline-flex');
+    const row = document.querySelector('.tool-activity-row__summary')!;
+    expect(row).toHaveTextContent('Bash');
+    expect(row).toHaveTextContent('pwd && git status');
   });
 
   it('keeps long tool names from displacing the compact input and status', () => {
     render(() => <ToolCallCard toolCall={{ ...base, name: 'An unexpectedly long namespaced tool implementation', arguments: { command: 'pwd' } }} />);
-    const identity = document.querySelector('.tool-card__identity')!;
-    expect(identity).toHaveClass('overflow-hidden');
-    expect(identity.children[0]).toHaveClass('max-w-[40%]', 'shrink', 'text-ellipsis');
-    expect(identity.children[1]).toHaveClass('flex-1', 'min-w-0', 'text-ellipsis');
+    const row = document.querySelector('.tool-activity-row__summary span.truncate')!;
+    expect(row).toHaveClass('truncate');
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
@@ -113,8 +110,8 @@ describe('ToolCallCard', () => {
       arguments: { limit: 2_000, offset: 0, file_path: '/workspace/src/main.rs' },
     }} />);
 
-    expect(document.querySelector('.tool-card__summary')).toHaveTextContent('/workspace/src/main.rs');
-    expect(document.querySelector('.tool-card__summary')).not.toHaveTextContent('2000');
+    expect(summary()).toHaveTextContent('/workspace/src/main.rs');
+    expect(summary()).not.toHaveTextContent('2000');
   });
 
   it('presents shell command and output as tool-specific evidence', () => {
@@ -126,7 +123,7 @@ describe('ToolCallCard', () => {
       result: { stdout: '', output: 'test result: ok', stderr: '', exitCode: 0 },
     }} />);
 
-    fireEvent.click(document.querySelector('.tool-card__summary')!);
+    fireEvent.click(summary());
     expect(screen.getByText('Command')).toBeInTheDocument();
     expect(screen.getByText('Output')).toBeInTheDocument();
     expect(screen.getAllByText(/cargo test -p peri-studio/)).toHaveLength(2);
@@ -145,7 +142,7 @@ describe('ToolCallCard', () => {
       result: { content: [{ type: 'text', text: 'opened' }] },
     }} />);
 
-    fireEvent.click(document.querySelector('.tool-card__summary')!);
+    fireEvent.click(summary());
     expect(screen.getByText('Input')).toBeInTheDocument();
     expect(screen.getByText('Output')).toBeInTheDocument();
     expect(screen.queryByText('File')).not.toBeInTheDocument();
@@ -161,7 +158,7 @@ describe('ToolCallCard', () => {
       result: { content: [{ type: 'text', text: 'fn main() {}' }] },
     }} />);
 
-    fireEvent.click(document.querySelector('.tool-card__summary')!);
+    fireEvent.click(summary());
     expect(screen.getByText(/"offset": 40/)).toBeInTheDocument();
     expect(screen.getByText(/"limit": 80/)).toBeInTheDocument();
   });
@@ -183,7 +180,7 @@ describe('ToolCallCard', () => {
     }} />);
 
     expect(screen.queryByText('Input not loaded')).not.toBeInTheDocument();
-    fireEvent.click(document.querySelector('.tool-card__summary')!);
+    fireEvent.click(summary());
     expect(screen.getByText('Input not loaded')).toBeInTheDocument();
     expect(screen.getByText(/about 2.0 KB/)).toBeInTheDocument();
     expect(screen.getByText('Tool content')).toBeInTheDocument();

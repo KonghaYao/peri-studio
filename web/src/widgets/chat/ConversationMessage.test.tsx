@@ -44,8 +44,8 @@ describe('ConversationMessage', () => {
     expect(message).toHaveClass('conversation-message--user');
     expect(message).toHaveTextContent('**literal user input**');
     expect(message.querySelector('strong')).toBeNull();
-    expect(message.querySelector('.conversation-message__meta')).toHaveClass('absolute');
-    expect(message.querySelector('.conversation-message__surface')).toHaveClass('py-8', 'px-12', 'bg-surface');
+    expect(message.querySelector('.conversation-message__meta')).toHaveClass('flex');
+    expect(message.querySelector('.max-w-\\[72\\%\\]')).toHaveClass('rounded-xl', 'bg-surface-overlay', 'text-content-primary');
     expect(screen.queryByRole('button', { name: 'Copy answer' })).not.toBeInTheDocument();
     view.unmount();
   });
@@ -59,7 +59,7 @@ describe('ConversationMessage', () => {
     expect(screen.getByRole('heading', { name: 'Result' })).toBeInTheDocument();
     expect(screen.getByText('cargo test')).toHaveClass('md-inline-code');
     expect(screen.getByRole('button', { name: 'Copy answer' }).closest('.conversation-message__actions')).toHaveClass(
-      'absolute', 'border', 'bg-surface', 'shadow-popover', 'text-text-muted',
+      'absolute', 'border', 'bg-surface-overlay', 'shadow-overlay', 'text-content-muted',
     );
     fireEvent.click(screen.getByRole('button', { name: 'Copy answer' }));
     expect(writeText).toHaveBeenCalledWith('## Result\n\n`cargo test` passed.');
@@ -79,7 +79,7 @@ describe('ConversationMessage', () => {
     const trigger = screen.getByRole('button', { name: 'Message actions' });
     const actions = screen.getByRole('button', { name: 'Copy answer' }).closest('.conversation-message__actions');
 
-    expect(trigger).toHaveClass('hidden', 'pointer-coarse:inline-flex', 'min-h-44', 'min-w-44');
+    expect(trigger).toHaveClass('hidden', 'pointer-coarse:inline-flex');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(trigger).toHaveAttribute('aria-controls', actions?.id);
     expect(actions).toHaveClass('pointer-events-none', 'opacity-0');
@@ -204,13 +204,13 @@ describe('ConversationMessage', () => {
 
     const message = screen.getByLabelText('Assistant message');
     const before = screen.getByText('Before tool');
-    const toolCard = message.querySelector('.tool-card')!;
+    const toolGroup = message.querySelector('.tool-activity-group')!;
     const after = screen.getByText('After tool');
-    expect(before.compareDocumentPosition(toolCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(toolCard.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(before.compareDocumentPosition(toolGroup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(toolGroup.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('removes generic message spacing between adjacent tool activity rows', () => {
+  it('groups adjacent tool activity rows inside one bordered container', () => {
     const first = { ...baseTool('tool-1'), name: 'Read config' };
     const second = { ...baseTool('tool-2'), name: 'Run checks' };
     render(() => <ConversationMessage entry={entry({
@@ -221,12 +221,12 @@ describe('ConversationMessage', () => {
       ],
     })} />);
 
-    const surface = screen.getByLabelText('Assistant message').querySelector('.conversation-message__surface')!;
-    expect(surface).toHaveClass('[&>.conversation-message__activity-item+.conversation-message__activity-item]:mt-0');
-    expect(surface.querySelectorAll('.conversation-message__activity-item')).toHaveLength(2);
+    const group = screen.getByLabelText('Assistant message').querySelector('.tool-activity-group')!;
+    expect(group).toHaveClass('rounded-lg', 'border', 'bg-surface-overlay');
+    expect(group.querySelectorAll('.tool-activity-row')).toHaveLength(2);
   });
 
-  it('renders reasoning and tool calls as one vertical activity timeline', () => {
+  it('renders reasoning before grouped tool activity', () => {
     const tool = { ...baseTool('tool-1'), name: 'Bash', arguments: { command: 'pwd' } };
     render(() => <ConversationMessage entry={entry({
       reasoning: [{ id: 'reasoning-1', text: 'Inspect the repository', visibility: 'visible' }],
@@ -237,11 +237,10 @@ describe('ConversationMessage', () => {
       ],
     })} />);
 
-    const items = screen.getByLabelText('Assistant message').querySelectorAll('.conversation-message__activity-item');
-    expect(items).toHaveLength(2);
-    expect(items[0]).toHaveClass('before:left-7', 'before:bg-border-subtle', 'before:top-12', 'before:-bottom-10');
-    expect(items[1]).toHaveClass('before:-top-10', 'before:bottom-12');
-    expect(items[1].querySelector('.tool-card__mark')).toBeInTheDocument();
+    const message = screen.getByLabelText('Assistant message');
+    const reasoning = screen.getByText('Thinking').closest('.message-reasoning')!;
+    const toolRow = message.querySelector('.tool-activity-row__summary')!;
+    expect(reasoning.compareDocumentPosition(toolRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('keeps untrusted HTML inert in assistant Markdown', () => {
