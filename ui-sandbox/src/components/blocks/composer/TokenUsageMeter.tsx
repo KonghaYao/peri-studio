@@ -125,7 +125,7 @@ export function TokenUsageMeter(props: {
           <div class="mt-1 h-1 overflow-hidden rounded-full bg-border-subtle">
             <div
               class={cn(
-                'h-full rounded-full transition-[width] duration-(--duration-fast)',
+                'token-usage-meter__fill h-full rounded-full',
                 state() === 'critical' && 'bg-danger-solid',
                 state() === 'warning' && 'bg-warning-strong',
                 state() === 'normal' && 'bg-success-solid',

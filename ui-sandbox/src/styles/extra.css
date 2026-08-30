@@ -156,3 +156,9 @@
 .git-ref-badge--active > span:first-child {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-solid) 40%, transparent);
 }
+
+/* ── Token 用量条宽度动画 ─────────────────────────────────────────────── */
+
+.token-usage-meter__fill {
+  transition: width var(--duration-fast) var(--ease-standard);
+}
