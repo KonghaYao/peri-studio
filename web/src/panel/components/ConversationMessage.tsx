@@ -141,11 +141,10 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
                   return <><div class="flex items-baseline gap-8"><strong class="text-text-primary text-13 font-semibold">{resource().name || resource().resourceId || 'Resource'}</strong><span class="text-text-muted text-12">{resource().mediaType || 'Unknown type'}</span></div><Show when={resource().resourceId}><code class="block mt-3 wrap-anywhere text-text-muted font-mono text-11 leading-145" title={resource().resourceId || undefined}>{resource().resourceId}</code></Show></>;
                 })()}
               </section>
-            }>{(() => {
-              const toolCall = () => (block() as Extract<ChatBlock, { kind: 'tool_call' }>).toolCall;
-              const replayOrigin = () => (entry().origin === 'session_replay' ? 'replay' as const : entry().origin === 'live' ? 'live' as const : null);
-              return <McpToolBlock toolCall={toolCall} origin={replayOrigin} />;
-            })()}</Show>
+            }><McpToolBlock
+              toolCall={() => (block() as Extract<ChatBlock, { kind: 'tool_call' }>).toolCall}
+              origin={() => (entry().origin === 'session_replay' ? 'replay' as const : entry().origin === 'live' ? 'live' as const : null)}
+            /></Show>
           }>{
             <div class="conversation-message__text text-text-primary text-13 leading-20">
               <Show when={role() === 'assistant'} fallback={<For each={splitSystemReminders((block() as Extract<ChatBlock, { kind: 'text' }>).text)}>{(segment) =>

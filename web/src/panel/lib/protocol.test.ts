@@ -141,6 +141,33 @@ describe('downstream protocol envelope parsing', () => {
       .toBeNull();
   });
 
+  it('accepts mcp_app_resource with nested structuredContent and rejects a top-level key', () => {
+    const html = '<html></html>';
+    const mimeType = 'text/html;profile=mcp-app';
+    const source = 'export default function App() { return null }';
+    expect(parse(JSON.stringify({
+      t: 'mcp_app_resource',
+      commandId: 'q1',
+      chatId: 'chat-1',
+      appSessionId: 'app-1',
+      html,
+      mimeType,
+      toolResult: { content: [{ type: 'text', text: 'ok' }], structuredContent: { source } },
+    }))).toMatchObject({
+      t: 'mcp_app_resource',
+      toolResult: { structuredContent: { source } },
+    });
+    expect(parse(JSON.stringify({
+      t: 'mcp_app_resource',
+      commandId: 'q1',
+      chatId: 'chat-1',
+      appSessionId: 'app-1',
+      html,
+      mimeType,
+      structuredContent: { source },
+    }))).toBeNull();
+  });
+
   it('decodes body-free prompt recovery evidence and rejects false runtime claims', () => {
     expect(parse('{"t":"prompt_status","commandId":"q1","sessionId":"s1","runtimeRestored":false,"truncated":false,"evidenceIncomplete":false,"prompts":[{"commandId":"p1","status":"delivery_unknown","createdAt":"2026-08-14T00:00:00Z","updatedAt":"2026-08-14T00:00:01Z"}]}'))
       .toMatchObject({ t: 'prompt_status', sessionId: 's1', runtimeRestored: false, prompts: [{ commandId: 'p1', status: 'delivery_unknown' }] });

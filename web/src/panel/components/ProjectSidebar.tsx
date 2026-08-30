@@ -262,7 +262,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                     listId={`archived-sessions-${projectId}`}
                     listClass="archived-session-list flex flex-col gap-2 pt-2 pr-3 pb-5 pl-16"
                   >
-                    <For each={archivedSessions()}>{(session) => <div class="archived-session-row flex min-h-42 items-center gap-8 rounded-8 py-3 pr-4 pl-8 hover:bg-hover"><span class="flex min-w-0 flex-1 flex-col gap-2"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12 font-550">{sessionDisplayTitle(session.title, session.acpSessionId || session.id)}</strong><small class="text-10 text-text-muted">{session.lifecycle === 'ready' ? 'Session saved' : session.lifecycle}</small></span><Button size="compact" class="min-h-30! px-8! text-11! pointer-coarse:min-h-44!" busy={sessionLifecycleBusy() === session.id} disabled={readOnly() || !!sessionLifecycleBusy()} onClick={() => runConfirmedMutation(() => setSessionLifecycleBusy(session.id), () => setSessionLifecycleBusy(null), (committed, failed) => restoreProjectSession(session.id, committed, failed), () => {})}>Restore</Button></div>}</For>
+                    <For each={archivedSessions()}>{(session) => <div class="archived-session-row flex min-h-42 items-center gap-8 rounded-8 py-3 pr-4 pl-8 hover:bg-hover"><span class="flex min-w-0 flex-1 flex-col gap-2"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12 font-550">{sessionDisplayTitle(session.title, session.id)}</strong><small class="text-10 text-text-muted">{session.lifecycle === 'ready' ? 'Session saved' : session.lifecycle}</small></span><Button size="compact" class="min-h-30! px-8! text-11! pointer-coarse:min-h-44!" busy={sessionLifecycleBusy() === session.id} disabled={readOnly() || !!sessionLifecycleBusy()} onClick={() => runConfirmedMutation(() => setSessionLifecycleBusy(session.id), () => setSessionLifecycleBusy(null), (committed, failed) => restoreProjectSession(session.id, committed, failed), () => {})}>Restore</Button></div>}</For>
                   </ArchivedSection>
                 </Show>
               </CollapsibleContent>
@@ -326,7 +326,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
       <Dialog open={!!archiveSessionCandidate()} onOpenChange={(open) => { if (!open && !sessionLifecycleBusy()) setArchiveSessionCandidate(null); }}><DialogContent dismissible={!sessionLifecycleBusy()}><DialogTitle class="sr-only">Archive session</DialogTitle>
         {(() => {
           const session = () => projectSessions().find((item) => item.id === archiveSessionCandidate());
-          const displayTitle = () => sessionDisplayTitle(session()?.title, session()?.acpSessionId || session()?.id);
+          const displayTitle = () => sessionDisplayTitle(session()?.title, session()?.id);
           const running = () => !!session() && sessionHasRunningRuntime(session()!);
           return <ConfirmDialog
             eyebrow="Session cleanup"

@@ -38,16 +38,25 @@ pub struct ProjectSummary {
     pub archived_at: Option<String>,
 }
 
+/// ACP 权威会话目录项（ADR-0003）。
+///
+/// `id` 与 `acp_session_id` 同义，均为 ACP durable `session_id`；Registry
+/// `project_sessions` map 键与此 `id` 一致。hub 不再生成独立 logical id。
+/// `active_chat_id` 来自 ChatRegistry 运行态投影，非 SQLite 持久字段。
+/// `archived_at` 已废弃：归档由 Web IndexedDB 用户偏好承载，hub 不再写入。
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectSessionSummary {
+    /// ACP durable session id（与 Registry map 键、`acp_session_id` 同值）。
     pub id: String,
     pub project_id: String,
+    /// 与 `id` 同值；保留 wire 兼容，hub 写入时二者应一致。
     pub acp_session_id: Option<String>,
     pub title: String,
     pub lifecycle: String,
     pub updated_at: String,
     pub last_opened_at: Option<String>,
+    /// ChatRegistry 投影的运行中 chat；server 重启后为空直至 open/create。
     pub active_chat_id: Option<String>,
     #[serde(default)]
     pub archived_at: Option<String>,

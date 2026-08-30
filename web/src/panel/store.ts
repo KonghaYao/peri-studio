@@ -16,6 +16,14 @@ import { settleLateQuickStart } from './lib/quick-start-delivery';
 import { confirmRuntimeControl, resetRuntimeControls } from './lib/runtime-control';
 import { resetPermissionDecisions } from './lib/permission-delivery';
 import { CatalogActions } from './lib/catalog-actions';
+import { applySessionPreferences, resolveSessionPreferenceKey } from './lib/session-preference-merge';
+import {
+  hydrateSessionPreferences,
+  resetSessionPreferences,
+  unloadSessionPreferences,
+  setSessionArchivedPreference,
+  setSessionCustomNamePreference,
+} from './lib/session-preferences';
 import { ToastStore } from './lib/toast-store';
 import { ACK_TIMEOUT_MS, type Ack, type ActionError, type ActionFrame, type ActionOptions } from './lib/action-contract';
 import { handleMcpOAuth, handleMcpOAuthAuthorization, handleMcpServers, resetMcpState } from './lib/mcp';
@@ -52,6 +60,16 @@ export { elicitationResponses };
 export const [projects, setProjects] = createSignal<ProjectInfo[]>([]);
 export const [registryHydrated, setRegistryHydrated] = createSignal(false);
 export const [projectSessions, setProjectSessions] = createSignal<ProjectSessionInfo[]>([]);
+let rawProjectSessions: ProjectSessionInfo[] = [];
+
+function publishProjectSessions(sessions: ProjectSessionInfo[]): void {
+  rawProjectSessions = sessions;
+  setProjectSessions(applySessionPreferences(sessions, principalId()));
+}
+
+function refreshProjectSessionsFromPreferences(): void {
+  setProjectSessions(applySessionPreferences(rawProjectSessions, principalId()));
+}
 export const [importableSessions, setImportableSessions] = createSignal<SessionSummaryInfo[]>([]);
 /** registry 投影的实例清单（拓扑面板只读消费；由 server 权威维护状态）。 */
 export const [instances, setInstances] = createSignal<InstanceInfo[]>([]);
@@ -191,8 +209,13 @@ installConnection({
   sendSubscribe,
   onReady: () => {
     replayResourceSubscriptions();
-    if (registryHydrated()) reconcileSessionNavigation(projectSessions());
-    if (selectedSessionId()) requestPromptRecovery(selectedSessionId()!);
+    // Server restart drops in-memory runtime chat docs; resubscribe alone is not
+    // enough — re-open the selected logical session so the server can spawn/load
+    // or resume the correct runtime chat instead of accepting prompts on a stale id.
+    sessionActivation.reactivateAfterReconnect();
+    if (!selectedSessionId() && registryHydrated()) reconcileSessionNavigation(projectSessions());
+    const sessionId = selectedSessionId();
+    if (sessionId) requestPromptRecovery(sessionId);
   },
   onFrame,
   onProtocolIssue: reportTransportIssue,
@@ -354,7 +377,9 @@ installStoreProjection(
     setElicitations,
     setProjects,
     setRegistryHydrated,
-    setProjectSessions,
+    setProjectSessions: (value) => {
+      publishProjectSessions(typeof value === 'function' ? value(projectSessions()) : value);
+    },
     setImportableSessions,
     setInstances,
     setChatCatalog,
@@ -387,6 +412,11 @@ const catalogActions = new CatalogActions({
   },
   discoveringProjectId: discoveringSessionsProjectId,
   setDiscoveringProjectId: setDiscoveringSessionsProjectId,
+  principalId,
+  resolveSessionKey: (sessionId) => resolveSessionPreferenceKey(sessionId, rawProjectSessions, principalId()),
+  setSessionArchivedPreference,
+  setSessionCustomNamePreference,
+  onSessionPreferencesChanged: refreshProjectSessionsFromPreferences,
 });
 
 export const createProject = (name: string, cwd: string, onCommitted?: () => void, onFailed?: () => void) =>
@@ -431,7 +461,10 @@ export function resetAuthenticatedSession(options: { preserveLocalDrafts?: boole
   setRuntimeDocsState({ chat: false, control: false });
   setChatStatusSignal({});
   setProjects([]);
+  rawProjectSessions = [];
   setProjectSessions([]);
+  if (options.preserveLocalDrafts) unloadSessionPreferences();
+  else resetSessionPreferences();
   setImportableSessions([]);
   resetPromptRecoveryState();
   resetMessageDelivery(options.preserveLocalDrafts === true);
@@ -453,6 +486,11 @@ export function resetAuthenticatedSession(options: { preserveLocalDrafts?: boole
 
 export function navigateProjectSession(sessionId: string, callbacks: OpenSessionCallbacks = {}): boolean {
   return sessionActivation.navigate(sessionId, callbacks);
+}
+
+export async function reconcileStoredSessionPreferences(principalId: string): Promise<void> {
+  await hydrateSessionPreferences(principalId);
+  refreshProjectSessionsFromPreferences();
 }
 
 // Browser UI authenticates through AuthGate and an HttpOnly cookie. The

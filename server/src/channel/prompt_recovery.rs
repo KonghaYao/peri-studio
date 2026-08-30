@@ -12,18 +12,20 @@ use yrs::updates::decoder::Decode as _;
 use yrs::{Map as _, ReadTxn as _, Transact as _};
 
 use crate::control::{ProjectService, StoreSink};
-use crate::persist::metadata::SessionRuntimeRecord;
 use crate::persist::outbox::{CommandType, OutboxRecord, OutboxStatus};
 use crate::persist::Store;
 
 const STATUS_LIMIT: usize = 200;
 
+#[derive(Debug, Clone)]
+struct PromptRuntimeChat {
+    chat_id: String,
+}
+
 #[derive(Debug, Error)]
 pub(super) enum PromptRecoveryError {
     #[error("session not found")]
     SessionNotFound,
-    #[error("session runtime history unavailable")]
-    RuntimeHistoryUnavailable,
     #[error("history sink unavailable during prompt reconciliation")]
     HistorySinkUnavailable,
     #[error("prompt recovery store failure: {0}")]
@@ -49,7 +51,7 @@ pub(super) struct PreparedPromptStatus {
     store: Arc<Store>,
     sink: Option<Arc<StoreSink>>,
     session_id: String,
-    runtimes: Vec<SessionRuntimeRecord>,
+    runtimes: Vec<PromptRuntimeChat>,
 }
 
 #[cfg(test)]
@@ -69,29 +71,20 @@ impl PromptRecovery {
     /// `accepted`, preserving the existing synchronous failure boundary.
     pub async fn prepare_status(
         &self,
-        logical_session_id: &str,
+        acp_session_id: &str,
     ) -> Result<PreparedPromptStatus, PromptRecoveryError> {
-        let Some(session) = self
-            .projects
-            .metadata()
-            .session(logical_session_id)
-            .await
-            .ok()
-            .flatten()
-            .filter(|session| session.origin != "legacy_hidden")
-        else {
+        let Some(session) = self.projects.catalog().get(acp_session_id).await else {
             return Err(PromptRecoveryError::SessionNotFound);
         };
-        let runtimes = self
-            .projects
-            .metadata()
-            .session_runtimes(&session.id)
-            .await
-            .map_err(|_| PromptRecoveryError::RuntimeHistoryUnavailable)?;
+        let chat_ids = self.projects.bound_chat_ids(&session.acp_session_id).await;
+        let runtimes = chat_ids
+            .into_iter()
+            .map(|chat_id| PromptRuntimeChat { chat_id })
+            .collect();
         Ok(PreparedPromptStatus {
             store: self.store.clone(),
             sink: self.sink.clone(),
-            session_id: session.id,
+            session_id: session.acp_session_id,
             runtimes,
         })
     }

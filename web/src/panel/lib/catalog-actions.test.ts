@@ -7,6 +7,9 @@ function harness(overrides: Partial<CatalogActionsDependencies> = {}) {
   let uncertain = false;
   let discovering: string | null = null;
   const sent: Array<{ frame: Record<string, unknown>; label: string; options: CatalogSendOptions }> = [];
+  const setSessionArchivedPreference = vi.fn();
+  const setSessionCustomNamePreference = vi.fn();
+  const onSessionPreferencesChanged = vi.fn();
   const deps: CatalogActionsDependencies = {
     isReady: () => ready,
     isReadOnly: () => readOnly,
@@ -18,6 +21,13 @@ function harness(overrides: Partial<CatalogActionsDependencies> = {}) {
     onSessionArchived: vi.fn(),
     discoveringProjectId: () => discovering,
     setDiscoveringProjectId: (value) => { discovering = value; },
+    principalId: () => 'principal-1',
+    resolveSessionKey: (sessionId) => sessionId === 's1'
+      ? { principalId: 'principal-1', projectId: 'p1', acpSessionId: 's1' }
+      : null,
+    setSessionArchivedPreference,
+    setSessionCustomNamePreference,
+    onSessionPreferencesChanged,
     ...overrides,
   };
   return {
@@ -26,6 +36,9 @@ function harness(overrides: Partial<CatalogActionsDependencies> = {}) {
     setReadOnly: (value: boolean) => { readOnly = value; },
     setUncertain: (value: boolean) => { uncertain = value; },
     discovering: () => discovering,
+    setSessionArchivedPreference,
+    setSessionCustomNamePreference,
+    onSessionPreferencesChanged,
   };
 }
 
@@ -39,7 +52,7 @@ describe('CatalogActions', () => {
     expect(h.deps.toast).toHaveBeenLastCalledWith('Read-only mode cannot archive projects');
 
     h.setReadOnly(false); h.setReady(false);
-    expect(h.actions.renameSession('s1', 'Name')).toBe(false);
+    expect(h.actions.renameProject('p1', 'Name')).toBe(false);
     expect(h.deps.toast).toHaveBeenLastCalledWith('Connection not ready');
 
     h.setReady(true); h.setUncertain(true);
@@ -48,20 +61,31 @@ describe('CatalogActions', () => {
     expect(h.sent).toHaveLength(0);
   });
 
-  it('runs domain side effects only after committed or duplicate acknowledgement', () => {
+  it('stores session archive locally without server mutation', () => {
     const h = harness();
     const onCommitted = vi.fn();
     expect(h.actions.setSessionArchived('s1', true, { onCommitted })).toBe(true);
-    const request = h.sent[0];
-    expect(request.label).toBe('session/archive');
-    expect(request.options.retryOnUncertain).toBe(true);
-
-    request.options.cb?.({ commandId: String(request.frame.commandId), status: 'accepted' });
-    expect(h.deps.onSessionArchived).not.toHaveBeenCalled();
-    request.options.cb?.({ commandId: String(request.frame.commandId), status: 'committed' });
+    expect(h.sent).toHaveLength(0);
+    expect(h.setSessionArchivedPreference).toHaveBeenCalledWith(
+      { principalId: 'principal-1', projectId: 'p1', acpSessionId: 's1' },
+      true,
+    );
     expect(h.deps.onSessionArchived).toHaveBeenCalledWith('s1');
     expect(onCommitted).toHaveBeenCalledOnce();
     expect(h.deps.toast).toHaveBeenCalledWith('Session archived');
+    expect(h.onSessionPreferencesChanged).toHaveBeenCalledOnce();
+  });
+
+  it('stores session rename locally without server mutation', () => {
+    const h = harness();
+    expect(h.actions.renameSession('s1', '  New name  ')).toBe(true);
+    expect(h.sent).toHaveLength(0);
+    expect(h.setSessionCustomNamePreference).toHaveBeenCalledWith(
+      { principalId: 'principal-1', projectId: 'p1', acpSessionId: 's1' },
+      'New name',
+    );
+    expect(h.deps.toast).toHaveBeenCalledWith('Session renamed');
+    expect(h.onSessionPreferencesChanged).toHaveBeenCalledOnce();
   });
 
   it('retains exact command identity and recovery copy on uncertain mutation', () => {
@@ -101,7 +125,7 @@ describe('CatalogActions', () => {
     const request = h.sent[0];
     request.options.cb?.({ status: 'committed' });
     expect(onCommitted).not.toHaveBeenCalled();
-    request.options.cb?.({ status: 'duplicate', sessionId: 'logical-1' });
+    request.options.cb?.({ status: 'duplicate', sessionId: 'acp-1' });
     expect(onCommitted).toHaveBeenCalledOnce();
 
     request.options.onTimeout?.();

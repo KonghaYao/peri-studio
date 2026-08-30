@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const store = vi.hoisted(() => ({
   navigateProjectSession: vi.fn(),
   openingSessionId: vi.fn(() => null as string | null),
-  projectSessions: vi.fn(() => [{ id: 'hub-abcdef12', projectId: 'p1', title: 'New conversation', lifecycle: 'ready', updatedAt: '2026-08-13T10:00:00Z', activeChatId: null, acpSessionId: 'acp-12345678' }]),
+  projectSessions: vi.fn(() => [{ id: 'acp-12345678', projectId: 'p1', title: 'New conversation', lifecycle: 'ready', updatedAt: '2026-08-13T10:00:00Z', activeChatId: null }]),
   projects: vi.fn(() => [{ id: 'p1', name: 'Perihelion', cwd: '/repo', archivedAt: null }]),
   readOnly: vi.fn(() => false),
   selectedSessionId: vi.fn(() => null),
@@ -27,7 +27,7 @@ describe('SessionSearch', () => {
     render(() => <SessionSearch open onClose={close} />);
     fireEvent.input(screen.getByRole('textbox', { name: 'Search sessions' }), { target: { value: 'New conversation' } });
     fireEvent.click(await screen.findByRole('option'));
-    expect(store.navigateProjectSession).toHaveBeenCalledWith('hub-abcdef12', expect.any(Object));
+    expect(store.navigateProjectSession).toHaveBeenCalledWith('acp-12345678', expect.any(Object));
     expect(close).not.toHaveBeenCalled();
     expect(screen.getByRole('option')).toHaveTextContent('New conversation · …12345678');
     callbacks.onCommitted?.();

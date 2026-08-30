@@ -172,6 +172,15 @@ async fn health_is_credential_free_liveness_with_explicit_readiness() {
     assert!(!body.contains("token"));
     assert!(!body.contains("path"));
     assert!(!body.contains("reason"));
+    let port = crate::web::sandbox::advertised_sandbox_port();
+    assert!(
+        response.contains(&format!("frame-src http://127.0.0.1:{port}")),
+        "panel CSP must allow exact loopback sandbox origin: {response:?}"
+    );
+    assert!(
+        !response.contains("[::1]"),
+        "Chrome rejects IPv6 host-sources in frame-src: {response:?}"
+    );
 }
 
 #[tokio::test]

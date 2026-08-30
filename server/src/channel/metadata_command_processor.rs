@@ -23,7 +23,7 @@ use crate::auth::audit::audit;
 use crate::auth::ConnectionCtx;
 use crate::channel::broadcaster::OutboundMsg;
 use crate::control::{ChatRegistry, ProjectService};
-use crate::persist::metadata::{payload_hash, BeginCommand, MetadataError, NewSession};
+use crate::persist::metadata::{payload_hash, BeginCommand, MetadataError};
 
 use super::command_coordinator::{action_error, extract_command_id, SubmitAck};
 
@@ -128,22 +128,10 @@ impl MetadataCommandProcessor {
             }
             _ => (None, None),
         };
-        let new_session = prepared_create.as_ref().map(|(project, id)| NewSession {
-            id,
-            project_id: &project.id,
-            title: match &action {
-                ActionEnvelope::PersistedSessionCreate { payload, .. } => payload.title.as_deref(),
-                _ => None,
-            },
-        });
-        let activate = prepared_create
+        let new_session = None;
+        let activate = prepared_open
             .as_ref()
-            .map(|(_, id)| id.as_str())
-            .or_else(|| {
-                prepared_open
-                    .as_ref()
-                    .and_then(|(_, session, live)| live.is_none().then_some(session.id.as_str()))
-            });
+            .and_then(|(_, acp_id, live)| live.is_none().then_some(acp_id.as_str()));
         match projects
             .metadata()
             .begin_command_with_activation(
@@ -151,7 +139,7 @@ impl MetadataCommandProcessor {
                 action.type_str(),
                 &hash,
                 project_hint,
-                session_hint.or_else(|| prepared_create.as_ref().map(|(_, id)| id.as_str())),
+                session_hint.or_else(|| prepared_open.as_ref().map(|(_, acp, _)| acp.as_str())),
                 new_session,
                 activate,
             )

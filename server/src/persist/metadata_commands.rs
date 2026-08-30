@@ -1,6 +1,5 @@
-//! metadata 命令/激活账本（§命令账本）：`begin_command` /
-//! `begin_command_with_activation`（激活租约 UPSERT 覆盖终态）、
-//! runtime/OAuth 命令 CAS 迁移与 `update_command`。
+//! metadata 命令账本（§命令账本）：`begin_command`、runtime/OAuth 命令
+//! CAS 迁移与 `update_command`。会话激活租约已随 ADR-0003 移除。
 //!
 //! 本文件是 [`MetadataStore`](super::MetadataStore) 的实现段（结构拆分，
 //! 行为语义不变）。
@@ -15,31 +14,6 @@ impl MetadataStore {
         payload_hash: &str,
         project_id: Option<&str>,
         session_id: Option<&str>,
-    ) -> Result<BeginCommand> {
-        self.begin_command_with_activation(
-            command_id,
-            command_type,
-            payload_hash,
-            project_id,
-            session_id,
-            None,
-            None,
-        )
-        .await
-    }
-
-    /// Durably records the command intention and, when requested, the logical
-    /// session plus its single-flight activation in one SQLite transaction.
-    #[allow(clippy::too_many_arguments)] // One durable transaction carries the full command/activation identity tuple.
-    pub async fn begin_command_with_activation(
-        &self,
-        command_id: &str,
-        command_type: &str,
-        payload_hash: &str,
-        project_id: Option<&str>,
-        session_id: Option<&str>,
-        new_session: Option<NewSession<'_>>,
-        activate_session: Option<&str>,
     ) -> Result<BeginCommand> {
         let mut tx = self.pool.begin().await?;
         let existing = sqlx::query("SELECT command_id,command_type,payload_hash,phase,project_id,session_id,chat_id,acp_session_id,error_code FROM metadata_commands WHERE command_id=?")
@@ -57,48 +31,26 @@ impl MetadataStore {
         sqlx::query("INSERT INTO metadata_commands(command_id,command_type,payload_hash,phase,project_id,session_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)")
             .bind(command_id).bind(command_type).bind(payload_hash).bind("intention_durable")
             .bind(project_id).bind(session_id).bind(&ts).bind(&ts).execute(&mut *tx).await?;
-        let has_new_session = new_session.is_some();
-        if let Some(new_session) = new_session {
-            sqlx::query("INSERT INTO project_sessions(id,project_id,acp_title,lifecycle,created_at,updated_at,origin) VALUES(?,?,?,?,?,?,?)")
-                .bind(new_session.id).bind(new_session.project_id).bind(new_session.title)
-                .bind("pending").bind(&ts).bind(&ts).bind("hub").execute(&mut *tx).await?;
-        }
-        if let Some(session_id) = activate_session {
-            let archivable: Option<i64> = sqlx::query_scalar(
-                "SELECT 1 FROM project_sessions WHERE id=? AND archived_at IS NULL",
-            )
-            .bind(session_id)
-            .fetch_optional(&mut *tx)
-            .await?;
-            if archivable.is_none() {
-                return Err(MetadataError::InvalidState(format!(
-                    "session {session_id} is archived or missing"
-                )));
-            }
-            // 重新打开（reconciliation_required/failed 恢复路径）会带着残留的
-            // 旧激活记录（终态）再来一轮激活：UPSERT 覆盖，仅当旧记录是终态
-            // （reconciliation_required/failed）——进行中的激活必须保持冲突拒绝。
-            let activation_result = sqlx::query("INSERT INTO session_activations(session_id,command_id,phase,started_at,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(session_id) DO UPDATE SET command_id=excluded.command_id,phase=excluded.phase,chat_id=NULL,acp_session_id=NULL,updated_at=excluded.updated_at WHERE session_activations.phase IN ('reconciliation_required','failed')")
-                .bind(session_id).bind(command_id).bind("intention_durable").bind(&ts).bind(&ts)
-                .execute(&mut *tx).await?;
-            if activation_result.rows_affected() == 0 {
-                return Err(MetadataError::Conflict(format!(
-                    "session {session_id} activation already in progress"
-                )));
-            }
-            sqlx::query(
-                "UPDATE project_sessions SET lifecycle='activating',updated_at=? WHERE id=?",
-            )
-            .bind(&ts)
-            .bind(session_id)
-            .execute(&mut *tx)
-            .await?;
-        }
-        if has_new_session || activate_session.is_some() {
-            bump_generation_tx(&mut tx).await?;
-        }
         tx.commit().await?;
         Ok(BeginCommand::New)
+    }
+
+    /// Durably records the command intention. Session activation and SQLite
+    /// session rows were removed by ADR-0003; `new_session` / `activate_session`
+    /// are accepted for API compatibility but ignored.
+    #[allow(clippy::too_many_arguments)] // One durable transaction carries the full command identity tuple.
+    pub async fn begin_command_with_activation(
+        &self,
+        command_id: &str,
+        command_type: &str,
+        payload_hash: &str,
+        project_id: Option<&str>,
+        session_id: Option<&str>,
+        _new_session: Option<NewSession<'_>>,
+        _activate_session: Option<&str>,
+    ) -> Result<BeginCommand> {
+        self.begin_command(command_id, command_type, payload_hash, project_id, session_id)
+            .await
     }
 
     pub async fn command(&self, id: &str) -> Result<Option<MetadataCommand>> {

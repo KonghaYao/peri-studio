@@ -873,7 +873,7 @@ pub fn project_session_field(doc: &yrs::Doc, session_id: &str, field: &str) -> O
     nested_map_string(doc, "project_sessions", session_id, field)
 }
 
-/// root.project_sessions 的 logical session id 集合。
+/// root.project_sessions 的 ACP session id 集合（ADR-0003：map 键即 durable id）。
 pub fn project_session_ids(doc: &yrs::Doc) -> Vec<String> {
     let txn = doc.transact();
     let Some(root) = txn.get_map("root") else {

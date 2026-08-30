@@ -4,7 +4,7 @@ use tempfile::tempdir;
 use super::metadata::{payload_hash, BeginOAuthCommand, MetadataError, MetadataStore};
 
 #[tokio::test]
-async fn v2_catalog_migrates_additively_to_current_schema() {
+async fn v7_migration_drops_session_tables_from_legacy_schema() {
     let dir = tempdir().unwrap();
     let path = dir.path().join("metadata.sqlite3");
     let mut connection =
@@ -18,7 +18,16 @@ async fn v2_catalog_migrates_additively_to_current_schema() {
         .await
         .unwrap();
     connection
-        .execute("INSERT INTO schema_migrations VALUES(1,'t'),(2,'t')")
+        .execute("INSERT INTO schema_migrations VALUES(1,'t'),(2,'t'),(3,'t'),(4,'t'),(5,'t'),(6,'t')")
+        .await
+        .unwrap();
+    connection
+        .execute(
+            "CREATE TABLE projects(\
+             id TEXT PRIMARY KEY,name TEXT NOT NULL,cwd TEXT NOT NULL,\
+             instance_id TEXT NOT NULL DEFAULT 'local',created_at TEXT NOT NULL,\
+             updated_at TEXT NOT NULL,archived_at TEXT)",
+        )
         .await
         .unwrap();
     connection
@@ -27,7 +36,37 @@ async fn v2_catalog_migrates_additively_to_current_schema() {
              id TEXT PRIMARY KEY,project_id TEXT NOT NULL,acp_session_id TEXT UNIQUE,\
              acp_title TEXT,custom_name TEXT,lifecycle TEXT NOT NULL,created_at TEXT NOT NULL,\
              updated_at TEXT NOT NULL,last_opened_at TEXT,last_chat_id TEXT,failure_code TEXT,\
-             origin TEXT NOT NULL DEFAULT 'legacy_hidden')",
+             origin TEXT NOT NULL DEFAULT 'legacy_hidden',hub_title TEXT,archived_at TEXT)",
+        )
+        .await
+        .unwrap();
+    connection
+        .execute(
+            "CREATE TABLE session_activations(\
+             session_id TEXT PRIMARY KEY,command_id TEXT NOT NULL,phase TEXT NOT NULL,\
+             chat_id TEXT,acp_session_id TEXT,started_at TEXT NOT NULL,updated_at TEXT NOT NULL)",
+        )
+        .await
+        .unwrap();
+    connection
+        .execute(
+            "CREATE TABLE session_runtime_history(\
+             session_id TEXT NOT NULL,chat_id TEXT NOT NULL,activated_at TEXT NOT NULL,\
+             retired_at TEXT,PRIMARY KEY(session_id,chat_id))",
+        )
+        .await
+        .unwrap();
+    connection
+        .execute(
+            "CREATE TABLE projection_state(\
+             singleton INTEGER PRIMARY KEY CHECK(singleton = 1),generation INTEGER NOT NULL,\
+             projected_generation INTEGER NOT NULL,updated_at TEXT NOT NULL)",
+        )
+        .await
+        .unwrap();
+    connection
+        .execute(
+            "INSERT INTO projection_state VALUES(1,0,0,'1970-01-01T00:00:00Z')",
         )
         .await
         .unwrap();
@@ -35,14 +74,27 @@ async fn v2_catalog_migrates_additively_to_current_schema() {
 
     let store = MetadataStore::open(dir.path()).await.unwrap();
     assert!(
-        !store.seed_hub_title("unknown", "Title").await.unwrap(),
-        "the additive column must be queryable without rebuilding user data"
+        store.list_runtime_chats().await.unwrap().is_empty(),
+        "session tables must be gone after v7 migration"
     );
-    assert!(
-        store.session("unknown").await.unwrap().is_none(),
-        "the archive column must also be queryable after an additive migration"
-    );
-    assert!(store.session_runtimes("unknown").await.unwrap().is_empty());
+    let mut connection =
+        sqlx::SqliteConnection::connect(&format!("sqlite://{}?mode=rw", path.display()))
+            .await
+            .unwrap();
+    for table in [
+        "project_sessions",
+        "session_activations",
+        "session_runtime_history",
+    ] {
+        let found: Option<String> = sqlx::query_scalar(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+        )
+        .bind(table)
+        .fetch_optional(&mut connection)
+        .await
+        .unwrap();
+        assert!(found.is_none(), "table {table} must be dropped by v7");
+    }
 }
 
 #[tokio::test]
@@ -54,98 +106,10 @@ async fn fresh_open_reopen_and_crud() {
         .await
         .unwrap();
     assert_eq!(p.name, "Demo");
-    let s = store
-        .create_pending_session("s1", "p1", Some("ACP title"))
-        .await
-        .unwrap();
-    assert_eq!(s.display_title(), "ACP title");
-    store.rename_session("s1", "Alias").await.unwrap();
-    assert_eq!(
-        store.session("s1").await.unwrap().unwrap().display_title(),
-        "Alias"
-    );
     drop(store);
     let reopened = MetadataStore::open(dir.path()).await.unwrap();
     assert_eq!(reopened.list_projects().await.unwrap().len(), 1);
-    assert_eq!(reopened.list_sessions().await.unwrap().len(), 1);
-}
-
-#[tokio::test]
-async fn runtime_history_is_append_only_identity_not_liveness() {
-    let dir = tempdir().unwrap();
-    let store = MetadataStore::open(dir.path()).await.unwrap();
-    store
-        .create_project("p1", "Demo", dir.path().to_str().unwrap(), "local")
-        .await
-        .unwrap();
-    store
-        .create_pending_session("s1", "p1", None)
-        .await
-        .unwrap();
-    store.record_session_runtime("s1", "chat-1").await.unwrap();
-    store.record_session_runtime("s1", "chat-1").await.unwrap();
-    store.record_session_runtime("s1", "chat-2").await.unwrap();
-    let history = store.session_runtimes("s1").await.unwrap();
-    assert_eq!(history.len(), 2, "same runtime provenance is idempotent");
-    assert!(history.iter().all(|record| record.retired_at.is_none()));
-
-    store.recover_after_restart().await.unwrap();
-    assert_eq!(
-        store.session_runtimes("s1").await.unwrap().len(),
-        2,
-        "restart clears active hints, not historical provenance"
-    );
-}
-
-#[tokio::test]
-async fn v4_migration_backfills_the_last_known_runtime_before_restart_clears_the_hint() {
-    let dir = tempdir().unwrap();
-    let path = dir.path().join("metadata.sqlite3");
-    let store = MetadataStore::open(dir.path()).await.unwrap();
-    store
-        .create_project("p1", "Demo", dir.path().to_str().unwrap(), "local")
-        .await
-        .unwrap();
-    store
-        .create_pending_session("s1", "p1", None)
-        .await
-        .unwrap();
-    store
-        .finalize_session("s1", "acp-1", None, "chat-before-v5")
-        .await
-        .unwrap();
-    drop(store);
-
-    let mut connection =
-        sqlx::SqliteConnection::connect(&format!("sqlite://{}?mode=rw", path.display()))
-            .await
-            .unwrap();
-    connection
-        .execute("DROP INDEX session_runtime_history_session_activated_idx")
-        .await
-        .unwrap();
-    connection
-        .execute("DROP TABLE session_runtime_history")
-        .await
-        .unwrap();
-    connection
-        .execute("DROP INDEX oauth_commands_updated_idx")
-        .await
-        .unwrap();
-    connection
-        .execute("DROP TABLE oauth_commands")
-        .await
-        .unwrap();
-    connection
-        .execute("DELETE FROM schema_migrations WHERE version>=5")
-        .await
-        .unwrap();
-    connection.close().await.unwrap();
-
-    let migrated = MetadataStore::open(dir.path()).await.unwrap();
-    let history = migrated.session_runtimes("s1").await.unwrap();
-    assert_eq!(history.len(), 1);
-    assert_eq!(history[0].chat_id, "chat-before-v5");
+    assert!(reopened.snapshot().await.unwrap().sessions.is_empty());
 }
 
 #[tokio::test]
@@ -168,7 +132,7 @@ async fn v5_migration_adds_body_free_oauth_command_ledger() {
         .await
         .unwrap();
     connection
-        .execute("DELETE FROM schema_migrations WHERE version=6")
+        .execute("DELETE FROM schema_migrations WHERE version>=6")
         .await
         .unwrap();
     connection.close().await.unwrap();
@@ -198,7 +162,7 @@ async fn unknown_newer_metadata_schema_fails_before_mutating_user_tables() {
         .await
         .unwrap();
     connection
-        .execute("INSERT INTO schema_migrations VALUES(7,'future')")
+        .execute("INSERT INTO schema_migrations VALUES(8,'future')")
         .await
         .unwrap();
     connection.close().await.unwrap();
@@ -206,8 +170,8 @@ async fn unknown_newer_metadata_schema_fails_before_mutating_user_tables() {
     assert!(matches!(
         MetadataStore::open(dir.path()).await,
         Err(MetadataError::NewerSchema {
-            found: 7,
-            supported: 6
+            found: 8,
+            supported: 7
         })
     ));
     let mut connection =

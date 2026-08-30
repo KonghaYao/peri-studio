@@ -294,13 +294,17 @@ test('uncertain metadata retries preserve the original frame identity and are id
   assert.match(store, /new CatalogActions\(\{/);
   assert.doesNotMatch(store, /H\.project(?:Create|Archive|Restore|Rename)\(/);
   assert.doesNotMatch(store, /H\.persistedSession(?:Rename|Archive|Restore|Import|Discover)\(/);
-  for (const action of ['project/create', 'project/archive', 'project/restore', 'project/rename', 'session/rename', 'session/import']) {
+  for (const action of ['project/create', 'project/archive', 'project/restore', 'project/rename', 'session/import']) {
     const escaped = action.replace('/', '\\/');
     assert.match(catalog, new RegExp(`'${escaped}'`), action);
   }
+  assert.match(catalog, /setSessionCustomNamePreference/);
+  assert.match(catalog, /setSessionArchivedPreference/);
+  assert.doesNotMatch(catalog, /'session\/rename'/);
+  assert.doesNotMatch(catalog, /'session\/archive'/);
+  assert.doesNotMatch(catalog, /'session\/restore'/);
   assert.match(activation, /this\.deps\.send\(frame, 'session\/create', \{/);
   assert.match(catalog, /retryOnUncertain: true/);
-  assert.match(catalog, /archive \? 'session\/archive' : 'session\/restore'/);
 });
 
 test('project session discovery is an explicit cold-start read path', () => {
@@ -377,13 +381,13 @@ test('login setup is server-authoritative and credential-free', () => {
 test('global session search matches durable metadata and excludes empty queries', () => {
   const projects = [{ id: 'p1', name: 'Perihelion', cwd: '/code/peri' }];
   const sessions = [
-    { id: 's1', projectId: 'p1', title: 'Fix login', acpSessionId: 'acp-123', updatedAt: '2026-08-13T10:00:00Z' },
-    { id: 's2', projectId: 'p1', title: 'Component audit', acpSessionId: 'acp-456', updatedAt: '2026-08-13T11:00:00Z' },
+    { id: 'acp-123', projectId: 'p1', title: 'Fix login', updatedAt: '2026-08-13T10:00:00Z' },
+    { id: 'acp-456', projectId: 'p1', title: 'Component audit', updatedAt: '2026-08-13T11:00:00Z' },
   ];
   assert.deepEqual(searchProjectSessions('', projects, sessions), []);
   assert.equal(searchProjectSessions('peri', projects, sessions).length, 2);
-  assert.equal(searchProjectSessions('456', projects, sessions)[0].id, 's2');
-  assert.equal(searchProjectSessions('audit', projects, sessions)[0].id, 's2');
+  assert.equal(searchProjectSessions('456', projects, sessions)[0].id, 'acp-456');
+  assert.equal(searchProjectSessions('audit', projects, sessions)[0].id, 'acp-456');
 });
 
 test('session navigation closes only after a server-authoritative open commits', () => {

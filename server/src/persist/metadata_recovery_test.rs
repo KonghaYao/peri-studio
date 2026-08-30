@@ -3,42 +3,6 @@ use tempfile::tempdir;
 use super::metadata::{MetadataStore, NewSession};
 
 #[tokio::test]
-async fn restart_recovers_durable_acp_id_and_clears_runtime_chat() {
-    let dir = tempdir().unwrap();
-    let store = MetadataStore::open(dir.path()).await.unwrap();
-    store
-        .create_project("p1", "Demo", dir.path().to_str().unwrap(), "local")
-        .await
-        .unwrap();
-    store
-        .begin_command_with_activation(
-            "c1",
-            "session/create",
-            "h1",
-            Some("p1"),
-            Some("s1"),
-            Some(NewSession {
-                id: "s1",
-                project_id: "p1",
-                title: None,
-            }),
-            Some("s1"),
-        )
-        .await
-        .unwrap();
-    store
-        .activation_phase("s1", "acp_id_durable", Some("dead-chat"), Some("acp1"))
-        .await
-        .unwrap();
-    let (recovered, reconciled) = store.recover_after_restart().await.unwrap();
-    assert_eq!((recovered, reconciled), (1, 0));
-    let session = store.session("s1").await.unwrap().unwrap();
-    assert_eq!(session.lifecycle, "ready");
-    assert_eq!(session.acp_session_id.as_deref(), Some("acp1"));
-    assert!(session.last_chat_id.is_none());
-}
-
-#[tokio::test]
 async fn restart_terminates_pre_dispatch_intention_as_safe_retry() {
     let dir = tempdir().unwrap();
     let store = MetadataStore::open(dir.path()).await.unwrap();
@@ -52,13 +16,13 @@ async fn restart_terminates_pre_dispatch_intention_as_safe_retry() {
             "session/create",
             "h",
             Some("p1"),
-            Some("s1"),
+            Some("acp-session-1"),
             Some(NewSession {
-                id: "s1",
+                id: "acp-session-1",
                 project_id: "p1",
                 title: None,
             }),
-            Some("s1"),
+            Some("acp-session-1"),
         )
         .await
         .unwrap();
@@ -68,10 +32,6 @@ async fn restart_terminates_pre_dispatch_intention_as_safe_retry() {
     assert_eq!(
         command.error_code.as_deref(),
         Some("server_restart_before_dispatch_safe_retry")
-    );
-    assert_eq!(
-        store.session("s1").await.unwrap().unwrap().lifecycle,
-        "failed"
     );
 }
 
@@ -89,22 +49,26 @@ async fn dispatched_restart_is_reconciliation_not_safe_retry() {
             "session/create",
             "h",
             Some("p1"),
-            Some("s1"),
+            Some("acp-session-1"),
             Some(NewSession {
-                id: "s1",
+                id: "acp-session-1",
                 project_id: "p1",
                 title: None,
             }),
-            Some("s1"),
+            Some("acp-session-1"),
         )
         .await
         .unwrap();
     store
-        .activation_phase("s1", "dispatched", None, None)
-        .await
-        .unwrap();
-    store
-        .update_command("c1", "dispatched", Some("p1"), Some("s1"), None, None, None)
+        .update_command(
+            "c1",
+            "dispatched",
+            Some("p1"),
+            Some("acp-session-1"),
+            None,
+            None,
+            None,
+        )
         .await
         .unwrap();
     let (_, reconciled) = store.recover_after_restart().await.unwrap();

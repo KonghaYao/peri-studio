@@ -135,14 +135,7 @@ async fn persisted_session_prompt_status_joins_catalog_outbox_and_exact_projecti
         .create_project("p1", "Demo", "/", "local")
         .await
         .unwrap();
-    env.metadata
-        .create_pending_session("logical-query", "p1", None)
-        .await
-        .unwrap();
-    env.metadata
-        .finalize_session("logical-query", "acp-3", None, S3)
-        .await
-        .unwrap();
+    seed_catalog_session(&env.projects, "p1", "acp-3", "Demo").await;
 
     let query_id = uuid::Uuid::new_v4().to_string();
     let (tx, mut rx) = mpsc::channel(4);
@@ -153,7 +146,7 @@ async fn persisted_session_prompt_status_joins_catalog_outbox_and_exact_projecti
             ActionEnvelope::PersistedSessionPromptStatus {
                 command_id: query_id.clone(),
                 payload: PersistedSessionOpenPayload {
-                    session_id: "logical-query".into(),
+                    session_id: "acp-3".into(),
                 },
             },
             tx,
@@ -168,7 +161,7 @@ async fn persisted_session_prompt_status_joins_catalog_outbox_and_exact_projecti
         panic!("expected prompt_status response")
     };
     assert_eq!(status.command_id, query_id);
-    assert_eq!(status.session_id, "logical-query");
+    assert_eq!(status.session_id, "acp-3");
     assert!(!status.runtime_restored);
     assert!(!status.evidence_incomplete);
     assert_eq!(status.prompts.len(), 1);

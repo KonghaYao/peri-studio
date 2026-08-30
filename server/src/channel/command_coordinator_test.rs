@@ -41,7 +41,7 @@ use crate::channel::OutboundMsg;
 use crate::channel::RelayEventHandler;
 use crate::channel::{CommandCoordinator, SubmitAck, DEFAULT_ACP_CMD};
 use crate::control::StoreSink;
-use crate::control::{ChatRegistry, ChatState, ProjectService};
+use crate::control::{CatalogSession, ChatRegistry, ChatState, ProjectService, SessionCatalog};
 use crate::control::{InstanceAck, InstanceConn, InstanceRegistry};
 use crate::persist::metadata::MetadataStore;
 use crate::persist::outbox::{CommandType, NewOutboxRecord, RetryableClass};
@@ -64,6 +64,7 @@ struct Env {
     relay: Arc<RelayEventHandler>,
     coordinator: Arc<CommandCoordinator>,
     metadata: Arc<MetadataStore>,
+    projects: ProjectService,
     /// 镜像 sink（session doc 镜像快照断言用）。
     sink: Arc<StoreSink>,
     /// 精确故障注入：默认透传 StoreSink，置位后拒绝新的 Doc update。
@@ -147,8 +148,15 @@ async fn env_with_create_deadlines(spawn_timeout: Duration, instance_ack_timeout
         Duration::from_millis(500),
     ));
     let metadata = Arc::new(MetadataStore::open(tmp.path()).await.unwrap());
+    let catalog = SessionCatalog::new();
+    let projects = ProjectService::new(
+        metadata.clone(),
+        doc.registry(),
+        catalog,
+        chats.clone(),
+    );
     coordinator
-        .install_project_service(ProjectService::new(metadata.clone(), doc.registry()))
+        .install_project_service(projects.clone())
         .await;
     coordinator.install_history_sink(sink.clone()).await;
     // instance 上线（hello）。
@@ -181,11 +189,33 @@ async fn env_with_create_deadlines(spawn_timeout: Duration, instance_ack_timeout
         relay,
         coordinator,
         metadata,
+        projects,
         sink,
         sink_fail,
         instance_rx,
         instance_tx,
     }
+}
+
+async fn seed_catalog_session(
+    projects: &ProjectService,
+    project_id: &str,
+    acp_id: &str,
+    title: &str,
+) {
+    projects
+        .upsert_catalog_session(CatalogSession {
+            acp_session_id: acp_id.to_string(),
+            project_id: project_id.to_string(),
+            title: title.to_string(),
+            updated_at: chrono::Utc::now().to_rfc3339(),
+            status: "ready".into(),
+            lifecycle: "ready".into(),
+            last_opened_at: None,
+            hub_title: None,
+        })
+        .await
+        .unwrap();
 }
 
 async fn env() -> Env {
@@ -229,7 +259,7 @@ fn session_catalog_sync_is_owned_by_the_deep_module() {
         "\"method\": \"session/list\"",
         "poll_once",
         "poll_target",
-        "refresh_catalog_titles",
+        "refresh_catalog_entries",
         "parse_session_list_response",
     ] {
         assert!(

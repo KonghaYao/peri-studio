@@ -8,7 +8,7 @@ use std::time::Duration;
 use peri_studio_proto::ack::{ActionError, ErrorCode};
 use peri_studio_proto::action::{McpAppCallPayload, McpAppOpenPayload, McpAppResourcePayload};
 use peri_studio_proto::frame::Frame;
-use peri_studio_proto::mcp_apps::{McpAppResourceFrame, McpAppSessionFrame};
+use peri_studio_proto::mcp_apps::McpAppSessionFrame;
 use peri_studio_proto::schema::{ToolCallStatus, ToolCallProjection};
 use tokio::sync::{mpsc, RwLock};
 
@@ -72,6 +72,8 @@ impl McpAppsControl {
     pub async fn tear_down_chat(&self, chat_id: &str) {
         let mut sessions = self.sessions.write().await;
         sessions.retain(|_, session| session.chat_id != chat_id);
+        drop(sessions);
+        self.relay.clear_mcp_app_tool_results(chat_id).await;
     }
 
     pub async fn open(

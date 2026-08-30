@@ -1,12 +1,12 @@
 //! metadata.sqlite3 schema 迁移面：版本常量（`SCHEMA_VERSION`）、
-//! `MIGRATION_V1..V6` 与 [`MetadataStore`](super::MetadataStore) 的
+//! `MIGRATION_V1..V7` 与 [`MetadataStore`](super::MetadataStore) 的
 //! `migrate()`/`verify_pragmas()` 执行（§migrate 逐语句模式为受控常量，
 //! 无字符串内分号；`unknown_newer_metadata_schema_fails_before_mutating_user_
 //! tables` 保证不向后迁移）。
 
 use super::*;
 
-const SCHEMA_VERSION: i64 = 6;
+const SCHEMA_VERSION: i64 = 7;
 
 const MIGRATION_V1: &str = r#"
 CREATE TABLE IF NOT EXISTS schema_migrations(
@@ -128,6 +128,12 @@ CREATE TABLE oauth_commands(
 CREATE INDEX oauth_commands_updated_idx ON oauth_commands(updated_at DESC);
 "#;
 
+const MIGRATION_V7: &str = r#"
+DROP TABLE IF EXISTS session_activations;
+DROP TABLE IF EXISTS session_runtime_history;
+DROP TABLE IF EXISTS project_sessions;
+"#;
+
 impl MetadataStore {
     pub(super) async fn migrate(&self) -> Result<()> {
         let mut tx = self.pool.begin().await?;
@@ -217,6 +223,19 @@ impl MetadataStore {
                 sqlx::query(statement).execute(&mut *tx).await?;
             }
             sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(6,?)")
+                .bind(now())
+                .execute(&mut *tx)
+                .await?;
+        }
+        if found < 7 {
+            for statement in MIGRATION_V7
+                .split(';')
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                sqlx::query(statement).execute(&mut *tx).await?;
+            }
+            sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(7,?)")
                 .bind(now())
                 .execute(&mut *tx)
                 .await?;

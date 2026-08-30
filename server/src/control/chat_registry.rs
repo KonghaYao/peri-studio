@@ -252,6 +252,18 @@ impl ChatRegistry {
         cwd: &str,
         workspace_id: Option<&str>,
     ) -> Result<(), ChatError> {
+        self.register_inner(chat_id, instance_id, title, cwd, workspace_id)
+            .await
+    }
+
+    async fn register_inner(
+        &self,
+        chat_id: &str,
+        instance_id: &str,
+        title: Option<&str>,
+        cwd: &str,
+        workspace_id: Option<&str>,
+    ) -> Result<(), ChatError> {
         let now = Utc::now();
         let title = title.unwrap_or_default();
         let entry = ChatRecord {

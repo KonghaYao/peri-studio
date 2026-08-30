@@ -17,7 +17,7 @@ export const searchProjectSessions = (
   return sessions
     .filter((session) => {
       const project = projectById.get(session.projectId);
-      return [session.title, session.acpSessionId, project?.name, project?.cwd]
+      return [session.title, session.id, project?.name, project?.cwd]
         .some((value) => normalized(value).includes(needle));
     })
     .map((session) => ({ ...session, project: projectById.get(session.projectId) || null }))

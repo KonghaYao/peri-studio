@@ -17,9 +17,8 @@ import { resetRuntimeControls } from '../lib/runtime-control';
 import { setPrincipalRole } from '../lib/auth-state';
 
 const session = {
-  id: 'session-1',
+  id: 'acp-1',
   projectId: 'project-1',
-  acpSessionId: 'acp-1',
   title: 'Persistent session',
   lifecycle: 'ready',
   updatedAt: null,
@@ -55,8 +54,8 @@ describe('ChatHeader runtime truth', () => {
   });
 
   it('disambiguates a fallback title with the durable ACP identity', () => {
-    setProjectSessions([{ ...session, title: 'New conversation', acpSessionId: 'acp-12345678', activeChatId: null }]);
-    setSelectedSessionId(session.id);
+    setProjectSessions([{ ...session, title: 'New conversation', id: 'acp-12345678', activeChatId: null }]);
+    setSelectedSessionId('acp-12345678');
     render(() => <ChatHeader />);
 
     expect(screen.getByText('New conversation · …12345678')).toBeInTheDocument();

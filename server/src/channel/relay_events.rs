@@ -10,7 +10,7 @@ use tracing::info;
 use crate::channel::relay_event_handler::{ConsumeResult, RelayEventHandler};
 use crate::control::ChatState;
 use crate::state::doc_manager::{DocCommand, SubmitError, SubmitResult};
-use crate::state::normalized::{EventBody, NormalizedEvent};
+use crate::state::normalized::{EventBody, NormalizedEvent, ToolJsonPatch};
 
 impl RelayEventHandler {
     /// Advance transport ordering for a frame that was received but has no
@@ -47,6 +47,7 @@ impl RelayEventHandler {
             } => Some(options.clone()),
             _ => None,
         };
+        let app_result = mcp_app_result_snapshot(&nev.body);
         match self.inner.doc.submit_event(nev).await {
             SubmitResult::Applied(r) => {
                 // #3 增量窗口续命（issue #3）：事件投递成功（聚合器接受）
@@ -57,6 +58,10 @@ impl RelayEventHandler {
                     self.inner.chats.touch_active_turn(chat_id).await;
                     if let Some(options) = config_catalog {
                         self.inner.chats.set_config_catalog(chat_id, options).await;
+                    }
+                    if let Some((tool_call_id, result)) = app_result {
+                        self.remember_mcp_app_tool_result(chat_id, &tool_call_id, result)
+                            .await;
                     }
                 }
                 ConsumeResult::Delivered {
@@ -111,5 +116,24 @@ impl RelayEventHandler {
                 // 拒绝（uncalibratable / chat 已关闭）或迁移失败：保持 gap。
             }
         }
+    }
+}
+
+fn mcp_app_result_snapshot(body: &EventBody) -> Option<(String, serde_json::Value)> {
+    match body {
+        EventBody::ToolCallPatched {
+            tool_call_id,
+            patch,
+            ..
+        } => match &patch.result {
+            ToolJsonPatch::Set { value } => Some((tool_call_id.clone(), value.clone())),
+            _ => None,
+        },
+        EventBody::ToolCallCompleted {
+            tool_call_id,
+            result: Some(value),
+            ..
+        } => Some((tool_call_id.clone(), value.clone())),
+        _ => None,
     }
 }

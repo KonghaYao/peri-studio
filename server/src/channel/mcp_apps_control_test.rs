@@ -71,3 +71,20 @@ fn gate_open_rejects_non_completed_and_non_mcp_tools() {
         "unsupported"
     );
 }
+
+#[test]
+fn as_mcp_app_call_tool_result_wraps_output_schema() {
+    use crate::channel::relay_event_handler::as_mcp_app_call_tool_result;
+    use serde_json::json;
+
+    let output = json!({"canvasId": "c1", "source": "export default function App() { return null }"});
+    let wrapped = as_mcp_app_call_tool_result(output.clone());
+    assert_eq!(wrapped["structuredContent"], output);
+    assert!(wrapped["content"].as_array().is_some());
+
+    let already = json!({
+        "content": [{"type": "text", "text": "ok"}],
+        "structuredContent": {"source": "tsx"}
+    });
+    assert_eq!(as_mcp_app_call_tool_result(already.clone()), already);
+}

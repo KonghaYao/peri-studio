@@ -192,6 +192,13 @@ export class SessionActivation {
 
   connectionLost(): void { this.applyEffects(this.navigator.transition({ type: 'connection-lost' })); }
 
+  /** Re-bind the current logical session after reconnect (server restart safe). */
+  reactivateAfterReconnect(): void {
+    const sessionId = this.deps.selectedSessionId();
+    if (!sessionId) return;
+    this.navigate(sessionId);
+  }
+
   reset(): void {
     resetQuickStart();
     this.deps.setCreatingProjectId(null);

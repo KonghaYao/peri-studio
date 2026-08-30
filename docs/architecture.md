@@ -1,9 +1,9 @@
 # Peri Studio 架构设计（权威版）
 
-> 状态：v2.16（SSH 机器挂载可开工契约；实现未开始）
+> 状态：v2.17（ACP 权威会话目录，[ADR-0003](adr/0003-acp-authoritative-session-catalog.md)）
 > 日期：2026-08-30
 > 定位：peri-studio 独立项目的架构基准文档。与 peri 的唯一耦合点是 ACP 进程（协议线格式），本设计不依赖 peri 的任何 crate 与部署形态。
-> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界；v2.9 令 Web 权限裁决回传 Control Doc 投影的精确 ACP `optionId`，并在恢复证据与交付边界校验 ID 和 scope；v2.10 增加权限期限的可见倒计时与浏览器 fail-close 门控；v2.11 统一权限与询问队列的领域身份选择和删除回退；v2.12 为一次性 elicitation 回答增加不可重放的刷新与本地隐藏恢复面；v2.13 为移动端 FS/Git 预览增加稳定来源身份与编辑器焦点往返；v2.14 完成有序 Chat blocks、回放信任标签、按 session 消息投递、协商 prompt 字节预算、principal 作用域持久草稿、权限输入证据、资源租约/代际与高对比浏览器矩阵；v2.15 将 ACP 工具 kind、content、locations、raw output 与 content chunk 统一为有界 tri-state patch，允许终态后只补证据但不重开生命周期，并令 turn 终态收敛全部消息分段和非终态工具；**v2.16 将 M2 跨机接入定为 SSH 供应器 + 反向隧道（对抗审查后可开工：SSH 不进全局 Restarting、Disconnect≠Stop、监督在 app/）**（见 §3.1、§8.3 步骤 5a 与 [ssh-machine-mount.md](design/ssh-machine-mount.md)，[ADR-0002](adr/0002-ssh-machine-provisioner.md)）。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
+> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界；v2.9 令 Web 权限裁决回传 Control Doc 投影的精确 ACP `optionId`，并在恢复证据与交付边界校验 ID 和 scope；v2.10 增加权限期限的可见倒计时与浏览器 fail-close 门控；v2.11 统一权限与询问队列的领域身份选择和删除回退；v2.12 为一次性 elicitation 回答增加不可重放的刷新与本地隐藏恢复面；v2.13 为移动端 FS/Git 预览增加稳定来源身份与编辑器焦点往返；v2.14 完成有序 Chat blocks、回放信任标签、按 session 消息投递、协商 prompt 字节预算、principal 作用域持久草稿、权限输入证据、资源租约/代际与高对比浏览器矩阵；v2.15 将 ACP 工具 kind、content、locations、raw output 与 content chunk 统一为有界 tri-state patch，允许终态后只补证据但不重开生命周期，并令 turn 终态收敛全部消息分段和非终态工具；**v2.16 将 M2 跨机接入定为 SSH 供应器 + 反向隧道（对抗审查后可开工：SSH 不进全局 Restarting、Disconnect≠Stop、监督在 app/）**（见 §3.1、§8.3 步骤 5a 与 [ssh-machine-mount.md](design/ssh-machine-mount.md)，[ADR-0002](adr/0002-ssh-machine-provisioner.md)）；**v2.17 移除 SQLite `project_sessions` 权威，ACP `session/list` + agent 磁盘为 durable 会话目录唯一事实源，wire `sessionId` 即 ACP id，归档/重命名改浏览器 IndexedDB**（见 §3.0、[ADR-0003](adr/0003-acp-authoritative-session-catalog.md)）。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
 > 约定：引用 chat-channel 处标注其文档章节号（如「chat §5.2」），实现时以该仓库为对照基线。协议事实（帧 tag、action 面、schema 版本、默认值）以 `peri-studio-proto` / `server/src/config` 实现为真相来源，本文与实现不一致时以实现为准并回改本文。【v2.16】`machine/*` 在进入 proto+whitelist 之前，以 [ssh-machine-mount.md](design/ssh-machine-mount.md) 为开工契约，禁止只改文档不改白名单。
 
 ---
@@ -56,29 +56,29 @@
 
 ### 3.0 Web project session 扩展
 
-Web UI 使用四层身份，禁止互换：`project_id` 是左栏分组，`project_session_id` 是 SQLite 持久入口，ACP `session_id` 是 agent 的 durable thread，`chat_id` 是一次 server/ACP runtime。`last_chat_id` 只作运行期提示；重启后打开持久入口必须以精确 ACP session id 走 `session/load`，不得复活旧进程或根据标题猜测。
+Web UI 使用三层身份加一次 runtime，禁止互换：`project_id` 是左栏分组；wire `sessionId` **即 ACP durable `session_id`**（Registry 投影字段 `acp_session_id` 保留兼容）；`chat_id` 是一次 server/ACP runtime。Hub 不再生成独立 logical session id，也不维护 SQLite `last_chat_id` 快路径。重启后打开持久入口必须以精确 ACP session id 走 `spawn + session/load`，不得复活旧进程或根据标题猜测；同一 ACP id 已绑定且 `runtime_confirmed` 的 chat 仍可由 `ChatRegistry` 复用。
 
 runtime create 横跨 Hub chat 状态、instance child 与 ACP durable thread 三个不同副作用边界。server 必须在 spawn 前在内存 outbox 越过 no-redelivery barrier（§4.4 状态机，§8.4：不落盘）；只有显式 spawn rejection 或同 chat 的 `kill_ack.ok=true` 才能证明 child 不存在并解除该 barrier。`session/new` 一旦可能进入 ACP stdin，kill child 也不能证明 durable thread 未创建，命令必须收敛为 `DELIVERY_UNKNOWN` 并禁止自动重放。重启后内存 outbox 为空（§8.4.1），create 不自动恢复、不重发；禁止把已丢失 executor 的记录继续暴露为进行中，也不得自动复活旧进程。
 
 该恢复不变量的端到端验收必须跨过 ACP stdin wire，而不能只比较 Ack 回显或 SQLite 投影：隔离产品旅程需证明重启后的新 ACP 进程只收到一次 `session/load`，其 `params.sessionId` 与重启前持久化的 durable ACP id 完全一致，并在该 runtime 上成功继续 prompt/Yjs 投影。生产 instance 仍只统计 ACP stderr，不记录正文；wire 观察仅允许测试专用 ACP fixture 写入其临时目录。
 
-左栏 catalog 只展示来源为 `hub`（经 `session/create` 建立）或 `imported`（用户经 `session/import` 明确加入）的 project session。ACP `session/list` 的其余历史仅作为按 project cwd 分面的导入候选，不得在启动或轮询时自动进入侧边栏；旧版自动迁移记录标为 `legacy_hidden`，保留数据但不投影。
+左栏 catalog 直接投影 ACP `session/list` 在 project cwd 上的 durable 会话（agent 磁盘为权威）。`session/create` 在 project cwd 上 `session/new`，committed ack 的 `sessionId` 即新 ACP id 并刷新该 project 的 list 缓存。`session/import` 保留为兼容 no-op（list 已包含即已在目录）。server 重启后 Registry `project_sessions` 段为空，直至 `session/discover` 或用户打开 project 触发 list。
 
-交互式 `session/list` 与后台 `(instance_id,cwd)` catalog 同步由 `SessionCatalogSync` 单独拥有：它统一负责 ACP RPC 登记/撤销、超时、响应解析、cwd/current-binding 装饰、精确 ACP id 标题刷新以及 legacy Registry 全量投影。`CommandCoordinator` 只在同步校验后把结果映射为 `Accepted`/`Failed`，Hub 只启动 poller；catalog 模块不得依赖 outbox、DocManager、chat executor 或 terminal watcher。后台每个精确 `(instance_id,cwd)` 只选择一个非终态且已 binding 的 runtime 作为查询通道，不能按标题或逻辑 session 猜测归属。
+交互式 `session/list` 与后台 `(instance_id,cwd)` catalog 同步由 `SessionCatalogService`（原 `SessionCatalogSync`）单独拥有：它统一负责按 `project_id` 调用 ACP `session/list`（经 discovery runtime 或项目级 single-flight）、list 缓存、超时、响应解析、cwd/current-binding 装饰、精确 ACP id 标题刷新，以及合并 `ChatRegistry` 运行态（`active_chat_id`、status）与内存激活表后写入 Registry `project_sessions` 段。`CommandCoordinator` 只在同步校验后把结果映射为 `Accepted`/`Failed`，Hub 只启动 poller；catalog 模块不得依赖 outbox、DocManager、chat executor 或 terminal watcher。后台每个精确 `(instance_id,cwd)` 只选择一个非终态且已 binding 的 runtime 作为查询通道，不能按标题猜测归属。
 
 旧客户端的 `workspace/create|remove` 由 `WorkspaceCompatibility` 单独拥有：它把 legacy action 适配到 SQLite project 权威写入、Registry v2 project 投影和 legacy `workspaces` mirror，并在启动与变更后重建同一进程内索引。`CommandCoordinator` 只保留 action 路由和既有 Ack fan-out；兼容模块不得依赖 outbox、DocManager、chat executor 或 transport sender。`workspace/remove` 只归档目录定义并移除 legacy navigation projection，绝不关闭或改变已经存在的 runtime chat；跨 SQLite/Registry 的部分失败保持结构化终态，不能伪装成全局原子提交。
 
 已有 commandId 的重放、恢复身份校验、替代连接 observer 与 terminal wire publication 由 `CommandOutcomeBroker` 单独拥有。它以一个进程内 outcome-state 临界区统一保护 missing-durable terminal fallback、sticky overflow、durable terminal 二次读取与 observer attach/remove；因此 durable terminal 或 terminal append 失败的 fallback 无论先于还是后于替代连接到达，都只能被立即重放或被后续 fan-out，不得留下永远等待的 observer。每 command 最多 8 个、全局最多 256 个 live observer；missing-durable verdict 最多保留 1024 个且绝不任意淘汰，容量耗尽后全局 fail-closed。`CommandCoordinator` 只保留全局 admission gate、新 command reserve/outbox insert、per-chat 调度及 lifecycle 结果适配；各 lifecycle 模块仍是 durable terminal transition 的唯一 owner，Broker 不制造持久事实。
 
-导入候选的冷启动入口是 project 级 `session/discover {projectId}`，不能要求用户先创建或打开一个 Hub 会话。server 优先复用同 instance/cwd 的非终态 runtime；没有可复用 runtime 时，建立一个不进入 ChatRegistry 常规 chat map、Registry chat map 或 SQLite catalog 的私有 ACP 进程，依次执行 `initialize`、`session/list` 并在投影候选后 `instance/kill`。该临时进程只在 ChatRegistry 的心跳 ownership 集合中登记为 server-owned，避免被孤儿清理竞态提前终止；同一 project 的 discovery 必须 single-flight。discovery 本身绝不创建 ACP session、Hub project session 或侧边栏条目，只有用户后续确认的 `session/import` 才写入 catalog。
+导入候选的冷启动入口是 project 级 `session/discover {projectId}`，不能要求用户先创建或打开一个 Hub 会话。server 优先复用同 instance/cwd 的非终态 runtime；没有可复用 runtime 时，建立一个不进入 ChatRegistry 常规 chat map、Registry chat map 的私有 ACP 进程，依次执行 `initialize`、`session/list` 并在刷新 list 缓存后 `instance/kill`。该临时进程只在 ChatRegistry 的心跳 ownership 集合中登记为 server-owned，避免被孤儿清理竞态提前终止；同一 project 的 discovery 必须 single-flight。discovery 刷新 ACP list 缓存，不创建 ACP session 或侧边栏外的新身份。
 
-导入是显式的选择、事实复核、提交三阶段流程。复核只展示 ACP `session/list` 与 project catalog 已实际提供的标题、更新时间、完整 `acp_session_id` 和精确 cwd；当前协议没有消息摘要时，UI 必须明确说明内容预览不可用，不得从标题推断或伪造预览。搜索或 Registry 刷新使候选离开当前结果后，旧选择立即失效且不可提交。提交期间锁定查询与选择；服务端明确拒绝和 delivery unknown 必须显示不同恢复建议，后者只能使用原 `commandId` 重新确认。
+导入是显式的选择、事实复核、提交三阶段流程（【v2.17】`session/import` 提交改为兼容 no-op；复核与 discover 仍用于刷新 list）。复核只展示 ACP `session/list` 已实际提供的标题、更新时间、完整 `acp_session_id` 和精确 cwd；当前协议没有消息摘要时，UI 必须明确说明内容预览不可用，不得从标题推断或伪造预览。搜索或 Registry 刷新使候选离开当前结果后，旧选择立即失效且不可提交。提交期间锁定查询与选择；服务端明确拒绝和 delivery unknown 必须显示不同恢复建议，后者只能使用原 `commandId` 重新确认。
 
-`<data_dir>/metadata.sqlite3` 是 project/project session 元数据与全局 metadata command 去重的唯一事实源，也是**唯一落盘产物**（§无状态投影：per-chat 投影 update 与 outbox 均为内存态，崩溃恢复由 ACP 重放提供，§8.3/§8.4）。Registry v2 的 `projects`、`project_sessions` 是 SQLite 的只读广播投影。project/session mutation 的 committed Ack 必须跨过 SQLite 提交与 Registry 投影屏障；ACP 副作用结果不确定时进入 `reconciliation_required`，不得自动重试 `session/new`。`project/rename` 只更新展示名并保持 project id、cwd、instance binding 与所有 session identity 不变。project 与 project session 的“删除”在用户界面中始终是可逆归档：`project/archive|restore` 和 `session/archive|restore` 只设置或清除各自独立的 `archived_at`，复用全局 commandId 去重与投影屏障；session 的 `lifecycle`、ACP thread、消息历史、runtime chat 文档和工作目录文件均不因此改变或删除。归档 session 后，Web 必须从导航、搜索、上次打开恢复候选中排除它，恢复后才重新可见。任何 project session 仍绑定非终态 runtime 时，归档 project 或 session 都必须拒绝；无法读取元数据或验证 runtime 状态时同样 fail-closed，避免把仍在工作的 agent 从导航中隐藏。
+`<data_dir>/metadata.sqlite3` 是 **project** 元数据与全局 metadata command 去重的唯一事实源，也是**唯一落盘产物**（§无状态投影：per-chat 投影 update 与 outbox 均为内存态，崩溃恢复由 ACP 重放提供，§8.3/§8.4）。**会话目录不再落 SQLite**（V7 删除 `project_sessions`、`session_activations`、`session_runtime_history`）。Registry v2 的 `projects` 仍自 SQLite 投影；`project_sessions` 段改为 **ACP `session/list` 内存缓存** 的只读广播。`project/*` mutation 的 committed Ack 仍须跨过 SQLite 提交与 Registry 投影屏障；`session/create|open` 等含 ACP 副作用的动作按 §4.4 域规则，结果不确定时进入 `reconciliation_required`，不得自动重试 `session/new`。`project/rename` 只更新展示名并保持 project id、cwd、instance binding 不变。project 的“删除”在用户界面中始终是可逆归档：`project/archive|restore` 只设置或清除 `archived_at`，复用全局 commandId 去重与投影屏障。project session 的归档/恢复与自定义展示名 **不落 server**：Web 以 IndexedDB `{principalId, projectId, acpSessionId}` 存 `archived` / `customName`，读侧与 Registry 目录合并；ACP thread、消息历史、runtime chat 文档和工作目录文件均不因归档而改变或删除。归档 session 后，Web 必须从导航、搜索、上次打开恢复候选中排除它，恢复后才重新可见。任何 project session 仍绑定非终态 runtime 时，归档 project 或 session 都必须拒绝；无法验证 runtime 状态时同样 fail-closed，避免把仍在工作的 agent 从导航中隐藏。
 
-project session 的展示名同时保留三类不同来源，优先级固定为用户 `custom_name` → 有意义的 ACP `acp_title` → Hub 从首条已安全下发 prompt 生成的 `hub_title` → ACP 默认标题 → `新对话`。`hub_title` 只给 `origin='hub'` 的目录项写一次，使用首个非空行、Unicode 字符边界和 60 字符上限；它不调用 ACP rename，也不覆盖用户别名。后续 `session/list` 返回真实 ACP 标题时，ACP 事实自然接管展示。该分层避免多个新会话长期不可辨识，同时不伪造跨进程标题同步。
+project session 的展示名优先级固定为浏览器 `customName`（IndexedDB）→ 有意义的 ACP `acp_title` → Hub 从首条已安全下发 prompt 生成的内存 `hub_title`（仅当前 server 进程、不写 SQLite）→ ACP 默认标题 → `新对话`。`hub_title` 使用首个非空行、Unicode 字符边界和 60 字符上限；它不调用 ACP rename，也不覆盖用户别名。后续 `session/list` 返回真实 ACP 标题时，ACP 事实自然接管展示。
 
-Registry 视图无独立日志/快照：`registry.log`/`registry.snapshot` 及其 compact 机制已随无状态投影重构删除（§8.4）。Registry Doc 是 metadata.sqlite3 的只读广播投影，server 启动时由 `ProjectService::reproject` 从 SQLite 全量重建（毫秒级），运行期由 ProjectService 随 SQLite 变更投影；启动失败（SQLite 不可读）fail-fast，不静默重建。
+Registry 视图无独立日志/快照：`registry.log`/`registry.snapshot` 及其 compact 机制已随无状态投影重构删除（§8.4）。Registry Doc 的 `projects` 段自 metadata.sqlite3 只读广播；`project_sessions` 段自 ACP list 缓存与运行态合并投影。server 启动时 `ProjectService::reproject` 从 SQLite 重建 `projects`（毫秒级），`project_sessions` 启动为空直至 list；运行期随 SQLite project 变更或 catalog 刷新投影；启动失败（SQLite 不可读）fail-fast，不静默重建。
 
 浏览器认证通过同源 `POST/GET/DELETE /api/auth/session` 建立内存 opaque session，并下发 `HttpOnly; SameSite=Strict; Path=/; Max-Age=28800` Cookie，与服务端 8 小时 TTL 对齐。会话本身始终是 HttpOnly cookie，WebSocket 帧与 URL 不携带 bearer；为免去每次重开登录，Web 把 full token 存入 localStorage（`peri_studio_token`），仅在下一次打开时自动重放 `POST /api/auth/session`——token 是登录界面的本地便利凭据，不是会话事实源，登出、server 判定 token 失效（`auth_error`/认证终态关闭码）或浏览器存储不可用时立即清除并退回手动输入。Cookie attach 与存量连接按心跳重新校验 token id、撤销状态和当前 role；instance HMAC 与旧 CLI wire-token 流程保持兼容。
 
@@ -100,7 +100,7 @@ loopback 认证 HTTP 面是封闭协议：只接受 HTTP/1.1；POST/DELETE 必�
 
 Web action 的连接期生命周期由单一 `CommandTracker` module 所有：发送成功后登记 timer，`accepted` 只表示排队且不得释放命令，`committed`/`duplicate`/`action_error` 才是终态。普通 metadata action 使用固定墙钟超时，`accepted` 不得延长它；只有显式声明 `acceptedStartsInactivityLease` 的 prompt 才把 accepted 与所选 runtime 的 Chat/Control Doc 更新视为活动证据，通过 `touch(commandId)` 续租 30 秒静默窗口，只有连续静默才转为“结果尚未确认”。超时或连接中断统一转为“结果尚未确认”；只有声明支持安全对账的 action 才保留原始 frame，并且重试必须复用同一 `commandId`。晚到终态可以清除对账记录，但不得再次调用已超时的业务 continuation。Solid store 只提供 transport adapter、runtime progress 与领域 callback，不得自行维护第二套 pending/timer/uncertain map。
 
-project/session 目录动作的浏览器策略由 `CatalogActions` deep module 单一所有。它统一执行连接、权限与未确认 metadata 门控，构造目录命令，声明可对账 mutation 的同一 `commandId` 重试策略，并只在 `committed`/`duplicate` 后触发本地导航副作用。Solid store 只注入 transport、toast、错误持久化和选中态清理适配器；不得重新直接构造 `project/create|archive|restore|rename` 或 `session/rename|archive|restore|import|discover`，避免等价目录动作产生不同的超时文案、终态语义或权限边界。`session/create`、`session/open` 与 quick start 因包含 runtime 激活/导航状态机，仍由其各自的深模块与 store 编排，不归入纯目录 mutation。
+project/session 目录动作的浏览器策略由 `CatalogActions` deep module 单一所有。它统一执行连接、权限与未确认 metadata 门控，构造目录命令，声明可对账 mutation 的同一 `commandId` 重试策略，并只在 `committed`/`duplicate` 后触发本地导航副作用。Solid store 只注入 transport、toast、错误持久化和选中态清理适配器；不得重新直接构造 `project/create|archive|restore|rename` 或 `session/discover|import`，避免等价目录动作产生不同的超时文案、终态语义或权限边界。`session/archive|restore` 与 `session/rename` 为浏览器 IndexedDB 偏好，不经 server metadata mutation。`session/create`、`session/open` 与 quick start 因包含 runtime 激活/导航状态机，仍由其各自的深模块与 store 编排，不归入纯目录 mutation。
 
 终态业务副作用只能由 dispatch 时注册的 callback 执行一次；全局 Ack/Error handler 只负责日志、错误中心与调用 tracker。`action_error` 即使在 timeout/disconnect 后晚到，也可通过原 callback 把匹配的本地状态收敛为明确失败；晚到 committed/duplicate 不运行 callback，只能消除不确定证据。消息提交可安全清除其匹配的恢复卡，但 quick start 禁止在此时自动切换 runtime 或发送首条消息，必须提示用户从 server-authoritative 侧栏重新打开。非重试 action 的 late-error callback 只保留一个 Ack timeout 窗口，随后释放。
 
@@ -148,7 +148,7 @@ Web 组件库以 `src/components/ui/index.ts` 为唯一公共代码入口，以 
 
 选中 runtime 后，Web 必须分别确认 `chat:{chat_id}` 与 `session:{chat_id}` 两份 server-authoritative Y.Doc 已至少应用一帧，才可以宣称“可输入”并开放 Composer。切换 runtime 会清空该 hydration 证据；断线不会抹掉已渲染历史，但任何新 runtime 都不得把初始空数组误当成空会话。控制文档已经投影出的待决权限高于普通载入文案；两份文档都到齐且消息确认为空后，UI 才显示首次消息引导。
 
-Composer 草稿由独立 IndexedDB store 以 `{principalId,projectId,project_session_id}` 复合键持久化，而不是跟随临时 `chat_id` 或组件实例。同步内存 signal 提供输入体验，异步 hydration 受 revision fence 保护，晚到旧草稿不得覆盖用户已经输入的新文本。切换会话、项目或 principal 不得串稿，刷新后返回同一复合身份必须恢复；登出或认证失效清空当前浏览器全部草稿与本地 unknown 证据。消息提交状态同时携带 `command_id`、草稿 owner、`project_session_id` 与 `chat_id`：发送失败或连接结果未知时只把原文恢复到所属会话，其他会话不被阻塞；`uncertain` 状态不可被直接关闭或以新 command 重发。`delivery_unknown` 只能经明确的 acknowledge-and-continue 转为只读证据后释放目标 session 单飞槽，晚到精确投影仍按原 command 清除该证据。
+Composer 草稿由独立 IndexedDB store 以 `{principalId, projectId, acpSessionId}` 复合键持久化（`acpSessionId` 与 wire `sessionId` 同值），而不是跟随临时 `chat_id` 或组件实例。同步内存 signal 提供输入体验，异步 hydration 受 revision fence 保护，晚到旧草稿不得覆盖用户已经输入的新文本。切换会话、项目或 principal 不得串稿，刷新后返回同一复合身份必须恢复；登出或认证失效清空当前浏览器全部草稿与本地 unknown 证据。消息提交状态同时携带 `command_id`、草稿 owner、`acpSessionId` 与 `chat_id`：发送失败或连接结果未知时只把原文恢复到所属会话，其他会话不被阻塞；`uncertain` 状态不可被直接关闭或以新 command 重发。`delivery_unknown` 只能经明确的 acknowledge-and-continue 转为只读证据后释放目标 session 单飞槽，晚到精确投影仍按原 command 清除该证据。
 
 `ready` 在协商 `prompt-delivery-v2` 时必须携带正安全整数 `maxPromptBytes`；server 与 Web 都按 UTF-8 字节数而不是 UTF-16 code unit 执行同一上限。缺少 capability 或上限时 prompt 门控保持关闭；Composer 显示当前字节数/预算并禁用发送，非 Composer 的 quick-start/领域入口仍须在 action 边界重复验证。server 必须在 coordinator admission 前以 `PAYLOAD_TOO_LARGE` 拒绝超限正文。
 
@@ -302,20 +302,20 @@ Action 方法面（Server 对客户端；【v2.6】按 `proto` crate `ActionEnve
 | `chat/rewind-preview` | `{ chat_id, ... }` | 读取候选的安全、project-relative 文件影响预览与确认指纹 |
 | `chat/rewind` | `{ chat_id, preview_fingerprint, ... }` | 执行已预览确认的 rewind；fingerprint 必须原样来自同一 runtime 最新 preview |
 
-**project / 持久会话域**（Web 侧目录事实，SQLite 权威，§3.0）：
+**project / 持久会话域**（Web 侧目录：project 仍 SQLite 权威；会话目录 ACP `session/list` 权威，§3.0）：
 
 | type | payload | 说明 |
 |------|---------|------|
 | `project/create` | `{ name?, cwd, instance_id? }` | 创建持久化 project。`cwd` 是 **该 instance 上的路径**。绑定 `kind=ssh` 时 `instance_id` 必填且该 instance 必须 Online；缺省仍表示 `local`（兼容）。SSH 目标禁止使用本机目录选择器 |
 | `project/archive` / `project/restore` | `{ project_id }` | project 的可逆归档/恢复（`archived_at`） |
 | `project/rename` | `{ project_id, name }` | 只更新展示名，不改变 id/cwd/instance binding |
-| `session/create` | `{ project_id, ... }` | 在 project 下创建持久化 logical session 并激活 ACP runtime |
-| `session/open` | `{ sessionId }` | 打开持久化 logical session；必要时新建 runtime 并 `session/load` |
-| `session/rename` | `{ sessionId, name }` | 修改 hub 侧展示名，不改 ACP ThreadStore title |
-| `session/archive` / `session/restore` | `{ sessionId }` | 持久会话的可逆归档/恢复（不删除 ACP thread 或消息历史） |
-| `session/import` | `{ sessionId?, project_id, acp_session_id, ... }` | 将 ACP 历史会话显式加入某 project 的持久侧边栏 |
-| `session/discover` | `{ project_id }` | 刷新某 project 的 ACP 历史会话候选（冷启动入口，§3.0 discovery） |
-| `session/prompt-status` | `{ sessionId }` | 读取持久 logical session 的安全 prompt delivery 摘要（§5.3.1） |
+| `session/create` | `{ project_id, ... }` | 在 project cwd 上 `session/new`；committed ack 的 `sessionId` = 新 ACP id，并刷新 list 缓存 |
+| `session/open` | `{ sessionId }` | `sessionId` = ACP durable id；始终 `spawn + session/load`（无 SQLite `last_chat_id` 快路径）；已 `runtime_confirmed` 的同 id chat 可复用 |
+| `session/rename` | `{ sessionId, name }` | **【v2.17 客户端】** IndexedDB `customName`；server 不持久化 |
+| `session/archive` / `session/restore` | `{ sessionId }` | **【v2.17 客户端】** IndexedDB `archived`；不删除 ACP thread 或消息历史 |
+| `session/import` | `{ sessionId?, project_id, acp_session_id, ... }` | **【v2.17 兼容 no-op】** list 已包含即已在目录；保留 duplicate ack |
+| `session/discover` | `{ project_id }` | 刷新某 project 的 ACP `session/list` 缓存（冷启动入口，§3.0 discovery） |
+| `session/prompt-status` | `{ sessionId }` | 读取 ACP durable session 的安全 prompt delivery 摘要（§5.3.1）；`sessionId` = ACP id |
 
 **machine 域**（【v2.16 可开工，实现未开始】SQLite `machines` 权威；live 连接仍只来自 hello。`committed` 与 `project/*` 同为 SQLite+Registry 屏障，**不是** ACP stdin。域错误在投影 `machines.errorCode`；wire `action_error.code` **只**用 §4.4 既有 `ErrorCode`。完整契约见 [ssh-machine-mount.md](design/ssh-machine-mount.md)。**本表与 `ActionEnvelope`+whitelist 必须同 PR 落地。**）：
 
@@ -360,7 +360,8 @@ Action 方法面（Server 对客户端；【v2.6】按 `proto` crate `ActionEnve
 参照 chat §7.1：`accepted` 只表示进入有界处理队列。`committed` 的业务事实因域而异：
 
 - **chat / ACP 域**（prompt、spawn 路径上的 session/new 等）：命令已写入 ACP stdin 且 ACP 已确认接收（无投影落盘屏障，见 §8.4）。
-- **元数据域**（`project/*`、持久 `session/*` 目录、【v2.16】`machine/*` 的 admit/rename/remove 等）：SQLite 提交与 Registry 投影屏障已越过。`machine/add` 的 committed **不**表示远端 instance Online；管道进度只走 `machines.phase`。
+- **元数据域**（`project/*`、【v2.16】`machine/*` 的 admit/rename/remove 等）：SQLite 提交与 Registry 投影屏障已越过。`machine/add` 的 committed **不**表示远端 instance Online；管道进度只走 `machines.phase`。
+- **会话目录域**（`session/create|open|discover` 等含 ACP 副作用）：按 chat/ACP 域规则（§4.4 第一段）；list 缓存刷新不经 SQLite 屏障。
 
 越过非幂等外部副作用（远端 `connect` start、ACP stdin）且无法证明未发生时，仍必须 `DELIVERY_UNKNOWN`，禁止自动重放。
 
@@ -647,10 +648,7 @@ struct ToolCallProjection {
 
 ### 5.3.1 Logical session prompt recovery provenance
 
-SQLite schema v5 只增加 `session_runtime_history(session_id, chat_id,
-activated_at, retired_at)` 身份历史；它不复制 outbox 状态，也不宣称旧 runtime
-仍存活。`session/prompt-status` 是认证后的只读查询，client 只能提交 logical
-`sessionId`，历史 chat id 由 server 从 catalog provenance 解析，不能被任意探测。
+【v2.17】删除 SQLite `session_runtime_history` 与 `session_activations`；prompt 恢复 provenance 仅以 **per-chat 内存 outbox** 与 Chat/Session Doc 为权威。`session/prompt-status` 是认证后的只读查询，client 提交 wire `sessionId`（= ACP durable id），相关 chat id 由 server 从 `ChatRegistry` binding 与 catalog 运行态解析，不能被任意探测。
 
 查询以 per-chat outbox 为 delivery authority，以 Chat/Session Doc 为 projection
 authority，只公开 command/turn id、安全时间、稳定错误码和
@@ -690,7 +688,7 @@ struct PermissionProjection {
 
 ### 5.5 Registry Doc schema（peri-studio 特有）
 
-【v2.6】schema v2：`projects` / `project_sessions` / `workspaces`。【v2.16】schema v3 增加 `machines`（SQLite 挂载意图的只读广播；`instances` 仍只反映 live hello/心跳）。旧客户端忽略未知键。
+【v2.6】schema v2：`projects` / `project_sessions` / `workspaces`。【v2.16】schema v3 增加 `machines`（SQLite 挂载意图的只读广播；`instances` 仍只反映 live hello/心跳）。【v2.17】Registry `project_sessions` 段键为 ACP `session_id`，内容自 ACP list 内存缓存投影，不再对应 SQLite 行。旧客户端忽略未知键。
 
 ```rust
 struct RegistryDocRoot {
@@ -853,7 +851,7 @@ Composer 草稿为 `/name `，不得自动发送、不得增加 ACP prompt 私�
   → server 经 instance 转发 initialize（透传 JSON-RPC，instance 保持 dumb）
   → server 经 instance 转发 session/new
   → instance 上报 session 创建结果（session_id）
-  → server 建立 binding（acp_session_id → chat_id，记入 SQLite runtime 历史）并写入 agent 投影（内存镜像，§8.4）
+  → server 建立 binding（acp_session_id → chat_id，内存 ChatRegistry）并写入 agent 投影（内存镜像，§8.4）
   → 此后该 chat 的 ACP 帧才允许投影（binding 建立前到达的帧一律丢弃，§6.4 丢弃语义在此挂钩）
   → action_ack committed（携带 chatId）
 ```
@@ -1038,9 +1036,9 @@ chat/create 或 load ──► accepting ──► ... （turn 状态机驱动�
 1. server 崩溃瞬间：instance 检测到 ws 断开。
 2. instance 上的 ACP 进程**继续运行**；daemon 将原始 ACP 帧写入本地缓冲（内存，超限溢出到磁盘；上限默认 10MB/万条，可配置）。**「产出不丢」是有界承诺**【顾问：P0-3】：缓冲上限内不丢；超限按 §8.5 丢弃策略丢弃（delta 优先、控制帧最后），并以 `gap` 结构化呈现缺口——**不承诺无限缓冲**，避免「10MB 与产出不丢」矛盾表述。
 3. instance 以指数退避重连 server。
-4. server 重启后：**无快照重建**——不加载任何投影/命令状态（§8.4：StoreSink 启动即空，outbox 重启即空；命令从不重新发送，以 ACP 现场为准）。live chat 视图先由 `Hub::rebuild_chat_views` 从 metadata.sqlite3 `session_runtime_history`（retired_at IS NULL 的活跃 runtime）重建为 accepting 且 `runtime_confirmed=false`。各 instance 的 `instance/hello` 只完成认证、连接 fencing、capability 与 `stream_epochs` 登记；hello **没有** authoritative `alive_sessions`，不得触发对账、resume 或清除 Restarting。
+4. server 重启后：**无快照重建**——不加载任何投影/命令状态（§8.4：StoreSink 启动即空，outbox 重启即空；命令从不重新发送，以 ACP 现场为准）。`ChatRegistry` 启动为空，**不再**从 SQLite 预注册 runtime（V7 删除 `session_runtime_history`）；Registry `project_sessions` 为空直至 `session/discover` 或打开 project 触发 list。各 instance 的 `instance/hello` 只完成认证、连接 fencing、capability 与 `stream_epochs` 登记；hello **没有** authoritative `alive_sessions`，不得触发对账、resume 或清除 Restarting。
 5. **首份权威心跳恢复屏障**：每个 **进入全局 pending 的** instance 的首份 `instance/heartbeat`（空集合也有效）由 `RecoveryCoordinator` 的 per-instance 串行 lane 依次执行 `alive_sessions` 对账 → 仅对 confirmed runtime 批量 `session/resume` 并等待 RPC 终态 → 完成该 instance barrier。相邻快照按连接 epoch fencing，未开始的快照 latest-wins；旧连接不能确认 runtime、发送 resume 或完成 barrier。任一 **全局 pending** 恢复失败报告 `RestoreInvariant` 并进入 Degraded；**全局 pending 集合**全部完成后才能清除 Restarting。
-5a. **【v2.16】SSH 机器不进入全局 pending。** `rebuild_chat_views` 仍重建 SSH 上的未确认 chat，但 `recovery_instances` **只含本进程保证能拉起控制面的 id**（当前：`kind=local`）。`kind=ssh` 不得加入，否则 studio 会在 Restarting 中等待一台尚未建隧道的机器，连 `machine/connect` 也被拒（自锁）。SSH hello 之后只跑该 id 的 per-instance lane，不挡 Healthy。已 Trust 且 `auto_reconnect` 的隧道由 `app` 在 Healthy **之后** best-effort 重建。
+5a. **【v2.16】SSH 机器不进入全局 pending。** heartbeat 对账仍处理 SSH 上意外存活的 chat，但 `recovery_instances` **只含本进程保证能拉起控制面的 id**（当前：`kind=local`）。`kind=ssh` 不得加入，否则 studio 会在 Restarting 中等待一台尚未建隧道的机器，连 `machine/connect` 也被拒（自锁）。SSH hello 之后只跑该 id 的 per-instance lane，不挡 Healthy。已 Trust 且 `auto_reconnect` 的隧道由 `app` 在 Healthy **之后** best-effort 重建。
 6. **runtime 存活确认与补推**：心跳命中的 chat 才置 `runtime_confirmed=true`，missing chat 清除确认并置 gap；未确认 chat 打开时一律 spawn 新 ACP 进程 + `session/load`。恢复确认后，**epoch 相同**的 chat 按 `instance/buffer_sync` 补推；**epoch 变化**判不可校准缺口（§4.5.1）。已结束会话不重建视图；面板断线期间自行退避重连，重连后经 §4.6 时序恢复。
 
 ### 8.4 Y.Doc 持久化规范【无状态投影重构修订：无落盘契约】
@@ -1048,10 +1046,10 @@ chat/create 或 load ──► accepting ──► ... （turn 状态机驱动�
 yrs CRDT docs 与 command outbox **均不落盘**（§无状态投影重构；【v2.6】原引用的 `docs/design/peri-studio-stateless-projections.md` 未随仓库迁移保留，规范以本节为准）；**业务权威**落盘是 `<data_dir>/metadata.sqlite3`（§3.0）。【v2.16】另允许 `<data_dir>/ssh/known_hosts` 仅作 OpenSSH Trust，不是第二份领域事实。
 
 - **UpdateSink = 内存镜像 + 广播流**：`UpdateSink` trait 保留（§5.6），`persist_update` 把 update 投递到 StoreSink 的内存镜像（应用 + 广播），**不写磁盘**；gateway 快照与 broadcaster 增量同源（同 clientID），客户端应用无 CRDT 分叉。
-- **【v2.6】SQLite schema（migrations V1–V6，唯一业务权威落盘面）**：V1 建表 `schema_migrations` / `projects` / `project_sessions` / `metadata_commands`（metadata 命令去重账本）/ `session_activations` / `metadata_imports` / `projection_state`；V2 加 `project_sessions.origin`（hub|imported|legacy_hidden，§3.0）；V3 加 `hub_title`（§3.0 展示名分层）；V4 加 `archived_at` 与归档索引（§3.0 可逆归档）；V5 建 `session_runtime_history`（§5.3.1 身份历史）；V6 建 `oauth_commands`（§6.2 `peri.oauth` 副作用账本）。**【v2.16】V7 建 `machines`（SSH 挂载意图；PK `instance_id`；未归档 `(ssh_destination, ssh_port)` 唯一）。** 另允许 `<data_dir>/ssh/known_hosts`（`0600`）作为 OpenSSH Trust 文件，**不是**第二份业务权威；禁止写入 token/私钥。
+- **【v2.6】SQLite schema（migrations V1–V7，唯一业务权威落盘面）**：V1–V6 见历史修订；【v2.16】V7 建 `machines`（SSH 挂载意图；PK `instance_id`；未归档 `(ssh_destination, ssh_port)` 唯一）；**【v2.17】V7 同时删除 `project_sessions`、`session_activations`、`session_runtime_history`（及关联 `metadata_imports` 会话外键），归档旧表或 DROP，hub `project_session_id` 行一次性丢弃**。保留：`projects`、`metadata_commands`（缩减：不再含 session 目录 mutation 的 session 外键）、`machines`、`oauth_commands`、`projection_state`。另允许 `<data_dir>/ssh/known_hosts`（`0600`）作为 OpenSSH Trust 文件，**不是**第二份业务权威；禁止写入 token/私钥。
 - 持久化路径：`~/.local/share/peri-studio/`（或平台对应目录）用于 metadata.sqlite3、instance token 发布文件与【v2.16】`ssh/known_hosts`，凭据类文件 `0600`。
 - **已删除**：`chats/<id>/updates.log`、`updates.snapshot`、`outbox.log`、`watermark.json`、registry log/snapshot、compact 机制（8MB/64MB 阈值）、`closed_at` 归档标记；启动不重放任何日志。`committed` Ack 与落盘/fsync **解绑**（§4.4：无持久化屏障）。
-- **视图重建完全由 ACP 重放提供**：live chat 走 `session/resume`（§8.3），已结束会话走重启进程 + `session/load`；registry 从 metadata.sqlite3 全量重建（`ProjectService::reproject`）。
+- **视图重建完全由 ACP 重放提供**：live chat 走 `session/resume`（§8.3），已结束会话走重启进程 + `session/load`；`projects` 段由 metadata.sqlite3 经 `ProjectService::reproject` 重建，`project_sessions` 段由 ACP list 缓存填充（启动为空）。
 - **degraded 触发点**：无投影落盘路径；原「落盘失败」语义由 **UpdateSink 投递失败 / 终态无法建立**取代（§17.2）。
 - 注意：Y.Doc 是实时镜像（内存态），不是持久化真相；ACP 进程（权威）断链后不依赖旧 Doc 继续写入（§8.1 原则 5）。
 
@@ -1065,7 +1063,7 @@ yrs CRDT docs 与 command outbox **均不落盘**（§无状态投影重构；�
 
 1. **outbox 纯内存、重启即空**：启动不重放任何 outbox 日志（无日志）；命令**从不重新发送**，命令状态以 ACP 现场为准（客户端手动重试 prompt 可能重复执行为已接受边缘风险）。`reconcile_*_after_restart` 在空索引上执行为 **no-op**；
 2. **无 last_seq 持久化**：`(epoch, last_seq)` 为内存态（§4.5.1）；缓冲补推起点由 instance 给出（§8.5），无日志核对；
-3. **视图从零重建**：StoreSink 启动即空；live chat 视图由 `Hub::rebuild_chat_views` 从 SQLite `session_runtime_history`（retired_at IS NULL）重建为 accepting（绑定 acp_session_id），registry 由 `ProjectService::reproject` 从 metadata.sqlite3 全量重建；schema_version 判空幂等补结构（§5.6）仍适用；
+3. **视图从零重建**：StoreSink 启动即空；`ChatRegistry` 启动为空（无 SQLite runtime 预注册）；live chat 仅由 §8.3 步骤 5 heartbeat `alive_sessions` 对账后 `session/resume` 恢复；`projects` Registry 段由 `ProjectService::reproject` 从 metadata.sqlite3 重建，`project_sessions` 启动为空直至 list；schema_version 判空幂等补结构（§5.6）仍适用；
 4. **instance 对账后开门**：装配后 Registry 置 `Restarting`；hello 只登记连接，首份 authoritative heartbeat 由 `RecoveryCoordinator` 对账并等待 `resume_instance_chats` 终态。**全局 pending**（§8.3 步骤 5a：当前仅 local）全部完成后才 `clear_restarting`——Restarting 期间拒绝 Action 与 Git mutation 等新 committed 承诺；SSH 机器的自动重连发生在 Healthy 之后，其 `machine/*` 不得被 Restarting 自锁；
 5. **任一不变量失败**：进入 `degraded`（§17.2），可继续服务只读视图，拒绝新 committed 承诺。
 
@@ -1198,7 +1196,7 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 | 区域 / 模块 | 数据源 | 说明 |
 |------|--------|------|
 | `AuthGate` + `lib/auth-state` | `/api/auth/session` | 浏览器认证门（principal、read-only policy、失效事件；§3.0） |
-| `ProjectSidebar` + `lib/catalog-actions` | Registry Doc `projects`/`project_sessions`/`chats` | 左栏目录（§3.0：只展示 hub/imported 来源） |
+| `ProjectSidebar` + `lib/catalog-actions` | Registry Doc `projects`/`project_sessions`/`chats` + IndexedDB 偏好 | 左栏目录（§3.0：ACP list 缓存 + 客户端归档过滤） |
 | `MessageList` / `ConversationMessage` + `lib/ChatProjection` / `TranscriptWindow` | Chat Doc `entries`/`tool_calls` + Control Doc `active_turn` | keyed 增量投影、变量高度窗口化消息视图与工具卡片；订阅经 `ysync.subscribe`（§4.2）；双 Doc 水合后才开放输入（§3.0） |
 | `Composer` + `lib/message-delivery` + `lib/composer-draft` | Chat Doc + command tracker + IndexedDB | 草稿按 principal/project/session 持久隔离；投递按 session single-flight（§3.0） |
 | `PermissionQueue` / `ElicitationQueue` | Control Doc `pending_permissions` + elicitation 投影 | 权限队列（§3.0 排序/聚焦契约）、结构化追问表单 |
@@ -1252,8 +1250,8 @@ peri-studio/
 │   │                     #   prompt-delivery*（prompt 跨 outbox/Yjs/ACP 的唯一 lifecycle owner）、
 │   │                     #   command-outcome-broker*（重放/恢复身份校验/observer 临界区，§3.0）、
 │   │                     #   runtime-creation*（create 全局队列/索引、准备回滚、kill 证明与 no-redelivery 裁决）、
-│   │                     #   metadata-command-processor / metadata-{project,session,activation,validation}
-│   │                     #     （project/session SQLite command + Registry projection barrier + runtime activation）、
+│   │                     #   metadata-command-processor / metadata-{project,validation}
+│   │                     #     （project SQLite command + Registry projection barrier；【v2.17】session 目录改 SessionCatalogService）、
 │   │                     #   session-{actions,catalog-sync,discovery,resume,rewind*,runtime-*,configuration}、
 │   │                     #   workspace-compatibility（legacy workspace → project authority + Registry mirror）、
 │   │                     #   mcp-control* / oauth-control / oauth-command-ledger（§6.2 peri.oauth）、
@@ -1352,7 +1350,7 @@ peri-studio/
 | Ack 与持久化解绑 | committed 不再绑定落盘（无落盘路径） | committed = 命令已写入 ACP stdin 且 ACP 已确认接收（§4.4/§8.4）；崩溃窗口内命令不自动重试，以 ACP 现场为准（§8.4.1） |
 | 去重记录跨重启失效 | 重启后内存 outbox 即空，同 commandId 重发可能穿透去重 | 命令从不重新发送 + 以 ACP 现场为准；客户端手动重试 prompt 可能重复执行为已接受边缘风险（§8.4.1） |
 | 补推边界歧义 | daemon 重启后旧流残余与新流无法区分 | stream_epoch 代际标识 + 不可校准 gap（§4.5.1）【顾问：P0-2】 |
-| 投影与 SQLite 状态不一致 | chat/control 双 Doc 内存镜像与 metadata.sqlite3 无跨库事务 | 以 SQLite 为唯一权威 + 视图从零重建（rebuild_chat_views / reproject）+ degraded 降级（§8.4.1）【顾问：P0-5】 |
+| 投影与 SQLite 状态不一致 | chat/control 双 Doc 内存镜像与 metadata.sqlite3 无跨库事务 | 以 SQLite project 权威 + ACP list 缓存 + 视图从零重建（heartbeat 对账 / reproject）+ degraded 降级（§8.4.1）【顾问：P0-5】 |
 | L3 未知状态盲重试 | L2 后 ACP 侧状态未知时自动重发 → 重复外部副作用 | delivery_unknown 状态 + 非幂等命令禁止盲重试（§4.4）【顾问2：P0-1】 |
 | 单二进制被误解为单进程 | server 异常退出会同时中断 instance/ACP，直接破坏 P3 | 只合并发布物；local 使用同一可执行文件的独立 `connect` 进程，后台托管使用两个 service（ADR-0001） |
 

@@ -1,8 +1,9 @@
-//! SQLite navigation catalog for project → logical session metadata.
+//! SQLite navigation catalog for project metadata.
 //!
 //! This store is deliberately separate from the existing Yjs/outbox file logs.
-//! SQLite is authoritative for navigation metadata; Registry Doc maps are a
-//! rebuildable projection owned by `ProjectService`.
+//! SQLite is authoritative for project navigation metadata; session catalog facts
+//! come from ACP `session/list` (ADR-0003). Registry Doc maps are a rebuildable
+//! projection owned by `ProjectService`.
 
 use std::fs::{File, OpenOptions};
 use std::path::{Path, PathBuf};
@@ -56,6 +57,7 @@ pub struct ProjectRecord {
     pub archived_at: Option<String>,
 }
 
+/// In-memory Registry projection carrier; not persisted after schema v7.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProjectSessionRecord {
     pub id: String,
@@ -93,9 +95,8 @@ pub struct SessionRuntimeRecord {
     pub retired_at: Option<String>,
 }
 
-/// 活跃 runtime chat 的视图重建投影（`session_runtime_history` ×
-/// `project_sessions` × `projects` JOIN 产物）。server 重启后用于重建
-/// ChatRegistry / Registry Doc `chats` 段（无状态投影，§恢复路径）。
+/// 活跃 runtime chat 的视图重建投影（内存态；server 重启后由 ChatRegistry 与
+/// ACP `session/list` 重建，不再从 SQLite 恢复）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuntimeChatView {
     pub chat_id: String,
@@ -256,25 +257,6 @@ fn project_from_row(r: sqlx::sqlite::SqliteRow) -> ProjectRecord {
         created_at: r.get(4),
         updated_at: r.get(5),
         archived_at: r.get(6),
-    }
-}
-
-fn session_from_row(r: sqlx::sqlite::SqliteRow) -> ProjectSessionRecord {
-    ProjectSessionRecord {
-        id: r.get(0),
-        project_id: r.get(1),
-        acp_session_id: r.get(2),
-        acp_title: r.get(3),
-        custom_name: r.get(4),
-        hub_title: r.get(5),
-        lifecycle: r.get(6),
-        created_at: r.get(7),
-        updated_at: r.get(8),
-        last_opened_at: r.get(9),
-        last_chat_id: r.get(10),
-        failure_code: r.get(11),
-        origin: r.get(12),
-        archived_at: r.get(13),
     }
 }
 

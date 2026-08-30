@@ -8,7 +8,7 @@ test('sidebar import candidates are cwd-scoped and exclude catalog sessions', ()
     { sessionId: 'b', cwd: '/repo' },
     { sessionId: 'c', cwd: '/other' },
   ];
-  const catalog = [{ acpSessionId: 'a' }];
+  const catalog = [{ id: 'a' }];
   const unimported = unimportedSessions(sessions, catalog);
   assert.deepEqual(importCandidates(unimported, '/repo').map((item) => item.sessionId), ['b']);
 });

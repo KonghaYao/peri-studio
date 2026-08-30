@@ -247,8 +247,12 @@ impl SessionDiscovery {
             entry.bound_chat_id = None;
         }
         if let Some(projects) = self.projects.read().await.clone() {
-            if let Err(error) = projects.refresh_acp_titles(&entries).await {
-                warn!(error = ?error, "ACP session title metadata refresh failed");
+            if let Ok(project_list) = projects.metadata().list_projects().await {
+                if let Some(project) = project_list.into_iter().find(|p| p.cwd == cwd) {
+                    let _ = projects
+                        .refresh_project_catalog(&project.id, &entries)
+                        .await;
+                }
             }
         }
         self.chats

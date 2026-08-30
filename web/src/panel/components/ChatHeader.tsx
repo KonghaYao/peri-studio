@@ -11,7 +11,7 @@ export type ChatHeaderProps = { launch?: boolean; onOpenNavigation?: () => void;
 export function ChatHeader(props: ChatHeaderProps) {
   const logical = () => projectSessions().find((s) => s.id === selectedSessionId());
   const title = () => logical()
-    ? sessionDisplayTitle(logical()!.title, logical()!.acpSessionId || logical()!.id)
+    ? sessionDisplayTitle(logical()!.title, logical()!.id)
     : chatHead()?.chat?.title || 'New conversation';
   const runtime = () => connectedRuntimeState({
     hasSession: !!logical(),

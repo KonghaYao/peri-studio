@@ -325,3 +325,30 @@ async fn raw_frame_without_session_id_still_dropped() {
         }
     ));
 }
+
+#[tokio::test]
+async fn mcp_app_tool_result_cache_clears_with_chat() {
+    let env = env().await;
+    let source = "x".repeat(5000);
+    env.relay
+        .remember_mcp_app_tool_result(
+            S1,
+            "tool-1",
+            json!({
+                "content": [{"type": "text", "text": "ok"}],
+                "structuredContent": {"source": source}
+            }),
+        )
+        .await;
+    let cached = env
+        .relay
+        .mcp_app_tool_result(S1, "tool-1")
+        .await
+        .expect("cached first-paint result");
+    assert_eq!(
+        cached["structuredContent"]["source"].as_str().unwrap().len(),
+        5000
+    );
+    env.relay.clear_mcp_app_tool_results(S1).await;
+    assert!(env.relay.mcp_app_tool_result(S1, "tool-1").await.is_none());
+}

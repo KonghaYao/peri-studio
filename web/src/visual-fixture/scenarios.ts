@@ -157,11 +157,11 @@ const projects: ProjectInfo[] = [
 ];
 
 const sessions: ProjectSessionInfo[] = [
-  { id: 'session-current', projectId: 'project-perihelion', acpSessionId: 'acp-thread-01J5WORLDCLASSCURRENT', title: 'Refactor ACP session recovery and projection boundaries', lifecycle: 'ready', updatedAt: '2026-08-14T00:00:00Z', lastOpenedAt: '2026-08-14T00:00:00Z', activeChatId: 'chat-current', archivedAt: null },
-  { id: 'session-idle', projectId: 'project-perihelion', acpSessionId: 'acp-thread-01J5IDLESESSION', title: 'Audit tool-call readability', lifecycle: 'ready', updatedAt: '2026-08-13T03:00:00Z', lastOpenedAt: '2026-08-13T03:00:00Z', activeChatId: null, archivedAt: null },
-  { id: 'session-reconcile', projectId: 'project-perihelion', acpSessionId: null, title: 'Creation result needs manual reconciliation', lifecycle: 'reconciliation_required', updatedAt: '2026-08-12T04:00:00Z', lastOpenedAt: null, activeChatId: null, archivedAt: null },
-  { id: 'session-protocol', projectId: 'project-protocol-lab', acpSessionId: 'acp-thread-01J5PROTOCOL', title: 'Wire contract compatibility', lifecycle: 'ready', updatedAt: '2026-08-10T05:00:00Z', lastOpenedAt: '2026-08-10T05:00:00Z', activeChatId: null, archivedAt: null },
-  { id: 'session-archived', projectId: 'project-perihelion', acpSessionId: 'acp-thread-01J5ARCHIVED', title: 'Legacy UI comparison record', lifecycle: 'ready', updatedAt: '2026-07-04T05:00:00Z', lastOpenedAt: '2026-07-04T05:00:00Z', activeChatId: null, archivedAt: '2026-08-01T05:00:00Z' },
+  { id: 'acp-thread-01J5WORLDCLASSCURRENT', projectId: 'project-perihelion', title: 'Refactor ACP session recovery and projection boundaries', lifecycle: 'ready', updatedAt: '2026-08-14T00:00:00Z', lastOpenedAt: '2026-08-14T00:00:00Z', activeChatId: 'chat-current', archivedAt: null },
+  { id: 'acp-thread-01J5IDLESESSION', projectId: 'project-perihelion', title: 'Audit tool-call readability', lifecycle: 'ready', updatedAt: '2026-08-13T03:00:00Z', lastOpenedAt: '2026-08-13T03:00:00Z', activeChatId: null, archivedAt: null },
+  { id: 'session-reconcile', projectId: 'project-perihelion', title: 'Creation result needs manual reconciliation', lifecycle: 'reconciliation_required', updatedAt: '2026-08-12T04:00:00Z', lastOpenedAt: null, activeChatId: null, archivedAt: null },
+  { id: 'acp-thread-01J5PROTOCOL', projectId: 'project-protocol-lab', title: 'Wire contract compatibility', lifecycle: 'ready', updatedAt: '2026-08-10T05:00:00Z', lastOpenedAt: '2026-08-10T05:00:00Z', activeChatId: null, archivedAt: null },
+  { id: 'acp-thread-01J5ARCHIVED', projectId: 'project-perihelion', title: 'Legacy UI comparison record', lifecycle: 'ready', updatedAt: '2026-07-04T05:00:00Z', lastOpenedAt: '2026-07-04T05:00:00Z', activeChatId: null, archivedAt: '2026-08-01T05:00:00Z' },
 ];
 
 const tool = (overrides: Partial<ToolCallInfo>): ToolCallInfo => ({
@@ -331,7 +331,7 @@ function seedCatalog(): void {
 }
 
 function selectConversation(currentEntries = entries, head = control(false)): void {
-  setSelectedSessionId('session-current');
+  setSelectedSessionId('acp-thread-01J5WORLDCLASSCURRENT');
   setSelectedCid('chat-current');
   setRuntimeDocsState({ chat: true, control: true });
   setChatEntries(currentEntries);

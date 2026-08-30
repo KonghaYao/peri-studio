@@ -8,6 +8,9 @@ import {
   installMcpApps,
   liveMcpApp,
   maybeOpenCompletedMcpTool,
+  mcpUiInitializeResult,
+  asCallToolResult,
+  asToolInputParams,
   openMcpApp,
   ownsMcpAppsError,
   resetMcpAppsState,
@@ -75,6 +78,40 @@ describe('mcp apps frame routing', () => {
     expect(acknowledge).toHaveBeenCalledWith({ commandId, status: 'committed' });
   });
 
+  it('mcp_app_resource prefers ephemeral toolResult over the Chat Doc snapshot', () => {
+    const { acknowledge, lastCommandId } = installTestDeps();
+    openMcpApp('chat-1', 'tool-1', {}, { content: [{ type: 'text', text: '{"truncated":true' }] });
+    handleMcpAppSession({
+      t: 'mcp_app_session',
+      commandId: lastCommandId(),
+      chatId: 'chat-1',
+      toolCallId: 'tool-1',
+      appSessionId: 'app-1',
+      serverId: 'fixture',
+      resourceUri: 'ui://fixture/dashboard',
+    } as never);
+    const resourceCommandId = lastCommandId();
+    const source = 'export default function App() { return null }';
+    handleMcpAppResource({
+      t: 'mcp_app_resource',
+      commandId: resourceCommandId,
+      chatId: 'chat-1',
+      appSessionId: 'app-1',
+      html: '<html></html>',
+      mimeType: 'text/html;profile=mcp-app',
+      toolResult: {
+        content: [{ type: 'text', text: 'ok' }],
+        structuredContent: { source, canvasId: 'c1' },
+      },
+    } as never);
+    expect(liveMcpApp('tool-1')?.html).toBe('<html></html>');
+    expect(liveMcpApp('tool-1')?.toolResult).toEqual({
+      content: [{ type: 'text', text: 'ok' }],
+      structuredContent: { source, canvasId: 'c1' },
+    });
+    expect(acknowledge).toHaveBeenCalledWith({ commandId: resourceCommandId, status: 'committed' });
+  });
+
   it('mcp_app_resource ignores stale queries and other chats', () => {
     const { acknowledge } = installTestDeps();
     openMcpApp('chat-1', 'tool-1', {}, {});
@@ -137,7 +174,7 @@ describe('mcp apps helpers', () => {
     expect(sendAction).toHaveBeenCalledTimes(2);
   });
 
-  it('handleMcpAppCallResult forwards inner JSON-RPC payload', () => {
+  it('handleMcpAppCallResult resolves the matching tools/call with inner result', async () => {
     const { acknowledge, lastCommandId } = installTestDeps();
     openMcpApp('chat-1', 'tool-1', {}, {});
     handleMcpAppSession({
@@ -149,15 +186,13 @@ describe('mcp apps helpers', () => {
       serverId: 'fixture',
       resourceUri: 'ui://fixture/dashboard',
     } as never);
-    callMcpAppTool('app-1', {
+    const resultPromise = callMcpAppTool('app-1', {
       jsonrpc: '2.0',
       id: 'app-call-1',
       method: 'tools/call',
       params: { name: 'get-time', arguments: {} },
     });
     const callCommandId = lastCommandId();
-    const listener = vi.fn();
-    window.addEventListener('peri-mcp-app-call-result', listener as EventListener);
     handleMcpAppCallResult({
       t: 'mcp_app_call_result',
       commandId: callCommandId,
@@ -169,14 +204,36 @@ describe('mcp apps helpers', () => {
         result: { content: [{ type: 'text', text: 'ok' }] },
       },
     } as never);
-    expect(listener).toHaveBeenCalledOnce();
-    const detail = (listener.mock.calls[0][0] as CustomEvent).detail;
-    expect(detail.result).toEqual({
-      jsonrpc: '2.0',
-      id: 'app-call-1',
-      result: { content: [{ type: 'text', text: 'ok' }] },
+    await expect(resultPromise).resolves.toEqual({
+      content: [{ type: 'text', text: 'ok' }],
     });
     expect(acknowledge).toHaveBeenCalledWith({ commandId: callCommandId, status: 'committed' });
-    window.removeEventListener('peri-mcp-app-call-result', listener as EventListener);
+  });
+});
+
+describe('mcpUiInitializeResult', () => {
+  it('includes hostInfo.version and hostCapabilities for App Bridge', () => {
+    const result = mcpUiInitializeResult('light');
+    expect(result.protocolVersion).toBe('2026-01-26');
+    expect(result.hostInfo).toEqual({ name: 'peri-studio', version: '0.2.0' });
+    expect(result.hostCapabilities).toEqual({ openLinks: {}, serverTools: {} });
+    expect((result.hostContext as { theme: string }).theme).toBe('light');
+  });
+});
+
+describe('app bridge payloads', () => {
+  it('asCallToolResult wraps strings so params stay an object', () => {
+    expect(asCallToolResult('hello')).toEqual({ content: [{ type: 'text', text: 'hello' }] });
+    expect(asCallToolResult({ content: [{ type: 'text', text: 'ok' }] }).content).toEqual([{ type: 'text', text: 'ok' }]);
+    expect(asCallToolResult({ canvasId: 'c1', source: 'export default function App() { return null }' })).toEqual({
+      content: [{ type: 'text', text: JSON.stringify({ canvasId: 'c1', source: 'export default function App() { return null }' }) }],
+      structuredContent: { canvasId: 'c1', source: 'export default function App() { return null }' },
+    });
+    expect(asCallToolResult(null)).toEqual({ content: [] });
+  });
+
+  it('asToolInputParams always returns an arguments object', () => {
+    expect(asToolInputParams({ city: 'SF' })).toEqual({ arguments: { city: 'SF' } });
+    expect(asToolInputParams('x')).toEqual({ arguments: {} });
   });
 });

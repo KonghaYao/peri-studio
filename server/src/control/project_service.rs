@@ -2,12 +2,11 @@
 
 use std::sync::Arc;
 
-use peri_studio_proto::schema::{
-    ProjectSessionSummary, ProjectSummary, SessionSummaryProjection, WorkspaceSummary,
-};
+use peri_studio_proto::schema::{ProjectSummary, SessionSummaryProjection, WorkspaceSummary};
 use thiserror::Error;
 
-use crate::persist::metadata::{MetadataError, MetadataStore, ProjectRecord, ProjectSessionRecord};
+use crate::control::{CatalogSession, ChatRegistry, SessionCatalog};
+use crate::persist::metadata::{MetadataError, MetadataStore, ProjectRecord};
 use crate::state::registry::{RegistryError, RegistryState};
 
 #[derive(Debug, Error)]
@@ -22,14 +21,31 @@ pub enum ProjectServiceError {
 pub struct ProjectService {
     metadata: Arc<MetadataStore>,
     registry: RegistryState,
+    catalog: SessionCatalog,
+    chats: ChatRegistry,
 }
 
 impl ProjectService {
-    pub fn new(metadata: Arc<MetadataStore>, registry: RegistryState) -> Self {
-        Self { metadata, registry }
+    pub fn new(
+        metadata: Arc<MetadataStore>,
+        registry: RegistryState,
+        catalog: SessionCatalog,
+        chats: ChatRegistry,
+    ) -> Self {
+        Self {
+            metadata,
+            registry,
+            catalog,
+            chats,
+        }
     }
+
     pub fn metadata(&self) -> &Arc<MetadataStore> {
         &self.metadata
+    }
+
+    pub fn catalog(&self) -> &SessionCatalog {
+        &self.catalog
     }
 
     pub async fn import_legacy_workspaces(&self) -> Result<(), ProjectServiceError> {
@@ -54,52 +70,6 @@ impl ProjectService {
         }
         self.metadata
             .mark_import_complete(SOURCE, imported, 0)
-            .await?;
-        self.reproject().await
-    }
-
-    /// Imports only legacy sessions whose cwd names exactly one live project.
-    /// Empty/ambiguous cwd evidence is counted as skipped and never guessed.
-    pub async fn import_legacy_sessions(&self) -> Result<(), ProjectServiceError> {
-        const SOURCE: &str = "registry-sessions-v1-exact-cwd";
-        if self.metadata.import_completed(SOURCE).await? {
-            return Ok(());
-        }
-        let projects = self.metadata.list_projects().await?;
-        let mut imported = 0i64;
-        let mut skipped = 0i64;
-        for session in self.registry.list_legacy_sessions().await? {
-            let matches: Vec<_> = projects
-                .iter()
-                .filter(|p| {
-                    p.archived_at.is_none() && !session.cwd.is_empty() && p.cwd == session.cwd
-                })
-                .collect();
-            if matches.len() != 1 || session.session_id.trim().is_empty() {
-                skipped += 1;
-                continue;
-            }
-            let logical_id = uuid::Uuid::new_v5(
-                &uuid::Uuid::NAMESPACE_URL,
-                format!("peri-studio:legacy-session:{}", session.session_id).as_bytes(),
-            )
-            .to_string();
-            if self
-                .metadata
-                .import_session(
-                    &logical_id,
-                    &matches[0].id,
-                    &session.session_id,
-                    &session.title,
-                    &session.updated_at,
-                )
-                .await?
-            {
-                imported += 1;
-            }
-        }
-        self.metadata
-            .mark_import_complete(SOURCE, imported, skipped)
             .await?;
         self.reproject().await
     }
@@ -148,54 +118,25 @@ impl ProjectService {
         Ok(self.metadata.rename_project(id, name).await?)
     }
 
-    pub async fn rename_session_metadata(
-        &self,
-        id: &str,
-        name: &str,
-    ) -> Result<(), ProjectServiceError> {
-        Ok(self.metadata.rename_session(id, name).await?)
-    }
-
-    pub async fn archive_session_metadata(&self, id: &str) -> Result<(), ProjectServiceError> {
-        Ok(self.metadata.archive_session(id).await?)
-    }
-
-    pub async fn restore_session_metadata(&self, id: &str) -> Result<(), ProjectServiceError> {
-        Ok(self.metadata.restore_session(id).await?)
-    }
-
     pub async fn archive_project(&self, id: &str) -> Result<(), ProjectServiceError> {
         self.metadata.archive_project(id).await?;
         self.reproject().await
     }
 
-    pub async fn rename_session(&self, id: &str, name: &str) -> Result<(), ProjectServiceError> {
-        self.metadata.rename_session(id, name).await?;
+    /// Refreshes the in-memory ACP catalog for one project and reprojects when
+    /// list facts changed.
+    pub async fn refresh_project_catalog(
+        &self,
+        project_id: &str,
+        sessions: &[SessionSummaryProjection],
+    ) -> Result<(), ProjectServiceError> {
+        self.catalog.refresh(project_id, sessions).await;
         self.reproject().await
     }
 
-    /// Refreshes ACP-derived titles for sessions already admitted to the hub
-    /// catalog. SQLite remains authoritative; Registry is rebuilt only when an
-    /// exact durable id changed, and user aliases continue to win at display.
-    pub async fn refresh_acp_titles(
-        &self,
-        sessions: &[SessionSummaryProjection],
-    ) -> Result<u64, ProjectServiceError> {
-        let titles: Vec<_> = sessions
-            .iter()
-            .map(|session| (session.session_id.clone(), session.title.clone()))
-            .collect();
-        let changed = self.metadata.update_acp_titles(&titles).await?;
-        let (generation, projected_generation) = self.metadata.generation().await?;
-        if changed > 0 || generation != projected_generation {
-            self.reproject().await?;
-        }
-        Ok(changed)
-    }
-
     /// Derives a restrained Hub fallback from the first dispatched user
-    /// prompt. It never mutates the ACP thread title and never outranks a user
-    /// alias or a meaningful ACP-owned title.
+    /// prompt. It never mutates the ACP thread title and never outranks a
+    /// meaningful ACP-owned title.
     pub async fn seed_prompt_title(
         &self,
         acp_session_id: &str,
@@ -204,9 +145,8 @@ impl ProjectService {
         let Some(title) = prompt_title(prompt) else {
             return Ok(false);
         };
-        let changed = self.metadata.seed_hub_title(acp_session_id, &title).await?;
-        let (generation, projected_generation) = self.metadata.generation().await?;
-        if changed || generation != projected_generation {
+        let changed = self.catalog.seed_hub_title(acp_session_id, &title).await;
+        if changed {
             self.reproject().await?;
         }
         Ok(changed)
@@ -215,12 +155,8 @@ impl ProjectService {
     pub async fn reproject(&self) -> Result<(), ProjectServiceError> {
         let snapshot = self.metadata.snapshot().await?;
         let projects = snapshot.projects.into_iter().map(project_summary).collect();
-        let sessions = snapshot
-            .sessions
-            .into_iter()
-            .filter(|session| session.origin != "legacy_hidden")
-            .map(session_summary)
-            .collect();
+        let sessions =
+            SessionCatalog::project_summaries(self.catalog.list_all().await, &self.chats).await;
         self.registry.replace_projects(projects, sessions).await?;
         self.metadata.mark_projected(snapshot.generation).await?;
         Ok(())
@@ -240,6 +176,27 @@ impl ProjectService {
             })
             .await?;
         Ok(())
+    }
+
+    pub async fn record_opened_session(&self, acp_session_id: &str) -> Result<(), ProjectServiceError> {
+        self.catalog.touch_opened(acp_session_id).await;
+        self.reproject().await
+    }
+
+    pub async fn upsert_catalog_session(
+        &self,
+        session: CatalogSession,
+    ) -> Result<(), ProjectServiceError> {
+        self.catalog.upsert(session).await;
+        self.reproject().await
+    }
+
+    pub async fn bound_chat_ids(&self, acp_session_id: &str) -> Vec<String> {
+        self.chats
+            .resolve(acp_session_id)
+            .await
+            .into_iter()
+            .collect()
     }
 }
 
@@ -272,35 +229,20 @@ fn project_summary(p: ProjectRecord) -> ProjectSummary {
         archived_at: p.archived_at,
     }
 }
-fn session_summary(s: ProjectSessionRecord) -> ProjectSessionSummary {
-    let title = s.display_title();
-    ProjectSessionSummary {
-        id: s.id,
-        project_id: s.project_id,
-        acp_session_id: s.acp_session_id,
-        title,
-        lifecycle: s.lifecycle,
-        updated_at: s.updated_at,
-        last_opened_at: s.last_opened_at,
-        active_chat_id: s.last_chat_id,
-        archived_at: s.archived_at,
-    }
-}
 
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
 
-    use peri_studio_proto::schema::SessionSummaryProjection;
     use tempfile::tempdir;
 
-    use super::{prompt_title, ProjectService};
-    use crate::control::StoreSink;
+    use super::{prompt_title, ProjectService, SessionCatalog};
+    use crate::control::{ChatRegistry, StoreSink};
     use crate::persist::metadata::MetadataStore;
     use crate::state::doc_manager::{BatchConfig, DocManager};
 
     #[tokio::test]
-    async fn title_refresh_repairs_an_existing_projection_gap() {
+    async fn catalog_refresh_repairs_registry_projection() {
         let dir = tempdir().unwrap();
         let sink = Arc::new(StoreSink::new());
         let doc = DocManager::new(BatchConfig::default(), sink);
@@ -309,40 +251,28 @@ mod tests {
             .create_project("p", "Demo", "/", "local")
             .await
             .unwrap();
-        metadata
-            .import_session("s", "p", "acp", "Old", "2026-08-13T00:00:00Z")
-            .await
-            .unwrap();
-        let service = ProjectService::new(metadata.clone(), doc.registry());
+        let catalog = SessionCatalog::new();
+        let chats = ChatRegistry::new(doc.registry());
+        let service = ProjectService::new(metadata.clone(), doc.registry(), catalog, chats);
         service.reproject().await.unwrap();
 
-        metadata.update_acp_title("acp", "New").await.unwrap();
-        let (generation, projected) = metadata.generation().await.unwrap();
-        assert!(
-            generation > projected,
-            "fixture must contain a projection gap"
-        );
-
-        assert_eq!(
-            service
-                .refresh_acp_titles(&[SessionSummaryProjection {
+        service
+            .refresh_project_catalog(
+                "p",
+                &[peri_studio_proto::schema::SessionSummaryProjection {
                     session_id: "acp".into(),
                     title: "New".into(),
                     status: String::new(),
-                    updated_at: String::new(),
+                    updated_at: "2026-08-13T00:00:00Z".into(),
                     cwd: "/".into(),
                     bound_chat_id: None,
-                }])
-                .await
-                .unwrap(),
-            0,
-            "same title is a metadata no-op"
-        );
-        let (generation_after, projected_after) = metadata.generation().await.unwrap();
-        assert_eq!(
-            generation_after, projected_after,
-            "no-op poll repairs pending projection"
-        );
+                }],
+            )
+            .await
+            .unwrap();
+        let session = service.catalog().get("acp").await.unwrap();
+        assert_eq!(session.title, "New");
+        assert_eq!(session.project_id, "p");
     }
 
     #[test]

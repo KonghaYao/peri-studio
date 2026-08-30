@@ -1,6 +1,6 @@
 # Peri Studio 术语集合（定制版）
 
-> 状态：v1.3 定稿（2026-08-30，SSH 机器挂载产品面）
+> 状态：v1.4 定稿（2026-08-30，ACP 权威会话目录，[ADR-0003](adr/0003-acp-authoritative-session-catalog.md)）
 > 定位：本仓库**唯一权威术语表**。代码标识符、ws 协议帧、磁盘持久化格式、
 > 文档一律以本表为准。旧术语仅在「历史数据/迁移说明」中出现。
 > 原则：**session 一词特指 ACP 进程内的会话**，其余原 session 概念全部更名。
@@ -15,13 +15,13 @@
 | **instance**（实例） | 一个 ws 连接所注册的 machine：运行 ACP 进程的独立运行角色，outbound ws 连 server，接收 spawn/kill 指令 | `instance_id` | machine / `machine_id` |
 | **session**（会话） | **ACP 进程内的会话**：agent 进程收到 `session/new` 后建立，`session/prompt` 等 JSON-RPC 方法的作用域 | `session_id`（agent 返回） | acp_session_id（所指实体，名不变） |
 | **project**（项目） | Web 侧持久分组；继承 workspace 的名称、cwd 与 instance 路由语义，由 SQLite 作为事实源 | `project_id`（hub 生成） | workspace（兼容投影继续保留） |
-| **project session**（项目会话） | Web 左栏中的持久会话入口；记录 ACP session、显示标题与最近一次 runtime chat，但自身不等同于 ACP session 或 chat | `project_session_id`（协议字段为 `sessionId`） | 无 |
+| **project session**（项目会话） | Web 左栏中的持久会话入口；**即 ACP durable thread 在目录中的投影**，不等同于一次 runtime `chat_id`。目录事实由 ACP `session/list` + agent 磁盘承载；Hub 不再生成独立 logical id | wire `sessionId` = ACP `session_id`（与 `acp_session_id` 同值） | hub `project_session_id` |
 | turn（轮） | 一轮 prompt → 回复 | `turn_id` | 不变 |
 | entry / block / tool_call | 消息条目 / 内容块 / 工具调用 | `entry_id` / `block_id` | 不变 |
 
 **归属关系**：一个 chat → 归属 1 个 instance（`instance_id` 字段，create 时指定，缺省 `local`）+ 绑定 1 个 ACP session（binding：`session_id → chat_id`）。instance 可同时承载多个 chat（心跳 `alive_sessions`），ACP 一进程一会话。
 
-Web 项目模型额外遵守：一个 project → 多个 project session；一个 project session → 至多一个 ACP session，并可在不同时刻激活为不同的 runtime chat。server 重启后旧 chat 不复活，打开 project session 时用持久的 ACP session id 执行 `session/load` 并建立新 binding。
+Web 项目模型额外遵守：一个 project → 多个 project session（各对应一个 ACP durable `session_id`）；打开 project session 时在 project cwd 上 `spawn + session/load`，可在不同时刻绑定不同的 runtime `chat_id`。server 重启后旧 chat 不复活，目录缓存为空直至 `session/discover` 或用户打开 project 触发 `session/list`；归档与自定义展示名仅存浏览器 IndexedDB（`{principalId, projectId, acpSessionId}`），server 不持久化。
 
 ## 1.1 产品与运行形态
 
@@ -123,7 +123,8 @@ Web 项目模型额外遵守：一个 project → 多个 project session；一�
 
 - `chat_id`：server 容器 UUID（原 session_id）；`chats/` 目录、`chat:` Doc 前缀
 - `session_id`：ACP 进程内会话（原 acp_session_id 所指）；仅 ACP 侧代码允许
-- `project_session_id`：SQLite/Registry 中的持久 Web 会话身份；wire action/ack 为兼容 Web API 使用 `sessionId`
+- `sessionId`（wire / Web API）：**即 ACP durable `session_id`**；Registry 投影字段 `acp_session_id` 保留兼容。`project_session_id` 仅作历史迁移术语，Hub 不再生成
+- 用户偏好（`archived`、`customName`）：浏览器 IndexedDB，按 `{principalId, projectId, acpSessionId}` 隔离；读侧与 server 目录投影合并，不落 SQLite
 - `instance_id`：ws 注册的 instance（原 machine_id）；`local` 为本机，SSH 挂载为 `ssh_<ulid>`
 - UI 中文文案：会话列表 → **对话**列表；已 hello 的运行角色 → **实例**
 - Web 英文管理页标题与页签：**Machines**（侧栏入口须带可见短标签，不是帮助图标）；

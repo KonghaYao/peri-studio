@@ -1,6 +1,4 @@
-//! metadata 项目/会话目录 CRUD（§目录）：项目 CRUD、导入面
-//! （import_project / import_session / import_explicit_session / 导入完成
-//! 标记）与 ACP 会话查找。
+//! metadata 项目目录 CRUD（§目录）：项目 CRUD、导入面与导入完成标记。
 //!
 //! 本文件是 [`MetadataStore`](super::MetadataStore) 的实现段（结构拆分，
 //! 行为语义不变）。
@@ -33,32 +31,6 @@ impl MetadataStore {
             .bind(&rec.id).bind(&rec.name).bind(&rec.cwd).bind(&rec.instance_id)
             .bind(&rec.created_at).bind(&rec.updated_at).bind(&rec.archived_at).execute(&self.pool).await?;
         Ok(result.rows_affected() == 1)
-    }
-
-    pub async fn import_session(
-        &self,
-        id: &str,
-        project_id: &str,
-        acp_session_id: &str,
-        title: &str,
-        updated_at: &str,
-    ) -> Result<bool> {
-        let created = if updated_at.is_empty() {
-            now()
-        } else {
-            updated_at.to_string()
-        };
-        // 条件 bump 与插入同事务（§5 原子性）。
-        let mut tx = self.pool.begin().await?;
-        let result = sqlx::query("INSERT OR IGNORE INTO project_sessions(id,project_id,acp_session_id,acp_title,lifecycle,created_at,updated_at,origin) VALUES(?,?,?,?,?,?,?,?)")
-            .bind(id).bind(project_id).bind(acp_session_id).bind(title).bind("ready")
-            .bind(&created).bind(&created).bind("legacy_hidden").execute(&mut *tx).await?;
-        let inserted = result.rows_affected() == 1;
-        if inserted {
-            bump_generation_tx(&mut tx).await?;
-        }
-        tx.commit().await?;
-        Ok(inserted)
     }
 
     pub async fn archive_project(&self, id: &str) -> Result<()> {
@@ -130,69 +102,6 @@ impl MetadataStore {
     pub async fn list_projects(&self) -> Result<Vec<ProjectRecord>> {
         Ok(sqlx::query("SELECT id,name,cwd,instance_id,created_at,updated_at,archived_at FROM projects ORDER BY updated_at DESC,id")
             .fetch_all(&self.pool).await?.into_iter().map(project_from_row).collect())
-    }
-
-    pub async fn import_explicit_session(
-        &self,
-        id: &str,
-        project_id: &str,
-        acp_session_id: &str,
-        title: &str,
-        updated_at: &str,
-    ) -> Result<ProjectSessionRecord> {
-        let ts = now();
-        let created = if updated_at.is_empty() {
-            &ts
-        } else {
-            updated_at
-        };
-        let mut tx = self.pool.begin().await?;
-        let existing =
-            sqlx::query("SELECT project_id,origin FROM project_sessions WHERE acp_session_id=?")
-                .bind(acp_session_id)
-                .fetch_optional(&mut *tx)
-                .await?;
-        let changed = if let Some(existing) = existing {
-            let existing_project: String = existing.get(0);
-            let origin: String = existing.get(1);
-            if existing_project != project_id {
-                return Err(MetadataError::Conflict(format!(
-                    "ACP session {acp_session_id} already belongs to project {existing_project}"
-                )));
-            }
-            if origin == "legacy_hidden" {
-                sqlx::query("UPDATE project_sessions SET acp_title=?,lifecycle='ready',updated_at=?,origin='imported' WHERE acp_session_id=?")
-                    .bind(title).bind(&ts).bind(acp_session_id).execute(&mut *tx).await?;
-                true
-            } else {
-                false
-            }
-        } else {
-            sqlx::query(
-                "INSERT INTO project_sessions(id,project_id,acp_session_id,acp_title,lifecycle,created_at,updated_at,origin) VALUES(?,?,?,?,?,?,?,'imported')",
-            )
-            .bind(id).bind(project_id).bind(acp_session_id).bind(title).bind("ready")
-            .bind(created).bind(&ts).execute(&mut *tx).await?;
-            true
-        };
-        if changed {
-            bump_generation_tx(&mut tx).await?;
-        }
-        tx.commit().await?;
-        self.find_by_acp_id(acp_session_id)
-            .await?
-            .ok_or_else(|| MetadataError::NotFound(acp_session_id.into()))
-    }
-
-    pub async fn find_by_acp_id(
-        &self,
-        acp_session_id: &str,
-    ) -> Result<Option<ProjectSessionRecord>> {
-        let row = sqlx::query("SELECT id,project_id,acp_session_id,acp_title,custom_name,hub_title,lifecycle,created_at,updated_at,last_opened_at,last_chat_id,failure_code,origin,archived_at FROM project_sessions WHERE acp_session_id=?")
-            .bind(acp_session_id)
-            .fetch_optional(&self.pool)
-            .await?;
-        Ok(row.map(session_from_row))
     }
 
     pub async fn import_completed(&self, source: &str) -> Result<bool> {

@@ -1,4 +1,5 @@
 import * as H from './protocol';
+import type { SessionPreferenceKey } from './session-preferences';
 
 export type CatalogFrame = ReturnType<typeof H.action>;
 
@@ -35,6 +36,11 @@ export interface CatalogActionsDependencies {
   onSessionArchived: (sessionId: string) => void;
   discoveringProjectId: () => string | null;
   setDiscoveringProjectId: (projectId: string | null) => void;
+  principalId: () => string | null;
+  resolveSessionKey: (sessionId: string) => SessionPreferenceKey | null;
+  setSessionArchivedPreference: (key: SessionPreferenceKey, archived: boolean) => void;
+  setSessionCustomNamePreference: (key: SessionPreferenceKey, name: string) => void;
+  onSessionPreferencesChanged: () => void;
 }
 
 export interface MutationCallbacks {
@@ -47,9 +53,8 @@ const committed = (ack: CatalogAck) => ack.status === 'committed' || ack.status 
 /**
  * Owns the complete browser lifecycle for project/session catalog commands.
  *
- * The Solid store supplies transport and local selection side effects, but it
- * cannot vary authorization gates, uncertain-result wording, retry identity or
- * terminal acknowledgement semantics between otherwise equivalent mutations.
+ * Session archive/restore/rename are local IndexedDB preferences (ADR-0003).
+ * Server mutations remain for discover/import and project-level catalog ops.
  */
 export class CatalogActions {
   constructor(private readonly deps: CatalogActionsDependencies) {}
@@ -92,24 +97,25 @@ export class CatalogActions {
   }
 
   renameSession(sessionId: string, name: string, callbacks: MutationCallbacks = {}): boolean {
+    const key = this.deps.resolveSessionKey(sessionId);
+    if (!key) return false;
     if (!name.trim()) return false;
-    if (!this.canMutate('Read-only mode cannot rename sessions')) return false;
-    const frame = H.persistedSessionRename(sessionId, name.trim());
-    return this.sendMutation(frame, 'session/rename', 'Session renamed', {
-      title: 'Session rename result not yet confirmed',
-      detail: 'The name may already be saved. Your input is preserved; wait for the sidebar to sync.',
-    }, callbacks);
+    this.deps.setSessionCustomNamePreference(key, name.trim());
+    this.deps.onSessionPreferencesChanged();
+    this.deps.toast('Session renamed');
+    callbacks.onCommitted?.();
+    return true;
   }
 
   setSessionArchived(sessionId: string, archive: boolean, callbacks: MutationCallbacks = {}): boolean {
-    if (!this.canMutate('Read-only mode cannot modify sessions')) return false;
-    const frame = archive ? H.persistedSessionArchive(sessionId) : H.persistedSessionRestore(sessionId);
-    return this.sendMutation(frame, archive ? 'session/archive' : 'session/restore', archive ? 'Session archived' : 'Session restored', {
-      title: archive ? 'Session archive result not yet confirmed' : 'Session restore result not yet confirmed',
-      detail: archive
-        ? 'The session may already be archived. Wait for the sidebar to sync, then use the original request to confirm.'
-        : 'The session may already be restored. Wait for the sidebar to sync, then use the original request to confirm.',
-    }, callbacks, archive ? () => this.deps.onSessionArchived(sessionId) : undefined);
+    const key = this.deps.resolveSessionKey(sessionId);
+    if (!key) return false;
+    this.deps.setSessionArchivedPreference(key, archive);
+    this.deps.onSessionPreferencesChanged();
+    if (archive) this.deps.onSessionArchived(sessionId);
+    this.deps.toast(archive ? 'Session archived' : 'Session restored');
+    callbacks.onCommitted?.();
+    return true;
   }
 
   importSession(

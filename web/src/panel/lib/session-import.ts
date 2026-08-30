@@ -1,7 +1,7 @@
 import type { ProjectSessionInfo, SessionSummaryInfo } from './registry-view';
 
 export function unimportedSessions(sessions: SessionSummaryInfo[], projectSessions: ProjectSessionInfo[]): SessionSummaryInfo[] {
-  const imported = new Set(projectSessions.map((session) => session.acpSessionId).filter(Boolean));
+  const imported = new Set(projectSessions.map((session) => session.id));
   return sessions.filter((candidate) => !imported.has(candidate.sessionId));
 }
 

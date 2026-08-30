@@ -188,6 +188,10 @@ impl McpAppsControl {
                         html,
                         mime_type,
                         csp,
+                        tool_result: self
+                            .relay
+                            .mcp_app_tool_result(&session.chat_id, &session.tool_call_id)
+                            .await,
                     }),
                     Err(message) => Frame::ActionError(apps_error(
                         command_id,

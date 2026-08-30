@@ -298,6 +298,10 @@ pub(crate) fn all_frames() -> Vec<Frame> {
             html: "<html><body>app</body></html>".into(),
             mime_type: "text/html;profile=mcp-app".into(),
             csp: Some("default-src 'none'".into()),
+            tool_result: Some(serde_json::json!({
+                "content": [{"type": "text", "text": "ok"}],
+                "structuredContent": {"source": "export default function App() { return null }"}
+            })),
         }),
         Frame::McpAppCallResult(McpAppCallResultFrame {
             command_id: "mcp-app-call-1".into(),

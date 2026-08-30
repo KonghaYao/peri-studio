@@ -125,7 +125,7 @@ impl SessionCatalogSync {
                         == query.current_active.as_deref())
                     .then(|| query.chat_id.clone());
                 }
-                self.refresh_catalog_titles(&entries).await;
+                self.refresh_catalog_entries(&query.cwd, &entries).await;
                 audit(
                     "session.list",
                     Some(&query.command_id),
@@ -209,7 +209,7 @@ impl SessionCatalogSync {
     async fn poll_target(&self, instance_id: &str, chat_id: &str, cwd: &str) {
         match self.request(instance_id, chat_id, cwd).await {
             Ok(entries) => {
-                self.refresh_catalog_titles(&entries).await;
+                self.refresh_catalog_entries(cwd, &entries).await;
                 if let Err(error) = self.chats.registry().apply_sessions(entries).await {
                     warn!(chat_id, instance_id, ?error, "session poll apply failed");
                 }
@@ -263,12 +263,21 @@ impl SessionCatalogSync {
         }
     }
 
-    async fn refresh_catalog_titles(&self, entries: &[SessionSummaryProjection]) {
+    async fn refresh_catalog_entries(&self, cwd: &str, entries: &[SessionSummaryProjection]) {
         let Some(projects) = self.projects.read().await.clone() else {
             return;
         };
-        if let Err(error) = projects.refresh_acp_titles(entries).await {
-            warn!(?error, "ACP session title metadata refresh failed");
+        let Ok(project_list) = projects.metadata().list_projects().await else {
+            return;
+        };
+        let Some(project) = project_list.into_iter().find(|p| p.cwd == cwd) else {
+            return;
+        };
+        if let Err(error) = projects
+            .refresh_project_catalog(&project.id, entries)
+            .await
+        {
+            warn!(?error, "ACP session catalog refresh failed");
         }
     }
 }

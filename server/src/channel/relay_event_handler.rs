@@ -169,6 +169,9 @@ pub(super) struct RelayInner {
     pub(super) pending_permissions: RwLock<HashMap<String, PendingPermissionReq>>,
     pub(super) pending_elicitations: RwLock<HashMap<String, PendingElicitationReq>>,
     pub(super) oauth: OAuthControl,
+    /// MCP App 首屏 CallToolResult（chat_id → tool_call_id → result）。
+    /// Chat Doc 4KB 会省略；随 chat tear-down 丢弃，不落盘。
+    pub(super) mcp_app_tool_results: RwLock<HashMap<String, HashMap<String, serde_json::Value>>>,
     /// 丢弃计数（§17.1 指标；**按原因分桶**，review #6：调用方传入的稳定
     /// 原因——`epoch_mismatch`/`binding_missing`/`oauth_replay_rejected` 等
     /// ——各自独立计数，运维可区分丢弃分布）。
@@ -194,6 +197,7 @@ impl RelayEventHandler {
                 pending_permissions: RwLock::new(HashMap::new()),
                 pending_elicitations: RwLock::new(HashMap::new()),
                 oauth: OAuthControl::new(),
+                mcp_app_tool_results: RwLock::new(HashMap::new()),
                 dropped: StdRwLock::new(HashMap::new()),
             }),
         }
@@ -397,6 +401,47 @@ impl RelayEventHandler {
         }
     }
 
+    /// Chat Doc 4KB 会省略工具结果；MCP App 首屏走瞬时缓存（上限与 HTML 同为 1 MiB）。
+    pub(super) const MCP_APP_RESULT_MAX_BYTES: usize = 1024 * 1024;
+
+    /// 从 ACP 规范化事件记住完整 CallToolResult（不写 Yjs）。
+    pub(super) async fn remember_mcp_app_tool_result(
+        &self,
+        chat_id: &str,
+        tool_call_id: &str,
+        result: serde_json::Value,
+    ) {
+        let wrapped = as_mcp_app_call_tool_result(result);
+        let Some(bytes) = serde_json::to_vec(&wrapped).ok().map(|body| body.len()) else {
+            return;
+        };
+        if bytes == 0 || bytes > Self::MCP_APP_RESULT_MAX_BYTES {
+            return;
+        }
+        let mut by_chat = self.inner.mcp_app_tool_results.write().await;
+        by_chat
+            .entry(chat_id.to_string())
+            .or_default()
+            .insert(tool_call_id.to_string(), wrapped);
+    }
+
+    pub(super) async fn mcp_app_tool_result(
+        &self,
+        chat_id: &str,
+        tool_call_id: &str,
+    ) -> Option<serde_json::Value> {
+        self.inner
+            .mcp_app_tool_results
+            .read()
+            .await
+            .get(chat_id)
+            .and_then(|by_tool| by_tool.get(tool_call_id).cloned())
+    }
+
+    pub(super) async fn clear_mcp_app_tool_results(&self, chat_id: &str) {
+        self.inner.mcp_app_tool_results.write().await.remove(chat_id);
+    }
+
     /// Exact, explicit retrieval of the transient authorization URL.
     pub(super) async fn oauth_authorization(
         &self,
@@ -409,6 +454,23 @@ impl RelayEventHandler {
             .authorization(command_id, chat_id, flow_id)
             .await
     }
+}
+
+/// 把 ACP `rawOutput` 收成 App Bridge 需要的 CallToolResult。
+/// 已有 `content[]` 则原样保留；否则包一层并把原值放进 `structuredContent`。
+pub(super) fn as_mcp_app_call_tool_result(value: serde_json::Value) -> serde_json::Value {
+    if value.get("content").and_then(|content| content.as_array()).is_some() {
+        return value;
+    }
+    if value.is_object() {
+        return serde_json::json!({
+            "content": [{ "type": "text", "text": value.to_string() }],
+            "structuredContent": value,
+        });
+    }
+    serde_json::json!({
+        "content": [{ "type": "text", "text": value.to_string() }],
+    })
 }
 
 #[cfg(test)]

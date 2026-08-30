@@ -4,9 +4,8 @@ import type { ProjectSessionInfo } from '../lib/registry-view';
 import { ProjectSessionRow, type ProjectSessionRowProps } from './ProjectSessionRow';
 
 const session: ProjectSessionInfo = {
-  id: 'hub-abcdef12',
+  id: 'acp-12345678',
   projectId: 'p1',
-  acpSessionId: 'acp-12345678',
   title: 'Architecture refactor',
   lifecycle: 'ready',
   updatedAt: '2026-08-13T10:00:00Z',
@@ -70,7 +69,7 @@ describe('ProjectSessionRow', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /^Architecture refactor/ }));
 
-    expect(value.onOpen).toHaveBeenCalledWith('hub-abcdef12', value.onNavigate);
+    expect(value.onOpen).toHaveBeenCalledWith('acp-12345678', value.onNavigate);
     expect(value.onNavigate).not.toHaveBeenCalled();
   });
 
@@ -83,7 +82,7 @@ describe('ProjectSessionRow', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /^Architecture refactor/ }));
 
-    expect(value.onSelectRuntime).toHaveBeenCalledWith('hub-abcdef12', 'chat-live');
+    expect(value.onSelectRuntime).toHaveBeenCalledWith('acp-12345678', 'chat-live');
     expect(value.onNavigate).toHaveBeenCalledOnce();
     expect(value.onOpen).not.toHaveBeenCalled();
   });
@@ -108,7 +107,7 @@ describe('ProjectSessionRow', () => {
     fireEvent.input(screen.getByRole('textbox', { name: 'Session name' }), { target: { value: '  New name  ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    expect(value.onRename).toHaveBeenCalledWith('hub-abcdef12', 'New name', expect.any(Function), expect.any(Function));
+    expect(value.onRename).toHaveBeenCalledWith('acp-12345678', 'New name', expect.any(Function), expect.any(Function));
     expect(value.onRenameOpenChange).not.toHaveBeenCalledWith(false);
     commit?.();
     expect(value.onRenameOpenChange).toHaveBeenCalledWith(false);
@@ -121,7 +120,7 @@ describe('ProjectSessionRow', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: 'Archive session' }));
 
     expect(value.onMenuOpenChange).toHaveBeenCalledWith(false);
-    expect(value.onArchiveRequest).toHaveBeenCalledWith('hub-abcdef12');
+    expect(value.onArchiveRequest).toHaveBeenCalledWith('acp-12345678');
   });
 
   it('does not allow a live runtime to be hidden from the sidebar', () => {

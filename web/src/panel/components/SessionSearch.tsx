@@ -45,14 +45,14 @@ export function SessionSearch(props: { open: boolean; onClose: () => void; onSel
             aria-label="Search results"
             options={results()}
             optionValue="id"
-            optionTextValue={(session) => sessionDisplayTitle(session.title, session.acpSessionId || session.id)}
+            optionTextValue={(session) => sessionDisplayTitle(session.title, session.id)}
             optionDisabled={(session) => (readOnly() && !session.activeChatId) || session.lifecycle !== 'ready' || !!openingSessionId()}
             value={selectedSessionId() ? [selectedSessionId()!] : []}
             onChange={select}
             shouldFocusWrap
             renderItem={(item) => <ListboxItem item={item} class="flex w-full cursor-pointer items-center justify-between gap-18 rounded-9 border-0 bg-transparent px-12 py-10 text-left text-text-primary hover:bg-hover focus-visible:bg-hover data-[disabled]:cursor-not-allowed data-[disabled]:opacity-52 pointer-coarse:min-h-44">
-              <span class="grid min-w-0 gap-3"><ListboxItemLabel as="strong" class="overflow-hidden text-ellipsis whitespace-nowrap">{sessionDisplayTitle(item.rawValue.title, item.rawValue.acpSessionId || item.rawValue.id)}</ListboxItemLabel><ListboxItemDescription as="small" class="overflow-hidden text-ellipsis whitespace-nowrap text-12 text-text-muted">{item.rawValue.project?.name || 'Unknown project'} · {formatRelativeTime(item.rawValue.lastOpenedAt || item.rawValue.updatedAt)}</ListboxItemDescription></span>
-              <Show when={openingSessionId() === item.rawValue.id} fallback={<code class="flex-none text-12 text-text-muted">…{shortSessionId(item.rawValue.acpSessionId || item.rawValue.id)}</code>}><Spinner label="Opening" /></Show>
+              <span class="grid min-w-0 gap-3"><ListboxItemLabel as="strong" class="overflow-hidden text-ellipsis whitespace-nowrap">{sessionDisplayTitle(item.rawValue.title, item.rawValue.id)}</ListboxItemLabel><ListboxItemDescription as="small" class="overflow-hidden text-ellipsis whitespace-nowrap text-12 text-text-muted">{item.rawValue.project?.name || 'Unknown project'} · {formatRelativeTime(item.rawValue.lastOpenedAt || item.rawValue.updatedAt)}</ListboxItemDescription></span>
+              <Show when={openingSessionId() === item.rawValue.id} fallback={<code class="flex-none text-12 text-text-muted">…{shortSessionId(item.rawValue.id)}</code>}><Spinner label="Opening" /></Show>
             </ListboxItem>}
           />
         </Show>

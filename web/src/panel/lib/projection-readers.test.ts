@@ -5,7 +5,7 @@ import { parsePermissionExpiration, renderControl } from './control-view';
 import { renderRegistry } from './registry-view';
 
 describe('renderRegistry project session catalog', () => {
-  it('preserves the independent archive marker without changing runtime lifecycle', () => {
+  it('normalizes ACP session id and ignores server archive markers', () => {
     const doc = new Y.Doc();
     const sessions = new Y.Map<unknown>();
     const session = new Y.Map<unknown>();
@@ -18,7 +18,8 @@ describe('renderRegistry project session catalog', () => {
     session.set('archived_at', '2026-08-14T00:00:00Z');
 
     const [projectSession] = renderRegistry(doc).projectSessions;
-    expect(projectSession.archivedAt).toBe('2026-08-14T00:00:00Z');
+    expect(projectSession.id).toBe('acp-1');
+    expect(projectSession.archivedAt).toBeUndefined();
     expect(projectSession.lifecycle).toBe('ready');
   });
 });

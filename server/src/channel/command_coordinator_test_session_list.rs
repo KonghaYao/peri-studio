@@ -18,16 +18,7 @@ async fn session_list_queries_agent_and_returns_frame() {
         .create_project("project-1", "Demo", "/", "local")
         .await
         .unwrap();
-    env.metadata
-        .import_session(
-            "logical-1",
-            "project-1",
-            "acp-1",
-            "旧标题",
-            "2026-08-09T00:00:00Z",
-        )
-        .await
-        .unwrap();
+    seed_catalog_session(&env.projects, "project-1", "acp-1", "旧标题").await;
     let cid = uuid::Uuid::new_v4().to_string();
     let action = ActionEnvelope::SessionList {
         command_id: cid.clone(),
@@ -103,16 +94,15 @@ async fn session_list_queries_agent_and_returns_frame() {
         }
         other => panic!("expected session_list frame, got {other:?}"),
     }
-    let persisted = env
-        .metadata
-        .session("logical-1")
+    let session = env
+        .projects
+        .catalog()
+        .get("acp-1")
         .await
-        .unwrap()
         .expect("catalog session remains present");
     assert_eq!(
-        persisted.acp_title.as_deref(),
-        Some("已打开会话"),
-        "session/list ACP title must persist by exact durable session id"
+        session.title, "已打开会话",
+        "session/list ACP title must refresh the in-memory catalog"
     );
 }
 

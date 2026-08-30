@@ -31,6 +31,7 @@ use crate::config::Config;
 use crate::control::ChatRegistry;
 use crate::control::InstanceRegistry;
 use crate::control::ProjectService;
+use crate::control::SessionCatalog;
 use crate::persist::metadata::MetadataStore;
 use crate::persist::Store;
 use crate::state::doc_manager::{BatchConfig, DocManager};
@@ -133,6 +134,7 @@ impl Hub {
         );
         // 3. 注册表/协调器/广播器。
         let chats = Arc::new(ChatRegistry::new(registry.clone()));
+        let catalog = SessionCatalog::new();
         let instance = Arc::new(InstanceRegistry::new(
             cfg.offline_timeout,
             cfg.spawn_timeout,
@@ -157,7 +159,12 @@ impl Hub {
             cfg.initialize_timeout,
             cfg.binding_timeout,
         ));
-        let projects = ProjectService::new(metadata.clone(), registry.clone());
+        let projects = ProjectService::new(
+            metadata.clone(),
+            registry.clone(),
+            catalog,
+            chats.as_ref().clone(),
+        );
         coordinator.install_project_service(projects.clone()).await;
         coordinator.install_history_sink(sink.clone()).await;
         coordinator
@@ -172,10 +179,6 @@ impl Hub {
         coordinator.rebuild_workspaces().await;
         projects
             .import_legacy_workspaces()
-            .await
-            .map_err(|e| HubError::Store(e.to_string()))?;
-        projects
-            .import_legacy_sessions()
             .await
             .map_err(|e| HubError::Store(e.to_string()))?;
         metadata
@@ -257,54 +260,14 @@ impl Hub {
         })
     }
 
-    /// 启动重建（§无状态投影 恢复路径）：chat 视图从 SQLite
-    /// `session_runtime_history`（retired_at IS NULL 的活跃 runtime）全量
-    /// 重建——进程内 ChatRegistry 与 Registry Doc `chats` 段同步恢复。
-    ///
-    /// 状态语义：**accepting + 绑定 acp_session_id**——live chat 的 ACP 进程
-    /// 在 server 崩溃期间继续运行（§8.3 不变），instance 重连并提交首份
-    /// authoritative heartbeat 后，`resume_instance_chats` 只命中非终态 chat，必须保持非终态才能恢复
-    /// 视图。终态 chat 不在 runtime 历史（retired）中，不重建；用户显式
-    /// 打开时由 spawn + `session/load` 兜底。重建不完整会阻止 server 启动，
-    /// 不能让缺失的 Registry 事实被后续 hello 提前标成 Healthy。
+    /// Server restart no longer rebuilds chat views from SQLite (ADR-0003).
+    /// ChatRegistry starts empty; live runtimes are recovered via instance
+    /// hello reconciliation and explicit `session/open` + `session/load`.
     async fn rebuild_chat_views(
-        metadata: &MetadataStore,
-        chats: &ChatRegistry,
+        _metadata: &MetadataStore,
+        _chats: &ChatRegistry,
     ) -> Result<HashSet<String>, HubError> {
-        let runtimes = metadata
-            .list_runtime_chats()
-            .await
-            .map_err(|error| HubError::Store(error.to_string()))?;
-        let mut restored = 0usize;
-        let mut recovery_instances = HashSet::new();
-        for runtime in runtimes {
-            chats
-                .register(
-                    &runtime.chat_id,
-                    &runtime.instance_id,
-                    Some(&runtime.title),
-                    &runtime.cwd,
-                    runtime.workspace_id.as_deref(),
-                )
-                .await
-                .map_err(|error| HubError::Store(error.to_string()))?;
-            if let Some(acp_session_id) = runtime.acp_session_id.as_deref() {
-                // 视图重建不构成进程存活证据：恢复的 chat 先按未确认处理，
-                // 等 instance 首份 heartbeat 对账（alive_sessions）裁决后再复用为
-                // live runtime（§8.3）。未确认的 chat 打开时走 spawn +
-                // `session/load` 恢复。
-                chats
-                    .bind(&runtime.chat_id, acp_session_id, false)
-                    .await
-                    .map_err(|error| HubError::Store(error.to_string()))?;
-            }
-            recovery_instances.insert(runtime.instance_id);
-            restored += 1;
-        }
-        if restored > 0 {
-            info!(count = restored, "chat views rebuilt from metadata.sqlite3");
-        }
-        Ok(recovery_instances)
+        Ok(HashSet::new())
     }
 
     /// 运行入口（main `run_with` 调用）：绑定监听 → 周期任务 + gateway 并发
@@ -363,7 +326,12 @@ impl Hub {
         let sandbox_port = crate::web::sandbox::sandbox_port(addr.port());
         let sandbox_addr = SocketAddr::new(addr.ip(), sandbox_port);
         let sandbox_listener = match tokio::net::TcpListener::bind(sandbox_addr).await {
-            Ok(listener) => Some(listener),
+            Ok(listener) => {
+                if let Ok(bound) = listener.local_addr() {
+                    crate::web::sandbox::remember_bound_port(bound.port());
+                }
+                Some(listener)
+            }
             Err(error) => {
                 warn!(%sandbox_addr, ?error, "MCP Apps sandbox listener failed; inline Apps disabled");
                 None

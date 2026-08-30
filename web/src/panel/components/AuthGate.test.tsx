@@ -12,7 +12,10 @@ const transport = vi.hoisted(() => ({
   connectWithCookie: vi.fn(),
 }));
 
-vi.mock('../store', () => ({ resetAuthenticatedSession: transport.resetAuthenticatedSession }));
+vi.mock('../store', () => ({
+  resetAuthenticatedSession: transport.resetAuthenticatedSession,
+  reconcileStoredSessionPreferences: vi.fn(),
+}));
 vi.mock('../lib/connection', () => ({ connectWithCookie: transport.connectWithCookie }));
 
 import { AuthGate } from './AuthGate';

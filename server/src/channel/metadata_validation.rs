@@ -7,20 +7,19 @@
 
 use peri_studio_proto::ack::ErrorCode;
 use peri_studio_proto::action::ActionEnvelope;
-use uuid::Uuid;
 
 use crate::channel::metadata_command_processor::MetadataCommandProcessor;
 use crate::control::ProjectService;
-use crate::persist::metadata::{ProjectRecord, ProjectSessionRecord};
+use crate::persist::metadata::ProjectRecord;
 use crate::protocol::validate_cwd;
 
 use super::command_coordinator::{action_error, SubmitAck};
 
 /// 预校验产物（submit 后续 hint/activate 计算与 action 执行使用）。
 pub(super) struct PreparedValidation {
-    pub prepared_create: Option<(ProjectRecord, String)>,
-    /// 元组顺序与原 submit 一致：(project, session, live_chat)。
-    pub prepared_open: Option<(ProjectRecord, ProjectSessionRecord, Option<String>)>,
+    pub prepared_create: Option<ProjectRecord>,
+    /// 元组顺序：(project, acp_session_id, live_chat)。
+    pub prepared_open: Option<(ProjectRecord, String, Option<String>)>,
 }
 
 impl MetadataCommandProcessor {
@@ -96,10 +95,7 @@ impl MetadataCommandProcessor {
             }
             ActionEnvelope::PersistedSessionRename { payload, .. } => {
                 if payload.name.trim().is_empty()
-                    || !matches!(
-                        projects.metadata().session(&payload.session_id).await,
-                        Ok(Some(ref session)) if session.archived_at.is_none()
-                    )
+                    || projects.catalog().get(&payload.session_id).await.is_none()
                 {
                     return Err(SubmitAck::Failed(action_error(
                         command_id,
@@ -110,41 +106,34 @@ impl MetadataCommandProcessor {
                 }
             }
             ActionEnvelope::PersistedSessionArchive { payload, .. } => {
-                let Some(session) = projects
-                    .metadata()
-                    .session(&payload.session_id)
-                    .await
-                    .ok()
-                    .flatten()
-                    .filter(|session| session.archived_at.is_none())
-                else {
+                if projects.catalog().get(&payload.session_id).await.is_none() {
                     return Err(SubmitAck::Failed(action_error(
                         command_id,
                         ErrorCode::InvalidState,
                         "active session not found",
                         false,
                     )));
-                };
-                if let Some(acp_id) = session.acp_session_id.as_deref() {
-                    if self.chats.has_live_acp_session(acp_id).await {
-                        return Err(SubmitAck::Failed(action_error(
-                            command_id,
-                            ErrorCode::InvalidState,
-                            "session has a running instance; close it before archiving",
-                            false,
-                        )));
-                    }
+                }
+                if self.chats.has_live_acp_session(&payload.session_id).await {
+                    return Err(SubmitAck::Failed(action_error(
+                        command_id,
+                        ErrorCode::InvalidState,
+                        "session has a running instance; close it before archiving",
+                        false,
+                    )));
                 }
             }
             ActionEnvelope::PersistedSessionRestore { payload, .. } => {
-                let restorable = match projects.metadata().session(&payload.session_id).await {
-                    Ok(Some(session)) if session.archived_at.is_some() => matches!(
-                        projects.metadata().project(&session.project_id).await,
-                        Ok(Some(ref project)) if project.archived_at.is_none()
-                    ),
-                    _ => false,
+                let Some(session) = projects.catalog().get(&payload.session_id).await else {
+                    return Err(SubmitAck::Failed(action_error(
+                        command_id,
+                        ErrorCode::InvalidState,
+                        "archived session or active project not found",
+                        false,
+                    )));
                 };
-                if !restorable {
+                if !matches!(projects.metadata().project(&session.project_id).await, Ok(Some(ref project)) if project.archived_at.is_none())
+                {
                     return Err(SubmitAck::Failed(action_error(
                         command_id,
                         ErrorCode::InvalidState,
@@ -205,17 +194,11 @@ impl MetadataCommandProcessor {
                         false,
                     )));
                 };
-                prepared_create = Some((project, Uuid::new_v4().to_string()));
+                prepared_create = Some(project);
             }
             ActionEnvelope::PersistedSessionOpen { payload, .. } => {
-                let Some(session) = projects
-                    .metadata()
-                    .session(&payload.session_id)
-                    .await
-                    .ok()
-                    .flatten()
-                    .filter(|session| session.archived_at.is_none())
-                else {
+                let acp_id = payload.session_id.trim();
+                let Some(session) = projects.catalog().get(acp_id).await else {
                     return Err(SubmitAck::Failed(action_error(
                         command_id,
                         ErrorCode::InvalidState,
@@ -223,37 +206,13 @@ impl MetadataCommandProcessor {
                         false,
                     )));
                 };
-                // 打开闸门：`ready` 正常打开；`reconciliation_required`/`failed`
-                // 是激活中断/失败后的可恢复状态（acp_session_id 仍在 sqlite，
-                // §8.5 经 spawn + `session/load` 恢复）——**不得**以 "not ready"
-                // 拒绝，否则服务重启/激活失败后会话永远无法再次打开。
-                // `pending`/`activating` 表示激活进行中，拒绝以防并发重复激活。
-                if session.acp_session_id.is_none() {
+                if session.lifecycle == "activating" {
                     return Err(SubmitAck::Failed(action_error(
                         command_id,
                         ErrorCode::InvalidState,
-                        "session has no ACP identity",
+                        "session activation in progress",
                         false,
                     )));
-                }
-                match session.lifecycle.as_str() {
-                    "ready" | "reconciliation_required" | "failed" => {}
-                    "pending" | "activating" => {
-                        return Err(SubmitAck::Failed(action_error(
-                            command_id,
-                            ErrorCode::InvalidState,
-                            "session activation in progress",
-                            false,
-                        )));
-                    }
-                    _ => {
-                        return Err(SubmitAck::Failed(action_error(
-                            command_id,
-                            ErrorCode::InvalidState,
-                            "session is not ready",
-                            false,
-                        )));
-                    }
                 }
                 let Some(project) = projects
                     .metadata()
@@ -270,23 +229,20 @@ impl MetadataCommandProcessor {
                         false,
                     )));
                 };
-                let live_chat = if let (Some(chat), Some(acp)) = (
-                    session.last_chat_id.as_deref(),
-                    session.acp_session_id.as_deref(),
-                ) {
+                let live_chat = if let Some(chat) = self.chats.resolve(acp_id).await {
                     self.chats
-                        .entry(chat)
+                        .entry(&chat)
                         .await
-                        .filter(|e| {
-                            !e.state.is_terminal()
-                                && e.runtime_confirmed
-                                && e.session_id.as_deref() == Some(acp)
+                        .filter(|entry| {
+                            !entry.state.is_terminal()
+                                && entry.runtime_confirmed
+                                && entry.session_id.as_deref() == Some(acp_id)
                         })
-                        .map(|_| chat.to_string())
+                        .map(|_| chat)
                 } else {
                     None
                 };
-                prepared_open = Some((project, session, live_chat));
+                prepared_open = Some((project, acp_id.to_string(), live_chat));
             }
             _ => unreachable!("dispatch guarantees metadata action"),
         }

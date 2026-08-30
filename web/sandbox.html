@@ -12,9 +12,10 @@
   <body>
     <script type="module">
       // 异源沙箱代理：sandbox-proxy-ready ↔ sandbox-resource-ready 在本地处理；
-      // 其余 View↔Host JSON-RPC 双向透传。
+      // 其余 View↔Host JSON-RPC 双向透传（官方 App Bridge 经此后转到内层 View）。
       const hostOrigin = new URLSearchParams(location.search).get('host');
       let viewFrame = null;
+      let viewLoaded = false;
 
       const DEFAULT_CSP = [
         "default-src 'none'",
@@ -23,6 +24,8 @@
         "img-src 'self' data:",
         "media-src 'self' data:",
         "connect-src 'none'",
+        "frame-src 'none'",
+        "object-src 'none'",
       ].join('; ');
 
       function postToHost(message) {
@@ -30,7 +33,30 @@
         window.parent.postMessage(message, hostOrigin);
       }
 
+      function cspHeader(csp) {
+        if (typeof csp === 'string' && csp.trim()) return csp;
+        if (csp && typeof csp === 'object') {
+          const connect = Array.isArray(csp.connectDomains) && csp.connectDomains.length
+            ? `'self' ${csp.connectDomains.join(' ')}`
+            : "'none'";
+          const resources = Array.isArray(csp.resourceDomains) ? csp.resourceDomains.join(' ') : '';
+          const img = resources ? `'self' data: ${resources}` : "'self' data:";
+          return [
+            "default-src 'none'",
+            "script-src 'self' 'unsafe-inline'",
+            "style-src 'self' 'unsafe-inline'",
+            `img-src ${img}`,
+            `media-src ${img}`,
+            `connect-src ${connect}`,
+            "frame-src 'none'",
+            "object-src 'none'",
+          ].join('; ');
+        }
+        return DEFAULT_CSP;
+      }
+
       function injectCsp(html, csp) {
+        if (/http-equiv=["']Content-Security-Policy["']/i.test(html)) return html;
         const meta = `<meta http-equiv="Content-Security-Policy" content="${csp.replace(/"/g, '&quot;')}">`;
         if (/<head[^>]*>/i.test(html)) {
           return html.replace(/<head[^>]*>/i, (head) => `${head}${meta}`);
@@ -39,9 +65,11 @@
       }
 
       function loadView(html, csp) {
+        if (viewLoaded) return;
+        viewLoaded = true;
         const iframe = document.createElement('iframe');
         iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
-        iframe.srcdoc = injectCsp(html, csp || DEFAULT_CSP);
+        iframe.srcdoc = injectCsp(html, cspHeader(csp));
         document.body.replaceChildren(iframe);
         viewFrame = iframe;
       }
@@ -70,7 +98,7 @@
         viewFrame?.contentWindow?.postMessage(data, location.origin);
       });
 
-      postToHost({ jsonrpc: '2.0', method: 'ui/notifications/sandbox-proxy-ready' });
+      postToHost({ jsonrpc: '2.0', method: 'ui/notifications/sandbox-proxy-ready', params: {} });
     </script>
   </body>
 </html>

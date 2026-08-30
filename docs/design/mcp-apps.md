@@ -1,6 +1,6 @@
 # MCP Apps 对接计划
 
-> 状态：实现计划（调研见 [research/mcp-apps.md](../research/mcp-apps.md)）
+> 状态：实现计划（调研见 [research/mcp-apps.md](../research/mcp-apps.md)；落地经验与 e2e 踩坑见 [mcp-apps-host.md](./mcp-apps-host.md)）
 > 日期：2026-08-30
 > Peri 契约：[`KonghaYao/peri` spec/issues/2026-08-27-mcp-apps-stdio-relay.md](https://github.com/KonghaYao/peri/blob/main/spec/issues/2026-08-27-mcp-apps-stdio-relay.md)、e2e [`side-projects/mcp-apps/check-peri.ts`](https://github.com/KonghaYao/peri/blob/main/side-projects/mcp-apps/check-peri.ts)
 > 规范：MCP Apps `2026-01-26`（`io.modelcontextprotocol/ui`）
@@ -85,7 +85,7 @@ OAuth 仍由 `McpControl` 独占。Apps 是另一次工具调用的 UI，不是�
 | tag | 内容 | 落盘 |
 |-----|------|------|
 | `mcp_app_session` | `{ commandId, chatId, toolCallId, appSessionId, serverId, resourceUri }` | 否。Hub 可把 `appSessionId`/`resourceUri` 有界写入对应 tool_call 公开字段 |
-| `mcp_app_resource` | `{ commandId, chatId, appSessionId, html, mimeType, csp? }` | **否**。对标 `mcp_oauth_authorization` |
+| `mcp_app_resource` | `{ commandId, chatId, appSessionId, html, mimeType, csp?, toolResult? }` | **否**。对标 `mcp_oauth_authorization`。`toolResult` 是首屏 CallToolResult（可嵌套 `structuredContent`）；Chat Doc 4KB 预算不够 canvas TSX |
 
 HTML 上限建议 1 MiB（instance 单行 4 MiB，Hub 再收紧）。超限公开错误，不截断渲染。
 

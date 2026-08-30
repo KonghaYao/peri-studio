@@ -40,15 +40,18 @@ export interface ProjectInfo {
   archivedAt: string | null;
 }
 
+/** ACP 权威会话目录项：`id` 即 ACP durable session id（ADR-0003）。 */
 export interface ProjectSessionInfo {
+  /** ACP durable session id；与 Registry `project_sessions` map 键同值。 */
   id: string;
   projectId: string;
-  acpSessionId: string | null;
   title: string;
   lifecycle: string;
   updatedAt: string | null;
   lastOpenedAt: string | null;
+  /** ChatRegistry 运行态投影；非 SQLite 持久字段。 */
   activeChatId: string | null;
+  /** Web IndexedDB 用户偏好合并结果；registry 投影不携带。 */
   archivedAt?: string | null;
 }
 
@@ -137,19 +140,18 @@ export function renderRegistry(doc: Y.Doc): RegistryView {
   });
   projects.sort((left, right) => String(right.updatedAt || '').localeCompare(String(left.updatedAt || '')));
 
-  asMap(root.get('project_sessions'))?.forEach((value, id) => {
+  asMap(root.get('project_sessions'))?.forEach((value, mapKey) => {
     const map = asMap(value);
     if (!map) return;
+    const acpId = getStr(map, 'acp_session_id') || mapKey;
     projectSessions.push({
-      id,
+      id: acpId,
       projectId: getStr(map, 'project_id') || '',
-      acpSessionId: getStr(map, 'acp_session_id'),
       title: getStr(map, 'title') || 'New conversation',
       lifecycle: getStr(map, 'lifecycle') || 'pending',
       updatedAt: getStr(map, 'updated_at'),
       lastOpenedAt: getStr(map, 'last_opened_at'),
       activeChatId: getStr(map, 'active_chat_id'),
-      archivedAt: getStr(map, 'archived_at'),
     });
   });
   projectSessions.sort((left, right) => String(right.lastOpenedAt || right.updatedAt || '').localeCompare(String(left.lastOpenedAt || left.updatedAt || '')));

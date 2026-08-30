@@ -1,5 +1,6 @@
-//! Web 产品主旅程：cookie auth → project/session create → server restart →
-//! catalog 恢复 → 精确 session/load 重新激活。
+//! Web 产品主旅程（ADR-0003）：cookie auth → project/session create →
+//! server restart → `session/discover` 重建 ACP 目录缓存 → `session/open` +
+//! 精确 `session/load` 重新激活。
 
 mod common;
 
@@ -284,15 +285,23 @@ async fn web_project_session_survives_restart_and_rebinds_exact_acp_id() -> Resu
         wait_terminal(&mut client, Duration::from_secs(35)).await?,
         "session/create",
     )?;
-    let logical_session_id = session_ack
+    let acp_session_id = session_ack
         .session_id
         .ok_or_else(|| "session/create committed 缺 sessionId".to_string())?;
     let first_chat_id = session_ack
         .chat_id
         .ok_or_else(|| "session/create committed 缺 chatId".to_string())?;
-    let acp_session_id = session_ack
-        .acp_session_id
-        .ok_or_else(|| "session/create committed 缺 acpSessionId".to_string())?;
+    assert_eq!(
+        session_ack.acp_session_id.as_deref(),
+        Some(acp_session_id.as_str()),
+        "wire sessionId 即 ACP durable id（ADR-0003）"
+    );
+    env.set_discoverable_sessions(&[serde_json::json!({
+        "sessionId": acp_session_id,
+        "title": "Restart contract",
+        "status": "ready",
+        "updatedAt": "2026-08-13T10:00:00Z"
+    })]);
 
     let prompt_command = uuid::Uuid::new_v4().to_string();
     client
@@ -321,45 +330,18 @@ async fn web_project_session_survives_restart_and_rebinds_exact_acp_id() -> Resu
         .await?;
     committed(
         wait_terminal(&mut client, Duration::from_secs(20)).await?,
-        "chat/close before archive",
+        "chat/close before restart",
     )?;
 
-    let archive_command = uuid::Uuid::new_v4().to_string();
-    client
-        .send(&Frame::Action(ActionEnvelope::PersistedSessionArchive {
-            command_id: archive_command,
-            payload: PersistedSessionOpenPayload {
-                session_id: logical_session_id.clone(),
-            },
-        }))
-        .await?;
-    let archive_ack = committed(
-        wait_terminal(&mut client, Duration::from_secs(20)).await?,
-        "session/archive",
-    )?;
-    assert_eq!(
-        archive_ack.session_id.as_deref(),
-        Some(logical_session_id.as_str())
-    );
-
-    let forbidden_open_command = uuid::Uuid::new_v4().to_string();
-    client
-        .send(&Frame::Action(ActionEnvelope::PersistedSessionOpen {
-            command_id: forbidden_open_command,
-            payload: PersistedSessionOpenPayload {
-                session_id: logical_session_id.clone(),
-            },
-        }))
-        .await?;
-    match wait_terminal(&mut client, Duration::from_secs(10)).await? {
-        Frame::ActionError(error) => assert_eq!(
-            error.code,
-            peri_studio_proto::ack::ErrorCode::InvalidState,
-            "archived session must be fail-closed on the wire"
-        ),
-        other => return Err(format!("archived session unexpectedly opened: {other:?}")),
-    }
     let _ = client.ws.close(None).await;
+    let (_, pre_restart_snapshots) =
+        WsClient::connect_cookie(env.port, &cookie, &["hub:registry"]).await?;
+    let pre_restart_registry = doc_from_snapshots(&pre_restart_snapshots, "hub:registry")?;
+    assert_eq!(
+        project_session_ids(&pre_restart_registry),
+        vec![acp_session_id.clone()],
+        "create 后目录缓存应包含 ACP id"
+    );
 
     instance.kill();
     server.kill();
@@ -384,59 +366,45 @@ async fn web_project_session_survives_restart_and_rebinds_exact_acp_id() -> Resu
         project_field(&registry, &project_id, "name").as_deref(),
         Some("E2E Project")
     );
-    assert_eq!(
-        project_session_field(&registry, &logical_session_id, "acp_session_id").as_deref(),
-        Some(acp_session_id.as_str())
-    );
-    assert_eq!(
-        project_session_field(&registry, &logical_session_id, "lifecycle").as_deref(),
-        Some("ready")
-    );
     assert!(
-        project_session_field(&registry, &logical_session_id, "archived_at").is_some(),
-        "restart must preserve the independent session archive marker"
-    );
-    assert_eq!(
-        project_session_field(&registry, &logical_session_id, "active_chat_id").as_deref(),
-        Some(first_chat_id.as_str()),
-        "重启后 last_chat_id 保留（活跃 chat 权威判定）；hint 存活性由 chats 段交叉校验（web retainLiveRuntimeHints）"
+        project_session_ids(&registry).is_empty(),
+        "ADR-0003：server 重启后内存目录为空，直至 session/discover"
     );
 
-    let restore_command = uuid::Uuid::new_v4().to_string();
+    let discover_command = uuid::Uuid::new_v4().to_string();
     restored_client
-        .send(&Frame::Action(ActionEnvelope::PersistedSessionRestore {
-            command_id: restore_command,
-            payload: PersistedSessionOpenPayload {
-                session_id: logical_session_id.clone(),
+        .send(&Frame::Action(ActionEnvelope::PersistedSessionDiscover {
+            command_id: discover_command,
+            payload: ProjectArchivePayload {
+                project_id: project_id.clone(),
             },
         }))
         .await?;
-    let restore_ack = committed(
-        wait_terminal(&mut restored_client, Duration::from_secs(20)).await?,
-        "session/restore",
+    committed(
+        wait_terminal(&mut restored_client, Duration::from_secs(35)).await?,
+        "session/discover after restart",
     )?;
-    assert_eq!(
-        restore_ack.session_id.as_deref(),
-        Some(logical_session_id.as_str())
-    );
     let _ = restored_client.ws.close(None).await;
-    let (mut restored_client, restored_snapshots) =
+    let (mut restored_client, discovered_snapshots) =
         WsClient::connect_cookie(env.port, &cookie, &["hub:registry"]).await?;
-    let restored_registry = doc_from_snapshots(&restored_snapshots, "hub:registry")?;
+    let discovered_registry = doc_from_snapshots(&discovered_snapshots, "hub:registry")?;
     assert_eq!(
-        project_session_field(&restored_registry, &logical_session_id, "archived_at"),
+        project_session_ids(&discovered_registry),
+        vec![acp_session_id.clone()],
+        "discover 必须从 ACP session/list 重建目录"
+    );
+    assert_eq!(
+        project_session_field(&discovered_registry, &acp_session_id, "acp_session_id").as_deref(),
+        Some(acp_session_id.as_str())
+    );
+    assert_eq!(
+        project_session_field(&discovered_registry, &acp_session_id, "lifecycle").as_deref(),
+        Some("ready")
+    );
+    assert_eq!(
+        project_session_field(&discovered_registry, &acp_session_id, "active_chat_id"),
         None,
-        "a fresh Registry snapshot must prove the restore projection barrier"
-    );
-    assert_eq!(
-        project_session_field(&restored_registry, &logical_session_id, "acp_session_id").as_deref(),
-        Some(acp_session_id.as_str()),
-        "restore must preserve the durable ACP identity"
-    );
-    assert_eq!(
-        project_session_field(&restored_registry, &logical_session_id, "lifecycle").as_deref(),
-        Some("ready"),
-        "restore must not rewrite runtime lifecycle"
+        "重启后不得从 SQLite 恢复 last_chat_id 快路径"
     );
 
     let open_command = uuid::Uuid::new_v4().to_string();
@@ -444,7 +412,7 @@ async fn web_project_session_survives_restart_and_rebinds_exact_acp_id() -> Resu
         .send(&Frame::Action(ActionEnvelope::PersistedSessionOpen {
             command_id: open_command,
             payload: PersistedSessionOpenPayload {
-                session_id: logical_session_id.clone(),
+                session_id: acp_session_id.clone(),
             },
         }))
         .await?;
@@ -454,7 +422,7 @@ async fn web_project_session_survives_restart_and_rebinds_exact_acp_id() -> Resu
     )?;
     assert_eq!(
         open_ack.session_id.as_deref(),
-        Some(logical_session_id.as_str())
+        Some(acp_session_id.as_str())
     );
     assert_eq!(
         open_ack.acp_session_id.as_deref(),
@@ -470,7 +438,7 @@ async fn web_project_session_survives_restart_and_rebinds_exact_acp_id() -> Resu
     assert_eq!(
         audited_load_ids(&env)?,
         vec![acp_session_id.clone()],
-        "新的 ACP 进程必须在 stdin wire 上收到 SQLite 恢复出的精确 durable session id"
+        "重启后必须 spawn 新 runtime 并对 ACP wire 发出 session/load"
     );
 
     let restored_chat_doc = format!("chat:{restored_chat_id}");
@@ -532,7 +500,7 @@ async fn web_project_session_survives_restart_and_rebinds_exact_acp_id() -> Resu
     assert_eq!(logged_out.status, 401);
 
     println!(
-        "T-web-project-session-restart: PASS project={project_id} logical_session={logical_session_id} acp_session={acp_session_id}"
+        "T-web-project-session-restart: PASS project={project_id} acp_session={acp_session_id}"
     );
     Ok(())
 }
@@ -604,9 +572,10 @@ async fn web_explicit_import_survives_restart_and_loads_exact_acp_id() -> Result
         wait_terminal(&mut client, Duration::from_secs(20)).await?,
         "session/import",
     )?;
-    let logical_session_id = import_ack
+    let acp_session_id = import_ack
         .session_id
         .ok_or_else(|| "session/import committed 缺 sessionId".to_string())?;
+    assert_eq!(acp_session_id, imported_acp_id);
     assert_eq!(import_ack.acp_session_id.as_deref(), Some(imported_acp_id));
     assert_eq!(
         import_ack.chat_id, None,
@@ -619,19 +588,19 @@ async fn web_explicit_import_survives_restart_and_loads_exact_acp_id() -> Result
     let registry = doc_from_snapshots(&snapshots, "hub:registry")?;
     assert_eq!(
         project_session_ids(&registry),
-        vec![logical_session_id.clone()],
+        vec![acp_session_id.clone()],
         "未导入的 ACP 候选不得自动进入 project_sessions/侧边栏"
     );
     assert_eq!(
-        project_session_field(&registry, &logical_session_id, "acp_session_id").as_deref(),
+        project_session_field(&registry, &acp_session_id, "acp_session_id").as_deref(),
         Some(imported_acp_id)
     );
     assert_eq!(
-        project_session_field(&registry, &logical_session_id, "title").as_deref(),
+        project_session_field(&registry, &acp_session_id, "title").as_deref(),
         Some("External ACP thread")
     );
     assert_eq!(
-        project_session_field(&registry, &logical_session_id, "active_chat_id"),
+        project_session_field(&registry, &acp_session_id, "active_chat_id"),
         None
     );
     let _ = client.ws.close(None).await;
@@ -651,16 +620,38 @@ async fn web_explicit_import_survives_restart_and_loads_exact_acp_id() -> Result
     let (mut restored_client, restored_snapshots) =
         WsClient::connect_cookie(env.port, &cookie, &["hub:registry"]).await?;
     let restored_registry = doc_from_snapshots(&restored_snapshots, "hub:registry")?;
+    assert!(
+        project_session_ids(&restored_registry).is_empty(),
+        "ADR-0003：重启后内存目录为空"
+    );
+
+    let discover_command = uuid::Uuid::new_v4().to_string();
+    restored_client
+        .send(&Frame::Action(ActionEnvelope::PersistedSessionDiscover {
+            command_id: discover_command,
+            payload: ProjectArchivePayload {
+                project_id: project_id.clone(),
+            },
+        }))
+        .await?;
+    committed(
+        wait_terminal(&mut restored_client, Duration::from_secs(35)).await?,
+        "session/discover after import restart",
+    )?;
+    let _ = restored_client.ws.close(None).await;
+    let (mut restored_client, discovered_snapshots) =
+        WsClient::connect_cookie(env.port, &cookie, &["hub:registry"]).await?;
+    let discovered_registry = doc_from_snapshots(&discovered_snapshots, "hub:registry")?;
     assert_eq!(
-        project_session_ids(&restored_registry),
-        vec![logical_session_id.clone()]
+        project_session_ids(&discovered_registry),
+        vec![acp_session_id.clone()]
     );
     assert_eq!(
-        project_session_field(&restored_registry, &logical_session_id, "acp_session_id").as_deref(),
+        project_session_field(&discovered_registry, &acp_session_id, "acp_session_id").as_deref(),
         Some(imported_acp_id)
     );
     assert_eq!(
-        project_session_field(&restored_registry, &logical_session_id, "active_chat_id"),
+        project_session_field(&discovered_registry, &acp_session_id, "active_chat_id"),
         None,
         "重启后不得把导入候选冒充成存活 runtime"
     );
@@ -670,7 +661,7 @@ async fn web_explicit_import_survives_restart_and_loads_exact_acp_id() -> Result
         .send(&Frame::Action(ActionEnvelope::PersistedSessionOpen {
             command_id: open_command,
             payload: PersistedSessionOpenPayload {
-                session_id: logical_session_id.clone(),
+                session_id: acp_session_id.clone(),
             },
         }))
         .await?;
@@ -680,7 +671,7 @@ async fn web_explicit_import_survives_restart_and_loads_exact_acp_id() -> Result
     )?;
     assert_eq!(
         open_ack.session_id.as_deref(),
-        Some(logical_session_id.as_str())
+        Some(acp_session_id.as_str())
     );
     assert_eq!(open_ack.acp_session_id.as_deref(), Some(imported_acp_id));
     assert!(
@@ -694,7 +685,7 @@ async fn web_explicit_import_survives_restart_and_loads_exact_acp_id() -> Result
     );
 
     println!(
-        "T-web-explicit-import-restart: PASS project={project_id} logical_session={logical_session_id} acp_session={imported_acp_id}"
+        "T-web-explicit-import-restart: PASS project={project_id} acp_session={imported_acp_id}"
     );
     Ok(())
 }

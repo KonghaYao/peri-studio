@@ -42,6 +42,10 @@ pub struct McpAppSessionFrame {
 }
 
 /// `mcp_app_resource` 下行帧（瞬时 HTML，不落盘）。
+///
+/// `tool_result` 是首屏 CallToolResult（可含 `structuredContent`）。Chat Doc
+/// 对工具结果有 4KB 预算，canvas 一类的 TSX 会被省略；该字段走 OAuth 式瞬时
+/// 通道，**禁止**把 `structuredContent` 提升为帧顶层键（Web 解析器会拒收）。
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct McpAppResourceFrame {
@@ -52,6 +56,8 @@ pub struct McpAppResourceFrame {
     pub mime_type: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub csp: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_result: Option<serde_json::Value>,
 }
 
 /// `mcp_app_call_result` 下行帧：`peri/mcp/app` 的 raw CallToolResult（瞬时）。

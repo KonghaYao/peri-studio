@@ -57,4 +57,15 @@ describe('SessionNavigator', () => {
     expect(navigator.transition(event)).toEqual([{ type: 'forget-preference' }]);
     expect(navigator.transition(event)).toEqual([]);
   });
+
+  it('allows catalog restore again after connection loss', () => {
+    const navigator = new SessionNavigator();
+    const catalog = {
+      type: 'catalog' as const, ready: true, readOnly: false, preferredId: 'ready', selectedSessionId: null,
+      sessions: [{ id: 'ready', lifecycle: 'ready' }],
+    };
+    navigator.transition(catalog);
+    navigator.transition({ type: 'connection-lost' });
+    expect(navigator.transition(catalog)).toEqual([{ type: 'request-open', sessionId: 'ready' }]);
+  });
 });

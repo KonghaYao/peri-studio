@@ -27,6 +27,7 @@ export interface AuthActions {
 export interface AuthControllerDeps {
   /** 清空旧运行时；同一 principal 的成功重连可保留按身份隔离的持久草稿。 */
   resetSession: (options?: { preserveLocalDrafts?: boolean }) => void;
+  onPrincipalInstalled?: (principalId: string) => void;
 }
 
 export const AuthActionsContext = createContext<AuthActions>();
@@ -110,6 +111,7 @@ export function createAuthController(deps: AuthControllerDeps) {
       }
       deps.resetSession({ preserveLocalDrafts: true });
       installPrincipalRole(principal.role, principal.principalId);
+      deps.onPrincipalInstalled?.(principal.principalId);
       clearAuthInvalidation();
       setState('signed-in');
       connectWithCookie();
@@ -155,6 +157,7 @@ export function createAuthController(deps: AuthControllerDeps) {
       rememberToken(raw);
       deps.resetSession({ preserveLocalDrafts: true });
       installPrincipalRole(principal.role, principal.principalId);
+      deps.onPrincipalInstalled?.(principal.principalId);
       clearAuthInvalidation();
       setToken('');
       setState('signed-in');

@@ -94,30 +94,7 @@ async fn first_dispatched_prompt_seeds_the_hub_catalog_title() {
         .create_project("p1", "Demo", "/", "local")
         .await
         .unwrap();
-    env.metadata
-        .begin_command_with_activation(
-            "create-1",
-            "session/create",
-            "hash",
-            Some("p1"),
-            Some("logical-1"),
-            Some(crate::persist::metadata::NewSession {
-                id: "logical-1",
-                project_id: "p1",
-                title: None,
-            }),
-            Some("logical-1"),
-        )
-        .await
-        .unwrap();
-    env.metadata
-        .activation_phase("logical-1", "acp_id_durable", Some(S1), Some("acp-1"))
-        .await
-        .unwrap();
-    env.metadata
-        .finalize_session_and_command("create-1", "logical-1", "p1", "acp-1", None, S1)
-        .await
-        .unwrap();
+    seed_catalog_session(&env.projects, "p1", "acp-1", "").await;
     bound_session(&env, S1, "acp-1").await;
 
     let (tx, _rx) = mpsc::channel(8);
@@ -158,11 +135,13 @@ async fn first_dispatched_prompt_seeds_the_hub_catalog_title() {
     tokio::time::timeout(Duration::from_secs(2), async {
         loop {
             if env
-                .metadata
-                .session("logical-1")
+                .projects
+                .catalog()
+                .get("acp-1")
                 .await
-                .unwrap()
-                .is_some_and(|session| session.display_title() == "修复 session catalog 标题")
+                .is_some_and(|session| {
+                    session.hub_title.as_deref() == Some("修复 session catalog 标题")
+                })
             {
                 break;
             }

@@ -47,7 +47,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
   const renameId = () => `rename-session-${props.session.id}`;
   const displayTitle = () => sessionDisplayTitle(
     props.session.title,
-    props.session.acpSessionId || props.session.id,
+    props.session.id,
   );
   const renameValid = () => !!draft().trim();
   const loading = () => props.state.tone === 'busy';

@@ -40,7 +40,7 @@ flowchart TB
 
     PROTO["peri-studio-proto（proto/，共享协议 crate）<br/>frame · action/ack · instance · conn<br/>ysync · whitelist · hmac · schema · oauth/rewind/session"]
 
-    DB[("metadata.sqlite3<br/>projects · project_sessions<br/>session_runtime_history ...")]
+    DB[("metadata.sqlite3<br/>projects · machines<br/>metadata_commands ...")]
 
     BIN -.->|"选择角色 / 监督"| SRV
     BIN -.->|"local 拉起同一可执行文件的 connect 子进程"| INST
@@ -85,7 +85,7 @@ flowchart TB
 | --- | --- | --- | --- | --- |
 | `app/` | `peri-studio` | **唯一发布二进制** | CLI 角色选择、信号/就绪契约、local 子进程监督、【v2.16】SshBackend | `local`、`serve [--local]`、`connect <URL>`、`token`、`status` |
 | `proto/` | `peri-studio-proto` | 纯协议 crate（无异步依赖） | 帧模型、Action/Ack 信封、instance 协议 9 帧、连接生命周期、y-sync envelope、M1 帧集白名单、HMAC 双向认证原语、Y.Doc schema 类型镜像 | server / instance 编译期共享 |
-| `server/` | server 角色库 | 运行时模块 | 认证/授权、控制面（Hub）、ACPChannel 规范化、Y.Doc 聚合投影、命令协调（mcp/oauth/prompt/rewind）、唯一业务权威 `metadata.sqlite3`、内嵌 Web 面板、【v2.16】MachineService | ws `/`（浏览器）、ws `/instance`（instance）、HTTP `/api/health`、`/api/auth/session` |
+| `server/` | server 角色库 | 运行时模块 | 认证/授权、控制面（Hub）、ACPChannel 规范化、Y.Doc 聚合投影、命令协调（mcp/oauth/prompt/rewind）、SQLite project 元数据、ACP 会话 list 缓存、内嵌 Web 面板、【v2.16】MachineService | ws `/`（浏览器）、ws `/instance`（instance）、HTTP `/api/health`、`/api/auth/session` |
 | `instance/` | instance 角色库 | 运行时模块 | outbound 连 server、收 spawn/kill 指令、管理 ACP 进程树（进程组信号）、透明转发 + 断线缓冲 + 补推、心跳 | ws outbound `/instance`；stdio 对接 ACP 进程 |
 | `web/` | Web 面板 | 前端源码（Vite + SolidJS + TS，Bun 构建） | 面板 UI；构建产物 `dist/` 内嵌进 `peri-studio`，只消费 server 事实 | 仅经 server 角色暴露 |
 | `deploy/` | 部署模板 | systemd unit / launchd plist / logrotate 配置 | 同一可执行文件以两个 service 分别托管 `serve` 与 `connect`，保持故障隔离 | 面向运维，不内嵌 token |
@@ -170,8 +170,10 @@ flowchart LR
     HRT --> INSTREG --> RSTATE
     RSTATE -->|"写（单写，不从 chat Doc 聚合）"| REGDOC
     REGDOC --> BROAD --> UI
-    PROJ -->|"projects / project_sessions<br/>session_runtime_history<br/>（打开归档、退出归档、session/list 同步）"| SQL
-    SQL -->|"启动重建 list_runtime_chats<br/>（崩溃恢复）"| PROJ
+    PROJ <-->|"projects（SQLite 权威）"| SQL
+    ACP_LIST["SessionCatalogService<br/>session/list per project"]
+    ACP_LIST -->|"刷新 project_sessions list 缓存"| PROJ
+    SQL -->|"启动重建 projects"| PROJ
 ```
 
 ### 4.4 数据实体与存放位置
@@ -183,8 +185,8 @@ flowchart LR
 | Registry Doc | `DocManager`（yrs 内存） | `RegistryState` 单写 | 会话列表/机器列表唯一权威；聚合器不直写（gap 走上报路径） |
 | 内存镜像（快照+增量） | `StoreSink` | `DocManager` 提交流 | 同源同 clientID，客户端应用无 CRDT 分叉 |
 | outbox 记录 | `Store`（内存） | `CommandCoordinator` / `command_outcome_broker` | 命令去重与重发判定（§4.4） |
-| `projects` / `project_sessions` | `metadata.sqlite3` | `ProjectService` | 逻辑会话所有权（navigation catalog） |
-| `session_runtime_history` | `metadata.sqlite3` | `ProjectService`（激活/退役归档） | 崩溃恢复重建 runtime 的唯一来源（`Hub::rebuild_chat_views`） |
+| `projects` | `metadata.sqlite3` | `ProjectService` | project 分组与 cwd/instance 绑定（navigation 根） |
+| `project_sessions`（Registry 段） | 内存（ACP `session/list` 缓存 + ChatRegistry 运行态） | `SessionCatalogService` | durable 会话目录投影；启动为空，discover/open 触发 list |
 | `metadata_commands` / `oauth_commands` | `metadata.sqlite3` | `metadata_command_processor` / `oauth_control` | 命令审计 |
 
 ### 4.5 崩溃恢复：server 重启后的视图重建
@@ -194,38 +196,30 @@ server 重启后：
 
 ```mermaid
 flowchart LR
-    SQL[("metadata.sqlite3<br/>session_runtime_history")]
-    REBUILD["Hub::rebuild_chat_views"]
-    REG["ChatRegistry 恢复<br/>（accepting + bind）"]
-    INSTANCE["instance 重连 hello<br/>认证 / fencing / caps"]
+    HELLO["instance 重连 hello<br/>认证 / fencing / caps"]
     HEARTBEAT["首份 authoritative heartbeat<br/>（空集合同样有效）"]
     RECON["RecoveryCoordinator 串行对账<br/>（§8.3 步骤 5）"]
+    REG["ChatRegistry<br/>（启动为空）"]
     KILL["意外存活/终态 → 补发 kill"]
     RESUME["确认存活 → 复用 live runtime<br/>（session/resume 重放）"]
     LOAD["未确认/已结束 → spawn + session/load"]
+    LIST["session/discover 或打开 project<br/>→ ACP session/list 填充目录缓存"]
 
-    SQL -->|"retired_at IS NULL 的活跃 runtime"| REBUILD --> REG
-    INSTANCE --> HEARTBEAT --> RECON
-    REG -->|"恢复态不构成存活证据（未确认）"| RECON
+    HELLO --> HEARTBEAT --> RECON
+    REG -->|"启动无预注册 runtime"| RECON
     RECON --> KILL
     RECON --> RESUME
     RECON --> LOAD
+    LIST --> REG
 ```
 
-- **视图重建**（`Hub::rebuild_chat_views`，control/hub.rs）：从 `session_runtime_history`
-  （`retired_at` 为空）全量恢复非终态 chat——`ChatRegistry::register` +
-  `bind(acp_session_id, confirmed = false)`；Registry Doc `chats` 段同步恢复。
-- **未确认语义**：重建不构成进程存活证据。恢复的 chat 先按未确认处理；
-  hello 不携带 `alive_sessions`，必须等首份 heartbeat 对账裁决（§8.3 步骤 5）：
-  - 确认存活 → 复用为 live runtime（`session/resume` 重放）；
+- **live chat 恢复**（§8.3）：`ChatRegistry` 启动为空，不再从 SQLite 预注册。首份 authoritative heartbeat 的 `alive_sessions` 对账是唯一 live runtime 恢复路径：
+  - 确认存活 → 注册并 `session/resume` 重放；
   - 意外存活 / 需终止 → server 补发 kill；
-  - 未确认 → 用户显式打开时 spawn + `session/load`。
-- **终态 chat 不重建**（不在 runtime 历史中），显式打开由 spawn + `session/load`
-  兜底；活跃 runtime 重建不完整会 fail-fast，不能以部分 Registry 进入 Healthy。
-- **Registry Doc 全量重建**：由 `metadata.sqlite3` 经 `ProjectService::reproject`；
-  server 侧 `StoreSink` 内存镜像启动即空（零落盘，不参与恢复）。
-- **后台维护**：单一 tick 合并 instance 离线 sweep + nonce sweep；周期
-  `session/list` poller 持续对齐精确 durable identity。
+  - 未在 heartbeat 中 → 用户显式打开时 `spawn + session/load`（wire `sessionId` = ACP id）。
+- **会话目录恢复**：Registry `project_sessions` 启动为空；`session/discover` 或用户打开 project 触发 `SessionCatalogService` 调用 ACP `session/list` 填充缓存。归档/自定义名由浏览器 IndexedDB 读侧合并。
+- **Registry Doc 重建**：`projects` 段由 metadata.sqlite3 经 `ProjectService::reproject`；`project_sessions` 段随 list 缓存填充。server 侧 `StoreSink` 内存镜像启动即空（零落盘，不参与恢复）。
+- **后台维护**：单一 tick 合并 instance 离线 sweep + nonce sweep；周期 `session/list` poller 持续对齐精确 durable identity。
 
 ### 4.6 韧性：server 挂掉期间与重连后的 instance 侧
 
@@ -307,7 +301,7 @@ flowchart LR
 | `channel/` | ws 网关（`gateway`）、ACP 事件中继（`relay_event_handler`）、命令协调（`command_coordinator` + `runtime_command_ledger`/`oauth_command_ledger`/`command_outcome_broker`）、MCP/OAuth 控制、prompt 投递/恢复、session 发现/配置/rewind、turn 取消、广播器 | `Gateway`、`CommandCoordinator`、`Broadcaster`、`PromptRecovery`、`SessionRewind` | `protocol/`、`state/` |
 | `protocol/` | ACP 事件规范化（双格式 sessionId 提取、幂等聚合输入）、peri 扩展翻译（oauth/rewind/skill_names…） | `AcpChannel`、`Translator`、`NormalizeOutcome` | `state/`（产出 `NormalizedEvent`） |
 | `state/` | Y.Doc 聚合面：`DocManager` 唯一提交边界、`Aggregator` 幂等投影、per-chat 双 Doc（Chat/Control）+ Registry Doc、会话历史列表投影、权限 CAS、Degraded 判定 | `DocManager`、`Aggregator`、`ViewStore`、`Factory`、`RegistryState` | `persist/`（`UpdateSink`） |
-| `persist/` | **唯一落盘** `metadata.sqlite3`（projects/project_sessions/session_runtime_history…）；内存 `Store`（chat 索引 + outbox 状态机，零落盘） | `Store`、`OutboxStore`、`MetadataStore`（sqlx pool） | 无（最底层） |
+| `persist/` | **唯一落盘** `metadata.sqlite3`（projects、machines、metadata_commands…）；ACP 会话目录为内存 list 缓存；内存 `Store`（chat 索引 + outbox 状态机，零落盘） | `Store`、`OutboxStore`、`MetadataStore`（sqlx pool） | 无（最底层） |
 
 依赖方向（单向为主）：`config/auth/web → control(Hub) → channel → protocol → state → persist`；`channel ↔ control` 双向协作（命令提交与结果回收）。
 
@@ -365,7 +359,7 @@ flowchart LR
 
 ## 8. 持久化边界（无状态投影重构后）
 
-- **唯一落盘**：`<data_dir>/metadata.sqlite3`（sqlx + SQLite，schema v6）：`projects`、`project_sessions`（含 `acp_session_id`、lifecycle）、`session_runtime_history` 等导航元数据；`Hub::rebuild_chat_views` 据此跨重启恢复 chat 视图。
+- **唯一落盘**：`<data_dir>/metadata.sqlite3`（sqlx + SQLite，schema v7）：`projects`、`machines`、`metadata_commands`、`oauth_commands` 等；【v2.17】不再含 `project_sessions` / `session_runtime_history`（[ADR-0003](adr/0003-acp-authoritative-session-catalog.md)）。会话目录由 ACP `session/list` 内存缓存投影；live chat 恢复依赖 heartbeat 对账，不再 `rebuild_chat_views` 读 SQLite。
 - **零落盘**（重构后删除）：Yjs updates.log、outbox.log、watermark、closed_at、归档文件。
 - **内存态**：`persist::Store`（chat 索引 + outbox 状态机）、`state::ViewStore`（Y.Doc 投影）、Registry Doc map 为可重建投影（由 `ProjectService` 持有）。
 - **崩溃恢复**：instance 缓冲不跨重启保留（`hello` 上报 `buffer_lost`）；server 重启不伪装恢复旧进程，打开持久会话时以精确 ACP session id 建新 runtime 并经 `session/load` 恢复上下文（`README.md` 产品模型）。

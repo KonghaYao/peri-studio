@@ -1,5 +1,5 @@
-//! Hub 装配与 chat 视图重建测试：`rebuild_chat_views`（SQLite 投影重建
-//! live runtime 视图）+ `Hub::assemble` 全链路 smoke（§16 测试 20/31）。
+//! Hub 装配与 chat 视图重建测试：`rebuild_chat_views`（ADR-0003 no-op）+
+//! `Hub::assemble` 全链路 smoke（§16 测试 20/31）。
 //! StoreSink 镜像/广播/修复测试见 `hub_sink_test.rs`。
 
 use std::sync::Arc;
@@ -23,113 +23,16 @@ async fn env() -> (tempfile::TempDir, Arc<Store>, Arc<StoreSink>, DocManager) {
 }
 
 #[tokio::test]
-async fn rebuild_chat_views_restores_live_chats_from_metadata() {
-    use crate::control::{ChatRegistry, ChatState, Hub};
-    use crate::persist::metadata::MetadataStore;
-
-    let (tmp, _store, sink, doc) = env().await;
-    let metadata = Arc::new(MetadataStore::open(tmp.path()).await.unwrap());
-    metadata
-        .create_project("p1", "Demo", tmp.path().to_str().unwrap(), "local")
-        .await
-        .unwrap();
-    let chat_id = "33333333-3333-3333-3333-333333333333";
-    metadata
-        .import_session("s1", "p1", "acp-1", "Live", "2026-08-13T00:00:00Z")
-        .await
-        .unwrap();
-    metadata
-        .record_session_runtime("s1", chat_id)
-        .await
-        .unwrap();
-    // 活跃 chat 权威 = last_chat_id（open 时更新；runtime history 是身份
-    // 追踪，恒 retired_at IS NULL，不构成活跃证据）。
-    metadata.touch_session_open("s1", chat_id).await.unwrap();
-    let chats = ChatRegistry::new(doc.registry());
-    Hub::rebuild_chat_views(&metadata, &chats).await.unwrap();
-
-    // 状态 accepting（非终态——resume 路径可命中）+ 已绑定 acp 会话。
-    let entry = chats.entry(chat_id).await.expect("chat registered");
-    assert_eq!(entry.state, ChatState::Accepting);
-    assert_eq!(entry.session_id.as_deref(), Some("acp-1"));
-    assert_eq!(entry.instance_id, "local");
-    assert_eq!(entry.workspace_id.as_deref(), Some("p1"));
-    assert_eq!(chats.resolve("acp-1").await.as_deref(), Some(chat_id));
-    // Registry Doc 投影同步（chats 段含条目，状态 accepting）。
-    let (registry_update, _) = sink
-        .snapshot(&DocId::REGISTRY)
-        .await
-        .expect("registry mirror exists after chat registration");
-    use yrs::updates::decoder::Decode as _;
-    use yrs::{Map, ReadTxn, Transact};
-    let registry_doc = yrs::Doc::new();
-    registry_doc
-        .transact_mut()
-        .apply_update(yrs::Update::decode_v1(&registry_update).unwrap())
-        .unwrap();
-    let txn = registry_doc.transact();
-    let chats_map = txn
-        .get_map("root")
-        .and_then(|root| root.get(&txn, "chats"))
-        .and_then(|value| value.cast::<yrs::MapRef>().ok())
-        .expect("registry chats map");
-    let entry_map = chats_map
-        .get(&txn, chat_id)
-        .and_then(|value| value.cast::<yrs::MapRef>().ok())
-        .expect("rebuilt chat entry in registry doc");
-    assert_eq!(
-        entry_map
-            .get(&txn, "status")
-            .and_then(|value| value.cast::<String>().ok())
-            .as_deref(),
-        Some("accepting")
-    );
-}
-
-#[tokio::test]
-async fn rebuild_chat_views_skips_retired_and_archived_runtimes() {
+async fn rebuild_chat_views_is_noop_after_adr_0003() {
     use crate::control::{ChatRegistry, Hub};
     use crate::persist::metadata::MetadataStore;
 
     let (tmp, _store, _sink, doc) = env().await;
     let metadata = Arc::new(MetadataStore::open(tmp.path()).await.unwrap());
-    metadata
-        .create_project("p1", "Demo", tmp.path().to_str().unwrap(), "local")
-        .await
-        .unwrap();
-    metadata
-        .import_session("s1", "p1", "acp-1", "Retired", "2026-08-13T00:00:00Z")
-        .await
-        .unwrap();
-    metadata
-        .import_session("s2", "p1", "acp-2", "Archived", "2026-08-13T00:00:01Z")
-        .await
-        .unwrap();
-    metadata
-        .record_session_runtime("s1", "chat-retired")
-        .await
-        .unwrap();
-    metadata
-        .record_session_runtime("s2", "chat-archived")
-        .await
-        .unwrap();
-    // 活跃 chat 权威 = last_chat_id：s1 切换到 chat-current（旧 chat 的
-    // runtime 行仍存在且 retired_at 恒 NULL——不构成活跃证据）；s2 归档。
-    metadata
-        .record_session_runtime("s1", "chat-current")
-        .await
-        .unwrap();
-    metadata
-        .touch_session_open("s1", "chat-current")
-        .await
-        .unwrap();
-    metadata.archive_session("s2").await.unwrap();
-
     let chats = ChatRegistry::new(doc.registry());
-    Hub::rebuild_chat_views(&metadata, &chats).await.unwrap();
-    assert!(chats.entry("chat-retired").await.is_none());
-    assert!(chats.entry("chat-archived").await.is_none());
-    assert!(chats.entry("chat-current").await.is_some());
+    let recovery = Hub::rebuild_chat_views(&metadata, &chats).await.unwrap();
+    assert!(recovery.is_empty());
+    assert!(chats.entry("chat-live").await.is_none());
 }
 
 // ---------------------------------------------------------------------------
@@ -259,8 +162,6 @@ async fn hub_assemble_smoke_ready_sequence() {
         other => panic!("expected ready, got {other:?}"),
     }
 
-    // 此 fixture 没有待恢复 runtime，多 instance barrier 为空，装配阶段应直接
-    // 清除 Restarting；只有存在恢复候选时才等待首份 authoritative heartbeat。
     assert!(hub.can_accept_committed());
 
     task.abort();

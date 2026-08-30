@@ -86,7 +86,8 @@ export class SessionNavigator {
         this.update({ ...this.state, restoringSessionId: null });
         return [{ type: 'activate', sessionId: event.sessionId, chatId: event.chatId }];
       case 'connection-lost':
-        this.update({ ...this.state, opening: null, restoringSessionId: null });
+        // Allow catalog restore / reconnect re-open after the server drops.
+        this.update({ ...this.state, opening: null, restoringSessionId: null, restoreAttempted: false });
         return [];
       case 'reset':
         this.update({ opening: null, restoringSessionId: null, restoreAttempted: false });

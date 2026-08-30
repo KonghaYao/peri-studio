@@ -8,7 +8,7 @@ interface HarnessOverrides {
   uncertain?: boolean;
   messagePending?: boolean;
   creatingProjectId?: string | null;
-  sessions?: Array<{ id: string; projectId: string; acpSessionId: string | null; title: string; lifecycle: string; updatedAt: string | null; lastOpenedAt: string | null; activeChatId: string | null; archivedAt?: string | null }>;
+  sessions?: Array<{ id: string; projectId: string; title: string; lifecycle: string; updatedAt: string | null; lastOpenedAt: string | null; activeChatId: string | null; archivedAt?: string | null }>;
   maxPromptBytes?: number;
   sendFirstMessage?: boolean;
   preserveFirstMessage?: boolean;
@@ -53,7 +53,7 @@ function harness(overrides: HarnessOverrides = {}) {
     toast,
     sendFirstMessage,
     preserveFirstMessage,
-    sentFrame: () => sentFrame as { commandId: string; payload: Record<string, unknown> } | null,
+    sentFrame: () => sentFrame as { commandId: string; type: string; payload: Record<string, unknown> } | null,
     options: () => sendOptions as ActivationSendOptions | null,
     creatingProjectId: () => creatingProjectId,
   };
@@ -94,16 +94,16 @@ describe('SessionActivation', () => {
 
   it('keeps open selection atomic and quarantines a late terminal after timeout', () => {
     const subject = harness({ sessions: [{
-      id: 'logical', projectId: 'project', acpSessionId: 'acp', title: 'title', lifecycle: 'ready',
+      id: 'acp-logical', projectId: 'project', title: 'title', lifecycle: 'ready',
       updatedAt: null, lastOpenedAt: null, activeChatId: null,
     }] });
     const uncertain = vi.fn();
-    expect(subject.activation.navigate('logical', { onUncertain: uncertain })).toBe(true);
+    expect(subject.activation.navigate('acp-logical', { onUncertain: uncertain })).toBe(true);
     const commandId = subject.sentFrame()!.commandId;
     subject.options()!.onTimeout?.();
     expect(uncertain).toHaveBeenCalledOnce();
     expect(subject.activate).not.toHaveBeenCalled();
-    subject.options()!.cb?.({ commandId, status: 'committed', sessionId: 'logical', chatId: 'late-chat' });
+    subject.options()!.cb?.({ commandId, status: 'committed', sessionId: 'acp-logical', chatId: 'late-chat' });
     expect(subject.activate).not.toHaveBeenCalled();
   });
 
@@ -136,11 +136,21 @@ describe('SessionActivation', () => {
 
   it('uses projection-proven runtime locally in read-only mode without sending open', () => {
     const subject = harness({ readOnly: true, sessions: [{
-      id: 'logical', projectId: 'project', acpSessionId: 'acp', title: 'title', lifecycle: 'ready',
+      id: 'acp-logical', projectId: 'project', title: 'title', lifecycle: 'ready',
       updatedAt: null, lastOpenedAt: null, activeChatId: 'live-chat',
     }] });
-    expect(subject.activation.navigate('logical')).toBe(true);
+    expect(subject.activation.navigate('acp-logical')).toBe(true);
     expect(subject.sentFrame()).toBeNull();
-    expect(subject.activate).toHaveBeenCalledWith('logical', 'live-chat');
+    expect(subject.activate).toHaveBeenCalledWith('acp-logical', 'live-chat');
+  });
+
+  it('re-opens the selected logical session after reconnect', () => {
+    const subject = harness({ sessions: [{
+      id: 'old-session', projectId: 'project', title: 'title', lifecycle: 'ready',
+      updatedAt: null, lastOpenedAt: null, activeChatId: 'stale-chat',
+    }] });
+    subject.activation.reactivateAfterReconnect();
+    expect(subject.sentFrame()?.type).toBe('session/open');
+    expect(subject.sentFrame()?.payload).toEqual({ sessionId: 'old-session' });
   });
 });

@@ -18,7 +18,7 @@ describe('visual fixture scenarios', () => {
     expect(Date.now()).toBe(VISUAL_NOW);
     expect(projects().length).toBeGreaterThan(1);
     expect(registryHydrated()).toBe(true);
-    expect(selectedSessionId()).toBe('session-current');
+    expect(selectedSessionId()).toBe('acp-thread-01J5WORLDCLASSCURRENT');
     expect(selectedCid()).toBe('chat-current');
     expect(chatEntries()).toHaveLength(2);
     expect(chatEntries()[0].text).toContain('login page build failure');

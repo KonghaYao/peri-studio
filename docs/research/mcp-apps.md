@@ -1,6 +1,6 @@
 # Peri Studio 对接 MCP Apps 研究报告
 
-> 状态：调研稿，供实现前过目。不是架构裁决，不修改 `docs/architecture.md`。
+> 状态：调研稿，供实现前过目。不是架构裁决，不修改 `docs/architecture.md`。落地后的线契约与踩坑以 [design/mcp-apps-host.md](../design/mcp-apps-host.md) 为准。
 > 调研日期：2026-08-30。
 > 规范基线：MCP Apps `2026-01-26`（SEP-1865，扩展标识 `io.modelcontextprotocol/ui`）。
 > Peri 基线：本机已安装 `peri` 二进制 + GitHub `KonghaYao/peri` 的 `peri-acp` / `peri-middlewares` / `peri-acp-types` 源码。

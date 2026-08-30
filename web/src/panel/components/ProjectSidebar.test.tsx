@@ -28,14 +28,13 @@ const store = vi.hoisted(() => ({
     archivedAt: null as string | null,
   }]),
   projectSessions: vi.fn(() => [{
-    id: 'hub-abcdef12',
+    id: 'acp-12345678',
     projectId: 'p1',
     title: 'Architecture refactor',
     lifecycle: 'ready',
     updatedAt: '2026-08-13T10:00:00Z',
     lastOpenedAt: null,
     activeChatId: null as string | null,
-    acpSessionId: 'acp-12345678',
     archivedAt: null as string | null,
   }]),
   readOnly: vi.fn(() => false),
@@ -118,14 +117,13 @@ describe('ProjectSidebar registry hydration', () => {
     store.selectedSessionId.mockReturnValue(null);
     store.selectedCid.mockReturnValue(null);
     store.projectSessions.mockReturnValue([{
-      id: 'hub-abcdef12',
+      id: 'acp-12345678',
       projectId: 'p1',
       title: 'Architecture refactor',
       lifecycle: 'ready',
       updatedAt: '2026-08-13T10:00:00Z',
       lastOpenedAt: null,
       activeChatId: null,
-      acpSessionId: 'acp-12345678',
       archivedAt: null,
     }]);
   });
@@ -142,7 +140,7 @@ describe('ProjectSidebar registry hydration', () => {
   });
 
   it('lets the selected project stay collapsed after the user closes it', async () => {
-    store.selectedSessionId.mockReturnValue('hub-abcdef12');
+    store.selectedSessionId.mockReturnValue('acp-12345678');
     render(() => <ProjectSidebar />);
     const disclosure = screen.getByRole('button', { name: 'Perihelion' });
 
@@ -171,7 +169,7 @@ describe('ProjectSidebar registry hydration', () => {
     render(() => <ProjectSidebar onNavigate={navigate} />);
     fireEvent.click(sessionButton());
 
-    expect(store.navigateProjectSession).toHaveBeenCalledWith('hub-abcdef12', expect.any(Object));
+    expect(store.navigateProjectSession).toHaveBeenCalledWith('acp-12345678', expect.any(Object));
     expect(navigate).not.toHaveBeenCalled();
     callbacks.onCommitted?.();
     expect(navigate).toHaveBeenCalledOnce();
@@ -194,34 +192,32 @@ describe('ProjectSidebar registry hydration', () => {
     const navigate = vi.fn();
     store.readOnly.mockReturnValue(true);
     store.projectSessions.mockReturnValue([{
-      id: 'hub-abcdef12',
+      id: 'acp-12345678',
       projectId: 'p1',
       title: 'Architecture refactor',
       lifecycle: 'ready',
       updatedAt: '2026-08-13T10:00:00Z',
       lastOpenedAt: null,
       activeChatId: 'chat-live',
-      acpSessionId: 'acp-12345678',
       archivedAt: null,
     }]);
 
     render(() => <ProjectSidebar onNavigate={navigate} />);
     fireEvent.click(sessionButton());
 
-    expect(store.navigateProjectSession).toHaveBeenCalledWith('hub-abcdef12');
+    expect(store.navigateProjectSession).toHaveBeenCalledWith('acp-12345678');
     expect(navigate).toHaveBeenCalledOnce();
   });
 
   it('keeps an unselected live runtime switchable without adding a persistent status dot', () => {
     store.projectSessions.mockReturnValue([{
-      id: 'hub-abcdef12',
+      id: 'acp-12345678',
       projectId: 'p1',
       title: 'Architecture refactor',
       lifecycle: 'ready',
       updatedAt: '2026-08-13T10:00:00Z',
       lastOpenedAt: null,
       activeChatId: 'chat-live',
-      acpSessionId: 'acp-12345678',
       archivedAt: null,
     }]);
 
@@ -236,14 +232,13 @@ describe('ProjectSidebar registry hydration', () => {
     let commit = () => {};
     store.restoreProjectSession.mockImplementation((_id, onCommitted) => { commit = onCommitted; return true; });
     store.projectSessions.mockReturnValue([{
-      id: 'hub-abcdef12',
+      id: 'acp-12345678',
       projectId: 'p1',
       title: 'Architecture refactor',
       lifecycle: 'ready',
       updatedAt: '2026-08-13T10:00:00Z',
       lastOpenedAt: null,
       activeChatId: null,
-      acpSessionId: 'acp-12345678',
       archivedAt: '2026-08-14T00:00:00Z',
     }]);
 
@@ -251,7 +246,7 @@ describe('ProjectSidebar registry hydration', () => {
     expect(screen.queryByRole('button', { name: /^Architecture refactor/ })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Archived sessions/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
-    expect(store.restoreProjectSession).toHaveBeenCalledWith('hub-abcdef12', expect.any(Function), expect.any(Function));
+    expect(store.restoreProjectSession).toHaveBeenCalledWith('acp-12345678', expect.any(Function), expect.any(Function));
     commit();
   });
 });

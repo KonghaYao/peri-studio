@@ -31,6 +31,12 @@ export default defineConfig({
           if (id.includes('/markdown-to-jsx/')) return 'vendor-markdown';
           if (id.includes('/@kobalte/')) return 'vendor-interactions';
           if (id.includes('/solid-js/')) return 'vendor-solid';
+          if (
+            id.includes('/@modelcontextprotocol/')
+            || id.includes('/zod/')
+          ) {
+            return 'vendor-mcp-apps';
+          }
           return undefined;
         },
       },

@@ -388,6 +388,8 @@ export interface McpAppResourceFrame {
   html: string;
   mimeType: string;
   csp?: string;
+  /** 首屏 CallToolResult；嵌套 structuredContent，不得作为帧顶层键。 */
+  toolResult?: unknown;
 }
 
 export interface McpAppCallResultFrame {
@@ -461,7 +463,17 @@ function isMcpAppResourceFrame(frame: Record<string, unknown>): boolean {
     && frame.html.length <= 1024 * 1024
     && nonEmptyString(frame.mimeType)
     && frame.mimeType === 'text/html;profile=mcp-app'
-    && (frame.csp == null || typeof frame.csp === 'string');
+    && (frame.csp == null || typeof frame.csp === 'string')
+    && (frame.toolResult == null || isBoundedJsonObject(frame.toolResult));
+}
+
+function isBoundedJsonObject(value: unknown): boolean {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  try {
+    return JSON.stringify(value).length <= 1024 * 1024;
+  } catch {
+    return false;
+  }
 }
 
 function isMcpAppCallResultFrame(frame: Record<string, unknown>): boolean {
