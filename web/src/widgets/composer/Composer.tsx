@@ -332,7 +332,7 @@ export function Composer() {
             : undefined}
           aria-describedby={inputDescribedBy()}
           spellcheck={false}
-          class="composer-input ui-scrollbar relative z-1 block min-h-36 max-h-180 w-full resize-none overflow-y-auto border-0 bg-transparent px-8 py-8 text-12 leading-18 text-text-primary outline-0 placeholder:text-text-muted disabled:bg-transparent disabled:text-text-secondary focus-visible:outline-0"
+          class="composer-input ui-scrollbar relative z-1 block min-h-36 max-h-180 w-full resize-none overflow-y-auto border-0 bg-transparent px-8 py-8 text-(length:--text-12) leading-18 text-text-primary outline-0 placeholder:text-text-muted disabled:bg-transparent disabled:text-text-secondary focus-visible:outline-0"
           />
         </div>
         <Show when={promptOverBudget()}>

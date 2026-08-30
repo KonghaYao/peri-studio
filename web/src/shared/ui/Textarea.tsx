@@ -1,4 +1,5 @@
 import { createEffect, createUniqueId, Show, splitProps, type JSX } from 'solid-js';
+import { cn } from '../lib/cn';
 
 type Props = JSX.TextareaHTMLAttributes<HTMLTextAreaElement> & {
   autoResize?: boolean;
@@ -8,6 +9,17 @@ type Props = JSX.TextareaHTMLAttributes<HTMLTextAreaElement> & {
   error?: string;
   variant?: 'field' | 'bare';
 };
+
+const textareaControlClasses = (invalid?: boolean, autoResize?: boolean, className?: string) => cn(
+  'box-border w-full rounded-6 border bg-surface px-12 py-8 text-13 leading-normal text-text-primary outline-none [transition:border-color_120ms_ease,box-shadow_120ms_ease]',
+  'placeholder:text-text-faint',
+  autoResize ? 'min-h-32 resize-none' : 'min-h-32 resize-y',
+  invalid
+    ? 'border-danger focus:border-danger focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--danger)_25%,transparent)]'
+    : 'border-border-strong hover:border-[color-mix(in_srgb,var(--accent)_30%,var(--border-strong))] focus:border-focus-ring focus:shadow-accent-ring',
+  'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-text-muted',
+  className,
+);
 
 /** Controlled textarea with the same finite auto-growth contract as Composer. */
 export function Textarea(props: Props) {
@@ -25,24 +37,39 @@ export function Textarea(props: Props) {
     element.style.height = `${Math.min(element.scrollHeight, local.maxHeight ?? 180)}px`;
   };
   createEffect(() => { textarea.value; queueMicrotask(resize); });
-  const fieldClasses = shouldAutoResize()
-    ? 'box-border min-h-34 w-full resize-none rounded-12 border border-border-strong bg-surface px-12 py-8 text-13 text-text-primary leading-15 outline-none focus-visible:border-focus-ring focus-visible:shadow-[0_0_0_2px_var(--focus-ring)]'
-    : 'box-border min-h-34 w-full resize-y rounded-12 border border-border-strong bg-surface px-12 py-8 text-13 text-text-primary leading-15 outline-none focus-visible:border-focus-ring focus-visible:shadow-[0_0_0_2px_var(--focus-ring)]';
-  const control = <textarea {...textarea} id={id()} aria-invalid={local.error ? 'true' : undefined} aria-describedby={describedBy()} ref={(node) => {
-    element = node;
-    if (typeof local.ref === 'function') local.ref(node);
-    queueMicrotask(resize);
-  }} onInput={(event) => {
-    resize();
-    const handler = textarea.onInput;
-    if (typeof handler === 'function') handler(event);
-  }} class={`ui-textarea ${local.variant === 'field' ? fieldClasses : '[font-family:inherit]'} ${local.class ?? ''}`} />;
-  return <Show when={local.label || local.hint || local.error} fallback={control}>
-    <div class="mb-9 flex flex-col gap-6">
-      <Show when={local.label}><label class="text-12 font-semibold text-text-secondary" for={id()}>{local.label}</label></Show>
-      {control}
-      <Show when={local.hint}><span id={hintId()} class="text-11 text-text-muted">{local.hint}</span></Show>
-      <Show when={local.error}><span id={errorId()} class="m-0 text-13 text-danger">{local.error}</span></Show>
-    </div>
-  </Show>;
+  const control = (
+    <textarea
+      {...textarea}
+      id={id()}
+      aria-invalid={local.error ? 'true' : undefined}
+      aria-describedby={describedBy()}
+      ref={(node) => {
+        element = node;
+        if (typeof local.ref === 'function') local.ref(node);
+        queueMicrotask(resize);
+      }}
+      onInput={(event) => {
+        resize();
+        const handler = textarea.onInput;
+        if (typeof handler === 'function') handler(event);
+      }}
+      class={cn(
+        'ui-textarea',
+        local.variant === 'field'
+          ? textareaControlClasses(!!local.error, shouldAutoResize(), local.class)
+          : '[font-family:inherit]',
+        local.class,
+      )}
+    />
+  );
+  return (
+    <Show when={local.label || local.hint || local.error} fallback={control}>
+      <div class="mb-9 flex flex-col gap-6">
+        <Show when={local.label}><label class="text-12 font-semibold text-text-secondary" for={id()}>{local.label}</label></Show>
+        {control}
+        <Show when={local.hint}><span id={hintId()} class="text-11 text-text-muted">{local.hint}</span></Show>
+        <Show when={local.error}><span id={errorId()} class="m-0 text-13 text-danger">{local.error}</span></Show>
+      </div>
+    </Show>
+  );
 }

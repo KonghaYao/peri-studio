@@ -1,15 +1,57 @@
 import { splitProps, type JSX } from 'solid-js';
+import { cn } from '../lib/cn';
 
-export type BadgeTone = 'neutral' | 'ok' | 'warn' | 'err';
+/* Badge 规则（对齐 sandbox T2）：文字永远是中性灰，颜色由状态点承载。 */
+export type BadgeTone =
+  | 'neutral'
+  | 'success'
+  | 'warning'
+  | 'danger'
+  | 'info'
+  | 'ok'
+  | 'warn'
+  | 'err';
 
-const TONE_CLASS: Record<BadgeTone, string> = {
-  ok: 'bg-success-soft text-success',
-  warn: 'bg-warning-soft text-warning',
-  err: 'bg-danger-soft text-danger',
-  neutral: 'bg-surface-muted text-text-secondary',
+type ResolvedBadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info';
+
+const LEGACY_TONE: Record<'ok' | 'warn' | 'err', ResolvedBadgeTone> = {
+  ok: 'success',
+  warn: 'warning',
+  err: 'danger',
 };
+
+const dotClasses: Record<ResolvedBadgeTone, string> = {
+  neutral: 'bg-text-faint',
+  success: 'bg-success',
+  warning: 'bg-warning',
+  danger: 'bg-danger',
+  info: 'bg-accent',
+};
+
+function resolveTone(tone: BadgeTone | undefined): ResolvedBadgeTone {
+  if (!tone || tone === 'neutral') return 'neutral';
+  if (tone === 'ok' || tone === 'warn' || tone === 'err') return LEGACY_TONE[tone];
+  return tone;
+}
 
 export function Badge(props: JSX.HTMLAttributes<HTMLSpanElement> & { tone?: BadgeTone }) {
   const [local, span] = splitProps(props, ['tone', 'class', 'children']);
-  return <span {...span} class={`inline-flex h-20 items-center rounded-full px-7 text-11 font-medium ${TONE_CLASS[local.tone ?? 'neutral']} ${local.class || ''}`.trim()}>{local.children}</span>;
+  const tone = () => resolveTone(local.tone);
+  return (
+    <span
+      {...span}
+      data-slot="badge"
+      class={cn(
+        'inline-flex h-20 items-center gap-6 rounded-full border border-border-strong bg-surface px-8',
+        'text-11 font-medium text-text-secondary',
+        local.class,
+      )}
+    >
+      <span
+        class={cn('ui-badge__dot size-6 flex-none rounded-full', dotClasses[tone()])}
+        aria-hidden="true"
+      />
+      {local.children}
+    </span>
+  );
 }

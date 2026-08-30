@@ -297,11 +297,10 @@ test('uncertain metadata retries preserve the original frame identity and are id
     const escaped = action.replace('/', '\\/');
     assert.match(catalog, new RegExp(`'${escaped}'`), action);
   }
-  assert.match(catalog, /setSessionCustomNamePreference/);
-  assert.match(catalog, /setSessionArchivedPreference/);
-  assert.doesNotMatch(catalog, /'session\/rename'/);
-  assert.doesNotMatch(catalog, /'session\/archive'/);
-  assert.doesNotMatch(catalog, /'session\/restore'/);
+  assert.match(catalog, /renameSession/);
+  assert.match(catalog, /setSessionArchived/);
+  assert.match(catalog, /persistedSessionRename/);
+  assert.match(catalog, /persistedSessionArchive/);
   assert.match(activation, /this\.deps\.send\(frame, 'session\/create', \{/);
   assert.match(catalog, /retryOnUncertain: true/);
 });

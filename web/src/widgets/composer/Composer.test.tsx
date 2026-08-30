@@ -77,7 +77,7 @@ describe('Composer', () => {
     render(() => <Composer />);
 
     expect(document.querySelector('.composer-surface')).toHaveClass('rounded-(--composer-radius)', 'p-9');
-    expect(screen.getByRole('textbox')).toHaveClass('min-h-36', 'text-12', 'leading-18');
+    expect(screen.getByRole('textbox')).toHaveClass('min-h-36', 'text-(length:--text-12)', 'leading-18');
     expect(screen.getByRole('button', { name: 'Choose model' })).toHaveTextContent('Nova 4.1');
     expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('w-36', 'min-h-32', 'rounded-8');
   });

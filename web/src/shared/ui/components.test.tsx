@@ -63,7 +63,7 @@ describe('Button', () => {
     expect(button).not.toHaveAttribute('busy');
     expect(button).not.toHaveAttribute('size');
     expect(button).toHaveTextContent('Processing');
-    expect(button).toHaveClass('[color:var(--surface)]!');
+    expect(button).toHaveClass('bg-btn-primary', '[color:var(--surface)]!');
     expect(button).not.toHaveClass('text-inherit');
   });
 
@@ -88,8 +88,8 @@ describe('Button', () => {
 
   it('uses rounded rectangular geometry for icon-only actions', () => {
     render(() => <><IconButton label="Default action">×</IconButton><IconButton label="Compact action" size="compact">×</IconButton></>);
-    expect(screen.getByRole('button', { name: 'Default action' })).toHaveClass('w-34', 'min-h-30', 'rounded-7');
-    expect(screen.getByRole('button', { name: 'Compact action' })).toHaveClass('w-28', 'min-h-24', 'rounded-6');
+    expect(screen.getByRole('button', { name: 'Default action' })).toHaveClass('size-32', 'rounded-6');
+    expect(screen.getByRole('button', { name: 'Compact action' })).toHaveClass('size-24', 'rounded-6');
     expect(screen.getByRole('button', { name: 'Default action' })).not.toHaveClass('rounded-full');
   });
 
@@ -145,6 +145,8 @@ describe('Badge', () => {
     const badge = screen.getByTestId('badge');
     expect(badge).toHaveTextContent('Pending');
     expect(badge).not.toHaveAttribute('tone');
+    expect(badge).toHaveClass('text-text-secondary');
+    expect(badge.querySelector('.ui-badge__dot')).toHaveClass('bg-warning');
   });
 });
 

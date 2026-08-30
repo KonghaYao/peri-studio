@@ -10,12 +10,14 @@ type LoadingStateProps = JSX.HTMLAttributes<HTMLDivElement> & {
 /** Shared loading feedback with one polite live region and a decorative spinner. */
 export function LoadingState(props: LoadingStateProps) {
   const [local, div] = splitProps(props, ['class', 'label', 'description', 'children']);
-  return <div {...div} role="status" aria-live="polite" aria-label={local.label} class={cn('flex items-center gap-9 text-13 leading-145 text-text-secondary', local.class)}>
-    <Spinner decorative />
-    <div class="flex min-w-0 flex-col gap-2">
-      <strong class="font-semibold text-text-primary">{local.label}</strong>
-      <Show when={local.description}><span class="text-text-secondary">{local.description}</span></Show>
-      {local.children}
+  return (
+    <div {...div} role="status" aria-live="polite" aria-label={local.label} class={cn('flex items-center gap-10 text-13 leading-normal text-text-secondary', local.class)}>
+      <Spinner decorative />
+      <div class="flex min-w-0 flex-col gap-2">
+        <strong class="font-medium text-text-primary">{local.label}</strong>
+        <Show when={local.description}><span class="text-text-secondary">{local.description}</span></Show>
+        {local.children}
+      </div>
     </div>
-  </div>;
+  );
 }

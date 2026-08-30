@@ -1,4 +1,14 @@
 import { createUniqueId, Show, splitProps, type JSX } from 'solid-js';
+import { cn } from '../lib/cn';
+
+const selectControlClasses = (invalid?: boolean, className?: string) => cn(
+  'box-border h-32 w-full appearance-auto rounded-6 border bg-surface px-12 text-13 text-text-primary outline-none [transition:border-color_120ms_ease,box-shadow_120ms_ease]',
+  invalid
+    ? 'border-danger focus:border-danger focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--danger)_25%,transparent)]'
+    : 'border-border-strong hover:border-[color-mix(in_srgb,var(--accent)_30%,var(--border-strong))] focus:border-focus-ring focus:shadow-accent-ring',
+  'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-text-muted',
+  className,
+);
 
 type Props = JSX.SelectHTMLAttributes<HTMLSelectElement> & {
   label: string;
@@ -15,7 +25,7 @@ export function SelectField(props: Props) {
   const describedBy = () => [local['aria-describedby'], local.hint ? hintId() : '', local.error ? errorId() : ''].filter(Boolean).join(' ') || undefined;
   return <div class="mb-9 flex flex-col gap-6">
     <label class="text-12 font-semibold text-text-secondary" for={id()}>{local.label}</label>
-    <select {...select} id={id()} aria-invalid={local.error ? 'true' : undefined} aria-describedby={describedBy()} class={`box-border h-34 w-full appearance-auto rounded-9 border border-border-strong bg-surface px-11 text-text-primary outline-none focus:border-focus-ring focus:shadow-[0_0_0_1px_var(--surface),0_0_0_3px_var(--focus-ring)] focus-visible:outline-0 ${local.class ?? ''}`}>{local.children}</select>
+    <select {...select} id={id()} aria-invalid={local.error ? 'true' : undefined} aria-describedby={describedBy()} class={selectControlClasses(!!local.error, local.class)}>{local.children}</select>
     <Show when={local.hint}><span id={hintId()} class="text-11 text-text-muted">{local.hint}</span></Show>
     <Show when={local.error}><span id={errorId()} class="m-0 text-13 text-danger">{local.error}</span></Show>
   </div>;

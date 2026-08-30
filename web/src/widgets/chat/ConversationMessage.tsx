@@ -141,7 +141,10 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
         const activity = () => isActivityBlock(block());
         const startsActivity = () => activity() && !isActivityBlock(blocksById().get(blockIds()[blockIndex() - 1]));
         const endsActivity = () => activity() && !isActivityBlock(blocksById().get(blockIds()[blockIndex() + 1]));
-        const toolCall = () => block().kind === 'tool_call' ? block().toolCall : null;
+        const toolCall = () => {
+          const current = block();
+          return current.kind === 'tool_call' ? current.toolCall : null;
+        };
         const duplicateToolBlock = () => {
           const id = toolCall()?.toolCallId || '';
           if (!id) return false;

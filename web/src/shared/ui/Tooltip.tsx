@@ -4,9 +4,9 @@ import * as TooltipPrimitive from '@kobalte/core/tooltip';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import { cn } from '../lib/cn';
 
-const tooltipClasses = 'fixed z-80 w-max max-w-240 rounded-7 border border-border-subtle bg-surface px-10 py-7 text-11 font-400 leading-145 text-text-primary shadow-popover pointer-events-none whitespace-normal animate-[ui-tooltip-in_100ms_ease-out] data-[placement=bottom]:-translate-x-1/2 data-[placement=bottom-start]:translate-x-0 data-[placement=bottom-end]:-translate-x-full data-[placement=top]:-translate-x-1/2 data-[placement=top]:-translate-y-full data-[placement=top-start]:-translate-y-full data-[placement=top-end]:-translate-x-full data-[placement=top-end]:-translate-y-full motion-reduce:animate-none';
+const tooltipClasses = 'fixed z-80 w-max max-w-240 rounded-6 bg-text-primary px-8 py-4 text-12 font-400 leading-snug text-surface shadow-popover pointer-events-none whitespace-normal animate-[ui-tooltip-in_120ms_ease-out] data-[placement=bottom]:-translate-x-1/2 data-[placement=bottom-start]:translate-x-0 data-[placement=bottom-end]:-translate-x-full data-[placement=top]:-translate-x-1/2 data-[placement=top]:-translate-y-full data-[placement=top-start]:-translate-y-full data-[placement=top-end]:-translate-x-full data-[placement=top-end]:-translate-y-full motion-reduce:animate-none';
 
-const Tooltip: Component<TooltipPrimitive.TooltipRootProps> = (props) => <TooltipPrimitive.Root gutter={4} openDelay={450} {...props} />;
+const Tooltip: Component<TooltipPrimitive.TooltipRootProps> = (props) => <TooltipPrimitive.Root gutter={4} openDelay={200} {...props} />;
 const TooltipTrigger = TooltipPrimitive.Trigger;
 
 const TooltipContent = <T extends ValidComponent = 'div'>(props: PolymorphicProps<T, TooltipPrimitive.TooltipContentProps<T> & { class?: string }>) => {

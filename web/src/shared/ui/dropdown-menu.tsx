@@ -29,7 +29,7 @@ const DropdownMenuContent = <T extends ValidComponent = "div">(
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
         class={cn(
-          "absolute z-50 flex min-w-32 flex-col gap-2 overflow-hidden rounded-11 border border-border-subtle !bg-surface p-7 !text-text-primary shadow-popover origin-[var(--kb-menu-content-transform-origin)] animate-content-hide data-[expanded]:animate-content-show",
+          "absolute z-50 flex min-w-[160px] flex-col overflow-hidden rounded-8 border border-border-subtle bg-surface p-4 text-text-primary shadow-popover outline-none origin-[var(--kb-menu-content-transform-origin)] animate-content-hide data-[expanded]:animate-content-show",
           props.class
         )}
         {...rest}
@@ -50,7 +50,7 @@ const DropdownMenuItem = <T extends ValidComponent = "div">(
   return (
     <DropdownMenuPrimitive.Item
       class={cn(
-        "relative flex w-full min-h-36 cursor-pointer select-none items-center gap-2 rounded-7 border-0 !bg-transparent px-10 text-left text-13 !text-text-primary outline-none transition-colors hover:bg-hover focus-visible:bg-hover focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-45 [@media(pointer:coarse)]:min-h-44 [@media(pointer:coarse)]:w-full",
+        "relative flex w-full min-h-32 cursor-pointer select-none items-center gap-8 rounded-6 border-0 bg-transparent px-12 text-left text-13 text-text-primary outline-none transition-colors data-[highlighted]:bg-hover focus-visible:bg-hover focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-45 [@media(pointer:coarse)]:min-h-44 [@media(pointer:coarse)]:w-full",
         props.class
       )}
       {...rest}
@@ -60,14 +60,14 @@ const DropdownMenuItem = <T extends ValidComponent = "div">(
 
 const DropdownMenuShortcut: Component<ComponentProps<"span">> = (props) => {
   const [, rest] = splitProps(props, ["class"])
-  return <span class={cn("ml-auto text-xs tracking-widest opacity-60", props.class)} {...rest} />
+  return <span class={cn("ml-auto text-11 tracking-widest text-text-muted opacity-60", props.class)} {...rest} />
 }
 
 const DropdownMenuLabel: Component<ComponentProps<"div"> & { inset?: boolean }> = (props) => {
   const [, rest] = splitProps(props, ["class", "inset"])
   return (
     <div
-      class={cn("px-2 py-1.5 text-sm font-semibold", props.inset && "pl-8", props.class)}
+      class={cn("px-12 py-8 text-11 font-600 text-text-muted", props.inset && "pl-32", props.class)}
       {...rest}
     />
   )
@@ -84,7 +84,7 @@ const DropdownMenuSeparator = <T extends ValidComponent = "hr">(
   const [, rest] = splitProps(props as DropdownMenuSeparatorProps, ["class"])
   return (
     <DropdownMenuPrimitive.Separator
-      class={cn("-mx-1 my-1 h-px bg-muted", props.class)}
+      class={cn("-mx-4 my-4 h-px bg-divider", props.class)}
       {...rest}
     />
   )
@@ -103,7 +103,7 @@ const DropdownMenuSubTrigger = <T extends ValidComponent = "div">(
   return (
     <DropdownMenuPrimitive.SubTrigger
       class={cn(
-        "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent",
+        "flex min-h-32 cursor-default select-none items-center rounded-6 px-12 text-13 text-text-primary outline-none data-[highlighted]:bg-hover data-[state=open]:bg-hover",
         props.class
       )}
       {...rest}
@@ -117,7 +117,7 @@ const DropdownMenuSubTrigger = <T extends ValidComponent = "div">(
         stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round"
-        class="ml-auto size-4"
+        class="ml-auto size-16"
       >
         <path d="M9 6l6 6l-6 6" />
       </svg>
@@ -137,7 +137,7 @@ const DropdownMenuSubContent = <T extends ValidComponent = "div">(
   return (
     <DropdownMenuPrimitive.SubContent
       class={cn(
-        "z-50 min-w-32 origin-[var(--kb-menu-content-transform-origin)] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md animate-in",
+        "z-50 min-w-[160px] origin-[var(--kb-menu-content-transform-origin)] overflow-hidden rounded-8 border border-border-subtle bg-surface p-4 text-text-primary shadow-popover outline-none animate-content-hide data-[expanded]:animate-content-show",
         props.class
       )}
       {...rest}
@@ -158,12 +158,12 @@ const DropdownMenuCheckboxItem = <T extends ValidComponent = "div">(
   return (
     <DropdownMenuPrimitive.CheckboxItem
       class={cn(
-        "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex min-h-32 cursor-default select-none items-center rounded-6 py-8 pl-32 pr-12 text-13 text-text-primary outline-none transition-colors data-[highlighted]:bg-hover focus-visible:bg-hover data-[disabled]:pointer-events-none data-[disabled]:opacity-45",
         props.class
       )}
       {...rest}
     >
-      <span class="absolute left-2 flex size-3.5 items-center justify-center">
+      <span class="absolute left-12 flex size-14 items-center justify-center">
         <DropdownMenuPrimitive.ItemIndicator>
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -173,7 +173,7 @@ const DropdownMenuCheckboxItem = <T extends ValidComponent = "div">(
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-            class="size-4"
+            class="size-16"
           >
             <path d="M5 12l5 5l10 -10" />
           </svg>
@@ -195,7 +195,7 @@ const DropdownMenuGroupLabel = <T extends ValidComponent = "span">(
   const [, rest] = splitProps(props as DropdownMenuGroupLabelProps, ["class"])
   return (
     <DropdownMenuPrimitive.GroupLabel
-      class={cn("px-2 py-1.5 text-sm font-semibold", props.class)}
+      class={cn("px-12 py-8 text-11 font-600 text-text-muted", props.class)}
       {...rest}
     />
   )
@@ -214,12 +214,12 @@ const DropdownMenuRadioItem = <T extends ValidComponent = "div">(
   return (
     <DropdownMenuPrimitive.RadioItem
       class={cn(
-        "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex min-h-32 cursor-default select-none items-center rounded-6 py-8 pl-32 pr-12 text-13 text-text-primary outline-none transition-colors data-[highlighted]:bg-hover focus-visible:bg-hover data-[disabled]:pointer-events-none data-[disabled]:opacity-45",
         props.class
       )}
       {...rest}
     >
-      <span class="absolute left-2 flex size-3.5 items-center justify-center">
+      <span class="absolute left-12 flex size-14 items-center justify-center">
         <DropdownMenuPrimitive.ItemIndicator>
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -229,7 +229,7 @@ const DropdownMenuRadioItem = <T extends ValidComponent = "div">(
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-            class="size-2 fill-current"
+            class="size-8 fill-current"
           >
             <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
           </svg>

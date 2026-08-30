@@ -14,7 +14,47 @@
  * break without inline mode.
  */
 @theme inline {
-  /* Surfaces */
+  /* Tier 1 · Semantic surfaces */
+  --color-surface-canvas: var(--surface-canvas);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-overlay: var(--surface-overlay);
+
+  /* Tier 1 · Semantic text */
+  --color-content-primary: var(--content-primary);
+  --color-content-secondary: var(--content-secondary);
+  --color-content-muted: var(--content-muted);
+  --color-content-faint: var(--content-faint);
+  --color-content-link: var(--content-link);
+  --color-content-on-accent: var(--content-on-accent);
+
+  /* Tier 1 · Semantic accent & interaction */
+  --color-accent-solid: var(--accent-solid);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-active: var(--accent-active);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-border-hover: var(--accent-border-hover);
+  --color-border-focus: var(--border-focus);
+  --color-selection-border: var(--selection-border);
+  --color-selection-bg: var(--selection-bg);
+  --color-interaction-hover: var(--interaction-hover);
+  --color-sidebar-selected: var(--sidebar-selected-bg);
+  --color-decision-action: var(--decision-action-solid);
+  --color-decision-action-hover: var(--decision-action-hover);
+
+  /* Tier 1 · Feedback matrix */
+  --color-success-solid: var(--feedback-success-solid);
+  --color-success-strong: var(--feedback-success-strong);
+  --color-success-border: var(--feedback-success-border);
+  --color-warning-solid: var(--feedback-warning-solid);
+  --color-warning-border: var(--feedback-warning-border);
+  --color-danger-solid: var(--feedback-danger-solid);
+  --color-danger-border: var(--feedback-danger-border);
+  --color-info-solid: var(--feedback-info-solid);
+  --color-info-strong: var(--feedback-info-strong);
+  --color-info-soft: var(--feedback-info-soft);
+  --color-info-border: var(--feedback-info-border);
+
+  /* Legacy surfaces */
   --color-app-bg: var(--app-bg);
   --color-sidebar-bg: var(--sidebar-bg);
   --color-surface: var(--surface);
@@ -135,6 +175,45 @@
   --radius-16: var(--radius-16);
   --radius-18: var(--radius-18);
   --radius-full: var(--radius-full);
+
+  /* Sandbox radius aliases */
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+
+  /* Sandbox typography aliases */
+  --text-caption: var(--text-caption);
+  --text-body: var(--text-body);
+  --text-title: var(--text-title);
+  --text-display: var(--text-display);
+
+  /* Sandbox line-height aliases */
+  --leading-tight: var(--leading-tight);
+  --leading-snug: var(--leading-snug);
+  --leading-compact: var(--leading-compact);
+  --leading-normal: var(--leading-normal);
+  --leading-relaxed: var(--leading-relaxed);
+
+  /* Sandbox tracking aliases */
+  --tracking-caps: var(--tracking-caps);
+  --tracking-wide: var(--tracking-wide);
+
+  /* Sandbox elevation & motion */
+  --shadow-raised: var(--shadow-raised);
+  --shadow-overlay: var(--shadow-overlay);
+  --shadow-focus-ring: var(--shadow-focus-ring);
+  --shadow-decision: var(--decision-shadow);
+  --z-sticky: var(--z-sticky);
+  --z-overlay: var(--z-overlay);
+  --z-modal: var(--z-modal);
+  --z-toast: var(--z-toast);
+  --duration-fast: var(--duration-fast);
+  --duration-base: var(--duration-base);
+  --ease-standard: var(--ease-standard);
+  --ease-out: var(--ease-out);
 
   /* Typography */
   --font-sans: var(--font-sans);

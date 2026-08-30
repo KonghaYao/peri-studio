@@ -1,10 +1,219 @@
-/* peri-studio Solid UI design tokens.
-   This file is the single source of truth for reusable color, typography,
-   elevation, spacing, radius, and layout values. Feature CSS consumes
-   variables only. */
+/* ==========================================================================
+   Peri Studio design tokens
+   三层架构：Tier 0 palette → Tier 1 semantic → Tier 2 component。
+   依赖方向只允许向下：组件禁引 palette-*，功能样式只用 semantic/component。
+   生产 widget 仍消费 legacy 段（--text-primary、--accent 等）；P2 迁移目标为
+   sandbox 语义名（--content-primary、--accent-solid 等）。同名 legacy token 值
+   保持不变，避免本阶段视觉回归。
+   ========================================================================== */
 
 :root {
   color-scheme: light;
+
+  /* ------------------------------------------------------------------
+     Tier 0 · Primitives：色调色板。组件禁止使用，只被语义层引用。
+     ------------------------------------------------------------------ */
+
+  /* Accent · B4 湛蓝（白字 5.2:1 过 AA） */
+  --palette-accent-50: #eff6ff;
+  --palette-accent-100: #dbeafe;
+  --palette-accent-200: #bfdbfe;
+  --palette-accent-300: #93c5fd;
+  --palette-accent-400: #60a5fa;
+  --palette-accent-500: #3b82f6;
+  --palette-accent-600: #2563eb;
+  --palette-accent-700: #1d4ed8;
+  --palette-accent-800: #1e40af;
+  --palette-accent-900: #1e3a8a;
+
+  /* Neutral · AntD 冷灰 */
+  --palette-neutral-0: #ffffff;
+  --palette-neutral-25: #fafafa;
+  --palette-neutral-50: #f5f5f5;
+  --palette-neutral-100: #f0f0f0;
+  --palette-neutral-200: #d9d9d9;
+  --palette-neutral-300: #bfbfbf;
+  --palette-neutral-400: #a3a3a3;
+  --palette-neutral-500: #8c8c8c;
+  --palette-neutral-600: #595959;
+  --palette-neutral-700: #434343;
+  --palette-neutral-800: #262626;
+  --palette-neutral-900: #1f1f1f;
+  --palette-neutral-950: #141414;
+
+  /* Success · AntD 绿 */
+  --palette-success-50: #f6ffed;
+  --palette-success-100: #d9f7be;
+  --palette-success-200: #b7eb8f;
+  --palette-success-500: #52c41a;
+  --palette-success-600: #389e0d;
+  --palette-success-700: #237804;
+
+  /* Warning · AntD 琥珀 */
+  --palette-warning-50: #fffbe6;
+  --palette-warning-100: #fff1b8;
+  --palette-warning-200: #ffe58f;
+  --palette-warning-500: #faad14;
+  --palette-warning-600: #d48806;
+  --palette-warning-700: #ad6800;
+
+  /* Danger · AntD 红 */
+  --palette-danger-50: #fff2f0;
+  --palette-danger-100: #ffccc7;
+  --palette-danger-200: #ffa39e;
+  --palette-danger-500: #ff4d4f;
+  --palette-danger-600: #cf1322;
+  --palette-danger-700: #a8071a;
+
+  /* ------------------------------------------------------------------
+     Tier 1 · Semantic（sandbox 对齐；与 legacy 同名 token 不重复声明）
+     ------------------------------------------------------------------ */
+
+  /* 表面 */
+  --surface-canvas: var(--palette-neutral-0);
+  --surface-sunken: var(--palette-neutral-25);
+  --surface-overlay: var(--palette-neutral-0);
+
+  /* 文字 */
+  --content-primary: var(--palette-neutral-900);
+  --content-secondary: var(--palette-neutral-600);
+  --content-muted: var(--palette-neutral-500);
+  --content-faint: var(--palette-neutral-400);
+  --content-link: var(--palette-accent-600);
+  --content-on-accent: var(--palette-neutral-0);
+
+  /* 主色与选中 */
+  --accent-solid: var(--palette-accent-600);
+  --accent-hover: var(--palette-accent-500);
+  --accent-active: var(--palette-accent-700);
+  --accent-soft: var(--palette-accent-50);
+  --accent-border-hover: var(--palette-accent-300);
+  --accent-ring: color-mix(in srgb, var(--palette-accent-500) 18%, transparent);
+  --border-focus: var(--palette-accent-600);
+  --selection-border: var(--palette-accent-600);
+  --selection-bg: var(--palette-neutral-0);
+  --interaction-hover: rgb(0 0 0 / 0.03);
+
+  /* 反馈色：solid / strong / soft / border 四态矩阵 */
+  --feedback-success-solid: var(--palette-success-500);
+  --feedback-success-strong: var(--palette-success-600);
+  --feedback-success-soft: var(--palette-success-50);
+  --feedback-success-border: var(--palette-success-200);
+  --feedback-warning-solid: var(--palette-warning-500);
+  --feedback-warning-strong: var(--palette-warning-600);
+  --feedback-warning-soft: var(--palette-warning-50);
+  --feedback-warning-border: var(--palette-warning-200);
+  --feedback-danger-solid: var(--palette-danger-500);
+  --feedback-danger-strong: var(--palette-danger-600);
+  --feedback-danger-soft: var(--palette-danger-50);
+  --feedback-danger-border: var(--palette-danger-100);
+  --feedback-info-solid: var(--palette-accent-600);
+  --feedback-info-strong: var(--palette-accent-700);
+  --feedback-info-soft: var(--palette-accent-50);
+  --feedback-info-border: var(--palette-accent-200);
+
+  /* 半径语义别名（数值与 legacy --radius-* 对齐） */
+  --radius-xs: var(--radius-2);
+  --radius-sm: var(--radius-4);
+  --radius-md: var(--radius-6);
+  --radius-lg: var(--radius-8);
+  --radius-xl: var(--radius-12);
+  --radius-2xl: var(--radius-16);
+  --radius-control: var(--radius-md);
+  --radius-card: var(--radius-lg);
+  --radius-pill: var(--radius-full);
+
+  /* 字号语义别名 */
+  --text-caption: var(--text-10);
+  --text-body: var(--text-13);
+  --text-title: var(--text-15);
+  --text-display: var(--text-28);
+
+  /* 行高语义别名 */
+  --leading-tight: var(--leading-115);
+  --leading-snug: var(--leading-125);
+  --leading-compact: var(--leading-135);
+  --leading-normal: var(--leading-145);
+  --leading-relaxed: var(--leading-16);
+
+  /* 字距语义别名 */
+  --tracking-caps: var(--tracking-6);
+  --tracking-wide: var(--tracking-8);
+
+  /* 阴影与层级（sandbox 命名；legacy shadow-* 保留） */
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 4%), 0 2px 8px rgb(0 0 0 / 6%);
+  --shadow-overlay:
+    0 6px 16px 0 rgb(0 0 0 / 8%), 0 3px 6px -4px rgb(0 0 0 / 12%),
+    0 9px 28px 8px rgb(0 0 0 / 5%);
+  --shadow-focus-ring: 0 0 0 3px var(--accent-ring);
+  --z-sticky: 10;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+
+  /* 动效 */
+  --duration-fast: 120ms;
+  --duration-base: 160ms;
+  --ease-standard: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+
+  /* ------------------------------------------------------------------
+     Tier 2 · Component（sandbox 几何；与 legacy 组件 token 并行）
+     ------------------------------------------------------------------ */
+
+  /* Shell 壳层 */
+  --shell-sidebar-width: 280px;
+  --shell-sidebar-width-desk: 240px;
+
+  /* Sidebar 侧栏 */
+  --sidebar-row-height: var(--pattern-row-height);
+  --sidebar-row-height-touch: 52px;
+  --sidebar-selected-bg: var(--palette-neutral-25);
+
+  /* Chat 聊天 */
+  --chat-transcript-max: var(--container-chat);
+  --chat-content-max: var(--container-chat-content);
+  --chat-markdown-rhythm: var(--markdown-rich-block-gap);
+  --chat-tool-activity-max: var(--tool-activity-max);
+
+  /* Resource 资源树 */
+  --resource-tree-row: var(--tree-row-height);
+  --resource-tree-indent: var(--tree-depth-chat);
+  --resource-asset-tile: var(--asset-tile-size);
+
+  /* Decision 决策面 */
+  --decision-shadow: var(--shadow-raised);
+  --decision-action-solid: var(--palette-warning-600);
+  --decision-action-hover: var(--palette-warning-700);
+
+  /* Workbench 资源浮层 */
+  --workbench-panel-width: 264px;
+  --workbench-rail-width: 44px;
+
+  /* 控件高度（AntD 24/32/40 + 触控 44；legacy compact/default 保留） */
+  --control-height-sm: 24px;
+  --control-height-md: 32px;
+  --control-height-lg: 40px;
+  --control-height-touch: 44px;
+
+  /* Git Graph（mhutchie/vscode-git-graph 色板） */
+  --git-graph-color-0: #0085d9;
+  --git-graph-color-1: #d9008f;
+  --git-graph-color-2: #00d90a;
+  --git-graph-color-3: #d98500;
+  --git-graph-color-4: #a300d9;
+  --git-graph-color-5: #ff0000;
+  --git-graph-color-6: #00d9cc;
+  --git-graph-color-7: #e138e8;
+  --git-graph-color-8: #85d900;
+  --git-graph-color-9: #dc5b23;
+  --git-graph-color-10: #6f24d6;
+  --git-graph-color-11: #ff0000;
+  --git-graph-row-height: var(--resource-tree-row);
+
+  /* ------------------------------------------------------------------
+     Legacy production tokens（现有 widget 消费；值不变）
+     ------------------------------------------------------------------ */
 
   /* Surfaces: white is the canvas; hierarchy comes from spacing and hairlines. */
   --app-bg: #ffffff;

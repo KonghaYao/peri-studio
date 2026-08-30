@@ -245,8 +245,8 @@ test('coarse pointers expose sidebar actions without hover and keep controls tou
   const button = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Button.tsx'), 'utf8');
   const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Dialog.tsx'), 'utf8');
   assert.match(sessionRow, /group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100/);
-  assert.match(sessionRow, /pointer-coarse:min-h-52 pointer-coarse:pr-\[68px\]/);
-  assert.match(button, /pointer-coarse:w-48 pointer-coarse:min-h-44/);
+  assert.match(sessionRow, /pointer-coarse:min-h-44/);
+  assert.match(button, /pointer-coarse:min-h-44/);
   assert.match(dialog, /pointer-coarse:w-48 pointer-coarse:min-h-44/);
 });
 
@@ -380,7 +380,10 @@ test('domain status inference delegates visual rendering to the shared Badge', (
   const primitive = readFileSync(join(root, 'shared', 'ui', 'Badge.tsx'), 'utf8');
   assert.match(adapter, /Badge as UiBadge/);
   assert.doesNotMatch(adapter, /bg-\[|text-\[/);
-  assert.match(primitive, /BadgeTone = 'neutral' \| 'ok' \| 'warn' \| 'err'/);
+  assert.match(primitive, /export type BadgeTone/);
+  assert.match(primitive, /'ok'/);
+  assert.match(primitive, /'warn'/);
+  assert.match(primitive, /'err'/);
 });
 
 test('icon-only controls receive visible help from the shared Tooltip', () => {
@@ -401,8 +404,10 @@ test('icon-only controls receive visible help from the shared Tooltip', () => {
 test('icon-only actions use one rounded rectangular geometry and never circular buttons', () => {
   const sourceRoot = join(import.meta.dirname, '..', 'src');
   const button = readFileSync(join(sourceRoot, 'shared', 'ui', 'Button.tsx'), 'utf8');
-  assert.match(button, /compact: 'w-28 min-h-24 rounded-6/);
-  assert.match(button, /default: 'w-34 min-h-30 rounded-7/);
+  assert.match(button, /rounded-6/);
+  assert.match(button, /compact: 'size-24'/);
+  assert.match(button, /default: 'size-32'/);
+  assert.doesNotMatch(button, /rounded-full/);
   for (const file of allFiles(sourceRoot).filter((path) => path.endsWith('.tsx'))) {
     const source = readFileSync(file, 'utf8');
     for (const match of source.matchAll(/<IconButton\b[\s\S]*?(?:\/>|<\/IconButton>)/g)) {

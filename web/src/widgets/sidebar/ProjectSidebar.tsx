@@ -250,7 +250,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                       menuOpen={sessionMenu() === sessionId}
                       replacementBusy={creatingSessionProjectId() === projectId}
                       onNavigate={() => props.onNavigate?.()}
-                      onOpen={(id, onCommitted) => { navigateProjectSession(id, { onCommitted }); }}
+                      onOpen={(sessionId, onCommitted) => { navigateProjectSession(sessionId, { onCommitted }); }}
                       onSelectRuntime={(id) => { navigateProjectSession(id); }}
                       onRenameOpenChange={(open) => setEditing(open ? sessionId : null)}
                       onMenuOpenChange={(open) => setSessionMenu(open ? sessionId : null)}

@@ -38,7 +38,7 @@ export function DialogContent<T extends ValidComponent = 'div'>(props: Polymorph
   return <DialogPortal>
     <DialogOverlay class={local.overlayClass} />
     <DialogPrimitive.Content
-      class={cn('fixed top-1/2 left-1/2 z-61 max-h-[calc(100dvh-2*var(--space-20))] w-[min(400px,calc(100vw-2*var(--space-20)))] -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-14 border border-border-strong bg-surface shadow-popover', {
+      class={cn('fixed top-1/2 left-1/2 z-61 max-h-[calc(100dvh-2*var(--space-20))] w-[min(400px,calc(100vw-2*var(--space-20)))] -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-8 border border-border-subtle bg-surface text-text-primary shadow-popover outline-none', {
         'w-(--container-search)': local.size === 'search',
         'w-(--container-settings) max-h-(--container-settings-tall)': local.size === 'settings',
         'w-(--container-mcp) max-h-(--container-settings-tall)': local.size === 'mcp',
@@ -55,10 +55,10 @@ export const DialogDescription = DialogPrimitive.Description;
 
 export const DialogHeader: Component<ComponentProps<'header'>> = (props) => {
   const [local, rest] = splitProps(props, ['class']);
-  return <header class={cn('flex min-h-54 items-center gap-12 px-18 pr-10', local.class)} {...rest} />;
+  return <header class={cn('flex min-h-0 items-center gap-12 border-b border-border-subtle px-20 py-14 pr-12', local.class)} {...rest} />;
 };
 
 export const DialogFooter: Component<ComponentProps<'footer'>> = (props) => {
   const [local, rest] = splitProps(props, ['class']);
-  return <footer class={cn('mt-10 flex justify-end gap-6', local.class)} {...rest} />;
+  return <footer class={cn('flex justify-end gap-8 border-t border-border-subtle px-20 py-12', local.class)} {...rest} />;
 };
