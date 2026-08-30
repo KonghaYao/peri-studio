@@ -330,6 +330,37 @@ fn project_payload(
                 item.insert(txn, "status", change_status(change.status));
             }
         }
+        InstanceResourcePayload::GitLogPage(page) => {
+            meta.insert(txn, "view_type", "git_log_page");
+            meta.insert(txn, "repo_id", page.repo_id.clone());
+            meta.insert(txn, "source_generation", page.source_generation.clone());
+            meta.insert(txn, "head_oid", page.head_oid.clone());
+            insert_optional(meta, txn, "next_cursor", page.next_cursor.as_deref());
+            for commit in &page.commits {
+                order.push_back(txn, commit.commit_id.clone());
+                let item = entries.insert(txn, commit.commit_id.clone(), yrs::MapPrelim::default());
+                item.insert(txn, "oid", commit.oid.clone());
+                item.insert(txn, "short_oid", commit.short_oid.clone());
+                item.insert(txn, "message", commit.message.clone());
+                if commit.message_truncated.unwrap_or(false) {
+                    item.insert(txn, "message_truncated", true);
+                }
+                item.insert(txn, "author_name", commit.author_name.clone());
+                item.insert(txn, "author_date", commit.author_date.clone());
+                item.insert(
+                    txn,
+                    "parents",
+                    serde_json::to_string(&commit.parents).unwrap_or_else(|_| "[]".into()),
+                );
+                item.insert(txn, "parents_complete", commit.parents_complete);
+                item.insert(
+                    txn,
+                    "refs",
+                    serde_json::to_string(&commit.refs).unwrap_or_else(|_| "[]".into()),
+                );
+                item.insert(txn, "refs_complete", commit.refs_complete);
+            }
+        }
         InstanceResourcePayload::Blob(_) | InstanceResourcePayload::Mutation(_) => {
             meta.insert(txn, "view_type", "blob");
         }

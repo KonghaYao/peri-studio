@@ -27,6 +27,7 @@ export type GitGraphCommit = {
   time: string;
   date?: string;
   hash?: string;
+  shortHash?: string;
   refs?: GitGraphRef[];
   isHead?: boolean;
   /** Parent commit hashes (git log order: parents are older commits). */

@@ -4,6 +4,7 @@ import type { PendingElicitation, PendingPermission } from '@/entities/chat/cont
 import type { ProjectInfo } from '@/entities/registry/registry-view';
 
 const state = vi.hoisted(() => ({
+  chatEntries: vi.fn(() => [] as never[]),
   chatHead: vi.fn(() => null),
   createProjectSession: vi.fn(),
   creatingSessionProjectId: vi.fn(() => null),
@@ -18,7 +19,9 @@ const state = vi.hoisted(() => ({
   respondElicitation: vi.fn(),
   retryPersistentAction: vi.fn(),
   restoringSessionId: vi.fn(() => null as string | null),
+  runtimeDocsHydrated: vi.fn(() => true),
   selectedSessionId: vi.fn(() => 'session-1' as string | null),
+  turnActive: vi.fn(() => false),
 }));
 
 vi.mock('../../panel/store', () => state);
@@ -52,8 +55,7 @@ describe('ChatView project directory hydration', () => {
     render(() => <ChatView />);
 
     expect(screen.getByRole('status', { name: 'Loading projects' })).toBeInTheDocument();
-    expect(screen.queryByText('Start with a clear prompt')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'New project' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'What would you like to do today?' })).not.toBeInTheDocument();
   });
 
   it('shows the project empty state only after the registry confirms it is empty', () => {
@@ -62,7 +64,6 @@ describe('ChatView project directory hydration', () => {
 
     render(() => <ChatView />);
 
-    expect(screen.getByText('Start with a clear prompt')).toBeInTheDocument();
     expect(screen.getByText('Create a project first; Peri Studio saves and restores ACP sessions within it.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'New project' })).toBeInTheDocument();
     expect(screen.queryByRole('status', { name: 'Loading projects' })).not.toBeInTheDocument();
@@ -77,7 +78,8 @@ describe('ChatView project directory hydration', () => {
 
     render(() => <ChatView />);
 
-    expect(screen.getByRole('heading', { name: 'What do you want to build in Peri Studio?' })).toBeInTheDocument();
+    expect(screen.getByTestId('chat-empty-workspace')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'What do you want to build?' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Start new session' })).toHaveAttribute('data-testid', 'quick-start-docked');
     expect(screen.getByTestId('chat-view')).toHaveClass('chat-view--launch');
   });

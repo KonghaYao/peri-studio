@@ -12,6 +12,7 @@ use crate::conn::DocId;
 
 pub const RESOURCE_PROTOCOL_VERSION: u32 = 4;
 pub const DEFAULT_DIRECTORY_PAGE_SIZE: u32 = 200;
+pub const DEFAULT_GIT_LOG_PAGE_SIZE: u32 = 50;
 pub const MAX_DIRECTORY_PAGE_SIZE: u32 = 500;
 /// instance → server 单次 blob 中继的原始字节上限。
 pub const MAX_RESOURCE_BLOB_BYTES: u64 = 8 * 1024 * 1024;
@@ -95,6 +96,8 @@ pub struct OpenResourceView {
     pub group_id: Option<GitGroupId>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cursor: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expected_generation: Option<String>,
     #[serde(default = "default_page_size")]
     pub limit: u32,
 }
@@ -111,6 +114,7 @@ pub enum ResourceViewKind {
     FsDirectoryPage,
     GitRepository,
     GitGroupPage,
+    GitLogPage,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -231,6 +235,7 @@ pub enum InstanceResourceQueryKind {
     GitSnapshot(GitSnapshotQuery),
     GitChanges(GitChangesQuery),
     GitDiff(GitDiffQuery),
+    GitLog(GitLogQuery),
     GitMutate(GitMutateQuery),
 }
 
@@ -291,6 +296,26 @@ pub struct GitChangesQuery {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct GitLogQuery {
+    pub repo_id: String,
+    pub expected_generation: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cursor: Option<String>,
+    pub limit: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitLogQuery {
+    pub repo_id: String,
+    pub expected_generation: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cursor: Option<String>,
+    pub limit: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InstanceResourceResult {
     pub request_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -306,6 +331,7 @@ pub enum InstanceResourcePayload {
     RepositoriesPage(RepositoriesPage),
     GitRepository(GitRepositorySnapshot),
     GitGroupPage(GitGroupPage),
+    GitLogPage(GitLogPage),
     Blob(InstanceBlob),
     Mutation(InstanceMutationResult),
 }
@@ -427,6 +453,92 @@ pub struct GitGroupPage {
     pub changes: Vec<GitChange>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub next_cursor: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitLogPage {
+    pub repo_id: String,
+    pub source_generation: String,
+    pub commits: Vec<GitLogCommit>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_cursor: Option<String>,
+    pub head_oid: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitLogCommit {
+    pub commit_id: String,
+    pub oid: String,
+    pub short_oid: String,
+    pub message: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub message_truncated: Option<bool>,
+    pub author_name: String,
+    pub author_date: String,
+    pub parents: Vec<String>,
+    pub parents_complete: bool,
+    pub refs: Vec<GitRefLabel>,
+    pub refs_complete: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitRefLabel {
+    pub name: String,
+    pub kind: GitRefKind,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum GitRefKind {
+    Branch,
+    Remote,
+    Tag,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitLogPage {
+    pub repo_id: String,
+    pub source_generation: String,
+    pub commits: Vec<GitLogCommit>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_cursor: Option<String>,
+    pub head_oid: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitLogCommit {
+    pub commit_id: String,
+    pub oid: String,
+    pub short_oid: String,
+    pub message: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub message_truncated: Option<bool>,
+    pub author_name: String,
+    pub author_date: String,
+    pub parents: Vec<String>,
+    pub parents_complete: bool,
+    pub refs: Vec<GitRefLabel>,
+    pub refs_complete: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitRefLabel {
+    pub name: String,
+    pub kind: GitRefKind,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum GitRefKind {
+    Branch,
+    Remote,
+    Tag,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

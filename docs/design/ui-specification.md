@@ -15,11 +15,10 @@ date: 2026-08-30
 
 | 文件 | 状态 | 说明 |
 |------|------|------|
-| [`style-demo.html`](style-demo.html) | **已废止** | 暖橙 accent（`#c4571f`）、暖灰侧栏、含深色主题草稿；**与现行产品不一致** |
 | [`../arch/workspace-ui-concept.html`](../arch/workspace-ui-concept.html) | **概念稿** | Workspace/Project/Session 信息架构讨论用；颜色与组件均非生产规范 |
 | 任意截图 / Figma 未回写 token | **无效** | 必须以 `tokens.css` 与 `shared/ui` 为准 |
 
-**现行视觉身份**：白底画布 + AntD 冷灰发丝线 + **湛蓝 accent**（`#2563eb`，`--palette-accent-600`），层次靠间距与边框而非大面积灰底块。权威 token 与 `ui-sandbox` Layers 对齐。深色主题尚未在产品中启用（`style-demo` 中的 `.dark` 仅为历史探索）。
+**现行视觉身份**：白底画布 + AntD 冷灰发丝线 + **湛蓝 accent**（`#2563eb`，`--palette-accent-600`），层次靠间距与边框而非大面积灰底块。权威 token 与 `ui-sandbox` Layers 对齐。深色主题尚未在产品中启用。
 
 ---
 
@@ -82,15 +81,6 @@ widgets/*           ← 业务组合；禁止深层 import 单个 ui 文件，�
 | 遮罩 | `--scrim` | `bg-scrim` | Dialog overlay |
 
 主按钮：`--btn-primary` → `bg-btn-primary`，前景 **必须**为 `--surface` 白字（见 `Button` `primary` variant）。
-
-### 4.2 与废止 `style-demo` 的差异
-
-| 维度 | style-demo（废止） | 现行产品 |
-|------|-------------------|----------|
-| Accent | 暖橙 `#c4571f` | 湛蓝 `#2563eb` |
-| 背景 | 暖灰 `#faf9f7` | 纯白 `#ffffff` |
-| 侧栏 | 灰底 `#f3f2ee` | 白底 + 线框 |
-| 深色主题 | 有 `.dark` 草稿 | **未启用** |
 
 ---
 
@@ -230,6 +220,5 @@ Widget **可以**读 `store`；**不得**直发 WebSocket 帧。复杂逻辑下�
 
 ## 14. 后续演进（非阻塞）
 
-- [ ] 深色主题：需先在 `tokens.css` 定义 `.dark` 语义映射，再更新 `theme.css`；废止 demo 的橙色映射 **不得**直接搬入
-- [ ] 将 `style-demo.html` 重写为只读 token 画廊（只读现行绿/白规范）或移入 `docs/archive/`
+- [ ] 深色主题：需先在 `tokens.css` 定义 `.dark` 语义映射，再更新 `theme.css`
 - [ ] Storybook / visual-fixture 与本文 token 表自动对账

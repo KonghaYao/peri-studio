@@ -25,6 +25,7 @@ import { useComposerPrediction } from '@/features/composer/composer-prediction';
 import { useComposerSlash } from '@/features/composer/composer-slash';
 import { slashMenuOptionId } from '@/features/composer/slash-menu';
 import { Button, IconButton, InlineNotice, Textarea } from '@/shared/ui';
+import { cn } from '@/shared/lib/cn';
 import { SlashMenu } from './SlashMenu';
 import { SessionModelMenu } from '@/widgets/shell/SessionConfigDialog';
 import { TokenUsageMeter, tokenUsageLabel } from '@/widgets/chat/TokenUsageMeter';
@@ -58,7 +59,8 @@ function AssetIcon(props: { kind: ComposerAssetKind }) {
   return <FileText size={21} strokeWidth={1.7} />;
 }
 
-export function Composer() {
+export function Composer(props: { layout?: 'docked' | 'centered' }) {
+  const centered = () => props.layout === 'centered';
   let taRef: HTMLTextAreaElement | undefined;
   let modelTrigger: HTMLButtonElement | undefined;
   const slashMenuId = 'composer-slash-menu';
@@ -251,7 +253,13 @@ export function Composer() {
   }
 
   return (
-    <div data-testid="composer-wrap" class="composer-wrap composer-wrap--overlay chat-column relative">
+    <div
+      data-testid="composer-wrap"
+      class={cn(
+        'composer-wrap relative w-full',
+        centered() ? 'composer-wrap--centered' : 'composer-wrap--overlay chat-column',
+      )}
+    >
       <Show when={slash.slashMenuOpen()}>
         <SlashMenu
           id={slashMenuId}
@@ -334,7 +342,10 @@ export function Composer() {
           aria-describedby={inputDescribedBy()}
           spellcheck={false}
           data-testid="composer-input"
-          class="composer-input ui-scrollbar relative z-1 block min-h-36 max-h-180 w-full resize-none overflow-y-auto border-0 bg-transparent px-1 py-8 text-13 leading-normal text-content-primary outline-0 placeholder:text-content-muted disabled:bg-transparent disabled:text-content-secondary focus-visible:outline-0"
+          class={cn(
+            'composer-input ui-scrollbar relative z-1 block w-full resize-none overflow-y-auto border-0 bg-transparent px-1 py-8 text-13 leading-normal text-content-primary outline-0 placeholder:text-content-muted disabled:bg-transparent disabled:text-content-secondary focus-visible:outline-0',
+            centered() ? 'min-h-72 max-h-180 text-14 leading-22' : 'min-h-36 max-h-180',
+          )}
           />
         </div>
         <Show when={promptOverBudget()}>

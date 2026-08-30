@@ -29,6 +29,7 @@ fn browser_open_view_has_no_trusted_root_or_instance_fields() {
             repo_id: None,
             group_id: None,
             cursor: None,
+            expected_generation: None,
             limit: 200,
         },
     });

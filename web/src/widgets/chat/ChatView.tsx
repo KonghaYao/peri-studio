@@ -12,8 +12,9 @@
 import { ChatHeader } from './ChatHeader';
 import { Composer } from '@/widgets/composer/Composer';
 import { MessageList } from './MessageList';
-import { createSignal, onCleanup, onMount, Show } from 'solid-js';
-import { chatEntries, chatHead, elicitationResponses, elicitations, permissions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, restoringSessionId, retryPersistentAction, selectedSessionId, turnActive } from '../../panel/store';
+import { ChatEmptyWorkspace, CHAT_EMPTY_TITLE } from './ChatEmptyWorkspace';
+import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
+import { chatEntries, chatHead, elicitationResponses, elicitations, permissions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, restoringSessionId, retryPersistentAction, runtimeDocsHydrated, selectedSessionId, turnActive } from '../../panel/store';
 import { readOnly } from '../../panel/lib/auth-state';
 import { LoadingState } from '@/shared/ui';
 import { ConnectionProblem } from '@/widgets/shell/ConnectionProblem';
@@ -24,6 +25,10 @@ import { ElicitationQueue } from './ElicitationQueue';
 import { dismissUncertainElicitation, visibleElicitations } from '../../panel/lib/elicitation-delivery';
 import { PermissionQueue } from './PermissionQueue';
 import { permissionDecisions } from '../../panel/lib/permission-delivery';
+import { messageSubmission } from '../../panel/lib/message-delivery';
+import { isConversationEmpty } from '@/features/chat/conversation-empty';
+
+const EMPTY_HINT = 'Enter to send · Shift+Enter for newline';
 
 type ChatViewProps = {
   onOpenNavigation?: () => void;
@@ -38,6 +43,14 @@ export function ChatView(props: ChatViewProps) {
   let composerObserver: ResizeObserver | undefined;
   const hasPendingPermission = () => permissions().some((permission) => permission.status === 'pending');
   const hasPendingElicitation = () => visibleElicitations(elicitations()).length > 0;
+  const conversationEmpty = createMemo(() => isConversationEmpty({
+    runtimeDocsHydrated: runtimeDocsHydrated(),
+    entryCount: chatEntries().length,
+    turnActive: turnActive(),
+    hasSubmission: !!messageSubmission(selectedSessionId()),
+    restoring: !!restoringSessionId(),
+    chatLoading: !!chatHead()?.chat?.loading,
+  }));
   onMount(() => {
     if (!composerStack || typeof ResizeObserver === 'undefined') return;
     const updateHeight = () => setComposerHeight(composerStack?.getBoundingClientRect().height ?? 0);
@@ -63,32 +76,61 @@ export function ChatView(props: ChatViewProps) {
         <LaunchWorkspace onOpenNavigation={props.onOpenNavigation} onCreateProject={props.onCreateProject} onImport={props.onImport} />
       </Show>}>
         <div class="chat-workspace relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
-          <MessageList footerHeight={composerHeight()} />
-          <div ref={composerStack} class="composer-stack relative z-20 flex-none min-w-0 overflow-x-hidden bg-app-bg" data-testid="composer-stack">
-            <Show when={hasPendingPermission()}>
-              <PermissionQueue
-                permissions={permissions().filter((permission) => permission.status === 'pending')}
-                decisions={permissionDecisions()}
-                readOnly={readOnly()}
-                onResolve={resolvePermission}
-                onRetry={retryPersistentAction}
-              />
-            </Show>
-            <Show when={!hasPendingPermission()}>
-              <ElicitationQueue
-                elicitations={visibleElicitations(elicitations())}
-                responses={elicitationResponses()}
-                readOnly={readOnly()}
-                onRefreshStatus={refreshCurrentControlProjection}
-                onDismissUncertain={dismissUncertainElicitation}
-                onRespond={respondElicitation}
-              />
-            </Show>
-            <Show when={!hasPendingPermission() && !hasPendingElicitation()}>
-              <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} entries={chatEntries()} />
-            </Show>
-            <Composer />
-          </div>
+          <Show when={conversationEmpty()} fallback={(
+            <>
+              <MessageList footerHeight={composerHeight()} />
+              <div ref={composerStack} class="composer-stack relative z-20 flex-none min-w-0 overflow-x-hidden bg-app-bg" data-testid="composer-stack">
+                <Show when={hasPendingPermission()}>
+                  <PermissionQueue
+                    permissions={permissions().filter((permission) => permission.status === 'pending')}
+                    decisions={permissionDecisions()}
+                    readOnly={readOnly()}
+                    onResolve={resolvePermission}
+                    onRetry={retryPersistentAction}
+                  />
+                </Show>
+                <Show when={!hasPendingPermission()}>
+                  <ElicitationQueue
+                    elicitations={visibleElicitations(elicitations())}
+                    responses={elicitationResponses()}
+                    readOnly={readOnly()}
+                    onRefreshStatus={refreshCurrentControlProjection}
+                    onDismissUncertain={dismissUncertainElicitation}
+                    onRespond={respondElicitation}
+                  />
+                </Show>
+                <Show when={!hasPendingPermission() && !hasPendingElicitation()}>
+                  <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} entries={chatEntries()} />
+                </Show>
+                <Composer />
+              </div>
+            </>
+          )}>
+            <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
+              <Show when={hasPendingPermission()}>
+                <PermissionQueue
+                  permissions={permissions().filter((permission) => permission.status === 'pending')}
+                  decisions={permissionDecisions()}
+                  readOnly={readOnly()}
+                  onResolve={resolvePermission}
+                  onRetry={retryPersistentAction}
+                />
+              </Show>
+              <Show when={!hasPendingPermission()}>
+                <ElicitationQueue
+                  elicitations={visibleElicitations(elicitations())}
+                  responses={elicitationResponses()}
+                  readOnly={readOnly()}
+                  onRefreshStatus={refreshCurrentControlProjection}
+                  onDismissUncertain={dismissUncertainElicitation}
+                  onRespond={respondElicitation}
+                />
+              </Show>
+              <ChatEmptyWorkspace title={CHAT_EMPTY_TITLE} hint={EMPTY_HINT}>
+                <Composer layout="centered" />
+              </ChatEmptyWorkspace>
+            </div>
+          </Show>
         </div>
       </Show>
     </section>

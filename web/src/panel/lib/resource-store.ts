@@ -23,6 +23,8 @@ const openViews = new Map<string, OpenResourceLease>();
 const openViewKeys = new Map<string, string>();
 const requested = new Set<string>();
 let resourceGeneration = 0;
+const activeLogViews = new Map<string, string>();
+const MAX_ACCUMULATED_COMMITS_PER_REPO = 4000;
 
 interface Transport { send: (frame: unknown) => boolean; ready: () => boolean; toast: (message: string) => void }
 let transport: Transport | null = null;

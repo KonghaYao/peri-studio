@@ -45,7 +45,7 @@ export function composerInputState(input: ComposerPlaceholderInput): ComposerInp
   } else if (input.turnActive || input.submissionForSession) {
     placeholder = '';
   } else {
-    placeholder = 'Message the agent';
+    placeholder = 'Message the agent, or type / for commands';
   }
   return { disabled, placeholder };
 }

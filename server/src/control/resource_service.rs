@@ -8,12 +8,12 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use peri_studio_proto::resource::{
-    DiscoverRepositoriesQuery, GitChangesQuery, GitDiffQuery, GitMutateQuery, GitSnapshotQuery,
-    InstanceResourcePayload, InstanceResourceQuery, InstanceResourceQueryKind, OpenResourceBlob,
-    OpenResourceView, ReadDirectoryQuery, ReadFileQuery, ResourceBlobKind, ResourceBlobOpened,
-    ResourceErrorCode, ResourceFailure, ResourceGitActionKind, ResourceQuery, ResourceQueryResult,
-    ResourceResult, ResourceViewKind, DEFAULT_DIRECTORY_PAGE_SIZE, MAX_COMMIT_MESSAGE_BYTES,
-    MAX_DIRECTORY_PAGE_SIZE, MAX_RESOURCE_BLOB_BYTES,
+    DiscoverRepositoriesQuery, GitChangesQuery, GitDiffQuery, GitLogQuery, GitMutateQuery,
+    GitSnapshotQuery, InstanceResourcePayload, InstanceResourceQuery, InstanceResourceQueryKind,
+    OpenResourceBlob, OpenResourceView, ReadDirectoryQuery, ReadFileQuery, ResourceBlobKind,
+    ResourceBlobOpened, ResourceErrorCode, ResourceFailure, ResourceGitActionKind, ResourceQuery,
+    ResourceQueryResult, ResourceResult, ResourceViewKind, DEFAULT_DIRECTORY_PAGE_SIZE,
+    MAX_COMMIT_MESSAGE_BYTES, MAX_DIRECTORY_PAGE_SIZE, MAX_RESOURCE_BLOB_BYTES,
 };
 
 use crate::control::{InstanceError, InstanceRegistry, ResourceProjection};
@@ -420,6 +420,17 @@ fn view_to_instance_query(
             Ok(InstanceResourceQueryKind::GitChanges(GitChangesQuery {
                 repo_id,
                 group_id,
+                cursor: view.cursor,
+                limit,
+            }))
+        }
+        ResourceViewKind::GitLogPage => {
+            let repo_id = required(view.repo_id, "repository is required")?;
+            let expected_generation =
+                required(view.expected_generation, "repository generation is required")?;
+            Ok(InstanceResourceQueryKind::GitLog(GitLogQuery {
+                repo_id,
+                expected_generation,
                 cursor: view.cursor,
                 limit,
             }))

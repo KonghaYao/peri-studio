@@ -7,7 +7,7 @@ export interface ResourceView {
   docId: string;
   viewId: string;
   projectId: string;
-  viewType: 'fs_directory_page' | 'workspace_repositories_page' | 'git_repository' | 'git_group_page';
+  viewType: 'fs_directory_page' | 'workspace_repositories_page' | 'git_repository' | 'git_group_page' | 'git_log_page';
   path?: string;
   repoId?: string;
   groupId?: GitGroupId;
@@ -18,7 +18,7 @@ export interface ResourceView {
 }
 
 const VIEW_TYPES: ResourceView['viewType'][] = [
-  'fs_directory_page', 'workspace_repositories_page', 'git_repository', 'git_group_page',
+  'fs_directory_page', 'workspace_repositories_page', 'git_repository', 'git_group_page', 'git_log_page',
 ];
 const GIT_GROUP_IDS: GitGroupId[] = ['conflicts', 'index', 'working_tree', 'untracked'];
 
@@ -39,7 +39,9 @@ export function renderResourceView(docId: string, doc: Y.Doc): ResourceView | nu
     .filter((id): id is string => typeof id === 'string')
     .map((id) => {
       const value = entries.get(id);
-      return value instanceof Y.Map ? { id, ...mapValue(value) } : null;
+      if (!(value instanceof Y.Map)) return null;
+      const fields = mapValue(value);
+      return { id, ...fields, ...parseGitLogEntryFields(fields) };
     })
     .filter((entry): entry is ResourceEntry => !!entry);
   return {
@@ -65,4 +67,21 @@ function mapValue(map: Y.Map<unknown>): Record<string, unknown> {
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined;
+}
+
+function parseGitLogEntryFields(fields: Record<string, unknown>): Record<string, unknown> {
+  const parsed: Record<string, unknown> = {};
+  if (typeof fields.parents === 'string') {
+    try {
+      const parents = JSON.parse(fields.parents);
+      if (Array.isArray(parents)) parsed.parents = parents;
+    } catch { /* ignore malformed wire */ }
+  }
+  if (typeof fields.refs === 'string') {
+    try {
+      const refs = JSON.parse(fields.refs);
+      if (Array.isArray(refs)) parsed.refs = refs;
+    } catch { /* ignore malformed wire */ }
+  }
+  return parsed;
 }

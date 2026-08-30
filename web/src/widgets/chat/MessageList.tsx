@@ -13,7 +13,7 @@ import { chatEntries, chatHead, elicitations, permissions, retryMessageSubmissio
 import { nextFollowState } from '../../panel/lib/message-follow.ts';
 import { messageTime } from '../../panel/lib/message-time.ts';
 import type { ChatEntry } from '@/entities/chat/chat-view';
-import { Button, EmptyState, LoadingState } from '@/shared/ui';
+import { Button, LoadingState } from '@/shared/ui';
 import { ConversationMessage } from './ConversationMessage';
 import { acknowledgeUnknownMessageDelivery, acknowledgedMessageDeliveries, canAcknowledgeUnknownMessageDelivery, dismissFailedMessageDelivery, messageSubmissionForChat } from '../../panel/lib/message-delivery';
 import { MessageOutbox } from './MessageOutbox';
@@ -325,9 +325,6 @@ export function MessageList(props: { footerHeight?: number }) {
         <div ref={prefixRef} class="transcript-prefix">
           <Show when={!runtimeDocsHydrated()}>
             <LoadingState label="Loading session" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />
-          </Show>
-          <Show when={runtimeDocsHydrated() && chatEntries().length === 0 && !outboxForChat()}>
-            <EmptyState title="Start this conversation" description="Send the first message. Content is saved to this session and can be restored later." class="min-h-(--container-placeholder)" />
           </Show>
         </div>
         <div ref={transcriptRef} class="transcript-window" role="list" aria-label="Conversation transcript">

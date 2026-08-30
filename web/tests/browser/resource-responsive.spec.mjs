@@ -213,15 +213,16 @@ test('desktop preview falls back to its resource view when the source row is del
   await expect(page.getByRole('button', { name: 'Explorer', exact: true })).toBeFocused();
 });
 
-test('short mobile launch layout keeps prompt and composer separated', async ({ page }) => {
+test('short mobile launch layout keeps the centered composer within the viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 430 });
   await page.goto('/visual-fixture.html?scenario=catalog', { waitUntil: 'networkidle' });
   const geometry = await page.evaluate(() => {
-    const prompt = document.querySelector('[data-testid="launch-prompt"]').getBoundingClientRect();
+    const workspace = document.querySelector('[data-testid="chat-empty-workspace"]').getBoundingClientRect();
     const composer = document.querySelector('[data-testid="launch-composer"]').getBoundingClientRect();
-    return { promptBottom: prompt.bottom, composerTop: composer.top, pageWidth: document.documentElement.scrollWidth };
+    return { workspaceTop: workspace.top, composerBottom: composer.bottom, pageWidth: document.documentElement.scrollWidth };
   });
-  expect(geometry.promptBottom).toBeLessThanOrEqual(geometry.composerTop);
+  expect(geometry.workspaceTop).toBeGreaterThanOrEqual(0);
+  expect(geometry.composerBottom).toBeLessThanOrEqual(430);
   expect(geometry.pageWidth).toBeLessThanOrEqual(390);
 });
 

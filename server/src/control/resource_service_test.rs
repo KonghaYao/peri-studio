@@ -12,6 +12,7 @@ fn view(kind: ResourceViewKind) -> OpenResourceView {
         repo_id: None,
         group_id: None,
         cursor: None,
+        expected_generation: None,
         limit: 200,
     }
 }
@@ -41,6 +42,25 @@ fn git_group_requires_repository_and_group_identity() {
         view_to_instance_query(group).unwrap(),
         InstanceResourceQueryKind::GitChanges(_)
     ));
+}
+
+#[test]
+fn git_log_requires_repository_and_expected_generation() {
+    let error = view_to_instance_query(view(ResourceViewKind::GitLogPage)).unwrap_err();
+    assert_eq!(error.code, ResourceErrorCode::InvalidRequest);
+
+    let mut log = view(ResourceViewKind::GitLogPage);
+    log.repo_id = Some("repo-1".into());
+    let error = view_to_instance_query(log.clone()).unwrap_err();
+    assert_eq!(error.code, ResourceErrorCode::InvalidRequest);
+
+    log.expected_generation = Some("gen-1".into());
+    let InstanceResourceQueryKind::GitLog(query) = view_to_instance_query(log).unwrap() else {
+        panic!("expected git log query");
+    };
+    assert_eq!(query.repo_id, "repo-1");
+    assert_eq!(query.expected_generation, "gen-1");
+    assert_eq!(query.limit, 200);
 }
 
 #[test]

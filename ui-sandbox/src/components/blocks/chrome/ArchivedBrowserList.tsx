@@ -8,7 +8,7 @@ export type ArchivedBrowserItem = {
   subtitle: string;
 };
 
-/** 归档浏览弹窗列表：紧凑行高、细间距（对齐 style-demo archived 列表）。 */
+/** 归档浏览弹窗列表：紧凑行高、细间距。 */
 export function ArchivedBrowserList(props: {
   items: ArchivedBrowserItem[];
   class?: string;

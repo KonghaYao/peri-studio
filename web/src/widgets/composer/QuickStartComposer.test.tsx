@@ -23,7 +23,7 @@ describe('QuickStartComposer', () => {
     expect(message).toHaveValue('Please review this project');
     expect(screen.queryByRole('combobox', { name: 'Save to project' })).not.toBeInTheDocument();
     expect(screen.queryByText('Local')).not.toBeInTheDocument();
-    expect(message).toHaveAttribute('placeholder', 'Message the agent');
+    expect(message).toHaveAttribute('placeholder', 'Message the agent, or type / for commands');
   });
 
   it('falls back when the selected active project disappears before submit', async () => {
@@ -38,7 +38,7 @@ describe('QuickStartComposer', () => {
     setProjects([{ id: 'alpha', name: 'Alpha' }]);
 
     await waitFor(() => expect(screen.queryByRole('combobox', { name: 'Save to project' })).not.toBeInTheDocument());
-    expect(screen.getByRole('textbox', { name: 'First message' })).toHaveAttribute('placeholder', 'Message the agent');
+    expect(screen.getByRole('textbox', { name: 'First message' })).toHaveAttribute('placeholder', 'Message the agent, or type / for commands');
   });
 
   it('announces creation as busy without constructing a local session or message', () => {

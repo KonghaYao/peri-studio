@@ -40,7 +40,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
           if (event.isComposing || event.keyCode === 229) return;
           if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); submit(); }
         }}
-        placeholder="Message the agent"
+        placeholder="Message the agent, or type / for commands"
         aria-label="First message"
         aria-describedby={[pendingNeedsAttention() ? statusId : '', promptOverBudget() ? budgetId : ''].filter(Boolean).join(' ') || undefined}
         variant="bare"

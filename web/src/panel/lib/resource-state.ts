@@ -7,12 +7,19 @@ export interface RepositoryState {
   root: string;
   name: string;
   generation?: string;
+  headOid?: string;
   headName?: string;
   upstream?: string;
   detached?: boolean;
   ahead?: number;
   behind?: number;
   groups: Record<string, { count: number; revision: string; changes: ResourceEntry[]; sourceGeneration?: string; nextCursor?: string }>;
+  log?: {
+    commits: ResourceEntry[];
+    nextCursor?: string;
+    sourceGeneration?: string;
+    headOid?: string;
+  };
 }
 export interface ResourceWorkspaceState {
   projectId: string | null;
@@ -57,13 +64,18 @@ export function reduceResourceView(
   }
   if (view.viewType === 'git_repository') {
     const repoId = view.repoId!;
+    const nextHeadOid = stringOrUndefined(view.meta.head_oid);
+    const existing = state.repositories.find((repo) => repo.id === repoId);
+    const clearLog = !!existing?.headOid && !!nextHeadOid && existing.headOid !== nextHeadOid;
     const repositories = upsertRepo(state.repositories, repoId, {
       root: String(view.meta.root ?? ''), generation: view.sourceGeneration,
+      headOid: nextHeadOid,
       headName: stringOrUndefined(view.meta.head_name), upstream: stringOrUndefined(view.meta.upstream),
       detached: !!view.meta.detached, ahead: numberOrZero(view.meta.ahead), behind: numberOrZero(view.meta.behind),
       groups: Object.fromEntries(view.entries.map((entry) => [entry.id, {
         count: numberOrZero(entry.count), revision: String(entry.revision ?? ''), changes: [],
       }])),
+      ...(clearLog ? { log: undefined } : {}),
     });
     return {
       state: { ...state, repositories },
@@ -73,17 +85,48 @@ export function reduceResourceView(
       })),
     };
   }
-  const repoId = view.repoId!;
-  const groupId = view.groupId!;
-  return {
-    state: {
-      ...state,
-      repositories: state.repositories.map((repo) => repo.id === repoId ? {
-        ...repo, groups: { ...repo.groups, [groupId]: mergeGitPage(repo.groups[groupId], view) },
-      } : repo),
-    },
-    followups: [],
-  };
+  if (view.viewType === 'git_log_page') {
+    const repoId = view.repoId!;
+    const sourceGeneration = view.sourceGeneration ?? '';
+    const headOid = stringOrUndefined(view.meta.head_oid) ?? '';
+    return {
+      state: {
+        ...state,
+        repositories: state.repositories.map((repo) => {
+          if (repo.id !== repoId) return repo;
+          const current = repo.log;
+          const canMerge = current
+            && current.sourceGeneration === sourceGeneration
+            && current.headOid === headOid;
+          return {
+            ...repo,
+            headOid: headOid || repo.headOid,
+            log: {
+              commits: canMerge ? mergeEntries(current.commits, view.entries) : view.entries,
+              nextCursor: view.nextCursor,
+              sourceGeneration,
+              headOid,
+            },
+          };
+        }),
+      },
+      followups: [],
+    };
+  }
+  if (view.viewType === 'git_group_page') {
+    const repoId = view.repoId!;
+    const groupId = view.groupId!;
+    return {
+      state: {
+        ...state,
+        repositories: state.repositories.map((repo) => repo.id === repoId ? {
+          ...repo, groups: { ...repo.groups, [groupId]: mergeGitPage(repo.groups[groupId], view) },
+        } : repo),
+      },
+      followups: [],
+    };
+  }
+  return { state, followups: [] };
 }
 
 function mergeDirectoryPage(current: DirectoryState | undefined, view: ResourceView): DirectoryState {

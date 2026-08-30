@@ -5,7 +5,8 @@ export type ResourceViewKind =
   | 'workspace-repositories-page'
   | 'fs-directory-page'
   | 'git-repository'
-  | 'git-group-page';
+  | 'git-group-page'
+  | 'git-log-page';
 
 export type GitGroupId = 'conflicts' | 'index' | 'working_tree' | 'untracked';
 export type GitActionKind = 'stage' | 'unstage' | 'discard' | 'commit' | 'pull' | 'push' | 'sync';

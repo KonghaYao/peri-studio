@@ -73,20 +73,6 @@
   }
 }
 
-.launch-prompt {
-  top: 42%;
-}
-
-.launch-mark {
-  width: 50px;
-  height: 50px;
-}
-
-.launch-mark .ui-icon {
-  width: 50px;
-  height: 50px;
-}
-
 .composer-wrap {
   padding-bottom: var(--composer-safe-bottom);
 }
@@ -94,19 +80,11 @@
 /* 软键盘或横屏会把手机可用高度压到 520px 以下。启动页此时必须回到
    正常文档流，否则绝对定位的提示会与 composer 大面积重叠。 */
 @media (max-width: 959px) and (max-height: 520px) {
-  .launch-workspace {
+  .chat-empty-workspace.launch-workspace {
     align-items: stretch;
     overflow-y: auto;
   }
-  .launch-prompt {
-    position: static;
-    transform: none;
-    margin-block: var(--space-18);
-  }
-  .launch-mark {
-    display: none;
-  }
-  .launch-composer {
+  .chat-empty-workspace.launch-workspace .chat-empty-hint {
     margin-top: var(--space-12);
   }
 }

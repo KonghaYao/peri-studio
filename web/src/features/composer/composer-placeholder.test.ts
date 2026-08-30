@@ -65,12 +65,12 @@ describe('composerInputState', () => {
   it('does not block the selected session for another session confirmation', () => {
     const state = composerInputState(base());
     expect(state.disabled).toBe(false);
-    expect(state.placeholder).toBe('Message the agent');
+    expect(state.placeholder).toBe('Message the agent, or type / for commands');
   });
 
   it('is enabled with the default placeholder when everything is ready', () => {
     const state = composerInputState(base());
     expect(state.disabled).toBe(false);
-    expect(state.placeholder).toBe('Message the agent');
+    expect(state.placeholder).toBe('Message the agent, or type / for commands');
   });
 });

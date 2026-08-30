@@ -166,7 +166,7 @@ describe('Composer', () => {
     render(() => <Composer />);
     const input = screen.getByRole('textbox');
     const send = screen.getByRole('button', { name: 'Send' });
-    expect(input).toHaveAttribute('placeholder', 'Message the agent');
+    expect(input).toHaveAttribute('placeholder', 'Message the agent, or type / for commands');
     expect(send).toBeDisabled();
     fireEvent.input(input, { target: { value: '  inspect the state  ' } });
     expect(send).toBeEnabled();
@@ -484,7 +484,7 @@ describe('Composer', () => {
     setSelectedCid('chat-2');
     render(() => <Composer />);
 
-    expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', 'Message the agent');
+    expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', 'Message the agent, or type / for commands');
     expect(screen.getByRole('textbox')).toBeEnabled();
     expect(screen.queryByText('Another session is still confirming')).not.toBeInTheDocument();
     expect(screen.queryByText('private draft A')).not.toBeInTheDocument();

@@ -261,13 +261,13 @@ describe('MessageList hydration', () => {
     expect(screen.queryByText('Start this conversation')).not.toBeInTheDocument();
   });
 
-  it('turns a confirmed empty projection into a meaningful first-message state', () => {
+  it('keeps an empty transcript quiet once runtime documents are ready', () => {
     setRuntimeDocsState({ chat: true, control: true });
     render(() => <MessageList />);
-    const empty = screen.getByRole('heading', { name: 'Start this conversation' }).parentElement;
-    expect(empty).toBeInTheDocument();
-    expect(screen.getByText(/Content is saved to this session/)).toBeInTheDocument();
+    expect(screen.queryByTestId('chat-empty-workspace')).not.toBeInTheDocument();
+    expect(screen.queryByText('Start this conversation')).not.toBeInTheDocument();
     expect(screen.queryByText('Loading session')).not.toBeInTheDocument();
+    expect(document.querySelector('.transcript-window [role="listitem"]')).toBeNull();
   });
 
   it('keeps one generic working state through the gap after completed tool output', () => {
