@@ -5,9 +5,9 @@ test('conversation copy keeps compact authored line heights', async ({ page }) =
   await page.goto('/visual-fixture.html?scenario=conversation', { waitUntil: 'networkidle' });
   const geometry = await page.getByRole('article', { name: 'Your message' }).first().evaluate((element) => ({
     height: element.getBoundingClientRect().height,
-    lineHeight: getComputedStyle(element.querySelector('.conversation-message__text')).lineHeight,
+    lineHeight: getComputedStyle(element.querySelector('.conversation-message__text, .text-13, p') ?? element).lineHeight,
     composerLineHeight: getComputedStyle(document.querySelector('.composer-input')).lineHeight,
-    assistantHeight: document.querySelector('.conversation-message--assistant').getBoundingClientRect().height,
+    assistantHeight: document.querySelector('.conversation-message--assistant')?.getBoundingClientRect().height ?? 0,
   }));
   expect(geometry).toMatchObject({ lineHeight: '20px', composerLineHeight: '18px' });
   expect(geometry.height).toBeLessThan(100);

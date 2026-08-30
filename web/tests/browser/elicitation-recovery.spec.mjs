@@ -7,8 +7,9 @@ test('unknown question delivery can be hidden without exposing a second answer p
 
   const card = page.locator('.elicitation-card');
   await expect(card.getByRole('alert')).toContainText('Answer delivery not confirmed');
-  await expect(card.getByRole('button', { name: 'Refresh status' })).toBeVisible();
-  await expect(card.getByRole('button', { name: 'Continue' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Refresh status' })).toBeVisible();
+  await expect(card.getByRole('button', { name: 'Hide question' })).toBeVisible();
+  await expect(card.getByRole('button', { name: 'Next', exact: true })).toBeDisabled();
   await card.getByRole('button', { name: 'Hide question' }).click();
   await expect(card.getByText('Which release scope should this change use?')).toBeVisible();
   await expect(card.getByText('1 / 1')).toBeHidden();

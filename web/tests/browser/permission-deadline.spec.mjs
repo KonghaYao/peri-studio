@@ -7,5 +7,5 @@ test('permission deadline is visible while the decision remains actionable', asy
   await expect(page.locator('.permission-request time')).toHaveText('Expires in 5m 0s');
   await expect(page.getByRole('button', { name: 'Allow once' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Deny' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Next', exact: true }).last()).toBeDisabled();
 });

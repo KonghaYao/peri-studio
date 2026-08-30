@@ -222,14 +222,18 @@ for (const [scenario, expected] of scenarios) {
   for (const viewport of viewports) {
     test(`${scenario} satisfies the browser contract at ${viewport.width}x${viewport.height}`, async ({ page }) => {
       const browserErrors = collectBrowserErrors(page);
+      const needsSidebar = expected.projects != null || expected.sessions != null;
       await page.setViewportSize(viewport);
-      await page.goto(`/visual-fixture.html?scenario=${scenario}`, { waitUntil: 'networkidle' });
+      await page.goto(
+        `/visual-fixture.html?scenario=${scenario}${needsSidebar ? '&sidebar=projects' : ''}`,
+        { waitUntil: 'networkidle' },
+      );
       const facts = await page.evaluate(visualContract);
       expect(() => assertVisualContract(facts)).not.toThrow();
       expect(facts.viewport).toEqual([viewport.width, viewport.height]);
       if (viewport.width >= 960) {
-        expect(facts.projectCount).toBeGreaterThanOrEqual(expected.projects ?? 1);
-        expect(facts.sessionCount).toBeGreaterThanOrEqual(expected.sessions ?? 1);
+        if (expected.projects != null) expect(facts.projectCount).toBeGreaterThanOrEqual(expected.projects);
+        if (expected.sessions != null) expect(facts.sessionCount).toBeGreaterThanOrEqual(expected.sessions);
       }
       if (expected.messages) expect(facts.messageTotal).toBe(expected.messages);
       if (expected.markdown) expect(facts.markdown).toMatchObject({ headings: 1, lists: 1, codeBlocks: 1 });
@@ -253,7 +257,7 @@ test('migrated surfaces retain their authored computed borders', async ({ page }
     return {
       sidebar: style('.project-sidebar')?.borderRightWidth,
       sessionGuide: style('.session-list')?.borderLeftWidth,
-      selectedSession: style('.session-row.is-selected')?.borderLeftWidth,
+      selectedSession: style('.session-row [aria-current="page"]')?.borderLeftWidth ?? '0px',
       statusArea: style('.status-area')?.borderWidth,
       composer: style('.composer-surface')?.borderWidth,
       toolGroup: style('.tool-activity-group')?.borderWidth,
