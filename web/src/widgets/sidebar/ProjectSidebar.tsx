@@ -28,7 +28,7 @@ import {
   turnActive,
 } from '../../panel/store';
 import { isTerminal } from '../../panel/lib/action-state';
-import { readOnly } from '../../panel/lib/auth-state';
+import { principalId, readOnly } from '../../panel/lib/auth-state';
 import {
   Button,
   Collapsible,
@@ -56,8 +56,14 @@ import { projectNameFromPath } from '../../panel/lib/project-path';
 import { runtimeState } from '../../panel/lib/runtime-state.ts';
 import { sessionDisplayTitle } from '../../panel/lib/recovery-state.ts';
 import { selectActiveProjects } from '../../features/catalog/project-catalog';
-import { compareSessionsForSidebar } from '@/entities/registry/session-order';
 import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
+import {
+  readPinnedSessions,
+  selectPinnedSessions,
+  togglePinnedSession,
+  writePinnedSessions,
+  type SessionPin,
+} from '@/features/session/session-pins';
 import { ArchivedSection } from '@/widgets/shell/shared/ArchivedSection';
 import { ConfirmDialog } from '@/widgets/shell/shared/ConfirmDialog';
 import { SidebarChrome } from '@/widgets/shell/SidebarChrome';
@@ -77,8 +83,6 @@ import {
   Plus,
   Search,
 } from 'lucide-solid';
-
-const PINNED_LIMIT = 5;
 
 function PlusIcon() { return <Plus size={15} strokeWidth={1.7} />; }
 function ImportIcon() { return <Download size={16} strokeWidth={1.7} />; }
@@ -114,12 +118,13 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
   const [projectNameDraft, setProjectNameDraft] = createSignal('');
   const [projectRenameSubmitting, setProjectRenameSubmitting] = createSignal(false);
   const [searchOpen, setSearchOpen] = createSignal(false);
+  const [pinnedSessionKeys, setPinnedSessionKeys] = createSignal<SessionPin[]>([]);
   let observedSelectedSessionId: string | null | undefined;
   const activeProjects = createMemo(() => selectActiveProjects(projects()));
-  const pinnedSessions = createMemo(() => projectSessions()
-    .filter((session) => !session.archivedAt && session.lastOpenedAt)
-    .sort(compareSessionsForSidebar)
-    .slice(0, PINNED_LIMIT));
+  const pinnedSessions = createMemo(() => selectPinnedSessions(
+    projectSessions().filter((session) => !session.archivedAt),
+    pinnedSessionKeys(),
+  ));
   const sessionHasRunningRuntime = (session: { id: string; activeChatId?: string | null }) => {
     if (!session.activeChatId) return false;
     return session.id !== selectedSessionId() || !isTerminal(chatStatusSignal()[session.activeChatId]);
@@ -148,6 +153,20 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
     const next = new Set(current);
     if (open) next.add(projectId); else next.delete(projectId);
     return next;
+  });
+  const isSessionPinned = (session: Pick<ProjectSessionInfo, 'projectId' | 'id'>): boolean =>
+    pinnedSessionKeys().some((pin) => pin.projectId === session.projectId && pin.sessionId === session.id);
+  const toggleSessionPin = (sessionId: string): void => {
+    const session = projectSessions().find((item) => item.id === sessionId);
+    const identity = principalId();
+    if (!session || !identity) return;
+    const next = togglePinnedSession(pinnedSessionKeys(), session);
+    setPinnedSessionKeys(next);
+    writePinnedSessions(identity, next);
+  };
+
+  createEffect(() => {
+    setPinnedSessionKeys(readPinnedSessions(principalId()));
   });
 
   createEffect(() => {
@@ -234,6 +253,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
     options: { pinned?: boolean; indent?: number } = {},
   ) => {
     const sessionId = session.id;
+    const menuKey = `${options.pinned ? 'pinned' : 'workspace'}:${sessionId}`;
     const selected = () => selectedSessionId() === sessionId;
     const state = () => runtimeState({
       hasSession: true,
@@ -254,18 +274,19 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
         navigationBusy={!!openingSessionId()}
         readOnly={readOnly()}
         renameOpen={editing() === sessionId}
-        menuOpen={sessionMenu() === sessionId}
+        menuOpen={sessionMenu() === menuKey}
         replacementBusy={creatingSessionProjectId() === projectId}
-        pinned={options.pinned}
+        pinned={isSessionPinned(session)}
         indent={options.indent}
         onNavigate={() => props.onNavigate?.()}
         onOpen={(sessionId, onCommitted) => { navigateProjectSession(sessionId, { onCommitted }); }}
         onSelectRuntime={(id) => { navigateProjectSession(id); }}
         onRenameOpenChange={(open) => setEditing(open ? sessionId : null)}
-        onMenuOpenChange={(open) => setSessionMenu(open ? sessionId : null)}
+        onMenuOpenChange={(open) => setSessionMenu(open ? menuKey : null)}
         onRename={renameProjectSession}
         onCreateReplacement={(title) => { createProjectSession(projectId, title); }}
         onArchiveRequest={setArchiveSessionCandidate}
+        onTogglePin={() => toggleSessionPin(sessionId)}
       />
     );
   };

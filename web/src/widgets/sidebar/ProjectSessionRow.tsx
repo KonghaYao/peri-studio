@@ -12,7 +12,7 @@ import {
   TextField,
   Button,
 } from '@/shared/ui';
-import { Archive, Pencil } from 'lucide-solid';
+import { Archive, Pencil, Pin } from 'lucide-solid';
 import { formatCompactRelativeTime, sessionDisplayTitle } from '../../panel/lib/recovery-state.ts';
 import { runConfirmedMutation } from '../../panel/lib/form-mutation';
 import { cn } from '@/shared/lib/cn';
@@ -33,7 +33,7 @@ export interface ProjectSessionRowProps {
   renameOpen: boolean;
   menuOpen: boolean;
   replacementBusy: boolean;
-  pinned?: boolean;
+  pinned: boolean;
   indent?: number;
   onNavigate: () => void;
   onOpen: (sessionId: string, onCommitted: () => void) => void;
@@ -48,10 +48,12 @@ export interface ProjectSessionRowProps {
   ) => boolean;
   onCreateReplacement: (title: string) => void;
   onArchiveRequest: (sessionId: string) => void;
+  onTogglePin: () => void;
 }
 
 function RenameIcon() { return <Pencil size={16} strokeWidth={1.7} />; }
 function ArchiveIcon() { return <Archive size={16} strokeWidth={1.7} />; }
+function PinIcon() { return <Pin size={16} strokeWidth={1.7} />; }
 
 export function ProjectSessionRow(props: ProjectSessionRowProps) {
   const [draft, setDraft] = createSignal(props.session.title);
@@ -122,27 +124,29 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
           pinOnHover={props.pinned}
         />
       </button>
-      <Show when={!props.pinned}>
-        <DropdownMenu open={props.menuOpen} onOpenChange={props.onMenuOpenChange} placement="bottom-end">
-          <DropdownMenuTrigger
-            as={IconButton}
-            size="sm"
-            showTooltip={false}
-            class="session-menu absolute top-1/2 right-4 -translate-y-1/2 size-24 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm transition-opacity duration-(--duration-fast) group-hover/row:opacity-100 group-focus-within/row:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 data-[expanded]:opacity-100"
-            disabled={props.readOnly || submitting()}
-            label="Session actions"
-          >
-            <SessionMenuIcon />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent id={`${renameId()}-menu`} aria-label={`Session actions: ${displayTitle()}`} class="ui-menu">
-            <DropdownMenuItem onSelect={() => props.onRenameOpenChange(true)}><RenameIcon />Rename session</DropdownMenuItem>
-            <DropdownMenuItem class="text-danger focus:text-danger" onClick={() => {
-              props.onMenuOpenChange(false);
-              props.onArchiveRequest(props.session.id);
-            }}><ArchiveIcon />Archive session</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </Show>
+      <DropdownMenu open={props.menuOpen} onOpenChange={props.onMenuOpenChange} placement="bottom-end">
+        <DropdownMenuTrigger
+          as={IconButton}
+          size="sm"
+          showTooltip={false}
+          class="session-menu absolute top-1/2 right-4 -translate-y-1/2 size-24 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm transition-opacity duration-(--duration-fast) group-hover/row:opacity-100 group-focus-within/row:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 data-[expanded]:opacity-100"
+          disabled={submitting()}
+          label="Session actions"
+        >
+          <SessionMenuIcon />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent id={`${renameId()}-menu`} aria-label={`Session actions: ${displayTitle()}`} class="ui-menu">
+          <DropdownMenuItem onClick={() => {
+            props.onMenuOpenChange(false);
+            props.onTogglePin();
+          }}><PinIcon />{props.pinned ? 'Unpin session' : 'Pin session'}</DropdownMenuItem>
+          <DropdownMenuItem disabled={props.readOnly} onSelect={() => props.onRenameOpenChange(true)}><RenameIcon />Rename session</DropdownMenuItem>
+          <DropdownMenuItem class="text-danger focus:text-danger" disabled={props.readOnly} onClick={() => {
+            props.onMenuOpenChange(false);
+            props.onArchiveRequest(props.session.id);
+          }}><ArchiveIcon />Archive session</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Popover open={props.renameOpen} onOpenChange={(open) => props.onRenameOpenChange(open)} placement="bottom-end">
         <PopoverTrigger as="span" class="sr-only" aria-label={`Rename ${displayTitle()}`} />
         <PopoverContent

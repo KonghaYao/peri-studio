@@ -24,6 +24,7 @@ function props(overrides: Partial<ProjectSessionRowProps> = {}): ProjectSessionR
     renameOpen: false,
     menuOpen: false,
     replacementBusy: false,
+    pinned: false,
     onNavigate: vi.fn(),
     onOpen: vi.fn(),
     onSelectRuntime: vi.fn(),
@@ -32,6 +33,7 @@ function props(overrides: Partial<ProjectSessionRowProps> = {}): ProjectSessionR
     onRename: vi.fn(() => true),
     onCreateReplacement: vi.fn(),
     onArchiveRequest: vi.fn(),
+    onTogglePin: vi.fn(),
     ...overrides,
   };
 }
@@ -121,6 +123,16 @@ describe('ProjectSessionRow', () => {
 
     expect(value.onMenuOpenChange).toHaveBeenCalledWith(false);
     expect(value.onArchiveRequest).toHaveBeenCalledWith('acp-12345678');
+  });
+
+  it('keeps pin state explicit and exposes unpin for pinned rows', () => {
+    const value = props({ menuOpen: true, pinned: true });
+    render(() => <ProjectSessionRow {...value} />);
+
+    expect(screen.getByRole('menuitem', { name: 'Unpin session' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Unpin session' }));
+
+    expect(value.onTogglePin).toHaveBeenCalledOnce();
   });
 
   it('allows archiving a session with a live runtime through server metadata', () => {

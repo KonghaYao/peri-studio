@@ -34,7 +34,7 @@ const store = vi.hoisted(() => ({
     title: 'Architecture refactor',
     lifecycle: 'ready',
     updatedAt: '2026-08-13T10:00:00Z',
-    lastOpenedAt: null,
+    lastOpenedAt: null as string | null,
     activeChatId: null as string | null,
     archivedAt: null as string | null,
   }]),
@@ -50,7 +50,7 @@ const store = vi.hoisted(() => ({
 }));
 
 vi.mock('../../panel/store', () => store);
-vi.mock('../../panel/lib/auth-state', () => ({ readOnly: store.readOnly }));
+vi.mock('../../panel/lib/auth-state', () => ({ principalId: () => 'test-principal', readOnly: store.readOnly }));
 vi.mock('@/widgets/auth/AuthGate', () => ({ useAuthActions: () => ({ logout: vi.fn() }) }));
 
 import { ProjectSidebar } from './ProjectSidebar';
@@ -109,6 +109,7 @@ describe('ProjectSidebar registry hydration', () => {
   });
 
   beforeEach(() => {
+    window.localStorage.clear();
     store.registryHydrated.mockReturnValue(true);
     store.projects.mockReturnValue([{ id: 'p1', name: 'Perihelion', cwd: '/repo', instanceId: 'local', createdAt: '2026-08-13T10:00:00Z', updatedAt: '2026-08-13T10:00:00Z', archivedAt: null }]);
     store.navigateProjectSession.mockReset();
@@ -127,6 +128,64 @@ describe('ProjectSidebar registry hydration', () => {
       activeChatId: null,
       archivedAt: null,
     }]);
+  });
+
+  afterEach(() => {
+    window.localStorage.clear();
+  });
+
+  it('does not classify every opened session as pinned', () => {
+    store.projectSessions.mockReturnValue([{
+      id: 'acp-12345678',
+      projectId: 'p1',
+      title: 'Architecture refactor',
+      lifecycle: 'ready',
+      updatedAt: '2026-08-13T10:00:00Z',
+      lastOpenedAt: '2026-08-14T10:00:00Z',
+      activeChatId: null,
+      archivedAt: null,
+    }]);
+
+    render(() => <ProjectSidebar />);
+
+    expect(screen.queryByText('Pinned')).not.toBeInTheDocument();
+  });
+
+  it('pins explicitly and keeps the pin order independent from open recency', () => {
+    store.projectSessions.mockReturnValue([
+      {
+        id: 'session-a',
+        projectId: 'p1',
+        title: 'Session A',
+        lifecycle: 'ready',
+        updatedAt: '2026-08-13T10:00:00Z',
+        lastOpenedAt: '2026-08-14T10:00:00Z',
+        activeChatId: null,
+        archivedAt: null,
+      },
+      {
+        id: 'session-b',
+        projectId: 'p1',
+        title: 'Session B',
+        lifecycle: 'ready',
+        updatedAt: '2026-08-13T09:00:00Z',
+        lastOpenedAt: '2026-08-15T10:00:00Z',
+        activeChatId: null,
+        archivedAt: null,
+      },
+    ]);
+    // 显式 pin session-a 在前；session-b 更近打开也不应排到它前面。
+    window.localStorage.setItem(
+      'peri_studio:pinned_sessions:test-principal',
+      JSON.stringify([{ projectId: 'p1', sessionId: 'session-a' }]),
+    );
+
+    render(() => <ProjectSidebar />);
+
+    expect(screen.getByText('Pinned')).toBeInTheDocument();
+    const pinnedList = screen.getByText('Pinned').closest('div')!.nextElementSibling!;
+    expect(pinnedList.querySelector('[data-session-id="session-a"]')).toBeInTheDocument();
+    expect(pinnedList.querySelector('[data-session-id="session-b"]')).not.toBeInTheDocument();
   });
 
   it('uses folder disclosure for project sessions', () => {
