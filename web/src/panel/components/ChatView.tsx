@@ -10,7 +10,7 @@
 // 供中窄屏打开左右 drawer。
 
 import { ChatHeader } from './ChatHeader';
-import { Composer } from './Composer';
+import { Composer } from '@/widgets/composer/Composer';
 import { MessageList } from './MessageList';
 import { createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { chatEntries, chatHead, elicitationResponses, elicitations, permissions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, restoringSessionId, retryPersistentAction, selectedSessionId, turnActive } from '../store';

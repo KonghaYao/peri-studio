@@ -1,5 +1,5 @@
 import { Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
-import { ProjectSidebar } from './ProjectSidebar';
+import { ProjectSidebar } from '../../widgets/sidebar/ProjectSidebar';
 import { ChatView } from './ChatView';
 import { compactViewportQuery, mediumViewportQuery } from '../lib/breakpoints';
 import { ProjectDrawer } from './shared/ProjectDrawer';

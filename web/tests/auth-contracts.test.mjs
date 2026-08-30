@@ -30,7 +30,22 @@ test('authentication invalidation survives UI cleanup and reaches the login surf
   assert.match(gate, /auth\.problem\(\)/);
   assert.doesNotMatch(gate, /fetch\(|localStorage\./);
   assert.doesNotMatch(store, /export \{[^}]*authInvalidation/);
-  for (const file of ['ProjectSidebar.tsx', 'Composer.tsx', 'SessionSearch.tsx', 'ChatView.tsx', 'QuickStartComposer.tsx', 'SessionRailActions.tsx']) {
+  const migratedComponents = [
+    ['Composer.tsx', join(import.meta.dirname, '..', 'src', 'widgets', 'composer')],
+    ['QuickStartComposer.tsx', join(import.meta.dirname, '..', 'src', 'widgets', 'composer')],
+    ['ProjectSidebar.tsx', join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar')],
+    ['SessionSearch.tsx', join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar')],
+  ];
+  const panelComponents = [
+    'ChatView.tsx',
+    'SessionRailActions.tsx',
+  ];
+  for (const [file, directory] of migratedComponents) {
+    const feature = readFileSync(join(directory, file), 'utf8');
+    assert.match(feature, /from '\.\.\/\.\.\/panel\/lib\/auth-state'/, file);
+    assert.doesNotMatch(feature, /import \{[^}]*\breadOnly\b[^}]*\} from '\.\.\/store'/, file);
+  }
+  for (const file of panelComponents) {
     const feature = readFileSync(join(root, 'components', file), 'utf8');
     assert.match(feature, /from '\.\.\/lib\/auth-state'/, file);
     assert.doesNotMatch(feature, /import \{[^}]*\breadOnly\b[^}]*\} from '\.\.\/store'/, file);

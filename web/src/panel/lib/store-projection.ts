@@ -6,7 +6,7 @@ import { ChatProjection } from './chat-projection';
 import { renderControl, type ControlView } from './control-view';
 import type { ChatInfo, InstanceInfo, ProjectInfo, ProjectSessionInfo, SessionSummaryInfo } from './registry-view';
 import { RegistryProjection } from './registry-projection';
-import { unimportedSessions } from './session-import';
+import { unimportedSessions } from '../../features/session/session-import';
 import { isTerminal } from './action-state';
 import { retainLiveRuntimeHints } from './recovery-state';
 import { reconcileMessageProjection } from './message-delivery';

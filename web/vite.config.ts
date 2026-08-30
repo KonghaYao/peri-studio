@@ -7,7 +7,20 @@ import tailwindcss from '@tailwindcss/vite';
 // 构建产物 dist/ 由 peri-studio-server 的 build.rs 编译期内嵌（见 server/build.rs）。
 // 产物文件名带内容 hash，Rust 端按实际文件清单生成路由表，无需约定固定名。
 const rootDir = import.meta.dirname;
+const srcDir = resolve(rootDir, 'src');
+
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@/shared': resolve(srcDir, 'shared'),
+      '@/entities': resolve(srcDir, 'entities'),
+      '@/features': resolve(srcDir, 'features'),
+      '@/widgets': resolve(srcDir, 'widgets'),
+      '@/pages': resolve(srcDir, 'pages'),
+      '@/store': resolve(srcDir, 'store/index.ts'),
+      '@/app': resolve(srcDir, 'app'),
+    },
+  },
   plugins: [solid(), tailwindcss()],
   test: {
     environment: 'jsdom',

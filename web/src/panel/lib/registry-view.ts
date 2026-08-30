@@ -1,6 +1,6 @@
 import * as Y from 'yjs';
 import { asMap, getStr } from './yjs-values';
-import { compareSessionsForSidebar } from './session-sidebar-order';
+import { compareSessionsForSidebar } from '../../features/session/session-sidebar-order';
 
 export interface InstanceInfo {
   id: string;

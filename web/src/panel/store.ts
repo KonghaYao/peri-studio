@@ -8,22 +8,22 @@ import type { ControlView } from './lib/control-view';
 import type { ChatInfo, InstanceInfo, ProjectInfo, ProjectSessionInfo, SessionSummaryInfo } from './lib/registry-view';
 import { isTerminal, isTurnActive } from './lib/action-state.ts';
 import { CommandTracker } from './lib/command-tracker';
-import { SessionActivation, type OpeningSession, type OpenSessionCallbacks } from './lib/session-activation';
+import { SessionActivation, type OpeningSession, type OpenSessionCallbacks } from '../features/session/session-activation';
 import { installPrincipalRole, principalId, publishAuthInvalidation, readOnly } from './lib/auth-state';
-import { setComposerDraft } from './lib/composer-draft';
+import { setComposerDraft } from '@/features/composer/composer-draft';
 import { completeMessageDelivery, messageSubmission, messageSubmissionForChat, ownsMessageDeliveryError, resetMessageDelivery, settleProjectedMessageDelivery } from './lib/message-delivery';
 import { settleLateQuickStart } from './lib/quick-start-delivery';
 import { confirmRuntimeControl, resetRuntimeControls } from './lib/runtime-control';
 import { resetPermissionDecisions } from './lib/permission-delivery';
-import { CatalogActions } from './lib/catalog-actions';
-import { applySessionPreferences, resolveSessionPreferenceKey } from './lib/session-preference-merge';
+import { CatalogActions } from '../features/catalog/catalog-actions';
+import { applySessionPreferences, resolveSessionPreferenceKey } from '../features/session/session-preference-merge';
 import {
   hydrateSessionPreferences,
   resetSessionPreferences,
   unloadSessionPreferences,
   setSessionArchivedPreference,
   setSessionCustomNamePreference,
-} from './lib/session-preferences';
+} from '../features/session/session-preferences';
 import { ToastStore } from './lib/toast-store';
 import { ACK_TIMEOUT_MS, type Ack, type ActionError, type ActionFrame, type ActionOptions } from './lib/action-contract';
 import { handleMcpOAuth, handleMcpOAuthAuthorization, handleMcpServers, resetMcpState } from './lib/mcp';

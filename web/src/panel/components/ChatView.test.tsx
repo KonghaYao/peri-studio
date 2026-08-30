@@ -25,13 +25,13 @@ vi.mock('../store', () => state);
 vi.mock('../lib/auth-state', () => ({ readOnly: state.readOnly }));
 vi.mock('./StatusArea', () => ({ StatusArea: () => null }));
 vi.mock('./ChatHeader', () => ({ ChatHeader: () => null }));
-vi.mock('./Composer', () => ({ Composer: () => null }));
+vi.mock('@/widgets/composer/Composer', () => ({ Composer: () => null }));
 vi.mock('./ConnectionProblem', () => ({ ConnectionProblem: () => null }));
 vi.mock('./ElicitationQueue', () => ({ ElicitationQueue: () => <section aria-label="Agent question" /> }));
 vi.mock('./PermissionQueue', () => ({ PermissionQueue: () => <section aria-label="Permissions" /> }));
 vi.mock('./ErrorCenter', () => ({ ErrorCenter: () => null }));
 vi.mock('./MessageList', () => ({ MessageList: () => null }));
-vi.mock('./QuickStartComposer', () => ({ QuickStartComposer: () => <section aria-label="Start new session" class="quick-start quick-start--docked" /> }));
+vi.mock('@/widgets/composer/QuickStartComposer', () => ({ QuickStartComposer: () => <section aria-label="Start new session" class="quick-start quick-start--docked" /> }));
 
 import { ChatView } from './ChatView';
 

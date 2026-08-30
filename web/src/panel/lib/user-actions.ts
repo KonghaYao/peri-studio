@@ -53,7 +53,7 @@ import {
 } from './elicitation-delivery';
 import { persistActionProblem, retryPersistentAction } from './panel-errors';
 import type { DispatchResult } from './command-tracker';
-import type { ComposerDraftOwner } from './composer-draft';
+import type { ComposerDraftOwner } from '@/features/composer/composer-draft';
 
 /** 会话配置修改的运行时状态（SessionConfigDialog 消费）。 */
 export interface SessionConfigMutation {

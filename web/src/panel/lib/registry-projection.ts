@@ -1,6 +1,6 @@
 import type * as Y from 'yjs';
 import { renderRegistry, type RegistryView } from './registry-view';
-import { stabilizeProjectSessionOrder } from './session-sidebar-order';
+import { stabilizeProjectSessionOrder } from '../../features/session/session-sidebar-order';
 
 const sameFields = <T extends object>(left: T, right: T): boolean => {
   const keys = Object.keys(right) as Array<keyof T>;

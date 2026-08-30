@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { importCandidates, unimportedSessions } from '../src/panel/lib/session-import.ts';
+import { importCandidates, unimportedSessions } from '../src/features/session/session-import.ts';
 
 test('sidebar import candidates are cwd-scoped and exclude catalog sessions', () => {
   const sessions = [

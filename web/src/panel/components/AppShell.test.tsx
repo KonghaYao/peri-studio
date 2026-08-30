@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@solidjs/testing-library';
 import type { JSX } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('./ProjectSidebar', () => ({
+vi.mock('../../widgets/sidebar/ProjectSidebar', () => ({
   ProjectSidebar: (props: { onOpenSystem?: () => void }) => <div data-testid="project-sidebar"><button type="button" onClick={props.onOpenSystem}>System information</button></div>,
 }));
 vi.mock('./ChatView', () => ({ ChatView: (props: { onOpenResources?: () => void; onOpenMcp?: () => void }) => <><button type="button" onClick={props.onOpenResources}>Open workspace resources</button><button type="button" onClick={props.onOpenMcp}>Open MCP resources</button></> }));

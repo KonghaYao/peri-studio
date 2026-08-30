@@ -1,4 +1,2 @@
-import type { ProjectInfo } from './registry-view';
-
-export const selectActiveProjects = (items: readonly ProjectInfo[]) => items.filter((project) => !project.archivedAt);
-export const selectArchivedProjects = (items: readonly ProjectInfo[]) => items.filter((project) => !!project.archivedAt);
+/** @deprecated 请改用 `../../features/catalog/project-catalog` */
+export * from '../../features/catalog/project-catalog';

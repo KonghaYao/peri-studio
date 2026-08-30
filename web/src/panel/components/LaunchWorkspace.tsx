@@ -1,9 +1,9 @@
 import { createMemo, Show } from 'solid-js';
 import { Button, Icon } from '../../components/ui';
 import { readOnly } from '../lib/auth-state';
-import { selectActiveProjects, selectArchivedProjects } from '../lib/project-catalog';
+import { selectActiveProjects, selectArchivedProjects } from '../../features/catalog/project-catalog';
 import { createProjectSession, creatingSessionProjectId, projects } from '../store';
-import { QuickStartComposer } from './QuickStartComposer';
+import { QuickStartComposer } from '@/widgets/composer/QuickStartComposer';
 
 interface LaunchWorkspaceProps {
   onOpenNavigation?: () => void;

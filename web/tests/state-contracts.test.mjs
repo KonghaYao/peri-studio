@@ -18,7 +18,7 @@ import { messageTime } from '../src/panel/lib/message-time.ts';
 import { parseMarkdown, safeHref } from '../src/panel/lib/markdown.ts';
 import { messageActivity, nextFollowState } from '../src/panel/lib/message-follow.ts';
 import { authFeedback } from '../src/panel/lib/auth-feedback.ts';
-import { searchProjectSessions } from '../src/panel/lib/session-search.ts';
+import { searchProjectSessions } from '../src/features/session/session-search.ts';
 import { connectedRuntimeState, runtimeState } from '../src/panel/lib/runtime-state.ts';
 
 // principal 解析与变更策略（保持闭包默认语义，与 recovery-state 解耦）
@@ -64,7 +64,7 @@ test('prompt recovery is owned by CommandTracker rather than an ad-hoc frame cac
   const store = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'store.ts'), 'utf8');
   const actions = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'user-actions.ts'), 'utf8');
   const delivery = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'message-delivery.ts'), 'utf8');
-  const activation = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'session-activation.ts'), 'utf8');
+  const activation = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'session', 'session-activation.ts'), 'utf8');
   assert.match(actions, /sendAction\(frame, 'prompt', \{\s*acceptedStartsInactivityLease: true,\s*retryOnUncertain: true/);
   assert.match(activation, /this\.deps\.send\(frame, 'session\/create', \{\s*retryOnUncertain: true/);
   assert.match(actions, /deps!\.retry\(current\.commandId\)/);
@@ -267,8 +267,8 @@ test('each Yjs document kind has one independent reader without a shared barrel'
 test('all empty-session creation entry points share one store-level single-flight guard', () => {
   const root = join(import.meta.dirname, '..', 'src');
   const store = readFileSync(join(root, 'panel', 'store.ts'), 'utf8');
-  const activation = readFileSync(join(root, 'panel', 'lib', 'session-activation.ts'), 'utf8');
-  const sidebar = readFileSync(join(root, 'panel', 'components', 'ProjectSidebar.tsx'), 'utf8');
+  const activation = readFileSync(join(root, 'features', 'session', 'session-activation.ts'), 'utf8');
+  const sidebar = readFileSync(join(root, 'widgets', 'sidebar', 'ProjectSidebar.tsx'), 'utf8');
   const launchWorkspace = readFileSync(join(root, 'panel', 'components', 'LaunchWorkspace.tsx'), 'utf8');
   assert.match(activation, /this\.deps\.creatingProjectId\(\)/);
   assert.match(activation, /this\.deps\.setCreatingProjectId\(projectId\)/);
@@ -281,8 +281,8 @@ test('uncertain metadata retries preserve the original frame identity and are id
   const store = readFileSync(join(root, 'store.ts'), 'utf8');
   const errors = readFileSync(join(root, 'lib', 'panel-errors.ts'), 'utf8');
   const tracker = readFileSync(join(root, 'lib', 'command-tracker.ts'), 'utf8');
-  const catalog = readFileSync(join(root, 'lib', 'catalog-actions.ts'), 'utf8');
-  const activation = readFileSync(join(root, 'lib', 'session-activation.ts'), 'utf8');
+  const catalog = readFileSync(join(root, '..', 'features', 'catalog', 'catalog-actions.ts'), 'utf8');
+  const activation = readFileSync(join(root, '..', 'features', 'session', 'session-activation.ts'), 'utf8');
   assert.match(tracker, /this\.uncertain\.set\(commandId, request\)/);
   assert.match(tracker, /return this\.dispatch\(request, send\)/);
   assert.match(tracker, /frame: tracked\.frame/);
@@ -310,7 +310,7 @@ test('uncertain metadata retries preserve the original frame identity and are id
 test('project session discovery is an explicit cold-start read path', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
   const store = readFileSync(join(root, 'store.ts'), 'utf8');
-  const catalog = readFileSync(join(root, 'lib', 'catalog-actions.ts'), 'utf8');
+  const catalog = readFileSync(join(root, '..', 'features', 'catalog', 'catalog-actions.ts'), 'utf8');
   const protocol = readFileSync(join(root, 'lib', 'protocol.ts'), 'utf8');
   const dialog = readFileSync(join(root, 'components', 'SessionImportDialog.tsx'), 'utf8');
   assert.match(protocol, /action\('session\/discover', \{ projectId \}\)/);
@@ -326,7 +326,7 @@ test('terminal action effects have one owner and late acknowledgements cannot re
   const store = readFileSync(join(root, 'store.ts'), 'utf8');
   const actions = readFileSync(join(root, 'lib', 'user-actions.ts'), 'utf8');
   const tracker = readFileSync(join(root, 'lib', 'command-tracker.ts'), 'utf8');
-  const activation = readFileSync(join(root, 'lib', 'session-activation.ts'), 'utf8');
+  const activation = readFileSync(join(root, '..', 'features', 'session', 'session-activation.ts'), 'utf8');
   const ackHandler = store.slice(store.indexOf('function onAck('), store.indexOf('function onActionError('));
   const errorHandler = store.slice(store.indexOf('function onActionError('), store.indexOf('// ── 渲染入口'));
   const lateBranch = ackHandler.slice(ackHandler.indexOf("if (disposition === 'late_terminal')"));
@@ -393,10 +393,10 @@ test('global session search matches durable metadata and excludes empty queries'
 test('session navigation closes only after a server-authoritative open commits', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
   const store = readFileSync(join(root, 'store.ts'), 'utf8');
-  const sidebar = readFileSync(join(root, 'components', 'ProjectSidebar.tsx'), 'utf8');
-  const sessionRow = readFileSync(join(root, 'components', 'ProjectSessionRow.tsx'), 'utf8');
-  const search = readFileSync(join(root, 'components', 'SessionSearch.tsx'), 'utf8');
-  const activation = readFileSync(join(root, 'lib', 'session-activation.ts'), 'utf8');
+  const sidebar = readFileSync(join(root, '..', 'widgets', 'sidebar', 'ProjectSidebar.tsx'), 'utf8');
+  const sessionRow = readFileSync(join(root, '..', 'widgets', 'sidebar', 'ProjectSessionRow.tsx'), 'utf8');
+  const search = readFileSync(join(root, '..', 'widgets', 'sidebar', 'SessionSearch.tsx'), 'utf8');
+  const activation = readFileSync(join(root, '..', 'features', 'session', 'session-activation.ts'), 'utf8');
   assert.match(activation, /export interface OpenSessionCallbacks/);
   assert.match(activation, /callbacks\.onCommitted\?\.\(\)/);
   assert.match(sidebar, /onOpen=\{\(sessionId, onCommitted\) => \{ navigateProjectSession\(sessionId, \{ onCommitted \}\); \}\}/);
@@ -409,7 +409,7 @@ test('session navigation closes only after a server-authoritative open commits',
 test('session activation policy is a deep module rather than store callback sprawl', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
   const store = readFileSync(join(root, 'store.ts'), 'utf8');
-  const activation = readFileSync(join(root, 'lib', 'session-activation.ts'), 'utf8');
+  const activation = readFileSync(join(root, '..', 'features', 'session', 'session-activation.ts'), 'utf8');
   assert.match(store, /new SessionActivation\(\{/);
   assert.match(store, /sessionActivation\.create\(projectId, title\)/);
   assert.match(store, /sessionActivation\.quickStart\(projectId, text\)/);

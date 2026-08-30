@@ -2,7 +2,7 @@ import { createEffect, createMemo, createSignal, Show, untrack } from 'solid-js'
 import type { ProjectInfo, SessionSummaryInfo } from '../lib/registry-view';
 import { Button, Dialog, DialogContent, DialogTitle, EmptyState, InlineNotice, Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel, LoadingState, TextField } from '../../components/ui';
 import { MessageSquare } from 'lucide-solid';
-import { importCandidates } from '../lib/session-import.ts';
+import { importCandidates } from '../../features/session/session-import.ts';
 import { cleanSessionTitle, formatRelativeTime, shortSessionId } from '../lib/recovery-state.ts';
 
 export interface SessionImportDialogProps {

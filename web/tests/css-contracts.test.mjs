@@ -68,7 +68,7 @@ test('source stylesheets are structurally valid and consume only declared design
 });
 
 test('Kobalte dialog composes an independently layered portal overlay and content', () => {
-  const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Dialog.tsx'), 'utf8');
+  const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Dialog.tsx'), 'utf8');
   assert.match(dialog, /return <DialogPrimitive\.Portal \{\.\.\.props\} \/>;/);
   assert.match(
     dialog,
@@ -82,7 +82,7 @@ test('Kobalte dialog composes an independently layered portal overlay and conten
 
 test('dialog size belongs to DialogContent rather than an overflowing child', () => {
   const source = join(import.meta.dirname, '..', 'src');
-  const dialog = readFileSync(join(source, 'components', 'ui', 'Dialog.tsx'), 'utf8');
+  const dialog = readFileSync(join(source, 'shared', 'ui', 'Dialog.tsx'), 'utf8');
   const components = join(source, 'panel', 'components');
   const dialogConsumers = readdirSync(components)
     .filter((file) => file.endsWith('.tsx'))
@@ -95,7 +95,7 @@ test('dialog size belongs to DialogContent rather than an overflowing child', ()
 });
 
 test('Composer and quick start expose one labeled textarea and keyboard submit guidance', () => {
-  const root = join(import.meta.dirname, '..', 'src', 'panel', 'components');
+  const root = join(import.meta.dirname, '..', 'src', 'widgets', 'composer');
   const composer = readFileSync(join(root, 'Composer.tsx'), 'utf8');
   const quickStart = readFileSync(join(root, 'QuickStartComposer.tsx'), 'utf8');
   assert.match(composer, /<Textarea[\s\S]*?aria-label="Message the agent"/);
@@ -120,7 +120,7 @@ test('feature-owned SVG geometry always uses the shared finite icon canvas', () 
     .filter((file) => file.endsWith('.tsx'))
     .filter((file) => /<svg\b/.test(readFileSync(join(components, file), 'utf8')));
   assert.deepEqual(offenders, []);
-  const icon = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Icon.tsx'), 'utf8');
+  const icon = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Icon.tsx'), 'utf8');
   assert.match(icon, /<svg/);
   assert.match(icon, /viewBox="0 0 20 20"/);
   assert.match(icon, /aria-hidden="true"/);
@@ -130,9 +130,10 @@ test('feature-owned SVG geometry always uses the shared finite icon canvas', () 
 
 test('high-frequency chat controls are owned by the Solid UI library', () => {
   const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
-  for (const file of ['Composer.tsx', 'MessageList.tsx']) {
-    assert.doesNotMatch(readFileSync(join(components, file), 'utf8'), /<button\b/, file);
-  }
+  const composer = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'composer', 'Composer.tsx'), 'utf8');
+  const messageList = readFileSync(join(components, 'MessageList.tsx'), 'utf8');
+  assert.doesNotMatch(composer, /<button\b/, 'Composer.tsx');
+  assert.doesNotMatch(messageList, /<button\b/, 'MessageList.tsx');
 });
 
 test('MessageList delegates entry semantics through stable entry-id slots to one tested conversation component', () => {
@@ -162,7 +163,7 @@ test('the permission surface exposes a queue and never resolves an empty identit
 });
 
 test('the shared Button defaults to non-submitting behavior', () => {
-  const button = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Button.tsx'), 'utf8');
+  const button = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Button.tsx'), 'utf8');
   assert.match(button, /type=\{button\.type \?\? 'button'\}/);
 });
 
@@ -187,7 +188,7 @@ test('feature components never introduce literal colors', () => {
 test('large semantic status surfaces stay white', () => {
   const source = join(import.meta.dirname, '..', 'src');
   const files = [
-    'components/ui/InlineNotice.tsx',
+    'shared/ui/InlineNotice.tsx',
     'panel/components/MessageOutbox.tsx',
     'panel/components/PermissionQueue.tsx',
     'panel/components/PermissionRequestCard.tsx',
@@ -206,7 +207,7 @@ test('responsive behavior has compact, medium and wide layout contracts', () => 
   const shell = readFileSync(join(root, 'panel', 'components', 'AppShell.tsx'), 'utf8');
   const drawer = readFileSync(join(root, 'panel', 'components', 'shared', 'ProjectDrawer.tsx'), 'utf8');
   const messageList = readFileSync(join(root, 'panel', 'components', 'MessageList.tsx'), 'utf8');
-  const composer = readFileSync(join(root, 'panel', 'components', 'Composer.tsx'), 'utf8');
+  const composer = readFileSync(join(root, 'widgets', 'composer', 'Composer.tsx'), 'utf8');
   const theme = readFileSync(join(root, 'styles', 'theme.css'), 'utf8');
   const breakpoints = readFileSync(join(root, 'panel', 'lib', 'breakpoints.ts'), 'utf8');
   assert.match(shell, /compactViewportQuery/);
@@ -231,9 +232,9 @@ test('responsive behavior has compact, medium and wide layout contracts', () => 
 });
 
 test('coarse pointers expose sidebar actions without hover and keep controls touch-sized', () => {
-  const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'components', 'ProjectSessionRow.tsx'), 'utf8');
-  const button = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Button.tsx'), 'utf8');
-  const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Dialog.tsx'), 'utf8');
+  const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'ProjectSessionRow.tsx'), 'utf8');
+  const button = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Button.tsx'), 'utf8');
+  const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Dialog.tsx'), 'utf8');
   assert.match(sessionRow, /group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100/);
   assert.match(sessionRow, /pointer-coarse:min-h-52 pointer-coarse:pr-\[68px\]/);
   assert.match(button, /pointer-coarse:w-48 pointer-coarse:min-h-44/);
@@ -241,10 +242,9 @@ test('coarse pointers expose sidebar actions without hover and keep controls tou
 });
 
 test('P0 interaction architecture cannot regress to hidden cancel or viewport-breaking overlays', () => {
-  const componentRoot = join(import.meta.dirname, '..', 'src', 'panel', 'components');
-  const composer = readFileSync(join(componentRoot, 'Composer.tsx'), 'utf8');
-  const sidebarChrome = readFileSync(join(componentRoot, 'SidebarChrome.tsx'), 'utf8');
-  const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'components', 'ui', 'Dialog.tsx'), 'utf8');
+  const composer = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'composer', 'Composer.tsx'), 'utf8');
+  const sidebarChrome = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'components', 'SidebarChrome.tsx'), 'utf8');
+  const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Dialog.tsx'), 'utf8');
   const styles = featureCss();
   assert.match(composer, /cancelTurn/);
   assert.match(composer, /Stop generation/);
@@ -258,7 +258,7 @@ test('P0 interaction architecture cannot regress to hidden cancel or viewport-br
 
 test('composer keeps the writing surface quiet and keyboard behavior discoverable', () => {
   const root = join(import.meta.dirname, '..', 'src');
-  const composer = readFileSync(join(root, 'panel', 'components', 'Composer.tsx'), 'utf8');
+  const composer = readFileSync(join(root, 'widgets', 'composer', 'Composer.tsx'), 'utf8');
   const base = readFileSync(join(root, 'styles', 'base.css'), 'utf8');
   assert.match(composer, /Enter to send · Shift \+ Enter for newline/);
   assert.match(composer, /runtimeSummary/);
@@ -354,8 +354,8 @@ test('primitive visuals remain in shared UI components and out of feature styles
   const styles = cssFiles().filter((file) => file.startsWith('panel/styles/'))
     .map((file) => readFileSync(join(root, file), 'utf8')).join('\n');
   const primitives = readFileSync(join(root, 'styles', 'primitives.css'), 'utf8');
-  const button = readFileSync(join(root, 'components', 'ui', 'Button.tsx'), 'utf8');
-  const dialog = readFileSync(join(root, 'components', 'ui', 'Dialog.tsx'), 'utf8');
+  const button = readFileSync(join(root, 'shared', 'ui', 'Button.tsx'), 'utf8');
+  const dialog = readFileSync(join(root, 'shared', 'ui', 'Dialog.tsx'), 'utf8');
   const drawer = readFileSync(join(root, 'panel', 'components', 'shared', 'ProjectDrawer.tsx'), 'utf8');
   assert.match(primitives, /\.ui-scrollbar\s*\{/);
   assert.match(primitives, /\*::\-webkit-scrollbar\s*\{/);
@@ -370,14 +370,14 @@ test('primitive visuals remain in shared UI components and out of feature styles
 test('domain status inference delegates visual rendering to the shared Badge', () => {
   const root = join(import.meta.dirname, '..', 'src');
   const adapter = readFileSync(join(root, 'panel', 'components', 'Badge.tsx'), 'utf8');
-  const primitive = readFileSync(join(root, 'components', 'ui', 'Badge.tsx'), 'utf8');
+  const primitive = readFileSync(join(root, 'shared', 'ui', 'Badge.tsx'), 'utf8');
   assert.match(adapter, /Badge as UiBadge/);
   assert.doesNotMatch(adapter, /bg-\[|text-\[/);
   assert.match(primitive, /BadgeTone = 'neutral' \| 'ok' \| 'warn' \| 'err'/);
 });
 
 test('icon-only controls receive visible help from the shared Tooltip', () => {
-  const root = join(import.meta.dirname, '..', 'src', 'components', 'ui');
+  const root = join(import.meta.dirname, '..', 'src', 'shared', 'ui');
   const button = readFileSync(join(root, 'Button.tsx'), 'utf8');
   const tooltip = readFileSync(join(root, 'Tooltip.tsx'), 'utf8');
   assert.match(button, /<Tooltip placement=/);
@@ -386,14 +386,14 @@ test('icon-only controls receive visible help from the shared Tooltip', () => {
   assert.doesNotMatch(button, /title=\{/);
   assert.match(tooltip, /@kobalte\/core\/tooltip/);
   assert.match(tooltip, /TooltipPrimitive\.Content/);
-  const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'components', 'ProjectSessionRow.tsx'), 'utf8');
+  const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'ProjectSessionRow.tsx'), 'utf8');
   assert.match(sessionRow, /<DropdownMenuTrigger as=\{IconButton\}[\s\S]*?class="session-menu(?:\s|[^"]*?")/);
   assert.doesNotMatch(sessionRow, /<button[^>]*class="session-menu"/);
 });
 
 test('icon-only actions use one rounded rectangular geometry and never circular buttons', () => {
   const sourceRoot = join(import.meta.dirname, '..', 'src');
-  const button = readFileSync(join(sourceRoot, 'components', 'ui', 'Button.tsx'), 'utf8');
+  const button = readFileSync(join(sourceRoot, 'shared', 'ui', 'Button.tsx'), 'utf8');
   assert.match(button, /compact: 'w-28 min-h-24 rounded-6/);
   assert.match(button, /default: 'w-34 min-h-30 rounded-7/);
   for (const file of allFiles(sourceRoot).filter((path) => path.endsWith('.tsx'))) {

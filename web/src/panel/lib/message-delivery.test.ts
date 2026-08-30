@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { composerDraft, setComposerDraft } from './composer-draft';
+import { composerDraft, setComposerDraft } from '@/features/composer/composer-draft';
 import {
   acknowledgeUnknownMessageDelivery,
   acknowledgedMessageDeliveries,

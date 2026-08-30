@@ -21,7 +21,7 @@ import { connectionReady } from './connection';
 import type { DispatchResult } from './command-tracker';
 import type { ControlView } from './control-view';
 import type { Ack, ActionError, ActionFrame, ActionOptions } from './action-contract';
-import type { ComposerDraftOwner } from './composer-draft';
+import type { ComposerDraftOwner } from '@/features/composer/composer-draft';
 
 export interface StoreWiringDeps {
   setPersistentErrors: (updater: (items: PersistentError[]) => PersistentError[]) => void;
