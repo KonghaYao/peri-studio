@@ -16,6 +16,7 @@ use tokio::sync::Mutex;
 
 use crate::auth::AuthService;
 use crate::web::auth_http::serve_auth_session;
+use crate::web::pick_directory_http::serve_pick_directory;
 #[cfg(test)]
 use crate::web::parse::request_path;
 use crate::web::parse::{
@@ -348,6 +349,38 @@ async fn serve_http_inner(
             blob.bytes.as_slice(),
             &headers,
             method == "GET",
+        )
+        .await;
+    }
+    if path == "/api/local/pick-directory" {
+        if !peer.ip().is_loopback() || !valid_loopback_host(host.unwrap_or_default()) {
+            return write_http(
+                &mut stream,
+                "403 Forbidden",
+                "application/json",
+                br#"{"error":"forbidden"}"#,
+                &security_headers(),
+            )
+            .await;
+        }
+        if !valid_origin(origin, host.unwrap_or_default()) {
+            return write_http(
+                &mut stream,
+                "403 Forbidden",
+                "application/json",
+                br#"{"error":"forbidden"}"#,
+                &security_headers(),
+            )
+            .await;
+        }
+        return serve_pick_directory(
+            stream,
+            peer,
+            auth,
+            method,
+            cookie.as_deref(),
+            transfer_encoding.as_deref(),
+            content_length.unwrap_or(0),
         )
         .await;
     }

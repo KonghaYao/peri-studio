@@ -7,6 +7,8 @@ import { SessionSearch } from './SessionSearch';
 import { SessionImportDialog } from './SessionImportDialog';
 import { ProjectSessionRow } from './ProjectSessionRow';
 import { runConfirmedMutation } from '../lib/form-mutation';
+import { pickProjectDirectory } from '../lib/pick-directory';
+import { projectNameFromPath } from '../lib/project-path';
 import { runtimeState } from '../lib/runtime-state.ts';
 import { sessionDisplayTitle } from '../lib/recovery-state.ts';
 import { selectActiveProjects } from '../lib/project-catalog';
@@ -33,7 +35,8 @@ interface ProjectSidebarProps {
 export function ProjectSidebar(props: ProjectSidebarProps) {
   const [creating, setCreating] = createSignal(false);
   const [projectCreateSubmitting, setProjectCreateSubmitting] = createSignal(false);
-  const [name, setName] = createSignal('');
+  const [pickingDirectory, setPickingDirectory] = createSignal(false);
+  const [pickDirectoryError, setPickDirectoryError] = createSignal<string | null>(null);
   const [cwd, setCwd] = createSignal('');
   const [editing, setEditing] = createSignal<string | null>(null);
   const [sessionMenu, setSessionMenu] = createSignal<string | null>(null);
@@ -112,24 +115,64 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
 
   const submitProject = (e: SubmitEvent) => {
     e.preventDefault();
-    if (!cwd().trim() || projectCreateSubmitting()) return;
+    const directory = cwd().trim();
+    if (!directory || projectCreateSubmitting()) return;
     runConfirmedMutation(
       () => setProjectCreateSubmitting(true),
       () => setProjectCreateSubmitting(false),
-      (committed, failed) => createProject(name().trim() || cwd().split('/').filter(Boolean).at(-1) || 'Project', cwd().trim(), committed, failed),
-      () => { setName(''); setCwd(''); setCreating(false); },
+      (committed, failed) => createProject(projectNameFromPath(directory), directory, committed, failed),
+      () => { setCwd(''); setPickDirectoryError(null); setCreating(false); },
     );
+  };
+
+  const browseProjectDirectory = async () => {
+    if (pickingDirectory() || projectCreateSubmitting()) return;
+    setPickDirectoryError(null);
+    setPickingDirectory(true);
+    try {
+      const result = await pickProjectDirectory();
+      if (result.kind === 'selected') {
+        setCwd(result.path);
+        return;
+      }
+      if (result.kind === 'cancelled') return;
+      if (result.kind === 'unauthorized') {
+        setPickDirectoryError('Sign in again before choosing a folder.');
+        return;
+      }
+      if (result.kind === 'unavailable') {
+        setPickDirectoryError('Folder picker is not available on this machine.');
+        return;
+      }
+      setPickDirectoryError('Could not open the folder picker. Try entering the path manually.');
+    } finally {
+      setPickingDirectory(false);
+    }
   };
 
   return (
     <SidebarChrome onOpenSystem={props.onOpenSystem}>
       <SessionSearch open={searchOpen()} onClose={() => setSearchOpen(false)} onSelected={props.onNavigate} />
       <Show when={readOnly()}><div class="readonly-label -mt-8 mx-8 mb-12 text-11 font-semibold text-warning">Read-only mode</div></Show>
-      <Dialog open={creating()} onOpenChange={(open) => { if (!open && !projectCreateSubmitting()) setCreating(false); }}><DialogContent dismissible={!projectCreateSubmitting()}><DialogTitle class="sr-only">New project</DialogTitle>
+      <Dialog open={creating()} onOpenChange={(open) => { if (!open && !projectCreateSubmitting()) { setCreating(false); setPickDirectoryError(null); } }}><DialogContent dismissible={!projectCreateSubmitting() && !pickingDirectory()}><DialogTitle class="sr-only">New project</DialogTitle>
         <form class="m-0 rounded-12 border-0 bg-surface p-18 shadow-none" onSubmit={submitProject}>
-          <TextField label="Project name" value={name()} onInput={(e) => setName(e.currentTarget.value)} placeholder="perihelion" autofocus />
-          <TextField label="Working directory" value={cwd()} onInput={(e) => setCwd(e.currentTarget.value)} placeholder="/absolute/path" />
-          <div class="mt-10 flex justify-end gap-6"><Button type="button" disabled={projectCreateSubmitting()} onClick={() => setCreating(false)}>Cancel</Button><Button variant="primary" type="submit" busy={projectCreateSubmitting()} disabled={!cwd().trim()}>Create</Button></div>
+          <div class="mb-9 flex flex-col gap-6">
+            <label class="text-12 font-semibold text-text-secondary" for="project-directory">Working directory</label>
+            <div class="flex items-center gap-6">
+              <input
+                id="project-directory"
+                class="box-border h-38 min-w-0 flex-1 rounded-9 border border-border-strong bg-surface px-11 text-text-primary outline-none focus:border-focus-ring focus:shadow-[0_0_0_1px_var(--surface),0_0_0_3px_var(--focus-ring)] focus-visible:outline-0"
+                value={cwd()}
+                onInput={(e) => { setCwd(e.currentTarget.value); setPickDirectoryError(null); }}
+                placeholder="/absolute/path"
+                autofocus
+              />
+              <Button type="button" variant="secondary" class="shrink-0" busy={pickingDirectory()} disabled={projectCreateSubmitting()} onClick={() => { void browseProjectDirectory(); }}>Browse…</Button>
+            </div>
+            <Show when={cwd().trim()}><span class="text-11 text-text-muted">Project name: {projectNameFromPath(cwd())}</span></Show>
+            <Show when={pickDirectoryError()}><span class="m-0 text-13 text-danger">{pickDirectoryError()}</span></Show>
+          </div>
+          <div class="mt-10 flex justify-end gap-6"><Button type="button" disabled={projectCreateSubmitting() || pickingDirectory()} onClick={() => setCreating(false)}>Cancel</Button><Button variant="primary" type="submit" busy={projectCreateSubmitting()} disabled={!cwd().trim() || pickingDirectory()}>Create</Button></div>
         </form>
       </DialogContent></Dialog>
       <div class="project-scroll ui-scrollbar min-h-0 flex-1 overflow-auto pt-4 pb-16">

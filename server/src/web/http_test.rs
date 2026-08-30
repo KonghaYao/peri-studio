@@ -268,6 +268,17 @@ async fn health_rejects_mutating_methods_and_bodies() {
 }
 
 #[tokio::test]
+async fn unauthenticated_pick_directory_is_rejected() {
+    let response = auth_socket_response(
+        "POST /api/local/pick-directory HTTP/1.1\r\nHost: 127.0.0.1:8456\r\nOrigin: http://127.0.0.1:8456\r\nContent-Length: 0\r\n\r\n",
+    )
+    .await;
+
+    assert!(response.starts_with("HTTP/1.1 401 Unauthorized\r\n"));
+    assert!(response.contains(r#""error":"unauthorized""#));
+}
+
+#[tokio::test]
 async fn unauthenticated_status_returns_credential_free_setup_hint() {
     let response = auth_socket_response(
         "GET /api/auth/session HTTP/1.1\r\nHost: 127.0.0.1:8456\r\nContent-Length: 0\r\n\r\n",

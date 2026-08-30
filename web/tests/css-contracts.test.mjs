@@ -219,7 +219,7 @@ test('responsive behavior has compact, medium and wide layout contracts', () => 
   assert.match(shell, /grid-cols-shell/);
   assert.match(shell, /desk:grid-cols-shell-desk/);
   assert.match(shell, /wide:grid-cols-shell-wide/);
-  assert.match(drawer, /<aside[^>]*class=\{drawerClass\}/);
+  assert.match(drawer, /<aside[^>]*class=\{drawerPanelClass\}/);
   assert.match(drawer, /<Dialog open=\{props\.open\}/);
   assert.match(drawer, /max-desk:fixed[^']*max-desk:w-\(--container-drawer\)/);
   // 正文拥有独立阅读宽度，composer 与决策面保持较宽的操作轨道。

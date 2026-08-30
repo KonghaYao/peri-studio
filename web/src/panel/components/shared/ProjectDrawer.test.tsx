@@ -37,6 +37,13 @@ describe('ProjectDrawer', () => {
     expect(navigation).not.toHaveAttribute('inert');
   });
 
+  it('keeps the compact drawer panel above the modal scrim', async () => {
+    render(() => <ProjectDrawer open modal onOpenChange={() => {}}><button>Project</button></ProjectDrawer>);
+    const drawer = await screen.findByRole('dialog', { name: 'Projects & Sessions' });
+    expect(drawer.className).toMatch(/max-desk:z-61/);
+    expect(drawer.className).toMatch(/max-desk:translate-x-0/);
+  });
+
   it('lets a nested Dialog consume Escape before the navigation layer', async () => {
     function Harness() {
       const [drawerOpen, setDrawerOpen] = createSignal(true);

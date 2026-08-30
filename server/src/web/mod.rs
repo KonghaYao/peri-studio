@@ -27,7 +27,10 @@
 
 mod auth_http;
 mod http;
+mod local_dialog;
 mod parse;
+mod pick_directory_http;
+pub(crate) mod sandbox;
 #[path = "static.rs"]
 mod static_;
 
