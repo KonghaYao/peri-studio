@@ -1,4 +1,4 @@
-import type { ProjectSessionInfo } from '../../panel/lib/registry-view';
+import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
 import {
   getSessionPreference,
   type SessionPreferenceKey,

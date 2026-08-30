@@ -1,4 +1,4 @@
-import type { ChatEntry, ToolCallInfo } from '../panel/lib/chat-view';
+import type { ChatEntry, ToolCallInfo } from '@/entities/chat/chat-view';
 
 function tool(turn: number, step: number, overrides: Partial<ToolCallInfo>): ToolCallInfo {
   return {

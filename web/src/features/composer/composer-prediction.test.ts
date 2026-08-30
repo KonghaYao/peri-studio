@@ -1,6 +1,6 @@
 import { createRoot } from 'solid-js';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { AgentInputPredictionInfo, ControlView } from '../../panel/lib/control-view';
+import type { AgentInputPredictionInfo, ControlView } from '@/entities/chat/control-view';
 import { useComposerPrediction, type ComposerPredictionController } from './composer-prediction';
 
 const prediction: AgentInputPredictionInfo = { id: 'prediction:1:7', text: 'failed check test', createdAt: '2026-08-15T00:00:00Z' };

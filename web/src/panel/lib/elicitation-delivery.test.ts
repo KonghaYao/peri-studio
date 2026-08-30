@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { PendingElicitation } from './control-view';
+import type { PendingElicitation } from '@/entities/chat/control-view';
 import {
   completeElicitationResponse,
   dismissUncertainElicitation,

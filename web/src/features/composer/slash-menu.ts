@@ -1,4 +1,4 @@
-import type { AgentCommandInfo } from '../../panel/lib/control-view';
+import type { AgentCommandInfo } from '@/entities/chat/control-view';
 
 export interface SlashToken {
   start: number;

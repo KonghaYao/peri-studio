@@ -61,7 +61,7 @@ test('principal parsing and mutation policy are closed by default', async () => 
 });
 
 test('prompt recovery is owned by CommandTracker rather than an ad-hoc frame cache', () => {
-  const store = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'store.ts'), 'utf8');
+  const store = readFileSync(join(import.meta.dirname, '..', 'src', 'store', 'index.ts'), 'utf8');
   const actions = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'user-actions.ts'), 'utf8');
   const delivery = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'message-delivery.ts'), 'utf8');
   const activation = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'session', 'session-activation.ts'), 'utf8');
@@ -86,7 +86,7 @@ test('active turn excludes every terminal projection state', () => {
 });
 
 test('permission delivery uncertainty remains locked in the security surface', () => {
-  const store = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'store.ts'), 'utf8');
+  const store = readFileSync(join(import.meta.dirname, '..', 'src', 'store', 'index.ts'), 'utf8');
   const projection = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'store-projection.ts'), 'utf8');
   const actions = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'user-actions.ts'), 'utf8');
   const delivery = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'permission-delivery.ts'), 'utf8');
@@ -223,8 +223,8 @@ test('routine connection readiness stays in persistent status instead of interru
 test('browser diagnostics never print raw protocol or user payloads', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
   const ws = readFileSync(join(root, 'lib', 'ws-client.ts'), 'utf8');
-  const store = readFileSync(join(root, 'store.ts'), 'utf8');
-  const yjsValues = readFileSync(join(root, 'lib', 'yjs-values.ts'), 'utf8');
+  const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
+  const yjsValues = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'yjs', 'yjs-values.ts'), 'utf8');
   assert.doesNotMatch(ws, /console\.(?:error|warn)\([^\n]*(?:ev\.data|frame\)|ev\.reason|,\s*ev\b)/);
   assert.doesNotMatch(store, /console\.error\([^\n]*JSON\.stringify\(err\)/);
   assert.doesNotMatch(yjsValues, /console\.warn\([^\n]*,\s*err\)/);
@@ -249,11 +249,10 @@ test('downstream parsing rejects unsafe JSON shapes while preserving future tags
 test('each Yjs document kind has one independent reader without a shared barrel', () => {
   // 兼容 barrel（yjs.ts）已删除：投影 reader 直接由各模块消费，契约降级为
   // 断言每个 reader 保持独立实现、不互相耦合。
-  const root = join(import.meta.dirname, '..', 'src', 'panel', 'lib');
-  const registry = readFileSync(join(root, 'registry-view.ts'), 'utf8');
-  const chat = readFileSync(join(root, 'chat-view.ts'), 'utf8');
-  const control = readFileSync(join(root, 'control-view.ts'), 'utf8');
-  const docs = readFileSync(join(root, 'doc-store.ts'), 'utf8');
+  const registry = readFileSync(join(import.meta.dirname, '..', 'src', 'entities', 'registry', 'registry-view.ts'), 'utf8');
+  const chat = readFileSync(join(import.meta.dirname, '..', 'src', 'entities', 'chat', 'chat-view.ts'), 'utf8');
+  const control = readFileSync(join(import.meta.dirname, '..', 'src', 'entities', 'chat', 'control-view.ts'), 'utf8');
+  const docs = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'yjs', 'doc-store.ts'), 'utf8');
   assert.match(registry, /export function renderRegistry/);
   assert.doesNotMatch(registry, /renderChat|renderControl|class DocStore/);
   assert.match(chat, /export function renderChat/);
@@ -266,10 +265,10 @@ test('each Yjs document kind has one independent reader without a shared barrel'
 
 test('all empty-session creation entry points share one store-level single-flight guard', () => {
   const root = join(import.meta.dirname, '..', 'src');
-  const store = readFileSync(join(root, 'panel', 'store.ts'), 'utf8');
+  const store = readFileSync(join(root, 'store', 'index.ts'), 'utf8');
   const activation = readFileSync(join(root, 'features', 'session', 'session-activation.ts'), 'utf8');
   const sidebar = readFileSync(join(root, 'widgets', 'sidebar', 'ProjectSidebar.tsx'), 'utf8');
-  const launchWorkspace = readFileSync(join(root, 'panel', 'components', 'LaunchWorkspace.tsx'), 'utf8');
+  const launchWorkspace = readFileSync(join(root, 'widgets', 'shell', 'LaunchWorkspace.tsx'), 'utf8');
   assert.match(activation, /this\.deps\.creatingProjectId\(\)/);
   assert.match(activation, /this\.deps\.setCreatingProjectId\(projectId\)/);
   assert.match(sidebar, /busy=\{creatingSessionProjectId\(\) === projectId\}/);
@@ -278,7 +277,7 @@ test('all empty-session creation entry points share one store-level single-fligh
 
 test('uncertain metadata retries preserve the original frame identity and are identity-scoped', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
-  const store = readFileSync(join(root, 'store.ts'), 'utf8');
+  const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
   const errors = readFileSync(join(root, 'lib', 'panel-errors.ts'), 'utf8');
   const tracker = readFileSync(join(root, 'lib', 'command-tracker.ts'), 'utf8');
   const catalog = readFileSync(join(root, '..', 'features', 'catalog', 'catalog-actions.ts'), 'utf8');
@@ -309,10 +308,10 @@ test('uncertain metadata retries preserve the original frame identity and are id
 
 test('project session discovery is an explicit cold-start read path', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
-  const store = readFileSync(join(root, 'store.ts'), 'utf8');
+  const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
   const catalog = readFileSync(join(root, '..', 'features', 'catalog', 'catalog-actions.ts'), 'utf8');
   const protocol = readFileSync(join(root, 'lib', 'protocol.ts'), 'utf8');
-  const dialog = readFileSync(join(root, 'components', 'SessionImportDialog.tsx'), 'utf8');
+  const dialog = readFileSync(join(root, '..', 'widgets', 'shell', 'SessionImportDialog.tsx'), 'utf8');
   assert.match(protocol, /action\('session\/discover', \{ projectId \}\)/);
   assert.match(store, /catalogActions\.discoverSessions/);
   assert.match(catalog, /this\.deps\.send\(frame, 'session\/discover'/);
@@ -323,7 +322,7 @@ test('project session discovery is an explicit cold-start read path', () => {
 
 test('terminal action effects have one owner and late acknowledgements cannot resume quick start', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
-  const store = readFileSync(join(root, 'store.ts'), 'utf8');
+  const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
   const actions = readFileSync(join(root, 'lib', 'user-actions.ts'), 'utf8');
   const tracker = readFileSync(join(root, 'lib', 'command-tracker.ts'), 'utf8');
   const activation = readFileSync(join(root, '..', 'features', 'session', 'session-activation.ts'), 'utf8');
@@ -349,7 +348,7 @@ test('terminal action effects have one owner and late acknowledgements cannot re
 
 test('runtime controls are chat-scoped and reconcile through projection truth', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
-  const store = readFileSync(join(root, 'store.ts'), 'utf8');
+  const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
   const projection = readFileSync(join(root, 'lib', 'store-projection.ts'), 'utf8');
   const actions = readFileSync(join(root, 'lib', 'user-actions.ts'), 'utf8');
   const control = readFileSync(join(root, 'lib', 'runtime-control.ts'), 'utf8');
@@ -367,7 +366,7 @@ test('login setup is server-authoritative and credential-free', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
   // P4：parseAuthSetup 调用链在 lib/auth-hook（authPayload），渲染展示在 AuthGate。
   const hook = readFileSync(join(root, 'lib', 'auth-hook.ts'), 'utf8');
-  const gate = readFileSync(join(root, 'components', 'AuthGate.tsx'), 'utf8');
+  const gate = readFileSync(join(root, '..', 'widgets', 'auth', 'AuthGate.tsx'), 'utf8');
   const parser = readFileSync(join(root, 'lib', 'auth-setup.ts'), 'utf8');
   assert.match(hook, /parseAuthSetup/);
   assert.match(gate, /setup\(\)\?\.generateCommand/);
@@ -392,7 +391,7 @@ test('global session search matches durable metadata and excludes empty queries'
 
 test('session navigation closes only after a server-authoritative open commits', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
-  const store = readFileSync(join(root, 'store.ts'), 'utf8');
+  const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
   const sidebar = readFileSync(join(root, '..', 'widgets', 'sidebar', 'ProjectSidebar.tsx'), 'utf8');
   const sessionRow = readFileSync(join(root, '..', 'widgets', 'sidebar', 'ProjectSessionRow.tsx'), 'utf8');
   const search = readFileSync(join(root, '..', 'widgets', 'sidebar', 'SessionSearch.tsx'), 'utf8');
@@ -408,7 +407,7 @@ test('session navigation closes only after a server-authoritative open commits',
 
 test('session activation policy is a deep module rather than store callback sprawl', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
-  const store = readFileSync(join(root, 'store.ts'), 'utf8');
+  const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
   const activation = readFileSync(join(root, '..', 'features', 'session', 'session-activation.ts'), 'utf8');
   assert.match(store, /new SessionActivation\(\{/);
   assert.match(store, /sessionActivation\.create\(projectId, title\)/);

@@ -1,5 +1,5 @@
 import { createEffect, createSignal, Show } from 'solid-js';
-import type { ProjectSessionInfo } from '../../panel/lib/registry-view';
+import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
 import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, IconButton, Popover, PopoverContent, PopoverTrigger, TextField } from '../../components/ui';
 import { Archive, MoreHorizontal, Pencil } from 'lucide-solid';
 import { sessionDisplayTitle } from '../../panel/lib/recovery-state.ts';

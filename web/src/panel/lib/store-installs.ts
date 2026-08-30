@@ -19,7 +19,7 @@ import { installPromptRecovery } from './prompt-recovery-assembly';
 import { isTerminal } from './action-state';
 import { connectionReady } from './connection';
 import type { DispatchResult } from './command-tracker';
-import type { ControlView } from './control-view';
+import type { ControlView } from '@/entities/chat/control-view';
 import type { Ack, ActionError, ActionFrame, ActionOptions } from './action-contract';
 import type { ComposerDraftOwner } from '@/features/composer/composer-draft';
 

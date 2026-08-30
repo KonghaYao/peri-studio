@@ -5,7 +5,7 @@
 // 通过 `onAccept` 回调写草稿并聚焦，dismiss 只记录精确键。
 
 import { createSignal } from 'solid-js';
-import type { ControlView } from '../../panel/lib/control-view';
+import type { ControlView } from '@/entities/chat/control-view';
 
 export interface ComposerPredictionOptions {
   /** 当前 chatHead 的 agent（协商字段来源）。 */

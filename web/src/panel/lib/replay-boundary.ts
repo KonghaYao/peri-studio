@@ -1,4 +1,4 @@
-import type { ChatEntry } from './chat-view';
+import type { ChatEntry } from '@/entities/chat/chat-view';
 
 export type ReplayBoundary = 'verified_history' | 'inferred_history' | 'live_runtime' | null;
 

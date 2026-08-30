@@ -1,7 +1,7 @@
 import { createSignal } from 'solid-js';
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { describe, expect, it, vi } from 'vitest';
-import type { AgentCommandInfo } from '../../panel/lib/control-view';
+import type { AgentCommandInfo } from '@/entities/chat/control-view';
 import { slashMenuOptionId } from '@/features/composer/slash-menu';
 import { SlashMenu } from './SlashMenu';
 

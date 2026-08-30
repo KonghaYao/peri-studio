@@ -1,7 +1,7 @@
 import { createEffect, Show } from 'solid-js';
 import { Listbox, ListboxItem } from '../../components/ui';
 import { cn } from '../../lib/cn';
-import type { AgentCommandInfo } from '../../panel/lib/control-view';
+import type { AgentCommandInfo } from '@/entities/chat/control-view';
 import { slashMenuOptionId } from '@/features/composer/slash-menu';
 
 interface Props {

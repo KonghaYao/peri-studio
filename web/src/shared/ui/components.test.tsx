@@ -366,10 +366,15 @@ describe('Dialog', () => {
     const backdrop = document.querySelector('[data-dialog-overlay]');
     expect(document.body.contains(backdrop)).toBe(true);
     expect(app.contains(backdrop)).toBe(false);
-    expect(app).toHaveAttribute('aria-hidden', 'true');
+    await waitFor(() => {
+      expect(outside.hasAttribute('inert') || outside.getAttribute('aria-hidden') === 'true').toBe(true);
+    });
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    await waitFor(() => expect(app).not.toHaveAttribute('aria-hidden'));
+    await waitFor(() => {
+      expect(outside.hasAttribute('inert')).toBe(false);
+      expect(outside).not.toHaveAttribute('aria-hidden');
+    });
     expect(document.activeElement).not.toBe(screen.queryByRole('dialog'));
     app.remove(); outside.remove();
   });

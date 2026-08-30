@@ -1,2 +1,2 @@
-/** @deprecated 请改用 `../../features/session/session-sidebar-order` */
-export * from '../../features/session/session-sidebar-order';
+/** @deprecated 请改用 @/entities/registry/session-order */
+export * from '@/entities/registry/session-order';

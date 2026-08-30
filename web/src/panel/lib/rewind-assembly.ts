@@ -12,7 +12,7 @@
 import { createSignal } from 'solid-js';
 import * as H from './protocol';
 import { readOnly } from './auth-state';
-import type { ControlView } from './control-view';
+import type { ControlView } from '@/entities/chat/control-view';
 import type { Ack, ActionError, ActionFrame, ActionOptions } from './action-contract';
 import {
   closedRewindFlow,

@@ -50,7 +50,7 @@ const store = vi.hoisted(() => ({
 
 vi.mock('../../panel/store', () => store);
 vi.mock('../../panel/lib/auth-state', () => ({ readOnly: store.readOnly }));
-vi.mock('../../panel/components/AuthGate', () => ({ useAuthActions: () => ({ logout: vi.fn() }) }));
+vi.mock('@/widgets/auth/AuthGate', () => ({ useAuthActions: () => ({ logout: vi.fn() }) }));
 
 import { ProjectSidebar } from './ProjectSidebar';
 import { primaryShortcut } from '../../panel/lib/keyboard';

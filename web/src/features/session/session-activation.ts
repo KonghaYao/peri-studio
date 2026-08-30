@@ -1,5 +1,5 @@
 import * as H from '../../panel/lib/protocol';
-import type { ProjectSessionInfo } from '../../panel/lib/registry-view';
+import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
 import { SessionNavigator, type OpeningSession, type SessionNavigationEffect, type SessionNavigationSnapshot } from './session-navigator';
 import {
   acceptQuickStart,

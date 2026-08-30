@@ -1,4 +1,4 @@
-import type { InstanceInfo, ProjectInfo } from './registry-view';
+import type { InstanceInfo, ProjectInfo } from '@/entities/registry/registry-view';
 
 export interface InstanceGroup {
   id: string;

@@ -1,0 +1,228 @@
+import * as Y from 'yjs';
+import { asArray, asMap, getNum, getStr, safeTime, yText, yValue } from '../../panel/lib/yjs-values';
+
+export interface ReasoningBlock { id?: string; text: string; visibility: string | null }
+export type ToolCallKind = 'read' | 'edit' | 'delete' | 'move' | 'search' | 'execute' | 'think' | 'fetch' | 'switch_mode' | 'other';
+export interface ToolCallInfo {
+  toolCallId: string | null;
+  name: string | null;
+  /** ACP 1.6 的服务端规范化类别；缺失表示旧投影，UI 必须按 other 处理。 */
+  kind?: ToolCallKind | null;
+  status: string | null;
+  arguments: unknown;
+  argumentsOmitted?: boolean | null;
+  argumentsBytes?: number | null;
+  result: unknown;
+  resultOmitted: boolean | null;
+  resultBytes: number | null;
+  content?: unknown;
+  contentOmitted?: boolean | null;
+  contentBytes?: number | null;
+  locations?: unknown;
+  locationsOmitted?: boolean | null;
+  locationsBytes?: number | null;
+  publicError: { code: string | null; message: string | null } | null;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+export interface ResourceInfo { resourceId: string | null; mediaType: string | null; name: string | null }
+export type ChatBlock =
+  | { kind: 'text'; id: string; text: string }
+  | { kind: 'reasoning'; id: string; reasoning: ReasoningBlock }
+  | { kind: 'tool_call'; id: string; toolCall: ToolCallInfo }
+  | { kind: 'resource'; id: string; resource: ResourceInfo };
+export interface ChatEntry {
+  id: string;
+  turnId: string | null;
+  kind: string | null;
+  role: string | null;
+  status: string | null;
+  authorUserId: string | null;
+  sourceCommandId: string | null;
+  origin?: 'live' | 'session_replay' | null;
+  replayVerified?: boolean | null;
+  deliverySchemaVersion?: number | null;
+  deliveryState?: string | null;
+  deliveryErrorCode?: string | null;
+  payloadFingerprint?: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  text: string;
+  blocks: ChatBlock[];
+  reasoning: ReasoningBlock[];
+  toolCalls: ToolCallInfo[];
+  resources: ResourceInfo[];
+  error: { code: string | null; message: string | null } | null;
+}
+export interface ChatView { schemaVersion: unknown; projectionVersion: unknown; entries: ChatEntry[] }
+
+export interface ChatEntryRead {
+  entry: ChatEntry;
+  referencedToolIds: Set<string>;
+}
+
+export function readChatToolCall(id: string, map: Y.Map<unknown> | null): ToolCallInfo {
+  const projectedKind = getStr(map, 'kind');
+  const kind: ToolCallKind = ['read', 'edit', 'delete', 'move', 'search', 'execute', 'think', 'fetch', 'switch_mode', 'other'].includes(projectedKind ?? '')
+    ? projectedKind as ToolCallKind
+    : 'other';
+  return {
+    toolCallId: id,
+    name: getStr(map, 'name'),
+    kind,
+    status: getStr(map, 'status'),
+    arguments: yValue(map?.get('arguments')),
+    argumentsOmitted: map?.has('arguments_omitted') ? map.get('arguments_omitted') === true : null,
+    argumentsBytes: getNum(map, 'arguments_bytes'),
+    result: yValue(map?.get('result')),
+    resultOmitted: map?.has('result_omitted') ? map.get('result_omitted') === true : null,
+    resultBytes: getNum(map, 'result_bytes'),
+    content: yValue(map?.get('content')),
+    contentOmitted: map?.has('content_omitted') ? map.get('content_omitted') === true : null,
+    contentBytes: getNum(map, 'content_bytes'),
+    locations: yValue(map?.get('locations')),
+    locationsOmitted: map?.has('locations_omitted') ? map.get('locations_omitted') === true : null,
+    locationsBytes: getNum(map, 'locations_bytes'),
+    publicError: (() => {
+      const error = asMap(map?.get('public_error'));
+      return error ? { code: getStr(error, 'code'), message: getStr(error, 'message') } : null;
+    })(),
+    startedAt: getStr(map, 'started_at'),
+    completedAt: getStr(map, 'completed_at'),
+  };
+}
+
+/** 读取单条 entry；legacy orphan tool 由上层按 turn 索引补入。 */
+export function readChatEntry(
+  entryId: string,
+  entriesMap: Y.Map<unknown> | null,
+  toolCalls: Y.Map<unknown> | null,
+): ChatEntryRead | null {
+  const map = asMap(entriesMap?.get(entryId));
+  if (!map) return null;
+  const referencedToolIds = new Set<string>();
+  const entry: ChatEntry = {
+    id: entryId,
+    turnId: getStr(map, 'turn_id'),
+    kind: getStr(map, 'kind'),
+    role: getStr(map, 'role'),
+    status: getStr(map, 'status'),
+    authorUserId: getStr(map, 'author_user_id'),
+    sourceCommandId: getStr(map, 'source_command_id'),
+    origin: (() => {
+      const value = getStr(map, 'origin');
+      return value === 'live' || value === 'session_replay' ? value : null;
+    })(),
+    replayVerified: typeof map.get('replay_verified') === 'boolean' ? map.get('replay_verified') as boolean : null,
+    deliverySchemaVersion: getNum(map, 'delivery_schema_version'),
+    deliveryState: getStr(map, 'delivery_state'),
+    deliveryErrorCode: getStr(map, 'delivery_error_code'),
+    payloadFingerprint: getStr(map, 'payload_fingerprint'),
+    createdAt: safeTime(map.get('created_at')),
+    completedAt: getStr(map, 'completed_at'),
+    text: '',
+    blocks: [],
+    reasoning: [],
+    toolCalls: [],
+    resources: [],
+    error: null,
+  };
+  const error = asMap(map.get('error'));
+  if (error) entry.error = { code: getStr(error, 'code'), message: getStr(error, 'message') };
+
+  const blocks = asMap(map.get('blocks'));
+  const seenBlockIds = new Set<string>();
+  asArray(map.get('block_order'))?.toArray().forEach((blockIdValue) => {
+    if (typeof blockIdValue !== 'string' || seenBlockIds.has(blockIdValue)) return;
+    seenBlockIds.add(blockIdValue);
+    const block = asMap(blocks?.get(blockIdValue));
+    if (!block) return;
+    switch (block.get('kind')) {
+      case 'text': {
+        const text = yText(block.get('text'));
+        if (text !== null) {
+          entry.text += text;
+          entry.blocks.push({ kind: 'text', id: blockIdValue, text });
+        }
+        break;
+      }
+      case 'reasoning': {
+        // Chat Doc 是浏览器共享投影。只有协议明确标记为 summary 的推理
+        // 才属于用户可见内容；hidden、缺失与未来未知值一律 fail closed。
+        const visibility = getStr(block, 'visibility');
+        if (visibility === 'summary') {
+          const reasoning = { id: blockIdValue, text: yText(block.get('text')) || '', visibility };
+          entry.reasoning.push(reasoning);
+          entry.blocks.push({ kind: 'reasoning', id: blockIdValue, reasoning });
+        }
+        break;
+      }
+      case 'tool_call': {
+        const id = getStr(block, 'tool_call_id');
+        if (id) referencedToolIds.add(id);
+        const toolCall = readChatToolCall(id || '', asMap(id ? toolCalls?.get(id) : null));
+        entry.toolCalls.push(toolCall);
+        entry.blocks.push({ kind: 'tool_call', id: blockIdValue, toolCall });
+        break;
+      }
+      case 'resource': {
+        const resource = {
+          resourceId: getStr(block, 'resource_id'),
+          mediaType: getStr(block, 'media_type'),
+          name: getStr(block, 'name'),
+        };
+        entry.resources.push(resource);
+        entry.blocks.push({ kind: 'resource', id: blockIdValue, resource });
+        break;
+      }
+      default:
+        break;
+    }
+  });
+  return { entry, referencedToolIds };
+}
+
+/** Read-only browser projection of one chat:{id} document. */
+export function renderChat(doc: Y.Doc): ChatView {
+  const root = doc.getMap<unknown>('root');
+  const order = asArray(root.get('entry_order'));
+  const entriesMap = asMap(root.get('entries'));
+  const toolCalls = asMap(root.get('tool_calls'));
+  const entries: ChatEntry[] = [];
+  const referencedToolIds = new Set<string>();
+
+  order?.toArray().forEach((entryIdValue) => {
+    if (typeof entryIdValue !== 'string') return;
+    const read = readChatEntry(entryIdValue, entriesMap, toolCalls);
+    if (!read) return;
+    read.referencedToolIds.forEach((id) => referencedToolIds.add(id));
+    entries.push(read.entry);
+  });
+
+  const assistantByTurn = new Map(entries
+    .filter((entry) => entry.role === 'assistant' && entry.turnId)
+    .map((entry) => [entry.turnId as string, entry]));
+  const legacyOrphans: Array<{ id: string; turnId: string; startedAt: string; map: Y.Map<unknown> }> = [];
+  toolCalls?.forEach((value, id) => {
+    if (referencedToolIds.has(id)) return;
+    const map = asMap(value);
+    const turnId = getStr(map, 'turn_id');
+    if (!map || !turnId || !assistantByTurn.has(turnId)) return;
+    legacyOrphans.push({ id, turnId, startedAt: getStr(map, 'started_at') || '', map });
+  });
+  legacyOrphans
+    .sort((left, right) => left.startedAt.localeCompare(right.startedAt) || left.id.localeCompare(right.id))
+    .forEach((orphan) => {
+      const entry = assistantByTurn.get(orphan.turnId);
+      if (!entry) return;
+      const toolCall = readChatToolCall(orphan.id, orphan.map);
+      entry.toolCalls.push(toolCall);
+      entry.blocks.push({ kind: 'tool_call', id: `legacy-tool:${orphan.id}`, toolCall });
+    });
+
+  return {
+    schemaVersion: root.get('schema_version'),
+    projectionVersion: root.get('projection_version'),
+    entries,
+  };
+}

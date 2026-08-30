@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ChatEntry } from './chat-view';
+import type { ChatEntry } from '@/entities/chat/chat-view';
 import { replayBoundaryAt } from './replay-boundary';
 
 function entry(origin: NonNullable<ChatEntry['origin']> | null, replayVerified: boolean | null): ChatEntry {

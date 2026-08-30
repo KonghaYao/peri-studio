@@ -5,7 +5,7 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { transform } from 'lightningcss';
 import postcss from 'postcss';
@@ -19,6 +19,26 @@ const cssFiles = () => {
   return [...entry.matchAll(/@import\s+'([^']+)';/g)].map((match) => match[1].replace(/^\.\//, ''));
 };
 const featureCss = () => cssFiles().map((file) => readFileSync(join(import.meta.dirname, '..', 'src', file), 'utf8')).join('\n');
+const sourceRoot = () => join(import.meta.dirname, '..', 'src');
+const widgetComponentRoots = () => [
+  'widgets/shell',
+  'widgets/chat',
+  'widgets/auth',
+  'widgets/resource',
+  'widgets/composer',
+  'widgets/sidebar',
+].map((segment) => join(sourceRoot(), segment));
+const listWidgetTsx = (predicate = () => true) => widgetComponentRoots().flatMap((root) => {
+  const entries = existsSync(root) ? readdirSync(root, { withFileTypes: true }) : [];
+  return entries
+    .filter((item) => item.isFile() && item.name.endsWith('.tsx') && predicate(item.name))
+    .map((item) => join(root, item.name));
+});
+const readWidgetTsx = (name) => {
+  const path = listWidgetTsx((file) => file === name)[0];
+  assert.ok(path, `missing widget component ${name}`);
+  return readFileSync(path, 'utf8');
+};
 const allFiles = (directory) => readdirSync(directory, { withFileTypes: true }).flatMap((item) => {
   const path = join(directory, item.name);
   return item.isDirectory() ? allFiles(path) : [path];
@@ -81,12 +101,9 @@ test('Kobalte dialog composes an independently layered portal overlay and conten
 });
 
 test('dialog size belongs to DialogContent rather than an overflowing child', () => {
-  const source = join(import.meta.dirname, '..', 'src');
-  const dialog = readFileSync(join(source, 'shared', 'ui', 'Dialog.tsx'), 'utf8');
-  const components = join(source, 'panel', 'components');
-  const dialogConsumers = readdirSync(components)
-    .filter((file) => file.endsWith('.tsx'))
-    .map((file) => [file, readFileSync(join(components, file), 'utf8')])
+  const dialog = readFileSync(join(sourceRoot(), 'shared', 'ui', 'Dialog.tsx'), 'utf8');
+  const dialogConsumers = listWidgetTsx()
+    .map((path) => [path, readFileSync(path, 'utf8')])
     .filter(([, code]) => code.includes('<DialogContent'));
   assert.match(dialog, /type DialogSize = 'default' \| 'search' \| 'settings' \| 'mcp'/);
   for (const [file, code] of dialogConsumers) {
@@ -107,18 +124,16 @@ test('Composer and quick start expose one labeled textarea and keyboard submit g
 });
 
 test('feature components consume the Solid UI library only through its public barrel', () => {
-  const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
-  const offenders = readdirSync(components)
-    .filter((file) => file.endsWith('.tsx'))
-    .filter((file) => /from\s+['"]\.\.\/\.\.\/ui\//.test(readFileSync(join(components, file), 'utf8')));
+  const offenders = listWidgetTsx()
+    .filter((path) => /from\s+['"]\.\.\/\.\.\/ui\//.test(readFileSync(path, 'utf8')))
+    .map((path) => path.split('/').pop());
   assert.deepEqual(offenders, []);
 });
 
 test('feature-owned SVG geometry always uses the shared finite icon canvas', () => {
-  const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
-  const offenders = readdirSync(components)
-    .filter((file) => file.endsWith('.tsx'))
-    .filter((file) => /<svg\b/.test(readFileSync(join(components, file), 'utf8')));
+  const offenders = listWidgetTsx()
+    .filter((path) => /<svg\b/.test(readFileSync(path, 'utf8')))
+    .map((path) => path.split('/').pop());
   assert.deepEqual(offenders, []);
   const icon = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Icon.tsx'), 'utf8');
   assert.match(icon, /<svg/);
@@ -129,17 +144,15 @@ test('feature-owned SVG geometry always uses the shared finite icon canvas', () 
 });
 
 test('high-frequency chat controls are owned by the Solid UI library', () => {
-  const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
-  const composer = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'composer', 'Composer.tsx'), 'utf8');
-  const messageList = readFileSync(join(components, 'MessageList.tsx'), 'utf8');
+  const composer = readFileSync(join(sourceRoot(), 'widgets', 'composer', 'Composer.tsx'), 'utf8');
+  const messageList = readWidgetTsx('MessageList.tsx');
   assert.doesNotMatch(composer, /<button\b/, 'Composer.tsx');
   assert.doesNotMatch(messageList, /<button\b/, 'MessageList.tsx');
 });
 
 test('MessageList delegates entry semantics through stable entry-id slots to one tested conversation component', () => {
-  const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
-  const list = readFileSync(join(components, 'MessageList.tsx'), 'utf8');
-  const message = readFileSync(join(components, 'ConversationMessage.tsx'), 'utf8');
+  const list = readWidgetTsx('MessageList.tsx');
+  const message = readWidgetTsx('ConversationMessage.tsx');
   assert.match(list, /const chatEntryIds = createMemo\(\(\) => chatEntries\(\)\.map\(\(entry\) => entry\.id\)\)/);
   assert.match(list, /<Show when=\{chatEntries\(\)\[globalIndex\(\)\]\}>\{\(entry\) => <ConversationMessage entry=\{entry\} \/>\}<\/Show>/);
   assert.doesNotMatch(list, /function MessageBubble|<Markdown|<ToolCallCard/);
@@ -148,11 +161,10 @@ test('MessageList delegates entry semantics through stable entry-id slots to one
 });
 
 test('the permission surface exposes a queue and never resolves an empty identity', () => {
-  const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
-  const messageList = readFileSync(join(components, 'MessageList.tsx'), 'utf8');
-  const chatView = readFileSync(join(components, 'ChatView.tsx'), 'utf8');
-  const queue = readFileSync(join(components, 'PermissionQueue.tsx'), 'utf8');
-  const card = readFileSync(join(components, 'PermissionRequestCard.tsx'), 'utf8');
+  const messageList = readWidgetTsx('MessageList.tsx');
+  const chatView = readWidgetTsx('ChatView.tsx');
+  const queue = readWidgetTsx('PermissionQueue.tsx');
+  const card = readWidgetTsx('PermissionRequestCard.tsx');
   assert.doesNotMatch(messageList, /<PermissionQueue/);
   assert.match(chatView, /<PermissionQueue/);
   assert.ok(chatView.indexOf('<PermissionQueue') < chatView.indexOf('<Composer />'));
@@ -168,33 +180,30 @@ test('the shared Button defaults to non-submitting behavior', () => {
 });
 
 test('feature-owned native buttons always state their form behavior', () => {
-  const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
-  const offenders = readdirSync(components)
-    .filter((file) => file.endsWith('.tsx') && !file.endsWith('.test.tsx'))
-    .flatMap((file) => [...readFileSync(join(components, file), 'utf8').matchAll(/<button\b([^>]*)>/gs)]
+  const offenders = listWidgetTsx((file) => !file.endsWith('.test.tsx'))
+    .flatMap((path) => [...readFileSync(path, 'utf8').matchAll(/<button\b([^>]*)>/gs)]
       .filter((match) => !/\btype\s*=/.test(match[1]))
-      .map(() => file));
+      .map(() => path.split('/').pop()));
   assert.deepEqual(offenders, []);
 });
 
 test('feature components never introduce literal colors', () => {
-  const components = join(import.meta.dirname, '..', 'src', 'panel', 'components');
-  const offenders = readdirSync(components)
-    .filter((file) => file.endsWith('.tsx'))
-    .filter((file) => /#[0-9a-f]{3,8}\b|rgba?\(/i.test(readFileSync(join(components, file), 'utf8')));
+  const offenders = listWidgetTsx()
+    .filter((path) => /#[0-9a-f]{3,8}\b|rgba?\(/i.test(readFileSync(path, 'utf8')))
+    .map((path) => path.split('/').pop());
   assert.deepEqual(offenders, []);
 });
 
 test('large semantic status surfaces stay white', () => {
-  const source = join(import.meta.dirname, '..', 'src');
+  const source = sourceRoot();
   const files = [
     'shared/ui/InlineNotice.tsx',
-    'panel/components/MessageOutbox.tsx',
-    'panel/components/PermissionQueue.tsx',
-    'panel/components/PermissionRequestCard.tsx',
-    'panel/components/RewindDialog.tsx',
-    'panel/components/ToolCallCard.tsx',
-    'panel/components/shared/ConfirmDialog.tsx',
+    'widgets/chat/MessageOutbox.tsx',
+    'widgets/chat/PermissionQueue.tsx',
+    'widgets/chat/PermissionRequestCard.tsx',
+    'widgets/chat/RewindDialog.tsx',
+    'widgets/chat/ToolCallCard.tsx',
+    'widgets/shell/shared/ConfirmDialog.tsx',
   ];
   for (const file of files) {
     const code = readFileSync(join(source, file), 'utf8');
@@ -203,10 +212,10 @@ test('large semantic status surfaces stay white', () => {
 });
 
 test('responsive behavior has compact, medium and wide layout contracts', () => {
-  const root = join(import.meta.dirname, '..', 'src');
-  const shell = readFileSync(join(root, 'panel', 'components', 'AppShell.tsx'), 'utf8');
-  const drawer = readFileSync(join(root, 'panel', 'components', 'shared', 'ProjectDrawer.tsx'), 'utf8');
-  const messageList = readFileSync(join(root, 'panel', 'components', 'MessageList.tsx'), 'utf8');
+  const root = sourceRoot();
+  const shell = readWidgetTsx('AppShell.tsx');
+  const drawer = readFileSync(join(root, 'widgets', 'shell', 'shared', 'ProjectDrawer.tsx'), 'utf8');
+  const messageList = readWidgetTsx('MessageList.tsx');
   const composer = readFileSync(join(root, 'widgets', 'composer', 'Composer.tsx'), 'utf8');
   const theme = readFileSync(join(root, 'styles', 'theme.css'), 'utf8');
   const breakpoints = readFileSync(join(root, 'panel', 'lib', 'breakpoints.ts'), 'utf8');
@@ -243,7 +252,7 @@ test('coarse pointers expose sidebar actions without hover and keep controls tou
 
 test('P0 interaction architecture cannot regress to hidden cancel or viewport-breaking overlays', () => {
   const composer = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'composer', 'Composer.tsx'), 'utf8');
-  const sidebarChrome = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'components', 'SidebarChrome.tsx'), 'utf8');
+  const sidebarChrome = readWidgetTsx('SidebarChrome.tsx');
   const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Dialog.tsx'), 'utf8');
   const styles = featureCss();
   assert.match(composer, /cancelTurn/);
@@ -303,9 +312,7 @@ test('reusable design tokens have one UI-library source', () => {
   assert.doesNotMatch(tokens, /--breakpoint-/);
   assert.doesNotMatch(featureStyles, /#[0-9a-f]{3,8}\b|rgba?\(/i);
   const declared = new Set([...tokens.matchAll(/--([a-z0-9-]+)\s*:/gi)].map((match) => match[1]));
-  const sourceFiles = [featureStyles, theme, ...readdirSync(join(root, 'panel', 'components'))
-    .filter((file) => file.endsWith('.tsx'))
-    .map((file) => readFileSync(join(root, 'panel', 'components', file), 'utf8'))];
+  const sourceFiles = [featureStyles, theme, ...listWidgetTsx().map((path) => readFileSync(path, 'utf8'))];
   const referenced = new Set(sourceFiles.flatMap((source) => [...source.matchAll(/var\(--([a-z0-9-]+)/gi)].map((match) => match[1])));
   assert.deepEqual([...referenced].filter((token) => !declared.has(token)), []);
 });
@@ -356,7 +363,7 @@ test('primitive visuals remain in shared UI components and out of feature styles
   const primitives = readFileSync(join(root, 'styles', 'primitives.css'), 'utf8');
   const button = readFileSync(join(root, 'shared', 'ui', 'Button.tsx'), 'utf8');
   const dialog = readFileSync(join(root, 'shared', 'ui', 'Dialog.tsx'), 'utf8');
-  const drawer = readFileSync(join(root, 'panel', 'components', 'shared', 'ProjectDrawer.tsx'), 'utf8');
+  const drawer = readFileSync(join(root, 'widgets', 'shell', 'shared', 'ProjectDrawer.tsx'), 'utf8');
   assert.match(primitives, /\.ui-scrollbar\s*\{/);
   assert.match(primitives, /\*::\-webkit-scrollbar\s*\{/);
   assert.match(primitives, /scrollbar-color:\s*var\(--scrollbar-thumb\) transparent/);
@@ -369,7 +376,7 @@ test('primitive visuals remain in shared UI components and out of feature styles
 
 test('domain status inference delegates visual rendering to the shared Badge', () => {
   const root = join(import.meta.dirname, '..', 'src');
-  const adapter = readFileSync(join(root, 'panel', 'components', 'Badge.tsx'), 'utf8');
+  const adapter = readFileSync(join(root, 'widgets', 'shell', 'Badge.tsx'), 'utf8');
   const primitive = readFileSync(join(root, 'shared', 'ui', 'Badge.tsx'), 'utf8');
   assert.match(adapter, /Badge as UiBadge/);
   assert.doesNotMatch(adapter, /bg-\[|text-\[/);
@@ -405,9 +412,8 @@ test('icon-only actions use one rounded rectangular geometry and never circular 
 });
 
 test('responsive navigation uses structural desktop layout and Kobalte modal behavior', () => {
-  const root = join(import.meta.dirname, '..', 'src');
-  const shell = readFileSync(join(root, 'panel', 'components', 'AppShell.tsx'), 'utf8');
-  const drawer = readFileSync(join(root, 'panel', 'components', 'shared', 'ProjectDrawer.tsx'), 'utf8');
+  const shell = readWidgetTsx('AppShell.tsx');
+  const drawer = readFileSync(join(sourceRoot(), 'widgets', 'shell', 'shared', 'ProjectDrawer.tsx'), 'utf8');
   assert.match(shell, /<ProjectDrawer\b/);
   assert.match(shell, /if \(!query\.matches\) setOpen\(false\)/);
   assert.doesNotMatch(shell, /document\.addEventListener\('keydown'/);

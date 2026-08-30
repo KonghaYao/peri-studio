@@ -1,4 +1,4 @@
-import type { ProjectSessionInfo, SessionSummaryInfo } from '../../panel/lib/registry-view';
+import type { ProjectSessionInfo, SessionSummaryInfo } from '@/entities/registry/registry-view';
 
 export function unimportedSessions(sessions: SessionSummaryInfo[], projectSessions: ProjectSessionInfo[]): SessionSummaryInfo[] {
   const imported = new Set(projectSessions.map((session) => session.id));

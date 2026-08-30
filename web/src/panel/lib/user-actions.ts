@@ -16,7 +16,7 @@ import { isTerminal } from './action-state';
 import { connectionReady, promptDeliveryReady, promptMaxBytes } from './connection';
 import { promptFitsBudget } from './prompt-budget';
 import { readOnly } from './auth-state';
-import type { ControlView } from './control-view';
+import type { ControlView } from '@/entities/chat/control-view';
 import type { ActionFrame, ActionOptions } from './action-contract';
 import {
   acceptMessageDelivery,

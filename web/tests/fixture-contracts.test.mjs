@@ -22,12 +22,12 @@ test('the visual fixture is a development-only entry and cannot bypass productio
   const index = readFileSync(join(root, 'index.html'), 'utf8');
   const fixture = readFileSync(join(root, 'visual-fixture.html'), 'utf8');
   const vite = readFileSync(join(root, 'vite.config.ts'), 'utf8');
-  const productionMain = readFileSync(join(root, 'src', 'panel', 'main.tsx'), 'utf8');
-  const authGate = readFileSync(join(root, 'src', 'panel', 'components', 'AuthGate.tsx'), 'utf8');
+  const productionMain = readFileSync(join(root, 'src', 'app', 'main.tsx'), 'utf8');
+  const authGate = readFileSync(join(root, 'src', 'widgets', 'auth', 'AuthGate.tsx'), 'utf8');
   const fixtureMain = readFileSync(join(root, 'src', 'visual-fixture', 'main.tsx'), 'utf8');
   const scenarios = readFileSync(join(root, 'src', 'visual-fixture', 'scenarios.ts'), 'utf8');
 
-  assert.match(index, /src="\/src\/panel\/main\.tsx"/);
+  assert.match(index, /src="\/src\/app\/main\.tsx"/);
   assert.doesNotMatch(index, /visual-fixture/);
   assert.match(fixture, /src="\/src\/visual-fixture\/main\.tsx"/);
   assert.doesNotMatch(fixture, /panel\/main|AuthGate/);
@@ -59,12 +59,12 @@ test('design-token modules are implemented by production components', () => {
   const board = read('visual-fixture', 'DesignTokenBoard.tsx');
   const fixtureCss = read('visual-fixture', 'fixture.css');
   const composer = read('widgets', 'composer', 'Composer.tsx');
-  const tool = read('panel', 'components', 'ToolCallCard.tsx');
-  const status = read('panel', 'components', 'StatusArea.tsx');
-  const questions = read('panel', 'components', 'ElicitationQueue.tsx');
-  const permissions = read('panel', 'components', 'PermissionQueue.tsx');
-  const explorer = read('panel', 'components', 'ExplorerPanel.tsx');
-  const sourceControl = read('panel', 'components', 'SourceControlPanel.tsx');
+  const tool = read('widgets', 'chat', 'ToolCallCard.tsx');
+  const status = read('widgets', 'shell', 'StatusArea.tsx');
+  const questions = read('widgets', 'chat', 'ElicitationQueue.tsx');
+  const permissions = read('widgets', 'chat', 'PermissionQueue.tsx');
+  const explorer = read('widgets', 'resource', 'ExplorerPanel.tsx');
+  const sourceControl = read('widgets', 'resource', 'SourceControlPanel.tsx');
 
   for (const token of [
     'control-height-compact', 'pattern-row-height', 'tree-row-height',

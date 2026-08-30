@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ProjectSessionInfo } from '../../panel/lib/registry-view';
+import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
 import { ProjectSessionRow, type ProjectSessionRowProps } from './ProjectSessionRow';
 
 const session: ProjectSessionInfo = {

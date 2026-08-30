@@ -1,5 +1,5 @@
 import { createSignal } from 'solid-js';
-import type { PendingElicitation } from './control-view';
+import type { PendingElicitation } from '@/entities/chat/control-view';
 
 export type ElicitationDeliveryPhase = 'pending' | 'confirmed' | 'failed' | 'uncertain' | 'delivery_unknown';
 

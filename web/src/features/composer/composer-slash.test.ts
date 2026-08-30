@@ -1,6 +1,6 @@
 import { createRoot } from 'solid-js';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { AgentCommandInfo } from '../../panel/lib/control-view';
+import type { AgentCommandInfo } from '@/entities/chat/control-view';
 import { useComposerSlash, type ComposerSlashController } from './composer-slash';
 
 const catalog: AgentCommandInfo[] = [

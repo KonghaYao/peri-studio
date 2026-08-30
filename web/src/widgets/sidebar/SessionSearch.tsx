@@ -5,7 +5,7 @@ import { navigateProjectSession, openingSessionId, projectSessions, projects, se
 import { readOnly } from '../../panel/lib/auth-state';
 import { formatRelativeTime, sessionDisplayTitle, shortSessionId } from '../../panel/lib/recovery-state.ts';
 import { searchProjectSessions } from '../../features/session/session-search.ts';
-import type { ProjectSessionInfo } from '../../panel/lib/registry-view';
+import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
 
 type SearchResult = ProjectSessionInfo & { project: { name: string } | null };
 

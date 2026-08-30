@@ -1,4 +1,4 @@
-import type { ProjectInfo, ProjectSessionInfo } from '../../panel/lib/registry-view';
+import type { ProjectInfo, ProjectSessionInfo } from '@/entities/registry/registry-view';
 
 export interface ProjectSessionSearchResult extends ProjectSessionInfo {
   project: ProjectInfo | null;

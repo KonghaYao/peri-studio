@@ -201,10 +201,24 @@ web/src/
 - MCP Apps 宿主：`design/mcp-apps-host.md` 中路径在 Phase 4 后改为 `features/mcp`、`widgets/chat/McpAppFrame`。
 - 术语：`terminology.md` 不变；代码目录名用英文 feature 名，UI 文案仍英文。
 
-## 11. 验收（Phase 1–3 完成时）
+## 11. 验收
 
-- [ ] `shared/ui` 为唯一设计系统入口；`components/ui` 仅 re-export。
-- [ ] Composer 全链路文件位于 `features/composer` + `widgets/composer`。
-- [ ] Session 侧栏相关位于 `features/session|catalog` + `widgets/sidebar`。
-- [ ] `bun run test` 与 `bun run test:browser` 通过。
-- [ ] `architecture.md` §10.2 指向本文档。
+### Phase 1–3（已完成）
+
+- [x] `shared/ui` 为唯一设计系统入口；`components/ui` 仅 re-export。
+- [x] Composer 全链路文件位于 `features/composer` + `widgets/composer`。
+- [x] Session 侧栏相关位于 `features/session|catalog` + `widgets/sidebar`。
+
+### Phase 4–5（已完成）
+
+- [x] `entities/{registry,chat,resource,topology}` 承载只读投影；`shared/yjs` 承载 doc-store 基元。
+- [x] 剩余 `panel/components` 迁至 `widgets/{shell,chat,auth,resource}`。
+- [x] `store/index.ts` 为组合根；`app/main.tsx` + `pages/panel` 为入口装配。
+- [x] Phase 2–3 无引用 shim 已删除；`panel/store.ts`、`panel/main.tsx` 保留 deprecated 重导出。
+- [x] `bun run test` 通过。
+
+### 后续（Phase 6+）
+
+- [ ] `panel/lib` 剩余模块按 features 域继续迁移（connection、message、runtime、mcp、auth…）。
+- [ ] `entities/chat` 去除对 `panel/lib/rfc3339` 的临时依赖，迁入 `shared/lib`。
+- [ ] ESLint import 边界规则强制执行五层依赖表。

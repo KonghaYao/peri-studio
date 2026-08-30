@@ -20,8 +20,8 @@ import { isTerminal, isTurnActive } from './action-state';
 import { resetMcpState } from './mcp';
 import { tearDownMcpAppsForChat } from './mcp-apps';
 import { resetRewindState } from './rewind-assembly';
-import type { ChatEntry } from './chat-view';
-import type { ControlView } from './control-view';
+import type { ChatEntry } from '@/entities/chat/chat-view';
+import type { ControlView } from '@/entities/chat/control-view';
 import { resetElicitationResponses } from './elicitation-delivery';
 
 export interface ChatSubscriptionDeps {

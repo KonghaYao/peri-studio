@@ -31,7 +31,7 @@ const FEATURE_OWNERS = {
   resource_result: { module: 'panel/lib/resource-store.ts', prefix: 'handleResourceResult' },
   // ysync.update 是唯一含点的标签（[a-z_.]+），由 store 内的 doc-store
   // 实例内联消费（store.applyUpdateFrame），不委托模块 handler。
-  'ysync.update': { module: 'panel/lib/doc-store.ts', prefix: 'applyUpdateFrame' },
+  'ysync.update': { module: 'shared/yjs/doc-store.ts', prefix: 'applyUpdateFrame' },
 };
 
 function protocolFrameTags() {
@@ -50,7 +50,7 @@ function protocolFrameTags() {
 }
 
 function onFrameSwitch() {
-  const store = source('panel/store.ts');
+  const store = source('store/index.ts');
   const start = store.indexOf('function onFrame(');
   const end = store.indexOf('function onAck(');
   assert.ok(start !== -1 && end !== -1 && start < end, 'store.ts onFrame block must exist');
@@ -90,7 +90,7 @@ test('every onFrame case has a substantive handler (inline or delegated)', () =>
 });
 
 test('feature frame cases are handled by their owning module handlers', () => {
-  const store = source('panel/store.ts');
+  const store = source('store/index.ts');
   for (const [tag, owner] of Object.entries(FEATURE_OWNERS)) {
     const body = caseBody(tag);
     const call = body.match(/(handle[A-Za-z]+)\(frame(?:\s+as\s+[^)]+)?\)/);

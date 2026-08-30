@@ -8,7 +8,7 @@
 // 提交键。
 
 import { createMemo, createSignal } from 'solid-js';
-import type { AgentCommandInfo } from '../../panel/lib/control-view';
+import type { AgentCommandInfo } from '@/entities/chat/control-view';
 import { filterCommandCatalog, insertSlashCommand, slashTokenAt } from './slash-menu';
 
 export interface ComposerSlashOptions {

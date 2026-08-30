@@ -1,5 +1,5 @@
-import type { ChatEntry, ToolCallInfo } from '../panel/lib/chat-view';
-import type { ControlView, PendingPermission } from '../panel/lib/control-view';
+import type { ChatEntry, ToolCallInfo } from '@/entities/chat/chat-view';
+import type { ControlView, PendingPermission } from '@/entities/chat/control-view';
 import { setConnState, setPromptDeliveryReady } from '../panel/lib/connection';
 import { setChatEntries, setChatHead, setPermissions } from '../panel/store';
 
