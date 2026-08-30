@@ -1,0 +1,277 @@
+/* ==========================================================================
+   Peri Studio design tokens（2026-08-30 定稿）
+   三层架构：Tier 0 palette → Tier 1 semantic → Tier 2 component。
+   依赖方向只允许向下：组件禁引 palette-*，功能样式只用 semantic/component。
+   深色主题：语义层已按可重映射结构化，[data-theme='dark'] 骨架见文末（未启用）。
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* ------------------------------------------------------------------
+     Tier 0 · Primitives：色调色板。组件禁止使用，只被语义层引用。
+     accent 命名与色相解耦：换主题色只改这一段。
+     ------------------------------------------------------------------ */
+
+  /* Accent · B4 湛蓝（白字 5.2:1 过 AA） */
+  --palette-accent-50: #eff6ff;
+  --palette-accent-100: #dbeafe;
+  --palette-accent-200: #bfdbfe;
+  --palette-accent-300: #93c5fd;
+  --palette-accent-400: #60a5fa;
+  --palette-accent-500: #3b82f6;
+  --palette-accent-600: #2563eb;
+  --palette-accent-700: #1d4ed8;
+  --palette-accent-800: #1e40af;
+  --palette-accent-900: #1e3a8a;
+
+  /* Neutral · AntD 冷灰 */
+  --palette-neutral-0: #ffffff;
+  --palette-neutral-25: #fafafa;
+  --palette-neutral-50: #f5f5f5;
+  --palette-neutral-100: #f0f0f0;
+  --palette-neutral-200: #d9d9d9;
+  --palette-neutral-300: #bfbfbf;
+  --palette-neutral-400: #a3a3a3;
+  --palette-neutral-500: #8c8c8c;
+  --palette-neutral-600: #595959;
+  --palette-neutral-700: #434343;
+  --palette-neutral-800: #262626;
+  --palette-neutral-900: #1f1f1f;
+  --palette-neutral-950: #141414;
+
+  /* Success · AntD 绿（与 accent 蓝拉开） */
+  --palette-success-50: #f6ffed;
+  --palette-success-100: #d9f7be;
+  --palette-success-200: #b7eb8f;
+  --palette-success-500: #52c41a;
+  --palette-success-600: #389e0d;
+  --palette-success-700: #237804;
+
+  /* Warning · AntD 琥珀 */
+  --palette-warning-50: #fffbe6;
+  --palette-warning-100: #fff1b8;
+  --palette-warning-200: #ffe58f;
+  --palette-warning-500: #faad14;
+  --palette-warning-600: #d48806;
+  --palette-warning-700: #ad6800;
+
+  /* Danger · AntD 红 */
+  --palette-danger-50: #fff2f0;
+  --palette-danger-100: #ffccc7;
+  --palette-danger-200: #ffa39e;
+  --palette-danger-500: #ff4d4f;
+  --palette-danger-600: #cf1322;
+  --palette-danger-700: #a8071a;
+
+  /* ------------------------------------------------------------------
+     Tier 1 · Semantic：功能样式与组件的唯一可用层。
+     ------------------------------------------------------------------ */
+
+  /* 表面 */
+  --surface-canvas: var(--palette-neutral-0);
+  --surface-muted: var(--palette-neutral-25);
+  --surface-sunken: var(--palette-neutral-25);
+  --surface-overlay: var(--palette-neutral-0);
+  --scrim: rgb(20 20 20 / 45%);
+
+  /* 文字 */
+  --content-primary: var(--palette-neutral-900);
+  --content-secondary: var(--palette-neutral-600);
+  --content-muted: var(--palette-neutral-500);
+  --content-faint: var(--palette-neutral-400);
+  --content-link: var(--palette-accent-600);
+  --content-on-accent: var(--palette-neutral-0);
+
+  /* 边框 */
+  --border-subtle: var(--palette-neutral-100);
+  --border-strong: var(--palette-neutral-200);
+  --border-focus: var(--palette-accent-600);
+
+  /* 主色（AntD 节奏：hover 浅一档，active/文字深一档） */
+  --accent-solid: var(--palette-accent-600);
+  --accent-hover: var(--palette-accent-500);
+  --accent-active: var(--palette-accent-700);
+  --accent-soft: var(--palette-accent-50);
+  /* 控件 hover 边：比 fill hover（500）再浅一档，避免光边发闷 */
+  --accent-border-hover: var(--palette-accent-300);
+  --accent-ring: color-mix(in srgb, var(--palette-accent-500) 18%, transparent);
+
+  /* 选中态：白底 + 主色边框（不用彩色底色） */
+  --selection-border: var(--palette-accent-600);
+  --selection-bg: var(--palette-neutral-0);
+
+  /* 交互 hover：极浅遮罩，避免 #f5f5f5 叠层发闷 */
+  --interaction-hover: rgb(0 0 0 / 0.03);
+
+  /* 反馈色：solid / strong / soft / border 四态矩阵 */
+  --feedback-success-solid: var(--palette-success-500);
+  --feedback-success-strong: var(--palette-success-600);
+  --feedback-success-soft: var(--palette-success-50);
+  --feedback-success-border: var(--palette-success-200);
+
+  --feedback-warning-solid: var(--palette-warning-500);
+  --feedback-warning-strong: var(--palette-warning-600);
+  --feedback-warning-soft: var(--palette-warning-50);
+  --feedback-warning-border: var(--palette-warning-200);
+
+  --feedback-danger-solid: var(--palette-danger-500);
+  --feedback-danger-strong: var(--palette-danger-600);
+  --feedback-danger-soft: var(--palette-danger-50);
+  --feedback-danger-border: var(--palette-danger-100);
+
+  /* info 并入 accent 族（AntD：链接/信息 = 主色） */
+  --feedback-info-solid: var(--palette-accent-600);
+  --feedback-info-strong: var(--palette-accent-700);
+  --feedback-info-soft: var(--palette-accent-50);
+  --feedback-info-border: var(--palette-accent-200);
+
+  /* 滚动条 */
+  --scrollbar-thumb: rgb(0 0 0 / 18%);
+  --scrollbar-thumb-hover: rgb(0 0 0 / 32%);
+
+  /* ------------------------------------------------------------------
+     Tier 1 · 基础刻度（半径/字号/行高/字距/阴影/层级/动效）
+     间距不在此定义：Tailwind v4 原生 --spacing: 4px（见 theme.css）。
+     字重不定义自定义值：只用 400/500/600/700（Tailwind 原生档）。
+     ------------------------------------------------------------------ */
+
+  /* 半径（px；语义别名见下行） */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-full: 999px;
+  /* 语义别名：AntD 几何 */
+  --radius-control: var(--radius-md);
+  --radius-card: var(--radius-lg);
+  --radius-pill: var(--radius-full);
+
+  /* 字号（px，开发工具密度；语义别名：caption/body/title/display） */
+  --text-9: 9px;
+  --text-10: 10px;
+  --text-11: 11px;
+  --text-12: 12px;
+  --text-13: 13px;
+  --text-14: 14px;
+  --text-15: 15px;
+  --text-16: 16px;
+  --text-18: 18px;
+  --text-24: 24px;
+  --text-28: 28px;
+  --text-caption: var(--text-10);
+  --text-body: var(--text-13);
+  --text-title: var(--text-15);
+  --text-display: var(--text-28);
+
+  /* 行高（无单位比例，禁用 px 行高） */
+  --leading-tight: 1.15;
+  --leading-snug: 1.25;
+  --leading-compact: 1.35;
+  --leading-normal: 1.45;
+  --leading-relaxed: 1.6;
+
+  /* 字距（大写标签/徽章用） */
+  --tracking-caps: 0.06em;
+  --tracking-wide: 0.08em;
+
+  /* 字族 */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono:
+    'SFMono-Regular', 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono',
+    monospace;
+
+  /* 阴影（AntD 方向：浮层用更明确的 elevation） */
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 4%), 0 2px 8px rgb(0 0 0 / 6%);
+  --shadow-overlay:
+    0 6px 16px 0 rgb(0 0 0 / 8%), 0 3px 6px -4px rgb(0 0 0 / 12%),
+    0 9px 28px 8px rgb(0 0 0 / 5%);
+  --shadow-focus-ring: 0 0 0 3px var(--accent-ring);
+
+  /* 层级 */
+  --z-sticky: 10;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+
+  /* 动效 */
+  --duration-fast: 120ms;
+  --duration-base: 160ms;
+  --ease-standard: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+
+  /* ------------------------------------------------------------------
+     Tier 2 · Component：业务域几何与尺寸。
+     ------------------------------------------------------------------ */
+
+  /* Shell 壳层 */
+  --shell-sidebar-width: 280px;
+  --shell-sidebar-width-desk: 240px;
+
+  /* Sidebar 侧栏 */
+  --sidebar-row-height: 28px;
+  --sidebar-row-height-touch: 52px;
+  /* 选中：浅灰底，不用主色边框；比 hover 略一点但不发闷 */
+  --sidebar-selected-bg: var(--palette-neutral-25);
+
+  /* Chat 聊天 */
+  --chat-transcript-max: 960px;
+  --chat-content-max: 860px;
+  --chat-markdown-rhythm: 16px;
+  --chat-tool-activity-max: 740px;
+
+  /* Composer 输入 */
+  --composer-max: 864px;
+  --composer-launch-max: 736px;
+  --composer-radius: var(--radius-xl);
+  --composer-border: var(--border-subtle);
+
+  /* Resource 资源 */
+  --resource-tree-row: 24px;
+  --resource-tree-indent: 43px;
+  --resource-asset-tile: 68px;
+
+  /* Decision 决策面 */
+  --decision-radius: var(--radius-xl);
+  --decision-shadow: var(--shadow-raised);
+  --decision-card-min-height: 96px;
+  --decision-action-solid: var(--palette-warning-600);
+  --decision-action-hover: var(--palette-warning-700);
+
+  /* Workbench 资源浮层 */
+  --workbench-panel-width: 264px;
+  --workbench-rail-width: 44px;
+
+  /* Status 状态区与控件高度（AntD 24/32/40 + 触控 44） */
+  --status-panel-max-height: 132px;
+  --control-height-sm: 24px;
+  --control-height-md: 32px;
+  --control-height-lg: 40px;
+  --control-height-touch: 44px;
+
+  /* Overlay 有界容器 */
+  --container-auth-card: min(440px, 100%);
+  --container-settings: min(560px, calc(100vw - 40px));
+  --container-mcp: min(620px, calc(100vw - 40px));
+  --container-search: min(520px, calc(100vw - 56px));
+  --container-drawer: min(88vw, 320px);
+}
+
+/* ------------------------------------------------------------------
+   深色主题骨架（预留，未启用）
+   启用方式：只在此重映射 Tier 1 语义层；Tier 0 palette 不动，
+   组件零改动。色值待深色设计评审后填入。
+   ------------------------------------------------------------------ */
+/*
+[data-theme='dark'] {
+  color-scheme: dark;
+  --surface-canvas: var(--palette-neutral-950);
+  --surface-muted: var(--palette-neutral-900);
+  --content-primary: var(--palette-neutral-100);
+  ... 其余语义映射：待深色设计评审
+}
+*/

@@ -1,0 +1,155 @@
+/* Git Graph panel — aligned with mhutchie/vscode-git-graph */
+
+.git-graph-panel {
+  --git-graph-color-0: #0085d9;
+  --git-graph-color-1: #d9008f;
+  --git-graph-color-2: #00d90a;
+  --git-graph-color-3: #d98500;
+  --git-graph-color-4: #a300d9;
+  --git-graph-color-5: #ff0000;
+  --git-graph-color-6: #00d9cc;
+  --git-graph-color-7: #e138e8;
+  --git-graph-color-8: #85d900;
+  --git-graph-color-9: #dc5b23;
+  --git-graph-color-10: #6f24d6;
+  --git-graph-color-11: #ff0000;
+  --git-graph-row-height: 24px;
+}
+
+.git-graph-control-btn {
+  border: 0;
+  background: transparent;
+  color: var(--content-muted);
+  width: 28px;
+  min-height: 28px;
+}
+
+.git-graph-control-btn:hover {
+  background: var(--interaction-hover);
+  color: var(--content-primary);
+}
+
+.git-graph-scroll {
+  position: relative;
+  min-width: 100%;
+}
+
+.git-graph-svg {
+  display: block;
+}
+
+.git-graph-path-shadow {
+  fill: none;
+  stroke-opacity: 0.75;
+  stroke-width: 4;
+}
+
+.git-graph-path-line {
+  fill: none;
+  stroke-width: 2;
+}
+
+.git-graph-table {
+  font-size: 13px;
+  width: 100%;
+}
+
+.git-graph-th {
+  box-sizing: border-box;
+  height: 31px;
+  padding: 6px 12px;
+  line-height: 18px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--content-muted);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.5);
+  background: var(--surface-overlay);
+  vertical-align: middle;
+}
+
+.git-graph-td {
+  box-sizing: border-box;
+  height: var(--git-graph-row-height);
+  max-height: var(--git-graph-row-height);
+  padding: 0 12px;
+  line-height: var(--git-graph-row-height);
+  vertical-align: middle;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.git-graph-graph-col {
+  padding: 0;
+}
+
+.git-graph-desc-col {
+  overflow: hidden;
+}
+
+.git-graph-date-col {
+  width: 124px;
+  max-width: 124px;
+}
+
+.git-graph-author-col {
+  width: 124px;
+  max-width: 124px;
+}
+
+.git-graph-commit-col {
+  width: 80px;
+  max-width: 80px;
+  font-size: 13px;
+}
+
+.git-graph-row {
+  height: var(--git-graph-row-height);
+  cursor: default;
+}
+
+.git-graph-row.hover,
+.git-graph-row:hover {
+  background: rgba(128, 128, 128, 0.15);
+}
+
+.git-graph-row.selected {
+  background: rgba(128, 128, 128, 0.25);
+}
+
+.git-graph-row.current .git-graph-message {
+  font-weight: 600;
+}
+
+.git-graph-description {
+  display: flex;
+  align-items: center;
+  height: var(--git-graph-row-height);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.git-graph-message {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--content-primary);
+}
+
+.git-graph-head-dot {
+  display: inline-block;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border: 2px solid var(--git-graph-color);
+  border-radius: 50%;
+}
+
+.git-graph-date-col,
+.git-graph-author-col,
+.git-graph-commit-col {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

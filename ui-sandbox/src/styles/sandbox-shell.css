@@ -1,0 +1,98 @@
+/* 沙箱壳层：顶栏四级 Tab + 左侧章节导航；小屏章节导航为抽屉。 */
+
+:root {
+  --sandbox-header-height: 88px;
+}
+
+.sandbox-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--surface-canvas);
+  color: var(--content-primary);
+}
+
+.sandbox-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-canvas);
+}
+
+.sandbox-frame {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.sandbox-chapters {
+  border-right: 1px solid var(--border-subtle);
+  background: var(--surface-canvas);
+}
+
+.sandbox-chapters-desktop {
+  position: sticky;
+  top: var(--sandbox-header-height);
+  height: calc(100dvh - var(--sandbox-header-height));
+  overflow: auto;
+}
+
+.sandbox-main {
+  min-width: 0;
+  overflow: auto;
+}
+
+.sandbox-chapters-trigger {
+  display: none;
+}
+
+.sandbox-drawer-root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+}
+
+.sandbox-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: var(--scrim);
+  cursor: default;
+}
+
+.sandbox-chapters-drawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(280px, 88vw);
+  height: 100%;
+  box-shadow: var(--shadow-overlay);
+}
+
+.sandbox-chapters-drawer nav {
+  flex: 1;
+  overflow: auto;
+}
+
+@media (max-width: 959px) {
+  :root {
+    --sandbox-header-height: 88px;
+  }
+
+  .sandbox-frame {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sandbox-chapters-desktop {
+    display: none;
+  }
+
+  .sandbox-chapters-trigger {
+    display: inline-flex;
+  }
+}

@@ -1,0 +1,138 @@
+export type SandboxRoute = 'tokens' | 'components' | 'blocks' | 'layers';
+
+export const SANDBOX_ROUTES: SandboxRoute[] = ['tokens', 'components', 'blocks', 'layers'];
+
+export const ROUTE_META: Record<SandboxRoute, { tier: string; label: string }> = {
+  tokens: { tier: 'T1', label: 'Tokens' },
+  components: { tier: 'T2', label: 'Base UI' },
+  blocks: { tier: 'T3', label: 'Blocks' },
+  layers: { tier: 'T4', label: 'Layers' },
+};
+
+export type CatalogItem = { id: string; label: string };
+export type CatalogGroup = { title?: string; items: CatalogItem[] };
+
+export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
+  tokens: [
+    {
+      items: [
+        { id: 'palette', label: 'Color palettes' },
+        { id: 'semantic', label: 'Semantic colors' },
+        { id: 'spacing', label: 'Spacing' },
+        { id: 'radius', label: 'Radius' },
+        { id: 'typography', label: 'Typography' },
+        { id: 'elevation', label: 'Elevation & motion' },
+        { id: 'component-tokens', label: 'Component tokens' },
+      ],
+    },
+  ],
+  components: [
+    {
+      items: [
+        { id: 'button', label: 'Button' },
+        { id: 'icon-button', label: 'IconButton' },
+        { id: 'input', label: 'Input & Textarea' },
+        { id: 'select', label: 'Select & forms' },
+        { id: 'badge', label: 'Badge & Status' },
+        { id: 'tabs', label: 'Tabs' },
+        { id: 'dialog', label: 'Dialog & menu' },
+        { id: 'inline-notice', label: 'InlineNotice' },
+        { id: 'spinner', label: 'Spinner & empty' },
+      ],
+    },
+  ],
+  blocks: [
+    {
+      title: 'Chat',
+      items: [
+        { id: 'markdown', label: 'Markdown' },
+        { id: 'user-bubble', label: 'User bubble' },
+        { id: 'tool-activity', label: 'Tool activity' },
+        { id: 'resource-cite', label: 'Resource cite' },
+      ],
+    },
+    {
+      title: 'Composer',
+      items: [
+        { id: 'slash-menu', label: 'Slash menu' },
+        { id: 'token-usage', label: 'Token usage' },
+      ],
+    },
+    {
+      title: 'Chrome',
+      items: [{ id: 'chat-header', label: 'Chat header' }],
+    },
+    {
+      title: 'Decision',
+      items: [{ id: 'decision-card', label: 'Decision card' }],
+    },
+    {
+      title: 'Git',
+      items: [
+        { id: 'git-change-row', label: 'Git change tree' },
+        { id: 'git-commit-bar', label: 'Git commit bar' },
+        { id: 'git-graph-row', label: 'Git graph panel' },
+        { id: 'git-diff-panel', label: 'Git diff panel' },
+      ],
+    },
+  ],
+  layers: [
+    {
+      title: 'Shell',
+      items: [{ id: 'project-sidebar', label: 'Project sidebar' }],
+    },
+    {
+      title: 'Chat',
+      items: [{ id: 'chat-transcript', label: 'Chat transcript' }],
+    },
+    {
+      title: 'Composer',
+      items: [{ id: 'composer', label: 'Composer' }],
+    },
+    {
+      title: 'Decision',
+      items: [{ id: 'decision', label: 'Decision surfaces' }],
+    },
+    {
+      title: 'Status',
+      items: [{ id: 'status-area', label: 'Status area' }],
+    },
+    {
+      title: 'Resource',
+      items: [{ id: 'resource-panel', label: 'Explorer panel' }],
+    },
+    {
+      title: 'Git',
+      items: [
+        { id: 'source-control', label: 'Source control' },
+        { id: 'git-graph', label: 'Git graph' },
+      ],
+    },
+    {
+      title: 'Workbench',
+      items: [{ id: 'workbench', label: 'Workbench' }],
+    },
+  ],
+};
+
+export function isSandboxRoute(value: string): value is SandboxRoute {
+  return SANDBOX_ROUTES.includes(value as SandboxRoute);
+}
+
+export function parseSandboxHash(hash = window.location.hash): { route: SandboxRoute; section?: string } {
+  const path = hash.replace(/^#\/?/, '').split('?')[0];
+  const [routePart, section] = path.split('/').filter(Boolean);
+  const route: SandboxRoute = isSandboxRoute(routePart ?? '') ? (routePart as SandboxRoute) : 'tokens';
+  return { route, section: section || undefined };
+}
+
+export function sandboxHref(route: SandboxRoute, section?: string) {
+  return section ? `#/${route}/${section}` : `#/${route}`;
+}
+
+export function scrollToSection(sectionId: string) {
+  requestAnimationFrame(() => {
+    const el = document.getElementById(sectionId);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
