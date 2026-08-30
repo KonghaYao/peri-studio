@@ -7,6 +7,7 @@ date: 2026-08-30
 
 > 与 `docs/architecture.md` §10 对齐；本文是 **目录结构、依赖方向与迁移规则** 的单一事实源。
 > 关联 ADR：[0004-web-frontend-layered-architecture](../adr/0004-web-frontend-layered-architecture.md)
+> **Agent 入口**：根目录 [`AGENTS.md`](../../AGENTS.md)（检查清单）；[`CLAUDE.md`](../../CLAUDE.md) §Web 前端分层规范。
 
 ## 1. 问题
 

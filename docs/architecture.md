@@ -1181,7 +1181,7 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 
 ## 10. 视图层（Web 面板）
 
-> 【v2.6】原规划的 `peri-studio-tui`（ratatui）**未实现**；视图层由 SolidJS Web 面板（`web/src/panel`）承担。【v2.7】构建产物内嵌最终 `peri-studio` 并由 server 角色托管（§3.2）。本节按实现改写；「纯客户端、不上行 update」的裁决（P1/P2 语义）不变。浏览器侧的完整行为契约（认证、目录动作、命令追踪、消息投递恢复、导航、渲染边界）见 §3.0。
+> 【v2.6】原规划的 `peri-studio-tui`（ratatui）**未实现**；视图层由 SolidJS Web 面板承担。【v2.7】构建产物内嵌最终 `peri-studio` 并由 server 角色托管（§3.2）。【v2.18】前端目录已五层化（`app` / `pages` / `widgets` / `features` / `entities` / `shared` + `store`），权威说明见 [frontend-architecture.md](design/frontend-architecture.md) 与根目录 `AGENTS.md`。本节按实现改写；「纯客户端、不上行 update」的裁决（P1/P2 语义）不变。浏览器侧的完整行为契约（认证、目录动作、命令追踪、消息投递恢复、导航、渲染边界）见 §3.0。
 
 ### 10.1 定位
 
@@ -1191,22 +1191,32 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 
 ### 10.2 结构与数据源
 
-**分层与目录的权威说明见 [frontend-architecture.md](design/frontend-architecture.md)**（app / pages / widgets / features / entities / shared）。迁移完成前，下列路径仍有效：
+**分层与目录的权威说明见 [frontend-architecture.md](design/frontend-architecture.md)**；Agent 协作清单见根目录 **`AGENTS.md`**。`web/src/` 按层组织：
 
-`web/src/panel` 分两层：`lib/`（领域逻辑，纯 TS，node --test / vitest 覆盖）与 `components/`（Solid 组件）；`web/src/components/ui`（将迁入 `shared/ui`）是可复用基础组件库（Button/Dialog/Drawer/Field/Menu/Popover/Toast/Tooltip 等，以 `index.ts` 作为唯一公共代码入口）。
+| 层 | 路径 | 职责 |
+|----|------|------|
+| 外壳 | `app/` | `main.tsx`、全局样式 |
+| 页面 | `pages/` | 页面级 widget 装配 |
+| 业务组件 | `widgets/` | Solid 组合块（`shell` / `chat` / `composer` / `sidebar` / `auth` / `resource`） |
+| 特性 | `features/` | 可测试领域用例（`session` / `catalog` / `composer` 等）；禁止 import `store` |
+| 实体 | `entities/` | Yjs 只读投影（`chat` / `registry` / `resource` / `topology`） |
+| 共享 | `shared/` | `ui` 设计系统、`lib`、`protocol`、`yjs`（`doc-store` 等） |
+| 组合根 | `store/index.ts` | 全局信号与 `install*` 接线 |
 
-| 区域 / 模块 | 数据源 | 说明 |
-|------|--------|------|
-| `AuthGate` + `lib/auth-state` | `/api/auth/session` | 浏览器认证门（principal、read-only policy、失效事件；§3.0） |
-| `ProjectSidebar` + `lib/catalog-actions` | Registry Doc `projects`/`project_sessions`/`chats` + IndexedDB 偏好 | 左栏目录（§3.0：ACP list 缓存 + 客户端归档过滤） |
-| `MessageList` / `ConversationMessage` + `lib/ChatProjection` / `TranscriptWindow` | Chat Doc `entries`/`tool_calls` + Control Doc `active_turn` | keyed 增量投影、变量高度窗口化消息视图与工具卡片；订阅经 `ysync.subscribe`（§4.2）；双 Doc 水合后才开放输入（§3.0） |
-| `Composer` + `lib/message-delivery` + `lib/composer-draft` | Chat Doc + command tracker + IndexedDB | 草稿按 principal/project/session 持久隔离；投递按 session single-flight（§3.0） |
-| `PermissionQueue` / `ElicitationQueue` | Control Doc `pending_permissions` + elicitation 投影 | 权限队列（§3.0 排序/聚焦契约）、结构化追问表单 |
-| `RewindDialog` / `McpPanel` / `TopologyView` / `SessionSearch` / `SettingsDialog` | Control Doc / 查询帧 | rewind 三步流程（§6.2）、MCP 快照、实例拓扑、会话搜索 |
-| `lib/connection-state` + `ErrorCenter` | ws 生命周期 | 连接世代/身份世代、动作门控、持久错误中心（§3.0） |
-| 状态栏 | `keep_alive` / 连接状态 | 连接状态、重连中指示、校准中指示（projection_version，§4.6） |
+`web/src/panel/` 仅保留 **deprecated shim** 与尚未迁入 `features/` 的 `lib/`（connection、message、runtime、mcp、auth 等）；**新代码不得写入 `panel/`**。设计系统唯一入口：`shared/ui/index.ts`（`components/ui` 仅 re-export）。
 
-关键 lib 模块（深模块裁决，§3.0）：`doc-store`（Yjs 边界与连接世代屏障）、`registry-projection`（目录对象结构共享）、`chat-projection`（按 entry/tool 身份增量读取）、`transcript-window`（变量高度窗口与锚点）、`command-tracker`（连接期命令生命周期）、`message-delivery`（投递恢复）、`session-navigator`（逻辑会话导航状态机）、`session-activation`（create/open/restore/quick-start façade）、`catalog-actions`（目录动作策略）、`ws-client`/`protocol`（传输与 wire 解码边界）。
+| 区域 / 模块 | 代码位置（现行） | 数据源 | 说明 |
+|------|--------|------|------|
+| `AuthGate` + auth-state | `widgets/auth` + `panel/lib/auth-*`（待迁 `features/auth`） | `/api/auth/session` | 浏览器认证门（§3.0） |
+| `ProjectSidebar` + catalog | `widgets/sidebar` + `features/catalog` | Registry Doc + IndexedDB 偏好 | 左栏目录（§3.0） |
+| `MessageList` / `ConversationMessage` | `widgets/chat` + `entities/chat` | Chat Doc + Control Doc | 投影见 `chat-projection`、`transcript-window`（§3.0） |
+| `Composer` + 投递/草稿 | `widgets/composer` + `features/composer` + `panel/lib/message-delivery` | Chat Doc + command tracker + IndexedDB | 草稿隔离；session single-flight（§3.0） |
+| `PermissionQueue` / `ElicitationQueue` | `widgets/chat` + `panel/lib/*-delivery` | Control Doc | 权限与追问（§3.0） |
+| `RewindDialog` / `McpPanel` / `TopologyView` 等 | `widgets/chat` | Control Doc / 查询帧 | rewind（§6.2）、MCP、拓扑 |
+| `ErrorCenter` + 连接状态 | `widgets/shell` + `panel/lib/connection-*` | ws 生命周期 | 连接世代、错误中心（§3.0） |
+| 状态栏 | `widgets/shell/StatusArea` | `keep_alive` / 连接状态 | 重连与校准指示（§4.6） |
+
+关键模块与层的对应（§3.0）：`shared/yjs/doc-store`（Yjs 边界）、`entities/registry/registry-projection`（目录读投影）、`entities/chat/chat-projection`（消息增量读）、`entities/chat/transcript-window`（窗口化）、`panel/lib/command-tracker`（命令生命周期）、`panel/lib/message-delivery`（投递恢复）、`features/session/*`（导航与激活）、`features/catalog/catalog-actions`（目录动作）、`panel/lib/ws-client` + `protocol`（传输边界，待迁 `shared/protocol` + `features/connection`）。
 
 ### 10.3 断线恢复
 
@@ -1270,8 +1280,8 @@ peri-studio/
 │   └── tests/            # contract（auth）/ integration / product-flow / resilience
 ├── instance/              # instance 运行时库（无独立发布二进制）：child（进程组+fingerprint）/ buffer（断线缓冲+watermark）/
 │                         #   transport（重连循环）/ hub（daemon 主循环）/ auth / router / global；tests/child_test.rs
-├── web/                   # SolidJS 面板：src/panel（store + components + lib，§10.2）/ src/components/ui（组件库）；
-│                         #   vitest 单测 + tests/*.test.mjs（node --test 协议/状态契约）+ Playwright 浏览器契约
+├── web/                   # SolidJS SPA（§10.2）：app / pages / widgets / features / entities / shared / store；
+│                         #   panel/ 遗留 shim + 待迁 lib；vitest + tests/*.test.mjs + Playwright；见 AGENTS.md
 ├── scripts/               # dev-contract-test / verify-create-chain / verify-load / package-release / verify-release（+ e2e-flow/ws-verify JS 验证脚本）
 ├── dev.sh                 # 一键开发：构建 Web → 启动 peri-studio local → 就绪校验
 └── docs/                  # architecture.md（本文）/ terminology.md（唯一权威术语表）/ topology.md /

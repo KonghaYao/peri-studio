@@ -25,7 +25,7 @@ Peri Studio 是 ACP agent 的持久 Web 工作台（仓库名 peri-studio，产�
 - `proto/`（peri-studio-proto）：共享协议 crate——ws 帧、HMAC 双向认证、RPC schema、Yjs 同步，三端共用的事实源
 - `server/`（peri-studio-server library）：中心控制面运行时，模块按职责拆分：`auth`（token/审计）、`channel`（命令协调、runtime 生命周期、catalog 同步）、`control`（registry、心跳）、`persist`（SQLite、outbox）、`protocol`（ACP 通道）、`state`、`web`；`build.rs` 编译期内嵌 `web/dist` 产物
 - `instance/`（peri-instance library）：运行 ACP 子进程的宿主运行时；仅测试辅助二进制 `test-child` 独立存在
-- `web/`：SolidJS 单页面板（`src/panel`）+ 可复用 UI 组件库（`src/components/ui`）
+- `web/`：SolidJS 单页 SPA（**五层目录**：`app` / `pages` / `widgets` / `features` / `entities` / `shared` + `store`；权威规范见 `docs/design/frontend-architecture.md` 与根目录 `AGENTS.md`）。`panel/` 仅遗留 shim 与待迁 `lib`，**禁止在此新增业务实现**
 - `docs/`：`architecture.md`（权威架构基准，v2.14 与实现对齐）、`terminology.md`（唯一权威术语表）、`topology.md`、`adr/`、`design/`（设计决策与验证证据）
 - `scripts/`：契约测试与端到端验证脚本（含 release 打包）
 - `dev.sh`：一键启动 server + instance 并校验就绪
@@ -73,10 +73,26 @@ cargo run -q -p peri-studio -- status --json | --ready
 - **副作用边界**：runtime create 横跨 Hub chat 状态、instance child 与 ACP durable thread；`session/new` 一旦可能进入 ACP stdin，kill child 也不能证明 thread 未创建，命令必须收敛为 `DELIVERY_UNKNOWN` 且禁止自动重放。客户端以同一 `commandId` 重发不得产生重复副作用。
 - **安全边界**：loopback 明文 HTTP/ws 仅限本机；非回环 `connect` 默认要求 `wss`，`--allow-insecure` 只用于受控测试网络；`/api/health` 的 peer 与 Host 必须同为 loopback；token（`full`/`instance` 等角色）不得进入代码、日志、issue 或聊天记录；浏览器会话用 HttpOnly opaque cookie；日志不得泄露敏感信息。
 
+## Web 前端分层规范（必读）
+
+**权威文档**：`docs/design/frontend-architecture.md`（目录、依赖、迁移）；`AGENTS.md`（Agent 检查清单）。ADR：`docs/adr/0004-web-frontend-layered-architecture.md`。
+
+| 层 | 路径 | 职责 |
+|----|------|------|
+| 外壳 | `web/src/app/` | `main.tsx`、全局样式入口 |
+| 页面 | `web/src/pages/` | 路由级装配，只组合 widgets |
+| 业务组件 | `web/src/widgets/` | Solid 组合块（shell / chat / composer / sidebar / auth / resource） |
+| 特性 | `web/src/features/` | 纯 TS 领域用例；**禁止 import store**（依赖注入） |
+| 实体 | `web/src/entities/` | Yjs 只读投影（chat / registry / resource / topology） |
+| 共享 | `web/src/shared/` | `ui` 设计系统、`lib`、`protocol`、`yjs` |
+| 组合根 | `web/src/store/index.ts` | 全局信号与 `install*` 装配；业务逻辑委托 features |
+
+**硬规则**：依赖只能自上而下（`shared` → `entities` → `features` → `widgets` → `pages` → `app`）；`widgets` 不得直发协议帧；新代码用 `@/` 路径别名，勿在 `panel/` 下新增实现。改 Web 结构须同步 `architecture.md` §10.2。
+
 ## 代码与测试约定
 
 - Rust 模块按单一职责拆分（参考 `server/src/channel` 各模块的拆分粒度），单元测试以 `*_test.rs` 与模块同目录内联；代码注释用中文，日志用英文。
-- Web：状态集中在 `src/panel/store.ts`（含 session-reset 测试）；组件单测放 `src/**/*.test.{ts,tsx}`（vitest/jsdom），协议与状态契约测试放 `web/tests/*.test.mjs`（node --test），浏览器端到端用 `bun run test:browser`。
+- Web：组合根在 `web/src/store/index.ts`；feature/entity 测 `src/features`、`src/entities`；widget 测 `src/widgets`；契约测 `web/tests/*.test.mjs`；浏览器用 `bun run test:browser`。提交前 `cd web && bun run test`。
 - 设计决策与验证证据同步到 `docs/design/`；历史功能计划文档（f1~f6）已有意删除（git 历史可溯），架构演进记录以 `docs/architecture.md` 的版本修订（v2.x 标注）为准。
 - `web/dist`、`.tmp/`、`.peri/` 不提交 git；`cargo` 构建依赖 `web/dist` 就绪（缺失时 build.rs 直接编译失败并提示构建命令）。
 

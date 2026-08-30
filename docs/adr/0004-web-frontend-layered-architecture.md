@@ -21,6 +21,8 @@ date: 2026-08-30
 
 迁移采用绞杀者模式：新路径 + 旧路径 re-export，分阶段迁移 Composer、Session/Catalog，最后收口 store 并删除 `panel/` shim。
 
+**协作文档**：根目录 [`AGENTS.md`](../AGENTS.md)（Agent 检查清单）；[`CLAUDE.md`](../CLAUDE.md) §Web 前端分层规范。
+
 ## 后果
 
 - 短期存在双路径 import；文档与 alias 必须同步。
