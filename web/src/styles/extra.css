@@ -1,0 +1,309 @@
+/* 无法（或不宜）用 Tailwind token utility 表达的样式例外。
+ *
+ * 准入条件（须满足其一）：
+ * - 子选择器编排（如 Markdown 富文本、表单 dt/dd）
+ * - 浏览器私有属性（如 -webkit-line-clamp 栈）
+ * - 跨子树响应式组合（如 compact 断点下按钮行重排）
+ * - 第三方注入 DOM 的后代选择器（如 Mermaid SVG）
+ *
+ * 禁止：新颜色/间距/字号字面量——一律引用 tokens.css 的 var(--*)。
+ * JSX 默认只用 Tailwind；新增例外须加语义 class 并在此登记实现。 */
+
+/* ── Markdown 富文本（markdown-to-jsx 输出） ─────────────────────────── */
+
+.markdown-body > *:first-child {
+  margin-top: 0;
+}
+
+.markdown-body > *:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body p {
+  margin-block: 0 var(--space-3);
+}
+
+.markdown-body h1 {
+  margin: var(--space-28) 0 var(--space-10);
+  font-size: var(--text-18);
+  font-weight: 600;
+  letter-spacing: var(--tracking-dialog);
+}
+
+.markdown-body h2 {
+  margin: var(--space-24) 0 var(--space-8);
+  font-size: var(--text-16);
+  font-weight: 600;
+}
+
+.markdown-body h3 {
+  margin: var(--space-20) 0 var(--space-8);
+  font-size: var(--text-15);
+  font-weight: 600;
+}
+
+.markdown-body h4 {
+  margin: var(--space-20) 0 var(--space-6);
+  font-size: var(--text-14);
+  font-weight: 600;
+}
+
+.markdown-body h5,
+.markdown-body h6 {
+  margin: var(--space-16) 0 var(--space-6);
+  font-weight: 600;
+}
+
+.markdown-body h6 {
+  color: var(--content-secondary);
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin: var(--space-8) 0 var(--space-14);
+  padding-left: var(--space-22);
+}
+
+.markdown-body ul {
+  list-style: disc;
+}
+
+.markdown-body ol {
+  list-style: decimal;
+}
+
+.markdown-body li {
+  margin-block: var(--space-4);
+}
+
+.markdown-body li > ul,
+.markdown-body li > ol {
+  margin-block: var(--space-4) 0;
+}
+
+.markdown-body li:has(> input[type='checkbox']) {
+  list-style: none;
+  padding-left: 0;
+}
+
+.markdown-body input[type='checkbox'] {
+  margin-right: var(--space-8);
+  accent-color: var(--accent-solid);
+}
+
+.markdown-body blockquote {
+  margin-block: var(--space-14);
+  padding: var(--space-2) 0 var(--space-2) var(--space-14);
+  border-left: 2px solid var(--border-strong);
+  color: var(--content-secondary);
+}
+
+.markdown-body blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body hr {
+  margin-block: var(--space-24);
+  height: 1px;
+  border: 0;
+  background: var(--border-subtle);
+}
+
+.markdown-body a {
+  color: var(--content-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.markdown-body th {
+  padding: var(--space-8) var(--space-12);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-muted);
+  font-weight: 600;
+}
+
+.markdown-body td {
+  padding: var(--space-8) var(--space-12);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.markdown-body tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.markdown-body del {
+  color: var(--content-muted);
+}
+
+.markdown-body footer {
+  margin-top: var(--space-20);
+  padding-top: var(--space-12);
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--text-12);
+  color: var(--content-secondary);
+}
+
+.markdown-body sup {
+  font-size: var(--text-10);
+}
+
+.markdown-body sup a {
+  text-decoration: none;
+}
+
+.markdown-body .md-math--block {
+  text-align: center;
+}
+
+/* ── 文本截断（WebKit 栈，Tailwind 无等价 token） ─────────────────────── */
+
+.ui-line-clamp-2 {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* ── Rewind 面板 ─────────────────────────────────────────────────────── */
+
+.rewind-panel__state {
+  display: grid;
+  min-height: var(--space-180);
+  place-content: center;
+  justify-items: center;
+  padding: var(--space-24);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .rewind-panel__state {
+    padding: var(--space-20) var(--space-8);
+  }
+}
+
+.rewind-panel__state .ui-spinner {
+  margin-bottom: var(--space-12);
+  width: var(--space-22);
+  height: var(--space-22);
+}
+
+.rewind-panel__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+  margin-top: var(--space-20);
+}
+
+@media (max-width: 640px) {
+  .rewind-panel__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .rewind-panel__actions [data-slot='button'] {
+    min-height: var(--space-44);
+  }
+
+  .rewind-panel__actions [data-slot='button']:last-child {
+    grid-row-start: 1;
+  }
+}
+
+/* ── 运行时状态点（tone 子元素着色） ───────────────────────────────────── */
+
+.runtime-status--busy i {
+  background: var(--accent-solid);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.runtime-status--attention i {
+  background: var(--feedback-warning-solid);
+}
+
+.runtime-status--danger i {
+  background: var(--feedback-danger-solid);
+}
+
+.runtime-status--idle i,
+.runtime-status--ready i {
+  background: var(--content-faint);
+}
+
+/* ── 侧栏拖拽把手（激活态光标） ───────────────────────────────────────── */
+
+.sidebar-resize-handle--dragging,
+.sidebar-resize-handle--dragging * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+.sidebar-resize-handle--dragging > span {
+  background: var(--sidebar-resize-handle-hover);
+}
+
+/* ── Mermaid 注入 SVG ────────────────────────────────────────────────── */
+
+.md-mermaid__canvas svg,
+.md-mermaid__canvas--dialog svg {
+  display: block;
+  margin-inline: auto;
+  max-width: 100%;
+}
+
+/* ── MCP 授权外链（主按钮视觉，非 Button 组件） ───────────────────────── */
+
+.mcp-auth-link {
+  transition:
+    background var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard),
+    opacity var(--duration-fast) var(--ease-standard);
+}
+
+/* ── 设置关于页元数据表 ───────────────────────────────────────────────── */
+
+.settings-form-meta dt {
+  font-size: var(--text-12);
+  color: var(--text-muted);
+}
+
+.settings-form-meta dd {
+  margin: 0;
+  font-size: var(--text-13);
+  color: var(--text-primary);
+}
+
+/* ── Quick start 状态条 ───────────────────────────────────────────────── */
+
+.quick-start__state small {
+  min-width: 0;
+}
+
+/* ── 推理折叠摘要（隐藏 WebKit marker） ───────────────────────────────── */
+
+.message-reasoning summary::-webkit-details-marker {
+  display: none;
+}
+
+/* ── 代码块 tab 宽度 ─────────────────────────────────────────────────── */
+
+.code-tab-size {
+  tab-size: 4;
+}
+
+/* ── Composer skills 窄屏降级为「/」 ─────────────────────────────────── */
+
+@media (max-width: 520px) {
+  .composer-skills::before {
+    content: '/';
+    font-family: var(--font-mono);
+    font-size: var(--text-15);
+    line-height: 1;
+    font-weight: 700;
+  }
+
+  .composer-skills__icon {
+    display: none;
+  }
+}

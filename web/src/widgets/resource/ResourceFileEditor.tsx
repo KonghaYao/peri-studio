@@ -59,9 +59,9 @@ export function ResourceFileEditor(props: ResourceFileEditorProps = {}) {
             <Show when={allLines().length > MAX_RENDERED_FILE_LINES}><div role="status" class="shrink-0 border-b border-warning-border bg-warning-soft px-12 py-6 text-11 text-warning-strong">Preview limited to the first {MAX_RENDERED_FILE_LINES.toLocaleString()} lines. Download the file to inspect all {allLines().length.toLocaleString()} lines.</div></Show>
             <div class="ui-scrollbar min-h-0 flex-1 overflow-auto" role="region" aria-label={`Contents of ${preview()?.path ?? 'file'}`}>
               <div class="min-w-max py-4 font-mono text-11 leading-18">
-                <For each={lines()}>{(line, index) => <div class="grid min-h-18 grid-cols-[54px_minmax(0,1fr)]">
+                <For each={lines()}>{(line, index) => <div class="grid min-h-18 grid-cols-editor-line">
                   <span class="sticky left-0 select-none border-r border-divider bg-surface px-9 text-right tabular-nums text-text-faint" aria-hidden="true">{index() + 1}</span>
-                  <code class="whitespace-pre rounded-none bg-transparent px-10 py-0 text-text-primary [tab-size:4]">{line || ' '}</code>
+                  <code class="code-tab-size whitespace-pre rounded-none bg-transparent px-10 py-0 text-text-primary">{line || ' '}</code>
                 </div>}</For>
               </div>
             </div>

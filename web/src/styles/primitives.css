@@ -49,6 +49,24 @@
   scrollbar-gutter: stable;
 }
 
+.launch-prompt {
+  top: 42%;
+}
+
+.launch-mark {
+  width: 50px;
+  height: 50px;
+}
+
+.launch-mark .ui-icon {
+  width: 50px;
+  height: 50px;
+}
+
+.composer-wrap {
+  padding-bottom: var(--composer-safe-bottom);
+}
+
 /* 软键盘或横屏会把手机可用高度压到 520px 以下。启动页此时必须回到
    正常文档流，否则绝对定位的提示会与 composer 大面积重叠。 */
 @media (max-width: 959px) and (max-height: 520px) {
@@ -215,4 +233,15 @@
   to {
     opacity: 1;
   }
+}
+
+.ui-tooltip-animate {
+  animation: ui-tooltip-in var(--duration-fast) var(--ease-out);
+}
+
+.ui-control-transition {
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
 }

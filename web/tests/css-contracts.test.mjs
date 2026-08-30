@@ -43,6 +43,38 @@ const allFiles = (directory) => readdirSync(directory, { withFileTypes: true }).
   const path = join(directory, item.name);
   return item.isDirectory() ? allFiles(path) : [path];
 });
+const listWidgetSourceTsx = () => {
+  const widgetsRoot = join(sourceRoot(), 'widgets');
+  return existsSync(widgetsRoot)
+    ? allFiles(widgetsRoot).filter((path) => path.endsWith('.tsx') && !path.endsWith('.test.tsx'))
+    : [];
+};
+const ARBITRARY_SIZING_UTILITY = /(?<![\w-])(?:(?:[a-z][\w-]*|max-desk|max-narrow|max-tight|desk|wide|compact|pointer-coarse):)*-?(?:(?:w|h|min-w|max-w|min-h|max-h|size|top|right|bottom|left|inset(?:-x|-y)?|gap(?:-x|-y)?|p[trblxy]?|m[trblxy]?)|shadow|tracking)-\[([^\]]+)\]/g;
+const ARBITRARY_BREAKPOINT_VARIANT = /(?<![\w-])(?:min|max)-\[[^\]]+\]:/g;
+const findArbitraryBracketViolations = (source) => {
+  const violations = new Set();
+  for (const match of source.matchAll(ARBITRARY_SIZING_UTILITY)) {
+    const token = match[0].trim();
+    if (!/\[&/.test(token)) violations.add(token);
+  }
+  for (const match of source.matchAll(ARBITRARY_BREAKPOINT_VARIANT)) {
+    violations.add(match[0].trim());
+  }
+  return [...violations];
+};
+
+test('widgets must not use arbitrary tailwind bracket utilities', () => {
+  const offenders = listWidgetSourceTsx().flatMap((path) => {
+    const violations = findArbitraryBracketViolations(readFileSync(path, 'utf8'));
+    return violations.map((token) => `${path.split('/').slice(-3).join('/')}: ${token}`);
+  });
+  assert.deepEqual(offenders, []);
+});
+
+test('styles entry imports extra.css for non-utility exceptions', () => {
+  const entry = readFileSync(join(import.meta.dirname, '..', 'src', 'styles.css'), 'utf8');
+  assert.match(entry, /@import\s+'\.\/styles\/extra\.css';/);
+});
 
 test('numeric Tailwind spacing utilities resolve to an explicit product token', () => {
   const source = join(import.meta.dirname, '..', 'src');
@@ -67,7 +99,7 @@ test('numeric Tailwind spacing utilities resolve to an explicit product token', 
 
 test('source stylesheets are structurally valid and consume only declared design tokens', () => {
   const source = join(import.meta.dirname, '..', 'src');
-  const files = ['styles.css', 'styles/base.css', 'styles/primitives.css', 'styles/tokens.css', ...cssFiles().filter((file) => file.startsWith('panel/styles/'))];
+  const files = ['styles.css', 'styles/base.css', 'styles/primitives.css', 'styles/extra.css', 'styles/tokens.css', ...cssFiles().filter((file) => file.startsWith('panel/styles/'))];
   const stylesheets = files.filter((file) => file !== 'styles/tokens.css');
   const roots = files.map((file) => {
     const css = readFileSync(join(source, file), 'utf8');
@@ -95,7 +127,8 @@ test('Kobalte dialog composes an independently layered portal overlay and conten
     /<DialogOverlay class=\{local\.overlayClass\} \/>\s*<DialogPrimitive\.Content/s,
   );
   assert.match(dialog, /DialogPrimitive\.Overlay data-dialog-overlay class=\{cn\('fixed inset-0 z-60 bg-scrim'/);
-  assert.match(dialog, /DialogPrimitive\.Content\s+class=\{cn\('fixed top-1\/2 left-1\/2 z-61/);
+  assert.match(dialog, /DialogPrimitive\.Content\s+class=\{cn\(\s*local\.size === 'resource-compact'/);
+  assert.match(dialog, /fixed top-1\/2 left-1\/2 z-61 w-\(--container-dialog-default\)/);
   assert.match(dialog, /onEscapeKeyDown=\{preventWhenLocked\}/);
   assert.match(dialog, /onPointerDownOutside=\{preventWhenLocked\}/);
 });
@@ -105,7 +138,7 @@ test('dialog size belongs to DialogContent rather than an overflowing child', ()
   const dialogConsumers = listWidgetTsx()
     .map((path) => [path, readFileSync(path, 'utf8')])
     .filter(([, code]) => code.includes('<DialogContent'));
-  assert.match(dialog, /type DialogSize = 'default' \| 'search' \| 'settings' \| 'mcp'/);
+  assert.match(dialog, /type DialogSize = 'default' \| 'search' \| 'settings' \| 'mcp' \| 'resource-compact'/);
   for (const [file, code] of dialogConsumers) {
     assert.doesNotMatch(code, /<DialogContent[\s\S]{0,300}(?:w-|min-w-)\(--container-/, `${file} puts viewport width inside DialogContent`);
   }
@@ -412,7 +445,8 @@ test('icon-only controls receive visible help from the shared Tooltip', () => {
   assert.match(sessionAccessory, /ButtonGroup[\s\S]*?buttonGroupItemClass/);
   const buttonGroup = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'ButtonGroup.tsx'), 'utf8');
   assert.match(buttonGroup, /ui-button-group inline-flex/);
-  assert.match(buttonGroup, /border border-border-subtle bg-surface-overlay\/95 shadow-sm/);
+  assert.match(buttonGroup, /bg-transparent/);
+  assert.doesNotMatch(buttonGroup, /bg-surface-overlay|shadow-sm/);
 });
 
 test('icon-only actions use one rounded rectangular geometry and never circular buttons', () => {

@@ -30,7 +30,7 @@ export function ResourcePanelLayout() {
   const [selected, setSelected] = createSignal('src/web/Composer.tsx');
 
   return (
-    <div class="grid max-w-3xl grid-cols-1 gap-4 min-[720px]:grid-cols-2">
+    <div class="grid max-w-3xl grid-cols-1 gap-4 min-diff-min:grid-cols-2">
       <div class="rounded-lg border border-border-subtle bg-surface-canvas p-2 text-12" role="tree" aria-label="Explorer">
         <FileTree
           nodes={EXPLORER_DEMO}

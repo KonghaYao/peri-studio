@@ -11,7 +11,7 @@ type Props = Omit<JSX.HTMLAttributes<HTMLDivElement>, 'children'> & {
 
 const VARIANT_CLASS: Record<NonNullable<Props['variant']>, string> = {
   page: 'flex-1 px-32 py-48',
-  inline: 'flex-[0_1_auto] rounded-8 border border-border-subtle bg-surface p-24',
+  inline: 'flex-initial rounded-8 border border-border-subtle bg-surface p-24',
 };
 
 export function EmptyState(props: Props) {

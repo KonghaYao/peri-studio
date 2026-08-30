@@ -111,7 +111,7 @@ function SystemReminderBadge(props: { reminders: string[] }) {
     <PopoverTrigger type="button" class="system-reminder-badge self-start inline-flex h-20 cursor-pointer items-center rounded-6 border-0 bg-surface-sunken px-8 text-11 font-medium text-content-secondary hover:bg-interaction-hover pointer-coarse:min-h-44" aria-label="System message">
       System
     </PopoverTrigger>
-    <PopoverContent class="system-reminder-popover max-h-[min(420px,calc(100vh-32px))] w-[min(520px,calc(100vw-32px))] overflow-auto" aria-label="System message">
+    <PopoverContent class="system-reminder-popover max-h-(--container-system-reminder-tall) w-(--container-system-reminder) overflow-auto" aria-label="System message">
       <For each={props.reminders}>{(reminder, index) =>
         <p class={`${index() === 0 ? 'm-0' : 'm-0 mt-10'} whitespace-pre-wrap wrap-anywhere text-12 leading-19 text-content-secondary`}>{reminder}</p>
       }</For>
@@ -195,7 +195,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
   }} class={`conversation-message conversation-message--${role()} group/message relative mb-8 flex min-w-0 flex-col gap-8 ${role() === 'user' ? 'items-end' : role() === 'system' ? 'items-center' : ''}`} aria-label={label()}>
     <Show when={userHasVisibleSurface()}>
       <Show when={role() === 'user'} fallback={
-        <div class={`conversation-message__surface flex max-w-(--chat-content-max) min-w-0 flex-col gap-8 ${role() === 'system' ? 'max-w-[70%] rounded-full bg-surface-muted px-12 py-4 text-12 text-content-secondary' : 'w-full'}`}>
+        <div class={`conversation-message__surface flex max-w-(--chat-content-max) min-w-0 flex-col gap-8 ${role() === 'system' ? 'max-w-(--chat-system-max) rounded-full bg-surface-muted px-12 py-4 text-12 text-content-secondary' : 'w-full'}`}>
           <For each={blockIds()}>{(id, blockIndex) => {
             const block = () => blocksById().get(id)!;
             const startsToolRun = () => block().kind === 'tool_call' && !isToolCallBlock(blocksById().get(blockIds()[blockIndex() - 1]));

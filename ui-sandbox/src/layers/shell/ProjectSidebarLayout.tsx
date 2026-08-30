@@ -196,7 +196,7 @@ export function ProjectSidebarLayout() {
 
   return (
     <nav
-      class="flex h-[min(680px,78vh)] w-[var(--shell-sidebar-width)] flex-col border border-border-faint bg-surface-overlay"
+      class="flex h-(--container-settings-tall) w-(--shell-sidebar-width) flex-col border border-border-faint bg-surface-overlay"
       aria-label="Projects and sessions"
     >
       <div class="shrink-0 px-1.5 pt-2 pb-1">

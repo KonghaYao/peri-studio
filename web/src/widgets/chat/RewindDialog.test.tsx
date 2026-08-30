@@ -14,10 +14,10 @@ describe('RewindDialog', () => {
     render(() => <RewindDialog open onClose={() => undefined} />);
     const panel = screen.getByRole('dialog');
     expect(panel).toHaveAttribute('data-resource-panel', 'rewind');
-    expect(panel).toHaveClass('inset-y-8', 'right-52', 'left-auto', 'w-[264px]', 'wide:w-[310px]', 'translate-x-0', 'translate-y-0', 'rounded-14', 'border-border-subtle');
+    expect(panel).toHaveClass('inset-y-8', 'right-52', 'left-auto', 'w-(--workbench-panel-width)', 'wide:w-(--workbench-panel-width-wide)', 'translate-x-0', 'translate-y-0', 'rounded-14', 'border-border-subtle');
     expect(panel).not.toHaveClass('w-[min(400px,calc(100vw-2*var(--space-20)))]');
-    expect(panel).toHaveClass('max-[959px]:inset-y-0', 'max-[959px]:w-[min(92vw,360px)]', 'max-[959px]:rounded-none');
-    expect(document.querySelector('[data-dialog-overlay]')).toHaveClass('bg-transparent', 'max-[959px]:bg-scrim');
+    expect(panel).toHaveClass('max-desk:inset-y-0', 'max-desk:w-(--container-rewind-compact)', 'max-desk:rounded-none');
+    expect(document.querySelector('[data-dialog-overlay]')).toHaveClass('bg-transparent', 'max-desk:bg-scrim');
     expect(screen.getByRole('heading', { name: 'Rewind session' })).toHaveClass('uppercase', 'text-11');
     expect(screen.getByRole('button', { name: 'Close rewind panel' })).toBeInTheDocument();
     const target = screen.getByRole('option', { name: /Fix the login flow/ });

@@ -23,7 +23,7 @@ export function DialogOverlay<T extends ValidComponent = 'div'>(props: Polymorph
   return <DialogPrimitive.Overlay data-dialog-overlay class={cn('fixed inset-0 z-60 bg-scrim', local.class)} {...rest} />;
 }
 
-type DialogSize = 'default' | 'search' | 'settings' | 'mcp';
+type DialogSize = 'default' | 'search' | 'settings' | 'mcp' | 'resource-compact';
 
 type ContentProps<T extends ValidComponent = 'div'> = DialogPrimitive.DialogContentProps<T> & {
   class?: string;
@@ -38,11 +38,16 @@ export function DialogContent<T extends ValidComponent = 'div'>(props: Polymorph
   return <DialogPortal>
     <DialogOverlay class={local.overlayClass} />
     <DialogPrimitive.Content
-      class={cn('fixed top-1/2 left-1/2 z-61 max-h-[calc(100dvh-2*var(--space-20))] w-[min(400px,calc(100vw-2*var(--space-20)))] -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-8 border border-border-subtle bg-surface text-text-primary shadow-popover outline-none', {
-        'w-(--container-search)': local.size === 'search',
-        'w-(--container-settings) max-h-(--container-settings-tall)': local.size === 'settings',
-        'w-(--container-mcp) max-h-(--container-settings-tall)': local.size === 'mcp',
-      }, local.class)}
+      class={cn(
+        local.size === 'resource-compact'
+          ? 'fixed top-0 right-0 bottom-0 left-auto z-61 flex h-auto max-h-none w-(--container-rewind-compact) translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border border-border-subtle border-y-0 border-r-0 bg-surface text-text-primary shadow-popover outline-none p-0'
+          : cn('fixed top-1/2 left-1/2 z-61 w-(--container-dialog-default) max-h-(--container-dialog-tall) -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-8 border border-border-subtle bg-surface text-text-primary shadow-popover outline-none', {
+              'w-(--container-search)': local.size === 'search',
+              'w-(--container-settings) max-h-(--container-settings-tall)': local.size === 'settings',
+              'w-(--container-mcp) max-h-(--container-settings-tall)': local.size === 'mcp',
+            }),
+        local.class,
+      )}
       onEscapeKeyDown={preventWhenLocked}
       onPointerDownOutside={preventWhenLocked}
       {...rest}

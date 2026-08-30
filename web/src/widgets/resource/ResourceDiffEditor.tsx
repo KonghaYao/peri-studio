@@ -64,7 +64,7 @@ export function ResourceDiffEditor(props: ResourceDiffEditorProps = {}) {
           <Show when={parsed().hunks.length > 0} fallback={<EmptyDiff title="No textual changes" detail="The file has no line changes to display." />}>
             <Show when={parsed().truncated}><div role="status" class="shrink-0 border-b border-warning-border bg-warning-soft px-12 py-6 text-11 text-warning-strong">Preview limited to the first {MAX_RENDERED_DIFF_ROWS.toLocaleString()} rows to keep the editor responsive.</div></Show>
             <div class="ui-scrollbar min-h-0 flex-1 overflow-auto" role="table" aria-label={`Changes in ${preview()?.path ?? 'file'}`}>
-              <div class="min-w-[720px] font-mono text-11 leading-18">
+              <div class="min-w-(--container-diff-min) font-mono text-11 leading-18">
                 <For each={parsed().hunks}>{(hunk) => <section role="rowgroup">
                   <div role="row" class="grid grid-cols-2 border-b border-divider bg-selected text-accent">
                     <div role="cell" class="px-10 py-3">{hunk.header}</div>
@@ -94,7 +94,7 @@ function DiffCell(props: { number?: number; text?: string; changed: boolean; sid
   const tone = () => props.changed
     ? props.side === 'left' ? 'border-l-2 border-danger bg-danger-soft' : 'border-l-2 border-success bg-success-soft'
     : props.text === undefined ? 'bg-surface-muted' : 'border-l-2 border-transparent';
-  return <div role="cell" class={`grid min-w-0 grid-cols-[48px_minmax(0,1fr)] ${props.side === 'right' ? 'border-l border-divider' : ''} ${tone()}`}>
+  return <div role="cell" class={`grid min-w-0 grid-cols-diff-line ${props.side === 'right' ? 'border-l border-divider' : ''} ${tone()}`}>
     <span class="select-none border-r border-divider px-7 text-right tabular-nums text-text-faint" aria-hidden="true">{props.number ?? ''}</span>
     <code class="overflow-visible whitespace-pre rounded-none bg-transparent px-8 py-0 text-text-primary [tab-size:4]">{props.text ?? ''}</code>
   </div>;

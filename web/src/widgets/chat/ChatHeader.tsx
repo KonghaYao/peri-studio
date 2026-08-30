@@ -42,7 +42,7 @@ export function ChatHeader(props: ChatHeaderProps) {
     </IconButton></Show>
     <Show when={!props.launch} fallback={<Status live labelHidden tone={connState().kind || 'idle'} title={connection().detail} aria-label={connection().detail} class="connection-pill mr-2">{connection().label}</Status>}>
       <strong class="chat-title min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-14 font-semibold text-content-primary">{title()}</strong>
-      <Show when={showRuntimeStatus()}><span title={runtime().detail} aria-label={runtime().detail || runtime().label} class={`runtime-status runtime-status--${runtime().tone} inline-flex size-7 items-center justify-center rounded-full hover:bg-interaction-hover ${runtime().tone === 'busy' ? '[&_i]:bg-accent-solid [&_i]:animate-pulse' : runtime().tone === 'attention' ? '[&_i]:bg-warning-solid' : runtime().tone === 'danger' ? '[&_i]:bg-danger-solid' : '[&_i]:bg-content-faint'}`}><i aria-hidden="true" class="size-1.5 rounded-full bg-content-faint" /><span class="sr-only">{runtime().label}</span></span></Show>
+      <Show when={showRuntimeStatus()}><span title={runtime().detail} aria-label={runtime().detail || runtime().label} class={`runtime-status runtime-status--${runtime().tone} inline-flex size-7 items-center justify-center rounded-full hover:bg-interaction-hover`}><i aria-hidden="true" class="size-1.5 rounded-full bg-content-faint" /><span class="sr-only">{runtime().label}</span></span></Show>
       <Status live labelHidden tone={connState().kind || 'idle'} title={connection().detail} aria-label={connection().detail} class="connection-pill">{connection().label}</Status>
     </Show>
     <Show when={props.launch}>

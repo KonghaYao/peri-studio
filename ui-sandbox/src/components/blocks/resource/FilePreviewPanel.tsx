@@ -58,7 +58,7 @@ export function FilePreviewPanel(props: {
               {(line, index) => (
                 <div
                   class={cn(
-                    'grid min-h-[18px] grid-cols-[44px_minmax(0,1fr)]',
+                    'grid min-h-4.5 grid-cols-preview-line',
                     line.kind === 'add' && 'bg-success-soft text-success-strong',
                     line.kind === 'del' && 'bg-danger-soft text-danger-strong',
                     line.kind === 'plain' && 'text-content-primary',
@@ -67,7 +67,7 @@ export function FilePreviewPanel(props: {
                   <span class="select-none border-r border-border-subtle bg-surface-overlay px-2 text-right tabular-nums text-content-faint" aria-hidden="true">
                     {props.mode === 'text' ? index() + 1 : ''}
                   </span>
-                  <code class="whitespace-pre px-2.5 [tab-size:4]">{line.text || ' '}</code>
+                  <code class="code-tab-size whitespace-pre px-2.5">{line.text || ' '}</code>
                 </div>
               )}
             </For>

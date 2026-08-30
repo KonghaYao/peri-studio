@@ -104,7 +104,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     >
       <button
         type="button"
-        class="session-row-main flex min-h-32 w-full min-w-0 items-center rounded-md pl-10 pr-[88px] text-left pointer-coarse:min-h-44"
+        class="session-row-main flex min-h-32 w-full min-w-0 items-center rounded-md pl-10 pr-(--sidebar-row-accessory-pr-session) text-left pointer-coarse:min-h-44"
         aria-current={props.selected ? 'page' : undefined}
         aria-label={displayTitle()}
         onClick={open}

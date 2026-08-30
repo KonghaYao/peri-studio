@@ -8,7 +8,7 @@ export function ButtonGroup(props: { class?: string; 'aria-label'?: string; chil
       role="group"
       aria-label={props['aria-label']}
       class={cn(
-        'ui-button-group inline-flex items-center overflow-hidden rounded-md border border-border-subtle bg-surface-overlay/95 shadow-sm',
+        'ui-button-group inline-flex items-center overflow-hidden rounded-md bg-transparent',
         props.class,
       )}
     >

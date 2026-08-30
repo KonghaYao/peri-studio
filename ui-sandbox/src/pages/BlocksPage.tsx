@@ -217,7 +217,7 @@ export function BlocksPage() {
         </DemoSection>
 
         <DemoSection id="git-graph-row" title="GitGraphPanel" description="VS Code Git Graph 风格表头 + 五列 commit 表。">
-          <div class="h-[min(360px,50vh)] overflow-hidden rounded-lg border border-border-subtle">
+          <div class="h-(--demo-frame-git-graph) overflow-hidden rounded-lg border border-border-subtle">
             <GitGraphPanel
               commits={[
                 {

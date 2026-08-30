@@ -6,7 +6,7 @@ import { TierHeader } from '@/pages/shared/DemoSection';
 
 function Section(props: { id: string; title: string; description?: string; children: unknown }) {
   return (
-    <section id={props.id} class="scroll-mt-[calc(var(--sandbox-header-height)+12px)] border-b border-border-subtle px-4 py-7 min-[720px]:px-8">
+    <section id={props.id} class="demo-scroll-anchor border-b border-border-subtle px-4 py-7 diff-min:px-8">
       <h2 class="text-15 font-semibold text-content-primary">{props.title}</h2>
       {props.description && <p class="mt-1 mb-5 text-12 text-content-muted">{props.description}</p>}
       <div class="mt-4">{props.children as never}</div>
@@ -73,7 +73,7 @@ function SemanticTable(props: { entries: TokenEntry[]; prefix: string; label: st
           <For each={rows()}>
             {(entry, index) => (
               <div
-                class="grid grid-cols-1 items-center gap-1 px-3 py-2 text-12 min-[640px]:grid-cols-[200px_1fr_1fr] min-[640px]:gap-3"
+                class="grid grid-cols-1 items-center gap-1 px-3 py-2 text-12 compact:grid-cols-token-row compact:gap-3"
                 classList={{ 'border-t border-border-subtle': index() > 0 }}
               >
                 <code class="truncate text-11 text-content-primary">{entry.name}</code>
@@ -81,7 +81,7 @@ function SemanticTable(props: { entries: TokenEntry[]; prefix: string; label: st
                   <span class="size-4 flex-none rounded-sm border border-black/10" style={{ background: `var(${entry.name})` }} />
                   <span class="truncate font-mono text-10 text-content-muted" title={resolveToken(entry.name)}>{entry.value}</span>
                 </span>
-                <span class="truncate font-mono text-10 text-content-faint max-[639px]:pl-6">{resolveToken(entry.name)}</span>
+                <span class="truncate font-mono text-10 text-content-faint max-compact:pl-6">{resolveToken(entry.name)}</span>
               </div>
             )}
           </For>
@@ -236,7 +236,7 @@ export function TokensPage() {
                   <div class="overflow-hidden rounded-lg border border-border-subtle">
                     <For each={rows()}>
                       {(entry, index) => (
-                        <div class="grid grid-cols-1 items-center gap-0.5 px-3 py-1.5 min-[640px]:grid-cols-[240px_1fr] min-[640px]:gap-3" classList={{ 'border-t border-border-subtle': index() > 0 }}>
+                        <div class="grid grid-cols-1 items-center gap-0.5 px-3 py-1.5 compact:grid-cols-token-alias compact:gap-3" classList={{ 'border-t border-border-subtle': index() > 0 }}>
                           <code class="truncate text-11 text-content-primary">{entry.name}</code>
                           <span class="truncate font-mono text-10 text-content-muted">{entry.value}</span>
                         </div>

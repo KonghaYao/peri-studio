@@ -69,7 +69,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
         </IconButton>
       </div>
     </div>
-    <Show when={pendingNeedsAttention() ? pending() : null}>{(submission) => <InlineNotice id={statusId} class="quick-start__state mt-8 [&_small]:min-w-0" tone={submission().phase === 'failed' ? 'danger' : 'warning'} role="alert" title={submission().phase === 'uncertain' ? 'Creation result not confirmed yet' : 'Failed to create session'}>
+    <Show when={pendingNeedsAttention() ? pending() : null}>{(submission) => <InlineNotice id={statusId} class="quick-start__state mt-8" tone={submission().phase === 'failed' ? 'danger' : 'warning'} role="alert" title={submission().phase === 'uncertain' ? 'Creation result not confirmed yet' : 'Failed to create session'}>
       <span>{submission().phase === 'uncertain' ? 'Re-confirming uses the original request and will not create a duplicate project session.' : 'The draft remains local until you choose to start again.'}</span>
       <Show when={submission().detail}><small>{submission().detail}</small></Show>
       <div class="quick-start__actions flex flex-wrap gap-6">

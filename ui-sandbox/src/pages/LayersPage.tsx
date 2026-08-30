@@ -11,7 +11,7 @@ import {
 } from '@/layers';
 import { DemoSection, DomainSection, TierHeader } from '@/pages/shared/DemoSection';
 
-const GIT_FRAME = 'h-[min(520px,70vh)] overflow-hidden rounded-lg border border-border-subtle';
+const GIT_FRAME = 'h-(--workbench-frame-height) overflow-hidden rounded-lg border border-border-subtle';
 
 export function LayersPage() {
   return (

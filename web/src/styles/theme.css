@@ -104,6 +104,7 @@
   --shadow-composer-overlay: var(--shadow-composer-overlay);
   --shadow-recovery: var(--shadow-recovery);
   --shadow-accent-ring: var(--shadow-accent-ring);
+  --shadow-focus-danger: var(--shadow-focus-danger);
 
   /* Spacing scale: exact pixel values from tokens (p-16 = 16px, etc.). */
   --spacing-1: var(--space-1);
@@ -148,7 +149,9 @@
   --spacing-56: var(--space-56);
   --spacing-58: var(--space-58);
   --spacing-60: var(--space-60);
+  --spacing-64: var(--space-64);
   --spacing-72: var(--space-72);
+  --spacing-88: var(--space-88);
   --spacing-82: var(--space-82);
   --spacing-84: var(--space-84);
   --spacing-90: var(--space-90);
@@ -207,6 +210,8 @@
   --shadow-raised: var(--shadow-raised);
   --shadow-overlay: var(--shadow-overlay);
   --shadow-focus-ring: var(--shadow-focus-ring);
+  --shadow-focus-danger: var(--shadow-focus-danger);
+  --shadow-focus-ring-input: var(--shadow-focus-ring-input);
   --shadow-decision: var(--decision-shadow);
   --z-sticky: var(--z-sticky);
   --z-overlay: var(--z-overlay);
@@ -231,6 +236,7 @@
   --breakpoint-narrow: 480px;
   --breakpoint-tight: 520px;
   --breakpoint-middle: 760px;
+  --breakpoint-compact: 640px;
 
   /* Font-size scale */
   --text-9: var(--text-9);
@@ -278,6 +284,7 @@
   --tracking-6: var(--tracking-6);
   --tracking-7: var(--tracking-7);
   --tracking-8: var(--tracking-8);
+  --tracking-dialog: var(--tracking-dialog);
 
   /* Motion and z-index */
   --z-12: var(--z-12);
@@ -293,6 +300,17 @@
   --grid-template-columns-boundary: var(--grid-cols-boundary);
   --grid-template-columns-settings-form: var(--grid-cols-settings-form);
   --grid-template-columns-slash: var(--grid-cols-slash);
+  --grid-template-columns-split-auto: var(--grid-cols-split-auto);
+  --grid-template-columns-detail-label: var(--grid-cols-detail-label);
+  --grid-template-columns-diff-line: var(--grid-cols-diff-line);
+  --grid-template-columns-preview-line: var(--grid-cols-preview-line);
+  --grid-template-columns-editor-line: var(--grid-cols-editor-line);
+  --grid-template-columns-code-line: var(--grid-cols-code-line);
+  --grid-template-columns-tool-row: var(--grid-cols-tool-row);
+  --grid-template-columns-status-row: var(--grid-cols-status-row);
+  --grid-template-columns-status-activity: var(--grid-cols-status-activity);
+  --grid-template-rows-fill: var(--grid-rows-fill);
+  --grid-template-rows-asset-tile: var(--grid-rows-asset-tile);
 
   /* Containers: max-w-/max-h-/w- utilities resolve to these */
   --container-chat: var(--container-chat);
@@ -311,6 +329,28 @@
   --container-activity: var(--container-activity);
   --container-placeholder: var(--container-placeholder);
   --container-placeholder-narrow: var(--container-placeholder-narrow);
+  --container-token-usage: var(--container-token-usage);
+  --container-popover: var(--container-popover);
+  --container-toast: var(--container-toast);
+  --container-dialog-default: var(--container-dialog-default);
+  --container-dialog-tall: var(--container-dialog-tall);
+  --container-mermaid: var(--container-mermaid);
+  --container-mermaid-body: var(--container-mermaid-body);
+  --container-system-reminder: var(--container-system-reminder);
+  --container-system-reminder-tall: var(--container-system-reminder-tall);
+  --container-mcp-compact: var(--container-mcp-compact);
+  --container-menu-min: var(--container-menu-min);
+  --container-rewind-compact: var(--container-rewind-compact);
+  --container-diff-min: var(--container-diff-min);
+
+  /* Component geometry */
+  --width-workbench-panel-wide: var(--workbench-panel-width-wide);
+  --max-width-chat-bubble: var(--chat-bubble-max);
+  --max-width-chat-reasoning: var(--chat-reasoning-max);
+  --max-width-chat-system: var(--chat-system-max);
+  --min-width-markdown-table: var(--markdown-table-min);
+  --spacing-sidebar-row-accessory-pr-session: var(--sidebar-row-accessory-pr-session);
+  --spacing-sidebar-row-accessory-pr-workspace: var(--sidebar-row-accessory-pr-workspace);
 }
 
 /* Named utilities that are shared across multiple JSX consumers. */

@@ -160,7 +160,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
     : `${sidebarWidth()}px minmax(0, 1fr) auto`;
 
   return (
-    <div class="app-shell relative grid h-dvh grid-rows-[minmax(0,1fr)] overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide" style={{ 'grid-template-columns': sidebarGridTemplate() }}>
+    <div class="app-shell relative grid h-dvh grid-rows-fill overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide" style={{ 'grid-template-columns': sidebarGridTemplate() }}>
       <ProjectDrawer ref={(element) => { drawer = element; }} open={open()} modal={mobile()} onOpenChange={setOpen}>
         <ProjectSidebar
           onNavigate={() => setOpen(false)}
@@ -169,7 +169,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
         />
       </ProjectDrawer>
       <div
-        class={`sidebar-resize-handle group pointer-events-none absolute z-35 top-0 bottom-0 w-12 -translate-x-1/2 touch-none max-desk:hidden ${sidebarResizing() ? 'select-none [&_*]:cursor-col-resize! [&_span]:bg-sidebar-resize-handle-hover' : ''}`}
+        class={`sidebar-resize-handle group pointer-events-none absolute z-35 top-0 bottom-0 w-12 -translate-x-1/2 touch-none max-desk:hidden ${sidebarResizing() ? 'sidebar-resize-handle--dragging' : ''}`}
         style={{ left: `${sidebarWidth()}px` }}
         role="separator"
         aria-label="Resize sidebar"

@@ -11,7 +11,7 @@ export function Toaster() {
 type ToastProps<T extends ValidComponent = 'li'> = ToastPrimitive.ToastRootProps<T> & { class?: string; children?: JSX.Element };
 export function Toast<T extends ValidComponent = 'li'>(props: PolymorphicProps<T, ToastProps<T>>) {
   const [local, rest] = splitProps(props as ToastProps, ['class']);
-  return <ToastPrimitive.Root class={cn('box-border w-[min(360px,calc(100vw-32px))] translate-y-0 rounded-12 border border-border-subtle bg-surface px-12 py-9 text-13 leading-14 text-text-primary opacity-100 shadow-popover transition-[opacity,transform] duration-150 ease-in motion-reduce:transition-none pointer-events-auto', local.class)} {...rest} />;
+  return <ToastPrimitive.Root class={cn('box-border w-(--container-toast) translate-y-0 rounded-12 border border-border-subtle bg-surface px-12 py-9 text-13 leading-14 text-text-primary opacity-100 shadow-popover transition duration-150 ease-in motion-reduce:transition-none pointer-events-auto', local.class)} {...rest} />;
 }
 
 export const ToastTitle = ToastPrimitive.Title;

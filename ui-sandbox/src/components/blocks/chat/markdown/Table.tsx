@@ -30,7 +30,7 @@ export function MarkdownTable(props: JSX.HTMLAttributes<HTMLTableElement>) {
         </IconButton>
       </div>
       <div class="overflow-x-auto">
-        <table {...props} ref={table} class="w-full min-w-[420px] border-collapse text-left text-13" />
+        <table {...props} ref={table} class="w-full min-w-(--markdown-table-min) border-collapse text-left text-13" />
       </div>
     </div>
   );

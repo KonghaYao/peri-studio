@@ -35,7 +35,7 @@ export function SessionModelMenu(props: {
           <For each={model().options}>{(choice) => {
             const selected = () => choice.value === displayedValue();
             return <DropdownMenuItem
-              class="model-menu__item grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-14 gap-y-2"
+              class="model-menu__item grid grid-cols-split-auto items-center gap-x-14 gap-y-2"
               aria-current={selected() ? 'true' : undefined}
               disabled={locked()}
               onClick={() => choose(choice.value)}

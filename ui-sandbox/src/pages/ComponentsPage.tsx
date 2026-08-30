@@ -26,7 +26,7 @@ import { Bell, Archive, Inbox, Mic, MoreHorizontal, Pencil, Pin, Plus, Search, S
 
 function Demo(props: { id: string; title: string; description?: string; children: unknown }) {
   return (
-    <section id={props.id} class="scroll-mt-[calc(var(--sandbox-header-height)+12px)] border-b border-border-subtle px-4 py-7 min-[720px]:px-8">
+    <section id={props.id} class="demo-scroll-anchor border-b border-border-subtle px-4 py-7 diff-min:px-8">
       <h2 class="text-15 font-semibold text-content-primary">{props.title}</h2>
       {props.description && <p class="mt-1 max-w-2xl text-12 leading-normal text-content-muted">{props.description}</p>}
       <div class="mt-4 flex flex-col gap-4">{props.children as never}</div>

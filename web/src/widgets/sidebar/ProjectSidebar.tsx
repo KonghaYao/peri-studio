@@ -51,13 +51,14 @@ import { SessionSearch } from './SessionSearch';
 import { ArchivedBrowserDialog } from './ArchivedBrowserDialog';
 import { SessionImportDialog } from '@/widgets/shell/SessionImportDialog';
 import { ProjectSessionRow } from './ProjectSessionRow';
-import { NavAction, ProjectRowAccessory, ProjectRowActionGroup, SectionHeader } from './sidebar-parts';
+import { NavAction, ProjectRowAccessory, ProjectRowActionGroup, SectionHeader, SidebarNavBar } from './sidebar-parts';
 import { runConfirmedMutation } from '../../panel/lib/form-mutation';
 import { pickProjectDirectory } from '../../panel/lib/pick-directory';
 import { projectNameFromPath } from '../../panel/lib/project-path';
 import { runtimeState } from '../../panel/lib/runtime-state.ts';
 import { sessionDisplayTitle } from '../../panel/lib/recovery-state.ts';
 import { selectActiveProjects } from '../../features/catalog/project-catalog';
+import { listArchivedEntries } from '@/features/catalog/archived-search';
 import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
 import {
   readPinnedSessions,
@@ -67,7 +68,6 @@ import {
   type SessionPin,
 } from '@/features/session/session-pins';
 import { ConfirmDialog } from '@/widgets/shell/shared/ConfirmDialog';
-import { ArchivedSection } from '@/widgets/shell/shared/ArchivedSection';
 import { SidebarChrome } from '@/widgets/shell/SidebarChrome';
 import { reconcileInstanceGroups, type InstanceGroup } from '../../panel/lib/instance-groups';
 import {
@@ -113,7 +113,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
   const [archiveCandidate, setArchiveCandidate] = createSignal<string | null>(null);
   const [archiveSubmitting, setArchiveSubmitting] = createSignal(false);
   const [archivedBrowserProjectId, setArchivedBrowserProjectId] = createSignal<string | null>(null);
-  const [archivedOpen, setArchivedOpen] = createSignal(false);
+  const [archivedBrowserGlobalOpen, setArchivedBrowserGlobalOpen] = createSignal(false);
   const [restoringProject, setRestoringProject] = createSignal<string | null>(null);
   const [renamingProject, setRenamingProject] = createSignal<string | null>(null);
   const [projectNameDraft, setProjectNameDraft] = createSignal('');
@@ -131,6 +131,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
     if (!projectId) return null;
     return projects().find((item) => item.id === projectId) ?? null;
   };
+  const archivedEntryCount = () => listArchivedEntries(projects(), projectSessions()).length;
   const sessionHasRunningRuntime = (session: { id: string; activeChatId?: string | null }) => {
     if (!session.activeChatId) return false;
     return session.id !== selectedSessionId() || !isTerminal(chatStatusSignal()[session.activeChatId]);
@@ -295,15 +296,30 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
   return (
     <SidebarChrome
       onOpenSystem={props.onOpenSystem}
-      nav={<>
-        <NavAction icon={<MessageSquarePlus size={16} strokeWidth={1.7} />} label="New session" disabled={readOnly()} onClick={handleNewSession} />
-        <NavAction icon={<Search size={16} strokeWidth={1.7} />} label="Search" onClick={() => setSearchOpen(true)} />
-      </>}
+      nav={(
+        <SidebarNavBar
+          more={(
+            <DropdownMenuItem onSelect={() => setArchivedBrowserGlobalOpen(true)}>
+              <ArchiveIcon />
+              Archived
+              <Show when={archivedEntryCount() > 0}>
+                <span class="ml-auto text-11 text-content-muted">{archivedEntryCount()}</span>
+              </Show>
+            </DropdownMenuItem>
+          )}
+        >
+          <NavAction icon={<MessageSquarePlus size={16} strokeWidth={1.7} />} label="New session" disabled={readOnly()} onClick={handleNewSession} />
+          <NavAction icon={<Search size={16} strokeWidth={1.7} />} label="Search" onClick={() => setSearchOpen(true)} />
+        </SidebarNavBar>
+      )}
     >
       <SessionSearch open={searchOpen()} onClose={() => setSearchOpen(false)} onSelected={props.onNavigate} />
       <ArchivedBrowserDialog
-        open={archivedBrowserProjectId() !== null}
-        onClose={() => setArchivedBrowserProjectId(null)}
+        open={archivedBrowserGlobalOpen() || archivedBrowserProjectId() !== null}
+        onClose={() => {
+          setArchivedBrowserGlobalOpen(false);
+          setArchivedBrowserProjectId(null);
+        }}
         projectId={archivedBrowserProjectId()}
         projectName={archivedBrowserProject()?.name ?? null}
         readOnly={readOnly()}
@@ -330,7 +346,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
             <div class="flex items-center gap-6">
               <input
                 id="project-directory"
-                class="box-border h-34 min-w-0 flex-1 rounded-9 border border-border-strong bg-surface px-11 text-text-primary outline-none focus:border-focus-ring focus:shadow-[0_0_0_1px_var(--surface),0_0_0_3px_var(--focus-ring)] focus-visible:outline-0"
+                class="box-border h-34 min-w-0 flex-1 rounded-9 border border-border-strong bg-surface px-11 text-text-primary outline-none focus:border-focus-ring focus:shadow-(--shadow-focus-ring-input) focus-visible:outline-0"
                 value={cwd()}
                 onInput={(e) => { setCwd(e.currentTarget.value); setPickDirectoryError(null); }}
                 placeholder="/absolute/path"
@@ -412,7 +428,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                 const projectMenuId = `project-menu-${projectId}`;
                 return <Collapsible as="section" class="project-group min-w-0" open={open()} onOpenChange={(next) => setProjectCollapsed(projectId, !next)}>
                   <div class="group/workspace relative min-w-0 rounded-md hover:bg-interaction-hover focus-within:bg-interaction-hover">
-                    <CollapsibleTrigger class="relative z-0 flex w-full min-w-0 items-start gap-8 pl-2.5 pr-[64px] py-4 text-left" aria-label={project().name}>
+                    <CollapsibleTrigger class="relative z-0 flex w-full min-w-0 items-start gap-8 pl-2.5 pr-(--sidebar-row-accessory-pr-workspace) py-4 text-left" aria-label={project().name}>
                       <span class="mt-0.5 shrink-0 text-content-muted">
                         <Show when={open()} fallback={<Folder size={15} strokeWidth={1.7} />}>
                           <FolderOpen size={15} strokeWidth={1.7} />
@@ -489,22 +505,6 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
             </section>;
           }}</For>
         </Show>
-      </Show>
-
-      <Show when={registryHydrated() && projects().some((project) => !!project.archivedAt)}>
-        <section class="archived-projects border-t border-border-subtle px-1.5 pt-2">
-          <ArchivedSection
-            toggleClass="archived-projects__toggle flex w-full min-h-32 cursor-pointer items-center gap-6 rounded-md border-0 bg-transparent px-2.5 text-left text-11 text-content-muted hover:bg-interaction-hover hover:text-content-secondary pointer-coarse:min-h-44"
-            label="Archived"
-            count={projects().filter((project) => !!project.archivedAt).length}
-            open={archivedOpen()}
-            onOpenChange={setArchivedOpen}
-            listId="archived-project-list"
-            listClass="archived-project-list flex max-h-180 flex-col gap-4 overflow-auto py-4"
-          >
-            <For each={projects().filter((project) => !!project.archivedAt)}>{(project) => <div class="archived-project-row flex min-h-32 items-center gap-8 rounded-md px-2.5 py-4 hover:bg-interaction-hover pointer-coarse:min-h-44"><span class="flex min-w-0 flex-1 flex-col gap-2"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12 font-medium text-content-primary">{project.name}</strong><small class="text-10 text-content-muted">{projectSessions().filter((session) => session.projectId === project.id).length} sessions</small></span><Button class="min-h-30! px-8! text-11! pointer-coarse:min-h-44!" busy={restoringProject() === project.id} disabled={readOnly() || !!restoringProject()} onClick={() => runConfirmedMutation(() => setRestoringProject(project.id), () => setRestoringProject(null), (committed, failed) => restoreProject(project.id, committed, failed), () => {})}>Restore</Button></div>}</For>
-          </ArchivedSection>
-        </section>
       </Show>
 
       <SessionImportDialog

@@ -69,6 +69,7 @@ web/src/
 | **T2 · Base UI** | `ui-sandbox/src/components/ui/` | `web/src/shared/ui/` |
 | **T3 · Blocks** | `ui-sandbox/src/components/blocks/` | `web/src/widgets/*` 或 `shared/ui`（无业务语义时） |
 | **T4 · Layers** | `ui-sandbox/src/layers/` | `widgets` 组合参考（不直接 import） |
+| **Extra** | `ui-sandbox/src/styles/extra.css` | `web/src/styles/extra.css`（Tailwind 无法表达的例外） |
 
 **工作流（强制）**
 
@@ -109,6 +110,28 @@ cd ui-sandbox && bun run typecheck
 
 **IconButton**：侧栏已有可见文案/菜单语义时用 `showTooltip={false}`，避免重复 tooltip（`css-contracts` 约束）。
 
+### CSS 规范（全 Tailwind + extra.css 例外）
+
+生产 Web 样式四级级联（入口 `web/src/styles.css`）：
+
+```
+tokens.css   → 设计值唯一来源（颜色、间距、容器、--grid-cols-*）
+theme.css    → Tailwind v4 @theme inline（utility 与命名断点 max-desk / max-compact 等）
+primitives.css → 跨组件原子（滚动条、ui-spinner、ui-control-transition、git-graph）
+extra.css    → 无法纳入 Tailwind 的语义 class（子选择器、WebKit hack、Mermaid SVG 等）
+```
+
+**JSX 写法**
+
+- 优先 Tailwind token utility：`gap-8`、`w-(--container-dialog-default)`、`grid-cols-split-auto`、`max-compact:px-8`
+- 禁止任意 bracket：`w-[360px]`、`grid-cols-[minmax(0,1fr)_auto]`、`max-[640px]:`、`[&_p]:mb-3`
+- 重复布局：在 `tokens.css` 加 `--grid-cols-*` → `theme.css` 映射 → JSX 用 `grid-cols-*`
+- 例外：语义 class + `extra.css`（如 `.markdown-body`、`.rewind-panel__actions`、`.ui-line-clamp-2`）
+
+**契约**：`web/tests/css-contracts.test.mjs`（widgets 无 bracket utility、spacing 数字须在 theme 声明、extra.css 被入口 import）。
+
+**Sandbox 对齐**：`ui-sandbox` 与 `web` 共用同一 CSS 级联规则（`extra.css` 登记例外）；演示页禁止 bracket utility，新 token 先改 sandbox `tokens.css` 再同步 `web`。
+
 ### 测试落点
 
 | 类型 | 位置 | 命令 |
@@ -132,6 +155,7 @@ cd ui-sandbox && bun run typecheck
 - [ ] 新文件落在正确层，未违反依赖表
 - [ ] `features` 未 import `store`；`shared/ui` 未 import 业务模块
 - [ ] 颜色/间距来自 `tokens.css` utility，符合 `ui-specification.md`；sandbox→web 间距已按生产刻度换算
+- [ ] JSX 无任意 Tailwind bracket（`w-[…]`、`[&_…]`）；例外已登记 `web/src/styles/extra.css`
 - [ ] 单文件 < 500 行；UI 文案英文，注释中文，**log 英文**
 - [ ] `cd web && bun run test` 全绿
 - [ ] 若改变目录、token 或视觉契约，同步 `frontend-architecture.md` / `ui-specification.md` / `ui-implementation-plan.md` 与 `architecture.md` §10.2

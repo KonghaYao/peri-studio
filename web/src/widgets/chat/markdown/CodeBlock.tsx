@@ -126,7 +126,7 @@ export function CodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { streamin
       <IconButton size="compact" disabled={locked()} onClick={() => downloadText(details().text, safeFilename(details().filename || `snippet.${extension()}`, 'snippet.txt'))} label="Download code"><DownloadIcon /></IconButton>
     </div>
     <pre class="m-0 max-h-520 overflow-auto bg-surface-sunken px-0 py-12 font-mono text-12 leading-relaxed text-content-primary"><code class="block min-w-max bg-transparent p-0 font-mono text-inherit">
-      <For each={lines()}>{(line, index) => <span class="md-code-line grid min-h-18 grid-cols-[auto_1fr] px-14">
+      <For each={lines()}>{(line, index) => <span class="md-code-line grid min-h-18 grid-cols-code-line px-14">
         <Show when={details().lineNumbers}><span class="md-code-line__number mr-14 min-w-20 select-none text-right text-content-faint" aria-hidden="true">{details().startLine + index()}</span></Show>
         <span class="whitespace-pre"><For each={line}>{(token) => <span style={tokenStyle(token)}>{token.content}</span>}</For>{index() < lines().length - 1 ? '\n' : ''}</span>
       </span>}</For>

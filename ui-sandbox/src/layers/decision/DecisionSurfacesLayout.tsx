@@ -22,7 +22,7 @@ export function DecisionSurfacesLayout() {
   const [permissionIndex, setPermissionIndex] = createSignal(0);
 
   return (
-    <div class="grid max-w-3xl grid-cols-1 gap-4 min-[720px]:grid-cols-2">
+    <div class="grid max-w-3xl grid-cols-1 gap-4 diff-min:grid-cols-2">
       <DecisionCard
         title="Questions"
         prompt="归档 session 时，如果该 session 仍有正在运行的 chat，应如何处理？"

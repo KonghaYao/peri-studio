@@ -32,7 +32,7 @@ export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
             </div>
           </TabsContent>
           <TabsContent value="about">
-            <dl class="grid grid-cols-settings-form gap-x-12 gap-y-9 mt-16 p-15 border border-divider rounded-12 bg-surface-muted [&_dt]:text-text-muted [&_dt]:text-12 [&_dd]:m-0 [&_dd]:text-text-primary [&_dd]:text-13">
+            <dl class="settings-form-meta grid grid-cols-settings-form gap-x-12 gap-y-9 mt-16 p-15 border border-divider rounded-12 bg-surface-muted">
               <dt>WebSocket connection</dt>
               <dd>{connState().text}</dd>
               <dt>Server health</dt>

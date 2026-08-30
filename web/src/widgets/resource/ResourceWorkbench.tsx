@@ -113,8 +113,8 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   };
   const close = () => props.compact ? props.onOpenChange?.(false) : setView(null);
   const panelTitle = () => view() === 'mcp' ? 'MCP' : project()?.name ?? 'Workspace';
-  const surface = () => <aside class={`resource-workbench flex h-full min-h-0 border-l border-border-subtle bg-surface-overlay ${props.compact ? 'absolute inset-0 w-full' : 'relative w-[46px] shrink-0'}`} aria-label="Workspace resources">
-    <nav class="flex w-46 shrink-0 flex-col items-center gap-4 bg-surface-overlay py-8" aria-label="Resource views">
+  const surface = () => <aside class={`resource-workbench flex h-full min-h-0 border-l border-border-subtle bg-surface-overlay ${props.compact ? 'absolute inset-0 w-full' : 'relative w-(--workbench-rail-width) shrink-0'}`} aria-label="Workspace resources">
+    <nav class="flex w-(--workbench-rail-width) shrink-0 flex-col items-center gap-4 bg-surface-overlay py-8" aria-label="Resource views">
       <ResourceRailButton label="Explorer" active={view() === 'explorer'} onClick={() => toggle('explorer')}><Files size={17} strokeWidth={1.7} /></ResourceRailButton>
       <ResourceRailButton label="Source Control" active={view() === 'scm'} badge={sourceControlCount()} onClick={() => toggle('scm')}><GitBranch size={17} strokeWidth={1.7} /></ResourceRailButton>
       <ResourceRailButton label="MCP" active={view() === 'mcp'} onClick={() => toggle('mcp')}><PlugZap size={17} strokeWidth={1.7} /></ResourceRailButton>
@@ -150,7 +150,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   return <Show when={props.compact} fallback={surface()}>
     <Dialog open={!!props.open} onOpenChange={(open) => props.onOpenChange?.(open)}>
       <DialogContent
-        class="top-0 right-0 bottom-0 left-auto h-auto max-h-none w-[min(92vw,360px)] translate-x-0 translate-y-0 overflow-hidden rounded-none border-y-0 border-r-0 p-0"
+        size="resource-compact"
         onOpenAutoFocus={props.onCompactOpenAutoFocus}
         onCloseAutoFocus={props.onCompactCloseAutoFocus}
       >

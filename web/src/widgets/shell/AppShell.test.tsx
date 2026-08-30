@@ -1,4 +1,6 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { JSX } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -27,6 +29,16 @@ describe('AppShell desktop sidebar', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('avoids arbitrary tailwind bracket sizing outside the resize handle', () => {
+    const source = readFileSync(join(import.meta.dirname, 'AppShell.tsx'), 'utf8');
+    const sizingUtilities = ['pr-[', 'pl-[', 'pt-[', 'pb-[', 'w-[', 'h-[', 'min-w-[', 'max-w-[', 'min-h-[', 'max-h-[', 'size-[', 'top-[', 'shadow-[', 'tracking-['];
+
+    for (const utility of sizingUtilities) {
+      expect(source.includes(utility)).toBe(false);
+    }
+    expect(source).toMatch(/sidebar-resize-handle--dragging/);
   });
 
   it('resizes within accessible keyboard and pointer limits', () => {

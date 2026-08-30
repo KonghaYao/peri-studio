@@ -29,7 +29,7 @@ const DropdownMenuContent = <T extends ValidComponent = "div">(
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
         class={cn(
-          "absolute z-50 flex min-w-[160px] flex-col overflow-hidden rounded-8 border border-border-subtle bg-surface p-4 text-text-primary shadow-popover outline-none origin-[var(--kb-menu-content-transform-origin)] animate-content-hide data-[expanded]:animate-content-show",
+          "absolute z-50 flex min-w-(--container-menu-min) flex-col overflow-hidden rounded-8 border border-border-subtle bg-surface p-4 text-text-primary shadow-popover outline-none origin-[var(--kb-menu-content-transform-origin)] animate-content-hide data-[expanded]:animate-content-show",
           props.class
         )}
         {...rest}
@@ -137,7 +137,7 @@ const DropdownMenuSubContent = <T extends ValidComponent = "div">(
   return (
     <DropdownMenuPrimitive.SubContent
       class={cn(
-        "z-50 min-w-[160px] origin-[var(--kb-menu-content-transform-origin)] overflow-hidden rounded-8 border border-border-subtle bg-surface p-4 text-text-primary shadow-popover outline-none animate-content-hide data-[expanded]:animate-content-show",
+        "z-50 min-w-(--container-menu-min) origin-[var(--kb-menu-content-transform-origin)] overflow-hidden rounded-8 border border-border-subtle bg-surface p-4 text-text-primary shadow-popover outline-none animate-content-hide data-[expanded]:animate-content-show",
         props.class
       )}
       {...rest}

@@ -45,7 +45,7 @@ describe('ConversationMessage', () => {
     expect(message).toHaveTextContent('**literal user input**');
     expect(message.querySelector('strong')).toBeNull();
     expect(message.querySelector('.conversation-message__meta')).toHaveClass('flex');
-    expect(message.querySelector('.max-w-\\[72\\%\\]')).toHaveClass('rounded-xl', 'bg-surface-overlay', 'text-content-primary');
+    expect(message.querySelector('[class*="max-w-(--chat-bubble-max)"]')).toHaveClass('rounded-xl', 'bg-surface-overlay', 'text-content-primary');
     expect(screen.queryByRole('button', { name: 'Copy answer' })).not.toBeInTheDocument();
     view.unmount();
   });

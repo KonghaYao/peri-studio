@@ -23,7 +23,7 @@ function RailButton(props: {
       onClick={props.onClick}
       class={cn(
         'relative w-full min-h-9 rounded-md border-0 bg-transparent text-content-muted',
-        props.active && 'bg-sidebar-selected text-content-primary before:absolute before:top-1.5 before:bottom-1.5 before:right-[-3px] before:w-0.5 before:rounded-full before:bg-accent-solid',
+        props.active && 'bg-sidebar-selected text-content-primary before:absolute before:top-1.5 before:bottom-1.5 before:-right-0.75 before:w-0.5 before:rounded-full before:bg-accent-solid',
       )}
     >
       {props.children as never}
@@ -51,7 +51,7 @@ export function ResourceWorkbenchLayout() {
 
   return (
     <div
-      class="flex h-[min(520px,70vh)] w-full overflow-hidden rounded-lg border border-border-subtle bg-surface-canvas"
+      class="flex h-(--workbench-frame-height) w-full overflow-hidden rounded-lg border border-border-subtle bg-surface-canvas"
       aria-label="Resource workbench"
     >
       <section class="min-w-0 flex-1 overflow-hidden" aria-label="File preview">
@@ -60,8 +60,7 @@ export function ResourceWorkbenchLayout() {
 
       <div class="flex shrink-0 border-l border-border-subtle">
         <div
-          class="flex h-full flex-col overflow-hidden bg-surface-overlay"
-          style={{ width: 'var(--workbench-panel-width)' }}
+          class="flex h-full w-(--workbench-panel-width) flex-col overflow-hidden bg-surface-overlay"
         >
           <header class="flex h-8 shrink-0 items-center gap-1 border-b border-border-subtle px-2.5">
             <span class="min-w-0 flex-1 truncate text-10 font-semibold tracking-wide uppercase text-content-muted">
@@ -84,7 +83,7 @@ export function ResourceWorkbenchLayout() {
           </div>
         </div>
         <nav
-          class="flex w-[var(--workbench-rail-width)] shrink-0 flex-col items-center gap-1 border-l border-border-subtle py-2"
+          class="flex w-(--workbench-rail-width) shrink-0 flex-col items-center gap-1 border-l border-border-subtle py-2"
           aria-label="Resource views"
         >
           <RailButton label="Explorer" active={view() === 'explorer'} onClick={() => setView('explorer')}>

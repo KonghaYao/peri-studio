@@ -54,7 +54,7 @@ export function ToolActivityRow(props: {
         type="button"
         disabled={!hasEvidence()}
         class={cn(
-          'grid w-full min-h-7 grid-cols-[16px_minmax(0,1fr)_auto_14px] items-center gap-2 rounded-md px-2 text-left transition-colors duration-(--duration-fast)',
+          'grid w-full min-h-7 grid-cols-tool-row items-center gap-2 rounded-md px-2 text-left transition-colors duration-(--duration-fast)',
           props.status === 'running' ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
           !hasEvidence() && 'cursor-default',
         )}

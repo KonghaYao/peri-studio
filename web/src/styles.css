@@ -1,8 +1,10 @@
 @import './styles/base.css';
 @import './styles/theme.css';
 @import './styles/primitives.css';
+@import './styles/extra.css';
 
 /* peri-studio 面板样式入口只负责组织级联顺序：
    styles/base.css → styles/theme.css（Tailwind v4 theme + preflight）→
-   styles/primitives.css（→ styles/tokens.css）。复用设计值集中在
-   styles/tokens.css，功能布局由组件 JSX utility 表达。 */
+   styles/primitives.css（→ styles/tokens.css）→ styles/extra.css（Tailwind
+   无法表达的样式例外）。复用设计值集中在 styles/tokens.css，功能布局由组件
+   JSX utility 表达；实在无法纳入 Tailwind 的语义 class 登记在 extra.css。 */

@@ -1,0 +1,158 @@
+/* 无法（或不宜）用 Tailwind token utility 表达的样式例外（与 web/extra.css 同规则）。
+ * 数值须引用 tokens.css 的 var(--*)；禁止在 JSX 用任意 bracket utility。 */
+
+/* ── 沙箱页面锚点滚动偏移 ─────────────────────────────────────────────── */
+
+.demo-scroll-anchor {
+  scroll-margin-top: var(--sandbox-scroll-anchor);
+}
+
+/* ── Markdown 富文本 ───────────────────────────────────────────────────── */
+
+.markdown-body > *:first-child {
+  margin-top: 0;
+}
+
+.markdown-body > *:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body p {
+  margin-block: 0 12px;
+}
+
+.markdown-body h1 {
+  margin: 28px 0 10px;
+  font-size: var(--text-18);
+  font-weight: 600;
+  letter-spacing: var(--tracking-dialog);
+}
+
+.markdown-body h2 {
+  margin: 24px 0 8px;
+  font-size: var(--text-16);
+  font-weight: 600;
+}
+
+.markdown-body h3 {
+  margin: 20px 0 8px;
+  font-size: var(--text-15);
+  font-weight: 600;
+}
+
+.markdown-body h4 {
+  margin: 20px 0 6px;
+  font-size: var(--text-14);
+  font-weight: 600;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin: 8px 0 14px;
+  padding-left: 22px;
+}
+
+.markdown-body ul {
+  list-style: disc;
+}
+
+.markdown-body ol {
+  list-style: decimal;
+}
+
+.markdown-body li {
+  margin-block: 4px;
+}
+
+.markdown-body li:has(> input[type='checkbox']) {
+  list-style: none;
+  padding-left: 0;
+}
+
+.markdown-body input[type='checkbox'] {
+  margin-right: 8px;
+  accent-color: var(--accent-solid);
+}
+
+.markdown-body blockquote {
+  margin-block: 14px;
+  padding: 2px 0 2px 14px;
+  border-left: 2px solid var(--border-strong);
+  color: var(--content-secondary);
+}
+
+.markdown-body blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body hr {
+  margin-block: 24px;
+  height: 1px;
+  border: 0;
+  background: var(--border-subtle);
+}
+
+.markdown-body a {
+  color: var(--content-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.markdown-body th {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-muted);
+  font-weight: 600;
+}
+
+.markdown-body td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.markdown-body tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.markdown-body del {
+  color: var(--content-muted);
+}
+
+.markdown-body footer {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--text-12);
+  color: var(--content-secondary);
+}
+
+.markdown-body .md-math--block {
+  text-align: center;
+}
+
+/* ── 推理折叠摘要 ─────────────────────────────────────────────────────── */
+
+.message-reasoning summary::-webkit-details-marker {
+  display: none;
+}
+
+/* ── Mermaid 注入 SVG ────────────────────────────────────────────────── */
+
+.md-mermaid__canvas svg,
+.md-mermaid__canvas--dialog svg {
+  display: block;
+  margin-inline: auto;
+  max-width: 100%;
+}
+
+/* ── 代码块 tab 宽度 ───────────────────────────────────────────────── */
+
+.code-tab-size {
+  tab-size: 4;
+}
+
+/* ── Git Graph ref 激活环 ───────────────────────────────────────────── */
+
+.git-ref-badge--active > span:first-child {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-solid) 40%, transparent);
+}

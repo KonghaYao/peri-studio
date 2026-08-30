@@ -251,7 +251,7 @@ export function Composer() {
   }
 
   return (
-    <div class="composer-wrap composer-wrap--overlay relative box-border w-full max-w-(--container-chat) mx-auto px-20 pb-[calc(var(--space-20)+env(safe-area-inset-bottom))] desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 wide:max-w-(--container-chat) wide:px-20 max-desk:max-w-(--container-chat-narrow) max-narrow:px-10">
+    <div class="composer-wrap composer-wrap--overlay relative box-border w-full max-w-(--container-chat) mx-auto px-20 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 wide:max-w-(--container-chat) wide:px-20 max-desk:max-w-(--container-chat-narrow) max-narrow:px-10">
       <Show when={slash.slashMenuOpen()}>
         <SlashMenu
           id={slashMenuId}
@@ -269,7 +269,7 @@ export function Composer() {
       >
         <Show when={composerAssets().length > 0}>
           <div class="composer-assets ui-scrollbar flex gap-7 overflow-x-auto pb-7" aria-label="Staged assets">
-            <For each={composerAssets()}>{(asset) => <article class="group relative grid shrink-0 grid-rows-[1fr_auto] overflow-hidden rounded-md border border-border-subtle bg-surface-canvas p-1.5" style={{ width: 'var(--asset-tile-size)', height: 'var(--asset-tile-size)' }} title={asset.detail || asset.name}>
+            <For each={composerAssets()}>{(asset) => <article class="group relative grid shrink-0 grid-rows-asset-tile overflow-hidden rounded-md border border-border-subtle bg-surface-canvas p-1.5" style={{ width: 'var(--asset-tile-size)', height: 'var(--asset-tile-size)' }} title={asset.detail || asset.name}>
               <Show when={asset.kind === 'image' && asset.previewUrl} fallback={<span class="grid place-items-center text-content-muted"><AssetIcon kind={asset.kind} /></span>}>
                     <img src={asset.previewUrl} alt="" class="h-full w-full rounded-sm object-cover" />
                   </Show>
@@ -380,7 +380,7 @@ export function Composer() {
           <Show when={canBrowseSkills()}>
             <Button
               size="compact"
-              class="composer-skills relative inline-flex w-34 min-h-30 items-center justify-center gap-0 rounded-7 border-0 bg-transparent p-0 text-text-primary text-11 font-normal pointer-coarse:w-48 pointer-coarse:min-h-44 max-tight:before:content-['/'] max-tight:before:font-mono max-tight:before:text-15 max-tight:before:leading-none max-tight:before:font-bold"
+              class="composer-skills relative inline-flex w-34 min-h-30 items-center justify-center gap-0 rounded-7 border-0 bg-transparent p-0 text-text-primary text-11 font-normal pointer-coarse:w-48 pointer-coarse:min-h-44"
               aria-expanded={slash.browseSkills() && slash.slashMenuOpen()}
               aria-controls={slashMenuId}
               aria-label={`Browse skills (${skillCount()})`}
@@ -390,7 +390,7 @@ export function Composer() {
                 queueMicrotask(() => taRef?.focus());
               }}
               disabled={inputDisabled()}
-            ><ScanLine size={17} strokeWidth={1.7} class="max-tight:hidden" aria-hidden="true" /><span class="composer-skills__count sr-only">{skillCount()}</span></Button>
+            ><ScanLine size={17} strokeWidth={1.7} class="composer-skills__icon" aria-hidden="true" /><span class="composer-skills__count sr-only">{skillCount()}</span></Button>
           </Show>
           <span class="composer-shortcut sr-only" aria-hidden="true">Enter to send · Shift + Enter for newline</span>
           <div class="composer-toolbar__right ml-auto flex min-w-0 items-center gap-4">

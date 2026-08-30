@@ -72,7 +72,7 @@ export function CodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { streamin
         <code class="block min-w-max bg-transparent p-0">
           <For each={lines()}>
             {(line, index) => (
-              <span class="grid min-h-4.5 grid-cols-[auto_1fr] px-3.5">
+              <span class="grid min-h-4.5 grid-cols-code-line px-3.5">
                 <Show when={details().lineNumbers}>
                   <span class="mr-3.5 min-w-5 select-none text-right text-content-faint" aria-hidden="true">{details().startLine + index()}</span>
                 </Show>

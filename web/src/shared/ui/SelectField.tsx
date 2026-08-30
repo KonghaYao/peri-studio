@@ -2,10 +2,10 @@ import { createUniqueId, Show, splitProps, type JSX } from 'solid-js';
 import { cn } from '../lib/cn';
 
 const selectControlClasses = (invalid?: boolean, className?: string) => cn(
-  'box-border h-32 w-full appearance-auto rounded-6 border bg-surface px-12 text-13 text-text-primary outline-none [transition:border-color_120ms_ease,box-shadow_120ms_ease]',
+  'box-border h-32 w-full appearance-auto rounded-6 border bg-surface px-12 text-13 text-text-primary outline-none ui-control-transition',
   invalid
-    ? 'border-danger focus:border-danger focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--danger)_25%,transparent)]'
-    : 'border-border-strong hover:border-[color-mix(in_srgb,var(--accent)_30%,var(--border-strong))] focus:border-focus-ring focus:shadow-accent-ring',
+    ? 'border-danger focus:border-danger focus:shadow-(--shadow-focus-danger)'
+    : 'border-border-strong hover:border-accent-border-hover focus:border-focus-ring focus:shadow-accent-ring',
   'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-text-muted',
   className,
 );

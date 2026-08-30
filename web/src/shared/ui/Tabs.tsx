@@ -15,7 +15,7 @@ export function TabsList<T extends ValidComponent = 'div'>(props: PolymorphicPro
 type TriggerProps<T extends ValidComponent = 'button'> = TabsPrimitive.TabsTriggerProps<T> & { class?: string };
 export function TabsTrigger<T extends ValidComponent = 'button'>(props: PolymorphicProps<T, TriggerProps<T>>) {
   const [local, rest] = splitProps(props as TriggerProps, ['class']);
-  return <TabsPrimitive.Trigger class={cn('-mb-px cursor-pointer border-0 border-b-2 border-transparent bg-transparent px-4 py-8 text-13 text-text-secondary transition-[color,border-color] duration-120 ease-in-out outline-none hover:text-text-primary focus-visible:text-text-primary data-selected:border-b-accent data-selected:font-medium data-selected:text-accent data-disabled:cursor-not-allowed data-disabled:opacity-45', local.class)} {...rest} />;
+  return <TabsPrimitive.Trigger class={cn('-mb-px cursor-pointer border-0 border-b-2 border-transparent bg-transparent px-4 py-8 text-13 text-text-secondary transition-colors duration-120 ease-in-out outline-none hover:text-text-primary focus-visible:text-text-primary data-selected:border-b-accent data-selected:font-medium data-selected:text-accent data-disabled:cursor-not-allowed data-disabled:opacity-45', local.class)} {...rest} />;
 }
 
 type ContentProps<T extends ValidComponent = 'div'> = TabsPrimitive.TabsContentProps<T> & { class?: string };

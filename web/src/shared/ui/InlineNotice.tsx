@@ -14,7 +14,7 @@ type InlineNoticeProps = JSX.HTMLAttributes<HTMLElement> & {
 
 const toneClasses: Record<InlineNoticeTone, { box: string; icon: string }> = {
   info: { box: 'border-border-subtle', icon: 'text-link' },
-  success: { box: 'border-[color-mix(in_srgb,var(--success)_35%,var(--border-subtle))]', icon: 'text-success' },
+  success: { box: 'border-success-border', icon: 'text-success' },
   warning: { box: 'border-warning-border', icon: 'text-warning' },
   danger: { box: 'border-danger-border', icon: 'text-danger' },
 };

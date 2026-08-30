@@ -111,6 +111,21 @@ cargo run -q -p peri-studio -- status --json | --ready
 
 **硬规则**：依赖只能自上而下（`shared` → `entities` → `features` → `widgets` → `pages` → `app`）；`widgets` 不得直发协议帧；新代码用 `@/` 路径别名，勿在 `panel/` 下新增实现。UI 颜色/间距/组件须符合 `ui-specification.md`；改 Web 结构须同步 `architecture.md` §10.2。
 
+**CSS 样式级联**（全 Tailwind 优先，`web/tests/css-contracts.test.mjs` 门禁）：
+
+| 层级 | 文件 | 职责 |
+|------|------|------|
+| T1 · Token | `web/src/styles/tokens.css` | 颜色/间距/半径/容器/栅格模板的唯一数值源 |
+| T2 · Theme | `web/src/styles/theme.css` | Tailwind v4 `@theme inline` 映射（`bg-*`、`p-*`、`grid-cols-*`、`max-desk:` 等） |
+| T3 · Primitives | `web/src/styles/primitives.css` | 跨组件原子 class（滚动条、`.ui-spinner`、`.ui-control-transition`、Git graph） |
+| T4 · Extra | `web/src/styles/extra.css` | **无法纳入 Tailwind 的例外**：子选择器编排、WebKit 私有属性、第三方注入 DOM、复合响应式组合 |
+| 入口 | `web/src/styles.css` | `base → theme → primitives → extra` 级联顺序 |
+
+- **JSX 默认只用 Tailwind token utility**（`w-(--container-*)`、`gap-8`、`max-desk:`）；禁止 `w-[…]`、`max-[640px]:` 等任意 bracket 写法（`css-contracts` 对 `widgets/` 扫描）。
+- **重复栅格**优先在 `tokens.css` 声明 `--grid-cols-*` 并在 `theme.css` 映射为 `grid-cols-*` utility，而非 bracket。
+- **实在无法表达时**：在 JSX 加语义 class（BEM 或 `feature__element`），实现登记在 `extra.css`；禁止新增颜色/间距字面量，须 `var(--*)`。
+- **禁止**在 `widgets/` 用 `[&_…]` 子选择器 variant 堆砌；Markdown 富文本等统一用 `.markdown-body`（见 `extra.css`）。
+
 ## 代码与测试约定
 
 - Rust 模块按单一职责拆分（参考 `server/src/channel` 各模块的拆分粒度），单元测试以 `*_test.rs` 与模块同目录内联；代码注释用中文，日志用英文。

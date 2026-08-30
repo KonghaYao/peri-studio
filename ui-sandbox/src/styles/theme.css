@@ -83,6 +83,7 @@
   --text-9: var(--text-9);
   --text-10: var(--text-10);
   --text-11: var(--text-11);
+  --text-11p5: var(--text-11p5);
   --text-12: var(--text-12);
   --text-13: var(--text-13);
   --text-14: var(--text-14);
@@ -106,15 +107,22 @@
   /* 字距 */
   --tracking-caps: var(--tracking-caps);
   --tracking-wide: var(--tracking-wide);
+  --tracking-dialog: var(--tracking-dialog);
 
   /* 字族 */
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 
+  /* Breakpoints */
+  --breakpoint-diff-min: 720px;
+  --breakpoint-compact: 640px;
+
   /* 阴影 */
   --shadow-raised: var(--shadow-raised);
   --shadow-overlay: var(--shadow-overlay);
   --shadow-focus-ring: var(--shadow-focus-ring);
+  --shadow-focus-danger: var(--shadow-focus-danger);
+  --shadow-focus-ring-input: var(--shadow-focus-ring-input);
   --shadow-decision: var(--decision-shadow);
 
   /* 层级 */
@@ -128,6 +136,53 @@
   --duration-base: var(--duration-base);
   --ease-standard: var(--ease-standard);
   --ease-out: var(--ease-out);
+
+  /* 间距刻度（与 web 生产像素值对齐） */
+  --spacing-20: var(--space-20);
+  --spacing-64: var(--space-64);
+  --spacing-88: var(--space-88);
+
+  /* 有界容器 */
+  --container-auth-card: var(--container-auth-card);
+  --container-settings: var(--container-settings);
+  --container-settings-tall: var(--container-settings-tall);
+  --container-mcp: var(--container-mcp);
+  --container-search: var(--container-search);
+  --container-drawer: var(--container-drawer);
+  --container-token-usage: var(--container-token-usage);
+  --container-toast: var(--container-toast);
+  --container-dialog-default: var(--container-dialog-default);
+  --container-dialog-tall: var(--container-dialog-tall);
+  --container-mermaid: var(--container-mermaid);
+  --container-mermaid-body: var(--container-mermaid-body);
+  --container-system-reminder: var(--container-system-reminder);
+  --container-system-reminder-tall: var(--container-system-reminder-tall);
+  --container-mcp-compact: var(--container-mcp-compact);
+  --container-menu-min: var(--container-menu-min);
+  --container-rewind-compact: var(--container-rewind-compact);
+  --container-diff-min: var(--container-diff-min);
+
+  /* 组件几何 */
+  --width-workbench-panel-wide: var(--workbench-panel-width-wide);
+  --max-width-chat-bubble: var(--chat-bubble-max);
+  --max-width-chat-reasoning: var(--chat-reasoning-max);
+  --max-width-chat-system: var(--chat-system-max);
+  --min-width-markdown-table: var(--markdown-table-min);
+  --spacing-sidebar-row-accessory-pr-session: var(--sidebar-row-accessory-pr-session);
+  --spacing-sidebar-row-accessory-pr-workspace: var(--sidebar-row-accessory-pr-workspace);
+
+  /* Grid templates */
+  --grid-template-columns-split-auto: var(--grid-cols-split-auto);
+  --grid-template-columns-preview-line: var(--grid-cols-preview-line);
+  --grid-template-columns-code-line: var(--grid-cols-code-line);
+  --grid-template-columns-tool-row: var(--grid-cols-tool-row);
+  --grid-template-columns-token-row: var(--grid-cols-token-row);
+  --grid-template-columns-token-alias: var(--grid-cols-token-alias);
+  --grid-template-rows-asset-tile: var(--grid-rows-asset-tile);
+
+  /* Demo frame heights */
+  --height-workbench-frame: var(--workbench-frame-height);
+  --height-demo-frame-git-graph: var(--demo-frame-git-graph);
 }
 
 /* 共享工具类 */

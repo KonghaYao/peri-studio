@@ -68,10 +68,10 @@ export function MermaidBlock(props: { code: string; incomplete?: boolean }) {
     <Show when={showSource()}><pre class="m-0 max-h-360 overflow-auto bg-surface-sunken px-12 py-10 font-mono text-12 leading-relaxed"><code class="bg-transparent p-0 text-inherit">{props.code}</code></pre></Show>
     <Show when={error()}><div role="alert" class="border-t border-border-subtle px-12 py-8 text-12 text-danger-solid">{error()}</div></Show>
     <Show when={!showSource() && svg()}>{(value) => <div class="md-mermaid__result bg-surface-overlay p-16">
-      <div class="overflow-auto [&_svg]:mx-auto [&_svg]:max-w-full" innerHTML={value()} />
-      <Dialog open={expanded()} onOpenChange={setExpanded}><DialogContent class="w-[min(920px,calc(100vw-40px))] max-h-[calc(100dvh-40px)]">
+      <div class="md-mermaid__canvas overflow-auto" innerHTML={value()} />
+      <Dialog open={expanded()} onOpenChange={setExpanded}><DialogContent class="w-(--container-mermaid) max-h-(--container-dialog-tall)">
         <DialogHeader><DialogTitle>Diagram</DialogTitle></DialogHeader>
-        <div class="max-h-[calc(100dvh-110px)] overflow-auto border-t border-border-subtle bg-surface-overlay p-20 [&_svg]:mx-auto [&_svg]:max-w-full" innerHTML={value()} />
+        <div class="md-mermaid__canvas md-mermaid__canvas--dialog max-h-(--container-mermaid-body) overflow-auto border-t border-border-subtle bg-surface-overlay p-20" innerHTML={value()} />
       </DialogContent></Dialog>
     </div>}</Show>
   </div>;

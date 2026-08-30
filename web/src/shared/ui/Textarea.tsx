@@ -11,12 +11,12 @@ type Props = JSX.TextareaHTMLAttributes<HTMLTextAreaElement> & {
 };
 
 const textareaControlClasses = (invalid?: boolean, autoResize?: boolean, className?: string) => cn(
-  'box-border w-full rounded-6 border bg-surface px-12 py-8 text-13 leading-normal text-text-primary outline-none [transition:border-color_120ms_ease,box-shadow_120ms_ease]',
+  'box-border w-full rounded-6 border bg-surface px-12 py-8 text-13 leading-normal text-text-primary outline-none ui-control-transition',
   'placeholder:text-text-faint',
   autoResize ? 'min-h-32 resize-none' : 'min-h-32 resize-y',
   invalid
-    ? 'border-danger focus:border-danger focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--danger)_25%,transparent)]'
-    : 'border-border-strong hover:border-[color-mix(in_srgb,var(--accent)_30%,var(--border-strong))] focus:border-focus-ring focus:shadow-accent-ring',
+    ? 'border-danger focus:border-danger focus:shadow-(--shadow-focus-danger)'
+    : 'border-border-strong hover:border-accent-border-hover focus:border-focus-ring focus:shadow-accent-ring',
   'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-text-muted',
   className,
 );
@@ -57,7 +57,7 @@ export function Textarea(props: Props) {
         'ui-textarea',
         local.variant === 'field'
           ? textareaControlClasses(!!local.error, shouldAutoResize(), local.class)
-          : '[font-family:inherit]',
+          : 'font-inherit',
         local.class,
       )}
     />

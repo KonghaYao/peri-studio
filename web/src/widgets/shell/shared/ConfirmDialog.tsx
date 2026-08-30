@@ -33,7 +33,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
   return (
     <div class="p-20">
       <Show when={props.eyebrow}><span class="block mb-5 text-text-muted text-10 font-bold tracking-8 uppercase">{props.eyebrow}</span></Show>
-      <h2 class="m-0 text-19 tracking-[-.02em]">{props.title}</h2>
+      <h2 class="m-0 text-19 tracking-(--tracking-dialog)">{props.title}</h2>
       <p class="mt-9 mb-0 text-13 leading-155 text-text-secondary">{props.description}</p>
       <Show when={props.warning}><p class="mt-9 mb-0 rounded-9 border border-warning-border bg-surface px-10 py-9 !text-warning text-13 leading-155">{props.warning}</p></Show>
       <div class="mt-20 flex justify-end gap-6">

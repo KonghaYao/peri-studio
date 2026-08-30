@@ -75,7 +75,7 @@ export function TopologyView() {
                   <For each={node.chats}>{(chat) => (
                     <li class="flex items-center gap-8 px-6 py-4 rounded-8 hover:bg-hover">
                       <span class="min-w-0 overflow-hidden flex-1 text-text-primary text-12p5 text-ellipsis whitespace-nowrap">{chat.title || chat.id}</span>
-                      <span class="overflow-hidden max-w-[40%] text-text-muted font-mono text-10p5 text-ellipsis whitespace-nowrap">{chat.id}</span>
+                      <span class="overflow-hidden max-w-2/5 text-text-muted font-mono text-10p5 text-ellipsis whitespace-nowrap">{chat.id}</span>
                       <Badge tone={CHAT_TONE[chat.status ?? ''] ?? 'neutral'}>{chatStatusLabel(chat.status)}</Badge>
                     </li>
                   )}</For>

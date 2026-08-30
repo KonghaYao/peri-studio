@@ -81,7 +81,7 @@ describe('ToolCallCard', () => {
     const { unmount } = render(() => <ToolCallCard toolCall={{ ...base, status: 'running', completedAt: null }} />);
     const active = summary();
     expect(active).toHaveClass('min-h-(--pattern-row-height)', 'bg-sidebar-selected');
-    expect(active).toHaveClass('grid-cols-[16px_minmax(0,1fr)_auto_14px]');
+    expect(active).toHaveClass('grid-cols-tool-row');
     unmount();
 
     render(() => <ToolCallCard toolCall={base} />);

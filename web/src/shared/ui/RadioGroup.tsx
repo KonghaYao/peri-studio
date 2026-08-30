@@ -21,7 +21,7 @@ export function RadioGroupItemControl<T extends ValidComponent = 'div'>(props: P
   return (
     <RadioGroupPrimitive.ItemControl
       class={cn(
-        'grid size-16 flex-none place-items-center rounded-full border border-border-strong bg-surface [transition:border-color_120ms_ease,box-shadow_120ms_ease]',
+        'grid size-16 flex-none place-items-center rounded-full border border-border-strong bg-surface ui-control-transition',
         'hover:border-accent peer-focus-visible:shadow-accent-ring',
         'data-checked:border-accent',
         local.class,

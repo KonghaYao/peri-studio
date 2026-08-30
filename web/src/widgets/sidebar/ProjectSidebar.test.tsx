@@ -212,17 +212,25 @@ describe('ProjectSidebar registry hydration', () => {
   it('exposes workspace more actions for each project row', () => {
     render(() => <ProjectSidebar />);
     expect(screen.getByRole('button', { name: 'Perihelion actions' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'More' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'More' })).toBeInTheDocument();
   });
 
   it('exposes sandbox-aligned nav actions while retaining project creation', () => {
     render(() => <ProjectSidebar />);
     expect(screen.getByRole('button', { name: 'New session' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Search' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'More' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Notifications' })).not.toBeInTheDocument();
     expect(screen.queryByText('Projects')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'New project' })).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'New workspace' })).toBeInTheDocument();
+  });
+
+  it('uses token-based accessory padding on session and workspace rows', () => {
+    render(() => <ProjectSidebar />);
+
+    expect(document.querySelector('.session-row-main')).toHaveClass('pr-(--sidebar-row-accessory-pr-session)');
+    expect(screen.getByRole('button', { name: 'Perihelion' })).toHaveClass('pr-(--sidebar-row-accessory-pr-workspace)');
   });
 
   it('keeps sidebar controls free of tooltip wrappers and native title hints', () => {

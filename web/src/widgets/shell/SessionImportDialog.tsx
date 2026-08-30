@@ -88,7 +88,7 @@ export function SessionImportDialog(props: SessionImportDialogProps) {
     <div class="p-20">
       <div>
         <span class="block mb-5 text-text-muted text-10 font-bold tracking-8 uppercase">{props.project?.name}</span>
-        <h2 class="m-0 text-18 tracking-[-.02em]">Import session</h2>
+        <h2 class="m-0 text-18 tracking-(--tracking-dialog)">Import session</h2>
         <p class="mt-6 mb-16 text-13 leading-145 text-text-secondary">Shows only ACP sessions in this project directory that are not yet in the sidebar. Importing does not copy or move the original session.</p>
       </div>
       <TextField class="mb-12" label="Search sessions" value={query()} disabled={submitting() || props.discovering} onInput={(event) => setQuery(event.currentTarget.value)} placeholder="Search by title or session ID" />
@@ -115,9 +115,9 @@ export function SessionImportDialog(props: SessionImportDialogProps) {
       <Show when={selected()}>{(candidate) => <section id="import-session-review" class="mt-12 rounded-12 border border-border-subtle bg-surface-muted p-12" role="region" aria-label="Pending import details">
         <header class="flex flex-col gap-2"><span class="text-10 font-bold tracking-6 uppercase text-text-secondary">Review before import</span><strong class="text-14">{cleanSessionTitle(candidate().title)}</strong></header>
         <dl class="grid gap-6 my-10">
-          <div class="grid grid-cols-[88px_minmax(0,1fr)] gap-8"><dt class="text-11 text-text-secondary">Project directory</dt><dd class="min-w-0 m-0 wrap-anywhere text-11 text-text-primary"><code class="font-mono text-11 leading-145">{props.project?.cwd}</code></dd></div>
-          <div class="grid grid-cols-[88px_minmax(0,1fr)] gap-8"><dt class="text-11 text-text-secondary">Recent activity</dt><dd class="min-w-0 m-0 wrap-anywhere text-11 text-text-primary">{formatRelativeTime(candidate().updatedAt)}</dd></div>
-          <div class="grid grid-cols-[88px_minmax(0,1fr)] gap-8"><dt class="text-11 text-text-secondary">Full ACP ID</dt><dd class="min-w-0 m-0 wrap-anywhere text-11 text-text-primary"><code class="font-mono text-11 leading-145">{candidate().sessionId}</code></dd></div>
+          <div class="grid grid-cols-detail-label gap-8"><dt class="text-11 text-text-secondary">Project directory</dt><dd class="min-w-0 m-0 wrap-anywhere text-11 text-text-primary"><code class="font-mono text-11 leading-145">{props.project?.cwd}</code></dd></div>
+          <div class="grid grid-cols-detail-label gap-8"><dt class="text-11 text-text-secondary">Recent activity</dt><dd class="min-w-0 m-0 wrap-anywhere text-11 text-text-primary">{formatRelativeTime(candidate().updatedAt)}</dd></div>
+          <div class="grid grid-cols-detail-label gap-8"><dt class="text-11 text-text-secondary">Full ACP ID</dt><dd class="min-w-0 m-0 wrap-anywhere text-11 text-text-primary"><code class="font-mono text-11 leading-145">{candidate().sessionId}</code></dd></div>
         </dl>
         <p class="mt-9 mb-0 border-t border-divider pt-9 text-11 leading-15 text-text-secondary">ACP does not provide a message preview. Confirm via the project directory, title, time and full ID; importing only adds this session to the sidebar, without copying or moving content.</p>
       </section>}</Show>

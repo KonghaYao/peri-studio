@@ -13,7 +13,7 @@ export function ComposerLayout() {
         <For each={[{ icon: 'image', name: 'layout.png' }, { icon: 'file', name: 'spec.md' }]}>
           {(asset) => (
             <div
-              class="relative grid flex-none grid-rows-[1fr_auto] overflow-hidden rounded-md border border-border-subtle bg-surface-canvas p-1.5"
+              class="relative grid flex-none grid-rows-asset-tile overflow-hidden rounded-md border border-border-subtle bg-surface-canvas p-1.5"
               style={{ width: 'var(--resource-asset-tile)', height: 'var(--resource-asset-tile)' }}
             >
               <IconButton label={`Remove ${asset.name}`} size="sm" class="absolute top-0.5 right-0.5 size-5 bg-surface-overlay/90"><X size={11} /></IconButton>

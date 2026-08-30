@@ -93,10 +93,10 @@ export function MermaidBlock(props: { code: string; incomplete?: boolean }) {
         {(value) => (
           <>
             <div class="md-mermaid__result bg-surface-overlay p-4">
-              <div class="overflow-auto [&_svg]:mx-auto [&_svg]:max-w-full" innerHTML={value()} />
+              <div class="md-mermaid__canvas overflow-auto" innerHTML={value()} />
             </div>
-            <Dialog open={expanded()} onOpenChange={setExpanded} title="Diagram" width="min(920px, calc(100vw - 32px))">
-              <div class="max-h-[70vh] overflow-auto [&_svg]:mx-auto [&_svg]:max-w-full" innerHTML={value()} />
+            <Dialog open={expanded()} onOpenChange={setExpanded} title="Diagram" width="var(--container-mermaid)">
+              <div class="md-mermaid__canvas md-mermaid__canvas--dialog max-h-(--container-mermaid-body) overflow-auto" innerHTML={value()} />
             </Dialog>
           </>
         )}

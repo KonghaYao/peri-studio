@@ -21,7 +21,7 @@ export function CheckboxControl<T extends ValidComponent = 'div'>(props: Polymor
   return (
     <CheckboxPrimitive.Control
       class={cn(
-        'grid size-16 flex-none place-items-center rounded-4 border border-border-strong bg-surface [transition:border-color_120ms_ease,background-color_120ms_ease,box-shadow_120ms_ease]',
+        'grid size-16 flex-none place-items-center rounded-4 border border-border-strong bg-surface ui-control-transition',
         'hover:border-accent peer-focus-visible:shadow-accent-ring',
         'data-checked:border-accent data-checked:bg-accent data-checked:text-surface',
         local.class,
