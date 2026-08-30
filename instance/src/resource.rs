@@ -73,6 +73,16 @@ impl ResourceHost {
                 )
                 .await
             }
+            InstanceResourceQueryKind::GitLog(input) => {
+                self.git_log(
+                    &query.root,
+                    &input.repo_id,
+                    &input.expected_generation,
+                    input.cursor.as_deref(),
+                    input.limit,
+                )
+                .await
+            }
             InstanceResourceQueryKind::GitDiff(input) => {
                 self.git_diff(
                     &query.root,
@@ -109,6 +119,9 @@ impl ResourceHost {
     }
 }
 
+#[cfg(test)]
+#[path = "resource_git_log_test.rs"]
+mod resource_git_log_test;
 #[cfg(test)]
 #[path = "resource_diff_test.rs"]
 mod resource_diff_test;

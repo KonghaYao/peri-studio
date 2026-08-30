@@ -89,20 +89,42 @@ export function reduceResourceView(
     const repoId = view.repoId!;
     const sourceGeneration = view.sourceGeneration ?? '';
     const headOid = stringOrUndefined(view.meta.head_oid) ?? '';
+    const repo = state.repositories.find((item) => item.id === repoId);
+    const current = repo?.log;
+    const canMerge = current
+      && current.sourceGeneration === sourceGeneration
+      && current.headOid === headOid;
+
+    // 分页过程中 head/generation 变化：丢弃迟到页并重新从首屏拉取。
+    if (current?.commits.length && !canMerge && current.nextCursor) {
+      return {
+        state: {
+          ...state,
+          repositories: state.repositories.map((item) => item.id === repoId
+            ? { ...item, headOid: headOid || item.headOid, log: undefined }
+            : item),
+        },
+        followups: [{
+          key: `log:${repoId}:start`,
+          payload: {
+            kind: 'git-log-page',
+            repoId,
+            expectedGeneration: repo?.generation ?? sourceGeneration,
+          },
+        }],
+      };
+    }
+
     return {
       state: {
         ...state,
-        repositories: state.repositories.map((repo) => {
-          if (repo.id !== repoId) return repo;
-          const current = repo.log;
-          const canMerge = current
-            && current.sourceGeneration === sourceGeneration
-            && current.headOid === headOid;
+        repositories: state.repositories.map((item) => {
+          if (item.id !== repoId) return item;
           return {
-            ...repo,
-            headOid: headOid || repo.headOid,
+            ...item,
+            headOid: headOid || item.headOid,
             log: {
-              commits: canMerge ? mergeEntries(current.commits, view.entries) : view.entries,
+              commits: canMerge ? mergeEntries(current!.commits, view.entries) : view.entries,
               nextCursor: view.nextCursor,
               sourceGeneration,
               headOid,

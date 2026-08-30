@@ -128,6 +128,84 @@ fn repository_git_action_carries_only_a_bounded_command_payload() {
 }
 
 #[test]
+fn git_log_query_roundtrips_on_instance_wire() {
+    use crate::frame::Frame;
+    use crate::resource::{
+        GitLogCommit, GitLogPage, GitLogQuery, GitRefKind, GitRefLabel, InstanceResourcePayload,
+        InstanceResourceQuery, InstanceResourceQueryKind, InstanceResourceResult, OpenResourceView,
+        ResourceViewKind, DEFAULT_GIT_LOG_PAGE_SIZE,
+    };
+
+    assert_eq!(DEFAULT_GIT_LOG_PAGE_SIZE, 50);
+
+    let frame = Frame::InstanceResourceQuery(InstanceResourceQuery {
+        request_id: "request-1".into(),
+        workspace_id: "workspace-1".into(),
+        root: "/srv/workspaces/demo".into(),
+        query: InstanceResourceQueryKind::GitLog(GitLogQuery {
+            repo_id: "repo-1".into(),
+            expected_generation: "generation-1".into(),
+            cursor: Some("generation-1.50".into()),
+            limit: 50,
+        }),
+    });
+    let value = serde_json::to_value(&frame).unwrap();
+    assert_eq!(value["query"]["type"], "git_log");
+    assert_eq!(value["query"]["payload"]["expectedGeneration"], "generation-1");
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&frame).unwrap()).unwrap(),
+        frame
+    );
+
+    let open = Frame::ResourceQuery(crate::resource::ResourceQuery::OpenView {
+        request_id: "request-1".into(),
+        project_id: "project-1".into(),
+        payload: OpenResourceView {
+            kind: ResourceViewKind::GitLogPage,
+            path: None,
+            repo_id: Some("repo-1".into()),
+            group_id: None,
+            cursor: None,
+            expected_generation: Some("gen-1".into()),
+            limit: 50,
+        },
+    });
+    let open_value = serde_json::to_value(&open).unwrap();
+    assert_eq!(open_value["payload"]["kind"], "git-log-page");
+
+    let result = Frame::InstanceResourceResult(InstanceResourceResult {
+        request_id: "request-1".into(),
+        result: Some(InstanceResourcePayload::GitLogPage(GitLogPage {
+            repo_id: "repo-1".into(),
+            source_generation: "generation-1".into(),
+            commits: vec![GitLogCommit {
+                commit_id: "a".repeat(40),
+                oid: "a".repeat(40),
+                short_oid: "aaaaaaaa".into(),
+                message: "Ship graph".into(),
+                message_truncated: None,
+                author_name: "Peri".into(),
+                author_date: "2026-08-31T00:00:00+00:00".into(),
+                parents: vec!["b".repeat(40)],
+                parents_complete: true,
+                refs: vec![GitRefLabel {
+                    name: "main".into(),
+                    kind: GitRefKind::Branch,
+                }],
+                refs_complete: true,
+            }],
+            next_cursor: Some("generation-1.1".into()),
+            head_oid: "a".repeat(40),
+        })),
+        error: None,
+    });
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&result).unwrap()).unwrap(),
+        result
+    );
+}
+
+#[test]
 fn resource_results_roundtrip_for_web_and_instance() {
     let view = Frame::ResourceResult(ResourceResult {
         request_id: "request-1".into(),

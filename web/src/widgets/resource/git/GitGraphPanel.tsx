@@ -33,7 +33,10 @@ function headHash(commits: GitGraphCommit[]) {
 }
 
 /** VS Code Git Graph 插件风格：HTML table + 绝对定位 SVG 叠加层。 */
-export function GitGraphPanel(props: { commits: GitGraphCommit[] }) {
+export function GitGraphPanel(props: {
+  commits: GitGraphCommit[];
+  onRefresh?: () => void;
+}) {
   const [hovered, setHovered] = createSignal<number | null>(null);
   const [selected, setSelected] = createSignal(0);
   const [metrics, setMetrics] = createSignal<TableMetrics>({
@@ -125,7 +128,7 @@ export function GitGraphPanel(props: { commits: GitGraphCommit[] }) {
           <IconButton size="compact" label="Settings" class="git-graph-control-btn">
             <Settings2 size={16} strokeWidth={1.8} />
           </IconButton>
-          <IconButton size="compact" label="Refresh" class="git-graph-control-btn">
+          <IconButton size="compact" label="Refresh" class="git-graph-control-btn" onClick={() => props.onRefresh?.()}>
             <RefreshCw size={16} strokeWidth={1.8} />
           </IconButton>
         </div>
@@ -237,7 +240,7 @@ export function GitGraphPanel(props: { commits: GitGraphCommit[] }) {
                       <td class="git-graph-td git-graph-date-col text-content-muted">{commit.date ?? commit.time}</td>
                       <td class="git-graph-td git-graph-author-col text-content-muted">{commit.author}</td>
                       <td class="git-graph-td git-graph-commit-col font-mono text-content-muted">
-                        {commit.hash ?? commit.id.slice(0, 8)}
+                        {commit.shortHash ?? commit.hash?.slice(0, 8) ?? commit.id.slice(0, 8)}
                       </td>
                     </tr>
                   );

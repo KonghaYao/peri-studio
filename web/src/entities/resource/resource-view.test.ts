@@ -49,4 +49,35 @@ describe('resource Yjs projection reader', () => {
       expect(renderResourceView('resource:bad', doc)).toBeNull();
     }
   });
+
+  it('reads git log page entries and parses JSON parents and refs', () => {
+    const doc = new Y.Doc();
+    const root = doc.getMap('root');
+    const meta = new Y.Map();
+    meta.set('view_id', 'view-log');
+    meta.set('project_id', 'project-1');
+    meta.set('view_type', 'git_log_page');
+    meta.set('repo_id', 'repo-1');
+    meta.set('head_oid', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+    root.set('meta', meta);
+    const order = new Y.Array<string>();
+    order.push(['c1']);
+    root.set('entry_order', order);
+    const entries = new Y.Map<Y.Map<unknown>>();
+    const entry = new Y.Map<unknown>();
+    entry.set('oid', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+    entry.set('short_oid', 'aaaaaaaa');
+    entry.set('message', 'feat: graph');
+    entry.set('author_name', 'Peri');
+    entry.set('author_date', '2026-08-30T10:00:00.000Z');
+    entry.set('parents', '["bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"]');
+    entry.set('refs', '[{"name":"main","kind":"branch"}]');
+    entries.set('c1', entry);
+    root.set('entries', entries);
+
+    const view = renderResourceView('resource:view-log', doc)!;
+    expect(view.viewType).toBe('git_log_page');
+    expect(view.entries[0].parents).toEqual(['bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb']);
+    expect(view.entries[0].refs).toEqual([{ name: 'main', kind: 'branch' }]);
+  });
 });

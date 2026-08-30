@@ -105,6 +105,7 @@ async fn e2e_resource_directory_projects_through_instance_and_ysync() {
                     repo_id: None,
                     group_id: None,
                     cursor: None,
+                    expected_generation: None,
                     limit: 200,
                 },
             }))

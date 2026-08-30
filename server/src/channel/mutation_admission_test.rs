@@ -28,6 +28,7 @@ fn git_mutation_requires_a_healthy_server_but_resource_reads_do_not() {
             repo_id: None,
             group_id: None,
             cursor: None,
+            expected_generation: None,
             limit: 100,
         },
     });

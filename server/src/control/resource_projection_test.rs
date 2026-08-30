@@ -1,5 +1,7 @@
 use super::*;
-use peri_studio_proto::resource::{DirectoryPage, FileEntry, FileKind};
+use peri_studio_proto::resource::{
+    DirectoryPage, FileEntry, FileKind, GitLogCommit, GitLogPage, GitRefKind, GitRefLabel,
+};
 use yrs::{Array, Map, Transact};
 
 #[tokio::test]
@@ -140,4 +142,147 @@ async fn active_subscription_defers_ttl_until_disconnect() {
     projection.disconnect(42).await;
     tokio::time::sleep(Duration::from_millis(40)).await;
     assert!(sink.snapshot(&opened.doc_id).await.is_none());
+}
+
+#[tokio::test]
+async fn git_log_page_projection_roundtrips_nested_commit_fields() {
+    let sink = Arc::new(StoreSink::new());
+    let projection = ResourceProjection::new(sink.clone(), Duration::from_secs(60), 2);
+    let head_oid: String = "abc123".repeat(5).chars().take(40).collect();
+    let payload = InstanceResourcePayload::GitLogPage(GitLogPage {
+        repo_id: "repo-1".into(),
+        source_generation: "gen-1".into(),
+        commits: vec![GitLogCommit {
+            commit_id: head_oid.clone(),
+            oid: head_oid.clone(),
+            short_oid: "abc12345".into(),
+            message: "Initial commit".into(),
+            message_truncated: None,
+            author_name: "Alice".into(),
+            author_date: "2026-08-31T00:00:00Z".into(),
+            parents: vec![],
+            parents_complete: true,
+            refs: vec![
+                GitRefLabel {
+                    name: "main".into(),
+                    kind: GitRefKind::Branch,
+                },
+                GitRefLabel {
+                    name: "origin/main".into(),
+                    kind: GitRefKind::Remote,
+                },
+            ],
+            refs_complete: true,
+        }],
+        next_cursor: Some("gen-1.50".into()),
+        head_oid: head_oid.clone(),
+    });
+
+    let opened = projection
+        .publish("token-a", "project-1", &payload)
+        .await
+        .unwrap();
+    let (state, _) = sink.snapshot(&opened.doc_id).await.unwrap();
+    let doc = yrs::Doc::new();
+    {
+        use yrs::updates::decoder::Decode as _;
+        let update = yrs::Update::decode_v1(&state).unwrap();
+        doc.transact_mut().apply_update(update).unwrap();
+    }
+    let txn = doc.transact();
+    let root = txn.get_map(ROOT).unwrap();
+    let meta = root
+        .get(&txn, "meta")
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap();
+    assert_eq!(
+        meta.get(&txn, "view_type")
+            .and_then(|value| value.cast::<String>().ok())
+            .as_deref(),
+        Some("git_log_page")
+    );
+    assert_eq!(
+        meta.get(&txn, "repo_id")
+            .and_then(|value| value.cast::<String>().ok())
+            .as_deref(),
+        Some("repo-1")
+    );
+    assert_eq!(
+        meta.get(&txn, "source_generation")
+            .and_then(|value| value.cast::<String>().ok())
+            .as_deref(),
+        Some("gen-1")
+    );
+    assert_eq!(
+        meta.get(&txn, "next_cursor")
+            .and_then(|value| value.cast::<String>().ok())
+            .as_deref(),
+        Some("gen-1.50")
+    );
+    assert_eq!(
+        meta.get(&txn, "head_oid")
+            .and_then(|value| value.cast::<String>().ok())
+            .as_deref(),
+        Some(head_oid.as_str())
+    );
+
+    let order = root
+        .get(&txn, "entry_order")
+        .unwrap()
+        .cast::<yrs::ArrayRef>()
+        .unwrap();
+    assert_eq!(order.len(&txn), 1);
+    let commit_id = order
+        .get(&txn, 0)
+        .unwrap()
+        .cast::<String>()
+        .unwrap();
+    let entries = root
+        .get(&txn, "entries")
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap();
+    let item = entries
+        .get(&txn, commit_id.as_str())
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap();
+    assert_eq!(
+        item.get(&txn, "oid")
+            .and_then(|value| value.cast::<String>().ok())
+            .as_deref(),
+        Some(head_oid.as_str())
+    );
+    assert_eq!(
+        item.get(&txn, "short_oid")
+            .and_then(|value| value.cast::<String>().ok())
+            .as_deref(),
+        Some("abc12345")
+    );
+    assert_eq!(
+        item.get(&txn, "parents")
+            .and_then(|value| value.cast::<String>().ok())
+            .as_deref(),
+        Some("[]")
+    );
+    let refs = item
+        .get(&txn, "refs")
+        .and_then(|value| value.cast::<String>().ok())
+        .unwrap();
+    let parsed: Vec<serde_json::Value> = serde_json::from_str(&refs).unwrap();
+    assert_eq!(parsed.len(), 2);
+    assert_eq!(parsed[0]["name"], "main");
+    assert_eq!(parsed[0]["kind"], "branch");
+    assert_eq!(parsed[1]["kind"], "remote");
+    assert_eq!(
+        item.get(&txn, "parents_complete")
+            .and_then(|value| value.cast::<bool>().ok()),
+        Some(true)
+    );
+    assert_eq!(
+        item.get(&txn, "refs_complete")
+            .and_then(|value| value.cast::<bool>().ok()),
+        Some(true)
+    );
 }

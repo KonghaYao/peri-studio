@@ -56,6 +56,57 @@ export function openMoreGitChanges(repoId: string, groupId: import('./resource-p
   });
 }
 
+export function openGitLog(repoId: string, cursor?: string): void {
+  const projectId = resourceWorkspace().projectId;
+  const repo = resourceWorkspace().repositories.find((item) => item.id === repoId);
+  if (!projectId || !repo?.generation) return;
+  const accumulated = repo.log?.commits.length ?? 0;
+  if (cursor && accumulated >= MAX_ACCUMULATED_COMMITS_PER_REPO) return;
+  request(projectId, `log:${repoId}:${cursor ?? 'start'}`, {
+    kind: 'git-log-page',
+    repoId,
+    cursor,
+    limit: 50,
+    expectedGeneration: repo.generation,
+  });
+}
+
+export function openMoreGitLog(repoId: string): void {
+  const repo = resourceWorkspace().repositories.find((item) => item.id === repoId);
+  const nextCursor = repo?.log?.nextCursor;
+  if (!nextCursor) return;
+  const accumulated = repo.log?.commits.length ?? 0;
+  if (accumulated >= MAX_ACCUMULATED_COMMITS_PER_REPO) return;
+  openGitLog(repoId, nextCursor);
+}
+
+export function refreshGitLog(repoId: string): void {
+  refreshGitRepository(repoId);
+}
+
+export function gitLogCommits(repoId: string): ResourceEntry[] {
+  return resourceWorkspace().repositories.find((repo) => repo.id === repoId)?.log?.commits ?? [];
+}
+
+export function gitLogNextCursor(repoId: string): string | undefined {
+  return resourceWorkspace().repositories.find((repo) => repo.id === repoId)?.log?.nextCursor;
+}
+
+export function gitLogHeadOid(repoId: string): string | undefined {
+  const repo = resourceWorkspace().repositories.find((item) => item.id === repoId);
+  return repo?.log?.headOid ?? repo?.headOid;
+}
+
+export function gitLogLoading(repoId: string): boolean {
+  return resourceWorkspace().loading.some((key) => key.startsWith(`log:${repoId}:`));
+}
+
+export function canLoadMoreGitLog(repoId: string): boolean {
+  const repo = resourceWorkspace().repositories.find((item) => item.id === repoId);
+  if (!repo?.log?.nextCursor) return false;
+  return (repo.log.commits.length ?? 0) < MAX_ACCUMULATED_COMMITS_PER_REPO;
+}
+
 export function downloadResourceFile(path: string): void {
   const projectId = resourceWorkspace().projectId;
   if (!projectId || !transport?.ready()) return;
@@ -194,6 +245,12 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
       gitMutations.fail(mutationRequest, frame.error, setResourceWorkspace);
       return;
     }
+    if (key) requested.delete(key);
+    if (key?.startsWith('log:') && frame.error.code === 'STALE_CURSOR') {
+      const repoId = key.slice('log:'.length).split(':')[0];
+      if (repoId) invalidateGitLog(repoId);
+      return;
+    }
     setResourceWorkspace((state) => ({ ...state, error: frame.error!.message }));
     return;
   }
@@ -230,10 +287,12 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
   }
 }
 
-function refreshGitRepository(repoId: string): void {
+function invalidateGitLog(repoId: string): void {
   const projectId = resourceWorkspace().projectId;
-  if (!projectId || !transport) return;
-  const prefixes = [`repository:${repoId}`, `group:${repoId}:`];
+  const repo = resourceWorkspace().repositories.find((item) => item.id === repoId);
+  if (!projectId || !repo?.generation) return;
+  const prefixes = [`log:${repoId}:`];
+  activeLogViews.delete(repoId);
   for (const key of [...requested]) {
     if (prefixes.some((prefix) => key.startsWith(prefix))) requested.delete(key);
   }
@@ -244,20 +303,38 @@ function refreshGitRepository(repoId: string): void {
   }
   for (const [docId, key] of [...openViewKeys]) {
     if (!prefixes.some((prefix) => key.startsWith(prefix))) continue;
-    const lease = openViews.get(docId);
-    transport.send({ t: 'ysync.unsubscribe', docs: [docId] });
-    if (lease) {
-      if (lease.timer !== undefined) window.clearTimeout(lease.timer);
-      transport.send(releaseResourceView(lease.viewId));
-    }
-    docs.drop(docId);
-    openViews.delete(docId);
-    openViewKeys.delete(docId);
+    releaseDocLease(docId);
+  }
+  setResourceWorkspace((state) => ({
+    ...state,
+    repositories: state.repositories.map((item) => item.id === repoId
+      ? { ...item, log: undefined }
+      : item),
+  }));
+  openGitLog(repoId);
+}
+
+function refreshGitRepository(repoId: string): void {
+  const projectId = resourceWorkspace().projectId;
+  if (!projectId || !transport) return;
+  const prefixes = [`repository:${repoId}`, `group:${repoId}:`, `log:${repoId}:`];
+  activeLogViews.delete(repoId);
+  for (const key of [...requested]) {
+    if (prefixes.some((prefix) => key.startsWith(prefix))) requested.delete(key);
+  }
+  for (const [requestId, owner] of [...pending]) {
+    if (!prefixes.some((prefix) => owner.key.startsWith(prefix))) continue;
+    pending.delete(requestId);
+    ignoredRequests.add(requestId);
+  }
+  for (const [docId, key] of [...openViewKeys]) {
+    if (!prefixes.some((prefix) => key.startsWith(prefix))) continue;
+    releaseDocLease(docId);
   }
   setResourceWorkspace((state) => ({
     ...state,
     repositories: state.repositories.map((repo) => repo.id === repoId
-      ? { ...repo, groups: {} }
+      ? { ...repo, groups: {}, log: undefined }
       : repo),
   }));
   request(projectId, `repository:${repoId}`, { kind: 'git-repository', repoId });
@@ -308,6 +385,7 @@ export function resetResourceProject(): void {
   openViews.clear();
   openViewKeys.clear();
   requested.clear();
+  activeLogViews.clear();
   setResourceDiffPreview(null);
   setResourceFilePreview(null);
   setResourceWorkspace(initial());
@@ -351,11 +429,7 @@ function scheduleLeaseDeadline(docId: string, lease: OpenResourceLease): void {
 function expireLease(docId: string, lease: OpenResourceLease): void {
   if (openViews.get(docId) !== lease) return;
   if (lease.timer !== undefined) window.clearTimeout(lease.timer);
-  transport?.send({ t: 'ysync.unsubscribe', docs: [docId] });
-  transport?.send(releaseResourceView(lease.viewId));
-  docs.drop(docId);
-  openViews.delete(docId);
-  openViewKeys.delete(docId);
+  releaseDocLease(docId);
   setResourceWorkspace((state) => ({ ...state, error: 'Resource view lease expired before synchronization completed.' }));
 }
 
@@ -369,7 +443,31 @@ function setLoading(key: string, loading: boolean) {
 }
 
 function consume(view: ResourceView) {
+  const previousDocId = view.viewType === 'git_log_page' && view.repoId
+    ? activeLogViews.get(view.repoId)
+    : undefined;
+  const hadLogCommits = view.viewType === 'git_log_page' && view.repoId
+    ? (resourceWorkspace().repositories.find((repo) => repo.id === view.repoId)?.log?.commits.length ?? 0) > 0
+    : false;
   const result = reduceResourceView(resourceWorkspace(), view);
   if (result.state !== resourceWorkspace()) setResourceWorkspace(result.state);
+  if (view.viewType === 'git_log_page' && view.repoId) {
+    if (hadLogCommits && previousDocId && previousDocId !== view.docId) {
+      releaseDocLease(previousDocId);
+    }
+    activeLogViews.set(view.repoId, view.docId);
+  }
   for (const followup of result.followups) request(view.projectId, followup.key, followup.payload);
+}
+
+function releaseDocLease(docId: string): void {
+  const lease = openViews.get(docId);
+  transport?.send({ t: 'ysync.unsubscribe', docs: [docId] });
+  if (lease) {
+    if (lease.timer !== undefined) window.clearTimeout(lease.timer);
+    transport?.send(releaseResourceView(lease.viewId));
+  }
+  docs.drop(docId);
+  openViews.delete(docId);
+  openViewKeys.delete(docId);
 }

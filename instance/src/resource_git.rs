@@ -18,6 +18,8 @@ use super::ResourceHost;
 
 #[path = "resource_git_diff.rs"]
 mod diff;
+#[path = "resource_git_log.rs"]
+mod log;
 #[path = "resource_git_mutation.rs"]
 mod mutation;
 

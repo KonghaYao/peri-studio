@@ -1,6 +1,20 @@
 import { Show, createEffect, createMemo, createSignal, untrack } from 'solid-js';
 import { Dialog, DialogContent, DialogTitle, IconButton } from '@/shared/ui';
-import { activateResourceProject, projectSessions, projects, refreshResourceProject, resourceWorkspace, selectedSessionId } from '../../panel/store';
+import {
+  activateResourceProject,
+  canLoadMoreGitLog,
+  gitLogCommits,
+  gitLogHeadOid,
+  gitLogLoading,
+  openGitLog,
+  openMoreGitLog,
+  projectSessions,
+  projects,
+  refreshGitLog,
+  refreshResourceProject,
+  resourceWorkspace,
+  selectedSessionId,
+} from '../../panel/store';
 import { ExplorerPanel } from './ExplorerPanel';
 import { SourceControlPanel } from './SourceControlPanel';
 import { McpPanelContent } from '@/widgets/chat/McpPanel';
@@ -9,7 +23,7 @@ import { SessionRailActions } from '@/widgets/shell/SessionRailActions';
 import { Files, GitBranch, GitGraph, PlugZap, RefreshCw, X } from 'lucide-solid';
 import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_SURFACE_CLASS, RESOURCE_PANEL_TITLE_CLASS } from './resource-panel-layout';
 import { GitGraphPanel } from './git/GitGraphPanel';
-import { MOCK_GIT_GRAPH_COMMITS } from './git/git-graph-mock';
+import { mapGitLogToGraphCommits } from '@/features/resource/map-git-log';
 
 export type WorkbenchView = 'explorer' | 'scm' | 'mcp' | 'graph' | null;
 export type ResourcePreviewOrigin = {
@@ -34,6 +48,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   const [explorerExpanded, setExplorerExpanded] = createSignal(new Set<string>(['']));
   const [explorerActivePath, setExplorerActivePath] = createSignal('');
   const [explorerScrollTop, setExplorerScrollTop] = createSignal(0);
+  const [graphRepoId, setGraphRepoId] = createSignal<string | null>(null);
   const [commitMessages, setCommitMessages] = createSignal<Record<string, string>>({});
   const submittedCommits = new Map<string, { projectId: string; repoId: string; requestId: string; message: string }>();
   const view = () => props.view === undefined ? localView() : props.view;
@@ -58,6 +73,19 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
     repo.id,
     commitMessages()[commitKey(activeProjectId(), repo.id)] ?? '',
   ])));
+  const graphRepositories = createMemo(() => resourceWorkspace().repositories);
+  const activeGraphRepoId = createMemo(() => {
+    const repos = graphRepositories();
+    if (repos.length === 0) return null;
+    const selected = graphRepoId();
+    if (selected && repos.some((repo) => repo.id === selected)) return selected;
+    return repos[0].id;
+  });
+  const graphCommits = createMemo(() => {
+    const repoId = activeGraphRepoId();
+    if (!repoId) return [];
+    return mapGitLogToGraphCommits(gitLogCommits(repoId), gitLogHeadOid(repoId));
+  });
   const setCommitMessage = (repoId: string, message: string) => {
     const projectId = activeProjectId();
     if (projectId) setCommitMessages((current) => ({ ...current, [commitKey(projectId, repoId)]: message }));
@@ -94,9 +122,19 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   });
   createEffect(() => {
     const selected = project();
-    if (selected && (view() === 'explorer' || view() === 'scm') && (!props.compact || props.open)) {
+    if (selected && (view() === 'explorer' || view() === 'scm' || view() === 'graph') && (!props.compact || props.open)) {
       untrack(() => activateResourceProject(selected.id));
     }
+  });
+  createEffect(() => {
+    if (view() !== 'graph') return;
+    const repoId = activeGraphRepoId();
+    if (!repoId) return;
+    const workspace = resourceWorkspace();
+    const repo = workspace.repositories.find((item) => item.id === repoId);
+    if (!repo?.generation || gitLogLoading(repoId) || repo.log) return;
+    if (workspace.loading.includes(`repository:${repoId}`)) return;
+    untrack(() => openGitLog(repoId));
   });
   createEffect(() => {
     if (props.compact && props.open && !view()) setView('explorer');
@@ -131,7 +169,51 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
         <Show when={view() === 'mcp'}><McpPanelContent embedded /></Show>
         <Show when={view() === 'graph'}>
           <div class="flex min-h-0 flex-1 flex-col">
-            <GitGraphPanel commits={MOCK_GIT_GRAPH_COMMITS} />
+            <Show when={resourceWorkspace().error}>{(message) => <div role="alert" class="m-8 flex items-start gap-6 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">
+              <span class="min-w-0 flex-1">{message()}</span>
+              <button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={() => { const repoId = activeGraphRepoId(); if (repoId) refreshGitLog(repoId); else refreshResourceProject(); }}>Retry</button>
+            </div>}</Show>
+            <Show when={graphRepositories().length > 1}>
+              <div class="flex items-center gap-6 border-b border-border-subtle px-10 py-8">
+                <span class="text-11 text-content-muted">Repository</span>
+                <div class="flex min-w-0 flex-wrap gap-4">
+                  {graphRepositories().map((repo) => (
+                    <button
+                      type="button"
+                      class={`rounded-4 px-8 py-4 text-11 ${activeGraphRepoId() === repo.id ? 'bg-selected text-content-primary' : 'text-content-muted hover:bg-interaction-hover'}`}
+                      onClick={() => {
+                        setGraphRepoId(repo.id);
+                        if (!repo.log && repo.generation) openGitLog(repo.id);
+                      }}
+                    >
+                      {repo.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </Show>
+            <Show when={activeGraphRepoId()} fallback={<div class="p-16 text-12 text-content-muted">No Git repositories in this workspace.</div>}>
+              {(repoId) => (
+                <>
+                  <GitGraphPanel
+                    commits={graphCommits()}
+                    onRefresh={() => refreshGitLog(repoId())}
+                  />
+                  <Show when={canLoadMoreGitLog(repoId())}>
+                    <div class="border-t border-border-subtle px-10 py-8">
+                      <button
+                        type="button"
+                        class="text-11 text-accent hover:underline pointer-coarse:min-h-44"
+                        disabled={gitLogLoading(repoId())}
+                        onClick={() => openMoreGitLog(repoId())}
+                      >
+                        Load more commits
+                      </button>
+                    </div>
+                  </Show>
+                </>
+              )}
+            </Show>
           </div>
         </Show>
         <Show when={view() === 'explorer' || view() === 'scm'}>

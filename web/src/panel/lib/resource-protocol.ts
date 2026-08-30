@@ -17,6 +17,7 @@ export interface OpenResourceView {
   repoId?: string;
   groupId?: GitGroupId;
   cursor?: string;
+  expectedGeneration?: string;
   limit?: number;
 }
 
