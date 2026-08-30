@@ -179,10 +179,6 @@
   --grid-template-columns-token-row: var(--grid-cols-token-row);
   --grid-template-columns-token-alias: var(--grid-cols-token-alias);
   --grid-template-rows-asset-tile: var(--grid-rows-asset-tile);
-
-  /* Demo frame heights */
-  --height-workbench-frame: var(--workbench-frame-height);
-  --height-demo-frame-git-graph: var(--demo-frame-git-graph);
 }
 
 /* 共享工具类 */

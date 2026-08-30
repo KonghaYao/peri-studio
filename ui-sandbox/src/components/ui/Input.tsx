@@ -11,7 +11,7 @@ export function Input(props: JSX.InputHTMLAttributes<HTMLInputElement> & { inval
         'h-(--control-height-md) w-full rounded-md border bg-surface-overlay px-3 text-13 text-content-primary outline-none transition-colors duration-(--duration-fast)',
         'placeholder:text-content-faint',
         local.invalid
-          ? 'border-danger-solid focus:border-danger-solid focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--feedback-danger-solid)_25%,transparent)]'
+          ? 'border-danger-solid focus:border-danger-solid focus:shadow-(--shadow-focus-danger)'
           : 'border-border-strong hover:border-accent-border-hover focus:border-border-focus focus:shadow-(--shadow-focus-ring)',
         'disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:text-content-muted',
         local.class,

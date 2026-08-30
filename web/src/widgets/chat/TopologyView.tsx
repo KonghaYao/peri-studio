@@ -71,7 +71,7 @@ export function TopologyView() {
                 <span>Last heartbeat {heartbeat()?.label ?? '—'}</span>
               </div>
               <Show when={node.chats.length > 0}>
-                <ul class="grid gap-2 mx-14 mb-11 pt-7 pl-13 border-t border-l-2 [border-top-style:dashed] border-solid-l border-divider list-none">
+                <ul class="topology-instance-children grid gap-2 mx-14 mb-11 pt-7 pl-13 border-t border-dashed border-l-2 border-solid-l border-divider list-none">
                   <For each={node.chats}>{(chat) => (
                     <li class="flex items-center gap-8 px-6 py-4 rounded-8 hover:bg-hover">
                       <span class="min-w-0 overflow-hidden flex-1 text-text-primary text-12p5 text-ellipsis whitespace-nowrap">{chat.title || chat.id}</span>

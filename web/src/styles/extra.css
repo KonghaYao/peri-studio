@@ -307,3 +307,21 @@
     display: none;
   }
 }
+
+/* ── 消息出站气泡（相邻块间距） ───────────────────────────────────────── */
+
+.message-outbox__surface > * + * {
+  margin-top: var(--space-8);
+}
+
+/* ── Token 用量条宽度动画 ─────────────────────────────────────────────── */
+
+.token-usage-meter__fill {
+  transition: width var(--duration-fast) var(--ease-standard);
+}
+
+/* ── 拓扑子节点连线 ───────────────────────────────────────────────────── */
+
+.topology-instance-children {
+  border-top-style: dashed;
+}

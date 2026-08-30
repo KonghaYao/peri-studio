@@ -15,7 +15,7 @@ describe('RewindDialog', () => {
     const panel = screen.getByRole('dialog');
     expect(panel).toHaveAttribute('data-resource-panel', 'rewind');
     expect(panel).toHaveClass('inset-y-8', 'right-52', 'left-auto', 'w-(--workbench-panel-width)', 'wide:w-(--workbench-panel-width-wide)', 'translate-x-0', 'translate-y-0', 'rounded-14', 'border-border-subtle');
-    expect(panel).not.toHaveClass('w-[min(400px,calc(100vw-2*var(--space-20)))]');
+    expect(panel).not.toHaveClass('w-(--container-dialog-default)');
     expect(panel).toHaveClass('max-desk:inset-y-0', 'max-desk:w-(--container-rewind-compact)', 'max-desk:rounded-none');
     expect(document.querySelector('[data-dialog-overlay]')).toHaveClass('bg-transparent', 'max-desk:bg-scrim');
     expect(screen.getByRole('heading', { name: 'Rewind session' })).toHaveClass('uppercase', 'text-11');

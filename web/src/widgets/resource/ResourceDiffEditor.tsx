@@ -96,7 +96,7 @@ function DiffCell(props: { number?: number; text?: string; changed: boolean; sid
     : props.text === undefined ? 'bg-surface-muted' : 'border-l-2 border-transparent';
   return <div role="cell" class={`grid min-w-0 grid-cols-diff-line ${props.side === 'right' ? 'border-l border-divider' : ''} ${tone()}`}>
     <span class="select-none border-r border-divider px-7 text-right tabular-nums text-text-faint" aria-hidden="true">{props.number ?? ''}</span>
-    <code class="overflow-visible whitespace-pre rounded-none bg-transparent px-8 py-0 text-text-primary [tab-size:4]">{props.text ?? ''}</code>
+    <code class="code-tab-size overflow-visible whitespace-pre rounded-none bg-transparent px-8 py-0 text-text-primary">{props.text ?? ''}</code>
   </div>;
 }
 
