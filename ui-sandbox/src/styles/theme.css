@@ -28,6 +28,8 @@
   /* 边框 */
   --color-border-subtle: var(--border-subtle);
   --color-border-strong: var(--border-strong);
+  --color-border-faint: var(--border-faint);
+  --color-sidebar-resize-handle-hover: var(--sidebar-resize-handle-hover);
   --color-border-focus: var(--border-focus);
 
   /* 主色 */

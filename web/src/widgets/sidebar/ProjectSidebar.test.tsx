@@ -95,7 +95,8 @@ describe('ProjectSidebar registry hydration', () => {
 
     expect(screen.getByText('Local instance')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Archived project' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Archived\s*1/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Archived · / })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Archived sessions/ })).not.toBeInTheDocument();
   });
   it('renders an offline instance without projects and exposes its offline state', () => {
     store.projects.mockReturnValue([]);
@@ -208,6 +209,12 @@ describe('ProjectSidebar registry hydration', () => {
     await waitFor(() => expect(disclosure).toHaveAttribute('aria-expanded', 'false'));
   });
 
+  it('exposes workspace more actions for each project row', () => {
+    render(() => <ProjectSidebar />);
+    expect(screen.getByRole('button', { name: 'Perihelion actions' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'More' })).not.toBeInTheDocument();
+  });
+
   it('exposes sandbox-aligned nav actions while retaining project creation', () => {
     render(() => <ProjectSidebar />);
     expect(screen.getByRole('button', { name: 'New session' })).toBeInTheDocument();
@@ -295,9 +302,7 @@ describe('ProjectSidebar registry hydration', () => {
     expect(screen.queryByText(/Ready/)).not.toBeInTheDocument();
   });
 
-  it('keeps archived sessions out of normal navigation and restores them explicitly', () => {
-    let commit = () => {};
-    store.restoreProjectSession.mockImplementation((_id, onCommitted) => { commit = onCommitted; return true; });
+  it('keeps archived sessions out of the workspace session list', () => {
     store.projectSessions.mockReturnValue([{
       id: 'acp-12345678',
       projectId: 'p1',
@@ -311,10 +316,7 @@ describe('ProjectSidebar registry hydration', () => {
 
     render(() => <ProjectSidebar />);
     expect(screen.queryByRole('button', { name: /^Architecture refactor/ })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Archived sessions/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
-    expect(store.restoreProjectSession).toHaveBeenCalledWith('acp-12345678', expect.any(Function), expect.any(Function));
-    commit();
+    expect(screen.queryByRole('button', { name: /Archived sessions/ })).not.toBeInTheDocument();
   });
 });
 

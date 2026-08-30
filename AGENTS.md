@@ -12,6 +12,7 @@
 | 术语（session / chat / project session 等） | `docs/terminology.md` |
 | **Web 目录、分层、依赖方向、新代码放哪** | **`docs/design/frontend-architecture.md`（权威）** |
 | **Web 视觉、token、组件、微文案、a11y** | **`docs/design/ui-specification.md`（权威）** |
+| **设计稿 → 生产落地计划与映射表** | **`docs/design/ui-implementation-plan.md`** |
 | Web 分层 ADR | `docs/adr/0004-web-frontend-layered-architecture.md` |
 | MCP Apps 宿主 | `docs/design/mcp-apps-host.md` |
 
@@ -58,6 +59,56 @@ web/src/
 
 **禁止**：在 `panel/lib` 或 `panel/components` 新增实现；仅允许保留 deprecated shim。新 import 使用 `@/shared`、`@/entities`、`@/features`、`@/widgets`、`@/pages`、`@/store`。
 
+### UI Sandbox（设计权威，先于生产）
+
+`ui-sandbox/` 与 `web/` **完全隔离构建**；新视觉与交互须先在 sandbox 定稿，再镜像到生产。
+
+| Sandbox Tier | 路径 | 生产落点 |
+|--------------|------|----------|
+| **T1 · Tokens** | `ui-sandbox/src/styles/tokens.css` | `web/src/styles/tokens.css` + `theme.css` |
+| **T2 · Base UI** | `ui-sandbox/src/components/ui/` | `web/src/shared/ui/` |
+| **T3 · Blocks** | `ui-sandbox/src/components/blocks/` | `web/src/widgets/*` 或 `shared/ui`（无业务语义时） |
+| **T4 · Layers** | `ui-sandbox/src/layers/` | `widgets` 组合参考（不直接 import） |
+
+**工作流（强制）**
+
+1. 在 `ui-sandbox` 新增/调整组件与 demo（`#/components`、`#/blocks`、`#/layers`）。
+2. `cd ui-sandbox && bun run typecheck` 通过。
+3. 将同等视觉契约镜像到 `web/`（类名、token、交互语义一致；**间距用生产像素刻度**，见下）。
+4. `cd web && bun run test` 全绿；涉及壳层/侧栏时补 widget 测或 `css-contracts`。
+
+**间距刻度陷阱**：`web` 的 Tailwind 数字 utility 映射 `--space-N`（`gap-8` = 8px）；`ui-sandbox` 部分区域用 Tailwind ×4 基值（`gap-2` = 8px）。**禁止**把 sandbox 的 `gap-2`、`px-2.5` 等类名原样抄到 `web` 而不换算；以 `tokens.css` 像素为准。
+
+**启动**
+
+```bash
+./dev-sandbox.sh          # http://127.0.0.1:5273/ ，仅 Vite，不启 server/instance
+cd ui-sandbox && bun run typecheck
+```
+
+`dev-sandbox.sh` 与 `dev.sh` 一样**只能由用户本地手动执行**；Agent 不得代启，可改脚本与跑 `typecheck`。
+
+**缺后端能力**：先在 sandbox / widget 用 mock 数据演示 UI；生产侧 `features/*` + 测试夹具对齐契约，禁止在浏览器伪造 server 历史。
+
+### 已确立的 UI 模式（2026-08）
+
+| 模式 | Sandbox | 生产 |
+|------|---------|------|
+| 分段按钮组 | `components/ui/ButtonGroup.tsx` | `shared/ui/ButtonGroup.tsx` |
+| 侧栏行浮动 accessory | `blocks/chrome/RowAccessorySlot.tsx` | `widgets/sidebar/sidebar-parts.tsx` |
+| Session 行操作 | `SessionRowAccessory`（Pin \| Archive \| More） | 同上 + `ProjectSessionRow` |
+| Project 行操作 | `ProjectRowAccessory`（计数 + More \| New session） | `ProjectSidebar` |
+| 归档浏览列表 | `ArchivedBrowserList` | `ArchivedBrowserDialog` |
+| 搜索弹窗列表密度 | — | `SessionSearch`、`ArchivedBrowserDialog`：`gap-1` 列表、`min-h-32` 行、`py-6 px-10`、`text-11` 副标题 |
+
+**ButtonGroup 契约**：透明底、无阴影、无外层 border；段间 `border-r`；hover `bg-interaction-hover`。侧栏 accessory **绝对定位叠层**，不占文档流（meta 与 actions 淡入淡出）。
+
+**侧栏边框**：右边框 `border-border-faint`；拖拽条 hover `--sidebar-resize-handle-hover`（浅灰，非 accent）。
+
+**侧栏折叠态**：workspace 折叠时**不**显示「No sessions yet」；空状态仅在展开后的 session 列表内展示。
+
+**IconButton**：侧栏已有可见文案/菜单语义时用 `showTooltip={false}`，避免重复 tooltip（`css-contracts` 约束）。
+
 ### 测试落点
 
 | 类型 | 位置 | 命令 |
@@ -66,22 +117,24 @@ web/src/
 | widget | `widgets/**/*.test.tsx` | vitest jsdom |
 | 协议 / 状态契约 | `web/tests/*.test.mjs` | node --test |
 | 浏览器契约 | `web/tests/browser/*` | `bun run test:browser` |
+| sandbox 类型检查 | `ui-sandbox/` | `cd ui-sandbox && bun run typecheck` |
 
 ### 本地启动权限
 
-- `dev.sh` 只能由用户在本地终端手动执行。
-- Agent 不得调用 `./dev.sh`、重启或停止其进程，也不得通过后台 shell 代执行。
+- `dev.sh`、`dev-sandbox.sh` 只能由用户在本地终端手动执行。
+- Agent 不得调用 `./dev.sh`、`./dev-sandbox.sh`、重启或停止其进程，也不得通过后台 shell 代执行。
 - 需要运行时验证时，Agent 应停止并请用户执行；Agent 只能运行不启动
-  server/instance 的静态检查、类型检查和单元/协议测试。
+  server/instance 的静态检查、类型检查和单元/协议测试（含 `ui-sandbox` typecheck）。
 
 ### 前端改动检查清单
 
+- [ ] 视觉变更是否已在 `ui-sandbox` 定稿并 typecheck 通过
 - [ ] 新文件落在正确层，未违反依赖表
 - [ ] `features` 未 import `store`；`shared/ui` 未 import 业务模块
-- [ ] 颜色/间距来自 `tokens.css` utility，符合 `ui-specification.md`
+- [ ] 颜色/间距来自 `tokens.css` utility，符合 `ui-specification.md`；sandbox→web 间距已按生产刻度换算
 - [ ] 单文件 < 500 行；UI 文案英文，注释中文，**log 英文**
 - [ ] `cd web && bun run test` 全绿
-- [ ] 若改变目录或视觉契约，同步 `frontend-architecture.md` / `ui-specification.md` 与 `architecture.md` §10.2
+- [ ] 若改变目录、token 或视觉契约，同步 `frontend-architecture.md` / `ui-specification.md` / `ui-implementation-plan.md` 与 `architecture.md` §10.2
 
 ---
 

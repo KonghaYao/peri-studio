@@ -86,6 +86,8 @@
   /* 边框 */
   --border-subtle: var(--palette-neutral-100);
   --border-strong: var(--palette-neutral-200);
+  --border-faint: color-mix(in srgb, var(--palette-neutral-200) 14%, transparent);
+  --sidebar-resize-handle-hover: color-mix(in srgb, var(--palette-neutral-200) 22%, transparent);
   --border-focus: var(--palette-accent-600);
 
   /* 主色（AntD 节奏：hover 浅一档，active/文字深一档） */

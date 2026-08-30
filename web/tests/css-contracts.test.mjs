@@ -245,7 +245,7 @@ test('coarse pointers expose sidebar actions without hover and keep controls tou
   const sessionAccessory = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'sidebar-parts.tsx'), 'utf8');
   const button = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Button.tsx'), 'utf8');
   const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Dialog.tsx'), 'utf8');
-  assert.match(sessionAccessory, /hoverGroup\(\)/);
+  assert.match(sessionAccessory, /group-hover\/workspace:opacity-100/);
   assert.match(sessionAccessory, /group-hover\/row/);
   assert.match(sessionAccessory, /group-focus-within\/row/);
   assert.match(sessionAccessory, /pointer-coarse:pointer-events-auto pointer-coarse:opacity-100/);
@@ -390,6 +390,13 @@ test('domain status inference delegates visual rendering to the shared Badge', (
   assert.match(primitive, /'err'/);
 });
 
+test('sidebar row accessories use static named group hover classes', () => {
+  const source = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'sidebar-parts.tsx'), 'utf8');
+  assert.match(source, /group-hover\/workspace:opacity-100/);
+  assert.match(source, /group-hover\/row:opacity-100/);
+  assert.match(readFileSync(join(import.meta.dirname, '..', 'src', 'styles', 'project-sidebar.css'), 'utf8'), /row-accessory-slot__actions/);
+});
+
 test('icon-only controls receive visible help from the shared Tooltip', () => {
   const root = join(import.meta.dirname, '..', 'src', 'shared', 'ui');
   const button = readFileSync(join(root, 'Button.tsx'), 'utf8');
@@ -403,6 +410,9 @@ test('icon-only controls receive visible help from the shared Tooltip', () => {
   const sessionAccessory = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'sidebar-parts.tsx'), 'utf8');
   assert.match(sessionAccessory, /<DropdownMenuTrigger[\s\S]*?as=\{IconButton\}[\s\S]*?session-menu/);
   assert.match(sessionAccessory, /ButtonGroup[\s\S]*?buttonGroupItemClass/);
+  const buttonGroup = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'ButtonGroup.tsx'), 'utf8');
+  assert.match(buttonGroup, /ui-button-group inline-flex/);
+  assert.match(buttonGroup, /border border-border-subtle bg-surface-overlay\/95 shadow-sm/);
 });
 
 test('icon-only actions use one rounded rectangular geometry and never circular buttons', () => {

@@ -11,7 +11,7 @@ interface ProjectDrawerProps {
 }
 
 const drawerPanelClass =
-  'project-drawer min-h-0 min-w-0 overflow-hidden border-r border-border-subtle bg-sidebar-bg max-desk:fixed max-desk:inset-y-0 max-desk:left-0 max-desk:top-0 max-desk:z-61 max-desk:h-dvh max-desk:w-(--container-drawer) max-desk:max-h-none max-desk:translate-y-0 max-desk:rounded-none max-desk:border-t-0 max-desk:shadow-none max-desk:transition-transform max-desk:duration-200';
+  'project-drawer min-h-0 min-w-0 overflow-hidden border-r border-border-faint bg-sidebar-bg max-desk:fixed max-desk:inset-y-0 max-desk:left-0 max-desk:top-0 max-desk:z-61 max-desk:h-dvh max-desk:w-(--container-drawer) max-desk:max-h-none max-desk:translate-y-0 max-desk:rounded-none max-desk:border-t-0 max-desk:shadow-none max-desk:transition-transform max-desk:duration-200';
 
 /** Product navigation: structural on desktop and a Kobalte modal dialog on compact viewports. */
 export function ProjectDrawer(props: ProjectDrawerProps) {

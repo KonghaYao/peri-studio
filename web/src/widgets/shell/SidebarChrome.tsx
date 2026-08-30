@@ -15,7 +15,7 @@ export function SidebarChrome(props: SidebarChromeProps) {
 
   return (
     <nav
-      class="project-sidebar relative flex h-full min-h-0 flex-col border-r border-border-subtle bg-surface-overlay"
+      class="project-sidebar relative flex h-full min-h-0 flex-col border-r border-border-faint bg-surface-overlay"
       aria-label="Projects and sessions"
     >
       <Show when={props.nav}>

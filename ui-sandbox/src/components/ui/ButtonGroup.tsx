@@ -19,4 +19,4 @@ export function ButtonGroup(props: { class?: string; 'aria-label'?: string; chil
 
 /** ButtonGroup 内单个图标按钮的统一样式（禁止圆角、段间分隔线）。 */
 export const buttonGroupItemClass =
-  'size-(--control-height-sm) shrink-0 rounded-none border-0 border-r border-border-subtle bg-transparent shadow-none hover:bg-interaction-hover last:border-r-0';
+  'size-(--control-height-sm) shrink-0 rounded-none border-0 border-r border-border-subtle bg-transparent shadow-none hover:bg-interaction-hover last:border-r-0 pointer-coarse:min-h-44 pointer-coarse:min-w-44';

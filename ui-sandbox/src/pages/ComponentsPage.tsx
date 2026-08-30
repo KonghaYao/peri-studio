@@ -87,7 +87,7 @@ export function ComponentsPage() {
         </Row>
       </Demo>
 
-      <Demo id="button-group" title="ButtonGroup" description="侧栏行 hover 操作：分段图标组，段间竖线、共享浮层底。">
+      <Demo id="button-group" title="ButtonGroup" description="侧栏行 hover 操作：分段图标组，段间竖线、透明底、无阴影。">
         <Row label="Session actions">
           <ButtonGroup aria-label="Session actions">
             <IconButton size="sm" showTooltip={false} label="Pin session" class={buttonGroupItemClass}><Pin size={14} strokeWidth={1.7} /></IconButton>

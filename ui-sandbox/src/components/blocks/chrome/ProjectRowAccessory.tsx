@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import { MoreHorizontal, Plus } from 'lucide-solid';
-import { ButtonGroup, buttonGroupItemClass, IconButton } from '@/components/ui';
+import { ButtonGroup, buttonGroupItemClass, DropdownMenu, IconButton, type MenuItem } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { RowAccessorySlot } from './RowAccessorySlot';
 
@@ -8,9 +8,27 @@ import { RowAccessorySlot } from './RowAccessorySlot';
 export function ProjectRowAccessory(props: {
   count?: number;
   actionsVisible?: boolean;
+  menuItems?: MenuItem[];
+  onMenuSelect?: (id: string) => void;
   onMore?: () => void;
   onCreateSession?: () => void;
 }) {
+  const moreButton = (
+    <IconButton
+      size="sm"
+      showTooltip={false}
+      label="Project actions"
+      class={cn(buttonGroupItemClass, 'project-menu-trigger')}
+      onClick={(event) => {
+        if (props.menuItems) return;
+        event.stopPropagation();
+        props.onMore?.();
+      }}
+    >
+      <MoreHorizontal size={14} strokeWidth={1.7} />
+    </IconButton>
+  );
+
   return (
     <RowAccessorySlot
       group="workspace"
@@ -22,18 +40,14 @@ export function ProjectRowAccessory(props: {
       )}
       actions={(
         <ButtonGroup aria-label="Project actions">
-          <IconButton
-            size="sm"
-            showTooltip={false}
-            label="Project actions"
-            class={cn(buttonGroupItemClass, 'project-menu-trigger')}
-            onClick={(event) => {
-              event.stopPropagation();
-              props.onMore?.();
-            }}
-          >
-            <MoreHorizontal size={14} strokeWidth={1.7} />
-          </IconButton>
+          {props.menuItems ? (
+            <DropdownMenu
+              label="Project actions"
+              trigger={moreButton}
+              items={props.menuItems}
+              onSelect={(id) => props.onMenuSelect?.(id)}
+            />
+          ) : moreButton}
           <IconButton
             size="sm"
             showTooltip={false}

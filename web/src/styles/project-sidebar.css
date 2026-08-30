@@ -11,6 +11,38 @@
   scrollbar-gutter: stable;
 }
 
+/* 行右侧浮动操作须高于侧栏拖拽把手（z-35），且不被裁切。 */
+.project-sidebar .row-accessory-slot {
+  z-index: 40;
+}
+
+/* Tailwind 扫描兜底：行 hover 时在 meta（时间/计数）与 actions（按钮组）间切换。 */
+.project-sidebar .group\/workspace:hover .row-accessory-slot__meta,
+.project-sidebar .group\/workspace:focus-within .row-accessory-slot__meta,
+.project-sidebar .group\/row:hover .row-accessory-slot__meta,
+.project-sidebar .group\/row:focus-within .row-accessory-slot__meta {
+  opacity: 0;
+}
+
+.project-sidebar .group\/workspace:hover .row-accessory-slot__actions,
+.project-sidebar .group\/workspace:focus-within .row-accessory-slot__actions,
+.project-sidebar .group\/row:hover .row-accessory-slot__actions,
+.project-sidebar .group\/row:focus-within .row-accessory-slot__actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (pointer: coarse) {
+  .project-sidebar .row-accessory-slot__meta {
+    opacity: 0;
+  }
+
+  .project-sidebar .row-accessory-slot__actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 .sidebar-scroll-mist {
   position: absolute;
   inset-inline: 0;

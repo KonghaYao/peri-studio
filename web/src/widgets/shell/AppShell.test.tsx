@@ -32,12 +32,13 @@ describe('AppShell desktop sidebar', () => {
   it('resizes within accessible keyboard and pointer limits', () => {
     render(() => <AppShell />);
     const handle = screen.getByRole('separator', { name: 'Resize sidebar' });
+    const grip = handle.querySelector('span')!;
 
     expect(handle).toHaveAttribute('aria-valuenow', '242');
     fireEvent.keyDown(handle, { key: 'ArrowRight' });
     expect(handle).toHaveAttribute('aria-valuenow', '266');
 
-    fireEvent.pointerDown(handle, { button: 0 });
+    fireEvent.pointerDown(grip, { button: 0 });
     expect(document.body).toHaveClass('sidebar-resizing');
     fireEvent.pointerMove(window, { clientX: 600 });
     expect(handle).toHaveAttribute('aria-valuenow', '480');

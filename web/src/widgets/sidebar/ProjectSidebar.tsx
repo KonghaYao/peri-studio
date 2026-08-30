@@ -48,6 +48,7 @@ import {
   TextField,
 } from '@/shared/ui';
 import { SessionSearch } from './SessionSearch';
+import { ArchivedBrowserDialog } from './ArchivedBrowserDialog';
 import { SessionImportDialog } from '@/widgets/shell/SessionImportDialog';
 import { ProjectSessionRow } from './ProjectSessionRow';
 import { NavAction, ProjectRowAccessory, ProjectRowActionGroup, SectionHeader } from './sidebar-parts';
@@ -65,8 +66,8 @@ import {
   writePinnedSessions,
   type SessionPin,
 } from '@/features/session/session-pins';
-import { ArchivedSection } from '@/widgets/shell/shared/ArchivedSection';
 import { ConfirmDialog } from '@/widgets/shell/shared/ConfirmDialog';
+import { ArchivedSection } from '@/widgets/shell/shared/ArchivedSection';
 import { SidebarChrome } from '@/widgets/shell/SidebarChrome';
 import { reconcileInstanceGroups, type InstanceGroup } from '../../panel/lib/instance-groups';
 import {
@@ -106,12 +107,12 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
   const [sessionMenu, setSessionMenu] = createSignal<string | null>(null);
   const [archiveSessionCandidate, setArchiveSessionCandidate] = createSignal<string | null>(null);
   const [sessionLifecycleBusy, setSessionLifecycleBusy] = createSignal<string | null>(null);
-  const [archivedSessionsOpen, setArchivedSessionsOpen] = createSignal(new Set<string>());
   const [importingProject, setImportingProject] = createSignal<string | null>(null);
   const [collapsedProjects, setCollapsedProjects] = createSignal(new Set<string>());
   const [projectMenu, setProjectMenu] = createSignal<string | null>(null);
   const [archiveCandidate, setArchiveCandidate] = createSignal<string | null>(null);
   const [archiveSubmitting, setArchiveSubmitting] = createSignal(false);
+  const [archivedBrowserProjectId, setArchivedBrowserProjectId] = createSignal<string | null>(null);
   const [archivedOpen, setArchivedOpen] = createSignal(false);
   const [restoringProject, setRestoringProject] = createSignal<string | null>(null);
   const [renamingProject, setRenamingProject] = createSignal<string | null>(null);
@@ -125,9 +126,11 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
     projectSessions().filter((session) => !session.archivedAt),
     pinnedSessionKeys(),
   ));
-  const archivedProjectCount = createMemo(() => projects().filter((project) => !!project.archivedAt).length);
-  const archivedSessionCount = createMemo(() => projectSessions().filter((session) => !!session.archivedAt).length);
-  const hasArchivedEntries = () => archivedProjectCount() > 0 || archivedSessionCount() > 0;
+  const archivedBrowserProject = () => {
+    const projectId = archivedBrowserProjectId();
+    if (!projectId) return null;
+    return projects().find((item) => item.id === projectId) ?? null;
+  };
   const sessionHasRunningRuntime = (session: { id: string; activeChatId?: string | null }) => {
     if (!session.activeChatId) return false;
     return session.id !== selectedSessionId() || !isTerminal(chatStatusSignal()[session.activeChatId]);
@@ -150,11 +153,6 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
   const setProjectCollapsed = (projectId: string, collapsed: boolean) => setCollapsedProjects((current) => {
     const next = new Set(current);
     if (collapsed) next.add(projectId); else next.delete(projectId);
-    return next;
-  });
-  const setArchivedSessionsExpanded = (projectId: string, open: boolean) => setArchivedSessionsOpen((current) => {
-    const next = new Set(current);
-    if (open) next.add(projectId); else next.delete(projectId);
     return next;
   });
   const isSessionPinned = (session: Pick<ProjectSessionInfo, 'projectId' | 'id'>): boolean =>
@@ -300,16 +298,30 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
       nav={<>
         <NavAction icon={<MessageSquarePlus size={16} strokeWidth={1.7} />} label="New session" disabled={readOnly()} onClick={handleNewSession} />
         <NavAction icon={<Search size={16} strokeWidth={1.7} />} label="Search" onClick={() => setSearchOpen(true)} />
-        <Show when={hasArchivedEntries()}>
-          <NavAction
-            icon={<Archive size={16} strokeWidth={1.7} />}
-            label={`Archived · ${archivedProjectCount() + archivedSessionCount()}`}
-            onClick={() => setArchivedOpen(true)}
-          />
-        </Show>
       </>}
     >
       <SessionSearch open={searchOpen()} onClose={() => setSearchOpen(false)} onSelected={props.onNavigate} />
+      <ArchivedBrowserDialog
+        open={archivedBrowserProjectId() !== null}
+        onClose={() => setArchivedBrowserProjectId(null)}
+        projectId={archivedBrowserProjectId()}
+        projectName={archivedBrowserProject()?.name ?? null}
+        readOnly={readOnly()}
+        restoringProjectId={restoringProject()}
+        restoringSessionId={sessionLifecycleBusy()}
+        onRestoreProject={(projectId) => runConfirmedMutation(
+          () => setRestoringProject(projectId),
+          () => setRestoringProject(null),
+          (committed, failed) => restoreProject(projectId, committed, failed),
+          () => {},
+        )}
+        onRestoreSession={(sessionId) => runConfirmedMutation(
+          () => setSessionLifecycleBusy(sessionId),
+          () => setSessionLifecycleBusy(null),
+          (committed, failed) => restoreProjectSession(sessionId, committed, failed),
+          () => {},
+        )}
+      />
       <Show when={readOnly()}><div class="readonly-label px-2.5 pb-2 text-11 font-semibold text-warning">Read-only mode</div></Show>
       <Dialog open={creating()} onOpenChange={(open) => { if (!open && !projectCreateSubmitting()) { setCreating(false); setPickDirectoryError(null); } }}><DialogContent dismissible={!projectCreateSubmitting() && !pickingDirectory()}><DialogTitle class="sr-only">New project</DialogTitle>
         <form class="m-0 rounded-12 border-0 bg-surface p-18 shadow-none" onSubmit={submitProject}>
@@ -370,7 +382,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
           <For each={instanceIds()}>{(instanceId) => {
             const instance = () => instanceGroups().find((item) => item.id === instanceId)!;
             return <section class="instance-group group/instance pb-1">
-              <div class="instance-row flex min-h-28 items-center gap-8 pl-2.5 pr-4 text-11 text-content-muted">
+              <div class="instance-row group/instance relative flex min-h-28 items-center gap-8 pl-2.5 pr-4 text-11 text-content-muted">
                 <span class="instance-name min-w-0 flex-1 truncate">{instance().name}</span>
                 <Show when={instance().offline}>
                   <span class="instance-offline flex shrink-0 items-center gap-4 text-danger-solid" role="img" aria-label="Instance offline">
@@ -381,7 +393,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                 <IconButton
                   size="sm"
                   showTooltip={false}
-                  class="new-project-button instance-create-action ml-auto size-24 shrink-0 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:opacity-100 focus-visible:opacity-100 pointer-coarse:size-32 pointer-coarse:opacity-100"
+                  class="new-project-button instance-create-action pointer-events-none absolute right-4 top-1/2 size-24 -translate-y-1/2 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:pointer-events-auto group-hover/instance:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 pointer-coarse:size-32 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100"
                   label="New project"
                   disabled={readOnly()}
                   onClick={() => setCreating(true)}
@@ -397,11 +409,10 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                 const collapsed = () => collapsedProjects().has(projectId);
                 const open = () => !collapsed();
                 const hasSessions = () => sessions().length > 0;
-                const emptyHint = () => (sessionsLoading() ? null : 'No sessions yet');
                 const projectMenuId = `project-menu-${projectId}`;
                 return <Collapsible as="section" class="project-group min-w-0" open={open()} onOpenChange={(next) => setProjectCollapsed(projectId, !next)}>
                   <div class="group/workspace relative min-w-0 rounded-md hover:bg-interaction-hover focus-within:bg-interaction-hover">
-                    <CollapsibleTrigger class="flex w-full min-w-0 items-start gap-8 px-2.5 py-4 text-left" aria-label={project().name}>
+                    <CollapsibleTrigger class="relative z-0 flex w-full min-w-0 items-start gap-8 pl-2.5 pr-[64px] py-4 text-left" aria-label={project().name}>
                       <span class="mt-0.5 shrink-0 text-content-muted">
                         <Show when={open()} fallback={<Folder size={15} strokeWidth={1.7} />}>
                           <FolderOpen size={15} strokeWidth={1.7} />
@@ -409,9 +420,6 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                       </span>
                       <span class="min-w-0 flex-1 py-0.5">
                         <span class="min-w-0 flex-1 truncate text-13 text-content-primary">{project().name}</span>
-                        <Show when={emptyHint() && !open()}>
-                          <span class="sidebar-mist-hint mt-0.5 block truncate text-11">{emptyHint()}</span>
-                        </Show>
                       </span>
                     </CollapsibleTrigger>
                     <ProjectRowAccessory count={hasSessions() ? sessions().length : undefined} actionsVisible={projectMenu() === projectId}>
@@ -431,6 +439,13 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                           <DropdownMenuContent id={projectMenuId} aria-label={`${project().name} actions`} class="ui-menu">
                             <DropdownMenuItem onSelect={() => { setProjectNameDraft(project().name); setRenamingProject(projectId); }}><RenameIcon />Rename project</DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => setImportingProject(projectId)}><ImportIcon />Import existing session</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setArchivedBrowserProjectId(projectId)}>
+                              <ArchiveIcon />
+                              Archived
+                              <Show when={archivedSessions().length > 0}>
+                                <span class="ml-auto text-11 text-content-muted">{archivedSessions().length}</span>
+                              </Show>
+                            </DropdownMenuItem>
                             <DropdownMenuItem class="text-danger focus:text-danger" disabled={projectHasRunningSession(projectId)} onSelect={() => setArchiveCandidate(projectId)}><ArchiveIcon />Archive project</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -467,19 +482,6 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                           return renderSessionRow(session(), projectId, { indent: 16 });
                         }}
                       </For>
-                    </Show>
-                    <Show when={archivedSessions().length > 0}>
-                      <ArchivedSection
-                        toggleClass="archived-sessions__toggle flex w-full min-h-32 cursor-pointer items-center gap-6 rounded-md border-0 bg-transparent px-2.5 py-4 pl-36 text-left text-11 text-content-muted hover:bg-interaction-hover hover:text-content-secondary pointer-coarse:min-h-44"
-                        label="Archived sessions"
-                        count={archivedSessions().length}
-                        open={archivedSessionsOpen().has(projectId)}
-                        onOpenChange={(next) => setArchivedSessionsExpanded(projectId, next)}
-                        listId={`archived-sessions-${projectId}`}
-                        listClass="archived-session-list flex flex-col gap-2 pb-1 pl-36"
-                      >
-                        <For each={archivedSessions()}>{(session) => <div class="archived-session-row flex min-h-32 items-center gap-8 rounded-md px-2.5 py-4 hover:bg-interaction-hover pointer-coarse:min-h-44"><span class="flex min-w-0 flex-1 flex-col gap-2"><strong class="overflow-hidden text-ellipsis whitespace-nowrap text-12 font-medium text-content-primary">{sessionDisplayTitle(session.title, session.id)}</strong><small class="text-10 text-content-muted">{session.lifecycle === 'ready' ? 'Session saved' : session.lifecycle}</small></span><Button size="compact" class="min-h-30! px-8! text-11! pointer-coarse:min-h-44!" busy={sessionLifecycleBusy() === session.id} disabled={readOnly() || !!sessionLifecycleBusy()} onClick={() => runConfirmedMutation(() => setSessionLifecycleBusy(session.id), () => setSessionLifecycleBusy(null), (committed, failed) => restoreProjectSession(session.id, committed, failed), () => {})}>Restore</Button></div>}</For>
-                      </ArchivedSection>
                     </Show>
                   </CollapsibleContent>
                 </Collapsible>;
@@ -547,7 +549,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
           return <ConfirmDialog
             eyebrow="Session cleanup"
             title={`Archive “${displayTitle()}”?`}
-            description="The session will be hidden from the current project list, but the ACP thread, message history, and local project files are not deleted. You can restore it later under “Archived sessions”."
+            description="The session will be hidden from the current project list, but the ACP thread, message history, and local project files are not deleted. You can restore it later from the workspace More menu → Archived."
             cancelDisabled={!!sessionLifecycleBusy()}
             confirmLabel="Archive session"
             confirmBusy={!!sessionLifecycleBusy()}

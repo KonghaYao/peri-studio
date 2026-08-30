@@ -35,13 +35,13 @@ export function SessionSearch(props: { open: boolean; onClose: () => void; onSel
   const focusResults = () => { if (results().length) resultList?.focus(); };
 
   return <Dialog open={props.open} onOpenChange={(open) => { if (!open && !openingSessionId()) props.onClose(); }}><DialogContent size="search" dismissible={!openingSessionId()}><DialogHeader><DialogTitle>Search sessions</DialogTitle></DialogHeader>
-    <div class="session-search-dialog grid gap-14 px-18 pb-18">
+    <div class="session-search-dialog grid gap-10 px-16 pb-16">
       <TextField aria-label="Search sessions" value={query()} onInput={(event) => setQuery(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === 'ArrowDown') { event.preventDefault(); focusResults(); } }} placeholder="Search title, project, directory or session ID" autofocus />
-      <Show when={query().trim()} fallback={<InlineNotice class="session-search-hint px-12 py-28 text-center text-12 text-text-muted"><kbd>{primaryShortcut('K')}</kbd> opens search anytime. Start typing a project name or session title.</InlineNotice>}>
-        <Show when={results().length} fallback={<EmptyState variant="inline" class="session-search-hint px-12 py-28" title="No matching saved sessions" description="Try another title, project, directory, or session ID." />}>
+      <Show when={query().trim()} fallback={<InlineNotice class="session-search-hint px-10 py-20 text-center text-12 text-text-muted"><kbd>{primaryShortcut('K')}</kbd> opens search anytime. Start typing a project name or session title.</InlineNotice>}>
+        <Show when={results().length} fallback={<EmptyState variant="inline" class="session-search-hint px-10 py-20" title="No matching saved sessions" description="Try another title, project, directory, or session ID." />}>
           <Listbox
             ref={resultList}
-            class="ui-listbox session-search-results grid max-h-(--container-search-results) gap-4 overflow-auto"
+            class="ui-listbox session-search-results grid max-h-(--container-search-results) gap-1 overflow-auto"
             aria-label="Search results"
             options={results()}
             optionValue="id"
@@ -50,9 +50,9 @@ export function SessionSearch(props: { open: boolean; onClose: () => void; onSel
             value={selectedSessionId() ? [selectedSessionId()!] : []}
             onChange={select}
             shouldFocusWrap
-            renderItem={(item) => <ListboxItem item={item} class="flex w-full cursor-pointer items-center justify-between gap-18 rounded-9 border-0 bg-transparent px-12 py-10 text-left text-text-primary hover:bg-hover focus-visible:bg-hover data-[disabled]:cursor-not-allowed data-[disabled]:opacity-52 pointer-coarse:min-h-44">
-              <span class="grid min-w-0 gap-3"><ListboxItemLabel as="strong" class="overflow-hidden text-ellipsis whitespace-nowrap">{sessionDisplayTitle(item.rawValue.title, item.rawValue.id)}</ListboxItemLabel><ListboxItemDescription as="small" class="overflow-hidden text-ellipsis whitespace-nowrap text-12 text-text-muted">{item.rawValue.project?.name || 'Unknown project'} · {formatRelativeTime(item.rawValue.lastOpenedAt || item.rawValue.updatedAt)}</ListboxItemDescription></span>
-              <Show when={openingSessionId() === item.rawValue.id} fallback={<code class="flex-none text-12 text-text-muted">…{shortSessionId(item.rawValue.id)}</code>}><Spinner label="Opening" /></Show>
+            renderItem={(item) => <ListboxItem item={item} class="flex w-full min-h-32 cursor-pointer items-center justify-between gap-10 rounded-md border-0 bg-transparent px-10 py-6 text-left text-content-primary hover:bg-interaction-hover focus-visible:bg-interaction-hover data-[disabled]:cursor-not-allowed data-[disabled]:opacity-52 pointer-coarse:min-h-44">
+              <span class="grid min-w-0 gap-1"><ListboxItemLabel as="strong" class="overflow-hidden text-ellipsis whitespace-nowrap text-13 font-normal">{sessionDisplayTitle(item.rawValue.title, item.rawValue.id)}</ListboxItemLabel><ListboxItemDescription as="small" class="overflow-hidden text-ellipsis whitespace-nowrap text-11 text-content-muted">{item.rawValue.project?.name || 'Unknown project'} · {formatRelativeTime(item.rawValue.lastOpenedAt || item.rawValue.updatedAt)}</ListboxItemDescription></span>
+              <Show when={openingSessionId() === item.rawValue.id} fallback={<code class="flex-none text-11 text-content-muted">…{shortSessionId(item.rawValue.id)}</code>}><Spinner label="Opening" /></Show>
             </ListboxItem>}
           />
         </Show>

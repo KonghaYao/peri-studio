@@ -1,6 +1,5 @@
 import { createSignal, For, Show } from 'solid-js';
-import { IconButton } from '@/components/ui';
-import { ProjectRowAccessory, SessionRowAccessory } from '@/components/blocks/chrome';
+import { ArchivedBrowserList, ProjectRowAccessory, SessionRowAccessory } from '@/components/blocks/chrome';
 import { cn } from '@/lib/cn';
 import {
   Archive,
@@ -16,6 +15,13 @@ import {
   Settings,
   Workflow,
 } from 'lucide-solid';
+import { Dialog, IconButton, Input } from '@/components/ui';
+
+const ARCHIVED_DEMO = [
+  { id: 'arch-1', title: 'legacy-ws-proto', subtitle: 'Session · peri-studio' },
+  { id: 'arch-2', title: 'token-audit', subtitle: 'Project · /audit' },
+  { id: 'arch-3', title: 'Spike notes', subtitle: 'Session · cellp' },
+];
 
 type SessionItem = {
   id: string;
@@ -142,7 +148,7 @@ function SessionRow(props: {
     >
       <button
         type="button"
-        class="flex min-h-8 w-full min-w-0 items-center rounded-md pl-2.5 pr-14 text-left"
+        class="flex min-h-8 w-full min-w-0 items-center rounded-md pl-2.5 pr-16 text-left"
         onClick={props.onClick}
       >
         <span class="session-copy min-w-0 flex-1 truncate text-13 text-content-primary">{props.session.title}</span>
@@ -161,7 +167,23 @@ function SessionRow(props: {
 export function ProjectSidebarLayout() {
   const [expandedWorkspaces, setExpandedWorkspaces] = createSignal(new Set(['peri', 'remote']));
   const [selectedId, setSelectedId] = createSignal('pin-1');
-  const [archivedOpen, setArchivedOpen] = createSignal(false);
+  const [archivedBrowserOpen, setArchivedBrowserOpen] = createSignal(false);
+  const [archivedBrowserWorkspace, setArchivedBrowserWorkspace] = createSignal<string | null>(null);
+  const [archivedQuery, setArchivedQuery] = createSignal('');
+
+  const workspaceMenuItems = [
+    { id: 'archived', label: 'Archived', icon: <Archive size={14} strokeWidth={1.7} /> },
+    { id: 'archive-project', label: 'Archive project', icon: <Archive size={14} strokeWidth={1.7} />, danger: true },
+  ];
+
+  const archivedResults = () => {
+    const needle = archivedQuery().trim().toLocaleLowerCase();
+    if (!needle) return ARCHIVED_DEMO;
+    return ARCHIVED_DEMO.filter((item) => (
+      item.title.toLocaleLowerCase().includes(needle)
+      || item.subtitle.toLocaleLowerCase().includes(needle)
+    ));
+  };
 
   const toggleWorkspace = (id: string) => {
     setExpandedWorkspaces((current) => {
@@ -174,13 +196,12 @@ export function ProjectSidebarLayout() {
 
   return (
     <nav
-      class="flex h-[min(680px,78vh)] w-[var(--shell-sidebar-width)] flex-col border border-border-subtle bg-surface-overlay"
+      class="flex h-[min(680px,78vh)] w-[var(--shell-sidebar-width)] flex-col border border-border-faint bg-surface-overlay"
       aria-label="Projects and sessions"
     >
       <div class="shrink-0 px-1.5 pt-2 pb-1">
         <NavAction icon={<MessageSquarePlus size={16} strokeWidth={1.7} />} label="New session" />
         <NavAction icon={<Search size={16} strokeWidth={1.7} />} label="Search" />
-        <NavAction icon={<Archive size={16} strokeWidth={1.7} />} label="Archived · 2" onClick={() => setArchivedOpen((open) => !open)} />
         <NavAction icon={<Workflow size={16} strokeWidth={1.7} />} label="Automations" />
         <NavAction icon={<LayoutGrid size={16} strokeWidth={1.7} />} label="Customize" />
       </div>
@@ -224,7 +245,7 @@ export function ProjectSidebarLayout() {
                   size="sm"
                   showTooltip={false}
                   label="New project"
-                  class="pointer-events-none absolute right-1 top-1/2 size-6 -translate-y-1/2 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm transition-opacity duration-(--duration-fast) group-hover/instance:pointer-events-auto group-hover/instance:opacity-100"
+                  class="pointer-events-none absolute right-1 top-1/2 size-6 -translate-y-1/2 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:pointer-events-auto group-hover/instance:opacity-100"
                 >
                   <Plus size={15} strokeWidth={1.7} />
                 </IconButton>
@@ -239,7 +260,7 @@ export function ProjectSidebarLayout() {
                       <div class="group/workspace relative min-w-0 rounded-md hover:bg-interaction-hover focus-within:bg-interaction-hover">
                         <button
                           type="button"
-                          class="flex w-full min-w-0 items-start gap-2 px-2.5 py-1 text-left"
+                          class="flex w-full min-w-0 items-start gap-2 pl-2.5 pr-14 py-1 text-left"
                           aria-expanded={open()}
                           onClick={() => toggleWorkspace(workspace.id)}
                         >
@@ -255,7 +276,16 @@ export function ProjectSidebarLayout() {
                             </Show>
                           </span>
                         </button>
-                        <ProjectRowAccessory count={hasSessions() ? workspace.sessions.length : undefined} />
+                        <ProjectRowAccessory
+                          count={hasSessions() ? workspace.sessions.length : undefined}
+                          menuItems={workspaceMenuItems}
+                          onMenuSelect={(id) => {
+                            if (id === 'archived') {
+                              setArchivedBrowserWorkspace(workspace.name);
+                              setArchivedBrowserOpen(true);
+                            }
+                          }}
+                        />
                       </div>
 
                       <Show when={open()}>
@@ -286,14 +316,32 @@ export function ProjectSidebarLayout() {
             </section>
           )}
         </For>
-
-        <Show when={archivedOpen()}>
-          <SectionHeader title="Archived" icon={<Archive size={14} strokeWidth={1.7} />} />
-          <div class="px-2.5 py-1 text-11 text-content-muted">Legacy UI comparison record</div>
-        </Show>
         </div>
         <div class="sidebar-scroll-mist" aria-hidden="true" />
       </div>
+
+      <Dialog
+        open={archivedBrowserOpen()}
+        onOpenChange={(open) => {
+          setArchivedBrowserOpen(open);
+          if (!open) setArchivedBrowserWorkspace(null);
+        }}
+        title={archivedBrowserWorkspace() ? `${archivedBrowserWorkspace()} · Archived` : 'Archived'}
+        width="min(520px, calc(100vw - 56px))"
+      >
+        <div class="grid gap-3.5">
+          <Input
+            aria-label="Search archived sessions"
+            value={archivedQuery()}
+            onInput={(event) => setArchivedQuery(event.currentTarget.value)}
+            placeholder="Search session title or ID"
+          />
+          <ArchivedBrowserList items={archivedResults()} />
+          <p class="m-0 text-12 text-content-muted">
+            Restored items return to the sidebar list. Archiving only hides them; nothing is deleted.
+          </p>
+        </div>
+      </Dialog>
 
       <div class="sidebar-mist-divider" aria-hidden="true" />
       <div class="flex h-12 shrink-0 items-center gap-2 px-2.5">

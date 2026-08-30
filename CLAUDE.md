@@ -26,14 +26,16 @@ Peri Studio 是 ACP agent 的持久 Web 工作台（仓库名 peri-studio，产�
 - `server/`（peri-studio-server library）：中心控制面运行时，模块按职责拆分：`auth`（token/审计）、`channel`（命令协调、runtime 生命周期、catalog 同步）、`control`（registry、心跳）、`persist`（SQLite、outbox）、`protocol`（ACP 通道）、`state`、`web`；`build.rs` 编译期内嵌 `web/dist` 产物
 - `instance/`（peri-instance library）：运行 ACP 子进程的宿主运行时；仅测试辅助二进制 `test-child` 独立存在
 - `web/`：SolidJS 单页 SPA（**五层目录**：`app` / `pages` / `widgets` / `features` / `entities` / `shared` + `store`；权威规范见 `docs/design/frontend-architecture.md` 与根目录 `AGENTS.md`）。`panel/` 仅遗留 shim 与待迁 `lib`，**禁止在此新增业务实现**
+- `ui-sandbox/`：设计稿沙箱（T1 Tokens → T2 Base UI → T3 Blocks → T4 Layers），与 `web/` 构建隔离；**新 UI 须先在此定稿**再镜像生产（见 `docs/design/ui-implementation-plan.md`）
 - `docs/`：`architecture.md`（权威架构基准，v2.14 与实现对齐）、`terminology.md`（唯一权威术语表）、`topology.md`、`adr/`、`design/`（设计决策与验证证据）
 - `scripts/`：契约测试与端到端验证脚本（含 release 打包）
 - `dev.sh`：一键启动 server + instance 并校验就绪
+- `dev-sandbox.sh`：仅启动 ui-sandbox Vite（`http://127.0.0.1:5273/`）
 
-**本地启动权限**：`dev.sh` 只能由用户在本地终端手动执行。Agent 不得调用
-`./dev.sh`、重启其进程或通过后台 shell 代执行；需要运行时验证时应停止并请用户执行。
-Agent 可以阅读或修改脚本，以及运行不启动 server/instance 的静态检查，但不得启动
-本地 server 或 instance。
+**本地启动权限**：`dev.sh` 与 `dev-sandbox.sh` 只能由用户在本地终端手动执行。Agent 不得调用
+`./dev.sh`、`./dev-sandbox.sh`、重启其进程或通过后台 shell 代执行；需要运行时验证时应停止并请用户执行。
+Agent 可以阅读或修改脚本，以及运行不启动 server/instance 的静态检查（含 `cd ui-sandbox && bun run typecheck`），但不得启动
+本地 server、instance 或 sandbox dev server。
 
 ## 技术栈
 
@@ -47,10 +49,17 @@ Agent 可以阅读或修改脚本，以及运行不启动 server/instance 的静
 # 一键开发（重建 Web → 启动 server + instance，http://127.0.0.1:8456/）
 ./dev.sh
 
+# UI 设计稿沙箱（仅 Vite，http://127.0.0.1:5273/）
+./dev-sandbox.sh
+
 # Web（Bun）
 cd web && bun run test        # typecheck + node --test + vitest + 生产边界校验
 bun run test:browser          # Playwright 浏览器契约
 bun run build                 # 生成 web/dist（cargo 构建前必须先执行）
+
+# UI Sandbox（Bun）
+cd ui-sandbox && bun run typecheck
+cd ui-sandbox && bun run dev    # 等价于 dev-sandbox.sh，须用户手动执行
 
 # Rust workspace
 cargo test -p peri-studio-proto
@@ -80,7 +89,7 @@ cargo run -q -p peri-studio -- status --json | --ready
 
 ## Web 前端分层规范（必读）
 
-**权威文档**：`docs/design/frontend-architecture.md`（目录、依赖、迁移）；`docs/design/ui-specification.md`（**视觉、token、组件、微文案**）；`AGENTS.md`（Agent 检查清单）。ADR：`docs/adr/0004-web-frontend-layered-architecture.md`。
+**权威文档**：`docs/design/frontend-architecture.md`（目录、依赖、迁移）；`docs/design/ui-specification.md`（**视觉、token、组件、微文案**）；`docs/design/ui-implementation-plan.md`（**sandbox → web 映射与落地阶段**）；`AGENTS.md`（Agent 检查清单与工作流）。ADR：`docs/adr/0004-web-frontend-layered-architecture.md`。
 
 | 层 | 路径 | 职责 |
 |----|------|------|
@@ -92,12 +101,20 @@ cargo run -q -p peri-studio -- status --json | --ready
 | 共享 | `web/src/shared/` | `ui` 设计系统、`lib`、`protocol`、`yjs` |
 | 组合根 | `web/src/store/index.ts` | 全局信号与 `install*` 装配；业务逻辑委托 features |
 
+**UI Sandbox 与生产对齐**（细节见 `AGENTS.md` §UI Sandbox）：
+
+- 设计权威：`ui-sandbox/` 四级体系（T1 `styles/tokens.css` → T2 `components/ui` → T3 `components/blocks` → T4 `layers`）。
+- 落地映射：T2 → `web/src/shared/ui`；T3/T4 视觉 → `web/src/widgets/*`（禁止从生产 import sandbox）。
+- 流程：sandbox 定稿 → `bun run typecheck` → 镜像 `web` → `cd web && bun run test`。
+- **间距**：`web` 用 `--space-N` 像素 utility；勿把 sandbox 的 Tailwind class 原样抄到 `web` 而不换算。
+- 缺后端：sandbox/widget 用 mock；生产用 `features` + 测试，不在浏览器伪造 server 事实。
+
 **硬规则**：依赖只能自上而下（`shared` → `entities` → `features` → `widgets` → `pages` → `app`）；`widgets` 不得直发协议帧；新代码用 `@/` 路径别名，勿在 `panel/` 下新增实现。UI 颜色/间距/组件须符合 `ui-specification.md`；改 Web 结构须同步 `architecture.md` §10.2。
 
 ## 代码与测试约定
 
 - Rust 模块按单一职责拆分（参考 `server/src/channel` 各模块的拆分粒度），单元测试以 `*_test.rs` 与模块同目录内联；代码注释用中文，日志用英文。
-- Web：组合根在 `web/src/store/index.ts`；feature/entity 测 `src/features`、`src/entities`；widget 测 `src/widgets`；契约测 `web/tests/*.test.mjs`；浏览器用 `bun run test:browser`。提交前 `cd web && bun run test`。
+- Web：组合根在 `web/src/store/index.ts`；feature/entity 测 `src/features`、`src/entities`；widget 测 `src/widgets`；契约测 `web/tests/*.test.mjs`；浏览器用 `bun run test:browser`；UI 定稿在 `ui-sandbox/` 用 `bun run typecheck`。提交前 `cd web && bun run test`。
 - 设计决策与验证证据同步到 `docs/design/`；历史功能计划文档（f1~f6）已有意删除（git 历史可溯），架构演进记录以 `docs/architecture.md` 的版本修订（v2.x 标注）为准。
 - `web/dist`、`.tmp/`、`.peri/` 不提交 git；`cargo` 构建依赖 `web/dist` 就绪（缺失时 build.rs 直接编译失败并提示构建命令）。
 

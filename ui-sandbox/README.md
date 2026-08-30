@@ -6,6 +6,9 @@
 cd ui-sandbox
 bun install
 bun run dev   # http://127.0.0.1:5273/
+
+# 或从仓库根目录：
+./dev-sandbox.sh
 ```
 
 ## 导航

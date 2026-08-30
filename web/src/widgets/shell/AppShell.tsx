@@ -169,7 +169,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
         />
       </ProjectDrawer>
       <div
-        class={`sidebar-resize-handle group absolute z-35 top-0 bottom-0 w-12 -translate-x-1/2 cursor-col-resize touch-none max-desk:hidden ${sidebarResizing() ? 'select-none [&_*]:cursor-col-resize!' : ''}`}
+        class={`sidebar-resize-handle group pointer-events-none absolute z-35 top-0 bottom-0 w-12 -translate-x-1/2 touch-none max-desk:hidden ${sidebarResizing() ? 'select-none [&_*]:cursor-col-resize! [&_span]:bg-sidebar-resize-handle-hover' : ''}`}
         style={{ left: `${sidebarWidth()}px` }}
         role="separator"
         aria-label="Resize sidebar"
@@ -179,9 +179,12 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
         aria-valuenow={sidebarWidth()}
         aria-valuetext={`${sidebarWidth()} pixels wide`}
         tabIndex={0}
-        onPointerDown={startSidebarResize}
         onKeyDown={resizeSidebarWithKeyboard}
-      ><span aria-hidden="true" class="absolute top-0 bottom-0 left-5 w-2 rounded-full bg-transparent transition-colors group-hover:bg-accent group-focus-visible:bg-accent" /></div>
+      ><span
+        aria-hidden="true"
+        class="absolute top-0 bottom-0 left-5 w-2 cursor-col-resize rounded-full bg-transparent transition-colors pointer-events-auto group-hover:bg-sidebar-resize-handle-hover group-focus-visible:bg-sidebar-resize-handle-hover"
+        onPointerDown={startSidebarResize}
+      /></div>
       <main ref={main} class="conversation-pane min-w-0 min-h-0 overflow-hidden">
         <Show when={resourceFilePreview()} fallback={<Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenResources={openResources} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
           <ResourceDiffEditor onClose={() => closePreview('diff')} />
