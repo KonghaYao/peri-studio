@@ -1,5 +1,6 @@
 import * as Y from 'yjs';
 import { asMap, getStr } from './yjs-values';
+import { compareSessionsForSidebar } from './session-sidebar-order';
 
 export interface InstanceInfo {
   id: string;
@@ -154,7 +155,7 @@ export function renderRegistry(doc: Y.Doc): RegistryView {
       activeChatId: getStr(map, 'active_chat_id'),
     });
   });
-  projectSessions.sort((left, right) => String(right.lastOpenedAt || right.updatedAt || '').localeCompare(String(left.lastOpenedAt || left.updatedAt || '')));
+  projectSessions.sort(compareSessionsForSidebar);
 
   const seen = new Set<string>();
   asMap(root.get('sessions'))?.forEach((value) => {

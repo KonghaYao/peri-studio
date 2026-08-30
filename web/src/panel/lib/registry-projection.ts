@@ -1,5 +1,6 @@
 import type * as Y from 'yjs';
 import { renderRegistry, type RegistryView } from './registry-view';
+import { stabilizeProjectSessionOrder } from './session-sidebar-order';
 
 const sameFields = <T extends object>(left: T, right: T): boolean => {
   const keys = Object.keys(right) as Array<keyof T>;
@@ -43,7 +44,10 @@ export class RegistryProjection {
       sessions: reconcileById(previous.sessions, incoming.sessions, (value) => value.sessionId),
       workspaces: reconcileById(previous.workspaces, incoming.workspaces, (value) => value.id),
       projects: reconcileById(previous.projects, incoming.projects, (value) => value.id),
-      projectSessions: reconcileById(previous.projectSessions, incoming.projectSessions, (value) => value.id),
+      projectSessions: stabilizeProjectSessionOrder(
+        previous.projectSessions,
+        reconcileById(previous.projectSessions, incoming.projectSessions, (value) => value.id),
+      ),
     };
     this.view = next;
     return next;
