@@ -11,6 +11,7 @@ export default defineConfig({
   outputDir: 'test-results/playwright',
   use: {
     ...devices['Desktop Chrome'],
+    ...(process.env.CI ? {} : { channel: 'chrome' }),
     baseURL: 'http://127.0.0.1:4173',
     colorScheme: 'light',
     locale: 'en-US',

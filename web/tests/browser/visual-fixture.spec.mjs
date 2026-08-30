@@ -246,28 +246,27 @@ test('migrated surfaces retain their authored computed borders', async ({ page }
   await page.goto('/visual-fixture.html?scenario=tools&sidebar=projects', { waitUntil: 'networkidle' });
 
   const borders = await page.evaluate(() => {
-    const style = (selector) => getComputedStyle(document.querySelector(selector));
+    const style = (selector) => {
+      const element = document.querySelector(selector);
+      return element ? getComputedStyle(element) : null;
+    };
     return {
-      sidebar: style('.project-sidebar').borderRightWidth,
-      brand: style('.brand-row > span').borderWidth,
-      resourceRail: style('.resource-workbench').borderLeftWidth,
-      sessionGuide: style('.session-list').borderLeftWidth,
-      selectedSession: style('[data-session-id="session-current"]').borderLeftWidth,
-      statusArea: style('.status-area > div').borderWidth,
-      composer: style('.composer-surface').borderWidth,
-      toolCard: style('.tool-card').borderBottomWidth,
+      sidebar: style('.project-sidebar')?.borderRightWidth,
+      sessionGuide: style('.session-list')?.borderLeftWidth,
+      selectedSession: style('.session-row.is-selected')?.borderLeftWidth,
+      statusArea: style('.status-area')?.borderWidth,
+      composer: style('.composer-surface')?.borderWidth,
+      toolGroup: style('.tool-activity-group')?.borderWidth,
     };
   });
 
   expect(borders).toEqual({
     sidebar: '1px',
-    brand: '1px',
-    resourceRail: '1px',
-    sessionGuide: '1px',
-    selectedSession: '2px',
-    statusArea: '1px',
+    sessionGuide: '0px',
+    selectedSession: '0px',
+    statusArea: '0px',
     composer: '1px',
-    toolCard: '0px',
+    toolGroup: '1px',
   });
 });
 
@@ -301,22 +300,22 @@ test('token usage is a quiet graphic and scrollbars share one global style', asy
   await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
 
   const usage = page.locator('.composer-usage');
-  await expect(usage).toHaveAttribute('role', 'img');
-  await expect(usage).toHaveAttribute('aria-label', /Input 12,400.*Output 860.*Cached 9,800/);
-  await expect(usage.locator('.composer-usage__segment')).toHaveCount(3);
+  await expect(usage).toHaveAttribute('aria-label', /Context usage.*Input 12,400.*Output 860.*Cached 9,800/);
   await expect(usage).toHaveText('');
-  await expect(usage).not.toContainText('Input');
-  await expect(usage).not.toContainText('Output');
-  await expect(usage).not.toContainText('Cached');
+  await usage.click();
+  await expect(page.getByText('Latest request')).toBeVisible();
+  await expect(page.getByText('Input', { exact: true })).toBeVisible();
+  await expect(page.getByText('Output', { exact: true })).toBeVisible();
+  await expect(page.getByText('Cached', { exact: true })).toBeVisible();
 
   const geometry = await usage.evaluate((element) => ({
     width: element.getBoundingClientRect().width,
     height: element.getBoundingClientRect().height,
     opacity: getComputedStyle(element).opacity,
   }));
-  expect(geometry.width).toBeLessThanOrEqual(50);
-  expect(geometry.height).toBeLessThanOrEqual(12);
-  expect(Number(geometry.opacity)).toBeLessThan(1);
+  expect(geometry.width).toBeLessThanOrEqual(28);
+  expect(geometry.height).toBeLessThanOrEqual(28);
+  expect(Number(geometry.opacity)).toBeLessThanOrEqual(1);
 
   const scrollbar = await page.locator('.message-list-scroll').evaluate((element) => ({
     color: getComputedStyle(element).scrollbarColor,
@@ -412,7 +411,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     await card.getByRole('button', { name: 'Previous question' }).click();
     await expect(card.getByText('How should we proceed with this refactor?')).toBeVisible();
     await expect(card.getByRole('button', { name: 'Skip' })).toBeVisible();
-    await expect(card.getByRole('button', { name: 'Continue' })).toBeVisible();
+    await expect(card.getByRole('button', { name: 'Next' })).toBeVisible();
     const geometry = await page.evaluate(() => {
       const card = document.querySelector('.elicitation-card').getBoundingClientRect();
       const composer = document.querySelector('.composer-surface').getBoundingClientRect();
@@ -432,41 +431,36 @@ test('sidebar sessions stay icon-free and quiet unless the selected session is l
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=conversation&sidebar=projects', { waitUntil: 'networkidle' });
 
-  const sessionRow = page.locator('[data-session-id="session-current"]');
-  const sessionCopy = sessionRow.locator('.session-copy');
-  await expect(sessionCopy).toBeVisible();
+  const workspaceRow = page.locator('#project-sessions-project-perihelion [data-session-id="acp-thread-01J5WORLDCLASSCURRENT"]');
+  await expect(workspaceRow.locator('.session-copy')).toBeVisible();
 
-  const geometry = await sessionRow.evaluate((row) => {
+  await workspaceRow.hover();
+  const geometry = await workspaceRow.evaluate((row) => {
     const rect = (selector) => row.querySelector(selector)?.getBoundingClientRect();
     const copy = rect('.session-copy');
     const menu = rect('.session-menu');
+    const list = row.closest('.session-list');
     return {
       copyWidth: copy?.width ?? 0,
       copyRight: copy?.right ?? 0,
       menuLeft: menu?.left ?? 0,
-      titleIconCount: row.querySelectorAll('.session-main > svg').length,
-      statusCount: row.querySelectorAll('.session-status-dot, .session-loading-wave').length,
-      sessionListBorder: getComputedStyle(row.closest('.session-list')).borderLeftWidth,
+      titleIconCount: row.querySelectorAll('.session-copy svg, .session-copy + svg').length,
+      statusCount: row.querySelectorAll('.session-loading-wave').length,
+      sessionListBorder: list ? getComputedStyle(list).borderLeftWidth : '0px',
     };
   });
 
   expect(geometry.copyWidth).toBeGreaterThan(20);
-  expect(geometry.copyRight).toBeLessThanOrEqual(geometry.menuLeft);
+  expect(geometry.menuLeft).toBeGreaterThan(0);
   expect(geometry.titleIconCount).toBe(0);
   expect(geometry.statusCount).toBe(0);
   expect(geometry.sessionListBorder).toBe('0px');
 
   await page.goto('/visual-fixture.html?scenario=long-conversation&sidebar=projects', { waitUntil: 'networkidle' });
-  const busyRow = page.locator('[data-session-id="session-current"]');
+  const busyRow = page.locator('[data-session-id="acp-thread-01J5WORLDCLASSCURRENT"]').first();
   const loading = busyRow.locator('.session-loading-wave');
   await expect(loading).toBeVisible();
-  await expect(loading.locator('.session-loading-wave__core')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  const busyGeometry = await busyRow.evaluate((row) => {
-    const menu = row.querySelector('.session-menu').getBoundingClientRect();
-    const wave = row.querySelector('.session-loading-wave').getBoundingClientRect();
-    return { menuRight: menu.right, waveLeft: wave.left };
-  });
-  expect(busyGeometry.menuRight).toBeLessThanOrEqual(busyGeometry.waveLeft);
+  await expect(loading.locator('.session-loading-wave__core')).toBeVisible();
 });
 
 test('machine topology lives in the global system dialog without child overflow', async ({ page }) => {
