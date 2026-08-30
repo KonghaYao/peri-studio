@@ -300,8 +300,8 @@ pub async fn run(config: InstanceConfig, shutdown: CancellationToken) -> anyhow:
                         // §8 第一层：daemon 结束前进程组 kill 全部会话——仅靠
                         // kill_on_drop 只杀直接子进程，孙进程（shell/工具）会
                         // 孤儿残留到下次启动清理（Shutdown 分支已 kill，幂等）。
-                        shutdown_all(&state, &config).await;
-                        drain_exit_events(&state, &handle, &config, &mut child_rx).await;
+                        let had_acps = shutdown_all(&state, &config).await;
+                        drain_exit_events(&state, &handle, &config, &mut child_rx, had_acps).await;
                         break;
                     }
                     TransportEvent::Frame(frame) => {
@@ -320,11 +320,11 @@ pub async fn run(config: InstanceConfig, shutdown: CancellationToken) -> anyhow:
             }
             _ = shutdown.cancelled() => {
                 tracing::info!(target: "peri_studio::instance", "shutdown requested, shutting down gracefully");
-                shutdown_all(&state, &config).await;
+                let had_acps = shutdown_all(&state, &config).await;
                 // 水位收尾（问题 20）：shutdown_all 只杀进程，Exit 事件由 stdout
                 // 读任务 wait 后经 child_rx 上报；主循环即将退出不再消费——短暂
                 // 消费至超时，让水位以 pgid=0 落盘，避免下次启动误报 buffer_lost。
-                drain_exit_events(&state, &handle, &config, &mut child_rx).await;
+                drain_exit_events(&state, &handle, &config, &mut child_rx, had_acps).await;
                 handle.shutdown();
                 break;
             }
@@ -343,8 +343,8 @@ pub async fn run(config: InstanceConfig, shutdown: CancellationToken) -> anyhow:
                         owner_control_error = Some(error);
                     }
                 }
-                shutdown_all(&state, &config).await;
-                drain_exit_events(&state, &handle, &config, &mut child_rx).await;
+                let had_acps = shutdown_all(&state, &config).await;
+                drain_exit_events(&state, &handle, &config, &mut child_rx, had_acps).await;
                 handle.shutdown();
                 break;
             }
@@ -365,13 +365,20 @@ pub async fn run(config: InstanceConfig, shutdown: CancellationToken) -> anyhow:
 /// 收尾消费 child_rx 中的 Exit 事件（优雅关闭后，问题 20）：进程已 SIGKILL，
 /// wait 在毫秒级完成，短暂超时即可收齐；超时未收齐的由下次启动的
 /// buffer_lost 对账兜底（server 侧权威）。
+///
+/// `had_acps=false`（无存活 ACP 会话被终止）时不会有 Exit 事件，直接返回，
+/// 不再空等固定超时（原 800ms 在无会话关闭时造成 ~0.8s 的退出尾巴）。
 async fn drain_exit_events(
     state: &HubState,
     handle: &TransportHandle,
     config: &InstanceConfig,
     child_rx: &mut mpsc::Receiver<ChildOutput>,
+    had_acps: bool,
 ) {
-    let drain = tokio::time::timeout(Duration::from_millis(800), async {
+    if !had_acps {
+        return;
+    }
+    let drain = tokio::time::timeout(Duration::from_millis(150), async {
         while let Some(out) = child_rx.recv().await {
             if matches!(out, ChildOutput::Exit { .. }) {
                 forward_child_output(state, handle, config, out, false).await;

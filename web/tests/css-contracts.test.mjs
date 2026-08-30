@@ -242,9 +242,13 @@ test('responsive behavior has compact, medium and wide layout contracts', () => 
 
 test('coarse pointers expose sidebar actions without hover and keep controls touch-sized', () => {
   const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'ProjectSessionRow.tsx'), 'utf8');
+  const sessionAccessory = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'sidebar-parts.tsx'), 'utf8');
   const button = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Button.tsx'), 'utf8');
   const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Dialog.tsx'), 'utf8');
-  assert.match(sessionRow, /group-hover\/row:opacity-100 group-focus-within\/row:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100/);
+  assert.match(sessionAccessory, /hoverGroup\(\)/);
+  assert.match(sessionAccessory, /group-hover\/row/);
+  assert.match(sessionAccessory, /group-focus-within\/row/);
+  assert.match(sessionAccessory, /pointer-coarse:pointer-events-auto pointer-coarse:opacity-100/);
   assert.match(sessionRow, /pointer-coarse:min-h-44/);
   assert.match(button, /pointer-coarse:min-h-44/);
   assert.match(dialog, /pointer-coarse:w-48 pointer-coarse:min-h-44/);
@@ -396,8 +400,9 @@ test('icon-only controls receive visible help from the shared Tooltip', () => {
   assert.doesNotMatch(button, /title=\{/);
   assert.match(tooltip, /@kobalte\/core\/tooltip/);
   assert.match(tooltip, /TooltipPrimitive\.Content/);
-  const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'ProjectSessionRow.tsx'), 'utf8');
-  assert.match(sessionRow, /<DropdownMenuTrigger[\s\S]*?as=\{IconButton\}[\s\S]*?class="session-menu/);
+  const sessionAccessory = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'sidebar-parts.tsx'), 'utf8');
+  assert.match(sessionAccessory, /<DropdownMenuTrigger[\s\S]*?as=\{IconButton\}[\s\S]*?session-menu/);
+  assert.match(sessionAccessory, /ButtonGroup[\s\S]*?buttonGroupItemClass/);
 });
 
 test('icon-only actions use one rounded rectangular geometry and never circular buttons', () => {

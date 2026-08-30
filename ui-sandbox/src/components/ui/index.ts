@@ -1,6 +1,7 @@
 export { CopyButton } from './CopyButton';
 export { Badge, type BadgeTone } from './Badge';
 export { Button, type ButtonProps } from './Button';
+export { ButtonGroup, buttonGroupItemClass } from './ButtonGroup';
 export { Checkbox } from './Checkbox';
 export { Dialog } from './Dialog';
 export { DropdownMenu, type MenuItem } from './DropdownMenu';

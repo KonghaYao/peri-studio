@@ -6,6 +6,11 @@
   flex: 1;
 }
 
+/* 侧栏列表：为滚动条预留沟槽，避免时间戳/操作钮与滚动条叠压。 */
+.sidebar-scroll {
+  scrollbar-gutter: stable;
+}
+
 .sidebar-scroll-mist {
   position: absolute;
   inset-inline: 0;

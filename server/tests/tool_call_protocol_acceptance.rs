@@ -136,3 +136,51 @@ fn oversized_arguments_are_explicitly_omitted_instead_of_silently_empty() {
     }));
     assert!(matches!(patch.arguments, ToolJsonPatch::Omitted { bytes } if bytes > 4_096));
 }
+
+#[test]
+fn raw_output_without_status_stays_non_terminal() {
+    let running = patch(json!({
+        "sessionUpdate": "tool_call_update",
+        "toolCallId": "result-only",
+        "status": "in_progress",
+        "rawOutput": { "stdout": "partial" }
+    }));
+    assert_eq!(running.status, Some(ToolCallStatus::Running));
+
+    let result_only = patch(json!({
+        "sessionUpdate": "tool_call_update",
+        "toolCallId": "result-only",
+        "rawOutput": { "stdout": "done", "exitCode": 0 }
+    }));
+    assert_eq!(result_only.status, None, "ACP: rawOutput alone must not imply completed");
+    assert!(result_only.completed_at.is_none());
+    assert!(
+        matches!(result_only.result, ToolJsonPatch::Set { value } if value["stdout"] == "done")
+    );
+}
+
+#[test]
+fn status_aliases_and_case_insensitive_terminal_values() {
+    for status in ["success", "Succeeded", "FINISHED", "OK"] {
+        let patch = patch(json!({
+            "sessionUpdate": "tool_call_update",
+            "toolCallId": format!("alias-{status}"),
+            "status": status
+        }));
+        assert_eq!(
+            patch.status,
+            Some(ToolCallStatus::Completed),
+            "alias {status}"
+        );
+    }
+
+    assert_eq!(
+        patch(json!({
+            "sessionUpdate": "tool_call_update",
+            "toolCallId": "pending-explicit",
+            "status": "pending"
+        }))
+        .status,
+        Some(ToolCallStatus::Pending)
+    );
+}

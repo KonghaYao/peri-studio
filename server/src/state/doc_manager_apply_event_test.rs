@@ -400,6 +400,61 @@ async fn load_replay_first_frame_is_delta_synthesizes_placeholder() {
 }
 
 #[tokio::test(start_paused = true)]
+async fn load_replay_clears_stale_session_loading() {
+    let sink = MemSink::default();
+    let mgr = DocManager::new(cfg(), Arc::new(sink.clone()));
+    open(&mgr, "s1").await;
+    assert!(matches!(
+        mgr.submit_command(
+            "s1",
+            DocCommand::RegisterPendingPromptEntry {
+                turn_id: "turn-1".into(),
+                entry_id: "turn-1:user".into(),
+                text: "in flight".into(),
+                author_user_id: None,
+                source_command_id: "11111111-1111-1111-1111-111111111111".into(),
+                payload_fingerprint: "fingerprint".into(),
+                created_at: "2026-08-14T00:00:00Z".into(),
+            },
+        )
+        .await,
+        SubmitResult::Applied(result) if result.applied
+    ));
+    assert_eq!(projected_session_loading(&sink, "s1").await, Some(true));
+
+    assert!(matches!(
+        mgr.submit_command(
+            "s1",
+            DocCommand::BeginLoadReplay {
+                acp_session_id: "acp-1".into(),
+            },
+        )
+        .await,
+        SubmitResult::Applied(result) if result.applied
+    ));
+    assert_eq!(
+        projected_session_loading(&sink, "s1").await,
+        None,
+        "BeginLoadReplay must clear stale loading"
+    );
+
+    assert!(matches!(
+        mgr.submit_event(replay_delta("s1", 1, "历史回答（无前置问题）"))
+            .await,
+        SubmitResult::Applied(_)
+    ));
+    assert!(matches!(
+        mgr.submit_command("s1", DocCommand::EndLoadReplay).await,
+        SubmitResult::Applied(result) if result.applied
+    ));
+    assert_eq!(
+        projected_session_loading(&sink, "s1").await,
+        Some(false),
+        "EndLoadReplay must not leave session loading true"
+    );
+}
+
+#[tokio::test(start_paused = true)]
 async fn turn_terminal_is_idempotent_only_for_the_same_persisted_outcome() {
     let mgr = DocManager::new(cfg(), Arc::new(MemSink::default()));
     open(&mgr, "s1").await;

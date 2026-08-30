@@ -31,6 +31,7 @@ import { isTerminal } from '../../panel/lib/action-state';
 import { principalId, readOnly } from '../../panel/lib/auth-state';
 import {
   Button,
+  buttonGroupItemClass,
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -49,7 +50,7 @@ import {
 import { SessionSearch } from './SessionSearch';
 import { SessionImportDialog } from '@/widgets/shell/SessionImportDialog';
 import { ProjectSessionRow } from './ProjectSessionRow';
-import { NavAction, SectionHeader } from './sidebar-parts';
+import { NavAction, ProjectRowAccessory, ProjectRowActionGroup, SectionHeader } from './sidebar-parts';
 import { runConfirmedMutation } from '../../panel/lib/form-mutation';
 import { pickProjectDirectory } from '../../panel/lib/pick-directory';
 import { projectNameFromPath } from '../../panel/lib/project-path';
@@ -68,7 +69,6 @@ import { ArchivedSection } from '@/widgets/shell/shared/ArchivedSection';
 import { ConfirmDialog } from '@/widgets/shell/shared/ConfirmDialog';
 import { SidebarChrome } from '@/widgets/shell/SidebarChrome';
 import { reconcileInstanceGroups, type InstanceGroup } from '../../panel/lib/instance-groups';
-import { cn } from '@/shared/lib/cn';
 import {
   Archive,
   CloudOff,
@@ -125,6 +125,9 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
     projectSessions().filter((session) => !session.archivedAt),
     pinnedSessionKeys(),
   ));
+  const archivedProjectCount = createMemo(() => projects().filter((project) => !!project.archivedAt).length);
+  const archivedSessionCount = createMemo(() => projectSessions().filter((session) => !!session.archivedAt).length);
+  const hasArchivedEntries = () => archivedProjectCount() > 0 || archivedSessionCount() > 0;
   const sessionHasRunningRuntime = (session: { id: string; activeChatId?: string | null }) => {
     if (!session.activeChatId) return false;
     return session.id !== selectedSessionId() || !isTerminal(chatStatusSignal()[session.activeChatId]);
@@ -297,6 +300,13 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
       nav={<>
         <NavAction icon={<MessageSquarePlus size={16} strokeWidth={1.7} />} label="New session" disabled={readOnly()} onClick={handleNewSession} />
         <NavAction icon={<Search size={16} strokeWidth={1.7} />} label="Search" onClick={() => setSearchOpen(true)} />
+        <Show when={hasArchivedEntries()}>
+          <NavAction
+            icon={<Archive size={16} strokeWidth={1.7} />}
+            label={`Archived · ${archivedProjectCount() + archivedSessionCount()}`}
+            onClick={() => setArchivedOpen(true)}
+          />
+        </Show>
       </>}
     >
       <SessionSearch open={searchOpen()} onClose={() => setSearchOpen(false)} onSelected={props.onNavigate} />
@@ -360,7 +370,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
           <For each={instanceIds()}>{(instanceId) => {
             const instance = () => instanceGroups().find((item) => item.id === instanceId)!;
             return <section class="instance-group group/instance pb-1">
-              <div class="instance-row flex min-h-28 items-center gap-8 px-2.5 text-11 text-content-muted">
+              <div class="instance-row flex min-h-28 items-center gap-8 pl-2.5 pr-4 text-11 text-content-muted">
                 <span class="instance-name min-w-0 flex-1 truncate">{instance().name}</span>
                 <Show when={instance().offline}>
                   <span class="instance-offline flex shrink-0 items-center gap-4 text-danger-solid" role="img" aria-label="Instance offline">
@@ -397,56 +407,49 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                           <FolderOpen size={15} strokeWidth={1.7} />
                         </Show>
                       </span>
-                      <span class="min-w-0 flex-1 py-0.5 pr-14">
-                        <span class="flex min-w-0 items-center gap-8">
-                          <span class="min-w-0 flex-1 truncate text-13 text-content-primary">{project().name}</span>
-                          <Show when={hasSessions()}>
-                            <span
-                              class={cn(
-                                'shrink-0 tabular-nums text-11 text-content-muted transition-opacity duration-(--duration-fast)',
-                                'group-hover/workspace:opacity-0 group-focus-within/workspace:opacity-0 pointer-coarse:opacity-100',
-                              )}
-                              aria-hidden="true"
-                            >
-                              {sessions().length}
-                            </span>
-                          </Show>
-                        </span>
+                      <span class="min-w-0 flex-1 py-0.5">
+                        <span class="min-w-0 flex-1 truncate text-13 text-content-primary">{project().name}</span>
                         <Show when={emptyHint() && !open()}>
                           <span class="sidebar-mist-hint mt-0.5 block truncate text-11">{emptyHint()}</span>
                         </Show>
                       </span>
                     </CollapsibleTrigger>
-                    <div class="row-actions absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 transition-opacity duration-(--duration-fast) group-hover/workspace:opacity-100 group-focus-within/workspace:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100">
-                      <DropdownMenu open={projectMenu() === projectId} onOpenChange={(next) => setProjectMenu(next ? projectId : null)} placement="bottom-end">
-                        <DropdownMenuTrigger
-                          as={IconButton}
+                    <ProjectRowAccessory count={hasSessions() ? sessions().length : undefined} actionsVisible={projectMenu() === projectId}>
+                      <ProjectRowActionGroup>
+                        <DropdownMenu open={projectMenu() === projectId} onOpenChange={(next) => setProjectMenu(next ? projectId : null)} placement="bottom-end">
+                          <DropdownMenuTrigger
+                            as={IconButton}
+                            size="sm"
+                            showTooltip={false}
+                            class={`${buttonGroupItemClass} project-menu-trigger`}
+                            label={`${project().name} actions`}
+                            disabled={readOnly()}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <MoreIcon />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent id={projectMenuId} aria-label={`${project().name} actions`} class="ui-menu">
+                            <DropdownMenuItem onSelect={() => { setProjectNameDraft(project().name); setRenamingProject(projectId); }}><RenameIcon />Rename project</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setImportingProject(projectId)}><ImportIcon />Import existing session</DropdownMenuItem>
+                            <DropdownMenuItem class="text-danger focus:text-danger" disabled={projectHasRunningSession(projectId)} onSelect={() => setArchiveCandidate(projectId)}><ArchiveIcon />Archive project</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <IconButton
                           size="sm"
                           showTooltip={false}
-                          class="project-menu-trigger size-24 border-0 bg-surface-overlay/90 text-content-muted shadow-sm hover:text-content-primary pointer-coarse:size-32"
-                          label={`${project().name} actions`}
-                          disabled={readOnly()}
+                          class={`${buttonGroupItemClass} row-create-action`}
+                          label={`New session in ${project().name}`}
+                          busy={creatingSessionProjectId() === projectId}
+                          disabled={readOnly() || !!creatingSessionProjectId()}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            createProjectSession(projectId);
+                          }}
                         >
-                          <MoreIcon />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent id={projectMenuId} aria-label={`${project().name} actions`} class="ui-menu">
-                          <DropdownMenuItem onSelect={() => { setProjectNameDraft(project().name); setRenamingProject(projectId); }}><RenameIcon />Rename project</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => setImportingProject(projectId)}><ImportIcon />Import existing session</DropdownMenuItem>
-                          <DropdownMenuItem class="text-danger focus:text-danger" disabled={projectHasRunningSession(projectId)} onSelect={() => setArchiveCandidate(projectId)}><ArchiveIcon />Archive project</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <IconButton
-                        size="sm"
-                        showTooltip={false}
-                        class="row-create-action size-24 border-0 bg-surface-overlay/90 text-content-muted shadow-sm hover:text-content-primary pointer-coarse:size-32"
-                        label={`New session in ${project().name}`}
-                        busy={creatingSessionProjectId() === projectId}
-                        disabled={readOnly() || !!creatingSessionProjectId()}
-                        onClick={() => createProjectSession(projectId)}
-                      >
-                        <PlusIcon />
-                      </IconButton>
-                    </div>
+                          <PlusIcon />
+                        </IconButton>
+                      </ProjectRowActionGroup>
+                    </ProjectRowAccessory>
                   </div>
                   <CollapsibleContent id={`project-sessions-${projectId}`} class="session-list flex flex-col gap-2 pb-1">
                     <Show

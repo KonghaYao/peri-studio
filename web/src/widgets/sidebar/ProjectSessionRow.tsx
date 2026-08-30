@@ -1,22 +1,18 @@
 import { createEffect, createSignal, Show } from 'solid-js';
 import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-  IconButton,
   Popover,
   PopoverContent,
   PopoverTrigger,
   TextField,
   Button,
 } from '@/shared/ui';
-import { Archive, Pencil, Pin } from 'lucide-solid';
+import { Pencil } from 'lucide-solid';
 import { formatCompactRelativeTime, sessionDisplayTitle } from '../../panel/lib/recovery-state.ts';
 import { runConfirmedMutation } from '../../panel/lib/form-mutation';
 import { cn } from '@/shared/lib/cn';
-import { SessionMenuIcon, SessionRowTail } from './sidebar-parts';
+import { SessionRowAccessory } from './sidebar-parts';
 
 export interface SessionRowState {
   label: string;
@@ -52,8 +48,6 @@ export interface ProjectSessionRowProps {
 }
 
 function RenameIcon() { return <Pencil size={16} strokeWidth={1.7} />; }
-function ArchiveIcon() { return <Archive size={16} strokeWidth={1.7} />; }
-function PinIcon() { return <Pin size={16} strokeWidth={1.7} />; }
 
 export function ProjectSessionRow(props: ProjectSessionRowProps) {
   const [draft, setDraft] = createSignal(props.session.title);
@@ -110,43 +104,32 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     >
       <button
         type="button"
-        class="flex min-h-32 min-w-0 flex-1 items-center rounded-md px-10 pr-48 text-left pointer-coarse:min-h-44"
+        class="session-row-main flex min-h-32 w-full min-w-0 items-center rounded-md pl-10 pr-56 text-left pointer-coarse:min-h-44"
         aria-current={props.selected ? 'page' : undefined}
         aria-label={displayTitle()}
         onClick={open}
         disabled={(props.readOnly && !props.session.activeChatId) || props.session.lifecycle !== 'ready' || props.navigationBusy}
       >
         <span class="session-copy min-w-0 flex-1 truncate text-13 text-content-primary">{displayTitle()}</span>
-        <SessionRowTail
-          time={relativeTime()}
-          live={loading()}
-          liveLabel={props.state.detail || props.state.label}
-          pinOnHover={props.pinned}
-        />
       </button>
-      <DropdownMenu open={props.menuOpen} onOpenChange={props.onMenuOpenChange} placement="bottom-end">
-        <DropdownMenuTrigger
-          as={IconButton}
-          size="sm"
-          showTooltip={false}
-          class="session-menu absolute top-1/2 right-4 -translate-y-1/2 size-24 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm transition-opacity duration-(--duration-fast) group-hover/row:opacity-100 group-focus-within/row:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 data-[expanded]:opacity-100"
-          disabled={submitting()}
-          label="Session actions"
-        >
-          <SessionMenuIcon />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent id={`${renameId()}-menu`} aria-label={`Session actions: ${displayTitle()}`} class="ui-menu">
-          <DropdownMenuItem onClick={() => {
-            props.onMenuOpenChange(false);
-            props.onTogglePin();
-          }}><PinIcon />{props.pinned ? 'Unpin session' : 'Pin session'}</DropdownMenuItem>
-          <DropdownMenuItem disabled={props.readOnly} onSelect={() => props.onRenameOpenChange(true)}><RenameIcon />Rename session</DropdownMenuItem>
-          <DropdownMenuItem class="text-danger focus:text-danger" disabled={props.readOnly} onClick={() => {
-            props.onMenuOpenChange(false);
-            props.onArchiveRequest(props.session.id);
-          }}><ArchiveIcon />Archive session</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <SessionRowAccessory
+        time={relativeTime()}
+        live={loading()}
+        liveLabel={props.state.detail || props.state.label}
+        pinned={props.pinned}
+        readOnly={props.readOnly}
+        menuOpen={props.menuOpen}
+        onMenuOpenChange={props.onMenuOpenChange}
+        onTogglePin={props.onTogglePin}
+        onArchive={() => props.onArchiveRequest(props.session.id)}
+        menuId={`${renameId()}-menu`}
+        menuLabel={`Session actions: ${displayTitle()}`}
+        menuContent={
+          <DropdownMenuItem disabled={props.readOnly || submitting()} onSelect={() => props.onRenameOpenChange(true)}>
+            <RenameIcon />Rename session
+          </DropdownMenuItem>
+        }
+      />
       <Popover open={props.renameOpen} onOpenChange={(open) => props.onRenameOpenChange(open)} placement="bottom-end">
         <PopoverTrigger as="span" class="sr-only" aria-label={`Rename ${displayTitle()}`} />
         <PopoverContent

@@ -6,10 +6,12 @@ import { SourceControlPanel } from './SourceControlPanel';
 import { McpPanelContent } from '@/widgets/chat/McpPanel';
 import { ResourceRailButton } from './ResourceRailButton';
 import { SessionRailActions } from '@/widgets/shell/SessionRailActions';
-import { Files, GitBranch, PlugZap, RefreshCw, X } from 'lucide-solid';
+import { Files, GitBranch, GitGraph, PlugZap, RefreshCw, X } from 'lucide-solid';
 import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_SURFACE_CLASS, RESOURCE_PANEL_TITLE_CLASS } from './resource-panel-layout';
+import { GitGraphPanel } from './git/GitGraphPanel';
+import { MOCK_GIT_GRAPH_COMMITS } from './git/git-graph-mock';
 
-export type WorkbenchView = 'explorer' | 'scm' | 'mcp' | null;
+export type WorkbenchView = 'explorer' | 'scm' | 'mcp' | 'graph' | null;
 export type ResourcePreviewOrigin = {
   view: 'explorer' | 'scm';
   key: string;
@@ -116,6 +118,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
       <ResourceRailButton label="Explorer" active={view() === 'explorer'} onClick={() => toggle('explorer')}><Files size={17} strokeWidth={1.7} /></ResourceRailButton>
       <ResourceRailButton label="Source Control" active={view() === 'scm'} badge={sourceControlCount()} onClick={() => toggle('scm')}><GitBranch size={17} strokeWidth={1.7} /></ResourceRailButton>
       <ResourceRailButton label="MCP" active={view() === 'mcp'} onClick={() => toggle('mcp')}><PlugZap size={17} strokeWidth={1.7} /></ResourceRailButton>
+      <ResourceRailButton label="Git Graph" active={view() === 'graph'} onClick={() => toggle('graph')}><GitGraph size={17} strokeWidth={1.7} /></ResourceRailButton>
       <SessionRailActions />
     </nav>
     <Show when={view()}>
@@ -126,6 +129,11 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
           <IconButton label="Close resource panel" size="compact" onClick={close} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><X size={14} strokeWidth={1.7} /></IconButton>
         </header>
         <Show when={view() === 'mcp'}><McpPanelContent embedded /></Show>
+        <Show when={view() === 'graph'}>
+          <div class="flex min-h-0 flex-1 flex-col">
+            <GitGraphPanel commits={MOCK_GIT_GRAPH_COMMITS} />
+          </div>
+        </Show>
         <Show when={view() === 'explorer' || view() === 'scm'}>
           <Show when={project()} fallback={<div class="p-16 text-12 text-content-muted">Select or create a project to browse its workspace.</div>}>
             <Show when={resourceWorkspace().error}>{(message) => <div role="alert" class="m-8 flex items-start gap-6 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">

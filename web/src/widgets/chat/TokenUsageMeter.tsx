@@ -110,7 +110,7 @@ export function TokenUsageMeter(props: {
       </KPopover.Trigger>
       <KPopover.Portal>
         <KPopover.Content
-          class="z-(--z-overlay) w-48 rounded-md border border-border-subtle bg-surface-overlay p-2.5 shadow-overlay outline-none"
+          class="z-(--z-overlay) w-[200px] rounded-md border border-border-subtle bg-surface-overlay p-10 shadow-overlay outline-none"
           onPointerEnter={() => setHovering(true)}
           onPointerLeave={() => setHovering(false)}
         >

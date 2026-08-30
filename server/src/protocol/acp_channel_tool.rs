@@ -199,13 +199,19 @@ pub(crate) fn tool_kind(value: &str) -> ToolCallKind {
 }
 
 pub(crate) fn tool_status(value: &str) -> ToolCallStatus {
-    match value {
+    // ACP wire status 大小写不一；在协议边界统一为小写再映射。
+    match value.to_ascii_lowercase().as_str() {
+        "pending" => ToolCallStatus::Pending,
         "in_progress" | "running" | "streaming" => ToolCallStatus::Running,
-        "awaiting_permission" | "awaitingPermission" => ToolCallStatus::AwaitingPermission,
-        "completed" | "complete" | "done" => ToolCallStatus::Completed,
+        "awaiting_permission" | "awaitingpermission" => ToolCallStatus::AwaitingPermission,
+        "completed" | "complete" | "done" | "success" | "succeeded" | "finished" | "ok" => {
+            ToolCallStatus::Completed
+        }
         "failed" | "error" => ToolCallStatus::Error,
         "cancelled" | "canceled" => ToolCallStatus::Cancelled,
-        _ => ToolCallStatus::Pending,
+        // ACP v2 自定义扩展（`_foo`）与未知值：保持进行中，避免把 Running 降级为 Pending。
+        s if s.starts_with('_') => ToolCallStatus::Running,
+        _ => ToolCallStatus::Running,
     }
 }
 

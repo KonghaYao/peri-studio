@@ -278,13 +278,16 @@ async fn send_spawn_ack(
 }
 
 /// 优雅关闭：组级 kill 全部存活 session（并行，§8 三层语义第一/二层）。
-pub(super) async fn shutdown_all(state: &HubState, config: &InstanceConfig) {
+///
+/// 返回是否 kill 了任何进程组；`false` 表示无存活 ACP 会话（调用方可据此
+/// 跳过等待 Exit 事件的收尾阶段，避免空等）。
+pub(super) async fn shutdown_all(state: &HubState, config: &InstanceConfig) -> bool {
     let acps: Vec<Arc<AcpProcess>> = {
         let chats = state.chats.lock().expect("chats mutex poisoned");
         chats.values().filter_map(|e| e.acp.clone()).collect()
     };
     if acps.is_empty() {
-        return;
+        return false;
     }
     let grace = config.kill_grace;
     let tasks = acps.into_iter().map(|acp| {
@@ -293,6 +296,7 @@ pub(super) async fn shutdown_all(state: &HubState, config: &InstanceConfig) {
         })
     });
     join_all(tasks).await;
+    true
 }
 
 /// 断线：所有存活 session 置缓冲模式（重连补推判定依据）。

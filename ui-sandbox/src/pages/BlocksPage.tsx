@@ -1,5 +1,7 @@
 import {
   ChatHeader,
+  ProjectRowAccessory,
+  SessionRowAccessory,
   GitBranchBar,
   GitChangeGroup,
   GitChangeTree,
@@ -16,6 +18,7 @@ import {
   ToolActivityRow,
   UserBubble,
 } from '@/components/blocks';
+import { Folder } from 'lucide-solid';
 import { DemoSection, DomainSection, TierHeader } from '@/pages/shared/DemoSection';
 
 const MARKDOWN_SAMPLE = `# Markdown rendering lab
@@ -137,6 +140,35 @@ export function BlocksPage() {
         <DemoSection id="chat-header" title="ChatHeader" description="会话标题 + 连接状态。">
           <div class="overflow-hidden rounded-lg border border-border-subtle">
             <ChatHeader title="Refactor ACP session recovery and projection boundaries" />
+          </div>
+        </DemoSection>
+
+        <DemoSection id="session-row-accessory" title="SessionRowAccessory" description="浮动槽位：默认时间戳，hover 切换为 Pin / Archive / More 按钮组。">
+          <div class="max-w-sm rounded-lg border border-border-subtle bg-surface-overlay p-2">
+            <div class="group/row relative min-h-8 rounded-md hover:bg-interaction-hover">
+              <div class="flex min-h-8 items-center px-2.5">
+                <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Refactor ACP session recovery</span>
+              </div>
+              <SessionRowAccessory time="18m" pinned actionsVisible />
+            </div>
+            <div class="group/row relative mt-1 min-h-8 rounded-md bg-sidebar-selected">
+              <div class="flex min-h-8 items-center px-2.5">
+                <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Design workspace state</span>
+              </div>
+              <SessionRowAccessory time="2m" live />
+            </div>
+          </div>
+        </DemoSection>
+
+        <DemoSection id="project-row-accessory" title="ProjectRowAccessory" description="项目行：默认会话计数，hover 切换为 More / New session 按钮组。">
+          <div class="max-w-sm rounded-lg border border-border-subtle bg-surface-overlay p-2">
+            <div class="group/workspace relative min-h-8 rounded-md hover:bg-interaction-hover">
+              <div class="flex min-h-8 items-center gap-2 px-2.5">
+                <Folder size={15} strokeWidth={1.7} class="shrink-0 text-content-muted" />
+                <span class="min-w-0 flex-1 truncate text-13 text-content-primary">peri-studio</span>
+              </div>
+              <ProjectRowAccessory count={3} />
+            </div>
           </div>
         </DemoSection>
       </DomainSection>

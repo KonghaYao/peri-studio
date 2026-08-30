@@ -6,6 +6,10 @@
   flex: 1;
 }
 
+.sidebar-scroll {
+  scrollbar-gutter: stable;
+}
+
 .sidebar-scroll-mist {
   position: absolute;
   inset-inline: 0;

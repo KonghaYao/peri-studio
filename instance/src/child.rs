@@ -91,6 +91,10 @@ const MAX_LINE_BYTES: usize = 4 * 1024 * 1024;
 /// 超长行丢弃日志限频间隔（异常巨行可能高频出现，5s 一条即可见且不风暴）。
 const OVERSIZE_LINE_LOG_INTERVAL: Duration = Duration::from_secs(5);
 
+/// kill 宽限期内进程组存活轮询间隔：组提前清空则不再等待剩余宽限
+/// （§4.1 语义不变，仅缩短常路径关闭耗时）。
+const GROUP_POLL_INTERVAL: Duration = Duration::from_millis(50);
+
 /// 白名单基集（§9.6：默认空 = 仅继承白名单基集；hub 侧 `validate_env` 用
 /// 同一常量做双端校验）。值在 spawn 时取自 daemon 环境。
 pub(crate) const ENV_BASE_ALLOWLIST: [&str; 5] = ["PATH", "HOME", "LANG", "SHELL", "PERI_MCP_APPS"];
@@ -439,6 +443,10 @@ impl AcpProcess {
     ///
     /// 幂等：已退出（或进程组不存在，ESRCH）→ 立即成功。stdout 读任务随后
     /// wait 完成并上报退出。
+    ///
+    /// 宽限期内以 `kill(-pgid, 0)` 轮询进程组是否已清空（组消失即全体退出，
+    /// 含孙进程）：提前清空则立即返回，不再睡满剩余宽限；到点仍未清空
+    /// （存在忽略 SIGTERM 的进程）才 SIGKILL 兜底。
     pub async fn kill(&self, grace: Duration) -> anyhow::Result<()> {
         {
             let state = self.inner.state.lock().expect("state mutex poisoned");
@@ -451,7 +459,16 @@ impl AcpProcess {
             // ESRCH 等：进程组已不存在，视为已达成（幂等）。
             return Ok(());
         }
-        tokio::time::sleep(grace).await;
+        let deadline = tokio::time::Instant::now() + grace;
+        loop {
+            if !sys::kill_group(pgid, 0) {
+                return Ok(());
+            }
+            if tokio::time::Instant::now() >= deadline {
+                break;
+            }
+            tokio::time::sleep(GROUP_POLL_INTERVAL).await;
+        }
         sys::kill_group(pgid, sys::SIGKILL);
         tracing::info!(target: "peri_studio::instance", session_id = %self.inner.session_id, pgid,
             grace_ms = grace.as_millis(), "ACP process group kill complete");

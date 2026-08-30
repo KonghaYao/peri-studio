@@ -144,26 +144,16 @@ impl AcpChannel {
         Some(value.clone())
     }
 
-    /// 官方 `session/request_permission` 解析（schema v1）：params =
-    /// `{sessionId(req), toolCall(req, ToolCallUpdate), options(req)}`。
-    ///
-    /// - `permission_id` 由 server 生成（uuid v4，§4.7 server 权威；官方
-    ///   request 无 permissionId 字段）；
-    /// - `title` = toolCall.title → toolCall.toolCallId → 空串回退；
-    /// - `description` 官方无字段 → None；
-    /// - `request_id` 帧顶层 id **原样保留** `serde_json::Value`
-    ///   （string/number 均合法；`as_str` 失败不得丢弃——这是与现有
-    ///   [`NormalizeOutcome::RpcResponse`] 分支 160-162 的关键差异）。
+    /// 官方 `session/request_permission` 解析（schema v1/v2）：
+    /// - v1：`params.toolCall`
+    /// - v2：`params.subject.toolCall`（`subject.type = tool_call`）
     pub(crate) fn normalize_request_permission(
         &self,
         request_id: &Value,
         params: &serde_json::Map<String, Value>,
     ) -> Result<PermissionRequestFields, MapError> {
         let session_id = required(params, "sessionId", "session_id")?;
-        let tool_call = params
-            .get("toolCall")
-            .and_then(Value::as_object)
-            .ok_or(MapError::MissingField)?;
+        let tool_call = permission_tool_call(params)?;
         let tool_call_id = super::acp_channel_tool::validated_tool_call_id(tool_call)?;
         let options = params
             .get("options")
@@ -175,8 +165,10 @@ impl AcpChannel {
                 return Err(MapError::MissingField);
             }
         }
-        let title =
-            string_field(tool_call, "title", "title").unwrap_or_else(|| tool_call_id.clone());
+        let title = string_field(params, "title", "title")
+            .or_else(|| string_field(tool_call, "title", "title"))
+            .unwrap_or_else(|| tool_call_id.clone());
+        let description = string_field(params, "description", "description");
         let argument_bytes = tool_call
             .get("rawInput")
             .and_then(|value| serde_json::to_vec(value).ok())
@@ -215,11 +207,30 @@ impl AcpChannel {
                 result_bytes,
             },
             title,
-            description: None,
+            description,
             options: options.clone(),
             session_id,
         })
     }
+}
+
+/// ACP v1 `params.toolCall` 或 v2 `params.subject.toolCall`。
+fn permission_tool_call(
+    params: &serde_json::Map<String, Value>,
+) -> Result<&serde_json::Map<String, Value>, MapError> {
+    if let Some(subject) = params.get("subject").and_then(Value::as_object) {
+        if let Some(tool_call) = subject
+            .get("toolCall")
+            .or_else(|| subject.get("tool_call"))
+            .and_then(Value::as_object)
+        {
+            return Ok(tool_call);
+        }
+    }
+    params
+        .get("toolCall")
+        .and_then(Value::as_object)
+        .ok_or(MapError::MissingField)
 }
 
 fn bounded_tool_evidence(value: Option<&Value>) -> (Option<Value>, Option<bool>, Option<u64>) {

@@ -2,6 +2,8 @@ import { createSignal, For, Show, type JSX } from 'solid-js';
 import {
   Badge,
   Button,
+  ButtonGroup,
+  buttonGroupItemClass,
   Checkbox,
   Dialog,
   DropdownMenu,
@@ -18,7 +20,7 @@ import {
   Tooltip,
 } from '@/components/ui';
 import { TierHeader } from '@/pages/shared/DemoSection';
-import { Bell, Inbox, Mic, Pencil, Plus, Search, Send, Settings, Trash2 } from 'lucide-solid';
+import { Bell, Archive, Inbox, Mic, MoreHorizontal, Pencil, Pin, Plus, Search, Send, Settings, Trash2 } from 'lucide-solid';
 
 /* Tier 2 · Base UI：AntD 方向基础组件的状态矩阵。 */
 
@@ -82,6 +84,22 @@ export function ComponentsPage() {
           <IconButton label="Settings" tooltip="Settings"><Settings size={16} /></IconButton>
           <IconButton label="Voice input" tooltip="Voice input" disabled><Mic size={16} /></IconButton>
           <IconButton label="Send" tooltip="Send" class="bg-accent-solid text-content-on-accent hover:bg-accent-hover hover:text-content-on-accent"><Send size={16} /></IconButton>
+        </Row>
+      </Demo>
+
+      <Demo id="button-group" title="ButtonGroup" description="侧栏行 hover 操作：分段图标组，段间竖线、共享浮层底。">
+        <Row label="Session actions">
+          <ButtonGroup aria-label="Session actions">
+            <IconButton size="sm" showTooltip={false} label="Pin session" class={buttonGroupItemClass}><Pin size={14} strokeWidth={1.7} /></IconButton>
+            <IconButton size="sm" showTooltip={false} label="Archive session" class={`${buttonGroupItemClass} text-content-muted hover:text-danger-solid`}><Archive size={14} strokeWidth={1.7} /></IconButton>
+            <IconButton size="sm" showTooltip={false} label="More actions" class={buttonGroupItemClass}><MoreHorizontal size={14} strokeWidth={1.7} /></IconButton>
+          </ButtonGroup>
+        </Row>
+        <Row label="Project actions">
+          <ButtonGroup aria-label="Project actions">
+            <IconButton size="sm" showTooltip={false} label="Project actions" class={buttonGroupItemClass}><MoreHorizontal size={14} strokeWidth={1.7} /></IconButton>
+            <IconButton size="sm" showTooltip={false} label="New session" class={buttonGroupItemClass}><Plus size={14} strokeWidth={1.7} /></IconButton>
+          </ButtonGroup>
         </Row>
       </Demo>
 

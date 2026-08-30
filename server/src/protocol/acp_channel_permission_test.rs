@@ -141,6 +141,41 @@ fn map_request_permission_official() {
 }
 
 #[test]
+fn map_request_permission_v2_subject_tool_call() {
+    let f = json!({
+        "jsonrpc": "2.0",
+        "id": 12,
+        "method": "session/request_permission",
+        "params": {
+            "sessionId": "acp-1",
+            "title": "Approve shell command",
+            "description": "Agent wants to run cargo test",
+            "subject": {
+                "type": "tool_call",
+                "toolCall": {
+                    "toolCallId": "tc-v2",
+                    "title": "Run checks",
+                    "rawInput": { "command": "cargo test" }
+                }
+            },
+            "options": [
+                {"optionId": "allow-once", "name": "Allow once", "kind": "allow_once"}
+            ]
+        }
+    });
+    match norm(f) {
+        NormalizeOutcome::PermissionRequest(req) => {
+            assert_eq!(req.tool_call_id.as_deref(), Some("tc-v2"));
+            assert_eq!(req.title, "Approve shell command");
+            assert_eq!(req.description.as_deref(), Some("Agent wants to run cargo test"));
+            assert_eq!(req.tool.name, "Approve shell command");
+            assert_eq!(req.tool.arguments, Some(json!({"command": "cargo test"})));
+        }
+        other => panic!("expected permission request, got {other:?}"),
+    }
+}
+
+#[test]
 fn permission_rejects_the_same_overlong_tool_id_as_updates() {
     let f = json!({
         "jsonrpc": "2.0",

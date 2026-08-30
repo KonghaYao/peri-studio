@@ -115,35 +115,41 @@ describe('ProjectSessionRow', () => {
     expect(value.onRenameOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('exposes archive through a semantic menu and delegates confirmation ownership', () => {
-    const value = props({ menuOpen: true });
+  it('exposes archive as a direct action in the floating button group', () => {
+    const value = props();
     render(() => <ProjectSessionRow {...value} />);
 
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Archive session' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Archive session' }));
 
-    expect(value.onMenuOpenChange).toHaveBeenCalledWith(false);
     expect(value.onArchiveRequest).toHaveBeenCalledWith('acp-12345678');
   });
 
-  it('keeps pin state explicit and exposes unpin for pinned rows', () => {
-    const value = props({ menuOpen: true, pinned: true });
+  it('keeps rename in the overflow menu while pin and archive stay visible on hover', () => {
+    const value = props({ menuOpen: true });
     render(() => <ProjectSessionRow {...value} />);
 
-    expect(screen.getByRole('menuitem', { name: 'Unpin session' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Unpin session' }));
+    expect(screen.getByRole('button', { name: 'Pin session' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Archive session' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Rename session' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Archive session' })).not.toBeInTheDocument();
+  });
 
+  it('keeps pin state explicit with a direct toggle action', () => {
+    const value = props({ pinned: true });
+    render(() => <ProjectSessionRow {...value} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Unpin session' }));
     expect(value.onTogglePin).toHaveBeenCalledOnce();
   });
 
   it('allows archiving a session with a live runtime through server metadata', () => {
     const value = props({
-      menuOpen: true,
       session: { ...session, activeChatId: 'chat-live' },
     });
     render(() => <ProjectSessionRow {...value} />);
 
-    const archive = screen.getByRole('menuitem', { name: 'Archive session' });
-    expect(archive).not.toHaveAttribute('aria-disabled', 'true');
+    const archive = screen.getByRole('button', { name: 'Archive session' });
+    expect(archive).toBeEnabled();
     fireEvent.click(archive);
     expect(value.onArchiveRequest).toHaveBeenCalledWith('acp-12345678');
   });

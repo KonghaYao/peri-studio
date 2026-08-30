@@ -31,6 +31,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
       items: [
         { id: 'button', label: 'Button' },
         { id: 'icon-button', label: 'IconButton' },
+        { id: 'button-group', label: 'ButtonGroup' },
         { id: 'input', label: 'Input & Textarea' },
         { id: 'select', label: 'Select & forms' },
         { id: 'badge', label: 'Badge & Status' },
@@ -60,7 +61,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
     },
     {
       title: 'Chrome',
-      items: [{ id: 'chat-header', label: 'Chat header' }],
+      items: [{ id: 'chat-header', label: 'Chat header' }, { id: 'session-row-accessory', label: 'Session row accessory' }, { id: 'project-row-accessory', label: 'Project row accessory' }],
     },
     {
       title: 'Decision',

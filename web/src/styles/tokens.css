@@ -358,7 +358,7 @@
   --tool-activity-max: 740px;
 
   /* Layout */
-  --composer-max: 864px;
+  --composer-max: 760px;
   --composer-launch-max: 736px;
   --container-popover: 288px;
 
@@ -434,9 +434,9 @@
   --grid-cols-slash: minmax(150px, 0.8fr) minmax(0, 1.2fr);
 
   /* Containers (bounded surfaces; used by max-w-/max-h-/w- utilities) */
-  --container-chat: 960px;
-  --container-chat-content: 860px;
-  --container-chat-narrow: 840px;
+  --container-chat: 840px;
+  --container-chat-content: 752px;
+  --container-chat-narrow: 720px;
   --container-composer-launch: var(--composer-launch-max);
   --container-auth-card: min(440px, 100%);
 

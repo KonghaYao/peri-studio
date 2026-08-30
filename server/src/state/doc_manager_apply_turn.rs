@@ -298,6 +298,22 @@ pub(crate) fn apply_turn_group(
                     chat_writer::bump_projection_version(&mut txn, &root);
                 }
             }
+            // 回放期间跳过 control 侧 active_turn 投影；BeginLoadReplay 已清
+            // active_turn 字段，EndLoadReplay 的 CAS 常为 no-op。此处兜底清除
+            // 遗留 loading，避免恢复会话永久显示「Agent 正在工作」。
+            {
+                let mut txn = pair.session_txn();
+                let root = txn.get_or_insert_map(crate::state::factory::ROOT);
+                let sm = root.get_or_init::<_, yrs::MapRef>(&mut txn, "session");
+                if sm
+                    .get(&txn, "loading")
+                    .and_then(|value| value.cast::<bool>().ok())
+                    != Some(false)
+                {
+                    sm.insert(&mut txn, "loading", false);
+                    chat_writer::bump_projection_version(&mut txn, &root);
+                }
+            }
             pair.stream.replay_active = false;
             pair.stream.replay_turn = None;
             ApplyResult {
@@ -340,6 +356,7 @@ pub(crate) fn apply_turn_group(
                     "active_turn_id",
                     "active_turn_status",
                     "active_turn_updated_at",
+                    "loading",
                     "created_at",
                     "updated_at",
                 ] {

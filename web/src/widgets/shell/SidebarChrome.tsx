@@ -22,7 +22,7 @@ export function SidebarChrome(props: SidebarChromeProps) {
         <div class="shrink-0 px-6 pt-8 pb-4">{props.nav}</div>
       </Show>
       <div class="sidebar-scroll-shell min-h-0 flex-1 px-6">
-        <div class="min-h-0 h-full overflow-auto pb-8 ui-scrollbar">{props.children}</div>
+        <div class="sidebar-scroll min-h-0 h-full overflow-auto pb-8 ui-scrollbar">{props.children}</div>
         <div class="sidebar-scroll-mist" aria-hidden="true" />
       </div>
       <div class="sidebar-mist-divider" aria-hidden="true" />

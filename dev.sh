@@ -68,6 +68,11 @@ fi
 echo "==> 构建 Web 前端"
 (cd web && bun run build)
 
+# Rust 二进制预构建：有源码改动时 cargo 需增量编译（数秒），显式提示并
+# 在运行前完成，避免"启动后长时间无输出"被误认为卡在实例就绪。
+echo "==> 构建 peri-studio 二进制（有 Rust 改动时需增量编译）"
+cargo build -q -p peri-studio
+
 umask 077
 mkdir -p "${LOG_DIR}" "${DATA_DIR}" "${CONFIG_DIR}"
 set -m
@@ -89,7 +94,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 echo "==> 启动 peri-studio local（日志: ${APP_LOG}）"
-RUST_LOG="${DEV_LOG_FILTER}" cargo run -q -p peri-studio -- local \
+RUST_LOG="${DEV_LOG_FILTER}" ./target/debug/peri-studio local \
     --listen "${LISTEN_ADDR}" \
     --listen-port "${LISTEN_PORT}" \
     --config-dir "${CONFIG_DIR}" \

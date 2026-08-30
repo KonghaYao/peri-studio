@@ -198,3 +198,24 @@ pub(crate) async fn projected_active_turn_status(sink: &MemSink, chat: &str) -> 
         .await
         .map(|(_, status)| status)
 }
+
+pub(crate) async fn projected_session_loading(sink: &MemSink, chat: &str) -> Option<bool> {
+    use yrs::updates::decoder::Decode as _;
+
+    let mirror = yrs::Doc::new();
+    for (doc, update) in sink.updates.lock().await.iter() {
+        if *doc != DocId::session(chat) {
+            continue;
+        }
+        mirror
+            .transact_mut()
+            .apply_update(yrs::Update::decode_v1(update).unwrap())
+            .unwrap();
+    }
+    let txn = mirror.transact();
+    txn.get_map("root")
+        .and_then(|root| root.get(&txn, "session"))
+        .and_then(|value| value.cast::<yrs::MapRef>().ok())
+        .and_then(|session| session.get(&txn, "loading"))
+        .and_then(|value| value.cast::<bool>().ok())
+}
