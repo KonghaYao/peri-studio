@@ -50,6 +50,8 @@ export function filterCommandCatalog(
     .slice(0, limit);
 }
 
+export const slashMenuOptionId = (menuId: string, commandName: string) => `${menuId}-option-${commandName}`;
+
 /** Insert a slash invocation at the active token/caret. Selection never sends. */
 export function insertSlashCommand(text: string, cursor: number, name: string): DraftInsertion {
   const caret = Math.max(0, Math.min(cursor, text.length));

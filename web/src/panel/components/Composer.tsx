@@ -23,6 +23,7 @@ import { runtimeControlFor } from '../lib/runtime-control';
 import { composerInputState } from '../lib/composer-placeholder';
 import { useComposerPrediction } from '../lib/composer-prediction';
 import { useComposerSlash } from '../lib/composer-slash';
+import { slashMenuOptionId } from '../lib/slash-menu';
 import { Button, IconButton, InlineNotice, Textarea } from '../../components/ui';
 import { SlashMenu } from './SlashMenu';
 import { SessionModelMenu } from './SessionConfigDialog';
@@ -258,6 +259,7 @@ export function Composer() {
           activeIndex={slash.boundedActiveIndex()}
           onActiveIndex={slash.onMenuActiveIndex}
           onSelect={(item) => slash.selectCommand(item.name)}
+          onKeyDown={(event) => { slash.handleKeyDown(event); }}
         />
       </Show>
       <section
@@ -322,7 +324,12 @@ export function Composer() {
           aria-autocomplete="list"
           aria-expanded={slash.slashMenuOpen()}
           aria-controls={slash.slashMenuOpen() ? slashMenuId : undefined}
-          aria-activedescendant={slash.slashMenuOpen() ? `${slashMenuId}-option-${slash.boundedActiveIndex()}` : undefined}
+          aria-activedescendant={slash.slashMenuOpen()
+            ? (() => {
+              const active = slash.slashItems()[slash.boundedActiveIndex()];
+              return active ? slashMenuOptionId(slashMenuId, active.name) : undefined;
+            })()
+            : undefined}
           aria-describedby={inputDescribedBy()}
           spellcheck={false}
           class="composer-input ui-scrollbar relative z-1 block h-52 min-h-52 max-h-180 w-full resize-none overflow-y-auto border-0 bg-transparent px-8 py-10 text-12 leading-18 text-text-primary outline-0 placeholder:text-text-muted disabled:bg-transparent disabled:text-text-secondary focus-visible:outline-0"

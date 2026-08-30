@@ -269,6 +269,32 @@ describe('Composer', () => {
     expect(screen.queryByRole('img', { name: /Input/ })).not.toBeInTheDocument();
   });
 
+  it('navigates skills with arrow keys from the composer input', async () => {
+    selectReadyChat();
+    setChatHead({
+      chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
+      agent: {
+        instanceId: 'local', sessionId: 'acp-1', status: 'ready', lastActivityAt: null,
+        availableCommands: ['compact', 'auto-issue-fixer', 'mcp__docs__search'],
+        commandCatalog: [
+          { name: 'compact', description: 'Compress context', kind: 'command' },
+          { name: 'auto-issue-fixer', description: 'Fix an issue', kind: 'skill' },
+          { name: 'mcp__docs__search', description: 'Search docs', kind: 'mcp_skill' },
+        ],
+        extensions: ['peri.skillNames'], activities: [], inputPrediction: null, latestUsage: null,
+        model: 'model', effort: 'high', contextWindow: 200_000, contextUsed: 42_000,
+      },
+      activeTurn: null, pendingPermissions: [],
+    });
+    render(() => <Composer />);
+    fireEvent.click(screen.getByRole('button', { name: 'Browse skills (2)' }));
+    const input = screen.getByRole('textbox');
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(screen.getByRole('option', { name: /mcp__docs__search.*MCP Skill/ })).toHaveClass('bg-selected');
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await waitFor(() => expect(input).toHaveValue('/mcp__docs__search '));
+  });
+
   it('discovers negotiated Peri Skills and inserts one without sending it', async () => {
     selectReadyChat();
     setChatHead({
