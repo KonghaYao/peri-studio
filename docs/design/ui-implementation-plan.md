@@ -1,0 +1,79 @@
+---
+status: active
+date: 2026-08-30
+---
+
+# UI 设计稿 → 生产 web 实施计划
+
+> 设计权威：`ui-sandbox/`（Tokens / Base UI / Blocks / Layers）  
+> 落地目标：`web/src/shared/ui` + `web/src/widgets/*`  
+> 规范：`docs/design/ui-specification.md`、`docs/design/frontend-architecture.md`
+
+## 阶段总览
+
+| 阶段 | 范围 | 并发 | 门禁 |
+|------|------|------|------|
+| **P1** | `shared/ui` + `styles/tokens` 对齐 sandbox T2 | 4 subagent | `cd web && bun run test` |
+| **P2** | `widgets/*` 替换为 sandbox Blocks/Layers 视觉 | 4+ subagent | 同上 + 关键 widget 测 |
+| **P3** | 验收 | 1 subagent | `bun run test` + `bun run test:browser` |
+| **P4** | 清理 shim、fixture、死代码 | 2+ subagent | 全绿 + clippy 无关 |
+
+## P1 工作包（纯 UI）
+
+### P1-A · Tokens & 主题
+- 对照 `ui-sandbox/src/styles/tokens.css`、`theme.css`、`base.css`
+- 同步 `web/src/styles/tokens.css` 语义色、间距、组件 token（composer、sidebar、workbench、decision、git-graph 等）
+- 更新 `web/src/styles/theme.css` Tailwind v4 映射
+- 不改业务组件
+
+### P1-B · 操作类组件
+- `Button`、`IconButton`：对齐 sandbox 尺寸、圆角、primary/ghost
+- `Badge`、`Status`：状态点 + 中性灰字规则
+- `Spinner`、`CopyButton`
+- 更新 `shared/ui/components.test.tsx`
+
+### P1-C · 浮层与导航
+- `Dialog`、`DropdownMenu`、`Tooltip`、`Popover`
+- `Tabs`：对齐 sandbox 密度
+- Kobalte 封装保持，只改 class/token
+
+### P1-D · 表单与反馈
+- `TextField`/`Input`、`Textarea`、`SelectField`、`Checkbox`、`RadioGroup`
+- `InlineNotice`、`EmptyState`、`LoadingState`
+- 与 sandbox `ComponentsPage` 对照
+
+## P2 工作包（业务组件）
+
+### P2-A · Shell + Sidebar
+- `widgets/shell/*`、`widgets/sidebar/*` ← `ProjectSidebarLayout`、云雾分隔、Pinned/Workspaces 树
+
+### P2-B · Chat + Composer
+- `widgets/chat/*`、`widgets/composer/*` ← Markdown、ToolActivity、UserBubble、SlashMenu、TokenUsageMeter
+
+### P2-C · Resource + Git
+- `widgets/resource/*` ← FileTree、FilePreview、SCM 树、GitGraphPanel（大面板）、Workbench 布局
+
+### P2-D · Decision + Status
+- Questions/Permissions `DecisionCard`、Status area
+
+## P3 验收清单
+
+- [ ] Layers 对照：`project-sidebar`、`composer`、`decision`、`workbench`、`git-graph`、`source-control`
+- [ ] `bun run test` 全绿
+- [ ] `bun run test:browser` 契约通过
+- [ ] 无 `panel/` 新增业务代码
+- [ ] `ui-specification.md` 与实现一致（有差异则更新文档）
+
+## P4 清理
+
+- [ ] `panel/components` 空 shim 删除或标记完成
+- [ ] `visual-fixture` 仅保留场景装配，无重复 token 板
+- [ ] ui-sandbox 与 web 重复工具函数评估（不盲目合并，注释独立演进原因）
+
+## 参考路径
+
+| Sandbox | Web 目标 |
+|---------|----------|
+| `ui-sandbox/src/components/ui/*` | `web/src/shared/ui/*` |
+| `ui-sandbox/src/components/blocks/*` | `web/src/widgets/*` 或 `shared`（无业务语义块） |
+| `ui-sandbox/src/layers/*` | `widgets` 组合参考 |
