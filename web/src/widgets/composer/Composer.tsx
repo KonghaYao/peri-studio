@@ -265,7 +265,7 @@ export function Composer() {
       <section
         aria-busy={submissionIsInFlight() || undefined}
         aria-disabled={inputDisabled()}
-        class="composer-surface overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface-overlay p-2.5 shadow-float max-narrow:rounded-16"
+        class="composer-surface overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface-overlay p-2.5 max-narrow:rounded-16"
       >
         <Show when={composerAssets().length > 0}>
           <div class="composer-assets ui-scrollbar flex gap-7 overflow-x-auto pb-7" aria-label="Staged assets">

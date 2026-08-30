@@ -137,7 +137,7 @@ export function BlocksPage() {
       </DomainSection>
 
       <DomainSection title="Chrome · 壳层块" description="顶栏、侧栏等壳层上的独立块。">
-        <DemoSection id="chat-header" title="ChatHeader" description="会话标题 + 连接状态。">
+        <DemoSection id="chat-header" title="ChatHeader" description="会话标题与资源入口。">
           <div class="overflow-hidden rounded-lg border border-border-subtle">
             <ChatHeader title="Refactor ACP session recovery and projection boundaries" />
           </div>

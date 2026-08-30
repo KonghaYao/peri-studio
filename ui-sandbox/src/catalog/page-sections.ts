@@ -84,7 +84,10 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
     },
     {
       title: 'Chat',
-      items: [{ id: 'chat-transcript', label: 'Chat transcript' }],
+      items: [
+        { id: 'chat-shell', label: 'Chat shell' },
+        { id: 'chat-transcript', label: 'Chat transcript' },
+      ],
     },
     {
       title: 'Composer',

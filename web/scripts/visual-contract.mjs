@@ -17,7 +17,6 @@ export const visualContract = () => {
     horizontalOverflow: root.scrollWidth > root.clientWidth,
     bodyMargin: getComputedStyle(document.body).margin,
     selectedScenario: document.querySelector('.visual-fixture-rail a[aria-current="page"]')?.textContent?.trim() || null,
-    connectionStatus: document.querySelector('.chat-header .connection-pill')?.textContent?.trim() || null,
     projectCount: document.querySelectorAll('.project-group').length,
     sessionCount: document.querySelectorAll('.session-row').length,
     messageCount: document.querySelectorAll('.conversation-message').length,

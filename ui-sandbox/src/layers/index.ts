@@ -1,3 +1,4 @@
+export { ChatShellLayout } from './chat/ChatShellLayout';
 export { ChatTranscriptLayout } from './chat/ChatTranscriptLayout';
 export { ComposerLayout } from './composer/ComposerLayout';
 export { DecisionSurfacesLayout } from './decision/DecisionSurfacesLayout';

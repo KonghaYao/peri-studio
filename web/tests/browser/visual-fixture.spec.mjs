@@ -278,15 +278,15 @@ test('migrated surfaces retain their authored computed borders', async ({ page }
   });
 });
 
-test('runtime status stays compact while recovery labels disclose trust', async ({ page }) => {
+test('recovery labels disclose trust without header status chrome', async ({ page }) => {
   await page.setViewportSize({ width: 631, height: 800 });
   await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
   await expect(page.locator('.runtime-status')).toHaveCount(0);
-  await expect(page.locator('.connection-pill')).toHaveText('Online');
-  await expect(page.locator('.connection-pill .ui-status__label')).toHaveClass(/sr-only/);
+  await expect(page.locator('.connection-pill')).toHaveCount(0);
 
   await page.goto('/visual-fixture.html?scenario=terminal-readonly', { waitUntil: 'networkidle' });
-  await expect(page.locator('.runtime-status')).toHaveText('Crashed');
+  await expect(page.locator('.runtime-status')).toHaveCount(0);
+  await expect(page.locator('.connection-pill')).toHaveCount(0);
   const boundaries = await page.locator('.history-boundary > span').allTextContents();
   expect(boundaries).toContain('Verified history');
   expect(boundaries.every((label) => /^(?:Verified|Unverified) history$/.test(label))).toBe(true);

@@ -29,7 +29,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
   };
 
   return <section class="quick-start quick-start--docked w-full text-left" aria-label="Start new session">
-    <div class="quick-start__surface overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface-overlay p-2.5 shadow-float max-narrow:rounded-16" aria-busy={pendingIsInFlight() || undefined}>
+    <div class="quick-start__surface overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface-overlay p-2.5 max-narrow:rounded-16" aria-busy={pendingIsInFlight() || undefined}>
       <Textarea
         autoResize
         maxHeight={180}

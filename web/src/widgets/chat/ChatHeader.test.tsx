@@ -43,14 +43,14 @@ function resetStore() {
 
 afterEach(resetStore);
 
-describe('ChatHeader runtime truth', () => {
+describe('ChatHeader', () => {
   it('keeps durable session identity separate from an absent runtime', () => {
     setProjectSessions([{ ...session, activeChatId: null }]);
     setSelectedSessionId(session.id);
     render(() => <ChatHeader />);
 
     expect(screen.getByText('Persistent session')).toBeInTheDocument();
-    expect(screen.getByText('Idle')).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('disambiguates a fallback title with the durable ACP identity', () => {
@@ -80,43 +80,7 @@ describe('ChatHeader runtime truth', () => {
 
     expect(screen.queryByText('Approval')).not.toBeInTheDocument();
     expect(screen.queryByText('Working')).not.toBeInTheDocument();
-  });
-
-  it('states that a crashed runtime did not delete the session', () => {
-    setProjectSessions([session]);
-    setSelectedSessionId(session.id);
-    setSelectedCid('chat-1');
-    setChatStatusSignal({ 'chat-1': 'crashed' });
-    render(() => <ChatHeader />);
-
-    const status = screen.getByText('Crashed');
-    expect(status.closest('.runtime-status')).toHaveClass('runtime-status--danger');
-  });
-
-  it('does not announce input readiness before runtime hydration completes', () => {
-    setProjectSessions([session]);
-    setSelectedSessionId(session.id);
-    setSelectedCid('chat-1');
-    setChatStatusSignal({ 'chat-1': 'active' });
-    setRuntimeDocsState({ chat: true, control: false });
-    setConnState({ text: 'Ready', kind: 'ok' });
-    render(() => <ChatHeader />);
-
-    expect(screen.getByText('Loading')).toBeInTheDocument();
-    expect(screen.queryByText('Ready')).not.toBeInTheDocument();
-  });
-
-  it('does not advertise input readiness after the browser connection stops', () => {
-    setProjectSessions([session]);
-    setSelectedSessionId(session.id);
-    setSelectedCid('chat-1');
-    setChatStatusSignal({ 'chat-1': 'active' });
-    setRuntimeDocsState({ chat: true, control: true });
-    setConnState({ text: 'Stopped (4501)', kind: 'err' });
-    render(() => <ChatHeader />);
-
-    expect(screen.getByText('Offline', { selector: '.runtime-status .sr-only' }).closest('.runtime-status')).toHaveClass('runtime-status--danger');
-    expect(screen.queryByText('Ready')).not.toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('keeps system information out of the per-conversation header', () => {

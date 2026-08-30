@@ -1,4 +1,5 @@
 import {
+  ChatShellLayout,
   ChatTranscriptLayout,
   ComposerLayout,
   DecisionSurfacesLayout,
@@ -28,7 +29,10 @@ export function LayersPage() {
         </DemoSection>
       </DomainSection>
 
-      <DomainSection title="Chat · 会话区" description="Transcript 装配（不含 Composer）。">
+      <DomainSection title="Chat · 会话区" description="顶栏 + Transcript 装配（不含 Composer）。">
+        <DemoSection id="chat-shell" title="Chat shell" description="标题顶栏无连接/运行时状态灯；下方为消息流。">
+          <ChatShellLayout />
+        </DemoSection>
         <DemoSection id="chat-transcript" title="Chat transcript" description="用户气泡 + assistant 文流 + 工具活动组。">
           <ChatTranscriptLayout />
         </DemoSection>

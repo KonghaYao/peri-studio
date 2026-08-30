@@ -10,8 +10,8 @@ import { join } from 'node:path';
 import { transform } from 'lightningcss';
 import postcss from 'postcss';
 
-// styles.css is the cascade entry now: it imports ui/base.css, ui/primitives.css
-// and the feature sheets under panel/styles/. Feature assertions run against the
+// styles.css is the cascade entry now: it imports styles/base.css, styles/theme.css,
+// styles/primitives.css and styles/extra.css. Feature assertions run against the
 // concatenated source so the cascade contract stays covered per selector.
 const cssFiles = () => {
   const source = join(import.meta.dirname, '..', 'src');
@@ -99,7 +99,7 @@ test('numeric Tailwind spacing utilities resolve to an explicit product token', 
 
 test('source stylesheets are structurally valid and consume only declared design tokens', () => {
   const source = join(import.meta.dirname, '..', 'src');
-  const files = ['styles.css', 'styles/base.css', 'styles/primitives.css', 'styles/extra.css', 'styles/tokens.css', ...cssFiles().filter((file) => file.startsWith('panel/styles/'))];
+  const files = ['styles.css', 'styles/base.css', 'styles/primitives.css', 'styles/extra.css', 'styles/tokens.css'];
   const stylesheets = files.filter((file) => file !== 'styles/tokens.css');
   const roots = files.map((file) => {
     const css = readFileSync(join(source, file), 'utf8');
@@ -154,6 +154,8 @@ test('Composer and quick start expose one labeled textarea and keyboard submit g
   assert.match(quickStart, /<Textarea[\s\S]*?aria-label="First message"/);
   assert.match(quickStart, /variant="bare"/);
   assert.match(quickStart, /if \(event\.key === 'Enter' && !event\.shiftKey\) \{ event\.preventDefault\(\); submit\(\); \}/);
+  assert.doesNotMatch(composer, /shadow-float/);
+  assert.doesNotMatch(quickStart, /shadow-float/);
 });
 
 test('feature components consume the Solid UI library only through its public barrel', () => {
@@ -312,6 +314,7 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
   assert.doesNotMatch(composer, />\s*上下文：/);
   assert.doesNotMatch(composer, /focus-within:border-focus-ring/);
   assert.doesNotMatch(composer, /has-\[\.composer-input:focus-visible\]:shadow-/);
+  assert.doesNotMatch(composer, /shadow-float/);
   assert.match(composer, /composer-toolbar flex min-h-36 items-center/);
   assert.match(composer, /rounded-\(--composer-radius\)/);
   assert.match(base, /:focus-visible\s*\{\s*outline:\s*2px solid var\(--focus-ring\)/);
@@ -393,10 +396,8 @@ test('product CSS owns its browser baseline and semantic layout', () => {
   assert.doesNotMatch(styles, /\.message-list-shell>section>div/);
 });
 
-test('primitive visuals remain in shared UI components and out of feature styles', () => {
+test('primitive visuals remain in shared UI components', () => {
   const root = join(import.meta.dirname, '..', 'src');
-  const styles = cssFiles().filter((file) => file.startsWith('panel/styles/'))
-    .map((file) => readFileSync(join(root, file), 'utf8')).join('\n');
   const primitives = readFileSync(join(root, 'styles', 'primitives.css'), 'utf8');
   const button = readFileSync(join(root, 'shared', 'ui', 'Button.tsx'), 'utf8');
   const dialog = readFileSync(join(root, 'shared', 'ui', 'Dialog.tsx'), 'utf8');
@@ -406,7 +407,6 @@ test('primitive visuals remain in shared UI components and out of feature styles
   assert.match(primitives, /scrollbar-color:\s*var\(--scrollbar-thumb\) transparent/);
   assert.match(button, /export function Button/);
   assert.match(dialog, /export function DialogContent/);
-  assert.equal(styles.trim(), '');
   assert.match(drawer, /<Dialog open=\{props\.open\}/);
   assert.match(drawer, /<DialogContent/);
 });

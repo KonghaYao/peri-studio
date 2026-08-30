@@ -209,26 +209,6 @@
   }
 }
 
-/* ── 运行时状态点（tone 子元素着色） ───────────────────────────────────── */
-
-.runtime-status--busy i {
-  background: var(--accent-solid);
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-.runtime-status--attention i {
-  background: var(--feedback-warning-solid);
-}
-
-.runtime-status--danger i {
-  background: var(--feedback-danger-solid);
-}
-
-.runtime-status--idle i,
-.runtime-status--ready i {
-  background: var(--content-faint);
-}
-
 /* ── 侧栏拖拽把手（激活态光标） ───────────────────────────────────────── */
 
 .sidebar-resize-handle--dragging,
