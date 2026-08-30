@@ -44,7 +44,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
         aria-label="First message"
         aria-describedby={[pendingNeedsAttention() ? statusId : '', promptOverBudget() ? budgetId : ''].filter(Boolean).join(' ') || undefined}
         variant="bare"
-        class="quick-start__textarea w-full min-h-60 px-18 pt-16 pb-8 border-0 outline-0 resize-none bg-transparent text-14 leading-22 text-text-primary"
+        class="quick-start__textarea w-full min-h-36 px-18 pt-10 pb-6 border-0 outline-0 resize-none bg-transparent text-14 leading-22 text-text-primary"
       />
       <Show when={promptOverBudget()}>
         <InlineNotice id={budgetId} class="mx-10 mb-8" tone="danger" role="alert" title="First message is too large">
@@ -53,7 +53,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
             : 'Secure message delivery is not enabled on the server. Refresh or upgrade the server before starting a session.'}</span>
         </InlineNotice>
       </Show>
-      <div class="quick-start__footer flex min-h-52 items-center gap-7 px-10 pb-8">
+      <div class="quick-start__footer flex min-h-44 items-center gap-7 px-10 pb-8">
         <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="border-0 bg-transparent text-text-primary"><Plus size={18} strokeWidth={1.7} /></IconButton>
         <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled class="border-0 bg-transparent text-text-muted"><ShieldCheck size={17} strokeWidth={1.7} /></IconButton>
         <span class="ml-auto" />

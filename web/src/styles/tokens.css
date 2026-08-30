@@ -49,10 +49,10 @@
   --scrollbar-thumb-hover: rgb(42 42 39 / 34%);
 
   /* Elevation: use only for layers that leave the canvas. */
-  --shadow-popover: 0 14px 34px rgb(25 25 24 / 10%), 0 2px 5px rgb(25 25 24 / 5%);
-  --shadow-float: 0 5px 18px rgb(35 55 43 / 4%), 0 1px 2px rgb(35 55 43 / 3%);
-  --shadow-composer-overlay: 0 8px 24px rgb(25 25 24 / 7%), 0 1px 3px rgb(25 25 24 / 5%);
-  --shadow-recovery: 0 4px 12px rgb(25 25 24 / 5%);
+  --shadow-popover: 0 4px 12px rgb(25 25 24 / 6%), 0 1px 3px rgb(25 25 24 / 4%);
+  --shadow-float: 0 2px 8px rgb(35 55 43 / 4%), 0 1px 2px rgb(35 55 43 / 3%);
+  --shadow-composer-overlay: 0 2px 10px rgb(25 25 24 / 5%), 0 1px 2px rgb(25 25 24 / 4%);
+  --shadow-recovery: 0 2px 8px rgb(25 25 24 / 4%);
   /* Status halo rings: exact arbitrary-shadow equivalents used by
      running/done activity states (color-mix over accent/success). */
   --shadow-accent-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
