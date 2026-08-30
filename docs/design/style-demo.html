@@ -1,9 +1,12 @@
 <!doctype html>
-<!-- peri-studio 权威样式 demo（样式图）。
-     本文件是 Web 面板视觉语言的单一事实源：色彩 token、字阶、组件形态均以此为准，
-     SolidJS 实现向本稿对齐。仅依赖 Tailwind v4 浏览器构建（与项目同版本语义）+ 少量原生 JS，
-     可直接浏览器打开。
-     约定：产品 UI 文案用英文（与现有面板一致），本稿的说明性文字用中文。 -->
+<!-- ═══════════════════════════════════════════════════════════════════
+     【已废止 · DEPRECATED】
+     本文件为 2026 年初期视觉探索稿，暖橙 accent + 暖灰背景 + 深色草稿，
+     与现行产品（web/src/styles/tokens.css：白底 + 绿色 accent #16865a）不一致。
+     权威 UI 规范：docs/design/ui-specification.md
+     请勿将新实现或设计评审对齐到本文件。
+     ═══════════════════════════════════════════════════════════════════ -->
+<!-- peri-studio 历史样式 demo（已废止，保留仅供考古对比） -->
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8" />
@@ -175,6 +178,10 @@
 </head>
 
 <body class="bg-app font-sans text-ink antialiased">
+<div style="background:#fff3cd;border-bottom:1px solid #e6c200;padding:12px 16px;font:13px/1.4 system-ui,sans-serif;color:#664d00;">
+  <strong>已废止：</strong>本页为历史视觉稿（暖橙主题），与现行产品不一致。请以
+  <code>docs/design/ui-specification.md</code> 与 <code>web/src/styles/tokens.css</code> 为准。
+</div>
 
 <!-- ══ demo 控制条（非产品 UI） ══════════════════════════════════════ -->
 <header class="sticky top-0 z-50 flex h-13 items-center gap-3 border-b border-line bg-surface/90 px-4 backdrop-blur-sm">

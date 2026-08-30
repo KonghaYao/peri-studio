@@ -75,7 +75,7 @@ cargo run -q -p peri-studio -- status --json | --ready
 
 ## Web 前端分层规范（必读）
 
-**权威文档**：`docs/design/frontend-architecture.md`（目录、依赖、迁移）；`AGENTS.md`（Agent 检查清单）。ADR：`docs/adr/0004-web-frontend-layered-architecture.md`。
+**权威文档**：`docs/design/frontend-architecture.md`（目录、依赖、迁移）；`docs/design/ui-specification.md`（**视觉、token、组件、微文案**）；`AGENTS.md`（Agent 检查清单）。ADR：`docs/adr/0004-web-frontend-layered-architecture.md`。
 
 | 层 | 路径 | 职责 |
 |----|------|------|
@@ -87,7 +87,7 @@ cargo run -q -p peri-studio -- status --json | --ready
 | 共享 | `web/src/shared/` | `ui` 设计系统、`lib`、`protocol`、`yjs` |
 | 组合根 | `web/src/store/index.ts` | 全局信号与 `install*` 装配；业务逻辑委托 features |
 
-**硬规则**：依赖只能自上而下（`shared` → `entities` → `features` → `widgets` → `pages` → `app`）；`widgets` 不得直发协议帧；新代码用 `@/` 路径别名，勿在 `panel/` 下新增实现。改 Web 结构须同步 `architecture.md` §10.2。
+**硬规则**：依赖只能自上而下（`shared` → `entities` → `features` → `widgets` → `pages` → `app`）；`widgets` 不得直发协议帧；新代码用 `@/` 路径别名，勿在 `panel/` 下新增实现。UI 颜色/间距/组件须符合 `ui-specification.md`；改 Web 结构须同步 `architecture.md` §10.2。
 
 ## 代码与测试约定
 

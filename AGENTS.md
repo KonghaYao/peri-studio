@@ -11,6 +11,7 @@
 | 全栈架构、server 契约、Yjs 投影 | `docs/architecture.md` |
 | 术语（session / chat / project session 等） | `docs/terminology.md` |
 | **Web 目录、分层、依赖方向、新代码放哪** | **`docs/design/frontend-architecture.md`（权威）** |
+| **Web 视觉、token、组件、微文案、a11y** | **`docs/design/ui-specification.md`（权威）** |
 | Web 分层 ADR | `docs/adr/0004-web-frontend-layered-architecture.md` |
 | MCP Apps 宿主 | `docs/design/mcp-apps-host.md` |
 
@@ -70,9 +71,10 @@ web/src/
 
 - [ ] 新文件落在正确层，未违反依赖表
 - [ ] `features` 未 import `store`；`shared/ui` 未 import 业务模块
+- [ ] 颜色/间距来自 `tokens.css` utility，符合 `ui-specification.md`
 - [ ] 单文件 < 500 行；UI 文案英文，注释中文，**log 英文**
 - [ ] `cd web && bun run test` 全绿
-- [ ] 若改变目录契约，同步 `docs/design/frontend-architecture.md` 与 `docs/architecture.md` §10.2
+- [ ] 若改变目录或视觉契约，同步 `frontend-architecture.md` / `ui-specification.md` 与 `architecture.md` §10.2
 
 ---
 

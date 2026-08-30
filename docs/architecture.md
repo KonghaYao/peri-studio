@@ -142,7 +142,7 @@ Web 的逻辑会话导航由 `SessionNavigator` 状态机唯一裁决。Registry
 
 Registry 中的 `active_chat_id` 只证明某个 runtime 仍可复用，不证明当前浏览器已经选择、水合或能够向它输入。侧栏未选中的 live runtime 必须显示为“运行中，可切换”；只有当前选中、非终态且完成 Chat/Control 两份文档水合的 runtime 才能宣称“可输入”。默认标题必须在 sidebar、search 与 header 使用同一稳定身份消歧规则，避免多个“新对话”在切换后失去可识别性。
 
-Web 组件库以 `src/components/ui/index.ts` 为唯一公共代码入口，以 `src/styles/tokens.css` 和 `src/styles/base.css` 为视觉入口。基础组件必须独立拥有默认、交互、禁用、错误、焦点与响应式触控状态；Feature 组件不得深层导入 UI 实现、创建裸 SVG canvas，或依赖偶然的页面样式才能让 Dialog、Drawer、Button、Field、Menu、Tooltip、Status、Toast 等基础能力正确渲染。该边界由源码架构契约与真实 Solid DOM 测试共同执行。
+Web 组件库以 `shared/ui/index.ts`（`@/shared/ui`）为唯一公共代码入口，以 `src/styles/tokens.css` 和 `src/styles/base.css` 为视觉入口；完整 UI 规范见 `docs/design/ui-specification.md`。基础组件必须独立拥有默认、交互、禁用、错误、焦点与响应式触控状态；Feature 组件不得深层导入 UI 实现、创建裸 SVG canvas，或依赖偶然的页面样式才能让 Dialog、Drawer、Button、Field、Menu、Tooltip、Status、Toast 等基础能力正确渲染。该边界由源码架构契约与真实 Solid DOM 测试共同执行。
 
 源样式必须在测试中通过 Lightning CSS 的无错误恢复严格解析，并由 PostCSS AST 检查媒体查询结构与设计令牌引用。Composer 与 quick-start 的容器焦点外观只能由一条共享规则拥有：指针焦点保持中性，只有内部输入命中 `:focus-visible` 时才显示高对比键盘焦点环；Feature 样式不得重新引入已淘汰的焦点令牌或失效选择器。
 
@@ -1203,7 +1203,7 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 | 共享 | `shared/` | `ui` 设计系统、`lib`、`protocol`、`yjs`（`doc-store` 等） |
 | 组合根 | `store/index.ts` | 全局信号与 `install*` 接线 |
 
-`web/src/panel/` 仅保留 **deprecated shim** 与尚未迁入 `features/` 的 `lib/`（connection、message、runtime、mcp、auth 等）；**新代码不得写入 `panel/`**。设计系统唯一入口：`shared/ui/index.ts`（`components/ui` 仅 re-export）。
+`web/src/panel/` 仅保留 **deprecated shim** 与尚未迁入 `features/` 的 `lib/`（connection、message、runtime、mcp、auth 等）；**新代码不得写入 `panel/`**。设计系统唯一入口：`shared/ui/index.ts`（`components/ui` 仅 re-export）。**视觉与组件规范**：[`ui-specification.md`](design/ui-specification.md)。
 
 | 区域 / 模块 | 代码位置（现行） | 数据源 | 说明 |
 |------|--------|------|------|

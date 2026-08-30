@@ -1,3 +1,10 @@
 # shared/ui
 
-本目录是 Peri Studio Web 前端的**设计系统层**：基于 Kobalte 封装的通用 UI 组件（Button、Dialog、Listbox 等），不含 server / session / project 等业务语义。对外唯一入口为 `shared/ui/index.ts`（别名 `@/shared/ui`）；迁移期间 `components/ui` 仅作 re-export shim。
+Peri Studio Web **设计系统层**（Kobalte 封装）：Button、Dialog、Listbox 等通用组件，**零** server / session / project 业务语义。
+
+- **唯一入口**：`shared/ui/index.ts`（`@/shared/ui`）
+- **视觉规范**：[`docs/design/ui-specification.md`](../../../docs/design/ui-specification.md)
+- **Token 事实源**：`web/src/styles/tokens.css` → `theme.css`
+- 迁移期间 `components/ui` 仅作 re-export shim
+
+Widget 层组合业务 UI；不得 deep import 本目录单文件，不得内联裸 SVG（见 `css-contracts.test.mjs`）。
