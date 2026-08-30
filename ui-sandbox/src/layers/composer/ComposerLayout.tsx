@@ -8,7 +8,8 @@ export function ComposerLayout() {
   const [model, setModel] = createSignal('nova');
 
   return (
-    <div class="max-w-(--composer-launch-max) border border-composer-border bg-surface-overlay p-2.5" style={{ 'border-radius': 'var(--composer-radius)' }}>
+    <div class="chat-column">
+      <div class="border border-composer-border bg-surface-overlay p-2.5" style={{ 'border-radius': 'var(--composer-radius)' }}>
       <div class="mb-1 flex gap-2">
         <For each={[{ icon: 'image', name: 'layout.png' }, { icon: 'file', name: 'spec.md' }]}>
           {(asset) => (
@@ -43,6 +44,7 @@ export function ComposerLayout() {
         <TokenUsageMeter input={12400} output={3180} cached={8200} />
         <IconButton label="Voice input" tooltip="Voice input" disabled><Mic size={16} /></IconButton>
         <IconButton label="Send" tooltip="Send" class="bg-accent-solid text-content-on-accent hover:bg-accent-hover hover:text-content-on-accent"><Send size={16} /></IconButton>
+      </div>
       </div>
     </div>
   );

@@ -251,7 +251,7 @@ export function Composer() {
   }
 
   return (
-    <div class="composer-wrap composer-wrap--overlay relative box-border w-full max-w-(--container-chat) mx-auto px-20 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 wide:max-w-(--container-chat) wide:px-20 max-desk:max-w-(--container-chat-narrow) max-narrow:px-10">
+    <div data-testid="composer-wrap" class="composer-wrap composer-wrap--overlay chat-column relative">
       <Show when={slash.slashMenuOpen()}>
         <SlashMenu
           id={slashMenuId}
@@ -263,6 +263,7 @@ export function Composer() {
         />
       </Show>
       <section
+        data-testid="composer-surface"
         aria-busy={submissionIsInFlight() || undefined}
         aria-disabled={inputDisabled()}
         class="composer-surface overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface-overlay p-2.5 max-narrow:rounded-16"
@@ -280,7 +281,7 @@ export function Composer() {
         </Show>
         <div class="composer-editor relative">
           <Show when={prediction.activePrediction()}>{(prediction) => <>
-            <span class="composer-prediction absolute z-0 top-10 right-8 left-8 overflow-hidden text-text-faint text-12 leading-18 pointer-events-none text-ellipsis whitespace-nowrap" aria-hidden="true">{prediction().text}</span>
+            <span data-testid="composer-prediction" class="composer-prediction absolute z-0 top-10 right-8 left-8 overflow-hidden text-text-faint text-12 leading-18 pointer-events-none text-ellipsis whitespace-nowrap" aria-hidden="true">{prediction().text}</span>
             <span id="composer-prediction-description" class="sr-only">
               Peri suggests: {prediction().text}. Press Tab to use it, or Escape to ignore.
             </span>
@@ -332,6 +333,7 @@ export function Composer() {
             : undefined}
           aria-describedby={inputDescribedBy()}
           spellcheck={false}
+          data-testid="composer-input"
           class="composer-input ui-scrollbar relative z-1 block min-h-36 max-h-180 w-full resize-none overflow-y-auto border-0 bg-transparent px-1 py-8 text-13 leading-normal text-content-primary outline-0 placeholder:text-content-muted disabled:bg-transparent disabled:text-content-secondary focus-visible:outline-0"
           />
         </div>
@@ -365,7 +367,7 @@ export function Composer() {
             </div>
           </InlineNotice>
         }</Show>
-        <div class="composer-toolbar flex min-h-36 items-center gap-4">
+        <div data-testid="composer-toolbar" class="composer-toolbar flex min-h-36 items-center gap-4">
           <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="composer-attachment shrink-0 border-0 bg-transparent text-content-primary disabled:opacity-55">
             <AttachmentIcon />
           </IconButton>
@@ -399,6 +401,7 @@ export function Composer() {
           }</Show>
           <SessionModelMenu open={modelMenuOpen()} id={modelMenuId} onOpenChange={setModelMenuOpen} trigger={
             <Button
+              data-testid="composer-runtime"
               size="compact"
               class="composer-runtime min-h-28 max-w-(--model-badge-max) shrink-0 gap-4 overflow-hidden border-0 bg-sidebar-selected px-8 text-10 text-success-solid hover:bg-sidebar-selected"
               ref={modelTrigger}
@@ -413,11 +416,11 @@ export function Composer() {
             </IconButton>
           </span>
           <Show when={turnActive()} fallback={
-            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || !composerDraft(draftOwner()).trim() || promptOverBudget()} label="Send" class="composer-action flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-accent-solid text-content-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:w-48 max-narrow:min-h-44">
+            <span class="shrink-0"><IconButton data-testid="composer-action" tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || !composerDraft(draftOwner()).trim() || promptOverBudget()} label="Send" class="composer-action flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-accent-solid text-content-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:w-48 max-narrow:min-h-44">
               <SendHorizontal size={18} strokeWidth={1.7} />
             </IconButton></span>
           }>
-            <span class="shrink-0"><IconButton tooltipPlacement="end" variant="primary" type="button" onClick={requestCancel} disabled={cancelLocked() || readOnly()} busy={cancelControl()?.phase === 'sending' || cancelControl()?.phase === 'accepted'} label={cancelLabel()} class={`composer-action composer-action--stop flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:w-48 max-narrow:min-h-44 ${cancelControl()?.phase === 'uncertain' ? 'bg-warning hover:bg-warning-strong' : ''}`}>
+            <span class="shrink-0"><IconButton data-testid="composer-action" tooltipPlacement="end" variant="primary" type="button" onClick={requestCancel} disabled={cancelLocked() || readOnly()} busy={cancelControl()?.phase === 'sending' || cancelControl()?.phase === 'accepted'} label={cancelLabel()} class={`composer-action composer-action--stop flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:w-48 max-narrow:min-h-44 ${cancelControl()?.phase === 'uncertain' ? 'bg-warning hover:bg-warning-strong' : ''}`}>
               <Show when={!cancelControl() || cancelControl()?.phase === 'uncertain' || cancelControl()?.phase === 'confirmed'}><span aria-hidden="true" class="size-10 rounded-2 bg-current" /></Show>
             </IconButton></span>
           </Show>

@@ -182,7 +182,9 @@
   --tracking-dialog: -0.02em;
 
   /* 间距刻度（与 web 生产像素值对齐；sandbox 组件语义 padding 引用） */
+  --space-10: 10px;
   --space-12: 12px;
+  --space-18: 18px;
   --space-20: 20px;
   --space-64: 64px;
   --space-88: 88px;

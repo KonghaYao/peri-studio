@@ -92,7 +92,7 @@ function AskUserQuestionDialog(props: {
   };
 
   return <section
-    class="elicitation-inline box-border w-full max-w-(--container-chat) mx-auto px-20 pb-10 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 max-desk:max-w-(--container-chat-narrow) max-narrow:px-10"
+    class="elicitation-inline chat-column pb-10"
     aria-label="Agent question"
   >
     <form
@@ -102,6 +102,7 @@ function AskUserQuestionDialog(props: {
       onSubmit={submit}
     >
       <DecisionCard
+        data-testid="elicitation-card"
         class="elicitation-card"
         title="Questions"
         prompt={props.elicitation.message}

@@ -5,12 +5,12 @@ async function installPhase(page, phase) {
 }
 
 function rowById(page, toolCallId) {
-  return page.locator('.tool-activity-row').filter({ has: page.locator(`code.sr-only`, { hasText: toolCallId }) });
+  return page.getByTestId('tool-activity-row').filter({ has: page.locator(`code.sr-only`, { hasText: toolCallId }) });
 }
 
 async function expand(row) {
-  await row.locator('.tool-activity-row__summary').click();
-  await expect(row.locator('.tool-activity-row__body')).toBeVisible();
+  await row.getByTestId('tool-activity-row-summary').click();
+  await expect(row.getByTestId('tool-activity-row-body')).toBeVisible();
 }
 
 test.describe('tool-call evidence acceptance', () => {
@@ -23,7 +23,7 @@ test.describe('tool-call evidence acceptance', () => {
   test('collapsed cards do not eagerly mount evidence and reveal it on demand', async ({ page }) => {
     const bash = rowById(page, 'acceptance-bash');
     await expect(bash).toBeVisible();
-    await expect(bash.locator('.tool-activity-row__body')).toHaveCount(0);
+    await expect(bash.getByTestId('tool-activity-row-body')).toHaveCount(0);
 
     await expand(bash);
     await expect(bash.getByText('printf bash-input-sentinel', { exact: true })).toBeVisible();
@@ -75,55 +75,55 @@ test.describe('loading transition acceptance', () => {
   test('tool-only evidence suppresses loading while a completed-tool thinking gap has one loader until the next delta', async ({ page }) => {
     await installPhase(page, 'tool-only');
     await expect(rowById(page, 'acceptance-tool')).toBeVisible();
-    await expect(page.locator('.chat-loading')).toHaveCount(0);
+    await expect(page.getByTestId('chat-loading')).toHaveCount(0);
 
     await installPhase(page, 'completed-gap');
     await expect(rowById(page, 'acceptance-tool')).toContainText('Done');
-    await expect(page.locator('.chat-loading')).toHaveCount(1);
+    await expect(page.getByTestId('chat-loading')).toHaveCount(1);
     await expect(page.getByRole('status', { name: 'Agent activity' })).toHaveText('Peri is working');
 
     await installPhase(page, 'next-delta');
     await expect(page.getByText('next delta sentinel')).toBeVisible();
-    await expect(page.locator('.chat-loading')).toHaveCount(0);
+    await expect(page.getByTestId('chat-loading')).toHaveCount(0);
   });
 
   test('permission-first owns the decision surface without a second working indicator', async ({ page }) => {
     await installPhase(page, 'permission-first');
-    await expect(page.locator('.permission-queue')).toBeVisible();
-    await expect(page.locator('.chat-loading')).toHaveCount(0);
+    await expect(page.getByTestId('permission-queue')).toBeVisible();
+    await expect(page.getByTestId('chat-loading')).toHaveCount(0);
   });
 
   test('disconnect clears indefinite loading and recovery resumes from projected tool evidence', async ({ page }) => {
     await installPhase(page, 'disconnected');
-    await expect(page.locator('.chat-loading')).toHaveCount(0);
+    await expect(page.getByTestId('chat-loading')).toHaveCount(0);
     await expect(rowById(page, 'acceptance-tool')).toBeVisible();
 
     await installPhase(page, 'recovered');
-    await expect(page.locator('.chat-loading')).toHaveCount(0);
+    await expect(page.getByTestId('chat-loading')).toHaveCount(0);
     await expect(rowById(page, 'acceptance-tool')).toContainText('Done');
-    await expect(page.locator('.composer-input')).toBeEnabled();
+    await expect(page.getByTestId('composer-input')).toBeEnabled();
   });
 });
 
 test('expanded output at the tail remains fully visible above the composer and status area', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/visual-fixture.html?scenario=long-conversation', { waitUntil: 'networkidle' });
-  const scroll = page.locator('.message-list-scroll');
+  const scroll = page.getByTestId('message-list-scroll');
   await scroll.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
 
   const diagnostics = rowById(page, 'acceptance-diagnostics').or(
-    page.locator('.tool-activity-row').filter({ hasText: 'Final diagnostics' }),
+    page.getByTestId('tool-activity-row').filter({ hasText: 'Final diagnostics' }),
   );
   await expect(diagnostics.first()).toBeVisible();
-  await expect(diagnostics.first().locator('.tool-activity-row__body')).toHaveCount(0);
+  await expect(diagnostics.first().getByTestId('tool-activity-row-body')).toHaveCount(0);
   await expand(diagnostics.first());
   await expect(diagnostics.first().getByText(/final diagnostic tail sentinel/)).toBeVisible();
 
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   const layout = await page.evaluate(() => {
-    const tail = [...document.querySelectorAll('.tool-activity-row__body pre')].find((node) => node.textContent?.includes('final diagnostic tail sentinel'));
-    const composer = document.querySelector('.composer-surface');
-    const status = document.querySelector('.status-area');
+    const tail = [...document.querySelectorAll('[data-testid="tool-activity-row-body"] pre')].find((node) => node.textContent?.includes('final diagnostic tail sentinel'));
+    const composer = document.querySelector('[data-testid="composer-surface"]');
+    const status = document.querySelector('[data-testid="status-area"]');
     if (!tail || !composer) return null;
     const tailBox = tail.getBoundingClientRect();
     const composerBox = composer.getBoundingClientRect();
@@ -145,8 +145,8 @@ for (const viewport of [{ width: 1600, height: 900 }, { width: 1280, height: 900
     await page.goto('/visual-fixture.html?scenario=long-conversation', { waitUntil: 'networkidle' });
 
     const geometry = await page.evaluate(() => {
-      const area = document.querySelector('.message-list-scroll');
-      const composer = document.querySelector('.composer-stack');
+      const area = document.querySelector('[data-testid="message-list-scroll"]');
+      const composer = document.querySelector('[data-testid="composer-stack"]');
       if (!area || !composer) throw new Error('Scroll geometry missing');
       area.scrollTo({ top: area.scrollHeight });
       return {
@@ -162,7 +162,7 @@ for (const viewport of [{ width: 1600, height: 900 }, { width: 1280, height: 900
     expect(geometry.scrollBottom).toBeLessThanOrEqual(geometry.composerTop + 1);
     expect(geometry.gutter).toBe('stable');
     expect(geometry.bottomGap).toBeLessThanOrEqual(2);
-    expect(geometry.horizontalOverflow).toBeLessThanOrEqual(viewport.width <= 390 ? 48 : 1);
+    expect(geometry.horizontalOverflow).toBeLessThanOrEqual(1);
     expect(geometry.pageOverflow).toBeLessThanOrEqual(1);
   });
 }

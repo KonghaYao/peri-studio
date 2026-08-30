@@ -162,3 +162,26 @@
 .token-usage-meter__fill {
   transition: width var(--duration-fast) var(--ease-standard);
 }
+
+/* ── Chat 正文与 Composer 共享水平轨道 ───────────────────────────────── */
+
+.chat-column {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--chat-content-max);
+  min-width: 0;
+  margin-inline: auto;
+  padding-inline: var(--space-20);
+}
+
+@media (min-width: 960px) and (max-width: 1199px) {
+  .chat-column {
+    padding-inline: var(--space-18);
+  }
+}
+
+@media (max-width: 479px) {
+  .chat-column {
+    padding-inline: var(--space-10);
+  }
+}

@@ -47,7 +47,7 @@ export function ChatView(props: ChatViewProps) {
   });
   onCleanup(() => composerObserver?.disconnect());
   return (
-    <section class={`chat-view relative flex h-full min-h-0 flex-col bg-app-bg ${selectedSessionId() ? '' : 'chat-view--launch'}`}>
+    <section class={`chat-view relative flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden bg-app-bg ${selectedSessionId() ? '' : 'chat-view--launch'}`} data-testid="chat-view">
       <ChatHeader
         launch={!selectedSessionId()}
         onOpenNavigation={props.onOpenNavigation}
@@ -55,16 +55,16 @@ export function ChatView(props: ChatViewProps) {
       />
       <ConnectionProblem />
       <ErrorCenter />
-      <Show when={restoringSessionId()}><LoadingState label="Restoring last session and ACP context…" class="restore-banner justify-center mt-12 mx-20 max-narrow:m-10" /></Show>
+      <Show when={restoringSessionId()}><LoadingState label="Restoring last session and ACP context…" class="restore-banner justify-center mt-12 mx-20 max-narrow:m-10" data-testid="restore-banner" /></Show>
       <Show when={selectedSessionId()} fallback={<Show
         when={registryHydrated()}
         fallback={<LoadingState label="Loading projects" class="flex-1 justify-center text-center" />}
       >
         <LaunchWorkspace onOpenNavigation={props.onOpenNavigation} onCreateProject={props.onCreateProject} onImport={props.onImport} />
       </Show>}>
-        <div class="chat-workspace relative flex min-h-0 flex-1 flex-col">
+        <div class="chat-workspace relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
           <MessageList footerHeight={composerHeight()} />
-          <div ref={composerStack} class="composer-stack relative z-20 flex-none bg-app-bg">
+          <div ref={composerStack} class="composer-stack relative z-20 flex-none min-w-0 overflow-x-hidden bg-app-bg" data-testid="composer-stack">
             <Show when={hasPendingPermission()}>
               <PermissionQueue
                 permissions={permissions().filter((permission) => permission.status === 'pending')}

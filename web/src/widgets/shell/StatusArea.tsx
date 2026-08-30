@@ -58,7 +58,7 @@ export function StatusArea(props: StatusAreaProps) {
   const visibleTab = () => tabs().some((tab) => tab.id === activeTab()) ? activeTab() : tabs()[0]?.id;
 
   return <Show when={tabs().length > 0}>
-    <section class="status-area mx-auto mb-8 w-full max-w-(--container-chat) px-20 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 wide:max-w-(--container-chat) wide:px-20 max-desk:max-w-(--container-chat-narrow) max-narrow:px-10" aria-label="Status area">
+    <section data-testid="status-area" class="status-area chat-column mb-8" aria-label="Status area">
       <div class="overflow-hidden rounded-12 border border-border-subtle bg-surface-overlay shadow-decision">
         <div class="flex min-h-34 items-center gap-2 border-b border-divider px-5" role="tablist" aria-label="Work status">
           <For each={tabs()}>{(tab) => <button

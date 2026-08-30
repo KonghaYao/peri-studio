@@ -35,17 +35,19 @@ function HistoryBoundary(props: { kind: VisibleHistoryBoundary }) {
   const accessibleLabel = () => props.kind === 'live_runtime'
     ? 'Current run'
     : 'Peri-verified recovered history';
-  return <div class="history-boundary grid grid-cols-boundary items-center gap-8 mt-4 mb-4 text-text-muted text-10 tracking-25 text-center before:h-px before:bg-divider before:content-[''] after:h-px after:bg-divider after:content-['']" role="separator" aria-label={accessibleLabel()} title={accessibleLabel()}>
+  return <div class="history-boundary grid grid-cols-boundary items-center gap-8 mt-4 mb-4 text-text-muted text-10 tracking-25 text-center before:h-px before:bg-divider before:content-[''] after:h-px after:bg-divider after:content-['']" data-testid="history-boundary" role="separator" aria-label={accessibleLabel()} title={accessibleLabel()}>
     <span class="whitespace-nowrap">{label()}</span>
   </div>;
 }
 
 function ChatLoading() {
-  return <div class="chat-loading message-loading mb-12 flex min-h-32 items-center gap-8 text-12 text-text-muted" aria-hidden="true">
+  return <div data-testid="chat-loading">
+    <div class="chat-loading message-loading mb-12 flex min-h-32 items-center gap-8 text-12 text-text-muted" data-testid="message-loading" aria-hidden="true">
     <span class="grid size-18 shrink-0 place-items-center rounded-6 border border-border-subtle bg-surface-muted" aria-hidden="true">
       <i class="h-10 w-2 rounded-full bg-text-muted animate-pulse motion-reduce:animate-none" />
     </span>
     <span><strong class="font-650 text-text-primary">Peri</strong> is working</span>
+  </div>
   </div>;
 }
 
@@ -306,7 +308,7 @@ export function MessageList(props: { footerHeight?: number }) {
   };
 
   return (
-    <div class="message-list-shell relative flex min-h-0 flex-1 overflow-hidden">
+    <div class="message-list-shell relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
     <section aria-label="Conversation messages"
       ref={areaRef}
       onScroll={(e) => {
@@ -314,11 +316,12 @@ export function MessageList(props: { footerHeight?: number }) {
         setStick(el.scrollHeight - el.scrollTop - el.clientHeight < 40);
         updateViewport(el.scrollTop);
       }}
-      class="ui-scrollbar message-list-scroll min-h-0 flex-1 overflow-y-auto [overflow-anchor:none] [overscroll-behavior:contain] [scrollbar-gutter:stable]"
+      class="ui-scrollbar message-list-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto [overflow-anchor:none] [overscroll-behavior:contain]"
+      data-testid="message-list-scroll"
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
       <div class="sr-only" role="status" aria-label="Agent activity" aria-live="polite" aria-atomic="true">{agentActivityAnnouncement()}</div>
-      <div class="message-list-content box-border w-full max-w-(--container-chat-content) min-w-0 mx-auto px-20 pt-32 pb-32 desk:max-wide:px-18 max-narrow:px-10">
+      <div class="message-list-content chat-column pt-32 pb-32" data-testid="message-list-content">
         <div ref={prefixRef} class="transcript-prefix">
           <Show when={!runtimeDocsHydrated()}>
             <LoadingState label="Loading session" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />

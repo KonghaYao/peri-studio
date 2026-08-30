@@ -22,10 +22,11 @@ export function PermissionQueue(props: PermissionQueueProps) {
         const permissionId = () => permission().permissionId;
         return (
           <aside
-            class="permission-queue box-border w-full max-w-(--container-chat) mx-auto px-20 pb-10 desk:max-wide:max-w-(--container-chat-narrow) desk:max-wide:px-18 max-desk:max-w-(--container-chat-narrow) max-narrow:px-10"
+            class="permission-queue chat-column pb-10"
+            data-testid="permission-queue"
             aria-label={`Pending permission requests, ${props.permissions.length} total`}
           >
-            <div class="permission-queue__surface mb-12">
+            <div class="permission-queue__surface mb-12" data-testid="permission-queue-surface">
               <PermissionRequestCard
                 permission={permission()}
                 decision={permissionId() ? props.decisions.get(permissionId()!) : undefined}

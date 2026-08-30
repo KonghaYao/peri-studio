@@ -151,8 +151,8 @@ describe('MessageList footer resize', () => {
     setChatEntries([message('assistant-1', 'live', null)]);
     const { container } = render(() => <MessageList footerHeight={160} />);
 
-    expect(container.querySelector('.message-list-content')).toHaveClass('pb-32');
-    expect(screen.getByRole('region', { name: 'Conversation messages' })).toHaveClass('[scrollbar-gutter:stable]');
+    expect(container.querySelector('[data-testid="message-list-content"]')).toHaveClass('chat-column', 'pb-32');
+    expect(screen.getByRole('region', { name: 'Conversation messages' })).toHaveClass('message-list-scroll');
   });
 
   it('keeps following the true bottom when the in-flow footer grows', async () => {
@@ -210,7 +210,7 @@ describe('MessageList entry updates', () => {
 
     const messageRow = screen.getByLabelText('Assistant message');
     const reasoning = screen.getByText('Thinking').closest('details')!;
-    const tool = messageRow.querySelector<HTMLButtonElement>('.tool-activity-row__summary')!;
+    const tool = messageRow.querySelector<HTMLButtonElement>('[data-testid="tool-activity-row-summary"]')!;
     fireEvent.click(reasoning.querySelector('summary')!);
     fireEvent.click(tool);
     expect(reasoning).toHaveAttribute('open');
@@ -225,7 +225,7 @@ describe('MessageList entry updates', () => {
 
     const updatedMessageRow = screen.getByLabelText('Assistant message');
     const updatedReasoning = screen.getByText('Thinking').closest('details')!;
-    const updatedTool = updatedMessageRow.querySelector<HTMLButtonElement>('.tool-activity-row__summary')!;
+    const updatedTool = updatedMessageRow.querySelector<HTMLButtonElement>('[data-testid="tool-activity-row-summary"]')!;
     expect(updatedMessageRow).toBe(messageRow);
     expect(updatedReasoning).toBe(reasoning);
     expect(updatedReasoning).toHaveAttribute('open');
@@ -282,11 +282,11 @@ describe('MessageList hydration', () => {
 
     render(() => <MessageList />);
 
-    const loading = document.querySelector('.message-loading')!;
+    const loading = document.querySelector('[data-testid="message-loading"]')!;
     expect(loading).toHaveClass('message-loading');
     expect(loading).not.toHaveClass('sr-only');
     expect(loading).toHaveTextContent('Peri is working');
-    expect(document.querySelectorAll('.message-loading')).toHaveLength(1);
+    expect(document.querySelectorAll('[data-testid="message-loading"]')).toHaveLength(1);
 
     setChatEntries([{
       ...message('turn-1', 'live', null),
@@ -297,7 +297,7 @@ describe('MessageList hydration', () => {
       }}],
       toolCalls: [{ toolCallId: 'tool-1', name: 'Bash', kind: 'execute', status: 'completed', arguments: { command: 'pwd' }, result: { stdout: '/repo' }, resultOmitted: false, resultBytes: 5, publicError: null, startedAt: null, completedAt: null }],
     }]);
-    expect(document.querySelector('.message-loading')).toHaveTextContent('Peri is working');
+    expect(document.querySelector('[data-testid="message-loading"]')).toHaveTextContent('Peri is working');
     expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('Peri is working');
 
     setChatEntries([{
@@ -309,7 +309,7 @@ describe('MessageList hydration', () => {
         resultOmitted: false, resultBytes: 5, publicError: null, startedAt: null, completedAt: null,
       }],
     }]);
-    expect(document.querySelector('.message-loading')).toBeNull();
+    expect(document.querySelector('[data-testid="message-loading"]')).toBeNull();
   });
 
   it('uses one aggregate live status without duplicating a running tool or permission surface', () => {
@@ -329,17 +329,17 @@ describe('MessageList hydration', () => {
     }]);
     const view = render(() => <MessageList />);
 
-    expect(document.querySelector('.message-loading')).toBeNull();
+    expect(document.querySelector('[data-testid="message-loading"]')).toBeNull();
     expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('Bash running');
 
     setPermissions([{ queueKey: 'p1', permissionId: 'p1', turnId: 'turn-1', toolCallId: null, title: 'Run command', description: null, options: ['allowOnce', 'deny'], status: 'pending', decision: null }]);
     setChatEntries([]);
-    expect(document.querySelector('.message-loading')).toBeNull();
+    expect(document.querySelector('[data-testid="message-loading"]')).toBeNull();
     expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('Waiting for permission');
 
     setPermissions([]);
     setElicitations([{ elicitationId: 'e1', message: 'Choose a path', status: 'pending', responseAction: null, fields: [], createdAt: null }]);
-    expect(document.querySelector('.message-loading')).toBeNull();
+    expect(document.querySelector('[data-testid="message-loading"]')).toBeNull();
     expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('Waiting for your answer');
     view.unmount();
   });
@@ -361,16 +361,16 @@ describe('MessageList hydration', () => {
     render(() => <MessageList />);
 
     setChatEntries([firstText, toolSegment]);
-    expect(document.querySelector('.message-loading')).toBeNull();
+    expect(document.querySelector('[data-testid="message-loading"]')).toBeNull();
     expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('Bash running');
 
     const completedTool = { ...runningTool, status: 'completed', result: { exitCode: 0 }, completedAt: '2026-08-15T00:00:01Z' };
     setChatEntries([firstText, { ...toolSegment, toolCalls: [completedTool], blocks: [{ kind: 'tool_call', id: 'tool-1', toolCall: completedTool }] }]);
-    expect(document.querySelector('.message-loading')).toHaveTextContent('Peri is working');
+    expect(document.querySelector('[data-testid="message-loading"]')).toHaveTextContent('Peri is working');
 
     const finalText = { ...message('segment-final', 'live', null), turnId: 'turn-1', text: 'Final delta', blocks: [{ kind: 'text' as const, id: 'text-2', text: 'Final delta' }] };
     setChatEntries([firstText, { ...toolSegment, toolCalls: [completedTool], blocks: [{ kind: 'tool_call', id: 'tool-1', toolCall: completedTool }] }, finalText]);
-    expect(document.querySelector('.message-loading')).toBeNull();
+    expect(document.querySelector('[data-testid="message-loading"]')).toBeNull();
     expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('');
   });
 
@@ -390,7 +390,7 @@ describe('MessageList hydration', () => {
     ]);
 
     render(() => <MessageList />);
-    expect(document.querySelector('.message-loading')).toBeNull();
+    expect(document.querySelector('[data-testid="message-loading"]')).toBeNull();
     expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('Bash running');
   });
 

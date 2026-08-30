@@ -39,7 +39,7 @@ export function LayersPage() {
       </DomainSection>
 
       <DomainSection title="Composer · 输入区" description="资产磁贴 + 文本域 + 操作行。">
-        <DemoSection id="composer" title="Composer" description="12px 圆角、浅灰边；模型选择 + token 圆环 + Send。">
+        <DemoSection id="composer" title="Composer" description="与正文同宽 chat-column 轨道；浅灰边、模型选择 + token 圆环 + Send。">
           <ComposerLayout />
         </DemoSection>
       </DomainSection>
