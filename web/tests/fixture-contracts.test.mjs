@@ -52,19 +52,19 @@ test('the visual fixture is a development-only entry and cannot bypass productio
   assert.match(visualContract, /connectionStatus/);
 });
 
-test('design-token modules are implemented by production components', () => {
+test('component geometry tokens are declared once and consumed by production widgets', () => {
   const root = join(import.meta.dirname, '..', 'src');
   const read = (...parts) => readFileSync(join(root, ...parts), 'utf8');
   const tokens = read('styles', 'tokens.css');
-  const board = read('visual-fixture', 'DesignTokenBoard.tsx');
-  const fixtureCss = read('visual-fixture', 'fixture.css');
   const composer = read('widgets', 'composer', 'Composer.tsx');
   const tool = read('widgets', 'chat', 'ToolCallCard.tsx');
   const status = read('widgets', 'shell', 'StatusArea.tsx');
   const questions = read('widgets', 'chat', 'ElicitationQueue.tsx');
   const permissions = read('widgets', 'chat', 'PermissionQueue.tsx');
+  const permissionCard = read('widgets', 'chat', 'PermissionRequestCard.tsx');
   const explorer = read('widgets', 'resource', 'ExplorerPanel.tsx');
   const sourceControl = read('widgets', 'resource', 'SourceControlPanel.tsx');
+  const button = read('shared', 'ui', 'Button.tsx');
 
   for (const token of [
     'control-height-compact', 'pattern-row-height', 'tree-row-height',
@@ -72,13 +72,8 @@ test('design-token modules are implemented by production components', () => {
     'decision-radius', 'permission-card-min-height', 'tool-activity-max',
   ]) {
     assert.match(tokens, new RegExp(`--${token}:`));
-    assert.match(`${fixtureCss}\n${composer}\n${tool}\n${status}\n${questions}\n${permissions}\n${explorer}\n${sourceControl}`, new RegExp(`--${token}`));
+    assert.match(`${composer}\n${tool}\n${status}\n${questions}\n${permissions}\n${permissionCard}\n${explorer}\n${sourceControl}\n${button}`, new RegExp(`--${token}`));
   }
-  assert.match(board, /Tool activity · max 740px/);
-  assert.match(board, /Status Area/);
-  assert.match(board, /VS Code-like file tree/);
-  assert.match(board, /Composer shell/);
-  assert.match(board, /Decision surfaces/);
   assert.doesNotMatch(composer, /token-composer|design-token/);
   assert.doesNotMatch(tool, /token-tool|design-token/);
 });

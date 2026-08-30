@@ -44,7 +44,6 @@ export const VISUAL_SCENARIO_IDS = [
   'assets',
   'terminal-readonly',
   'catalog',
-  'design-tokens',
 ] as const;
 
 /** Browser acceptance bridge; this module shares the fixture's live store graph. */
@@ -147,7 +146,6 @@ export const visualScenarios: readonly VisualScenarioDefinition[] = [
   { id: 'assets', label: 'Assets & components', description: 'Images, diagrams, and embedded previews.', controls: 'locally-interactive' },
   { id: 'terminal-readonly', label: 'Error recovery', description: 'Interrupted runtime and verified history.', controls: 'locally-interactive' },
   { id: 'catalog', label: 'Empty state', description: 'First action with no active conversation.', controls: 'locally-interactive' },
-  { id: 'design-tokens', label: 'Design tokens', description: 'Palette, primitives, patterns, and modules.', controls: 'display-only' },
 ] as const;
 
 const projects: ProjectInfo[] = [

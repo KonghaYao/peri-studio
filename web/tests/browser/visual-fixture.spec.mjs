@@ -202,19 +202,7 @@ test('subtasks identify agent and workflow task sources', async ({ page }) => {
   await expect(asyncTasks).toContainText('Workflow');
 });
 
-test('design token page documents foundations, primitives, patterns, and modules', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto('/visual-fixture.html?scenario=design-tokens', { waitUntil: 'networkidle' });
-
-  await expect(page.getByRole('heading', { name: 'Peri Studio · Design tokens' })).toBeVisible();
-  await expect(page.locator('.token-swatch')).toHaveCount(7);
-  await expect(page.getByText('Lucide icon family')).toBeVisible();
-  await expect(page.getByText('Tool activity · max 740px')).toBeVisible();
-  await expect(page.getByText('Composer shell')).toBeVisible();
-  await expect(page.locator('.design-token-page')).toHaveCSS('overflow-x', 'visible');
-});
-
-for (const scenario of ['conversation', 'permission-streaming', 'elicitation', 'markdown', 'resources', 'assets', 'design-tokens']) {
+for (const scenario of ['conversation', 'permission-streaming', 'elicitation', 'markdown', 'resources', 'assets']) {
   test(`${scenario} keeps icon actions rectangular`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(`/visual-fixture.html?scenario=${scenario}`, { waitUntil: 'networkidle' });

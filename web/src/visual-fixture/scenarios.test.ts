@@ -29,7 +29,7 @@ describe('visual fixture scenarios', () => {
   it('covers permissions and closed-by-default read-only state', () => {
     expect(visualScenarios.map((item) => item.id)).toEqual([
       'conversation', 'long-conversation', 'markdown', 'tools', 'permission-streaming',
-      'elicitation', 'subtasks', 'resources', 'assets', 'terminal-readonly', 'catalog', 'design-tokens',
+      'elicitation', 'subtasks', 'resources', 'assets', 'terminal-readonly', 'catalog',
     ]);
     let installed = installVisualScenario('terminal-readonly');
     dispose = installed.dispose;

@@ -6,7 +6,6 @@ import { AppShell } from '@/widgets/shell/AppShell';
 import { Toasts } from '@/widgets/shell/Toasts';
 import { appendVisualResourceEntries, DEFAULT_VISUAL_SCENARIO, installVisualScenario, removeVisualResourceEntry, setVisualDiffPreview, setVisualElicitationUnknown, setVisualFilePreview, setVisualToolAcceptancePhase, setVisualTranscriptCount, visualScenarios } from './scenarios';
 import { VisualScenarioSidebar } from './VisualScenarioSidebar';
-import { DesignTokenBoard } from './DesignTokenBoard';
 
 declare global {
   interface Window {
@@ -29,7 +28,6 @@ const initialResourceView = search.get('resource') === 'scm' ? 'scm' : 'explorer
 
 function VisualFixture() {
   const installed = installVisualScenario(selected);
-  const foundationMode = installed.scenario.id === 'design-tokens';
   window.__PERI_VISUAL_FIXTURE__ = {
     setFilePreview: setVisualFilePreview,
     setDiffPreview: setVisualDiffPreview,
@@ -52,8 +50,8 @@ function VisualFixture() {
         <code>Mock data</code>
       </aside>
       {!projectSidebarMode && <VisualScenarioSidebar scenarios={visualScenarios} current={installed.scenario.id} />}
-      <div class={`visual-fixture-stage ${foundationMode ? 'visual-fixture-stage--foundation' : ''}`}>
-        {foundationMode ? <DesignTokenBoard /> : <AppShell initialResourceView={installed.scenario.id === 'resources' ? initialResourceView : null} />}
+      <div class="visual-fixture-stage">
+        <AppShell initialResourceView={installed.scenario.id === 'resources' ? initialResourceView : null} />
       </div>
     </div>
     <Toasts />

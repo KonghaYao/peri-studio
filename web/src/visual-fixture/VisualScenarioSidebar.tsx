@@ -1,6 +1,6 @@
 import { For } from 'solid-js';
 import type { VisualScenarioDefinition, VisualScenarioId } from './scenarios';
-import { CircleHelp, FileText, FolderOpen, History, Image, MessageSquare, MessagesSquare, PanelsTopLeft, Plus, Search, ShieldCheck, Sparkles, Workflow, Wrench } from 'lucide-solid';
+import { CircleHelp, FileText, FolderOpen, History, Image, MessageSquare, MessagesSquare, Plus, Search, ShieldCheck, Sparkles, Workflow, Wrench } from 'lucide-solid';
 
 function ScenarioIcon(props: { id: VisualScenarioId }) {
   const iconProps = { size: 18, strokeWidth: 1.7, 'aria-hidden': true } as const;
@@ -16,7 +16,6 @@ function ScenarioIcon(props: { id: VisualScenarioId }) {
     case 'assets': return <Image {...iconProps} />;
     case 'terminal-readonly': return <History {...iconProps} />;
     case 'catalog': return <Sparkles {...iconProps} />;
-    case 'design-tokens': return <PanelsTopLeft {...iconProps} />;
   }
 }
 
