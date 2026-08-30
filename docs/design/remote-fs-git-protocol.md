@@ -195,7 +195,7 @@ resource mutation 的 terminal `action_ack` 增加小型、封闭的可选 `reso
 | `fs/directory-page` | 某目录的一页直接子项 | 每目录每页一个 Doc，默认最多 200 项 |
 | `git/repository` | HEAD、upstream、operation、各 group count/revision | 每 repo 一个小型租赁 Doc |
 | `git/group-page` | 某 SCM group 的一页 `GitChange` | 每 group 每页一个 Doc，默认最多 200 项 |
-| `git/log-page` | 某 repo 的一页提交 DAG 元数据（hash、parents、message、author、refs） | 每 repo 每页一个 Doc，默认最多 200 项；**权威契约见 [git-graph-protocol.md](git-graph-protocol.md)** |
+| `git/log-page` | 某 repo 的一页提交 DAG 元数据（hash、parents、message、author、refs） | 每 repo 每页一个 Doc，默认 **50** 项（上限与体积预算见 [git-graph-protocol.md](git-graph-protocol.md) §10） |
 
 `resource:{viewId}` 使用 server 生成的 opaque id；浏览器不能从 path/repoId 自行构造合法 Doc。每次 subscribe 都重新校验 principal 对该 view 所绑定 workspace 的权限，知道 view id 不等于有权限。
 
@@ -404,7 +404,7 @@ server→instance projection query：
 - `git/discover { mode: "workspace" }`
 - `git/snapshot { repoId }`
 - `git/changes { repoId, groupId, groupRevision, cursor?, limit }`
-- `git/log { repoId, cursor?, limit }` → commit DAG 页（Graph；见 [git-graph-protocol.md](git-graph-protocol.md)）
+- `git/log { repoId, expectedGeneration, cursor?, limit }` → commit DAG 页（Graph；cursor 为 `{generation}.{offset}`；见 [git-graph-protocol.md](git-graph-protocol.md)）
 - `git/open-diff { repoId, changeId, context? }` → stream metadata
 - `git/open-show { repoId, source: "head" | "index", path }` → stream metadata
 - `git/refs { repoId, cursor?, limit }`
@@ -483,7 +483,7 @@ mutation：
 | R4 | HTTP upload + atomic `fs/write-file` | `ifMatch` 冲突、单次 ticket、临时文件清理、symlink/TOCTOU |
 | R5 | `fs/watch` → server refresh → Yjs update | epoch/seq、overflow 全量刷新、debounce/single-flight、旧 generation fencing |
 | R6 | `git/discover/snapshot/changes` → repo/group Y.Doc + HTTP diff | repo scope、porcelain 解析、有界分页、Git 缺失/锁/冲突状态 |
-| R6b | `git/log` → `git/log-page` Y.Doc + Graph UI | 有界 commit DAG、refs 标注、与 repository generation 绑定；见 [git-graph-protocol.md](git-graph-protocol.md) |
+| R6b | `git/log` → `git/log-page` Y.Doc + Graph UI | 有界 commit DAG、refs 标注、`expectedGeneration` + `headOid` 围栏、分页租约释放；见 [git-graph-protocol.md](git-graph-protocol.md) v1.1 |
 | R7 | `stage/unstage/discard/commit` | per-repo 串行、expectedGeneration、投影刷新、确认 token、delivery unknown |
 | R8 | fetch/pull/push 等远端操作 | credential broker、长任务进度、取消与对账 |
 
