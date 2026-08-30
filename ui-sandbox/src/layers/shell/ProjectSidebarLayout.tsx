@@ -229,7 +229,8 @@ export function ProjectSidebarLayout() {
         <NavAction icon={<LayoutGrid size={16} strokeWidth={1.7} />} label="Customize" />
       </div>
 
-      <div class="min-h-0 flex-1 overflow-auto px-1.5 pb-2">
+      <div class="sidebar-scroll-shell px-1.5">
+        <div class="min-h-0 h-full overflow-auto pb-2">
         <SectionHeader title="Pinned" icon={<Pin size={14} strokeWidth={1.7} />} />
         <div class="flex flex-col gap-0.5 pb-1">
           <For each={PINNED}>
@@ -304,7 +305,7 @@ export function ProjectSidebarLayout() {
                               </Show>
                             </span>
                             <Show when={workspace.hint && !open()}>
-                              <span class="mt-0.5 block truncate text-11 text-content-muted">{workspace.hint}</span>
+                              <span class="mt-0.5 block truncate text-11 sidebar-mist-hint">{workspace.hint}</span>
                             </Show>
                           </span>
                         </button>
@@ -322,7 +323,7 @@ export function ProjectSidebarLayout() {
                           <Show
                             when={hasSessions()}
                             fallback={
-                              <div class="px-2.5 py-1 pl-9 text-11 text-content-muted">{workspace.hint ?? 'No sessions yet'}</div>
+                              <div class="px-2.5 py-1 pl-9 text-11 sidebar-mist-hint">{workspace.hint ?? 'No sessions yet'}</div>
                             }
                           >
                             <For each={workspace.sessions}>
@@ -348,9 +349,12 @@ export function ProjectSidebarLayout() {
             </section>
           )}
         </For>
+        </div>
+        <div class="sidebar-scroll-mist" aria-hidden="true" />
       </div>
 
-      <div class="flex h-12 shrink-0 items-center gap-2 border-t border-border-subtle px-2.5">
+      <div class="sidebar-mist-divider" aria-hidden="true" />
+      <div class="flex h-12 shrink-0 items-center gap-2 px-2.5">
         <span class="grid size-7 shrink-0 place-items-center rounded-full bg-surface-muted text-11 font-medium text-content-secondary">C</span>
         <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Christopher13</span>
         <IconButton size="sm" label="Settings" class="shrink-0 text-content-muted">
