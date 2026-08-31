@@ -206,6 +206,24 @@ impl TokenStore {
         Ok(Some(rec))
     }
 
+    /// 按 instance token name（即 `instance_id`）吊销；幂等。
+    pub fn revoke_instance_token(&mut self, instance_id: &str) -> Result<Option<TokenRecord>, StoreError> {
+        self.maybe_reload();
+        let Some(id) = self
+            .records
+            .iter()
+            .find(|record| {
+                record.role == TokenRole::Instance
+                    && record.name == instance_id
+                    && !record.revoked
+            })
+            .map(|record| record.id.clone())
+        else {
+            return Ok(None);
+        };
+        self.revoke(&id)
+    }
+
     /// 视图列表（无 token 本体，§9.2.1）。
     pub fn list(&self) -> Vec<TokenInfo> {
         self.records.iter().map(TokenInfo::from).collect()

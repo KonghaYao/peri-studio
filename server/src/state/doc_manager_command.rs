@@ -187,6 +187,9 @@ pub enum DocCommand {
         projects: Vec<peri_studio_proto::schema::ProjectSummary>,
         sessions: Vec<peri_studio_proto::schema::ProjectSessionSummary>,
     },
+    RegistryReplaceMachines {
+        machines: Vec<peri_studio_proto::schema::MachineSummary>,
+    },
 }
 
 impl DocCommand {
@@ -203,6 +206,7 @@ impl DocCommand {
                 | DocCommand::RegistryUpsertWorkspace(_)
                 | DocCommand::RegistryRemoveWorkspace { .. }
                 | DocCommand::RegistryReplaceProjects { .. }
+                | DocCommand::RegistryReplaceMachines { .. }
         )
     }
 }

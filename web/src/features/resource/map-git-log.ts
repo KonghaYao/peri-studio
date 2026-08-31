@@ -1,5 +1,19 @@
 import type { ResourceEntry } from '@/entities/resource/resource-view';
-import type { GitGraphCommit } from '@/widgets/resource/git/types';
+
+type GitGraphRef = { label: string; tone?: 'branch' | 'remote' | 'tag' };
+
+type GitGraphCommit = {
+  id: string;
+  hash: string;
+  shortHash?: string;
+  message: string;
+  author: string;
+  date: string;
+  time: string;
+  parents: string[];
+  refs?: GitGraphRef[];
+  isHead?: boolean;
+};
 
 type GitRefWire = { name?: string; kind?: string };
 
@@ -39,7 +53,8 @@ function parseRefs(value: unknown): GitGraphCommit['refs'] {
       if (!item || typeof item !== 'object') return null;
       const ref = item as GitRefWire;
       if (typeof ref.name !== 'string') return null;
-      const tone = ref.kind === 'branch' || ref.kind === 'remote' || ref.kind === 'tag' ? ref.kind : undefined;
+      const tone: 'branch' | 'remote' | 'tag' | undefined =
+        ref.kind === 'branch' || ref.kind === 'remote' || ref.kind === 'tag' ? ref.kind : undefined;
       return { label: ref.name, tone };
     })
     .filter((ref): ref is NonNullable<typeof ref> => !!ref);

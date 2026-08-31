@@ -84,6 +84,18 @@ pub const M1_ACTION_TYPES: &[&str] = &[
     "mcp/app-open",
     "mcp/app-resource",
     "mcp/app-call",
+    "machine/add",
+    "machine/connect",
+    "machine/disconnect",
+    "machine/stop",
+    "machine/cancel",
+    "machine/retry",
+    "machine/trust-host",
+    "machine/confirm-replace",
+    "machine/rename",
+    "machine/set-auto-reconnect",
+    "machine/remove",
+    "machine/restore",
 ];
 
 /// `action` 帧的 `type` 子集是否在 M1 白名单内。

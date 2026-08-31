@@ -13,5 +13,6 @@ pub mod control;
 pub mod persist;
 pub mod protocol;
 pub mod runtime;
+pub use runtime::MachinePorts;
 pub mod state;
 pub mod web;

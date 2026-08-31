@@ -92,6 +92,18 @@ pub(crate) fn extract_command_id(action: &ActionEnvelope) -> Option<String> {
         | ActionEnvelope::McpAppOpen { command_id, .. }
         | ActionEnvelope::McpAppResource { command_id, .. }
         | ActionEnvelope::McpAppCall { command_id, .. } => Some(command_id.clone()),
+        ActionEnvelope::MachineAdd { command_id, .. }
+        | ActionEnvelope::MachineConnect { command_id, .. }
+        | ActionEnvelope::MachineDisconnect { command_id, .. }
+        | ActionEnvelope::MachineStop { command_id, .. }
+        | ActionEnvelope::MachineCancel { command_id, .. }
+        | ActionEnvelope::MachineRetry { command_id, .. }
+        | ActionEnvelope::MachineTrustHost { command_id, .. }
+        | ActionEnvelope::MachineConfirmReplace { command_id, .. }
+        | ActionEnvelope::MachineRename { command_id, .. }
+        | ActionEnvelope::MachineSetAutoReconnect { command_id, .. }
+        | ActionEnvelope::MachineRemove { command_id, .. }
+        | ActionEnvelope::MachineRestore { command_id, .. } => Some(command_id.clone()),
     }
 }
 
@@ -135,6 +147,18 @@ pub(super) fn extract_chat_id(action: &ActionEnvelope) -> Option<String> {
         ActionEnvelope::McpAppOpen { payload, .. } => Some(payload.chat_id.clone()),
         ActionEnvelope::McpAppResource { payload, .. } => Some(payload.chat_id.clone()),
         ActionEnvelope::McpAppCall { payload, .. } => Some(payload.chat_id.clone()),
+        ActionEnvelope::MachineAdd { .. }
+        | ActionEnvelope::MachineConnect { .. }
+        | ActionEnvelope::MachineDisconnect { .. }
+        | ActionEnvelope::MachineStop { .. }
+        | ActionEnvelope::MachineCancel { .. }
+        | ActionEnvelope::MachineRetry { .. }
+        | ActionEnvelope::MachineTrustHost { .. }
+        | ActionEnvelope::MachineConfirmReplace { .. }
+        | ActionEnvelope::MachineRename { .. }
+        | ActionEnvelope::MachineSetAutoReconnect { .. }
+        | ActionEnvelope::MachineRemove { .. }
+        | ActionEnvelope::MachineRestore { .. } => None,
     }
 }
 

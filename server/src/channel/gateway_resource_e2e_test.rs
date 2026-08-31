@@ -98,13 +98,15 @@ async fn e2e_resource_directory_projects_through_instance_and_ysync() {
         .send(Message::Text(
             serde_json::to_string(&Frame::ResourceQuery(ResourceQuery::OpenView {
                 request_id: "resource-e2e".into(),
-                project_id: "project-e2e".into(),
+                project_id: Some("project-e2e".into()),
+                instance_id: None,
                 payload: OpenResourceView {
                     kind: ResourceViewKind::FsDirectoryPage,
                     path: Some(String::new()),
                     repo_id: None,
                     group_id: None,
                     cursor: None,
+                    expected_generation: None,
                     limit: 200,
                 },
             }))

@@ -195,13 +195,24 @@ fn m1_action_type_subset() {
         "mcp/app-open",
         "mcp/app-resource",
         "mcp/app-call",
+        "machine/add",
+        "machine/connect",
+        "machine/disconnect",
+        "machine/stop",
+        "machine/cancel",
+        "machine/retry",
+        "machine/trust-host",
+        "machine/rename",
+        "machine/set-auto-reconnect",
+        "machine/remove",
+        "machine/restore",
     ] {
         assert!(m1_allows_action_type(t), "{t} 应在 M1");
     }
     for t in ["events/subscribe", "events/unsubscribe"] {
         assert!(!m1_allows_action_type(t), "{t} 应不在 M1");
     }
-    assert_eq!(crate::whitelist::M1_ACTION_TYPES.len(), 34);
+    assert_eq!(crate::whitelist::M1_ACTION_TYPES.len(), 46);
 }
 
 /// 全量注册表：39 个 tag 且与 §3.2 表一致（含 M2/M3 保留帧与

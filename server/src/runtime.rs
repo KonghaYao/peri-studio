@@ -18,6 +18,30 @@ use crate::config::Config;
 use crate::control::Hub;
 use crate::persist::{PersistConfig, Store};
 
+/// app 可注入的 server 侧机器相关端口集合。
+#[derive(Clone, Default)]
+pub struct MachinePorts {
+    pipeline: Option<Arc<dyn crate::control::MachinePipelinePort>>,
+}
+
+impl MachinePorts {
+    /// 不注入 app 管道（SSH 供应操作返回 `PipelineUnavailable`）。
+    pub fn none() -> Self {
+        Self::default()
+    }
+
+    /// 注入 app 侧 `MachinePipelinePort` 实现。
+    pub fn with_pipeline(pipeline: Arc<dyn crate::control::MachinePipelinePort>) -> Self {
+        Self {
+            pipeline: Some(pipeline),
+        }
+    }
+
+    pub(crate) fn pipeline(&self) -> Option<Arc<dyn crate::control::MachinePipelinePort>> {
+        self.pipeline.clone()
+    }
+}
+
 /// 由 server 管理、可直接交给本地 instance 的凭据定位信息。
 ///
 /// 结构中没有 token 本体，`Debug` 和上层状态输出不会意外泄露 secret。
@@ -87,6 +111,14 @@ impl ServerRuntime {
     where
         S: Future<Output = ()> + Send + 'static,
     {
+        Self::start_with_ports(cfg, shutdown, MachinePorts::none()).await
+    }
+
+    /// 装配并启动 server，并注入 app 侧机器管道端口。
+    pub async fn start_with_ports<S>(cfg: Config, shutdown: S, ports: MachinePorts) -> anyhow::Result<Self>
+    where
+        S: Future<Output = ()> + Send + 'static,
+    {
         // 先占用监听地址再做任何凭据或状态写入；端口冲突时启动必须无副作用。
         let requested = SocketAddr::new(cfg.listen_addr, cfg.listen_port);
         let listener = tokio::net::TcpListener::bind(requested).await?;
@@ -119,7 +151,7 @@ impl ServerRuntime {
         let persist_cfg = PersistConfig::from(&cfg);
         let store = Arc::new(Store::open(&persist_cfg)?);
         let auth = Arc::new(tokio::sync::Mutex::new(AuthService::new(token_store)));
-        let hub = Hub::assemble(&cfg, store, auth).await?;
+        let hub = Hub::assemble_with_ports(&cfg, store, auth, ports, listen_addr.port()).await?;
 
         let ready = ServerReady::new(listen_addr, credential);
         let task = tokio::spawn(async move { hub.run_server_on(listener, shutdown).await });

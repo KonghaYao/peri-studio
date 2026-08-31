@@ -8,21 +8,21 @@ async fn command_dedup_detects_payload_mismatch_and_replays_result() {
     let store = MetadataStore::open(dir.path()).await.unwrap();
     assert_eq!(
         store
-            .begin_command("c1", "project/create", "h1", None, None)
+            .begin_command("c1", "project/create", "h1", None, None, None)
             .await
             .unwrap(),
         BeginCommand::New
     );
     assert_eq!(
         store
-            .begin_command("c1", "project/create", "h1", None, None)
+            .begin_command("c1", "project/create", "h1", None, None, None)
             .await
             .unwrap(),
         BeginCommand::Existing
     );
     assert!(matches!(
         store
-            .begin_command("c1", "project/create", "h2", None, None)
+            .begin_command("c1", "project/create", "h2", None, None, None)
             .await,
         Err(MetadataError::Conflict(_))
     ));

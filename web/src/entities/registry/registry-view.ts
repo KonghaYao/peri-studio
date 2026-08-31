@@ -41,6 +41,21 @@ export interface ProjectInfo {
   archivedAt: string | null;
 }
 
+export interface MachineInfo {
+  instanceId: string;
+  kind: string;
+  displayName: string;
+  sshDestination: string | null;
+  sshPort: number | null;
+  phase: string;
+  errorCode: string | null;
+  hasIdentityFile: boolean;
+  autoReconnect: boolean;
+  hostKeySha256: string | null;
+  updatedAt: string | null;
+  archivedAt: string | null;
+}
+
 /** ACP 权威会话目录项：`id` 即 ACP durable session id（ADR-0003）。 */
 export interface ProjectSessionInfo {
   /** ACP durable session id；与 Registry `project_sessions` map 键同值。 */
@@ -71,6 +86,7 @@ export interface RegistryView {
   sessions: SessionSummaryInfo[];
   workspaces: WorkspaceInfo[];
   projects: ProjectInfo[];
+  machines: MachineInfo[];
   projectSessions: ProjectSessionInfo[];
   globalStatus: string;
   schemaVersion: unknown;
@@ -85,6 +101,7 @@ export function renderRegistry(doc: Y.Doc): RegistryView {
   const sessions: SessionSummaryInfo[] = [];
   const workspaces: WorkspaceInfo[] = [];
   const projects: ProjectInfo[] = [];
+  const machines: MachineInfo[] = [];
   const projectSessions: ProjectSessionInfo[] = [];
 
   asMap(root.get('instances'))?.forEach((value, id) => {
@@ -174,12 +191,38 @@ export function renderRegistry(doc: Y.Doc): RegistryView {
   });
   sessions.sort((left, right) => String(right.updatedAt || '').localeCompare(String(left.updatedAt || '')));
 
+  asMap(root.get('machines'))?.forEach((value, id) => {
+    const map = asMap(value);
+    if (!map) return;
+  const portRaw = map.get('ssh_port');
+    machines.push({
+      instanceId: getStr(map, 'instance_id') || id,
+      kind: getStr(map, 'kind') || 'ssh',
+      displayName: getStr(map, 'display_name') || id,
+      sshDestination: getStr(map, 'ssh_destination'),
+      sshPort: typeof portRaw === 'number' ? portRaw : null,
+      phase: getStr(map, 'phase') || 'offline',
+      errorCode: getStr(map, 'error_code'),
+      hasIdentityFile: map.get('has_identity_file') === true,
+      autoReconnect: map.get('auto_reconnect') === true,
+      hostKeySha256: getStr(map, 'host_key_sha256'),
+      updatedAt: getStr(map, 'updated_at'),
+      archivedAt: getStr(map, 'archived_at'),
+    });
+  });
+  machines.sort((left, right) => {
+    if (left.kind === 'local') return -1;
+    if (right.kind === 'local') return 1;
+    return String(left.displayName).localeCompare(String(right.displayName));
+  });
+
   return {
     instances,
     chats,
     sessions,
     workspaces,
     projects,
+    machines,
     projectSessions,
     globalStatus: getStr(asMap(root.get('global')), 'status') || 'unknown',
     schemaVersion: root.get('schema_version'),

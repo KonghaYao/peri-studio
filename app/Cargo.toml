@@ -11,12 +11,16 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = { workspace = true }
+async-trait = { workspace = true }
+base64 = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
 dirs-next = { workspace = true }
 libc = { workspace = true }
 peri-instance = { path = "../instance", version = "0.2.0" }
+peri-studio-proto = { path = "../proto", version = "0.2.0" }
 peri-studio-server = { path = "../server", version = "0.2.0" }
 serde_json = { workspace = true }
+sha2 = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tokio-util = { workspace = true }
 tracing = { workspace = true }

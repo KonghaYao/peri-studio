@@ -5,7 +5,7 @@ import * as H from '../panel/lib/protocol';
 import { DocStore } from '../panel/lib/doc-store';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import type { ControlView } from '@/entities/chat/control-view';
-import type { ChatInfo, InstanceInfo, ProjectInfo, ProjectSessionInfo, SessionSummaryInfo } from '@/entities/registry/registry-view';
+import type { ChatInfo, InstanceInfo, MachineInfo, ProjectInfo, ProjectSessionInfo, SessionSummaryInfo } from '@/entities/registry/registry-view';
 import { isTerminal, isTurnActive } from '../panel/lib/action-state.ts';
 import { CommandTracker } from '../panel/lib/command-tracker';
 import { SessionActivation, type OpeningSession, type OpenSessionCallbacks } from '@/features/session/session-activation';
@@ -16,6 +16,7 @@ import { settleLateQuickStart } from '../panel/lib/quick-start-delivery';
 import { confirmRuntimeControl, resetRuntimeControls } from '../panel/lib/runtime-control';
 import { resetPermissionDecisions } from '../panel/lib/permission-delivery';
 import { CatalogActions } from '@/features/catalog/catalog-actions';
+import { MachineActions } from '@/features/machine/machine-actions';
 import { createSessionCatalogBootstrap } from '@/features/catalog/session-catalog-bootstrap';
 import { selectActiveProjects } from '@/features/catalog/project-catalog';
 import { ToastStore } from '../panel/lib/toast-store';
@@ -38,6 +39,10 @@ import { installStoreWiring } from '../panel/lib/store-installs';
 import { installStoreProjection, type RuntimeDocsState } from '../panel/lib/store-projection';
 import { elicitationResponses, resetElicitationResponses } from '../panel/lib/elicitation-delivery';
 import {
+  forwardRemoteDirectoryResourceResult,
+  forwardRemoteDirectoryResourceUpdate,
+} from '@/features/machine/remote-directory-browse';
+import {
   handleResourceResult,
   handleResourceUpdate,
   installResourceStore,
@@ -52,6 +57,7 @@ export const [permissions, setPermissions] = createSignal<ControlView['pendingPe
 export const [elicitations, setElicitations] = createSignal<NonNullable<ControlView['pendingElicitations']>>([]);
 export { elicitationResponses };
 export const [projects, setProjects] = createSignal<ProjectInfo[]>([]);
+export const [machines, setMachines] = createSignal<MachineInfo[]>([]);
 export const [registryHydrated, setRegistryHydrated] = createSignal(false);
 export const [projectSessions, setProjectSessions] = createSignal<ProjectSessionInfo[]>([]);
 export const [importableSessions, setImportableSessions] = createSignal<SessionSummaryInfo[]>([]);
@@ -217,11 +223,13 @@ installConnection({
 function onFrame(frame: H.DownstreamFrame): void {
   switch (frame.t) {
     case 'ysync.update':
+      if (forwardRemoteDirectoryResourceUpdate(frame as { doc: string; update: string })) break;
       if (!handleResourceUpdate(frame as { doc: string; update: string })) {
         store.applyUpdateFrame(frame as { doc: string; update: string });
       }
       break;
     case 'resource_result':
+      if (forwardRemoteDirectoryResourceResult(frame as import('../panel/lib/resource-protocol').ResourceResultFrame)) break;
       handleResourceResult(frame as import('../panel/lib/resource-protocol').ResourceResultFrame);
       break;
     case 'action_ack':
@@ -369,6 +377,7 @@ installStoreProjection(
     setPermissions,
     setElicitations,
     setProjects,
+    setMachines,
     setRegistryHydrated,
     setProjectSessions,
     setImportableSessions,
@@ -405,6 +414,15 @@ const catalogActions = new CatalogActions({
   setDiscoveringProjectId: setDiscoveringSessionsProjectId,
 });
 
+const machineActions = new MachineActions({
+  isReady: connectionReady,
+  isReadOnly: readOnly,
+  hasUncertainMetadata: () => !!uncertainMetadataCount(),
+  send: sendAction,
+  toast,
+  persistProblem: persistActionProblem,
+});
+
 sessionCatalogBootstrap = createSessionCatalogBootstrap({
   isReady: connectionReady,
   isReadOnly: readOnly,
@@ -421,8 +439,61 @@ createEffect(() => {
   if (ready && hydrated) scheduleSessionCatalogBootstrap();
 });
 
-export const createProject = (name: string, cwd: string, onCommitted?: () => void, onFailed?: () => void) =>
-  catalogActions.createProject(name, cwd, { onCommitted, onFailed });
+export const createProject = (name: string, cwd: string, instanceId?: string, onCommitted?: () => void, onFailed?: () => void) =>
+  catalogActions.createProject(name, cwd, instanceId, { onCommitted, onFailed });
+
+export const addComputer = (
+  destination: string,
+  displayName?: string,
+  port?: number,
+  identityFile?: string,
+  onCommitted?: () => void,
+  onFailed?: () => void,
+): boolean => machineActions.add(destination, displayName, port, identityFile, { onCommitted, onFailed });
+
+export const connectMachine = (instanceId: string, onCommitted?: () => void, onFailed?: () => void) =>
+  machineActions.connect(instanceId, { onCommitted, onFailed });
+
+export const disconnectMachine = (instanceId: string, onCommitted?: () => void, onFailed?: () => void) =>
+  machineActions.disconnect(instanceId, { onCommitted, onFailed });
+
+export const stopMachine = (instanceId: string, onCommitted?: () => void, onFailed?: () => void) =>
+  machineActions.stop(instanceId, { onCommitted, onFailed });
+
+export const cancelMachine = (instanceId: string, onCommitted?: () => void, onFailed?: () => void) =>
+  machineActions.cancel(instanceId, { onCommitted, onFailed });
+
+export const retryMachine = (instanceId: string, onCommitted?: () => void, onFailed?: () => void) =>
+  machineActions.retry(instanceId, { onCommitted, onFailed });
+
+export const trustMachineHost = (
+  instanceId: string,
+  fingerprint: string,
+  onCommitted?: () => void,
+  onFailed?: () => void,
+) => machineActions.trustHost(instanceId, fingerprint, { onCommitted, onFailed });
+
+export const confirmMachineReplace = (
+  instanceId: string,
+  onCommitted?: () => void,
+  onFailed?: () => void,
+) => machineActions.confirmReplace(instanceId, { onCommitted, onFailed });
+
+export const renameMachine = (instanceId: string, name: string, onCommitted?: () => void, onFailed?: () => void) =>
+  machineActions.rename(instanceId, name, { onCommitted, onFailed });
+
+export const setMachineAutoReconnect = (
+  instanceId: string,
+  enabled: boolean,
+  onCommitted?: () => void,
+  onFailed?: () => void,
+) => machineActions.setAutoReconnect(instanceId, enabled, { onCommitted, onFailed });
+
+export const removeMachine = (instanceId: string, onCommitted?: () => void, onFailed?: () => void) =>
+  machineActions.remove(instanceId, { onCommitted, onFailed });
+
+export const restoreMachine = (instanceId: string, onCommitted?: () => void, onFailed?: () => void) =>
+  machineActions.restore(instanceId, { onCommitted, onFailed });
 export const archiveProject = (projectId: string, onCommitted?: () => void, onFailed?: () => void) =>
   catalogActions.archiveProject(projectId, { onCommitted, onFailed });
 export const restoreProject = (projectId: string, onCommitted?: () => void, onFailed?: () => void) =>
@@ -463,6 +534,7 @@ export function resetAuthenticatedSession(options: { preserveLocalDrafts?: boole
   setRuntimeDocsState({ chat: false, control: false });
   setChatStatusSignal({});
   setProjects([]);
+  setMachines([]);
   setProjectSessions([]);
   setImportableSessions([]);
   resetPromptRecoveryState();

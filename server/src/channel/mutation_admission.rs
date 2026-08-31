@@ -34,6 +34,9 @@ impl MutationAdmission {
         }
         match frame {
             Frame::Action(action) => {
+                if is_machine_metadata_action(action) {
+                    return None;
+                }
                 Some(Frame::ActionError(action_error_committed_rejected(action)))
             }
             Frame::ResourceQuery(query @ ResourceQuery::GitAction { .. }) => {
@@ -50,6 +53,23 @@ impl MutationAdmission {
             _ => None,
         }
     }
+}
+
+fn is_machine_metadata_action(action: &ActionEnvelope) -> bool {
+    matches!(
+        action,
+        ActionEnvelope::MachineAdd { .. }
+            | ActionEnvelope::MachineConnect { .. }
+            | ActionEnvelope::MachineDisconnect { .. }
+            | ActionEnvelope::MachineStop { .. }
+            | ActionEnvelope::MachineCancel { .. }
+            | ActionEnvelope::MachineRetry { .. }
+            | ActionEnvelope::MachineTrustHost { .. }
+            | ActionEnvelope::MachineRename { .. }
+            | ActionEnvelope::MachineSetAutoReconnect { .. }
+            | ActionEnvelope::MachineRemove { .. }
+            | ActionEnvelope::MachineRestore { .. }
+    )
 }
 
 fn is_read_only_action(action: &ActionEnvelope) -> bool {

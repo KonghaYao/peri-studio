@@ -216,8 +216,23 @@ impl Gateway {
         };
         if !is_ws {
             // HTTP 分支：不进配额/注册表（§8.6 只面向 ws 连接）。
-            let health =
-                crate::web::HealthSnapshot::from_global_status(self.registry.global_status());
+            let machines: Vec<crate::web::HealthMachineSummary> = self
+                .registry
+                .list_health_machines()
+                .await
+                .unwrap_or_default()
+                .into_iter()
+                .map(|m| crate::web::HealthMachineSummary {
+                    instance_id: m.instance_id,
+                    display_name: m.display_name,
+                    phase: m.phase,
+                    kind: m.kind,
+                })
+                .collect();
+            let health = crate::web::HealthSnapshot::from_runtime(
+                self.registry.global_status(),
+                machines,
+            );
             if let Err(e) = crate::web::serve_http_with_resources(
                 stream,
                 peer,

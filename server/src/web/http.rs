@@ -379,7 +379,7 @@ async fn serve_http_inner(
             auth,
             method,
             cookie.as_deref(),
-            transfer_encoding.as_deref(),
+            transfer_encoding,
             content_length.unwrap_or(0),
         )
         .await;

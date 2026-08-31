@@ -11,6 +11,7 @@ import {
   importableSessions,
   importProjectSession,
   instances,
+  machines,
   isProjectCatalogBootstrapPending,
   navigateProjectSession,
   openingSessionId,
@@ -69,7 +70,9 @@ import {
 } from '@/features/session/session-pins';
 import { ConfirmDialog } from '@/widgets/shell/shared/ConfirmDialog';
 import { SidebarChrome } from '@/widgets/shell/SidebarChrome';
+import { RemoteDirectoryDialog } from './RemoteDirectoryDialog';
 import { reconcileInstanceGroups, type InstanceGroup } from '../../panel/lib/instance-groups';
+import { isLocalMachine, sortMachinesForPanel } from '@/entities/machine/machine-view';
 import {
   Archive,
   CloudOff,
@@ -99,6 +102,7 @@ interface ProjectSidebarProps {
 
 export function ProjectSidebar(props: ProjectSidebarProps) {
   const [creating, setCreating] = createSignal(false);
+  const [projectInstanceId, setProjectInstanceId] = createSignal('local');
   const [projectCreateSubmitting, setProjectCreateSubmitting] = createSignal(false);
   const [pickingDirectory, setPickingDirectory] = createSignal(false);
   const [pickDirectoryError, setPickDirectoryError] = createSignal<string | null>(null);
@@ -118,6 +122,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
   const [renamingProject, setRenamingProject] = createSignal<string | null>(null);
   const [projectNameDraft, setProjectNameDraft] = createSignal('');
   const [projectRenameSubmitting, setProjectRenameSubmitting] = createSignal(false);
+  const [remoteBrowseOpen, setRemoteBrowseOpen] = createSignal(false);
   const [searchOpen, setSearchOpen] = createSignal(false);
   const [pinnedSessionKeys, setPinnedSessionKeys] = createSignal<SessionPin[]>([]);
   let observedSelectedSessionId: string | null | undefined;
@@ -140,6 +145,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
   const instanceGroups = createMemo<InstanceGroup[]>((previous = []) => reconcileInstanceGroups(
     instances(),
     activeProjects(),
+    machines(),
     previous,
   ));
   const instanceIds = createMemo(() => instanceGroups().map((instance) => instance.id));
@@ -174,7 +180,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
   createEffect(() => {
     const intent = props.intent;
     if (!intent) return;
-    if (intent.kind === 'create-project') setCreating(true);
+    if (intent.kind === 'create-project') openCreateProject('local');
     if (intent.kind === 'import' && intent.projectId) {
       setImportingProject(intent.projectId);
     }
@@ -210,17 +216,36 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
     e.preventDefault();
     const directory = cwd().trim();
     if (!directory || projectCreateSubmitting()) return;
+    const instanceId = projectInstanceId();
+    if (instanceId !== 'local' && !machineOnline(instanceId)) return;
+    const boundInstance = instanceId === 'local' ? undefined : instanceId;
     runConfirmedMutation(
       () => setProjectCreateSubmitting(true),
       () => setProjectCreateSubmitting(false),
-      (committed, failed) => createProject(projectNameFromPath(directory), directory, committed, failed),
-      () => { setCwd(''); setPickDirectoryError(null); setCreating(false); },
+      (committed, failed) => createProject(projectNameFromPath(directory), directory, boundInstance, committed, failed),
+      () => { setCwd(''); setPickDirectoryError(null); setProjectInstanceId('local'); setCreating(false); },
     );
   };
+
+  const openCreateProject = (instanceId = 'local') => {
+    setProjectInstanceId(instanceId);
+    setPickDirectoryError(null);
+    setCreating(true);
+  };
+
+  const machineOnline = (instanceId: string) => instances().some((row) => row.id === instanceId && row.status === 'online');
+  const selectableMachines = () => sortMachinesForPanel(
+    machines().filter((machine) => !machine.archivedAt && (isLocalMachine(machine) || machineOnline(machine.instanceId))),
+  );
+  const isRemoteInstance = (instanceId: string) => instanceId !== 'local';
 
   const browseProjectDirectory = async () => {
     if (pickingDirectory() || projectCreateSubmitting()) return;
     setPickDirectoryError(null);
+    if (isRemoteInstance(projectInstanceId())) {
+      setRemoteBrowseOpen(true);
+      return;
+    }
     setPickingDirectory(true);
     try {
       const result = await pickProjectDirectory();
@@ -246,7 +271,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
   const handleNewSession = () => {
     const projectId = defaultProjectId();
     if (projectId) createProjectSession(projectId);
-    else setCreating(true);
+    else openCreateProject();
   };
 
   const renderSessionRow = (
@@ -339,8 +364,31 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
         )}
       />
       <Show when={readOnly()}><div class="readonly-label px-2.5 pb-2 text-11 font-semibold text-warning">Read-only mode</div></Show>
-      <Dialog open={creating()} onOpenChange={(open) => { if (!open && !projectCreateSubmitting()) { setCreating(false); setPickDirectoryError(null); } }}><DialogContent dismissible={!projectCreateSubmitting() && !pickingDirectory()}><DialogTitle class="sr-only">New project</DialogTitle>
+      <RemoteDirectoryDialog
+        open={remoteBrowseOpen()}
+        instanceId={projectInstanceId()}
+        projects={projects()}
+        onClose={() => setRemoteBrowseOpen(false)}
+        onSelect={(path) => { setCwd(path); setPickDirectoryError(null); }}
+      />
+      <Dialog open={creating()} onOpenChange={(open) => { if (!open && !projectCreateSubmitting()) { setCreating(false); setPickDirectoryError(null); setRemoteBrowseOpen(false); } }}><DialogContent dismissible={!projectCreateSubmitting() && !pickingDirectory() && !remoteBrowseOpen()}><DialogTitle class="sr-only">New project</DialogTitle>
         <form class="m-0 rounded-12 border-0 bg-surface p-18 shadow-none" onSubmit={submitProject}>
+          <div class="mb-9 flex flex-col gap-6">
+            <label class="text-12 font-semibold text-text-secondary" for="project-computer">Computer</label>
+            <select
+              id="project-computer"
+              class="box-border h-34 rounded-9 border border-border-strong bg-surface px-11 text-text-primary outline-none focus:border-focus-ring"
+              value={projectInstanceId()}
+              onChange={(e) => setProjectInstanceId(e.currentTarget.value)}
+              disabled={projectCreateSubmitting()}
+            >
+              <For each={selectableMachines()}>{(machine) => (
+                <option value={machine.instanceId} disabled={!isLocalMachine(machine) && !machineOnline(machine.instanceId)}>
+                  {machine.displayName}{!isLocalMachine(machine) && !machineOnline(machine.instanceId) ? ' (offline)' : ''}
+                </option>
+              )}</For>
+            </select>
+          </div>
           <div class="mb-9 flex flex-col gap-6">
             <label class="text-12 font-semibold text-text-secondary" for="project-directory">Working directory</label>
             <div class="flex items-center gap-6">
@@ -352,7 +400,9 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                 placeholder="/absolute/path"
                 autofocus
               />
-              <Button type="button" variant="secondary" class="shrink-0" busy={pickingDirectory()} disabled={projectCreateSubmitting()} onClick={() => { void browseProjectDirectory(); }}>Browse…</Button>
+              <Button type="button" variant="secondary" class="shrink-0" busy={pickingDirectory()} disabled={projectCreateSubmitting() || (isRemoteInstance(projectInstanceId()) && !machineOnline(projectInstanceId()))} onClick={() => { void browseProjectDirectory(); }}>
+                {isRemoteInstance(projectInstanceId()) ? 'Browse remote…' : 'Browse…'}
+              </Button>
             </div>
             <Show when={cwd().trim()}><span class="text-11 text-text-muted">Project name: {projectNameFromPath(cwd())}</span></Show>
             <Show when={pickDirectoryError()}><span class="m-0 text-13 text-danger">{pickDirectoryError()}</span></Show>
@@ -381,7 +431,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
           <IconButton size="sm" showTooltip={false} label="Filter workspaces" class="size-28 shrink-0 text-content-muted" onClick={() => setSearchOpen(true)}>
             <ListFilter size={15} strokeWidth={1.7} />
           </IconButton>
-          <IconButton size="sm" showTooltip={false} label="New workspace" class="new-project-button size-28 shrink-0 text-content-muted" disabled={readOnly()} onClick={() => setCreating(true)}>
+          <IconButton size="sm" showTooltip={false} label="New workspace" class="new-project-button size-28 shrink-0 text-content-muted" disabled={readOnly()} onClick={() => openCreateProject()}>
             <Folder size={15} strokeWidth={1.7} />
           </IconButton>
         </SectionHeader>
@@ -412,7 +462,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
                   class="new-project-button instance-create-action pointer-events-none absolute right-4 top-1/2 size-24 -translate-y-1/2 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:pointer-events-auto group-hover/instance:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 pointer-coarse:size-32 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100"
                   label="New project"
                   disabled={readOnly()}
-                  onClick={() => setCreating(true)}
+                  onClick={() => openCreateProject(instanceId)}
                 >
                   <PlusIcon />
                 </IconButton>

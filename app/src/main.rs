@@ -1,11 +1,21 @@
 //! Peri Studio 单一产品二进制。
 
+use std::path::PathBuf;
+
 mod cli;
 mod connect;
 mod connection;
+mod machine_ports;
 mod private_file;
 mod server;
 mod signal;
+mod ssh_argv;
+mod ssh_backend;
+mod ssh_release_checksums;
+#[cfg(test)]
+#[path = "ssh_backend_fake_test.rs"]
+mod ssh_backend_fake_test;
+mod ssh_backend_pipeline;
 mod status;
 mod telemetry;
 mod token;
@@ -14,6 +24,8 @@ use clap::{FromArgMatches as _, Parser as _};
 use peri_studio_server::config::{CliOverrides, Config};
 use tokio_util::sync::CancellationToken;
 
+use anyhow::Context as _;
+
 use crate::cli::{Cli, Command, ServerArgs};
 
 fn main() -> anyhow::Result<()> {
@@ -21,6 +33,10 @@ fn main() -> anyhow::Result<()> {
     match cli.command {
         Some(Command::Token(args)) => token::run(cli.config.as_deref(), cli.json_log, args),
         Some(Command::Status(args)) => status::run(cli.config.as_deref(), args),
+        Some(Command::ProtocolVersion) => {
+            println!("{}", peri_studio_proto::version::PROTOCOL_VERSION);
+            Ok(())
+        }
         command => {
             let runtime = tokio::runtime::Builder::new_multi_thread()
                 .enable_all()
@@ -79,7 +95,10 @@ async fn run_async(
             )
             .await
         }
-        Some(Command::Token(_)) | Some(Command::Status(_)) => {
+        Some(Command::OwnerShutdown { data_dir, token_file }) => {
+            run_owner_shutdown(data_dir, token_file).await
+        }
+        Some(Command::Token(_)) | Some(Command::Status(_)) | Some(Command::ProtocolVersion) => {
             unreachable!("handled before runtime")
         }
     }
@@ -121,4 +140,13 @@ fn default_server_overrides() -> anyhow::Result<CliOverrides> {
     let command = <CliOverrides as clap::Args>::augment_args(clap::Command::new("peri-studio"));
     CliOverrides::from_arg_matches(&command.get_matches_from([""]))
         .map_err(|error| anyhow::anyhow!("failed to read default server options: {error}"))
+}
+
+async fn run_owner_shutdown(data_dir: PathBuf, token_file: PathBuf) -> anyhow::Result<()> {
+    let owner = peri_instance::hub::owner_identity(&data_dir)?
+        .ok_or_else(|| anyhow::anyhow!("no running instance owner in {}", data_dir.display()))?;
+    let token = private_file::read_private_text(&token_file, "instance credential")?;
+    peri_instance::hub::request_owner_shutdown(&data_dir, &owner, &token)
+        .await
+        .context("owner shutdown request failed")
 }

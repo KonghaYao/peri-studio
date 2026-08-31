@@ -43,14 +43,20 @@ export interface ResourceResultFrame {
   error?: ResourceFailure;
 }
 
-export function openResourceView(projectId: string, payload: OpenResourceView) {
-  return {
-    t: 'resource_query',
-    type: 'resource/open-view',
+export function openResourceView(
+  scope: { projectId: string } | { instanceId: string },
+  payload: OpenResourceView,
+) {
+  const base = {
+    t: 'resource_query' as const,
+    type: 'resource/open-view' as const,
     requestId: crypto.randomUUID(),
-    projectId,
     payload: { limit: 200, ...payload },
-  } as const;
+  };
+  if ('projectId' in scope) {
+    return { ...base, projectId: scope.projectId };
+  }
+  return { ...base, instanceId: scope.instanceId };
 }
 
 export function releaseResourceView(viewId: string) {

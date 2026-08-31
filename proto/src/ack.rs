@@ -36,6 +36,9 @@ pub struct ActionAck {
     /// project 管理 action 的持久化 project id。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub project_id: Option<String>,
+    /// `machine/*` 管理 action 的持久化 instance id。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instance_id: Option<String>,
     /// project/session 管理 action 的 hub logical session id。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_id: Option<String>,

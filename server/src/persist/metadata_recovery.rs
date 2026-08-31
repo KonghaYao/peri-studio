@@ -77,6 +77,8 @@ impl MetadataStore {
             bump_generation_tx(&mut tx).await?;
         }
         tx.commit().await?;
+        // SSH 供应管道：进行中 phase 收敛为 failed/server_restarted（§6.2）。
+        let _machines_failed = self.fail_in_progress_machines_on_restart().await?;
         Ok((0, reconciled.rows_affected()))
     }
 

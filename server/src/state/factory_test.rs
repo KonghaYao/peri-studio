@@ -141,7 +141,7 @@ fn registry_doc_has_global_status() {
     let root_map = txn.get_map(ROOT).unwrap();
     assert_eq!(
         root_map.get(&txn, "schema_version"),
-        Some(yrs::Out::Any(2u32.into()))
+        Some(yrs::Out::Any(3u32.into()))
     );
     assert!(root_map
         .get(&txn, "instances")

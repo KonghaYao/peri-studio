@@ -1,11 +1,12 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { setChatCatalog, setGlobalStatus, setInstances, setSchemaVersion } from '../../panel/store';
+import { setChatCatalog, setGlobalStatus, setInstances, setMachines, setSchemaVersion } from '../../panel/store';
 import { setConnState } from '../../panel/lib/connection';
 import { SettingsDialog } from './SettingsDialog';
 
 function resetStore() {
   setInstances([]);
+  setMachines([]);
   setChatCatalog([]);
   setGlobalStatus('healthy');
   setSchemaVersion(3);
@@ -15,15 +16,30 @@ function resetStore() {
 afterEach(resetStore);
 
 describe('SettingsDialog', () => {
-  it('opens on the machines tab by default and renders the compact machine tree', () => {
+  it('opens on the machines tab by default and renders the machines list', () => {
+    setMachines([{
+      instanceId: 'local',
+      kind: 'local',
+      displayName: 'This computer',
+      sshDestination: null,
+      sshPort: null,
+      phase: 'online',
+      errorCode: null,
+      hasIdentityFile: false,
+      autoReconnect: true,
+      hostKeySha256: null,
+      updatedAt: null,
+      archivedAt: null,
+    }]);
     setInstances([{ id: 'local', hostname: 'macbook.local', status: 'online', tokenId: 'token-1', registeredAt: null, lastHeartbeat: null, chatCount: 0 }]);
     render(() => <SettingsDialog open onClose={() => undefined} />);
 
     expect(screen.getByRole('dialog', { name: 'System' })).toBeInTheDocument();
     const machinesTab = screen.getByRole('tab', { name: 'Machines' });
     expect(machinesTab).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tree', { name: 'Machine topology' })).toBeInTheDocument();
-    expect(screen.getByText('macbook.local')).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Computer list' })).toBeInTheDocument();
+    expect(screen.getByText('This computer')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add computer' })).toBeInTheDocument();
   });
 
   it('switches to the about tab and shows server facts', () => {

@@ -123,6 +123,10 @@ impl Gateway {
         if let Err(e) = self.registry.upsert_instance(view).await {
             warn!(instance_id = %instance_id, error = ?e, "registry instance upsert failed (hello)");
         }
+        self.deps
+            .coordinator
+            .on_instance_hello(&instance_id)
+            .await;
         self.recovery
             .on_connection_registered(&instance_id, conn_id)
             .await;

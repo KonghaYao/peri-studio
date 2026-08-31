@@ -250,6 +250,67 @@ pub enum ActionEnvelope {
         command_id: String,
         payload: McpAppCallPayload,
     },
+    /// 添加远端计算机（SSH 供应管道；R1 仅校验，不调 OpenSSH）。
+    #[serde(rename = "machine/add", rename_all = "camelCase")]
+    MachineAdd {
+        command_id: String,
+        payload: MachineAddPayload,
+    },
+    #[serde(rename = "machine/connect", rename_all = "camelCase")]
+    MachineConnect {
+        command_id: String,
+        payload: MachineInstancePayload,
+    },
+    #[serde(rename = "machine/disconnect", rename_all = "camelCase")]
+    MachineDisconnect {
+        command_id: String,
+        payload: MachineInstancePayload,
+    },
+    #[serde(rename = "machine/stop", rename_all = "camelCase")]
+    MachineStop {
+        command_id: String,
+        payload: MachineInstancePayload,
+    },
+    #[serde(rename = "machine/cancel", rename_all = "camelCase")]
+    MachineCancel {
+        command_id: String,
+        payload: MachineInstancePayload,
+    },
+    #[serde(rename = "machine/retry", rename_all = "camelCase")]
+    MachineRetry {
+        command_id: String,
+        payload: MachineInstancePayload,
+    },
+    #[serde(rename = "machine/trust-host", rename_all = "camelCase")]
+    MachineTrustHost {
+        command_id: String,
+        payload: MachineTrustHostPayload,
+    },
+    #[serde(rename = "machine/confirm-replace", rename_all = "camelCase")]
+    MachineConfirmReplace {
+        command_id: String,
+        payload: MachineInstancePayload,
+    },
+    #[serde(rename = "machine/rename", rename_all = "camelCase")]
+    MachineRename {
+        command_id: String,
+        payload: MachineRenamePayload,
+    },
+    #[serde(rename = "machine/set-auto-reconnect", rename_all = "camelCase")]
+    MachineSetAutoReconnect {
+        command_id: String,
+        payload: MachineSetAutoReconnectPayload,
+    },
+    #[serde(rename = "machine/remove", rename_all = "camelCase")]
+    MachineRemove {
+        command_id: String,
+        payload: MachineInstancePayload,
+    },
+    #[serde(rename = "machine/restore", rename_all = "camelCase")]
+    MachineRestore {
+        command_id: String,
+        payload: MachineInstancePayload,
+    },
 }
 
 impl ActionEnvelope {
@@ -293,6 +354,18 @@ impl ActionEnvelope {
             ActionEnvelope::McpAppOpen { .. } => "mcp/app-open",
             ActionEnvelope::McpAppResource { .. } => "mcp/app-resource",
             ActionEnvelope::McpAppCall { .. } => "mcp/app-call",
+            ActionEnvelope::MachineAdd { .. } => "machine/add",
+            ActionEnvelope::MachineConnect { .. } => "machine/connect",
+            ActionEnvelope::MachineDisconnect { .. } => "machine/disconnect",
+            ActionEnvelope::MachineStop { .. } => "machine/stop",
+            ActionEnvelope::MachineCancel { .. } => "machine/cancel",
+            ActionEnvelope::MachineRetry { .. } => "machine/retry",
+            ActionEnvelope::MachineTrustHost { .. } => "machine/trust-host",
+            ActionEnvelope::MachineConfirmReplace { .. } => "machine/confirm-replace",
+            ActionEnvelope::MachineRename { .. } => "machine/rename",
+            ActionEnvelope::MachineSetAutoReconnect { .. } => "machine/set-auto-reconnect",
+            ActionEnvelope::MachineRemove { .. } => "machine/remove",
+            ActionEnvelope::MachineRestore { .. } => "machine/restore",
         }
     }
 }

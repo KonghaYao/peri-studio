@@ -1,6 +1,7 @@
 use super::*;
 use peri_studio_proto::resource::{
-    GitGroupId, ResourceGitAction, ResourceGitActionKind, ResourceViewKind,
+    GitGroupId, InstanceResourcePayload, ResourceGitAction, ResourceGitActionKind,
+    ResourceQueryResult, ResourceViewKind,
 };
 use peri_studio_proto::Frame;
 use serde_json::json;
@@ -189,6 +190,119 @@ async fn blob_cache_is_bounded_per_principal() {
     assert_eq!(error.code, ResourceErrorCode::RateLimited);
 }
 
+#[test]
+fn open_view_scope_requires_exactly_one_identity() {
+    let error = resolve_open_view_scope(None, None).unwrap_err();
+    assert_eq!(error.code, ResourceErrorCode::InvalidRequest);
+    let error = resolve_open_view_scope(Some("p1"), Some("ssh_1")).unwrap_err();
+    assert_eq!(error.code, ResourceErrorCode::InvalidRequest);
+    assert!(matches!(
+        resolve_open_view_scope(Some("p1"), None).unwrap(),
+        OpenViewScope::Project("p1")
+    ));
+    assert!(matches!(
+        resolve_open_view_scope(None, Some("ssh_1")).unwrap(),
+        OpenViewScope::Instance("ssh_1")
+    ));
+}
+
+#[tokio::test]
+async fn instance_open_view_browses_from_remote_root_without_a_project() {
+    let dir = tempfile::tempdir().unwrap();
+    let metadata = Arc::new(MetadataStore::open(dir.path()).await.unwrap());
+    metadata.ensure_local_machine().await.unwrap();
+    metadata
+        .admit_ssh_machine(crate::persist::metadata::AdmitSshMachineParams {
+            instance_id: "ssh_1",
+            destination: "gpu.example",
+            port: None,
+            identity_file: None,
+            display_name: "GPU",
+        })
+        .await
+        .unwrap();
+    let (registry_tx, _registry_rx) = tokio::sync::mpsc::channel(1);
+    let registry = crate::state::registry::RegistryState::new(registry_tx);
+    let instances = Arc::new(InstanceRegistry::new(
+        std::time::Duration::from_secs(30),
+        std::time::Duration::from_secs(10),
+        crate::control::ChatRegistry::new(registry),
+    ));
+    let (instance_tx, mut instance_rx) = tokio::sync::mpsc::channel(4);
+    instances
+        .on_hello(
+            "ssh_1",
+            "instance-token",
+            crate::control::InstanceConn { tx: instance_tx },
+            &peri_studio_proto::instance::InstanceHello {
+                protocol_version: peri_studio_proto::version::PROTOCOL_VERSION,
+                token: "token".into(),
+                hostname: "gpu".into(),
+                caps: json!({"resources": {"protocolVersion": peri_studio_proto::resource::RESOURCE_PROTOCOL_VERSION}}),
+                buffered: None,
+                buffer_lost: None,
+                stream_epochs: None,
+                nonce: "nonce".into(),
+            },
+        )
+        .await;
+    let sink = Arc::new(crate::control::StoreSink::new());
+    let projection = ResourceProjection::new(sink.clone(), std::time::Duration::from_secs(60), 2);
+    let service = ResourceService::new(metadata, instances.clone(), projection.clone());
+    let pending = tokio::spawn({
+        let service = service.clone();
+        async move {
+            service
+                .handle(
+                    "browser-token",
+                    true,
+                    ResourceQuery::OpenView {
+                        request_id: "browse-query".into(),
+                        project_id: None,
+                        instance_id: Some("ssh_1".into()),
+                        payload: view(ResourceViewKind::FsDirectoryPage),
+                    },
+                )
+                .await
+        }
+    });
+    let Some(crate::channel::OutboundMsg::Frame(Frame::InstanceResourceQuery(query))) =
+        instance_rx.recv().await
+    else {
+        panic!("expected trusted instance resource query");
+    };
+    assert_eq!(query.root, "/");
+    assert_eq!(query.workspace_id, "ssh_1");
+    assert!(
+        instances
+            .on_ack(
+                "ssh_1",
+                &query.request_id,
+                crate::control::InstanceAck::Resource(
+                    peri_studio_proto::resource::InstanceResourceResult {
+                        request_id: query.request_id.clone(),
+                        result: Some(InstanceResourcePayload::DirectoryPage(
+                            peri_studio_proto::resource::DirectoryPage {
+                                path: "".into(),
+                                source_generation: "g1".into(),
+                                entries: Vec::new(),
+                                next_cursor: None,
+                            },
+                        )),
+                        error: None,
+                    },
+                ),
+            )
+            .await
+    );
+    let result = pending.await.unwrap();
+    let Some(ResourceQueryResult::View(opened)) = result.result else {
+        panic!("expected opened view: {result:?}");
+    };
+    assert!(projection.authorize("browser-token", &opened.doc_id).await);
+    assert!(sink.snapshot(&opened.doc_id).await.is_some());
+}
+
 #[tokio::test]
 async fn open_view_resolves_trusted_project_and_publishes_authorized_doc() {
     let dir = tempfile::tempdir().unwrap();
@@ -239,7 +353,8 @@ async fn open_view_resolves_trusted_project_and_publishes_authorized_doc() {
                     true,
                     ResourceQuery::OpenView {
                         request_id: "browser-query".into(),
-                        project_id: "project-1".into(),
+                        project_id: Some("project-1".into()),
+                        instance_id: None,
                         payload: view(ResourceViewKind::FsDirectoryPage),
                     },
                 )

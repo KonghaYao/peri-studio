@@ -20,7 +20,7 @@ import {
 } from '../../panel/lib/resource-store';
 import { installPrincipalRole } from '../../panel/lib/auth-state';
 import { DocStore } from '../../panel/lib/doc-store';
-import { setChatCatalog, setGlobalStatus, setInstances, setProjects, setProjectSessions, setSchemaVersion, setSelectedSessionId } from '../../panel/store';
+import { setChatCatalog, setGlobalStatus, setInstances, setMachines, setProjects, setProjectSessions, setSchemaVersion, setSelectedSessionId } from '../../panel/store';
 
 afterEach(() => {
   cleanup();
@@ -51,17 +51,30 @@ describe('VS Code-style resource panels', () => {
     expect(row.querySelector('[data-file-icon="folder-src"]')).toBeInTheDocument();
   });
 
-  it('renders machines as the same compact tree instead of a separate card stack', () => {
+  it('renders the machines management list with local computer', () => {
     setGlobalStatus('healthy');
-    setSchemaVersion(7);
+    setSchemaVersion(3);
+    setMachines([{
+      instanceId: 'local',
+      kind: 'local',
+      displayName: 'This computer',
+      sshDestination: null,
+      sshPort: null,
+      phase: 'online',
+      errorCode: null,
+      hasIdentityFile: false,
+      autoReconnect: true,
+      hostKeySha256: null,
+      updatedAt: null,
+      archivedAt: null,
+    }]);
     setInstances([{ id: 'local', hostname: 'dev-machine', status: 'online', tokenId: 'token-1', registeredAt: null, lastHeartbeat: null, chatCount: 1 }]);
-    setChatCatalog([{ id: 'chat-1', instanceId: 'local', title: 'Build UI', status: 'active', gap: null, updatedAt: null, cwd: null, workspaceId: null }]);
     render(() => <MachinePanel />);
 
-    expect(screen.getByRole('tree', { name: 'Machine topology' })).toBeInTheDocument();
-    expect(screen.getByRole('treeitem', { name: /Peri Studio.*Healthy/i })).toHaveClass('h-(--tree-row-height)');
-    expect(screen.getByRole('treeitem', { name: /dev-machine.*Online/i })).toHaveAttribute('aria-level', '2');
-    expect(screen.getByRole('treeitem', { name: /Build UI.*Running/i })).toHaveAttribute('aria-level', '3');
+    expect(screen.getByRole('list', { name: 'Computer list' })).toBeInTheDocument();
+    expect(screen.getByText('This computer')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add computer' })).toBeInTheDocument();
+    expect(screen.getByText(/Add a remote computer over SSH/)).toBeInTheDocument();
   });
 
   it('keeps Source Control reachable from the workbench rail with its change badge', async () => {

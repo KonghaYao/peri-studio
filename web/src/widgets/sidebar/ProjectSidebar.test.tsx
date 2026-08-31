@@ -15,6 +15,20 @@ const store = vi.hoisted(() => ({
   importableSessions: vi.fn(() => []),
   importProjectSession: vi.fn(),
   instances: vi.fn(() => [{ id: 'local', hostname: 'Local instance', status: 'online' }]),
+  machines: vi.fn(() => [{
+    instanceId: 'local',
+    kind: 'local',
+    displayName: 'This computer',
+    sshDestination: null,
+    sshPort: null,
+    phase: 'online',
+    errorCode: null,
+    hasIdentityFile: false,
+    autoReconnect: false,
+    hostKeySha256: null,
+    updatedAt: null,
+    archivedAt: null,
+  }]),
   navigateProjectSession: vi.fn(),
   openingSessionId: vi.fn(() => null as string | null),
   permissions: vi.fn(() => []),
@@ -81,7 +95,7 @@ describe('ProjectSidebar registry hydration', () => {
 
     render(() => <ProjectSidebar />);
 
-    expect(screen.getByText('Local instance')).toBeInTheDocument();
+    expect(screen.getByText('This computer')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'New project' })).toBeEnabled();
     expect(screen.queryByText('No projects yet')).not.toBeInTheDocument();
     expect(screen.queryByText('Root workspace')).not.toBeInTheDocument();
@@ -93,7 +107,7 @@ describe('ProjectSidebar registry hydration', () => {
 
     render(() => <ProjectSidebar />);
 
-    expect(screen.getByText('Local instance')).toBeInTheDocument();
+    expect(screen.getByText('This computer')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Archived project' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Archived · / })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Archived sessions/ })).not.toBeInTheDocument();

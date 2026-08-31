@@ -44,6 +44,7 @@ export class RegistryProjection {
       sessions: reconcileById(previous.sessions, incoming.sessions, (value) => value.sessionId),
       workspaces: reconcileById(previous.workspaces, incoming.workspaces, (value) => value.id),
       projects: reconcileById(previous.projects, incoming.projects, (value) => value.id),
+      machines: reconcileById(previous.machines, incoming.machines, (value) => value.instanceId),
       projectSessions: stabilizeProjectSessionOrder(
         previous.projectSessions,
         reconcileById(previous.projectSessions, incoming.projectSessions, (value) => value.id),

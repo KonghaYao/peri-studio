@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { installPrincipalRole } from '../../panel/lib/auth-state';
 import {
   setInstances,
+  setMachines,
   setPermissions,
   setProjects,
   setProjectSessions,
@@ -23,6 +24,20 @@ describe('ProjectSidebar structural identity', () => {
     installPrincipalRole('full');
     setRegistryHydrated(true);
     setInstances([instance('first')]);
+    setMachines([{
+      instanceId: 'local',
+      kind: 'local',
+      displayName: 'This computer',
+      sshDestination: null,
+      sshPort: null,
+      phase: 'online',
+      errorCode: null,
+      hasIdentityFile: false,
+      autoReconnect: false,
+      hostKeySha256: null,
+      updatedAt: null,
+      archivedAt: null,
+    }]);
     setProjects([{
       id: 'project-1', name: 'Peri', cwd: '/workspace/peri', instanceId: 'local',
       createdAt: null, updatedAt: null, archivedAt: null,
@@ -39,6 +54,7 @@ describe('ProjectSidebar structural identity', () => {
 
   afterEach(() => {
     setInstances([]);
+    setMachines([]);
     setProjects([]);
     setProjectSessions([]);
     setRegistryHydrated(false);
@@ -65,6 +81,20 @@ describe('ProjectSidebar structural identity', () => {
     expect(document.activeElement).toBe(input);
 
     setInstances([{ ...instance('third'), hostname: 'Renamed instance', status: 'offline' }]);
+    setMachines([{
+      instanceId: 'local',
+      kind: 'local',
+      displayName: 'Renamed instance',
+      sshDestination: null,
+      sshPort: null,
+      phase: 'offline',
+      errorCode: null,
+      hasIdentityFile: false,
+      autoReconnect: false,
+      hostKeySha256: null,
+      updatedAt: null,
+      archivedAt: null,
+    }]);
     setProjects([{
       id: 'project-1', name: 'Peri renamed', cwd: '/workspace/peri', instanceId: 'local',
       createdAt: null, updatedAt: 'third', archivedAt: null,

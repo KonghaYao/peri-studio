@@ -18,6 +18,8 @@ pub struct RegistryDocRoot {
     #[serde(default)]
     pub projects: HashMap<String, ProjectSummary>,
     #[serde(default)]
+    pub machines: HashMap<String, MachineSummary>,
+    #[serde(default)]
     pub project_sessions: HashMap<String, ProjectSessionSummary>,
     /// 工作区摘要 map（独立于 chat 的上层概念，§5.5 扩展；server registry
     /// 写入路径 `write_workspace` 实际持久化该键）。
@@ -34,6 +36,24 @@ pub struct ProjectSummary {
     pub cwd: String,
     pub instance_id: String,
     pub created_at: String,
+    pub updated_at: String,
+    pub archived_at: Option<String>,
+}
+
+/// SQLite `machines` 行投影（ssh-machine-mount §8.3）。
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MachineSummary {
+    pub instance_id: String,
+    pub kind: String,
+    pub display_name: String,
+    pub ssh_destination: Option<String>,
+    pub ssh_port: Option<u32>,
+    pub phase: String,
+    pub error_code: Option<String>,
+    pub has_identity_file: bool,
+    pub auto_reconnect: bool,
+    pub host_key_sha256: Option<String>,
     pub updated_at: String,
     pub archived_at: Option<String>,
 }

@@ -1,6 +1,6 @@
 # SSH 机器挂载与机器管理页
 
-> 状态：可开工契约（v1.1，对抗审查后修订）
+> 状态：R1–R4 已落地（feat/ssh-machine-mount worktree）；checksum 表在 release 时钉选更新；真 sshd 契约测 `#[ignore]` + `SSH_MACHINE_CONTRACT=1`
 > 日期：2026-08-30
 > 定位：把远端 Unix 主机加成 Peri Studio 一台 **instance** 的唯一推荐路径；并规定主 server Web 面板的机器管理与项目绑定交互。协议身份、ws 帧、Ack 码仍以 [`docs/terminology.md`](../terminology.md) 与 [`docs/architecture.md`](../architecture.md) 为准。不可逆裁决见 [ADR-0002](../adr/0002-ssh-machine-provisioner.md)。
 > 实现约束：`machine/*` 进入 `ActionEnvelope` + whitelist 必须与本文件 **同一 PR**；未进 proto 之前不得把 §4.3 表当成已交付协议。落地后回写 architecture 删除「实现未开始」。
@@ -111,7 +111,7 @@ System → Machines 仍是只读拓扑（`MachinePanel`），空文案 “No mac
 
 ## 5. 恢复（与 architecture §8.3 对齐，开工必改代码）
 
-1. `Hub::rebuild_chat_views` 仍从 `session_runtime_history` 重建 **全部** 非终态 chat（含 SSH 上的），`runtime_confirmed=false`。
+1. **【v1.2 / ADR-0003】** `session_runtime_history` 已删除；`Hub::rebuild_chat_views` 为 **no-op**，ChatRegistry 启动为空。SSH 上非终态 chat **不得**在 server 重启后仅凭「内存无登记」即 reconcile kill。首连窗口：SSH instance hello + 心跳若上报存活 chat，走 **register-unconfirmed + resume**（或等价 per-instance lane），禁止默认 `to_kill`。实现须在 R2 供应管道前闭合，与 §5.6 默认「Connect 成功后再打开」一致。
 2. 进入全局 Restarting pending 的 **仅** `kind=local` 的 `instance_id`（以及未来「本进程内保证可拉起控制面」的同类）。**所有 `kind=ssh` 的 id 不得加入 `recovery_instances`。**
 3. local hello + 首份心跳完成后 `clear_restarting`。此时 SSH 机器在管理页为 Offline 或 Connecting（若自动重连已开始），其 chat 为未确认 / interrupted。
 4. app 在 Healthy 之后对符合 §8 的 SSH 行启动 Connect 管道（best-effort，并行、有界并发例如 4）。
@@ -142,7 +142,7 @@ P3 产品表对 SSH 的可读表述：**关掉 / 重启本机 Peri 不会杀掉�
 | 7 | `connecting` | 等该 `instance_id` hello 且可服务 | hello | `hello_timeout` |
 | 8 | `online` | `phase=online` | 管理页 Online | — |
 
-Connect / 自动重连从步骤 5 起跑（已知 Trust、二进制与 token 仍在）。若 probe 发现协议版本变化，先走 3 再 5。**每次 Connect 重新 `-R :0`**，不得死守旧端口。
+Connect / 自动重连从步骤 5 起跑（已知 Trust、二进制与 token 仍在）。若 probe 发现协议版本变化，先走 3 再 5。**每次 Connect 重新 `-R :0`**，不得死守旧端口。**【v1.2】** 动态端口与远端 `connect` URL 绑定：隧道重建后 **必须** 同步 restart connect（或 owner shutdown → tunnel → start），禁止「owner lock 仍在则只建隧道」单独成功。Disconnect tunnel 后重连同理。
 
 ### 6.2 副作用分类（幂等）
 

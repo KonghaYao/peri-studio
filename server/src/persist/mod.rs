@@ -14,6 +14,7 @@
 //! `global.status`）属 `state`；本层只提供内存数据源。
 
 pub mod metadata;
+pub use metadata::machine_phases;
 pub mod outbox;
 pub mod store;
 

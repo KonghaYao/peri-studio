@@ -28,7 +28,10 @@ pub enum ResourceQuery {
     #[serde(rename = "resource/open-view", rename_all = "camelCase")]
     OpenView {
         request_id: String,
-        project_id: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        project_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        instance_id: Option<String>,
         payload: OpenResourceView,
     },
     #[serde(rename = "resource/release-view", rename_all = "camelCase")]
@@ -306,16 +309,6 @@ pub struct GitLogQuery {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GitLogQuery {
-    pub repo_id: String,
-    pub expected_generation: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cursor: Option<String>,
-    pub limit: u32,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct InstanceResourceResult {
     pub request_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -492,49 +485,6 @@ pub struct GitRefLabel {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum GitRefKind {
-    Branch,
-    Remote,
-    Tag,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GitLogPage {
-    pub repo_id: String,
-    pub source_generation: String,
-    pub commits: Vec<GitLogCommit>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub next_cursor: Option<String>,
-    pub head_oid: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GitLogCommit {
-    pub commit_id: String,
-    pub oid: String,
-    pub short_oid: String,
-    pub message: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub message_truncated: Option<bool>,
-    pub author_name: String,
-    pub author_date: String,
-    pub parents: Vec<String>,
-    pub parents_complete: bool,
-    pub refs: Vec<GitRefLabel>,
-    pub refs_complete: bool,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GitRefLabel {
-    pub name: String,
-    pub kind: GitRefKind,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
 pub enum GitRefKind {
     Branch,
     Remote,

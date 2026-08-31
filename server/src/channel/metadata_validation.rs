@@ -24,6 +24,7 @@ pub(super) struct PreparedValidation {
 
 impl MetadataCommandProcessor {
     /// 预校验（§4.4 纪律：校验先于保留 commandId 去重行）。
+    #[allow(clippy::result_large_err)]
     pub(super) async fn validate(
         &self,
         projects: &ProjectService,

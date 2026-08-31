@@ -184,7 +184,7 @@ Composer 草稿由独立 IndexedDB store 以 `{principalId, projectId, acpSessio
 - **浏览器认证走同源 HTTP**：`/api/auth/session` 建立 HttpOnly cookie 会话后升 ws（§3.0 浏览器认证契约），与 instance 的 HMAC 双向认证（§9.2）是两条独立认证路径。
 - **一个发布物，两个进程角色**：默认命令/`local` 与 `serve --local` 在 server 就绪后，以 `current_exe` 拉起独立 `connect` 子进程。不得改为进程内 instance task，否则 server crash 会同时中断 ACP，违反 P3。
 - **本地/远程同路**：本地 instance 也必须走 `/instance` ws、版本校验、HMAC 和补推协议；禁止增加仅本地可用的直调 adapter。
-- **SSH 挂载（v2.16 可开工，实现未开始）**：SSH 只做探测、安装/对齐二进制、落盘 instance token、以及本机 `ssh -R` 隧道。远端仍 `connect ws://127.0.0.1:<allocated>/instance`（无 `--allow-insecure`）。OpenSSH 由 **`app/` `SshBackend`** 监督并随 studio 退出；`server/` 禁止 spawn ssh。`kind=ssh` 的 instance **不得**进入全局 `recovery_instances`。已 Trust 且 `auto_reconnect` 的行在 Healthy 之后自动重建隧道。浏览器不持有私钥、不收集口令。Web 动词为 Add computer / Connect / Disconnect tunnel / Stop agents / Remove from Peri。权威契约见 [ssh-machine-mount.md](design/ssh-machine-mount.md)；[ADR-0002](adr/0002-ssh-machine-provisioner.md)。
+- **SSH 挂载（v2.16 已落地）**：SSH 只做探测、安装/对齐二进制、落盘 instance token、以及本机 `ssh -R` 隧道。远端仍 `connect ws://127.0.0.1:<allocated>/instance`（无 `--allow-insecure`）。OpenSSH 由 **`app/` `SshBackend`** 监督并随 studio 退出；`server/` 禁止 spawn ssh。`kind=ssh` 的 instance **不得**进入全局 `recovery_instances`。已 Trust 且 `auto_reconnect` 的行在 Healthy 之后自动重建隧道。浏览器不持有私钥、不收集口令。Web 动词为 Add computer / Connect / Disconnect tunnel / Stop agents / Remove from Peri。`status --json` 经 `/api/health` 暴露 credential-free `machines[]`（`instanceId`/`displayName`/`phase`/`kind`）。权威契约见 [ssh-machine-mount.md](design/ssh-machine-mount.md)；[ADR-0002](adr/0002-ssh-machine-provisioner.md)。
 
 ### 3.2 模块与单二进制
 
@@ -317,7 +317,7 @@ Action 方法面（Server 对客户端；【v2.6】按 `proto` crate `ActionEnve
 | `session/discover` | `{ project_id }` | 刷新某 project 的 ACP `session/list` 缓存（冷启动入口，§3.0 discovery） |
 | `session/prompt-status` | `{ sessionId }` | 读取 ACP durable session 的安全 prompt delivery 摘要（§5.3.1）；`sessionId` = ACP id |
 
-**machine 域**（【v2.16 可开工，实现未开始】SQLite `machines` 权威；live 连接仍只来自 hello。`committed` 与 `project/*` 同为 SQLite+Registry 屏障，**不是** ACP stdin。域错误在投影 `machines.errorCode`；wire `action_error.code` **只**用 §4.4 既有 `ErrorCode`。完整契约见 [ssh-machine-mount.md](design/ssh-machine-mount.md)。**本表与 `ActionEnvelope`+whitelist 必须同 PR 落地。**）：
+**machine 域**（【v2.16 已落地】SQLite `machines` 权威；live 连接仍只来自 hello。`committed` 与 `project/*` 同为 SQLite+Registry 屏障，**不是** ACP stdin。域错误在投影 `machines.errorCode`；wire `action_error.code` **只**用 §4.4 既有 `ErrorCode`。完整契约见 [ssh-machine-mount.md](design/ssh-machine-mount.md)。**本表与 `ActionEnvelope`+whitelist 必须同 PR 落地。**）：
 
 | type | payload | 说明 |
 |------|---------|------|
@@ -1305,7 +1305,7 @@ peri-studio/
 | 里程碑 | 范围 | 验收 | 状态【v2.6】 |
 |--------|------|------|------|
 | **M1 本机闭环** | server + instance 同机 + 视图客户端 + 三 Doc + token（含双向认证）+ 断线韧性 + **部署包** | P1–P9 全绿；客户端崩溃重启不影响 agent；双面板 attach 一致；**kill -9 server / kill -9 instance daemon 演练**【审查：运维 P1-1】；**§4.8 测试向量 1–12 全绿**【顾问2】 | **已实现**（视图层为 Web 面板而非 TUI；`dev.sh` 本机闭环 + `scripts/` 验证链可用） |
-| **M2 局域网** | instance 部署到第二台机器、心跳/离线/重连、实例列表 UI、显式调度、**可观测性指标落地** | 断网 → turn interrupted 呈现 → 重连缓冲补推校准 → chat 恢复可用；gap 计数可见 | 部分（心跳/离线/重连/缓冲补推已实现；跨机部署可开工契约见 [ssh-machine-mount.md](design/ssh-machine-mount.md)，**实现未开始**；指标聚合未落地） |
+| **M2 局域网** | instance 部署到第二台机器、心跳/离线/重连、实例列表 UI、显式调度、**可观测性指标落地** | 断网 → turn interrupted 呈现 → 重连缓冲补推校准 → chat 恢复可用；gap 计数可见 | 部分（心跳/离线/重连/缓冲补推已实现；跨机部署契约见 [ssh-machine-mount.md](design/ssh-machine-mount.md)，server/app 管道部分落地；`status --json` 已暴露 machines 摘要；指标聚合未落地） |
 | **M3 多端** | 多端视图一致（原规划 Web 只读面板） | 多面板视图一致 | **已实现并超出**：Web 面板为可写客户端；`events/subscribe`/awareness 仍为保留帧面 |
 | **M4 公网** | wss、token 管理/轮换 UI、限流 | 公网远程连接安全基线 | 未开始（当前仅支持 loopback 单机部署，远程部署为后置里程碑） |
 
@@ -1324,9 +1324,10 @@ peri-studio/
   重启自行重连。模板不包含 token，也不扩大 loopback listener；凭据文件
   必须由运维者以 `0600` 权限提供。
 - `GET /api/health` 是受 loopback peer + 严格 Host 双门禁保护的无凭据 liveness：所有
-  已运行状态返回 HTTP 200，正文仅含 `status/ready/protocolVersion/serverVersion`；
-  `ready=true` 只对应 `GlobalStatus::Healthy`。`peri-studio status` 探测 liveness，
-  `status --ready` 为 degraded/restarting 返回非零，`--json` 提供稳定机器输出。
+  已运行状态返回 HTTP 200，正文含 `status/ready/protocolVersion/serverVersion` 与
+  credential-free `machines[]`（`instanceId`/`displayName`/`phase`/`kind`，来自 Registry
+  投影）；`ready=true` 只对应 `GlobalStatus::Healthy`。`peri-studio status` 探测 liveness，
+  `status --ready` 为 degraded/restarting 返回非零，`--json` 经同源 health 提供稳定机器输出。
 - 日志继续只写 stderr。systemd 交由 journald 限额；launchd 文件输出可使用
   `deploy/logrotate/peri-studio` 的外部轮转模板，不在应用内删除或重命名活跃日志。
 - **升级流程**：原子替换单个 `peri-studio` 文件，先重启 server service，再滚动

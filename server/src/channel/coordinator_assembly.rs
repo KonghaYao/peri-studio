@@ -17,6 +17,7 @@ use crate::channel::elicitation_response::ElicitationResponse;
 use crate::channel::mcp_control::McpControl;
 use crate::channel::mcp_apps_control::McpAppsControl;
 use crate::channel::metadata_command_processor::MetadataCommandProcessor;
+use crate::channel::machine_command_processor::MachineCommandProcessor;
 use crate::channel::permission_resolution::PermissionResolution;
 use crate::channel::prompt_delivery::{PromptDelivery, PromptDeliveryDeps};
 use crate::channel::prompt_recovery::PromptRecovery;
@@ -32,7 +33,7 @@ use crate::channel::session_rewind::{SessionRewindExecution, SessionRewindQuerie
 use crate::channel::session_runtime_operations::{SessionRuntimeConfig, SessionRuntimeOperations};
 use crate::channel::turn_cancellation::TurnCancellation;
 use crate::channel::workspace_compatibility::WorkspaceCompatibility;
-use crate::control::{ChatRegistry, InstanceRegistry, ProjectService, WorkspaceRegistry, StoreSink};
+use crate::control::{ChatRegistry, InstanceRegistry, MachineService, ProjectService, WorkspaceRegistry, StoreSink};
 use crate::persist::Store;
 use crate::protocol::Translator;
 use crate::state::doc_manager::{BatchConfig, DocManager};
@@ -91,6 +92,7 @@ impl CommandCoordinator {
             .unwrap_or_else(|_| "/".to_string());
         let translator = Arc::new(Translator::new());
         let projects = Arc::new(RwLock::new(None));
+        let machines = Arc::new(RwLock::new(None));
         let prompt_delivery = PromptDelivery::new(
             PromptDeliveryDeps {
                 store: store.clone(),
@@ -104,6 +106,7 @@ impl CommandCoordinator {
             l3_timeout,
         );
         let metadata_commands = MetadataCommandProcessor::new(projects.clone(), chats.clone());
+        let machine_commands = MachineCommandProcessor::new(machines.clone());
         let workspaces = WorkspaceRegistry::new(chats.registry());
         let workspace_compatibility =
             WorkspaceCompatibility::new(projects.clone(), workspaces.clone());
@@ -238,6 +241,7 @@ impl CommandCoordinator {
                 prompt_delivery,
                 runtime_creation,
                 metadata_commands,
+                machine_commands,
                 session_discovery,
                 session_catalog,
                 session_configuration,
@@ -266,6 +270,17 @@ impl CommandCoordinator {
             .install_metadata(projects.metadata().clone())
             .await;
         *self.inner.projects.write().await = Some(projects);
+    }
+
+    pub async fn install_machine_service(&self, machines: MachineService) {
+        *self.inner.machine_commands.machines.write().await = Some(machines);
+    }
+
+    /// 全局恢复门禁清除后触发 SSH auto_reconnect（§2.1 A）。
+    pub async fn on_recovery_barrier_cleared(&self) {
+        if let Some(machines) = self.inner.machine_commands.machines.read().await.clone() {
+            machines.schedule_auto_reconnect().await;
+        }
     }
 
     pub async fn install_history_sink(&self, sink: Arc<crate::control::StoreSink>) {

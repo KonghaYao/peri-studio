@@ -6,7 +6,7 @@
 
 use super::*;
 
-const SCHEMA_VERSION: i64 = 8;
+const SCHEMA_VERSION: i64 = 10;
 
 const MIGRATION_V1: &str = r#"
 CREATE TABLE IF NOT EXISTS schema_migrations(
@@ -147,6 +147,32 @@ CREATE INDEX catalog_session_prefs_archived_idx
   ON catalog_session_prefs(project_id, archived_at);
 "#;
 
+const MIGRATION_V9: &str = r#"
+CREATE TABLE machines(
+  instance_id TEXT PRIMARY KEY,
+  kind TEXT NOT NULL CHECK(kind IN ('local', 'ssh')),
+  display_name TEXT NOT NULL,
+  ssh_destination TEXT,
+  ssh_port INTEGER,
+  identity_file TEXT,
+  auto_reconnect INTEGER NOT NULL DEFAULT 1 CHECK(auto_reconnect IN (0, 1)),
+  remote_forward_port INTEGER,
+  pipeline_generation INTEGER NOT NULL DEFAULT 0,
+  phase TEXT NOT NULL,
+  error_code TEXT,
+  host_key_sha256 TEXT,
+  pending_host_key_fingerprint TEXT,
+  pending_host_key_line TEXT,
+  remote_owner_fingerprint TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  archived_at TEXT
+);
+CREATE UNIQUE INDEX machines_ssh_dest_port_unique
+  ON machines(ssh_destination, COALESCE(ssh_port, 0))
+  WHERE kind = 'ssh' AND archived_at IS NULL;
+"#;
+
 impl MetadataStore {
     pub(super) async fn migrate(&self) -> Result<()> {
         let mut tx = self.pool.begin().await?;
@@ -262,6 +288,42 @@ impl MetadataStore {
                 sqlx::query(statement).execute(&mut *tx).await?;
             }
             sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(8,?)")
+                .bind(now())
+                .execute(&mut *tx)
+                .await?;
+        }
+        if found < 9 {
+            for statement in MIGRATION_V9
+                .split(';')
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                sqlx::query(statement).execute(&mut *tx).await?;
+            }
+            sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(9,?)")
+                .bind(now())
+                .execute(&mut *tx)
+                .await?;
+        }
+        if found < 10 {
+            let commands_table: Option<String> = sqlx::query_scalar(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='metadata_commands'",
+            )
+            .fetch_optional(&mut *tx)
+            .await?;
+            if commands_table.is_some() {
+                let has_instance_id: Option<String> = sqlx::query_scalar(
+                    "SELECT name FROM pragma_table_info('metadata_commands') WHERE name='instance_id'",
+                )
+                .fetch_optional(&mut *tx)
+                .await?;
+                if has_instance_id.is_none() {
+                    sqlx::query("ALTER TABLE metadata_commands ADD COLUMN instance_id TEXT")
+                        .execute(&mut *tx)
+                        .await?;
+                }
+            }
+            sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(10,?)")
                 .bind(now())
                 .execute(&mut *tx)
                 .await?;

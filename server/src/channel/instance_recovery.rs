@@ -273,6 +273,8 @@ impl RecoveryCoordinator {
                     .registry
                     .report_condition(DegradeCause::RestoreInvariant)
                     .await;
+            } else {
+                self.coordinator.on_recovery_barrier_cleared().await;
             }
         }
     }

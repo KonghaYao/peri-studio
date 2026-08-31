@@ -93,6 +93,9 @@ impl ResourceHost {
                 )
                 .await
             }
+            InstanceResourceQueryKind::GitLog(_) => {
+                Err(failure(ResourceErrorCode::GitNotAvailable, false))
+            }
         };
         match result {
             Ok(result) => InstanceResourceResult {

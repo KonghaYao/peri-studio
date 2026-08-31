@@ -323,6 +323,7 @@ impl CommandCoordinator {
 
     /// Create preparation is owned by RuntimeCreation; this adapter only maps
     /// its terminal verdict into the coordinator submit contract.
+    #[allow(clippy::result_large_err)]
     async fn prepare_create(
         &self,
         payload: &CreateChatPayload,

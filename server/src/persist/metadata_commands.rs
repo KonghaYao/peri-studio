@@ -14,13 +14,22 @@ impl MetadataStore {
         payload_hash: &str,
         project_id: Option<&str>,
         session_id: Option<&str>,
+        instance_id: Option<&str>,
     ) -> Result<BeginCommand> {
         let mut tx = self.pool.begin().await?;
-        let existing = sqlx::query("SELECT command_id,command_type,payload_hash,phase,project_id,session_id,chat_id,acp_session_id,error_code FROM metadata_commands WHERE command_id=?")
-            .bind(command_id).fetch_optional(&mut *tx).await?
-            .map(|r| MetadataCommand { command_id: r.get(0), command_type: r.get(1), payload_hash: r.get(2), phase: r.get(3), project_id: r.get(4), session_id: r.get(5), chat_id: r.get(6), acp_session_id: r.get(7), error_code: r.get(8) });
+        let existing = sqlx::query(
+            "SELECT command_id,command_type,payload_hash,phase,project_id,session_id,chat_id,\
+             acp_session_id,instance_id,error_code FROM metadata_commands WHERE command_id=?",
+        )
+        .bind(command_id)
+        .fetch_optional(&mut *tx)
+        .await?
+        .map(metadata_command_from_row);
         if let Some(existing) = existing {
-            if existing.command_type != command_type || existing.payload_hash != payload_hash {
+            if existing.command_type != command_type
+                || existing.payload_hash != payload_hash
+                || existing.instance_id.as_deref() != instance_id
+            {
                 return Err(MetadataError::Conflict(format!(
                     "command {command_id} payload/type mismatch"
                 )));
@@ -28,11 +37,43 @@ impl MetadataStore {
             return Ok(BeginCommand::Existing);
         }
         let ts = now();
-        sqlx::query("INSERT INTO metadata_commands(command_id,command_type,payload_hash,phase,project_id,session_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)")
-            .bind(command_id).bind(command_type).bind(payload_hash).bind("intention_durable")
-            .bind(project_id).bind(session_id).bind(&ts).bind(&ts).execute(&mut *tx).await?;
+        sqlx::query(
+            "INSERT INTO metadata_commands(\
+             command_id,command_type,payload_hash,phase,project_id,session_id,instance_id,\
+             created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)",
+        )
+        .bind(command_id)
+        .bind(command_type)
+        .bind(payload_hash)
+        .bind("intention_durable")
+        .bind(project_id)
+        .bind(session_id)
+        .bind(instance_id)
+        .bind(&ts)
+        .bind(&ts)
+        .execute(&mut *tx)
+        .await?;
         tx.commit().await?;
         Ok(BeginCommand::New)
+    }
+
+    /// 与 [`begin_command`] 相同，但显式命名 `instance_id`（`machine/*` 域）。
+    pub async fn begin_command_with_instance(
+        &self,
+        command_id: &str,
+        command_type: &str,
+        payload_hash: &str,
+        instance_id: Option<&str>,
+    ) -> Result<BeginCommand> {
+        self.begin_command(
+            command_id,
+            command_type,
+            payload_hash,
+            None,
+            None,
+            instance_id,
+        )
+        .await
     }
 
     /// Durably records the command intention. Session activation and SQLite
@@ -49,24 +90,26 @@ impl MetadataStore {
         _new_session: Option<NewSession<'_>>,
         _activate_session: Option<&str>,
     ) -> Result<BeginCommand> {
-        self.begin_command(command_id, command_type, payload_hash, project_id, session_id)
-            .await
+        self.begin_command(
+            command_id,
+            command_type,
+            payload_hash,
+            project_id,
+            session_id,
+            None,
+        )
+        .await
     }
 
     pub async fn command(&self, id: &str) -> Result<Option<MetadataCommand>> {
-        let row = sqlx::query("SELECT command_id,command_type,payload_hash,phase,project_id,session_id,chat_id,acp_session_id,error_code FROM metadata_commands WHERE command_id=?")
-            .bind(id).fetch_optional(&self.pool).await?;
-        Ok(row.map(|r| MetadataCommand {
-            command_id: r.get(0),
-            command_type: r.get(1),
-            payload_hash: r.get(2),
-            phase: r.get(3),
-            project_id: r.get(4),
-            session_id: r.get(5),
-            chat_id: r.get(6),
-            acp_session_id: r.get(7),
-            error_code: r.get(8),
-        }))
+        let row = sqlx::query(
+            "SELECT command_id,command_type,payload_hash,phase,project_id,session_id,chat_id,\
+             acp_session_id,instance_id,error_code FROM metadata_commands WHERE command_id=?",
+        )
+        .bind(id)
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(row.map(metadata_command_from_row))
     }
 
     /// Reserves a body-free runtime mutation in the global command ledger.
@@ -79,9 +122,14 @@ impl MetadataStore {
         chat_id: &str,
     ) -> Result<BeginCommand> {
         let mut tx = self.pool.begin().await?;
-        let existing = sqlx::query("SELECT command_id,command_type,payload_hash,phase,project_id,session_id,chat_id,acp_session_id,error_code FROM metadata_commands WHERE command_id=?")
-            .bind(command_id).fetch_optional(&mut *tx).await?
-            .map(|r| MetadataCommand { command_id: r.get(0), command_type: r.get(1), payload_hash: r.get(2), phase: r.get(3), project_id: r.get(4), session_id: r.get(5), chat_id: r.get(6), acp_session_id: r.get(7), error_code: r.get(8) });
+        let existing = sqlx::query(
+            "SELECT command_id,command_type,payload_hash,phase,project_id,session_id,chat_id,\
+             acp_session_id,instance_id,error_code FROM metadata_commands WHERE command_id=?",
+        )
+        .bind(command_id)
+        .fetch_optional(&mut *tx)
+        .await?
+        .map(metadata_command_from_row);
         if let Some(existing) = existing {
             if existing.command_type != command_type
                 || existing.payload_hash != payload_hash
@@ -234,5 +282,36 @@ impl MetadataStore {
             return Err(MetadataError::NotFound(format!("command {id}")));
         }
         Ok(())
+    }
+
+    /// `machine/add` admit 后回填 instance_id（begin_command 时 id 尚未生成）。
+    pub async fn set_command_instance_id(&self, command_id: &str, instance_id: &str) -> Result<()> {
+        let result = sqlx::query(
+            "UPDATE metadata_commands SET instance_id=?, updated_at=? WHERE command_id=?",
+        )
+        .bind(instance_id)
+        .bind(now())
+        .bind(command_id)
+        .execute(&self.pool)
+        .await?;
+        if result.rows_affected() == 0 {
+            return Err(MetadataError::NotFound(format!("command {command_id}")));
+        }
+        Ok(())
+    }
+}
+
+fn metadata_command_from_row(r: sqlx::sqlite::SqliteRow) -> MetadataCommand {
+    MetadataCommand {
+        command_id: r.get("command_id"),
+        command_type: r.get("command_type"),
+        payload_hash: r.get("payload_hash"),
+        phase: r.get("phase"),
+        project_id: r.get("project_id"),
+        session_id: r.get("session_id"),
+        chat_id: r.get("chat_id"),
+        acp_session_id: r.get("acp_session_id"),
+        instance_id: r.get("instance_id"),
+        error_code: r.get("error_code"),
     }
 }

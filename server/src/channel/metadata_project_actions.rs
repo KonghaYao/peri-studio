@@ -87,7 +87,7 @@ impl MetadataCommandProcessor {
                         true,
                     ));
                 }
-                self.send_metadata_ack(cmd, AckStatus::Committed, Some(&id), None, None, None)
+                self.send_metadata_ack(cmd, AckStatus::Committed, Some(&id), None, None, None, None)
                     .await;
             }
             Err(_) => {
@@ -198,6 +198,7 @@ impl MetadataCommandProcessor {
             None,
             None,
             None,
+            None,
         )
         .await;
         SubmitAck::Handled
@@ -282,6 +283,7 @@ impl MetadataCommandProcessor {
             cmd,
             AckStatus::Committed,
             Some(project_id),
+            None,
             None,
             None,
             None,
@@ -374,6 +376,7 @@ impl MetadataCommandProcessor {
             cmd,
             AckStatus::Committed,
             Some(project_id),
+            None,
             None,
             None,
             None,

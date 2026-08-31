@@ -115,17 +115,13 @@ impl McpAppsControl {
             },
             Err(AppsRpcFailure::Rejected(kind)) => {
                 let error = map_apps_kind(command_id, kind);
-                let silent = matches!(
+                let _silent = matches!(
                     kind,
                     "capability_disabled" | "policy_denied" | "tool_not_app_visible"
                 );
                 self.open_commands.write().await.insert(
                     command_id.to_string(),
-                    if silent {
-                        OpenCommandState::Failed(error.clone())
-                    } else {
-                        OpenCommandState::Failed(error.clone())
-                    },
+                    OpenCommandState::Failed(error.clone()),
                 );
                 Frame::ActionError(error)
             }

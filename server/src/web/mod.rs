@@ -51,6 +51,16 @@ pub(crate) use parse::{is_json_content_type, request_path, valid_loopback_host};
 #[cfg(test)]
 pub(crate) use static_::{cache_headers_for_static, content_type, route, ASSETS};
 
+/// Credential-free machine row for `/api/health` and `status --json`.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HealthMachineSummary {
+    pub instance_id: String,
+    pub display_name: String,
+    pub phase: String,
+    pub kind: String,
+}
+
 /// Credential-free local process health. This intentionally excludes paths,
 /// identities, counts and degradation reasons.
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -60,6 +70,8 @@ pub struct HealthSnapshot {
     pub ready: bool,
     pub protocol_version: u32,
     pub server_version: String,
+    #[serde(default)]
+    pub machines: Vec<HealthMachineSummary>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -82,6 +94,13 @@ impl HealthStatus {
 
 impl HealthSnapshot {
     pub fn from_global_status(status: GlobalStatus) -> Self {
+        Self::from_runtime(status, [])
+    }
+
+    pub fn from_runtime(
+        status: GlobalStatus,
+        machines: impl IntoIterator<Item = HealthMachineSummary>,
+    ) -> Self {
         let status = match status {
             GlobalStatus::Healthy => HealthStatus::Healthy,
             GlobalStatus::Degraded => HealthStatus::Degraded,
@@ -92,6 +111,7 @@ impl HealthSnapshot {
             status,
             protocol_version: PROTOCOL_VERSION,
             server_version: env!("CARGO_PKG_VERSION").to_string(),
+            machines: machines.into_iter().collect(),
         }
     }
 }

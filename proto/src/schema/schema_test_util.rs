@@ -222,6 +222,7 @@ pub(crate) fn registry_root() -> RegistryDocRoot {
         instances,
         chats,
         projects: HashMap::new(),
+        machines: HashMap::new(),
         project_sessions: HashMap::new(),
         workspaces,
         global: RegistryGlobal {

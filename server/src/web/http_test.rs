@@ -19,7 +19,7 @@ use crate::auth::{AuthService, TokenRole, TokenStore};
 use crate::web::{
     cookie_value, header_end, is_json_content_type, is_ws_upgrade, request_path, serve_http,
     serve_http_with_resources, valid_loopback_host, valid_ws_host, valid_ws_origin,
-    BrowserAuthSetup, HealthSnapshot, HealthStatus,
+    BrowserAuthSetup, HealthSnapshot, HealthStatus, HealthMachineSummary,
 };
 
 /// 请求行解析：常规 GET 路径。
@@ -167,8 +167,9 @@ async fn health_is_credential_free_liveness_with_explicit_readiness() {
             .as_object()
             .unwrap()
             .len(),
-        4
+        5
     );
+    assert!(snapshot.machines.is_empty());
     assert!(!body.contains("token"));
     assert!(!body.contains("path"));
     assert!(!body.contains("reason"));
@@ -178,8 +179,41 @@ async fn health_is_credential_free_liveness_with_explicit_readiness() {
         "panel CSP must allow exact loopback sandbox origin: {response:?}"
     );
     assert!(
+        !body.contains("sshDestination"),
+        "health must not expose machine secrets: {body}"
+    );
+    assert!(
         !response.contains("[::1]"),
         "Chrome rejects IPv6 host-sources in frame-src: {response:?}"
+    );
+}
+
+#[tokio::test]
+async fn health_includes_credential_free_machine_summaries() {
+    let health = HealthSnapshot::from_runtime(
+        peri_studio_proto::schema::GlobalStatus::Healthy,
+        [HealthMachineSummary {
+            instance_id: "local".into(),
+            display_name: "This Mac".into(),
+            phase: "online".into(),
+            kind: "local".into(),
+        }],
+    );
+    let response = health_socket_response(
+        health,
+        "GET /api/health HTTP/1.1\r\nHost: 127.0.0.1:8456\r\nContent-Length: 0\r\n\r\n",
+    )
+    .await;
+    let body = response.split_once("\r\n\r\n").unwrap().1;
+    let snapshot: HealthSnapshot = serde_json::from_str(body).unwrap();
+    assert_eq!(snapshot.machines.len(), 1);
+    assert_eq!(snapshot.machines[0].instance_id, "local");
+    assert_eq!(snapshot.machines[0].display_name, "This Mac");
+    assert_eq!(snapshot.machines[0].phase, "online");
+    assert_eq!(snapshot.machines[0].kind, "local");
+    assert!(
+        !body.contains("token"),
+        "health must not expose secrets: {body}"
     );
 }
 

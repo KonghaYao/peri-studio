@@ -46,6 +46,16 @@ pub(crate) enum RegistryMsg {
     /// workspace 全量查询（启动恢复：内存注册表从 Registry Doc 重建）。
     ListWorkspaces(oneshot::Sender<Vec<WorkspaceSummary>>),
     ListLegacySessions(oneshot::Sender<Vec<SessionSummaryProjection>>),
+    ListHealthMachines(oneshot::Sender<Vec<MachineHealthRow>>),
+}
+
+/// Registry `machines` 投影的 credential-free 摘要（供 `/api/health`）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MachineHealthRow {
+    pub instance_id: String,
+    pub display_name: String,
+    pub phase: String,
+    pub kind: String,
 }
 
 /// Registry 操作错误。
@@ -312,6 +322,17 @@ impl RegistryState {
         rx.await.map_err(|_| RegistryError::ChannelClosed)
     }
 
+    /// 机器列表 credential-free 摘要（Registry Doc `machines` 投影）。
+    pub async fn list_health_machines(&self) -> Result<Vec<MachineHealthRow>, RegistryError> {
+        let (reply, rx) = oneshot::channel();
+        self.inner
+            .tx
+            .send(RegistryMsg::ListHealthMachines(reply))
+            .await
+            .map_err(|_| RegistryError::ChannelClosed)?;
+        rx.await.map_err(|_| RegistryError::ChannelClosed)
+    }
+
     pub async fn replace_projects(
         &self,
         projects: Vec<ProjectSummary>,
@@ -319,6 +340,13 @@ impl RegistryState {
     ) -> Result<(), RegistryError> {
         self.send(DocCommand::RegistryReplaceProjects { projects, sessions })
             .await
+    }
+
+    pub async fn replace_machines(
+        &self,
+        machines: Vec<peri_studio_proto::schema::MachineSummary>,
+    ) -> Result<(), RegistryError> {
+        self.send(DocCommand::RegistryReplaceMachines { machines }).await
     }
 
     async fn set_global(&self, status: GlobalStatus) -> Result<(), RegistryError> {

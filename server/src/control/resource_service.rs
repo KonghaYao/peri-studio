@@ -22,6 +22,15 @@ use crate::persist::metadata::MetadataStore;
 const MAX_BLOBS_PER_PRINCIPAL: usize = 4;
 const MAX_SINGLE_BLOB_BYTES: usize = MAX_RESOURCE_BLOB_BYTES as usize;
 const MAX_BLOB_CACHE_BYTES: usize = 256 * 1024 * 1024;
+/// Instance-scoped directory browse roots at the remote filesystem root; relative
+/// paths stay workspace-relative to this trusted anchor.
+const INSTANCE_BROWSE_ROOT: &str = "/";
+
+#[derive(Debug)]
+enum OpenViewScope<'a> {
+    Project(&'a str),
+    Instance(&'a str),
+}
 
 #[derive(Clone)]
 pub struct ResourceService {
@@ -68,9 +77,18 @@ impl ResourceService {
         let outcome = match query {
             ResourceQuery::OpenView {
                 project_id,
+                instance_id,
                 payload,
                 ..
-            } => self.open_view(principal, &project_id, payload).await,
+            } => {
+                self.open_view(
+                    principal,
+                    project_id.as_deref(),
+                    instance_id.as_deref(),
+                    payload,
+                )
+                .await
+            }
             ResourceQuery::ReleaseView { payload, .. } => {
                 // release 幂等且不泄露 view 是否存在或属于其他 principal。
                 self.projection.release(principal, &payload.view_id).await;
@@ -301,6 +319,23 @@ impl ResourceService {
     async fn open_view(
         &self,
         principal: &str,
+        project_id: Option<&str>,
+        instance_id: Option<&str>,
+        view: OpenResourceView,
+    ) -> Result<ResourceQueryResult, ResourceFailure> {
+        match resolve_open_view_scope(project_id, instance_id)? {
+            OpenViewScope::Project(project_id) => {
+                self.open_project_view(principal, project_id, view).await
+            }
+            OpenViewScope::Instance(instance_id) => {
+                self.open_instance_view(principal, instance_id, view).await
+            }
+        }
+    }
+
+    async fn open_project_view(
+        &self,
+        principal: &str,
         project_id: &str,
         view: OpenResourceView,
     ) -> Result<ResourceQueryResult, ResourceFailure> {
@@ -335,6 +370,53 @@ impl ResourceService {
         let opened = self
             .projection
             .publish(principal, project_id, &payload)
+            .await?;
+        Ok(ResourceQueryResult::View(opened))
+    }
+
+    async fn open_instance_view(
+        &self,
+        principal: &str,
+        instance_id: &str,
+        view: OpenResourceView,
+    ) -> Result<ResourceQueryResult, ResourceFailure> {
+        if view.kind != ResourceViewKind::FsDirectoryPage {
+            return Err(failure(
+                ResourceErrorCode::InvalidRequest,
+                "instance browse only supports directory pages",
+                false,
+            ));
+        }
+        if instance_id != "local"
+            && !matches!(
+                self.metadata.machine(instance_id).await,
+                Ok(Some(machine)) if machine.archived_at.is_none()
+            )
+        {
+            return Err(failure(
+                ResourceErrorCode::InvalidRequest,
+                "machine was not found",
+                false,
+            ));
+        }
+        let query = InstanceResourceQuery {
+            request_id: uuid::Uuid::new_v4().to_string(),
+            workspace_id: instance_id.to_string(),
+            root: INSTANCE_BROWSE_ROOT.to_string(),
+            query: view_to_instance_query(view)?,
+        };
+        let result = self
+            .instance
+            .query_resource(instance_id, query)
+            .await
+            .map_err(instance_failure)?;
+        if let Some(error) = result.error {
+            return Err(error);
+        }
+        let payload = result.result.ok_or_else(unavailable)?;
+        let opened = self
+            .projection
+            .publish(principal, instance_id, &payload)
             .await?;
         Ok(ResourceQueryResult::View(opened))
     }
@@ -375,6 +457,28 @@ fn validate_git_action(
         ));
     }
     Ok(())
+}
+
+fn resolve_open_view_scope<'a>(
+    project_id: Option<&'a str>,
+    instance_id: Option<&'a str>,
+) -> Result<OpenViewScope<'a>, ResourceFailure> {
+    let project_id = project_id.filter(|value| !value.is_empty());
+    let instance_id = instance_id.filter(|value| !value.is_empty());
+    match (project_id, instance_id) {
+        (Some(project_id), None) => Ok(OpenViewScope::Project(project_id)),
+        (None, Some(instance_id)) => Ok(OpenViewScope::Instance(instance_id)),
+        (Some(_), Some(_)) => Err(failure(
+            ResourceErrorCode::InvalidRequest,
+            "projectId and instanceId are mutually exclusive",
+            false,
+        )),
+        (None, None) => Err(failure(
+            ResourceErrorCode::InvalidRequest,
+            "projectId or instanceId is required",
+            false,
+        )),
+    }
 }
 
 fn view_to_instance_query(
