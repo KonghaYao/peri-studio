@@ -15,4 +15,6 @@ export type GitGraphCommit = {
   isHead?: boolean;
   /** Parent commit hashes (git log order: parents are older commits). */
   parents?: string[];
+  parentsComplete?: boolean;
+  refsComplete?: boolean;
 };

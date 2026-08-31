@@ -56,7 +56,7 @@ export function openMoreGitChanges(repoId: string, groupId: import('./resource-p
   });
 }
 
-export function openGitLog(repoId: string, cursor?: string): void {
+export function openGitLog(repoId: string, cursor?: string, limit = 50): void {
   const projectId = resourceWorkspace().projectId;
   const repo = resourceWorkspace().repositories.find((item) => item.id === repoId);
   if (!projectId || !repo?.generation) return;
@@ -66,7 +66,7 @@ export function openGitLog(repoId: string, cursor?: string): void {
     kind: 'git-log-page',
     repoId,
     cursor,
-    limit: 50,
+    limit,
     expectedGeneration: repo.generation,
   });
 }
@@ -250,6 +250,16 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
       const repoId = key.slice('log:'.length).split(':')[0];
       if (repoId) invalidateGitLog(repoId);
       return;
+    }
+    if (key?.startsWith('log:') && frame.error.code === 'VIEW_TOO_LARGE') {
+      const suffix = key.slice(`log:${key.slice('log:'.length).split(':')[0]}:`.length);
+      const repoId = key.slice('log:'.length).split(':')[0];
+      const cursor = suffix === 'start' ? undefined : suffix;
+      const suggested = frame.error.suggestedLimit;
+      if (repoId && typeof suggested === 'number' && suggested > 0) {
+        openGitLog(repoId, cursor, suggested);
+        return;
+      }
     }
     setResourceWorkspace((state) => ({ ...state, error: frame.error!.message }));
     return;

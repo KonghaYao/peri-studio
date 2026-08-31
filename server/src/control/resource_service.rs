@@ -13,7 +13,8 @@ use peri_studio_proto::resource::{
     OpenResourceBlob, OpenResourceView, ReadDirectoryQuery, ReadFileQuery, ResourceBlobKind,
     ResourceBlobOpened, ResourceErrorCode, ResourceFailure, ResourceGitActionKind, ResourceQuery,
     ResourceQueryResult, ResourceResult, ResourceViewKind, DEFAULT_DIRECTORY_PAGE_SIZE,
-    MAX_COMMIT_MESSAGE_BYTES, MAX_DIRECTORY_PAGE_SIZE, MAX_RESOURCE_BLOB_BYTES,
+    DEFAULT_GIT_LOG_PAGE_SIZE, MAX_COMMIT_MESSAGE_BYTES, MAX_DIRECTORY_PAGE_SIZE,
+    MAX_RESOURCE_BLOB_BYTES,
 };
 
 use crate::control::{InstanceError, InstanceRegistry, ResourceProjection};
@@ -317,11 +318,16 @@ impl ResourceService {
                     false,
                 )
             })?;
+        let query_kind = if view.kind == ResourceViewKind::GitLogPage {
+            self.resolve_git_log_query(&project, view).await?
+        } else {
+            view_to_instance_query(view)?
+        };
         let query = InstanceResourceQuery {
             request_id: uuid::Uuid::new_v4().to_string(),
             workspace_id: project.id.clone(),
             root: project.cwd.clone(),
-            query: view_to_instance_query(view)?,
+            query: query_kind,
         };
         let result = self
             .instance
@@ -337,6 +343,50 @@ impl ResourceService {
             .publish(principal, project_id, &payload)
             .await?;
         Ok(ResourceQueryResult::View(opened))
+    }
+
+    async fn resolve_git_log_query(
+        &self,
+        project: &crate::persist::metadata::ProjectRecord,
+        view: OpenResourceView,
+    ) -> Result<InstanceResourceQueryKind, ResourceFailure> {
+        let repo_id = required(view.repo_id, "repository is required")?;
+        let client_generation =
+            required(view.expected_generation, "repository generation is required")?;
+        let limit = git_log_limit(view.limit)?;
+        let snapshot = InstanceResourceQuery {
+            request_id: uuid::Uuid::new_v4().to_string(),
+            workspace_id: project.id.clone(),
+            root: project.cwd.clone(),
+            query: InstanceResourceQueryKind::GitSnapshot(GitSnapshotQuery {
+                repo_id: repo_id.clone(),
+            }),
+        };
+        let result = self
+            .instance
+            .query_resource(&project.instance_id, snapshot)
+            .await
+            .map_err(instance_failure)?;
+        if let Some(error) = result.error {
+            return Err(error);
+        }
+        let generation = match result.result {
+            Some(InstanceResourcePayload::GitRepository(repo)) => repo.generation,
+            _ => return Err(unavailable()),
+        };
+        if generation != client_generation {
+            return Err(failure(
+                ResourceErrorCode::StaleCursor,
+                "repository generation changed; refresh required",
+                false,
+            ));
+        }
+        Ok(InstanceResourceQueryKind::GitLog(GitLogQuery {
+            repo_id,
+            expected_generation: generation,
+            cursor: view.cursor,
+            limit,
+        }))
     }
 }
 
@@ -432,10 +482,26 @@ fn view_to_instance_query(
                 repo_id,
                 expected_generation,
                 cursor: view.cursor,
-                limit,
+                limit: git_log_limit(view.limit)?,
             }))
         }
     }
+}
+
+fn git_log_limit(limit: u32) -> Result<u32, ResourceFailure> {
+    let limit = if limit == 0 {
+        DEFAULT_GIT_LOG_PAGE_SIZE
+    } else {
+        limit
+    };
+    if limit > MAX_DIRECTORY_PAGE_SIZE {
+        return Err(failure(
+            ResourceErrorCode::InvalidRequest,
+            "resource page limit exceeds maximum",
+            false,
+        ));
+    }
+    Ok(limit)
 }
 
 fn required(value: Option<String>, message: &str) -> Result<String, ResourceFailure> {
@@ -487,6 +553,7 @@ fn failure(code: ResourceErrorCode, message: &str, retryable: bool) -> ResourceF
         code,
         message: message.to_string(),
         retryable,
+        suggested_limit: None,
     }
 }
 

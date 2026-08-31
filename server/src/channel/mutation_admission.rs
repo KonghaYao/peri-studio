@@ -44,6 +44,7 @@ impl MutationAdmission {
                         code: ResourceErrorCode::Unavailable,
                         message: "server degraded/restarting; retry later".to_string(),
                         retryable: true,
+                        suggested_limit: None,
                     }),
                 }))
             }

@@ -24,7 +24,17 @@ function mapGitLogEntry(entry: ResourceEntry, headOid?: string): GitGraphCommit 
     parents: parseParents(entry.parents),
     refs: parseRefs(entry.refs),
     isHead: !!headOid && oid === headOid,
+    parentsComplete: boolOrUndefined(entry.parents_complete),
+    refsComplete: boolOrUndefined(entry.refs_complete),
   };
+}
+
+function boolOrUndefined(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+export function gitLogHasIncompleteDag(commits: GitGraphCommit[]): boolean {
+  return commits.some((commit) => commit.parentsComplete === false || commit.refsComplete === false);
 }
 
 function parseParents(value: unknown): string[] {

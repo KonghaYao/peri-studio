@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mapGitLogToGraphCommits } from './map-git-log';
+import { gitLogHasIncompleteDag, mapGitLogToGraphCommits } from './map-git-log';
 
 describe('mapGitLogToGraphCommits', () => {
   it('maps wire entries to layout commits with full oid keys', () => {
@@ -38,5 +38,14 @@ describe('mapGitLogToGraphCommits', () => {
 
     expect(head.isHead).toBe(true);
     expect(parent.isHead).toBe(false);
+  });
+
+  it('detects incomplete dag metadata', () => {
+    expect(gitLogHasIncompleteDag([
+      { id: 'a', message: 'a', author: 'A', time: '1m', parentsComplete: false },
+    ])).toBe(true);
+    expect(gitLogHasIncompleteDag([
+      { id: 'a', message: 'a', author: 'A', time: '1m', parentsComplete: true, refsComplete: true },
+    ])).toBe(false);
   });
 });

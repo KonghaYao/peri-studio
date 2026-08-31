@@ -37,6 +37,7 @@ impl ResourceHost {
         &self,
         root: &str,
     ) -> Result<InstanceResourcePayload, ResourceFailure> {
+        let _permit = self.try_acquire_git_query_permit()?;
         let root = canonical_root(root)?;
         let output = match self.git(&root, &["rev-parse", "--show-toplevel"]).await {
             Ok(output) => output,
@@ -77,6 +78,7 @@ impl ResourceHost {
         root: &str,
         expected_repo_id: &str,
     ) -> Result<InstanceResourcePayload, ResourceFailure> {
+        let _permit = self.try_acquire_git_query_permit()?;
         let (root, repo) = self.resolve_repo(root, expected_repo_id).await?;
         let status = self.git(&repo, STATUS_ARGS).await?;
         let parsed = parse_status(&status)?;
@@ -126,6 +128,7 @@ impl ResourceHost {
         cursor: Option<&str>,
         limit: u32,
     ) -> Result<InstanceResourcePayload, ResourceFailure> {
+        let _permit = self.try_acquire_git_query_permit()?;
         if limit == 0 || limit > MAX_DIRECTORY_PAGE_SIZE {
             return Err(failure(ResourceErrorCode::ViewTooLarge, false));
         }

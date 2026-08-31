@@ -11,6 +11,7 @@ import {
 } from './git-graph-engine';
 import { GitGraphRefBadge } from './GitGraphRefBadge';
 import type { GitGraphCommit } from './types';
+import { gitLogHasIncompleteDag } from '@/features/resource/map-git-log';
 
 type TableMetrics = {
   headerHeight: number;
@@ -114,6 +115,8 @@ export function GitGraphPanel(props: {
     return node?.cy ?? 0;
   };
 
+  const incompleteDag = createMemo(() => gitLogHasIncompleteDag(props.commits));
+
   return (
     <div class="git-graph-panel flex h-full min-h-0 flex-col bg-surface-overlay" aria-label="Git Graph">
       <div class="git-graph-controls flex h-32 shrink-0 items-center border-b border-border-subtle px-10">
@@ -133,6 +136,12 @@ export function GitGraphPanel(props: {
           </IconButton>
         </div>
       </div>
+
+      <Show when={incompleteDag()}>
+        <div role="status" class="border-b border-border-subtle bg-surface-muted px-10 py-6 text-11 text-content-muted">
+          Some commit relationships are truncated. Load more history or refresh for a fuller graph.
+        </div>
+      </Show>
 
       <div class="git-graph-content ui-scrollbar min-h-0 flex-1 overflow-auto">
         <div class="git-graph-scroll relative" style={{ height: `${svgHeight()}px` }}>

@@ -82,6 +82,18 @@ fn test_build_hello_fields() {
     assert_eq!(hello.caps["resources"]["protocolVersion"], 4);
     assert_eq!(hello.caps["resources"]["git"], true);
     assert_eq!(
+        hello.caps["resources"]["maxGitLogPageBytes"],
+        peri_studio_proto::resource::MAX_GIT_LOG_PAGE_BYTES
+    );
+    assert_eq!(
+        hello.caps["resources"]["defaultGitLogPageSize"],
+        peri_studio_proto::resource::DEFAULT_GIT_LOG_PAGE_SIZE
+    );
+    assert_eq!(
+        hello.caps["resources"]["maxConcurrentGitQueries"],
+        peri_studio_proto::resource::MAX_CONCURRENT_GIT_QUERIES
+    );
+    assert_eq!(
         hello.stream_epochs,
         Some(HashMap::from([("s1".to_string(), 2u64)]))
     );

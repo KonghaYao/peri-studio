@@ -4,7 +4,8 @@ use crate::conn::DocId;
 use crate::frame::Frame;
 use crate::resource::{
     GitDiffQuery, InstanceResourcePayload, InstanceResourceQuery, InstanceResourceQueryKind,
-    InstanceResourceResult, OpenResourceView, ReadDirectoryQuery, ResourceGitAction,
+    InstanceResourceResult, OpenResourceView, ReadDirectoryQuery, ResourceErrorCode,
+    ResourceFailure, ResourceGitAction,
     ResourceGitActionKind, ResourceQuery, ResourceQueryResult, ResourceResult, ResourceViewKind,
     ResourceViewOpened, RESOURCE_PROTOCOL_VERSION,
 };
@@ -238,4 +239,18 @@ fn resource_results_roundtrip_for_web_and_instance() {
         Frame::parse(&serde_json::to_string(&result).unwrap()).unwrap(),
         result
     );
+}
+
+#[test]
+fn resource_failure_roundtrips_suggested_limit() {
+    let failure = ResourceFailure {
+        code: ResourceErrorCode::ViewTooLarge,
+        message: "page too large".into(),
+        retryable: false,
+        suggested_limit: Some(25),
+    };
+    let value = serde_json::to_value(&failure).unwrap();
+    assert_eq!(value["suggestedLimit"], 25);
+    let parsed: ResourceFailure = serde_json::from_value(value).unwrap();
+    assert_eq!(parsed.suggested_limit, Some(25));
 }

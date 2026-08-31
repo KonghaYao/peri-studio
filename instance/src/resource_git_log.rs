@@ -25,9 +25,7 @@ impl ResourceHost {
         cursor: Option<&str>,
         limit: u32,
     ) -> Result<InstanceResourcePayload, ResourceFailure> {
-        let _permit = self.git_log_permits.try_acquire().map_err(|_| {
-            failure(ResourceErrorCode::RateLimited, true)
-        })?;
+        let _permit = self.try_acquire_git_query_permit()?;
 
         let limit = if limit == 0 {
             DEFAULT_GIT_LOG_PAGE_SIZE
@@ -163,6 +161,7 @@ fn view_too_large(limit: u32, actual_bytes: usize) -> ResourceFailure {
         code: ResourceErrorCode::ViewTooLarge,
         message: format!("Requested resource page is too large; try limit {suggested}"),
         retryable: false,
+        suggested_limit: Some(suggested),
     }
 }
 

@@ -22,6 +22,7 @@ impl ResourceHost {
         expected_change_id: &str,
         max_bytes: u64,
     ) -> Result<InstanceResourcePayload, ResourceFailure> {
+        let _permit = self.try_acquire_git_query_permit()?;
         if expected_change_id.is_empty() || max_bytes == 0 || max_bytes > MAX_RESOURCE_BLOB_BYTES {
             return Err(failure(ResourceErrorCode::InvalidRequest, false));
         }

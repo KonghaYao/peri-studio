@@ -19,7 +19,7 @@ use tokio::sync::Mutex;
 
 use peri_studio_proto::resource::{
     InstanceResourceQuery, InstanceResourceQueryKind, InstanceResourceResult,
-    MAX_CONCURRENT_GIT_LOG_QUERIES, ResourceErrorCode,
+    MAX_CONCURRENT_GIT_QUERIES, ResourceErrorCode, ResourceFailure,
 };
 
 use common::failure;
@@ -31,7 +31,7 @@ const GIT_TIMEOUT: Duration = Duration::from_secs(8);
 pub struct ResourceHost {
     pub(super) git_timeout: Duration,
     pub(super) mutation_locks: Arc<Mutex<HashMap<String, Weak<Mutex<()>>>>>,
-    pub(super) git_log_permits: Arc<tokio::sync::Semaphore>,
+    pub(super) git_query_permits: Arc<tokio::sync::Semaphore>,
 }
 
 impl Default for ResourceHost {
@@ -39,14 +39,22 @@ impl Default for ResourceHost {
         Self {
             git_timeout: GIT_TIMEOUT,
             mutation_locks: Arc::new(Mutex::new(HashMap::new())),
-            git_log_permits: Arc::new(tokio::sync::Semaphore::new(
-                MAX_CONCURRENT_GIT_LOG_QUERIES as usize,
+            git_query_permits: Arc::new(tokio::sync::Semaphore::new(
+                MAX_CONCURRENT_GIT_QUERIES as usize,
             )),
         }
     }
 }
 
 impl ResourceHost {
+    pub(super) fn try_acquire_git_query_permit(
+        &self,
+    ) -> Result<tokio::sync::SemaphorePermit<'_>, ResourceFailure> {
+        self.git_query_permits.try_acquire().map_err(|_| {
+            failure(ResourceErrorCode::RateLimited, true)
+        })
+    }
+
     pub async fn query(&self, query: InstanceResourceQuery) -> InstanceResourceResult {
         let request_id = query.request_id;
         let result = match query.query {

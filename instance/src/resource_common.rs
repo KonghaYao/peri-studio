@@ -106,5 +106,6 @@ pub(super) fn failure(code: ResourceErrorCode, retryable: bool) -> ResourceFailu
         }
         .to_string(),
         retryable,
+        suggested_limit: None,
     }
 }

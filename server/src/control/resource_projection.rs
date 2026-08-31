@@ -395,6 +395,7 @@ fn failure(code: ResourceErrorCode, message: &str, retryable: bool) -> ResourceF
         code,
         message: message.to_string(),
         retryable,
+        suggested_limit: None,
     }
 }
 

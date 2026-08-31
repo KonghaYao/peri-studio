@@ -342,6 +342,7 @@ async fn git_log_rejects_oversized_page() {
     let error = result.error.expect("expected ViewTooLarge");
     assert_eq!(error.code, ResourceErrorCode::ViewTooLarge);
     assert!(error.message.contains("try limit"));
+    assert!(error.suggested_limit.is_some());
 }
 
 #[tokio::test]

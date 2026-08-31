@@ -22,8 +22,10 @@ pub const MAX_RESOURCE_WS_MESSAGE_BYTES: usize = 12 * 1024 * 1024;
 pub const MAX_COMMIT_MESSAGE_BYTES: usize = 4 * 1024;
 /// Git log 单页 JSON 编码快照上限。
 pub const MAX_GIT_LOG_PAGE_BYTES: usize = 256 * 1024;
-/// 同一 instance 上并发的 GitLog 查询上限。
-pub const MAX_CONCURRENT_GIT_LOG_QUERIES: u32 = 4;
+/// 同一 instance 上并发的 Git 查询上限（log / snapshot / changes / diff 共享）。
+pub const MAX_CONCURRENT_GIT_QUERIES: u32 = 4;
+/// 兼容别名；新代码请使用 [`MAX_CONCURRENT_GIT_QUERIES`]。
+pub const MAX_CONCURRENT_GIT_LOG_QUERIES: u32 = MAX_CONCURRENT_GIT_QUERIES;
 
 /// Web 面板申请一个有界只读投影视图。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -194,6 +196,8 @@ pub struct ResourceFailure {
     pub code: ResourceErrorCode,
     pub message: String,
     pub retryable: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub suggested_limit: Option<u32>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

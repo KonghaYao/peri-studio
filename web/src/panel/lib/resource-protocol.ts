@@ -31,6 +31,7 @@ export interface ResourceFailure {
   code: string;
   message: string;
   retryable: boolean;
+  suggestedLimit?: number;
 }
 
 export interface ResourceResultFrame {

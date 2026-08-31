@@ -288,6 +288,7 @@ impl Gateway {
                                     code: ResourceErrorCode::Forbidden,
                                     message: "resource view is not authorized".into(),
                                     retryable: false,
+                                    suggested_limit: None,
                                 }),
                             })))
                             .await;

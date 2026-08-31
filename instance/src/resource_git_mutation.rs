@@ -32,6 +32,7 @@ impl ResourceHost {
         message: Option<&str>,
     ) -> Result<InstanceResourcePayload, ResourceFailure> {
         validate_action(action, change_ids, message)?;
+        let _permit = self.try_acquire_git_query_permit()?;
         // 先解析可信仓库再登记锁，避免随机 repoId 扩张锁表。
         let (_, initial_repo) = self.resolve_repo(root, expected_repo_id).await?;
         let mutation_lock = self.mutation_lock(&initial_repo).await;
@@ -338,5 +339,6 @@ fn action_failure(action: ResourceGitActionKind) -> ResourceFailure {
         code: ResourceErrorCode::Unavailable,
         message: message.to_string(),
         retryable: false,
+        suggested_limit: None,
     }
 }
