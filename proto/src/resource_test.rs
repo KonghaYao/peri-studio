@@ -100,6 +100,10 @@ fn git_mutation_is_generation_bound_and_never_accepts_browser_paths() {
             change_ids: vec!["change-1".into()],
             expected_generation: "generation-1".into(),
             message: None,
+            target_oid: None,
+            ref_name: None,
+            new_ref_name: None,
+            reset_mode: None,
         },
     });
     let value = serde_json::to_value(&frame).unwrap();
@@ -119,6 +123,10 @@ fn repository_git_action_carries_only_a_bounded_command_payload() {
             change_ids: vec![],
             expected_generation: "generation-1".into(),
             message: Some("Ship SCM".into()),
+            target_oid: None,
+            ref_name: None,
+            new_ref_name: None,
+            reset_mode: None,
         },
     });
     let value = serde_json::to_value(frame).unwrap();

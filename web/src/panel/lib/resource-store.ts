@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
 import { DocStore } from './doc-store';
-import { openResourceFile, openResourceGitDiff, openResourceView, releaseResourceView, type GitActionKind, type GitGroupId, type ResourceResultFrame } from './resource-protocol';
+import { openResourceFile, openResourceGitDiff, openResourceView, releaseResourceView, type GitActionKind, type GitGraphActionPayload, type GitGroupId, type ResourceResultFrame } from './resource-protocol';
 import { GitMutationController } from './resource-mutations';
 import { downloadResourceUrl, loadFilePreview, loadGitDiff, type ResourceDiffPreviewState, type ResourceFilePreviewState } from './resource-preview';
 import { renderResourceView, type ResourceEntry, type ResourceView } from './resource-view';
@@ -179,10 +179,18 @@ export function retryGitDiffPreview(): void {
   });
 }
 
-export function mutateGitResource(repoId: string, action: GitActionKind, changeIds: string[] = [], message?: string): boolean {
+export function mutateGitResource(repoId: string, action: GitActionKind, changeIds: string[] = [], message?: string, graph?: GitGraphActionPayload): boolean {
   if (!transport) return false;
-  return gitMutations.start({ state: resourceWorkspace(), repoId, action, changeIds, message,
+  return gitMutations.start({ state: resourceWorkspace(), repoId, action, changeIds, message, graph,
     ready: transport.ready(), send: transport.send, update: setResourceWorkspace, setLoading });
+}
+
+export function mutateGitGraphResource(
+  repoId: string,
+  action: Extract<GitActionKind, 'checkout' | 'create-branch' | 'rename-branch' | 'reset' | 'revert'>,
+  graph: GitGraphActionPayload,
+): boolean {
+  return mutateGitResource(repoId, action, [], undefined, graph);
 }
 
 export function retryGitResourceMutation(changeId: string): boolean {

@@ -86,6 +86,10 @@ fn git_action_validates_commit_message_and_change_identity_shape() {
         change_ids: vec![],
         expected_generation: "g1".into(),
         message: Some("Ship SCM".into()),
+        target_oid: None,
+        ref_name: None,
+        new_ref_name: None,
+        reset_mode: None,
     };
     assert!(validate_git_action(&commit).is_ok());
     commit.message = Some("   ".into());
@@ -446,6 +450,10 @@ async fn read_only_principal_cannot_stage_changes() {
                     change_ids: vec!["change-1".into()],
                     expected_generation: "g1".into(),
                     message: None,
+                    target_oid: None,
+                    ref_name: None,
+                    new_ref_name: None,
+                    reset_mode: None,
                 },
             },
         )

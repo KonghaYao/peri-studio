@@ -8,8 +8,8 @@ use std::path::Path;
 use std::process::Stdio;
 
 use peri_studio_proto::resource::{
-    GitGroupId, InstanceMutationResult, InstanceResourcePayload, ResourceErrorCode,
-    ResourceFailure, ResourceGitActionKind, MAX_COMMIT_MESSAGE_BYTES,
+    GitGroupId, GitMutateQuery, GitResetMode, InstanceMutationResult, InstanceResourcePayload,
+    ResourceErrorCode, ResourceFailure, ResourceGitActionKind, MAX_COMMIT_MESSAGE_BYTES,
 };
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
@@ -20,44 +20,41 @@ use crate::resource::ResourceHost;
 
 const MAX_MUTATION_PATH_BYTES: usize = 64 * 1024;
 const MAX_MUTATION_CHANGES: usize = 500;
+const MAX_REF_NAME_BYTES: usize = 255;
 
 impl ResourceHost {
     pub(in crate::resource) async fn git_mutate(
         &self,
         root: &str,
-        expected_repo_id: &str,
-        action: ResourceGitActionKind,
-        change_ids: &[String],
-        expected_generation: &str,
-        message: Option<&str>,
+        query: &GitMutateQuery,
     ) -> Result<InstanceResourcePayload, ResourceFailure> {
-        validate_action(action, change_ids, message)?;
+        validate_action(query)?;
         let _permit = self.try_acquire_git_query_permit()?;
         // 先解析可信仓库再登记锁，避免随机 repoId 扩张锁表。
-        let (_, initial_repo) = self.resolve_repo(root, expected_repo_id).await?;
+        let (_, initial_repo) = self.resolve_repo(root, &query.repo_id).await?;
         let mutation_lock = self.mutation_lock(&initial_repo).await;
         let _mutation_guard = mutation_lock.lock().await;
-        let (_, repo) = self.resolve_repo(root, expected_repo_id).await?;
+        let (_, repo) = self.resolve_repo(root, &query.repo_id).await?;
         let before = self.git(&repo, STATUS_ARGS).await?;
         let generation = hash_bytes(&before);
-        if expected_generation != generation {
+        if query.expected_generation != generation {
             return Err(failure(ResourceErrorCode::VersionConflict, false));
         }
         let parsed = parse_status(&before)?;
 
-        match action {
+        match query.action {
             ResourceGitActionKind::Stage | ResourceGitActionKind::Unstage => {
-                let paths = resolve_change_paths(&parsed, &generation, action, change_ids)?;
+                let paths = resolve_change_paths(&parsed, &generation, query.action, &query.change_ids)?;
                 validate_paths(&paths)?;
-                let args = if action == ResourceGitActionKind::Stage {
+                let args = if query.action == ResourceGitActionKind::Stage {
                     ["add", "--"].as_slice()
                 } else {
                     ["restore", "--staged", "--"].as_slice()
                 };
-                self.run_paths_command(&repo, args, &paths, action).await?;
+                self.run_paths_command(&repo, args, &paths, query.action).await?;
             }
             ResourceGitActionKind::Discard => {
-                let discard = resolve_discard_paths(&parsed, &generation, change_ids)?;
+                let discard = resolve_discard_paths(&parsed, &generation, &query.change_ids)?;
                 validate_paths(&discard.tracked)?;
                 validate_paths(&discard.untracked)?;
                 if !discard.tracked.is_empty() {
@@ -65,7 +62,7 @@ impl ResourceHost {
                         &repo,
                         &["restore", "--worktree", "--"],
                         &discard.tracked,
-                        action,
+                        query.action,
                     )
                     .await?;
                 }
@@ -74,26 +71,41 @@ impl ResourceHost {
                         &repo,
                         &["clean", "-f", "--"],
                         &discard.untracked,
-                        action,
+                        query.action,
                     )
                     .await?;
                 }
             }
             ResourceGitActionKind::Commit => {
-                self.run_commit(&repo, message.expect("validated commit message"))
+                self.run_commit(&repo, query.message.as_deref().expect("validated commit message"))
                     .await?;
             }
             ResourceGitActionKind::Pull => {
-                self.run_fixed_command(&repo, &["pull", "--ff-only"], action)
+                self.run_fixed_command(&repo, &["pull", "--ff-only"], query.action)
                     .await?;
             }
             ResourceGitActionKind::Push => {
-                self.run_fixed_command(&repo, &["push"], action).await?;
+                self.run_fixed_command(&repo, &["push"], query.action).await?;
             }
             ResourceGitActionKind::Sync => {
-                self.run_fixed_command(&repo, &["pull", "--ff-only"], action)
+                self.run_fixed_command(&repo, &["pull", "--ff-only"], query.action)
                     .await?;
-                self.run_fixed_command(&repo, &["push"], action).await?;
+                self.run_fixed_command(&repo, &["push"], query.action).await?;
+            }
+            ResourceGitActionKind::Checkout => {
+                run_checkout(self, &repo, query).await?;
+            }
+            ResourceGitActionKind::CreateBranch => {
+                run_create_branch(self, &repo, query).await?;
+            }
+            ResourceGitActionKind::RenameBranch => {
+                run_rename_branch(self, &repo, query).await?;
+            }
+            ResourceGitActionKind::Reset => {
+                run_reset(self, &repo, query).await?;
+            }
+            ResourceGitActionKind::Revert => {
+                run_revert(self, &repo, query).await?;
             }
         }
 
@@ -127,6 +139,31 @@ impl ResourceHost {
     ) -> Result<(), ResourceFailure> {
         let mut command = noninteractive_git(repo);
         command.args(args);
+        self.wait_for_command(command, action).await
+    }
+
+    async fn run_ref_command(
+        &self,
+        repo: &Path,
+        args: &[&str],
+        value: &str,
+        action: ResourceGitActionKind,
+    ) -> Result<(), ResourceFailure> {
+        let mut command = noninteractive_git(repo);
+        command.args(args).arg(value);
+        self.wait_for_command(command, action).await
+    }
+
+    async fn run_two_ref_command(
+        &self,
+        repo: &Path,
+        args: &[&str],
+        first: &str,
+        second: &str,
+        action: ResourceGitActionKind,
+    ) -> Result<(), ResourceFailure> {
+        let mut command = noninteractive_git(repo);
+        command.args(args).arg(first).arg(second);
         self.wait_for_command(command, action).await
     }
 
@@ -183,16 +220,23 @@ fn noninteractive_git(repo: &Path) -> Command {
     command
 }
 
-fn validate_action(
-    action: ResourceGitActionKind,
-    change_ids: &[String],
-    message: Option<&str>,
-) -> Result<(), ResourceFailure> {
+fn validate_action(query: &GitMutateQuery) -> Result<(), ResourceFailure> {
+    let action = query.action;
+    let change_ids = &query.change_ids;
+    let message = query.message.as_deref();
     let path_action = matches!(
         action,
         ResourceGitActionKind::Stage
             | ResourceGitActionKind::Unstage
             | ResourceGitActionKind::Discard
+    );
+    let graph_action = matches!(
+        action,
+        ResourceGitActionKind::Checkout
+            | ResourceGitActionKind::CreateBranch
+            | ResourceGitActionKind::RenameBranch
+            | ResourceGitActionKind::Reset
+            | ResourceGitActionKind::Revert
     );
     if path_action
         && (change_ids.is_empty()
@@ -202,6 +246,16 @@ fn validate_action(
         return Err(failure(ResourceErrorCode::InvalidRequest, false));
     }
     if !path_action && !change_ids.is_empty() {
+        return Err(failure(ResourceErrorCode::InvalidRequest, false));
+    }
+    if graph_action {
+        return validate_graph_payload(query);
+    }
+    if query.target_oid.is_some()
+        || query.ref_name.is_some()
+        || query.new_ref_name.is_some()
+        || query.reset_mode.is_some()
+    {
         return Err(failure(ResourceErrorCode::InvalidRequest, false));
     }
     match (action, message.map(str::trim)) {
@@ -216,6 +270,172 @@ fn validate_action(
         (_, None) => Ok(()),
         _ => Err(failure(ResourceErrorCode::InvalidRequest, false)),
     }
+}
+
+fn validate_graph_payload(query: &GitMutateQuery) -> Result<(), ResourceFailure> {
+    if query.message.is_some() {
+        return Err(failure(ResourceErrorCode::InvalidRequest, false));
+    }
+    match query.action {
+        ResourceGitActionKind::Checkout => {
+            let has_ref = query.ref_name.as_deref().is_some_and(|value| validate_ref_name(value).is_ok());
+            let has_oid = query
+                .target_oid
+                .as_deref()
+                .is_some_and(|value| validate_oid(value).is_ok());
+            if has_ref == has_oid || query.new_ref_name.is_some() || query.reset_mode.is_some() {
+                return Err(failure(ResourceErrorCode::InvalidRequest, false));
+            }
+            Ok(())
+        }
+        ResourceGitActionKind::CreateBranch => {
+            let oid = query
+                .target_oid
+                .as_deref()
+                .and_then(|value| validate_oid(value).ok());
+            let name = query
+                .ref_name
+                .as_deref()
+                .and_then(|value| validate_ref_name(value).ok());
+            if oid.is_none() || name.is_none() || query.new_ref_name.is_some() || query.reset_mode.is_some() {
+                return Err(failure(ResourceErrorCode::InvalidRequest, false));
+            }
+            Ok(())
+        }
+        ResourceGitActionKind::RenameBranch => {
+            let old_name = query
+                .ref_name
+                .as_deref()
+                .and_then(|value| validate_ref_name(value).ok());
+            let new_name = query
+                .new_ref_name
+                .as_deref()
+                .and_then(|value| validate_ref_name(value).ok());
+            if old_name.is_none()
+                || new_name.is_none()
+                || query.target_oid.is_some()
+                || query.reset_mode.is_some()
+            {
+                return Err(failure(ResourceErrorCode::InvalidRequest, false));
+            }
+            Ok(())
+        }
+        ResourceGitActionKind::Reset => {
+            if query.target_oid.as_deref().and_then(|value| validate_oid(value).ok()).is_none()
+                || query.ref_name.is_some()
+                || query.new_ref_name.is_some()
+            {
+                return Err(failure(ResourceErrorCode::InvalidRequest, false));
+            }
+            Ok(())
+        }
+        ResourceGitActionKind::Revert => {
+            if query.target_oid.as_deref().and_then(|value| validate_oid(value).ok()).is_none()
+                || query.ref_name.is_some()
+                || query.new_ref_name.is_some()
+                || query.reset_mode.is_some()
+            {
+                return Err(failure(ResourceErrorCode::InvalidRequest, false));
+            }
+            Ok(())
+        }
+        _ => Err(failure(ResourceErrorCode::InvalidRequest, false)),
+    }
+}
+
+fn validate_oid(value: &str) -> Result<String, ResourceFailure> {
+    let oid = value.trim();
+    if oid.len() == 40 && oid.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        Ok(oid.to_ascii_lowercase())
+    } else {
+        Err(failure(ResourceErrorCode::InvalidRequest, false))
+    }
+}
+
+fn validate_ref_name(value: &str) -> Result<String, ResourceFailure> {
+    let name = value.trim();
+    if name.is_empty() || name.len() > MAX_REF_NAME_BYTES {
+        return Err(failure(ResourceErrorCode::InvalidRequest, false));
+    }
+    if name.bytes().any(|byte| byte < 32 || byte == 127) {
+        return Err(failure(ResourceErrorCode::InvalidRequest, false));
+    }
+    if name.contains("..") || name.contains("@{") || name.starts_with('-') || name.ends_with('/') {
+        return Err(failure(ResourceErrorCode::InvalidRequest, false));
+    }
+    if name.starts_with('/') || name.contains(' ') {
+        return Err(failure(ResourceErrorCode::InvalidRequest, false));
+    }
+    Ok(name.to_string())
+}
+
+async fn run_checkout(
+    host: &ResourceHost,
+    repo: &Path,
+    query: &GitMutateQuery,
+) -> Result<(), ResourceFailure> {
+    if let Some(ref_name) = query.ref_name.as_deref() {
+        let name = validate_ref_name(ref_name)?;
+        host
+            .run_ref_command(repo, &["checkout", "--"], &name, query.action)
+            .await
+    } else {
+        let oid = validate_oid(query.target_oid.as_deref().unwrap_or_default())?;
+        host
+            .run_ref_command(repo, &["checkout", "--detach"], &oid, query.action)
+            .await
+    }
+}
+
+async fn run_create_branch(
+    host: &ResourceHost,
+    repo: &Path,
+    query: &GitMutateQuery,
+) -> Result<(), ResourceFailure> {
+    let oid = validate_oid(query.target_oid.as_deref().unwrap_or_default())?;
+    let name = validate_ref_name(query.ref_name.as_deref().unwrap_or_default())?;
+    host
+        .run_two_ref_command(repo, &["branch"], &name, &oid, query.action)
+        .await
+}
+
+async fn run_rename_branch(
+    host: &ResourceHost,
+    repo: &Path,
+    query: &GitMutateQuery,
+) -> Result<(), ResourceFailure> {
+    let old_name = validate_ref_name(query.ref_name.as_deref().unwrap_or_default())?;
+    let new_name = validate_ref_name(query.new_ref_name.as_deref().unwrap_or_default())?;
+    host
+        .run_two_ref_command(repo, &["branch", "-m"], &old_name, &new_name, query.action)
+        .await
+}
+
+async fn run_reset(
+    host: &ResourceHost,
+    repo: &Path,
+    query: &GitMutateQuery,
+) -> Result<(), ResourceFailure> {
+    let oid = validate_oid(query.target_oid.as_deref().unwrap_or_default())?;
+    let mode = match query.reset_mode.unwrap_or(GitResetMode::Mixed) {
+        GitResetMode::Soft => "--soft",
+        GitResetMode::Mixed => "--mixed",
+        GitResetMode::Hard => "--hard",
+    };
+    host
+        .run_ref_command(repo, &["reset", mode], &oid, query.action)
+        .await
+}
+
+async fn run_revert(
+    host: &ResourceHost,
+    repo: &Path,
+    query: &GitMutateQuery,
+) -> Result<(), ResourceFailure> {
+    let oid = validate_oid(query.target_oid.as_deref().unwrap_or_default())?;
+    host
+        .run_ref_command(repo, &["revert", "--no-edit"], &oid, query.action)
+        .await
 }
 
 fn validate_paths(paths: &[String]) -> Result<(), ResourceFailure> {
@@ -334,6 +554,19 @@ fn action_failure(action: ResourceGitActionKind) -> ResourceFailure {
         ResourceGitActionKind::Pull => "Pull failed. Check upstream access and branch state.",
         ResourceGitActionKind::Push => "Push failed. Check upstream access and branch state.",
         ResourceGitActionKind::Sync => "Sync stopped. Refresh Source Control before retrying.",
+        ResourceGitActionKind::Checkout => {
+            "Checkout failed. Refresh Git Graph and try again."
+        }
+        ResourceGitActionKind::CreateBranch => {
+            "Create branch failed. Choose another name or refresh Git Graph."
+        }
+        ResourceGitActionKind::RenameBranch => {
+            "Rename branch failed. Refresh Git Graph and try again."
+        }
+        ResourceGitActionKind::Reset => "Reset failed. Refresh Git Graph and try again.",
+        ResourceGitActionKind::Revert => {
+            "Revert failed. Resolve conflicts locally and refresh Git Graph."
+        }
     };
     ResourceFailure {
         code: ResourceErrorCode::Unavailable,

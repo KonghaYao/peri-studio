@@ -359,7 +359,20 @@ GitLogPage(GitLogPage),
 
 info 级日志 **MUST NOT** 记录 commit message、完整 cursor、或超过 3 个 oid。允许：`operation=git_log`、`projectId`、`repoId`、`limit`、`offset`、`errorCode`、`durationMs`。
 
----
+### 10.4 Graph mutation（`resource/git-action`）
+
+Git Graph 写操作复用 SCM 同一 `resource/git-action` 通道，**CAS 绑定 `repository.generation`（status 哈希）**，成功后 web **MUST** `refreshGitRepository`（清空 `log` 并重开）。
+
+| `action` | 必填字段 | git 命令（instance 固定 argv） |
+| --- | --- | --- |
+| `checkout` | `refName` **或** `targetOid`（互斥） | `checkout -- <ref>` / `checkout --detach <oid>` |
+| `create-branch` | `refName` + `targetOid` | `branch <name> <oid>` |
+| `rename-branch` | `refName` + `newRefName` | `branch -m <old> <new>` |
+| `reset` | `targetOid`；`resetMode` 可选（默认 `mixed`） | `reset --soft\|--mixed\|--hard <oid>` |
+| `revert` | `targetOid` | `revert --no-edit <oid>` |
+
+`refName` / oid **MUST** 经 server + instance 双侧校验；**禁止**浏览器提交路径或任意 argv。
+
 
 ## 11. 落地阶段
 
@@ -368,8 +381,8 @@ info 级日志 **MUST NOT** 记录 commit message、完整 cursor、或超过 3 
 | **G1** | proto + instance `GitLog` + 契约测试 | `parse_cursor`、subtree path 限定、merge commit、`parentsComplete`/`refsComplete`、oid 校验 |
 | **G2** | server 投影 + E2E | Yjs 字段 round-trip；越权拒绝；256 KiB 预算 |
 | **G3** | web store + entity + Graph | 去掉 mock；`reduceResourceView` 独立分支；release 旧页租约；repo 切换器（N>1） |
-| **G4** | sandbox 说明 | Layers 标注 live 数据依赖 instance |
-| **G5**（可选） | `git/refs` + checkout | remote-fs-git R8 |
+| **G4** | 大面板 + Graph mutation UI | 桌面 Graph 占满 conversation pane；右键 checkout / branch / reset / revert |
+| **G5**（可选） | sandbox 说明 | Layers 标注 live 数据依赖 instance |
 
 **PR 顺序**：`proto` → `instance` → `server` → `web`；**G1 合并前本文 v1.1 条款为验收门禁**。
 
@@ -413,3 +426,4 @@ info 级日志 **MUST NOT** 记录 commit message、完整 cursor、或超过 3 
 | --- | --- | --- |
 | v1.0 | 2026-08-31 | 首版：resource 短租约投影 + `git-log-page` |
 | v1.1 | 2026-08-31 | 对抗审查修订：oid 布局键、`parse_cursor` 分页、headOid 围栏、Yjs meta 对齐实现、subtree log、租约释放、安全 fail-closed |
+| v1.2 | 2026-08-31 | Graph mutation：`checkout` / `create-branch` / `rename-branch` / `reset` / `revert`；大面板 UI |

@@ -76,6 +76,17 @@ pub struct ResourceGitAction {
     pub expected_generation: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
+    /// 目标提交 oid（checkout detached、reset、revert、create-branch 基点）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_oid: Option<String>,
+    /// 分支或 tag 名（checkout branch、rename 旧名、create-branch 新名）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ref_name: Option<String>,
+    /// rename-branch 的新名称。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub new_ref_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reset_mode: Option<GitResetMode>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -88,6 +99,19 @@ pub enum ResourceGitActionKind {
     Pull,
     Push,
     Sync,
+    Checkout,
+    CreateBranch,
+    RenameBranch,
+    Reset,
+    Revert,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum GitResetMode {
+    Soft,
+    Mixed,
+    Hard,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -264,6 +288,14 @@ pub struct GitMutateQuery {
     pub expected_generation: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_oid: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ref_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub new_ref_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reset_mode: Option<GitResetMode>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

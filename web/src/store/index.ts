@@ -522,6 +522,7 @@ export {
   downloadPreviewedFile,
   closeResourceDiffPreview,
   mutateGitResource,
+  mutateGitGraphResource,
   retryGitRepositoryMutation,
   retryGitResourceMutation,
   openGitDiffPreview,

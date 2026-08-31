@@ -17,6 +17,10 @@ fn git_mutation_requires_a_healthy_server_but_resource_reads_do_not() {
             change_ids: vec!["change-1".into()],
             expected_generation: "generation-1".into(),
             message: None,
+            target_oid: None,
+            ref_name: None,
+            new_ref_name: None,
+            reset_mode: None,
         },
     });
     let read = Frame::ResourceQuery(ResourceQuery::OpenView {
@@ -69,6 +73,10 @@ fn rejected_git_mutation_preserves_request_correlation_and_retry_semantics() {
             change_ids: vec!["change-1".into()],
             expected_generation: "generation-1".into(),
             message: None,
+            target_oid: None,
+            ref_name: None,
+            new_ref_name: None,
+            reset_mode: None,
         },
     });
 

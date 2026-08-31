@@ -82,6 +82,10 @@ async fn commit_uses_bounded_stdin_message_without_shell_interpolation() {
                 change_ids: vec![],
                 expected_generation: generation,
                 message: Some("Ship 'remote' $SCM".into()),
+                target_oid: None,
+                ref_name: None,
+                new_ref_name: None,
+                reset_mode: None,
             }),
         ))
         .await;
@@ -133,6 +137,10 @@ async fn discard_restores_tracked_content_and_removes_only_selected_untracked_fi
                 change_ids: ids,
                 expected_generation: generation,
                 message: None,
+                target_oid: None,
+                ref_name: None,
+                new_ref_name: None,
+                reset_mode: None,
             }),
         ))
         .await;
@@ -189,6 +197,10 @@ async fn remote_actions_fail_without_prompting_or_exposing_git_stderr() {
                 change_ids: vec![],
                 expected_generation: generation,
                 message: None,
+                target_oid: None,
+                ref_name: None,
+                new_ref_name: None,
+                reset_mode: None,
             }),
         ))
         .await;
@@ -294,6 +306,10 @@ async fn mutate_repository(
             change_ids: vec![],
             expected_generation,
             message: None,
+            target_oid: None,
+            ref_name: None,
+            new_ref_name: None,
+            reset_mode: None,
         }),
     ))
     .await

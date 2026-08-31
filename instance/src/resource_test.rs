@@ -266,6 +266,10 @@ async fn git_query_projects_repository_groups_without_raw_output() {
                 change_ids: vec!["invalid-change".into()],
                 expected_generation: generation.clone(),
                 message: None,
+                target_oid: None,
+                ref_name: None,
+                new_ref_name: None,
+                reset_mode: None,
             }),
         ))
         .await;
@@ -322,6 +326,10 @@ async fn git_query_projects_repository_groups_without_raw_output() {
             change_ids: vec![new_change_id],
             expected_generation: generation.clone(),
             message: None,
+            target_oid: None,
+            ref_name: None,
+            new_ref_name: None,
+            reset_mode: None,
         }),
     ));
     let second = competing_host.query(query(
@@ -332,6 +340,10 @@ async fn git_query_projects_repository_groups_without_raw_output() {
             change_ids: vec![tracked_change_id],
             expected_generation: generation,
             message: None,
+            target_oid: None,
+            ref_name: None,
+            new_ref_name: None,
+            reset_mode: None,
         }),
     ));
     let (first, second) = tokio::join!(first, second);
@@ -462,6 +474,10 @@ async fn git_unstage_rename_resolves_both_new_and_original_paths() {
                 change_ids: vec![changes.changes[0].change_id.clone()],
                 expected_generation: repository.generation,
                 message: None,
+                target_oid: None,
+                ref_name: None,
+                new_ref_name: None,
+                reset_mode: None,
             }),
         ))
         .await;

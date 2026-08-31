@@ -1,4 +1,5 @@
-import { gitResourceAction, type GitActionKind } from './resource-protocol';
+import { gitResourceAction, type GitActionKind, type GitGraphActionPayload } from './resource-protocol';
+import { isGitGraphAction, validateGitGraphAction } from '@/features/resource/git-graph-mutations';
 
 export const MAX_COMMIT_MESSAGE_BYTES = 4_096;
 
@@ -32,6 +33,7 @@ export class GitMutationController {
     action: GitActionKind;
     changeIds?: string[];
     message?: string;
+    graph?: GitGraphActionPayload;
     ready: boolean;
     send: (frame: unknown) => boolean;
     update: UpdateWorkspace<T>;
@@ -39,14 +41,16 @@ export class GitMutationController {
   }): boolean {
     const changeIds = input.changeIds ?? [];
     const repo = input.state.repositories.find((item) => item.id === input.repoId);
-    const repositoryAction = ['commit', 'pull', 'push', 'sync'].includes(input.action);
+    const repositoryAction = ['commit', 'pull', 'push', 'sync', 'checkout', 'create-branch', 'rename-branch', 'reset', 'revert'].includes(input.action);
     const normalizedMessage = input.action === 'commit' ? input.message?.trim() : undefined;
     if (!input.state.projectId || !input.ready || !repo?.generation) return false;
     if (repositoryAction === (changeIds.length > 0)) return false;
     if (input.action === 'commit' && (!normalizedMessage || new TextEncoder().encode(normalizedMessage).byteLength > MAX_COMMIT_MESSAGE_BYTES)) return false;
+    if (isGitGraphAction(input.action) && (!input.graph || !validateGitGraphAction(input.action, input.graph))) return false;
+    if (!isGitGraphAction(input.action) && input.graph) return false;
     if (input.state.repoMutations?.[input.repoId]?.pending
       || Object.values(input.state.mutations ?? {}).some((mutation) => mutation.repoId === input.repoId && mutation.pending)) return false;
-    const frame = gitResourceAction(input.state.projectId, input.repoId, input.action, changeIds, repo.generation, normalizedMessage);
+    const frame = gitResourceAction(input.state.projectId, input.repoId, input.action, changeIds, repo.generation, normalizedMessage, input.graph);
     if (!input.send(frame)) return false;
     const mutation: GitMutationState = {
       requestId: frame.requestId, repoId: input.repoId, action: input.action, changeIds,

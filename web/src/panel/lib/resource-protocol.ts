@@ -9,7 +9,28 @@ export type ResourceViewKind =
   | 'git-log-page';
 
 export type GitGroupId = 'conflicts' | 'index' | 'working_tree' | 'untracked';
-export type GitActionKind = 'stage' | 'unstage' | 'discard' | 'commit' | 'pull' | 'push' | 'sync';
+export type GitActionKind =
+  | 'stage'
+  | 'unstage'
+  | 'discard'
+  | 'commit'
+  | 'pull'
+  | 'push'
+  | 'sync'
+  | 'checkout'
+  | 'create-branch'
+  | 'rename-branch'
+  | 'reset'
+  | 'revert';
+
+export type GitResetMode = 'soft' | 'mixed' | 'hard';
+
+export interface GitGraphActionPayload {
+  targetOid?: string;
+  refName?: string;
+  newRefName?: string;
+  resetMode?: GitResetMode;
+}
 
 export interface OpenResourceView {
   kind: ResourceViewKind;
@@ -91,13 +112,24 @@ export function gitResourceAction(
   changeIds: string[],
   expectedGeneration: string,
   message?: string,
+  graph?: GitGraphActionPayload,
 ) {
   return {
     t: 'resource_query',
     type: 'resource/git-action',
     requestId: crypto.randomUUID(),
     projectId,
-    payload: { repoId, action, changeIds, expectedGeneration, ...(message === undefined ? {} : { message }) },
+    payload: {
+      repoId,
+      action,
+      changeIds,
+      expectedGeneration,
+      ...(message === undefined ? {} : { message }),
+      ...(graph?.targetOid === undefined ? {} : { targetOid: graph.targetOid }),
+      ...(graph?.refName === undefined ? {} : { refName: graph.refName }),
+      ...(graph?.newRefName === undefined ? {} : { newRefName: graph.newRefName }),
+      ...(graph?.resetMode === undefined ? {} : { resetMode: graph.resetMode }),
+    },
   } as const;
 }
 

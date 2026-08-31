@@ -106,15 +106,7 @@ impl ResourceHost {
                 .await
             }
             InstanceResourceQueryKind::GitMutate(input) => {
-                self.git_mutate(
-                    &query.root,
-                    &input.repo_id,
-                    input.action,
-                    &input.change_ids,
-                    &input.expected_generation,
-                    input.message.as_deref(),
-                )
-                .await
+                self.git_mutate(&query.root, &input).await
             }
         };
         match result {

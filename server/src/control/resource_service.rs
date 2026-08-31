@@ -141,6 +141,10 @@ impl ResourceService {
                 change_ids: action.change_ids,
                 expected_generation: action.expected_generation,
                 message: action.message,
+                target_oid: action.target_oid,
+                ref_name: action.ref_name,
+                new_ref_name: action.new_ref_name,
+                reset_mode: action.reset_mode,
             }),
         };
         let result = self
@@ -397,12 +401,90 @@ fn relay_base64_length_is_valid(encoded_len: usize) -> bool {
 fn validate_git_action(
     action: &peri_studio_proto::resource::ResourceGitAction,
 ) -> Result<(), ResourceFailure> {
+    use peri_studio_proto::resource::GitResetMode;
+
     let path_action = matches!(
         action.action,
         ResourceGitActionKind::Stage
             | ResourceGitActionKind::Unstage
             | ResourceGitActionKind::Discard
     );
+    let graph_action = matches!(
+        action.action,
+        ResourceGitActionKind::Checkout
+            | ResourceGitActionKind::CreateBranch
+            | ResourceGitActionKind::RenameBranch
+            | ResourceGitActionKind::Reset
+            | ResourceGitActionKind::Revert
+    );
+    if action.repo_id.is_empty() || action.expected_generation.is_empty() {
+        return Err(invalid_git_action());
+    }
+    if graph_action {
+        if !action.change_ids.is_empty() || action.message.is_some() {
+            return Err(invalid_git_action());
+        }
+        let oid_ok = |value: &str| {
+            value.len() == 40 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+        };
+        let ref_ok = |value: &str| {
+            let name = value.trim();
+            !name.is_empty()
+                && name.len() <= 255
+                && !name.bytes().any(|byte| byte < 32 || byte == 127)
+                && !name.contains("..")
+                && !name.contains("@{")
+                && !name.starts_with('-')
+                && !name.ends_with('/')
+                && !name.starts_with('/')
+                && !name.contains(' ')
+        };
+        let valid = match action.action {
+            ResourceGitActionKind::Checkout => {
+                let has_ref = action.ref_name.as_deref().is_some_and(ref_ok);
+                let has_oid = action.target_oid.as_deref().is_some_and(oid_ok);
+                (has_ref ^ has_oid)
+                    && action.new_ref_name.is_none()
+                    && action.reset_mode.is_none()
+            }
+            ResourceGitActionKind::CreateBranch => {
+                action.target_oid.as_deref().is_some_and(oid_ok)
+                    && action.ref_name.as_deref().is_some_and(ref_ok)
+                    && action.new_ref_name.is_none()
+                    && action.reset_mode.is_none()
+            }
+            ResourceGitActionKind::RenameBranch => {
+                action.ref_name.as_deref().is_some_and(ref_ok)
+                    && action.new_ref_name.as_deref().is_some_and(ref_ok)
+                    && action.target_oid.is_none()
+                    && action.reset_mode.is_none()
+            }
+            ResourceGitActionKind::Reset => {
+                action.target_oid.as_deref().is_some_and(oid_ok)
+                    && action.ref_name.is_none()
+                    && action.new_ref_name.is_none()
+                    && matches!(
+                        action.reset_mode,
+                        None | Some(GitResetMode::Soft | GitResetMode::Mixed | GitResetMode::Hard)
+                    )
+            }
+            ResourceGitActionKind::Revert => {
+                action.target_oid.as_deref().is_some_and(oid_ok)
+                    && action.ref_name.is_none()
+                    && action.new_ref_name.is_none()
+                    && action.reset_mode.is_none()
+            }
+            _ => false,
+        };
+        return if valid { Ok(()) } else { Err(invalid_git_action()) };
+    }
+    if action.target_oid.is_some()
+        || action.ref_name.is_some()
+        || action.new_ref_name.is_some()
+        || action.reset_mode.is_some()
+    {
+        return Err(invalid_git_action());
+    }
     let message_valid = match (action.action, action.message.as_deref()) {
         (ResourceGitActionKind::Commit, Some(message)) => {
             !message.trim().is_empty() && message.len() <= MAX_COMMIT_MESSAGE_BYTES
@@ -411,20 +493,22 @@ fn validate_git_action(
         (_, None) => true,
         (_, Some(_)) => false,
     };
-    if action.repo_id.is_empty()
-        || action.expected_generation.is_empty()
-        || path_action == action.change_ids.is_empty()
+    if path_action == action.change_ids.is_empty()
         || action.change_ids.len() > 500
         || action.change_ids.iter().map(String::len).sum::<usize>() > 64 * 1024
         || !message_valid
     {
-        return Err(failure(
-            ResourceErrorCode::InvalidRequest,
-            "Git action payload is invalid",
-            false,
-        ));
+        return Err(invalid_git_action());
     }
     Ok(())
+}
+
+fn invalid_git_action() -> ResourceFailure {
+    failure(
+        ResourceErrorCode::InvalidRequest,
+        "Git action payload is invalid",
+        false,
+    )
 }
 
 fn view_to_instance_query(
