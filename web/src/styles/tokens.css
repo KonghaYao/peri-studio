@@ -365,7 +365,8 @@
   --composer-radius: var(--radius-xl);
   --decision-radius: 14px;
   --permission-card-min-height: 96px;
-  --model-badge-max: 112px;
+  --model-badge-max: min(240px, 38vw);
+  --container-model-menu: min(320px, calc(100vw - 2 * var(--space-16)));
   --runtime-label-max: 120px;
   --tree-depth-chat: 43px;
   --tool-activity-max: 740px;

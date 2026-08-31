@@ -18,6 +18,7 @@ export { Spinner } from './Spinner';
 export { Status, type StatusTone } from './Status';
 export { Tabs, TabsContent, TabsIndicator, TabsList, TabsTrigger } from './Tabs';
 export { Textarea } from './Textarea';
+export { Select, type SelectOption } from './Select';
 export { SelectField } from './SelectField';
 export { dismissToast, showToast, Toast, ToastClose, ToastDescription, Toaster, ToastTitle } from './Toast';
 export { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip';

@@ -43,11 +43,10 @@ describe('SessionModelMenu', () => {
     const trigger = document.createElement('button');
     document.body.append(trigger);
 
-    render(() => <SessionModelMenu open id="models" trigger={<button>Models</button>} onOpenChange={() => {}} />);
+    render(() => <SessionModelMenu open id="models" onOpenChange={() => {}} />);
 
-    expect(screen.getAllByRole('menuitem')).toHaveLength(4);
-    expect(screen.getByRole('menuitem', { name: /Opus/ })).toHaveAttribute('aria-current', 'true');
-    expect(screen.getByLabelText('Current model')).toBeInTheDocument();
+    expect(screen.getAllByRole('option')).toHaveLength(4);
+    expect(screen.getByRole('option', { name: /Opus/ })).toHaveAttribute('aria-selected', 'true');
     trigger.remove();
   });
 
@@ -59,8 +58,8 @@ describe('SessionModelMenu', () => {
     document.body.append(trigger);
     let closed = false;
 
-    render(() => <SessionModelMenu open id="models" trigger={<button>Models</button>} onOpenChange={(open) => { if (!open) closed = true; }} />);
-    fireEvent.click(screen.getByRole('menuitem', { name: /Sonnet/ }));
+    render(() => <SessionModelMenu open id="models" onOpenChange={(open) => { if (!open) closed = true; }} />);
+    fireEvent.click(screen.getByRole('option', { name: /Sonnet/ }));
 
     await waitFor(() => expect(closed).toBe(true));
     trigger.remove();
@@ -84,8 +83,8 @@ describe('SessionModelMenu', () => {
     const trigger = document.createElement('button');
     document.body.append(trigger);
 
-    render(() => <SessionModelMenu open id="models" trigger={<button>Models</button>} onOpenChange={() => {}} />);
-    expect(screen.getByRole('menuitem', { name: /Haiku/ })).toHaveAttribute('aria-disabled', 'true');
+    render(() => <SessionModelMenu open id="models" onOpenChange={() => {}} />);
+    expect(screen.getByTestId('composer-runtime')).toBeDisabled();
     trigger.remove();
   });
 });

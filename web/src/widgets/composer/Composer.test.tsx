@@ -71,6 +71,10 @@ describe('Composer', () => {
         instanceId: 'local', sessionId: 'acp-1', status: 'ready', lastActivityAt: null,
         availableCommands: [], commandCatalog: [], extensions: [], activities: [], inputPrediction: null, latestUsage: null,
         model: 'Nova 4.1', effort: 'high', contextWindow: 200_000, contextUsed: 42_000,
+        configOptions: [{
+          id: 'model', name: 'Model', description: null, category: 'model', currentValue: 'nova-4.1',
+          options: [{ value: 'nova-4.1', name: 'Nova 4.1', description: null }],
+        }],
       },
       activeTurn: null, pendingPermissions: [],
     });
@@ -78,7 +82,8 @@ describe('Composer', () => {
 
     expect(screen.getByTestId('composer-surface')).toHaveClass('rounded-(--composer-radius)', 'p-2.5');
     expect(screen.getByRole('textbox')).toHaveClass('min-h-36', 'leading-normal', 'text-content-primary');
-    expect(screen.getByRole('button', { name: 'Choose model' })).toHaveTextContent('Nova 4.1');
+    expect(screen.getByTestId('composer-runtime')).toHaveTextContent('Nova 4.1');
+    expect(screen.getByTestId('composer-runtime')).toHaveClass('text-content-secondary');
     expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('w-36', 'min-h-32', 'rounded-8');
   });
 

@@ -84,9 +84,6 @@
     align-items: stretch;
     overflow-y: auto;
   }
-  .chat-empty-workspace.launch-workspace .chat-empty-hint {
-    margin-top: var(--space-12);
-  }
 }
 
 /* Git Graph panel — aligned with mhutchie/vscode-git-graph */
@@ -227,6 +224,19 @@
 .git-graph-commit-col {
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* 窄面板优先保留 Graph + Description + Commit */
+@media (max-width: 900px) {
+  .git-graph-panel .git-graph-author-col {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .git-graph-panel .git-graph-date-col {
+    display: none;
+  }
 }
 @keyframes ui-tooltip-in {
   from {

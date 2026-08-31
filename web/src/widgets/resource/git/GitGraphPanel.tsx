@@ -1,5 +1,5 @@
 import { createEffect, createMemo, createSignal, For, onCleanup, Show } from 'solid-js';
-import { RefreshCw, Search, Settings2, Terminal } from 'lucide-solid';
+import { RefreshCw } from 'lucide-solid';
 import { IconButton } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
 import {
@@ -61,6 +61,8 @@ function displayMessage(commit: GitGraphCommit) {
 /** VS Code Git Graph 插件风格：HTML table + 绝对定位 SVG 叠加层。 */
 export function GitGraphPanel(props: {
   commits: GitGraphCommit[];
+  /** 外层已有标题栏时隐藏面板内重复的 Git Graph 顶栏。 */
+  nested?: boolean;
   onRefresh?: () => void;
   onGraphAction?: (action: GitGraphActionKind, params: GitGraphActionParams) => boolean | void;
 }) {
@@ -204,23 +206,19 @@ export function GitGraphPanel(props: {
 
   return (
     <div class="git-graph-panel flex h-full min-h-0 flex-col bg-surface-overlay" aria-label="Git Graph">
-      <div class="git-graph-controls flex h-32 shrink-0 items-center border-b border-border-subtle px-10">
-        <span class="text-13 text-content-primary">Git Graph</span>
-        <div class="ml-auto flex items-center">
-          <IconButton size="compact" label="Find" class="git-graph-control-btn">
-            <Search size={16} strokeWidth={1.8} />
-          </IconButton>
-          <IconButton size="compact" label="Terminal" class="git-graph-control-btn">
-            <Terminal size={16} strokeWidth={1.8} />
-          </IconButton>
-          <IconButton size="compact" label="Settings" class="git-graph-control-btn">
-            <Settings2 size={16} strokeWidth={1.8} />
-          </IconButton>
-          <IconButton size="compact" label="Refresh" class="git-graph-control-btn" onClick={() => props.onRefresh?.()}>
-            <RefreshCw size={16} strokeWidth={1.8} />
+      <Show when={!props.nested}>
+        <div class="git-graph-controls flex h-36 shrink-0 items-center gap-8 border-b border-border-subtle px-12">
+          <span class="min-w-0 flex-1 text-11 font-semibold tracking-wide uppercase text-content-muted">Git Graph</span>
+          <IconButton
+            size="compact"
+            label="Refresh graph"
+            class="git-graph-control-btn"
+            onClick={() => props.onRefresh?.()}
+          >
+            <RefreshCw size={14} strokeWidth={1.7} />
           </IconButton>
         </div>
-      </div>
+      </Show>
 
       <Show when={incompleteDag()}>
         <div role="status" class="border-b border-border-subtle bg-surface-muted px-10 py-6 text-11 text-content-muted">

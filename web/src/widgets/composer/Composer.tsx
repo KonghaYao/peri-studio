@@ -13,11 +13,12 @@
 // 本组件保留编排：信号装配、textarea 聚焦与草稿读写、提交/取消状态机。
 
 import { createEffect, createSignal, createUniqueId, For, Show } from 'solid-js';
-import { cancelTurn, chatHead, chatStatusSignal, openingSessionId, projectSessions, retryMessageSubmission, retryPersistentAction, runtimeDocsHydrated, selectedCid, selectedSessionId, sendMessage, turnActive } from '../../panel/store';
+import { cancelTurn, chatHead, chatStatusSignal, openingSessionId, projectSessions, retryMessageSubmission, retryPersistentAction, runtimeDocsHydrated, selectedCid, selectedSessionId, sendMessage, sessionConfigMutation, turnActive } from '../../panel/store';
 import { isTerminal } from '../../panel/lib/action-state';
 import { promptDeliveryReady, promptMaxBytes } from '../../panel/lib/connection';
 import { principalId, readOnly } from '../../panel/lib/auth-state';
 import { composerDraft, hydrateComposerDraft, setComposerDraft, type ComposerDraftOwner } from '@/features/composer/composer-draft';
+import { composerModelLabel } from '@/features/composer/composer-model-label';
 import { acknowledgeUnknownMessageDelivery, canAcknowledgeUnknownMessageDelivery, dismissFailedMessageDelivery, messageSubmission } from '../../panel/lib/message-delivery';
 import { runtimeControlFor } from '../../panel/lib/runtime-control';
 import { composerInputState } from '@/features/composer/composer-placeholder';
@@ -62,12 +63,10 @@ function AssetIcon(props: { kind: ComposerAssetKind }) {
 export function Composer(props: { layout?: 'docked' | 'centered' }) {
   const centered = () => props.layout === 'centered';
   let taRef: HTMLTextAreaElement | undefined;
-  let modelTrigger: HTMLButtonElement | undefined;
   const slashMenuId = 'composer-slash-menu';
   const modelMenuId = 'composer-model-menu';
   const submissionStatusId = `composer-submission-${createUniqueId()}`;
   const promptBudgetStatusId = `composer-prompt-budget-${createUniqueId()}`;
-  const [modelMenuOpen, setModelMenuOpen] = createSignal(false);
   let consumedQuoteId = 0;
   const draftOwner = (): ComposerDraftOwner | null => {
     const sessionId = selectedSessionId();
@@ -159,7 +158,7 @@ export function Composer(props: { layout?: 'docked' | 'centered' }) {
     && !promptFitsBudget(composerDraft(draftOwner()), promptMaxBytes());
 
   // 信息行三个真实值（agent map，server 写入；缺失 → —）。
-  const model = () => chatHead()?.agent?.model || '—';
+  const model = () => composerModelLabel(chatHead()?.agent ?? null, sessionConfigMutation());
   const effort = () => chatHead()?.agent?.effort || '—';
 
   // 上下文占用（tokens）：12k/200k；任一缺失显示 —。
@@ -378,11 +377,12 @@ export function Composer(props: { layout?: 'docked' | 'centered' }) {
             </div>
           </InlineNotice>
         }</Show>
-        <div data-testid="composer-toolbar" class="composer-toolbar flex min-h-36 items-center gap-4">
-          <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="composer-attachment shrink-0 border-0 bg-transparent text-content-primary disabled:opacity-55">
+        <div data-testid="composer-toolbar" class="composer-toolbar flex min-h-36 min-w-0 items-center gap-4">
+          <div class="composer-toolbar__left flex min-w-0 shrink items-center gap-4 max-narrow:gap-2">
+          <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="composer-attachment max-narrow:hidden shrink-0 border-0 bg-transparent text-content-primary disabled:opacity-55">
             <AttachmentIcon />
           </IconButton>
-          <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled class="composer-approval shrink-0 border-0 bg-transparent text-content-muted disabled:opacity-55">
+          <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled class="composer-approval max-narrow:hidden shrink-0 border-0 bg-transparent text-content-muted disabled:opacity-55">
             <ApprovalIcon />
           </IconButton>
           <Show when={prediction.activePrediction()}>
@@ -405,23 +405,19 @@ export function Composer(props: { layout?: 'docked' | 'centered' }) {
               disabled={inputDisabled()}
             ><ScanLine size={17} strokeWidth={1.7} class="composer-skills__icon" aria-hidden="true" /><span class="composer-skills__count sr-only">{skillCount()}</span></Button>
           </Show>
+          </div>
           <span class="composer-shortcut sr-only" aria-hidden="true">Enter to send · Shift + Enter for newline</span>
-          <div class="composer-toolbar__right ml-auto flex min-w-0 items-center gap-4">
+          <div class="composer-toolbar__right ml-auto flex min-w-0 items-center justify-end gap-4">
           <Show when={latestUsage()}>{(usage) =>
             <TokenUsageMeter usage={usage()} contextWindow={chatHead()?.agent?.contextWindow ?? null} />
           }</Show>
-          <SessionModelMenu open={modelMenuOpen()} id={modelMenuId} onOpenChange={setModelMenuOpen} trigger={
-            <Button
-              data-testid="composer-runtime"
-              size="compact"
-              class="composer-runtime min-h-28 max-w-(--model-badge-max) shrink-0 gap-4 overflow-hidden border-0 bg-sidebar-selected px-8 text-10 text-success-solid hover:bg-sidebar-selected"
-              ref={modelTrigger}
-              title={runtimeSummary()}
-              aria-label="Choose model"
+          <div class="composer-runtime-slot min-w-0 flex-1" title={runtimeSummary()}>
+            <SessionModelMenu
+              id={modelMenuId}
               disabled={!selectedCid() || !runtimeDocsHydrated()}
-            ><span class="overflow-hidden text-ellipsis whitespace-nowrap">{model()}</span></Button>
-          } />
-          <span class="composer-voice-slot flex w-34 min-h-30 shrink-0 items-center justify-center">
+            />
+          </div>
+          <span class="composer-voice-slot max-narrow:hidden flex w-34 min-h-30 shrink-0 items-center justify-center">
             <IconButton label="Voice input" title="Voice input is not connected yet" disabled class="composer-voice shrink-0 border-0 bg-transparent text-text-primary disabled:opacity-55">
               <MicrophoneIcon />
             </IconButton>

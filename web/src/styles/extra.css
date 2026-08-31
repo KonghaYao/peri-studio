@@ -274,6 +274,29 @@
 
 /* ── Composer skills 窄屏降级为「/」 ─────────────────────────────────── */
 
+/* ── Composer 工具栏：窄屏为模型徽章让出整行 ─────────────────────────────── */
+
+.composer-runtime-slot {
+  max-width: var(--model-badge-max);
+}
+
+@media (max-width: 640px) {
+  .composer-toolbar {
+    flex-wrap: wrap;
+    row-gap: var(--space-6);
+  }
+
+  .composer-toolbar__right {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  .composer-runtime-slot {
+    flex: 1 1 auto;
+    max-width: none;
+  }
+}
+
 @media (max-width: 520px) {
   .composer-skills::before {
     content: '/';

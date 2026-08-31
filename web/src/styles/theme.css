@@ -336,6 +336,7 @@
   --container-system-reminder-tall: var(--container-system-reminder-tall);
   --container-mcp-compact: var(--container-mcp-compact);
   --container-menu-min: var(--container-menu-min);
+  --container-model-menu: var(--container-model-menu);
   --container-rewind-compact: var(--container-rewind-compact);
   --container-diff-min: var(--container-diff-min);
 

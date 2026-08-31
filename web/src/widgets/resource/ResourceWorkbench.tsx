@@ -8,6 +8,7 @@ import {
   resourceWorkspace,
   selectedSessionId,
 } from '../../panel/store';
+import { refreshGitLog } from '@/store';
 import { ExplorerPanel } from './ExplorerPanel';
 import { SourceControlPanel } from './SourceControlPanel';
 import { McpPanelContent } from '@/widgets/chat/McpPanel';
@@ -139,6 +140,19 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
           <header class={RESOURCE_PANEL_HEADER_CLASS}>
             <strong class={RESOURCE_PANEL_TITLE_CLASS}>{panelTitle()}</strong>
             <Show when={view() === 'explorer' || view() === 'scm'}><IconButton label="Refresh resources" size="compact" onClick={refreshResourceProject} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><RefreshCw size={14} strokeWidth={1.7} /></IconButton></Show>
+            <Show when={view() === 'graph'}>
+              <IconButton
+                label="Refresh graph"
+                size="compact"
+                onClick={() => {
+                  const repo = resourceWorkspace().repositories[0];
+                  if (repo) refreshGitLog(repo.id);
+                }}
+                class="border-0 bg-transparent text-content-muted hover:text-content-primary"
+              >
+                <RefreshCw size={14} strokeWidth={1.7} />
+              </IconButton>
+            </Show>
             <IconButton label="Close resource panel" size="compact" onClick={close} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><X size={14} strokeWidth={1.7} /></IconButton>
           </header>
         </Show>

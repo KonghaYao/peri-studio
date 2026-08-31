@@ -24,18 +24,20 @@ export function ChatEmptyWorkspace(props: Props) {
         {local.title && (
           <h2
             data-testid="chat-empty-title"
-            class="chat-empty-title m-0 mb-20 w-full text-center text-24 font-semibold leading-tight tracking-tight text-text-primary max-narrow:mb-16 max-narrow:text-20"
+            class="chat-empty-title m-0 mb-16 w-full text-center text-24 font-semibold leading-tight tracking-tight text-text-primary max-narrow:mb-12 max-narrow:text-20"
           >
             {local.title}
           </h2>
         )}
-        {local.children}
+        <div class="flex w-full flex-col items-center gap-12">
+          {local.children}
+          {local.hint && (
+            <p class="chat-empty-hint m-0 max-w-full rounded-full border border-border-subtle bg-surface-muted px-12 py-6 text-center text-11 leading-normal text-text-muted">
+              {local.hint}
+            </p>
+          )}
+        </div>
       </div>
-      {local.hint && (
-        <p class="chat-empty-hint mb-8 max-w-(--composer-launch-max) rounded-full border border-border-subtle bg-surface-muted px-12 py-6 text-center text-11 leading-normal text-text-muted">
-          {local.hint}
-        </p>
-      )}
     </div>
   );
 }

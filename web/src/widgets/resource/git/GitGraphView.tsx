@@ -1,6 +1,7 @@
 import { Show, createEffect, createMemo, createSignal, untrack } from 'solid-js';
 import { IconButton } from '@/shared/ui';
-import { X } from 'lucide-solid';
+import { RefreshCw, X } from 'lucide-solid';
+import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_TITLE_CLASS } from '../resource-panel-layout';
 import {
   canLoadMoreGitLog,
   gitLogCommits,
@@ -66,10 +67,20 @@ export function GitGraphView(props: GitGraphViewProps = {}) {
       aria-label="Git Graph workspace"
     >
       <Show when={!props.embedded && props.onClose}>
-        <header class="flex h-36 shrink-0 items-center gap-8 border-b border-border-subtle px-12">
-          <strong class="min-w-0 flex-1 text-11 font-semibold tracking-wide uppercase text-content-muted">
-            Git Graph
-          </strong>
+        <header class={RESOURCE_PANEL_HEADER_CLASS}>
+          <strong class={RESOURCE_PANEL_TITLE_CLASS}>Git Graph</strong>
+          <IconButton
+            label="Refresh graph"
+            size="compact"
+            disabled={!activeGraphRepoId() || gitLogLoading(activeGraphRepoId()!)}
+            onClick={() => {
+              const repoId = activeGraphRepoId();
+              if (repoId) refreshGitLog(repoId);
+            }}
+            class="border-0 bg-transparent text-content-muted hover:text-content-primary"
+          >
+            <RefreshCw size={14} strokeWidth={1.7} />
+          </IconButton>
           <IconButton
             label="Close Git Graph"
             size="compact"
@@ -123,6 +134,7 @@ export function GitGraphView(props: GitGraphViewProps = {}) {
         {(repoId) => (
           <>
             <GitGraphPanel
+              nested={props.embedded || !!props.onClose}
               commits={graphCommits()}
               onRefresh={() => refreshGitLog(repoId())}
               onGraphAction={(action, params) => runGraphAction(action, params)}
