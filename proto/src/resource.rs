@@ -20,6 +20,10 @@ pub const MAX_RESOURCE_BLOB_BYTES: u64 = 8 * 1024 * 1024;
 pub const MAX_RESOURCE_WS_MESSAGE_BYTES: usize = 12 * 1024 * 1024;
 /// UTF-8 编码后的提交信息上限，防止控制帧和子进程 stdin 无界增长。
 pub const MAX_COMMIT_MESSAGE_BYTES: usize = 4 * 1024;
+/// Git log 单页 JSON 编码快照上限。
+pub const MAX_GIT_LOG_PAGE_BYTES: usize = 256 * 1024;
+/// 同一 instance 上并发的 GitLog 查询上限。
+pub const MAX_CONCURRENT_GIT_LOG_QUERIES: u32 = 4;
 
 /// Web 面板申请一个有界只读投影视图。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -445,6 +449,22 @@ pub struct GitGroupPage {
     pub next_cursor: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum GitLogScope {
+    Full,
+    WorkspaceSubtreeReadonly,
+}
+
+impl GitLogScope {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Full => "full",
+            Self::WorkspaceSubtreeReadonly => "workspace_subtree_readonly",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitLogPage {
@@ -454,6 +474,8 @@ pub struct GitLogPage {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub next_cursor: Option<String>,
     pub head_oid: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scope: Option<GitLogScope>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

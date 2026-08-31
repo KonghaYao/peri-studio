@@ -52,7 +52,7 @@ impl ResourceHost {
             Err(error) => return Err(error),
         };
         let repo = canonical_repo(&root, &output)?;
-        let relative = relative_path(&root, &repo)?;
+        let relative = repo_root_wire(&root, &repo)?;
         let repo_id = repo_id(&repo);
         let name = repo
             .file_name()
@@ -102,7 +102,7 @@ impl ResourceHost {
         Ok(InstanceResourcePayload::GitRepository(
             GitRepositorySnapshot {
                 repo_id: expected_repo_id.to_string(),
-                root: relative_path(&root, &repo)?,
+                root: repo_root_wire(&root, &repo)?,
                 generation,
                 head_name: parsed.head_name,
                 head_oid: head_oid
@@ -234,10 +234,24 @@ fn canonical_repo(root: &Path, output: &[u8]) -> Result<PathBuf, ResourceFailure
     let value = String::from_utf8(output.to_vec())
         .map_err(|_| failure(ResourceErrorCode::RepoNotFound, false))?;
     let repo = std::fs::canonicalize(value.trim()).map_err(map_io)?;
-    if !repo.starts_with(root) {
+    if !repo.starts_with(root) && !root.starts_with(&repo) {
         return Err(failure(ResourceErrorCode::OutsideWorkspace, false));
     }
     Ok(repo)
+}
+
+/// workspace 与 git 根目录的相对关系（workspace-relative 展示路径）。
+fn repo_root_wire(workspace: &Path, repo: &Path) -> Result<String, ResourceFailure> {
+    if workspace == repo {
+        return Ok(String::new());
+    }
+    if repo.starts_with(workspace) {
+        return relative_path(workspace, repo);
+    }
+    if workspace.starts_with(repo) {
+        return relative_path(repo, workspace);
+    }
+    Err(failure(ResourceErrorCode::OutsideWorkspace, false))
 }
 
 fn repo_id(repo: &Path) -> String {

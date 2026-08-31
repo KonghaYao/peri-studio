@@ -196,6 +196,7 @@ fn git_log_query_roundtrips_on_instance_wire() {
             }],
             next_cursor: Some("generation-1.1".into()),
             head_oid: "a".repeat(40),
+            scope: Some(crate::resource::GitLogScope::Full),
         })),
         error: None,
     });

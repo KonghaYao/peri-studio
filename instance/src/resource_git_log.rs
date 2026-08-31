@@ -1,11 +1,13 @@
 use peri_studio_proto::resource::{
-    GitLogCommit, GitLogPage, GitRefKind, GitRefLabel, InstanceResourcePayload,
+    GitLogCommit, GitLogPage, GitLogScope, GitRefKind, GitRefLabel, InstanceResourcePayload,
     DEFAULT_GIT_LOG_PAGE_SIZE, MAX_COMMIT_MESSAGE_BYTES, MAX_DIRECTORY_PAGE_SIZE,
-    ResourceErrorCode, ResourceFailure,
+    MAX_GIT_LOG_PAGE_BYTES, ResourceErrorCode, ResourceFailure,
 };
 
 use super::STATUS_ARGS;
-use crate::resource::common::{cursor_for, failure, hash_bytes, parse_cursor};
+use crate::resource::common::{
+    cursor_for, failure, hash_bytes, parse_cursor, relative_path,
+};
 use crate::resource::ResourceHost;
 
 const LOG_PRETTY_FORMAT: &str = "%H%x00%P%x00%s%x00%an%x00%aI";
@@ -23,6 +25,10 @@ impl ResourceHost {
         cursor: Option<&str>,
         limit: u32,
     ) -> Result<InstanceResourcePayload, ResourceFailure> {
+        let _permit = self.git_log_permits.try_acquire().map_err(|_| {
+            failure(ResourceErrorCode::RateLimited, true)
+        })?;
+
         let limit = if limit == 0 {
             DEFAULT_GIT_LOG_PAGE_SIZE
         } else {
@@ -32,7 +38,14 @@ impl ResourceHost {
             return Err(failure(ResourceErrorCode::ViewTooLarge, false));
         }
 
-        let (_, repo) = self.resolve_repo(root, expected_repo_id).await?;
+        let (workspace_root, repo) = self.resolve_repo(root, expected_repo_id).await?;
+        let (scope, path_arg) = if workspace_root == repo {
+            (Some(GitLogScope::Full), None)
+        } else {
+            let relative = relative_path(&repo, &workspace_root)?;
+            (Some(GitLogScope::WorkspaceSubtreeReadonly), Some(relative))
+        };
+
         let status = self.git(&repo, STATUS_ARGS).await?;
         let generation = hash_bytes(&status);
         if expected_generation != generation {
@@ -43,19 +56,20 @@ impl ResourceHost {
         let skip = offset.to_string();
         let max_count = limit.to_string();
         let pretty = format!("--pretty=format:{LOG_PRETTY_FORMAT}");
-        let log_output = self
-            .git(
-                &repo,
-                &[
-                    "log",
-                    "--skip",
-                    &skip,
-                    "--max-count",
-                    &max_count,
-                    &pretty,
-                ],
-            )
-            .await?;
+        let mut log_args = vec![
+            "log".to_string(),
+            "--skip".to_string(),
+            skip,
+            "--max-count".to_string(),
+            max_count,
+            pretty,
+        ];
+        if let Some(path) = path_arg {
+            log_args.push("--".to_string());
+            log_args.push(path);
+        }
+        let log_argv = log_args.iter().map(String::as_str).collect::<Vec<_>>();
+        let log_output = self.git(&repo, &log_argv).await?;
 
         let head_bytes = self.git(&repo, &["rev-parse", "HEAD"]).await?;
         let head_oid = parse_oid(&String::from_utf8(head_bytes).map_err(|_| {
@@ -75,13 +89,22 @@ impl ResourceHost {
         let next_cursor = (commits.len() == limit as usize)
             .then(|| cursor_for(&generation, next_offset));
 
-        Ok(InstanceResourcePayload::GitLogPage(GitLogPage {
+        let page = GitLogPage {
             repo_id: expected_repo_id.to_string(),
             source_generation: generation,
             commits,
             next_cursor,
             head_oid,
-        }))
+            scope,
+        };
+        let encoded = serde_json::to_vec(&page).map_err(|_| {
+            failure(ResourceErrorCode::Unavailable, false)
+        })?;
+        if encoded.len() > MAX_GIT_LOG_PAGE_BYTES {
+            return Err(view_too_large(limit, encoded.len()));
+        }
+
+        Ok(InstanceResourcePayload::GitLogPage(page))
     }
 
     async fn collect_refs(
@@ -132,6 +155,23 @@ impl ResourceHost {
 struct CollectedRefs {
     labels: Vec<GitRefLabel>,
     complete: bool,
+}
+
+fn view_too_large(limit: u32, actual_bytes: usize) -> ResourceFailure {
+    let suggested = suggest_lower_limit(limit, actual_bytes);
+    ResourceFailure {
+        code: ResourceErrorCode::ViewTooLarge,
+        message: format!("Requested resource page is too large; try limit {suggested}"),
+        retryable: false,
+    }
+}
+
+fn suggest_lower_limit(limit: u32, actual_bytes: usize) -> u32 {
+    if actual_bytes == 0 {
+        return limit.saturating_sub(1).max(1);
+    }
+    let scaled = (limit as u64 * MAX_GIT_LOG_PAGE_BYTES as u64) / actual_bytes as u64;
+    scaled.max(1).min(limit.saturating_sub(1).max(1) as u64) as u32
 }
 
 fn parse_log_line(line: &[u8]) -> Result<GitLogCommit, ResourceFailure> {
@@ -258,5 +298,14 @@ mod tests {
     fn parse_oid_rejects_invalid_values() {
         assert!(parse_oid("not-a-commit").is_err());
         assert!(parse_oid("abc").is_err());
+    }
+
+    #[test]
+    fn suggest_lower_limit_scales_with_page_size() {
+        assert_eq!(
+            suggest_lower_limit(500, MAX_GIT_LOG_PAGE_BYTES * 2),
+            250
+        );
+        assert_eq!(suggest_lower_limit(10, MAX_GIT_LOG_PAGE_BYTES * 2), 5);
     }
 }

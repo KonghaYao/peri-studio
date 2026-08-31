@@ -336,6 +336,9 @@ fn project_payload(
             meta.insert(txn, "source_generation", page.source_generation.clone());
             meta.insert(txn, "head_oid", page.head_oid.clone());
             insert_optional(meta, txn, "next_cursor", page.next_cursor.as_deref());
+            if let Some(scope) = page.scope {
+                meta.insert(txn, "scope", scope.as_str());
+            }
             for commit in &page.commits {
                 order.push_back(txn, commit.commit_id.clone());
                 let item = entries.insert(txn, commit.commit_id.clone(), yrs::MapPrelim::default());

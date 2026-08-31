@@ -18,7 +18,8 @@ use std::{
 use tokio::sync::Mutex;
 
 use peri_studio_proto::resource::{
-    InstanceResourceQuery, InstanceResourceQueryKind, InstanceResourceResult, ResourceErrorCode,
+    InstanceResourceQuery, InstanceResourceQueryKind, InstanceResourceResult,
+    MAX_CONCURRENT_GIT_LOG_QUERIES, ResourceErrorCode,
 };
 
 use common::failure;
@@ -30,6 +31,7 @@ const GIT_TIMEOUT: Duration = Duration::from_secs(8);
 pub struct ResourceHost {
     pub(super) git_timeout: Duration,
     pub(super) mutation_locks: Arc<Mutex<HashMap<String, Weak<Mutex<()>>>>>,
+    pub(super) git_log_permits: Arc<tokio::sync::Semaphore>,
 }
 
 impl Default for ResourceHost {
@@ -37,6 +39,9 @@ impl Default for ResourceHost {
         Self {
             git_timeout: GIT_TIMEOUT,
             mutation_locks: Arc::new(Mutex::new(HashMap::new())),
+            git_log_permits: Arc::new(tokio::sync::Semaphore::new(
+                MAX_CONCURRENT_GIT_LOG_QUERIES as usize,
+            )),
         }
     }
 }

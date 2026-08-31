@@ -176,6 +176,7 @@ async fn git_log_page_projection_roundtrips_nested_commit_fields() {
         }],
         next_cursor: Some("gen-1.50".into()),
         head_oid: head_oid.clone(),
+        scope: Some(peri_studio_proto::resource::GitLogScope::Full),
     });
 
     let opened = projection
@@ -225,6 +226,12 @@ async fn git_log_page_projection_roundtrips_nested_commit_fields() {
             .and_then(|value| value.cast::<String>().ok())
             .as_deref(),
         Some(head_oid.as_str())
+    );
+    assert_eq!(
+        meta.get(&txn, "scope")
+            .and_then(|value| value.cast::<String>().ok())
+            .as_deref(),
+        Some("full")
     );
 
     let order = root
