@@ -1,7 +1,13 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { observedDuration, ToolCallCard } from './ToolActivityRow';
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
+import { openWorkspaceFromTool } from '../../panel/lib/open-workspace-from-tool';
+
+vi.mock('../../panel/lib/open-workspace-from-tool', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../panel/lib/open-workspace-from-tool')>();
+  return { ...actual, openWorkspaceFromTool: vi.fn() };
+});
 
 const base: ToolCallInfo = {
   toolCallId: 'tool-123456789', name: 'shell', kind: 'execute', status: 'completed',
@@ -11,7 +17,11 @@ const base: ToolCallInfo = {
 };
 
 function summary() {
-  return document.querySelector('[data-testid="tool-activity-row-summary"]') as HTMLButtonElement;
+  return document.querySelector('[data-testid="tool-activity-row-summary"]') as HTMLElement;
+}
+
+function expandControl() {
+  return document.querySelector('[data-testid="tool-activity-row-expand"]') as HTMLButtonElement;
 }
 
 describe('ToolActivityRow', () => {
@@ -22,7 +32,7 @@ describe('ToolActivityRow', () => {
     expect(screen.getByText('1.3 s')).toBeInTheDocument();
     expect(screen.getAllByText('pwd')).toHaveLength(1);
     expect(document.querySelector('[data-testid="tool-activity-row-body"]')).toBeNull();
-    fireEvent.click(summary());
+    fireEvent.click(expandControl());
     expect(document.querySelector('[data-testid="tool-activity-row-body"]')).toBeInTheDocument();
     expect(screen.getAllByText(/pwd/)).toHaveLength(2);
     expect(screen.getByRole('button', { name: 'Copy Command' })).toBeInTheDocument();
@@ -32,11 +42,13 @@ describe('ToolActivityRow', () => {
   it('keeps public errors compact until requested and never renders payload markup as HTML', () => {
     render(() => <ToolCallCard toolCall={{ ...base, status: 'error', result: null, publicError: { code: 'DENIED', message: '<img src=x onerror=alert(1)>' } }} />);
     expect(screen.getByText('Failed')).toBeInTheDocument();
+    expect(screen.getByText(/DENIED:/)).toBeInTheDocument();
     expect(document.querySelector('[data-testid="tool-activity-row-body"]')).toBeNull();
-    fireEvent.click(summary());
-    expect(screen.getByText(/<img src=x onerror=alert\(1\)>/)).toBeInTheDocument();
+    fireEvent.click(expandControl());
+    const body = document.querySelector('[data-testid="tool-activity-row-body"]')!;
+    expect(body.textContent).toMatch(/<img src=x onerror=alert\(1\)>/);
     expect(document.querySelector('img')).toBeNull();
-    expect(summary()).toHaveAttribute('aria-expanded', 'true');
+    expect(expandControl()).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('suppresses absent, invalid, and negative timing', () => {
@@ -47,26 +59,26 @@ describe('ToolActivityRow', () => {
 
   it('distinguishes an explicitly omitted result from an empty result', () => {
     const { unmount } = render(() => <ToolCallCard toolCall={{ ...base, result: null, resultOmitted: true, resultBytes: 8192 }} />);
-    fireEvent.click(summary());
+    fireEvent.click(expandControl());
     expect(screen.getByText('Output not loaded')).toBeInTheDocument();
     expect(screen.getByText(/of about 8.0 KB/)).toBeInTheDocument();
     expect(screen.queryByText('The tool returned no displayable output.')).not.toBeInTheDocument();
     unmount();
     render(() => <ToolCallCard toolCall={{ ...base, result: null, resultOmitted: false, resultBytes: null }} />);
-    fireEvent.click(summary());
+    fireEvent.click(expandControl());
     expect(screen.getByText('The tool returned no displayable output.')).toBeInTheDocument();
   });
 
   it('shows a public error and omission provenance independently', () => {
     render(() => <ToolCallCard toolCall={{ ...base, status: 'error', result: null, resultOmitted: true, resultBytes: 5000, publicError: { code: 'TOO_LARGE', message: 'safe failure' } }} />);
-    fireEvent.click(summary());
-    expect(screen.getByText(/TOO_LARGE: safe failure/)).toBeInTheDocument();
+    fireEvent.click(expandControl());
+    expect(screen.getAllByText(/TOO_LARGE: safe failure/).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Output not loaded')).toBeInTheDocument();
   });
 
   it('does not interpret missing legacy provenance as an explicit empty result', () => {
     render(() => <ToolCallCard toolCall={{ ...base, result: null, resultOmitted: null, resultBytes: null }} />);
-    fireEvent.click(summary());
+    fireEvent.click(expandControl());
     expect(screen.getByText(/legacy projection did not record/)).toBeInTheDocument();
     expect(screen.queryByText('The tool returned no displayable output.')).not.toBeInTheDocument();
   });
@@ -81,7 +93,7 @@ describe('ToolActivityRow', () => {
     const { unmount } = render(() => <ToolCallCard toolCall={{ ...base, status: 'running', completedAt: null }} />);
     const active = summary();
     expect(active).toHaveClass('min-h-(--pattern-row-height)', 'bg-sidebar-selected');
-    expect(active).toHaveClass('grid-cols-tool-row');
+    expect(active).toHaveClass('flex');
     unmount();
 
     render(() => <ToolCallCard toolCall={base} />);
@@ -97,9 +109,20 @@ describe('ToolActivityRow', () => {
 
   it('keeps long tool names from displacing the compact input and status', () => {
     render(() => <ToolCallCard toolCall={{ ...base, name: 'An unexpectedly long namespaced tool implementation', arguments: { command: 'pwd' } }} />);
-    const row = document.querySelector('[data-testid="tool-activity-row-summary"] span.truncate')!;
+    const row = document.querySelector('[data-testid="tool-activity-row-summary"] .tool-activity-row__title')!;
     expect(row).toHaveClass('truncate');
     expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
+  it('opens workspace preview when clicking a file path link', () => {
+    render(() => <ToolCallCard toolCall={{
+      ...base,
+      name: 'Read',
+      kind: 'read',
+      arguments: { file_path: 'web/src/main.ts' },
+    }} />);
+    fireEvent.click(screen.getByTestId('tool-activity-file-link'));
+    expect(openWorkspaceFromTool).toHaveBeenCalledWith('web/src/main.ts');
   });
 
   it('prefers the Read file path over pagination arguments in the compact row', () => {
@@ -123,7 +146,7 @@ describe('ToolActivityRow', () => {
       result: { stdout: '', output: 'test result: ok', stderr: '', exitCode: 0 },
     }} />);
 
-    fireEvent.click(summary());
+    fireEvent.click(expandControl());
     expect(screen.getByText('Command')).toBeInTheDocument();
     expect(screen.getByText('Output')).toBeInTheDocument();
     expect(screen.getAllByText(/cargo test -p peri-studio/)).toHaveLength(2);
@@ -142,7 +165,7 @@ describe('ToolActivityRow', () => {
       result: { content: [{ type: 'text', text: 'opened' }] },
     }} />);
 
-    fireEvent.click(summary());
+    fireEvent.click(expandControl());
     expect(screen.getByText('Input')).toBeInTheDocument();
     expect(screen.getByText('Output')).toBeInTheDocument();
     expect(screen.queryByText('File')).not.toBeInTheDocument();
@@ -158,7 +181,7 @@ describe('ToolActivityRow', () => {
       result: { content: [{ type: 'text', text: 'fn main() {}' }] },
     }} />);
 
-    fireEvent.click(summary());
+    fireEvent.click(expandControl());
     expect(screen.getByText(/"offset": 40/)).toBeInTheDocument();
     expect(screen.getByText(/"limit": 80/)).toBeInTheDocument();
   });
@@ -180,7 +203,7 @@ describe('ToolActivityRow', () => {
     }} />);
 
     expect(screen.queryByText('Input not loaded')).not.toBeInTheDocument();
-    fireEvent.click(summary());
+    fireEvent.click(expandControl());
     expect(screen.getByText('Input not loaded')).toBeInTheDocument();
     expect(screen.getByText(/about 2.0 KB/)).toBeInTheDocument();
     expect(screen.getByText('Tool content')).toBeInTheDocument();

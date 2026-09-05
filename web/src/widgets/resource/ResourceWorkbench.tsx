@@ -18,6 +18,7 @@ import { Files, GitBranch, GitGraph, PlugZap, RefreshCw, X } from 'lucide-solid'
 import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_TITLE_CLASS } from './resource-panel-layout';
 import { ResourceFloatingPanel } from './ResourceFloatingPanel';
 import { GitGraphView } from './git/GitGraphView';
+import { resourceWorkbenchRequest } from '../../panel/lib/open-workspace-from-tool';
 
 export type WorkbenchView = 'explorer' | 'scm' | 'mcp' | 'graph' | null;
 export type ResourcePreviewOrigin = {
@@ -42,6 +43,22 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   const [explorerExpanded, setExplorerExpanded] = createSignal(new Set<string>(['']));
   const [explorerActivePath, setExplorerActivePath] = createSignal('');
   const [explorerScrollTop, setExplorerScrollTop] = createSignal(0);
+  createEffect(() => {
+    const request = resourceWorkbenchRequest();
+    if (!request?.activePath) return;
+    setExplorerActivePath(request.activePath);
+    setExplorerExpanded((current) => {
+      const next = new Set(current);
+      const parts = request.activePath!.split('/').filter(Boolean);
+      let prefix = '';
+      for (const part of parts.slice(0, -1)) {
+        prefix = prefix ? `${prefix}/${part}` : part;
+        next.add(prefix);
+      }
+      next.add('');
+      return next;
+    });
+  });
   const [commitMessages, setCommitMessages] = createSignal<Record<string, string>>({});
   const submittedCommits = new Map<string, { projectId: string; repoId: string; requestId: string; message: string }>();
   const view = () => props.view === undefined ? localView() : props.view;

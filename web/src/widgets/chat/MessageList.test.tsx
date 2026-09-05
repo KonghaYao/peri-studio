@@ -210,7 +210,7 @@ describe('MessageList entry updates', () => {
 
     const messageRow = screen.getByLabelText('Assistant message');
     const reasoning = screen.getByText('Thinking').closest('details')!;
-    const tool = messageRow.querySelector<HTMLButtonElement>('[data-testid="tool-activity-row-summary"]')!;
+    const tool = messageRow.querySelector<HTMLButtonElement>('[data-testid="tool-activity-row-expand"]')!;
     fireEvent.click(reasoning.querySelector('summary')!);
     fireEvent.click(tool);
     expect(reasoning).toHaveAttribute('open');
@@ -225,7 +225,7 @@ describe('MessageList entry updates', () => {
 
     const updatedMessageRow = screen.getByLabelText('Assistant message');
     const updatedReasoning = screen.getByText('Thinking').closest('details')!;
-    const updatedTool = updatedMessageRow.querySelector<HTMLButtonElement>('[data-testid="tool-activity-row-summary"]')!;
+    const updatedTool = updatedMessageRow.querySelector<HTMLButtonElement>('[data-testid="tool-activity-row-expand"]')!;
     expect(updatedMessageRow).toBe(messageRow);
     expect(updatedReasoning).toBe(reasoning);
     expect(updatedReasoning).toHaveAttribute('open');

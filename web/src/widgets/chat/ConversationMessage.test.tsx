@@ -210,7 +210,7 @@ describe('ConversationMessage', () => {
     expect(toolGroup.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('groups adjacent tool activity rows inside one bordered container', () => {
+  it('groups adjacent tool activity rows with one card per tool', () => {
     const first = { ...baseTool('tool-1'), name: 'Read config' };
     const second = { ...baseTool('tool-2'), name: 'Run checks' };
     render(() => <ConversationMessage entry={entry({
@@ -222,8 +222,10 @@ describe('ConversationMessage', () => {
     })} />);
 
     const group = screen.getByLabelText('Assistant message').querySelector('[data-testid="tool-activity-group"]')!;
-    expect(group).toHaveClass('rounded-lg', 'border', 'bg-surface-overlay');
-    expect(group.querySelectorAll('[data-testid="tool-activity-row"]')).toHaveLength(2);
+    expect(group).toHaveClass('flex-col', 'gap-6');
+    const rows = group.querySelectorAll('[data-testid="tool-activity-row"]');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveClass('rounded-lg', 'border', 'bg-surface-overlay');
   });
 
   it('renders reasoning before grouped tool activity', () => {

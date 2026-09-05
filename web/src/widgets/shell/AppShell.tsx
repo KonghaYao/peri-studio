@@ -5,6 +5,7 @@ import { compactViewportQuery, mediumViewportQuery } from '../../panel/lib/break
 import { ProjectDrawer } from './shared/ProjectDrawer';
 import { ResourceWorkbench, type ResourcePreviewOrigin, type WorkbenchView } from '@/widgets/resource/ResourceWorkbench';
 import { closeResourceDiffPreview, closeResourceFilePreview, resourceDiffPreview, resourceFilePreview } from '../../panel/store';
+import { resourceWorkbenchRequest } from '../../panel/lib/open-workspace-from-tool';
 import { ResourceDiffEditor } from '@/widgets/resource/ResourceDiffEditor';
 import { ResourceFileEditor } from '@/widgets/resource/ResourceFileEditor';
 import { SettingsDialog } from './SettingsDialog';
@@ -23,6 +24,11 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
   const [resourcesOpen, setResourcesOpen] = createSignal(false);
   const [systemOpen, setSystemOpen] = createSignal(false);
   const [resourceView, setResourceView] = createSignal<WorkbenchView>(props.initialResourceView ?? null);
+  createEffect(() => {
+    const request = resourceWorkbenchRequest();
+    if (!request) return;
+    setResourceView(request.view);
+  });
   const [mobile, setMobile] = createSignal(false);
   const [medium, setMedium] = createSignal(false);
   const [sidebarWidth, setSidebarWidth] = createSignal(SIDEBAR_DEFAULT_WIDTH);

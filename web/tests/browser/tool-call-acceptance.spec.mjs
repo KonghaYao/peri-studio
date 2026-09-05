@@ -9,7 +9,7 @@ function rowById(page, toolCallId) {
 }
 
 async function expand(row) {
-  await row.getByTestId('tool-activity-row-summary').click();
+  await row.getByTestId('tool-activity-row-expand').click();
   await expect(row.getByTestId('tool-activity-row-body')).toBeVisible();
 }
 

@@ -1,6 +1,13 @@
 import { Check, ChevronRight, Circle, X } from 'lucide-solid';
 import { createMemo, createSignal, Show, type Accessor } from 'solid-js';
 import type { ToolCallInfo, ToolCallKind } from '@/entities/chat/chat-view';
+import {
+  compactToolInput,
+  extractLinkableFilePath,
+  formatToolDisplayName,
+  formatToolPathLabel,
+} from '@/features/chat/tool-file-link';
+import { openWorkspaceFromTool } from '../../panel/lib/open-workspace-from-tool';
 import { CopyButton } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
 
@@ -44,17 +51,6 @@ export function readableBytes(value: number | null): string | null {
   if (value < 1024) return `${Math.round(value)} B`;
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(value < 10 * 1024 ? 1 : 0)} KB`;
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function compactToolInput(value: unknown): string {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return typeof value === 'string' ? value : '';
-  const record = value as Record<string, unknown>;
-  const preferred = ['file_path', 'filePath', 'path', 'command', 'cmd', 'query', 'pattern', 'uri', 'url', 'file']
-    .map((key) => record[key])
-    .find((item) => typeof item === 'string');
-  if (typeof preferred === 'string') return preferred;
-  const first = Object.values(record).find((item) => typeof item === 'string' || typeof item === 'number');
-  return first === undefined ? '' : String(first);
 }
 
 function toolFamily(kind: ToolCallKind | null | undefined): 'shell' | 'read' | 'write' | 'generic' {
@@ -107,10 +103,11 @@ function OmittedEvidence(props: { label: string; size: number | null | undefined
   );
 }
 
-/** 工具活动行：时间线摘要，非 card；running 用浅灰底。 */
+/** 工具活动行：单条圆角卡片，可展开证据区。 */
 export function ToolActivityRow(props: {
   name: string;
   inputSummary?: string;
+  linkablePath?: string | null;
   status: ToolCallStatus;
   statusLabel: string;
   duration?: string | null;
@@ -156,40 +153,65 @@ export function ToolActivityRow(props: {
     setOpen((value) => !value);
   };
 
+  const openPath = (event: MouseEvent) => {
+    event.stopPropagation();
+    const path = props.linkablePath;
+    if (path) openWorkspaceFromTool(path);
+  };
+
   return (
-    <div class="tool-activity-row min-w-0" data-testid="tool-activity-row">
-      <button
-        type="button"
-        disabled={!hasEvidence()}
+    <div class="tool-activity-row min-w-0 rounded-lg border border-border-subtle bg-surface-overlay" data-testid="tool-activity-row">
+      <div
         data-testid="tool-activity-row-summary"
         class={cn(
-          'tool-activity-row__summary grid w-full min-h-(--pattern-row-height) grid-cols-tool-row items-center gap-8 rounded-md px-8 text-left transition-colors duration-(--duration-fast)',
-          props.status === 'running' ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
-          !hasEvidence() && 'cursor-default',
+          'tool-activity-row__summary flex w-full min-h-(--pattern-row-height) items-center gap-8 rounded-lg px-10 py-8',
+          props.status === 'running' ? 'bg-sidebar-selected' : '',
         )}
-        aria-expanded={open()}
-        onClick={toggle}
       >
-        <span class="grid size-16 place-items-center">
+        <span class="grid size-16 shrink-0 place-items-center">
           <StatusMark tone={props.status} />
         </span>
-        <span class="min-w-0 truncate text-12 text-content-primary">
-          <span class="font-medium">{props.name}</span>
+        <div class="tool-activity-row__title min-w-0 flex-1 truncate text-12 text-content-primary">
+          <span class="font-semibold">{props.name}</span>
           <Show when={props.inputSummary}>
-            <code class="ml-4 font-mono text-10 text-content-muted">{props.inputSummary}</code>
+            <span class="text-content-muted"> · </span>
+            <Show
+              when={props.linkablePath}
+              fallback={<span class="font-mono text-11 text-content-muted">{props.inputSummary}</span>}
+            >
+              <button
+                type="button"
+                data-testid="tool-activity-file-link"
+                class="font-mono text-11 text-accent-solid underline-offset-2 hover:underline"
+                onClick={openPath}
+              >
+                {formatToolPathLabel(props.inputSummary!)}
+              </button>
+            </Show>
           </Show>
           <Show when={props.toolCallId}>
             <code class="sr-only">{props.toolCallId}</code>
           </Show>
-        </span>
-        <span class="flex-none text-10 text-content-muted tabular-nums">
-          {props.statusLabel}
-          <Show when={props.duration}><span class="ml-4">{props.duration}</span></Show>
+        </div>
+        <span class="flex shrink-0 items-center gap-4 text-10 text-content-muted tabular-nums">
+          <span>{props.statusLabel}</span>
+          <Show when={props.duration}>
+            <span>{props.duration}</span>
+          </Show>
         </span>
         <Show when={hasEvidence()}>
-          <ChevronRight size={13} class={cn('text-content-faint transition-transform duration-(--duration-fast)', open() && 'rotate-90')} />
+          <button
+            type="button"
+            data-testid="tool-activity-row-expand"
+            class="grid size-20 shrink-0 place-items-center rounded-md text-content-faint hover:bg-interaction-hover"
+            aria-label={open() ? 'Collapse tool details' : 'Expand tool details'}
+            aria-expanded={open()}
+            onClick={toggle}
+          >
+            <ChevronRight size={13} class={cn('transition-transform duration-(--duration-fast)', open() && 'rotate-90')} />
+          </button>
         </Show>
-      </button>
+      </div>
       <Show when={open() && hasEvidence() && props.evidenceLoaded}>
         <div class="tool-activity-row__body mt-4 flex flex-col gap-6 pb-4 pl-16 pr-8" data-testid="tool-activity-row-body">
           <Show when={props.evidence.input !== undefined && props.evidence.input !== null}>
@@ -234,7 +256,7 @@ export function ToolActivityRow(props: {
 /** 聊天 transcript 里的工具活动组容器。 */
 export function ToolActivityGroup(props: { children: unknown }) {
   return (
-    <div class="tool-activity-group flex max-w-(--tool-activity-max) min-w-0 flex-col gap-2 rounded-lg border border-border-subtle bg-surface-overlay p-6" data-testid="tool-activity-group">
+    <div class="tool-activity-group flex max-w-(--tool-activity-max) min-w-0 flex-col gap-6" data-testid="tool-activity-group">
       {props.children as never}
     </div>
   );
@@ -249,9 +271,16 @@ export function ToolCallCard(props: { toolCall: ToolCallSource }) {
   const state = createMemo(() => STATUS[(tool().status || '').toLowerCase()] || { label: tool().status || 'Unknown status', tone: 'neutral' as ToolCallStatus });
   const duration = createMemo(() => observedDuration(tool().startedAt, tool().completedAt));
   const errorText = createMemo(() => [tool().publicError?.code, tool().publicError?.message].filter(Boolean).join(': '));
-  const inputSummary = createMemo(() => compactToolInput(tool().arguments));
-  const evidence = createMemo(() => toolEvidence(tool().kind, tool().arguments, tool().result));
   const tone = () => state().tone;
+  const inputSummary = createMemo(() => {
+    if (errorText() && tone() === 'failed') return errorText();
+    return compactToolInput(tool().arguments);
+  });
+  const linkablePath = createMemo(() => {
+    if (tone() === 'failed') return null;
+    return extractLinkableFilePath(tool().name || '', tool().kind, tool().arguments);
+  });
+  const evidence = createMemo(() => toolEvidence(tool().kind, tool().arguments, tool().result));
   const showEmptyOutput = () => tool().resultOmitted === false
     && (tool().result === undefined || tool().result === null)
     && !errorText()
@@ -263,8 +292,9 @@ export function ToolCallCard(props: { toolCall: ToolCallSource }) {
 
   return (
     <ToolActivityRow
-      name={tool().name || 'Tool call'}
+      name={formatToolDisplayName(tool().name || 'Tool call')}
       inputSummary={inputSummary() || undefined}
+      linkablePath={linkablePath()}
       status={tone()}
       statusLabel={state().label}
       duration={duration()}
