@@ -72,7 +72,7 @@ test('resource workbench keeps Explorer and Source Control directly reachable', 
   await expect(page.getByRole('region', { name: 'File preview: src/main.rs' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Contents of src/main.rs' })).toContainText('println!("ready")');
   await expect(page.getByText('Read-only', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Close file' }).click();
+  await page.getByRole('button', { name: 'Close file preview' }).click();
   await expect(page.getByRole('region', { name: /^File preview:/ })).toHaveCount(0);
   expect(browserErrors).toEqual([]);
 });

@@ -8,6 +8,8 @@ import { closeResourceDiffPreview, closeResourceFilePreview, resourceDiffPreview
 import { resourceWorkbenchRequest } from '../../panel/lib/open-workspace-from-tool';
 import { ResourceDiffEditor } from '@/widgets/resource/ResourceDiffEditor';
 import { ResourceFileEditor } from '@/widgets/resource/ResourceFileEditor';
+import { ResourceFloatingPanel } from '@/widgets/resource/ResourceFloatingPanel';
+import { workbenchFilePreviewLeftOffset } from '@/widgets/resource/resource-panel-layout';
 import { SettingsDialog } from './SettingsDialog';
 
 const SIDEBAR_MIN_WIDTH = 220;
@@ -148,14 +150,14 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
   });
   createEffect(() => {
     if (mobile()) return;
-    const previewOpen = !!(resourceFilePreview() || resourceDiffPreview());
+    const diffOpen = !!resourceDiffPreview();
     const currentView = resourceView();
-    if (previewOpen && currentView) {
+    if (diffOpen && currentView) {
       resourceViewBeforePreview = currentView;
       setResourceView(null);
       return;
     }
-    if (!previewOpen && !currentView && resourceViewBeforePreview) {
+    if (!diffOpen && !currentView && resourceViewBeforePreview) {
       const restore = resourceViewBeforePreview;
       resourceViewBeforePreview = null;
       setResourceView(restore);
@@ -192,12 +194,27 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
         onPointerDown={startSidebarResize}
       /></div>
       <main ref={main} data-testid="conversation-pane" class="conversation-pane min-w-0 min-h-0 overflow-hidden">
-        <Show when={resourceFilePreview()} fallback={<Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenResources={openResources} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
-          <ResourceDiffEditor onClose={() => closePreview('diff')} />
-        </Show>}>
+        <Show
+          when={mobile() && resourceFilePreview()}
+          fallback={
+            <Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenResources={openResources} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
+              <ResourceDiffEditor onClose={() => closePreview('diff')} />
+            </Show>
+          }
+        >
           <ResourceFileEditor onClose={() => closePreview('file')} />
         </Show>
       </main>
+      <Show when={!mobile() && resourceFilePreview()}>
+        <ResourceFloatingPanel
+          anchor="left"
+          leftOffset={workbenchFilePreviewLeftOffset(sidebarWidth())}
+          widthProfile="preview"
+          data-testid="resource-file-preview-panel"
+        >
+          <ResourceFileEditor floating onClose={() => closePreview('file')} />
+        </ResourceFloatingPanel>
+      </Show>
       <ResourceWorkbench
         compact={mobile()}
         autoCollapse={medium() && !mobile()}

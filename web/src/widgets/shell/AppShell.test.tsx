@@ -13,6 +13,7 @@ vi.mock('./shared/ProjectDrawer', () => ({
 }));
 
 import { AppShell } from './AppShell';
+import { resetResourceProject, setResourceFilePreview } from '../../panel/lib/resource-store';
 
 function shell() {
   return screen.getByTestId('app-shell');
@@ -29,6 +30,7 @@ describe('AppShell desktop sidebar', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    resetResourceProject();
   });
 
   it('avoids arbitrary tailwind bracket sizing outside the resize handle', () => {
@@ -103,6 +105,29 @@ describe('AppShell desktop sidebar', () => {
     expect(screen.getByRole('button', { name: 'Open workspace resources' })).toBeInTheDocument();
     expect(screen.getByTestId('git-graph-view')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Close Git Graph' })).not.toBeInTheDocument();
+  });
+
+  it('floats file preview on the left while keeping chat and the resource workbench on desktop', () => {
+    render(() => <AppShell initialResourceView="explorer" />);
+    setResourceFilePreview({
+      requestId: 'shell-file',
+      path: 'src/main.ts',
+      loading: false,
+      mode: 'text',
+      url: '/api/resource-blobs/blob-1',
+      contentType: 'text/plain',
+      size: 12,
+      text: 'export {};\n',
+    });
+
+    expect(screen.getByTestId('conversation-pane')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open workspace resources' })).toBeInTheDocument();
+    expect(screen.getByTestId('resource-workbench-panel')).toBeInTheDocument();
+    const previewPanel = screen.getByTestId('resource-file-preview-panel');
+    expect(previewPanel).toHaveAttribute('data-panel-anchor', 'left');
+    expect(previewPanel).toHaveAttribute('data-width-profile', 'preview');
+    expect(screen.getByTestId('resource-file-editor')).toBeInTheDocument();
+    expect(screen.getByText('export {};')).toBeInTheDocument();
   });
 
   it('opens Explorer from the medium resource rail', async () => {

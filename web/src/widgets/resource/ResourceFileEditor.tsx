@@ -7,15 +7,17 @@ import {
   resourceFilePreview,
   retryResourceFilePreview,
 } from '../../panel/store';
+import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_TITLE_CLASS } from './resource-panel-layout';
 
 function CloseIcon() {
   return <X size={15} strokeWidth={1.7} />;
 }
 
-type ResourceFileEditorProps = { onClose?: () => void };
+type ResourceFileEditorProps = { onClose?: () => void; floating?: boolean };
 
 export function ResourceFileEditor(props: ResourceFileEditorProps = {}) {
   const preview = resourceFilePreview;
+  const floating = () => !!props.floating;
   const accessibleTitle = () => `File preview: ${preview()?.path ?? 'file'}`;
   const close = () => props.onClose ? props.onClose() : closeResourceFilePreview();
   const allLines = createMemo(() => (preview()?.text ?? '').replaceAll('\r\n', '\n').split('\n'));
@@ -29,13 +31,33 @@ export function ResourceFileEditor(props: ResourceFileEditorProps = {}) {
     onCleanup(() => window.removeEventListener('keydown', closeOnEscape));
   });
 
-  return <section class="flex h-full min-h-0 flex-col bg-surface" aria-label={accessibleTitle()}>
+  return <section class={`flex h-full min-h-0 flex-col ${floating() ? 'bg-surface-overlay' : 'bg-surface'}`} aria-label={accessibleTitle()} data-testid="resource-file-editor">
+    <Show when={floating()} fallback={
+      <>
     <header data-testid="resource-editor-tab" class="resource-editor-tab flex h-35 shrink-0 items-center border-b border-divider bg-sidebar-bg pointer-coarse:h-44">
       <div class="flex h-full min-w-0 items-center gap-7 border-r border-divider border-t-2 border-t-accent bg-surface pl-12 pr-5 text-12">
         <h1 data-resource-preview-focus tabIndex={-1} aria-label={accessibleTitle()} class="m-0 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-550 text-text-primary outline-none">{basename(preview()?.path ?? '')}</h1>
         <IconButton label="Close file" size="compact" onClick={close} class="border-0 bg-transparent text-text-muted"><CloseIcon /></IconButton>
       </div>
     </header>
+      </>
+    }>
+      <header class={RESOURCE_PANEL_HEADER_CLASS}>
+        <strong
+          data-resource-preview-focus
+          tabIndex={-1}
+          aria-label={accessibleTitle()}
+          class={RESOURCE_PANEL_TITLE_CLASS}
+          title={preview()?.path}
+        >{basename(preview()?.path ?? '')}</strong>
+        <span class="shrink-0 text-10 text-content-muted">Read-only</span>
+        <Show when={preview()?.url}>
+          <IconButton label="Download file" size="sm" showTooltip={false} onClick={downloadPreviewedFile} class="shrink-0 text-content-muted"><DownloadIcon /></IconButton>
+        </Show>
+        <IconButton label="Close file preview" size="sm" showTooltip={false} onClick={close} class="shrink-0 text-content-muted"><CloseIcon /></IconButton>
+      </header>
+    </Show>
+    <Show when={!floating()}>
     <div data-testid="resource-editor-toolbar" class="resource-editor-toolbar flex h-34 shrink-0 items-center gap-8 border-b border-divider px-12 text-11 pointer-coarse:h-44">
       <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-text-primary" title={preview()?.path}>{preview()?.path}</span>
       <span class="ml-auto shrink-0 text-text-muted">Read-only</span>
@@ -43,6 +65,7 @@ export function ResourceFileEditor(props: ResourceFileEditorProps = {}) {
         <IconButton label="Download file" size="compact" onClick={downloadPreviewedFile} class="border-0 bg-transparent text-text-muted"><DownloadIcon /></IconButton>
       </Show>
     </div>
+    </Show>
 
     <Show when={!preview()?.loading} fallback={<LoadingState label="Opening file" class="m-auto" />}>
       <Show when={!preview()?.error} fallback={

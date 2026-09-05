@@ -7,10 +7,14 @@ import {
   WORKBENCH_PANEL_GRAPH_WIDTH_STORAGE_KEY,
   WORKBENCH_PANEL_MAX_WIDTH,
   WORKBENCH_PANEL_MIN_WIDTH,
+  WORKBENCH_PANEL_PREVIEW_DEFAULT_WIDTH,
+  WORKBENCH_PANEL_PREVIEW_WIDTH_STORAGE_KEY,
   WORKBENCH_PANEL_WIDTH_STORAGE_KEY,
   clampWorkbenchPanelWidth,
   persistWorkbenchPanelWidth,
   readStoredWorkbenchPanelWidth,
+  workbenchFilePreviewLeftOffset,
+  WORKBENCH_PANEL_EDGE_INSET,
 } from './resource-panel-layout';
 
 describe('resource-panel-layout', () => {
@@ -50,5 +54,16 @@ describe('resource-panel-layout', () => {
   it('ignores invalid stored width', () => {
     sessionStorage.setItem(WORKBENCH_PANEL_WIDTH_STORAGE_KEY, 'not-a-number');
     expect(readStoredWorkbenchPanelWidth()).toBe(WORKBENCH_PANEL_DEFAULT_WIDTH);
+  });
+
+  it('offsets left file preview past the sidebar inset', () => {
+    expect(workbenchFilePreviewLeftOffset(242)).toBe(242 + WORKBENCH_PANEL_EDGE_INSET);
+  });
+
+  it('reads and persists preview panel width separately', () => {
+    expect(readStoredWorkbenchPanelWidth('preview')).toBe(WORKBENCH_PANEL_PREVIEW_DEFAULT_WIDTH);
+    persistWorkbenchPanelWidth(600, 'preview');
+    expect(sessionStorage.getItem(WORKBENCH_PANEL_PREVIEW_WIDTH_STORAGE_KEY)).toBe('600');
+    expect(readStoredWorkbenchPanelWidth('preview')).toBe(600);
   });
 });
