@@ -102,6 +102,11 @@ cd ui-sandbox && bun run typecheck
 | Project 行操作 | `ProjectRowAccessory`（计数 + More \| New session） | `ProjectSidebar` |
 | 归档浏览列表 | `ArchivedBrowserList` | `ArchivedBrowserDialog` |
 | 搜索弹窗列表密度 | — | `SessionSearch`、`ArchivedBrowserDialog`：`gap-1` 列表、`min-h-32` 行、`py-6 px-10`、`text-11` 副标题 |
+| 资源 / 文件预览浮窗 | — | 右 `ResourceFloatingPanel`（Explorer·SCM·Graph）；左 `ResourceFloatingPanel` + `ResourceFileEditor floating` |
+
+**壳层 chrome（定稿）**：New session / Search / More 与 instance 行留在 `ProjectSidebar`（`SidebarNavBar`），**不做**全局顶栏迁移（`docs/design/ui-specification.md` §10.1）。
+
+**工具可点击路径**：`features/chat/tool-file-link.ts` 只对 Read/Write/Edit 等稳定 `file_path`（及等价字段）生成链接；**Grep/Glob 的 pattern 不是文件路径**，不得与 filesystem 工具共用同一链接规则。
 
 **ButtonGroup 契约**：透明底、无阴影、无外层 border；段间 `border-r`；hover `bg-interaction-hover`。侧栏 accessory **绝对定位叠层**，不占文档流（meta 与 actions 淡入淡出）。
 

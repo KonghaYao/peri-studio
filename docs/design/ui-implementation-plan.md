@@ -46,12 +46,15 @@ date: 2026-08-30
 
 ### P2-A · Shell + Sidebar
 - `widgets/shell/*`、`widgets/sidebar/*` ← `ProjectSidebarLayout`、云雾分隔、Pinned/Workspaces 树
+- **定稿**：Session 切换与 `SidebarNavBar` 动作留在侧栏（[`ui-specification.md` §10.1](ui-specification.md#101-壳层信息架构定稿)）
+- **不在范围**：全局顶栏填满 app 名、把 New session / Search / More 迁出侧栏
 
 ### P2-B · Chat + Composer
 - `widgets/chat/*`、`widgets/composer/*` ← Markdown、ToolActivity、UserBubble、SlashMenu、TokenUsageMeter
 
 ### P2-C · Resource + Git
-- `widgets/resource/*` ← FileTree、FilePreview、SCM 树、GitGraphPanel（大面板）、Workbench 布局
+- `widgets/resource/*` ← FileTree、FilePreview、SCM 树、GitGraphPanel、**ResourceFloatingPanel**（右轨 + 左文件预览）
+- 布局契约：[`ui-specification.md` §10.2](ui-specification.md#102-资源工作台浮窗)、`resource-panel-layout.ts`
 - **Git Graph 数据面**（非 UI）：wire 与投影契约见 [`git-graph-protocol.md`](git-graph-protocol.md)；视觉已落地，待接 `git-log-page` 替换 mock
 
 ### P2-D · Decision + Status

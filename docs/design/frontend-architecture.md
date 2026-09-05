@@ -121,6 +121,8 @@ web/src/
 - 把 features + entities + store 信号装配为一块 UI。
 - 允许 `*.test.tsx`（jsdom）；复杂逻辑仍下沉到 features。
 
+**资源工作台**（`widgets/resource`）：`AppShell` + `ResourceWorkbench` 装配导航；`ResourceFloatingPanel` / `resource-panel-layout.ts` 负责右轨（Explorer·SCM·Graph）与左轨（文件预览）浮窗。壳层与侧栏分工见 [`ui-specification.md`](ui-specification.md) §10.1–§10.2。
+
 ### 5.5 `pages`（页面）
 
 - 布局与路由入口；薄层，主要 `<AppShell>` 级组合。

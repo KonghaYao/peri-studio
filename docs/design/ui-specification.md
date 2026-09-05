@@ -1,6 +1,6 @@
 ---
 status: accepted
-date: 2026-08-30
+date: 2026-09-05
 ---
 
 # Peri Studio Web UI 规范（权威版）
@@ -16,6 +16,7 @@ date: 2026-08-30
 | 文件 | 状态 | 说明 |
 |------|------|------|
 | [`../arch/workspace-ui-concept.html`](../arch/workspace-ui-concept.html) | **概念稿** | Workspace/Project/Session 信息架构讨论用；颜色与组件均非生产规范 |
+| 全局 App 顶栏填满品牌名、Session 切换迁出 `ProjectSidebar` | **已否决** | 侧栏 instance 行 + `SidebarNavBar` 为定稿；见 §10.1 |
 | 任意截图 / Figma 未回写 token | **无效** | 必须以 `tokens.css` 与 `shared/ui` 为准 |
 
 **现行视觉身份**：白底画布 + AntD 冷灰发丝线 + **湛蓝 accent**（`#2563eb`，`--palette-accent-600`），层次靠间距与边框而非大面积灰底块。权威 token 与 `ui-sandbox` Layers 对齐。深色主题尚未在产品中启用。
@@ -173,10 +174,27 @@ widgets/*           ← 业务组合；禁止深层 import 单个 ui 文件，�
 | 侧栏 | `widgets/sidebar` | 28px 行高、选中 `bg-selected`、`For` 稳定 key |
 | 聊天 | `widgets/chat` | Transcript 窗口化、Permission/Elicitation 队列、Markdown |
 | 输入 | `widgets/composer` | Composer 圆角容器、slash overlay、`aria-activedescendant` |
-| 资源 | `widgets/resource` | Explorer 树 24px 行、diff 编辑器、44px 触控目标 |
+| 资源 | `widgets/resource` | 右/左 `ResourceFloatingPanel`（Explorer·SCM·Graph / 文件预览）；Git diff 占主区；44px 触控目标 |
 | 认证 | `widgets/auth` | AuthGate 卡片 `--container-auth-card` |
 
 Widget **可以**读 `store`；**不得**直发 WebSocket 帧。复杂逻辑下沉 `features/*`。
+
+### 10.1 壳层信息架构（定稿）
+
+- **侧栏为全局会话 chrome 的唯一位置**：`ProjectSidebar` 顶部保留 instance/品牌行与 `SidebarNavBar`（New session、Search、More）。**不**把这些动作迁入 AppShell 全局顶栏。
+- **`ChatHeader`**（对话区内）：当前会话标题、ACP session 切换、打开资源入口；不重复侧栏的全局新建/搜索。
+- 调整导航密度时只改 `widgets/sidebar` / `sidebar-parts`，勿并行维护第二套顶栏会话 UI。
+
+### 10.2 资源工作台浮窗
+
+| 视口 | 位置 | 内容 |
+|------|------|------|
+| 桌面 · 右 | `ResourceFloatingPanel`（`anchor=right`） | Explorer、Source Control、Git Graph；`widthProfile` 为 `workspace` 或 `graph` |
+| 桌面 · 左 | `ResourceFloatingPanel`（`anchor=left`，`widthProfile=preview`） | 只读文件预览；可与右侧文件树同时显示 |
+| 桌面 · 主区 | `conversation-pane` | 默认 `ChatView`；**Git diff** 预览占满主区并暂挂右侧资源 view |
+| 移动 | Dialog / 主区全屏 | 资源 drawer；文件预览仍在主区 |
+
+宽度默认值、sessionStorage 键与 `leftOffset`（侧栏宽 + 边距）见 `widgets/resource/resource-panel-layout.ts`。
 
 ---
 
