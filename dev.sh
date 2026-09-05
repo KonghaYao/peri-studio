@@ -1,7 +1,8 @@
 #!/bin/bash
-# Peri Studio 开发启动：构建 Web，再运行唯一的本地模式二进制。
+# Peri Studio 开发启动：Web 从磁盘提供（不重编 Rust），可选 watch 构建。
 set -euo pipefail
 cd "$(dirname "$0")"
+ROOT="$(pwd)"
 
 for REQUIRED_COMMAND in bun cargo grep tail lsof; do
     if ! command -v "${REQUIRED_COMMAND}" >/dev/null 2>&1; then
@@ -14,9 +15,13 @@ CONFIG_DIR="${PERI_STUDIO_CONFIG_DIR:-$HOME/.config/peri-studio}"
 DATA_DIR="${PERI_STUDIO_DATA_DIR:-$HOME/.local/share/peri-studio}"
 LISTEN_ADDR="${PERI_STUDIO_LISTEN_ADDR:-127.0.0.1}"
 LISTEN_PORT="${PERI_STUDIO_LISTEN_PORT:-8456}"
-LOG_DIR="$(pwd)/.tmp"
+LOG_DIR="${ROOT}/.tmp"
 APP_LOG="${LOG_DIR}/peri-studio.${$}.log"
 DEV_LOG_FILTER="${PERI_STUDIO_DEV_LOG:-info}"
+WEB_DIST="${PERI_STUDIO_WEB_DIST:-${ROOT}/web/dist}"
+WEB_WATCH="${PERI_STUDIO_WEB_WATCH:-1}"
+# 开发态：静态资源从 web/dist 读取，二进制不内嵌前端（--no-default-features）。
+export PERI_STUDIO_WEB_DIST="${WEB_DIST}"
 
 stale_local_listener_pids() {
     local records
@@ -65,13 +70,19 @@ if lsof -nP -iTCP:"${LISTEN_PORT}" -sTCP:LISTEN >/dev/null 2>&1; then
     exit 1
 fi
 
-echo "==> 构建 Web 前端"
-(cd web && bun run build)
+echo "==> 构建 Web 前端（产物: ${WEB_DIST}）"
+(cd "${ROOT}/web" && bun run build)
 
-# Rust 二进制预构建：有源码改动时 cargo 需增量编译（数秒），显式提示并
-# 在运行前完成，避免"启动后长时间无输出"被误认为卡在实例就绪。
-echo "==> 构建 peri-studio 二进制（有 Rust 改动时需增量编译）"
-cargo build -q -p peri-studio
+WEB_WATCH_PID=""
+if [ "${WEB_WATCH}" = "1" ]; then
+    echo "==> 后台监听 Web 变更（vite build --watch；关闭: PERI_STUDIO_WEB_WATCH=0）"
+    (cd "${ROOT}/web" && bunx vite build --watch) &
+    WEB_WATCH_PID=$!
+fi
+
+# Rust 二进制：不内嵌 web/dist；仅 Rust 源码变更时才需重编。
+echo "==> 构建 peri-studio 二进制（dev：无 embed-static-web；有 Rust 改动时需增量编译）"
+cargo build -q -p peri-studio --no-default-features
 
 umask 077
 mkdir -p "${LOG_DIR}" "${DATA_DIR}" "${CONFIG_DIR}"
@@ -85,6 +96,7 @@ cleanup() {
     CLEANED_UP=1
     echo
     echo "==> 停止 Peri Studio ..."
+    [ -n "${WEB_WATCH_PID}" ] && kill "${WEB_WATCH_PID}" 2>/dev/null || true
     [ -n "${APP_PID}" ] && kill -- -"${APP_PID}" 2>/dev/null || true
     [ -n "${TAIL_PID}" ] && kill "${TAIL_PID}" 2>/dev/null || true
     [ -n "${APP_PID}" ] && wait "${APP_PID}" 2>/dev/null || true
@@ -93,7 +105,7 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-echo "==> 启动 peri-studio local（日志: ${APP_LOG}）"
+echo "==> 启动 peri-studio local（静态: PERI_STUDIO_WEB_DIST；日志: ${APP_LOG}）"
 RUST_LOG="${DEV_LOG_FILTER}" ./target/debug/peri-studio local \
     --listen "${LISTEN_ADDR}" \
     --listen-port "${LISTEN_PORT}" \
@@ -123,6 +135,7 @@ fi
 
 echo
 echo "==> 已就绪：http://${LISTEN_ADDR}:${LISTEN_PORT}/（Ctrl+C 停止）"
+echo "    改前端: 保存后 vite watch 会更新 dist，刷新浏览器即可（无需 cargo build）"
 echo
 tail -f "${APP_LOG}" &
 TAIL_PID=$!

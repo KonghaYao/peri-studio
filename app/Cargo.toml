@@ -5,6 +5,10 @@ edition.workspace = true
 license.workspace = true
 description = "Peri Studio 单一产品入口：本地模式、中心 server 与远程 instance 连接"
 
+[features]
+default = ["embed-static-web"]
+embed-static-web = ["peri-studio-server/embed-static-web"]
+
 [[bin]]
 name = "peri-studio"
 path = "src/main.rs"
@@ -15,7 +19,7 @@ clap = { workspace = true, features = ["derive", "env"] }
 dirs-next = { workspace = true }
 libc = { workspace = true }
 peri-instance = { path = "../instance", version = "0.2.0" }
-peri-studio-server = { path = "../server", version = "0.2.0" }
+peri-studio-server = { path = "../server", version = "0.2.0", default-features = true }
 serde_json = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tokio-util = { workspace = true }

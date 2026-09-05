@@ -1,27 +1,79 @@
 //! 静态资源面：内嵌 Vite 产物路由 + Content-Type + 缓存策略。
 //!
-//! 构建产物 `web/dist/` 由 `build.rs` 在编译期扫描并生成内嵌资源表
-//! （`assets.rs`，字节经 include_bytes! 引用，零运行时文件 IO、零新依赖）。
-//! 本模块按实际文件清单做路径查表：`/`、`/index.html` 映射面板入口，
-//! `/panel.html` 为旧链接兼容（同样指向面板），`/assets/*` 直接映射产物
-//! 相对路径，未知路径返回 None（由调用方 404）。静态资源名不做 URL 解码，
-//! 取请求行 path 段（去 query）。
+//! 生产：构建产物 `web/dist/` 由 `build.rs` 在编译期扫描并生成内嵌资源表。
+//! 开发：设置 `PERI_STUDIO_WEB_DIST` 指向 `web/dist` 目录时，每次请求从磁盘读取
+//! （配合 `embed-static-web` feature 关闭，前端改动无需重编 Rust）。
+
+use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
+
+use tokio::fs;
 
 include!(concat!(env!("OUT_DIR"), "/assets.rs"));
 
-/// 静态资源路由表：URL 路径 → 产物相对路径。`/`、`/index.html` 与旧链接
-/// `/panel.html` 均映射面板入口 `index.html`，`/assets/*` 直接对应 vite
-/// 产物文件名。返回 (资源名, Content-Type, 内容)；未知路径 → None。
-pub(crate) fn route(path: &str) -> Option<(&'static str, &'static str, &'static [u8])> {
+/// 开发态静态根目录（绝对路径）。未设置则仅使用内嵌 `ASSETS`。
+pub(crate) fn external_web_dist_root() -> Option<&'static Path> {
+    static ROOT: OnceLock<Option<PathBuf>> = OnceLock::new();
+    ROOT.get_or_init(|| {
+        let raw = std::env::var("PERI_STUDIO_WEB_DIST").ok()?;
+        let path = PathBuf::from(raw);
+        if !path.join("index.html").is_file() {
+            tracing::warn!(
+                path = %path.display(),
+                "PERI_STUDIO_WEB_DIST is set but index.html is missing"
+            );
+            return None;
+        }
+        path.canonicalize().ok()
+    })
+    .as_deref()
+}
+
+/// 将 HTTP path 映射为 dist 内相对路径（与内嵌路由一致）。
+fn normalize_request_path(path: &str) -> Option<&str> {
     let rel = match path {
-        // index.html 为唯一页面（`/` 即面板）；/panel.html 仅做旧链接兼容。
         "/" | "/index.html" | "/panel.html" => "index.html",
         other => other.trim_start_matches('/'),
     };
+    if rel.is_empty() || rel.contains("..") || rel.contains('\\') || rel.contains('\0') {
+        return None;
+    }
+    Some(rel)
+}
+
+/// 静态资源路由表：URL 路径 → 产物相对路径。未知路径 → None。
+pub(crate) fn route(path: &str) -> Option<(&'static str, &'static str, &'static [u8])> {
+    let rel = normalize_request_path(path)?;
     ASSETS
         .iter()
         .find(|a| a.url == rel)
         .map(|a| (a.url, content_type(a.url), a.bytes))
+}
+
+/// 从 `PERI_STUDIO_WEB_DIST` 读取静态文件（开发态）。
+pub(crate) async fn route_external(
+    path: &str,
+) -> Option<(String, String, Vec<u8>)> {
+    let root = external_web_dist_root()?;
+    let rel = normalize_request_path(path)?;
+    let file = resolve_under_root(root, rel)?;
+    if !file.is_file() {
+        return None;
+    }
+    let bytes = fs::read(&file).await.ok()?;
+    let name = rel.to_string();
+    let ct = content_type(&name).to_string();
+    Some((name, ct, bytes))
+}
+
+fn resolve_under_root(root: &Path, rel: &str) -> Option<PathBuf> {
+    let joined = root.join(rel);
+    let canonical = joined.canonicalize().ok()?;
+    let root_canon = root.canonicalize().ok()?;
+    if !canonical.starts_with(&root_canon) {
+        return None;
+    }
+    Some(canonical)
 }
 
 /// 按扩展名取 Content-Type（最小映射表；未识别回 octet-stream）。
@@ -75,9 +127,6 @@ fn is_fingerprinted_asset(name: &str) -> bool {
         return false;
     };
     let stem = file_name.split('.').next().unwrap_or_default();
-    // Rollup's URL-safe base64 hash alphabet includes `-`, including as the
-    // final character (for example `index-CBgKAe6-.css`). Split at the first
-    // separator so a trailing hash character is not mistaken for a delimiter.
     let Some((_, fingerprint)) = stem.split_once('-') else {
         return false;
     };

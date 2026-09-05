@@ -15,7 +15,8 @@ import { McpPanelContent } from '@/widgets/chat/McpPanel';
 import { ResourceRailButton } from './ResourceRailButton';
 import { SessionRailActions } from '@/widgets/shell/SessionRailActions';
 import { Files, GitBranch, GitGraph, PlugZap, RefreshCw, X } from 'lucide-solid';
-import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_SURFACE_CLASS, RESOURCE_PANEL_TITLE_CLASS } from './resource-panel-layout';
+import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_TITLE_CLASS } from './resource-panel-layout';
+import { ResourceFloatingPanel } from './ResourceFloatingPanel';
 import { GitGraphView } from './git/GitGraphView';
 
 export type WorkbenchView = 'explorer' | 'scm' | 'mcp' | 'graph' | null;
@@ -120,12 +121,44 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   };
   const close = () => props.compact ? props.onOpenChange?.(false) : setView(null);
   const panelTitle = () => view() === 'mcp' ? 'MCP' : view() === 'graph' ? 'Git Graph' : project()?.name ?? 'Workspace';
-  const showGraphPanel = () => view() === 'graph' && props.compact;
-  const showStandardPanel = () => view() && view() !== 'graph';
-  const showPanel = () => {
-    const current = view();
-    return !!current && (current !== 'graph' || !!props.compact);
-  };
+  const showPanel = () => !!view();
+  const panelBodyClass = 'resource-workbench__panel flex min-h-0 min-w-0 flex-1 flex-col bg-surface-overlay';
+  const panelBody = () => (
+    <>
+      <header class={RESOURCE_PANEL_HEADER_CLASS}>
+        <strong class={RESOURCE_PANEL_TITLE_CLASS}>{panelTitle()}</strong>
+        <Show when={view() === 'explorer' || view() === 'scm'}><IconButton label="Refresh resources" size="compact" onClick={refreshResourceProject} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><RefreshCw size={14} strokeWidth={1.7} /></IconButton></Show>
+        <Show when={view() === 'graph'}>
+          <IconButton
+            label="Refresh graph"
+            size="compact"
+            onClick={() => {
+              const repo = resourceWorkspace().repositories[0];
+              if (repo) refreshGitLog(repo.id);
+            }}
+            class="border-0 bg-transparent text-content-muted hover:text-content-primary"
+          >
+            <RefreshCw size={14} strokeWidth={1.7} />
+          </IconButton>
+        </Show>
+        <IconButton label="Close resource panel" size="compact" onClick={close} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><X size={14} strokeWidth={1.7} /></IconButton>
+      </header>
+      <Show when={view() === 'mcp'}><McpPanelContent embedded /></Show>
+      <Show when={view() === 'graph'}>
+        <GitGraphView embedded />
+      </Show>
+      <Show when={view() === 'explorer' || view() === 'scm'}>
+        <Show when={project()} fallback={<div class="p-16 text-12 text-content-muted">Select or create a project to browse its workspace.</div>}>
+          <Show when={resourceWorkspace().error}>{(message) => <div role="alert" class="m-8 flex items-start gap-6 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">
+            <span class="min-w-0 flex-1">{message()}</span>
+            <button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={refreshResourceProject}>Retry</button>
+          </div>}</Show>
+          <Show when={view() === 'explorer'}><ExplorerPanel expanded={explorerExpanded()} onExpandedChange={setExplorerExpanded} activePath={explorerActivePath()} onActivePathChange={setExplorerActivePath} scrollTop={explorerScrollTop()} onScrollTopChange={(scrollTop) => { if (!props.compact || props.open) setExplorerScrollTop(scrollTop); }} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'explorer', key })} /></Show>
+          <Show when={view() === 'scm'}><SourceControlPanel commitMessages={visibleCommitMessages()} onCommitMessageChange={setCommitMessage} onCommitSubmitted={recordSubmittedCommit} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'scm', key })} /></Show>
+        </Show>
+      </Show>
+    </>
+  );
   const surface = () => <aside class={`resource-workbench flex h-full min-h-0 border-l border-border-subtle bg-surface-overlay ${props.compact ? 'absolute inset-0 w-full' : 'relative w-(--workbench-rail-width) shrink-0'}`} aria-label="Workspace resources">
     <nav class="flex w-(--workbench-rail-width) shrink-0 flex-col items-center gap-4 bg-surface-overlay py-8" aria-label="Resource views">
       <ResourceRailButton label="Explorer" active={view() === 'explorer'} onClick={() => toggle('explorer')}><Files size={17} strokeWidth={1.7} /></ResourceRailButton>
@@ -135,42 +168,19 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
       <SessionRailActions />
     </nav>
     <Show when={showPanel()}>
-      <div data-testid="resource-workbench-panel" class={`resource-workbench__panel flex min-h-0 min-w-0 flex-1 flex-col bg-surface-overlay ${props.compact ? '' : `absolute z-30 ${showGraphPanel() ? '' : RESOURCE_PANEL_SURFACE_CLASS}`}`}>
-        <Show when={showStandardPanel() || showGraphPanel()}>
-          <header class={RESOURCE_PANEL_HEADER_CLASS}>
-            <strong class={RESOURCE_PANEL_TITLE_CLASS}>{panelTitle()}</strong>
-            <Show when={view() === 'explorer' || view() === 'scm'}><IconButton label="Refresh resources" size="compact" onClick={refreshResourceProject} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><RefreshCw size={14} strokeWidth={1.7} /></IconButton></Show>
-            <Show when={view() === 'graph'}>
-              <IconButton
-                label="Refresh graph"
-                size="compact"
-                onClick={() => {
-                  const repo = resourceWorkspace().repositories[0];
-                  if (repo) refreshGitLog(repo.id);
-                }}
-                class="border-0 bg-transparent text-content-muted hover:text-content-primary"
-              >
-                <RefreshCw size={14} strokeWidth={1.7} />
-              </IconButton>
-            </Show>
-            <IconButton label="Close resource panel" size="compact" onClick={close} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><X size={14} strokeWidth={1.7} /></IconButton>
-          </header>
-        </Show>
-        <Show when={view() === 'mcp'}><McpPanelContent embedded /></Show>
-        <Show when={showGraphPanel()}>
-          <GitGraphView embedded onClose={close} />
-        </Show>
-        <Show when={view() === 'explorer' || view() === 'scm'}>
-          <Show when={project()} fallback={<div class="p-16 text-12 text-content-muted">Select or create a project to browse its workspace.</div>}>
-            <Show when={resourceWorkspace().error}>{(message) => <div role="alert" class="m-8 flex items-start gap-6 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">
-              <span class="min-w-0 flex-1">{message()}</span>
-              <button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={refreshResourceProject}>Retry</button>
-            </div>}</Show>
-            <Show when={view() === 'explorer'}><ExplorerPanel expanded={explorerExpanded()} onExpandedChange={setExplorerExpanded} activePath={explorerActivePath()} onActivePathChange={setExplorerActivePath} scrollTop={explorerScrollTop()} onScrollTopChange={(scrollTop) => { if (!props.compact || props.open) setExplorerScrollTop(scrollTop); }} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'explorer', key })} /></Show>
-            <Show when={view() === 'scm'}><SourceControlPanel commitMessages={visibleCommitMessages()} onCommitMessageChange={setCommitMessage} onCommitSubmitted={recordSubmittedCommit} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'scm', key })} /></Show>
-          </Show>
-        </Show>
-      </div>
+      <Show when={props.compact} fallback={
+        <ResourceFloatingPanel
+          data-testid="resource-workbench-panel"
+          class={panelBodyClass}
+          widthProfile={view() === 'graph' ? 'graph' : 'workspace'}
+        >
+          {panelBody()}
+        </ResourceFloatingPanel>
+      }>
+        <div data-testid="resource-workbench-panel" class={panelBodyClass}>
+          {panelBody()}
+        </div>
+      </Show>
     </Show>
   </aside>;
   return <Show when={props.compact} fallback={surface()}>

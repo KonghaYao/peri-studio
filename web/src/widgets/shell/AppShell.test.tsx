@@ -96,6 +96,15 @@ describe('AppShell desktop sidebar', () => {
     expect(screen.queryByRole('button', { name: 'Machines' })).not.toBeInTheDocument();
   });
 
+  it('keeps chat in the conversation pane when Git Graph is open on desktop', () => {
+    render(() => <AppShell initialResourceView="graph" />);
+
+    expect(screen.getByTestId('conversation-pane')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open workspace resources' })).toBeInTheDocument();
+    expect(screen.getByTestId('git-graph-view')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Close Git Graph' })).not.toBeInTheDocument();
+  });
+
   it('opens Explorer from the medium resource rail', async () => {
     vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
       matches: query.includes('1199'),

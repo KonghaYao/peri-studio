@@ -82,6 +82,31 @@ describe('VS Code-style resource panels', () => {
     expect(screen.getByRole('region', { name: 'Source Control' })).toBeInTheDocument();
   });
 
+  it('opens Git Graph in the shared desktop floating panel', async () => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    });
+    installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
+    setProjects([{ id: 'project-1', name: 'Peri', cwd: '/workspace/peri', instanceId: 'local', createdAt: null, updatedAt: null, archivedAt: null }]);
+    setProjectSessions([{ id: 'session-1', projectId: 'project-1', acpSessionId: 'acp-1', title: 'Work', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: null, archivedAt: null }]);
+    setSelectedSessionId('session-1');
+    setResourceWorkspace({
+      projectId: 'project-1', directories: {}, loading: [], error: null,
+      repositories: [{ id: 'repo-1', root: '', name: 'peri-studio', generation: 'g1', groups: {} }],
+    });
+    render(() => <ResourceWorkbench />);
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Git Graph' }));
+    expect(screen.getByRole('button', { name: 'Git Graph' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('resource-workbench-panel')).toHaveAttribute('data-resource-floating-panel');
+    expect(screen.getByTestId('resource-workbench-panel')).toHaveAttribute('data-width-profile', 'graph');
+    expect(screen.getByTestId('resource-workbench-panel')).toHaveStyle({ width: '480px' });
+    expect(screen.getByTestId('git-graph-view')).toBeInTheDocument();
+    expect(screen.getByRole('separator', { name: 'Resize resource panel' })).toBeInTheDocument();
+  });
+
   it('releases a stale project view without subscribing to it', () => {
     const sent: Array<Record<string, unknown>> = [];
     installResourceStore({ send: (frame) => { sent.push(frame as Record<string, unknown>); return true; }, ready: () => true, toast: vi.fn() });

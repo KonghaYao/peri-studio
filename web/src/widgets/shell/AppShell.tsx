@@ -4,7 +4,6 @@ import { ChatView } from '@/widgets/chat/ChatView';
 import { compactViewportQuery, mediumViewportQuery } from '../../panel/lib/breakpoints';
 import { ProjectDrawer } from './shared/ProjectDrawer';
 import { ResourceWorkbench, type ResourcePreviewOrigin, type WorkbenchView } from '@/widgets/resource/ResourceWorkbench';
-import { GitGraphView } from '@/widgets/resource/git/GitGraphView';
 import { closeResourceDiffPreview, closeResourceFilePreview, resourceDiffPreview, resourceFilePreview } from '../../panel/store';
 import { ResourceDiffEditor } from '@/widgets/resource/ResourceDiffEditor';
 import { ResourceFileEditor } from '@/widgets/resource/ResourceFileEditor';
@@ -160,11 +159,6 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
     ? 'minmax(0, 1fr)'
     : `${sidebarWidth()}px minmax(0, 1fr) auto`;
 
-  const graphInMainPane = () => !mobile()
-    && resourceView() === 'graph'
-    && !resourceFilePreview()
-    && !resourceDiffPreview();
-
   return (
     <div data-testid="app-shell" class="app-shell relative grid h-dvh grid-rows-fill overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide" style={{ 'grid-template-columns': sidebarGridTemplate() }}>
       <ProjectDrawer ref={(element) => { drawer = element; }} open={open()} modal={mobile()} onOpenChange={setOpen}>
@@ -192,14 +186,10 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
         onPointerDown={startSidebarResize}
       /></div>
       <main ref={main} data-testid="conversation-pane" class="conversation-pane min-w-0 min-h-0 overflow-hidden">
-        <Show when={graphInMainPane()} fallback={
-          <Show when={resourceFilePreview()} fallback={<Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenResources={openResources} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
-            <ResourceDiffEditor onClose={() => closePreview('diff')} />
-          </Show>}>
-            <ResourceFileEditor onClose={() => closePreview('file')} />
-          </Show>
-        }>
-          <GitGraphView onClose={() => setResourceView(null)} />
+        <Show when={resourceFilePreview()} fallback={<Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenResources={openResources} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
+          <ResourceDiffEditor onClose={() => closePreview('diff')} />
+        </Show>}>
+          <ResourceFileEditor onClose={() => closePreview('file')} />
         </Show>
       </main>
       <ResourceWorkbench

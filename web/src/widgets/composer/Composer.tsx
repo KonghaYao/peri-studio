@@ -12,7 +12,7 @@
 // lib/composer-placeholder；inputPrediction 展示在 lib/composer-prediction。
 // 本组件保留编排：信号装配、textarea 聚焦与草稿读写、提交/取消状态机。
 
-import { createEffect, createSignal, createUniqueId, For, Show } from 'solid-js';
+import { createEffect, createUniqueId, For, Show } from 'solid-js';
 import { cancelTurn, chatHead, chatStatusSignal, openingSessionId, projectSessions, retryMessageSubmission, retryPersistentAction, runtimeDocsHydrated, selectedCid, selectedSessionId, sendMessage, sessionConfigMutation, turnActive } from '../../panel/store';
 import { isTerminal } from '../../panel/lib/action-state';
 import { promptDeliveryReady, promptMaxBytes } from '../../panel/lib/connection';

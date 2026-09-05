@@ -314,7 +314,7 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
   assert.doesNotMatch(composer, /focus-within:border-focus-ring/);
   assert.doesNotMatch(composer, /has-\[\.composer-input:focus-visible\]:shadow-/);
   assert.doesNotMatch(composer, /shadow-float/);
-  assert.match(composer, /composer-toolbar flex min-h-36 items-center/);
+  assert.match(composer, /composer-toolbar flex min-h-36 min-w-0 items-center/);
   assert.match(composer, /rounded-\(--composer-radius\)/);
   assert.match(base, /:focus-visible\s*\{\s*outline:\s*2px solid var\(--focus-ring\)/);
 });

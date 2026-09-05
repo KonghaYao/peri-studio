@@ -1,7 +1,4 @@
 import { Show, createEffect, createMemo, createSignal, untrack } from 'solid-js';
-import { IconButton } from '@/shared/ui';
-import { RefreshCw, X } from 'lucide-solid';
-import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_TITLE_CLASS } from '../resource-panel-layout';
 import {
   canLoadMoreGitLog,
   gitLogCommits,
@@ -18,12 +15,11 @@ import { mapGitLogToGraphCommits } from '@/features/resource/map-git-log';
 import type { GitGraphActionKind, GitGraphActionParams } from '@/features/resource/git-graph-mutations';
 
 type GitGraphViewProps = {
-  /** 嵌在 workbench 窄面板内（移动端 / compact）。 */
+  /** 嵌在 workbench 面板内；标题与关闭由 workbench 头部负责。 */
   embedded?: boolean;
-  onClose?: () => void;
 };
 
-/** Git Graph 大面板：桌面占满 conversation pane，compact 时嵌在 workbench。 */
+/** Git Graph 内容区，由 ResourceWorkbench 浮动面板承载。 */
 export function GitGraphView(props: GitGraphViewProps = {}) {
   const [graphRepoId, setGraphRepoId] = createSignal<string | null>(null);
 
@@ -66,32 +62,6 @@ export function GitGraphView(props: GitGraphViewProps = {}) {
       class={`flex min-h-0 flex-col bg-surface-overlay ${props.embedded ? 'min-h-0 flex-1' : 'h-full w-full'}`}
       aria-label="Git Graph workspace"
     >
-      <Show when={!props.embedded && props.onClose}>
-        <header class={RESOURCE_PANEL_HEADER_CLASS}>
-          <strong class={RESOURCE_PANEL_TITLE_CLASS}>Git Graph</strong>
-          <IconButton
-            label="Refresh graph"
-            size="compact"
-            disabled={!activeGraphRepoId() || gitLogLoading(activeGraphRepoId()!)}
-            onClick={() => {
-              const repoId = activeGraphRepoId();
-              if (repoId) refreshGitLog(repoId);
-            }}
-            class="border-0 bg-transparent text-content-muted hover:text-content-primary"
-          >
-            <RefreshCw size={14} strokeWidth={1.7} />
-          </IconButton>
-          <IconButton
-            label="Close Git Graph"
-            size="compact"
-            onClick={() => props.onClose?.()}
-            class="border-0 bg-transparent text-content-muted hover:text-content-primary"
-          >
-            <X size={14} strokeWidth={1.7} />
-          </IconButton>
-        </header>
-      </Show>
-
       <Show when={resourceWorkspace().error}>
         {(message) => (
           <div role="alert" class="m-8 flex items-start gap-6 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">
@@ -134,7 +104,7 @@ export function GitGraphView(props: GitGraphViewProps = {}) {
         {(repoId) => (
           <>
             <GitGraphPanel
-              nested={props.embedded || !!props.onClose}
+              nested={props.embedded ?? true}
               commits={graphCommits()}
               onRefresh={() => refreshGitLog(repoId())}
               onGraphAction={(action, params) => runGraphAction(action, params)}

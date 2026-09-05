@@ -221,6 +221,22 @@
   background: var(--sidebar-resize-handle-hover);
 }
 
+.workbench-panel-resize-handle--dragging,
+.workbench-panel-resize-handle--dragging * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+.workbench-panel-resize-handle--dragging > span {
+  background: var(--sidebar-resize-handle-hover);
+}
+
+body.workbench-panel-resizing,
+body.workbench-panel-resizing * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
 /* ── Mermaid 注入 SVG ────────────────────────────────────────────────── */
 
 .md-mermaid__canvas svg,

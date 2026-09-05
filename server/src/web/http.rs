@@ -23,7 +23,9 @@ use crate::web::parse::{
     cookie_value, header_end, is_http_header_name, set_unique_header, valid_loopback_host,
     valid_origin,
 };
-use crate::web::static_::{cache_headers_for_static, route};
+use crate::web::static_::cache_headers_for_static;
+#[cfg(test)]
+use crate::web::static_::route;
 use crate::web::{BrowserAuthSetup, HealthSnapshot};
 
 pub(super) const MAX_HTTP_HEAD: usize = 16 * 1024;
@@ -424,32 +426,46 @@ async fn serve_static_consumed(
     method: &str,
     path: &str,
 ) -> std::io::Result<()> {
+    use super::static_::{cache_headers_for_static, route, route_external};
+
     let is_head = method == "HEAD";
-    let found = if method == "GET" || is_head {
-        route(path)
-    } else {
-        None
-    };
-    match found {
+    if method != "GET" && !is_head {
+        return write_static_not_found(&mut stream, path, is_head).await;
+    }
+
+    if let Some((name, ct, body)) = route_external(path).await {
+        let name_for_cache = name.clone();
+        let mut headers = base_security_headers();
+        headers.extend(cache_headers_for_static(path, Some(name_for_cache.as_str())));
+        return write_http_response(&mut stream, "200 OK", &ct, &body, &headers, !is_head).await;
+    }
+
+    match route(path) {
         Some((name, ct, body)) => {
             let mut headers = base_security_headers();
             headers.extend(cache_headers_for_static(path, Some(name)));
             write_http_response(&mut stream, "200 OK", ct, body, &headers, !is_head).await
         }
-        None => {
-            let mut headers = base_security_headers();
-            headers.extend(cache_headers_for_static(path, None));
-            write_http_response(
-                &mut stream,
-                "404 Not Found",
-                "text/plain",
-                b"404 Not Found\n",
-                &headers,
-                !is_head,
-            )
-            .await
-        }
+        None => write_static_not_found(&mut stream, path, is_head).await,
     }
+}
+
+async fn write_static_not_found(
+    stream: &mut TcpStream,
+    path: &str,
+    is_head: bool,
+) -> std::io::Result<()> {
+    let mut headers = base_security_headers();
+    headers.extend(cache_headers_for_static(path, None));
+    write_http_response(
+        stream,
+        "404 Not Found",
+        "text/plain",
+        b"404 Not Found\n",
+        &headers,
+        !is_head,
+    )
+    .await
 }
 
 pub(super) async fn write_http(

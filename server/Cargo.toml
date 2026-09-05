@@ -6,6 +6,11 @@ edition.workspace = true
 license.workspace = true
 description = "peri-studio 中心控制面：认证、控制面、ACPChannel 规范化、聚合器、DocManager、instance 注册表"
 
+[features]
+default = ["embed-static-web"]
+# 生产/发布默认开启；dev.sh 关闭后由 PERI_STUDIO_WEB_DIST 从磁盘提供 web/dist。
+embed-static-web = []
+
 [dependencies]
 tokio = { workspace = true, features = ["full", "test-util"] }
 tokio-util = { workspace = true }
