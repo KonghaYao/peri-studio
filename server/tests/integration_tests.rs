@@ -444,7 +444,10 @@ async fn t06_body() -> Result<(), String> {
     };
     let sid_a = session_ack.chat_id.unwrap_or_default();
     let acp_session_id = session_ack.session_id.unwrap_or_default();
-    assert!(!sid_a.is_empty(), "第一轮 session/create committed 必须携带 chatId");
+    assert!(
+        !sid_a.is_empty(),
+        "第一轮 session/create committed 必须携带 chatId"
+    );
     assert!(
         !acp_session_id.is_empty(),
         "第一轮 session/create committed 必须携带 sessionId（ACP durable id）"
