@@ -26,16 +26,14 @@ pub async fn run(
     shutdown: CancellationToken,
 ) -> anyhow::Result<()> {
     let server_shutdown = shutdown.clone();
-    let current_exe =
-        std::env::current_exe().context("failed to locate peri-studio executable")?;
-    let ports = MachinePorts::with_pipeline(Arc::new(AppMachinePipelinePort::new(
-        SshBackendConfig {
+    let current_exe = std::env::current_exe().context("failed to locate peri-studio executable")?;
+    let ports =
+        MachinePorts::with_pipeline(Arc::new(AppMachinePipelinePort::new(SshBackendConfig {
             data_dir: config.data_dir.clone(),
             config_dir: config.config_dir.clone(),
             current_exe,
             listen_port: config.listen_port,
-        },
-    )));
+        })));
     let runtime = ServerRuntime::start_with_ports(
         config.clone(),
         async move {

@@ -51,9 +51,7 @@ pub(crate) fn route(path: &str) -> Option<(&'static str, &'static str, &'static 
 }
 
 /// 从 `PERI_STUDIO_WEB_DIST` 读取静态文件（开发态）。
-pub(crate) async fn route_external(
-    path: &str,
-) -> Option<(String, String, Vec<u8>)> {
+pub(crate) async fn route_external(path: &str) -> Option<(String, String, Vec<u8>)> {
     let root = external_web_dist_root()?;
     let rel = normalize_request_path(path)?;
     let file = resolve_under_root(root, rel)?;

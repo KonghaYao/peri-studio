@@ -524,7 +524,11 @@ impl RelayEventHandler {
     }
 
     pub(super) async fn clear_mcp_app_tool_results(&self, chat_id: &str) {
-        self.inner.mcp_app_tool_results.write().await.remove(chat_id);
+        self.inner
+            .mcp_app_tool_results
+            .write()
+            .await
+            .remove(chat_id);
         self.inner.mcp_app_tool_inputs.write().await.remove(chat_id);
     }
 
@@ -545,7 +549,11 @@ impl RelayEventHandler {
 /// 把 ACP `rawOutput` 收成 App Bridge 需要的 CallToolResult。
 /// 已有 `content[]` 则原样保留；否则包一层并把原值放进 `structuredContent`。
 pub(super) fn as_mcp_app_call_tool_result(value: serde_json::Value) -> serde_json::Value {
-    if value.get("content").and_then(|content| content.as_array()).is_some() {
+    if value
+        .get("content")
+        .and_then(|content| content.as_array())
+        .is_some()
+    {
         return value;
     }
     if value.is_object() {

@@ -73,10 +73,7 @@ impl ChatRegistry {
                 None if ssh_empty_registry => {
                     // SSH 空 registry：登记未确认 chat，由 per-instance 恢复
                     // lane 接管（register + 心跳存活证据 → resume）。
-                    match self
-                        .register_from_reconcile(cid, instance_id)
-                        .await
-                    {
+                    match self.register_from_reconcile(cid, instance_id).await {
                         Ok(()) => {
                             report.alive.push(cid.clone());
                             confirmed.push(cid.clone());

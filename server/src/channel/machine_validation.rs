@@ -6,7 +6,10 @@ use peri_studio_proto::action::ActionEnvelope;
 
 use crate::channel::machine_command_processor::MachineCommandProcessor;
 use crate::control::MachineService;
-use crate::persist::machine_phases::{is_in_progress, is_terminal_failure, PHASE_AWAITING_HOST_KEY, PHASE_AWAITING_REPLACE, PHASE_OFFLINE};
+use crate::persist::machine_phases::{
+    is_in_progress, is_terminal_failure, PHASE_AWAITING_HOST_KEY, PHASE_AWAITING_REPLACE,
+    PHASE_OFFLINE,
+};
 use crate::persist::metadata::MachineRecord;
 use crate::protocol::{validate_identity_file_path, validate_ssh_destination};
 
@@ -36,7 +39,8 @@ impl MachineCommandProcessor {
                         false,
                     )));
                 }
-                if let Err(message) = validate_identity_file_path(payload.identity_file.as_deref()) {
+                if let Err(message) = validate_identity_file_path(payload.identity_file.as_deref())
+                {
                     return Err(SubmitAck::Failed(action_error(
                         command_id,
                         ErrorCode::InvalidState,
@@ -68,9 +72,7 @@ impl MachineCommandProcessor {
                         true,
                     )));
                 }
-                Ok(PreparedMachine {
-                    instance_id: None,
-                })
+                Ok(PreparedMachine { instance_id: None })
             }
             ActionEnvelope::MachineConnect { .. }
             | ActionEnvelope::MachineDisconnect { .. }

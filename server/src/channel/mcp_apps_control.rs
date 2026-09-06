@@ -9,7 +9,7 @@ use peri_studio_proto::ack::{ActionError, ErrorCode};
 use peri_studio_proto::action::{McpAppCallPayload, McpAppOpenPayload, McpAppResourcePayload};
 use peri_studio_proto::frame::Frame;
 use peri_studio_proto::mcp_apps::McpAppSessionFrame;
-use peri_studio_proto::schema::{ToolCallStatus, ToolCallProjection};
+use peri_studio_proto::schema::{ToolCallProjection, ToolCallStatus};
 use tokio::sync::{mpsc, RwLock};
 
 use crate::channel::broadcaster::OutboundMsg;
@@ -107,7 +107,9 @@ impl McpAppsControl {
         let tool = self
             .read_tool_call(&payload.chat_id, &payload.tool_call_id)
             .await
-            .ok_or_else(|| apps_error(command_id, ErrorCode::InvalidState, "tool call not found"))?;
+            .ok_or_else(|| {
+                apps_error(command_id, ErrorCode::InvalidState, "tool call not found")
+            })?;
         self.gate_open(command_id, &tool)?;
         let parsed = tool
             .mcp_server_id
@@ -115,16 +117,21 @@ impl McpAppsControl {
             .zip(tool.mcp_tool_name.as_deref())
             .map(|(server_id, tool_name)| (server_id.to_string(), tool_name.to_string()))
             .or_else(|| {
-                parse_mcp_tool_name(&tool.name).map(|parsed| {
-                    (parsed.server_id.clone(), parsed.tool_name.clone())
-                })
+                parse_mcp_tool_name(&tool.name)
+                    .map(|parsed| (parsed.server_id.clone(), parsed.tool_name.clone()))
             })
             .ok_or_else(|| silent_apps_error(command_id, "unsupported"))?;
         let owner_session_id = self
             .chats
             .session_id(&payload.chat_id)
             .await
-            .ok_or_else(|| apps_error(command_id, ErrorCode::InvalidState, "chat has no ACP session"))?;
+            .ok_or_else(|| {
+                apps_error(
+                    command_id,
+                    ErrorCode::InvalidState,
+                    "chat has no ACP session",
+                )
+            })?;
         send_accepted(&tx, command_id).await?;
         let this = self.clone();
         let command_id_owned = command_id.to_string();
@@ -164,7 +171,9 @@ impl McpAppsControl {
         let command_id_owned = command_id.to_string();
         let payload = payload.clone();
         tokio::spawn(async move {
-            let frame = this.execute_resource(&target, &command_id_owned, &payload).await;
+            let frame = this
+                .execute_resource(&target, &command_id_owned, &payload)
+                .await;
             let _ = tx.send(OutboundMsg::Frame(frame)).await;
         });
         Ok(())
@@ -200,13 +209,19 @@ impl McpAppsControl {
         let command_id_owned = command_id.to_string();
         let payload = payload.clone();
         tokio::spawn(async move {
-            let frame = this.execute_call(&target, &command_id_owned, &payload).await;
+            let frame = this
+                .execute_call(&target, &command_id_owned, &payload)
+                .await;
             let _ = tx.send(OutboundMsg::Frame(frame)).await;
         });
         Ok(())
     }
 
-    async fn read_tool_call(&self, chat_id: &str, tool_call_id: &str) -> Option<ToolCallProjection> {
+    async fn read_tool_call(
+        &self,
+        chat_id: &str,
+        tool_call_id: &str,
+    ) -> Option<ToolCallProjection> {
         self.sink.tool_call_projection(chat_id, tool_call_id).await
     }
 
@@ -222,10 +237,18 @@ impl McpAppsControl {
     ) -> Result<(), ActionError> {
         let sessions = self.sessions.read().await;
         let Some(session) = sessions.get(app_session_id) else {
-            return Err(apps_error(command_id, ErrorCode::InvalidState, "stale_session"));
+            return Err(apps_error(
+                command_id,
+                ErrorCode::InvalidState,
+                "stale_session",
+            ));
         };
         if session.chat_id != chat_id {
-            return Err(apps_error(command_id, ErrorCode::InvalidState, "stale_session"));
+            return Err(apps_error(
+                command_id,
+                ErrorCode::InvalidState,
+                "stale_session",
+            ));
         }
         Ok(())
     }
@@ -236,7 +259,11 @@ impl McpAppsControl {
         chat_id: &str,
     ) -> Result<mcp_apps_control_rpc::Target, ActionError> {
         let Some(record) = self.chats.entry(chat_id).await else {
-            return Err(apps_error(command_id, ErrorCode::ChatNotFound, "chat not found"));
+            return Err(apps_error(
+                command_id,
+                ErrorCode::ChatNotFound,
+                "chat not found",
+            ));
         };
         if record.state.is_terminal() || record.session_id.is_none() {
             return Err(apps_error(
@@ -250,10 +277,12 @@ impl McpAppsControl {
             instance_id: record.instance_id,
         })
     }
-
 }
 
-pub(super) fn gate_mcp_app_open(command_id: &str, tool: &ToolCallProjection) -> Result<(), ActionError> {
+pub(super) fn gate_mcp_app_open(
+    command_id: &str,
+    tool: &ToolCallProjection,
+) -> Result<(), ActionError> {
     if tool.status != ToolCallStatus::Completed {
         return Err(silent_apps_error(command_id, "policy_denied"));
     }

@@ -152,7 +152,10 @@ fn raw_output_without_status_stays_non_terminal() {
         "toolCallId": "result-only",
         "rawOutput": { "stdout": "done", "exitCode": 0 }
     }));
-    assert_eq!(result_only.status, None, "ACP: rawOutput alone must not imply completed");
+    assert_eq!(
+        result_only.status, None,
+        "ACP: rawOutput alone must not imply completed"
+    );
     assert!(result_only.completed_at.is_none());
     assert!(
         matches!(result_only.result, ToolJsonPatch::Set { value } if value["stdout"] == "done")

@@ -18,8 +18,8 @@ use std::{
 use tokio::sync::Mutex;
 
 use peri_studio_proto::resource::{
-    InstanceResourceQuery, InstanceResourceQueryKind, InstanceResourceResult,
-    MAX_CONCURRENT_GIT_QUERIES, ResourceErrorCode, ResourceFailure,
+    InstanceResourceQuery, InstanceResourceQueryKind, InstanceResourceResult, ResourceErrorCode,
+    ResourceFailure, MAX_CONCURRENT_GIT_QUERIES,
 };
 
 use common::failure;
@@ -50,9 +50,9 @@ impl ResourceHost {
     pub(super) fn try_acquire_git_query_permit(
         &self,
     ) -> Result<tokio::sync::SemaphorePermit<'_>, ResourceFailure> {
-        self.git_query_permits.try_acquire().map_err(|_| {
-            failure(ResourceErrorCode::RateLimited, true)
-        })
+        self.git_query_permits
+            .try_acquire()
+            .map_err(|_| failure(ResourceErrorCode::RateLimited, true))
     }
 
     pub async fn query(&self, query: InstanceResourceQuery) -> InstanceResourceResult {
@@ -125,11 +125,11 @@ impl ResourceHost {
 }
 
 #[cfg(test)]
-#[path = "resource_git_log_test.rs"]
-mod resource_git_log_test;
-#[cfg(test)]
 #[path = "resource_diff_test.rs"]
 mod resource_diff_test;
+#[cfg(test)]
+#[path = "resource_git_log_test.rs"]
+mod resource_git_log_test;
 #[cfg(test)]
 #[path = "resource_mutation_test.rs"]
 mod resource_mutation_test;

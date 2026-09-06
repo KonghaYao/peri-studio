@@ -6,7 +6,9 @@ use peri_studio_proto::schema::{ProjectSummary, SessionSummaryProjection, Worksp
 use thiserror::Error;
 
 use crate::control::{CatalogSession, ChatRegistry, SessionCatalog};
-use crate::persist::metadata::{catalog_session_pref_map, MetadataError, MetadataStore, ProjectRecord};
+use crate::persist::metadata::{
+    catalog_session_pref_map, MetadataError, MetadataStore, ProjectRecord,
+};
 use crate::state::registry::{RegistryError, RegistryState};
 
 #[derive(Debug, Error)]
@@ -190,12 +192,9 @@ impl ProjectService {
         let snapshot = self.metadata.snapshot().await?;
         let prefs = catalog_session_pref_map(self.metadata.list_catalog_session_prefs().await?);
         let projects = snapshot.projects.into_iter().map(project_summary).collect();
-        let sessions = SessionCatalog::project_summaries(
-            self.catalog.list_all().await,
-            &self.chats,
-            &prefs,
-        )
-        .await;
+        let sessions =
+            SessionCatalog::project_summaries(self.catalog.list_all().await, &self.chats, &prefs)
+                .await;
         self.registry.replace_projects(projects, sessions).await?;
         self.metadata.mark_projected(snapshot.generation).await?;
         Ok(())
@@ -217,7 +216,10 @@ impl ProjectService {
         Ok(())
     }
 
-    pub async fn record_opened_session(&self, acp_session_id: &str) -> Result<(), ProjectServiceError> {
+    pub async fn record_opened_session(
+        &self,
+        acp_session_id: &str,
+    ) -> Result<(), ProjectServiceError> {
         self.catalog.touch_opened(acp_session_id).await;
         self.reproject().await
     }

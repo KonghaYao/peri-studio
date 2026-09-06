@@ -437,8 +437,10 @@ impl ResourceService {
         view: OpenResourceView,
     ) -> Result<InstanceResourceQueryKind, ResourceFailure> {
         let repo_id = required(view.repo_id, "repository is required")?;
-        let client_generation =
-            required(view.expected_generation, "repository generation is required")?;
+        let client_generation = required(
+            view.expected_generation,
+            "repository generation is required",
+        )?;
         let limit = git_log_limit(view.limit)?;
         let snapshot = InstanceResourceQuery {
             request_id: uuid::Uuid::new_v4().to_string(),
@@ -506,9 +508,8 @@ fn validate_git_action(
         if !action.change_ids.is_empty() || action.message.is_some() {
             return Err(invalid_git_action());
         }
-        let oid_ok = |value: &str| {
-            value.len() == 40 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
-        };
+        let oid_ok =
+            |value: &str| value.len() == 40 && value.bytes().all(|byte| byte.is_ascii_hexdigit());
         let ref_ok = |value: &str| {
             let name = value.trim();
             !name.is_empty()
@@ -525,9 +526,7 @@ fn validate_git_action(
             ResourceGitActionKind::Checkout => {
                 let has_ref = action.ref_name.as_deref().is_some_and(ref_ok);
                 let has_oid = action.target_oid.as_deref().is_some_and(oid_ok);
-                (has_ref ^ has_oid)
-                    && action.new_ref_name.is_none()
-                    && action.reset_mode.is_none()
+                (has_ref ^ has_oid) && action.new_ref_name.is_none() && action.reset_mode.is_none()
             }
             ResourceGitActionKind::CreateBranch => {
                 action.target_oid.as_deref().is_some_and(oid_ok)
@@ -558,7 +557,11 @@ fn validate_git_action(
             }
             _ => false,
         };
-        return if valid { Ok(()) } else { Err(invalid_git_action()) };
+        return if valid {
+            Ok(())
+        } else {
+            Err(invalid_git_action())
+        };
     }
     if action.target_oid.is_some()
         || action.ref_name.is_some()
@@ -664,8 +667,10 @@ fn view_to_instance_query(
         }
         ResourceViewKind::GitLogPage => {
             let repo_id = required(view.repo_id, "repository is required")?;
-            let expected_generation =
-                required(view.expected_generation, "repository generation is required")?;
+            let expected_generation = required(
+                view.expected_generation,
+                "repository generation is required",
+            )?;
             Ok(InstanceResourceQueryKind::GitLog(GitLogQuery {
                 repo_id,
                 expected_generation,

@@ -189,12 +189,11 @@ impl MetadataStore {
         if result.rows_affected() == 0 {
             return Err(MetadataError::NotFound(format!("machine {instance_id}")));
         }
-        let generation: i64 = sqlx::query_scalar(
-            "SELECT pipeline_generation FROM machines WHERE instance_id=?",
-        )
-        .bind(instance_id)
-        .fetch_one(&mut *tx)
-        .await?;
+        let generation: i64 =
+            sqlx::query_scalar("SELECT pipeline_generation FROM machines WHERE instance_id=?")
+                .bind(instance_id)
+                .fetch_one(&mut *tx)
+                .await?;
         bump_generation_tx(&mut tx).await?;
         tx.commit().await?;
         Ok(generation)
@@ -229,11 +228,7 @@ impl MetadataStore {
     }
 
     /// Trust 写入：指纹必须与 pending 列逐字节相等（§6.3）。
-    pub async fn trust_host_key(
-        &self,
-        instance_id: &str,
-        fingerprint: &str,
-    ) -> Result<()> {
+    pub async fn trust_host_key(&self, instance_id: &str, fingerprint: &str) -> Result<()> {
         let ts = now();
         let mut tx = self.pool.begin().await?;
         let result = sqlx::query(
@@ -275,7 +270,11 @@ impl MetadataStore {
         Ok(())
     }
 
-    pub async fn set_remote_owner_fingerprint(&self, instance_id: &str, fingerprint: &str) -> Result<()> {
+    pub async fn set_remote_owner_fingerprint(
+        &self,
+        instance_id: &str,
+        fingerprint: &str,
+    ) -> Result<()> {
         let ts = now();
         let result = sqlx::query(
             "UPDATE machines SET remote_owner_fingerprint=?, updated_at=? \
@@ -345,7 +344,9 @@ impl MetadataStore {
         .execute(&mut *tx)
         .await?;
         if result.rows_affected() == 0 {
-            return Err(MetadataError::NotFound(format!("ssh machine {instance_id}")));
+            return Err(MetadataError::NotFound(format!(
+                "ssh machine {instance_id}"
+            )));
         }
         bump_generation_tx(&mut tx).await?;
         tx.commit().await?;

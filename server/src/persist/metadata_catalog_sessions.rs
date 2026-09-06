@@ -132,16 +132,9 @@ fn catalog_session_pref_from_row(r: sqlx::sqlite::SqliteRow) -> CatalogSessionPr
     }
 }
 
-pub fn catalog_session_pref_map(
-    prefs: Vec<CatalogSessionPref>,
-) -> CatalogSessionPrefMap {
+pub fn catalog_session_pref_map(prefs: Vec<CatalogSessionPref>) -> CatalogSessionPrefMap {
     prefs
         .into_iter()
-        .map(|pref| {
-            (
-                (pref.project_id.clone(), pref.acp_session_id.clone()),
-                pref,
-            )
-        })
+        .map(|pref| ((pref.project_id.clone(), pref.acp_session_id.clone()), pref))
         .collect()
 }

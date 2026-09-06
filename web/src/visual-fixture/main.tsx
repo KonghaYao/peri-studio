@@ -4,7 +4,8 @@ import '../styles.css';
 import './fixture.css';
 import { AppShell } from '@/widgets/shell/AppShell';
 import { Toasts } from '@/widgets/shell/Toasts';
-import { appendVisualResourceEntries, DEFAULT_VISUAL_SCENARIO, installVisualScenario, removeVisualResourceEntry, setVisualDiffPreview, setVisualElicitationUnknown, setVisualFilePreview, setVisualToolAcceptancePhase, setVisualTranscriptCount, visualScenarios } from './scenarios';
+import { installResourceStore } from '../panel/lib/resource-store';
+import { appendVisualResourceEntries, DEFAULT_VISUAL_SCENARIO, installVisualScenario, removeVisualResourceEntry, setVisualDiffPreview, setVisualElicitationUnknown, setVisualFilePreview, setVisualToolAcceptancePhase, setVisualTranscriptCount, visualResourceEntryExists, visualScenarios } from './scenarios';
 import { VisualScenarioSidebar } from './VisualScenarioSidebar';
 
 declare global {
@@ -17,6 +18,7 @@ declare global {
       setTranscriptCount: typeof setVisualTranscriptCount;
       setElicitationUnknown: typeof setVisualElicitationUnknown;
       setToolAcceptancePhase: typeof setVisualToolAcceptancePhase;
+      hasResourceEntry: typeof visualResourceEntryExists;
     };
   }
 }
@@ -25,6 +27,9 @@ const search = new URLSearchParams(window.location.search);
 const selected = search.get('scenario') || DEFAULT_VISUAL_SCENARIO;
 const projectSidebarMode = search.get('sidebar') === 'projects';
 const initialResourceView = search.get('resource') === 'scm' ? 'scm' : 'explorer';
+
+// 验收页使用静态 mock 资源树，禁止向真实 server 发 directory 请求以免覆盖 fixture 数据。
+installResourceStore({ send: () => true, ready: () => false, toast: () => {} });
 
 function VisualFixture() {
   const installed = installVisualScenario(selected);
@@ -36,6 +41,7 @@ function VisualFixture() {
     setTranscriptCount: setVisualTranscriptCount,
     setElicitationUnknown: setVisualElicitationUnknown,
     setToolAcceptancePhase: setVisualToolAcceptancePhase,
+    hasResourceEntry: visualResourceEntryExists,
   };
   onCleanup(() => {
     delete window.__PERI_VISUAL_FIXTURE__;

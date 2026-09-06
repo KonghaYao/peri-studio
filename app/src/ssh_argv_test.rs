@@ -34,12 +34,16 @@ fn ssh_argv_contains_batch_mode_and_control_master() {
     let argv = build_ssh_argv(&opts, &["uname", "-s"]).unwrap();
 
     assert!(argv.windows(2).any(|pair| pair == ["-o", "BatchMode=yes"]));
-    assert!(argv.windows(2).any(|pair| pair == ["-o", "ControlMaster=no"]));
-    assert!(argv.windows(2).any(|pair| {
-        pair[0] == "-o" && pair[1].starts_with("UserKnownHostsFile=")
-    }));
+    assert!(argv
+        .windows(2)
+        .any(|pair| pair == ["-o", "ControlMaster=no"]));
+    assert!(argv
+        .windows(2)
+        .any(|pair| { pair[0] == "-o" && pair[1].starts_with("UserKnownHostsFile=") }));
     let known_hosts = known_hosts_path(dir.path());
-    assert!(argv.iter().any(|arg| arg == &format!("UserKnownHostsFile={}", known_hosts.display())));
+    assert!(argv
+        .iter()
+        .any(|arg| arg == &format!("UserKnownHostsFile={}", known_hosts.display())));
 }
 
 #[test]
@@ -50,7 +54,9 @@ fn tunnel_argv_contains_reverse_forward_and_destination_after_separator() {
     let opts = sample_options(dir.path(), &config);
     let argv = build_tunnel_argv(&opts, 8456).unwrap();
 
-    assert!(argv.windows(2).any(|pair| pair == ["-o", "ExitOnForwardFailure=yes"]));
+    assert!(argv
+        .windows(2)
+        .any(|pair| pair == ["-o", "ExitOnForwardFailure=yes"]));
     assert!(argv.contains(&"-N".to_string()));
     assert!(argv.contains(&"-R".to_string()));
     assert!(argv.contains(&"127.0.0.1:0:127.0.0.1:8456".to_string()));

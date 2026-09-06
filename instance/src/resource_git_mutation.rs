@@ -44,14 +44,16 @@ impl ResourceHost {
 
         match query.action {
             ResourceGitActionKind::Stage | ResourceGitActionKind::Unstage => {
-                let paths = resolve_change_paths(&parsed, &generation, query.action, &query.change_ids)?;
+                let paths =
+                    resolve_change_paths(&parsed, &generation, query.action, &query.change_ids)?;
                 validate_paths(&paths)?;
                 let args = if query.action == ResourceGitActionKind::Stage {
                     ["add", "--"].as_slice()
                 } else {
                     ["restore", "--staged", "--"].as_slice()
                 };
-                self.run_paths_command(&repo, args, &paths, query.action).await?;
+                self.run_paths_command(&repo, args, &paths, query.action)
+                    .await?;
             }
             ResourceGitActionKind::Discard => {
                 let discard = resolve_discard_paths(&parsed, &generation, &query.change_ids)?;
@@ -77,20 +79,25 @@ impl ResourceHost {
                 }
             }
             ResourceGitActionKind::Commit => {
-                self.run_commit(&repo, query.message.as_deref().expect("validated commit message"))
-                    .await?;
+                self.run_commit(
+                    &repo,
+                    query.message.as_deref().expect("validated commit message"),
+                )
+                .await?;
             }
             ResourceGitActionKind::Pull => {
                 self.run_fixed_command(&repo, &["pull", "--ff-only"], query.action)
                     .await?;
             }
             ResourceGitActionKind::Push => {
-                self.run_fixed_command(&repo, &["push"], query.action).await?;
+                self.run_fixed_command(&repo, &["push"], query.action)
+                    .await?;
             }
             ResourceGitActionKind::Sync => {
                 self.run_fixed_command(&repo, &["pull", "--ff-only"], query.action)
                     .await?;
-                self.run_fixed_command(&repo, &["push"], query.action).await?;
+                self.run_fixed_command(&repo, &["push"], query.action)
+                    .await?;
             }
             ResourceGitActionKind::Checkout => {
                 run_checkout(self, &repo, query).await?;
@@ -278,7 +285,10 @@ fn validate_graph_payload(query: &GitMutateQuery) -> Result<(), ResourceFailure>
     }
     match query.action {
         ResourceGitActionKind::Checkout => {
-            let has_ref = query.ref_name.as_deref().is_some_and(|value| validate_ref_name(value).is_ok());
+            let has_ref = query
+                .ref_name
+                .as_deref()
+                .is_some_and(|value| validate_ref_name(value).is_ok());
             let has_oid = query
                 .target_oid
                 .as_deref()
@@ -297,7 +307,11 @@ fn validate_graph_payload(query: &GitMutateQuery) -> Result<(), ResourceFailure>
                 .ref_name
                 .as_deref()
                 .and_then(|value| validate_ref_name(value).ok());
-            if oid.is_none() || name.is_none() || query.new_ref_name.is_some() || query.reset_mode.is_some() {
+            if oid.is_none()
+                || name.is_none()
+                || query.new_ref_name.is_some()
+                || query.reset_mode.is_some()
+            {
                 return Err(failure(ResourceErrorCode::InvalidRequest, false));
             }
             Ok(())
@@ -321,7 +335,11 @@ fn validate_graph_payload(query: &GitMutateQuery) -> Result<(), ResourceFailure>
             Ok(())
         }
         ResourceGitActionKind::Reset => {
-            if query.target_oid.as_deref().and_then(|value| validate_oid(value).ok()).is_none()
+            if query
+                .target_oid
+                .as_deref()
+                .and_then(|value| validate_oid(value).ok())
+                .is_none()
                 || query.ref_name.is_some()
                 || query.new_ref_name.is_some()
             {
@@ -330,7 +348,11 @@ fn validate_graph_payload(query: &GitMutateQuery) -> Result<(), ResourceFailure>
             Ok(())
         }
         ResourceGitActionKind::Revert => {
-            if query.target_oid.as_deref().and_then(|value| validate_oid(value).ok()).is_none()
+            if query
+                .target_oid
+                .as_deref()
+                .and_then(|value| validate_oid(value).ok())
+                .is_none()
                 || query.ref_name.is_some()
                 || query.new_ref_name.is_some()
                 || query.reset_mode.is_some()
@@ -376,13 +398,11 @@ async fn run_checkout(
 ) -> Result<(), ResourceFailure> {
     if let Some(ref_name) = query.ref_name.as_deref() {
         let name = validate_ref_name(ref_name)?;
-        host
-            .run_ref_command(repo, &["checkout", "--"], &name, query.action)
+        host.run_ref_command(repo, &["checkout", "--"], &name, query.action)
             .await
     } else {
         let oid = validate_oid(query.target_oid.as_deref().unwrap_or_default())?;
-        host
-            .run_ref_command(repo, &["checkout", "--detach"], &oid, query.action)
+        host.run_ref_command(repo, &["checkout", "--detach"], &oid, query.action)
             .await
     }
 }
@@ -394,8 +414,7 @@ async fn run_create_branch(
 ) -> Result<(), ResourceFailure> {
     let oid = validate_oid(query.target_oid.as_deref().unwrap_or_default())?;
     let name = validate_ref_name(query.ref_name.as_deref().unwrap_or_default())?;
-    host
-        .run_two_ref_command(repo, &["branch"], &name, &oid, query.action)
+    host.run_two_ref_command(repo, &["branch"], &name, &oid, query.action)
         .await
 }
 
@@ -406,8 +425,7 @@ async fn run_rename_branch(
 ) -> Result<(), ResourceFailure> {
     let old_name = validate_ref_name(query.ref_name.as_deref().unwrap_or_default())?;
     let new_name = validate_ref_name(query.new_ref_name.as_deref().unwrap_or_default())?;
-    host
-        .run_two_ref_command(repo, &["branch", "-m"], &old_name, &new_name, query.action)
+    host.run_two_ref_command(repo, &["branch", "-m"], &old_name, &new_name, query.action)
         .await
 }
 
@@ -422,8 +440,7 @@ async fn run_reset(
         GitResetMode::Mixed => "--mixed",
         GitResetMode::Hard => "--hard",
     };
-    host
-        .run_ref_command(repo, &["reset", mode], &oid, query.action)
+    host.run_ref_command(repo, &["reset", mode], &oid, query.action)
         .await
 }
 
@@ -433,8 +450,7 @@ async fn run_revert(
     query: &GitMutateQuery,
 ) -> Result<(), ResourceFailure> {
     let oid = validate_oid(query.target_oid.as_deref().unwrap_or_default())?;
-    host
-        .run_ref_command(repo, &["revert", "--no-edit"], &oid, query.action)
+    host.run_ref_command(repo, &["revert", "--no-edit"], &oid, query.action)
         .await
 }
 
@@ -554,9 +570,7 @@ fn action_failure(action: ResourceGitActionKind) -> ResourceFailure {
         ResourceGitActionKind::Pull => "Pull failed. Check upstream access and branch state.",
         ResourceGitActionKind::Push => "Push failed. Check upstream access and branch state.",
         ResourceGitActionKind::Sync => "Sync stopped. Refresh Source Control before retrying.",
-        ResourceGitActionKind::Checkout => {
-            "Checkout failed. Refresh Git Graph and try again."
-        }
+        ResourceGitActionKind::Checkout => "Checkout failed. Refresh Git Graph and try again.",
         ResourceGitActionKind::CreateBranch => {
             "Create branch failed. Choose another name or refresh Git Graph."
         }

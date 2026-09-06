@@ -44,7 +44,9 @@ pub async fn run_pipeline(
             return;
         }
         let result = match step {
-            PipelineStep::HostKeyProbe => run_host_key_probe(&backend, &spec, &events, &cancel).await,
+            PipelineStep::HostKeyProbe => {
+                run_host_key_probe(&backend, &spec, &events, &cancel).await
+            }
             PipelineStep::AwaitingHostKey => return,
             PipelineStep::SshConnect => run_ssh_connect(&backend, &spec, &events, &cancel).await,
             PipelineStep::Probe => run_probe(&backend, &spec, &events, &cancel).await,
@@ -53,9 +55,7 @@ pub async fn run_pipeline(
             PipelineStep::Provision => run_provision(&backend, &spec, &events, &cancel).await,
             PipelineStep::Tunnel => run_tunnel(&backend, &spec, &events, &cancel).await,
             PipelineStep::Start => run_start(&backend, &spec, &events, &cancel).await,
-            PipelineStep::Connecting => {
-                run_connecting(&backend, &spec, &events, &cancel).await
-            }
+            PipelineStep::Connecting => run_connecting(&backend, &spec, &events, &cancel).await,
             PipelineStep::Online => return,
         };
         match result {
@@ -113,7 +113,7 @@ async fn run_host_key_probe(
     {
         tracing::warn!(instance_id = %spec.instance_id, ?error, "awaiting trust event failed");
     }
-  Ok(PipelineStep::AwaitingHostKey)
+    Ok(PipelineStep::AwaitingHostKey)
 }
 
 async fn run_ssh_connect(
@@ -157,11 +157,8 @@ async fn run_probe(
         return Err((PipelineStep::Probe, "remote_os_unsupported".into()));
     }
     let remote_bin = remote_bin_path();
-    let version_argv = build_ssh_argv(
-        &opts,
-        &[&remote_bin, "protocol-version"],
-    )
-    .map_err(|_| (PipelineStep::Probe, "ssh_exec_failed".into()))?;
+    let version_argv = build_ssh_argv(&opts, &[&remote_bin, "protocol-version"])
+        .map_err(|_| (PipelineStep::Probe, "ssh_exec_failed".into()))?;
     let remote_version = run_capture(backend, &backend.programs().ssh, &version_argv, cancel).await;
     match remote_version {
         Ok(text) => {
@@ -187,8 +184,12 @@ async fn run_install(
     let opts = backend.connect_options(spec);
     let remote_bin = remote_bin_path();
     if !spec.replace_confirmed {
-        let test_argv = build_ssh_argv(&opts, &["test", "-f", &remote_bin])
-            .map_err(|_| (PipelineStep::Install, "instance_binary_install_failed".into()))?;
+        let test_argv = build_ssh_argv(&opts, &["test", "-f", &remote_bin]).map_err(|_| {
+            (
+                PipelineStep::Install,
+                "instance_binary_install_failed".into(),
+            )
+        })?;
         let remote_exists = run_status(backend, &backend.programs().ssh, &test_argv, cancel)
             .await
             .map(|status| status.success())
@@ -211,14 +212,10 @@ async fn run_install(
     let local_binary = if same_platform(local_os, local_arch, &remote_os, &remote_arch) {
         spec.current_exe.clone()
     } else {
-        let platform = ssh_release_checksums::platform_key(&remote_os, &remote_arch).ok_or((
-            PipelineStep::Install,
-            "instance_binary_unavailable".into(),
-        ))?;
-        let asset = ssh_release_checksums::lookup(platform).ok_or((
-            PipelineStep::Install,
-            "instance_binary_unavailable".into(),
-        ))?;
+        let platform = ssh_release_checksums::platform_key(&remote_os, &remote_arch)
+            .ok_or((PipelineStep::Install, "instance_binary_unavailable".into()))?;
+        let asset = ssh_release_checksums::lookup(platform)
+            .ok_or((PipelineStep::Install, "instance_binary_unavailable".into()))?;
         prepare_cross_arch_binary(backend, &asset, cancel)
             .await
             .map_err(|_| (PipelineStep::Install, "instance_binary_unavailable".into()))?
@@ -349,7 +346,9 @@ async fn extract_binary_from_archive(
     if !output.status.success() {
         return Err(());
     }
-    tokio::fs::write(dest, &output.stdout).await.map_err(|_| ())?;
+    tokio::fs::write(dest, &output.stdout)
+        .await
+        .map_err(|_| ())?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt as _;
@@ -369,16 +368,23 @@ async fn stop_remote_owner_before_install(
 ) -> Result<(), (PipelineStep, String)> {
     let remote_data = remote_data_dir(&spec.instance_id);
     let lock_path = format!("{remote_data}/instance.owner.lock");
-    let test_argv = build_ssh_argv(opts, &["test", "-f", &lock_path])
-        .map_err(|_| (PipelineStep::Install, "instance_binary_install_failed".into()))?;
+    let test_argv = build_ssh_argv(opts, &["test", "-f", &lock_path]).map_err(|_| {
+        (
+            PipelineStep::Install,
+            "instance_binary_install_failed".into(),
+        )
+    })?;
     let has_owner = run_status(backend, &backend.programs().ssh, &test_argv, cancel)
         .await
         .map(|status| status.success())
         .unwrap_or(false);
     if has_owner {
-        stop_remote_agents(backend, spec)
-            .await
-            .map_err(|_| (PipelineStep::Install, "instance_binary_install_failed".into()))?;
+        stop_remote_agents(backend, spec).await.map_err(|_| {
+            (
+                PipelineStep::Install,
+                "instance_binary_install_failed".into(),
+            )
+        })?;
     }
     Ok(())
 }
@@ -394,33 +400,73 @@ async fn atomic_remote_install(
     let remote_bin = remote_bin_path();
     let remote_tmp = format!("{remote_bin}.tmp");
     let remote_dir = format!("~/{REMOTE_SHARE}/bin");
-    let mkdir_argv = build_ssh_argv(opts, &["mkdir", "-p", &remote_dir])
-        .map_err(|_| (PipelineStep::Install, "instance_binary_install_failed".into()))?;
+    let mkdir_argv = build_ssh_argv(opts, &["mkdir", "-p", &remote_dir]).map_err(|_| {
+        (
+            PipelineStep::Install,
+            "instance_binary_install_failed".into(),
+        )
+    })?;
     run_status(backend, &backend.programs().ssh, &mkdir_argv, cancel)
         .await
-        .map_err(|_| (PipelineStep::Install, "instance_binary_install_failed".into()))?;
-    let local_source = local_binary
-        .to_str()
-        .ok_or((PipelineStep::Install, "instance_binary_install_failed".into()))?;
+        .map_err(|_| {
+            (
+                PipelineStep::Install,
+                "instance_binary_install_failed".into(),
+            )
+        })?;
+    let local_source = local_binary.to_str().ok_or((
+        PipelineStep::Install,
+        "instance_binary_install_failed".into(),
+    ))?;
     let remote_target = format!("{}:{}", spec.ssh_destination, remote_tmp);
-    let scp_argv = build_scp_argv(opts, &[local_source], &remote_target)
-        .map_err(|_| (PipelineStep::Install, "instance_binary_install_failed".into()))?;
+    let scp_argv = build_scp_argv(opts, &[local_source], &remote_target).map_err(|_| {
+        (
+            PipelineStep::Install,
+            "instance_binary_install_failed".into(),
+        )
+    })?;
     let status = run_status(backend, &backend.programs().scp, &scp_argv, cancel)
         .await
-        .map_err(|_| (PipelineStep::Install, "instance_binary_install_failed".into()))?;
+        .map_err(|_| {
+            (
+                PipelineStep::Install,
+                "instance_binary_install_failed".into(),
+            )
+        })?;
     if !status.success() {
-        return Err((PipelineStep::Install, "instance_binary_install_failed".into()));
+        return Err((
+            PipelineStep::Install,
+            "instance_binary_install_failed".into(),
+        ));
     }
-    let mv_argv = build_ssh_argv(opts, &["mv", &remote_tmp, &remote_bin])
-        .map_err(|_| (PipelineStep::Install, "instance_binary_install_failed".into()))?;
+    let mv_argv = build_ssh_argv(opts, &["mv", &remote_tmp, &remote_bin]).map_err(|_| {
+        (
+            PipelineStep::Install,
+            "instance_binary_install_failed".into(),
+        )
+    })?;
     run_status(backend, &backend.programs().ssh, &mv_argv, cancel)
         .await
-        .map_err(|_| (PipelineStep::Install, "instance_binary_install_failed".into()))?;
-    let chmod_argv = build_ssh_argv(opts, &["chmod", "0755", &remote_bin])
-        .map_err(|_| (PipelineStep::Install, "instance_binary_install_failed".into()))?;
+        .map_err(|_| {
+            (
+                PipelineStep::Install,
+                "instance_binary_install_failed".into(),
+            )
+        })?;
+    let chmod_argv = build_ssh_argv(opts, &["chmod", "0755", &remote_bin]).map_err(|_| {
+        (
+            PipelineStep::Install,
+            "instance_binary_install_failed".into(),
+        )
+    })?;
     run_status(backend, &backend.programs().ssh, &chmod_argv, cancel)
         .await
-        .map_err(|_| (PipelineStep::Install, "instance_binary_install_failed".into()))?;
+        .map_err(|_| {
+            (
+                PipelineStep::Install,
+                "instance_binary_install_failed".into(),
+            )
+        })?;
     Ok(PipelineStep::Provision)
 }
 
@@ -438,7 +484,7 @@ async fn run_provision(
     store
         .ensure_instance_credential_to_file(&spec.instance_id, &local_token)
         .map_err(|_| (PipelineStep::Provision, "token_provision_failed".into()))?;
-  let remote_data = remote_data_dir(&spec.instance_id);
+    let remote_data = remote_data_dir(&spec.instance_id);
     let remote_token = format!("{remote_data}/instance.token");
     let opts = backend.connect_options(spec);
     let mkdir_argv = build_ssh_argv(&opts, &["mkdir", "-p", &remote_data])
@@ -485,7 +531,10 @@ async fn run_tunnel(
         .kill_on_drop(true)
         .spawn()
         .map_err(|_| (PipelineStep::Tunnel, "tunnel_failed".into()))?;
-    let stderr = child.stderr.take().ok_or((PipelineStep::Tunnel, "tunnel_failed".into()))?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or((PipelineStep::Tunnel, "tunnel_failed".into()))?;
     let port = parse_tunnel_port(stderr, cancel.clone())
         .await
         .ok_or((PipelineStep::Tunnel, "tunnel_failed".into()))?;
@@ -698,7 +747,9 @@ fn known_hosts_has_line(path: &std::path::Path, needle: &str) -> bool {
         return false;
     };
     let key = needle.split_whitespace().nth(2).unwrap_or("");
-    content.lines().any(|line| line.contains(key) && !line.trim().starts_with('#'))
+    content
+        .lines()
+        .any(|line| line.contains(key) && !line.trim().starts_with('#'))
 }
 
 fn remote_bin_path() -> String {
@@ -712,8 +763,7 @@ fn remote_data_dir(instance_id: &str) -> String {
 fn remote_os_supported(os: &str, arch: &str) -> bool {
     let os = os.to_ascii_lowercase();
     let arch = arch.to_ascii_lowercase();
-    (os.contains("linux") || os.contains("darwin") || os.contains("unix"))
-        && !arch.is_empty()
+    (os.contains("linux") || os.contains("darwin") || os.contains("unix")) && !arch.is_empty()
 }
 
 fn same_platform(local_os: &str, local_arch: &str, remote_os: &str, remote_arch: &str) -> bool {

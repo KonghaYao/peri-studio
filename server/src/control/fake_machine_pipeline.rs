@@ -79,11 +79,15 @@ impl MachinePipelinePort for FakeMachinePipeline {
         generation: u64,
         _events: mpsc::Sender<PipelineEvent>,
     ) -> Result<(), PipelineError> {
-        self.inner.lock().unwrap().invocations.push(PipelineInvocation {
-            spec,
-            generation,
-            from_step: None,
-        });
+        self.inner
+            .lock()
+            .unwrap()
+            .invocations
+            .push(PipelineInvocation {
+                spec,
+                generation,
+                from_step: None,
+            });
         Ok(())
     }
 
@@ -94,25 +98,41 @@ impl MachinePipelinePort for FakeMachinePipeline {
         generation: u64,
         _events: mpsc::Sender<PipelineEvent>,
     ) -> Result<(), PipelineError> {
-        self.inner.lock().unwrap().invocations.push(PipelineInvocation {
-            spec,
-            generation,
-            from_step: Some(from_step),
-        });
+        self.inner
+            .lock()
+            .unwrap()
+            .invocations
+            .push(PipelineInvocation {
+                spec,
+                generation,
+                from_step: Some(from_step),
+            });
         Ok(())
     }
 
     async fn teardown_tunnel(&self, instance_id: &str) -> Result<(), PipelineError> {
-        self.inner.lock().unwrap().torn_down.push(instance_id.to_string());
+        self.inner
+            .lock()
+            .unwrap()
+            .torn_down
+            .push(instance_id.to_string());
         Ok(())
     }
 
     async fn stop_remote(&self, instance_id: &str) -> Result<StopResult, PipelineError> {
-        self.inner.lock().unwrap().stopped.push(instance_id.to_string());
+        self.inner
+            .lock()
+            .unwrap()
+            .stopped
+            .push(instance_id.to_string());
         Ok(StopResult::Committed)
     }
 
-    async fn cancel(&self, instance_id: &str, generation: u64) -> Result<CancelResult, PipelineError> {
+    async fn cancel(
+        &self,
+        instance_id: &str,
+        generation: u64,
+    ) -> Result<CancelResult, PipelineError> {
         self.inner
             .lock()
             .unwrap()

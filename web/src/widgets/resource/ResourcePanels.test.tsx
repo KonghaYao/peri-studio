@@ -201,16 +201,17 @@ describe('VS Code-style resource panels', () => {
     expect(src).toHaveAttribute('tabindex', '0');
     src.focus();
     await fireEvent.keyDown(src, { key: 'ArrowRight' });
-    expect(src).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('treeitem', { name: /src/i })).toHaveAttribute('aria-expanded', 'true');
+
     const file = screen.getByRole('treeitem', { name: /main\.ts/i });
     expect(file).toHaveAttribute('tabindex', '-1');
     expect(file.querySelector('[data-file-icon="typescript"]')).toBeInTheDocument();
 
-    await fireEvent.keyDown(src, { key: 'ArrowDown' });
-    expect(file).toHaveFocus();
-    await fireEvent.keyDown(file, { key: 'ArrowLeft' });
-    expect(src).toHaveFocus();
-    expect(screen.getByRole('group')).toContainElement(file);
+    await fireEvent.keyDown(screen.getByRole('treeitem', { name: /src/i }), { key: 'ArrowDown' });
+    expect(screen.getByRole('treeitem', { name: /main\.ts/i })).toHaveFocus();
+    await fireEvent.keyDown(screen.getByRole('treeitem', { name: /main\.ts/i }), { key: 'ArrowLeft' });
+    expect(screen.getByRole('treeitem', { name: /src/i })).toHaveFocus();
+    expect(screen.getByRole('group')).toContainElement(screen.getByRole('treeitem', { name: /main\.ts/i }));
 
     setResourceWorkspace((current) => ({
       ...current,
@@ -219,7 +220,7 @@ describe('VS Code-style resource panels', () => {
         src: { generation: 'g4', entries: [] },
       },
     }));
-    await waitFor(() => expect(src).toHaveAttribute('tabindex', '0'));
+    await waitFor(() => expect(screen.getByRole('treeitem', { name: /src/i })).toHaveAttribute('tabindex', '0'));
 
     setResourceWorkspace((current) => ({
       ...current,

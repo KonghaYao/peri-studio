@@ -95,10 +95,7 @@ async fn import_completed_marker_is_idempotent() {
     let dir = tempdir().unwrap();
     let store = MetadataStore::open(dir.path()).await.unwrap();
     assert!(!store.import_completed("legacy").await.unwrap());
-    store
-        .mark_import_complete("legacy", 3, 1)
-        .await
-        .unwrap();
+    store.mark_import_complete("legacy", 3, 1).await.unwrap();
     assert!(store.import_completed("legacy").await.unwrap());
     assert!(matches!(
         store.mark_import_complete("legacy", 0, 0).await,

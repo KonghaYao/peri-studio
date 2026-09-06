@@ -60,7 +60,18 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
     props.onActivePathChange?.(path);
   };
   const nodeCache = new Map<string, FileTreeNode>();
-  const nodes = createMemo(() => (resourceWorkspace().directories['']?.entries ?? []).map((entry) => entryToNode(entry, expanded(), nodeCache)));
+  const directoryRevision = createMemo(() => Object.entries(resourceWorkspace().directories)
+    .map(([directory, page]) => `${directory}:${page.entries.map((entry) => String(entry.path ?? entry.id)).join('\0')}`)
+    .join('\n'));
+  let previousDirectoryRevision = '';
+  const nodes = createMemo(() => {
+    const revision = directoryRevision();
+    if (revision !== previousDirectoryRevision) {
+      nodeCache.clear();
+      previousDirectoryRevision = revision;
+    }
+    return (resourceWorkspace().directories['']?.entries ?? []).map((entry) => entryToNode(entry, expanded(), nodeCache));
+  });
   const visiblePaths = createMemo(() => {
     const paths: string[] = [];
     const visit = (items: FileTreeNode[]) => {

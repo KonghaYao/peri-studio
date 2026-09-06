@@ -232,10 +232,8 @@ impl Gateway {
                     kind: m.kind,
                 })
                 .collect();
-            let health = crate::web::HealthSnapshot::from_runtime(
-                self.registry.global_status(),
-                machines,
-            );
+            let health =
+                crate::web::HealthSnapshot::from_runtime(self.registry.global_status(), machines);
             if let Err(e) = crate::web::serve_http_with_resources(
                 stream,
                 peer,

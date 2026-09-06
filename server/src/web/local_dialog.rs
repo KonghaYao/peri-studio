@@ -31,7 +31,11 @@ pub fn pick_directory(prompt: &str) -> Option<PathBuf> {
 fn pick_directory_macos(prompt: &str) -> Option<PathBuf> {
     let escaped = prompt.replace('\\', "\\\\").replace('"', "\\\"");
     let script = format!("POSIX path of (choose folder with prompt \"{escaped}\")");
-    let output = Command::new("osascript").arg("-e").arg(script).output().ok()?;
+    let output = Command::new("osascript")
+        .arg("-e")
+        .arg(script)
+        .output()
+        .ok()?;
     if !output.status.success() {
         return None;
     }
@@ -44,19 +48,20 @@ fn pick_directory_macos(prompt: &str) -> Option<PathBuf> {
 
 #[cfg(target_os = "linux")]
 fn pick_directory_linux(prompt: &str) -> Option<PathBuf> {
-    if let Some(path) = run_directory_picker(
-        Command::new("zenity").args([
-            "--file-selection",
-            "--directory",
-            "--title",
-            prompt,
-        ]),
-    ) {
+    if let Some(path) = run_directory_picker(Command::new("zenity").args([
+        "--file-selection",
+        "--directory",
+        "--title",
+        prompt,
+    ])) {
         return Some(path);
     }
-    run_directory_picker(
-        Command::new("kdialog").args(["--getexistingdirectory", ".", "--title", prompt]),
-    )
+    run_directory_picker(Command::new("kdialog").args([
+        "--getexistingdirectory",
+        ".",
+        "--title",
+        prompt,
+    ]))
 }
 
 #[cfg(target_os = "windows")]

@@ -14,10 +14,10 @@ use crate::channel::command_coordinator::{
 };
 use crate::channel::command_outcome_broker::CommandOutcomeBroker;
 use crate::channel::elicitation_response::ElicitationResponse;
-use crate::channel::mcp_control::McpControl;
-use crate::channel::mcp_apps_control::McpAppsControl;
-use crate::channel::metadata_command_processor::MetadataCommandProcessor;
 use crate::channel::machine_command_processor::MachineCommandProcessor;
+use crate::channel::mcp_apps_control::McpAppsControl;
+use crate::channel::mcp_control::McpControl;
+use crate::channel::metadata_command_processor::MetadataCommandProcessor;
 use crate::channel::permission_resolution::PermissionResolution;
 use crate::channel::prompt_delivery::{PromptDelivery, PromptDeliveryDeps};
 use crate::channel::prompt_recovery::PromptRecovery;
@@ -33,7 +33,9 @@ use crate::channel::session_rewind::{SessionRewindExecution, SessionRewindQuerie
 use crate::channel::session_runtime_operations::{SessionRuntimeConfig, SessionRuntimeOperations};
 use crate::channel::turn_cancellation::TurnCancellation;
 use crate::channel::workspace_compatibility::WorkspaceCompatibility;
-use crate::control::{ChatRegistry, InstanceRegistry, MachineService, ProjectService, WorkspaceRegistry, StoreSink};
+use crate::control::{
+    ChatRegistry, InstanceRegistry, MachineService, ProjectService, StoreSink, WorkspaceRegistry,
+};
 use crate::persist::Store;
 use crate::protocol::Translator;
 use crate::state::doc_manager::{BatchConfig, DocManager};

@@ -28,9 +28,9 @@ pub use acp_channel::{
     ConfigCatalogError, DropReason, ElicitationRequestFields, NormalizeOutcome,
     PermissionRequestFields, PERMISSION_TIMEOUT,
 };
-pub(crate) use translator::permission_option_matches;
 pub use mcp_name::{parse_mcp_tool_name, ParsedMcpToolName};
 pub use ssh_destination::{validate_identity_file_path, validate_ssh_destination};
+pub(crate) use translator::permission_option_matches;
 pub use translator::{
     negotiated_peri_extensions, validate_cwd, OutboundCtx, OutboundMessage, TranslateError,
     Translator, PERI_AGENT_ACTIVITY_EXTENSION, PERI_OAUTH_EXTENSION, PERI_PREDICTION_EXTENSION,

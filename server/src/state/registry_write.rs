@@ -154,11 +154,7 @@ impl RegistryApplier {
                         Some(v) => entry.insert(&mut txn, "error_code", v.clone()),
                         None => entry.insert(&mut txn, "error_code", yrs::Any::Null),
                     };
-                    entry.insert(
-                        &mut txn,
-                        "has_identity_file",
-                        m.has_identity_file,
-                    );
+                    entry.insert(&mut txn, "has_identity_file", m.has_identity_file);
                     entry.insert(&mut txn, "auto_reconnect", m.auto_reconnect);
                     match &m.host_key_sha256 {
                         Some(v) => entry.insert(&mut txn, "host_key_sha256", v.clone()),

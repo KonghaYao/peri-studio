@@ -171,7 +171,7 @@ async fn runtime_rewind_restart_never_redelivers_dispatch_or_confirmed_effect() 
 #[tokio::test]
 async fn recover_after_restart_fails_in_progress_ssh_machines() {
     use super::metadata::{
-        AdmitSshMachineParams, MetadataStore, PHASE_FAILED, new_ssh_instance_id,
+        new_ssh_instance_id, AdmitSshMachineParams, MetadataStore, PHASE_FAILED,
     };
 
     let dir = tempdir().unwrap();

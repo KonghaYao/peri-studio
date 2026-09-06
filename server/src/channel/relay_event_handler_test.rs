@@ -346,7 +346,10 @@ async fn mcp_app_tool_result_cache_clears_with_chat() {
         .await
         .expect("cached first-paint result");
     assert_eq!(
-        cached["structuredContent"]["source"].as_str().unwrap().len(),
+        cached["structuredContent"]["source"]
+            .as_str()
+            .unwrap()
+            .len(),
         5000
     );
     env.relay.clear_mcp_app_tool_results(S1).await;

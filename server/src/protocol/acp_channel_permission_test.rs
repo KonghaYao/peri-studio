@@ -167,7 +167,10 @@ fn map_request_permission_v2_subject_tool_call() {
         NormalizeOutcome::PermissionRequest(req) => {
             assert_eq!(req.tool_call_id.as_deref(), Some("tc-v2"));
             assert_eq!(req.title, "Approve shell command");
-            assert_eq!(req.description.as_deref(), Some("Agent wants to run cargo test"));
+            assert_eq!(
+                req.description.as_deref(),
+                Some("Agent wants to run cargo test")
+            );
             assert_eq!(req.tool.name, "Approve shell command");
             assert_eq!(req.tool.arguments, Some(json!({"command": "cargo test"})));
         }

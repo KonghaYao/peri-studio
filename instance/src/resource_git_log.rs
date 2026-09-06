@@ -1,13 +1,11 @@
 use peri_studio_proto::resource::{
     GitLogCommit, GitLogPage, GitLogScope, GitRefKind, GitRefLabel, InstanceResourcePayload,
-    DEFAULT_GIT_LOG_PAGE_SIZE, MAX_COMMIT_MESSAGE_BYTES, MAX_DIRECTORY_PAGE_SIZE,
-    MAX_GIT_LOG_PAGE_BYTES, ResourceErrorCode, ResourceFailure,
+    ResourceErrorCode, ResourceFailure, DEFAULT_GIT_LOG_PAGE_SIZE, MAX_COMMIT_MESSAGE_BYTES,
+    MAX_DIRECTORY_PAGE_SIZE, MAX_GIT_LOG_PAGE_BYTES,
 };
 
 use super::STATUS_ARGS;
-use crate::resource::common::{
-    cursor_for, failure, hash_bytes, parse_cursor, relative_path,
-};
+use crate::resource::common::{cursor_for, failure, hash_bytes, parse_cursor, relative_path};
 use crate::resource::ResourceHost;
 
 const LOG_PRETTY_FORMAT: &str = "%H%x00%P%x00%s%x00%an%x00%aI";
@@ -70,12 +68,16 @@ impl ResourceHost {
         let log_output = self.git(&repo, &log_argv).await?;
 
         let head_bytes = self.git(&repo, &["rev-parse", "HEAD"]).await?;
-        let head_oid = parse_oid(&String::from_utf8(head_bytes).map_err(|_| {
-            failure(ResourceErrorCode::Unavailable, false)
-        })?)?;
+        let head_oid = parse_oid(
+            &String::from_utf8(head_bytes)
+                .map_err(|_| failure(ResourceErrorCode::Unavailable, false))?,
+        )?;
 
         let mut commits = Vec::new();
-        for line in log_output.split(|byte| *byte == b'\n').filter(|line| !line.is_empty()) {
+        for line in log_output
+            .split(|byte| *byte == b'\n')
+            .filter(|line| !line.is_empty())
+        {
             let mut commit = parse_log_line(line)?;
             let refs = self.collect_refs(&repo, &commit.oid).await?;
             commit.refs = refs.labels;
@@ -84,8 +86,8 @@ impl ResourceHost {
         }
 
         let next_offset = offset + commits.len();
-        let next_cursor = (commits.len() == limit as usize)
-            .then(|| cursor_for(&generation, next_offset));
+        let next_cursor =
+            (commits.len() == limit as usize).then(|| cursor_for(&generation, next_offset));
 
         let page = GitLogPage {
             repo_id: expected_repo_id.to_string(),
@@ -95,9 +97,8 @@ impl ResourceHost {
             head_oid,
             scope,
         };
-        let encoded = serde_json::to_vec(&page).map_err(|_| {
-            failure(ResourceErrorCode::Unavailable, false)
-        })?;
+        let encoded = serde_json::to_vec(&page)
+            .map_err(|_| failure(ResourceErrorCode::Unavailable, false))?;
         if encoded.len() > MAX_GIT_LOG_PAGE_BYTES {
             return Err(view_too_large(limit, encoded.len()));
         }
@@ -122,7 +123,10 @@ impl ResourceHost {
             .await?;
         let mut labels = Vec::new();
         let mut complete = true;
-        for line in output.split(|byte| *byte == b'\n').filter(|line| !line.is_empty()) {
+        for line in output
+            .split(|byte| *byte == b'\n')
+            .filter(|line| !line.is_empty())
+        {
             if labels.len() >= MAX_REFS_PER_COMMIT {
                 complete = false;
                 break;
@@ -135,7 +139,10 @@ impl ResourceHost {
                 continue;
             }
             if let Some((kind, display)) = classify_ref(&name) {
-                labels.push(GitRefLabel { name: display, kind });
+                labels.push(GitRefLabel {
+                    name: display,
+                    kind,
+                });
             }
         }
         if output
@@ -174,9 +181,14 @@ fn suggest_lower_limit(limit: u32, actual_bytes: usize) -> u32 {
 }
 
 fn parse_log_line(line: &[u8]) -> Result<GitLogCommit, ResourceFailure> {
-    let text = std::str::from_utf8(line).map_err(|_| failure(ResourceErrorCode::Unavailable, false))?;
+    let text =
+        std::str::from_utf8(line).map_err(|_| failure(ResourceErrorCode::Unavailable, false))?;
     let mut fields = text.split('\0');
-    let oid = parse_oid(fields.next().ok_or_else(|| failure(ResourceErrorCode::Unavailable, false))?)?;
+    let oid = parse_oid(
+        fields
+            .next()
+            .ok_or_else(|| failure(ResourceErrorCode::Unavailable, false))?,
+    )?;
     let parents_raw = fields.next().unwrap_or("");
     let message_raw = fields.next().unwrap_or("");
     let author_name = fields
@@ -301,10 +313,7 @@ mod tests {
 
     #[test]
     fn suggest_lower_limit_scales_with_page_size() {
-        assert_eq!(
-            suggest_lower_limit(500, MAX_GIT_LOG_PAGE_BYTES * 2),
-            250
-        );
+        assert_eq!(suggest_lower_limit(500, MAX_GIT_LOG_PAGE_BYTES * 2), 250);
         assert_eq!(suggest_lower_limit(10, MAX_GIT_LOG_PAGE_BYTES * 2), 5);
     }
 }

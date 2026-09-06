@@ -183,7 +183,12 @@ impl SshBackend {
     }
 
     pub async fn tunnel_port(&self, instance_id: &str) -> Option<u16> {
-        self.state.lock().await.tunnel_ports.get(instance_id).copied()
+        self.state
+            .lock()
+            .await
+            .tunnel_ports
+            .get(instance_id)
+            .copied()
     }
 
     pub async fn mark_pipeline_started(&self, instance_id: &str) {
@@ -220,7 +225,11 @@ impl SshBackend {
     }
 
     /// Trust 后追加 known_hosts 行（0600 目录语义由 data_dir 权限承担）。
-    pub async fn append_known_hosts_line(&self, _instance_id: &str, line: &str) -> Result<(), String> {
+    pub async fn append_known_hosts_line(
+        &self,
+        _instance_id: &str,
+        line: &str,
+    ) -> Result<(), String> {
         let path = self.known_hosts_path();
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
@@ -287,7 +296,8 @@ impl SshBackend {
         instance_id: &str,
         generation: u64,
     ) -> Result<CancelResult, PipelineError> {
-        self.cancel_pipeline_inner(instance_id, generation, true).await
+        self.cancel_pipeline_inner(instance_id, generation, true)
+            .await
     }
 
     async fn cancel_pipeline_inner(

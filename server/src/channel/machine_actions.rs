@@ -56,13 +56,8 @@ impl MachineCommandProcessor {
                         true,
                     ));
                 }
-                self.audit_machine_committed(
-                    machines,
-                    &instance_id,
-                    "machine.add",
-                    started,
-                )
-                .await;
+                self.audit_machine_committed(machines, &instance_id, "machine.add", started)
+                    .await;
                 self.send_machine_ack(cmd, AckStatus::Committed, Some(&instance_id))
                     .await;
             }
@@ -79,13 +74,8 @@ impl MachineCommandProcessor {
                         Some("machine_add_failed"),
                     )
                     .await;
-                self.send_error(
-                    cmd,
-                    ErrorCode::AgentUnavailable,
-                    "machine add failed",
-                    true,
-                )
-                .await;
+                self.send_error(cmd, ErrorCode::AgentUnavailable, "machine add failed", true)
+                    .await;
             }
         }
         SubmitAck::Handled
@@ -303,7 +293,9 @@ impl MachineCommandProcessor {
             command_id,
             &payload.instance_id,
             "machine rename failed",
-            machines.rename(&payload.instance_id, payload.name.trim()).await,
+            machines
+                .rename(&payload.instance_id, payload.name.trim())
+                .await,
             None,
         )
         .await
@@ -560,8 +552,8 @@ impl MachineCommandProcessor {
         message: &str,
         retryable: bool,
     ) {
-        let command_id = super::command_coordinator::extract_command_id(&cmd.action)
-            .unwrap_or_default();
+        let command_id =
+            super::command_coordinator::extract_command_id(&cmd.action).unwrap_or_default();
         crate::auth::audit::audit(
             "command.error",
             Some(&command_id),

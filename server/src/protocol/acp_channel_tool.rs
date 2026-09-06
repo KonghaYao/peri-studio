@@ -59,9 +59,7 @@ impl AcpChannel {
                 public_error: error,
                 created_at: (update_kind == "tool_call").then(|| now.to_string()),
                 completed_at: terminal.then(|| now.to_string()),
-                ..mcp_fields_from_name(
-                    string_field(payload, "name", "name").as_deref(),
-                )
+                ..mcp_fields_from_name(string_field(payload, "name", "name").as_deref())
             },
         })
     }
@@ -77,8 +75,8 @@ impl AcpChannel {
         let status = status_text.as_deref().map(tool_status);
         let terminal = status.is_some_and(is_terminal);
         let failed = matches!(status, Some(ToolCallStatus::Error));
-        let name = string_field(update, "title", "title")
-            .or_else(|| string_field(update, "name", "name"));
+        let name =
+            string_field(update, "title", "title").or_else(|| string_field(update, "name", "name"));
         let content = json_patch(update, "content", TOOL_ARGUMENTS_MAX_BYTES);
         let patch = ToolCallPatch {
             name: name.as_ref().map(|name| truncate_text(name)),
@@ -90,7 +88,9 @@ impl AcpChannel {
                 update,
                 "rawInput",
                 "input",
-                mcp_fields_from_name(name.as_deref()).mcp_tool_name.is_some(),
+                mcp_fields_from_name(name.as_deref())
+                    .mcp_tool_name
+                    .is_some(),
             ),
             content,
             append_content: false,

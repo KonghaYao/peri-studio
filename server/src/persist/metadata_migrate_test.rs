@@ -18,7 +18,9 @@ async fn v7_migration_drops_session_tables_from_legacy_schema() {
         .await
         .unwrap();
     connection
-        .execute("INSERT INTO schema_migrations VALUES(1,'t'),(2,'t'),(3,'t'),(4,'t'),(5,'t'),(6,'t')")
+        .execute(
+            "INSERT INTO schema_migrations VALUES(1,'t'),(2,'t'),(3,'t'),(4,'t'),(5,'t'),(6,'t')",
+        )
         .await
         .unwrap();
     connection
@@ -65,9 +67,7 @@ async fn v7_migration_drops_session_tables_from_legacy_schema() {
         .await
         .unwrap();
     connection
-        .execute(
-            "INSERT INTO projection_state VALUES(1,0,0,'1970-01-01T00:00:00Z')",
-        )
+        .execute("INSERT INTO projection_state VALUES(1,0,0,'1970-01-01T00:00:00Z')")
         .await
         .unwrap();
     connection.close().await.unwrap();
@@ -86,13 +86,12 @@ async fn v7_migration_drops_session_tables_from_legacy_schema() {
         "session_activations",
         "session_runtime_history",
     ] {
-        let found: Option<String> = sqlx::query_scalar(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-        )
-        .bind(table)
-        .fetch_optional(&mut connection)
-        .await
-        .unwrap();
+        let found: Option<String> =
+            sqlx::query_scalar("SELECT name FROM sqlite_master WHERE type='table' AND name=?")
+                .bind(table)
+                .fetch_optional(&mut connection)
+                .await
+                .unwrap();
         assert!(found.is_none(), "table {table} must be dropped by v7");
     }
 }

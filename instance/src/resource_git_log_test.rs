@@ -2,7 +2,7 @@ use std::process::Command;
 
 use peri_studio_proto::resource::{
     GitLogQuery, GitLogScope, InstanceResourcePayload, InstanceResourceQuery,
-    InstanceResourceQueryKind, MAX_COMMIT_MESSAGE_BYTES, ResourceErrorCode,
+    InstanceResourceQueryKind, ResourceErrorCode, MAX_COMMIT_MESSAGE_BYTES,
 };
 use tempfile::tempdir;
 
@@ -404,11 +404,16 @@ async fn git_log_rate_limits_concurrent_queries() {
     let mut rate_limited = 0;
     for handle in handles {
         let result = handle.await.unwrap();
-        if result.error.as_ref().is_some_and(|error| {
-            error.code == ResourceErrorCode::RateLimited
-        }) {
+        if result
+            .error
+            .as_ref()
+            .is_some_and(|error| error.code == ResourceErrorCode::RateLimited)
+        {
             rate_limited += 1;
         }
     }
-    assert!(rate_limited >= 1, "expected at least one RateLimited response");
+    assert!(
+        rate_limited >= 1,
+        "expected at least one RateLimited response"
+    );
 }

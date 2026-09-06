@@ -245,7 +245,12 @@ async fn session_archive_restore_persists_archived_at_in_registry() {
     assert!(
         matches!(rx.recv().await, Some(OutboundMsg::Frame(Frame::ActionAck(ref ack))) if ack.status == AckStatus::Committed)
     );
-    assert!(env.metadata.list_catalog_session_prefs().await.unwrap().is_empty());
+    assert!(env
+        .metadata
+        .list_catalog_session_prefs()
+        .await
+        .unwrap()
+        .is_empty());
 }
 
 #[tokio::test]

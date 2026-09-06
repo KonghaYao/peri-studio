@@ -20,8 +20,9 @@ import {
 } from '../panel/store';
 import { installPrincipalRole } from '../panel/lib/auth-state';
 import { acquireFixtureClock } from './fixture-clock';
-import { setResourceDiffPreview, setResourceFilePreview, setResourceWorkspace } from '../panel/lib/resource-store';
+import { resourceWorkspace, setResourceDiffPreview, setResourceFilePreview, setResourceWorkspace } from '../panel/lib/resource-store';
 import type { ResourceDiffPreviewState, ResourceFilePreviewState } from '../panel/lib/resource-preview';
+import type { ResourceEntry } from '../panel/lib/resource-view';
 import { markElicitationResponseUncertain, startElicitationResponse } from '../panel/lib/elicitation-delivery';
 import { setComposerAssets } from '../panel/lib/composer-assets';
 import { createLongConversationEntries } from './long-conversation';
@@ -57,15 +58,45 @@ export function setVisualDiffPreview(preview: ResourceDiffPreviewState): void {
   setResourceDiffPreview(preview);
 }
 
+function normalizeResourcePath(path: string): string {
+  return path.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '');
+}
+
+function resourceEntryFullPath(directory: string, entryPath: string): string {
+  const normalized = normalizeResourcePath(entryPath);
+  if (!directory) return normalized;
+  if (normalized.includes('/')) return normalized;
+  return normalizeResourcePath(`${directory}/${normalized}`);
+}
+
+function resourceEntryMatchesPath(directory: string, entry: ResourceEntry, target: string): boolean {
+  const entryPath = String(entry.path ?? entry.name ?? '');
+  if (!entryPath) return false;
+  const fullPath = resourceEntryFullPath(directory, entryPath);
+  return fullPath === target || fullPath.endsWith(`/${target}`) || target.endsWith(`/${entryPath}`);
+}
+
 /** 浏览器验收桥：模拟资源预览期间权威文件树删除来源行。 */
 export function removeVisualResourceEntry(path: string): void {
+  const target = normalizeResourcePath(path);
   setResourceWorkspace((state) => ({
     ...state,
     directories: Object.fromEntries(Object.entries(state.directories).map(([directory, page]) => [
       directory,
-      { ...page, entries: page.entries.filter((entry) => entry.path !== path) },
+      {
+        ...page,
+        entries: page.entries.filter((entry) => !resourceEntryMatchesPath(directory, entry, target)),
+      },
     ])),
   }));
+}
+
+/** 浏览器验收桥：查询 mock 资源树是否仍包含路径。 */
+export function visualResourceEntryExists(path: string): boolean {
+  const target = normalizeResourcePath(path);
+  return Object.entries(resourceWorkspace().directories).some(([directory, page]) => (
+    page.entries.some((entry) => resourceEntryMatchesPath(directory, entry, target))
+  ));
 }
 
 /** 浏览器验收桥：为移动抽屉构造可滚动的深文件列表。 */

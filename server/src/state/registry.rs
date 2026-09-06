@@ -346,7 +346,8 @@ impl RegistryState {
         &self,
         machines: Vec<peri_studio_proto::schema::MachineSummary>,
     ) -> Result<(), RegistryError> {
-        self.send(DocCommand::RegistryReplaceMachines { machines }).await
+        self.send(DocCommand::RegistryReplaceMachines { machines })
+            .await
     }
 
     async fn set_global(&self, status: GlobalStatus) -> Result<(), RegistryError> {

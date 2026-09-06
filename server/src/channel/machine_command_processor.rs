@@ -104,15 +104,7 @@ impl MachineCommandProcessor {
                     if machines.reproject().await.is_err()
                         || machines
                             .metadata()
-                            .update_command(
-                                &command_id,
-                                "committed",
-                                None,
-                                None,
-                                None,
-                                None,
-                                None,
-                            )
+                            .update_command(&command_id, "committed", None, None, None, None, None)
                             .await
                             .is_err()
                     {

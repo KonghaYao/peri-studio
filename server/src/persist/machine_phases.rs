@@ -54,7 +54,7 @@ pub fn is_in_progress(phase: &str) -> bool {
         phase,
         PHASE_PENDING
             | PHASE_HOST_KEY_PROBE
-            |         PHASE_AWAITING_HOST_KEY
+            | PHASE_AWAITING_HOST_KEY
             | PHASE_AWAITING_REPLACE
             | PHASE_SSH_CONNECT
             | PHASE_PROBE

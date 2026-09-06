@@ -11,11 +11,11 @@ mod server;
 mod signal;
 mod ssh_argv;
 mod ssh_backend;
-mod ssh_release_checksums;
 #[cfg(test)]
 #[path = "ssh_backend_fake_test.rs"]
 mod ssh_backend_fake_test;
 mod ssh_backend_pipeline;
+mod ssh_release_checksums;
 mod status;
 mod telemetry;
 mod token;
@@ -95,9 +95,10 @@ async fn run_async(
             )
             .await
         }
-        Some(Command::OwnerShutdown { data_dir, token_file }) => {
-            run_owner_shutdown(data_dir, token_file).await
-        }
+        Some(Command::OwnerShutdown {
+            data_dir,
+            token_file,
+        }) => run_owner_shutdown(data_dir, token_file).await,
         Some(Command::Token(_)) | Some(Command::Status(_)) | Some(Command::ProtocolVersion) => {
             unreachable!("handled before runtime")
         }

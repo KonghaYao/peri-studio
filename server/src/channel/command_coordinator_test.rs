@@ -149,15 +149,8 @@ async fn env_with_create_deadlines(spawn_timeout: Duration, instance_ack_timeout
     ));
     let metadata = Arc::new(MetadataStore::open(tmp.path()).await.unwrap());
     let catalog = SessionCatalog::new();
-    let projects = ProjectService::new(
-        metadata.clone(),
-        doc.registry(),
-        catalog,
-        chats.clone(),
-    );
-    coordinator
-        .install_project_service(projects.clone())
-        .await;
+    let projects = ProjectService::new(metadata.clone(), doc.registry(), catalog, chats.clone());
+    coordinator.install_project_service(projects.clone()).await;
     coordinator.install_history_sink(sink.clone()).await;
     // instance 上线（hello）。
     let (instance_tx, instance_rx) = mpsc::channel(64);

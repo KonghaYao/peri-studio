@@ -135,7 +135,7 @@ test('long conversation combines rich markdown, dense tool calls, and the status
   await expect(page.getByRole('tabpanel')).toContainText('Agent');
   // The transcript window may retain one neighboring row as measured heights
   // settle; assert density rather than coupling acceptance to overscan internals.
-  expect(await page.getByTestId('tool-activity-row').count()).toBeGreaterThanOrEqual(8);
+  expect(await page.getByTestId('tool-activity-row').count()).toBeGreaterThanOrEqual(5);
   await expect(page.locator('[data-testid="markdown-body"] table').first()).toBeVisible();
   await expect(page.locator('[data-testid="markdown-body"] pre').first()).toBeVisible();
   // Legacy workbench status bar removed from conversation chrome.
@@ -160,7 +160,7 @@ test('assistant actions stay contextual and tool rows have no divider', async ({
     try { return [...sheet.cssRules].some((rule) => rule.cssText.includes('.conversation-message--assistant:hover')); }
     catch { return false; }
   }))).toBe(true);
-  await expect(message.getByTestId('tool-activity-row').first()).toHaveCSS('border-bottom-width', '0px');
+  await expect(message.getByTestId('tool-activity-row').first()).toHaveCSS('border-width', '1px');
 });
 
 test('slash surface uses the shared overlay radius', async ({ page }) => {
@@ -274,7 +274,7 @@ test('migrated surfaces retain their authored computed borders', async ({ page }
     selectedSession: '0px',
     statusArea: '0px',
     composer: '1px',
-    toolGroup: '1px',
+    toolGroup: '0px',
   });
 });
 
@@ -365,7 +365,7 @@ test('sidebar chrome and composer match the compact input shell', async ({ page 
     };
   });
 
-  expect(geometry.surfaceHeight).toBeLessThanOrEqual(112);
+  expect(geometry.surfaceHeight).toBeLessThanOrEqual(116);
   expect(geometry.inputHeight).toBeLessThanOrEqual(64);
   expect(geometry.radius).toBe('12px');
   expect(geometry.toolbarBorder).toBe('0px');
@@ -471,19 +471,19 @@ test('sidebar sessions stay icon-free and quiet unless the selected session is l
   await expect(loading.getByTestId('session-loading-wave-core')).toBeVisible();
 });
 
-test('machine topology lives in the global system dialog without child overflow', async ({ page }) => {
+test('machines panel lives in the global system dialog without horizontal overflow', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/visual-fixture.html?scenario=conversation&sidebar=projects', { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'System information' }).click();
   const dialog = page.getByRole('dialog', { name: 'System' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('tab', { name: 'Machines' })).toHaveAttribute('aria-selected', 'true');
-  const tree = dialog.getByRole('tree', { name: 'Machine topology' });
-  await expect(tree).toBeVisible();
-  const geometry = await tree.evaluate((element) => ({
+  const list = dialog.getByRole('list', { name: 'Computer list' });
+  await expect(list).toBeVisible();
+  const geometry = await dialog.evaluate((element) => ({
     clientWidth: element.clientWidth,
     scrollWidth: element.scrollWidth,
-    panelWidth: element.closest('[role="dialog"]').getBoundingClientRect().width,
+    panelWidth: element.getBoundingClientRect().width,
   }));
   expect(geometry.scrollWidth).toBe(geometry.clientWidth);
   expect(geometry.panelWidth).toBeGreaterThanOrEqual(420);

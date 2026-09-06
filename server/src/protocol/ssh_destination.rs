@@ -8,7 +8,10 @@ pub fn validate_ssh_destination(destination: &str) -> Result<(), String> {
     if destination.len() > 255 {
         return Err("destination is too long".into());
     }
-    if destination.chars().any(|c| c.is_control() || c.is_whitespace()) {
+    if destination
+        .chars()
+        .any(|c| c.is_control() || c.is_whitespace())
+    {
         return Err("destination contains invalid characters".into());
     }
     if destination.starts_with('-') {
@@ -17,7 +20,7 @@ pub fn validate_ssh_destination(destination: &str) -> Result<(), String> {
     if destination.contains("://") {
         return Err("destination must not contain a URL scheme".into());
     }
-  if destination.contains('@') {
+    if destination.contains('@') {
         let user_part = destination.split('@').next().unwrap_or("");
         if user_part.contains(':') {
             return Err("passwords in destination are not supported".into());

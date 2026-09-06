@@ -15,10 +15,10 @@ use std::fs;
 use std::process::{Child, Command, Stdio};
 use std::time::Duration;
 
+use peri_studio_proto::ack::AckStatus;
 use peri_studio_proto::action::{
     ActionEnvelope, MachineAddPayload, MachineInstancePayload, MachineTrustHostPayload,
 };
-use peri_studio_proto::ack::AckStatus;
 use peri_studio_proto::Frame;
 use yrs::{Map, ReadTxn, Transact};
 
@@ -40,7 +40,10 @@ fn machine_phase(doc: &yrs::Doc, instance_id: &str) -> Option<String> {
     let txn = doc.transact();
     let root = txn.get_map("root")?;
     let machines = root.get(&txn, "machines")?.cast::<yrs::MapRef>().ok()?;
-    let entry = machines.get(&txn, instance_id)?.cast::<yrs::MapRef>().ok()?;
+    let entry = machines
+        .get(&txn, instance_id)?
+        .cast::<yrs::MapRef>()
+        .ok()?;
     entry
         .get(&txn, "phase")
         .and_then(|value| value.cast::<String>().ok())
@@ -50,7 +53,10 @@ fn machine_host_key(doc: &yrs::Doc, instance_id: &str) -> Option<String> {
     let txn = doc.transact();
     let root = txn.get_map("root")?;
     let machines = root.get(&txn, "machines")?.cast::<yrs::MapRef>().ok()?;
-    let entry = machines.get(&txn, instance_id)?.cast::<yrs::MapRef>().ok()?;
+    let entry = machines
+        .get(&txn, instance_id)?
+        .cast::<yrs::MapRef>()
+        .ok()?;
     entry
         .get(&txn, "hostKeySha256")
         .and_then(|value| value.cast::<String>().ok())
@@ -124,7 +130,8 @@ impl Drop for LocalAppProc {
 }
 
 async fn send_machine_add(env: &TestEnv) -> Result<(WsClient, String), String> {
-    let mut client = WsClient::connect_client(env.port, &env.client_token, &["hub:registry"]).await?;
+    let mut client =
+        WsClient::connect_client(env.port, &env.client_token, &["hub:registry"]).await?;
     let command_id = uuid::Uuid::new_v4().to_string();
     let mut payload = MachineAddPayload {
         destination: required_env("SSH_CONTRACT_DESTINATION")?,
@@ -168,11 +175,10 @@ async fn trust_host_if_needed(
     if machine_phase(&doc, instance_id).as_deref() != Some("awaiting_host_key") {
         return Ok(());
     }
-    let fingerprint = machine_host_key(&doc, instance_id).or_else(|| {
-        std::env::var("SSH_CONTRACT_HOST_KEY_FINGERPRINT").ok()
-    });
-    let fingerprint =
-        fingerprint.ok_or_else(|| "host awaiting trust but no hostKeySha256 in registry".to_string())?;
+    let fingerprint = machine_host_key(&doc, instance_id)
+        .or_else(|| std::env::var("SSH_CONTRACT_HOST_KEY_FINGERPRINT").ok());
+    let fingerprint = fingerprint
+        .ok_or_else(|| "host awaiting trust but no hostKeySha256 in registry".to_string())?;
     let command_id = uuid::Uuid::new_v4().to_string();
     client
         .send(&Frame::Action(ActionEnvelope::MachineTrustHost {
@@ -184,7 +190,9 @@ async fn trust_host_if_needed(
         }))
         .await?;
     match wait_terminal(client, RECV_TIMEOUT).await? {
-        Frame::ActionAck(ack) if matches!(ack.status, AckStatus::Committed | AckStatus::Duplicate) => {
+        Frame::ActionAck(ack)
+            if matches!(ack.status, AckStatus::Committed | AckStatus::Duplicate) =>
+        {
             Ok(())
         }
         Frame::ActionError(error) => Err(format!("machine/trust-host failed: {:?}", error.code)),
@@ -212,7 +220,8 @@ async fn wait_machine_phase(
 }
 
 async fn send_machine_disconnect(env: &TestEnv, instance_id: &str) -> Result<(), String> {
-    let mut client = WsClient::connect_client(env.port, &env.client_token, &["hub:registry"]).await?;
+    let mut client =
+        WsClient::connect_client(env.port, &env.client_token, &["hub:registry"]).await?;
     let command_id = uuid::Uuid::new_v4().to_string();
     client
         .send(&Frame::Action(ActionEnvelope::MachineDisconnect {
@@ -234,7 +243,8 @@ async fn send_machine_disconnect(env: &TestEnv, instance_id: &str) -> Result<(),
 }
 
 async fn send_machine_connect(env: &TestEnv, instance_id: &str) -> Result<(), String> {
-    let mut client = WsClient::connect_client(env.port, &env.client_token, &["hub:registry"]).await?;
+    let mut client =
+        WsClient::connect_client(env.port, &env.client_token, &["hub:registry"]).await?;
     let command_id = uuid::Uuid::new_v4().to_string();
     client
         .send(&Frame::Action(ActionEnvelope::MachineConnect {
@@ -267,9 +277,7 @@ async fn ssh_machine_add_hello_disconnect_connect() {
     let _app = LocalAppProc::start(&env);
     _app.wait_ready().expect("local app ready");
 
-    let (mut client, instance_id) = send_machine_add(&env)
-        .await
-        .expect("machine/add committed");
+    let (mut client, instance_id) = send_machine_add(&env).await.expect("machine/add committed");
     trust_host_if_needed(&env, &mut client, &instance_id)
         .await
         .expect("trust host when required");

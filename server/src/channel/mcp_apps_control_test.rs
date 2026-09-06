@@ -79,7 +79,8 @@ fn as_mcp_app_call_tool_result_wraps_output_schema() {
     };
     use serde_json::json;
 
-    let output = json!({"canvasId": "c1", "source": "export default function App() { return null }"});
+    let output =
+        json!({"canvasId": "c1", "source": "export default function App() { return null }"});
     let wrapped = as_mcp_app_call_tool_result(output.clone());
     assert_eq!(wrapped["structuredContent"], output);
     assert!(wrapped["content"].as_array().is_some());
@@ -91,7 +92,8 @@ fn as_mcp_app_call_tool_result_wraps_output_schema() {
     assert_eq!(as_mcp_app_call_tool_result(already.clone()), already);
 
     let content_only = json!({"content": [{"type": "text", "text": "Canvas ready"}]});
-    let input = json!({"canvasId": "c1", "source": "export default function App() { return null }"});
+    let input =
+        json!({"canvasId": "c1", "source": "export default function App() { return null }"});
     let merged = merge_mcp_app_tool_result(Some(content_only), Some(input.clone())).unwrap();
     assert_eq!(merged["structuredContent"], input);
     assert_eq!(merged["content"][0]["text"], "Canvas ready");

@@ -87,8 +87,16 @@ impl MetadataCommandProcessor {
                         true,
                     ));
                 }
-                self.send_metadata_ack(cmd, AckStatus::Committed, Some(&id), None, None, None, None)
-                    .await;
+                self.send_metadata_ack(
+                    cmd,
+                    AckStatus::Committed,
+                    Some(&id),
+                    None,
+                    None,
+                    None,
+                    None,
+                )
+                .await;
             }
             Err(_) => {
                 let _ = projects

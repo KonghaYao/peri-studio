@@ -5,9 +5,7 @@ use std::process::Command as StdCommand;
 
 use tempfile::tempdir;
 
-use crate::ssh_argv::{
-    build_keyscan_argv, build_tunnel_argv, known_hosts_path, SshConnectOptions,
-};
+use crate::ssh_argv::{build_keyscan_argv, build_tunnel_argv, known_hosts_path, SshConnectOptions};
 use crate::ssh_backend::{SshBackend, SshBackendConfig};
 
 fn write_fake_ssh(dir: &std::path::Path) -> std::path::PathBuf {
@@ -69,8 +67,12 @@ fn fake_ssh_tunnel_argv_contains_required_invariants() {
     let argv = build_tunnel_argv(&opts, 8456).unwrap();
 
     assert!(argv.windows(2).any(|pair| pair == ["-o", "BatchMode=yes"]));
-    assert!(argv.windows(2).any(|pair| pair == ["-o", "ControlMaster=no"]));
-    assert!(argv.iter().any(|arg| arg.starts_with("UserKnownHostsFile=")));
+    assert!(argv
+        .windows(2)
+        .any(|pair| pair == ["-o", "ControlMaster=no"]));
+    assert!(argv
+        .iter()
+        .any(|arg| arg.starts_with("UserKnownHostsFile=")));
     assert!(argv.contains(&"-N".to_string()));
     assert!(argv.contains(&"127.0.0.1:0:127.0.0.1:8456".to_string()));
     let separator = argv.iter().position(|arg| arg == "--").unwrap();

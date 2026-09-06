@@ -31,7 +31,10 @@ async fn rebuild_chat_views_only_local_in_recovery_barrier() {
     let metadata = Arc::new(MetadataStore::open(tmp.path()).await.unwrap());
     let chats = ChatRegistry::new(doc.registry());
     let recovery = Hub::rebuild_chat_views(&metadata, &chats).await.unwrap();
-    assert_eq!(recovery, std::collections::HashSet::from(["local".to_string()]));
+    assert_eq!(
+        recovery,
+        std::collections::HashSet::from(["local".to_string()])
+    );
     assert!(chats.entry("chat-live").await.is_none());
 }
 

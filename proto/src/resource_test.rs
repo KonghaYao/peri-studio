@@ -5,9 +5,8 @@ use crate::frame::Frame;
 use crate::resource::{
     GitDiffQuery, InstanceResourcePayload, InstanceResourceQuery, InstanceResourceQueryKind,
     InstanceResourceResult, OpenResourceView, ReadDirectoryQuery, ResourceErrorCode,
-    ResourceFailure, ResourceGitAction,
-    ResourceGitActionKind, ResourceQuery, ResourceQueryResult, ResourceResult, ResourceViewKind,
-    ResourceViewOpened, RESOURCE_PROTOCOL_VERSION,
+    ResourceFailure, ResourceGitAction, ResourceGitActionKind, ResourceQuery, ResourceQueryResult,
+    ResourceResult, ResourceViewKind, ResourceViewOpened, RESOURCE_PROTOCOL_VERSION,
 };
 
 #[test]
@@ -187,7 +186,10 @@ fn git_log_query_roundtrips_on_instance_wire() {
     });
     let value = serde_json::to_value(&frame).unwrap();
     assert_eq!(value["query"]["type"], "git_log");
-    assert_eq!(value["query"]["payload"]["expectedGeneration"], "generation-1");
+    assert_eq!(
+        value["query"]["payload"]["expectedGeneration"],
+        "generation-1"
+    );
     assert_eq!(
         Frame::parse(&serde_json::to_string(&frame).unwrap()).unwrap(),
         frame

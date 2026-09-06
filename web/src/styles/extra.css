@@ -288,6 +288,12 @@ body.workbench-panel-resizing * {
   tab-size: 4;
 }
 
+/* ── Composer：与正文 text-13 行高对齐（textarea 默认 leading 会偏大） ── */
+
+.composer-input {
+  line-height: var(--leading-normal);
+}
+
 /* ── Composer skills 窄屏降级为「/」 ─────────────────────────────────── */
 
 /* ── Composer 工具栏：窄屏为模型徽章让出整行 ─────────────────────────────── */

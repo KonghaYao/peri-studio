@@ -240,11 +240,7 @@ async fn git_log_page_projection_roundtrips_nested_commit_fields() {
         .cast::<yrs::ArrayRef>()
         .unwrap();
     assert_eq!(order.len(&txn), 1);
-    let commit_id = order
-        .get(&txn, 0)
-        .unwrap()
-        .cast::<String>()
-        .unwrap();
+    let commit_id = order.get(&txn, 0).unwrap().cast::<String>().unwrap();
     let entries = root
         .get(&txn, "entries")
         .unwrap()

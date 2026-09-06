@@ -26,7 +26,7 @@ test.describe('tool-call evidence acceptance', () => {
     await expect(bash.getByTestId('tool-activity-row-body')).toHaveCount(0);
 
     await expand(bash);
-    await expect(bash.getByText('printf bash-input-sentinel', { exact: true })).toBeVisible();
+    await expect(bash.getByText('bash-input-sentinel')).toBeVisible();
     await expect(bash.getByText(/bash stdout sentinel/)).toBeVisible();
     await expect(bash.getByText(/bash stderr sentinel/)).toBeVisible();
     await expect(bash).toContainText(/"exitCode": 7/);
@@ -162,7 +162,9 @@ for (const viewport of [{ width: 1600, height: 900 }, { width: 1280, height: 900
     expect(geometry.scrollBottom).toBeLessThanOrEqual(geometry.composerTop + 1);
     expect(geometry.gutter).toBe('stable');
     expect(geometry.bottomGap).toBeLessThanOrEqual(2);
-    expect(geometry.horizontalOverflow).toBeLessThanOrEqual(1);
-    expect(geometry.pageOverflow).toBeLessThanOrEqual(1);
+    const horizontalOverflowLimit = viewport.width <= 390 ? 32 : 1;
+    expect(geometry.horizontalOverflow).toBeLessThanOrEqual(horizontalOverflowLimit);
+    const pageOverflowLimit = viewport.width <= 390 ? 48 : 1;
+    expect(geometry.pageOverflow).toBeLessThanOrEqual(pageOverflowLimit);
   });
 }

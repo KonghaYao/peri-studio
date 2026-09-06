@@ -14,7 +14,7 @@ use crate::persist::machine_phases::{
     PHASE_PENDING,
 };
 use crate::persist::metadata::{
-    AdmitSshMachineParams, MachineRecord, MetadataError, MetadataStore, new_ssh_instance_id,
+    new_ssh_instance_id, AdmitSshMachineParams, MachineRecord, MetadataError, MetadataStore,
 };
 use crate::state::registry::{RegistryError, RegistryState};
 
@@ -175,10 +175,7 @@ impl MachineService {
                 record.phase
             )));
         }
-        let generation = self
-            .metadata
-            .bump_pipeline_generation(instance_id)
-            .await? as u64;
+        let generation = self.metadata.bump_pipeline_generation(instance_id).await? as u64;
         let record = self
             .metadata
             .machine(instance_id)
@@ -188,12 +185,8 @@ impl MachineService {
             .update_machine_phase(instance_id, connect_entry_phase(), None)
             .await?;
         self.reproject().await?;
-        self.spawn_pipeline(
-            pipeline,
-            &record,
-            Some(PipelineStep::Tunnel),
-        )
-        .await?;
+        self.spawn_pipeline(pipeline, &record, Some(PipelineStep::Tunnel))
+            .await?;
         self.active_generations
             .lock()
             .await
@@ -261,7 +254,11 @@ impl MachineService {
             }
             CancelResult::DeliveryUnknown => {
                 self.metadata
-                    .update_machine_phase(instance_id, PHASE_FAILED, Some("connect_delivery_unknown"))
+                    .update_machine_phase(
+                        instance_id,
+                        PHASE_FAILED,
+                        Some("connect_delivery_unknown"),
+                    )
                     .await?;
                 self.active_generations.lock().await.remove(instance_id);
                 self.reproject().await?;
@@ -284,10 +281,7 @@ impl MachineService {
         } else {
             Some(PipelineStep::HostKeyProbe)
         };
-        let generation = self
-            .metadata
-            .bump_pipeline_generation(instance_id)
-            .await? as u64;
+        let generation = self.metadata.bump_pipeline_generation(instance_id).await? as u64;
         let record = self
             .metadata
             .machine(instance_id)
@@ -318,13 +312,10 @@ impl MachineService {
                 "machine is not awaiting host key trust".into(),
             ));
         }
-        let line = record
-            .pending_host_key_line
-            .clone()
-            .ok_or_else(|| MachineServiceError::InvalidState("pending host key line missing".into()))?;
-        pipeline
-            .append_known_hosts_line(instance_id, &line)
-            .await?;
+        let line = record.pending_host_key_line.clone().ok_or_else(|| {
+            MachineServiceError::InvalidState("pending host key line missing".into())
+        })?;
+        pipeline.append_known_hosts_line(instance_id, &line).await?;
         self.metadata
             .trust_host_key(instance_id, fingerprint)
             .await?;
@@ -348,9 +339,15 @@ impl MachineService {
         Ok(())
     }
 
-    pub async fn rename(&self, instance_id: &str, display_name: &str) -> Result<(), MachineServiceError> {
+    pub async fn rename(
+        &self,
+        instance_id: &str,
+        display_name: &str,
+    ) -> Result<(), MachineServiceError> {
         self.require_machine(instance_id).await?;
-        self.metadata.rename_machine(instance_id, display_name).await?;
+        self.metadata
+            .rename_machine(instance_id, display_name)
+            .await?;
         self.reproject().await?;
         Ok(())
     }
@@ -529,7 +526,10 @@ impl MachineService {
             .ok_or(MachineServiceError::PipelineUnavailable)
     }
 
-    async fn require_machine(&self, instance_id: &str) -> Result<MachineRecord, MachineServiceError> {
+    async fn require_machine(
+        &self,
+        instance_id: &str,
+    ) -> Result<MachineRecord, MachineServiceError> {
         self.metadata
             .machine(instance_id)
             .await?
@@ -537,7 +537,10 @@ impl MachineService {
             .ok_or_else(|| MachineServiceError::NotFound(instance_id.into()))
     }
 
-    async fn require_ssh_machine(&self, instance_id: &str) -> Result<MachineRecord, MachineServiceError> {
+    async fn require_ssh_machine(
+        &self,
+        instance_id: &str,
+    ) -> Result<MachineRecord, MachineServiceError> {
         let record = self.require_machine(instance_id).await?;
         if record.kind != "ssh" {
             return Err(MachineServiceError::InvalidState(
@@ -684,7 +687,11 @@ mod tests {
         let pipeline = Arc::new(FakeMachinePipeline::default());
         let service = MachineService::new(metadata.clone(), doc.registry())
             .with_pipeline(pipeline.clone())
-            .with_runtime_paths(8456, dir.path().to_path_buf(), std::env::current_exe().unwrap());
+            .with_runtime_paths(
+                8456,
+                dir.path().to_path_buf(),
+                std::env::current_exe().unwrap(),
+            );
         service.bootstrap().await.unwrap();
         let instance_id = service
             .admit_and_start_add(AdmitAddParams {

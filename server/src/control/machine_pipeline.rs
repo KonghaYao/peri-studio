@@ -26,9 +26,9 @@ impl PipelineStep {
     /// 对应 `machines.phase` 字符串。
     pub fn as_phase(self) -> &'static str {
         use crate::persist::metadata::machine_phases::{
-            PHASE_AWAITING_HOST_KEY, PHASE_AWAITING_REPLACE, PHASE_CONNECTING, PHASE_HOST_KEY_PROBE,
-            PHASE_INSTALL, PHASE_ONLINE, PHASE_PROBE, PHASE_PROVISION, PHASE_SSH_CONNECT, PHASE_START,
-            PHASE_TUNNEL,
+            PHASE_AWAITING_HOST_KEY, PHASE_AWAITING_REPLACE, PHASE_CONNECTING,
+            PHASE_HOST_KEY_PROBE, PHASE_INSTALL, PHASE_ONLINE, PHASE_PROBE, PHASE_PROVISION,
+            PHASE_SSH_CONNECT, PHASE_START, PHASE_TUNNEL,
         };
         match self {
             Self::HostKeyProbe => PHASE_HOST_KEY_PROBE,
@@ -137,7 +137,11 @@ pub trait MachinePipelinePort: Send + Sync {
     async fn stop_remote(&self, instance_id: &str) -> Result<StopResult, PipelineError>;
 
     /// 取消进行中的管道（`machine/cancel`）。
-    async fn cancel(&self, instance_id: &str, generation: u64) -> Result<CancelResult, PipelineError>;
+    async fn cancel(
+        &self,
+        instance_id: &str,
+        generation: u64,
+    ) -> Result<CancelResult, PipelineError>;
 
     /// Trust 后把 pending host key 行写入本机 known_hosts（§8.2）。
     async fn append_known_hosts_line(

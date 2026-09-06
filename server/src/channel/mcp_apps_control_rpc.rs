@@ -6,11 +6,11 @@ use peri_studio_proto::frame::Frame;
 use peri_studio_proto::mcp_apps::{McpAppCallResultFrame, McpAppResourceFrame, McpAppSessionFrame};
 use serde::Deserialize;
 
-use crate::channel::relay_event_handler::merge_mcp_app_tool_result;
 use super::{
     apps_error, delivery_unknown, silent_apps_error, LiveAppSession, McpAppsControl,
     OpenCommandState,
 };
+use crate::channel::relay_event_handler::merge_mcp_app_tool_result;
 
 pub(super) struct Target {
     pub chat_id: String,
@@ -65,9 +65,7 @@ impl McpAppsControl {
             "ownerSessionId": owner_session_id,
             "invocationToken": payload.tool_call_id,
         });
-        let dispatch_result = self
-            .rpc(target, "peri/mcp/open", params)
-            .await;
+        let dispatch_result = self.rpc(target, "peri/mcp/open", params).await;
         let frame = match dispatch_result {
             Ok(value) => match serde_json::from_value::<OpenResult>(value) {
                 Ok(result)
@@ -373,7 +371,10 @@ fn map_apps_kind(command_id: &str, kind: &str) -> ActionError {
         "unsupported" => "unsupported",
         _ => "agent_unavailable",
     };
-    if matches!(message, "capability_disabled" | "policy_denied" | "stale_session" | "unsupported") {
+    if matches!(
+        message,
+        "capability_disabled" | "policy_denied" | "stale_session" | "unsupported"
+    ) {
         silent_apps_error(command_id, message)
     } else {
         apps_error(command_id, ErrorCode::AgentUnavailable, message)
@@ -391,10 +392,7 @@ fn pick_html_resource(
     if item.mime_type != "text/html;profile=mcp-app" {
         return Err("agent_unavailable");
     }
-    let html = item
-        .text
-        .or(item.blob)
-        .ok_or("agent_unavailable")?;
+    let html = item.text.or(item.blob).ok_or("agent_unavailable")?;
     if html.len() > HTML_MAX_BYTES {
         return Err("agent_unavailable");
     }

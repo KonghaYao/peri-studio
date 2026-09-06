@@ -3,7 +3,8 @@ import { chatEntries, chatHead, elicitations, permissions, projects, projectSess
 import { principalRole } from '../panel/lib/auth-state';
 import { composerAssets } from '../panel/lib/composer-assets';
 import * as store from '../panel/store';
-import { DEFAULT_VISUAL_SCENARIO, installVisualScenario, resolveVisualScenario, VISUAL_NOW, visualScenarios } from './scenarios';
+import { resourceWorkspace } from '../panel/lib/resource-store';
+import { DEFAULT_VISUAL_SCENARIO, installVisualScenario, removeVisualResourceEntry, resolveVisualScenario, VISUAL_NOW, visualScenarios } from './scenarios';
 
 let dispose: (() => void) | null = null;
 afterEach(() => { dispose?.(); dispose = null; });
@@ -67,6 +68,15 @@ describe('visual fixture scenarios', () => {
     expect(chatEntries()[0].resources).toHaveLength(1);
     expect(composerAssets()).toHaveLength(3);
     installed.dispose();
+  });
+
+  it('removes explorer rows for browser acceptance bridges', () => {
+    const installed = installVisualScenario('resources');
+    dispose = installed.dispose;
+    removeVisualResourceEntry('src/main.rs');
+    const srcEntries = resourceWorkspace().directories.src?.entries ?? [];
+    expect(srcEntries.some((entry) => String(entry.name) === 'main.rs')).toBe(false);
+    expect(srcEntries.some((entry) => String(entry.name) === 'lib.rs')).toBe(true);
   });
 
   it('always releases the fixture clock when scenario cleanup is repeated', () => {

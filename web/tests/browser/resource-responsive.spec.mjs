@@ -203,12 +203,12 @@ test('desktop preview falls back to its resource view when the source row is del
       contentType: 'text/plain', size: 13, text: 'fn main() {}\n',
     });
     bridge.removeResourceEntry('src/main.rs');
-    return true;
+    return bridge.hasResourceEntry('src/main.rs') === false;
   });
   expect(fixtureReady).toBe(true);
-  await expect(origin).toHaveCount(0);
-
   await page.keyboard.press('Escape');
+  await expect(page.getByRole('treeitem', { name: 'main.rs' })).toHaveCount(0);
+
   await expect(page.getByRole('region', { name: /^File preview:/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Explorer', exact: true })).toBeFocused();
 });

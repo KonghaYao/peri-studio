@@ -19,7 +19,7 @@ use crate::auth::{AuthService, TokenRole, TokenStore};
 use crate::web::{
     cookie_value, header_end, is_json_content_type, is_ws_upgrade, request_path, serve_http,
     serve_http_with_resources, valid_loopback_host, valid_ws_host, valid_ws_origin,
-    BrowserAuthSetup, HealthSnapshot, HealthStatus, HealthMachineSummary,
+    BrowserAuthSetup, HealthMachineSummary, HealthSnapshot, HealthStatus,
 };
 
 /// 请求行解析：常规 GET 路径。

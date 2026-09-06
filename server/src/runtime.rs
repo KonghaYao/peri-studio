@@ -115,7 +115,11 @@ impl ServerRuntime {
     }
 
     /// 装配并启动 server，并注入 app 侧机器管道端口。
-    pub async fn start_with_ports<S>(cfg: Config, shutdown: S, ports: MachinePorts) -> anyhow::Result<Self>
+    pub async fn start_with_ports<S>(
+        cfg: Config,
+        shutdown: S,
+        ports: MachinePorts,
+    ) -> anyhow::Result<Self>
     where
         S: Future<Output = ()> + Send + 'static,
     {

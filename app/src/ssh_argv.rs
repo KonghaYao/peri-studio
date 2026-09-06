@@ -47,7 +47,10 @@ pub fn build_ssh_argv(
 }
 
 /// 反向隧道进程（`-N -R`）；含 `ExitOnForwardFailure=yes`。
-pub fn build_tunnel_argv(opts: &SshConnectOptions<'_>, listen_port: u16) -> Result<Vec<String>, String> {
+pub fn build_tunnel_argv(
+    opts: &SshConnectOptions<'_>,
+    listen_port: u16,
+) -> Result<Vec<String>, String> {
     let mut argv = Vec::new();
     push_common_options(&mut argv, opts, true)?;
     argv.push("-N".into());
@@ -80,17 +83,17 @@ pub fn build_scp_argv(
 }
 
 /// host key 采集（ssh-keyscan；非 BatchMode ssh，§6.4）。
-pub fn build_keyscan_argv(
-    destination: &str,
-    port: Option<u16>,
-) -> Result<Vec<String>, String> {
+pub fn build_keyscan_argv(destination: &str, port: Option<u16>) -> Result<Vec<String>, String> {
     validate_ssh_destination(destination)?;
     let mut argv = Vec::new();
     if let Some(port) = port {
         argv.push("-p".into());
         argv.push(port.to_string());
     }
-    push_ssh_option(&mut argv, "HostKeyAlgorithms=ssh-ed25519,ecdsa-sha2-nistp256,rsa-sha2-512,rsa-sha2-256,ssh-rsa");
+    push_ssh_option(
+        &mut argv,
+        "HostKeyAlgorithms=ssh-ed25519,ecdsa-sha2-nistp256,rsa-sha2-512,rsa-sha2-256,ssh-rsa",
+    );
     argv.push("-t".into());
     argv.push("ed25519,ecdsa,rsa".into());
     argv.push(destination.to_string());

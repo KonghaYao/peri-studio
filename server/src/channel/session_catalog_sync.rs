@@ -273,10 +273,7 @@ impl SessionCatalogSync {
         let Some(project) = project_list.into_iter().find(|p| p.cwd == cwd) else {
             return;
         };
-        if let Err(error) = projects
-            .refresh_project_catalog(&project.id, entries)
-            .await
-        {
+        if let Err(error) = projects.refresh_project_catalog(&project.id, entries).await {
             warn!(?error, "ACP session catalog refresh failed");
         }
     }

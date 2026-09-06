@@ -303,7 +303,12 @@ pub fn upsert_tool_call(
     insert_opt_string(txn, &cm, "mcp_server_id", tc.mcp_server_id.as_deref());
     insert_opt_string(txn, &cm, "mcp_tool_name", tc.mcp_tool_name.as_deref());
     insert_opt_string(txn, &cm, "mcp_resource_uri", tc.mcp_resource_uri.as_deref());
-    insert_opt_string(txn, &cm, "mcp_app_session_id", tc.mcp_app_session_id.as_deref());
+    insert_opt_string(
+        txn,
+        &cm,
+        "mcp_app_session_id",
+        tc.mcp_app_session_id.as_deref(),
+    );
     created
 }
 
