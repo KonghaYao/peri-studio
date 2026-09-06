@@ -16,6 +16,7 @@ use tracing::{debug, trace, warn};
 use peri_studio_proto::conn::DocId;
 use yrs::{ReadTxn, StateVector, Transact};
 
+use crate::state::doc_manager_apply_event::read_session_active_turn;
 use crate::state::aggregator::Aggregator;
 use crate::state::doc_manager::{
     BatchConfig, ChatMsg, DocUpdate, SendSubscription, SubmitResult, UpdateSink, PERSIST_RETRY_MAX,
@@ -143,6 +144,9 @@ pub(crate) async fn chat_writer_loop(
                             let _ = r.send(result);
                         }
                     }
+                }
+                Some(ChatMsg::ReadSessionActiveTurn(reply)) => {
+                    let _ = reply.send(read_session_active_turn(&pair));
                 }
                 Some(ChatMsg::Command(cmd, reply)) => {
                     // 控制类先 flush（§6.4）。

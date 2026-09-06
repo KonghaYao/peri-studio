@@ -9,7 +9,7 @@
 // permission decision 值（allow/deny、按钮顺序）由 Composer 上方的决策槽位承载。
 
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, type JSX } from 'solid-js';
-import { chatEntries, chatHead, elicitations, permissions, retryMessageSubmission, runtimeDocsHydrated, selectedCid } from '../../panel/store';
+import { chatEntries, chatAgentLoading, chatHead, elicitations, permissions, retryMessageSubmission, runtimeDocsHydrated, selectedCid } from '../../panel/store';
 import { nextFollowState } from '../../panel/lib/message-follow.ts';
 import { messageTime } from '../../panel/lib/message-time.ts';
 import type { ChatEntry } from '@/entities/chat/chat-view';
@@ -141,7 +141,7 @@ export function MessageList(props: { footerHeight?: number }) {
     return null;
   };
   const agentActivityAnnouncement = createMemo(() => {
-    if (!runtimeDocsHydrated() || !chatHead()?.chat?.loading) return '';
+    if (!runtimeDocsHydrated() || !chatAgentLoading()) return '';
     if (permissions().some((permission) => permission.status === 'pending')) return 'Waiting for permission';
     if (visibleElicitations(elicitations()).length > 0) return 'Waiting for your answer';
     const activity = latestTurnActivity();

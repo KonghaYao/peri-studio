@@ -151,6 +151,8 @@ pub(crate) enum ChatMsg {
     Command(DocCommand, Option<oneshot::Sender<SubmitResult>>),
     /// 关闭：writer 完成在途批次后退出。
     Shutdown(oneshot::Sender<()>),
+    /// 只读：Session Doc 当前 active turn 投影（cancel 等控制路径与 Yjs 对账）。
+    ReadSessionActiveTurn(oneshot::Sender<(Option<String>, String)>),
 }
 
 /// 唯一提交边界（§5.6）。
@@ -390,6 +392,28 @@ impl DocManager {
         }
         rx.await
             .unwrap_or(SubmitResult::Rejected(SubmitError::ChannelClosed))
+    }
+
+    /// 读 Session Doc 内嵌 active turn（与 DocCommand 投影同源；chat 未 open 时返回 None）。
+    pub async fn read_session_active_turn(
+        &self,
+        chat_id: &str,
+    ) -> Option<(Option<String>, String)> {
+        let chats = self.chats.read().await;
+        let Some(handle) = chats.get(chat_id) else {
+            return None;
+        };
+        let (reply, rx) = oneshot::channel();
+        if handle
+            .tx
+            .send(ChatMsg::ReadSessionActiveTurn(reply))
+            .await
+            .is_err()
+        {
+            return None;
+        }
+        drop(chats);
+        rx.await.ok()
     }
 
     async fn submit_registry_command(&self, cmd: DocCommand) -> SubmitResult {

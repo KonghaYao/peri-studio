@@ -14,7 +14,7 @@ import { Composer } from '@/widgets/composer/Composer';
 import { MessageList } from './MessageList';
 import { ChatEmptyWorkspace, CHAT_EMPTY_TITLE } from './ChatEmptyWorkspace';
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
-import { chatEntries, chatHead, elicitationResponses, elicitations, permissions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, restoringSessionId, retryPersistentAction, runtimeDocsHydrated, selectedSessionId, turnActive } from '../../panel/store';
+import { chatEntries, chatAgentLoading, chatHead, elicitationResponses, elicitations, permissions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, restoringSessionId, retryPersistentAction, runtimeDocsHydrated, selectedSessionId, turnActive } from '../../panel/store';
 import { readOnly } from '../../panel/lib/auth-state';
 import { LoadingState } from '@/shared/ui';
 import { ConnectionProblem } from '@/widgets/shell/ConnectionProblem';
@@ -49,7 +49,7 @@ export function ChatView(props: ChatViewProps) {
     turnActive: turnActive(),
     hasSubmission: !!messageSubmission(selectedSessionId()),
     restoring: !!restoringSessionId(),
-    chatLoading: !!chatHead()?.chat?.loading,
+    chatLoading: chatAgentLoading(),
   }));
   onMount(() => {
     if (!composerStack || typeof ResizeObserver === 'undefined') return;

@@ -6,6 +6,7 @@ import type { ProjectInfo } from '@/entities/registry/registry-view';
 const state = vi.hoisted(() => ({
   chatEntries: vi.fn(() => [] as never[]),
   chatHead: vi.fn(() => null),
+  chatAgentLoading: vi.fn(() => false),
   createProjectSession: vi.fn(),
   creatingSessionProjectId: vi.fn(() => null),
   elicitationResponses: vi.fn(() => ({})),

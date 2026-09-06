@@ -78,8 +78,12 @@ pub(crate) fn apply_turn_group(
             } else {
                 let mut txn = pair.session_txn();
                 let root = txn.get_or_insert_map(crate::state::factory::ROOT);
-                let sm = root.get_or_init::<_, yrs::MapRef>(&mut txn, "session");
-                sm.insert(&mut txn, "active_turn_status", "cancelling");
+                let active = ActiveTurnProjection {
+                    turn_id: turn_id.clone(),
+                    turn_status: TurnStatus::Cancelling,
+                    updated_at: chrono::Utc::now().to_rfc3339(),
+                };
+                chat_writer::set_active_turn(&mut txn, &root, Some(&active));
                 chat_writer::bump_projection_version(&mut txn, &root);
                 ApplyResult {
                     applied: true,
@@ -116,6 +120,10 @@ pub(crate) fn apply_turn_group(
                     updated_at: completed_at.clone(),
                 };
                 chat_writer::set_active_turn(&mut txn, &root, Some(&active));
+                if is_terminal_turn(requested_status) {
+                    let sm = root.get_or_init::<_, yrs::MapRef>(&mut txn, "session");
+                    sm.insert(&mut txn, "loading", false);
+                }
                 chat_writer::bump_projection_version(&mut txn, &root);
                 drop(txn);
                 // chat 侧：assistant entry 终态迁移（§7.2 状态映射）。

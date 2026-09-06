@@ -141,7 +141,9 @@ impl TurnCancellation {
                     .await;
             }
         };
-        let active_turn = self.chats.active_turn(&request.chat_id).await;
+        let active_turn = self
+            .resolve_active_turn_id(&request.chat_id)
+            .await;
         if let Some(turn_id) = active_turn.as_ref() {
             let result = self
                 .doc
@@ -311,6 +313,17 @@ impl TurnCancellation {
         Ok(())
     }
 
+    async fn resolve_active_turn_id(&self, chat_id: &str) -> Option<String> {
+        if let Some(turn_id) = self.chats.active_turn(chat_id).await {
+            return Some(turn_id);
+        }
+        let (turn_id, status) = self.doc.read_session_active_turn(chat_id).await?;
+        if session_turn_is_terminal(&status) {
+            return None;
+        }
+        turn_id
+    }
+
     async fn predispatch_failure(
         &self,
         store: &Arc<crate::persist::ChatStore>,
@@ -419,6 +432,10 @@ impl TurnCancellation {
             audit_outcome,
         ))
     }
+}
+
+fn session_turn_is_terminal(status: &str) -> bool {
+    matches!(status, "completed" | "failed" | "cancelled" | "interrupted")
 }
 
 fn definitely_not_delivered(error: &InstanceError) -> bool {
