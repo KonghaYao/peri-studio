@@ -216,6 +216,37 @@ export function markWorkspaceUploadReferenceInjected(itemId: string): void {
   ensureQueue().markReferenceInjected(itemId);
 }
 
+export function submittedWorkspaceUploadItemIds(
+  snapshot: WorkspaceUploadBatchView | null,
+  projectId: string,
+  origin: Extract<WorkspaceUploadOrigin, 'composer' | 'quickstart'>,
+  itemOrigin: (itemId: string) => WorkspaceUploadOrigin | undefined,
+): string[] {
+  if (!snapshot || snapshot.projectId !== projectId) return [];
+  return snapshot.items
+    .filter((item) => itemOrigin(item.id) === origin
+      && item.phase === 'ready'
+      && item.referenceInjected)
+    .map((item) => item.id);
+}
+
+/** 消息提交被本地接受后，仅清除该草稿已经引用成功的上传资产。 */
+export function clearSubmittedWorkspaceUploads(
+  projectId: string,
+  origin: Extract<WorkspaceUploadOrigin, 'composer' | 'quickstart'>,
+): void {
+  const itemIds = submittedWorkspaceUploadItemIds(
+    uploadQueue?.snapshot() ?? null,
+    projectId,
+    origin,
+    (itemId) => uploadItemOrigins.get(itemId),
+  );
+  if (itemIds.length === 0) return;
+  uploadQueue?.dismissReadyItems(itemIds);
+  for (const itemId of itemIds) uploadItemOrigins.delete(itemId);
+  setWorkspaceUploadLiveMessage('');
+}
+
 export function dismissWorkspaceUploadLiveMessage(): void {
   setWorkspaceUploadLiveMessage('');
 }

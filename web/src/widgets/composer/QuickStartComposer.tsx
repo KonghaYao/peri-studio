@@ -1,6 +1,6 @@
 import { createEffect, createSignal, createUniqueId, Show } from 'solid-js';
 import { Button, IconButton, InlineNotice, Textarea } from '@/shared/ui';
-import { createSessionWithFirstMessage, creatingSessionProjectId, retryQuickStart } from '../../panel/store';
+import { createSessionWithFirstMessage, creatingSessionProjectId, retryQuickStart, clearSubmittedWorkspaceUploads } from '../../panel/store';
 import { readOnly } from '../../panel/lib/auth-state';
 import { dismissFailedQuickStart, quickStartSubmission } from '../../panel/lib/quick-start-delivery';
 import { promptMaxBytes } from '../../panel/lib/connection';
@@ -36,8 +36,11 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
   };
   const submit = () => {
     const text = draft().trim();
-    if (!text || pending() || !projectId() || !promptFitsBudget(text, promptMaxBytes())) return;
-    createSessionWithFirstMessage(projectId(), text);
+    const targetProjectId = projectId();
+    if (!text || pending() || !targetProjectId || !promptFitsBudget(text, promptMaxBytes())) return;
+    if (createSessionWithFirstMessage(targetProjectId, text)) {
+      clearSubmittedWorkspaceUploads(targetProjectId, 'quickstart');
+    }
   };
 
   return <section data-testid="quick-start-docked" class="quick-start quick-start--docked w-full text-left" aria-label="Start new session">

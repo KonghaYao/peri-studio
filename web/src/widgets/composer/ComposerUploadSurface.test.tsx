@@ -101,6 +101,13 @@ describe('ComposerUploadSurface', () => {
     await waitFor(() => expect(draft()).toBe('Review @notes.txt'));
     expect(mocks.markInjected).toHaveBeenCalledOnce();
     expect(setDraftSpy).toHaveBeenCalledOnce();
+    const tile = screen.getByTestId('upload-asset-tile');
+    expect(tile).toHaveStyle({
+      width: 'var(--composer-upload-tile-width)',
+      height: 'var(--composer-upload-tile-height)',
+    });
+    expect(tile).toHaveClass('grid-cols-preview-line');
+    expect(screen.getByTitle('notes.txt')).toHaveClass('truncate', 'text-left');
 
     setBatch((current) => current ? { ...current, items: [...current.items] } : null);
     await Promise.resolve();

@@ -29,6 +29,7 @@ import { Button, IconButton, InlineNotice, Textarea } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
 import { SlashMenu } from './SlashMenu';
 import { ComposerUploadSurface, openComposerUploadFilePicker } from './ComposerUploadSurface';
+import { clearSubmittedWorkspaceUploads } from '@/store';
 import { SessionModelMenu } from '@/widgets/shell/SessionConfigDialog';
 import { TokenUsageMeter, tokenUsageLabel } from '@/widgets/chat/TokenUsageMeter';
 import { promptByteLength, promptFitsBudget } from '../../panel/lib/prompt-budget';
@@ -242,9 +243,11 @@ export function Composer(props: { layout?: 'docked' | 'centered' }) {
   });
 
   function submit() {
-    const text = composerDraft(draftOwner()).trim();
+    const owner = draftOwner();
+    const text = composerDraft(owner).trim();
     if (!text || !promptFitsBudget(text, promptMaxBytes())) return;
     if (!sendMessage(text)) return;
+    if (owner) clearSubmittedWorkspaceUploads(owner.projectId, 'composer');
     if (taRef) {
       // 先同步清空 DOM 值再测量：value 绑定是延迟 effect，若在
       // setMsg('') 后立即测 scrollHeight 会测到旧多行文本的高度，

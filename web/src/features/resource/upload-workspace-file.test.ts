@@ -164,6 +164,29 @@ describe('WorkspaceUploadQueue', () => {
     expect((sentQueries.at(-1) as { requestId: string }).requestId).not.toBe(firstOpen.requestId);
   });
 
+  it('dismisses only ready draft assets and preserves failed items for retry', () => {
+    const { queue } = createHarness();
+    queue.enqueue('project-1', [
+      { ok: false, reason: 'file_exists', displayName: 'failed.txt' },
+    ]);
+    const failedId = queue.snapshot()?.items[0]?.id;
+
+    queue.enqueue('project-1', [{ ok: true, candidate: candidate('ready', 'ready.txt', 'ready.txt') }]);
+    const internal = queue as unknown as {
+      items: Map<string, { phase: string; committedPath: string | null; referenceInjected: boolean }>;
+    };
+    const ready = internal.items.get('ready');
+    if (!ready) throw new Error('ready item missing');
+    ready.phase = 'ready';
+    ready.committedPath = 'ready.txt';
+    ready.referenceInjected = true;
+
+    queue.dismissReadyItems(['ready', failedId ?? '']);
+
+    expect(queue.snapshot()?.items.map((current) => current.id)).toEqual([failedId]);
+    expect(queue.snapshot()?.items[0]?.phase).toBe('failed');
+  });
+
   it('ignores late resource results after generation changes', async () => {
     const { queue, sentQueries, bumpGeneration } = createHarness();
     queue.enqueue('project-1', [{ ok: true, candidate: candidate('f1', 'a.txt', 'a.txt') }]);

@@ -36,6 +36,7 @@ import type { TerminalDownstreamFrame } from '@/shared/protocol/terminal';
 import { connectionReady, disconnect, forgetRememberedSession, installConnection, promptMaxBytes, readRememberedSession, rememberSession, resetConnectionState, sendFrame } from '../panel/lib/connection';
 import { ERROR_REASONS, persistActionProblem, reportTransportIssue, type PersistentError } from '../panel/lib/panel-errors';
 import { sendMessage, type SessionConfigMutation } from '../panel/lib/user-actions';
+import { chatAgentLoading as deriveChatAgentLoading } from '@/features/chat/chat-agent-loading';
 import { installChatSubscription, reconcileCurrentRuntimeControl, refreshCurrentControlProjection, selectChat, sendSubscribe } from '../panel/lib/chat-subscription';
 import { installStoreWiring } from '../panel/lib/store-installs';
 import { installStoreProjection, type RuntimeDocsState } from '../panel/lib/store-projection';
@@ -55,6 +56,7 @@ import {
 import {
   bindWorkspaceUploadActionSender,
   bindWorkspaceUploadExplorerRefresh,
+  clearSubmittedWorkspaceUploads,
   enqueueComposerRootUpload,
   enqueueExplorerUpload,
   enqueueQuickStartRootUpload,
@@ -105,6 +107,7 @@ const toastStore = new ToastStore();
 export const toasts = toastStore.records;
 export const [persistentErrors, setPersistentErrors] = createSignal<PersistentError[]>([]);
 export const turnActive = () => isTurnActive(chatHead()?.activeTurn);
+export const chatAgentLoading = () => deriveChatAgentLoading(chatHead()?.chat?.loading, chatHead()?.activeTurn);
 export const [restoringSessionId, setRestoringSessionId] = createSignal<string | null>(null);
 export const [creatingSessionProjectId, setCreatingSessionProjectId] = createSignal<string | null>(null);
 export const [discoveringSessionsProjectId, setDiscoveringSessionsProjectId] = createSignal<string | null>(null);
@@ -667,6 +670,7 @@ export {
   resourceWorkspace,
 } from '../panel/lib/resource-store';
 export {
+  clearSubmittedWorkspaceUploads,
   enqueueComposerRootUpload,
   enqueueExplorerUpload,
   enqueueQuickStartRootUpload,

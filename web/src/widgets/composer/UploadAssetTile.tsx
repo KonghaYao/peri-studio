@@ -18,12 +18,12 @@ export function UploadAssetTile(props: UploadAssetTileProps) {
   return (
     <div
       class={cn(
-        'upload-asset-tile relative grid flex-none grid-rows-asset-tile overflow-hidden rounded-md border bg-surface-canvas p-6',
+        'upload-asset-tile relative grid flex-none grid-cols-preview-line items-center gap-8 overflow-hidden rounded-md border bg-surface-canvas px-8 py-6',
         failed() ? 'border-danger-border upload-asset-tile--failed' : 'border-border-subtle',
       )}
       style={{
-        width: 'var(--resource-asset-tile)',
-        height: 'var(--resource-asset-tile)',
+        width: 'var(--composer-upload-tile-width)',
+        height: 'var(--composer-upload-tile-height)',
         '--upload-progress': `${progress()}%`,
       } as Record<string, string>}
       aria-busy={busy() || undefined}
@@ -76,13 +76,13 @@ export function UploadAssetTile(props: UploadAssetTileProps) {
         </Show>
       </span>
 
-      <div class="flex min-h-0 flex-col items-center gap-4">
-        <span class="w-full truncate text-center text-9 text-content-secondary">{props.name}</span>
+      <div class="flex min-w-0 flex-col items-start gap-4 pr-20">
+        <span class="w-full truncate text-left text-9 text-content-secondary" title={props.name}>{props.name}</span>
         <Show when={props.status === 'committing'}>
           <span class="text-8 text-content-muted">Saving…</span>
         </Show>
         <Show when={failed() && props.errorMessage}>
-          <span class="upload-asset-tile__error ui-line-clamp-2 w-full text-center text-8 leading-tight text-danger-strong">
+          <span class="upload-asset-tile__error ui-line-clamp-2 w-full text-left text-8 leading-tight text-danger-strong">
             {props.errorMessage}
           </span>
         </Show>

@@ -255,6 +255,8 @@
   --resource-tree-row: 24px;
   --resource-tree-indent: 43px;
   --resource-asset-tile: 68px;
+  --composer-upload-tile-width: 184px;
+  --composer-upload-tile-height: 60px;
   --composer-drop-overlay-bg: color-mix(in srgb, var(--palette-accent-50) 72%, transparent);
   --explorer-drop-accent-width: 2px;
 

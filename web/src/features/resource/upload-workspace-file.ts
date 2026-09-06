@@ -238,6 +238,18 @@ export class WorkspaceUploadQueue {
     this.emit();
   }
 
+  /** 仅移除已落盘的草稿资产；进行中或失败项仍由原队列负责。 */
+  dismissReadyItems(itemIds: readonly string[]): void {
+    const dismissed = new Set(itemIds.filter((id) => this.items.get(id)?.phase === 'ready'));
+    if (dismissed.size === 0) return;
+    for (const id of dismissed) this.items.delete(id);
+    for (let index = this.order.length - 1; index >= 0; index -= 1) {
+      if (dismissed.has(this.order[index]!)) this.order.splice(index, 1);
+    }
+    if (this.order.length === 0) this.projectId = null;
+    this.emit();
+  }
+
   handleResourceResult(frame: ResourceResultFrame): boolean {
     const pending = this.pendingOpens.get(frame.requestId);
     if (!pending) return false;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkspaceUploadItemView } from '@/features/resource/upload-workspace-file';
-import { explorerUploadRefreshTransition } from './workspace-upload';
+import { explorerUploadRefreshTransition, submittedWorkspaceUploadItemIds } from './workspace-upload';
 
 function item(phase: WorkspaceUploadItemView['phase']): WorkspaceUploadItemView {
   return {
@@ -31,6 +31,30 @@ describe('Explorer upload refresh', () => {
       busy: false,
       refresh: false,
     });
+  });
+
+  it('selects only submitted assets owned by the current draft origin', () => {
+    const readyComposer = { ...item('ready'), id: 'composer-ready', referenceInjected: true };
+    const readyExplorer = { ...item('ready'), id: 'explorer-ready', referenceInjected: true };
+    const failedComposer = { ...item('failed'), id: 'composer-failed', referenceInjected: true };
+    const origins = new Map([
+      ['composer-ready', 'composer'],
+      ['explorer-ready', 'explorer'],
+      ['composer-failed', 'composer'],
+    ] as const);
+
+    expect(submittedWorkspaceUploadItemIds(
+      { generation: 1, projectId: 'project-1', items: [readyComposer, readyExplorer, failedComposer] },
+      'project-1',
+      'composer',
+      (id) => origins.get(id),
+    )).toEqual(['composer-ready']);
+    expect(submittedWorkspaceUploadItemIds(
+      { generation: 1, projectId: 'project-1', items: [readyComposer] },
+      'project-2',
+      'composer',
+      (id) => origins.get(id),
+    )).toEqual([]);
   });
 
   it('does not refresh an all-failed batch', () => {
