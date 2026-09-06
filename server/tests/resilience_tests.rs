@@ -9,8 +9,9 @@ use peri_studio_proto::ack::{AckStatus, ErrorCode};
 use peri_studio_proto::Frame;
 
 use common::{
-    chat_field, chat_ids, fetch_registry_snapshot, fresh_token, global_status, wait_terminal,
-    InstanceProc, ServerProc, TestEnv, WsClient, RECV_TIMEOUT, TEST_BUDGET,
+    chat_field, chat_ids, fetch_registry_snapshot, fresh_token, global_status,
+    wait_instance_recovery, wait_terminal, InstanceProc, ServerProc, TestEnv, WsClient,
+    RECV_TIMEOUT, TEST_BUDGET,
 };
 
 fn t(name: &str, tag: &str, r: Result<(), String>) {
@@ -26,10 +27,10 @@ async fn start_stack() -> Result<(TestEnv, ServerProc, InstanceProc), String> {
     let server = ServerProc::start(&env, None);
     server.wait_ready()?;
     let instance = InstanceProc::start(&env);
-    if !instance.wait_authenticated(Duration::from_secs(15)) {
+    if let Err(error) = wait_instance_recovery(&env, &instance).await {
         instance.dump_log();
         server.dump_log();
-        return Err("instance 未完成认证握手".to_string());
+        return Err(error);
     }
     Ok((env, server, instance))
 }
@@ -91,28 +92,12 @@ async fn t09_body() -> Result<(), String> {
     // 3. 重启 instance（同一 token/data-dir）→ 重连 hello（幂等替换）→
     //    心跳恢复 → 重新可服务（spawn 指令可送达）。
     let instance2 = InstanceProc::start(&env);
-    assert!(
-        instance2.wait_authenticated(Duration::from_secs(15)),
-        "instance 重启后未完成认证"
-    );
+    wait_instance_recovery(&env, &instance2).await?;
     // server 侧出现第二次 hello（fenced 或 re-register 日志）。
     assert!(
         server.log_contains("instance connected", Duration::from_secs(10)),
         "server 未记录重连 hello"
     );
-    // 对账开门：Registry global 恢复 healthy。
-    let ok = tokio::time::timeout(Duration::from_secs(10), async {
-        loop {
-            if let Ok(doc) = fetch_registry_snapshot(port, &env.client_token).await {
-                if global_status(&doc).as_deref() == Some("healthy") {
-                    break;
-                }
-            }
-            tokio::time::sleep(Duration::from_millis(300)).await;
-        }
-    })
-    .await;
-    assert!(ok.is_ok(), "重连后 Registry global.status 应恢复 healthy");
 
     // 4. 重新可服务：create 的 spawn 阶段应重新成功（initialize/session/new
     //    经 instance/forward 下行，终态由后续收帧确认）。

@@ -19,7 +19,8 @@ use yrs::{Map, ReadTxn, Transact};
 
 use common::{
     chat_entry_provenance, doc_from_snapshots, project_field, project_session_field,
-    project_session_ids, wait_terminal, InstanceProc, ServerProc, TestEnv, WsClient,
+    project_session_ids, wait_instance_recovery, wait_terminal, InstanceProc, ServerProc, TestEnv,
+    WsClient,
 };
 
 fn audited_load_ids(env: &TestEnv) -> Result<Vec<String>, String> {
@@ -241,9 +242,7 @@ async fn web_project_session_survives_restart_and_rebinds_exact_acp_id() -> Resu
     let mut server = ServerProc::start(&env, None);
     server.wait_ready()?;
     let mut instance = InstanceProc::start(&env);
-    if !instance.wait_authenticated(Duration::from_secs(15)) {
-        return Err("instance 初次认证超时".to_string());
-    }
+    wait_instance_recovery(&env, &instance).await?;
 
     let cookie = login(&env).await?;
     let status = auth_request(env.port, "GET", Some(&cookie), None).await?;
@@ -354,9 +353,7 @@ async fn web_project_session_survives_restart_and_rebinds_exact_acp_id() -> Resu
         "browser session 必须是进程内生命周期"
     );
     instance = InstanceProc::start(&env);
-    if !instance.wait_authenticated(Duration::from_secs(15)) {
-        return Err("instance 重启认证超时".to_string());
-    }
+    wait_instance_recovery(&env, &instance).await?;
 
     let cookie = login(&env).await?;
     let (mut restored_client, snapshots) =
@@ -519,9 +516,7 @@ async fn web_explicit_import_survives_restart_and_loads_exact_acp_id() -> Result
     let mut server = ServerProc::start(&env, None);
     server.wait_ready()?;
     let mut instance = InstanceProc::start(&env);
-    if !instance.wait_authenticated(Duration::from_secs(15)) {
-        return Err("instance 初次认证超时".to_string());
-    }
+    wait_instance_recovery(&env, &instance).await?;
 
     let cookie = login(&env).await?;
     let (mut client, _) = WsClient::connect_cookie(env.port, &cookie, &["hub:registry"]).await?;
@@ -612,9 +607,7 @@ async fn web_explicit_import_survives_restart_and_loads_exact_acp_id() -> Result
     let old_cookie = auth_request(env.port, "GET", Some(&cookie), None).await?;
     assert_eq!(old_cookie.status, 401);
     instance = InstanceProc::start(&env);
-    if !instance.wait_authenticated(Duration::from_secs(15)) {
-        return Err("instance 重启认证超时".to_string());
-    }
+    wait_instance_recovery(&env, &instance).await?;
 
     let cookie = login(&env).await?;
     let (mut restored_client, restored_snapshots) =
@@ -697,9 +690,7 @@ async fn peri_form_elicitation_projects_answers_and_deduplicates() -> Result<(),
     let mut server = ServerProc::start(&env, None);
     server.wait_ready()?;
     let mut instance = InstanceProc::start(&env);
-    if !instance.wait_authenticated(Duration::from_secs(15)) {
-        return Err("instance 认证超时".to_string());
-    }
+    wait_instance_recovery(&env, &instance).await?;
     let cookie = login(&env).await?;
     let (mut client, _) = WsClient::connect_cookie(env.port, &cookie, &["hub:registry"]).await?;
 

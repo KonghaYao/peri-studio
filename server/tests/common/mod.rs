@@ -930,6 +930,14 @@ pub async fn wait_registry_healthy(
     .map_err(|_| format!("registry global.status 未在 {timeout:?} 内变为 healthy"))?
 }
 
+/// instance 认证完成后等待恢复屏障清除（mutation 可提交）。
+pub async fn wait_instance_recovery(env: &TestEnv, instance: &InstanceProc) -> Result<(), String> {
+    if !instance.wait_authenticated(Duration::from_secs(15)) {
+        return Err("instance 认证超时".to_string());
+    }
+    wait_registry_healthy(env.port, &env.client_token, Duration::from_secs(15)).await
+}
+
 /// chat doc 的 entry 数量。
 pub fn chat_entry_count(doc: &yrs::Doc) -> usize {
     let txn = doc.transact();
