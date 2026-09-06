@@ -2,6 +2,8 @@
 export type TerminalViewport = {
   write(data: string | Uint8Array): void | Promise<void>;
   resize(cols: number, rows: number): void;
+  /** 按容器尺寸 fit（xterm FitAddon）。 */
+  fit(): void;
   focus(): void;
   /** 清空本地仿真器屏幕（不发送 PTY）。 */
   reset(): void;

@@ -1,5 +1,5 @@
 import { FolderRoot, PanelRightClose, Play, RotateCcw, SquareTerminal, X } from 'lucide-solid';
-import { createEffect, createMemo, onCleanup, Show } from 'solid-js';
+import { createEffect, createMemo, createSignal, onCleanup, Show } from 'solid-js';
 import { Badge, Button, IconButton, Status, Terminal, type TerminalViewport } from '@/shared/ui';
 import {
   attachTerminalOutput,
@@ -7,6 +7,7 @@ import {
   detachTerminalOutput,
   openTerminal,
   resizeTerminal,
+  sendTerminalBinaryInput,
   sendTerminalInput,
   terminalSession,
   type TerminalOutputSink,
@@ -44,6 +45,10 @@ export function TerminalPanel(props: { onClosePanel?: () => void; visible?: bool
 
   let viewportHost: HTMLDivElement | undefined;
   let viewport: TerminalViewport | null = null;
+  const [startQueued, setStartQueued] = createSignal(false);
+  const [engineError, setEngineError] = createSignal<string | null>(null);
+
+  const SIZE_WAIT_MAX_FRAMES = 600;
 
   const outputSink: TerminalOutputSink = {
     write: (data) => {
@@ -55,6 +60,7 @@ export function TerminalPanel(props: { onClosePanel?: () => void; visible?: bool
 
   const syncPtySize = (notifyServer: boolean) => {
     if (!viewport) return;
+    viewport.fit();
     if (notifyServer) resizeTerminal(viewport.cols, viewport.rows);
   };
 
@@ -64,12 +70,12 @@ export function TerminalPanel(props: { onClosePanel?: () => void; visible?: bool
     const tick = () => {
       attempts += 1;
       if (!viewportHost || !viewport) {
-        if (attempts < 40) requestAnimationFrame(tick);
+        if (attempts < SIZE_WAIT_MAX_FRAMES) requestAnimationFrame(tick);
         return;
       }
       const { clientWidth, clientHeight } = viewportHost;
       if (clientWidth < 16 || clientHeight < 16) {
-        if (attempts < 40) requestAnimationFrame(tick);
+        if (attempts < SIZE_WAIT_MAX_FRAMES) requestAnimationFrame(tick);
         return;
       }
       syncPtySize(notifyServer);
@@ -78,15 +84,7 @@ export function TerminalPanel(props: { onClosePanel?: () => void; visible?: bool
     requestAnimationFrame(tick);
   };
 
-  const bindViewport = (next: TerminalViewport) => {
-    viewport = next;
-    attachTerminalOutput(outputSink);
-    if (isVisible()) {
-      scheduleWhenSized(terminalSession().phase === 'running');
-    }
-  };
-
-  const start = () => {
+  const runStart = () => {
     const project = activeProject();
     if (!project || readOnly() || !connectionReady()) return;
     if (terminalSession().phase !== 'idle' && terminalSession().phase !== 'closed') closeTerminal();
@@ -95,6 +93,30 @@ export function TerminalPanel(props: { onClosePanel?: () => void; visible?: bool
       openTerminal(project, viewport.cols, viewport.rows);
       viewport.focus();
     });
+  };
+
+  const bindViewport = (next: TerminalViewport) => {
+    viewport = next;
+    setEngineError(null);
+    attachTerminalOutput(outputSink);
+    if (startQueued()) {
+      setStartQueued(false);
+      runStart();
+      return;
+    }
+    if (isVisible()) {
+      scheduleWhenSized(terminalSession().phase === 'running');
+    }
+  };
+
+  const start = () => {
+    const project = activeProject();
+    if (!project || readOnly() || !connectionReady()) return;
+    if (!viewport) {
+      setStartQueued(true);
+      return;
+    }
+    runStart();
   };
 
   createEffect(() => {
@@ -108,10 +130,17 @@ export function TerminalPanel(props: { onClosePanel?: () => void; visible?: bool
   onCleanup(() => {
     detachTerminalOutput(outputSink);
     viewport = null;
+    setStartQueued(false);
   });
 
   const state = terminalSession;
-  const startDisabled = () => !activeProject() || readOnly() || !connectionReady() || state().phase === 'opening';
+  const startDisabled = () =>
+    !activeProject()
+    || readOnly()
+    || !connectionReady()
+    || state().phase === 'opening'
+    || startQueued()
+    || !!engineError();
   const startLabel = () => state().phase === 'idle' || state().phase === 'closed' ? 'Start terminal' : 'Restart terminal';
   const terminalDescription = () => {
     if (!activeProject()) return 'Select a project session to start a terminal.';
@@ -140,7 +169,7 @@ export function TerminalPanel(props: { onClosePanel?: () => void; visible?: bool
         <Status tone={statusMeta().tone} live={statusMeta().live} class="shrink-0">{statusMeta().label}</Status>
         <Show when={state().phase === 'idle' || state().phase === 'closed'}>
           <Button size="sm" variant="ghost" disabled={startDisabled()} title={terminalDescription()} onClick={start}>
-            <Play size={13} aria-hidden="true" /> Start
+            <Play size={13} aria-hidden="true" /> {startQueued() ? 'Starting…' : 'Start'}
           </Button>
         </Show>
         <Show when={state().phase === 'exited' || state().phase === 'error'}>
@@ -160,6 +189,12 @@ export function TerminalPanel(props: { onClosePanel?: () => void; visible?: bool
         </Show>
       </header>
 
+      <Show when={engineError()}>
+        <div role="alert" class="shrink-0 border-b border-danger-border bg-danger-soft px-10 py-6 text-11 text-danger">
+          {engineError()}
+        </div>
+      </Show>
+
       <Show when={state().phase === 'error'}>
         <div role="alert" class="shrink-0 border-b border-danger-border bg-danger-soft px-10 py-6 text-11 text-danger">
           {state().error ?? 'Terminal unavailable.'}
@@ -173,8 +208,14 @@ export function TerminalPanel(props: { onClosePanel?: () => void; visible?: bool
         <Terminal
           visible={isVisible()}
           onData={sendTerminalInput}
+          onBinary={sendTerminalBinaryInput}
           onResize={(cols, rows) => resizeTerminal(cols, rows)}
           onReady={bindViewport}
+          onError={(error) => {
+            setStartQueued(false);
+            const message = error instanceof Error ? error.message : 'Terminal failed to initialize.';
+            setEngineError(message);
+          }}
         />
       </div>
     </section>

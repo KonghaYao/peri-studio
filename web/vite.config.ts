@@ -43,7 +43,7 @@ export default defineConfig({
           if (id.includes('/yjs/') || id.includes('/lib0/')) return 'vendor-crdt';
           if (id.includes('/markdown-to-jsx/')) return 'vendor-markdown';
           if (id.includes('/@kobalte/')) return 'vendor-interactions';
-          if (id.includes('/@wterm/')) return 'vendor-wterm';
+          if (id.includes('/@xterm/')) return 'vendor-xterm';
           if (id.includes('/solid-js/')) return 'vendor-solid';
           if (
             id.includes('/@modelcontextprotocol/')

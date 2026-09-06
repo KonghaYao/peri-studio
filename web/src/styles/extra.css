@@ -237,15 +237,24 @@ body.workbench-panel-resizing * {
   user-select: none;
 }
 
-/* ── wterm 在 flex 浮窗内须铺满 host ───────────────────────────────────── */
+/* ── xterm 在 flex 浮窗内须铺满 host ───────────────────────────────────── */
 
-.wterm-terminal-host.wterm,
-.wterm-terminal-host .wterm {
+.terminal-xterm-host,
+.terminal-xterm-host .xterm,
+.terminal-xterm-host .xterm-viewport {
   height: 100%;
   width: 100%;
-  border-radius: 0;
-  box-shadow: none;
-  padding: 0;
+}
+
+.terminal-xterm-host .xterm-screen {
+  cursor: text;
+}
+
+.terminal-xterm-host .xterm-link {
+  color: var(--content-link);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
 }
 
 /* 关闭 Terminal 浮窗但 PTY 仍在跑：0 尺寸停放，避免卸载终端视口。 */
