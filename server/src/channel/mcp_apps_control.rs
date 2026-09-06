@@ -337,6 +337,7 @@ async fn send_accepted(
         session_id: None,
         acp_session_id: None,
         committed_projection_version: None,
+        resource_result: None,
     })))
     .await
     .map_err(|_| apps_error(command_id, ErrorCode::AgentUnavailable, "agent_unavailable"))

@@ -1,12 +1,17 @@
 use std::str::FromStr;
 
+use crate::ack::{AckStatus, ActionAck};
+use crate::action::{ActionEnvelope, FsWriteFilePayload};
 use crate::conn::DocId;
 use crate::frame::Frame;
 use crate::resource::{
-    GitDiffQuery, InstanceResourcePayload, InstanceResourceQuery, InstanceResourceQueryKind,
-    InstanceResourceResult, OpenResourceView, ReadDirectoryQuery, ResourceErrorCode,
-    ResourceFailure, ResourceGitAction, ResourceGitActionKind, ResourceQuery, ResourceQueryResult,
-    ResourceResult, ResourceViewKind, ResourceViewOpened, RESOURCE_PROTOCOL_VERSION,
+    ActionResourceResult, FsPermissions, FsStat, GitDiffQuery, InstanceResourcePayload,
+    InstanceResourceQuery, InstanceResourceQueryKind, InstanceResourceResult, OpenResourceUpload,
+    OpenResourceView, ReadDirectoryQuery, ResourceErrorCode, ResourceFailure, ResourceGitAction,
+    ResourceGitActionKind, ResourceQuery, ResourceQueryResult, ResourceResult,
+    ResourceUploadOpened, ResourceViewKind, ResourceViewOpened, WriteFileQuery,
+    DEFAULT_UPLOAD_TICKET_TTL_SECS, MAX_CONCURRENT_UPLOADS_PER_PRINCIPAL,
+    RESOURCE_PROTOCOL_VERSION, RESOURCE_PROTOCOL_VERSION_WITH_FS_WRITE,
 };
 
 #[test]
@@ -97,7 +102,8 @@ fn trusted_instance_query_carries_root_separately() {
 
 #[test]
 fn git_diff_query_uses_only_opaque_change_identity() {
-    assert_eq!(RESOURCE_PROTOCOL_VERSION, 4);
+    assert_eq!(RESOURCE_PROTOCOL_VERSION, 5);
+    assert_eq!(RESOURCE_PROTOCOL_VERSION_WITH_FS_WRITE, 5);
     let frame = Frame::InstanceResourceQuery(InstanceResourceQuery {
         request_id: "request-1".into(),
         workspace_id: "workspace-1".into(),
@@ -116,7 +122,8 @@ fn git_diff_query_uses_only_opaque_change_identity() {
 
 #[test]
 fn git_mutation_is_generation_bound_and_never_accepts_browser_paths() {
-    assert_eq!(RESOURCE_PROTOCOL_VERSION, 4);
+    assert_eq!(RESOURCE_PROTOCOL_VERSION, 5);
+    assert_eq!(RESOURCE_PROTOCOL_VERSION_WITH_FS_WRITE, 5);
     let frame = Frame::ResourceQuery(ResourceQuery::GitAction {
         request_id: "request-1".into(),
         project_id: "project-1".into(),
@@ -291,4 +298,167 @@ fn resource_failure_roundtrips_suggested_limit() {
     assert_eq!(value["suggestedLimit"], 25);
     let parsed: ResourceFailure = serde_json::from_value(value).unwrap();
     assert_eq!(parsed.suggested_limit, Some(25));
+}
+
+#[test]
+fn open_upload_query_binds_project_and_path_without_root() {
+    let frame = Frame::ResourceQuery(ResourceQuery::OpenUpload {
+        request_id: "req-upload-1".into(),
+        project_id: "project-1".into(),
+        payload: OpenResourceUpload {
+            path: "docs/readme.md".into(),
+            expected_bytes: Some(1024),
+            sha256: Some("abc".into()),
+        },
+    });
+    let value = serde_json::to_value(&frame).unwrap();
+    assert_eq!(value["type"], "resource/open-upload");
+    assert_eq!(value["projectId"], "project-1");
+    assert_eq!(value["payload"]["path"], "docs/readme.md");
+    assert_eq!(value["payload"]["expectedBytes"], 1024);
+    assert!(value.get("root").is_none());
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&frame).unwrap()).unwrap(),
+        frame
+    );
+}
+
+#[test]
+fn upload_opened_result_roundtrips() {
+    let frame = Frame::ResourceResult(ResourceResult {
+        request_id: "req-upload-1".into(),
+        result: Some(ResourceQueryResult::Upload(ResourceUploadOpened {
+            upload_id: "upload-1".into(),
+            url: "/api/resource-uploads/upload-1".into(),
+            expires_at: "2026-09-06T12:01:00Z".into(),
+        })),
+        error: None,
+    });
+    let value = serde_json::to_value(&frame).unwrap();
+    assert_eq!(value["result"]["kind"], "upload");
+    assert_eq!(value["result"]["data"]["uploadId"], "upload-1");
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&frame).unwrap()).unwrap(),
+        frame
+    );
+}
+
+#[test]
+fn fs_write_file_action_roundtrips_with_command_id() {
+    let action = ActionEnvelope::FsWriteFile {
+        command_id: "cmd-write-1".into(),
+        payload: FsWriteFilePayload {
+            project_id: "project-1".into(),
+            path: "notes.txt".into(),
+            upload_id: "upload-1".into(),
+            if_match: None,
+            if_none_match: Some("*".into()),
+        },
+    };
+    let frame = Frame::Action(action.clone());
+    let value = serde_json::to_value(&frame).unwrap();
+    assert_eq!(value["type"], "fs/write-file");
+    assert_eq!(value["commandId"], "cmd-write-1");
+    assert_eq!(value["payload"]["uploadId"], "upload-1");
+    assert_eq!(value["payload"]["ifNoneMatch"], "*");
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&frame).unwrap()).unwrap(),
+        frame
+    );
+    assert_eq!(action.command_id(), "cmd-write-1");
+    assert_eq!(action.type_str(), "fs/write-file");
+}
+
+#[test]
+fn write_file_instance_query_roundtrips() {
+    let frame = Frame::InstanceResourceQuery(InstanceResourceQuery {
+        request_id: "req-write-1".into(),
+        workspace_id: "project-1".into(),
+        root: "/srv/workspaces/demo".into(),
+        query: InstanceResourceQueryKind::WriteFile(WriteFileQuery {
+            path: "notes.txt".into(),
+            content_base64: "aGVsbG8=".into(),
+            if_match: None,
+            if_none_match: Some("*".into()),
+        }),
+    });
+    let value = serde_json::to_value(&frame).unwrap();
+    assert_eq!(value["query"]["type"], "write_file");
+    assert_eq!(value["query"]["payload"]["contentBase64"], "aGVsbG8=");
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&frame).unwrap()).unwrap(),
+        frame
+    );
+}
+
+#[test]
+fn fs_stat_and_action_ack_resource_result_roundtrip() {
+    let stat = FsStat {
+        path: "notes.txt".into(),
+        kind: crate::resource::FileKind::File,
+        size: 5,
+        mtime_ns: "123".into(),
+        permissions: FsPermissions::ReadWrite,
+        revision: "rev-1".into(),
+    };
+    let ack = ActionAck {
+        command_id: "cmd-write-1".into(),
+        status: AckStatus::Committed,
+        turn_id: None,
+        chat_id: None,
+        project_id: Some("project-1".into()),
+        instance_id: None,
+        session_id: None,
+        acp_session_id: None,
+        committed_projection_version: None,
+        resource_result: Some(ActionResourceResult::FsStat(stat.clone())),
+    };
+    let frame = Frame::ActionAck(ack);
+    let value = serde_json::to_value(&frame).unwrap();
+    assert_eq!(value["resourceResult"]["kind"], "fs_stat");
+    assert_eq!(value["resourceResult"]["data"]["path"], "notes.txt");
+    assert_eq!(value["resourceResult"]["data"]["permissions"], "read-write");
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&frame).unwrap()).unwrap(),
+        frame
+    );
+
+    let instance = Frame::InstanceResourceResult(InstanceResourceResult {
+        request_id: "req-write-1".into(),
+        result: Some(InstanceResourcePayload::FsStat(stat)),
+        error: None,
+    });
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&instance).unwrap()).unwrap(),
+        instance
+    );
+}
+
+#[test]
+fn upload_error_codes_are_closed_and_screaming_snake() {
+    assert_eq!(DEFAULT_UPLOAD_TICKET_TTL_SECS, 60);
+    assert_eq!(MAX_CONCURRENT_UPLOADS_PER_PRINCIPAL, 4);
+    assert_eq!(
+        RESOURCE_PROTOCOL_VERSION,
+        RESOURCE_PROTOCOL_VERSION_WITH_FS_WRITE
+    );
+
+    let failure = ResourceFailure {
+        code: ResourceErrorCode::UploadExpired,
+        message: "Upload ticket expired.".into(),
+        retryable: true,
+        suggested_limit: None,
+    };
+    let value = serde_json::to_value(&failure).unwrap();
+    assert_eq!(value["code"], "UPLOAD_EXPIRED");
+    for code in [
+        ResourceErrorCode::ResourceUnsupported,
+        ResourceErrorCode::UploadTooLarge,
+        ResourceErrorCode::UploadChecksumMismatch,
+        ResourceErrorCode::UploadAlreadyConsumed,
+        ResourceErrorCode::UploadAlreadyComplete,
+    ] {
+        let serialized = serde_json::to_value(code).unwrap();
+        assert!(serialized.is_string());
+    }
 }

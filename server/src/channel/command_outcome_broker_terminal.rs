@@ -34,6 +34,7 @@ impl CommandOutcomeBroker {
                     session_id: None,
                     acp_session_id: None,
                     committed_projection_version: None,
+                    resource_result: None,
                 }))
             }
             TerminalOutcome::Error(error) => OutboundMsg::Frame(Frame::ActionError(error)),
@@ -122,6 +123,7 @@ pub(super) fn terminal_response(
             session_id: None,
             acp_session_id: None,
             committed_projection_version: None,
+            resource_result: None,
         })),
         OutboxStatus::Failed => {
             let error = record

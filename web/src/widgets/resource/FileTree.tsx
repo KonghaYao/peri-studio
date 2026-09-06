@@ -27,6 +27,10 @@ type FileTreeProps = {
   fileAriaLabel?: (node: FileTreeNode) => string | undefined;
   folderLoadingPaths?: Set<string>;
   fileTreeitem?: boolean;
+  dropTargetPath?: string | null;
+  onFolderDragOver?: (path: string, event: DragEvent) => void;
+  onFolderDragLeave?: (path: string, event: DragEvent) => void;
+  onFolderDrop?: (path: string, event: DragEvent) => void;
 };
 
 /** Explorer / SCM 共用文件树：目录仅展示文件夹图标，无 chevron。 */
@@ -68,6 +72,10 @@ export function FileTree(props: FileTreeProps) {
             onToggle={() => props.onToggleFolder(node.path)}
             onActivePathChange={props.onActivePathChange}
             renderFolderIcon={props.renderFolderIcon}
+            dropTargetPath={props.dropTargetPath}
+            onFolderDragOver={props.onFolderDragOver}
+            onFolderDragLeave={props.onFolderDragLeave}
+            onFolderDrop={props.onFolderDrop}
           />
           <Show when={props.expandedPaths.has(node.path)}>
             <div role="group">
@@ -98,6 +106,10 @@ export function FileTree(props: FileTreeProps) {
                   fileAriaLabel={props.fileAriaLabel}
                   folderLoadingPaths={props.folderLoadingPaths}
                   fileTreeitem={props.fileTreeitem}
+                  dropTargetPath={props.dropTargetPath}
+                  onFolderDragOver={props.onFolderDragOver}
+                  onFolderDragLeave={props.onFolderDragLeave}
+                  onFolderDrop={props.onFolderDrop}
                 />
               </Show>
             </div>
@@ -123,7 +135,12 @@ function FileTreeFolderRow(props: {
   onToggle: () => void;
   onActivePathChange?: (path: string) => void;
   renderFolderIcon?: (node: FileTreeNode, open: boolean) => JSX.Element;
+  dropTargetPath?: string | null;
+  onFolderDragOver?: (path: string, event: DragEvent) => void;
+  onFolderDragLeave?: (path: string, event: DragEvent) => void;
+  onFolderDrop?: (path: string, event: DragEvent) => void;
 }) {
+  const isDropTarget = () => props.dropTargetPath === props.node.path;
   return (
     <button
       type="button"
@@ -134,14 +151,19 @@ function FileTreeFolderRow(props: {
       aria-setsize={props.setSize}
       data-path={props.node.path}
       data-directory="true"
+      data-drop-target-path={props.node.path}
       tabIndex={props.active || props.defaultTabIndex ? 0 : -1}
       class={cn(
-        'flex h-(--tree-row-height) w-full items-center gap-4 rounded-4 border-0 pr-6 text-left text-11 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44',
+        'explorer-upload-treeitem flex h-(--tree-row-height) w-full items-center gap-4 rounded-4 border-0 pr-6 text-left text-11 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44',
         props.active ? 'bg-selected' : 'bg-transparent',
+        isDropTarget() ? 'explorer-upload-treeitem--drop-target bg-hover' : '',
       )}
       style={rowPadding(props.depth)}
       onClick={props.onToggle}
       onFocus={() => props.onActivePathChange?.(props.node.path)}
+      onDragOver={(event) => props.onFolderDragOver?.(props.node.path, event)}
+      onDragLeave={(event) => props.onFolderDragLeave?.(props.node.path, event)}
+      onDrop={(event) => props.onFolderDrop?.(props.node.path, event)}
       title={props.node.path}
     >
       {props.renderFolderIcon

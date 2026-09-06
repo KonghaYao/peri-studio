@@ -103,7 +103,8 @@ pub(crate) fn extract_command_id(action: &ActionEnvelope) -> Option<String> {
         | ActionEnvelope::MachineRename { command_id, .. }
         | ActionEnvelope::MachineSetAutoReconnect { command_id, .. }
         | ActionEnvelope::MachineRemove { command_id, .. }
-        | ActionEnvelope::MachineRestore { command_id, .. } => Some(command_id.clone()),
+        | ActionEnvelope::MachineRestore { command_id, .. }
+        | ActionEnvelope::FsWriteFile { command_id, .. } => Some(command_id.clone()),
     }
 }
 
@@ -158,7 +159,8 @@ pub(super) fn extract_chat_id(action: &ActionEnvelope) -> Option<String> {
         | ActionEnvelope::MachineRename { .. }
         | ActionEnvelope::MachineSetAutoReconnect { .. }
         | ActionEnvelope::MachineRemove { .. }
-        | ActionEnvelope::MachineRestore { .. } => None,
+        | ActionEnvelope::MachineRestore { .. }
+        | ActionEnvelope::FsWriteFile { .. } => None,
     }
 }
 

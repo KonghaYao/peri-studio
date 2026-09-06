@@ -1,7 +1,7 @@
 use peri_studio_proto::frame::Frame;
 use peri_studio_proto::resource::{
-    OpenResourceView, ResourceErrorCode, ResourceGitAction, ResourceGitActionKind, ResourceQuery,
-    ResourceViewKind,
+    OpenResourceUpload, OpenResourceView, ResourceErrorCode, ResourceGitAction,
+    ResourceGitActionKind, ResourceQuery, ResourceViewKind,
 };
 
 use super::mutation_admission::{Commitment, MutationAdmission};
@@ -89,4 +89,26 @@ fn rejected_git_mutation_preserves_request_correlation_and_retry_semantics() {
     assert_eq!(error.code, ResourceErrorCode::Unavailable);
     assert!(error.retryable);
     assert!(MutationAdmission::rejection(&mutation, true).is_none());
+}
+
+#[test]
+fn open_upload_is_a_committed_admission_request() {
+    let upload = Frame::ResourceQuery(ResourceQuery::OpenUpload {
+        request_id: "upload-1".into(),
+        project_id: "project-1".into(),
+        payload: OpenResourceUpload {
+            path: "file.txt".into(),
+            expected_bytes: Some(3),
+            sha256: None,
+        },
+    });
+    assert_eq!(MutationAdmission::classify(&upload), Commitment::Committed);
+    let Some(Frame::ResourceResult(result)) = MutationAdmission::rejection(&upload, false) else {
+        panic!("degraded server must reject upload ticket creation");
+    };
+    assert_eq!(result.request_id, "upload-1");
+    assert_eq!(
+        result.error.expect("typed failure").code,
+        ResourceErrorCode::Unavailable
+    );
 }

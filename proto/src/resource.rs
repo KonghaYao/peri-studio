@@ -10,8 +10,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::conn::DocId;
 
-pub const RESOURCE_PROTOCOL_VERSION: u32 = 4;
+pub const RESOURCE_PROTOCOL_VERSION: u32 = 5;
+/// v5 起 FS 写/upload；instance hello `caps.resources.write` 须为 true。
+pub const RESOURCE_PROTOCOL_VERSION_WITH_FS_WRITE: u32 = 5;
 pub const DEFAULT_DIRECTORY_PAGE_SIZE: u32 = 200;
+/// upload ticket 默认 TTL（秒）；与 blob ticket 哲学对齐。
+pub const DEFAULT_UPLOAD_TICKET_TTL_SECS: u64 = 60;
+/// 同一 principal 上并发的 open upload 槽位上限。
+pub const MAX_CONCURRENT_UPLOADS_PER_PRINCIPAL: u32 = 4;
 pub const DEFAULT_GIT_LOG_PAGE_SIZE: u32 = 50;
 pub const MAX_DIRECTORY_PAGE_SIZE: u32 = 500;
 /// instance → server 单次 blob 中继的原始字节上限。
@@ -57,6 +63,12 @@ pub enum ResourceQuery {
         project_id: String,
         payload: ResourceGitAction,
     },
+    #[serde(rename = "resource/open-upload", rename_all = "camelCase")]
+    OpenUpload {
+        request_id: String,
+        project_id: String,
+        payload: OpenResourceUpload,
+    },
 }
 
 impl ResourceQuery {
@@ -65,7 +77,8 @@ impl ResourceQuery {
             Self::OpenView { request_id, .. }
             | Self::ReleaseView { request_id, .. }
             | Self::OpenBlob { request_id, .. }
-            | Self::GitAction { request_id, .. } => request_id,
+            | Self::GitAction { request_id, .. }
+            | Self::OpenUpload { request_id, .. } => request_id,
         }
     }
 }
@@ -156,6 +169,18 @@ pub struct ReleaseResourceView {
     pub view_id: String,
 }
 
+/// 浏览器申请与 `(principal, projectId, path)` 绑定的单次 upload ticket。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OpenResourceUpload {
+    /// 最终 workspace-relative 目标路径；ticket 与 path 绑定。
+    pub path: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expected_bytes: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sha256: Option<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OpenResourceBlob {
@@ -196,6 +221,7 @@ pub enum ResourceQueryResult {
     View(ResourceViewOpened),
     Released,
     Blob(ResourceBlobOpened),
+    Upload(ResourceUploadOpened),
     Mutated,
 }
 
@@ -215,6 +241,15 @@ pub struct ResourceBlobOpened {
     pub expires_at: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub etag: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResourceUploadOpened {
+    pub upload_id: String,
+    /// 同源相对 PUT URL，例如 `/api/resource-uploads/{uploadId}`。
+    pub url: String,
+    pub expires_at: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -249,6 +284,12 @@ pub enum ResourceErrorCode {
     RateLimited,
     Timeout,
     Unavailable,
+    ResourceUnsupported,
+    UploadTooLarge,
+    UploadExpired,
+    UploadChecksumMismatch,
+    UploadAlreadyConsumed,
+    UploadAlreadyComplete,
 }
 
 /// server → instance 的可信查询。`root` 只由 server 从 project metadata 构造。
@@ -272,6 +313,7 @@ pub enum InstanceResourceQueryKind {
     GitDiff(GitDiffQuery),
     GitLog(GitLogQuery),
     GitMutate(GitMutateQuery),
+    WriteFile(WriteFileQuery),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -306,6 +348,18 @@ pub struct GitMutateQuery {
 pub struct ReadFileQuery {
     pub path: String,
     pub max_bytes: u64,
+}
+
+/// server → instance 条件写：Phase 1 经有界 base64 中继整文件内容。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WriteFileQuery {
+    pub path: String,
+    pub content_base64: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub if_match: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub if_none_match: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -367,12 +421,40 @@ pub enum InstanceResourcePayload {
     GitLogPage(GitLogPage),
     Blob(InstanceBlob),
     Mutation(InstanceMutationResult),
+    FsStat(FsStat),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InstanceMutationResult {
     pub generation: String,
+}
+
+/// 写文件成功后返回的 workspace 相对元数据（与 `remote-fs-git-protocol` §5.2 对齐）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FsStat {
+    pub path: String,
+    pub kind: FileKind,
+    pub size: u64,
+    pub mtime_ns: String,
+    pub permissions: FsPermissions,
+    pub revision: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum FsPermissions {
+    ReadOnly,
+    ReadWrite,
+}
+
+/// terminal `action_ack` 可选的小型 resource 结果（不含 bulk 内容）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", content = "data", rename_all = "snake_case")]
+pub enum ActionResourceResult {
+    FsStat(FsStat),
+    Mutation(InstanceMutationResult),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

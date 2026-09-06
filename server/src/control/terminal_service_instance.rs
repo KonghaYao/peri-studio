@@ -349,9 +349,7 @@ impl TerminalService {
         };
         let live_conn = self.instance.current_terminal_connection(instance_id).await;
         for (terminal_id, owner) in victims {
-            let conn = live_conn
-                .as_ref()
-                .unwrap_or(&owner.instance_conn);
+            let conn = live_conn.as_ref().unwrap_or(&owner.instance_conn);
             let _ = self
                 .instance
                 .send_terminal_close(instance_id, conn, terminal_id.clone())
@@ -367,9 +365,7 @@ impl TerminalService {
                 )));
         }
         for (terminal_id, owner) in pending_victims {
-            let conn = live_conn
-                .as_ref()
-                .unwrap_or(&owner.instance_conn);
+            let conn = live_conn.as_ref().unwrap_or(&owner.instance_conn);
             let _ = self
                 .instance
                 .send_terminal_close(instance_id, conn, terminal_id.clone())

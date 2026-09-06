@@ -1,8 +1,10 @@
 export { ChatShellLayout } from './chat/ChatShellLayout';
 export { ChatTranscriptLayout } from './chat/ChatTranscriptLayout';
 export { ComposerLayout } from './composer/ComposerLayout';
+export { ComposerUploadLayout } from './composer/ComposerUploadLayout';
 export { DecisionSurfacesLayout } from './decision/DecisionSurfacesLayout';
 export { GitGraphLayout } from './resource/GitGraphLayout';
+export { ExplorerUploadDropLayout } from './resource/ExplorerUploadDropLayout';
 export { ResourcePanelLayout } from './resource/ResourcePanelLayout';
 export { ResourceWorkbenchLayout } from './resource/ResourceWorkbenchLayout';
 export { SourceControlLayout } from './resource/SourceControlLayout';

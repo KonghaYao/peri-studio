@@ -98,6 +98,7 @@ impl MachineCommandProcessor {
                         session_id: None,
                         acp_session_id: None,
                         committed_projection_version: None,
+                        resource_result: None,
                     })
                 }
                 Ok(Some(c)) if c.phase == "projection_pending" => {
@@ -125,6 +126,7 @@ impl MachineCommandProcessor {
                         session_id: None,
                         acp_session_id: None,
                         committed_projection_version: None,
+                        resource_result: None,
                     });
                 }
                 Ok(Some(c)) if c.phase == "reconciliation_required" => {
@@ -189,6 +191,7 @@ impl MachineCommandProcessor {
                 session_id: None,
                 acp_session_id: None,
                 committed_projection_version: None,
+                resource_result: None,
             })))
             .await
             .is_err()

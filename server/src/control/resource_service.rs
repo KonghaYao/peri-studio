@@ -36,9 +36,13 @@ enum OpenViewScope<'a> {
 #[derive(Clone)]
 pub struct ResourceService {
     metadata: Arc<MetadataStore>,
-    instance: Arc<InstanceRegistry>,
+    pub(super) instance: Arc<InstanceRegistry>,
     projection: ResourceProjection,
     blobs: Arc<Mutex<HashMap<String, ResourceBlob>>>,
+    pub(super) uploads: super::resource_upload_store::UploadStore,
+    pub(super) upload_commands:
+        Arc<Mutex<HashMap<String, super::resource_upload_service::UploadCommandRecord>>>,
+    pub(super) upload_command_gate: Arc<Mutex<()>>,
 }
 
 #[derive(Debug, Clone)]
@@ -61,6 +65,9 @@ impl ResourceService {
             instance,
             projection,
             blobs: Arc::new(Mutex::new(HashMap::new())),
+            uploads: super::resource_upload_service::upload_store(),
+            upload_commands: Arc::new(Mutex::new(HashMap::new())),
+            upload_command_gate: Arc::new(Mutex::new(())),
         }
     }
 
@@ -71,6 +78,7 @@ impl ResourceService {
     pub async fn handle(
         &self,
         principal: &str,
+        owner_conn: u64,
         can_mutate: bool,
         query: ResourceQuery,
     ) -> ResourceResult {
@@ -100,6 +108,14 @@ impl ResourceService {
                 payload,
                 ..
             } => self.open_blob(principal, &project_id, payload).await,
+            ResourceQuery::OpenUpload {
+                project_id,
+                payload,
+                ..
+            } => {
+                self.open_upload(principal, owner_conn, can_mutate, &project_id, payload)
+                    .await
+            }
             ResourceQuery::GitAction {
                 project_id,
                 payload,
@@ -235,6 +251,24 @@ impl ResourceService {
             expires_at: expires_at.to_rfc3339(),
             etag: Some(etag),
         })
+    }
+
+    pub(super) async fn active_project(
+        &self,
+        project_id: &str,
+    ) -> Result<crate::persist::metadata::ProjectRecord, ResourceFailure> {
+        self.metadata
+            .project(project_id)
+            .await
+            .map_err(|_| unavailable())?
+            .filter(|project| project.archived_at.is_none())
+            .ok_or_else(|| {
+                failure(
+                    ResourceErrorCode::ProjectNotFound,
+                    "project was not found",
+                    false,
+                )
+            })
     }
 
     async fn open_blob(

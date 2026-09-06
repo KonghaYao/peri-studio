@@ -2,7 +2,9 @@ import {
   ChatShellLayout,
   ChatTranscriptLayout,
   ComposerLayout,
+  ComposerUploadLayout,
   DecisionSurfacesLayout,
+  ExplorerUploadDropLayout,
   GitGraphLayout,
   ProjectSidebarLayout,
   ResourcePanelLayout,
@@ -43,6 +45,13 @@ export function LayersPage() {
         <DemoSection id="composer" title="Composer" description="与正文同宽 chat-column 轨道；浅灰边、模型选择 + token 圆环 + Send。">
           <ComposerLayout />
         </DemoSection>
+        <DemoSection
+          id="composer-upload"
+          title="Composer file upload"
+          description="Drop overlay、per-file tile 状态机、Add attachment 键盘等价、live region / progress / alert。"
+        >
+          <ComposerUploadLayout />
+        </DemoSection>
       </DomainSection>
 
       <DomainSection title="Decision · 决策面" description="Questions 与 Permissions 共用 DecisionCard。">
@@ -70,6 +79,13 @@ export function LayersPage() {
       <DomainSection title="Resource · 资源区" description="Explorer 文件树与 diff 预览。">
         <DemoSection id="resource-panel" title="Explorer panel" description="24px 树行 + 并排 diff 预览。">
           <ResourcePanelLayout />
+        </DemoSection>
+        <DemoSection
+          id="explorer-upload-drop"
+          title="Explorer upload drop"
+          description="Folder / workspace root drop target、目录拒绝 alert、批次 N/M progress。"
+        >
+          <ExplorerUploadDropLayout />
         </DemoSection>
       </DomainSection>
 

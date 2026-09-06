@@ -21,6 +21,7 @@ import {
 import { installPrincipalRole } from '../../panel/lib/auth-state';
 import { DocStore } from '../../panel/lib/doc-store';
 import { setChatCatalog, setGlobalStatus, setInstances, setMachines, setProjects, setProjectSessions, setSchemaVersion, setSelectedSessionId } from '../../panel/store';
+import { resetWorkspaceUploadAssembly } from '@/store';
 
 afterEach(() => {
   cleanup();
@@ -33,6 +34,7 @@ afterEach(() => {
   setChatCatalog([]);
   setGlobalStatus('unknown');
   setSchemaVersion(null);
+  resetWorkspaceUploadAssembly();
   vi.unstubAllGlobals();
 });
 
@@ -49,6 +51,29 @@ describe('VS Code-style resource panels', () => {
     expect(row).toHaveClass('h-(--tree-row-height)', 'bg-selected');
     expect(row.querySelector('span:last-child')).toHaveClass('font-600');
     expect(row.querySelector('[data-file-icon="folder-src"]')).toBeInTheDocument();
+  });
+
+  it('prevents directory drops while offline and announces the blocked state', () => {
+    installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
+    installPrincipalRole('full');
+    setResourceWorkspace({
+      projectId: 'project-1', repositories: [], loading: [], error: null,
+      directories: { '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory' }] } },
+    });
+    render(() => <ExplorerPanel />);
+    const tree = screen.getByRole('tree', { name: 'Workspace files' });
+    const preventDefault = vi.fn();
+    const drop = new Event('drop', { bubbles: true }) as DragEvent;
+    Object.defineProperty(drop, 'dataTransfer', {
+      value: {
+        files: [],
+        items: [{ webkitGetAsEntry: () => ({ isDirectory: true }) }],
+      },
+    });
+    Object.defineProperty(drop, 'preventDefault', { value: preventDefault });
+    tree.dispatchEvent(drop);
+    expect(preventDefault).toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent(/Connect to the server before uploading files/i);
   });
 
   it('renders the machines management list with local computer', () => {

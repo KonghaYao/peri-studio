@@ -9,6 +9,8 @@ mod common;
 mod fs;
 #[path = "resource_git.rs"]
 mod git;
+#[path = "resource_write.rs"]
+mod write;
 
 use std::time::Duration;
 use std::{
@@ -24,6 +26,7 @@ use peri_studio_proto::resource::{
 
 use common::failure;
 use fs::{read_directory, read_file};
+use write::write_file;
 
 const GIT_TIMEOUT: Duration = Duration::from_secs(8);
 
@@ -107,6 +110,12 @@ impl ResourceHost {
             }
             InstanceResourceQueryKind::GitMutate(input) => {
                 self.git_mutate(&query.root, &input).await
+            }
+            InstanceResourceQueryKind::WriteFile(input) => {
+                let root = query.root;
+                tokio::task::spawn_blocking(move || write_file(&root, input))
+                    .await
+                    .unwrap_or_else(|_| Err(failure(ResourceErrorCode::Unavailable, true)))
             }
         };
         match result {

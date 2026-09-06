@@ -311,6 +311,12 @@ pub enum ActionEnvelope {
         command_id: String,
         payload: MachineInstancePayload,
     },
+    /// 消费 upload ticket，在 project 工作区内 atomic 写文件（Committed mutation）。
+    #[serde(rename = "fs/write-file", rename_all = "camelCase")]
+    FsWriteFile {
+        command_id: String,
+        payload: FsWriteFilePayload,
+    },
 }
 
 impl ActionEnvelope {
@@ -366,6 +372,62 @@ impl ActionEnvelope {
             ActionEnvelope::MachineSetAutoReconnect { .. } => "machine/set-auto-reconnect",
             ActionEnvelope::MachineRemove { .. } => "machine/remove",
             ActionEnvelope::MachineRestore { .. } => "machine/restore",
+            ActionEnvelope::FsWriteFile { .. } => "fs/write-file",
+        }
+    }
+
+    /// 幂等键（§4.3）。
+    pub fn command_id(&self) -> &str {
+        match self {
+            ActionEnvelope::ProjectCreate { command_id, .. }
+            | ActionEnvelope::ProjectArchive { command_id, .. }
+            | ActionEnvelope::ProjectRestore { command_id, .. }
+            | ActionEnvelope::ProjectRename { command_id, .. }
+            | ActionEnvelope::PersistedSessionCreate { command_id, .. }
+            | ActionEnvelope::PersistedSessionOpen { command_id, .. }
+            | ActionEnvelope::PersistedSessionRename { command_id, .. }
+            | ActionEnvelope::PersistedSessionArchive { command_id, .. }
+            | ActionEnvelope::PersistedSessionRestore { command_id, .. }
+            | ActionEnvelope::PersistedSessionImport { command_id, .. }
+            | ActionEnvelope::PersistedSessionDiscover { command_id, .. }
+            | ActionEnvelope::PersistedSessionPromptStatus { command_id, .. }
+            | ActionEnvelope::Create { command_id, .. }
+            | ActionEnvelope::Load { command_id, .. }
+            | ActionEnvelope::Close { command_id, .. }
+            | ActionEnvelope::Prompt { command_id, .. }
+            | ActionEnvelope::SessionNew { command_id, .. }
+            | ActionEnvelope::Cancel { command_id, .. }
+            | ActionEnvelope::ConfigSet { command_id, .. }
+            | ActionEnvelope::RewindCandidates { command_id, .. }
+            | ActionEnvelope::RewindPreview { command_id, .. }
+            | ActionEnvelope::Rewind { command_id, .. }
+            | ActionEnvelope::ResolvePermission { command_id, .. }
+            | ActionEnvelope::RespondElicitation { command_id, .. }
+            | ActionEnvelope::SubscribeEvents { command_id, .. }
+            | ActionEnvelope::UnsubscribeEvents { command_id, .. }
+            | ActionEnvelope::WorkspaceCreate { command_id, .. }
+            | ActionEnvelope::WorkspaceRemove { command_id, .. }
+            | ActionEnvelope::SessionList { command_id, .. }
+            | ActionEnvelope::McpList { command_id, .. }
+            | ActionEnvelope::McpOAuthStart { command_id, .. }
+            | ActionEnvelope::McpOAuthAuthorization { command_id, .. }
+            | ActionEnvelope::McpOAuthCancel { command_id, .. }
+            | ActionEnvelope::McpAppOpen { command_id, .. }
+            | ActionEnvelope::McpAppResource { command_id, .. }
+            | ActionEnvelope::McpAppCall { command_id, .. }
+            | ActionEnvelope::MachineAdd { command_id, .. }
+            | ActionEnvelope::MachineConnect { command_id, .. }
+            | ActionEnvelope::MachineDisconnect { command_id, .. }
+            | ActionEnvelope::MachineStop { command_id, .. }
+            | ActionEnvelope::MachineCancel { command_id, .. }
+            | ActionEnvelope::MachineRetry { command_id, .. }
+            | ActionEnvelope::MachineTrustHost { command_id, .. }
+            | ActionEnvelope::MachineConfirmReplace { command_id, .. }
+            | ActionEnvelope::MachineRename { command_id, .. }
+            | ActionEnvelope::MachineSetAutoReconnect { command_id, .. }
+            | ActionEnvelope::MachineRemove { command_id, .. }
+            | ActionEnvelope::MachineRestore { command_id, .. }
+            | ActionEnvelope::FsWriteFile { command_id, .. } => command_id,
         }
     }
 }

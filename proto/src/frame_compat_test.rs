@@ -24,6 +24,7 @@ fn terminal_optional_fields_omit_none_and_accept_legacy_null() {
         acp_session_id: None,
         instance_id: None,
         committed_projection_version: None,
+        resource_result: None,
     });
     let ack_json = serde_json::to_value(&ack).unwrap();
     for key in [

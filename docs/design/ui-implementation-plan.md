@@ -51,9 +51,11 @@ date: 2026-08-30
 
 ### P2-B · Chat + Composer
 - `widgets/chat/*`、`widgets/composer/*` ← Markdown、ToolActivity、UserBubble、SlashMenu、TokenUsageMeter
+- [x] Composer 与 QuickStart 已镜像 sandbox 上传 overlay/tile；drop 与 Add attachment 复用 feature 队列，commit 成功后插入 `@relative/path` 且不自动发送
 
 ### P2-C · Resource + Git
 - `widgets/resource/*` ← FileTree、FilePreview、SCM 树、GitGraphPanel、**ResourceFloatingPanel**（右轨 + 左文件预览）
+- [x] Explorer 已镜像 folder/root drop target、目录拒绝与批次状态；成功批次显式 single-flight refresh
 - 布局契约：[`ui-specification.md` §10.2](ui-specification.md#102-资源工作台浮窗)、`resource-panel-layout.ts`
 - **Git Graph 数据面**（非 UI）：wire 与投影契约见 [`git-graph-protocol.md`](git-graph-protocol.md)；视觉已落地，待接 `git-log-page` 替换 mock
 

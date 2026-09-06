@@ -483,6 +483,7 @@ impl CommandCoordinator {
                 session_id: session_id.map(str::to_string),
                 acp_session_id: acp_id,
                 committed_projection_version: None,
+                resource_result: None,
             })))
             .await;
     }

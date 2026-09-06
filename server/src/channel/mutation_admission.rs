@@ -22,7 +22,9 @@ pub(super) struct MutationAdmission;
 impl MutationAdmission {
     pub(super) fn classify(frame: &Frame) -> Commitment {
         match frame {
-            Frame::ResourceQuery(ResourceQuery::GitAction { .. }) => Commitment::Committed,
+            Frame::ResourceQuery(
+                ResourceQuery::GitAction { .. } | ResourceQuery::OpenUpload { .. },
+            ) => Commitment::Committed,
             Frame::Action(action) if !is_read_only_action(action) => Commitment::Committed,
             _ => Commitment::ReadOnly,
         }
@@ -39,18 +41,18 @@ impl MutationAdmission {
                 }
                 Some(Frame::ActionError(action_error_committed_rejected(action)))
             }
-            Frame::ResourceQuery(query @ ResourceQuery::GitAction { .. }) => {
-                Some(Frame::ResourceResult(ResourceResult {
-                    request_id: query.request_id().to_string(),
-                    result: None,
-                    error: Some(ResourceFailure {
-                        code: ResourceErrorCode::Unavailable,
-                        message: "server degraded/restarting; retry later".to_string(),
-                        retryable: true,
-                        suggested_limit: None,
-                    }),
-                }))
-            }
+            Frame::ResourceQuery(
+                query @ (ResourceQuery::GitAction { .. } | ResourceQuery::OpenUpload { .. }),
+            ) => Some(Frame::ResourceResult(ResourceResult {
+                request_id: query.request_id().to_string(),
+                result: None,
+                error: Some(ResourceFailure {
+                    code: ResourceErrorCode::Unavailable,
+                    message: "server degraded/restarting; retry later".to_string(),
+                    retryable: true,
+                    suggested_limit: None,
+                }),
+            })),
             _ => None,
         }
     }

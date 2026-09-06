@@ -39,17 +39,19 @@
 
 结论：如果目标是直接得到完整远程 IDE，优先评估 OpenVSCode Server；如果目标是给 Peri Studio 增加自己的文件树和 Source Control UI，应实现本文协议，并只把 VS Code 源码作为行为参考。
 
-## 当前落地状态（2026-08-23）
+## 当前落地状态（2026-09-06）
 
-当前已经交付可运行的 FS/SCM 纵向切片，协议版本为 `4`，资源投影 schema 版本为 `1`：
+当前已经交付可运行的 FS/SCM 纵向切片与 ≤8 MiB create-only 文件上传，资源协议版本为 `5`，资源投影 schema 版本为 `1`：
 
 - 浏览器只提交 `projectId` 与相对路径；server 从 SQLite 项目元数据解析可信 instance 与 workspace root，并在每次 view、mutation、Y.Doc subscribe 和 HTTP blob 请求上重新授权。
 - instance 已实现有界目录分页、精确文件读取、Unix root-dirfd + `openat(O_NOFOLLOW)` 的同句柄 containment、仓库发现、Git snapshot/changes，以及 generation-bound `changeIds`、强制 CAS、按仓库串行的 Stage/Unstage/Discard/Commit/Pull/Push/Sync；仓库锁使用可回收 weak entry，非 UTF-8 Git 路径会显式拒绝，hello 会显式协商资源协议版本与上限。
 - server 是资源 Y.Doc 的唯一 writer；目录、仓库、SCM group 都是按需、短租约、显式排序的独立只读投影，最后一个订阅者离开后才进入 TTL，空闲过期投影由主动 sweeper 回收，文件字节不进入 Yjs。
 - 浏览器通过 opaque、principal-bound、60 秒 ticket 的同源 `GET/HEAD /api/resource-blobs/{blobId}` 下载文件和 Git diff；响应保留精确字节、MIME、ETag，并要求当前 HttpOnly session cookie。diff 查询只携带 generation-bound opaque `changeId`，不接受浏览器路径或 Git argv。
+- 文件上传使用三阶段闭环：Full principal 以 `resource/open-upload` 提交 `projectId`、workspace-relative path 与预期大小，使用同源 session cookie 对 opaque、单次、60 秒 ticket 执行有界 `PUT /api/resource-uploads/{uploadId}`，再以带 `commandId` 的 `fs/write-file` action 提交。server 从 project 元数据解析可信 instance/cwd；instance 对路径重新校验，并以临时文件加 Unix root-dirfd/`openat(O_NOFOLLOW)` 与同目录 `linkat` 原子 create-only 发布。单文件上限 8 MiB、同名拒绝覆盖、断线/过期清理 staging，旧 instance 必须同时声明资源协议 v5 与 write capability。
+- Web 的 Composer、QuickStart 与 Explorer 复用同一上传队列；Composer/QuickStart 仅在 commit 成功后向草稿插入 `@relative/path`，不自动发送，Explorer 支持 folder/root 目标并在批次结束后显式刷新。v1 仅接受扁平普通文件，拒绝目录；键盘 Add attachment 与 drop 共用该用例。
 - Web 已提供 VS Code 风格 Activity Bar、可折叠 Explorer、懒加载/连续分页文件树、Source Control 仓库/分组/状态装饰、ahead/behind、逐文件 Stage/Unstage/Discard（确认对话框）、提交信息与 Commit、Pull/Push/Sync、分页加载、刷新与 SCM badge。选择文件会在主编辑区打开只读标签页：有界 UTF-8 文本带行号，图片使用 principal-bound URL，二进制/超大文件保持下载路径；选择变更会打开有界双栏 unified diff，包含行号、hunk、二进制/空/加载/错误状态、重试和键盘关闭。重连后会重新申请短租约视图，不重放可能过期的 Doc ID。
 
-当前实现是该设计的 R1/R2、部分 R3、R4、R6 与部分 R7，不把尚未完成的接口伪装成已支持：浏览器 bulk bytes 已走 HTTP，但 instance→server 的文件读取与 diff 暂时仍以统一 8 MiB 原始字节上限的 base64 control result 传输；server 在 decode 前校验编码长度，WebSocket message 显式限制为 12 MiB。Range、下游取消传播、独立 authenticated data WebSocket、watch/invalidation、文件编辑/upload/mutation，以及 branch/checkout/merge/stash 仍按后续阶段实现。全部 Git mutation 使用关联 `requestId`、generation-bound CAS、单仓库串行与非自动重试的 `DELIVERY_UNKNOWN` 收敛不确定结果；远程命令禁交互、丢弃 stderr，失败后要求刷新事实再行动。该兼容 seam 被限制在可信 server↔instance 链路，不会暴露给浏览器，也不会写入 Yjs。
+当前实现是该设计的 R1/R2、部分 R3、R4、R6 与部分 R7，不把尚未完成的接口伪装成已支持：上传只实现 ≤8 MiB 内存 staging 与可信 server↔instance base64 中继，不是大文件流式传输或通用文件编辑；instance→server 的文件读取与 diff 也暂时仍以统一 8 MiB 原始字节上限的 base64 control result 传输，server 在 decode 前校验编码长度，WebSocket message 显式限制为 12 MiB。Range、下游取消传播、独立 authenticated data WebSocket、watch/invalidation、覆盖/删除/移动/建目录，以及 branch/checkout/merge/stash 仍按后续阶段实现。全部 Git mutation 使用关联 `requestId`、generation-bound CAS、单仓库串行与非自动重试的 `DELIVERY_UNKNOWN` 收敛不确定结果；远程命令禁交互、丢弃 stderr，失败后要求刷新事实再行动。该兼容 seam 被限制在可信 server↔instance 链路，不会暴露给浏览器，也不会写入 Yjs。
 
 ### 2.3 Theia 与 OpenVSCode Server 的设计校准
 

@@ -257,6 +257,7 @@ impl CommandCoordinator {
                         session_id: None,
                         acp_session_id: None,
                         committed_projection_version: None,
+                        resource_result: None,
                     })))
                     .await;
             }
@@ -331,6 +332,7 @@ impl CommandCoordinator {
                         session_id: None,
                         acp_session_id: None,
                         committed_projection_version: None,
+                        resource_result: None,
                     })))
                     .await;
             }

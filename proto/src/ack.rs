@@ -7,6 +7,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::resource::ActionResourceResult;
+
 /// 两阶段 Ack 状态（§4.4）。
 ///
 /// - `accepted` = 命令进入有界处理队列；
@@ -50,6 +52,9 @@ pub struct ActionAck {
     /// 字段预留（对齐 chat types.ts，乐观并发校验二期启用）。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub committed_projection_version: Option<u32>,
+    /// FS/Git mutation 的 terminal ack 可选携带（不含 bulk 内容）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resource_result: Option<ActionResourceResult>,
 }
 
 /// `action_error` 帧载荷（§4.4）。失败即返回，不静默。

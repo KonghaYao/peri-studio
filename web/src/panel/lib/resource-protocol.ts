@@ -55,6 +55,18 @@ export interface ResourceFailure {
   suggestedLimit?: number;
 }
 
+export interface ResourceUploadOpened {
+  uploadId: string;
+  url: string;
+  expiresAt: string;
+}
+
+export interface OpenResourceUploadPayload {
+  path: string;
+  expectedBytes?: number;
+  sha256?: string;
+}
+
 export interface ResourceResultFrame {
   t: 'resource_result';
   requestId: string;
@@ -62,7 +74,8 @@ export interface ResourceResultFrame {
     | { kind: 'view'; data: ResourceViewOpened }
     | { kind: 'released' }
     | { kind: 'mutated' }
-    | { kind: 'blob'; data: { blobId: string; url: string; expiresAt: string; etag?: string } };
+    | { kind: 'blob'; data: { blobId: string; url: string; expiresAt: string; etag?: string } }
+    | { kind: 'upload'; data: ResourceUploadOpened };
   error?: ResourceFailure;
 }
 
@@ -89,6 +102,38 @@ export function releaseResourceView(viewId: string) {
     requestId: crypto.randomUUID(),
     payload: { viewId },
   } as const;
+}
+
+export function openResourceUpload(projectId: string, payload: OpenResourceUploadPayload) {
+  const body: OpenResourceUploadPayload = { path: payload.path };
+  if (payload.expectedBytes !== undefined) body.expectedBytes = payload.expectedBytes;
+  if (payload.sha256 !== undefined) body.sha256 = payload.sha256;
+  return {
+    t: 'resource_query' as const,
+    type: 'resource/open-upload' as const,
+    requestId: crypto.randomUUID(),
+    projectId,
+    payload: body,
+  };
+}
+
+/** create-only 写：默认 `ifNoneMatch: "*"`。 */
+export function fsWriteFileAction(
+  commandId: string,
+  projectId: string,
+  path: string,
+  uploadId: string,
+  options?: { ifMatch?: string; ifNoneMatch?: string },
+) {
+  const payload: Record<string, string> = { projectId, path, uploadId };
+  if (options?.ifMatch !== undefined) payload.ifMatch = options.ifMatch;
+  payload.ifNoneMatch = options?.ifNoneMatch ?? '*';
+  return {
+    t: 'action' as const,
+    commandId,
+    type: 'fs/write-file' as const,
+    payload,
+  };
 }
 
 export function openResourceFile(projectId: string, path: string) {
@@ -160,6 +205,12 @@ export function isResourceResult(frame: Record<string, unknown>): frame is Recor
       if (!data || typeof data.blobId !== 'string' || typeof data.url !== 'string'
         || !data.url.startsWith('/api/resource-blobs/') || typeof data.expiresAt !== 'string'
         || (data.etag !== undefined && typeof data.etag !== 'string')) return false;
+    } else if (result.kind === 'upload') {
+      const data = result.data as Record<string, unknown>;
+      if (!data || typeof data.uploadId !== 'string' || typeof data.url !== 'string'
+        || !data.url.startsWith('/api/resource-uploads/') || typeof data.expiresAt !== 'string') {
+        return false;
+      }
     } else if (result.kind !== 'released' && result.kind !== 'mutated') {
       return false;
     }

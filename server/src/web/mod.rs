@@ -30,6 +30,7 @@ mod http;
 mod local_dialog;
 mod parse;
 mod pick_directory_http;
+mod resource_upload_http;
 pub(crate) mod sandbox;
 #[path = "static.rs"]
 mod static_;
@@ -164,6 +165,9 @@ mod auth_principal_test;
 #[cfg(test)]
 #[path = "http_test.rs"]
 mod http_test;
+#[cfg(test)]
+#[path = "resource_upload_http_test.rs"]
+mod resource_upload_http_test;
 #[cfg(test)]
 #[path = "static_test.rs"]
 mod static_test;

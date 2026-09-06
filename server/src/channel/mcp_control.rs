@@ -405,6 +405,7 @@ fn acknowledged(command_id: &str, status: AckStatus) -> Frame {
         session_id: None,
         acp_session_id: None,
         committed_projection_version: None,
+        resource_result: None,
     })
 }
 
@@ -422,6 +423,7 @@ async fn send_accepted(
         session_id: None,
         acp_session_id: None,
         committed_projection_version: None,
+        resource_result: None,
     })))
     .await
     .map_err(|_| {

@@ -276,6 +276,9 @@ impl Translator {
             | ActionEnvelope::PersistedSessionPromptStatus { .. } => {
                 Err(TranslateError::UnsupportedAction("metadata control-plane"))
             }
+            ActionEnvelope::FsWriteFile { .. } => {
+                Err(TranslateError::UnsupportedAction("resource control-plane"))
+            }
             ActionEnvelope::MachineAdd { .. }
             | ActionEnvelope::MachineConnect { .. }
             | ActionEnvelope::MachineDisconnect { .. }

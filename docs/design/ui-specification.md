@@ -173,8 +173,8 @@ widgets/*           ← 业务组合；禁止深层 import 单个 ui 文件，�
 | 壳层 | `widgets/shell` | AppShell 网格、ErrorCenter、ConnectionProblem、StatusArea |
 | 侧栏 | `widgets/sidebar` | 28px 行高、选中 `bg-selected`、`For` 稳定 key |
 | 聊天 | `widgets/chat` | Transcript 窗口化、Permission/Elicitation 队列、Markdown |
-| 输入 | `widgets/composer` | Composer 圆角容器、slash overlay、`aria-activedescendant` |
-| 资源 | `widgets/resource` | 右/左 `ResourceFloatingPanel`（Explorer·SCM·Graph / 文件预览）；Git diff 占主区；44px 触控目标 |
+| 输入 | `widgets/composer` | Composer 圆角容器、slash overlay、`aria-activedescendant`；drop / Add attachment 共用上传队列，ready 后仅插入 `@relative/path` |
+| 资源 | `widgets/resource` | 右/左 `ResourceFloatingPanel`（Explorer·SCM·Graph / 文件预览）；Explorer folder/root drop target 与批次状态；Git diff 占主区；44px 触控目标 |
 | 认证 | `widgets/auth` | AuthGate 卡片 `--container-auth-card` |
 
 Widget **可以**读 `store`；**不得**直发 WebSocket 帧。复杂逻辑下沉 `features/*`。

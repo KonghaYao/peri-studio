@@ -259,6 +259,7 @@ async fn instance_open_view_browses_from_remote_root_without_a_project() {
             service
                 .handle(
                     "browser-token",
+                    1,
                     true,
                     ResourceQuery::OpenView {
                         request_id: "browse-query".into(),
@@ -354,6 +355,7 @@ async fn open_view_resolves_trusted_project_and_publishes_authorized_doc() {
             service
                 .handle(
                     "browser-token",
+                    1,
                     true,
                     ResourceQuery::OpenView {
                         request_id: "browser-query".into(),
@@ -456,6 +458,7 @@ async fn git_diff_blob_resolves_project_and_returns_a_principal_bound_http_ticke
             service
                 .handle(
                     "browser-token",
+                    1,
                     false,
                     ResourceQuery::OpenBlob {
                         request_id: "diff-query".into(),
@@ -555,6 +558,7 @@ async fn read_only_principal_cannot_stage_changes() {
     let result = service
         .handle(
             "read-only-token",
+            1,
             false,
             ResourceQuery::GitAction {
                 request_id: "mutation-1".into(),

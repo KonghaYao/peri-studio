@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setPromptDeliveryReady, setPromptMaxBytes } from '../../panel/lib/connection';
 import {
   setChatHead,
@@ -16,6 +16,7 @@ import { acknowledgeUnknownMessageDelivery, blockUnknownMessageDelivery, failMes
 import { markRuntimeControlUncertain, resetRuntimeControls, startRuntimeControl } from '../../panel/lib/runtime-control';
 import { Composer } from './Composer';
 import { requestComposerQuote, resetComposerQuoteRequest } from '../../panel/lib/composer-quote';
+import { resetWorkspaceUploadAssembly } from '@/store';
 
 const draftOwner = (sessionId = 'session-1') => ({ principalId: 'test-full', projectId: 'project-1', sessionId });
 
@@ -33,6 +34,7 @@ function resetStore() {
   setProjectSessions([]);
   setPromptDeliveryReady(false);
   setPromptMaxBytes(0);
+  resetWorkspaceUploadAssembly();
 }
 
 function selectReadyChat() {
@@ -493,5 +495,28 @@ describe('Composer', () => {
     expect(screen.getByRole('textbox')).toBeEnabled();
     expect(screen.queryByText('Another session is still confirming')).not.toBeInTheDocument();
     expect(screen.queryByText('private draft A')).not.toBeInTheDocument();
+  });
+
+  it('exposes the keyboard upload entry and blocks browser default file drops', () => {
+    selectReadyChat();
+    render(() => <Composer />);
+
+    expect(screen.getByRole('button', { name: 'Add attachment' })).toBeEnabled();
+    expect(screen.getByTestId('composer-upload-file-input')).toBeInTheDocument();
+
+    const surface = screen.getByTestId('composer-surface');
+    const preventDefault = vi.fn();
+    const stopPropagation = vi.fn();
+    const drop = new Event('drop', { bubbles: true }) as DragEvent;
+    Object.defineProperty(drop, 'dataTransfer', {
+      value: {
+        files: [new File(['hello'], 'notes.txt', { type: 'text/plain' })],
+        items: [{ webkitGetAsEntry: () => ({ isDirectory: false }) }],
+      },
+    });
+    Object.defineProperty(drop, 'preventDefault', { value: preventDefault });
+    Object.defineProperty(drop, 'stopPropagation', { value: stopPropagation });
+    surface.dispatchEvent(drop);
+    expect(preventDefault).toHaveBeenCalled();
   });
 });

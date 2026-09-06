@@ -222,6 +222,7 @@ pub(crate) fn all_frames() -> Vec<Frame> {
             acp_session_id: None,
             instance_id: None,
             committed_projection_version: Some(7),
+            resource_result: None,
         }),
         Frame::ActionError(ActionError {
             command_id: "c1".into(),

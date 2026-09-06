@@ -81,6 +81,8 @@ pub(super) struct ExistingCommandRequest<'a> {
 }
 
 #[derive(Debug)]
+// `ActionAck` 可选携带资源写结果；保留响应值形态，避免改变既有恢复匹配语义。
+#[allow(clippy::large_enum_variant)]
 pub(super) enum ExistingCommandDisposition {
     Missing,
     ProceedNew,

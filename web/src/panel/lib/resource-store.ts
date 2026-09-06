@@ -23,6 +23,12 @@ const openViews = new Map<string, OpenResourceLease>();
 const openViewKeys = new Map<string, string>();
 const requested = new Set<string>();
 let resourceGeneration = 0;
+
+/** 资源投影世代：project reset / refresh 后递增，供 upload 等边界对齐。 */
+export function resourceWorkspaceGeneration(): number {
+  return resourceGeneration;
+}
+
 const activeLogViews = new Map<string, string>();
 const MAX_ACCUMULATED_COMMITS_PER_REPO = 4000;
 

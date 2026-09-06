@@ -373,6 +373,9 @@
   --asset-tile-size: 68px;
   --status-panel-max-height: 132px;
   --composer-radius: var(--radius-xl);
+  --composer-drop-overlay-bg: var(--scrim);
+  --explorer-drop-accent-width: 3px;
+  --upload-progress: 0%;
   --decision-radius: 14px;
   --permission-card-min-height: 96px;
   --model-badge-max: min(240px, 38vw);

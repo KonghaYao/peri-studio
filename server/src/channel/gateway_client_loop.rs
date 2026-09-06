@@ -28,6 +28,7 @@ use tokio_tungstenite::WebSocketStream;
 use tracing::{debug, info, warn};
 
 use peri_studio_proto::ack::{ActionError, ErrorCode};
+use peri_studio_proto::action::ActionEnvelope;
 use peri_studio_proto::conn::Auth;
 use peri_studio_proto::frame::{Frame, ProtoError};
 use peri_studio_proto::resource::{ResourceErrorCode, ResourceFailure, ResourceResult};
@@ -201,11 +202,51 @@ impl Gateway {
                             if let Frame::ResourceQuery(query) = frame {
                                 let result = self.resources.handle(
                                     &channel.ctx.token_id,
+                                    conn_id,
                                     channel.ctx.role == crate::auth::TokenRole::Full,
                                     query,
                                 ).await;
                                 let _ = out_tx.send(OutboundMsg::Frame(
                                     Frame::ResourceResult(result))).await;
+                                continue;
+                            }
+                            if let Frame::Action(ActionEnvelope::FsWriteFile {
+                                command_id,
+                                payload,
+                            }) = frame
+                            {
+                                if channel.ctx.role != crate::auth::TokenRole::Full {
+                                    let _ = out_tx
+                                        .send(OutboundMsg::Frame(Frame::ActionError(ActionError {
+                                            command_id,
+                                            code: ErrorCode::Forbidden,
+                                            message: "read-only principals cannot upload files"
+                                                .to_string(),
+                                            retryable: false,
+                                            retry_after_ms: None,
+                                        })))
+                                        .await;
+                                    continue;
+                                }
+                                let (duplicate, outcome) = self
+                                    .resources
+                                    .commit_upload_action(
+                                        &channel.ctx.token_id,
+                                        &command_id,
+                                        &payload,
+                                    )
+                                    .await;
+                                let response = match outcome {
+                                    Ok(result) => Frame::ActionAck(
+                                        crate::control::resource_upload_service::committed_ack(
+                                            command_id,
+                                            result,
+                                            duplicate,
+                                        ),
+                                    ),
+                                    Err(error) => Frame::ActionError(error),
+                                };
+                                let _ = out_tx.send(OutboundMsg::Frame(response)).await;
                                 continue;
                             }
                             let outcome = channel.dispatch(frame, &deps, out_tx.clone()).await;
@@ -261,6 +302,7 @@ impl Gateway {
             }
         };
 
+        self.resources.cleanup_uploads_for_connection(conn_id).await;
         self.finish_connection(
             conn_id,
             &mut ws_sink,

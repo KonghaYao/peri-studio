@@ -333,3 +333,16 @@ pub struct MachineSetAutoReconnectPayload {
     pub instance_id: String,
     pub enabled: bool,
 }
+
+/// `fs/write-file`：消费 upload ticket，在 project workspace 内条件写文件。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FsWriteFilePayload {
+    pub project_id: String,
+    pub path: String,
+    pub upload_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub if_match: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub if_none_match: Option<String>,
+}

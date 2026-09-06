@@ -9,9 +9,8 @@ use peri_studio_proto::ack::{AckStatus, ErrorCode};
 use peri_studio_proto::Frame;
 
 use common::{
-    chat_field, chat_ids, fetch_registry_snapshot, fresh_token, global_status,
-    wait_instance_recovery, wait_terminal, InstanceProc, ServerProc, TestEnv, WsClient,
-    RECV_TIMEOUT, TEST_BUDGET,
+    chat_field, chat_ids, fetch_registry_snapshot, fresh_token, wait_instance_recovery,
+    wait_terminal, InstanceProc, ServerProc, TestEnv, WsClient, RECV_TIMEOUT, TEST_BUDGET,
 };
 
 fn t(name: &str, tag: &str, r: Result<(), String>) {

@@ -157,6 +157,7 @@ impl MetadataCommandProcessor {
                         session_id: c.session_id,
                         acp_session_id: c.acp_session_id,
                         committed_projection_version: None,
+                        resource_result: None,
                     })
                 }
                 Ok(Some(c)) if c.phase == "projection_pending" => {
@@ -192,6 +193,7 @@ impl MetadataCommandProcessor {
                         session_id: c.session_id,
                         acp_session_id: c.acp_session_id,
                         committed_projection_version: None,
+                        resource_result: None,
                     });
                 }
                 Ok(Some(c)) if c.phase == "reconciliation_required" => {
@@ -256,6 +258,7 @@ impl MetadataCommandProcessor {
                 session_id: None,
                 acp_session_id: None,
                 committed_projection_version: None,
+                resource_result: None,
             })))
             .await
             .is_err()
@@ -370,6 +373,7 @@ impl MetadataCommandProcessor {
                 session_id: session_id.map(str::to_string),
                 acp_session_id: acp_id,
                 committed_projection_version: None,
+                resource_result: None,
             })))
             .await;
     }

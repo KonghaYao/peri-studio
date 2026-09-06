@@ -80,6 +80,13 @@ impl InstanceRegistry {
             {
                 return Err(InstanceError::ResourceUnsupported);
             }
+            if matches!(
+                query.query,
+                peri_studio_proto::resource::InstanceResourceQueryKind::WriteFile(_)
+            ) && !entry.resource_write
+            {
+                return Err(InstanceError::ResourceUnsupported);
+            }
         }
         let request_id = query.request_id.clone();
         let ack = self

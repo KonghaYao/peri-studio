@@ -6,22 +6,34 @@ import { dismissFailedQuickStart, quickStartSubmission } from '../../panel/lib/q
 import { promptMaxBytes } from '../../panel/lib/connection';
 import { promptByteLength, promptFitsBudget } from '../../panel/lib/prompt-budget';
 import { Plus, SendHorizontal, ShieldCheck } from 'lucide-solid';
+import { ComposerUploadSurface, openComposerUploadFilePicker } from './ComposerUploadSurface';
 
 export function QuickStartComposer(props: { projects: Array<{ id: string; name: string }>; initialProjectId?: string }) {
   const [draft, setDraft] = createSignal('');
   const statusId = `quick-start-status-${createUniqueId()}`;
   const budgetId = `quick-start-budget-${createUniqueId()}`;
+  const uploadDropDescId = `quick-start-upload-drop-${createUniqueId()}`;
   const [projectId, setProjectId] = createSignal(props.initialProjectId || props.projects[0]?.id || '');
+  let quickStartSurfaceRef: HTMLDivElement | undefined;
+  let uploadFileInputRef: HTMLInputElement | undefined;
+  let textareaRef: HTMLTextAreaElement | undefined;
   const pending = () => quickStartSubmission();
   const pendingIsInFlight = () => pending()?.phase === 'creating' || pending()?.phase === 'accepted';
   const pendingNeedsAttention = () => pending()?.phase === 'uncertain' || pending()?.phase === 'failed';
   const draftBytes = () => promptByteLength(draft().trim());
   const promptOverBudget = () => !!draft().trim() && !promptFitsBudget(draft().trim(), promptMaxBytes());
   const locked = () => (!!pending() && pending()!.phase !== 'failed') || !!creatingSessionProjectId();
+  const inputDisabled = () => readOnly() || locked();
   const project = () => props.projects.find((item) => item.id === projectId());
   createEffect(() => {
     if (!pending() && !project()) setProjectId(props.projects[0]?.id || '');
   });
+  const focusAt = (caret: number) => {
+    queueMicrotask(() => {
+      textareaRef?.focus();
+      textareaRef?.setSelectionRange(caret, caret);
+    });
+  };
   const submit = () => {
     const text = draft().trim();
     if (!text || pending() || !projectId() || !promptFitsBudget(text, promptMaxBytes())) return;
@@ -29,12 +41,33 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
   };
 
   return <section data-testid="quick-start-docked" class="quick-start quick-start--docked w-full text-left" aria-label="Start new session">
-    <div data-testid="quick-start-surface" class="quick-start__surface overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface-overlay p-2.5 max-narrow:rounded-16" aria-busy={pendingIsInFlight() || undefined}>
+    <div
+      ref={quickStartSurfaceRef}
+      data-testid="quick-start-surface"
+      class="quick-start__surface relative overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface-overlay p-2.5 max-narrow:rounded-16"
+      aria-busy={pendingIsInFlight() || undefined}
+    >
+      <ComposerUploadSurface
+        origin="quickstart"
+        projectId={projectId() || null}
+        disabled={inputDisabled()}
+        dropDescId={uploadDropDescId}
+        surfaceRef={quickStartSurfaceRef}
+        registerFileInput={(element) => { uploadFileInputRef = element; }}
+        getDraft={draft}
+        setDraft={setDraft}
+        focusAt={focusAt}
+        readCaret={() => ({
+          start: textareaRef?.selectionStart ?? draft().length,
+          end: textareaRef?.selectionEnd ?? draft().length,
+        })}
+      />
       <Textarea
+        ref={textareaRef}
         autoResize
         maxHeight={180}
         value={draft()}
-        disabled={readOnly() || locked()}
+        disabled={inputDisabled()}
         onInput={(event) => setDraft(event.currentTarget.value)}
         onKeyDown={(event) => {
           if (event.isComposing || event.keyCode === 229) return;
@@ -54,7 +87,15 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
         </InlineNotice>
       </Show>
       <div class="quick-start__footer composer-toolbar flex min-h-36 items-center gap-4">
-        <IconButton label="Add attachment" title="Attachments are not connected yet" disabled><Plus size={16} strokeWidth={1.7} /></IconButton>
+        <IconButton
+          label="Add attachment"
+          title="Upload files to this project"
+          disabled={inputDisabled() || !projectId()}
+          onClick={() => {
+            openComposerUploadFilePicker(uploadFileInputRef);
+            queueMicrotask(() => textareaRef?.focus());
+          }}
+        ><Plus size={16} strokeWidth={1.7} /></IconButton>
         <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled><ShieldCheck size={16} strokeWidth={1.7} /></IconButton>
         <span class="flex-1" />
         <IconButton

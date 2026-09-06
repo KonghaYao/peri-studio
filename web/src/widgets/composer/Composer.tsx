@@ -28,6 +28,7 @@ import { slashMenuOptionId } from '@/features/composer/slash-menu';
 import { Button, IconButton, InlineNotice, Textarea } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
 import { SlashMenu } from './SlashMenu';
+import { ComposerUploadSurface, openComposerUploadFilePicker } from './ComposerUploadSurface';
 import { SessionModelMenu } from '@/widgets/shell/SessionConfigDialog';
 import { TokenUsageMeter, tokenUsageLabel } from '@/widgets/chat/TokenUsageMeter';
 import { promptByteLength, promptFitsBudget } from '../../panel/lib/prompt-budget';
@@ -65,8 +66,11 @@ export function Composer(props: { layout?: 'docked' | 'centered' }) {
   let taRef: HTMLTextAreaElement | undefined;
   const slashMenuId = 'composer-slash-menu';
   const modelMenuId = 'composer-model-menu';
+  const uploadDropDescId = `composer-upload-drop-${createUniqueId()}`;
   const submissionStatusId = `composer-submission-${createUniqueId()}`;
   const promptBudgetStatusId = `composer-prompt-budget-${createUniqueId()}`;
+  let composerSurfaceRef: HTMLElement | undefined;
+  let uploadFileInputRef: HTMLInputElement | undefined;
   let consumedQuoteId = 0;
   const draftOwner = (): ComposerDraftOwner | null => {
     const sessionId = selectedSessionId();
@@ -270,11 +274,27 @@ export function Composer(props: { layout?: 'docked' | 'centered' }) {
         />
       </Show>
       <section
+        ref={composerSurfaceRef}
         data-testid="composer-surface"
         aria-busy={submissionIsInFlight() || undefined}
         aria-disabled={inputDisabled()}
-        class="composer-surface overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface-overlay p-2.5 max-narrow:rounded-16"
+        class="composer-surface relative overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface-overlay p-2.5 max-narrow:rounded-16"
       >
+        <ComposerUploadSurface
+          origin="composer"
+          projectId={draftOwner()?.projectId ?? null}
+          disabled={inputDisabled()}
+          dropDescId={uploadDropDescId}
+          surfaceRef={composerSurfaceRef}
+          registerFileInput={(element) => { uploadFileInputRef = element; }}
+          getDraft={() => composerDraft(draftOwner())}
+          setDraft={(text) => setComposerDraft(draftOwner(), text)}
+          focusAt={focusAt}
+          readCaret={() => ({
+            start: taRef?.selectionStart ?? composerDraft(draftOwner()).length,
+            end: taRef?.selectionEnd ?? composerDraft(draftOwner()).length,
+          })}
+        />
         <Show when={composerAssets().length > 0}>
           <div class="composer-assets ui-scrollbar flex gap-7 overflow-x-auto pb-7" aria-label="Staged assets">
             <For each={composerAssets()}>{(asset) => <article class="group relative grid shrink-0 grid-rows-asset-tile overflow-hidden rounded-md border border-border-subtle bg-surface-canvas p-1.5" style={{ width: 'var(--asset-tile-size)', height: 'var(--asset-tile-size)' }} title={asset.detail || asset.name}>
@@ -379,7 +399,16 @@ export function Composer(props: { layout?: 'docked' | 'centered' }) {
         }</Show>
         <div data-testid="composer-toolbar" class="composer-toolbar flex min-h-36 min-w-0 items-center gap-4">
           <div class="composer-toolbar__left flex min-w-0 shrink items-center gap-4 max-narrow:gap-2">
-          <IconButton label="Add attachment" title="Attachments are not connected yet" disabled class="composer-attachment max-narrow:hidden shrink-0 border-0 bg-transparent text-content-primary disabled:opacity-55">
+          <IconButton
+            label="Add attachment"
+            title="Upload files to this project"
+            disabled={inputDisabled()}
+            class="composer-attachment max-narrow:hidden shrink-0 border-0 bg-transparent text-content-primary disabled:opacity-55"
+            onClick={() => {
+              openComposerUploadFilePicker(uploadFileInputRef);
+              queueMicrotask(() => taRef?.focus());
+            }}
+          >
             <AttachmentIcon />
           </IconButton>
           <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled class="composer-approval max-narrow:hidden shrink-0 border-0 bg-transparent text-content-muted disabled:opacity-55">

@@ -364,7 +364,9 @@ fn project_payload(
                 item.insert(txn, "refs_complete", commit.refs_complete);
             }
         }
-        InstanceResourcePayload::Blob(_) | InstanceResourcePayload::Mutation(_) => {
+        InstanceResourcePayload::Blob(_)
+        | InstanceResourcePayload::Mutation(_)
+        | InstanceResourcePayload::FsStat(_) => {
             meta.insert(txn, "view_type", "blob");
         }
     }

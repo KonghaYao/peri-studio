@@ -79,8 +79,12 @@ fn test_build_hello_fields() {
     assert_eq!(hello.hostname, "h1");
     assert_eq!(hello.buffered, Some(true));
     assert_eq!(hello.buffer_lost, Some(false));
-    assert_eq!(hello.caps["resources"]["protocolVersion"], 4);
+    assert_eq!(
+        hello.caps["resources"]["protocolVersion"],
+        peri_studio_proto::resource::RESOURCE_PROTOCOL_VERSION
+    );
     assert_eq!(hello.caps["resources"]["git"], true);
+    assert_eq!(hello.caps["resources"]["write"], true);
     assert_eq!(
         hello.caps["resources"]["maxGitLogPageBytes"],
         peri_studio_proto::resource::MAX_GIT_LOG_PAGE_BYTES

@@ -4,13 +4,20 @@
 //! 连接状态与审计计数等 server 语义见架构 §9.2/§17.1，由 server 集成测试覆盖。
 
 use peri_studio_proto::ack::ErrorCode;
+use peri_studio_proto::action::ActionEnvelope;
 use peri_studio_proto::conn::{AuthResponse, DocId};
 use peri_studio_proto::frame::{Frame, ProtoError};
 use peri_studio_proto::hmac::{
     compute_mac, derive_mac_key, generate_connection_context, mac_input, verify_mac, SeenNonces,
 };
 use peri_studio_proto::instance::InstanceHello;
-use peri_studio_proto::whitelist::{m1_allows, m1_check, Direction, M1Check, Role};
+use peri_studio_proto::resource::{
+    OpenResourceUpload, ResourceQuery, RESOURCE_PROTOCOL_VERSION,
+    RESOURCE_PROTOCOL_VERSION_WITH_FS_WRITE,
+};
+use peri_studio_proto::whitelist::{
+    m1_allows, m1_allows_action_type, m1_check, Direction, M1Check, Role,
+};
 use peri_studio_proto::{CHAT_DOC_SCHEMA_VERSION, PROTOCOL_VERSION};
 
 const INSTANCE_TOKEN: [u8; 32] = *b"0123456789abcdef0123456789abcdef";
@@ -146,4 +153,37 @@ fn protocol_version_consistency() {
 fn base64_encode(b: &[u8]) -> String {
     use base64::Engine as _;
     base64::engine::general_purpose::STANDARD.encode(b)
+}
+
+/// 拖拽上传 wire：open-upload + fs/write-file 白名单与版本门控常量。
+#[test]
+fn upload_wire_whitelist_and_protocol_version() {
+    assert_eq!(RESOURCE_PROTOCOL_VERSION, 5);
+    assert_eq!(RESOURCE_PROTOCOL_VERSION_WITH_FS_WRITE, 5);
+    assert!(m1_allows_action_type("fs/write-file"));
+
+    let open = Frame::ResourceQuery(ResourceQuery::OpenUpload {
+        request_id: "req-1".into(),
+        project_id: "project-1".into(),
+        payload: OpenResourceUpload {
+            path: "src/main.rs".into(),
+            expected_bytes: None,
+            sha256: None,
+        },
+    });
+    let raw = serde_json::to_string(&open).unwrap();
+    assert_eq!(Frame::parse(&raw).unwrap(), open);
+
+    let write = Frame::Action(ActionEnvelope::FsWriteFile {
+        command_id: "cmd-1".into(),
+        payload: peri_studio_proto::action::FsWriteFilePayload {
+            project_id: "project-1".into(),
+            path: "src/main.rs".into(),
+            upload_id: "upload-1".into(),
+            if_match: None,
+            if_none_match: Some("*".into()),
+        },
+    });
+    let write_raw = serde_json::to_string(&write).unwrap();
+    assert_eq!(Frame::parse(&write_raw).unwrap(), write);
 }

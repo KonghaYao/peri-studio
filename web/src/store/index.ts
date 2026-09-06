@@ -1,6 +1,6 @@
 // peri-studio Web 面板组合根：装配协议、投影与领域控制器。
 
-import { createSignal, createEffect } from 'solid-js';
+import { createSignal, createEffect, createRoot } from 'solid-js';
 import * as H from '../panel/lib/protocol';
 import { DocStore } from '../panel/lib/doc-store';
 import type { ChatEntry } from '@/entities/chat/chat-view';
@@ -49,8 +49,29 @@ import {
   handleResourceUpdate,
   installResourceStore,
   replayResourceSubscriptions,
+  refreshResourceProject,
   resetResourceProject,
 } from '../panel/lib/resource-store';
+import {
+  bindWorkspaceUploadActionSender,
+  bindWorkspaceUploadExplorerRefresh,
+  enqueueComposerRootUpload,
+  enqueueExplorerUpload,
+  enqueueQuickStartRootUpload,
+  forwardWorkspaceUploadActionAck,
+  forwardWorkspaceUploadActionError,
+  forwardWorkspaceUploadResourceResult,
+  markWorkspaceUploadReferenceInjected,
+  resetWorkspaceUploadAssembly,
+  retryWorkspaceUpload,
+  workspaceUploadAvailable,
+  workspaceUploadBlockedMessage,
+  workspaceUploadBatch,
+  workspaceUploadLiveMessage,
+  workspaceUploadOrigin,
+  workspaceUploadProgressPercent,
+  workspaceUploadTileStatus,
+} from './workspace-upload';
 
 export const [selectedCid, setSelectedCid] = createSignal<string | null>(null);
 export { connectionReady, readOnly };
@@ -163,6 +184,9 @@ function sendAction(frame: ActionFrame, label: string, options: ActionOptions = 
   return true;
 }
 
+bindWorkspaceUploadActionSender(sendAction);
+bindWorkspaceUploadExplorerRefresh(() => refreshResourceProject());
+
 installStoreWiring({
   setPersistentErrors,
   hasUncertain: (commandId) => commands.hasUncertain(commandId),
@@ -238,6 +262,7 @@ function onFrame(frame: H.DownstreamFrame): void {
       break;
     case 'resource_result':
       if (forwardRemoteDirectoryResourceResult(frame as import('../panel/lib/resource-protocol').ResourceResultFrame)) break;
+      if (forwardWorkspaceUploadResourceResult(frame as import('../panel/lib/resource-protocol').ResourceResultFrame)) break;
       handleResourceResult(frame as import('../panel/lib/resource-protocol').ResourceResultFrame);
       break;
     case 'action_ack':
@@ -294,6 +319,7 @@ function onFrame(frame: H.DownstreamFrame): void {
 }
 
 function onAck(ack: Ack): void {
+  forwardWorkspaceUploadActionAck(ack);
   const disposition = commands.acknowledge(ack);
   // A terminal acknowledgement that arrives after timeout/disconnect can
   // reconcile local uncertainty, but must not replay an expired continuation.
@@ -308,6 +334,7 @@ function onAck(ack: Ack): void {
 }
 
 function onActionError(err: ActionError): void {
+  const uploadOwned = forwardWorkspaceUploadActionError(err as Record<string, unknown>);
   if (promptRecoveryOwnsError(err)) return;
   if (rewindOwnsError(err)) return;
   if (ownsMcpAppsError(err)) return;
@@ -315,7 +342,7 @@ function onActionError(err: ActionError): void {
   const messageDeliveryOwnsError = ownsMessageDeliveryError(err.commandId, err.code);
   commands.fail(err);
   settleProjectedMessageDelivery(err.commandId);
-  if (messageDeliveryOwnsError) return;
+  if (uploadOwned || messageDeliveryOwnsError) return;
   const reason = err.code ? ERROR_REASONS[err.code] : undefined;
   persistActionProblem(reason || err.code || 'Operation failed', err.message || 'The server provided no further information.', err.commandId);
 }
@@ -453,10 +480,12 @@ sessionCatalogBootstrap = createSessionCatalogBootstrap({
 });
 scheduleSessionCatalogBootstrap = () => sessionCatalogBootstrap?.schedule();
 
-createEffect(() => {
-  const ready = connectionReady();
-  const hydrated = registryHydrated();
-  if (ready && hydrated) scheduleSessionCatalogBootstrap();
+createRoot(() => {
+  createEffect(() => {
+    const ready = connectionReady();
+    const hydrated = registryHydrated();
+    if (ready && hydrated) scheduleSessionCatalogBootstrap();
+  });
 });
 
 export const createProject = (name: string, cwd: string, instanceId?: string, onCommitted?: () => void, onFailed?: () => void) =>
@@ -572,6 +601,7 @@ export function resetAuthenticatedSession(options: { preserveLocalDrafts?: boole
   setRegistryHydrated(false);
   store.clear();
   resetResourceProject();
+  resetWorkspaceUploadAssembly();
   // Keep this last: disconnect/reset callbacks are allowed to publish feedback,
   // but no notification from the previous principal may survive this boundary.
   toastStore.clear();
@@ -636,3 +666,19 @@ export {
   resourceDiffPreview,
   resourceWorkspace,
 } from '../panel/lib/resource-store';
+export {
+  enqueueComposerRootUpload,
+  enqueueExplorerUpload,
+  enqueueQuickStartRootUpload,
+  markWorkspaceUploadReferenceInjected,
+  retryWorkspaceUpload,
+  workspaceUploadAvailable,
+  workspaceUploadBlockedMessage,
+  workspaceUploadBatch,
+  workspaceUploadLiveMessage,
+  workspaceUploadOrigin,
+  workspaceUploadProgressPercent,
+  workspaceUploadTileStatus,
+  resetWorkspaceUploadAssembly,
+};
+export type { WorkspaceUploadOrigin } from './workspace-upload';

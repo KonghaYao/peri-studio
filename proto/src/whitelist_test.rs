@@ -221,13 +221,14 @@ fn m1_action_type_subset() {
         "machine/set-auto-reconnect",
         "machine/remove",
         "machine/restore",
+        "fs/write-file",
     ] {
         assert!(m1_allows_action_type(t), "{t} 应在 M1");
     }
     for t in ["events/subscribe", "events/unsubscribe"] {
         assert!(!m1_allows_action_type(t), "{t} 应不在 M1");
     }
-    assert_eq!(crate::whitelist::M1_ACTION_TYPES.len(), 46);
+    assert_eq!(crate::whitelist::M1_ACTION_TYPES.len(), 47);
 }
 
 /// 全量注册表：54 个 tag（含 terminal 与 instance/forward 系）。

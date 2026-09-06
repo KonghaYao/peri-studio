@@ -96,6 +96,7 @@ pub const M1_ACTION_TYPES: &[&str] = &[
     "machine/set-auto-reconnect",
     "machine/remove",
     "machine/restore",
+    "fs/write-file",
 ];
 
 /// `action` 帧的 `type` 子集是否在 M1 白名单内。

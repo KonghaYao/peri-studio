@@ -23,6 +23,7 @@ use crate::web::parse::{
     valid_origin,
 };
 use crate::web::pick_directory_http::serve_pick_directory;
+use crate::web::resource_upload_http::serve_resource_upload;
 use crate::web::static_::cache_headers_for_static;
 #[cfg(test)]
 use crate::web::static_::route;
@@ -268,6 +269,44 @@ async fn serve_http_inner(
             "application/json",
             &body,
             &security_headers(),
+        )
+        .await;
+    }
+    if let Some(upload_id) = path.strip_prefix("/api/resource-uploads/") {
+        let Some(resources) = resources else {
+            return write_http(
+                &mut stream,
+                "404 Not Found",
+                "application/json",
+                br#"{"error":"not_found"}"#,
+                &security_headers(),
+            )
+            .await;
+        };
+        if !peer.ip().is_loopback() || !valid_loopback_host(host.unwrap_or_default()) {
+            return write_http(
+                &mut stream,
+                "403 Forbidden",
+                "application/json",
+                br#"{"error":"forbidden"}"#,
+                &security_headers(),
+            )
+            .await;
+        }
+        let buffered_body = buf[head_end..].to_vec();
+        return serve_resource_upload(
+            stream,
+            peer,
+            auth,
+            resources,
+            upload_id,
+            method,
+            cookie,
+            origin.is_some() && valid_origin(origin, host.unwrap_or_default()),
+            transfer_encoding,
+            content_length,
+            buffered_body,
+            deadline,
         )
         .await;
     }

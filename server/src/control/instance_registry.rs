@@ -146,6 +146,7 @@ struct InstanceEntry {
     token_id: String,
     hostname: String,
     resource_protocol_version: Option<u32>,
+    resource_write: bool,
     terminal_protocol_version: Option<u32>,
     terminal_ready: bool,
     conn: Option<mpsc::Sender<OutboundMsg>>,
@@ -254,6 +255,11 @@ impl InstanceRegistry {
                     .pointer("/resources/protocolVersion")
                     .and_then(serde_json::Value::as_u64)
                     .and_then(|value| u32::try_from(value).ok()),
+                resource_write: hello
+                    .caps
+                    .pointer("/resources/write")
+                    .and_then(serde_json::Value::as_bool)
+                    .unwrap_or(false),
                 terminal_protocol_version: hello
                     .caps
                     .pointer("/terminals/protocolVersion")

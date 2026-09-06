@@ -19,6 +19,8 @@ mod machine_service;
 mod project_service;
 mod resource_projection;
 mod resource_service;
+pub(crate) mod resource_upload_service;
+pub(crate) mod resource_upload_store;
 mod session_catalog;
 mod terminal_service;
 mod workspace_registry;
