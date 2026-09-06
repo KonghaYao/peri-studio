@@ -11,6 +11,13 @@
 // （连接状态机见 ws-client.ts）。
 
 import { isResourceResult, type ResourceResultFrame } from './resource-protocol';
+import {
+  decodeTerminalFrame,
+  type TerminalErrorFrame,
+  type TerminalExitFrame,
+  type TerminalOpenedFrame,
+  type TerminalOutputFrame,
+} from '@/shared/protocol/terminal';
 import { isServerDocId } from './doc-id';
 
 /** 注册表 doc id（与 proto/src/conn.rs 的 DocId::REGISTRY 对齐），常驻订阅。 */
@@ -214,6 +221,10 @@ export type DownstreamFrame =
   | ({ t: 'mcp_app_session' } & McpAppSessionFrame)
   | ({ t: 'mcp_app_resource' } & McpAppResourceFrame)
   | ({ t: 'mcp_app_call_result' } & McpAppCallResultFrame)
+  | TerminalOpenedFrame
+  | TerminalOutputFrame
+  | TerminalExitFrame
+  | TerminalErrorFrame
   | { t: 'auth_error'; [key: string]: unknown }
   | ResourceResultFrame
   | { t: string; [key: string]: unknown };
@@ -287,6 +298,11 @@ function decodeKnownFrame(frame: Record<string, unknown>): DownstreamFrame | nul
       return null;
     case 'mcp_app_call_result':
       return isMcpAppCallResultFrame(frame) ? frame as DownstreamFrame : null;
+    case 'terminal_opened':
+    case 'terminal_output':
+    case 'terminal_exit':
+    case 'terminal_error':
+      return decodeTerminalFrame(frame) as DownstreamFrame | null;
     case 'auth_error':
       return frame as DownstreamFrame;
     case 'resource_result':

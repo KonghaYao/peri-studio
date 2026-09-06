@@ -99,6 +99,72 @@ pub(super) async fn handle_inbound(
                 }
             });
         }
+        Frame::InstanceTerminalOpen(open) => {
+            if !authenticated {
+                state
+                    .pre_auth_dropped
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                tracing::warn!(target: "peri_studio::instance",
+                    "instance/terminal_open received before authentication (dropped, not executed)");
+                return;
+            }
+            let host = state.terminal_host.clone();
+            let opened = host.open(open).await;
+            let tid = opened.terminal_id.clone();
+            let ok = opened.ok;
+            if let Err(e) = handle.send(Frame::InstanceTerminalOpened(opened)).await {
+                host.close(peri_studio_proto::terminal::InstanceTerminalClose { terminal_id: tid });
+                tracing::warn!(target: "peri_studio::instance", error = ?e,
+                    "terminal_opened send failed");
+                return;
+            }
+            if ok {
+                host.start_reader(&tid);
+            }
+        }
+        Frame::InstanceTerminalInput(input) => {
+            if !authenticated {
+                state
+                    .pre_auth_dropped
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                tracing::warn!(target: "peri_studio::instance",
+                    "instance/terminal_input received before authentication (dropped, not executed)");
+                return;
+            }
+            let terminal_id = input.terminal_id.clone();
+            if let Err(error) = state.terminal_host.input(input).await {
+                tracing::warn!(target: "peri_studio::instance", terminal_id = %terminal_id,
+                    error = %error, "terminal input failed; closing PTY");
+                state.terminal_host.fail(&terminal_id, "input-error");
+            }
+        }
+        Frame::InstanceTerminalResize(resize) => {
+            if !authenticated {
+                state
+                    .pre_auth_dropped
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                tracing::warn!(target: "peri_studio::instance",
+                    "instance/terminal_resize received before authentication (dropped, not executed)");
+                return;
+            }
+            let terminal_id = resize.terminal_id.clone();
+            if let Err(error) = state.terminal_host.resize(resize).await {
+                tracing::warn!(target: "peri_studio::instance", terminal_id = %terminal_id,
+                    error = %error, "terminal resize failed; closing PTY");
+                state.terminal_host.fail(&terminal_id, "resize-error");
+            }
+        }
+        Frame::InstanceTerminalClose(close) => {
+            if !authenticated {
+                state
+                    .pre_auth_dropped
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                tracing::warn!(target: "peri_studio::instance",
+                    "instance/terminal_close received before authentication (dropped, not executed)");
+                return;
+            }
+            state.terminal_host.close(close);
+        }
         other => {
             tracing::warn!(target: "peri_studio::instance", tag = %other.tag(),
                 "inbound frame not handled by instance (dropped and counted)");

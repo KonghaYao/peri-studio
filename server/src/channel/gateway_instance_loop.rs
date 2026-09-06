@@ -83,17 +83,27 @@ impl Gateway {
             return;
         }
         let instance_id = ctx.name.clone();
+        let instance_conn = InstanceConn { tx: out_tx.clone() };
+        let forced_disconnect = tokio_util::sync::CancellationToken::new();
         // hello 注册（§4.5 幂等替换：fencing 旧连接）。
-        let outcome = self
-            .deps
-            .instance
-            .on_hello(
+        let outcome = match self
+            .terminals
+            .on_instance_connection_hello(
                 &instance_id,
                 &ctx.token_id,
-                InstanceConn { tx: out_tx.clone() },
+                instance_conn.clone(),
                 &hello,
+                forced_disconnect.clone(),
             )
-            .await;
+            .await
+        {
+            Ok(outcome) => outcome,
+            Err(error) => {
+                warn!(instance_id = %instance_id, error = ?error, "instance terminal registration failed");
+                self.conns.unregister(conn_id);
+                return;
+            }
+        };
         audit(
             "instance.hello",
             None,
@@ -136,6 +146,10 @@ impl Gateway {
 
         let close_code = loop {
             tokio::select! {
+                _ = forced_disconnect.cancelled() => {
+                    warn!(instance_id = %instance_id, "instance connection fenced after cleanup backpressure");
+                    break 1011;
+                }
                 _ = auth_ticker.tick() => {
                     if self.auth.lock().await.revalidate_instance_identity(&ctx.token_id).is_err() { break 4502; }
                 }
@@ -175,7 +189,7 @@ impl Gateway {
                                 Frame::InstanceHeartbeat(hb) => {
                                     match self.deps.instance.on_connection_heartbeat(
                                         &instance_id,
-                                        &InstanceConn { tx: out_tx.clone() },
+                                        &instance_conn,
                                         &hb,
                                     ).await {
                                         Ok(heartbeat) => {
@@ -228,6 +242,21 @@ impl Gateway {
                                     self.deps.instance.on_ack(&instance_id, &request_id,
                                         InstanceAck::Resource(result)).await;
                                 }
+                                Frame::InstanceTerminalOpened(opened) => {
+                                    self.terminals
+                                        .on_instance_opened(&instance_id, &instance_conn, opened)
+                                        .await;
+                                }
+                                Frame::InstanceTerminalOutput(output) => {
+                                    self.terminals
+                                        .on_instance_output(&instance_id, &instance_conn, output)
+                                        .await;
+                                }
+                                Frame::InstanceTerminalExit(exit) => {
+                                    self.terminals
+                                        .on_instance_exit(&instance_id, &instance_conn, exit)
+                                        .await;
+                                }
                                 Frame::InstanceProcessExit(exit) => {
                                     let r = self.relay.on_process_exit(&instance_id, &exit).await;
                                     trace_consume(&r);
@@ -277,6 +306,7 @@ impl Gateway {
             .on_disconnect(&instance_id, &InstanceConn { tx: out_tx.clone() })
             .await;
         if was_online {
+            self.terminals.on_instance_disconnect(&instance_id).await;
             if let Err(e) = self.relay.on_instance_disconnect(&instance_id).await {
                 warn!(instance_id = %instance_id, error = ?e, "instance disconnect cleanup failed");
             }

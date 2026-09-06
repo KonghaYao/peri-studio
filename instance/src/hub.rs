@@ -114,6 +114,7 @@ pub(super) struct HubState {
     pub(super) child_tx: mpsc::Sender<ChildOutput>,
     /// 资源查询宿主在 daemon 生命周期内共享，保证同一仓库 mutation 串行。
     pub(super) resource_host: crate::resource::ResourceHost,
+    pub(super) terminal_host: crate::terminal::TerminalHost,
     /// 无法提取 sessionId 的帧计数（§3.3 本地缺口）。
     pub(super) dropped_no_sid: AtomicU64,
     /// stdout 超长行丢弃计数（问题 4 本地缺口）。
@@ -176,6 +177,7 @@ pub async fn run(config: InstanceConfig, shutdown: CancellationToken) -> anyhow:
     // 3. 共享状态 + 子进程事件汇聚通道（有界，问题 3——不再 per-spawn 建
     // unbounded 转发层，spawn 直接向本通道投递）。
     let (child_tx, mut child_rx) = mpsc::channel::<ChildOutput>(CHILD_CHANNEL_CAP);
+    let (terminal_tx, mut terminal_rx) = mpsc::channel::<crate::terminal::TerminalEvent>(512);
     // hostname：HOSTNAME env（shell 导出）优先；macOS/daemon 场景常无该
     // env（hello hostname="unknown"，registry 视图/面板显示断点）→ 回退
     // libc gethostname。两者都失败才用 "unknown"。
@@ -213,6 +215,7 @@ pub async fn run(config: InstanceConfig, shutdown: CancellationToken) -> anyhow:
         hostname,
         child_tx,
         resource_host: crate::resource::ResourceHost::default(),
+        terminal_host: crate::terminal::TerminalHost::new(terminal_tx),
         dropped_no_sid: AtomicU64::new(0),
         oversize_lines: AtomicU64::new(0),
         oversize_gaps: AtomicU64::new(0),
@@ -274,6 +277,7 @@ pub async fn run(config: InstanceConfig, shutdown: CancellationToken) -> anyhow:
                     }
                     TransportEvent::Disconnected => {
                         authenticated = false;
+                        state.terminal_host.close_all();
                         mark_all_buffered(&state);
                         if let Some(h) = resync.take() {
                             h.abort();
@@ -297,6 +301,7 @@ pub async fn run(config: InstanceConfig, shutdown: CancellationToken) -> anyhow:
                         };
                         tracing::error!(target: "peri_studio::instance", reason = reason_str,
                             "transport stopped reconnecting, daemon ending");
+                        state.terminal_host.close_all();
                         // §8 第一层：daemon 结束前进程组 kill 全部会话——仅靠
                         // kill_on_drop 只杀直接子进程，孙进程（shell/工具）会
                         // 孤儿残留到下次启动清理（Shutdown 分支已 kill，幂等）。
@@ -313,6 +318,10 @@ pub async fn run(config: InstanceConfig, shutdown: CancellationToken) -> anyhow:
                 let Some(out) = out else { continue };
                 forward_child_output(&state, &handle, &config, out, authenticated).await;
             }
+            terminal_evt = terminal_rx.recv() => {
+                let Some(ev) = terminal_evt else { continue };
+                forward_terminal_event(&state, &handle, ev).await;
+            }
             _ = heartbeat.tick() => {
                 if handle.is_authenticated() {
                     send_heartbeat(&state, &handle).await;
@@ -320,6 +329,7 @@ pub async fn run(config: InstanceConfig, shutdown: CancellationToken) -> anyhow:
             }
             _ = shutdown.cancelled() => {
                 tracing::info!(target: "peri_studio::instance", "shutdown requested, shutting down gracefully");
+                state.terminal_host.close_all();
                 let had_acps = shutdown_all(&state, &config).await;
                 // 水位收尾（问题 20）：shutdown_all 只杀进程，Exit 事件由 stdout
                 // 读任务 wait 后经 child_rx 上报；主循环即将退出不再消费——短暂
@@ -343,6 +353,7 @@ pub async fn run(config: InstanceConfig, shutdown: CancellationToken) -> anyhow:
                         owner_control_error = Some(error);
                     }
                 }
+                state.terminal_host.close_all();
                 let had_acps = shutdown_all(&state, &config).await;
                 drain_exit_events(&state, &handle, &config, &mut child_rx, had_acps).await;
                 handle.shutdown();
@@ -414,6 +425,47 @@ fn build_hello(state: &HubState, auth: &AuthClient) -> (AuthSession, InstanceHel
 // ---------------------------------------------------------------------------
 // 心跳 / 查询接口
 // ---------------------------------------------------------------------------
+
+/// 终端输出/退出上行（不进入 ACP 缓冲）。
+async fn forward_terminal_event(
+    state: &HubState,
+    handle: &TransportHandle,
+    ev: crate::terminal::TerminalEvent,
+) {
+    use peri_studio_proto::terminal::{
+        InstanceTerminalClose, InstanceTerminalExit, InstanceTerminalOutput,
+    };
+    let terminal_id = match &ev {
+        crate::terminal::TerminalEvent::Output { terminal_id, .. }
+        | crate::terminal::TerminalEvent::Exit { terminal_id, .. } => terminal_id.clone(),
+    };
+    let frame = match ev {
+        crate::terminal::TerminalEvent::Output {
+            terminal_id,
+            seq,
+            data,
+        } => Frame::InstanceTerminalOutput(InstanceTerminalOutput {
+            terminal_id,
+            seq,
+            data,
+        }),
+        crate::terminal::TerminalEvent::Exit {
+            terminal_id,
+            exit_code,
+            signal,
+        } => Frame::InstanceTerminalExit(InstanceTerminalExit {
+            terminal_id,
+            exit_code,
+            signal,
+        }),
+    };
+    if let Err(error) = handle.send(frame).await {
+        state
+            .terminal_host
+            .close(InstanceTerminalClose { terminal_id });
+        tracing::warn!(target: "peri_studio::instance", ?error, "terminal upstream send failed");
+    }
+}
 
 /// 心跳：`instance/heartbeat { load, alive_sessions }`（§4.5）。
 /// load【决策】= min(100, alive×20)（§17.1 无精确语义）。

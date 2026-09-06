@@ -9,6 +9,7 @@ import {
   ResourceWorkbenchLayout,
   SourceControlLayout,
   StatusAreaLayout,
+  TerminalDockLayout,
 } from '@/layers';
 import { DemoSection, DomainSection, TierHeader } from '@/pages/shared/DemoSection';
 
@@ -53,6 +54,16 @@ export function LayersPage() {
       <DomainSection title="Status · 状态区" description="右栏或底栏任务面板。">
         <DemoSection id="status-area" title="Status area" description="Tabs + 紧凑列表；面板最大高 132px。">
           <StatusAreaLayout />
+        </DemoSection>
+      </DomainSection>
+
+      <DomainSection title="Terminal · 底栏 Dock" description="PTY 底栏；折叠仅隐藏 viewport。">
+        <DemoSection
+          id="terminal-dock"
+          title="Terminal dock"
+          description="白底发丝顶边、紧凑 header；viewport 深色 monospace。Terminal 固定绑定创建时的 project。"
+        >
+          <TerminalDockLayout />
         </DemoSection>
       </DomainSection>
 

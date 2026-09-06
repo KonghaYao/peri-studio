@@ -9,6 +9,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use tokio::sync::{mpsc, oneshot, RwLock};
+use tokio_util::sync::CancellationToken;
 use tracing::{debug, info, warn};
 
 use peri_studio_proto::frame::Frame;
@@ -134,6 +135,9 @@ pub enum InstanceError {
     /// instance 未声明当前资源协议能力，不能向其发送资源帧。
     #[error("instance does not support the resource protocol")]
     ResourceUnsupported,
+    /// instance 未声明终端协议能力。
+    #[error("instance does not support the terminal protocol")]
+    TerminalUnsupported,
 }
 
 /// instance 条目（进程内状态）。
@@ -142,7 +146,10 @@ struct InstanceEntry {
     token_id: String,
     hostname: String,
     resource_protocol_version: Option<u32>,
+    terminal_protocol_version: Option<u32>,
+    terminal_ready: bool,
     conn: Option<mpsc::Sender<OutboundMsg>>,
+    disconnect: Option<CancellationToken>,
     last_heartbeat: Instant,
     /// command_id → ack oneshot（spawn/kill ack 跟踪，§4.5）。
     pending_acks: HashMap<String, oneshot::Sender<InstanceAck>>,
@@ -194,12 +201,38 @@ impl InstanceRegistry {
         conn: InstanceConn,
         hello: &InstanceHello,
     ) -> HelloOutcome {
+        self.register_connection(instance_id, token_id, conn, hello, None)
+            .await
+    }
+
+    /// 生产 gateway 注册入口：绑定强制断链令牌，供关键清理帧背压失败时 fail-close。
+    pub async fn on_connection_hello(
+        &self,
+        instance_id: &str,
+        token_id: &str,
+        conn: InstanceConn,
+        hello: &InstanceHello,
+        disconnect: CancellationToken,
+    ) -> HelloOutcome {
+        self.register_connection(instance_id, token_id, conn, hello, Some(disconnect))
+            .await
+    }
+
+    async fn register_connection(
+        &self,
+        instance_id: &str,
+        token_id: &str,
+        conn: InstanceConn,
+        hello: &InstanceHello,
+        disconnect: Option<CancellationToken>,
+    ) -> HelloOutcome {
         let mut instances = self.inner.instances.write().await;
         let fenced = if let Some(old) = instances.get(instance_id) {
-            if let Some(old_tx) = &old.conn {
-                // fencing：旧连接关闭（1011 通用失败；旧连接事件经 gateway
-                // 侧连接结束路径丢弃，§4.5）。
-                let _ = old_tx.send(OutboundMsg::Close(1011)).await;
+            if let Some(disconnect) = &old.disconnect {
+                disconnect.cancel();
+            } else if let Some(old_tx) = &old.conn {
+                // 测试/嵌入式调用没有强制断链令牌时，仍以有界非阻塞 close fencing。
+                let _ = old_tx.try_send(OutboundMsg::Close(1011));
             }
             true
         } else {
@@ -221,7 +254,14 @@ impl InstanceRegistry {
                     .pointer("/resources/protocolVersion")
                     .and_then(serde_json::Value::as_u64)
                     .and_then(|value| u32::try_from(value).ok()),
+                terminal_protocol_version: hello
+                    .caps
+                    .pointer("/terminals/protocolVersion")
+                    .and_then(serde_json::Value::as_u64)
+                    .and_then(|value| u32::try_from(value).ok()),
+                terminal_ready: disconnect.is_none(),
                 conn: Some(conn.tx),
+                disconnect,
                 last_heartbeat: Instant::now(),
                 pending_acks: HashMap::new(),
                 chat_epochs: epochs.clone(),
@@ -366,6 +406,7 @@ impl InstanceRegistry {
         let was_online = entry.state != InstanceState::Offline;
         entry.state = InstanceState::Offline;
         entry.conn = None;
+        entry.disconnect = None;
         was_online
     }
 

@@ -13,4 +13,5 @@ pub mod global;
 pub mod hub;
 pub mod resource;
 pub mod router;
+pub mod terminal;
 pub mod transport;

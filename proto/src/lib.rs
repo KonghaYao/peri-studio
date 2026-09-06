@@ -31,14 +31,15 @@ pub mod conn;
 pub mod event;
 pub mod frame;
 pub mod hmac;
-pub mod mcp_apps;
 pub mod instance;
+pub mod mcp_apps;
 pub mod oauth;
 pub mod protocol;
 pub mod resource;
 pub mod rewind;
 pub mod schema;
 pub mod session;
+pub mod terminal;
 pub mod version;
 pub mod whitelist;
 pub mod ysync;
@@ -55,14 +56,14 @@ pub use instance::{
     BufferedFrame, InstanceBufferSync, InstanceEvent, InstanceHeartbeat, InstanceHello,
     InstanceKill, InstanceKillAck, InstanceProcessExit, InstanceSpawn, InstanceSpawnAck,
 };
+pub use mcp_apps::{
+    McpAppCallPayload, McpAppCallResultFrame, McpAppOpenPayload, McpAppResourceFrame,
+    McpAppResourcePayload, McpAppSessionFrame,
+};
 pub use oauth::{
     EphemeralAuthorizationUrl, McpConnectionStatus, McpOAuthAuthorizationFrame,
     McpOAuthEventStatus, McpOAuthFailureClass, McpOAuthFrame, McpOAuthStatus, McpServerInfo,
     McpServersFrame,
-};
-pub use mcp_apps::{
-    McpAppCallPayload, McpAppOpenPayload, McpAppResourceFrame, McpAppResourcePayload,
-    McpAppCallResultFrame, McpAppSessionFrame,
 };
 pub use resource::{ResourceQuery, ResourceResult};
 pub use rewind::{
@@ -70,6 +71,14 @@ pub use rewind::{
     RewindPreviewFrame,
 };
 pub use session::{PromptDeliveryStatus, PromptStatusFrame, PromptStatusItem, SessionListFrame};
+pub use terminal::{
+    decode_terminal_chunk, encode_terminal_chunk, validate_terminal_dims, validate_terminal_id,
+    InstanceTerminalClose, InstanceTerminalExit, InstanceTerminalInput, InstanceTerminalOpen,
+    InstanceTerminalOpened, InstanceTerminalOutput, InstanceTerminalResize, TerminalClose,
+    TerminalError, TerminalErrorCode, TerminalExit, TerminalInput, TerminalOpen, TerminalOpened,
+    TerminalOutput, TerminalResize, MAX_TERMINALS_PER_INSTANCE_HOST, MAX_TERMINALS_PER_PRINCIPAL,
+    TERMINAL_PROTOCOL_VERSION,
+};
 pub use version::{
     CHAT_DOC_SCHEMA_VERSION, PROTOCOL_VERSION, REGISTRY_DOC_SCHEMA_VERSION,
     SESSION_DOC_SCHEMA_VERSION, Y_UPDATE_ENCODING_VERSION,

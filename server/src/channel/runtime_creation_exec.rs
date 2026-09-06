@@ -15,11 +15,11 @@
 //! 职责边界：本文件只做「驱动与屏障推进」，不持有失败裁决语义（裁决在
 //! cleanup 模块）也不持有会话绑定语义（绑定在 bind 模块）。
 
+use crate::channel::spawn_env::default_acp_spawn_env;
 use chrono::Utc;
 use peri_studio_proto::ack::ErrorCode;
 use peri_studio_proto::action::ActionEnvelope;
 use peri_studio_proto::instance::InstanceSpawn;
-use crate::channel::spawn_env::default_acp_spawn_env;
 use tracing::warn;
 use uuid::Uuid;
 
@@ -161,9 +161,9 @@ impl RuntimeCreation {
                     }
                     // spawn 不会产生 MalformedFrame（防御分支）：协议 bug 属
                     // 本地失败，无需 runtime 清理。
-                    InstanceError::MalformedFrame(_) | InstanceError::ResourceUnsupported => {
-                        CreateFailureBoundary::LocalOnly
-                    }
+                    InstanceError::MalformedFrame(_)
+                    | InstanceError::ResourceUnsupported
+                    | InstanceError::TerminalUnsupported => CreateFailureBoundary::LocalOnly,
                 };
                 let code = instance_error_code(&error);
                 self.fail(

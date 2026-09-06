@@ -9,6 +9,7 @@ import { resourceWorkbenchRequest } from '../../panel/lib/open-workspace-from-to
 import { ResourceDiffEditor } from '@/widgets/resource/ResourceDiffEditor';
 import { ResourceFileEditor } from '@/widgets/resource/ResourceFileEditor';
 import { ResourceFloatingPanel } from '@/widgets/resource/ResourceFloatingPanel';
+import { TerminalDock } from '@/widgets/terminal/TerminalDock';
 import { workbenchFilePreviewLeftOffset } from '@/widgets/resource/resource-panel-layout';
 import { SettingsDialog } from './SettingsDialog';
 
@@ -193,17 +194,20 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
         class="absolute top-0 bottom-0 left-5 w-2 cursor-col-resize rounded-full bg-transparent transition-colors pointer-events-auto group-hover:bg-sidebar-resize-handle-hover group-focus-visible:bg-sidebar-resize-handle-hover"
         onPointerDown={startSidebarResize}
       /></div>
-      <main ref={main} data-testid="conversation-pane" class="conversation-pane min-w-0 min-h-0 overflow-hidden">
-        <Show
-          when={mobile() && resourceFilePreview()}
-          fallback={
-            <Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenResources={openResources} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
-              <ResourceDiffEditor onClose={() => closePreview('diff')} />
-            </Show>
-          }
-        >
-          <ResourceFileEditor onClose={() => closePreview('file')} />
-        </Show>
+      <main ref={main} data-testid="conversation-pane" class="conversation-pane flex min-w-0 min-h-0 flex-col overflow-hidden">
+        <div class="min-h-0 flex-1">
+          <Show
+            when={mobile() && resourceFilePreview()}
+            fallback={
+              <Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenResources={openResources} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
+                <ResourceDiffEditor onClose={() => closePreview('diff')} />
+              </Show>
+            }
+          >
+            <ResourceFileEditor onClose={() => closePreview('file')} />
+          </Show>
+        </div>
+        <TerminalDock />
       </main>
       <Show when={!mobile() && resourceFilePreview()}>
         <ResourceFloatingPanel

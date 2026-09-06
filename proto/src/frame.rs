@@ -37,6 +37,12 @@ use crate::resource::{
 use crate::rewind::{RewindCandidatesFrame, RewindPreviewFrame};
 use crate::session::PromptStatusFrame;
 use crate::session::SessionListFrame;
+use crate::terminal::{
+    InstanceTerminalClose, InstanceTerminalExit, InstanceTerminalInput, InstanceTerminalOpen,
+    InstanceTerminalOpened, InstanceTerminalOutput, InstanceTerminalResize, TerminalClose,
+    TerminalError, TerminalExit, TerminalInput, TerminalOpen, TerminalOpened, TerminalOutput,
+    TerminalResize,
+};
 use crate::ysync::{YsyncAwareness, YsyncSubscribe, YsyncSync, YsyncUnsubscribe, YsyncUpdate};
 
 /// 全量帧 tag 注册表（§3.2 完整面，含 M2/M3 保留帧）。
@@ -84,6 +90,21 @@ pub static FRAME_TAGS: &[FrameTag] = &[
     FrameTag("resource_result"),
     FrameTag("instance/resource_query"),
     FrameTag("instance/resource_result"),
+    FrameTag("terminal_open"),
+    FrameTag("terminal_input"),
+    FrameTag("terminal_resize"),
+    FrameTag("terminal_close"),
+    FrameTag("terminal_opened"),
+    FrameTag("terminal_output"),
+    FrameTag("terminal_exit"),
+    FrameTag("terminal_error"),
+    FrameTag("instance/terminal_open"),
+    FrameTag("instance/terminal_input"),
+    FrameTag("instance/terminal_resize"),
+    FrameTag("instance/terminal_close"),
+    FrameTag("instance/terminal_opened"),
+    FrameTag("instance/terminal_output"),
+    FrameTag("instance/terminal_exit"),
 ];
 
 /// 帧解析与白名单检查的错误面。
@@ -231,6 +252,51 @@ pub enum Frame {
     /// instance → server 的资源查询结果。
     #[serde(rename = "instance/resource_result")]
     InstanceResourceResult(InstanceResourceResult),
+    /// C→S 打开项目终端（PTY）。
+    #[serde(rename = "terminal_open")]
+    TerminalOpen(TerminalOpen),
+    /// C→S 终端输入。
+    #[serde(rename = "terminal_input")]
+    TerminalInput(TerminalInput),
+    /// C→S 终端尺寸调整。
+    #[serde(rename = "terminal_resize")]
+    TerminalResize(TerminalResize),
+    /// C→S 关闭终端。
+    #[serde(rename = "terminal_close")]
+    TerminalClose(TerminalClose),
+    /// S→C 终端已就绪。
+    #[serde(rename = "terminal_opened")]
+    TerminalOpened(TerminalOpened),
+    /// S→C 终端输出。
+    #[serde(rename = "terminal_output")]
+    TerminalOutput(TerminalOutput),
+    /// S→C 终端进程退出。
+    #[serde(rename = "terminal_exit")]
+    TerminalExit(TerminalExit),
+    /// S→C 终端错误。
+    #[serde(rename = "terminal_error")]
+    TerminalError(TerminalError),
+    /// S→M 打开 PTY。
+    #[serde(rename = "instance/terminal_open")]
+    InstanceTerminalOpen(InstanceTerminalOpen),
+    /// S→M 终端输入。
+    #[serde(rename = "instance/terminal_input")]
+    InstanceTerminalInput(InstanceTerminalInput),
+    /// S→M 终端 resize。
+    #[serde(rename = "instance/terminal_resize")]
+    InstanceTerminalResize(InstanceTerminalResize),
+    /// S→M 关闭终端。
+    #[serde(rename = "instance/terminal_close")]
+    InstanceTerminalClose(InstanceTerminalClose),
+    /// M→S 打开结果。
+    #[serde(rename = "instance/terminal_opened")]
+    InstanceTerminalOpened(InstanceTerminalOpened),
+    /// M→S 终端输出。
+    #[serde(rename = "instance/terminal_output")]
+    InstanceTerminalOutput(InstanceTerminalOutput),
+    /// M→S 终端退出。
+    #[serde(rename = "instance/terminal_exit")]
+    InstanceTerminalExit(InstanceTerminalExit),
     /// M→S ACP 进程退出事件（§4.5）。
     #[serde(rename = "instance/process_exit")]
     InstanceProcessExit(InstanceProcessExit),
@@ -307,6 +373,21 @@ impl Frame {
             Frame::ResourceResult(_) => FrameTag("resource_result"),
             Frame::InstanceResourceQuery(_) => FrameTag("instance/resource_query"),
             Frame::InstanceResourceResult(_) => FrameTag("instance/resource_result"),
+            Frame::TerminalOpen(_) => FrameTag("terminal_open"),
+            Frame::TerminalInput(_) => FrameTag("terminal_input"),
+            Frame::TerminalResize(_) => FrameTag("terminal_resize"),
+            Frame::TerminalClose(_) => FrameTag("terminal_close"),
+            Frame::TerminalOpened(_) => FrameTag("terminal_opened"),
+            Frame::TerminalOutput(_) => FrameTag("terminal_output"),
+            Frame::TerminalExit(_) => FrameTag("terminal_exit"),
+            Frame::TerminalError(_) => FrameTag("terminal_error"),
+            Frame::InstanceTerminalOpen(_) => FrameTag("instance/terminal_open"),
+            Frame::InstanceTerminalInput(_) => FrameTag("instance/terminal_input"),
+            Frame::InstanceTerminalResize(_) => FrameTag("instance/terminal_resize"),
+            Frame::InstanceTerminalClose(_) => FrameTag("instance/terminal_close"),
+            Frame::InstanceTerminalOpened(_) => FrameTag("instance/terminal_opened"),
+            Frame::InstanceTerminalOutput(_) => FrameTag("instance/terminal_output"),
+            Frame::InstanceTerminalExit(_) => FrameTag("instance/terminal_exit"),
         }
     }
 }

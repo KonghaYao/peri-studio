@@ -29,6 +29,10 @@ const FEATURE_OWNERS = {
   mcp_app_resource: { module: 'panel/lib/mcp-apps.ts', prefix: 'handleMcpAppResource' },
   mcp_app_call_result: { module: 'panel/lib/mcp-apps.ts', prefix: 'handleMcpAppCallResult' },
   resource_result: { module: 'panel/lib/resource-store.ts', prefix: 'handleResourceResult' },
+  terminal_opened: { module: 'features/terminal/terminal-session.ts', prefix: 'handleTerminalFrame' },
+  terminal_output: { module: 'features/terminal/terminal-session.ts', prefix: 'handleTerminalFrame' },
+  terminal_exit: { module: 'features/terminal/terminal-session.ts', prefix: 'handleTerminalFrame' },
+  terminal_error: { module: 'features/terminal/terminal-session.ts', prefix: 'handleTerminalFrame' },
   // ysync.update 是唯一含点的标签（[a-z_.]+），由 store 内的 doc-store
   // 实例内联消费（store.applyUpdateFrame），不委托模块 handler。
   'ysync.update': { module: 'shared/yjs/doc-store.ts', prefix: 'applyUpdateFrame' },
@@ -45,8 +49,17 @@ function protocolFrameTags() {
     resourceProtocol.indexOf('export interface ResourceResultFrame'),
     resourceProtocol.indexOf('export function openResourceView'),
   );
+  const terminalProtocol = source('shared/protocol/terminal.ts');
+  const terminalDownstream = terminalProtocol.slice(
+    terminalProtocol.indexOf('export interface TerminalOpenedFrame'),
+    terminalProtocol.indexOf('export type TerminalDownstreamFrame'),
+  );
   const literalTags = (text) => [...text.matchAll(/(?:\||interface\s+\w+\s*\{)[\s\S]*?\bt: '([a-z_.]+)'/g)].map((m) => m[1]);
-  return [...new Set([...literalTags(downstream), ...literalTags(resourceDownstream)])];
+  return [...new Set([
+    ...literalTags(downstream),
+    ...literalTags(resourceDownstream),
+    ...literalTags(terminalDownstream),
+  ])];
 }
 
 function onFrameSwitch() {

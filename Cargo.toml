@@ -57,6 +57,9 @@ hkdf = "0.12"
 base64 = "0.23.1"
 rand = "0.10"  # CSPRNG（默认 features 含 sys_rng）
 
+# --- PTY（instance 终端宿主） ---
+portable-pty = "0.9"
+
 # --- Unix 进程组信号（instance 进程树 kill，§4.1） ---
 libc = "0.2"
 crc32fast = "1.5"

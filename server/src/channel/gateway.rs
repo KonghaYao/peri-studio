@@ -56,7 +56,7 @@ use crate::channel::instance_recovery::RecoveryCoordinator;
 use crate::channel::RelayEventHandler;
 use crate::channel::{ChannelDeps, ConnId, ConnectionRegistry};
 use crate::config::Config;
-use crate::control::{ResourceService, StoreSink};
+use crate::control::{ResourceService, StoreSink, TerminalService};
 
 use crate::state::doc_manager::DocManager;
 use crate::state::registry::RegistryState;
@@ -92,6 +92,7 @@ pub struct Gateway {
     pub(super) doc: Arc<DocManager>,
     pub(super) sink: Arc<StoreSink>,
     pub(super) resources: Arc<ResourceService>,
+    pub(super) terminals: Arc<TerminalService>,
     pub(super) registry: RegistryState,
     pub(super) recovery: RecoveryCoordinator,
     pub(super) heartbeat_interval: Duration,
@@ -111,6 +112,7 @@ impl Gateway {
         doc: Arc<DocManager>,
         sink: Arc<StoreSink>,
         resources: Arc<ResourceService>,
+        terminals: Arc<TerminalService>,
         registry: RegistryState,
         recovery_instances: HashSet<String>,
     ) -> Self {
@@ -132,6 +134,7 @@ impl Gateway {
             doc,
             sink,
             resources,
+            terminals,
             registry,
             recovery,
             heartbeat_interval,
@@ -403,6 +406,7 @@ impl Gateway {
             })))
             .await;
         self.resources.projection().disconnect(conn_id).await;
+        self.terminals.disconnect(conn_id).await;
         self.deps.broadcast.unsubscribe_all(conn_id).await;
         self.conns.unregister(conn_id);
         info!(conn_id, code, reason, "connection closed");

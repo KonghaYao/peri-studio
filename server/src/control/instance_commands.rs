@@ -11,6 +11,59 @@ use tracing::{info, warn};
 use super::*;
 
 impl InstanceRegistry {
+    /// 当前生产连接完成 fencing 清理后，允许其承载 terminal 指令与回调。
+    pub async fn activate_terminal_connection(
+        &self,
+        instance_id: &str,
+        conn: &InstanceConn,
+    ) -> Result<(), InstanceError> {
+        let mut instances = self.inner.instances.write().await;
+        let Some(entry) = instances.get_mut(instance_id) else {
+            return Err(InstanceError::UnknownInstance(instance_id.to_string()));
+        };
+        if !entry
+            .conn
+            .as_ref()
+            .is_some_and(|current| current.same_channel(&conn.tx))
+        {
+            return Err(InstanceError::ConnectionGone);
+        }
+        entry.terminal_ready = true;
+        Ok(())
+    }
+
+    /// 返回当前且已完成 fencing 清理的 terminal 连接句柄。
+    pub async fn current_terminal_connection(&self, instance_id: &str) -> Option<InstanceConn> {
+        self.inner
+            .instances
+            .read()
+            .await
+            .get(instance_id)
+            .filter(|entry| entry.terminal_ready)
+            .and_then(|entry| entry.conn.clone())
+            .map(|tx| InstanceConn { tx })
+    }
+
+    /// terminal 上行帧必须来自当前且已完成 fencing 清理的 instance 连接。
+    pub async fn is_current_terminal_connection(
+        &self,
+        instance_id: &str,
+        conn: &InstanceConn,
+    ) -> bool {
+        self.inner
+            .instances
+            .read()
+            .await
+            .get(instance_id)
+            .is_some_and(|entry| {
+                entry.terminal_ready
+                    && entry
+                        .conn
+                        .as_ref()
+                        .is_some_and(|current| current.same_channel(&conn.tx))
+            })
+    }
+
     /// 向指定 instance 发出有界资源查询，并以 `request_id` 等待对应结果。
     pub async fn query_resource(
         &self,
@@ -285,6 +338,118 @@ impl InstanceRegistry {
             );
         }
         killed
+    }
+
+    /// 打开 PTY；完成结果由 `TerminalService::on_instance_opened` 独立消费。
+    pub async fn send_terminal_open(
+        &self,
+        instance_id: &str,
+        conn: &InstanceConn,
+        open: peri_studio_proto::terminal::InstanceTerminalOpen,
+    ) -> Result<(), InstanceError> {
+        self.send_terminal_fire_and_forget(
+            instance_id,
+            conn,
+            Frame::InstanceTerminalOpen(open),
+            true,
+        )
+        .await
+    }
+
+    /// 终端输入（有界 fire-and-forget）。
+    pub async fn send_terminal_input(
+        &self,
+        instance_id: &str,
+        conn: &InstanceConn,
+        input: peri_studio_proto::terminal::InstanceTerminalInput,
+    ) -> Result<(), InstanceError> {
+        self.send_terminal_fire_and_forget(
+            instance_id,
+            conn,
+            Frame::InstanceTerminalInput(input),
+            true,
+        )
+        .await
+    }
+
+    pub async fn send_terminal_resize(
+        &self,
+        instance_id: &str,
+        conn: &InstanceConn,
+        resize: peri_studio_proto::terminal::InstanceTerminalResize,
+    ) -> Result<(), InstanceError> {
+        self.send_terminal_fire_and_forget(
+            instance_id,
+            conn,
+            Frame::InstanceTerminalResize(resize),
+            true,
+        )
+        .await
+    }
+
+    pub async fn send_terminal_close(
+        &self,
+        instance_id: &str,
+        conn: &InstanceConn,
+        terminal_id: String,
+    ) -> Result<(), InstanceError> {
+        self.send_terminal_fire_and_forget(
+            instance_id,
+            conn,
+            Frame::InstanceTerminalClose(peri_studio_proto::terminal::InstanceTerminalClose {
+                terminal_id,
+            }),
+            false,
+        )
+        .await
+    }
+
+    async fn send_terminal_fire_and_forget(
+        &self,
+        instance_id: &str,
+        expected_conn: &InstanceConn,
+        frame: Frame,
+        require_serving: bool,
+    ) -> Result<(), InstanceError> {
+        let (tx, disconnect) = {
+            let instances = self.inner.instances.read().await;
+            let Some(entry) = instances.get(instance_id) else {
+                return Err(InstanceError::UnknownInstance(instance_id.to_string()));
+            };
+            if entry.terminal_protocol_version
+                != Some(peri_studio_proto::terminal::TERMINAL_PROTOCOL_VERSION)
+            {
+                return Err(InstanceError::TerminalUnsupported);
+            }
+            if !entry.terminal_ready {
+                return Err(InstanceError::ConnectionGone);
+            }
+            if require_serving && !entry.state.can_serve() {
+                return Err(InstanceError::Offline);
+            }
+            let Some(current) = entry.conn.as_ref() else {
+                return Err(InstanceError::Offline);
+            };
+            if !current.same_channel(&expected_conn.tx) {
+                return Err(InstanceError::ConnectionGone);
+            }
+            (entry.conn.clone(), entry.disconnect.clone())
+        };
+        let Some(tx) = tx else {
+            return Err(InstanceError::Offline);
+        };
+        match tx.try_send(OutboundMsg::Frame(frame)) {
+            Ok(()) => Ok(()),
+            Err(tokio::sync::mpsc::error::TrySendError::Full(_))
+            | Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => {
+                if !require_serving {
+                    if let Some(disconnect) = disconnect {
+                        disconnect.cancel();
+                    }
+                }
+                Err(InstanceError::ConnectionGone)
+            }
+        }
     }
 
     async fn drop_pending_ack(&self, instance_id: &str, command_id: &str) {

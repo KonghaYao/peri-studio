@@ -180,6 +180,24 @@ impl Gateway {
                                 let _ = out_tx.send(OutboundMsg::Frame(rejection)).await;
                                 continue;
                             }
+                            if matches!(
+                                &frame,
+                                Frame::TerminalOpen(_)
+                                    | Frame::TerminalInput(_)
+                                    | Frame::TerminalResize(_)
+                                    | Frame::TerminalClose(_)
+                            ) {
+                                self.terminals
+                                    .handle_client_frame(
+                                        conn_id,
+                                        &channel.ctx.token_id,
+                                        channel.ctx.role == crate::auth::TokenRole::Full,
+                                        frame,
+                                        out_tx.clone(),
+                                    )
+                                    .await;
+                                continue;
+                            }
                             if let Frame::ResourceQuery(query) = frame {
                                 let result = self.resources.handle(
                                     &channel.ctx.token_id,

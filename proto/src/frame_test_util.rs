@@ -7,11 +7,11 @@ use crate::ack::{AckStatus, ActionAck, ActionError, ErrorCode};
 use crate::action::{
     ActionEnvelope, CancelChatPayload, CloseChatPayload, ConfigSetPayload, CreateChatPayload,
     ElicitationAnswer, ElicitationResponseAction, LoadChatPayload, McpAppCallPayload,
-    McpAppOpenPayload, McpAppResourcePayload, PermissionDecision,
-    PersistedSessionCreatePayload, PersistedSessionImportPayload, PersistedSessionOpenPayload,
-    PersistedSessionRenamePayload, ProjectArchivePayload, ProjectCreatePayload,
-    ProjectRenamePayload, PromptChatPayload, ResolvePermissionPayload, RespondElicitationPayload,
-    SubscribeEventsPayload, UnsubscribeEventsPayload,
+    McpAppOpenPayload, McpAppResourcePayload, PermissionDecision, PersistedSessionCreatePayload,
+    PersistedSessionImportPayload, PersistedSessionOpenPayload, PersistedSessionRenamePayload,
+    ProjectArchivePayload, ProjectCreatePayload, ProjectRenamePayload, PromptChatPayload,
+    ResolvePermissionPayload, RespondElicitationPayload, SubscribeEventsPayload,
+    UnsubscribeEventsPayload,
 };
 use crate::conn::{Auth, AuthResponse, DocId, KeepAlive, Pong, Ready};
 use crate::event::EventFrame;
@@ -20,9 +20,7 @@ use crate::instance::{
     BufferedFrame, InstanceBufferSync, InstanceEvent, InstanceHeartbeat, InstanceHello,
     InstanceKill, InstanceKillAck, InstanceProcessExit, InstanceSpawn, InstanceSpawnAck,
 };
-use crate::mcp_apps::{
-    McpAppCallResultFrame, McpAppResourceFrame, McpAppSessionFrame,
-};
+use crate::mcp_apps::{McpAppCallResultFrame, McpAppResourceFrame, McpAppSessionFrame};
 use crate::oauth::{
     EphemeralAuthorizationUrl, McpConnectionStatus, McpOAuthAuthorizationFrame,
     McpOAuthEventStatus, McpOAuthFrame, McpOAuthStatus, McpServerInfo, McpServersFrame,
@@ -33,6 +31,12 @@ use crate::rewind::{
 };
 use crate::schema::SessionSummaryProjection;
 use crate::session::{PromptDeliveryStatus, PromptStatusFrame, PromptStatusItem, SessionListFrame};
+use crate::terminal::{
+    InstanceTerminalClose, InstanceTerminalExit, InstanceTerminalInput, InstanceTerminalOpen,
+    InstanceTerminalOpened, InstanceTerminalOutput, InstanceTerminalResize, TerminalClose,
+    TerminalError, TerminalErrorCode, TerminalExit, TerminalInput, TerminalOpen, TerminalOpened,
+    TerminalOutput, TerminalResize,
+};
 use crate::version::PROTOCOL_VERSION;
 use crate::ysync::{YsyncAwareness, YsyncSubscribe, YsyncSync, YsyncUnsubscribe, YsyncUpdate};
 
@@ -450,6 +454,89 @@ pub(crate) fn all_frames() -> Vec<Frame> {
         Frame::InstanceProcessExit(InstanceProcessExit {
             chat_id: "s1".into(),
             code: 0,
+        }),
+        Frame::TerminalOpen(TerminalOpen {
+            request_id: "tr-open".into(),
+            project_id: "p1".into(),
+            cols: 80,
+            rows: 24,
+        }),
+        Frame::TerminalInput(TerminalInput {
+            terminal_id: "term-1".into(),
+            seq: 1,
+            data: "aGk=".into(),
+        }),
+        Frame::TerminalResize(TerminalResize {
+            terminal_id: "term-1".into(),
+            cols: 100,
+            rows: 30,
+        }),
+        Frame::TerminalClose(TerminalClose {
+            request_id: None,
+            terminal_id: Some("term-1".into()),
+        }),
+        Frame::TerminalOpened(TerminalOpened {
+            request_id: "tr-open".into(),
+            terminal_id: "term-1".into(),
+            cwd: "/tmp".into(),
+            cols: 80,
+            rows: 24,
+        }),
+        Frame::TerminalOutput(TerminalOutput {
+            terminal_id: "term-1".into(),
+            seq: 1,
+            data: "b3V0".into(),
+        }),
+        Frame::TerminalExit(TerminalExit {
+            terminal_id: "term-1".into(),
+            exit_code: Some(0),
+            signal: None,
+        }),
+        Frame::TerminalError(TerminalError {
+            request_id: Some("tr-open".into()),
+            terminal_id: Some("term-1".into()),
+            code: TerminalErrorCode::Unavailable,
+            message: "instance offline".into(),
+            retryable: true,
+        }),
+        Frame::InstanceTerminalOpen(InstanceTerminalOpen {
+            request_id: "tr-open".into(),
+            terminal_id: "term-1".into(),
+            cwd: "/tmp".into(),
+            cols: 80,
+            rows: 24,
+        }),
+        Frame::InstanceTerminalInput(InstanceTerminalInput {
+            terminal_id: "term-1".into(),
+            seq: 1,
+            data: "aGk=".into(),
+        }),
+        Frame::InstanceTerminalResize(InstanceTerminalResize {
+            terminal_id: "term-1".into(),
+            cols: 100,
+            rows: 30,
+        }),
+        Frame::InstanceTerminalClose(InstanceTerminalClose {
+            terminal_id: "term-1".into(),
+        }),
+        Frame::InstanceTerminalOpened(InstanceTerminalOpened {
+            request_id: "tr-open".into(),
+            terminal_id: "term-1".into(),
+            ok: true,
+            cwd: Some("/tmp".into()),
+            cols: Some(80),
+            rows: Some(24),
+            error: None,
+        }),
+        Frame::InstanceTerminalOutput(InstanceTerminalOutput {
+            terminal_id: "term-1".into(),
+            seq: 1,
+            data: "b3V0".into(),
+        }),
+        Frame::InstanceTerminalExit(InstanceTerminalExit {
+            terminal_id: "term-1".into(),
+            exit_code: Some(0),
+            signal: None,
         }),
     ]
 }

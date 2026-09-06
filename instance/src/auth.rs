@@ -150,6 +150,9 @@ impl AuthSession {
                     "maxConcurrentGitQueries": peri_studio_proto::resource::MAX_CONCURRENT_GIT_QUERIES,
                     "maxFileBytes": MAX_RESOURCE_BLOB_BYTES,
                     "git": true
+                },
+                "terminals": {
+                    "protocolVersion": peri_studio_proto::terminal::TERMINAL_PROTOCOL_VERSION
                 }
             }),
             buffered: Some(ctx.buffered),

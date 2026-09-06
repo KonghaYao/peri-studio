@@ -37,7 +37,10 @@ fn hello(instance_id: &str) -> InstanceHello {
         protocol_version: peri_studio_proto::version::PROTOCOL_VERSION,
         token: "tok".into(),
         hostname: instance_id.into(),
-        caps: json!({"resources": {"protocolVersion": peri_studio_proto::resource::RESOURCE_PROTOCOL_VERSION}}),
+        caps: json!({
+            "resources": {"protocolVersion": peri_studio_proto::resource::RESOURCE_PROTOCOL_VERSION},
+            "terminals": {"protocolVersion": peri_studio_proto::terminal::TERMINAL_PROTOCOL_VERSION},
+        }),
         buffered: None,
         buffer_lost: None,
         stream_epochs: None,
@@ -255,6 +258,33 @@ async fn forward_rpc_and_offline() {
         Err(InstanceError::Offline)
     ));
     let _ = _drop;
+}
+
+#[tokio::test]
+async fn terminal_cleanup_backpressure_cancels_instance_connection() {
+    let (registry, _drop) = test_registry();
+    let chats = ChatRegistry::new(registry);
+    let reg = InstanceRegistry::new(Duration::from_secs(30), Duration::from_secs(10), chats);
+    let (tx, _rx) = mpsc::channel(1);
+    tx.try_send(OutboundMsg::Close(1000)).unwrap();
+    let disconnect = tokio_util::sync::CancellationToken::new();
+    let conn = InstanceConn { tx };
+    reg.on_connection_hello(
+        "m1",
+        "tok-1",
+        conn.clone(),
+        &hello("m1"),
+        disconnect.clone(),
+    )
+    .await;
+    reg.activate_terminal_connection("m1", &conn).await.unwrap();
+
+    assert!(matches!(
+        reg.send_terminal_close("m1", &conn, "terminal-1".into())
+            .await,
+        Err(InstanceError::ConnectionGone)
+    ));
+    assert!(disconnect.is_cancelled());
 }
 
 #[tokio::test]

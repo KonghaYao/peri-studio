@@ -45,6 +45,12 @@
   --color-interaction-hover: var(--interaction-hover);
   --color-sidebar-selected: var(--sidebar-selected-bg);
   --color-composer-border: var(--composer-border);
+  --color-terminal-dock-surface: var(--terminal-dock-surface);
+  --color-terminal-dock-border: var(--terminal-dock-border);
+  --color-terminal-viewport-bg: var(--terminal-viewport-bg);
+  --color-terminal-viewport-fg: var(--terminal-viewport-fg);
+  --color-terminal-viewport-muted: var(--terminal-viewport-muted);
+  --color-terminal-viewport-accent: var(--terminal-viewport-accent);
   --color-decision-action: var(--decision-action-solid);
   --color-decision-action-hover: var(--decision-action-hover);
 

@@ -7,4 +7,5 @@ export { ResourcePanelLayout } from './resource/ResourcePanelLayout';
 export { ResourceWorkbenchLayout } from './resource/ResourceWorkbenchLayout';
 export { SourceControlLayout } from './resource/SourceControlLayout';
 export { StatusAreaLayout } from './status/StatusAreaLayout';
+export { TerminalDockLayout } from './terminal/TerminalDockLayout';
 export { ProjectSidebarLayout } from './shell/ProjectSidebarLayout';

@@ -7,7 +7,6 @@
 //!
 //! 权威：`docs/architecture.md` §4.5–§4.7、§7.1–§7.6、§8.3–§8.6、§9.2、§17.2。
 
-mod session_catalog;
 mod chat_registry;
 mod close_codes;
 mod heartbeat;
@@ -16,7 +15,11 @@ mod instance_registry;
 mod project_service;
 mod resource_projection;
 mod resource_service;
+mod session_catalog;
+mod terminal_service;
 mod workspace_registry;
+
+pub use terminal_service::TerminalService;
 
 pub use chat_registry::{ChatError, ChatRecord, ChatRegistry, ChatState, ReconciliationReport};
 pub use close_codes::{
@@ -30,7 +33,7 @@ pub use instance_registry::{
     KillOutcome, SpawnOutcome,
 };
 pub use project_service::{ProjectService, ProjectServiceError};
-pub use session_catalog::{CatalogSession, SessionCatalog};
 pub use resource_projection::ResourceProjection;
 pub use resource_service::ResourceService;
+pub use session_catalog::{CatalogSession, SessionCatalog};
 pub use workspace_registry::{WorkspaceError, WorkspaceRecord, WorkspaceRegistry};

@@ -144,6 +144,21 @@ pub fn m1_check(tag: FrameTag, role: Role, dir: Direction) -> M1Check {
             | "resource_result"
             | "instance/resource_query"
             | "instance/resource_result"
+            | "terminal_open"
+            | "terminal_input"
+            | "terminal_resize"
+            | "terminal_close"
+            | "terminal_opened"
+            | "terminal_output"
+            | "terminal_exit"
+            | "terminal_error"
+            | "instance/terminal_open"
+            | "instance/terminal_input"
+            | "instance/terminal_resize"
+            | "instance/terminal_close"
+            | "instance/terminal_opened"
+            | "instance/terminal_output"
+            | "instance/terminal_exit"
     );
     if !in_m1_frame_set {
         return M1Check::NotInM1;
@@ -159,6 +174,10 @@ pub fn m1_check(tag: FrameTag, role: Role, dir: Direction) -> M1Check {
                     | "pong"
                     | "auth"
                     | "resource_query"
+                    | "terminal_open"
+                    | "terminal_input"
+                    | "terminal_resize"
+                    | "terminal_close"
             ),
             Direction::Outbound => matches!(
                 tag.0,
@@ -178,6 +197,10 @@ pub fn m1_check(tag: FrameTag, role: Role, dir: Direction) -> M1Check {
                     | "rewind_candidates"
                     | "rewind_preview"
                     | "resource_result"
+                    | "terminal_opened"
+                    | "terminal_output"
+                    | "terminal_exit"
+                    | "terminal_error"
             ),
         },
         Role::Instance => match dir {
@@ -192,6 +215,9 @@ pub fn m1_check(tag: FrameTag, role: Role, dir: Direction) -> M1Check {
                     | "instance/forward_ack"
                     | "instance/process_exit"
                     | "instance/resource_result"
+                    | "instance/terminal_opened"
+                    | "instance/terminal_output"
+                    | "instance/terminal_exit"
             ),
             Direction::Outbound => matches!(
                 tag.0,
@@ -199,6 +225,10 @@ pub fn m1_check(tag: FrameTag, role: Role, dir: Direction) -> M1Check {
                     | "instance/kill"
                     | "instance/forward"
                     | "instance/resource_query"
+                    | "instance/terminal_open"
+                    | "instance/terminal_input"
+                    | "instance/terminal_resize"
+                    | "instance/terminal_close"
                     | "auth_response"
             ),
         },

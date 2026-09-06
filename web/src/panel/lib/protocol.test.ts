@@ -37,6 +37,29 @@ describe('downstream protocol envelope parsing', () => {
     expect(parse('{"t":"ysync.update","doc":"resource:view:escape","update":"AAAA"}')).toBeNull();
   });
 
+  it('strictly validates terminal downstream frames', () => {
+    expect(parse('{"t":"terminal_opened","requestId":"request-1","terminalId":"terminal-1","cwd":"/trusted/project","cols":80,"rows":24}'))
+      .toEqual({
+        t: 'terminal_opened',
+        requestId: 'request-1',
+        terminalId: 'terminal-1',
+        cwd: '/trusted/project',
+        cols: 80,
+        rows: 24,
+      });
+    expect(parse('{"t":"terminal_output","terminalId":"terminal-1","seq":1,"data":"aGk="}'))
+      .toEqual({ t: 'terminal_output', terminalId: 'terminal-1', seq: 1, data: 'aGk=' });
+    expect(parse('{"t":"terminal_exit","terminalId":"terminal-1","exitCode":null,"signal":null}'))
+      .toEqual({ t: 'terminal_exit', terminalId: 'terminal-1' });
+    expect(parse('{"t":"terminal_error","requestId":"request-1","terminalId":"terminal-1","code":"unavailable","message":"offline","retryable":true}'))
+      .toMatchObject({ t: 'terminal_error', code: 'unavailable', retryable: true });
+
+    expect(parse('{"t":"terminal_output","terminalId":"terminal-1","seq":0,"data":"aGk="}')).toBeNull();
+    expect(parse('{"t":"terminal_opened","requestId":"request-1","terminalId":"terminal-1"}')).toBeNull();
+    expect(parse('{"t":"terminal_output","terminalId":"terminal-1","seq":1,"data":"***"}')).toBeNull();
+    expect(parse('{"t":"terminal_error","terminalId":"terminal-1","code":"secret","message":"x","retryable":false}')).toBeNull();
+  });
+
   it('strictly decodes opaque resource view results', () => {
     expect(parse('{"t":"resource_result","requestId":"q1","result":{"kind":"view","data":{"viewId":"v1","docId":"resource:v1","leaseExpiresAt":"2026-08-23T00:00:00Z"}}}'))
       .toMatchObject({ t: 'resource_result', requestId: 'q1', result: { kind: 'view', data: { docId: 'resource:v1' } } });

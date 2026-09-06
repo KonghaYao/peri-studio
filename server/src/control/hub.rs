@@ -105,6 +105,7 @@ pub struct Hub {
     pub projects: ProjectService,
     /// 短租约远程 FS/Git 查询与 Yjs 投影服务。
     pub resources: Arc<crate::control::ResourceService>,
+    pub terminals: Arc<crate::control::TerminalService>,
 }
 
 impl Hub {
@@ -209,6 +210,11 @@ impl Hub {
             instance.clone(),
             resource_projection,
         ));
+        let terminals = Arc::new(crate::control::TerminalService::new(
+            metadata.clone(),
+            instance.clone(),
+            cfg.spawn_timeout,
+        ));
         let deps = ChannelDeps {
             coordinator: coordinator.clone(),
             broadcast: broadcast.clone(),
@@ -238,6 +244,7 @@ impl Hub {
             doc.clone(),
             sink.clone(),
             resources.clone(),
+            terminals.clone(),
             registry.clone(),
             recovery_instances,
         );
@@ -257,6 +264,7 @@ impl Hub {
             metadata,
             projects,
             resources,
+            terminals,
         })
     }
 
@@ -303,6 +311,7 @@ impl Hub {
         // 决策 5；判定粒度 1s【决策】）。
         let instance = self.instance.clone();
         let relay = self.relay.clone();
+        let terminals = self.terminals.clone();
         let auth = self.auth.clone();
         let maintenance = AbortTaskOnDrop::new(tokio::spawn(async move {
             let mut ticker = tokio::time::interval(std::time::Duration::from_secs(1));
@@ -312,10 +321,12 @@ impl Hub {
                 let now = std::time::Instant::now();
                 for instance_id in instance.sweep_offline(now).await {
                     // §7.1 离线即刻生效（心跳超时路径）。
+                    terminals.on_instance_disconnect(&instance_id).await;
                     if let Err(e) = relay.on_instance_disconnect(&instance_id).await {
                         warn!(instance_id, error = ?e, "offline cleanup failed");
                     }
                 }
+                terminals.sweep_expired_pending(now).await;
                 // nonce sweep（§9.2：30s 窗口过期清理）。
                 auth.lock().await.nonces_mut().sweep(now);
             }
@@ -355,6 +366,7 @@ impl Hub {
             }
         }
         maintenance.stop().await;
+        self.terminals.shutdown().await;
         info!("peri-studio server role stopped");
         Ok(())
     }

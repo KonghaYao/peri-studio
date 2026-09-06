@@ -269,6 +269,16 @@
   --workbench-rail-width: 44px;
   --workbench-frame-height: min(520px, 70vh);
 
+  /* Terminal 底栏 Dock（折叠仅隐藏 viewport；将来镜像 web production Tier 2） */
+  --terminal-dock-surface: var(--palette-neutral-0);
+  --terminal-dock-border: var(--border-faint);
+  --terminal-header-height: var(--control-height-md);
+  --terminal-viewport-height: 180px;
+  --terminal-viewport-bg: var(--palette-neutral-950);
+  --terminal-viewport-fg: var(--palette-neutral-100);
+  --terminal-viewport-muted: var(--palette-neutral-500);
+  --terminal-viewport-accent: var(--palette-accent-400);
+
   /* Status 状态区与控件高度（AntD 24/32/40 + 触控 44） */
   --status-panel-max-height: 132px;
   --control-height-sm: 24px;

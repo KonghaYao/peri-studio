@@ -13,6 +13,10 @@ fn client_inbound_m1_set() {
         "pong",
         "auth",
         "resource_query",
+        "terminal_open",
+        "terminal_input",
+        "terminal_resize",
+        "terminal_close",
     ] {
         assert_eq!(
             m1_check(FrameTag(tag), Role::Client, Direction::Inbound),
@@ -48,6 +52,10 @@ fn client_outbound_m1_set() {
         "rewind_candidates",
         "rewind_preview",
         "resource_result",
+        "terminal_opened",
+        "terminal_output",
+        "terminal_exit",
+        "terminal_error",
     ] {
         assert_eq!(
             m1_check(FrameTag(tag), Role::Client, Direction::Outbound),
@@ -100,6 +108,9 @@ fn instance_m1_set() {
         "instance/kill_ack",
         "instance/process_exit",
         "instance/resource_result",
+        "instance/terminal_opened",
+        "instance/terminal_output",
+        "instance/terminal_exit",
     ] {
         assert_eq!(
             m1_check(FrameTag(tag), Role::Instance, Direction::Inbound),
@@ -112,6 +123,10 @@ fn instance_m1_set() {
         "instance/spawn",
         "instance/kill",
         "instance/resource_query",
+        "instance/terminal_open",
+        "instance/terminal_input",
+        "instance/terminal_resize",
+        "instance/terminal_close",
         "auth_response",
     ] {
         assert_eq!(
@@ -204,12 +219,11 @@ fn m1_action_type_subset() {
     assert_eq!(crate::whitelist::M1_ACTION_TYPES.len(), 34);
 }
 
-/// 全量注册表：39 个 tag 且与 §3.2 表一致（含 M2/M3 保留帧与
-/// instance/forward 系，冲突 1 裁决）。
+/// 全量注册表：54 个 tag（含 terminal 与 instance/forward 系）。
 #[test]
 fn frame_tag_registry_completeness() {
     let tags: Vec<&str> = crate::frame::FRAME_TAGS.iter().map(|t| t.0).collect();
-    assert_eq!(tags.len(), 39);
+    assert_eq!(tags.len(), 54);
     for expected in [
         "action",
         "action_ack",
@@ -250,6 +264,21 @@ fn frame_tag_registry_completeness() {
         "resource_result",
         "instance/resource_query",
         "instance/resource_result",
+        "terminal_open",
+        "terminal_input",
+        "terminal_resize",
+        "terminal_close",
+        "terminal_opened",
+        "terminal_output",
+        "terminal_exit",
+        "terminal_error",
+        "instance/terminal_open",
+        "instance/terminal_input",
+        "instance/terminal_resize",
+        "instance/terminal_close",
+        "instance/terminal_opened",
+        "instance/terminal_output",
+        "instance/terminal_exit",
     ] {
         assert!(tags.contains(&expected), "缺少注册 tag {expected}");
     }

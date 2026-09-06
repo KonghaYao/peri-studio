@@ -30,6 +30,8 @@ import {
 } from '../panel/lib/mcp-apps';
 import { handleRewindCandidates, handleRewindPreview, resetRewindState, rewindOwnsError } from '../panel/lib/rewind-assembly';
 import { clearPromptRecoverySelection, handlePromptStatus, promptRecoveryOwnsError, requestPromptRecovery, resetPromptRecoveryState } from '../panel/lib/prompt-recovery-assembly';
+import { handleTerminalConnectionLost, handleTerminalFrame, installTerminalTransport, resetTerminalSession } from '@/features/terminal/terminal-session';
+import type { TerminalDownstreamFrame } from '@/shared/protocol/terminal';
 import { connectionReady, disconnect, forgetRememberedSession, installConnection, promptMaxBytes, readRememberedSession, rememberSession, resetConnectionState, sendFrame } from '../panel/lib/connection';
 import { ERROR_REASONS, persistActionProblem, reportTransportIssue, type PersistentError } from '../panel/lib/panel-errors';
 import { sendMessage, type SessionConfigMutation } from '../panel/lib/user-actions';
@@ -46,6 +48,7 @@ import {
 } from '../panel/lib/resource-store';
 
 export const [selectedCid, setSelectedCid] = createSignal<string | null>(null);
+export { connectionReady, readOnly };
 export const [chatEntries, setChatEntries] = createSignal<ChatEntry[]>([]);
 export const [chatHead, setChatHead] = createSignal<ControlView | null>(null);
 export const [permissions, setPermissions] = createSignal<ControlView['pendingPermissions']>([]);
@@ -188,6 +191,9 @@ function invalidateAuthentication(reason: string): void {
   publishAuthInvalidation(reason);
 }
 
+// Terminal 与 chat/Yjs/resource 独立；这里只注入复用的认证 WebSocket。
+installTerminalTransport({ send: sendFrame, ready: connectionReady });
+
 // 连接装配（P3 拆分）：ws 生命周期与状态回调在 lib/connection，业务
 // 回调经 installConnection 注入回组合根。
 installConnection({
@@ -195,6 +201,7 @@ installConnection({
   onConnectionLost: () => {
     sessionCatalogBootstrap?.reset();
     sessionActivation.connectionLost();
+    handleTerminalConnectionLost();
   },
   onAuthInvalidation: invalidateAuthentication,
   toast,
@@ -256,6 +263,18 @@ function onFrame(frame: H.DownstreamFrame): void {
       break;
     case 'mcp_app_call_result':
       handleMcpAppCallResult(frame);
+      break;
+    case 'terminal_opened':
+      handleTerminalFrame(frame as TerminalDownstreamFrame);
+      break;
+    case 'terminal_output':
+      handleTerminalFrame(frame as TerminalDownstreamFrame);
+      break;
+    case 'terminal_exit':
+      handleTerminalFrame(frame as TerminalDownstreamFrame);
+      break;
+    case 'terminal_error':
+      handleTerminalFrame(frame as TerminalDownstreamFrame);
       break;
     case 'auth_error':
       invalidateAuthentication('Access token is invalid, revoked, or the server restarted. Please sign in again.');
@@ -471,6 +490,7 @@ export function resetAuthenticatedSession(options: { preserveLocalDrafts?: boole
   resetRuntimeControls();
   setSessionConfigMutation(null);
   resetRewindState();
+  resetTerminalSession();
   setDiscoveringSessionsProjectId(null);
   sessionCatalogBootstrap?.reset();
   setPersistentErrors([]);
