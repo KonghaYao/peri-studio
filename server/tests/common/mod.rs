@@ -910,6 +910,26 @@ pub fn global_status(doc: &yrs::Doc) -> Option<String> {
     g.get(&txn, "status").and_then(|v| v.cast::<String>().ok())
 }
 
+/// 等待 instance 对账开门后 Registry global.status 变为 healthy（恢复屏障竞态）。
+pub async fn wait_registry_healthy(
+    port: u16,
+    token: &str,
+    timeout: Duration,
+) -> Result<(), String> {
+    tokio::time::timeout(timeout, async {
+        loop {
+            if let Ok(doc) = fetch_registry_snapshot(port, token).await {
+                if global_status(&doc).as_deref() == Some("healthy") {
+                    return Ok(());
+                }
+            }
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        }
+    })
+    .await
+    .map_err(|_| format!("registry global.status 未在 {timeout:?} 内变为 healthy"))?
+}
+
 /// chat doc 的 entry 数量。
 pub fn chat_entry_count(doc: &yrs::Doc) -> usize {
     let txn = doc.transact();

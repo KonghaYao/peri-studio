@@ -17,8 +17,8 @@ use peri_studio_proto::Frame;
 
 use common::{
     chat_field, chat_ids, doc_from_snapshots, fetch_registry_snapshot, global_status,
-    project_field, project_session_ids, wait_terminal, InstanceProc, ServerProc, TestEnv, WsClient,
-    RECV_TIMEOUT, TEST_BUDGET,
+    project_field, project_session_ids, wait_registry_healthy, wait_terminal, InstanceProc,
+    ServerProc, TestEnv, WsClient, RECV_TIMEOUT, TEST_BUDGET,
 };
 
 fn t(name: &str, tag: &str, r: Result<(), String>) {
@@ -79,6 +79,12 @@ async fn t01_body() -> Result<(), String> {
 
     // 2. 对账开门：Registry 快照 global.status = healthy（§8.4.1 不变量 4：
     //    hello 后 Restarting → Healthy）。
+    wait_registry_healthy(
+        stack.env.port,
+        &stack.env.client_token,
+        Duration::from_secs(10),
+    )
+    .await?;
     let doc = fetch_registry_snapshot(stack.env.port, &stack.env.client_token).await?;
     assert_eq!(
         global_status(&doc).as_deref(),
@@ -159,6 +165,12 @@ async fn t01_instance_hello_register() {
 
 async fn t02_body() -> Result<(), String> {
     let stack = Stack::start()?;
+    wait_registry_healthy(
+        stack.env.port,
+        &stack.env.client_token,
+        Duration::from_secs(10),
+    )
+    .await?;
     let mut c = WsClient::connect(stack.env.port).await?;
     let (snap, ready) = c
         .handshake(&stack.env.client_token, &["hub:registry"])
