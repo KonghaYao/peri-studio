@@ -11,13 +11,14 @@ use std::time::Duration;
 
 use peri_studio_proto::ack::AckStatus;
 use peri_studio_proto::action::{
-    ActionEnvelope, PersistedSessionCreatePayload, ProjectCreatePayload,
+    ActionEnvelope, PersistedSessionCreatePayload, ProjectArchivePayload, ProjectCreatePayload,
 };
 use peri_studio_proto::Frame;
 
 use common::{
     chat_field, chat_ids, doc_from_snapshots, fetch_registry_snapshot, global_status,
-    wait_terminal, InstanceProc, ServerProc, TestEnv, WsClient, RECV_TIMEOUT, TEST_BUDGET,
+    project_field, project_session_ids, wait_terminal, InstanceProc, ServerProc, TestEnv, WsClient,
+    RECV_TIMEOUT, TEST_BUDGET,
 };
 
 fn t(name: &str, tag: &str, r: Result<(), String>) {
@@ -380,15 +381,14 @@ async fn t05_duplicate_command_id() {
 }
 
 // ---------------------------------------------------------------------------
-// t06 server 重启后 registry 一致性（§无状态投影：Registry Doc `chats` 段
-// 由 `rebuild_chat_views` 从 metadata.sqlite3 `session_runtime_history` 重建；
-// 镜像含历史 session，新 create 正常）
+// t06 server 重启后 registry 一致性（ADR-0003：project 元数据持久化；
+// project_sessions 内存目录在重启后为空，经 session/discover 从 ACP
+// session/list 重建；新 create 仍写入 chats）
 // ---------------------------------------------------------------------------
 
 async fn t06_body() -> Result<(), String> {
     // 第一轮：server + instance，创建持久化会话 A（project/create +
-    // session/create；该路径同步写 metadata.sqlite3：runtime 历史 +
-    // project_sessions.last_chat_id）。
+    // session/create）。
     let env = TestEnv::new();
     let mut server = ServerProc::start(&env, None);
     server.wait_ready().map_err(|e| e.to_string())?;
@@ -422,7 +422,7 @@ async fn t06_body() -> Result<(), String> {
         !project_id.is_empty(),
         "第一轮 project/create committed 必须携带 projectId"
     );
-    // session/create：spawn runtime + finalize（写 SQLite runtime 历史）。
+    // session/create：spawn runtime + finalize。
     let session_command = uuid::Uuid::new_v4().to_string();
     c.send(&Frame::Action(ActionEnvelope::PersistedSessionCreate {
         command_id: session_command,
@@ -432,8 +432,8 @@ async fn t06_body() -> Result<(), String> {
         },
     }))
     .await?;
-    let sid_a = match wait_terminal(&mut c, Duration::from_secs(35)).await? {
-        Frame::ActionAck(a) if a.status == AckStatus::Committed => a.chat_id.unwrap_or_default(),
+    let session_ack = match wait_terminal(&mut c, Duration::from_secs(35)).await? {
+        Frame::ActionAck(a) if a.status == AckStatus::Committed => a,
         Frame::ActionError(e) => {
             return Err(format!(
                 "第一轮 session/create 失败: {:?} {}",
@@ -442,12 +442,19 @@ async fn t06_body() -> Result<(), String> {
         }
         other => return Err(format!("第一轮 session/create 意外终态: {:?}", other)),
     };
+    let sid_a = session_ack.chat_id.unwrap_or_default();
+    let acp_session_id = session_ack.session_id.unwrap_or_default();
+    assert!(!sid_a.is_empty(), "第一轮 session/create committed 必须携带 chatId");
     assert!(
-        !sid_a.is_empty(),
-        "第一轮 session/create committed 必须携带 chatId"
+        !acp_session_id.is_empty(),
+        "第一轮 session/create committed 必须携带 sessionId（ACP durable id）"
     );
-    // 等待 metadata.sqlite3 写回完成（create 同步写 runtime 历史；补 200ms
-    // 仅为保险，非持久化屏障）。
+    env.set_discoverable_sessions(&[serde_json::json!({
+        "sessionId": acp_session_id,
+        "title": "T06 session A",
+        "status": "ready",
+        "updatedAt": "2026-09-06T00:00:00Z"
+    })]);
     tokio::time::sleep(Duration::from_millis(200)).await;
     drop(c);
 
@@ -455,7 +462,7 @@ async fn t06_body() -> Result<(), String> {
     instance.kill();
     server.kill();
 
-    // 第二轮：同一 data_dir 重启，create session B。
+    // 第二轮：同一 data_dir 重启，create session B，再 discover 恢复 A。
     let server2 = ServerProc::start(&env, None);
     server2.wait_ready().map_err(|e| e.to_string())?;
     let instance2 = InstanceProc::start(&env);
@@ -480,19 +487,50 @@ async fn t06_body() -> Result<(), String> {
     };
     assert!(!sid_b.is_empty(), "第二轮 committed 必须携带 sessionId");
 
-    // registry 快照：应含 A（SQLite runtime 历史重建）与 B（新写入）。
+    let discover_command = uuid::Uuid::new_v4().to_string();
+    c2.send(&Frame::Action(ActionEnvelope::PersistedSessionDiscover {
+        command_id: discover_command,
+        payload: ProjectArchivePayload {
+            project_id: project_id.clone(),
+        },
+    }))
+    .await?;
+    match wait_terminal(&mut c2, Duration::from_secs(35)).await? {
+        Frame::ActionAck(a) if a.status == AckStatus::Committed => {}
+        Frame::ActionError(e) => {
+            return Err(format!(
+                "第二轮 session/discover 失败: {:?} {}",
+                e.code, e.message
+            ))
+        }
+        other => return Err(format!("第二轮 session/discover 意外终态: {:?}", other)),
+    }
+
+    // registry 快照：project 仍在；discover 后含 A（ACP 目录）；chats 含 B。
     let doc = fetch_registry_snapshot(env.port, &env.client_token).await?;
-    let ids = chat_ids(&doc);
-    println!("  [t06] A={sid_a} B={sid_b} got={ids:?}");
-    assert!(
-        ids.contains(&sid_a),
-        "重启后 registry 应保留 session A（metadata.sqlite3 重建，got={ids:?}）"
+    let chat_list = chat_ids(&doc);
+    let session_list = project_session_ids(&doc);
+    println!(
+        "  [t06] acp={acp_session_id} chatA={sid_a} chatB={sid_b} sessions={session_list:?} chats={chat_list:?}"
+    );
+    assert_eq!(
+        project_field(&doc, &project_id, "name").as_deref(),
+        Some("T06 Project"),
+        "重启后 project 元数据应保留"
     );
     assert!(
-        ids.contains(&sid_b),
-        "重启后 registry 应含新 session B（got={ids:?}）"
+        session_list.contains(&acp_session_id),
+        "discover 后 registry 应恢复 session A（got={session_list:?}）"
     );
-    println!("  [t06] 重启 registry 一致性成立：A={sid_a} B={sid_b}");
+    assert!(
+        chat_list.contains(&sid_b),
+        "重启后 registry chats 应含新 create B（got={chat_list:?}）"
+    );
+    assert!(
+        !chat_list.contains(&sid_a),
+        "ADR-0003：旧 runtime chat A 不得从 SQLite 自动复活（got={chat_list:?}）"
+    );
+    println!("  [t06] 重启 registry 一致性成立：acp={acp_session_id} B={sid_b}");
     Ok(())
 }
 
