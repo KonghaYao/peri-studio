@@ -23,7 +23,7 @@ export type TerminalProps = {
 
 const MIN_HOST_EDGE_PX = 16;
 
-/** Solid 封装：xterm.js + Fit / Image / WebLinks（复制粘贴走浏览器选区 + 核心 onData）。 */
+/** Solid 封装：xterm.js beta + Fit / Image（SIXEL·IIP·Kitty）/ WebLinks。 */
 export function Terminal(props: TerminalProps) {
   const isVisible = () => props.visible !== false;
 
@@ -110,6 +110,8 @@ export function Terminal(props: TerminalProps) {
         sixelScrolling: true,
         sixelPaletteLimit: 256,
         iipSupport: true,
+        /** beta @xterm/addon-image：Kitty TGP（WIP，默认 true，此处显式打开便于联调） */
+        kittySupport: true,
         enableSizeReports: true,
       });
       webLinksAddon = new WebLinksAddon(openTerminalWebLink);

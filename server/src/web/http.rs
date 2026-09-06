@@ -520,11 +520,11 @@ pub(super) fn security_headers() -> Vec<(String, String)> {
 /// IPv6 host-source（`http://[::1]:8457` 与 `http://[::1]:*` 一样会被丢弃并刷控制台），
 /// 因此只写 `127.0.0.1` / `localhost`；e2e 必须用 `http://127.0.0.1`。
 /// `style-src 'unsafe-inline'`：Solid 运行时 `style` 属性（侧栏/浮窗宽度等）与 xterm.js
-/// 运行时注入样式；脚本仍禁止 inline（`script-src 'self'`）。
+/// 运行时注入样式；脚本禁止 inline。`wasm-unsafe-eval` 供 @xterm/addon-image（SIXEL/QOI 等 WASM 解码）。
 fn panel_csp() -> String {
     let port = crate::web::sandbox::advertised_sandbox_port();
     format!(
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:* ws://localhost:*; frame-src http://127.0.0.1:{port} http://localhost:{port} https://127.0.0.1:{port} https://localhost:{port}"
+        "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:* ws://localhost:*; frame-src http://127.0.0.1:{port} http://localhost:{port} https://127.0.0.1:{port} https://localhost:{port}"
     )
 }
 
