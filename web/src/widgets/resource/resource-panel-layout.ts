@@ -1,9 +1,10 @@
 /** Git、Files 与会话工具共享的桌面浮动面板视觉契约。 */
-export type WorkbenchPanelWidthProfile = 'workspace' | 'graph' | 'preview';
+export type WorkbenchPanelWidthProfile = 'workspace' | 'graph' | 'preview' | 'terminal';
 
 export const WORKBENCH_PANEL_WIDTH_STORAGE_KEY = 'peri:workbench-panel-width';
 export const WORKBENCH_PANEL_GRAPH_WIDTH_STORAGE_KEY = 'peri:workbench-panel-width-graph';
 export const WORKBENCH_PANEL_PREVIEW_WIDTH_STORAGE_KEY = 'peri:file-preview-panel-width';
+export const WORKBENCH_PANEL_TERMINAL_WIDTH_STORAGE_KEY = 'peri:workbench-panel-width-terminal';
 
 export const WORKBENCH_PANEL_DEFAULT_WIDTH = 264;
 export const WORKBENCH_PANEL_MIN_WIDTH = 220;
@@ -18,6 +19,11 @@ export const WORKBENCH_PANEL_GRAPH_MAX_WIDTH = 720;
 export const WORKBENCH_PANEL_PREVIEW_DEFAULT_WIDTH = 520;
 export const WORKBENCH_PANEL_PREVIEW_MIN_WIDTH = 320;
 export const WORKBENCH_PANEL_PREVIEW_MAX_WIDTH = 720;
+
+/** Terminal 浮窗默认更宽以便并排阅读与输入。 */
+export const WORKBENCH_PANEL_TERMINAL_DEFAULT_WIDTH = 520;
+export const WORKBENCH_PANEL_TERMINAL_MIN_WIDTH = 360;
+export const WORKBENCH_PANEL_TERMINAL_MAX_WIDTH = 720;
 
 export const WORKBENCH_PANEL_KEYBOARD_STEP = 24;
 
@@ -52,6 +58,14 @@ export function workbenchPanelWidthLimits(
       minWidth: WORKBENCH_PANEL_PREVIEW_MIN_WIDTH,
       maxWidth: WORKBENCH_PANEL_PREVIEW_MAX_WIDTH,
       storageKey: WORKBENCH_PANEL_PREVIEW_WIDTH_STORAGE_KEY,
+    };
+  }
+  if (profile === 'terminal') {
+    return {
+      defaultWidth: WORKBENCH_PANEL_TERMINAL_DEFAULT_WIDTH,
+      minWidth: WORKBENCH_PANEL_TERMINAL_MIN_WIDTH,
+      maxWidth: WORKBENCH_PANEL_TERMINAL_MAX_WIDTH,
+      storageKey: WORKBENCH_PANEL_TERMINAL_WIDTH_STORAGE_KEY,
     };
   }
   return {

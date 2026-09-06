@@ -9,7 +9,7 @@ import { resourceWorkbenchRequest } from '../../panel/lib/open-workspace-from-to
 import { ResourceDiffEditor } from '@/widgets/resource/ResourceDiffEditor';
 import { ResourceFileEditor } from '@/widgets/resource/ResourceFileEditor';
 import { ResourceFloatingPanel } from '@/widgets/resource/ResourceFloatingPanel';
-import { TerminalDock } from '@/widgets/terminal/TerminalDock';
+
 import { workbenchFilePreviewLeftOffset } from '@/widgets/resource/resource-panel-layout';
 import { SettingsDialog } from './SettingsDialog';
 
@@ -207,7 +207,6 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
             <ResourceFileEditor onClose={() => closePreview('file')} />
           </Show>
         </div>
-        <TerminalDock />
       </main>
       <Show when={!mobile() && resourceFilePreview()}>
         <ResourceFloatingPanel

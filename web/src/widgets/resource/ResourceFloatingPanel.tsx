@@ -116,7 +116,7 @@ export function ResourceFloatingPanel(props: ResourceFloatingPanelProps) {
       data-testid={props['data-testid']}
       data-width-profile={profile()}
       data-panel-anchor={anchor()}
-      class={cn(shellClass(), 'flex min-h-0 min-w-0 flex-col', props.class)}
+      class={cn(shellClass(), 'flex h-full min-h-0 min-w-0 flex-col', props.class)}
       style={panelStyle()}
     >
       <div

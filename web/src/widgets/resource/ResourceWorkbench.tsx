@@ -14,13 +14,16 @@ import { SourceControlPanel } from './SourceControlPanel';
 import { McpPanelContent } from '@/widgets/chat/McpPanel';
 import { ResourceRailButton } from './ResourceRailButton';
 import { SessionRailActions } from '@/widgets/shell/SessionRailActions';
-import { Files, GitBranch, GitGraph, PlugZap, RefreshCw, X } from 'lucide-solid';
+import { Files, GitBranch, GitGraph, PlugZap, RefreshCw, SquareTerminal, X } from 'lucide-solid';
+import { TerminalPanel } from '@/widgets/terminal/TerminalPanel';
+import { terminalSession } from '@/features/terminal/terminal-session';
 import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_TITLE_CLASS } from './resource-panel-layout';
 import { ResourceFloatingPanel } from './ResourceFloatingPanel';
 import { GitGraphView } from './git/GitGraphView';
+import { cn } from '@/shared/lib/cn';
 import { resourceWorkbenchRequest } from '../../panel/lib/open-workspace-from-tool';
 
-export type WorkbenchView = 'explorer' | 'scm' | 'mcp' | 'graph' | null;
+export type WorkbenchView = 'explorer' | 'scm' | 'mcp' | 'graph' | 'terminal' | null;
 export type ResourcePreviewOrigin = {
   view: 'explorer' | 'scm';
   key: string;
@@ -137,29 +140,52 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
     else setView((current) => current === next ? null : next);
   };
   const close = () => props.compact ? props.onOpenChange?.(false) : setView(null);
-  const panelTitle = () => view() === 'mcp' ? 'MCP' : view() === 'graph' ? 'Git Graph' : project()?.name ?? 'Workspace';
+  const panelTitle = () => {
+    if (view() === 'mcp') return 'MCP';
+    if (view() === 'graph') return 'Git Graph';
+    if (view() === 'terminal') return 'Terminal';
+    return project()?.name ?? 'Workspace';
+  };
+  const panelWidthProfile = () => {
+    if (view() === 'graph') return 'graph' as const;
+    if (view() === 'terminal') return 'terminal' as const;
+    return 'workspace' as const;
+  };
+  const terminalRailBadge = () => {
+    const phase = terminalSession().phase;
+    return phase === 'running' || phase === 'opening' ? 1 : 0;
+  };
+  const terminalPanelVisible = () => showPanel() && view() === 'terminal';
+  const holdTerminalSurface = () => {
+    if (terminalPanelVisible()) return true;
+    const phase = terminalSession().phase;
+    return phase === 'opening' || phase === 'running';
+  };
+  const terminalSurfaceParked = () => holdTerminalSurface() && !terminalPanelVisible();
   const showPanel = () => !!view();
   const panelBodyClass = 'resource-workbench__panel flex min-h-0 min-w-0 flex-1 flex-col bg-surface-overlay';
   const panelBody = () => (
     <>
-      <header class={RESOURCE_PANEL_HEADER_CLASS}>
-        <strong class={RESOURCE_PANEL_TITLE_CLASS}>{panelTitle()}</strong>
-        <Show when={view() === 'explorer' || view() === 'scm'}><IconButton label="Refresh resources" size="compact" onClick={refreshResourceProject} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><RefreshCw size={14} strokeWidth={1.7} /></IconButton></Show>
-        <Show when={view() === 'graph'}>
-          <IconButton
-            label="Refresh graph"
-            size="compact"
-            onClick={() => {
-              const repo = resourceWorkspace().repositories[0];
-              if (repo) refreshGitLog(repo.id);
-            }}
-            class="border-0 bg-transparent text-content-muted hover:text-content-primary"
-          >
-            <RefreshCw size={14} strokeWidth={1.7} />
-          </IconButton>
-        </Show>
-        <IconButton label="Close resource panel" size="compact" onClick={close} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><X size={14} strokeWidth={1.7} /></IconButton>
-      </header>
+      <Show when={view() !== 'terminal'}>
+        <header class={RESOURCE_PANEL_HEADER_CLASS}>
+          <strong class={RESOURCE_PANEL_TITLE_CLASS}>{panelTitle()}</strong>
+          <Show when={view() === 'explorer' || view() === 'scm'}><IconButton label="Refresh resources" size="compact" onClick={refreshResourceProject} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><RefreshCw size={14} strokeWidth={1.7} /></IconButton></Show>
+          <Show when={view() === 'graph'}>
+            <IconButton
+              label="Refresh graph"
+              size="compact"
+              onClick={() => {
+                const repo = resourceWorkspace().repositories[0];
+                if (repo) refreshGitLog(repo.id);
+              }}
+              class="border-0 bg-transparent text-content-muted hover:text-content-primary"
+            >
+              <RefreshCw size={14} strokeWidth={1.7} />
+            </IconButton>
+          </Show>
+          <IconButton label="Close resource panel" size="compact" onClick={close} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><X size={14} strokeWidth={1.7} /></IconButton>
+        </header>
+      </Show>
       <Show when={view() === 'mcp'}><McpPanelContent embedded /></Show>
       <Show when={view() === 'graph'}>
         <GitGraphView embedded />
@@ -182,20 +208,35 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
       <ResourceRailButton label="Source Control" active={view() === 'scm'} badge={sourceControlCount()} onClick={() => toggle('scm')}><GitBranch size={17} strokeWidth={1.7} /></ResourceRailButton>
       <ResourceRailButton label="MCP" active={view() === 'mcp'} onClick={() => toggle('mcp')}><PlugZap size={17} strokeWidth={1.7} /></ResourceRailButton>
       <ResourceRailButton label="Git Graph" active={view() === 'graph'} onClick={() => toggle('graph')}><GitGraph size={17} strokeWidth={1.7} /></ResourceRailButton>
+      <ResourceRailButton label="Terminal" active={view() === 'terminal'} badge={terminalRailBadge()} onClick={() => toggle('terminal')}><SquareTerminal size={17} strokeWidth={1.7} /></ResourceRailButton>
       <SessionRailActions />
     </nav>
+    <Show when={!props.compact && holdTerminalSurface()}>
+      <ResourceFloatingPanel
+        data-testid="terminal-floating-panel"
+        class={cn(panelBodyClass, terminalSurfaceParked() && 'terminal-workbench-park')}
+        widthProfile="terminal"
+      >
+        <TerminalPanel onClosePanel={close} visible={terminalPanelVisible()} />
+      </ResourceFloatingPanel>
+    </Show>
     <Show when={showPanel()}>
       <Show when={props.compact} fallback={
-        <ResourceFloatingPanel
-          data-testid="resource-workbench-panel"
-          class={panelBodyClass}
-          widthProfile={view() === 'graph' ? 'graph' : 'workspace'}
-        >
-          {panelBody()}
-        </ResourceFloatingPanel>
+        <Show when={view() !== 'terminal'}>
+          <ResourceFloatingPanel
+            data-testid="resource-workbench-panel"
+            class={panelBodyClass}
+            widthProfile={panelWidthProfile()}
+          >
+            {panelBody()}
+          </ResourceFloatingPanel>
+        </Show>
       }>
         <div data-testid="resource-workbench-panel" class={panelBodyClass}>
-          {panelBody()}
+          <Show when={view() === 'terminal'}>
+            <TerminalPanel onClosePanel={close} />
+          </Show>
+          <Show when={view() !== 'terminal'}>{panelBody()}</Show>
         </div>
       </Show>
     </Show>

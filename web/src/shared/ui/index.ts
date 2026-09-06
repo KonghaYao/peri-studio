@@ -16,6 +16,7 @@ export { RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput,
 export { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuGroupLabel, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from './dropdown-menu';
 export { Spinner } from './Spinner';
 export { Status, type StatusTone } from './Status';
+export { Terminal, type TerminalProps, type TerminalViewport } from './Terminal';
 export { Tabs, TabsContent, TabsIndicator, TabsList, TabsTrigger } from './Tabs';
 export { Textarea } from './Textarea';
 export { Select, type SelectOption } from './Select';

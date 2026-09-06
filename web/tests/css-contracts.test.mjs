@@ -10,15 +10,20 @@ import { join } from 'node:path';
 import { transform } from 'lightningcss';
 import postcss from 'postcss';
 
+const webRoot = () => join(import.meta.dirname, '..');
+
 // styles.css is the cascade entry now: it imports styles/base.css, styles/theme.css,
 // styles/primitives.css and styles/extra.css. Feature assertions run against the
 // concatenated source so the cascade contract stays covered per selector.
+// 第三方包样式（如 @wterm/dom/css）在 app/main.tsx 侧载，不纳入 product token 断言。
 const cssFiles = () => {
-  const source = join(import.meta.dirname, '..', 'src');
+  const source = join(webRoot(), 'src');
   const entry = readFileSync(join(source, 'styles.css'), 'utf8');
-  return [...entry.matchAll(/@import\s+'([^']+)';/g)].map((match) => match[1].replace(/^\.\//, ''));
+  return [...entry.matchAll(/@import\s+'([^']+)';/g)]
+    .map((match) => match[1].replace(/^\.\//, ''))
+    .filter((specifier) => !specifier.startsWith('@'));
 };
-const featureCss = () => cssFiles().map((file) => readFileSync(join(import.meta.dirname, '..', 'src', file), 'utf8')).join('\n');
+const featureCss = () => cssFiles().map((file) => readFileSync(join(webRoot(), 'src', file), 'utf8')).join('\n');
 const sourceRoot = () => join(import.meta.dirname, '..', 'src');
 const widgetComponentRoots = () => [
   'widgets/shell',
