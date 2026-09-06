@@ -1344,12 +1344,16 @@ name = "peri-studio"
 version = "0.2.0"
 dependencies = [
  "anyhow",
+ "async-trait",
+ "base64 0.23.1",
  "clap",
  "dirs-next",
  "libc",
  "peri-instance",
+ "peri-studio-proto",
  "peri-studio-server",
  "serde_json",
+ "sha2",
  "tempfile",
  "tokio",
  "tokio-util",

@@ -456,3 +456,7 @@ impl ChatRegistry {
 #[cfg(test)]
 #[path = "chat_registry_test.rs"]
 mod chat_registry_test;
+
+#[cfg(test)]
+#[path = "chat_reconcile_ssh_test.rs"]
+mod chat_reconcile_ssh_test;

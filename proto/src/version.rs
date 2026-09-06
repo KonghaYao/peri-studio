@@ -21,7 +21,7 @@ pub const SESSION_DOC_SCHEMA_VERSION: u32 = 1;
 /// `workspaces` 结构（server `state/registry.rs` 写入路径）；本常量是
 /// server 侧 registry doc 的 `schema_version` 写入值（功能面），旧快照恢复
 /// 时以此判空补结构。
-pub const REGISTRY_DOC_SCHEMA_VERSION: u32 = 2;
+pub const REGISTRY_DOC_SCHEMA_VERSION: u32 = 3;
 
 /// 远程 FS/Git 资源投影 Doc 的结构版本。
 pub const RESOURCE_DOC_SCHEMA_VERSION: u32 = 1;

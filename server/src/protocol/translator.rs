@@ -276,6 +276,20 @@ impl Translator {
             | ActionEnvelope::PersistedSessionPromptStatus { .. } => {
                 Err(TranslateError::UnsupportedAction("metadata control-plane"))
             }
+            ActionEnvelope::MachineAdd { .. }
+            | ActionEnvelope::MachineConnect { .. }
+            | ActionEnvelope::MachineDisconnect { .. }
+            | ActionEnvelope::MachineStop { .. }
+            | ActionEnvelope::MachineCancel { .. }
+            | ActionEnvelope::MachineRetry { .. }
+            | ActionEnvelope::MachineTrustHost { .. }
+            | ActionEnvelope::MachineConfirmReplace { .. }
+            | ActionEnvelope::MachineRename { .. }
+            | ActionEnvelope::MachineSetAutoReconnect { .. }
+            | ActionEnvelope::MachineRemove { .. }
+            | ActionEnvelope::MachineRestore { .. } => {
+                Err(TranslateError::UnsupportedAction("machine control-plane"))
+            }
         }
     }
 

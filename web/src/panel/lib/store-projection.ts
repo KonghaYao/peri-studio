@@ -4,7 +4,7 @@ import type { DocStore } from './doc-store';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { ChatProjection } from '@/entities/chat/chat-projection';
 import { renderControl, type ControlView } from '@/entities/chat/control-view';
-import type { ChatInfo, InstanceInfo, ProjectInfo, ProjectSessionInfo, SessionSummaryInfo } from '@/entities/registry/registry-view';
+import type { ChatInfo, InstanceInfo, MachineInfo, ProjectInfo, ProjectSessionInfo, SessionSummaryInfo } from '@/entities/registry/registry-view';
 import { RegistryProjection } from '@/entities/registry/registry-projection';
 import { unimportedSessions } from '../../features/session/session-import';
 import { isTerminal } from './action-state';
@@ -22,6 +22,7 @@ interface ProjectionSignals {
   setPermissions: Setter<ControlView['pendingPermissions']>;
   setElicitations: Setter<NonNullable<ControlView['pendingElicitations']>>;
   setProjects: Setter<ProjectInfo[]>;
+  setMachines: Setter<MachineInfo[]>;
   setRegistryHydrated: Setter<boolean>;
   setProjectSessions: Setter<ProjectSessionInfo[]>;
   setImportableSessions: Setter<SessionSummaryInfo[]>;
@@ -69,6 +70,7 @@ export function installStoreProjection(
       signals.setGlobalStatus(registry.globalStatus);
       signals.setSchemaVersion(registry.schemaVersion);
       signals.setProjects(registry.projects);
+      signals.setMachines(registry.machines);
       const sessions = retainLiveRuntimeHints(
         registry.projectSessions,
         registry.chats,

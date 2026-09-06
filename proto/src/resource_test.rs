@@ -20,10 +20,11 @@ fn resource_doc_id_is_opaque_and_roundtrips() {
 }
 
 #[test]
-fn browser_open_view_has_no_trusted_root_or_instance_fields() {
+fn browser_project_open_view_has_no_trusted_root_field() {
     let frame = Frame::ResourceQuery(ResourceQuery::OpenView {
         request_id: "request-1".into(),
-        project_id: "project-1".into(),
+        project_id: Some("project-1".into()),
+        instance_id: None,
         payload: OpenResourceView {
             kind: ResourceViewKind::FsDirectoryPage,
             path: Some("src".into()),
@@ -41,6 +42,32 @@ fn browser_open_view_has_no_trusted_root_or_instance_fields() {
     assert_eq!(value["payload"]["path"], "src");
     assert!(value.get("root").is_none());
     assert!(value.get("instanceId").is_none());
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&frame).unwrap()).unwrap(),
+        frame
+    );
+}
+
+#[test]
+fn browser_instance_open_view_carries_instance_id_only() {
+    let frame = Frame::ResourceQuery(ResourceQuery::OpenView {
+        request_id: "request-2".into(),
+        project_id: None,
+        instance_id: Some("ssh_1".into()),
+        payload: OpenResourceView {
+            kind: ResourceViewKind::FsDirectoryPage,
+            path: Some("".into()),
+            repo_id: None,
+            group_id: None,
+            cursor: None,
+            expected_generation: None,
+            limit: 200,
+        },
+    });
+    let value = serde_json::to_value(&frame).unwrap();
+    assert_eq!(value["instanceId"], "ssh_1");
+    assert!(value.get("projectId").is_none());
+    assert!(value.get("root").is_none());
     assert_eq!(
         Frame::parse(&serde_json::to_string(&frame).unwrap()).unwrap(),
         frame
@@ -168,7 +195,8 @@ fn git_log_query_roundtrips_on_instance_wire() {
 
     let open = Frame::ResourceQuery(crate::resource::ResourceQuery::OpenView {
         request_id: "request-1".into(),
-        project_id: "project-1".into(),
+        project_id: Some("project-1".into()),
+        instance_id: None,
         payload: OpenResourceView {
             kind: ResourceViewKind::GitLogPage,
             path: None,

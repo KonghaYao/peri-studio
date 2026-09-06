@@ -25,7 +25,8 @@ fn git_mutation_requires_a_healthy_server_but_resource_reads_do_not() {
     });
     let read = Frame::ResourceQuery(ResourceQuery::OpenView {
         request_id: "read-1".into(),
-        project_id: "project-1".into(),
+        project_id: Some("project-1".into()),
+        instance_id: None,
         payload: OpenResourceView {
             kind: ResourceViewKind::WorkspaceSummary,
             path: None,

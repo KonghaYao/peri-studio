@@ -44,6 +44,7 @@ use crate::channel::elicitation_response::ElicitationResponse;
 use crate::channel::mcp_control::McpControl;
 use crate::channel::mcp_apps_control::McpAppsControl;
 use crate::channel::metadata_command_processor::MetadataCommandProcessor;
+use crate::channel::machine_command_processor::MachineCommandProcessor;
 use crate::channel::permission_resolution::PermissionResolution;
 use crate::channel::prompt_delivery::PromptDelivery;
 use crate::channel::runtime_closure::RuntimeClosure;
@@ -142,6 +143,7 @@ pub(super) struct CoordInner {
     /// Project/session metadata commands own validation, durable command
     /// phases, Registry projection barriers and runtime activation.
     pub(super) metadata_commands: MetadataCommandProcessor,
+    pub(super) machine_commands: MachineCommandProcessor,
     /// Project-scoped discovery owns single-flight and private ACP lifecycle.
     pub(super) session_discovery: SessionDiscovery,
     /// Interactive and background ACP session catalog reads share one
@@ -174,6 +176,24 @@ impl CommandCoordinator {
         // metadata 直通面（独立子系统，review #9）：project/session 元数据
         // 命令自带完整提交序列（校验 → payload_hash → BeginCommand 去重 →
         // accepted ack → 按 action 分发），不经 chat 队列。
+        if matches!(
+            action,
+            ActionEnvelope::MachineAdd { .. }
+                | ActionEnvelope::MachineConnect { .. }
+                | ActionEnvelope::MachineDisconnect { .. }
+                | ActionEnvelope::MachineStop { .. }
+                | ActionEnvelope::MachineCancel { .. }
+                | ActionEnvelope::MachineRetry { .. }
+                | ActionEnvelope::MachineTrustHost { .. }
+                | ActionEnvelope::MachineConfirmReplace { .. }
+                | ActionEnvelope::MachineRename { .. }
+                | ActionEnvelope::MachineSetAutoReconnect { .. }
+                | ActionEnvelope::MachineRemove { .. }
+                | ActionEnvelope::MachineRestore { .. }
+        ) {
+            return self.inner.machine_commands.submit(ctx, action, tx).await;
+        }
+
         if matches!(
             action,
             ActionEnvelope::ProjectCreate { .. }
@@ -248,5 +268,13 @@ impl CommandCoordinator {
         // 队列面（§7.4 规则 6）：临界区内 去重判定 → try_reserve → 入队。
         self.submit_queued_action(ctx, action, tx, &command_id_str)
             .await
+    }
+
+    /// instance hello 到达后通知 MachineService（SSH 供应管道 step 7）。
+    pub async fn on_instance_hello(&self, instance_id: &str) {
+        self.inner
+            .machine_commands
+            .on_instance_hello(instance_id)
+            .await;
     }
 }

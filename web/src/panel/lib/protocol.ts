@@ -102,6 +102,52 @@ export const projectRestore = (projectId: string) =>
 export const projectRename = (projectId: string, name: string) =>
   action('project/rename', { projectId, name });
 
+export const machineAdd = (
+  destination: string,
+  displayName?: string,
+  port?: number,
+  identityFile?: string,
+) => {
+  const payload: Record<string, unknown> = { destination };
+  if (displayName) payload.displayName = displayName;
+  if (port != null) payload.port = port;
+  if (identityFile) payload.identityFile = identityFile;
+  return action('machine/add', payload);
+};
+
+export const machineConnect = (instanceId: string) =>
+  action('machine/connect', { instanceId });
+
+export const machineDisconnect = (instanceId: string) =>
+  action('machine/disconnect', { instanceId });
+
+export const machineStop = (instanceId: string) =>
+  action('machine/stop', { instanceId });
+
+export const machineCancel = (instanceId: string) =>
+  action('machine/cancel', { instanceId });
+
+export const machineRetry = (instanceId: string) =>
+  action('machine/retry', { instanceId });
+
+export const machineTrustHost = (instanceId: string, fingerprint: string) =>
+  action('machine/trust-host', { instanceId, fingerprint });
+
+export const machineConfirmReplace = (instanceId: string) =>
+  action('machine/confirm-replace', { instanceId });
+
+export const machineRename = (instanceId: string, name: string) =>
+  action('machine/rename', { instanceId, name });
+
+export const machineSetAutoReconnect = (instanceId: string, enabled: boolean) =>
+  action('machine/set-auto-reconnect', { instanceId, enabled });
+
+export const machineRemove = (instanceId: string) =>
+  action('machine/remove', { instanceId });
+
+export const machineRestore = (instanceId: string) =>
+  action('machine/restore', { instanceId });
+
 export const persistedSessionCreate = (projectId: string, title?: string) => {
   const payload: Record<string, unknown> = { projectId };
   if (title) payload.title = title;

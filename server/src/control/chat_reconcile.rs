@@ -3,6 +3,11 @@
 
 use super::*;
 
+/// SSH 机器 instance_id 前缀（§7.1 `ssh_<ulid>`）。
+fn is_ssh_instance(instance_id: &str) -> bool {
+    instance_id.starts_with("ssh_")
+}
+
 /// 重连对账摘要（§8.3 步骤 5）。
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ReconciliationReport {
@@ -43,6 +48,9 @@ impl ChatRegistry {
         let pending_close = self.inner.pending_close.read().await.clone();
         let ephemeral = self.inner.ephemeral_chats.read().await.clone();
         let mut confirmed: Vec<String> = Vec::new();
+        // SSH 首连窗口：ChatRegistry 对该 instance 仍为空时，不得仅凭「无
+        // 登记」就 kill 远端仍存活的 chat（ssh-machine-mount §5.5–5.6）。
+        let ssh_empty_registry = is_ssh_instance(instance_id) && registered.is_empty();
         drop(chats);
 
         for cid in alive {
@@ -61,6 +69,27 @@ impl ChatRegistry {
                 Some(_) => {
                     report.alive.push(cid.clone());
                     confirmed.push(cid.clone());
+                }
+                None if ssh_empty_registry => {
+                    // SSH 空 registry：登记未确认 chat，由 per-instance 恢复
+                    // lane 接管（register + 心跳存活证据 → resume）。
+                    match self
+                        .register_from_reconcile(cid, instance_id)
+                        .await
+                    {
+                        Ok(()) => {
+                            report.alive.push(cid.clone());
+                            confirmed.push(cid.clone());
+                        }
+                        Err(error) => {
+                            warn!(
+                                chat_id = %cid,
+                                instance_id,
+                                ?error,
+                                "ssh empty-registry reconcile register failed"
+                            );
+                        }
+                    }
                 }
                 None => {
                     // server 无登记（重启后遗留）→ 意外存活，kill 清理。
@@ -135,5 +164,15 @@ impl ChatRegistry {
             "alive_sessions reconciliation complete"
         );
         Ok(report)
+    }
+
+    /// SSH 空 registry 对账登记：server 重启后无 chat 视图，instance 心跳
+    /// 上报存活 chat 时补登记（不 kill；cwd 占位，打开时由 session/load 校准）。
+    async fn register_from_reconcile(
+        &self,
+        chat_id: &str,
+        instance_id: &str,
+    ) -> Result<(), ChatError> {
+        self.register(chat_id, instance_id, None, "/", None).await
     }
 }

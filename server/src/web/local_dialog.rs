@@ -10,15 +10,15 @@ use std::process::Command;
 pub fn pick_directory(prompt: &str) -> Option<PathBuf> {
     #[cfg(target_os = "macos")]
     {
-        return pick_directory_macos(prompt);
+        pick_directory_macos(prompt)
     }
     #[cfg(target_os = "linux")]
     {
-        return pick_directory_linux(prompt);
+        pick_directory_linux(prompt)
     }
     #[cfg(target_os = "windows")]
     {
-        return pick_directory_windows(prompt);
+        pick_directory_windows(prompt)
     }
     #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
     {

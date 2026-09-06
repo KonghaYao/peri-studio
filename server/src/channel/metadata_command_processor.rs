@@ -153,6 +153,7 @@ impl MetadataCommandProcessor {
                         turn_id: None,
                         chat_id: c.chat_id,
                         project_id: c.project_id,
+                        instance_id: c.instance_id,
                         session_id: c.session_id,
                         acp_session_id: c.acp_session_id,
                         committed_projection_version: None,
@@ -187,6 +188,7 @@ impl MetadataCommandProcessor {
                         turn_id: None,
                         chat_id: c.chat_id,
                         project_id: c.project_id,
+                        instance_id: c.instance_id,
                         session_id: c.session_id,
                         acp_session_id: c.acp_session_id,
                         committed_projection_version: None,
@@ -250,6 +252,7 @@ impl MetadataCommandProcessor {
                 turn_id: None,
                 chat_id: None,
                 project_id: None,
+                instance_id: None,
                 session_id: None,
                 acp_session_id: None,
                 committed_projection_version: None,
@@ -344,11 +347,13 @@ impl MetadataCommandProcessor {
     }
 
     /// committed/error 终态 ack 回投（action 执行段共用；广播经 tx 队列）。
+    #[allow(clippy::too_many_arguments)]
     pub(super) async fn send_metadata_ack(
         &self,
         cmd: &MetadataCommand,
         status: AckStatus,
         project_id: Option<&str>,
+        instance_id: Option<&str>,
         session_id: Option<&str>,
         chat_id: Option<&str>,
         acp_id: Option<String>,
@@ -361,6 +366,7 @@ impl MetadataCommandProcessor {
                 turn_id: None,
                 chat_id: chat_id.map(str::to_string),
                 project_id: project_id.map(str::to_string),
+                instance_id: instance_id.map(str::to_string),
                 session_id: session_id.map(str::to_string),
                 acp_session_id: acp_id,
                 committed_projection_version: None,

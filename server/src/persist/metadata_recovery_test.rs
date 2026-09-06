@@ -167,3 +167,34 @@ async fn runtime_rewind_restart_never_redelivers_dispatch_or_confirmed_effect() 
         Some("server_restart_after_rewind_confirmed")
     );
 }
+
+#[tokio::test]
+async fn recover_after_restart_fails_in_progress_ssh_machines() {
+    use super::metadata::{
+        AdmitSshMachineParams, MetadataStore, PHASE_FAILED, new_ssh_instance_id,
+    };
+
+    let dir = tempdir().unwrap();
+    let store = MetadataStore::open(dir.path()).await.unwrap();
+    let id = new_ssh_instance_id();
+    store
+        .admit_ssh_machine(AdmitSshMachineParams {
+            instance_id: &id,
+            destination: "user@remote",
+            port: None,
+            identity_file: None,
+            display_name: "remote",
+        })
+        .await
+        .unwrap();
+    store
+        .update_machine_phase(&id, "tunnel", None)
+        .await
+        .unwrap();
+
+    store.recover_after_restart().await.unwrap();
+
+    let row = store.machine(&id).await.unwrap().unwrap();
+    assert_eq!(row.phase, PHASE_FAILED);
+    assert_eq!(row.error_code.as_deref(), Some("server_restarted"));
+}

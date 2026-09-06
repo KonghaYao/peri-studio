@@ -53,9 +53,9 @@ const committed = (ack: CatalogAck) => ack.status === 'committed' || ack.status 
 export class CatalogActions {
   constructor(private readonly deps: CatalogActionsDependencies) {}
 
-  createProject(name: string, cwd: string, callbacks: MutationCallbacks = {}): boolean {
+  createProject(name: string, cwd: string, instanceId?: string, callbacks: MutationCallbacks = {}): boolean {
     if (!this.canMutate('Read-only mode cannot create projects')) return false;
-    const frame = H.projectCreate(name, cwd);
+    const frame = H.projectCreate(name, cwd, instanceId);
     return this.sendMutation(frame, 'project/create', 'Project created', {
       title: 'Project creation result not yet confirmed',
       detail: 'The project may already have been created. Your input is preserved; wait for the sidebar to sync before resubmitting.',

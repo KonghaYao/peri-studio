@@ -152,6 +152,7 @@ impl MetadataCommandProcessor {
                             &cmd,
                             AckStatus::Committed,
                             Some(&project.id),
+                            None,
                             Some(&acp_session_id),
                             Some(&chat_id),
                             Some(acp_session_id.clone()),

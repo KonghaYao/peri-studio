@@ -210,13 +210,24 @@ fn m1_action_type_subset() {
         "mcp/app-open",
         "mcp/app-resource",
         "mcp/app-call",
+        "machine/add",
+        "machine/connect",
+        "machine/disconnect",
+        "machine/stop",
+        "machine/cancel",
+        "machine/retry",
+        "machine/trust-host",
+        "machine/rename",
+        "machine/set-auto-reconnect",
+        "machine/remove",
+        "machine/restore",
     ] {
         assert!(m1_allows_action_type(t), "{t} 应在 M1");
     }
     for t in ["events/subscribe", "events/unsubscribe"] {
         assert!(!m1_allows_action_type(t), "{t} 应不在 M1");
     }
-    assert_eq!(crate::whitelist::M1_ACTION_TYPES.len(), 34);
+    assert_eq!(crate::whitelist::M1_ACTION_TYPES.len(), 46);
 }
 
 /// 全量注册表：54 个 tag（含 terminal 与 instance/forward 系）。

@@ -22,6 +22,7 @@ fn terminal_optional_fields_omit_none_and_accept_legacy_null() {
         project_id: Some("project-1".into()),
         session_id: None,
         acp_session_id: None,
+        instance_id: None,
         committed_projection_version: None,
     });
     let ack_json = serde_json::to_value(&ack).unwrap();

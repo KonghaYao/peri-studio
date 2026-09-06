@@ -28,12 +28,15 @@ use crate::channel::ConnectionRegistry;
 use crate::channel::Gateway;
 use crate::channel::RelayEventHandler;
 use crate::config::Config;
+use crate::control::machine_pipeline::MachinePipelinePort;
 use crate::control::ChatRegistry;
 use crate::control::InstanceRegistry;
 use crate::control::ProjectService;
+use crate::control::MachineService;
 use crate::control::SessionCatalog;
 use crate::persist::metadata::MetadataStore;
 use crate::persist::Store;
+use crate::runtime::MachinePorts;
 use crate::state::doc_manager::{BatchConfig, DocManager};
 use crate::state::registry::RegistryState;
 
@@ -116,6 +119,31 @@ impl Hub {
         store: Arc<Store>,
         auth: Arc<tokio::sync::Mutex<crate::auth::AuthService>>,
     ) -> Result<Hub, HubError> {
+        Self::assemble_with_pipeline(cfg, store, auth, None).await
+    }
+
+    /// 装配并注入可选 SSH 供应管道端口（app `SshBackend`；测试用 fake）。
+    pub async fn assemble_with_pipeline(
+        cfg: &Config,
+        store: Arc<Store>,
+        auth: Arc<tokio::sync::Mutex<crate::auth::AuthService>>,
+        machine_pipeline: Option<Arc<dyn MachinePipelinePort>>,
+    ) -> Result<Hub, HubError> {
+        let ports = machine_pipeline
+            .map(MachinePorts::with_pipeline)
+            .unwrap_or_else(MachinePorts::none);
+        Self::assemble_with_ports(cfg, store, auth, ports, cfg.listen_port).await
+    }
+
+    /// 装配并注入 app 侧机器管道端口（`MachinePipelinePort`）。
+    #[allow(clippy::too_many_arguments)]
+    pub async fn assemble_with_ports(
+        cfg: &Config,
+        store: Arc<Store>,
+        auth: Arc<tokio::sync::Mutex<crate::auth::AuthService>>,
+        ports: MachinePorts,
+        listen_port: u16,
+    ) -> Result<Hub, HubError> {
         // 1. UpdateSink 薄 adapter（内存镜像 + 广播流，无落盘）。
         let sink = Arc::new(StoreSink::new());
         // 2. DocManager（BatchConfig 从 §16 默认映射）。无恢复注入：registry
@@ -190,6 +218,24 @@ impl Hub {
             .reproject()
             .await
             .map_err(|e| HubError::Store(e.to_string()))?;
+        let machines = {
+            let service = MachineService::new(metadata.clone(), registry.clone())
+                .with_runtime_paths(
+                    listen_port,
+                    cfg.data_dir.clone(),
+                    std::env::current_exe().unwrap_or_default(),
+                )
+                .with_instance_chats(instance.clone(), chats.clone(), auth.clone());
+            match ports.pipeline() {
+                Some(pipeline) => service.with_pipeline(pipeline),
+                None => service,
+            }
+        };
+        machines
+            .bootstrap()
+            .await
+            .map_err(|e| HubError::Store(e.to_string()))?;
+        coordinator.install_machine_service(machines).await;
         // §6.3：session/list 轮询（10s 全量同步投影；server 侧，见
         // CommandCoordinator::spawn_session_poller 决策注释）。
         coordinator.spawn_session_poller();
@@ -234,6 +280,7 @@ impl Hub {
                 .clear_restarting()
                 .await
                 .map_err(|error| HubError::Store(error.to_string()))?;
+            coordinator.on_recovery_barrier_cleared().await;
         }
         let gateway = Gateway::new(
             Arc::new(cfg.clone()),
@@ -268,14 +315,14 @@ impl Hub {
         })
     }
 
-    /// Server restart no longer rebuilds chat views from SQLite (ADR-0003).
-    /// ChatRegistry starts empty; live runtimes are recovered via instance
-    /// hello reconciliation and explicit `session/open` + `session/load`.
+    /// Server restart 后 ChatRegistry 启动为空（ADR-0003）；全局 Restarting
+    /// pending 仅含本进程保证能拉起控制面的 instance（当前即 `local`）。
+    /// `kind=ssh` 的 id 永不进入此集合（§5 / ssh-machine-mount §5.2）。
     async fn rebuild_chat_views(
         _metadata: &MetadataStore,
         _chats: &ChatRegistry,
     ) -> Result<HashSet<String>, HubError> {
-        Ok(HashSet::new())
+        Ok(HashSet::from(["local".to_string()]))
     }
 
     /// 运行入口（main `run_with` 调用）：绑定监听 → 周期任务 + gateway 并发

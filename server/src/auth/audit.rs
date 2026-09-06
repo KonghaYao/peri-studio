@@ -36,3 +36,25 @@ pub fn audit(
         auth_failed_total = auth_failed_total,
     );
 }
+
+/// SSH 机器管理结构化审计（ssh-machine-mount §13）。
+///
+/// `hostname` 为规范化主机名（不含 `user@`）；禁止记录 token、私钥或完整 destination。
+pub fn machine_audit(
+    instance_id: &str,
+    hostname: Option<&str>,
+    action: &str,
+    result: &str,
+    duration_ms: u64,
+    generation: Option<u64>,
+) {
+    tracing::info!(
+        target: "peri_studio.audit",
+        action,
+        instance_id,
+        hostname = hostname.map(ToOwned::to_owned),
+        result,
+        duration_ms,
+        generation,
+    );
+}

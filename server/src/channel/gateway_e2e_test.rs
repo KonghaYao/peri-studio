@@ -75,6 +75,30 @@ async fn e2e_create_prompt_event_broadcast() {
         }
         other => panic!("expected auth_response, got {other:?}"),
     }
+    // 首个 authoritative heartbeat 完成 local 恢复门禁（recovery_instances
+    // 仅含 `local`；hello 本身不触发对账/开门）。
+    msink
+        .send(Message::Text(
+            serde_json::to_string(&Frame::InstanceHeartbeat(
+                peri_studio_proto::instance::InstanceHeartbeat {
+                    load: 0,
+                    alive_sessions: vec![],
+                },
+            ))
+            .unwrap()
+            .into(),
+        ))
+        .await
+        .unwrap();
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while server._hub_keep.registry.global_status()
+            != peri_studio_proto::schema::GlobalStatus::Healthy
+        {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .expect("local heartbeat should clear Restarting barrier");
 
     // ---- client 订阅 chat doc（create 前先订阅，快照时序 §4.6）----
     // create 的 chat_id 未知，订阅 registry 建立 ready；create committed

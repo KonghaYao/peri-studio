@@ -36,6 +36,17 @@ pub enum Command {
     Token(TokenArgs),
     /// Query server health.
     Status(StatusArgs),
+    /// Hidden: print wire protocol version for remote SSH probe.
+    #[command(hide = true)]
+    ProtocolVersion,
+    /// Hidden: authenticated owner shutdown for SSH stop agents.
+    #[command(hide = true)]
+    OwnerShutdown {
+        #[arg(long)]
+        data_dir: PathBuf,
+        #[arg(long)]
+        token_file: PathBuf,
+    },
 }
 
 #[derive(Debug, Clone, Args)]

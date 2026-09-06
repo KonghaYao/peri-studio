@@ -1,5 +1,5 @@
-//! Hub 装配与 chat 视图重建测试：`rebuild_chat_views`（ADR-0003 no-op）+
-//! `Hub::assemble` 全链路 smoke（§16 测试 20/31）。
+//! Hub 装配与 chat 视图重建测试：`rebuild_chat_views`（仅 `local` 进全局
+//! Restarting pending）+ `Hub::assemble` 全链路 smoke（§16 测试 20/31）。
 //! StoreSink 镜像/广播/修复测试见 `hub_sink_test.rs`。
 
 use std::sync::Arc;
@@ -23,7 +23,7 @@ async fn env() -> (tempfile::TempDir, Arc<Store>, Arc<StoreSink>, DocManager) {
 }
 
 #[tokio::test]
-async fn rebuild_chat_views_is_noop_after_adr_0003() {
+async fn rebuild_chat_views_only_local_in_recovery_barrier() {
     use crate::control::{ChatRegistry, Hub};
     use crate::persist::metadata::MetadataStore;
 
@@ -31,7 +31,7 @@ async fn rebuild_chat_views_is_noop_after_adr_0003() {
     let metadata = Arc::new(MetadataStore::open(tmp.path()).await.unwrap());
     let chats = ChatRegistry::new(doc.registry());
     let recovery = Hub::rebuild_chat_views(&metadata, &chats).await.unwrap();
-    assert!(recovery.is_empty());
+    assert_eq!(recovery, std::collections::HashSet::from(["local".to_string()]));
     assert!(chats.entry("chat-live").await.is_none());
 }
 
@@ -162,7 +162,14 @@ async fn hub_assemble_smoke_ready_sequence() {
         other => panic!("expected ready, got {other:?}"),
     }
 
-    assert!(hub.can_accept_committed());
+    assert!(
+        !hub.can_accept_committed(),
+        "without local instance hello, Restarting barrier must stay closed"
+    );
+    assert_eq!(
+        hub.registry.global_status(),
+        peri_studio_proto::schema::GlobalStatus::Restarting
+    );
 
     task.abort();
     drop(sink);

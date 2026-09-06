@@ -370,6 +370,7 @@ fn acknowledged(command_id: &str, status: AckStatus) -> Frame {
         turn_id: None,
         chat_id: None,
         project_id: None,
+        instance_id: None,
         session_id: None,
         acp_session_id: None,
         committed_projection_version: None,

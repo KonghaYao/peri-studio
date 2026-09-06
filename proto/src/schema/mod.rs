@@ -36,8 +36,8 @@ pub use elicitation::{
     ElicitationProjection, ElicitationResponseAction, ElicitationStatus,
 };
 pub use registry::{
-    ChatSummary, InstanceView, ProjectSessionSummary, ProjectSummary, RegistryDocRoot,
-    RegistryGlobal, WorkspaceSummary,
+    ChatSummary, InstanceView, MachineSummary, ProjectSessionSummary, ProjectSummary,
+    RegistryDocRoot, RegistryGlobal, WorkspaceSummary,
 };
 
 use serde::{Deserialize, Serialize};

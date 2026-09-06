@@ -34,7 +34,10 @@ pub enum ResourceQuery {
     #[serde(rename = "resource/open-view", rename_all = "camelCase")]
     OpenView {
         request_id: String,
-        project_id: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        project_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        instance_id: Option<String>,
         payload: OpenResourceView,
     },
     #[serde(rename = "resource/release-view", rename_all = "camelCase")]

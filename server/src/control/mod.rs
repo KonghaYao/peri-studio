@@ -7,12 +7,16 @@
 //!
 //! 权威：`docs/architecture.md` §4.5–§4.7、§7.1–§7.6、§8.3–§8.6、§9.2、§17.2。
 
+mod machine_pipeline;
+#[cfg(test)]
+mod fake_machine_pipeline;
 mod chat_registry;
 mod close_codes;
 mod heartbeat;
 mod hub;
 mod instance_registry;
 mod project_service;
+mod machine_service;
 mod resource_projection;
 mod resource_service;
 mod session_catalog;
@@ -28,11 +32,20 @@ pub use close_codes::{
 };
 pub use heartbeat::{Heartbeat, HeartbeatDriver, HeartbeatOutcome};
 pub use hub::{Hub, HubError, StoreSink};
+pub use machine_pipeline::{
+    CancelResult, MachinePipelinePort, NopMachinePipeline, PipelineError, PipelineEvent,
+    PipelineSpec, PipelineStep, StopResult,
+};
+#[cfg(test)]
+pub use fake_machine_pipeline::{FakeMachinePipeline, PipelineInvocation};
 pub use instance_registry::{
     HelloOutcome, InstanceAck, InstanceConn, InstanceError, InstanceRegistry, InstanceState,
     KillOutcome, SpawnOutcome,
 };
 pub use project_service::{ProjectService, ProjectServiceError};
+pub use machine_service::{
+    AdmitAddParams, MachineDeliveryOutcome, MachineService, MachineServiceError,
+};
 pub use resource_projection::ResourceProjection;
 pub use resource_service::ResourceService;
 pub use session_catalog::{CatalogSession, SessionCatalog};

@@ -6,7 +6,7 @@ import { installStoreProjection } from './store-projection';
 function signals() {
   return {
     setChatEntries: vi.fn(), setChatHead: vi.fn(), setPermissions: vi.fn(),
-    setElicitations: vi.fn(), setProjects: vi.fn(),
+    setElicitations: vi.fn(), setProjects: vi.fn(), setMachines: vi.fn(),
     setRegistryHydrated: vi.fn(), setProjectSessions: vi.fn(), setImportableSessions: vi.fn(),
     setInstances: vi.fn(), setChatCatalog: vi.fn(), setGlobalStatus: vi.fn(),
     setSchemaVersion: vi.fn(), setChatStatusSignal: vi.fn(), setRuntimeDocsState: vi.fn(),

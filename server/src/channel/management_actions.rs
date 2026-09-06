@@ -424,6 +424,7 @@ impl CommandCoordinator {
             None,
             None,
             None,
+            None,
         )
         .await;
         let me = self.clone();
@@ -446,6 +447,7 @@ impl CommandCoordinator {
                         None,
                         None,
                         None,
+                        None,
                     )
                     .await;
                 }
@@ -458,11 +460,13 @@ impl CommandCoordinator {
         SubmitAck::Handled
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn send_discovery_ack(
         &self,
         cmd: &ExecCmd,
         status: AckStatus,
         project_id: Option<&str>,
+        instance_id: Option<&str>,
         session_id: Option<&str>,
         chat_id: Option<&str>,
         acp_id: Option<String>,
@@ -475,6 +479,7 @@ impl CommandCoordinator {
                 turn_id: None,
                 chat_id: chat_id.map(str::to_string),
                 project_id: project_id.map(str::to_string),
+                instance_id: instance_id.map(str::to_string),
                 session_id: session_id.map(str::to_string),
                 acp_session_id: acp_id,
                 committed_projection_version: None,

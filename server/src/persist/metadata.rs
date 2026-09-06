@@ -30,8 +30,20 @@ mod metadata_recovery;
 mod metadata_sessions;
 #[path = "metadata_catalog_sessions.rs"]
 mod metadata_catalog_sessions;
+#[path = "machine_phases.rs"]
+pub mod machine_phases;
+#[path = "metadata_machines.rs"]
+mod metadata_machines;
 
+pub use machine_phases::{
+    connect_entry_phase, is_in_progress, is_terminal_failure, normalize_ssh_hostname,
+    normalize_ssh_destination,
+    PHASE_AWAITING_HOST_KEY, PHASE_AWAITING_REPLACE, PHASE_CONNECTING, PHASE_FAILED, PHASE_HOST_KEY_PROBE, PHASE_INSTALL,
+    PHASE_OFFLINE, PHASE_ONLINE, PHASE_PENDING, PHASE_PROBE, PHASE_PROVISION, PHASE_SSH_CONNECT,
+    PHASE_START, PHASE_TUNNEL,
+};
 pub use metadata_catalog_sessions::{CatalogSessionPref, CatalogSessionPrefMap, catalog_session_pref_map};
+pub use metadata_machines::{AdmitSshMachineParams, MachineRecord, new_ssh_instance_id};
 
 pub const METADATA_DB_FILE: &str = "metadata.sqlite3";
 #[derive(Debug, Error)]
@@ -134,6 +146,7 @@ pub struct MetadataCommand {
     pub session_id: Option<String>,
     pub chat_id: Option<String>,
     pub acp_session_id: Option<String>,
+    pub instance_id: Option<String>,
     pub error_code: Option<String>,
 }
 

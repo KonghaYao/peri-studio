@@ -34,6 +34,9 @@ mod metadata_command_processor;
 mod metadata_project_actions;
 mod metadata_session_actions;
 mod metadata_validation;
+mod machine_actions;
+mod machine_command_processor;
+mod machine_validation;
 mod mutation_admission;
 #[cfg(test)]
 #[path = "mutation_admission_test.rs"]

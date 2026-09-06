@@ -455,6 +455,9 @@ pub(crate) async fn registry_writer_loop(
             RegistryMsg::ListLegacySessions(reply) => {
                 let _ = reply.send(applier.list_legacy_sessions());
             }
+            RegistryMsg::ListHealthMachines(reply) => {
+                let _ = reply.send(applier.list_health_machines());
+            }
         }
     }
 }

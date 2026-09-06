@@ -133,6 +133,45 @@ impl RegistryApplier {
                 }
                 Ok(())
             }
+            DocCommand::RegistryReplaceMachines { machines } => {
+                let mm = root.get_or_init::<_, yrs::MapRef>(&mut txn, "machines");
+                mm.clear(&mut txn);
+                for m in machines {
+                    let entry = mm.get_or_init::<_, yrs::MapRef>(&mut txn, m.instance_id.as_str());
+                    entry.insert(&mut txn, "instance_id", m.instance_id.clone());
+                    entry.insert(&mut txn, "kind", m.kind.clone());
+                    entry.insert(&mut txn, "display_name", m.display_name.clone());
+                    match &m.ssh_destination {
+                        Some(v) => entry.insert(&mut txn, "ssh_destination", v.clone()),
+                        None => entry.insert(&mut txn, "ssh_destination", yrs::Any::Null),
+                    };
+                    match m.ssh_port {
+                        Some(v) => entry.insert(&mut txn, "ssh_port", v as i64),
+                        None => entry.insert(&mut txn, "ssh_port", yrs::Any::Null),
+                    };
+                    entry.insert(&mut txn, "phase", m.phase.clone());
+                    match &m.error_code {
+                        Some(v) => entry.insert(&mut txn, "error_code", v.clone()),
+                        None => entry.insert(&mut txn, "error_code", yrs::Any::Null),
+                    };
+                    entry.insert(
+                        &mut txn,
+                        "has_identity_file",
+                        m.has_identity_file,
+                    );
+                    entry.insert(&mut txn, "auto_reconnect", m.auto_reconnect);
+                    match &m.host_key_sha256 {
+                        Some(v) => entry.insert(&mut txn, "host_key_sha256", v.clone()),
+                        None => entry.insert(&mut txn, "host_key_sha256", yrs::Any::Null),
+                    };
+                    entry.insert(&mut txn, "updated_at", m.updated_at.clone());
+                    match &m.archived_at {
+                        Some(v) => entry.insert(&mut txn, "archived_at", v.clone()),
+                        None => entry.insert(&mut txn, "archived_at", yrs::Any::Null),
+                    };
+                }
+                Ok(())
+            }
             _ => Ok(()),
         }
     }
@@ -179,6 +218,44 @@ impl RegistryApplier {
         session_list::read_current(&txn, &root)
             .into_values()
             .collect()
+    }
+
+    /// Registry `machines` 投影的 credential-free 摘要（health / CLI status）。
+    pub(crate) fn list_health_machines(&self) -> Vec<super::registry::MachineHealthRow> {
+        let txn = self.doc.transact();
+        let root = match txn.get_map(ROOT) {
+            Some(r) => r,
+            None => return Vec::new(),
+        };
+        let Some(mm) = root
+            .get(&txn, "machines")
+            .and_then(|v| v.cast::<yrs::MapRef>().ok())
+        else {
+            return Vec::new();
+        };
+        let str_or = |m: &yrs::MapRef, k: &str| -> String {
+            m.get(&txn, k)
+                .and_then(|x| x.cast::<String>().ok())
+                .unwrap_or_default()
+        };
+        let mut out = Vec::new();
+        for (_, v) in mm.iter(&txn) {
+            if let Ok(m) = v.cast::<yrs::MapRef>() {
+                out.push(super::registry::MachineHealthRow {
+                    instance_id: str_or(&m, "instance_id"),
+                    kind: str_or(&m, "kind"),
+                    display_name: str_or(&m, "display_name"),
+                    phase: str_or(&m, "phase"),
+                });
+            }
+        }
+        out.sort_by(|a, b| {
+            a.kind
+                .cmp(&b.kind)
+                .then_with(|| a.display_name.cmp(&b.display_name))
+                .then_with(|| a.instance_id.cmp(&b.instance_id))
+        });
+        out
     }
 
     /// gap 写回（读现状改 gap 字段；§9.4/§12.4）。

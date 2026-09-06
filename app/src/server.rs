@@ -1,15 +1,18 @@
 //! server 角色与本地自连接 instance 的进程监督。
 
 use std::process::Stdio;
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context as _;
 use peri_studio_server::config::Config;
-use peri_studio_server::runtime::{ServerReady, ServerRuntime};
+use peri_studio_server::runtime::{MachinePorts, ServerReady, ServerRuntime};
 use tokio::process::{Child, Command};
 use tokio_util::sync::CancellationToken;
 
+use crate::machine_ports::AppMachinePipelinePort;
 use crate::private_file::read_private_text;
+use crate::ssh_backend::SshBackendConfig;
 
 const RESTART_BASE_DELAY: Duration = Duration::from_secs(1);
 const RESTART_MAX_DELAY: Duration = Duration::from_secs(30);
@@ -23,9 +26,23 @@ pub async fn run(
     shutdown: CancellationToken,
 ) -> anyhow::Result<()> {
     let server_shutdown = shutdown.clone();
-    let runtime = ServerRuntime::start(config.clone(), async move {
-        server_shutdown.cancelled().await;
-    })
+    let current_exe =
+        std::env::current_exe().context("failed to locate peri-studio executable")?;
+    let ports = MachinePorts::with_pipeline(Arc::new(AppMachinePipelinePort::new(
+        SshBackendConfig {
+            data_dir: config.data_dir.clone(),
+            config_dir: config.config_dir.clone(),
+            current_exe,
+            listen_port: config.listen_port,
+        },
+    )));
+    let runtime = ServerRuntime::start_with_ports(
+        config.clone(),
+        async move {
+            server_shutdown.cancelled().await;
+        },
+        ports,
+    )
     .await?;
     let ready = runtime.ready().clone();
     println!("Peri Studio: {}", ready.web_url);

@@ -297,3 +297,39 @@ pub struct McpAppCallPayload {
     pub app_session_id: String,
     pub payload: serde_json::Value,
 }
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MachineAddPayload {
+    pub destination: String,
+    pub display_name: Option<String>,
+    pub port: Option<u32>,
+    pub identity_file: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MachineInstancePayload {
+    pub instance_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MachineTrustHostPayload {
+    pub instance_id: String,
+    pub fingerprint: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MachineRenamePayload {
+    pub instance_id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MachineSetAutoReconnectPayload {
+    pub instance_id: String,
+    pub enabled: bool,
+}
