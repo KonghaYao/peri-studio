@@ -188,6 +188,27 @@ describe('connection lifecycle', () => {
     expect(deps.onConnectionLost).toHaveBeenCalled();
   });
 
+  it('disconnect invokes onBeforeDisconnect before connection loss hooks', () => {
+    const order: string[] = [];
+    const deps = {
+      settleConnectionLoss: vi.fn(() => { order.push('settle'); }),
+      onBeforeDisconnect: vi.fn(() => { order.push('before'); }),
+      onConnectionLost: vi.fn(() => { order.push('lost'); }),
+      onAuthInvalidation: vi.fn(),
+      toast: vi.fn(),
+      sendSubscribe: vi.fn(),
+      onReady: vi.fn(),
+      onFrame: vi.fn(),
+      onProtocolIssue: vi.fn(),
+    };
+    installConnection(deps);
+    connectWithCookie();
+    order.length = 0;
+    disconnect();
+    expect(deps.onBeforeDisconnect).toHaveBeenCalledOnce();
+    expect(order).toEqual(['before', 'settle', 'lost']);
+  });
+
   it('resetConnectionState restores every connection signal', () => {
     installTestDeps();
     connectWithCookie();

@@ -155,7 +155,11 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
     const phase = terminalSession().phase;
     return phase === 'running' || phase === 'opening' ? 1 : 0;
   };
-  const terminalPanelVisible = () => showPanel() && view() === 'terminal';
+  const terminalPanelVisible = () => {
+    if (!showPanel() || view() !== 'terminal') return false;
+    if (props.compact && !props.open) return false;
+    return true;
+  };
   const holdTerminalSurface = () => {
     if (terminalPanelVisible()) return true;
     const phase = terminalSession().phase;
@@ -233,24 +237,31 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
         </Show>
       }>
         <div data-testid="resource-workbench-panel" class={panelBodyClass}>
-          <Show when={view() === 'terminal'}>
-            <TerminalPanel onClosePanel={close} />
+          <Show when={terminalPanelVisible()}>
+            <TerminalPanel onClosePanel={close} visible={true} />
           </Show>
           <Show when={view() !== 'terminal'}>{panelBody()}</Show>
         </div>
       </Show>
     </Show>
   </aside>;
-  return <Show when={props.compact} fallback={surface()}>
-    <Dialog open={!!props.open} onOpenChange={(open) => props.onOpenChange?.(open)}>
-      <DialogContent
-        size="resource-compact"
-        onOpenAutoFocus={props.onCompactOpenAutoFocus}
-        onCloseAutoFocus={props.onCompactCloseAutoFocus}
-      >
-        <DialogTitle class="sr-only">Workspace resources</DialogTitle>
-        {surface()}
-      </DialogContent>
-    </Dialog>
-  </Show>;
+  return <>
+    <Show when={props.compact} fallback={surface()}>
+      <Dialog open={!!props.open} onOpenChange={(open) => props.onOpenChange?.(open)}>
+        <DialogContent
+          size="resource-compact"
+          onOpenAutoFocus={props.onCompactOpenAutoFocus}
+          onCloseAutoFocus={props.onCompactCloseAutoFocus}
+        >
+          <DialogTitle class="sr-only">Workspace resources</DialogTitle>
+          {surface()}
+        </DialogContent>
+      </Dialog>
+    </Show>
+    <Show when={props.compact && terminalSurfaceParked()}>
+      <div data-testid="terminal-parked-panel" class={cn(panelBodyClass, 'terminal-workbench-park')}>
+        <TerminalPanel onClosePanel={close} visible={false} />
+      </div>
+    </Show>
+  </>;
 }

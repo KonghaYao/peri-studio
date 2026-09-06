@@ -31,7 +31,7 @@ import {
 } from '../panel/lib/mcp-apps';
 import { handleRewindCandidates, handleRewindPreview, resetRewindState, rewindOwnsError } from '../panel/lib/rewind-assembly';
 import { clearPromptRecoverySelection, handlePromptStatus, promptRecoveryOwnsError, requestPromptRecovery, resetPromptRecoveryState } from '../panel/lib/prompt-recovery-assembly';
-import { handleTerminalConnectionLost, handleTerminalFrame, installTerminalTransport, resetTerminalSession } from '@/features/terminal/terminal-session';
+import { closeTerminalBeforeTeardown, handleTerminalConnectionLost, handleTerminalFrame, installTerminalTransport, resetTerminalSession } from '@/features/terminal/terminal-session';
 import type { TerminalDownstreamFrame } from '@/shared/protocol/terminal';
 import { connectionReady, disconnect, forgetRememberedSession, installConnection, promptMaxBytes, readRememberedSession, rememberSession, resetConnectionState, sendFrame } from '../panel/lib/connection';
 import { ERROR_REASONS, persistActionProblem, reportTransportIssue, type PersistentError } from '../panel/lib/panel-errors';
@@ -204,6 +204,7 @@ installTerminalTransport({ send: sendFrame, ready: connectionReady });
 // 回调经 installConnection 注入回组合根。
 installConnection({
   settleConnectionLoss: () => commands.settleConnectionLoss(),
+  onBeforeDisconnect: closeTerminalBeforeTeardown,
   onConnectionLost: () => {
     sessionCatalogBootstrap?.reset();
     sessionActivation.connectionLost();

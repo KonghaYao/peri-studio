@@ -21,8 +21,9 @@ mod terminal_host_util;
 
 pub(crate) use terminal_host_util::controlled_shell;
 use terminal_host_util::{
-    apply_safe_env, fail_generation, input_loop, kill_process_tree, kill_session, read_loop,
-    rejected_open, remove_if_generation, validate_open, ReadLoopEnd,
+    apply_safe_env, fail_generation, input_loop, kill_process_tree, kill_session,
+    process_group_id_from_pid, read_loop, rejected_open, remove_if_generation, validate_open,
+    ReadLoopEnd,
 };
 
 /// 汇入 hub 主循环的终端事件（不进入 ACP ring/disk）。
@@ -47,6 +48,7 @@ struct Session {
     next_input_seq: u64,
     child: Option<Box<dyn portable_pty::Child + Send + Sync>>,
     process_id: Option<u32>,
+    process_group_id: Option<i32>,
     killer: Mutex<Box<dyn portable_pty::ChildKiller + Send + Sync>>,
     reader_started: bool,
 }
@@ -172,7 +174,7 @@ impl TerminalHost {
             let reader = match master.lock().expect("pty master mutex").try_clone_reader() {
                 Ok(reader) => reader,
                 Err(_) => {
-                    kill_process_tree(process_id);
+                    kill_process_tree(process_group_id_from_pid(process_id));
                     let _ = child.kill();
                     let _ = child.wait();
                     let removed = remove_if_generation(&inner, &tid, generation);
@@ -189,7 +191,7 @@ impl TerminalHost {
             let seq_counter = AtomicU64::new(1);
             let read_end = read_loop(reader, tid.clone(), &seq_counter, &events);
             if read_end != ReadLoopEnd::Eof {
-                kill_process_tree(process_id);
+                kill_process_tree(process_group_id_from_pid(process_id));
                 let _ = child.kill();
             }
             let (exit_code, mut signal) = match child.wait() {
@@ -292,6 +294,17 @@ impl TerminalHost {
             }
         };
 
+        let process_id = child.process_id();
+        #[cfg(unix)]
+        {
+            // portable-pty 已在子进程 setsid；此处再尽力把 shell 放入独立 pgid（对齐 ACP child 的 process_group(0)）。
+            if let Some(pid) = process_id.and_then(|id| i32::try_from(id).ok()).filter(|pid| *pid > 0) {
+                unsafe {
+                    let _ = libc::setpgid(pid, pid);
+                }
+            }
+        }
+
         let writer = match pair.master.take_writer() {
             Ok(writer) => writer,
             Err(e) => {
@@ -302,10 +315,13 @@ impl TerminalHost {
         };
         let (input_tx, input_rx) = sync_channel::<Vec<u8>>(INPUT_QUEUE_CAP);
 
-        let process_id = child.process_id();
         let killer = child.clone_killer();
         let master: Box<dyn portable_pty::MasterPty + Send> = pair.master;
         let master = Arc::new(Mutex::new(master));
+        let process_group_id = master
+            .lock()
+            .ok()
+            .and_then(|guard| guard.process_group_leader());
         let generation = self.next_generation.fetch_add(1, Ordering::Relaxed);
 
         {
@@ -319,6 +335,7 @@ impl TerminalHost {
                     next_input_seq: 1,
                     child: Some(child),
                     process_id,
+                    process_group_id,
                     killer: Mutex::new(killer),
                     reader_started: false,
                 },

@@ -162,7 +162,17 @@ export class TerminalSessionController {
   close(): void {
     const current = this.state();
     if (current.phase === 'idle' || current.phase === 'closed') return;
-    this.sendCloseForCurrentSession();
+    const sent = this.sendCloseForCurrentSession();
+    if (!sent && this.transport?.ready()) {
+      this.setState({
+        ...current,
+        phase: 'error',
+        error: 'Terminal close could not be sent.',
+        retryable: true,
+      });
+      return;
+    }
+    if (!sent) return;
     this.nextInputSeq = 1;
     this.expectedSeq = 1;
     this.openingTerminalId = null;
@@ -178,6 +188,14 @@ export class TerminalSessionController {
       exitCode: null,
       signal: null,
     });
+  }
+
+  /** WS 断开前尽力下发 terminal_close，不强制进入 closed 阶段。 */
+  closeBeforeTeardown(): void {
+    const phase = this.state().phase;
+    if (phase === 'opening' || phase === 'running') {
+      this.sendCloseForCurrentSession();
+    }
   }
 
   connectionLost(): void {
@@ -320,14 +338,16 @@ export class TerminalSessionController {
     }
   }
 
-  private sendCloseForCurrentSession(): void {
+  private sendCloseForCurrentSession(): boolean {
     const current = this.state();
     const terminalId = current.terminalId ?? this.openingTerminalId;
     if (terminalId) {
-      this.transport?.send(terminalClose(terminalId));
-    } else if (current.phase === 'opening' && current.requestId) {
-      this.transport?.send(terminalCloseByRequest(current.requestId));
+      return this.transport?.send(terminalClose(terminalId)) ?? false;
     }
+    if (current.phase === 'opening' && current.requestId) {
+      return this.transport?.send(terminalCloseByRequest(current.requestId)) ?? false;
+    }
+    return true;
   }
 
   private bufferOutput(seq: number, bytes: Uint8Array): void {
@@ -402,4 +422,5 @@ export function handleTerminalFrame(frame: TerminalDownstreamFrame): void {
   terminalController.handleFrame(frame);
 }
 export const handleTerminalConnectionLost = (): void => terminalController.connectionLost();
+export const closeTerminalBeforeTeardown = (): void => terminalController.closeBeforeTeardown();
 export const resetTerminalSession = (): void => terminalController.reset();

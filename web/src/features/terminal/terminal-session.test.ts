@@ -172,4 +172,36 @@ describe('TerminalSessionController', () => {
     controller.connectionLost();
     expect(controller.state()).toMatchObject({ phase: 'error', terminalId, retryable: true });
   });
+
+  it('stays running when close frame cannot be sent while transport is ready', () => {
+    const { controller, sent } = harness();
+    const ids = beginOpen(controller);
+    controller.handleFrame(opened(ids.requestId));
+    let allowSend = true;
+    controller.installTransport({
+      ready: () => true,
+      send: (frame) => {
+        sent.push(frame);
+        return allowSend;
+      },
+    });
+    allowSend = false;
+    controller.close();
+    expect(sent.at(-1)).toEqual({ t: 'terminal_close', terminalId });
+    expect(controller.state()).toMatchObject({
+      phase: 'error',
+      terminalId,
+      error: 'Terminal close could not be sent.',
+      retryable: true,
+    });
+  });
+
+  it('sends close on teardown without entering closed phase', () => {
+    const { controller, sent } = harness();
+    const ids = beginOpen(controller);
+    controller.handleFrame(opened(ids.requestId));
+    controller.closeBeforeTeardown();
+    expect(sent.at(-1)).toEqual({ t: 'terminal_close', terminalId });
+    expect(controller.state()).toMatchObject({ phase: 'running', terminalId });
+  });
 });

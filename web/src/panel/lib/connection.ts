@@ -37,6 +37,7 @@ const LAST_SESSION_KEY = 'peri-studio:last-session';
 
 interface ConnectionDeps {
   settleConnectionLoss: () => void;
+  onBeforeDisconnect?: () => void;
   onConnectionLost: () => void;
   onAuthInvalidation: (reason: string) => void;
   toast: (msg: string) => void;
@@ -81,6 +82,7 @@ export function connectWithCookie(): void {
 export function reconnect(): void { connectWithCookie(); }
 
 export function disconnect(): void {
+  deps!.onBeforeDisconnect?.();
   deps!.settleConnectionLoss();
   connectionEpoch += 1;
   setConnectionReady(false);

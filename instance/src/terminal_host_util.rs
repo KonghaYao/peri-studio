@@ -3,7 +3,7 @@
 use super::*;
 
 pub(super) fn kill_session(session: &mut Session) {
-    kill_process_tree(session.process_id);
+    kill_process_tree(session.process_group_id.or(session.process_id.and_then(|id| i32::try_from(id).ok())));
     if let Ok(mut killer) = session.killer.lock() {
         let _ = killer.kill();
     }
@@ -14,22 +14,24 @@ pub(super) fn kill_session(session: &mut Session) {
 }
 
 #[cfg(unix)]
-pub(super) fn kill_process_tree(process_id: Option<u32>) {
-    let Some(process_id) = process_id else {
+pub(super) fn kill_process_tree(process_group_id: Option<i32>) {
+    let Some(process_group_id) = process_group_id.filter(|pgid| *pgid > 0) else {
         return;
     };
-    if let Ok(process_group) = i32::try_from(process_id) {
-        // portable-pty makes the shell a session leader; signal its process group
-        // so background descendants cannot survive browser/transport cleanup.
-        unsafe {
-            libc::kill(-process_group, libc::SIGHUP);
-            libc::kill(-process_group, libc::SIGKILL);
-        }
+    // portable-pty makes the shell a session leader; signal its process group
+    // so background descendants cannot survive browser/transport cleanup.
+    unsafe {
+        libc::kill(-process_group_id, libc::SIGHUP);
+        libc::kill(-process_group_id, libc::SIGKILL);
     }
 }
 
 #[cfg(not(unix))]
-pub(super) fn kill_process_tree(_process_id: Option<u32>) {}
+pub(super) fn kill_process_tree(_process_group_id: Option<i32>) {}
+
+pub(super) fn process_group_id_from_pid(process_id: Option<u32>) -> Option<i32> {
+    process_id.and_then(|id| i32::try_from(id).ok())
+}
 
 pub(super) fn rejected_open(
     request_id: String,
