@@ -95,8 +95,10 @@ export function Terminal(props: TerminalProps) {
         scrollback: 5000,
         rightClickSelectsWord: true,
         fontFamily: readXtermFontFamily(),
-        fontSize: 12,
-        lineHeight: 1.35,
+        fontSize: 13,
+        /** 1.0 保持行高为整像素，canvas 渲染中文笔画更稳（1.35 易出虚线/断笔） */
+        lineHeight: 1,
+        letterSpacing: 0,
         drawBoldTextInBrightColors: true,
         /** 关闭对比度强制调整，保留 truecolor / 256 色输出 */
         minimumContrastRatio: 1,

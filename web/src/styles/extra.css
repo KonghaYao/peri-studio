@@ -250,6 +250,10 @@ body.workbench-panel-resizing * {
   cursor: text;
 }
 
+.terminal-xterm-host .xterm-screen canvas {
+  image-rendering: auto;
+}
+
 .terminal-xterm-host .xterm-link {
   color: var(--content-link);
   text-decoration: underline;

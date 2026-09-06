@@ -29,7 +29,10 @@ export function readXtermTheme() {
   };
 }
 
+/** xterm 专用字体栈：Latin mono + CJK，避免宽字符用错 fallback 导致笔画断裂。 */
 export function readXtermFontFamily(): string {
-  const value = getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim();
-  return value || 'ui-monospace, monospace';
+  const mono = getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim();
+  const cjk = '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei"';
+  const latin = mono || 'Menlo, Monaco, Consolas, monospace';
+  return `${latin}, ${cjk}, monospace`;
 }
