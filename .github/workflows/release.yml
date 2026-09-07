@@ -88,6 +88,7 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           cargo fmt --all --check
+          cargo build --workspace --bins --locked
           cargo test --workspace --locked
           cargo clippy --workspace --all-targets --locked -- -D warnings
           cargo build --release --locked --target ${{ matrix.target }} --bin peri-studio

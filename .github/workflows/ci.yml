@@ -68,6 +68,8 @@ jobs:
         run: rustup component add rustfmt clippy
       - name: Check formatting
         run: cargo fmt --all --check
+      - name: Build integration test binaries
+        run: cargo build --workspace --bins --locked
       - name: Run workspace tests
         run: cargo test --workspace --locked
       - name: Reject warnings
