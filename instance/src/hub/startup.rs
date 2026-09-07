@@ -104,6 +104,10 @@ impl InstanceOwnerLock {
         })
     }
 
+    fn release_descriptor(file: &mut File) {
+        let _ = fs2::FileExt::unlock(file);
+    }
+
     pub(super) fn identity(&self) -> InstanceOwnerIdentity {
         self.identity.clone()
     }
@@ -125,7 +129,13 @@ pub(super) fn current_owner(data_dir: &Path) -> anyhow::Result<Option<InstanceOw
     }
 
     file.rewind()?;
-    Ok(Some(read_owner_identity(&mut file)?))
+    let identity = read_owner_identity(&mut file)?;
+    release_owner_probe_descriptor(&mut file);
+    Ok(Some(identity))
+}
+
+fn release_owner_probe_descriptor(file: &mut File) {
+    InstanceOwnerLock::release_descriptor(file);
 }
 
 fn read_owner_identity(file: &mut File) -> anyhow::Result<InstanceOwnerIdentity> {

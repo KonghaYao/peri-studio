@@ -14,19 +14,12 @@ Peri Studio 以单一原生二进制发布。安装器沿用 Peri 的 `~/.peri` 
 支持的首发目标：
 
 - Linux x86_64（glibc）；
-- macOS Apple Silicon；
-- Windows x86_64。
+- macOS Apple Silicon。
 
 macOS / Linux：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/KonghaYao/peri-studio/main/scripts/install.sh | bash
-```
-
-Windows PowerShell：
-
-```powershell
-irm https://raw.githubusercontent.com/KonghaYao/peri-studio/main/scripts/install.ps1 | iex
 ```
 
 默认安装布局：
@@ -38,11 +31,7 @@ irm https://raw.githubusercontent.com/KonghaYao/peri-studio/main/scripts/install
   peri-studio-current-version.txt
 ```
 
-Windows 使用 `%USERPROFILE%\.peri` 和 `.exe` 后缀。脚本从 GitHub Release
-选择对应平台资产，强制校验同名 `.sha256` 后才原子安装，并把 `~/.peri` 加入
-用户 PATH。指定版本可设置 `PERI_STUDIO_INSTALL_VERSION=0.2.0`；自定义目录可设置
-`PERI_STUDIO_INSTALL_DIR`。安装脚本和首发二进制尚未签名，macOS Gatekeeper 或
-Windows SmartScreen 可能显示来源警告。
+脚本从 GitHub Release 选择对应平台资产，强制校验同名 `.sha256` 后才原子安装，并把 `~/.peri` 加入用户 PATH。指定版本可设置 `PERI_STUDIO_INSTALL_VERSION=0.2.0`；自定义目录可设置 `PERI_STUDIO_INSTALL_DIR`。安装脚本和首发二进制尚未签名，macOS Gatekeeper 可能显示来源警告。Windows 尚未纳入当前 GitHub Release 矩阵；如需 Windows 支持，请从源码自行构建。
 
 安装后直接运行：
 
@@ -173,10 +162,9 @@ DNS rebinding 请求。
 
 ## GitHub Release 产物
 
-`peri-studio-v<workspace-version>` tag 触发 Linux x86_64、Windows x86_64 和
-macOS Apple Silicon 原生 release workflow。每个平台发布一个可直接执行的单一
+`peri-studio-v<workspace-version>` tag 触发 Linux x86_64 与 macOS Apple Silicon 原生 release workflow。每个平台发布一个可直接执行的单一
 `peri-studio` 二进制及其 `.sha256`、源码 revision metadata 和 SPDX SBOM；同时
-发布 `install.sh` 与 `install.ps1`。Web 产物已内嵌，release 不包含独立 Web 部署包，
+发布 `install.sh`。Web 产物已内嵌，release 不包含独立 Web 部署包，
 也明确排除 `test-child`、token、配置目录与运行数据。
 构建顺序固定为：
 

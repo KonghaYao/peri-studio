@@ -1,8 +1,7 @@
 # Peri Studio 后台部署
 
-GitHub Release 为每个平台提供一个 `peri-studio` 原生二进制，Web 静态资产已内嵌，
-不需要单独拷贝 `web/dist`。普通用户通过 `scripts/install.sh` 或 `install.ps1` 安装到
-`~/.peri`（Windows 为 `%USERPROFILE%\.peri`）；本文件的 systemd/launchd 模板用于需要
+GitHub Release 为 Linux x86_64 与 macOS Apple Silicon 提供 `peri-studio` 原生二进制，Web 静态资产已内嵌，
+不需要单独拷贝 `web/dist`。普通用户通过 `scripts/install.sh` 安装到 `~/.peri`；本文件的 systemd/launchd 模板用于需要
 长期后台运行的 Unix 主机。
 
 ## 运行模式

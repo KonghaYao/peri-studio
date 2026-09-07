@@ -1346,11 +1346,11 @@ peri-studio/
   作为短期 artifact。浏览器门禁通过后才测试/构建 Web，再执行 locked Rust
   build/test/Clippy；Linux/macOS 重复生成相同 native binary asset 并比较字节。根 workspace CI 不被
   误当作 peri-studio 的覆盖证据。
-- `peri-studio-v*` tag 只在 tag 版本精确等于 workspace 版本时产出 Linux x86_64、
-  Windows x86_64 与 macOS Apple Silicon 的单一原生二进制。native build 必须同时依赖
+- `peri-studio-v*` tag 只在 tag 版本精确等于 workspace 版本时产出 Linux x86_64 与
+  macOS Apple Silicon 的单一原生二进制。native build 必须同时依赖
   独立 policy 与 browser jobs；每个平台发布同版本 `peri-studio`、SHA-256、源码 revision
-  metadata、SPDX SBOM 与 provenance attestation，另发布 shell/PowerShell 安装器。安装器沿用
-  Peri 的 `~/.peri` / `%USERPROFILE%\.peri` PATH 约定，以独立 `peri-studio-v*` 版本目录避免
+  metadata、SPDX SBOM 与 provenance attestation，另发布 shell 安装器。安装器沿用
+  Peri 的 `~/.peri` PATH 约定，以独立 `peri-studio-v*` 版本目录避免
   覆盖 Peri；产物排除测试二进制、凭据和运行数据。Windows 尚不具备安全原子 FS mutation
   的平台实现时须返回 `ResourceUnsupported`，不得降级绕过 workspace 边界。Windows 的
   managed-local owner control 当前不支持异常 server 退出后的跨进程接管；正常启动与由

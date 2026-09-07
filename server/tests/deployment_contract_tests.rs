@@ -72,6 +72,8 @@ fn release_requires_fresh_sources_and_attests_single_binaries() {
     assert!(release.contains("tags: ['peri-studio-v*']"));
     assert!(release.contains("peri-studio-v${version}"));
     assert!(release.contains("macos-14"));
+    assert!(!release.contains("windows-latest"));
+    assert!(!release.contains("install.ps1"));
     assert!(release.contains("cmp \"$first\" \"$second\""));
 }
 
