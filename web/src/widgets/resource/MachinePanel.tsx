@@ -25,7 +25,8 @@ import {
 } from '@/entities/machine/machine-view';
 import type { MachineInfo } from '@/entities/registry/registry-view';
 import { ResourceSectionTitle } from './ResourceSectionTitle';
-import { Button, Dialog, DialogContent, DialogTitle, TextField } from '@/shared/ui';
+import { Button, Dialog, DialogContent, TextField } from '@/shared/ui';
+import { FormDialogShell } from '@/widgets/shell/shared/FormDialogShell';
 import { AddComputerDialog } from '@/widgets/resource/AddComputerDialog';
 import { MachineRow } from '@/widgets/resource/MachineRow';
 import {
@@ -217,20 +218,24 @@ export function MachinePanel() {
     />
     <Dialog open={!!renameTarget()} onOpenChange={(open) => { if (!open && !renameBusy()) setRenameTarget(null); }}>
       <DialogContent dismissible={!renameBusy()}>
-        <DialogTitle>Rename computer</DialogTitle>
-        <form class="m-0 flex flex-col gap-8" onSubmit={(event) => {
-          event.preventDefault();
-          const target = renameTarget();
-          const name = renameDraft().trim();
-          if (!target || !name) return;
-          runConfirmedMutation(() => setRenameBusy(true), () => setRenameBusy(false), (committed, failed) => renameMachine(target.instanceId, name, committed, failed), () => setRenameTarget(null));
-        }}>
-          <TextField label="Display name" value={renameDraft()} onInput={(event) => setRenameDraft(event.currentTarget.value)} disabled={renameBusy()} />
-          <div class="flex justify-end gap-6 pt-4">
-            <Button type="button" variant="secondary" disabled={renameBusy()} onClick={() => setRenameTarget(null)}>Cancel</Button>
-            <Button type="submit" variant="primary" busy={renameBusy()} disabled={!renameDraft().trim()}>Save</Button>
-          </div>
-        </form>
+        <FormDialogShell
+          title="Rename computer"
+          description="Updates the sidebar label only. SSH destination and port stay the same."
+        >
+          <form class="m-0 flex flex-col gap-12" onSubmit={(event) => {
+            event.preventDefault();
+            const target = renameTarget();
+            const name = renameDraft().trim();
+            if (!target || !name) return;
+            runConfirmedMutation(() => setRenameBusy(true), () => setRenameBusy(false), (committed, failed) => renameMachine(target.instanceId, name, committed, failed), () => setRenameTarget(null));
+          }}>
+            <TextField label="Display name" value={renameDraft()} onInput={(event) => setRenameDraft(event.currentTarget.value)} disabled={renameBusy()} autofocus />
+            <div class="mt-20 flex justify-end gap-6">
+              <Button type="button" variant="secondary" disabled={renameBusy()} onClick={() => setRenameTarget(null)}>Cancel</Button>
+              <Button type="submit" variant="primary" busy={renameBusy()} disabled={!renameDraft().trim()}>Save</Button>
+            </div>
+          </form>
+        </FormDialogShell>
       </DialogContent>
     </Dialog>
   </section>;

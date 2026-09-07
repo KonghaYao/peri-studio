@@ -1,5 +1,12 @@
-import { createEffect, createSignal, Show } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogTitle, Spinner, TextField } from '@/shared/ui';
+import { createEffect, createMemo, createSignal, For, Show } from 'solid-js';
+import { Button, CopyButton, Dialog, DialogContent, InlineNotice, Spinner, TextField } from '@/shared/ui';
+import { FormDialogShell } from '@/widgets/shell/shared/FormDialogShell';
+import { applyParsedSshToFields } from '@/features/machine/ssh-command-parse';
+import {
+  buildSshAddKeyCommand,
+  buildSshVerifyShellCommand,
+  shouldOfferSshVerifyCommand,
+} from '@/features/machine/ssh-verify-command';
 import { addComputer, confirmMachineReplace, instances, machines, retryMachine, toast } from '@/store';
 import { readOnly } from '../../panel/lib/auth-state';
 import { runConfirmedMutation } from '../../panel/lib/form-mutation';
@@ -17,10 +24,13 @@ interface AddComputerDialogProps {
 }
 
 export function AddComputerDialog(props: AddComputerDialogProps) {
+  const [sshCommandInput, setSshCommandInput] = createSignal('');
+  const [parseWarnings, setParseWarnings] = createSignal<string[]>([]);
   const [destination, setDestination] = createSignal('');
   const [displayName, setDisplayName] = createSignal('');
   const [port, setPort] = createSignal('');
   const [identityFile, setIdentityFile] = createSignal('');
+  const [credentialStripped, setCredentialStripped] = createSignal(false);
   const [submitting, setSubmitting] = createSignal(false);
   const [fieldError, setFieldError] = createSignal<string | null>(null);
   const [progressMode, setProgressMode] = createSignal(false);
@@ -31,10 +41,13 @@ export function AddComputerDialog(props: AddComputerDialogProps) {
   const [progressPhase, setProgressPhase] = createSignal('pending');
 
   const resetForm = () => {
+    setSshCommandInput('');
+    setParseWarnings([]);
     setDestination('');
     setDisplayName('');
     setPort('');
     setIdentityFile('');
+    setCredentialStripped(false);
     setFieldError(null);
     setProgressMode(false);
     setPendingDestination(null);
@@ -50,6 +63,56 @@ export function AddComputerDialog(props: AddComputerDialogProps) {
     }
     if (!open) resetForm();
     props.onOpenChange(open);
+  };
+
+  const parseSshLine = (): boolean => {
+    const line = sshCommandInput().trim();
+    if (!line) return true;
+    return applyParsedSshToFields(line, {
+      setDestination,
+      setPort,
+      setIdentityFile,
+      setParseWarnings,
+      setParseError: (message) => setFieldError(message),
+      setCredentialStripped,
+    });
+  };
+
+  const parsedPort = () => {
+    const text = port().trim();
+    if (!text || !/^\d{1,5}$/.test(text)) return undefined;
+    const value = Number(text);
+    return value >= 1 && value <= 65535 ? value : undefined;
+  };
+
+  const verifyShellCommand = createMemo(() => buildSshVerifyShellCommand({
+    destination: destination().trim(),
+    port: parsedPort(),
+    identityFile: identityFile().trim() || undefined,
+    interactivePassword: credentialStripped(),
+  }));
+
+  const sshAddKeyCommand = createMemo(() => {
+    const identity = identityFile().trim();
+    if (!identity || credentialStripped()) return '';
+    return buildSshAddKeyCommand(identity);
+  });
+
+  const showAuthSetupCommands = createMemo(() => shouldOfferSshVerifyCommand({
+    destination: destination(),
+    credentialStripped: credentialStripped(),
+    identityFile: identityFile(),
+  }));
+
+  const commitSshCommandParse = () => {
+    const line = sshCommandInput().trim();
+    if (!line) {
+      setParseWarnings([]);
+      setCredentialStripped(false);
+      setFieldError(null);
+      return;
+    }
+    if (parseSshLine()) setFieldError(null);
   };
 
   const validate = (): boolean => {
@@ -76,6 +139,10 @@ export function AddComputerDialog(props: AddComputerDialogProps) {
       portNum = Number(portText);
     }
     const identity = identityFile().trim();
+    if (identity.startsWith('~')) {
+      setFieldError('Identity file must be an absolute path on this Mac (replace ~).');
+      return false;
+    }
     if (identity && (identity.startsWith('-') || (!identity.startsWith('/') && !identity.startsWith('./')))) {
       setFieldError('Identity file must be an absolute path or start with ./');
       return false;
@@ -92,7 +159,9 @@ export function AddComputerDialog(props: AddComputerDialogProps) {
 
   const submit = (event: SubmitEvent) => {
     event.preventDefault();
-    if (progressMode() || !validate()) return;
+    if (progressMode()) return;
+    if (!destination().trim() && sshCommandInput().trim() && !parseSshLine()) return;
+    if (!validate()) return;
     const dest = destination().trim();
     const portNum = port().trim() ? Number(port().trim()) : undefined;
     const label = displayName().trim() || dest;
@@ -160,53 +229,97 @@ export function AddComputerDialog(props: AddComputerDialogProps) {
 
   return <Dialog open={props.open} onOpenChange={handleOpenChange}>
     <DialogContent dismissible={!submitting()}>
-      <DialogTitle>Add computer</DialogTitle>
       <Show when={progressMode()} fallback={
-        <>
-          <p class="m-0 mb-10 text-11 text-text-muted">
-            Uses OpenSSH on the computer running Peri. Put keys in ssh-agent or pick an identity file. Passwords cannot be entered here.
-          </p>
-          <form class="m-0 flex flex-col gap-8" onSubmit={submit}>
-            <TextField label="Destination" value={destination()} onInput={(event) => setDestination(event.currentTarget.value)} placeholder="user@host" disabled={readOnly() || submitting()} />
+        <FormDialogShell
+          title="Add computer"
+          description="Paste an ssh command or fill in the fields below. Peri stores destination, port, and identity file only—never passwords or API keys."
+        >
+          <form class="m-0 flex flex-col gap-12" onSubmit={submit}>
+            <TextField
+              label="SSH command or destination"
+              value={sshCommandInput()}
+              onInput={(event) => setSshCommandInput(event.currentTarget.value)}
+              onBlur={commitSshCommandParse}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  commitSshCommandParse();
+                }
+              }}
+              placeholder="ssh -p 2222 -i ~/.ssh/id_ed25519 user@host"
+              disabled={readOnly() || submitting()}
+            />
+            <TextField label="Destination" value={destination()} onInput={(event) => { setDestination(event.currentTarget.value); setFieldError(null); }} placeholder="user@host" disabled={readOnly() || submitting()} />
             <TextField label="Display name" value={displayName()} onInput={(event) => setDisplayName(event.currentTarget.value)} placeholder="Optional" disabled={readOnly() || submitting()} />
             <TextField label="Port" value={port()} onInput={(event) => setPort(event.currentTarget.value)} placeholder="Optional" disabled={readOnly() || submitting()} />
             <TextField label="Identity file" value={identityFile()} onInput={(event) => setIdentityFile(event.currentTarget.value)} placeholder="Optional absolute path" disabled={readOnly() || submitting()} />
-            <Show when={fieldError()}>
-              <p class="m-0 text-10 text-danger">{fieldError()}</p>
+            <Show when={showAuthSetupCommands()}>
+              <div class="flex flex-col gap-10 rounded-12 border border-border-subtle bg-surface-muted px-12 py-10">
+                <p class="m-0 text-13 leading-155 text-text-secondary">
+                  Run this on the Mac that runs Peri Studio before you click Add. If it prompts for a password or API key, enter it in Terminal—Peri cannot store that secret.
+                </p>
+                <div class="flex items-start gap-8">
+                  <code class="min-w-0 flex-1 break-all font-mono text-11 leading-145 text-text-primary">{verifyShellCommand()}</code>
+                  <CopyButton text={verifyShellCommand()} label="Copy ssh command" copiedLabel="Command copied" />
+                </div>
+                <Show when={sshAddKeyCommand()}>
+                  <p class="m-0 text-13 leading-155 text-text-secondary">
+                    After login works, load your private key into ssh-agent so Peri can connect without a prompt:
+                  </p>
+                  <div class="flex items-start gap-8">
+                    <code class="min-w-0 flex-1 break-all font-mono text-11 leading-145 text-text-primary">{sshAddKeyCommand()}</code>
+                    <CopyButton text={sshAddKeyCommand()} label="Copy ssh-add command" copiedLabel="Command copied" />
+                  </div>
+                </Show>
+              </div>
             </Show>
-            <div class="flex justify-end gap-6 pt-4">
+            <Show when={parseWarnings().length}>
+              <div class="flex flex-col gap-8">
+                <For each={parseWarnings()}>{(warning) => (
+                  <InlineNotice tone="warning" class="m-0">{warning}</InlineNotice>
+                )}</For>
+              </div>
+            </Show>
+            <Show when={fieldError()}>
+              <p class="m-0 text-13 text-danger">{fieldError()}</p>
+            </Show>
+            <div class="mt-20 flex justify-end gap-6">
               <Button type="button" variant="secondary" disabled={submitting()} onClick={() => handleOpenChange(false)}>Cancel</Button>
               <Button type="submit" variant="primary" busy={submitting()} disabled={readOnly()}>Add</Button>
             </div>
           </form>
-        </>
+        </FormDialogShell>
       }>
-        <div aria-current="step" class="flex flex-col gap-10 py-4">
-          <div class="flex items-center gap-8">
-            <Spinner label="Adding computer" />
-            <p class="m-0 text-13 text-text-primary">Adding {pendingLabel()}…</p>
+        <FormDialogShell
+          title={`Adding ${pendingLabel()}…`}
+          description={machinePipelineProgressLabel(progressPhase())}
+        >
+          <div aria-current="step" class="flex flex-col gap-12">
+            <div class="flex items-center gap-8">
+              <Spinner label="Adding computer" />
+              <span class="text-13 text-text-primary">Connecting and provisioning…</span>
+            </div>
+            <Show when={progressPhase() === 'awaiting_replace'}>
+              <p class="m-0 text-13 leading-155 text-text-secondary">This will replace the existing Peri Studio binary on that computer.</p>
+              <div class="mt-20 flex justify-end gap-6">
+                <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>Close</Button>
+                <Button type="button" variant="primary" disabled={readOnly() || submitting()} busy={submitting()} onClick={confirmReplace}>Confirm replace</Button>
+              </div>
+            </Show>
+            <Show when={progressPhase() === 'failed'}>
+              <p class="m-0 text-13 leading-155 text-text-secondary">{fieldError() ?? 'Keep this computer in the list to retry.'}</p>
+              <div class="mt-20 flex justify-end gap-6">
+                <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>Close</Button>
+                <Button type="button" variant="primary" disabled={readOnly() || submitting()} busy={submitting()} onClick={retryFailed}>Retry</Button>
+              </div>
+            </Show>
+            <Show when={progressPhase() !== 'failed' && progressPhase() !== 'awaiting_replace'}>
+              <div class="mt-20 flex justify-end gap-6">
+                <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>Close</Button>
+              </div>
+            </Show>
           </div>
-          <p class="m-0 text-11 text-text-secondary">{machinePipelineProgressLabel(progressPhase())}</p>
-          <Show when={progressPhase() === 'awaiting_replace'}>
-            <p class="m-0 text-10 text-text-muted">This will replace the existing Peri Studio binary on that computer.</p>
-            <div class="flex justify-end gap-6">
-              <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>Close</Button>
-              <Button type="button" variant="primary" disabled={readOnly() || submitting()} busy={submitting()} onClick={confirmReplace}>Confirm replace</Button>
-            </div>
-          </Show>
-          <Show when={progressPhase() === 'failed'}>
-            <p class="m-0 text-10 text-text-muted">{fieldError() ?? 'Keep this computer in the list to retry.'}</p>
-            <div class="flex justify-end gap-6">
-              <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>Close</Button>
-              <Button type="button" variant="primary" disabled={readOnly() || submitting()} busy={submitting()} onClick={retryFailed}>Retry</Button>
-            </div>
-          </Show>
-          <Show when={progressPhase() !== 'failed' && progressPhase() !== 'awaiting_replace'}>
-            <div class="flex justify-end">
-              <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>Close</Button>
-            </div>
-          </Show>
-        </div>
+        </FormDialogShell>
       </Show>
     </DialogContent>
   </Dialog>;
