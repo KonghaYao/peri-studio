@@ -1,25 +1,27 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup } from 'solid-js';
 import { Button, IconButton, InlineNotice, LoadingState } from '@/shared/ui';
-import { enqueueExplorerUpload, openFilePreview, openResourceDirectory, refreshResourceProject, resourceWorkspace, retryWorkspaceUpload, workspaceUploadAvailable, workspaceUploadBatch, workspaceUploadBlockedMessage, workspaceUploadLiveMessage, workspaceUploadOrigin, workspaceUploadProgressPercent } from '../../panel/store';
-import type { ResourceEntry } from '../../panel/lib/resource-view';
-import { RefreshCw } from 'lucide-solid';
+import {
+  createEmptyExplorerFile, createResourceDirectory, deleteResourcePath, enqueueExplorerUpload,
+  fsMutationAvailability, fsMutationState, moveResourcePath, openFilePreview,
+  openResourceDirectory, refreshResourceProject, resourceWorkspace, retryFsMutation, retryWorkspaceUpload, workspaceUploadAvailable, workspaceUploadBatch,
+  workspaceUploadBlockedMessage, workspaceUploadLiveMessage, workspaceUploadOrigin,
+  workspaceUploadProgressPercent,
+} from '@/store';
+import type { ResourceEntry } from '@/entities/resource/resource-view';
+import { FilePlus, FolderPlus, RefreshCw } from 'lucide-solid';
 import { FileTree, type FileTreeNode } from './FileTree';
+import { ExplorerDeleteDialog, ExplorerInlineEditor, ExplorerMoveDialog, type ExplorerEdit } from './ExplorerMutationDialogs';
+import { ExplorerItemMenu, type ExplorerMenuAction } from './ExplorerItemMenu';
 import { ResourceSectionTitle } from './ResourceSectionTitle';
+import { createExplorerTreeFocus } from './explorer-tree-focus';
 import { dataTransferHasFiles, parseFileDropTransfer, preventBrowserFileDrop } from '../composer/composer-upload-drop';
 import { cn } from '@/shared/lib/cn';
-
 function RefreshIcon() { return <RefreshCw size={14} strokeWidth={1.8} />; }
-
 type ExplorerPanelProps = {
-  expanded?: Set<string>;
-  onExpandedChange?: (expanded: Set<string>) => void;
-  activePath?: string;
-  onActivePathChange?: (path: string) => void;
-  scrollTop?: number;
-  onScrollTopChange?: (scrollTop: number) => void;
-  onPreviewIntent?: (key: string) => void;
+  expanded?: Set<string>; onExpandedChange?: (expanded: Set<string>) => void;
+  activePath?: string; onActivePathChange?: (path: string) => void;
+  scrollTop?: number; onScrollTopChange?: (scrollTop: number) => void; onPreviewIntent?: (key: string) => void;
 };
-
 function entryToNode(entry: ResourceEntry, expanded: Set<string>, cache: Map<string, FileTreeNode>): FileTreeNode {
   const path = String(entry.path ?? '');
   const directory = entry.kind === 'directory';
@@ -32,19 +34,15 @@ function entryToNode(entry: ResourceEntry, expanded: Set<string>, cache: Map<str
   };
   node.name = String(entry.name ?? path);
   node.kind = directory ? 'folder' : 'file';
+  node.meta = { revision: typeof entry.revision === 'string' ? entry.revision : '' };
   node.children = directory && expanded.has(path)
     ? (resourceWorkspace().directories[path]?.entries ?? []).map((child) => entryToNode(child, expanded, cache))
     : undefined;
   cache.set(path, node);
   return node;
 }
-
 function folderLoadingPaths(expanded: Set<string>) {
-  const loading = new Set<string>();
-  for (const path of expanded) {
-    if (path && !resourceWorkspace().directories[path]) loading.add(path);
-  }
-  return loading;
+  return new Set([...expanded].filter((path) => path && !resourceWorkspace().directories[path]));
 }
 
 export function ExplorerPanel(props: ExplorerPanelProps = {}) {
@@ -56,6 +54,11 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
     props.onExpandedChange?.(next);
   };
   const [localActivePath, setLocalActivePath] = createSignal('');
+  const [edit, setEdit] = createSignal<ExplorerEdit | null>(null);
+  const [moveNode, setMoveNode] = createSignal<FileTreeNode | null>(null);
+  const [deleteNode, setDeleteNode] = createSignal<FileTreeNode | null>(null);
+  const [contextNodePath, setContextNodePath] = createSignal<string | null>(null);
+  const [rootMenuOpen, setRootMenuOpen] = createSignal(false);
   const activePath = () => props.activePath ?? localActivePath();
   const setActivePath = (path: string) => {
     if (props.activePath === undefined) setLocalActivePath(path);
@@ -97,6 +100,7 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
     setActivePath(paths.includes(fallback) ? fallback : (paths[0] ?? ''));
   });
   let tree: HTMLDivElement | undefined;
+  const [treeMounted, setTreeMounted] = createSignal(false);
   let acceptingScroll = false;
   let restoreFrame: number | undefined;
   onCleanup(() => { if (restoreFrame !== undefined) cancelAnimationFrame(restoreFrame); });
@@ -129,6 +133,16 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
     queueMicrotask(() => item.focus());
   };
   const navigateTree = (event: KeyboardEvent) => {
+    if (event.key === 'F2' && selectedNode()) {
+      event.preventDefault();
+      setEdit({ mode: 'rename', node: selectedNode()! });
+      return;
+    }
+    if ((event.key === 'Delete' || event.key === 'Backspace') && selectedNode()) {
+      event.preventDefault();
+      setDeleteNode(selectedNode());
+      return;
+    }
     const target = (event.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
     if (!target || !tree) return;
     const items = Array.from(tree.querySelectorAll<HTMLElement>('[role="treeitem"]'));
@@ -159,6 +173,51 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
   const [rootDropActive, setRootDropActive] = createSignal(false);
   const [directoryAlert, setDirectoryAlert] = createSignal<string | null>(null);
   const projectId = () => resourceWorkspace().projectId;
+  const mutationAvailability = () => fsMutationAvailability(projectId());
+  const newFileAvailable = () => workspaceUploadAvailable(projectId());
+  const newFileBlockedMessage = () => workspaceUploadBlockedMessage(projectId());
+  const selectedNode = () => {
+    const path = activePath();
+    const visit = (items: FileTreeNode[]): FileTreeNode | null => {
+      for (const node of items) {
+        if (node.path === path) return node;
+        const child = node.children && visit(node.children);
+        if (child) return child;
+      }
+      return null;
+    };
+    return visit(nodes());
+  };
+  const handleNodeMount = createExplorerTreeFocus({
+    tree: () => tree,
+    treeMounted,
+    visiblePaths,
+    expanded,
+    setExpanded,
+    projectId,
+    setActivePath,
+  });
+  const editParent = (node: FileTreeNode | null) => node?.kind === 'folder'
+    ? node.path
+    : node?.path.includes('/') ? node.path.slice(0, node.path.lastIndexOf('/')) : '';
+  const handleMenuAction = async (action: ExplorerMenuAction, node: FileTreeNode | null) => {
+    if (action === 'copy-path' && node) { await navigator.clipboard.writeText(node.path); return; }
+    if (action === 'new-file' || action === 'new-folder') setEdit({ mode: action, parentPath: editParent(node) });
+    else if (action === 'rename' && node) setEdit({ mode: 'rename', node });
+    else if (action === 'move' && node) setMoveNode(node);
+    else if (node) setDeleteNode(node);
+  };
+  const commitEdit = (current: ExplorerEdit, name: string) => {
+    const currentProject = projectId();
+    if (!currentProject) return;
+    if (current.mode === 'new-file') createEmptyExplorerFile(currentProject, current.parentPath, name);
+    else if (current.mode === 'new-folder') createResourceDirectory(currentProject, current.parentPath ? `${current.parentPath}/${name}` : name);
+    else if (current.mode === 'rename') {
+      const parent = current.node.path.includes('/') ? current.node.path.slice(0, current.node.path.lastIndexOf('/')) : '';
+      moveResourcePath(currentProject, current.node.path, parent ? `${parent}/${name}` : name, String(current.node.meta?.revision ?? ''));
+    }
+    setEdit(null);
+  };
   const uploadBlocked = () => !workspaceUploadAvailable(projectId());
   const blockedMessage = () => workspaceUploadBlockedMessage(projectId());
   const explorerBatch = () => {
@@ -202,8 +261,21 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
 
   return <section class="flex min-h-0 flex-1 flex-col" aria-label="Explorer">
     <ResourceSectionTitle>
-      <span>Files</span><IconButton label="Refresh Explorer" size="compact" onClick={refreshResourceProject} class="ml-auto border-0 bg-transparent text-content-muted hover:text-content-primary"><RefreshIcon /></IconButton>
+      <span>Files</span>
+      <span class="ml-auto flex items-center gap-2">
+        <IconButton label="New File" showTooltip={false} size="compact" disabled={!newFileAvailable()} title={newFileAvailable() ? undefined : newFileBlockedMessage()} onClick={() => setEdit({ mode: 'new-file', parentPath: editParent(selectedNode()) })} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><FilePlus size={14} /></IconButton>
+        <IconButton label="New Folder" showTooltip={false} size="compact" disabled={!mutationAvailability().available} title={mutationAvailability().reason} onClick={() => setEdit({ mode: 'new-folder', parentPath: editParent(selectedNode()) })} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><FolderPlus size={14} /></IconButton>
+        <IconButton label="Refresh Explorer" showTooltip={false} size="compact" onClick={refreshResourceProject} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><RefreshIcon /></IconButton>
+      </span>
     </ResourceSectionTitle>
+    <Show when={edit()}>{(current) => <ExplorerInlineEditor edit={current()} onCommit={commitEdit} onCancel={() => setEdit(null)} />}</Show>
+    <Show when={fsMutationState().projectId === projectId() && fsMutationState().message}>
+      <InlineNotice class="mx-8 mb-8" tone={fsMutationState().phase === 'conflict' || fsMutationState().phase === 'error' ? 'warning' : 'info'} role="status" title="File change">
+        <span>{fsMutationState().message}</span>
+        <Show when={fsMutationState().phase === 'conflict'}><Button size="compact" variant="ghost" onClick={refreshResourceProject}>Refresh</Button></Show>
+        <Show when={fsMutationState().phase === 'uncertain'}><Button size="compact" variant="ghost" onClick={() => projectId() && retryFsMutation(projectId()!)}>Reconcile</Button></Show>
+      </InlineNotice>
+    </Show>
     <Show when={directoryAlert()}>
       <InlineNotice class="mx-8 mb-8" tone="warning" role="alert" title="Upload not started">
         <span>{directoryAlert()}</span>
@@ -246,6 +318,7 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
     <div
       ref={(element) => {
         tree = element;
+        setTreeMounted(true);
         const savedScrollTop = props.scrollTop ?? 0;
         queueMicrotask(() => {
           if (!element.isConnected) return;
@@ -260,6 +333,11 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
       role="tree"
       aria-label="Workspace files"
       onKeyDown={navigateTree}
+      onContextMenu={(event) => {
+        if ((event.target as HTMLElement).closest('[role="treeitem"]')) return;
+        event.preventDefault();
+        setRootMenuOpen(true);
+      }}
       onScroll={(event) => { if (acceptingScroll) props.onScrollTopChange?.(event.currentTarget.scrollTop); }}
       onDragEnter={(event) => {
         if (!dataTransferHasFiles(event.dataTransfer)) return;
@@ -293,6 +371,14 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
           onToggleFolder={toggleFolder}
           activePath={activePath()}
           onActivePathChange={setActivePath}
+          renderFileTrailing={(node) => <ExplorerItemMenu context="file" disabled={!mutationAvailability().available} disabledReason={mutationAvailability().reason} newFileDisabled={!newFileAvailable()} newFileDisabledReason={newFileBlockedMessage()} open={contextNodePath() === node.path} onOpenChange={(open) => setContextNodePath(open ? node.path : null)} onAction={(action) => handleMenuAction(action, node)} />}
+          renderFolderTrailing={(node) => <ExplorerItemMenu context="folder" disabled={!mutationAvailability().available} disabledReason={mutationAvailability().reason} newFileDisabled={!newFileAvailable()} newFileDisabledReason={newFileBlockedMessage()} open={contextNodePath() === node.path} onOpenChange={(open) => setContextNodePath(open ? node.path : null)} onAction={(action) => handleMenuAction(action, node)} />}
+          onNodeContextMenu={(node, event) => {
+            event.preventDefault();
+            setActivePath(node.path);
+            setContextNodePath(node.path);
+          }}
+          onNodeMount={handleNodeMount}
           folderLoadingPaths={folderLoadingPaths(expanded())}
           onSelect={(node) => {
             props.onPreviewIntent?.(`file:${node.path}`);
@@ -321,6 +407,37 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
         />
         <Show when={nextCursor()}>{(cursor) => <button type="button" class="h-(--tree-row-height) w-full border-0 bg-transparent text-left text-11 text-accent hover:bg-hover pointer-coarse:h-44" style={{ 'padding-left': '26px' }} onClick={() => openResourceDirectory('', cursor())}>Load more…</button>}</Show>
       </Show>
+      <ExplorerItemMenu
+        context="root"
+        disabled={!mutationAvailability().available}
+        disabledReason={mutationAvailability().reason}
+        newFileDisabled={!newFileAvailable()}
+        newFileDisabledReason={newFileBlockedMessage()}
+        open={rootMenuOpen()}
+        onOpenChange={setRootMenuOpen}
+        trigger={<span class="sr-only">Workspace actions</span>}
+        onAction={(action) => handleMenuAction(action, null)}
+      />
     </div>
+    <ExplorerMoveDialog
+      node={moveNode()}
+      onClose={() => setMoveNode(null)}
+      onMove={(target) => {
+        const node = moveNode();
+        const currentProject = projectId();
+        if (node && currentProject) moveResourcePath(currentProject, node.path, target, String(node.meta?.revision ?? ''));
+        setMoveNode(null);
+      }}
+    />
+    <ExplorerDeleteDialog
+      node={deleteNode()}
+      onClose={() => setDeleteNode(null)}
+      onDelete={(recursive) => {
+        const node = deleteNode();
+        const currentProject = projectId();
+        if (node && currentProject) deleteResourcePath(currentProject, node.path, String(node.meta?.revision ?? ''), recursive);
+        setDeleteNode(null);
+      }}
+    />
   </section>;
 }

@@ -37,6 +37,15 @@ describe('downstream protocol envelope parsing', () => {
     expect(parse('{"t":"ysync.update","doc":"resource:view:escape","update":"AAAA"}')).toBeNull();
   });
 
+  it('accepts structural filesystem query results and terminal action results', () => {
+    expect(parse('{"t":"resource_result","requestId":"q-delete","result":{"kind":"delete_confirm","data":{"confirmToken":"token-1","expiresAt":"2026-09-06T12:00:00Z","summary":{"path":"src","kind":"directory","entryCount":2}}}}'))
+      .toMatchObject({ t: 'resource_result', requestId: 'q-delete', result: { kind: 'delete_confirm' } });
+    expect(parse('{"t":"action_ack","commandId":"cmd-1","status":"committed","resourceResult":{"kind":"fs_mutation","data":{"primaryPath":"src/new.ts","affectedPaths":["src"]}}}'))
+      .toMatchObject({ t: 'action_ack', commandId: 'cmd-1', resourceResult: { kind: 'fs_mutation' } });
+    expect(parse('{"t":"resource_result","requestId":"q-delete","result":{"kind":"delete_confirm","data":{"confirmToken":"token-1","expiresAt":"x","summary":{"path":"src","kind":"symlink"}}}}')).toBeNull();
+    expect(parse('{"t":"action_ack","commandId":"cmd-1","status":"committed","resourceResult":{"kind":"fs_mutation","data":{"primaryPath":"src/new.ts","affectedPaths":"src"}}}')).toBeNull();
+  });
+
   it('strictly validates terminal downstream frames', () => {
     expect(parse('{"t":"terminal_opened","requestId":"request-1","terminalId":"terminal-1","cwd":"/trusted/project","cols":80,"rows":24}'))
       .toEqual({

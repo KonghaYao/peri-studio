@@ -317,6 +317,24 @@ pub enum ActionEnvelope {
         command_id: String,
         payload: FsWriteFilePayload,
     },
+    /// 在 project workspace 内创建目录（Committed mutation）。
+    #[serde(rename = "fs/create-dir", rename_all = "camelCase")]
+    FsCreateDir {
+        command_id: String,
+        payload: FsCreateDirPayload,
+    },
+    /// 重命名或移动 workspace 内路径（Committed mutation）。
+    #[serde(rename = "fs/move", rename_all = "camelCase")]
+    FsMove {
+        command_id: String,
+        payload: FsMovePayload,
+    },
+    /// 删除 workspace 内路径（Committed mutation）。
+    #[serde(rename = "fs/delete", rename_all = "camelCase")]
+    FsDelete {
+        command_id: String,
+        payload: FsDeletePayload,
+    },
 }
 
 impl ActionEnvelope {
@@ -373,6 +391,9 @@ impl ActionEnvelope {
             ActionEnvelope::MachineRemove { .. } => "machine/remove",
             ActionEnvelope::MachineRestore { .. } => "machine/restore",
             ActionEnvelope::FsWriteFile { .. } => "fs/write-file",
+            ActionEnvelope::FsCreateDir { .. } => "fs/create-dir",
+            ActionEnvelope::FsMove { .. } => "fs/move",
+            ActionEnvelope::FsDelete { .. } => "fs/delete",
         }
     }
 
@@ -427,7 +448,10 @@ impl ActionEnvelope {
             | ActionEnvelope::MachineSetAutoReconnect { command_id, .. }
             | ActionEnvelope::MachineRemove { command_id, .. }
             | ActionEnvelope::MachineRestore { command_id, .. }
-            | ActionEnvelope::FsWriteFile { command_id, .. } => command_id,
+            | ActionEnvelope::FsWriteFile { command_id, .. }
+            | ActionEnvelope::FsCreateDir { command_id, .. }
+            | ActionEnvelope::FsMove { command_id, .. }
+            | ActionEnvelope::FsDelete { command_id, .. } => command_id,
         }
     }
 }

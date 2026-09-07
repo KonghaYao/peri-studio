@@ -86,6 +86,10 @@ fn test_build_hello_fields() {
     assert_eq!(hello.caps["resources"]["git"], true);
     assert_eq!(hello.caps["resources"]["write"], true);
     assert_eq!(
+        hello.caps["resources"]["structuralMutations"],
+        cfg!(any(target_os = "linux", target_os = "macos"))
+    );
+    assert_eq!(
         hello.caps["resources"]["maxGitLogPageBytes"],
         peri_studio_proto::resource::MAX_GIT_LOG_PAGE_BYTES
     );

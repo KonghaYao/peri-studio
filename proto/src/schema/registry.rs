@@ -96,6 +96,13 @@ pub struct InstanceView {
     /// RFC3339。
     pub last_heartbeat: String,
     pub chat_count: u32,
+    /// 可选资源能力投影；旧快照缺字段时 fail closed。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resource_protocol_version: Option<u32>,
+    #[serde(default)]
+    pub resource_write: bool,
+    #[serde(default)]
+    pub resource_structural_mutations: bool,
 }
 
 /// 活跃 chat 摘要（§5.5）。

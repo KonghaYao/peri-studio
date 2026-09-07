@@ -31,6 +31,9 @@ fn view(id: &str, heartbeat: &str, chat_count: u32) -> InstanceView {
         registered_at: "2026-08-01T00:00:00Z".to_string(),
         last_heartbeat: heartbeat.to_string(),
         chat_count,
+        resource_protocol_version: Some(peri_studio_proto::resource::RESOURCE_PROTOCOL_VERSION),
+        resource_write: true,
+        resource_structural_mutations: true,
     }
 }
 

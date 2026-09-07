@@ -56,6 +56,7 @@ date: 2026-08-30
 ### P2-C · Resource + Git
 - `widgets/resource/*` ← FileTree、FilePreview、SCM 树、GitGraphPanel、**ResourceFloatingPanel**（右轨 + 左文件预览）
 - [x] Explorer 已镜像 folder/root drop target、目录拒绝与批次状态；成功批次显式 single-flight refresh
+- [x] Explorer structural mutations 已镜像 sandbox：New File/New Folder、row/root context menu、inline rename、Move to…、永久删除确认、F2/Delete/Backspace、Copy Path；生产由 `features/resource/FsMutationController` 接入 revision CAS、per-project single-flight、capability、uncertain same-commandId reconcile 与 generation-fenced refresh
 - 布局契约：[`ui-specification.md` §10.2](ui-specification.md#102-资源工作台浮窗)、`resource-panel-layout.ts`
 - **Git Graph 数据面**（非 UI）：wire 与投影契约见 [`git-graph-protocol.md`](git-graph-protocol.md)；视觉已落地，待接 `git-log-page` 替换 mock
 

@@ -57,9 +57,11 @@ import {
   bindWorkspaceUploadActionSender,
   bindWorkspaceUploadExplorerRefresh,
   clearSubmittedWorkspaceUploads,
+  createEmptyExplorerFile,
   enqueueComposerRootUpload,
   enqueueExplorerUpload,
   enqueueQuickStartRootUpload,
+  explorerCreatedFileFocus,
   forwardWorkspaceUploadActionAck,
   forwardWorkspaceUploadActionError,
   forwardWorkspaceUploadResourceResult,
@@ -74,6 +76,11 @@ import {
   workspaceUploadProgressPercent,
   workspaceUploadTileStatus,
 } from './workspace-upload';
+import {
+  bindFsMutationActionSender,
+  forwardFsMutationResourceResult,
+  installFsMutationCatalog,
+} from './fs-mutations';
 
 export const [selectedCid, setSelectedCid] = createSignal<string | null>(null);
 export { connectionReady, readOnly };
@@ -189,6 +196,8 @@ function sendAction(frame: ActionFrame, label: string, options: ActionOptions = 
 
 bindWorkspaceUploadActionSender(sendAction);
 bindWorkspaceUploadExplorerRefresh(() => refreshResourceProject());
+bindFsMutationActionSender(sendAction);
+installFsMutationCatalog({ projects, instances });
 
 installStoreWiring({
   setPersistentErrors,
@@ -266,6 +275,7 @@ function onFrame(frame: H.DownstreamFrame): void {
     case 'resource_result':
       if (forwardRemoteDirectoryResourceResult(frame as import('../panel/lib/resource-protocol').ResourceResultFrame)) break;
       if (forwardWorkspaceUploadResourceResult(frame as import('../panel/lib/resource-protocol').ResourceResultFrame)) break;
+      if (forwardFsMutationResourceResult(frame as import('@/shared/protocol/resource-fs-mutation').DeleteConfirmResultFrame)) break;
       handleResourceResult(frame as import('../panel/lib/resource-protocol').ResourceResultFrame);
       break;
     case 'action_ack':
@@ -671,9 +681,11 @@ export {
 } from '../panel/lib/resource-store';
 export {
   clearSubmittedWorkspaceUploads,
+  createEmptyExplorerFile,
   enqueueComposerRootUpload,
   enqueueExplorerUpload,
   enqueueQuickStartRootUpload,
+  explorerCreatedFileFocus,
   markWorkspaceUploadReferenceInjected,
   retryWorkspaceUpload,
   workspaceUploadAvailable,
@@ -686,3 +698,12 @@ export {
   resetWorkspaceUploadAssembly,
 };
 export type { WorkspaceUploadOrigin } from './workspace-upload';
+export {
+  clearFsMutation,
+  createResourceDirectory,
+  deleteResourcePath,
+  fsMutationAvailability,
+  fsMutationState,
+  moveResourcePath,
+  retryFsMutation,
+} from './fs-mutations';

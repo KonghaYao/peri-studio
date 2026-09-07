@@ -232,3 +232,14 @@
 .explorer-upload-treeitem--drop-target {
   box-shadow: inset var(--explorer-drop-accent-width) 0 0 0 var(--accent-solid);
 }
+
+/* ── Explorer mutations inline editor（WP-4 视觉契约） ───────────────────── */
+
+.explorer-mutation-inline-row {
+  background: var(--surface-overlay);
+}
+
+.explorer-mutation-inline-row--invalid {
+  outline: 1px solid var(--danger-border);
+  outline-offset: -1px;
+}

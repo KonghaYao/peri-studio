@@ -35,7 +35,7 @@ enum OpenViewScope<'a> {
 
 #[derive(Clone)]
 pub struct ResourceService {
-    metadata: Arc<MetadataStore>,
+    pub(super) metadata: Arc<MetadataStore>,
     pub(super) instance: Arc<InstanceRegistry>,
     projection: ResourceProjection,
     blobs: Arc<Mutex<HashMap<String, ResourceBlob>>>,
@@ -43,6 +43,9 @@ pub struct ResourceService {
     pub(super) upload_commands:
         Arc<Mutex<HashMap<String, super::resource_upload_service::UploadCommandRecord>>>,
     pub(super) upload_command_gate: Arc<Mutex<()>>,
+    pub(super) fs_mutation_project_gates: Arc<Mutex<HashMap<String, std::sync::Weak<Mutex<()>>>>>,
+    pub(super) delete_confirm_tokens:
+        Arc<Mutex<HashMap<String, super::resource_fs_mutation_service::DeleteConfirmRecord>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -68,6 +71,8 @@ impl ResourceService {
             uploads: super::resource_upload_service::upload_store(),
             upload_commands: Arc::new(Mutex::new(HashMap::new())),
             upload_command_gate: Arc::new(Mutex::new(())),
+            fs_mutation_project_gates: Arc::new(Mutex::new(HashMap::new())),
+            delete_confirm_tokens: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
@@ -114,6 +119,14 @@ impl ResourceService {
                 ..
             } => {
                 self.open_upload(principal, owner_conn, can_mutate, &project_id, payload)
+                    .await
+            }
+            ResourceQuery::OpenDeleteConfirm {
+                project_id,
+                payload,
+                ..
+            } => {
+                self.open_delete_confirm(principal, can_mutate, &project_id, payload)
                     .await
             }
             ResourceQuery::GitAction {

@@ -276,7 +276,10 @@ impl Translator {
             | ActionEnvelope::PersistedSessionPromptStatus { .. } => {
                 Err(TranslateError::UnsupportedAction("metadata control-plane"))
             }
-            ActionEnvelope::FsWriteFile { .. } => {
+            ActionEnvelope::FsWriteFile { .. }
+            | ActionEnvelope::FsCreateDir { .. }
+            | ActionEnvelope::FsMove { .. }
+            | ActionEnvelope::FsDelete { .. } => {
                 Err(TranslateError::UnsupportedAction("resource control-plane"))
             }
             ActionEnvelope::MachineAdd { .. }

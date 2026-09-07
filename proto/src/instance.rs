@@ -79,7 +79,8 @@ pub struct InstanceHello {
     pub protocol_version: u32,
     pub token: String,
     pub hostname: String,
-    /// 能力声明；当前识别 `resources.protocolVersion` 与资源上限，其余键前向兼容。
+    /// 能力声明；当前识别 `resources.protocolVersion`、`resources.write`、
+    /// `resources.structuralMutations`（缺省 false）与资源上限，其余键前向兼容。
     pub caps: serde_json::Value,
     /// 断线缓冲待补推。
     pub buffered: Option<bool>,

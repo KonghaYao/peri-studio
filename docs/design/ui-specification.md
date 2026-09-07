@@ -33,6 +33,10 @@ date: 2026-09-05
 6. **可访问性默认**：焦点环可见、触控目标 ≥ 44px（`pointer-coarse`）、`forced-colors` 安全边界、模态焦点陷阱由 Kobalte 基元保证。
 7. **组件自给自足**：基础组件在 `shared/ui` 内具备 default / hover / disabled / focus / error 全套状态，**不得**依赖页面偶然样式才能用。
 
+### 2.1 Explorer structural mutation
+
+Explorer Files 区头固定提供 `New File`、`New Folder`、`Refresh Explorer`。文件/目录行与根空白均提供 context menu；mutation 不可用时入口保留并显示英文原因，`Copy Path` 始终可用。New/Rename 使用 inline input（Enter 提交、Escape 取消），Move 使用 `Move to…` Dialog，Delete 始终经过 `Delete permanently?` danger Dialog；F2 与 Delete/Backspace 只在 treeitem 焦点上生效，inline input 阻断 tree shortcuts。`DeliveryUnknown` 显示 Reconcile 并复用原 `commandId`，revision conflict 仅提供手动 Refresh，不伪造成功。
+
 ---
 
 ## 3. 事实源栈（实现顺序）

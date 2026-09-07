@@ -147,6 +147,7 @@ struct InstanceEntry {
     hostname: String,
     resource_protocol_version: Option<u32>,
     resource_write: bool,
+    resource_structural_mutations: bool,
     terminal_protocol_version: Option<u32>,
     terminal_ready: bool,
     conn: Option<mpsc::Sender<OutboundMsg>>,
@@ -258,6 +259,11 @@ impl InstanceRegistry {
                 resource_write: hello
                     .caps
                     .pointer("/resources/write")
+                    .and_then(serde_json::Value::as_bool)
+                    .unwrap_or(false),
+                resource_structural_mutations: hello
+                    .caps
+                    .pointer("/resources/structuralMutations")
                     .and_then(serde_json::Value::as_bool)
                     .unwrap_or(false),
                 terminal_protocol_version: hello

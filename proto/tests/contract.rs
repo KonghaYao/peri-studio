@@ -187,3 +187,83 @@ fn upload_wire_whitelist_and_protocol_version() {
     let write_raw = serde_json::to_string(&write).unwrap();
     assert_eq!(Frame::parse(&write_raw).unwrap(), write);
 }
+
+/// 文件树 structural mutation：三 action 白名单 + open-delete-confirm + v5 cap 默认。
+#[test]
+fn fs_structural_mutation_wire_contract() {
+    use peri_studio_proto::action::{FsCreateDirPayload, FsDeletePayload, FsMovePayload};
+    use peri_studio_proto::resource::{
+        instance_supports_structural_fs_mutations, parse_instance_resource_caps,
+        OpenResourceDeleteConfirm, DEFAULT_DELETE_CONFIRM_TTL_SECS,
+    };
+
+    assert_eq!(DEFAULT_DELETE_CONFIRM_TTL_SECS, 60);
+    for action_type in ["fs/create-dir", "fs/move", "fs/delete"] {
+        assert!(m1_allows_action_type(action_type));
+    }
+
+    let caps = parse_instance_resource_caps(&serde_json::json!({
+        "resources": { "protocolVersion": 5, "write": true }
+    }));
+    assert!(!instance_supports_structural_fs_mutations(&caps));
+
+    let confirm = Frame::ResourceQuery(ResourceQuery::OpenDeleteConfirm {
+        request_id: "req-del-confirm".into(),
+        project_id: "project-1".into(),
+        payload: OpenResourceDeleteConfirm {
+            path: "src/pkg".into(),
+            if_match: "rev-1".into(),
+            recursive: true,
+            use_trash: false,
+        },
+    });
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&confirm).unwrap()).unwrap(),
+        confirm
+    );
+
+    let create = Frame::Action(ActionEnvelope::FsCreateDir {
+        command_id: "cmd-mkdir".into(),
+        payload: FsCreateDirPayload {
+            project_id: "project-1".into(),
+            path: "src/new-dir".into(),
+            if_none_match: "*".into(),
+        },
+    });
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&create).unwrap()).unwrap(),
+        create
+    );
+
+    let mv = Frame::Action(ActionEnvelope::FsMove {
+        command_id: "cmd-move".into(),
+        payload: FsMovePayload {
+            project_id: "project-1".into(),
+            source: "a.txt".into(),
+            target: "b.txt".into(),
+            source_if_match: "rev-a".into(),
+            target_if_match: None,
+            target_if_none_match: Some("*".into()),
+        },
+    });
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&mv).unwrap()).unwrap(),
+        mv
+    );
+
+    let delete = Frame::Action(ActionEnvelope::FsDelete {
+        command_id: "cmd-delete".into(),
+        payload: FsDeletePayload {
+            project_id: "project-1".into(),
+            path: "a.txt".into(),
+            if_match: "rev-a".into(),
+            recursive: false,
+            use_trash: false,
+            confirm_token: None,
+        },
+    });
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&delete).unwrap()).unwrap(),
+        delete
+    );
+}

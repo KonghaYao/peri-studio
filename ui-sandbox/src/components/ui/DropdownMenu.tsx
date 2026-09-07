@@ -15,9 +15,11 @@ export function DropdownMenu(props: {
   items: MenuItem[];
   onSelect?: (id: string) => void;
   label?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   return (
-    <KDropdownMenu placement="bottom-start">
+    <KDropdownMenu placement="bottom-start" open={props.open} onOpenChange={props.onOpenChange}>
       <KDropdownMenu.Trigger as="span" class="inline-flex">{props.trigger}</KDropdownMenu.Trigger>
       <KDropdownMenu.Portal>
         <KDropdownMenu.Content

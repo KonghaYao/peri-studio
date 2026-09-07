@@ -1,17 +1,22 @@
 use std::str::FromStr;
 
 use crate::ack::{AckStatus, ActionAck};
-use crate::action::{ActionEnvelope, FsWriteFilePayload};
+use crate::action::{
+    ActionEnvelope, FsCreateDirPayload, FsDeletePayload, FsMovePayload, FsWriteFilePayload,
+};
 use crate::conn::DocId;
 use crate::frame::Frame;
 use crate::resource::{
-    ActionResourceResult, FsPermissions, FsStat, GitDiffQuery, InstanceResourcePayload,
-    InstanceResourceQuery, InstanceResourceQueryKind, InstanceResourceResult, OpenResourceUpload,
-    OpenResourceView, ReadDirectoryQuery, ResourceErrorCode, ResourceFailure, ResourceGitAction,
-    ResourceGitActionKind, ResourceQuery, ResourceQueryResult, ResourceResult,
-    ResourceUploadOpened, ResourceViewKind, ResourceViewOpened, WriteFileQuery,
-    DEFAULT_UPLOAD_TICKET_TTL_SECS, MAX_CONCURRENT_UPLOADS_PER_PRINCIPAL,
-    RESOURCE_PROTOCOL_VERSION, RESOURCE_PROTOCOL_VERSION_WITH_FS_WRITE,
+    instance_supports_structural_fs_mutations, parse_instance_resource_caps, ActionResourceResult,
+    CreateDirQuery, DeleteConfirmSummary, DeletePathQuery, FsMutationResult, FsPermissions, FsStat,
+    GitDiffQuery, InstanceResourcePayload, InstanceResourceQuery, InstanceResourceQueryKind,
+    InstanceResourceResult, MovePathQuery, OpenResourceDeleteConfirm, OpenResourceUpload,
+    OpenResourceView, ReadDirectoryQuery, ResourceDeleteConfirmOpened, ResourceErrorCode,
+    ResourceFailure, ResourceGitAction, ResourceGitActionKind, ResourceQuery, ResourceQueryResult,
+    ResourceResult, ResourceUploadOpened, ResourceViewKind, ResourceViewOpened, WriteFileQuery,
+    DEFAULT_DELETE_CONFIRM_TTL_SECS, DEFAULT_UPLOAD_TICKET_TTL_SECS,
+    MAX_CONCURRENT_UPLOADS_PER_PRINCIPAL, RESOURCE_PROTOCOL_VERSION,
+    RESOURCE_PROTOCOL_VERSION_WITH_FS_WRITE,
 };
 
 #[test]
@@ -461,4 +466,262 @@ fn upload_error_codes_are_closed_and_screaming_snake() {
         let serialized = serde_json::to_value(code).unwrap();
         assert!(serialized.is_string());
     }
+}
+
+#[test]
+fn fs_structural_actions_roundtrip_and_whitelist() {
+    use crate::whitelist::m1_allows_action_type;
+
+    for action_type in ["fs/create-dir", "fs/move", "fs/delete"] {
+        assert!(m1_allows_action_type(action_type));
+    }
+
+    let create = Frame::Action(ActionEnvelope::FsCreateDir {
+        command_id: "cmd-mkdir-1".into(),
+        payload: FsCreateDirPayload {
+            project_id: "project-1".into(),
+            path: "src/components".into(),
+            if_none_match: "*".into(),
+        },
+    });
+    let create_value = serde_json::to_value(&create).unwrap();
+    assert_eq!(create_value["type"], "fs/create-dir");
+    assert_eq!(create_value["payload"]["ifNoneMatch"], "*");
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&create).unwrap()).unwrap(),
+        create
+    );
+
+    let mv = Frame::Action(ActionEnvelope::FsMove {
+        command_id: "cmd-move-1".into(),
+        payload: FsMovePayload {
+            project_id: "project-1".into(),
+            source: "src/old.ts".into(),
+            target: "src/new.ts".into(),
+            source_if_match: "rev-src".into(),
+            target_if_match: None,
+            target_if_none_match: Some("*".into()),
+        },
+    });
+    let mv_value = serde_json::to_value(&mv).unwrap();
+    assert_eq!(mv_value["type"], "fs/move");
+    assert_eq!(mv_value["payload"]["sourceIfMatch"], "rev-src");
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&mv).unwrap()).unwrap(),
+        mv
+    );
+
+    let delete = Frame::Action(ActionEnvelope::FsDelete {
+        command_id: "cmd-del-1".into(),
+        payload: FsDeletePayload {
+            project_id: "project-1".into(),
+            path: "src/obsolete.ts".into(),
+            if_match: "rev-del".into(),
+            recursive: false,
+            use_trash: false,
+            confirm_token: None,
+        },
+    });
+    let delete_value = serde_json::to_value(&delete).unwrap();
+    assert_eq!(delete_value["type"], "fs/delete");
+    assert_eq!(delete_value["payload"]["ifMatch"], "rev-del");
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&delete).unwrap()).unwrap(),
+        delete
+    );
+}
+
+#[test]
+fn fs_structural_payloads_deny_unknown_fields() {
+    let err = serde_json::from_value::<FsCreateDirPayload>(serde_json::json!({
+        "projectId": "p1",
+        "path": "a",
+        "ifNoneMatch": "*",
+        "extra": true
+    }))
+    .unwrap_err();
+    assert!(err.to_string().contains("unknown field"));
+
+    let err = serde_json::from_value::<FsMovePayload>(serde_json::json!({
+        "projectId": "p1",
+        "source": "a",
+        "target": "b",
+        "sourceIfMatch": "r",
+        "surprise": 1
+    }))
+    .unwrap_err();
+    assert!(err.to_string().contains("unknown field"));
+}
+
+#[test]
+fn structural_instance_queries_roundtrip() {
+    let mkdir = Frame::InstanceResourceQuery(InstanceResourceQuery {
+        request_id: "req-mkdir".into(),
+        workspace_id: "project-1".into(),
+        root: "/srv/workspaces/demo".into(),
+        query: InstanceResourceQueryKind::CreateDir(CreateDirQuery {
+            path: "src/components".into(),
+            if_none_match: "*".into(),
+        }),
+    });
+    let mkdir_value = serde_json::to_value(&mkdir).unwrap();
+    assert_eq!(mkdir_value["query"]["type"], "create_dir");
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&mkdir).unwrap()).unwrap(),
+        mkdir
+    );
+
+    let mv = Frame::InstanceResourceQuery(InstanceResourceQuery {
+        request_id: "req-move".into(),
+        workspace_id: "project-1".into(),
+        root: "/srv/workspaces/demo".into(),
+        query: InstanceResourceQueryKind::MovePath(MovePathQuery {
+            source: "a.ts".into(),
+            target: "b.ts".into(),
+            source_if_match: "rev-a".into(),
+            target_if_match: None,
+            target_if_none_match: Some("*".into()),
+        }),
+    });
+    let mv_value = serde_json::to_value(&mv).unwrap();
+    assert_eq!(mv_value["query"]["type"], "move_path");
+
+    let del = Frame::InstanceResourceQuery(InstanceResourceQuery {
+        request_id: "req-del".into(),
+        workspace_id: "project-1".into(),
+        root: "/srv/workspaces/demo".into(),
+        query: InstanceResourceQueryKind::DeletePath(DeletePathQuery {
+            path: "pkg".into(),
+            if_match: "rev-pkg".into(),
+            recursive: true,
+            use_trash: false,
+        }),
+    });
+    assert_eq!(
+        serde_json::to_value(&del).unwrap()["query"]["type"],
+        "delete_path"
+    );
+}
+
+#[test]
+fn open_delete_confirm_query_and_result_roundtrip() {
+    assert_eq!(DEFAULT_DELETE_CONFIRM_TTL_SECS, 60);
+
+    let frame = Frame::ResourceQuery(ResourceQuery::OpenDeleteConfirm {
+        request_id: "req-confirm-1".into(),
+        project_id: "project-1".into(),
+        payload: OpenResourceDeleteConfirm {
+            path: "src/pkg".into(),
+            if_match: "rev-pkg".into(),
+            recursive: true,
+            use_trash: false,
+        },
+    });
+    let value = serde_json::to_value(&frame).unwrap();
+    assert_eq!(value["type"], "resource/open-delete-confirm");
+    assert_eq!(value["projectId"], "project-1");
+    assert!(value.get("root").is_none());
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&frame).unwrap()).unwrap(),
+        frame
+    );
+
+    let result = Frame::ResourceResult(ResourceResult {
+        request_id: "req-confirm-1".into(),
+        result: Some(ResourceQueryResult::DeleteConfirm(
+            ResourceDeleteConfirmOpened {
+                confirm_token: "token-1".into(),
+                expires_at: "2026-09-06T12:01:00Z".into(),
+                summary: DeleteConfirmSummary {
+                    path: "src/pkg".into(),
+                    kind: crate::resource::FileKind::Directory,
+                    entry_count: Some(12),
+                },
+            },
+        )),
+        error: None,
+    });
+    let result_value = serde_json::to_value(&result).unwrap();
+    assert_eq!(result_value["result"]["kind"], "delete_confirm");
+    assert_eq!(result_value["result"]["data"]["summary"]["entryCount"], 12);
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&result).unwrap()).unwrap(),
+        result
+    );
+}
+
+#[test]
+fn fs_mutation_action_ack_resource_result_roundtrip() {
+    let mutation = FsMutationResult {
+        primary_path: "src/new.ts".into(),
+        affected_paths: vec!["src/new.ts".into(), "src".into()],
+        stat: Some(FsStat {
+            path: "src/new.ts".into(),
+            kind: crate::resource::FileKind::File,
+            size: 0,
+            mtime_ns: "1".into(),
+            permissions: FsPermissions::ReadWrite,
+            revision: "rev-new".into(),
+        }),
+    };
+    let ack = crate::ack::ActionAck {
+        command_id: "cmd-move-1".into(),
+        status: crate::ack::AckStatus::Committed,
+        turn_id: None,
+        chat_id: None,
+        project_id: Some("project-1".into()),
+        instance_id: None,
+        session_id: None,
+        acp_session_id: None,
+        committed_projection_version: None,
+        resource_result: Some(ActionResourceResult::FsMutation(mutation.clone())),
+    };
+    let frame = Frame::ActionAck(ack);
+    let value = serde_json::to_value(&frame).unwrap();
+    assert_eq!(value["resourceResult"]["kind"], "fs_mutation");
+    assert_eq!(value["resourceResult"]["data"]["primaryPath"], "src/new.ts");
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&frame).unwrap()).unwrap(),
+        frame
+    );
+
+    let instance = Frame::InstanceResourceResult(InstanceResourceResult {
+        request_id: "req-move".into(),
+        result: Some(InstanceResourcePayload::FsMutation(mutation)),
+        error: None,
+    });
+    assert_eq!(
+        Frame::parse(&serde_json::to_string(&instance).unwrap()).unwrap(),
+        instance
+    );
+}
+
+#[test]
+fn instance_resource_caps_default_structural_false_for_legacy_hello() {
+    let legacy = serde_json::json!({
+        "resources": {
+            "protocolVersion": 5,
+            "write": true
+        }
+    });
+    let parsed = parse_instance_resource_caps(&legacy);
+    assert_eq!(parsed.protocol_version, Some(5));
+    assert!(parsed.write);
+    assert!(!parsed.structural_mutations);
+    assert!(!instance_supports_structural_fs_mutations(&parsed));
+
+    let modern = serde_json::json!({
+        "resources": {
+            "protocolVersion": 5,
+            "write": true,
+            "structuralMutations": true
+        }
+    });
+    let parsed = parse_instance_resource_caps(&modern);
+    assert!(instance_supports_structural_fs_mutations(&parsed));
+
+    let empty = serde_json::json!({});
+    let parsed = parse_instance_resource_caps(&empty);
+    assert!(!parsed.write);
+    assert!(!parsed.structural_mutations);
 }

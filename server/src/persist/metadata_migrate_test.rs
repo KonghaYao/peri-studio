@@ -139,6 +139,10 @@ async fn v5_migration_adds_body_free_oauth_command_ledger() {
         .await
         .unwrap();
     connection
+        .execute("DROP TABLE IF EXISTS fs_mutation_commands")
+        .await
+        .unwrap();
+    connection
         .execute("DELETE FROM schema_migrations WHERE version>=6")
         .await
         .unwrap();
@@ -169,7 +173,7 @@ async fn unknown_newer_metadata_schema_fails_before_mutating_user_tables() {
         .await
         .unwrap();
     connection
-        .execute("INSERT INTO schema_migrations VALUES(11,'future')")
+        .execute("INSERT INTO schema_migrations VALUES(12,'future')")
         .await
         .unwrap();
     connection.close().await.unwrap();
@@ -177,8 +181,8 @@ async fn unknown_newer_metadata_schema_fails_before_mutating_user_tables() {
     assert!(matches!(
         MetadataStore::open(dir.path()).await,
         Err(MetadataError::NewerSchema {
-            found: 11,
-            supported: 10
+            found: 12,
+            supported: 11
         })
     ));
     let mut connection =

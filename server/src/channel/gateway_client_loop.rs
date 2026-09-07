@@ -210,6 +210,57 @@ impl Gateway {
                                     Frame::ResourceResult(result))).await;
                                 continue;
                             }
+                            if let Frame::Action(action @ (ActionEnvelope::FsCreateDir { .. }
+                                | ActionEnvelope::FsMove { .. }
+                                | ActionEnvelope::FsDelete { .. })) = frame
+                            {
+                                let command_id = action.command_id().to_string();
+                                if channel.ctx.role != crate::auth::TokenRole::Full {
+                                    let _ = out_tx
+                                        .send(OutboundMsg::Frame(Frame::ActionError(ActionError {
+                                            command_id,
+                                            code: ErrorCode::Forbidden,
+                                            message: "read-only principals cannot mutate files"
+                                                .to_string(),
+                                            retryable: false,
+                                            retry_after_ms: None,
+                                        })))
+                                        .await;
+                                    continue;
+                                }
+                                let payload = match action {
+                                    ActionEnvelope::FsCreateDir { payload, .. } => {
+                                        crate::control::resource_fs_mutation_service::FsMutationPayload::CreateDir(payload)
+                                    }
+                                    ActionEnvelope::FsMove { payload, .. } => {
+                                        crate::control::resource_fs_mutation_service::FsMutationPayload::Move(payload)
+                                    }
+                                    ActionEnvelope::FsDelete { payload, .. } => {
+                                        crate::control::resource_fs_mutation_service::FsMutationPayload::Delete(payload)
+                                    }
+                                    _ => unreachable!(),
+                                };
+                                let (duplicate, outcome) = self
+                                    .resources
+                                    .commit_fs_mutation_action(
+                                        &channel.ctx.token_id,
+                                        &command_id,
+                                        payload,
+                                    )
+                                    .await;
+                                let response = match outcome {
+                                    Ok(result) => Frame::ActionAck(
+                                        crate::control::resource_fs_mutation_service::committed_ack(
+                                            command_id,
+                                            result,
+                                            duplicate,
+                                        ),
+                                    ),
+                                    Err(error) => Frame::ActionError(error),
+                                };
+                                let _ = out_tx.send(OutboundMsg::Frame(response)).await;
+                                continue;
+                            }
                             if let Frame::Action(ActionEnvelope::FsWriteFile {
                                 command_id,
                                 payload,

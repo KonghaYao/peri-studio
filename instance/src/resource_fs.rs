@@ -11,8 +11,8 @@ use peri_studio_proto::resource::{
 use sha2::{Digest, Sha256};
 
 use super::common::{
-    canonical_root, cursor_for, failure, hash_bytes, hash_text, map_io, parse_cursor, path_to_wire,
-    validate_relative,
+    canonical_root, cursor_for, failure, fs_revision, hash_bytes, hash_text, map_io, parse_cursor,
+    path_to_wire, validate_relative,
 };
 
 pub(super) fn read_directory(
@@ -203,14 +203,14 @@ fn file_entry(relative_dir: &Path, entry: std::fs::DirEntry) -> Result<FileEntry
     } else {
         FileKind::Other
     };
+    let path = path_to_wire(&relative)?;
     let mtime_ns = metadata
         .modified()
         .ok()
         .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
         .map(|duration| duration.as_nanos())
         .unwrap_or_default();
-    let path = path_to_wire(&relative)?;
-    let revision = hash_text(&format!("{path}:{kind:?}:{}:{mtime_ns}", metadata.len()));
+    let revision = fs_revision(&path, kind, &metadata);
     Ok(FileEntry {
         id: hash_text(&path),
         name,

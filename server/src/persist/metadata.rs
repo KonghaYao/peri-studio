@@ -176,6 +176,17 @@ pub enum BeginCommand {
     Existing,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FsMutationCommand {
+    pub command_id: String,
+    pub principal: String,
+    pub command_type: String,
+    pub project_id: String,
+    pub payload_fingerprint: String,
+    pub phase: String,
+    pub outcome_json: Option<String>,
+}
+
 pub struct NewSession<'a> {
     pub id: &'a str,
     pub project_id: &'a str,

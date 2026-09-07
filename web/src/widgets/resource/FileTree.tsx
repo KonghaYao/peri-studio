@@ -23,6 +23,9 @@ type FileTreeProps = {
   renderFileIcon?: (node: FileTreeNode) => JSX.Element;
   renderFolderIcon?: (node: FileTreeNode, open: boolean) => JSX.Element;
   renderFileTrailing?: (node: FileTreeNode) => JSX.Element;
+  renderFolderTrailing?: (node: FileTreeNode) => JSX.Element;
+  onNodeContextMenu?: (node: FileTreeNode, event: MouseEvent) => void;
+  onNodeMount?: (node: FileTreeNode, element: HTMLElement) => void;
   getFileDataAttrs?: (node: FileTreeNode) => Record<string, string | undefined>;
   fileAriaLabel?: (node: FileTreeNode) => string | undefined;
   folderLoadingPaths?: Set<string>;
@@ -55,6 +58,8 @@ export function FileTree(props: FileTreeProps) {
               onActivePathChange={props.onActivePathChange}
               renderFileIcon={props.renderFileIcon}
               trailing={props.renderFileTrailing?.(node)}
+              onContextMenu={(event) => props.onNodeContextMenu?.(node, event)}
+              onMount={(element) => props.onNodeMount?.(node, element)}
               dataAttrs={props.getFileDataAttrs?.(node)}
               ariaLabel={props.fileAriaLabel?.(node)}
               treeitem={props.fileTreeitem !== false}
@@ -72,6 +77,9 @@ export function FileTree(props: FileTreeProps) {
             onToggle={() => props.onToggleFolder(node.path)}
             onActivePathChange={props.onActivePathChange}
             renderFolderIcon={props.renderFolderIcon}
+            trailing={props.renderFolderTrailing?.(node)}
+            onContextMenu={(event) => props.onNodeContextMenu?.(node, event)}
+            onMount={(element) => props.onNodeMount?.(node, element)}
             dropTargetPath={props.dropTargetPath}
             onFolderDragOver={props.onFolderDragOver}
             onFolderDragLeave={props.onFolderDragLeave}
@@ -102,6 +110,9 @@ export function FileTree(props: FileTreeProps) {
                   renderFileIcon={props.renderFileIcon}
                   renderFolderIcon={props.renderFolderIcon}
                   renderFileTrailing={props.renderFileTrailing}
+                  renderFolderTrailing={props.renderFolderTrailing}
+                  onNodeContextMenu={props.onNodeContextMenu}
+                  onNodeMount={props.onNodeMount}
                   getFileDataAttrs={props.getFileDataAttrs}
                   fileAriaLabel={props.fileAriaLabel}
                   folderLoadingPaths={props.folderLoadingPaths}
@@ -135,6 +146,9 @@ function FileTreeFolderRow(props: {
   onToggle: () => void;
   onActivePathChange?: (path: string) => void;
   renderFolderIcon?: (node: FileTreeNode, open: boolean) => JSX.Element;
+  trailing?: JSX.Element;
+  onContextMenu?: (event: MouseEvent) => void;
+  onMount?: (element: HTMLElement) => void;
   dropTargetPath?: string | null;
   onFolderDragOver?: (path: string, event: DragEvent) => void;
   onFolderDragLeave?: (path: string, event: DragEvent) => void;
@@ -142,35 +156,42 @@ function FileTreeFolderRow(props: {
 }) {
   const isDropTarget = () => props.dropTargetPath === props.node.path;
   return (
-    <button
-      type="button"
-      role="treeitem"
-      aria-expanded={props.open}
-      aria-level={props.depth + 1}
-      aria-posinset={props.index + 1}
-      aria-setsize={props.setSize}
-      data-path={props.node.path}
-      data-directory="true"
-      data-drop-target-path={props.node.path}
-      tabIndex={props.active || props.defaultTabIndex ? 0 : -1}
-      class={cn(
-        'explorer-upload-treeitem flex h-(--tree-row-height) w-full items-center gap-4 rounded-4 border-0 pr-6 text-left text-11 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44',
-        props.active ? 'bg-selected' : 'bg-transparent',
-        isDropTarget() ? 'explorer-upload-treeitem--drop-target bg-hover' : '',
-      )}
-      style={rowPadding(props.depth)}
-      onClick={props.onToggle}
-      onFocus={() => props.onActivePathChange?.(props.node.path)}
-      onDragOver={(event) => props.onFolderDragOver?.(props.node.path, event)}
-      onDragLeave={(event) => props.onFolderDragLeave?.(props.node.path, event)}
-      onDrop={(event) => props.onFolderDrop?.(props.node.path, event)}
-      title={props.node.path}
-    >
-      {props.renderFolderIcon
-        ? props.renderFolderIcon(props.node, props.open)
-        : <VSCodeFileIcon path={props.node.path} directory open={props.open} size={16} class="size-16" />}
-      <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-600">{props.node.name}</span>
-    </button>
+    <div class="group/tree-file flex h-(--tree-row-height) w-full items-center rounded-4 pr-5 text-11 pointer-coarse:h-44">
+      <button
+        type="button"
+        ref={(element) => props.onMount?.(element)}
+        role="treeitem"
+        aria-expanded={props.open}
+        aria-level={props.depth + 1}
+        aria-posinset={props.index + 1}
+        aria-setsize={props.setSize}
+        data-path={props.node.path}
+        data-directory="true"
+        data-drop-target-path={props.node.path}
+        tabIndex={props.active || props.defaultTabIndex ? 0 : -1}
+        class={cn(
+          'explorer-upload-treeitem flex h-(--tree-row-height) w-full min-w-0 items-center gap-4 rounded-4 border-0 pr-6 text-left text-11 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44',
+          props.active ? 'bg-selected' : 'bg-transparent',
+          isDropTarget() ? 'explorer-upload-treeitem--drop-target bg-hover' : '',
+        )}
+        style={rowPadding(props.depth)}
+        onClick={props.onToggle}
+        onFocus={() => props.onActivePathChange?.(props.node.path)}
+        onContextMenu={props.onContextMenu}
+        onDragOver={(event) => props.onFolderDragOver?.(props.node.path, event)}
+        onDragLeave={(event) => props.onFolderDragLeave?.(props.node.path, event)}
+        onDrop={(event) => props.onFolderDrop?.(props.node.path, event)}
+        title={props.node.path}
+      >
+        {props.renderFolderIcon
+          ? props.renderFolderIcon(props.node, props.open)
+          : <VSCodeFileIcon path={props.node.path} directory open={props.open} size={16} class="size-16" />}
+        <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-600">{props.node.name}</span>
+      </button>
+      <Show when={props.trailing}>
+        <div class="shrink-0">{props.trailing}</div>
+      </Show>
+    </div>
   );
 }
 
@@ -186,6 +207,8 @@ function FileTreeFileRow(props: {
   onActivePathChange?: (path: string) => void;
   renderFileIcon?: (node: FileTreeNode) => JSX.Element;
   trailing?: JSX.Element;
+  onContextMenu?: (event: MouseEvent) => void;
+  onMount?: (element: HTMLElement) => void;
   dataAttrs?: Record<string, string | undefined>;
   ariaLabel?: string;
   treeitem: boolean;
@@ -200,6 +223,7 @@ function FileTreeFileRow(props: {
     >
       <button
         type="button"
+        ref={(element) => props.onMount?.(element)}
         role={props.treeitem ? 'treeitem' : undefined}
         aria-level={props.treeitem ? props.depth + 1 : undefined}
         aria-posinset={props.treeitem ? props.index + 1 : undefined}
@@ -210,6 +234,7 @@ function FileTreeFileRow(props: {
         class="flex h-full min-w-0 flex-1 items-center gap-5 rounded-4 border-0 bg-transparent pl-6 text-left text-inherit focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2"
         onClick={() => props.onSelect?.(props.node)}
         onFocus={() => props.treeitem ? props.onActivePathChange?.(props.node.path) : undefined}
+        onContextMenu={props.onContextMenu}
         title={props.node.path}
         aria-label={props.ariaLabel}
         {...Object.fromEntries(Object.entries(props.dataAttrs ?? {}).filter(([, value]) => value !== undefined))}

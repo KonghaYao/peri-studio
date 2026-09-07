@@ -190,6 +190,9 @@ pub(crate) fn registry_root() -> RegistryDocRoot {
             registered_at: "2026-08-01T00:00:00Z".into(),
             last_heartbeat: "2026-08-07T00:00:01Z".into(),
             chat_count: 2,
+            resource_protocol_version: Some(crate::resource::RESOURCE_PROTOCOL_VERSION),
+            resource_write: true,
+            resource_structural_mutations: true,
         },
     );
     let mut chats = HashMap::new();

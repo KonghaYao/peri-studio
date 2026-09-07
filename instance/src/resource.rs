@@ -7,6 +7,8 @@
 mod common;
 #[path = "resource_fs.rs"]
 mod fs;
+#[path = "resource_fs_mutation.rs"]
+mod fs_mutation;
 #[path = "resource_git.rs"]
 mod git;
 #[path = "resource_write.rs"]
@@ -26,6 +28,7 @@ use peri_studio_proto::resource::{
 
 use common::failure;
 use fs::{read_directory, read_file};
+use fs_mutation::{create_dir, delete_path, move_path};
 use write::write_file;
 
 const GIT_TIMEOUT: Duration = Duration::from_secs(8);
@@ -114,6 +117,24 @@ impl ResourceHost {
             InstanceResourceQueryKind::WriteFile(input) => {
                 let root = query.root;
                 tokio::task::spawn_blocking(move || write_file(&root, input))
+                    .await
+                    .unwrap_or_else(|_| Err(failure(ResourceErrorCode::Unavailable, true)))
+            }
+            InstanceResourceQueryKind::CreateDir(input) => {
+                let root = query.root;
+                tokio::task::spawn_blocking(move || create_dir(&root, input))
+                    .await
+                    .unwrap_or_else(|_| Err(failure(ResourceErrorCode::Unavailable, true)))
+            }
+            InstanceResourceQueryKind::MovePath(input) => {
+                let root = query.root;
+                tokio::task::spawn_blocking(move || move_path(&root, input))
+                    .await
+                    .unwrap_or_else(|_| Err(failure(ResourceErrorCode::Unavailable, true)))
+            }
+            InstanceResourceQueryKind::DeletePath(input) => {
+                let root = query.root;
+                tokio::task::spawn_blocking(move || delete_path(&root, input))
                     .await
                     .unwrap_or_else(|_| Err(failure(ResourceErrorCode::Unavailable, true)))
             }

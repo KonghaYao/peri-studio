@@ -12,7 +12,10 @@ use crate::conn::DocId;
 
 pub const RESOURCE_PROTOCOL_VERSION: u32 = 5;
 /// v5 起 FS 写/upload；instance hello `caps.resources.write` 须为 true。
+/// structural mutation（mkdir/move/delete）另须 `caps.resources.structuralMutations: true`（缺字段默认 false）。
 pub const RESOURCE_PROTOCOL_VERSION_WITH_FS_WRITE: u32 = 5;
+/// delete confirm token 默认 TTL（秒）；与 upload ticket 哲学对齐。
+pub const DEFAULT_DELETE_CONFIRM_TTL_SECS: u64 = 60;
 pub const DEFAULT_DIRECTORY_PAGE_SIZE: u32 = 200;
 /// upload ticket 默认 TTL（秒）；与 blob ticket 哲学对齐。
 pub const DEFAULT_UPLOAD_TICKET_TTL_SECS: u64 = 60;
@@ -69,6 +72,12 @@ pub enum ResourceQuery {
         project_id: String,
         payload: OpenResourceUpload,
     },
+    #[serde(rename = "resource/open-delete-confirm", rename_all = "camelCase")]
+    OpenDeleteConfirm {
+        request_id: String,
+        project_id: String,
+        payload: OpenResourceDeleteConfirm,
+    },
 }
 
 impl ResourceQuery {
@@ -78,7 +87,8 @@ impl ResourceQuery {
             | Self::ReleaseView { request_id, .. }
             | Self::OpenBlob { request_id, .. }
             | Self::GitAction { request_id, .. }
-            | Self::OpenUpload { request_id, .. } => request_id,
+            | Self::OpenUpload { request_id, .. }
+            | Self::OpenDeleteConfirm { request_id, .. } => request_id,
         }
     }
 }
@@ -181,6 +191,16 @@ pub struct OpenResourceUpload {
     pub sha256: Option<String>,
 }
 
+/// 浏览器申请 destructive delete 的 confirm token（只读、无磁盘副作用）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct OpenResourceDeleteConfirm {
+    pub path: String,
+    pub if_match: String,
+    pub recursive: bool,
+    pub use_trash: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OpenResourceBlob {
@@ -222,6 +242,7 @@ pub enum ResourceQueryResult {
     Released,
     Blob(ResourceBlobOpened),
     Upload(ResourceUploadOpened),
+    DeleteConfirm(ResourceDeleteConfirmOpened),
     Mutated,
 }
 
@@ -250,6 +271,23 @@ pub struct ResourceUploadOpened {
     /// 同源相对 PUT URL，例如 `/api/resource-uploads/{uploadId}`。
     pub url: String,
     pub expires_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResourceDeleteConfirmOpened {
+    pub confirm_token: String,
+    pub expires_at: String,
+    pub summary: DeleteConfirmSummary,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteConfirmSummary {
+    pub path: String,
+    pub kind: FileKind,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub entry_count: Option<u32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -314,6 +352,9 @@ pub enum InstanceResourceQueryKind {
     GitLog(GitLogQuery),
     GitMutate(GitMutateQuery),
     WriteFile(WriteFileQuery),
+    CreateDir(CreateDirQuery),
+    MovePath(MovePathQuery),
+    DeletePath(DeletePathQuery),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -360,6 +401,36 @@ pub struct WriteFileQuery {
     pub if_match: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub if_none_match: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CreateDirQuery {
+    pub path: String,
+    pub if_none_match: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MovePathQuery {
+    pub source: String,
+    pub target: String,
+    pub source_if_match: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_if_match: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_if_none_match: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct DeletePathQuery {
+    pub path: String,
+    pub if_match: String,
+    #[serde(default)]
+    pub recursive: bool,
+    #[serde(default)]
+    pub use_trash: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -422,6 +493,49 @@ pub enum InstanceResourcePayload {
     Blob(InstanceBlob),
     Mutation(InstanceMutationResult),
     FsStat(FsStat),
+    FsMutation(FsMutationResult),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FsMutationResult {
+    pub primary_path: String,
+    pub affected_paths: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stat: Option<FsStat>,
+}
+
+/// instance hello `caps.resources` 子集（缺字段默认 false，前向兼容）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct InstanceResourceCaps {
+    pub protocol_version: Option<u32>,
+    pub write: bool,
+    pub structural_mutations: bool,
+}
+
+/// 从 `instance/hello.caps` 解析资源能力；旧 hello 无 `structuralMutations` 时为 false。
+pub fn parse_instance_resource_caps(caps: &serde_json::Value) -> InstanceResourceCaps {
+    InstanceResourceCaps {
+        protocol_version: caps
+            .pointer("/resources/protocolVersion")
+            .and_then(serde_json::Value::as_u64)
+            .and_then(|value| u32::try_from(value).ok()),
+        write: caps
+            .pointer("/resources/write")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false),
+        structural_mutations: caps
+            .pointer("/resources/structuralMutations")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false),
+    }
+}
+
+/// 是否允许 structural FS mutation（mkdir/move/delete）；须 v5 + write + structural cap。
+pub fn instance_supports_structural_fs_mutations(caps: &InstanceResourceCaps) -> bool {
+    caps.protocol_version == Some(RESOURCE_PROTOCOL_VERSION)
+        && caps.write
+        && caps.structural_mutations
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -454,6 +568,7 @@ pub enum FsPermissions {
 #[serde(tag = "kind", content = "data", rename_all = "snake_case")]
 pub enum ActionResourceResult {
     FsStat(FsStat),
+    FsMutation(FsMutationResult),
     Mutation(InstanceMutationResult),
 }
 

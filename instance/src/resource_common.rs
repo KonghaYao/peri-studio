@@ -1,6 +1,7 @@
 use std::path::{Component, Path, PathBuf};
+use std::time::UNIX_EPOCH;
 
-use peri_studio_proto::resource::{ResourceErrorCode, ResourceFailure};
+use peri_studio_proto::resource::{FileKind, ResourceErrorCode, ResourceFailure};
 use sha2::{Digest, Sha256};
 
 pub(super) fn validate_relative(value: &str) -> Result<PathBuf, ResourceFailure> {
@@ -68,6 +69,28 @@ pub(super) fn relative_path(root: &Path, target: &Path) -> Result<String, Resour
 
 pub(super) fn hash_text(value: &str) -> String {
     hash_bytes(value.as_bytes())
+}
+
+pub(super) fn fs_revision(path: &str, kind: FileKind, metadata: &std::fs::Metadata) -> String {
+    let mtime_ns = metadata
+        .modified()
+        .ok()
+        .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+        .map(|duration| duration.as_nanos())
+        .unwrap_or_default();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        hash_text(&format!(
+            "{path}:{kind:?}:{}:{mtime_ns}:{}:{}:{}",
+            metadata.len(),
+            metadata.dev(),
+            metadata.ino(),
+            metadata.ctime_nsec()
+        ))
+    }
+    #[cfg(not(unix))]
+    hash_text(&format!("{path}:{kind:?}:{}:{mtime_ns}", metadata.len()))
 }
 
 pub(super) fn hash_bytes(value: &[u8]) -> String {

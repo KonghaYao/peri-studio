@@ -5,6 +5,7 @@ export { ComposerUploadLayout } from './composer/ComposerUploadLayout';
 export { DecisionSurfacesLayout } from './decision/DecisionSurfacesLayout';
 export { GitGraphLayout } from './resource/GitGraphLayout';
 export { ExplorerUploadDropLayout } from './resource/ExplorerUploadDropLayout';
+export { ExplorerMutationsLayout } from './resource/ExplorerMutationsLayout';
 export { ResourcePanelLayout } from './resource/ResourcePanelLayout';
 export { ResourceWorkbenchLayout } from './resource/ResourceWorkbenchLayout';
 export { SourceControlLayout } from './resource/SourceControlLayout';

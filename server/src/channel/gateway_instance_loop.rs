@@ -129,6 +129,21 @@ impl Gateway {
             registered_at: registered_at.clone(),
             last_heartbeat: registered_at.clone(),
             chat_count: 0,
+            resource_protocol_version: hello
+                .caps
+                .pointer("/resources/protocolVersion")
+                .and_then(serde_json::Value::as_u64)
+                .and_then(|value| u32::try_from(value).ok()),
+            resource_write: hello
+                .caps
+                .pointer("/resources/write")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(false),
+            resource_structural_mutations: hello
+                .caps
+                .pointer("/resources/structuralMutations")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(false),
         };
         if let Err(e) = self.registry.upsert_instance(view).await {
             warn!(instance_id = %instance_id, error = ?e, "registry instance upsert failed (hello)");
@@ -218,6 +233,21 @@ impl Gateway {
                                         registered_at: registered_at.clone(),
                                         last_heartbeat: now,
                                         chat_count: hb.alive_sessions.len() as u32,
+                                        resource_protocol_version: hello
+                                            .caps
+                                            .pointer("/resources/protocolVersion")
+                                            .and_then(serde_json::Value::as_u64)
+                                            .and_then(|value| u32::try_from(value).ok()),
+                                        resource_write: hello
+                                            .caps
+                                            .pointer("/resources/write")
+                                            .and_then(serde_json::Value::as_bool)
+                                            .unwrap_or(false),
+                                        resource_structural_mutations: hello
+                                            .caps
+                                            .pointer("/resources/structuralMutations")
+                                            .and_then(serde_json::Value::as_bool)
+                                            .unwrap_or(false),
                                     };
                                     if let Err(e) = self.registry.upsert_instance(view).await {
                                         debug!(instance_id = %instance_id, error = ?e, "registry heartbeat upsert failed");

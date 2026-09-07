@@ -178,6 +178,98 @@ impl MetadataStore {
         Ok(())
     }
 
+    pub async fn fs_mutation_command(&self, id: &str) -> Result<Option<FsMutationCommand>> {
+        let row = sqlx::query(
+            "SELECT command_id,principal,command_type,project_id,payload_fingerprint,phase,outcome_json \
+             FROM fs_mutation_commands WHERE command_id=?",
+        )
+        .bind(id)
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(row.map(|row| FsMutationCommand {
+            command_id: row.get(0),
+            principal: row.get(1),
+            command_type: row.get(2),
+            project_id: row.get(3),
+            payload_fingerprint: row.get(4),
+            phase: row.get(5),
+            outcome_json: row.get(6),
+        }))
+    }
+
+    pub async fn begin_fs_mutation_command(
+        &self,
+        command_id: &str,
+        principal: &str,
+        command_type: &str,
+        project_id: &str,
+        payload_fingerprint: &str,
+    ) -> Result<BeginCommand> {
+        let mut tx = self.pool.begin().await?;
+        let existing = sqlx::query(
+            "SELECT principal,command_type,project_id,payload_fingerprint \
+             FROM fs_mutation_commands WHERE command_id=?",
+        )
+        .bind(command_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+        if let Some(existing) = existing {
+            let matches = existing.get::<String, _>(0) == principal
+                && existing.get::<String, _>(1) == command_type
+                && existing.get::<String, _>(2) == project_id
+                && existing.get::<String, _>(3) == payload_fingerprint;
+            if !matches {
+                return Err(MetadataError::Conflict(format!(
+                    "filesystem mutation command {command_id} identity mismatch"
+                )));
+            }
+            return Ok(BeginCommand::Existing);
+        }
+        let ts = now();
+        sqlx::query(
+            "INSERT INTO fs_mutation_commands(command_id,principal,command_type,project_id,\
+             payload_fingerprint,phase,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)",
+        )
+        .bind(command_id)
+        .bind(principal)
+        .bind(command_type)
+        .bind(project_id)
+        .bind(payload_fingerprint)
+        .bind("intent_durable")
+        .bind(&ts)
+        .bind(&ts)
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        Ok(BeginCommand::New)
+    }
+
+    pub async fn transition_fs_mutation_command(
+        &self,
+        command_id: &str,
+        expected_phase: &str,
+        next_phase: &str,
+        outcome_json: Option<&str>,
+    ) -> Result<()> {
+        let result = sqlx::query(
+            "UPDATE fs_mutation_commands SET phase=?,outcome_json=?,updated_at=? \
+             WHERE command_id=? AND phase=?",
+        )
+        .bind(next_phase)
+        .bind(outcome_json)
+        .bind(now())
+        .bind(command_id)
+        .bind(expected_phase)
+        .execute(&self.pool)
+        .await?;
+        if result.rows_affected() != 1 {
+            return Err(MetadataError::Conflict(format!(
+                "filesystem mutation command {command_id} is not in phase {expected_phase}"
+            )));
+        }
+        Ok(())
+    }
+
     pub async fn oauth_command(&self, id: &str) -> Result<Option<OAuthCommandRecord>> {
         let row = sqlx::query(
             "SELECT command_id,command_type,chat_id,payload_fingerprint,phase,error_code \

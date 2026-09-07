@@ -79,6 +79,8 @@ pub const SESSION_POLL_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// 提交结果（同步返回的部分）：accepted 立即；终态经连接发送队列。
 #[derive(Debug, Clone, PartialEq)]
+// `ActionAck` 可携带 structural FS 结果；保持既有同步返回 API。
+#[allow(clippy::large_enum_variant)]
 pub enum SubmitAck {
     /// 已入队（accepted，§4.4：只表示进入有界处理队列）。
     Accepted { command_id: String },

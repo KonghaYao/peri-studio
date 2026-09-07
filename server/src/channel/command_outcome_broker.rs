@@ -92,6 +92,8 @@ pub(super) enum ExistingCommandDisposition {
 }
 
 #[derive(Debug)]
+// `ActionAck` 可携带 structural FS 结果；保持现有恢复响应形态。
+#[allow(clippy::large_enum_variant)]
 pub(super) enum ExistingCommandResponse {
     Accepted { command_id: String },
     Duplicate(ActionAck),

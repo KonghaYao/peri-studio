@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkspaceUploadItemView } from '@/features/resource/upload-workspace-file';
-import { explorerUploadRefreshTransition, submittedWorkspaceUploadItemIds } from './workspace-upload';
+import { explorerUploadRefreshTransition, submittedWorkspaceUploadItemIds, type WorkspaceUploadOrigin } from './workspace-upload';
 
 function item(phase: WorkspaceUploadItemView['phase']): WorkspaceUploadItemView {
   return {
@@ -37,7 +37,7 @@ describe('Explorer upload refresh', () => {
     const readyComposer = { ...item('ready'), id: 'composer-ready', referenceInjected: true };
     const readyExplorer = { ...item('ready'), id: 'explorer-ready', referenceInjected: true };
     const failedComposer = { ...item('failed'), id: 'composer-failed', referenceInjected: true };
-    const origins = new Map([
+    const origins = new Map<string, WorkspaceUploadOrigin>([
       ['composer-ready', 'composer'],
       ['explorer-ready', 'explorer'],
       ['composer-failed', 'composer'],

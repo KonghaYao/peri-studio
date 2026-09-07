@@ -97,6 +97,9 @@ pub const M1_ACTION_TYPES: &[&str] = &[
     "machine/remove",
     "machine/restore",
     "fs/write-file",
+    "fs/create-dir",
+    "fs/move",
+    "fs/delete",
 ];
 
 /// `action` 帧的 `type` 子集是否在 M1 白名单内。

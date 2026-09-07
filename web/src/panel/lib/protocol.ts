@@ -18,6 +18,7 @@ import {
   type TerminalOpenedFrame,
   type TerminalOutputFrame,
 } from '@/shared/protocol/terminal';
+import { isActionResourceResult, isDeleteConfirmResultFrame } from '@/shared/protocol/resource-fs-mutation';
 import { isServerDocId } from './doc-id';
 
 /** 注册表 doc id（与 proto/src/conn.rs 的 DocId::REGISTRY 对齐），常驻订阅。 */
@@ -256,7 +257,7 @@ export type DownstreamFrame =
   | { t: 'keep_alive' }
   | { t: 'ready'; projectionVersions: Record<string, number>; negotiatedCapabilities?: string[]; maxPromptBytes?: number }
   | { t: 'ysync.update'; doc: string; update: string; projectionVersion?: number }
-  | { t: 'action_ack'; commandId: string; status: 'accepted' | 'committed' | 'duplicate'; turnId?: string; chatId?: string; projectId?: string; sessionId?: string; acpSessionId?: string; committedProjectionVersion?: number }
+  | { t: 'action_ack'; commandId: string; status: 'accepted' | 'committed' | 'duplicate'; turnId?: string; chatId?: string; projectId?: string; sessionId?: string; acpSessionId?: string; committedProjectionVersion?: number; resourceResult?: import('@/shared/protocol/resource-fs-mutation').FsMutationAck['resourceResult'] }
   | { t: 'action_error'; commandId: string; code: string; message: string; retryable: boolean; retryAfterMs?: number }
   | { t: 'prompt_status'; commandId: string; sessionId: string; runtimeRestored: false; truncated: boolean; evidenceIncomplete: boolean; prompts: PromptStatusItem[] }
   | ({ t: 'rewind_candidates' } & RewindCandidatesFrame)
@@ -312,6 +313,7 @@ function decodeKnownFrame(frame: Record<string, unknown>): DownstreamFrame | nul
       if (!nonEmptyString(frame.commandId) || !['accepted', 'committed', 'duplicate'].includes(String(frame.status))) return null;
       if (!optionalNullishStrings(frame, ['turnId', 'chatId', 'projectId', 'sessionId', 'acpSessionId'])) return null;
       if (frame.committedProjectionVersion != null && !nonNegativeInteger(frame.committedProjectionVersion)) return null;
+      if (frame.resourceResult !== undefined && !isActionResourceResult(frame.resourceResult)) return null;
       return omitNullish(frame, ['turnId', 'chatId', 'projectId', 'sessionId', 'acpSessionId', 'committedProjectionVersion']) as DownstreamFrame;
     case 'action_error':
       if (!nonEmptyString(frame.commandId) || !nonEmptyString(frame.code) || typeof frame.message !== 'string' || typeof frame.retryable !== 'boolean') return null;
@@ -352,7 +354,7 @@ function decodeKnownFrame(frame: Record<string, unknown>): DownstreamFrame | nul
     case 'auth_error':
       return frame as DownstreamFrame;
     case 'resource_result':
-      return isResourceResult(frame) ? frame : null;
+      return isDeleteConfirmResultFrame(frame) || isResourceResult(frame) ? frame as DownstreamFrame : null;
     default:
       return frame as DownstreamFrame;
   }

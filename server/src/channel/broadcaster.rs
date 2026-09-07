@@ -46,6 +46,8 @@ pub enum SubError {
 /// broadcaster / coordinator / gateway / instance registry 都向连接发送队列
 /// 投递；`Close` 携带关闭码（§4.7），gateway 消费后以对应码关闭 ws。
 #[derive(Debug, Clone)]
+// `Frame` 可携带 structural FS action；保持统一队列形态，避免全链路装箱改造。
+#[allow(clippy::large_enum_variant)]
 pub enum OutboundMsg {
     /// 业务帧（action_ack/action_error/ready/keep_alive/ysync.update/...）。
     Frame(Frame),

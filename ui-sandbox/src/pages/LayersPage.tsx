@@ -5,6 +5,7 @@ import {
   ComposerUploadLayout,
   DecisionSurfacesLayout,
   ExplorerUploadDropLayout,
+  ExplorerMutationsLayout,
   GitGraphLayout,
   ProjectSidebarLayout,
   ResourcePanelLayout,
@@ -86,6 +87,13 @@ export function LayersPage() {
           description="Folder / workspace root drop target、目录拒绝 alert、批次 N/M progress。"
         >
           <ExplorerUploadDropLayout />
+        </DemoSection>
+        <DemoSection
+          id="explorer-mutations"
+          title="Explorer file mutations"
+          description="New File/Folder/Refresh、上下文菜单、行内新建/重命名、Move to…、永久删除、danger/disabled/pending/conflict；F2/Delete 键盘语义（mock）。"
+        >
+          <ExplorerMutationsLayout />
         </DemoSection>
       </DomainSection>
 

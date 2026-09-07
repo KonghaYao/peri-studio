@@ -11,6 +11,22 @@ use tracing::{info, warn};
 use super::*;
 
 impl InstanceRegistry {
+    /// 目标 instance 是否在线且声明 structural FS mutation 能力。
+    pub async fn supports_structural_fs_mutations(&self, instance_id: &str) -> bool {
+        self.inner
+            .instances
+            .read()
+            .await
+            .get(instance_id)
+            .is_some_and(|entry| {
+                entry.state.can_serve()
+                    && entry.resource_protocol_version
+                        == Some(peri_studio_proto::resource::RESOURCE_PROTOCOL_VERSION)
+                    && entry.resource_write
+                    && entry.resource_structural_mutations
+            })
+    }
+
     /// 当前生产连接完成 fencing 清理后，允许其承载 terminal 指令与回调。
     pub async fn activate_terminal_connection(
         &self,
@@ -84,6 +100,15 @@ impl InstanceRegistry {
                 query.query,
                 peri_studio_proto::resource::InstanceResourceQueryKind::WriteFile(_)
             ) && !entry.resource_write
+            {
+                return Err(InstanceError::ResourceUnsupported);
+            }
+            if matches!(
+                query.query,
+                peri_studio_proto::resource::InstanceResourceQueryKind::CreateDir(_)
+                    | peri_studio_proto::resource::InstanceResourceQueryKind::MovePath(_)
+                    | peri_studio_proto::resource::InstanceResourceQueryKind::DeletePath(_)
+            ) && (!entry.resource_write || !entry.resource_structural_mutations)
             {
                 return Err(InstanceError::ResourceUnsupported);
             }

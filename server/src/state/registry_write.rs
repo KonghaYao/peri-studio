@@ -306,6 +306,16 @@ fn write_instance(txn: &mut yrs::TransactionMut<'_>, root: &yrs::MapRef, m: &Ins
     mm.insert(txn, "registered_at", m.registered_at.clone());
     mm.insert(txn, "last_heartbeat", m.last_heartbeat.clone());
     mm.insert(txn, "chat_count", m.chat_count as f64);
+    match m.resource_protocol_version {
+        Some(version) => mm.insert(txn, "resource_protocol_version", version as f64),
+        None => mm.insert(txn, "resource_protocol_version", yrs::Any::Null),
+    };
+    mm.insert(txn, "resource_write", m.resource_write);
+    mm.insert(
+        txn,
+        "resource_structural_mutations",
+        m.resource_structural_mutations,
+    );
 }
 
 fn write_chat_summary(txn: &mut yrs::TransactionMut<'_>, root: &yrs::MapRef, s: &ChatSummary) {

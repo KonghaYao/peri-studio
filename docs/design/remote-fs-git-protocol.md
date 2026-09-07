@@ -290,6 +290,14 @@ mutation：
 - `fs/move { source, target, sourceIfMatch, targetIfMatch? | targetIfNoneMatch }`
 - `fs/delete { path, ifMatch, recursive, useTrash }`
 
+已实现的 structural mutation 可靠性约束：
+
+- server 在 dispatch 前将 principal、`commandId`、action type、project 与 payload fingerprint 写入 SQLite `fs_mutation_commands`；终态 outcome 持久化后才回 Ack。同 ID/同 payload 跨重启重放原 outcome，同 ID/不同 payload 拒绝。
+- dispatch 后缺少终态证据一律收敛为 `DeliveryUnknown`；浏览器只可用原 `commandId` 对账，不得自动换 ID。server gate 按 project 隔离并在完成后回收，不以固定进程内命令表作为幂等事实源。
+- Unix move/delete 先把已授权目录项以 no-replace rename 原子隔离到独占 staging 名，再校验 device/inode/type identity，最终 syscall 只作用于 staging；revision 同时包含 device/inode/ctime。非 Linux/macOS 保持 fail closed。
+- recursive delete 是非事务操作；若已有子项删除后失败，返回 `DELIVERY_UNKNOWN`（不可自动重试），server 持久化该终态，Web 强制完整 project refresh 并要求人工核对真实文件系统。
+- Web Explorer 仅在 Registry 投影确认 resource protocol v5、`write:true`、`structuralMutations:true`、instance online 且 principal 为 Full 时启用入口；每 project single-flight，mutation ack 后按 generation fence 刷新受影响父目录。
+
 instance watcher：
 
 - `fs/watch { path, recursive, excludes[] }`

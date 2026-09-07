@@ -2,7 +2,7 @@ import { createEffect, createRoot, createSignal } from 'solid-js';
 import { connectionReady, sendFrame } from '../panel/lib/connection';
 import { canMutate, type PrincipalRole } from '../panel/lib/auth-role';
 import { principalRole } from '../panel/lib/auth-state';
-import { activateResourceProject, resourceWorkspace, resourceWorkspaceGeneration } from '../panel/lib/resource-store';
+import { activateResourceProject, openFilePreview, resourceWorkspace, resourceWorkspaceGeneration } from '../panel/lib/resource-store';
 import { putResourceUploadBytes } from '@/features/resource/upload-http-put';
 import {
   forwardWorkspaceUploadActionAck,
@@ -20,7 +20,9 @@ export type WorkspaceUploadOrigin = 'composer' | 'explorer' | 'quickstart';
 
 const [workspaceUploadBatch, setWorkspaceUploadBatch] = createSignal<WorkspaceUploadBatchView | null>(null);
 const [workspaceUploadLiveMessage, setWorkspaceUploadLiveMessage] = createSignal('');
+export const [explorerCreatedFileFocus, setExplorerCreatedFileFocus] = createSignal<{ id: string; path: string } | null>(null);
 const uploadItemOrigins = new Map<string, WorkspaceUploadOrigin>();
+const emptyExplorerFiles = new Set<string>();
 
 let uploadQueue: WorkspaceUploadQueue | null = null;
 let explorerRefreshInFlight = false;
@@ -123,6 +125,12 @@ function handleUploadBatchChange(view: WorkspaceUploadBatchView | null): void {
     return;
   }
   const explorerItems = view.items.filter((item) => uploadItemOrigins.get(item.id) === 'explorer');
+  for (const item of explorerItems) {
+    if (item.phase === 'ready' && emptyExplorerFiles.delete(item.id)) {
+      setExplorerCreatedFileFocus({ id: item.id, path: item.workspaceRelativePath });
+      openFilePreview(item.workspaceRelativePath);
+    }
+  }
   const transition = explorerUploadRefreshTransition(explorerUploadBusy, explorerItems);
   if (transition.refresh) scheduleExplorerRefresh();
   explorerUploadBusy = transition.busy;
@@ -133,6 +141,8 @@ export { workspaceUploadBatch, workspaceUploadLiveMessage, forwardWorkspaceUploa
 export function resetWorkspaceUploadAssembly(): void {
   uploadQueue?.reset();
   uploadItemOrigins.clear();
+  emptyExplorerFiles.clear();
+  setExplorerCreatedFileFocus(null);
   setWorkspaceUploadBatch(null);
   setWorkspaceUploadLiveMessage('');
   explorerRefreshInFlight = false;
@@ -205,6 +215,15 @@ export function enqueueQuickStartRootUpload(projectId: string, files: readonly F
 
 export function enqueueExplorerUpload(projectId: string, directoryPath: string, files: readonly File[]): boolean {
   return enqueueWorkspaceUpload('explorer', projectId, files, directoryPath);
+}
+
+export function createEmptyExplorerFile(projectId: string, directoryPath: string, name: string): boolean {
+  const queue = ensureQueue();
+  const knownIds = new Set(queue.snapshot()?.items.map((item) => item.id) ?? []);
+  if (!enqueueExplorerUpload(projectId, directoryPath, [new File([], name)])) return false;
+  const created = queue.snapshot()?.items.find((item) => !knownIds.has(item.id));
+  if (created) emptyExplorerFiles.add(created.id);
+  return true;
 }
 
 export function retryWorkspaceUpload(itemId: string): void {

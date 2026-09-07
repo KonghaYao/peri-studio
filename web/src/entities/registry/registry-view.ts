@@ -10,6 +10,9 @@ export interface InstanceInfo {
   registeredAt: string | null;
   lastHeartbeat: string | null;
   chatCount: unknown;
+  resourceProtocolVersion?: number | null;
+  resourceWrite?: boolean;
+  resourceStructuralMutations?: boolean;
 }
 
 export interface ChatInfo {
@@ -114,6 +117,11 @@ export function renderRegistry(doc: Y.Doc): RegistryView {
       registeredAt: getStr(map, 'registered_at'),
       lastHeartbeat: getStr(map, 'last_heartbeat'),
       chatCount: map?.get('chat_count') ?? null,
+      resourceProtocolVersion: typeof map?.get('resource_protocol_version') === 'number'
+        ? map.get('resource_protocol_version') as number
+        : null,
+      resourceWrite: map?.get('resource_write') === true,
+      resourceStructuralMutations: map?.get('resource_structural_mutations') === true,
     });
   });
 

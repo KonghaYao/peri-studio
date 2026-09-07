@@ -1,3 +1,10 @@
 export { FileTree, type FileTreeNode } from './FileTree';
 export { FilePreviewPanel, type PreviewLine } from './FilePreviewPanel';
 export { buildPathTree, folderPathsFromItems } from './build-path-tree';
+export { ExplorerSectionHeader } from './ExplorerSectionHeader';
+export { FileTreeInlineNameEditor } from './FileTreeInlineNameEditor';
+export { ExplorerItemMenu, buildExplorerContextMenuItems } from './ExplorerItemMenu';
+export { ExplorerDeleteDialog } from './ExplorerDeleteDialog';
+export { ExplorerMoveDialog } from './ExplorerMoveDialog';
+export { ExplorerMutationsTree, type InlineEditState } from './ExplorerMutationsTree';
+export { ExplorerMutationsPanel } from './ExplorerMutationsPanel';

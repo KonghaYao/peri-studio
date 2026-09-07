@@ -6,7 +6,7 @@
 
 use super::*;
 
-const SCHEMA_VERSION: i64 = 10;
+const SCHEMA_VERSION: i64 = 11;
 
 const MIGRATION_V1: &str = r#"
 CREATE TABLE IF NOT EXISTS schema_migrations(
@@ -173,6 +173,22 @@ CREATE UNIQUE INDEX machines_ssh_dest_port_unique
   WHERE kind = 'ssh' AND archived_at IS NULL;
 "#;
 
+const MIGRATION_V11: &str = r#"
+CREATE TABLE fs_mutation_commands(
+  command_id TEXT PRIMARY KEY,
+  principal TEXT NOT NULL,
+  command_type TEXT NOT NULL CHECK(command_type IN ('fs/create-dir','fs/move','fs/delete')),
+  project_id TEXT NOT NULL,
+  payload_fingerprint TEXT NOT NULL,
+  phase TEXT NOT NULL CHECK(phase IN ('intent_durable','dispatching','committed','failed','delivery_unknown')),
+  outcome_json TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX fs_mutation_commands_project_updated_idx
+  ON fs_mutation_commands(project_id, updated_at DESC);
+"#;
+
 impl MetadataStore {
     pub(super) async fn migrate(&self) -> Result<()> {
         let mut tx = self.pool.begin().await?;
@@ -324,6 +340,19 @@ impl MetadataStore {
                 }
             }
             sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(10,?)")
+                .bind(now())
+                .execute(&mut *tx)
+                .await?;
+        }
+        if found < 11 {
+            for statement in MIGRATION_V11
+                .split(';')
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                sqlx::query(statement).execute(&mut *tx).await?;
+            }
+            sqlx::query("INSERT INTO schema_migrations(version,applied_at) VALUES(11,?)")
                 .bind(now())
                 .execute(&mut *tx)
                 .await?;

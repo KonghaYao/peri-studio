@@ -366,7 +366,8 @@ fn project_payload(
         }
         InstanceResourcePayload::Blob(_)
         | InstanceResourcePayload::Mutation(_)
-        | InstanceResourcePayload::FsStat(_) => {
+        | InstanceResourcePayload::FsStat(_)
+        | InstanceResourcePayload::FsMutation(_) => {
             meta.insert(txn, "view_type", "blob");
         }
     }

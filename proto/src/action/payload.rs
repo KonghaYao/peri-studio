@@ -346,3 +346,41 @@ pub struct FsWriteFilePayload {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub if_none_match: Option<String>,
 }
+
+/// `fs/create-dir`：在 workspace 内创建单段目录（Committed mutation）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct FsCreateDirPayload {
+    pub project_id: String,
+    pub path: String,
+    pub if_none_match: String,
+}
+
+/// `fs/move`：重命名或跨目录移动（源 revision CAS；v1 目标不覆盖）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct FsMovePayload {
+    pub project_id: String,
+    pub source: String,
+    pub target: String,
+    pub source_if_match: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_if_match: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_if_none_match: Option<String>,
+}
+
+/// `fs/delete`：删除文件或目录（revision CAS；destructive 须 confirm token）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct FsDeletePayload {
+    pub project_id: String,
+    pub path: String,
+    pub if_match: String,
+    #[serde(default)]
+    pub recursive: bool,
+    #[serde(default)]
+    pub use_trash: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub confirm_token: Option<String>,
+}
