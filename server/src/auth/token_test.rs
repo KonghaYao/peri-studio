@@ -132,18 +132,16 @@ fn ensured_instance_credential_reuses_token_and_atomically_restricts_output() {
     }
 }
 
-#[cfg(unix)]
 #[test]
 fn t1_generate_to_file_retains_inert_credential_when_store_cannot_commit() {
-    use std::os::unix::fs::PermissionsExt as _;
-
     let dir = tempdir().unwrap();
     let config = dir.path().join("config");
     let data = dir.path().join("data");
     std::fs::create_dir_all(&config).unwrap();
     std::fs::create_dir_all(&data).unwrap();
-    let mut store = TokenStore::load(&config.join("tokens.toml")).unwrap();
-    std::fs::set_permissions(&config, std::fs::Permissions::from_mode(0o500)).unwrap();
+    let store_path = config.join("tokens.toml");
+    let mut store = TokenStore::load(&store_path).unwrap();
+    std::fs::create_dir(config.join(format!(".tokens.toml.tmp.{}", std::process::id()))).unwrap();
 
     let output = data.join("instance.token");
     let error = store
@@ -160,11 +158,7 @@ fn t1_generate_to_file_retains_inert_credential_when_store_cannot_commit() {
         "failed store commit must roll back memory state"
     );
 
-    std::fs::set_permissions(&config, std::fs::Permissions::from_mode(0o700)).unwrap();
-    assert_eq!(
-        TokenStore::load(&config.join("tokens.toml")).unwrap().len(),
-        0
-    );
+    assert_eq!(TokenStore::load(&store_path).unwrap().len(), 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -241,27 +235,27 @@ fn t4_atomic_write() {
     assert!(leftovers.is_empty(), "不应残留 tmp 文件");
 }
 
-#[cfg(unix)]
 #[test]
 fn t4_atomic_write_failure_keeps_original() {
-    use std::os::unix::fs::PermissionsExt;
-
     let dir = tempdir().unwrap();
     let path = dir.path().join("tokens.toml");
     let mut store = TokenStore::load(&path).unwrap();
     let rec = store.generate(TokenRole::Instance, "m1").unwrap();
 
-    // 目录只读 → 下次写失败
-    std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o500)).unwrap();
+    // 占用原子写临时路径为目录，使写入在任意用户身份下确定失败。
+    std::fs::create_dir(
+        dir.path()
+            .join(format!(".tokens.toml.tmp.{}", std::process::id())),
+    )
+    .unwrap();
     let err = store.generate(TokenRole::Full, "tui").unwrap_err();
     assert!(
         matches!(
             err,
             crate::auth::StoreError::Io(_) | crate::auth::StoreError::Persist(_)
         ),
-        "只读目录写失败应报错: {err}"
+        "临时路径冲突时写失败应报错: {err}"
     );
-    std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
 
     // 原文件完好（无半文件、无脏记录）
     let reloaded = TokenStore::load(&path).unwrap();
