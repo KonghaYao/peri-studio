@@ -36,7 +36,8 @@ pub(super) fn move_path_platform(
     if source_stat.revision != source_revision {
         return Err(failure(ResourceErrorCode::VersionConflict, false));
     }
-    let source_identity = identity_at(source_parent.as_raw_fd(), &source_name)?;
+    let source_handle = open_identity_handle(source_parent.as_raw_fd(), &source_name)?;
+    let source_identity = identity_of(&source_handle)?;
     before_mutation();
     let staging_name = unique_staging_name(source_parent.as_raw_fd())?;
     rename_exclusive(
@@ -85,7 +86,8 @@ pub(super) fn delete_path_platform_with_hooks(
     if stat.revision != revision {
         return Err(failure(ResourceErrorCode::VersionConflict, false));
     }
-    let identity = identity_at(parent.as_raw_fd(), &name)?;
+    let identity_handle = open_identity_handle(parent.as_raw_fd(), &name)?;
+    let identity = identity_of(&identity_handle)?;
     before_isolation();
     let staging_name = unique_staging_name(parent.as_raw_fd())?;
     rename_exclusive(parent.as_raw_fd(), &name, parent.as_raw_fd(), &staging_name)?;
@@ -271,6 +273,28 @@ struct EntryIdentity {
     dev: u64,
     ino: u64,
     mode: libc::mode_t,
+}
+
+fn identity_of(file: &std::fs::File) -> Result<EntryIdentity, ResourceFailure> {
+    let stat = file.metadata().map_err(map_io)?;
+    use std::os::unix::fs::MetadataExt as _;
+    Ok(EntryIdentity {
+        dev: stat.dev(),
+        ino: stat.ino(),
+        mode: stat.mode() as libc::mode_t,
+    })
+}
+
+fn open_identity_handle(fd: RawFd, name: &CStr) -> Result<std::fs::File, ResourceFailure> {
+    // O_RDONLY 可同时打开文件和目录；O_NONBLOCK 避免 FIFO 等特殊文件阻塞。
+    let flags = libc::O_RDONLY | libc::O_CLOEXEC | libc::O_NOFOLLOW | libc::O_NONBLOCK;
+    // SAFETY: name 是存活的 NUL 结尾缓冲；成功 fd 立即交给 File 独占。
+    let opened = unsafe { libc::openat(fd, name.as_ptr(), flags) };
+    if opened < 0 {
+        return Err(map_path_error(std::io::Error::last_os_error()));
+    }
+    // SAFETY: openat 返回新的 owned fd，File 成为唯一 owner。
+    Ok(unsafe { std::fs::File::from_raw_fd(opened) })
 }
 
 fn identity_at(fd: RawFd, name: &CStr) -> Result<EntryIdentity, ResourceFailure> {
