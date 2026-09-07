@@ -47,6 +47,46 @@ fn bootstrap_instance_token() {
     assert_eq!(rec2.role, TokenRole::Instance);
 }
 
+#[test]
+fn bootstrap_browser_token_is_managed_without_undoing_revocation() {
+    let dir = tempdir().unwrap();
+    let mut store = new_store(dir.path());
+    let first = store
+        .ensure_initial_browser_token()
+        .unwrap()
+        .expect("首次启动应生成 browser token");
+    assert_eq!(first.role, TokenRole::Full);
+    assert_eq!(first.name, crate::auth::BOOTSTRAP_BROWSER_NAME);
+
+    let mut reopened = TokenStore::load(&dir.path().join("tokens.toml")).unwrap();
+    assert!(
+        reopened.ensure_initial_browser_token().unwrap().is_none(),
+        "重启后不得重新开放 bootstrap"
+    );
+
+    store.revoke(&first.id).unwrap();
+    assert!(store.ensure_initial_browser_token().unwrap().is_none());
+}
+
+#[test]
+fn browser_bootstrap_session_is_single_use() {
+    let dir = tempdir().unwrap();
+    let mut store = new_store(dir.path());
+    let record = store
+        .ensure_initial_browser_token()
+        .unwrap()
+        .expect("应生成 browser token");
+    let mut service = AuthService::new(store);
+    service.set_initial_browser_token(Some(record.token));
+
+    let (_, context) = service
+        .create_initial_browser_session()
+        .unwrap()
+        .expect("首次交换应成功");
+    assert_eq!(context.role, TokenRole::Full);
+    assert!(service.create_initial_browser_session().unwrap().is_none());
+}
+
 // ---------------------------------------------------------------------------
 // 补充：client 认证上下文
 // ---------------------------------------------------------------------------

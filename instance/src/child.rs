@@ -93,6 +93,7 @@ const OVERSIZE_LINE_LOG_INTERVAL: Duration = Duration::from_secs(5);
 
 /// kill 宽限期内进程组存活轮询间隔：组提前清空则不再等待剩余宽限
 /// （§4.1 语义不变，仅缩短常路径关闭耗时）。
+#[cfg(unix)]
 const GROUP_POLL_INTERVAL: Duration = Duration::from_millis(50);
 
 /// 白名单基集（§9.6：默认空 = 仅继承白名单基集；hub 侧 `validate_env` 用
@@ -104,7 +105,7 @@ struct AcpInner {
     process: Mutex<Option<Child>>,
     stdin: Mutex<Option<BufWriter<tokio::process::ChildStdin>>>,
     session_id: String,
-    /// 进程组 id（= 子进程 pid，`process_group(0)` 语义）。
+    /// 进程组 id（Unix 上等于子进程 pid）；其他平台作为进程身份标签。
     pgid: i32,
     state: StdMutex<ProcessState>,
 }
@@ -347,13 +348,15 @@ async fn run_stdout_reader(inner: Arc<AcpInner>, tx: mpsc::Sender<ChildOutput>) 
         match process.as_mut() {
             Some(c) => {
                 let status = c.wait().await.ok();
-                (
-                    status.and_then(|s| s.code()),
-                    status.and_then(|s| {
-                        use std::os::unix::process::ExitStatusExt;
-                        s.signal()
-                    }),
-                )
+                let code = status.as_ref().and_then(std::process::ExitStatus::code);
+                #[cfg(unix)]
+                let signal = status.as_ref().and_then(|status| {
+                    use std::os::unix::process::ExitStatusExt;
+                    status.signal()
+                });
+                #[cfg(not(unix))]
+                let signal = None;
+                (code, signal)
             }
             None => (None, None),
         }
@@ -448,30 +451,43 @@ impl AcpProcess {
     /// 含孙进程）：提前清空则立即返回，不再睡满剩余宽限；到点仍未清空
     /// （存在忽略 SIGTERM 的进程）才 SIGKILL 兜底。
     pub async fn kill(&self, grace: Duration) -> anyhow::Result<()> {
+        #[cfg(not(unix))]
+        let _ = grace;
         {
             let state = self.inner.state.lock().expect("state mutex poisoned");
             if matches!(*state, ProcessState::Exited(_)) {
                 return Ok(());
             }
         }
-        let pgid = self.inner.pgid;
-        if !sys::kill_group(pgid, sys::SIGTERM) {
-            // ESRCH 等：进程组已不存在，视为已达成（幂等）。
-            return Ok(());
-        }
-        let deadline = tokio::time::Instant::now() + grace;
-        loop {
-            if !sys::kill_group(pgid, 0) {
+        #[cfg(unix)]
+        {
+            let pgid = self.inner.pgid;
+            if !sys::kill_group(pgid, sys::SIGTERM) {
                 return Ok(());
             }
-            if tokio::time::Instant::now() >= deadline {
-                break;
+            let deadline = tokio::time::Instant::now() + grace;
+            loop {
+                if !sys::kill_group(pgid, 0) {
+                    return Ok(());
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    break;
+                }
+                tokio::time::sleep(GROUP_POLL_INTERVAL).await;
             }
-            tokio::time::sleep(GROUP_POLL_INTERVAL).await;
+            sys::kill_group(pgid, sys::SIGKILL);
+            tracing::info!(target: "peri_studio::instance", session_id = %self.inner.session_id, pgid,
+                grace_ms = grace.as_millis(), "ACP process group kill complete");
         }
-        sys::kill_group(pgid, sys::SIGKILL);
-        tracing::info!(target: "peri_studio::instance", session_id = %self.inner.session_id, pgid,
-            grace_ms = grace.as_millis(), "ACP process group kill complete");
+        #[cfg(not(unix))]
+        {
+            let mut process = self.inner.process.lock().await;
+            if let Some(child) = process.as_mut() {
+                child.start_kill()?;
+            }
+            tracing::info!(target: "peri_studio::instance", session_id = %self.inner.session_id,
+                "ACP child process kill requested");
+        }
         Ok(())
     }
 }

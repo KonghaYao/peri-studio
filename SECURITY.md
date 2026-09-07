@@ -9,7 +9,7 @@ processes using the file should be upgraded as one protocol-compatible pair.
 
 The browser application remains a single-user, loopback-only surface. Binding its HTTP/WebSocket
 listener to a public interface, placing it behind an unreviewed proxy, or treating the unsigned native
-archive as notarized software is outside the supported security boundary. The `connect` role may reach
+binary as notarized software is outside the supported security boundary. The `connect` role may reach
 a remote instance endpoint only through reviewed TLS (`wss`); non-loopback plaintext requires the
 explicit `--allow-insecure` escape hatch and is unsupported outside controlled test networks.
 

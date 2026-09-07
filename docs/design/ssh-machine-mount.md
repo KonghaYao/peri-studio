@@ -24,7 +24,7 @@
 2. **默认连通是反向隧道。** server 继续听 `127.0.0.1`。远端连 `ws://127.0.0.1:<allocated>/instance`（loopback，禁止 `--allow-insecure`）。机密性由 SSH 提供，冒充仍由 HMAC 防。
 3. **P3 切成两层，禁止混写。** 进程层：本机 studio / 隧道退出 **不得 SIGKILL** 远端 ACP。控制面层：`ssh -R` **必须随本机 studio 进程退出**（与 local instance 的 `kill_on_drop(false)` **相反**）。隧道仍在且 listener 仍在时，远端 `connect` 按现有退避重连。studio 从退出到再次建隧道的窗口允许 turn interrupted 与缓冲溢出；UI 必须说清楚。
 4. **SSH runtime 永不进入全局 `recovery_instances`。** 只有本进程保证能拉起的控制面（当前即 `local`）挡住 Restarting。SSH 的 chat 重建为未确认；隧道恢复后的首份心跳走 **per-instance** `RecoveryCoordinator` lane，不挡 Healthy、不挡 `machine/*`。
-5. **没有 peri-studio 就安装；版本不对就先停再换。** 用户目录、不要求 root。同 OS/arch 优先 scp `current_exe`；否则按本机产品 semver 拉钉选 checksum 的 release 资产。禁止 `curl \| sh`、禁止在远端编译、禁止对正在运行的 inode 直接覆盖。
+5. **没有 peri-studio 就安装；版本不对就先停再换。** 用户目录、不要求 root。同 OS/arch 优先 scp `current_exe`；否则按本机产品 semver 拉对应 release 二进制及同名 SHA256，校验后安装。禁止 `curl \| sh`、禁止在远端编译、禁止对正在运行的 inode 直接覆盖。
 6. **浏览器不持有私钥，不收集 SSH 密码。** OpenSSH 只跑在 **跑 `peri-studio local/serve` 的那台 OS**。认证：`ssh-agent`、用户 `~/.ssh/config`、可选本机 Identity 路径。需要 TTY/口令 → 失败 + 可复制 `ssh <destination>`。
 7. **机器意图在 SQLite；live 连接只来自 hello/心跳。** 管理页展示未归档记录 ∪ live instance。离线机器不得从列表消失。
 8. **主管理面是带可见标签的 Machines 页**，不是帮助图标里的只读拓扑。侧栏对话树不承担机器生命周期。Web 英文动词见 §11.0，**UI 禁用 Mount**。
@@ -208,7 +208,7 @@ hello_timeout：`failed`，**不**再 spawn。Retry：若 owner lock 仍在，�
 | 条件 | 行为 |
 | --- | --- |
 | 远端 OS/arch = `current_exe` | scp 到 `.tmp` → fsync → rename 到约定路径 → `0755` |
-| 不同 arch/OS | 按 **本机产品 semver** 取仓库/构建钉选的 SHA256 资产表中匹配项；本机下载、校验、再 scp（同上原子安装） |
+| 不同 arch/OS | 按 **本机产品 semver** 下载匹配 target 的 release 二进制与同名 `.sha256`；本机强制校验后再 scp（同上原子安装） |
 | 已安装且协议版本一致 | 跳过 |
 | 已安装但协议版本不同 | **先**经 ssh exec 对 data-dir 做 owner shutdown（fingerprint fail-closed，禁止裸 PID），**再**安装，**再** start |
 | 无资产或 checksum 失败 | `instance_binary_unavailable` |
@@ -224,7 +224,7 @@ hello_timeout：`failed`，**不**再 spawn。Retry：若 owner lock 仍在，�
 
 替换正在使用的二进制必须走「停 → rename → start」。Linux 直接覆盖运行中 inode → `ETXTBSY` 视为 `instance_binary_install_failed`。**首次替换已有 peri-studio 须 UI 确认**（Add 进度里 Confirm replace）；自动重连路径：版本不齐则失败并要用户在管理页确认，避免无交互覆盖用户自己的 server 二进制。
 
-checksum 信任锚：与本机构建同一份 **锁定 SHA256 列表**（release 资产名 → hex），不是「GitHub 上最新」。无列表则跨 arch 直接 `instance_binary_unavailable`（R2 仍须能讲清 Mac→Linux：有列表才能过验收）。
+checksum 信任锚：固定为本机产品 semver 对应的 GitHub Release，同一 release 中的二进制与同名 `.sha256` 必须同时下载并匹配；不是「GitHub 上最新」。缺少 target 资产、checksum 文件或校验失败时，跨 arch 直接 `instance_binary_unavailable`。
 
 ---
 

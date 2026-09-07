@@ -4,8 +4,8 @@
 //! （`channel/gateway.rs` 连接任务步骤 2）：头部含 `upgrade: websocket`
 //! 的请求原样走 WebSocket 握手（ws 时序不变，§4.6），其余普通 HTTP 一律
 //! 交给本模块——不进连接配额/注册表，不产生占位连接。HTTP 面只包含两类
-//! 路由：内嵌 Vite 静态资源（`static_`），以及同源 `/api/auth/session` 的
-//! bounded GET/POST/DELETE cookie bootstrap（`auth_http`）。
+//! 路由：内嵌 Vite 静态资源（`static_`），以及同源 `/api/auth/session` 与
+//! `/api/auth/session/bootstrap` 的 bounded cookie 认证面（`auth_http`）。
 //!
 //! 前端是独立 Vite 工程（`web/`，SolidJS），Web 面板为唯一
 //! 页面（`/` 即面板入口）；构建产物 `web/dist/` 由 `build.rs` 在编译期

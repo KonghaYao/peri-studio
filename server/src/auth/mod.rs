@@ -43,6 +43,8 @@ pub const UNKNOWN_TOKEN_ID: &str = "<unknown>";
 /// bootstrap 机器即「缺省本机」路由目标（§4.3 P5），否则 client 不带
 /// instanceId 的 create 会命中 `UnknownInstance("local")`（E3 链路断点）。
 pub const BOOTSTRAP_INSTANCE_NAME: &str = "local";
+/// 首次本地浏览器引导生成的 full token 名称。
+pub const BOOTSTRAP_BROWSER_NAME: &str = "local-browser";
 pub const BROWSER_COOKIE: &str = "peri_studio_session";
 pub(crate) const BROWSER_SESSION_TTL_SECS: u64 = 8 * 3600;
 const BROWSER_SESSION_TTL: std::time::Duration =

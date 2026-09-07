@@ -28,6 +28,78 @@ function okFetch(payload: unknown = { role: 'full', principalId: 'principal-full
 }
 
 describe('createAuthController', () => {
+  it('uses the one-time local bootstrap after an unauthenticated first status check', async () => {
+    const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith('/bootstrap')) {
+        return { ok: true, status: 200, json: async () => ({ role: 'full', principalId: 'principal-full-1' }) };
+      }
+      expect(init?.method).toBeUndefined();
+      return { ok: false, status: 401, json: async () => ({ authenticated: false }) };
+    });
+    vi.stubGlobal('fetch', fetch);
+    const auth = makeAuth();
+
+    await auth.init();
+
+    expect(auth.state()).toBe('signed-in');
+    expect(fetch).toHaveBeenNthCalledWith(2, '/api/auth/session/bootstrap', {
+      method: 'POST',
+      credentials: 'same-origin',
+    });
+    expect(localStorage.getItem('peri_studio_token')).toBeNull();
+    expect(transport.connectWithCookie).toHaveBeenCalledOnce();
+  });
+
+  it('falls back to first-launch bootstrap after a stale remembered token is rejected', async () => {
+    localStorage.setItem('peri_studio_token', 'stale-token');
+    const fetch = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith('/bootstrap')) {
+        return { ok: true, status: 200, json: async () => ({ role: 'full', principalId: 'principal-full-1' }) };
+      }
+      return { ok: false, status: 401, json: async () => ({ authenticated: false }) };
+    });
+    vi.stubGlobal('fetch', fetch);
+    const auth = makeAuth();
+
+    await auth.init();
+
+    expect(auth.state()).toBe('signed-in');
+    expect(localStorage.getItem('peri_studio_token')).toBeNull();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenLastCalledWith('/api/auth/session/bootstrap', {
+      method: 'POST',
+      credentials: 'same-origin',
+    });
+  });
+
+  it('treats an unavailable bootstrap as the normal explicit-login fallback', async () => {
+    const fetch = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith('/bootstrap')) {
+        return { ok: false, status: 409, json: async () => ({ authenticated: false }) };
+      }
+      return { ok: false, status: 401, json: async () => ({ authenticated: false }) };
+    });
+    vi.stubGlobal('fetch', fetch);
+    const auth = makeAuth();
+
+    await auth.init();
+
+    expect(auth.state()).toBe('signed-out');
+    expect(auth.problem()).toBeNull();
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not attempt bootstrap when the status failure is retryable', async () => {
+    const fetch = okFetch({ error: 'auth_busy' }, 503);
+    vi.stubGlobal('fetch', fetch);
+    const auth = makeAuth();
+
+    await auth.init();
+
+    expect(auth.state()).toBe('signed-out');
+    expect(fetch).toHaveBeenCalledOnce();
+  });
+
   it('fails closed when a successful response carries an unknown role', async () => {
     vi.stubGlobal('fetch', okFetch({ role: 'instance' }));
     const auth = makeAuth();

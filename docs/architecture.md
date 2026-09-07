@@ -80,7 +80,7 @@ project session 的展示名优先级固定为浏览器 `customName`（IndexedDB
 
 Registry 视图无独立日志/快照：`registry.log`/`registry.snapshot` 及其 compact 机制已随无状态投影重构删除（§8.4）。Registry Doc 的 `projects` 段自 metadata.sqlite3 只读广播；`project_sessions` 段自 ACP list 缓存与运行态合并投影。server 启动时 `ProjectService::reproject` 从 SQLite 重建 `projects`（毫秒级），`project_sessions` 启动为空直至 list；运行期随 SQLite project 变更或 catalog 刷新投影；启动失败（SQLite 不可读）fail-fast，不静默重建。
 
-浏览器认证通过同源 `POST/GET/DELETE /api/auth/session` 建立内存 opaque session，并下发 `HttpOnly; SameSite=Strict; Path=/; Max-Age=28800` Cookie，与服务端 8 小时 TTL 对齐。会话本身始终是 HttpOnly cookie，WebSocket 帧与 URL 不携带 bearer；为免去每次重开登录，Web 把 full token 存入 localStorage（`peri_studio_token`），仅在下一次打开时自动重放 `POST /api/auth/session`——token 是登录界面的本地便利凭据，不是会话事实源，登出、server 判定 token 失效（`auth_error`/认证终态关闭码）或浏览器存储不可用时立即清除并退回手动输入。Cookie attach 与存量连接按心跳重新校验 token id、撤销状态和当前 role；instance HMAC 与旧 CLI wire-token 流程保持兼容。
+浏览器认证通过同源 `POST/GET/DELETE /api/auth/session` 建立内存 opaque session，并下发 `HttpOnly; SameSite=Strict; Path=/; Max-Age=28800` Cookie，与服务端 8 小时 TTL 对齐。会话本身始终是 HttpOnly cookie，WebSocket 帧与 URL 不携带 bearer。首次本地启动在 token store 从未配置 client 角色时自动创建受管 `local-browser` full token；同源 loopback 页面可且仅可调用一次 `POST /api/auth/session/bootstrap`，由进程内一次性 secret 直接换取 Cookie，响应、URL、日志和浏览器存储均不含 token。显式吊销或配置 client token 后不得自动补发。为兼容手动登录，Web 仅把用户主动输入的 full token 存入 localStorage（`peri_studio_token`），用于下一次打开时自动重放 `POST /api/auth/session`；登出、server 判定 token 失效或浏览器存储不可用时立即清除。Cookie attach 与存量连接按心跳重新校验 token id、撤销状态和当前 role；instance HMAC 与旧 CLI wire-token 流程保持兼容。
 
 认证成功响应额外返回由 server 对内部 token id 做单向 SHA-256 后截断编码的 `principalId`。该值只作为浏览器本地持久状态的隔离键，不是 bearer、不可用于恢复 token id，也不进入 WebSocket URL 或业务日志；role 或 principalId 缺失/畸形时 Web 必须 fail closed。
 
@@ -196,7 +196,7 @@ Composer 草稿由独立 IndexedDB store 以 `{principalId, projectId, acpSessio
 
 | 模块 / 角色 | crate / 位置 | 职责 | 备注 |
 |--------|------|------|------|
-| `peri-studio` 应用 | `app/` | 唯一 CLI 与发布入口；选择 `local`/`serve`/`connect`；持有信号、就绪、本地 `connect` 监督与【v2.16】`SshBackend`（OpenSSH 隧道，随 studio 退出） | 发布包仅有 `bin/peri-studio`；默认命令 = `local`；server 库禁止 spawn ssh |
+| `peri-studio` 应用 | `app/` | 唯一 CLI 与发布入口；选择 `local`/`serve`/`connect`；持有信号、就绪、本地 `connect` 监督与【v2.16】`SshBackend`（OpenSSH 隧道，随 studio 退出） | 每个平台发布一个原生 `peri-studio` 文件（Windows 为 `.exe`）；默认命令 = `local`；server 库禁止 spawn ssh |
 | server 角色 | `server/`（库） | 认证、HTTP 面与静态托管、控制面、ACPChannel 规范化、聚合器、DocManager、instance 注册表、SQLite 元数据、【v2.16】`MachineService` | `peri-studio serve`；`--local` 要求同时拉起本地 instance |
 | instance 角色 | `instance/`（库） | outbound 连 server（`/instance`）、收 spawn/kill/forward 指令、管理 ACP 进程树、透明转发 + 断线缓冲 | `peri-studio connect <URL>`；child 进程组 + fingerprint 孤儿清理（§3.3） |
 | Web 面板 | `web/`（`src/panel` + `src/components/ui`） | SolidJS 视图层：yjs 只读投影渲染 + Action/Ack 操作；`src/components/ui` 为可复用组件库 | 构建产物经 Vite 生成 `web/dist`，**不单独部署**；原规划 `peri-studio-tui` 未实现 |
@@ -1344,13 +1344,18 @@ peri-studio/
   失败均 fail closed。策略通过后安装 committed Bun lock 对应的 Chromium，执行五个
   确定性场景 × 三 viewport 以及移动 overlay/recovery 交互契约；失败 trace/screenshot
   作为短期 artifact。浏览器门禁通过后才测试/构建 Web，再执行 locked Rust
-  build/test/Clippy，最后重复生成相同 native archive 并比较字节。根 workspace CI 不被
+  build/test/Clippy；Linux/macOS 重复生成相同 native binary asset 并比较字节。根 workspace CI 不被
   误当作 peri-studio 的覆盖证据。
-- `peri-studio-v*` tag 只在 tag 版本精确等于 workspace 版本时产出 native Linux/macOS
-  归档。native build 必须同时依赖独立 policy 与 browser jobs；归档包含唯一同版本 `peri-studio`、部署资产、
-  LICENSE、安全策略与精确 Cargo/Bun locks，排除测试二进制、凭据和运行数据；每个平台
-  先本机执行 provenance 验证，再由 release job 汇总 SHA-256。Locks 是依赖 provenance，
-  不冒充 SBOM 或第三方许可证清单。
+- `peri-studio-v*` tag 只在 tag 版本精确等于 workspace 版本时产出 Linux x86_64、
+  Windows x86_64 与 macOS Apple Silicon 的单一原生二进制。native build 必须同时依赖
+  独立 policy 与 browser jobs；每个平台发布同版本 `peri-studio`、SHA-256、源码 revision
+  metadata、SPDX SBOM 与 provenance attestation，另发布 shell/PowerShell 安装器。安装器沿用
+  Peri 的 `~/.peri` / `%USERPROFILE%\.peri` PATH 约定，以独立 `peri-studio-v*` 版本目录避免
+  覆盖 Peri；产物排除测试二进制、凭据和运行数据。Windows 尚不具备安全原子 FS mutation
+  的平台实现时须返回 `ResourceUnsupported`，不得降级绕过 workspace 边界。Windows 的
+  managed-local owner control 当前不支持异常 server 退出后的跨进程接管；正常启动与由
+  原 supervisor 发起的关闭受支持，异常恢复在补齐具名管道与进程出生身份校验前保持
+  fail closed。
 
 ---
 

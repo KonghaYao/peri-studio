@@ -66,7 +66,6 @@ impl InstanceOwnerIdentity {
 
 impl InstanceOwnerLock {
     fn acquire(config: &InstanceConfig) -> anyhow::Result<Self> {
-        use std::os::fd::AsRawFd;
         let path = config.data_dir.join("instance.owner.lock");
         let mut file = fs::OpenOptions::new()
             .create(true)
@@ -79,11 +78,9 @@ impl InstanceOwnerLock {
             use std::os::unix::fs::PermissionsExt;
             file.set_permissions(fs::Permissions::from_mode(0o600))?;
         }
-        // SAFETY: flock operates on a valid owned fd and does not access Rust memory.
-        let rc = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
-        if rc != 0 {
-            anyhow::bail!("instance data directory is already owned by another daemon");
-        }
+        fs2::FileExt::try_lock_exclusive(&file).map_err(|_| {
+            anyhow::anyhow!("instance data directory is already owned by another daemon")
+        })?;
         let identity = InstanceOwnerIdentity {
             version: 1,
             pid: std::process::id(),
@@ -92,6 +89,7 @@ impl InstanceOwnerLock {
             credential_digest: credential_digest(&config.token),
             managed_local_id: config.managed_local_id.clone(),
         };
+        #[cfg(unix)]
         if identity.managed_local_id.is_some() && identity.process_fingerprint.is_none() {
             anyhow::bail!("managed local instance process identity is unavailable");
         }
@@ -113,8 +111,6 @@ impl InstanceOwnerLock {
 
 /// 返回当前持有 instance 数据目录锁的进程；无存活 owner 时返回 `None`。
 pub(super) fn current_owner(data_dir: &Path) -> anyhow::Result<Option<InstanceOwnerIdentity>> {
-    use std::os::fd::AsRawFd;
-
     let path = data_dir.join("instance.owner.lock");
     let mut file = match fs::OpenOptions::new().read(true).write(true).open(&path) {
         Ok(file) => file,
@@ -122,15 +118,10 @@ pub(super) fn current_owner(data_dir: &Path) -> anyhow::Result<Option<InstanceOw
         Err(error) => return Err(error.into()),
     };
     // 成功拿锁说明没有运行中的 owner；File drop 会立即释放本次探测锁。
-    // SAFETY: flock 只操作当前进程持有的有效文件描述符。
-    let rc = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
-    if rc == 0 {
-        return Ok(None);
-    }
-    let error = std::io::Error::last_os_error();
-    let code = error.raw_os_error();
-    if code != Some(libc::EWOULDBLOCK) && code != Some(libc::EAGAIN) {
-        return Err(error.into());
+    match fs2::FileExt::try_lock_exclusive(&file) {
+        Ok(()) => return Ok(None),
+        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
+        Err(error) => return Err(error.into()),
     }
 
     file.rewind()?;
@@ -170,6 +161,16 @@ pub(super) fn data_dir_identity(path: &Path) -> anyhow::Result<DataDirIdentity> 
     })
 }
 
+#[cfg(not(unix))]
+pub(super) fn data_dir_identity(path: &Path) -> anyhow::Result<DataDirIdentity> {
+    let canonical = fs::canonicalize(path)?;
+    let digest = Sha256::digest(canonical.to_string_lossy().as_bytes());
+    Ok(DataDirIdentity {
+        device: u64::from_le_bytes(digest[0..8].try_into().expect("SHA-256 prefix length")),
+        inode: u64::from_le_bytes(digest[8..16].try_into().expect("SHA-256 prefix length")),
+    })
+}
+
 pub(super) fn startup_cleanup(
     config: &InstanceConfig,
 ) -> anyhow::Result<(Watermark, bool, InstanceOwnerLock)> {
@@ -189,6 +190,7 @@ pub(super) fn startup_cleanup(
     let directory_matches = watermark.data_dir_identity() == Some(identity);
     for (pgid, expected) in runtime_records {
         let actual = child::process_fingerprint(pgid);
+        #[cfg(unix)]
         if directory_matches && expected.is_some() && expected == actual {
             let signalled = child::sys::kill_group(pgid, child::sys::SIGKILL);
             tracing::info!(target: "peri_studio::instance", pgid, signalled,
@@ -198,6 +200,10 @@ pub(super) fn startup_cleanup(
                 fingerprint_present = expected.is_some(), process_matches = expected.is_some() && expected == actual,
                 "startup cleanup: ownership unproven, skipping signal");
         }
+        #[cfg(not(unix))]
+        tracing::warn!(target: "peri_studio::instance", pgid, directory_matches,
+            fingerprint_present = expected.is_some(), process_matches = expected.is_some() && expected == actual,
+            "startup cleanup: process-tree signaling unsupported, skipping signal");
     }
     if buffer_dir.exists() {
         fs::remove_dir_all(&buffer_dir)?;

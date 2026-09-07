@@ -82,6 +82,7 @@ pub struct AuthService {
     nonces: NonceRegistry,
     stats: AuthStats,
     browser_sessions: HashMap<String, BrowserSession>,
+    initial_browser_token: Option<String>,
 }
 
 #[derive(Clone)]
@@ -98,7 +99,24 @@ impl AuthService {
             nonces: NonceRegistry::new(),
             stats: AuthStats::default(),
             browser_sessions: HashMap::new(),
+            initial_browser_token: None,
         }
+    }
+
+    pub fn set_initial_browser_token(&mut self, token: Option<String>) {
+        self.initial_browser_token = token;
+    }
+
+    /// 首次同源 loopback 页面用一次性 bootstrap secret 换取 HttpOnly 会话。
+    pub fn create_initial_browser_session(
+        &mut self,
+    ) -> Result<Option<(String, ConnectionCtx)>, AuthError> {
+        let Some(token) = self.initial_browser_token.clone() else {
+            return Ok(None);
+        };
+        let session = self.create_browser_session(&token)?;
+        self.initial_browser_token = None;
+        Ok(Some(session))
     }
 
     pub fn create_browser_session(

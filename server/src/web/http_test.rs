@@ -22,6 +22,34 @@ use crate::web::{
     BrowserAuthSetup, HealthMachineSummary, HealthSnapshot, HealthStatus,
 };
 
+async fn auth_response_with(
+    auth: Arc<Mutex<AuthService>>,
+    setup: BrowserAuthSetup,
+    request: &str,
+    peer_override: Option<std::net::SocketAddr>,
+) -> String {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let server = tokio::spawn(async move {
+        let (stream, peer) = listener.accept().await.unwrap();
+        serve_http(
+            stream,
+            peer_override.unwrap_or(peer),
+            auth,
+            setup,
+            test_health(),
+        )
+        .await
+        .unwrap();
+    });
+    let mut client = TcpStream::connect(addr).await.unwrap();
+    client.write_all(request.as_bytes()).await.unwrap();
+    let mut bytes = Vec::new();
+    client.read_to_end(&mut bytes).await.unwrap();
+    server.await.unwrap();
+    String::from_utf8(bytes).unwrap()
+}
+
 /// 请求行解析：常规 GET 路径。
 #[test]
 fn request_path_get() {
@@ -319,6 +347,74 @@ async fn unauthenticated_pick_directory_is_rejected() {
 
     assert!(response.starts_with("HTTP/1.1 401 Unauthorized\r\n"));
     assert!(response.contains(r#""error":"unauthorized""#));
+}
+
+#[tokio::test]
+async fn first_local_browser_bootstrap_sets_opaque_cookie_once_without_leaking_token() {
+    let dir = tempdir().unwrap();
+    let mut store = TokenStore::load(&dir.path().join("tokens.toml")).unwrap();
+    let record = store
+        .ensure_initial_browser_token()
+        .unwrap()
+        .expect("empty store should create bootstrap token");
+    let secret = record.token.clone();
+    let token_id = record.id.clone();
+    let mut service = AuthService::new(store);
+    service.set_initial_browser_token(Some(record.token));
+    let auth = Arc::new(Mutex::new(service));
+    let setup = test_auth_setup(dir.path());
+    let request = "POST /api/auth/session/bootstrap HTTP/1.1\r\nHost: 127.0.0.1:8456\r\nOrigin: http://127.0.0.1:8456\r\nContent-Length: 0\r\n\r\n";
+
+    let response = auth_response_with(auth.clone(), setup.clone(), request, None).await;
+
+    assert!(response.starts_with("HTTP/1.1 200 OK\r\n"), "{response:?}");
+    assert!(response.contains("Set-Cookie: peri_studio_session="));
+    assert!(response.contains("; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800\r\n"));
+    assert!(response.contains("Cache-Control: no-store\r\n"));
+    assert!(response.contains("\"authenticated\":true"));
+    assert!(response.contains("\"role\":\"full\""));
+    assert!(!response.contains(&secret));
+    assert!(!response.contains(&token_id));
+    assert!(!response.contains("local-browser"));
+
+    let second = auth_response_with(auth, setup, request, None).await;
+    assert!(
+        second.starts_with("HTTP/1.1 409 Conflict\r\n"),
+        "bootstrap must be single-use: {second:?}"
+    );
+    assert!(!second.contains("Set-Cookie: peri_studio_session="));
+    assert!(!second.contains(&secret));
+    assert!(!second.contains(&token_id));
+}
+
+#[tokio::test]
+async fn rejected_bootstrap_requests_do_not_consume_the_one_time_secret() {
+    let dir = tempdir().unwrap();
+    let mut store = TokenStore::load(&dir.path().join("tokens.toml")).unwrap();
+    let record = store
+        .ensure_initial_browser_token()
+        .unwrap()
+        .expect("empty store should create bootstrap token");
+    let mut service = AuthService::new(store);
+    service.set_initial_browser_token(Some(record.token));
+    let auth = Arc::new(Mutex::new(service));
+    let setup = test_auth_setup(dir.path());
+
+    let wrong_host = "POST /api/auth/session/bootstrap HTTP/1.1\r\nHost: evil.example:8456\r\nOrigin: http://evil.example:8456\r\nContent-Length: 0\r\n\r\n";
+    let response = auth_response_with(auth.clone(), setup.clone(), wrong_host, None).await;
+    assert!(response.starts_with("HTTP/1.1 403 Forbidden\r\n"));
+
+    let wrong_origin = "POST /api/auth/session/bootstrap HTTP/1.1\r\nHost: 127.0.0.1:8456\r\nOrigin: http://evil.example\r\nContent-Length: 0\r\n\r\n";
+    let response = auth_response_with(auth.clone(), setup.clone(), wrong_origin, None).await;
+    assert!(response.starts_with("HTTP/1.1 403 Forbidden\r\n"));
+
+    let valid = "POST /api/auth/session/bootstrap HTTP/1.1\r\nHost: 127.0.0.1:8456\r\nOrigin: http://127.0.0.1:8456\r\nContent-Length: 0\r\n\r\n";
+    let remote_peer = "203.0.113.7:45678".parse().unwrap();
+    let response = auth_response_with(auth.clone(), setup.clone(), valid, Some(remote_peer)).await;
+    assert!(response.starts_with("HTTP/1.1 403 Forbidden\r\n"));
+
+    let response = auth_response_with(auth, setup, valid, None).await;
+    assert!(response.starts_with("HTTP/1.1 200 OK\r\n"));
 }
 
 #[tokio::test]

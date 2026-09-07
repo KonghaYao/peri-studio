@@ -400,9 +400,7 @@ impl DocManager {
         chat_id: &str,
     ) -> Option<(Option<String>, String)> {
         let chats = self.chats.read().await;
-        let Some(handle) = chats.get(chat_id) else {
-            return None;
-        };
+        let handle = chats.get(chat_id)?;
         let (reply, rx) = oneshot::channel();
         if handle
             .tx

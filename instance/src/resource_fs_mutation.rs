@@ -1,14 +1,17 @@
 use std::path::{Component, Path, PathBuf};
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::time::UNIX_EPOCH;
 
 use peri_studio_proto::resource::{
-    CreateDirQuery, DeletePathQuery, FileKind, FsMutationResult, FsPermissions, FsStat,
-    InstanceResourcePayload, MovePathQuery, ResourceErrorCode, ResourceFailure,
+    CreateDirQuery, DeletePathQuery, InstanceResourcePayload, MovePathQuery, ResourceErrorCode,
+    ResourceFailure,
 };
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+use peri_studio_proto::resource::{FileKind, FsMutationResult, FsPermissions, FsStat};
 
-use super::common::{
-    canonical_root, failure, fs_revision, map_io, path_to_wire, validate_relative,
-};
+use super::common::{canonical_root, failure, validate_relative};
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+use super::common::{fs_revision, map_io, path_to_wire};
 
 pub(super) fn create_dir(
     root: &str,
@@ -133,10 +136,12 @@ fn validate_move_preconditions(query: &MovePathQuery) -> Result<(), ResourceFail
     Ok(())
 }
 
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn parent_wire(path: &Path) -> Result<String, ResourceFailure> {
     path_to_wire(path.parent().unwrap_or_else(|| Path::new("")))
 }
 
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn mutation_result(
     primary_path: &Path,
     affected_paths: Vec<String>,

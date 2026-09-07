@@ -61,9 +61,17 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact: linux
+            artifact: linux-x86_64
+            target: x86_64-unknown-linux-gnu
+            executable: peri-studio
+          - os: windows-latest
+            artifact: windows-x86_64
+            target: x86_64-pc-windows-msvc
+            executable: peri-studio.exe
           - os: macos-14
-            artifact: macos
+            artifact: macos-arm64
+            target: aarch64-apple-darwin
+            executable: peri-studio
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -73,41 +81,88 @@ jobs:
         with:
           name: release-web-dist
           path: web/dist
-      - name: Install Rust quality components
-        run: rustup component add rustfmt clippy
-      - name: Verify native workspace
+      - name: Install Rust quality components and target
+        run: |
+          rustup component add rustfmt clippy
+          rustup target add ${{ matrix.target }}
+      - name: Verify Unix native workspace
+        if: runner.os != 'Windows'
         run: |
           cargo fmt --all --check
           cargo test --workspace --locked
           cargo clippy --workspace --all-targets --locked -- -D warnings
-          cargo build --release --locked --bin peri-studio
-      - name: Package twice and compare reproducible archives
+          cargo build --release --locked --target ${{ matrix.target }} --bin peri-studio
+      - name: Verify Windows native workspace
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          scripts/package-release.sh --out-dir dist/first
-          scripts/package-release.sh --out-dir dist/second
-          first="$(find dist/first -name '*.tar.gz' -type f)"
-          second="$(find dist/second -name '*.tar.gz' -type f)"
+          cargo fmt --all --check
+          cargo check --workspace --locked
+          cargo clippy --workspace --lib --bins --locked -- -D warnings
+          cargo build --release --locked --target ${{ matrix.target }} --bin peri-studio
+      - name: Verify PowerShell installer syntax
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'scripts/install.ps1'),
+            [ref]$null,
+            [ref]$errors
+          )
+          if ($errors.Count -gt 0) { throw ($errors | Out-String) }
+      - name: Package Unix binary twice and compare reproducible assets
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          scripts/package-release-binary.sh --bin-dir "target/${{ matrix.target }}/release" --out-dir dist/first --target "${{ matrix.target }}"
+          scripts/package-release-binary.sh --bin-dir "target/${{ matrix.target }}/release" --out-dir dist/second --target "${{ matrix.target }}"
+          first="$(find dist/first -type f ! -name '*.sha256' ! -name '*.metadata')"
+          second="$(find dist/second -type f ! -name '*.sha256' ! -name '*.metadata')"
           cmp "$first" "$second"
+          mkdir -p dist
           cp dist/first/* dist/
-      - name: Verify clean source provenance
-        run: scripts/verify-release.sh --require-clean --expected-revision "$GITHUB_SHA" dist/peri-studio-*.tar.gz
+      - name: Package Windows binary
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: scripts/package-release.ps1 -BinDir 'target/${{ matrix.target }}/release' -OutDir dist -Target '${{ matrix.target }}'
+      - name: Verify clean Unix source provenance
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          asset="$(find dist -maxdepth 1 -type f ! -name '*.sha256' ! -name '*.metadata' ! -name '*.json')"
+          scripts/verify-release-binary.sh --require-clean --expected-revision "$GITHUB_SHA" "$asset"
+      - name: Verify Windows release metadata
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $asset = Get-ChildItem 'dist/peri-studio-*.exe' | Select-Object -First 1
+          $expected = ((Get-Content "$($asset.FullName).sha256" -Raw).Trim() -split '\s+')[0]
+          $actual = (Get-FileHash $asset.FullName -Algorithm SHA256).Hash
+          if ($expected -ne $actual) { throw 'release checksum mismatch' }
+          if (-not (Select-String -Path "$($asset.FullName).metadata" -SimpleMatch "source_revision=$env:GITHUB_SHA")) { throw 'source revision mismatch' }
+
       - name: Generate SPDX software bill of materials
         uses: anchore/sbom-action@v0
         with:
           path: .
           format: spdx-json
           output-file: dist/peri-studio-${{ matrix.artifact }}.spdx.json
-      - name: Attest archive provenance
+      - name: Attest Unix binary provenance
+        if: runner.os != 'Windows'
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: dist/peri-studio-*.tar.gz
+          subject-path: dist/peri-studio-*-${{ matrix.target }}
+      - name: Attest Windows binary provenance
+        if: runner.os == 'Windows'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/peri-studio-*-${{ matrix.target }}.exe
       - uses: actions/upload-artifact@v4
         with:
           name: peri-studio-${{ matrix.artifact }}
           path: |
-            dist/peri-studio-*.tar.gz
-            dist/peri-studio-*.sha256
-            dist/peri-studio-${{ matrix.artifact }}.spdx.json
+            dist/peri-studio-*
           if-no-files-found: error
 
   publish:
@@ -126,4 +181,6 @@ jobs:
       - name: Publish tagged release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --verify-tag --generate-notes
+        run: |
+          cp scripts/install.sh scripts/install.ps1 dist/
+          gh release create "$GITHUB_REF_NAME" dist/* --verify-tag --generate-notes

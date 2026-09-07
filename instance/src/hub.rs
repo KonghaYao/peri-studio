@@ -178,24 +178,19 @@ pub async fn run(config: InstanceConfig, shutdown: CancellationToken) -> anyhow:
     // unbounded 转发层，spawn 直接向本通道投递）。
     let (child_tx, mut child_rx) = mpsc::channel::<ChildOutput>(CHILD_CHANNEL_CAP);
     let (terminal_tx, mut terminal_rx) = mpsc::channel::<crate::terminal::TerminalEvent>(512);
-    // hostname：HOSTNAME env（shell 导出）优先；macOS/daemon 场景常无该
-    // env（hello hostname="unknown"，registry 视图/面板显示断点）→ 回退
-    // libc gethostname。两者都失败才用 "unknown"。
+    // hostname：HOSTNAME env 优先；缺失时回退系统 hostname 命令。
     let hostname = std::env::var("HOSTNAME")
         .ok()
         .filter(|s| !s.is_empty())
+        .or_else(|| std::env::var("COMPUTERNAME").ok().filter(|s| !s.is_empty()))
         .or_else(|| {
-            let mut buf = [0u8; 256];
-            // SAFETY: `buf` 为栈上 256B 有效缓冲区，`buf.len()` 传递实际长度；
-            // gethostname 成功（rc==0）时以 NUL 结尾，随后按 NUL 截断读取。
-            let rc = unsafe { libc::gethostname(buf.as_mut_ptr() as *mut _, buf.len()) };
-            if rc == 0 {
-                let end = buf.iter().position(|&b| b == 0).unwrap_or(buf.len());
-                let name = String::from_utf8_lossy(&buf[..end]).trim().to_string();
-                (!name.is_empty()).then_some(name)
-            } else {
-                None
-            }
+            std::process::Command::new("hostname")
+                .output()
+                .ok()
+                .filter(|output| output.status.success())
+                .and_then(|output| String::from_utf8(output.stdout).ok())
+                .map(|name| name.trim().to_string())
+                .filter(|name| !name.is_empty())
         })
         .unwrap_or_else(|| "unknown".to_string());
     let state = Arc::new(HubState {

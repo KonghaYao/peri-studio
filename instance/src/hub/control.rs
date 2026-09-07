@@ -3,26 +3,42 @@
 //! supervisor 不直接向 adopted PID 发信号；它通过数据目录内的 0600 Unix
 //! socket 发送 HMAC 认证请求，由仍持有 owner lock 的进程自行关闭。
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
+#[cfg(unix)]
+use std::path::PathBuf;
+#[cfg(unix)]
 use std::time::Duration;
 
+#[cfg(unix)]
 use anyhow::Context as _;
+#[cfg(unix)]
 use base64::Engine as _;
+#[cfg(unix)]
 use hmac::{Hmac, Mac as _};
+#[cfg(unix)]
 use rand::Rng as _;
+#[cfg(unix)]
 use serde::{Deserialize, Serialize};
+#[cfg(unix)]
 use sha2::Sha256;
+#[cfg(unix)]
 use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
 
 use super::startup::InstanceOwnerIdentity;
 
+#[cfg(unix)]
 const CONTROL_VERSION: u32 = 1;
+#[cfg(unix)]
 const CONTROL_FRAME_MAX_BYTES: usize = 32 * 1024;
+#[cfg(unix)]
 const CONTROL_SOCKET_NAME: &str = "instance.owner.sock";
+#[cfg(unix)]
 const CONTROL_DOMAIN: &[u8] = b"peri-studio-owner-control-v1\0";
 
+#[cfg(unix)]
 type HmacSha256 = Hmac<Sha256>;
 
+#[cfg(unix)]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ShutdownRequest {
@@ -32,6 +48,7 @@ struct ShutdownRequest {
     mac: String,
 }
 
+#[cfg(unix)]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ShutdownAck {
@@ -117,11 +134,11 @@ pub(super) struct OwnerControl;
 #[cfg(not(unix))]
 impl OwnerControl {
     pub(super) fn bind(_data_dir: &Path, _owner: InstanceOwnerIdentity) -> anyhow::Result<Self> {
-        anyhow::bail!("managed-local adoption requires Unix owner control sockets")
+        Ok(Self)
     }
 
     pub(super) async fn wait_for_shutdown(self, _token: String) -> anyhow::Result<()> {
-        anyhow::bail!("managed-local adoption requires Unix owner control sockets")
+        std::future::pending::<anyhow::Result<()>>().await
     }
 }
 
@@ -204,11 +221,13 @@ async fn handle_request(
     write_frame(stream, &serde_json::to_vec(&ack)?).await
 }
 
+#[cfg(unix)]
 fn control_mac(token: &str, purpose: &[u8], owner: &InstanceOwnerIdentity, nonce: &str) -> String {
     let mac = control_authenticator(token, purpose, owner, nonce);
     base64::engine::general_purpose::STANDARD.encode(mac.finalize().into_bytes())
 }
 
+#[cfg(unix)]
 fn verify_control_mac(
     token: &str,
     purpose: &[u8],
@@ -225,6 +244,7 @@ fn verify_control_mac(
 }
 
 /// 唯一规范化 MAC 输入，确保生成与校验不会随协议演进产生字段漂移。
+#[cfg(unix)]
 fn control_authenticator(
     token: &str,
     purpose: &[u8],

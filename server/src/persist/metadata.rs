@@ -212,16 +212,9 @@ impl MetadataStore {
             .open(&lock_path)
             .map_err(sqlx::Error::Io)?;
         set_private_permissions(&lock_path)?;
-        #[cfg(unix)]
-        {
-            use std::os::fd::AsRawFd;
-            let rc = unsafe { libc::flock(owner_lock.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
-            if rc != 0 {
-                return Err(MetadataError::Conflict(
-                    "metadata database is owned by another server process".into(),
-                ));
-            }
-        }
+        fs2::FileExt::try_lock_exclusive(&owner_lock).map_err(|_| {
+            MetadataError::Conflict("metadata database is owned by another server process".into())
+        })?;
         let path = data_dir.join(METADATA_DB_FILE);
         let opts = SqliteConnectOptions::new()
             .filename(&path)

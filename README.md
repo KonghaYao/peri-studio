@@ -6,7 +6,55 @@ Peri Studio 是 ACP agent 的持久 Web 工作台。发布包只有一个
 连接 server 并管理 ACP 进程。SolidJS Web 只消费 server 事实，不在浏览器
 里伪造对话历史。
 
-## 快速开始
+## 安装
+
+Peri Studio 以单一原生二进制发布。安装器沿用 Peri 的 `~/.peri` 目录和 PATH
+约定，但使用独立的 `peri-studio` 文件名和版本目录，因此二者可以共存。
+
+支持的首发目标：
+
+- Linux x86_64（glibc）；
+- macOS Apple Silicon；
+- Windows x86_64。
+
+macOS / Linux：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/KonghaYao/peri-studio/main/scripts/install.sh | bash
+```
+
+Windows PowerShell：
+
+```powershell
+irm https://raw.githubusercontent.com/KonghaYao/peri-studio/main/scripts/install.ps1 | iex
+```
+
+默认安装布局：
+
+```text
+~/.peri/
+  peri-studio                         # 当前版本入口
+  peri-studio-v<version>/peri-studio  # 版本化实体
+  peri-studio-current-version.txt
+```
+
+Windows 使用 `%USERPROFILE%\.peri` 和 `.exe` 后缀。脚本从 GitHub Release
+选择对应平台资产，强制校验同名 `.sha256` 后才原子安装，并把 `~/.peri` 加入
+用户 PATH。指定版本可设置 `PERI_STUDIO_INSTALL_VERSION=0.2.0`；自定义目录可设置
+`PERI_STUDIO_INSTALL_DIR`。安装脚本和首发二进制尚未签名，macOS Gatekeeper 或
+Windows SmartScreen 可能显示来源警告。
+
+安装后直接运行：
+
+```bash
+peri-studio
+```
+
+再打开 <http://127.0.0.1:8456/>。Web 静态资产已内嵌，无需部署 `web/dist`。
+默认 ACP 启动命令是 `peri acp`，因此还需安装 Peri，或通过
+`PERI_STUDIO_ACP_CMD` / `config.toml` 配置其他 ACP agent。
+
+## 从源码快速开始
 
 前置环境：Rust toolchain、Bun，以及可配置的 ACP agent。
 
@@ -30,18 +78,19 @@ instance；只有 listener 就绪且 instance 完成认证注册后才会打印�
 网络协议，也不共享失败命运；server 异常退出时 instance 与 ACP 进程继续
 运行并等待重连。
 
-第一次打开页面需要一个 `full` token。登录页的“令牌在哪里？”会显示**当前
-运行 server 实际使用的** token 文件和可复制生成命令；不要猜测配置目录。
-也可以在默认配置下执行：
+第一次打开本地页面时，server 会自动创建一个受管 `full` token，并通过仅限同源
+loopback 的一次性交换直接建立 HttpOnly 浏览器会话；token 不会进入 URL、日志或页面，
+用户无需运行命令或复制凭据。显式登出后，或连接单独管理的 server 时，仍可使用已有
+`full` token 登录；管理员也可以执行：
 
 ```bash
 cargo run -q -p peri-studio -- token generate --name web --role full
 ```
 
-完整 token 只打印一次。它只应粘贴到本机登录页，不要提交到 Git、日志、issue
-或聊天记录。浏览器登录成功后使用 HttpOnly opaque cookie 建立会话；token 会
-保存在本机浏览器（localStorage）用于下次自动登录，登出即清除，不写入
-WebSocket 帧或 URL。
+完整 token 只打印一次。它仅用于显式管理的登录场景，不要提交到 Git、日志、issue
+或聊天记录。浏览器登录成功后使用 HttpOnly opaque cookie 建立会话；仅当用户手动输入
+token 时，当前兼容流程才会将其保存在本机浏览器以便下次自动登录，登出即清除。首次
+自动引导不会把 token 写入浏览器存储、WebSocket 帧或 URL。
 
 server 会确保名为 `local` 的 instance token 存在，并把本地连接凭据原子发布到
 `<data_dir>/instance.token`（`0600`）；启动路径从不打印 token 本体。
@@ -122,13 +171,13 @@ DNS rebinding 请求。
 在 token/nonce 消耗前被拒绝，日志中呈现稳定的
 `protocol_version_mismatch`。验收使用 `peri-studio status --ready`。
 
-## Release 产物
+## GitHub Release 产物
 
-`peri-studio-v<workspace-version>` tag 触发独立的 Linux/macOS 原生 release workflow。每个
-归档包含唯一的 `peri-studio`、LICENSE、运行架构文档、部署模板
-和 runbook，并用 `BUILD-METADATA` 记录 target、源码 commit 与 dirty 状态；同时携带
-`SECURITY.md`、`deny.toml`、Cargo/Bun lock 作为可审阅的安全与精确依赖事实（它们不是
-SBOM 或第三方许可证清单）。产物明确排除 `test-child`、token、配置目录与运行数据。
+`peri-studio-v<workspace-version>` tag 触发 Linux x86_64、Windows x86_64 和
+macOS Apple Silicon 原生 release workflow。每个平台发布一个可直接执行的单一
+`peri-studio` 二进制及其 `.sha256`、源码 revision metadata 和 SPDX SBOM；同时
+发布 `install.sh` 与 `install.ps1`。Web 产物已内嵌，release 不包含独立 Web 部署包，
+也明确排除 `test-child`、token、配置目录与运行数据。
 构建顺序固定为：
 
 1. 固定版本的 cargo-deny 刷新 RustSec 并检查 advisory/license/source/bans；Bun 审计
@@ -137,8 +186,9 @@ SBOM 或第三方许可证清单）。产物明确排除 `test-child`、token、
    trace/screenshot，native build 不启动；
 3. `bun install --frozen-lockfile`，运行 Web 单元/组件测试并生成当前 `web/dist`；
 4. `cargo test --workspace --locked`；
-5. `cargo build --workspace --release --locked`，将 Web 产物内嵌进 `peri-studio`；
-6. 生成规范化 tar/gzip、SHA-256，并重复打包验证字节级可复现。
+5. `cargo build --release --locked --bin peri-studio`，将 Web 产物内嵌进唯一产品二进制；
+6. 复制规范化命名的原生二进制，生成 SHA-256 与源码 revision metadata，并在
+   Linux/macOS 重复打包验证字节级可复现。
 
 本地可用同一条产物链验证，不会安装或发布任何内容：
 
@@ -147,11 +197,11 @@ cd web && bun install --frozen-lockfile && bun run test && bun run build && cd .
 cd web && bunx playwright install chromium && bun run test:browser && cd ..
 cargo deny check advisories licenses bans sources
 cargo test --workspace --locked
-cargo build --workspace --release --locked
-scripts/package-release.sh
+cargo build --release --locked --bin peri-studio
+scripts/package-release-binary.sh
 ```
 
-归档名中的 target 来自 `rustc -vV` 的 host triple；聚合 release job 只做结构与校验和
-验证，`peri-studio --version` 在各自原生构建 runner 内执行。详细安装步骤见
+资产名中的 target 是 Rust target triple；聚合 release job 只做结构与校验和
+验证，`peri-studio --version` 在各自原生构建 runner 内执行。后台服务说明见
 [deploy/README.md](deploy/README.md)。安全边界和私密漏洞报告入口见
 [SECURITY.md](SECURITY.md)。

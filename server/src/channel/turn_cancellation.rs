@@ -141,9 +141,7 @@ impl TurnCancellation {
                     .await;
             }
         };
-        let active_turn = self
-            .resolve_active_turn_id(&request.chat_id)
-            .await;
+        let active_turn = self.resolve_active_turn_id(&request.chat_id).await;
         if let Some(turn_id) = active_turn.as_ref() {
             let result = self
                 .doc

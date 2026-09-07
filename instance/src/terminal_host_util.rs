@@ -3,7 +3,11 @@
 use super::*;
 
 pub(super) fn kill_session(session: &mut Session) {
-    kill_process_tree(session.process_group_id.or(session.process_id.and_then(|id| i32::try_from(id).ok())));
+    kill_process_tree(
+        session
+            .process_group_id
+            .or(session.process_id.and_then(|id| i32::try_from(id).ok())),
+    );
     if let Ok(mut killer) = session.killer.lock() {
         let _ = killer.kill();
     }
@@ -163,7 +167,7 @@ pub(super) fn validate_open(open: &InstanceTerminalOpen) -> Result<std::path::Pa
 pub(crate) fn controlled_shell() -> String {
     #[cfg(windows)]
     {
-        return "cmd.exe".to_string();
+        "cmd.exe".to_string()
     }
     #[cfg(not(windows))]
     {

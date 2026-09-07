@@ -224,30 +224,36 @@ async fn run_install(
     atomic_remote_install(backend, spec, &opts, &local_binary, cancel).await
 }
 
-/// 跨 arch：定位或下载 release 归档，校验 SHA256，解压 `bin/peri-studio` 到本机临时路径。
+/// 跨 arch：定位或下载 release 二进制，校验 Release SHA256，复制到本机临时路径。
 async fn prepare_cross_arch_binary(
     backend: &Arc<SshBackend>,
     asset: &ReleaseAsset,
     cancel: &CancellationToken,
 ) -> Result<PathBuf, ()> {
-    let archive = locate_or_download_release(backend.data_dir(), asset, cancel).await?;
-    if !verify_file_sha256(&archive, asset.sha256_hex) {
+    let binary = locate_or_download_release(backend.data_dir(), asset, cancel).await?;
+    if !verify_release_checksum(&binary) {
         tracing::warn!(
             platform = asset.platform,
             file = %asset.file_name,
-            "release archive checksum mismatch"
+            "release binary checksum mismatch"
         );
         return Err(());
     }
     let staging = backend
         .data_dir()
         .join("ssh")
-        .join(format!("{}.extracted", asset.platform));
+        .join(format!("{}.release", asset.platform));
     if let Some(parent) = staging.parent() {
         std::fs::create_dir_all(parent).map_err(|_| ())?;
     }
-    let root = ssh_release_checksums::archive_root_dir(asset);
-    extract_binary_from_archive(&archive, &root, &staging, cancel).await?;
+    tokio::fs::copy(&binary, &staging).await.map_err(|_| ())?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        tokio::fs::set_permissions(&staging, std::fs::Permissions::from_mode(0o755))
+            .await
+            .map_err(|_| ())?;
+    }
     Ok(staging)
 }
 
@@ -256,20 +262,53 @@ async fn locate_or_download_release(
     asset: &ReleaseAsset,
     cancel: &CancellationToken,
 ) -> Result<PathBuf, ()> {
-    for candidate in release_archive_candidates(data_dir, &asset.file_name) {
-        if candidate.is_file() {
+    for candidate in release_binary_candidates(data_dir, &asset.file_name) {
+        if candidate.is_file()
+            && release_checksum_path(&candidate).is_file()
+            && verify_release_checksum(&candidate)
+        {
             return Ok(candidate);
         }
     }
     let cache_dir = data_dir.join("releases");
     std::fs::create_dir_all(&cache_dir).map_err(|_| ())?;
     let dest = cache_dir.join(&asset.file_name);
+    let checksum_dest = release_checksum_path(&dest);
+    let suffix = format!(
+        "download-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|_| ())?
+            .as_nanos()
+    );
+    let binary_temp = cache_dir.join(format!(".{}.{}", asset.file_name, suffix));
+    let checksum_temp = release_checksum_path(&binary_temp);
     let url = release_download_url(&asset.file_name);
-    download_release_archive(&url, &dest, cancel).await?;
+    let checksum_name = format!("{}.sha256", asset.file_name);
+    let checksum_url = release_download_url(&checksum_name);
+    if download_release_binary(&url, &binary_temp, cancel)
+        .await
+        .is_err()
+        || download_release_binary(&checksum_url, &checksum_temp, cancel)
+            .await
+            .is_err()
+        || !verify_release_checksum(&binary_temp)
+    {
+        let _ = std::fs::remove_file(&binary_temp);
+        let _ = std::fs::remove_file(&checksum_temp);
+        return Err(());
+    }
+    std::fs::rename(&binary_temp, &dest).map_err(|_| ())?;
+    if std::fs::rename(&checksum_temp, &checksum_dest).is_err() {
+        let _ = std::fs::remove_file(&dest);
+        let _ = std::fs::remove_file(&checksum_temp);
+        return Err(());
+    }
     Ok(dest)
 }
 
-fn release_archive_candidates(data_dir: &Path, file_name: &str) -> Vec<PathBuf> {
+fn release_binary_candidates(data_dir: &Path, file_name: &str) -> Vec<PathBuf> {
     let mut paths = Vec::new();
     if let Ok(dir) = std::env::var("PERI_STUDIO_RELEASE_DIR") {
         paths.push(PathBuf::from(dir).join(file_name));
@@ -286,7 +325,7 @@ fn release_download_url(file_name: &str) -> String {
     format!("{base}/{file_name}")
 }
 
-async fn download_release_archive(
+async fn download_release_binary(
     url: &str,
     dest: &Path,
     cancel: &CancellationToken,
@@ -307,6 +346,24 @@ async fn download_release_archive(
     }
 }
 
+fn release_checksum_path(binary: &Path) -> PathBuf {
+    let mut name = binary.as_os_str().to_os_string();
+    name.push(".sha256");
+    PathBuf::from(name)
+}
+
+fn verify_release_checksum(path: &Path) -> bool {
+    let Ok(contents) = std::fs::read_to_string(release_checksum_path(path)) else {
+        return false;
+    };
+    let Some(expected) = contents.split_whitespace().next() else {
+        return false;
+    };
+    expected.len() == 64
+        && expected.bytes().all(|byte| byte.is_ascii_hexdigit())
+        && verify_file_sha256(path, expected)
+}
+
 fn verify_file_sha256(path: &Path, expected_hex: &str) -> bool {
     use std::io::Read as _;
     let Ok(mut file) = std::fs::File::open(path) else {
@@ -325,38 +382,6 @@ fn verify_file_sha256(path: &Path, expected_hex: &str) -> bool {
     }
     let digest = format!("{:x}", hasher.finalize());
     digest.eq_ignore_ascii_case(expected_hex)
-}
-
-async fn extract_binary_from_archive(
-    archive: &Path,
-    root: &str,
-    dest: &Path,
-    cancel: &CancellationToken,
-) -> Result<(), ()> {
-    let member = format!("{root}/bin/peri-studio");
-    let output = tokio::select! {
-        _ = cancel.cancelled() => return Err(()),
-        result = tokio::process::Command::new("tar")
-            .args(["-xzf"])
-            .arg(archive)
-            .args(["-O", &member])
-            .output() => result,
-    }
-    .map_err(|_| ())?;
-    if !output.status.success() {
-        return Err(());
-    }
-    tokio::fs::write(dest, &output.stdout)
-        .await
-        .map_err(|_| ())?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt as _;
-        tokio::fs::set_permissions(dest, std::fs::Permissions::from_mode(0o755))
-            .await
-            .map_err(|_| ())?;
-    }
-    Ok(())
 }
 
 /// 替换运行中二进制前经 owner shutdown（§7.3 stop → rename → start）。

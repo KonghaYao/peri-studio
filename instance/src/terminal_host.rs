@@ -298,7 +298,10 @@ impl TerminalHost {
         #[cfg(unix)]
         {
             // portable-pty 已在子进程 setsid；此处再尽力把 shell 放入独立 pgid（对齐 ACP child 的 process_group(0)）。
-            if let Some(pid) = process_id.and_then(|id| i32::try_from(id).ok()).filter(|pid| *pid > 0) {
+            if let Some(pid) = process_id
+                .and_then(|id| i32::try_from(id).ok())
+                .filter(|pid| *pid > 0)
+            {
                 unsafe {
                     let _ = libc::setpgid(pid, pid);
                 }
@@ -318,10 +321,13 @@ impl TerminalHost {
         let killer = child.clone_killer();
         let master: Box<dyn portable_pty::MasterPty + Send> = pair.master;
         let master = Arc::new(Mutex::new(master));
+        #[cfg(unix)]
         let process_group_id = master
             .lock()
             .ok()
             .and_then(|guard| guard.process_group_leader());
+        #[cfg(not(unix))]
+        let process_group_id = None;
         let generation = self.next_generation.fetch_add(1, Ordering::Relaxed);
 
         {

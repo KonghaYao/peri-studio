@@ -425,7 +425,8 @@ async fn serve_http_inner(
         )
         .await;
     }
-    if path != "/api/auth/session" {
+    let is_auth_bootstrap = path == "/api/auth/session/bootstrap";
+    if path != "/api/auth/session" && !is_auth_bootstrap {
         return serve_static_consumed(stream, method, path).await;
     }
     // 认证端点：loopback + Host/Origin 校验（§9.5）后移交独立端点处理。
@@ -448,6 +449,7 @@ async fn serve_http_inner(
         auth,
         auth_setup,
         method,
+        is_auth_bootstrap,
         cookie,
         origin,
         content_type,

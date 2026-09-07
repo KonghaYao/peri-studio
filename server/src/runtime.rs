@@ -130,6 +130,9 @@ impl ServerRuntime {
 
         cfg.ensure_dirs()?;
         let mut token_store = TokenStore::load(&cfg.config_dir.join(TOKENS_FILE))?;
+        let initial_browser_token = token_store
+            .ensure_initial_browser_token()?
+            .map(|record| record.token);
         let ensured = token_store.ensure_instance_credential_to_file(
             BOOTSTRAP_INSTANCE_NAME,
             &cfg.data_dir.join("instance.token"),
@@ -154,7 +157,9 @@ impl ServerRuntime {
         // Store/认证/控制面均在监听前完成；start 返回即代表可接受连接。
         let persist_cfg = PersistConfig::from(&cfg);
         let store = Arc::new(Store::open(&persist_cfg)?);
-        let auth = Arc::new(tokio::sync::Mutex::new(AuthService::new(token_store)));
+        let mut auth_service = AuthService::new(token_store);
+        auth_service.set_initial_browser_token(initial_browser_token);
+        let auth = Arc::new(tokio::sync::Mutex::new(auth_service));
         let hub = Hub::assemble_with_ports(&cfg, store, auth, ports, listen_addr.port()).await?;
 
         let ready = ServerReady::new(listen_addr, credential);

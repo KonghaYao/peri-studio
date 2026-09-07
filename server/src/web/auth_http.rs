@@ -2,7 +2,7 @@
 //!
 //! 从 [`super::http::serve_http`] 的读头/校验阶段之后接管：body 有限读取
 //! （`MAX_HTTP_BODY` 与总时长上限由调用方头读取共用同一 deadline）+ 登录/
-//! 校验/登出三态。浏览器 bearer 只出现在登录请求 body；成功后仅使用
+//! 校验/登出三态，以及首次本地启动的一次性 bootstrap。浏览器 bearer 只出现在登录请求 body；成功后仅使用
 //! HttpOnly opaque cookie，WebSocket 不持有或重放 bearer。
 
 use std::net::SocketAddr;
@@ -37,6 +37,7 @@ pub(crate) async fn serve_auth_session(
     auth: Arc<Mutex<AuthService>>,
     auth_setup: BrowserAuthSetup,
     method: &str,
+    bootstrap: bool,
     cookie: Option<String>,
     origin: Option<&str>,
     content_type: Option<&str>,
@@ -56,6 +57,16 @@ pub(crate) async fn serve_auth_session(
         )
         .await;
     }
+    if bootstrap && method != "POST" {
+        return write_http(
+            &mut stream,
+            "405 Method Not Allowed",
+            "application/json",
+            br#"{"error":"method"}"#,
+            &security_headers(),
+        )
+        .await;
+    }
     match method {
         "POST" => {
             if origin.is_none() {
@@ -68,25 +79,38 @@ pub(crate) async fn serve_auth_session(
                 )
                 .await;
             }
-            if !content_type.is_some_and(is_json_content_type) {
-                return write_http(
-                    &mut stream,
-                    "415 Unsupported Media Type",
-                    "application/json",
-                    br#"{"error":"content_type"}"#,
-                    &security_headers(),
-                )
-                .await;
-            }
-            if content_length == 0 {
-                return write_http(
-                    &mut stream,
-                    "400 Bad Request",
-                    "application/json",
-                    br#"{"error":"body_required"}"#,
-                    &security_headers(),
-                )
-                .await;
+            if bootstrap {
+                if content_length != 0 {
+                    return write_http(
+                        &mut stream,
+                        "400 Bad Request",
+                        "application/json",
+                        br#"{"error":"body_not_allowed"}"#,
+                        &security_headers(),
+                    )
+                    .await;
+                }
+            } else {
+                if !content_type.is_some_and(is_json_content_type) {
+                    return write_http(
+                        &mut stream,
+                        "415 Unsupported Media Type",
+                        "application/json",
+                        br#"{"error":"content_type"}"#,
+                        &security_headers(),
+                    )
+                    .await;
+                }
+                if content_length == 0 {
+                    return write_http(
+                        &mut stream,
+                        "400 Bad Request",
+                        "application/json",
+                        br#"{"error":"body_required"}"#,
+                        &security_headers(),
+                    )
+                    .await;
+                }
             }
         }
         "GET" => {
@@ -196,6 +220,36 @@ pub(crate) async fn serve_auth_session(
         .await;
     }
     let response = match method {
+        "POST" if bootstrap => match auth.try_lock() {
+            Ok(mut auth) => match auth.create_initial_browser_session() {
+                Ok(Some((sid, ctx))) => (
+                    "200 OK",
+                    serde_json::to_vec(&serde_json::json!({
+                        "authenticated": true,
+                        "role": ctx.role.as_str(),
+                        "principalId": browser_principal_id(&ctx.token_id),
+                        "setup": auth_setup,
+                    }))
+                    .unwrap(),
+                    vec![(
+                        "Set-Cookie".to_string(),
+                        format!(
+                            "{BROWSER_COOKIE}={sid}; HttpOnly; SameSite=Strict; Path=/; Max-Age={BROWSER_SESSION_TTL_SECS}"
+                        ),
+                    )],
+                ),
+                Ok(None) | Err(_) => (
+                    "409 Conflict",
+                    serde_json::to_vec(&serde_json::json!({"authenticated":false,"setup":auth_setup})).unwrap(),
+                    vec![],
+                ),
+            },
+            Err(_) => (
+                "503 Service Unavailable",
+                serde_json::to_vec(&serde_json::json!({"error":"auth_busy","setup":auth_setup})).unwrap(),
+                vec![("Retry-After".to_string(), "1".to_string())],
+            ),
+        },
         "POST" => {
             let body: BrowserLoginRequest = match serde_json::from_slice(
                 &buf[head_end..head_end + content_length.min(buf.len() - head_end)],

@@ -173,13 +173,59 @@ export function createAuthController(deps: AuthControllerDeps) {
     }
   }
 
-  /** 挂载时：记住的 token 直接重放；否则检查 cookie 会话。 */
-  function init() {
+  async function bootstrap() {
+    const epoch = ++requestEpoch;
+    setProblem(null);
+    try {
+      const res = await fetch('/api/auth/session/bootstrap', {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+      if (epoch !== requestEpoch) return;
+      const parsed = await authPayload(res);
+      if (epoch !== requestEpoch) return;
+      if (parsed.setup) setSetup(parsed.setup);
+      if (!res.ok) {
+        deps.resetSession();
+        // 409 表示该一次性窗口不存在或已被消费，是已初始化实例的正常状态；
+        // 静默退回显式登录，避免把正常 fallback 呈现为错误。
+        setProblem(res.status === 409 ? null : authFeedback(res.status, 'login'));
+        return setState('signed-out');
+      }
+      const principal = parsePrincipal(parsed.payload);
+      if (!principal) {
+        deps.resetSession();
+        setProblem({ kind: 'server', message: 'The server returned an unrecognized access role; sign-in is blocked.', retryable: true });
+        return setState('signed-out');
+      }
+      deps.resetSession({ preserveLocalDrafts: true });
+      installPrincipalRole(principal.role, principal.principalId);
+      deps.onPrincipalInstalled?.(principal.principalId);
+      clearAuthInvalidation();
+      setState('signed-in');
+      connectWithCookie();
+    } catch {
+      if (epoch === requestEpoch) {
+        deps.resetSession();
+        setProblem(authFeedback(0, 'login'));
+        setState('signed-out');
+      }
+    }
+  }
+
+  /** 挂载时优先恢复既有凭据；首次本地启动尝试一次性 bootstrap。 */
+  async function init() {
     const saved = rememberedToken();
     if (saved && saved.trim()) {
-      void submitToken(saved.trim());
-    } else {
-      void status();
+      await submitToken(saved.trim());
+      if (state() === 'signed-out' && problem()?.kind === 'credential') {
+        await bootstrap();
+      }
+      return;
+    }
+    await status();
+    if (state() === 'signed-out' && !problem()) {
+      await bootstrap();
     }
   }
 

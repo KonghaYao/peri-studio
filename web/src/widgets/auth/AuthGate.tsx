@@ -25,7 +25,7 @@ export function AuthGate(props: { children: JSX.Element }) {
         <section class="auth-card w-(--container-auth-card) border border-border-subtle rounded-16 bg-surface p-34 shadow-auth" aria-labelledby="auth-title">
           <div class="auth-brand mb-42 text-14 font-650">Peri Studio</div>
           <h1 id="auth-title" class="text-28 -tracking-35">Continue your work</h1>
-          <p class="mt-10 mb-26 text-14 leading-16 text-text-secondary">Sign in with a full token issued by the server to open your secure browser session. The token stays in this browser for the next sign-in; sign out from the top-right corner whenever you want to remove it.</p>
+          <p class="mt-10 mb-26 text-14 leading-16 text-text-secondary">Peri Studio signs in this browser automatically on first local launch. If you signed out or use a separately managed server, enter a full token issued by that server.</p>
           <Show when={auth.state() === 'checking'} fallback={
             <form onSubmit={signIn} class="auth-form">
               <TextField label="Access token" type="password" value={auth.token()} onInput={(e) => auth.setToken(e.currentTarget.value)} autocomplete="off" autofocus />

@@ -16,11 +16,11 @@ use tracing::{debug, trace, warn};
 use peri_studio_proto::conn::DocId;
 use yrs::{ReadTxn, StateVector, Transact};
 
-use crate::state::doc_manager_apply_event::read_session_active_turn;
 use crate::state::aggregator::Aggregator;
 use crate::state::doc_manager::{
     BatchConfig, ChatMsg, DocUpdate, SendSubscription, SubmitResult, UpdateSink, PERSIST_RETRY_MAX,
 };
+use crate::state::doc_manager_apply_event::read_session_active_turn;
 use crate::state::doc_pair::DocPair;
 use crate::state::normalized::{EventBody, NormalizedEvent};
 use crate::state::registry::{DegradeCause, RegistryApplier, RegistryMsg, RegistryState};

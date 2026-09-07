@@ -1,8 +1,9 @@
 # Peri Studio 后台部署
 
-发布归档只包含 `bin/peri-studio`。它可以作为 server 角色运行，也可以作为
-instance 角色连接另一个 server。Web 静态资产已内嵌，不需要单独拷贝
-`web/dist`。
+GitHub Release 为每个平台提供一个 `peri-studio` 原生二进制，Web 静态资产已内嵌，
+不需要单独拷贝 `web/dist`。普通用户通过 `scripts/install.sh` 或 `install.ps1` 安装到
+`~/.peri`（Windows 为 `%USERPROFILE%\.peri`）；本文件的 systemd/launchd 模板用于需要
+长期后台运行的 Unix 主机。
 
 ## 运行模式
 
@@ -52,7 +53,8 @@ peri-studio token generate --name local --role instance \
 
 ## systemd user
 
-1. 将 `peri-studio` 安装到 `/usr/local/bin/`，或同步修改两个 unit 的 `ExecStart`。
+1. 安装脚本默认将入口放到 `$HOME/.peri/peri-studio`；把两个 unit 的 `ExecStart`
+   改为该用户的绝对路径。若手动安装到 `/usr/local/bin/`，可保留模板默认值。
 2. 把 `systemd/*.service` 复制到 `~/.config/systemd/user/`。
 3. 准备 `~/.config/peri-studio/instance.token`，并执行 `chmod 600`。
 4. 启动：
@@ -84,7 +86,7 @@ launchd 日志路径在 plist 中显式指定。`logrotate/peri-studio` 是外�
 
 ## 升级与回滚
 
-1. 验证归档校验和，原子替换唯一 `peri-studio` 文件。
+1. 验证新二进制校验和，通过安装脚本切换 `$HOME/.peri/peri-studio` 当前入口。
 2. 重启 server 任务；instance/ACP 保持运行并等待重连。
 3. server 恢复后重启 instance 任务，使两个角色都使用新版文件。
 4. 以 `peri-studio status --ready` 验收。

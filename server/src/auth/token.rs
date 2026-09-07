@@ -320,6 +320,24 @@ impl TokenStore {
         Ok(Some(rec))
     }
 
+    /// 首次启动时创建本机浏览器 bootstrap token。
+    ///
+    /// 仅当从未配置过 client token 时创建并返回 secret；已有受管 token（包括
+    /// 上次启动创建的记录）、用户显式吊销或自行配置 client token时均不重新开放
+    /// bootstrap，避免 server 重启恢复一次性领取窗口。
+    pub fn ensure_initial_browser_token(&mut self) -> Result<Option<TokenRecord>, StoreError> {
+        self.maybe_reload();
+        if self
+            .records
+            .iter()
+            .any(|record| record.role != TokenRole::Instance)
+        {
+            return Ok(None);
+        }
+        let record = self.generate(TokenRole::Full, super::BOOTSTRAP_BROWSER_NAME)?;
+        Ok(Some(record))
+    }
+
     /// 已登记记录数（供 bootstrap/诊断）。
     pub fn len(&self) -> usize {
         self.records.len()

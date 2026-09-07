@@ -62,6 +62,7 @@ portable-pty = "0.9"
 
 # --- Unix 进程组信号（instance 进程树 kill，§4.1） ---
 libc = "0.2"
+fs2 = "0.4"
 crc32fast = "1.5"
 
 # --- CRDT / 聚合层（§5 数据模型，server 侧 Y.Doc） ---

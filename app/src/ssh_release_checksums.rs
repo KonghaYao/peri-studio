@@ -1,17 +1,16 @@
-//! 跨 OS/arch SSH 安装用的钉选 release 资产 SHA256 表（ssh-machine-mount §7.2）。
+//! 跨 OS/arch SSH 安装用的 release 资产目标表（ssh-machine-mount §7.2）。
 //!
-//! 表项在每次 `peri-studio-v*` 发布时与 CI 产物同步更新；运行时只信任本表，
-//! 不从 GitHub API 解析「最新」版本。
+//! 资产名与公开 release 单二进制契约一致；下载时必须同时取得同名 `.sha256`
+//! 并完成校验，不从 GitHub API 解析「最新」版本。
 
 /// 与 workspace `[package].version` 对齐的产品 semver。
 pub const PRODUCT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// 单条 release 资产：平台键 → 锁定 SHA256（小写 hex，无 `sha256:` 前缀）。
+/// 单条 release 资产：Rust target triple 与对应文件名。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReleaseAsset {
     pub platform: &'static str,
     pub file_name: String,
-    pub sha256_hex: &'static str,
 }
 
 /// 将远端 `uname` 输出映射为 release 资产平台键。
@@ -19,36 +18,25 @@ pub fn platform_key(os: &str, arch: &str) -> Option<&'static str> {
     let os = normalize_os(os);
     let arch = normalize_arch(arch);
     match (os.as_str(), arch.as_str()) {
-        ("linux", "x86_64") => Some("linux-x86_64"),
-        ("linux", "aarch64") => Some("linux-aarch64"),
-        ("darwin", "aarch64") => Some("macos-arm64"),
+        ("linux", "x86_64") => Some("x86_64-unknown-linux-gnu"),
+        ("darwin", "aarch64") => Some("aarch64-apple-darwin"),
         _ => None,
     }
 }
 
-/// 按平台键查找钉选 checksum 资产；无表项则跨 arch 安装不可用。
+/// 按 Rust target triple 查找发布资产；无表项则跨 arch 安装不可用。
 pub fn lookup(platform: &str) -> Option<ReleaseAsset> {
-    RELEASE_CHECKSUMS
+    RELEASE_TARGETS
         .iter()
-        .find(|entry| entry.0 == platform)
-        .map(|(platform, sha256)| ReleaseAsset {
+        .find(|target| **target == platform)
+        .map(|platform| ReleaseAsset {
             platform,
             file_name: release_file_name(platform),
-            sha256_hex: sha256,
         })
 }
 
-/// release 归档内根目录名（与 `file_name` 去 `.tar.gz` 一致）。
-pub fn archive_root_dir(asset: &ReleaseAsset) -> String {
-    asset
-        .file_name
-        .strip_suffix(".tar.gz")
-        .unwrap_or(&asset.file_name)
-        .to_string()
-}
-
 fn release_file_name(platform: &str) -> String {
-    format!("peri-studio-{PRODUCT_VERSION}-{platform}.tar.gz")
+    format!("peri-studio-{PRODUCT_VERSION}-{platform}")
 }
 
 fn normalize_os(value: &str) -> String {
@@ -70,51 +58,39 @@ fn normalize_arch(value: &str) -> String {
     }
 }
 
-/// 锁定 SHA256 表：平台键 → hex digest。
-/// 发布 `peri-studio-v{PRODUCT_VERSION}` 时由 release workflow 产物更新。
-const RELEASE_CHECKSUMS: &[(&str, &str)] = &[
-    (
-        "linux-x86_64",
-        "0000000000000000000000000000000000000000000000000000000000000000",
-    ),
-    (
-        "linux-aarch64",
-        "0000000000000000000000000000000000000000000000000000000000000000",
-    ),
-    (
-        "macos-arm64",
-        "0000000000000000000000000000000000000000000000000000000000000000",
-    ),
-];
+/// 当前公开 release 提供的 Unix Rust target triple。
+const RELEASE_TARGETS: &[&str] = &["x86_64-unknown-linux-gnu", "aarch64-apple-darwin"];
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn platform_key_maps_linux_and_macos_targets() {
-        assert_eq!(platform_key("Linux", "x86_64"), Some("linux-x86_64"));
-        assert_eq!(platform_key("Linux", "aarch64"), Some("linux-aarch64"));
-        assert_eq!(platform_key("Darwin", "arm64"), Some("macos-arm64"));
+    fn platform_key_maps_published_targets() {
+        assert_eq!(
+            platform_key("Linux", "x86_64"),
+            Some("x86_64-unknown-linux-gnu")
+        );
+        assert_eq!(platform_key("Linux", "aarch64"), None);
+        assert_eq!(
+            platform_key("Darwin", "arm64"),
+            Some("aarch64-apple-darwin")
+        );
         assert_eq!(platform_key("FreeBSD", "x86_64"), None);
     }
 
     #[test]
     fn lookup_returns_versioned_asset_names_and_checksums() {
-        let asset = lookup("linux-x86_64").expect("linux-x86_64 entry");
-        assert_eq!(asset.platform, "linux-x86_64");
+        let asset = lookup("x86_64-unknown-linux-gnu").expect("Linux x86_64 entry");
+        assert_eq!(asset.platform, "x86_64-unknown-linux-gnu");
         assert_eq!(
             asset.file_name,
-            format!("peri-studio-{PRODUCT_VERSION}-linux-x86_64.tar.gz")
+            format!("peri-studio-{PRODUCT_VERSION}-x86_64-unknown-linux-gnu")
         );
-        assert_eq!(asset.sha256_hex.len(), 64);
 
-        let arm = lookup("linux-aarch64").expect("linux-aarch64 entry");
-        assert!(arm.file_name.contains("linux-aarch64"));
+        let mac = lookup("aarch64-apple-darwin").expect("macOS ARM64 entry");
+        assert!(mac.file_name.contains("aarch64-apple-darwin"));
 
-        let mac = lookup("macos-arm64").expect("macos-arm64 entry");
-        assert!(mac.file_name.contains("macos-arm64"));
-
-        assert!(lookup("windows-x86_64").is_none());
+        assert!(lookup("x86_64-pc-windows-msvc").is_none());
     }
 }
