@@ -58,14 +58,15 @@ fn ci_is_a_real_required_evidence_chain() {
 }
 
 #[test]
-fn release_requires_clean_fresh_sources_and_attests_the_archive() {
-    let package = read("scripts/package-release.sh");
-    assert!(package.contains("refusing to package a dirty source tree"));
-    assert!(package.contains("web/dist is stale"));
+fn release_requires_fresh_sources_and_attests_single_binaries() {
+    let package = read("scripts/package-release-binary.sh");
+    assert!(package.contains("source_revision="));
+    assert!(package.contains("sha256"));
 
     let release = read(".github/workflows/release.yml");
-    assert!(release.contains("scripts/package-release.sh"));
-    assert!(release.contains("scripts/verify-release.sh --require-clean"));
+    assert!(release.contains("scripts/package-release-binary.sh"));
+    assert!(release.contains("scripts/verify-release-binary.sh --require-clean"));
+    assert!(release.contains("actions/download-artifact@v4"));
     assert!(release.contains("attest-build-provenance"));
     assert!(release.contains("sbom-action"));
     assert!(release.contains("tags: ['peri-studio-v*']"));
