@@ -270,18 +270,23 @@ fn entry_type_at(fd: RawFd, name: &CStr) -> Result<libc::mode_t, ResourceFailure
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct EntryIdentity {
-    dev: u64,
+    dev: libc::dev_t,
     ino: u64,
     mode: libc::mode_t,
 }
 
 fn identity_of(file: &std::fs::File) -> Result<EntryIdentity, ResourceFailure> {
-    let stat = file.metadata().map_err(map_io)?;
-    use std::os::unix::fs::MetadataExt as _;
+    let mut stat = std::mem::MaybeUninit::<libc::stat>::uninit();
+    // SAFETY: stat 指向可写缓冲，file fd 在调用期间有效。
+    if unsafe { libc::fstat(file.as_raw_fd(), stat.as_mut_ptr()) } != 0 {
+        return Err(map_io(std::io::Error::last_os_error()));
+    }
+    // SAFETY: fstat 成功后已初始化。
+    let stat = unsafe { stat.assume_init() };
     Ok(EntryIdentity {
-        dev: stat.dev(),
-        ino: stat.ino(),
-        mode: stat.mode() as libc::mode_t,
+        dev: stat.st_dev,
+        ino: stat.st_ino,
+        mode: stat.st_mode,
     })
 }
 
@@ -314,7 +319,7 @@ fn identity_at(fd: RawFd, name: &CStr) -> Result<EntryIdentity, ResourceFailure>
     // SAFETY: fstatat 成功后已初始化。
     let stat = unsafe { stat.assume_init() };
     Ok(EntryIdentity {
-        dev: stat.st_dev as u64,
+        dev: stat.st_dev,
         ino: stat.st_ino,
         mode: stat.st_mode,
     })
