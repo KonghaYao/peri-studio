@@ -27,12 +27,16 @@ case "$(uname -s):$(uname -m)" in
 esac
 command -v curl >/dev/null 2>&1 || fail "curl is required"
 
-AUTH_ARGS=()
+AUTH_HEADER=""
 if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-    AUTH_ARGS=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+    AUTH_HEADER="Authorization: Bearer ${GITHUB_TOKEN}"
 fi
 github_api() {
-    curl -fsSL "${AUTH_ARGS[@]}" "$1"
+    if [[ -n "$AUTH_HEADER" ]]; then
+        curl -fsSL -H "$AUTH_HEADER" "$1"
+    else
+        curl -fsSL "$1"
+    fi
 }
 
 REQUESTED="${PERI_STUDIO_INSTALL_VERSION:-}"
@@ -45,7 +49,7 @@ if [[ -n "$REQUESTED" ]]; then
     RELEASE_JSON="$(github_api "${GITHUB_API}/releases/tags/${TAG}")" || fail "Release not found: ${TAG}"
 else
     RELEASES_JSON="$(github_api "${GITHUB_API}/releases?per_page=30")" || fail "Unable to fetch releases"
-    TAG="$(printf '%s' "$RELEASES_JSON" | tr ',' '\n' | grep -F '"tag_name"' | grep -F '"peri-studio-v' | head -1 | cut -d'"' -f4)"
+    TAG="$(printf '%s' "$RELEASES_JSON" | tr ',' '\n' | grep -F '"tag_name"' | grep -F '"peri-studio-v' | head -1 | cut -d'"' -f4 || true)"
     [[ "$TAG" == peri-studio-v* ]] || fail "No Peri Studio release found"
     RELEASE_JSON="$(github_api "${GITHUB_API}/releases/tags/${TAG}")" || fail "Unable to fetch release ${TAG}"
 fi

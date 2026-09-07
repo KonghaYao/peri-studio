@@ -3,7 +3,6 @@ name: Peri Studio Release
 on:
   push:
     tags: ['peri-studio-v*']
-  workflow_dispatch:
 
 permissions:
   contents: write
