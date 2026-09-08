@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createSignal } from 'solid-js';
-import { setChatEntries, setChatHead, setElicitations, setPermissions, setRuntimeDocsState, setSelectedCid } from '../../panel/store';
+import { setChatEntries, setChatHead, setElicitations, setPermissions, setRuntimeDocsState, setSelectedCid } from '@/store';
 import { MessageList } from './MessageList';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { blockUnknownMessageDelivery, messageSubmission, resetMessageDelivery, startMessageDelivery } from '@/features/message/message-delivery';
@@ -302,9 +302,9 @@ describe('MessageList hydration', () => {
 
     const loading = document.querySelector('[data-testid="message-loading"]')!;
     expect(loading).toHaveClass('message-loading');
-    expect(loading.querySelector('.ui-spinner')).not.toBeNull();
+    expect(loading.querySelectorAll('.ui-skeleton')).toHaveLength(3);
     expect(loading).not.toHaveClass('sr-only');
-    expect(loading).toHaveTextContent('Peri is working');
+    expect(loading).not.toHaveTextContent('Peri is working');
     expect(document.querySelectorAll('[data-testid="message-loading"]')).toHaveLength(1);
 
     setChatEntries([{
@@ -316,7 +316,7 @@ describe('MessageList hydration', () => {
       }}],
       toolCalls: [{ toolCallId: 'tool-1', name: 'Bash', kind: 'execute', status: 'completed', arguments: { command: 'pwd' }, result: { stdout: '/repo' }, resultOmitted: false, resultBytes: 5, publicError: null, startedAt: null, completedAt: null }],
     }]);
-    expect(document.querySelector('[data-testid="message-loading"]')).toHaveTextContent('Peri is working');
+    expect(document.querySelector('[data-testid="message-loading"]')?.querySelectorAll('.ui-skeleton')).toHaveLength(3);
     expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('Peri is working');
 
     setChatEntries([{
@@ -385,7 +385,7 @@ describe('MessageList hydration', () => {
 
     const completedTool = { ...runningTool, status: 'completed', result: { exitCode: 0 }, completedAt: '2026-08-15T00:00:01Z' };
     setChatEntries([firstText, { ...toolSegment, toolCalls: [completedTool], blocks: [{ kind: 'tool_call', id: 'tool-1', toolCall: completedTool }] }]);
-    expect(document.querySelector('[data-testid="message-loading"]')).toHaveTextContent('Peri is working');
+    expect(document.querySelector('[data-testid="message-loading"]')?.querySelectorAll('.ui-skeleton')).toHaveLength(3);
 
     const finalText = { ...message('segment-final', 'live', null), turnId: 'turn-1', text: 'Final delta', blocks: [{ kind: 'text' as const, id: 'text-2', text: 'Final delta' }] };
     setChatEntries([firstText, { ...toolSegment, toolCalls: [completedTool], blocks: [{ kind: 'tool_call', id: 'tool-1', toolCall: completedTool }] }, finalText]);

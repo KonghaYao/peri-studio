@@ -1,14 +1,14 @@
 import type { Setter } from 'solid-js';
 import * as H from '@/shared/protocol/client';
-import type { DocStore } from './doc-store';
+import type { DocStore } from '@/shared/yjs/doc-store';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { ChatProjection } from '@/entities/chat/chat-projection';
 import { renderControl, type ControlView } from '@/entities/chat/control-view';
 import type { ChatInfo, InstanceInfo, MachineInfo, ProjectInfo, ProjectSessionInfo, SessionSummaryInfo } from '@/entities/registry/registry-view';
 import { RegistryProjection } from '@/entities/registry/registry-projection';
-import { unimportedSessions } from '../../features/session/session-import';
-import { isTerminal } from './action-state';
-import { retainLiveRuntimeHints } from './recovery-state';
+import { unimportedSessions } from '@/features/session/session-import';
+import { isTerminal } from '@/features/runtime/action-state';
+import { retainLiveRuntimeHints } from '@/features/session/recovery-state';
 import { reconcileMessageProjection } from '@/features/message/message-delivery';
 import { reconcileRuntimeControl } from '@/features/runtime/runtime-control';
 import { retainProjectedPermissions } from '@/features/message/permission-delivery';

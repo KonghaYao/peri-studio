@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
-import { resetResourceProject, resourceDiffPreview, setResourceDiffPreview } from '../../panel/lib/resource-store';
+import { resetResourceProject, resourceDiffPreview, setResourceDiffPreview } from '@/features/resource/resource-store';
 import { ResourceDiffEditor } from './ResourceDiffEditor';
 
 afterEach(() => { cleanup(); resetResourceProject(); });

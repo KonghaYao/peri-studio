@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ResourceResultFrame } from '../../panel/lib/resource-protocol';
+import type { ResourceResultFrame } from './resource-protocol';
 import { WorkspaceUploadQueue } from './upload-workspace-file';
 import type { LocalUploadCandidate } from './upload-path';
 

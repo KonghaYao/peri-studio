@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/features/connection/connection', () => ({ connectionReady: () => true, promptDeliveryReady: () => true, promptMaxBytes: () => 1_000_000 }));
-vi.mock('./auth-state', () => ({ readOnly: () => false }));
+vi.mock('@/features/auth/auth-state', () => ({ readOnly: () => false }));
 vi.mock('./panel-errors', () => ({ persistActionProblem: vi.fn(), retryPersistentAction: vi.fn() }));
 
-import type { ActionOptions } from './action-contract';
+import type { ActionOptions } from '@/shared/protocol/action-contract';
 import { elicitationResponses, resetElicitationResponses } from '@/features/message/elicitation-delivery';
 import { installUserActions, respondElicitation } from './user-actions';
 

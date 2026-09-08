@@ -1,8 +1,8 @@
 // action_ack / action_error / auth_error 下行帧（store 组合根委托）。
 import type * as H from '@/shared/protocol/client';
-import type { Ack, ActionError, ActionFrame } from '../../panel/lib/action-contract';
+import type { Ack, ActionError, ActionFrame } from '@/shared/protocol/action-contract';
 import type { CommandTracker } from '@/features/connection/command-tracker';
-import { ERROR_REASONS, persistActionProblem } from '../../panel/lib/panel-errors';
+import { ERROR_REASONS, persistActionProblem } from '../message/panel-errors';
 import {
   completeMessageDelivery,
   ownsMessageDeliveryError,
@@ -10,10 +10,10 @@ import {
 } from '@/features/message/message-delivery';
 import { settleLateQuickStart } from '@/features/message/quick-start-delivery';
 import { confirmRuntimeControl } from '@/features/runtime/runtime-control';
-import { promptRecoveryOwnsError } from '../../panel/lib/prompt-recovery-assembly';
-import { rewindOwnsError } from '../../panel/lib/rewind-assembly';
-import { ownsMcpAppsError } from '../../panel/lib/mcp-apps';
-import type { PersistentError } from '../../panel/lib/panel-errors';
+import { promptRecoveryOwnsError } from '@/features/runtime/prompt-recovery-assembly';
+import { rewindOwnsError } from '@/features/runtime/rewind-assembly';
+import { ownsMcpAppsError } from '@/features/mcp/mcp-apps';
+import type { PersistentError } from '../message/panel-errors';
 import type { Setter } from 'solid-js';
 
 export type ConnectionDownstreamDeps = {

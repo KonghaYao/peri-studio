@@ -24,7 +24,7 @@ const store = vi.hoisted(() => ({
   }>>(() => []),
 }));
 
-vi.mock('../../panel/store', () => ({
+vi.mock('@/store', () => ({
   projects: store.projects,
   projectSessions: store.projectSessions,
 }));

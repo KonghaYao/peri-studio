@@ -1,8 +1,8 @@
 import { createEffect, createSignal, For, Show } from 'solid-js';
 import type { ArchivedEntry } from '@/features/catalog/archived-search';
 import { searchArchivedEntries } from '@/features/catalog/archived-search';
-import { sessionDisplayTitle } from '../../panel/lib/recovery-state.ts';
-import { projectSessions, projects } from '../../panel/store';
+import { sessionDisplayTitle } from '@/features/session/recovery-state';
+import { projectSessions, projects } from '@/store';
 import {
   Button,
   Dialog,

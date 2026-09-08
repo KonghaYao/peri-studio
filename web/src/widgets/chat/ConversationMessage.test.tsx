@@ -4,17 +4,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { ConversationMessage } from './ConversationMessage';
 import { Markdown } from './Markdown';
-import { composerQuoteRequest, resetComposerQuoteRequest } from '../../panel/lib/composer-quote';
-import { setPrincipalRole } from '../../panel/lib/auth-state';
+import { composerQuoteRequest, resetComposerQuoteRequest } from '@/features/composer/composer-quote';
+import { setPrincipalRole } from '@/features/auth/auth-state';
 import {
   handleMcpAppResource,
   handleMcpAppSession,
   installMcpApps,
   openMcpApp,
   resetMcpAppsState,
-} from '../../panel/lib/mcp-apps';
+} from '@/features/mcp/mcp-apps';
 
-vi.mock('../../panel/lib/mcp-app-host', () => ({
+vi.mock('@/features/mcp/mcp-app-host', () => ({
   bindMcpAppHost: vi.fn(async () => ({ close: vi.fn(async () => undefined) })),
 }));
 
@@ -321,6 +321,17 @@ describe('ConversationMessage', () => {
     expect(warning).toHaveTextContent('Delivery result unknown');
     expect(warning).toHaveTextContent('not resent automatically');
     expect(warning).toHaveAttribute('role', 'alert');
+  });
+
+  it('does not keep a stale unknown badge after the turn already completed', () => {
+    render(() => <ConversationMessage entry={entry({
+      role: 'user',
+      status: 'pending',
+      text: 'already answered',
+      deliveryState: 'completed',
+    })} />);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByText('Delivery result unknown')).not.toBeInTheDocument();
   });
 
   it('does not present Hub observation time as the original time of restored history', () => {

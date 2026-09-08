@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { initialResourceWorkspace, reduceResourceView } from './resource-state';
-import type { ResourceView } from './resource-view';
+import type { ResourceView } from '@/entities/resource/resource-view';
 
 const baseView = (patch: Partial<ResourceView>): ResourceView => ({
   docId: 'resource:view-1',

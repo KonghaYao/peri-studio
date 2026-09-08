@@ -15,9 +15,9 @@ import { createSignal } from 'solid-js';
 import * as H from '@/shared/protocol/client';
 import { WsClient } from './ws-client';
 import type { ConnStatus, ConnDetail, WsProtocolIssue } from './ws-client';
-import { connectionTransition } from '../../panel/lib/connection-state';
-import type { ConnectionProblem } from '../../panel/lib/recovery-state';
-import { principalRole } from '../../panel/lib/auth-state';
+import { connectionTransition } from '@/features/connection/connection-state';
+import type { ConnectionProblem } from '@/features/session/recovery-state';
+import { principalRole } from '@/features/auth/auth-state';
 
 export const [busy, setBusy] = createSignal(false);
 export const [connState, setConnState] = createSignal<{ text: string; kind: 'idle' | 'ok' | 'warn' | 'err' }>({

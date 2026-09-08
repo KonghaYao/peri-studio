@@ -22,8 +22,8 @@ import {
   setMcpAppHeight,
   tearDownMcpAppsForChat,
 } from './mcp-apps';
-import { setPrincipalRole } from './auth-state';
-import type { ActionFrame, ActionOptions } from './action-contract';
+import { setPrincipalRole } from '@/features/auth/auth-state';
+import type { ActionFrame, ActionOptions } from '@/shared/protocol/action-contract';
 
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
 

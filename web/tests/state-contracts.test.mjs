@@ -12,14 +12,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { isTurnActive } from '../src/panel/lib/action-state.ts';
-import { cleanSessionTitle, connectionProblemForClose, formatRelativeTime, retainLiveRuntimeHints, sessionDisplayTitle, shortSessionId } from '../src/panel/lib/recovery-state.ts';
-import { messageTime } from '../src/panel/lib/message-time.ts';
-import { parseMarkdown, safeHref } from '../src/panel/lib/markdown.ts';
+import { isTurnActive } from '../src/features/runtime/action-state.ts';
+import { cleanSessionTitle, connectionProblemForClose, formatRelativeTime, retainLiveRuntimeHints, sessionDisplayTitle, shortSessionId } from '../src/features/session/recovery-state.ts';
+import { messageTime } from '../src/shared/lib/message-time.ts';
+import { parseMarkdown, safeHref } from '../src/shared/lib/markdown.ts';
 import { messageActivity, nextFollowState } from '../src/features/message/message-follow.ts';
-import { authFeedback } from '../src/panel/lib/auth-feedback.ts';
+import { authFeedback } from '../src/features/auth/auth-feedback.ts';
 import { searchProjectSessions } from '../src/features/session/session-search.ts';
-import { connectedRuntimeState, runtimeState } from '../src/panel/lib/runtime-state.ts';
+import { connectedRuntimeState, runtimeState } from '../src/features/runtime/runtime-state.ts';
 
 // principal 解析与变更策略（保持闭包默认语义，与 recovery-state 解耦）
 const parsePrincipal = (v) => v && ['full','read-only'].includes(v.role) ? v.role : null;
@@ -62,7 +62,7 @@ test('principal parsing and mutation policy are closed by default', async () => 
 
 test('prompt recovery is owned by CommandTracker rather than an ad-hoc frame cache', () => {
   const store = readFileSync(join(import.meta.dirname, '..', 'src', 'store', 'index.ts'), 'utf8');
-  const actions = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'user-actions.ts'), 'utf8');
+  const actions = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'message', 'user-actions.ts'), 'utf8');
   const delivery = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'message', 'message-delivery.ts'), 'utf8');
   const activation = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'session', 'session-activation.ts'), 'utf8');
   assert.match(actions, /sendAction\(frame, 'prompt', \{\s*acceptedStartsInactivityLease: true,\s*retryOnUncertain: true/);
@@ -87,8 +87,8 @@ test('active turn excludes every terminal projection state', () => {
 
 test('permission delivery uncertainty remains locked in the security surface', () => {
   const store = readFileSync(join(import.meta.dirname, '..', 'src', 'store', 'index.ts'), 'utf8');
-  const projection = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'store-projection.ts'), 'utf8');
-  const actions = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'user-actions.ts'), 'utf8');
+  const projection = readFileSync(join(import.meta.dirname, '..', 'src', 'store', 'store-projection.ts'), 'utf8');
+  const actions = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'message', 'user-actions.ts'), 'utf8');
   const delivery = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'message', 'permission-delivery.ts'), 'utf8');
   assert.match(actions, /startPermissionDecision\(frame\.commandId, permissionId, decision\)/);
   assert.match(actions, /retryOnError: true/);
@@ -214,7 +214,7 @@ test('replaced websocket callbacks cannot mutate the new connection state', () =
 
 test('routine connection readiness stays in persistent status instead of interrupting with a toast', () => {
   const connection = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'connection', 'connection.ts'), 'utf8');
-  const state = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'connection-state.ts'), 'utf8');
+  const state = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'connection', 'connection-state.ts'), 'utf8');
   assert.match(connection, /const transition = connectionTransition\(state, detail, !!principalRole\(\)\)/);
   assert.match(state, /case 'ready':[\s\S]*?ready: true,[\s\S]*?busy: false,[\s\S]*?text: 'Ready'/);
   assert.match(state, /case 'reconnecting':[\s\S]*?ready: false,[\s\S]*?busy: true/);
@@ -282,7 +282,7 @@ test('uncertain metadata retries preserve the original frame identity and are id
   const root = join(import.meta.dirname, '..', 'src', 'panel');
   const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
   const resetSession = readFileSync(join(root, '..', 'store', 'reset-session.ts'), 'utf8');
-  const errors = readFileSync(join(root, 'lib', 'panel-errors.ts'), 'utf8');
+  const errors = readFileSync(join(root, '..', 'features', 'message', 'panel-errors.ts'), 'utf8');
   const tracker = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'connection', 'command-tracker.ts'), 'utf8');
   const catalog = readFileSync(join(root, '..', 'features', 'catalog', 'catalog-actions.ts'), 'utf8');
   const activation = readFileSync(join(root, '..', 'features', 'session', 'session-activation.ts'), 'utf8');
@@ -328,7 +328,7 @@ test('terminal action effects have one owner and late acknowledgements cannot re
   const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
   const connectionDownstream = readFileSync(join(root, '..', 'features', 'connection', 'handle-downstream.ts'), 'utf8');
   const resetSession = readFileSync(join(root, '..', 'store', 'reset-session.ts'), 'utf8');
-  const actions = readFileSync(join(root, 'lib', 'user-actions.ts'), 'utf8');
+  const actions = readFileSync(join(root, '..', 'features', 'message', 'user-actions.ts'), 'utf8');
   const tracker = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'connection', 'command-tracker.ts'), 'utf8');
   const activation = readFileSync(join(root, '..', 'features', 'session', 'session-activation.ts'), 'utf8');
   const ackHandler = connectionDownstream.slice(connectionDownstream.indexOf('function onAck('), connectionDownstream.indexOf('function onActionError('));
@@ -354,8 +354,8 @@ test('terminal action effects have one owner and late acknowledgements cannot re
 test('runtime controls are chat-scoped and reconcile through projection truth', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
   const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
-  const projection = readFileSync(join(root, 'lib', 'store-projection.ts'), 'utf8');
-  const actions = readFileSync(join(root, 'lib', 'user-actions.ts'), 'utf8');
+  const projection = readFileSync(join(root, '..', 'store', 'store-projection.ts'), 'utf8');
+  const actions = readFileSync(join(root, '..', 'features', 'message', 'user-actions.ts'), 'utf8');
   const control = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'runtime', 'runtime-control.ts'), 'utf8');
   assert.doesNotMatch(store, /cancellingTurn|closingChat|setCancellingTurn|setClosingChat/);
   assert.match(actions, /startRuntimeControl\(frame\.commandId, chatId, 'cancel'\)/);
@@ -368,11 +368,11 @@ test('runtime controls are chat-scoped and reconcile through projection truth', 
 });
 
 test('login setup is server-authoritative and credential-free', () => {
-  const root = join(import.meta.dirname, '..', 'src', 'panel');
-  // P4：parseAuthSetup 调用链在 lib/auth-hook（authPayload），渲染展示在 AuthGate。
-  const hook = readFileSync(join(root, 'lib', 'auth-hook.ts'), 'utf8');
-  const gate = readFileSync(join(root, '..', 'widgets', 'auth', 'AuthGate.tsx'), 'utf8');
-  const parser = readFileSync(join(root, 'lib', 'auth-setup.ts'), 'utf8');
+  const authRoot = join(import.meta.dirname, '..', 'src', 'features', 'auth');
+  // P4：parseAuthSetup 调用链在 features/auth/auth-hook（authPayload），渲染展示在 AuthGate。
+  const hook = readFileSync(join(authRoot, 'auth-hook.ts'), 'utf8');
+  const gate = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'auth', 'AuthGate.tsx'), 'utf8');
+  const parser = readFileSync(join(authRoot, 'auth-setup.ts'), 'utf8');
   assert.match(hook, /parseAuthSetup/);
   assert.match(gate, /setup\(\)\?\.generateCommand/);
   assert.match(gate, /setup\(\)\?\.tokenFile|hint\(\)\.tokenFile/);

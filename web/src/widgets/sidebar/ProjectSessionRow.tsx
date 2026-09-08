@@ -9,8 +9,8 @@ import {
   Button,
 } from '@/shared/ui';
 import { Pencil } from 'lucide-solid';
-import { formatCompactRelativeTime, sessionDisplayTitle } from '../../panel/lib/recovery-state.ts';
-import { runConfirmedMutation } from '../../panel/lib/form-mutation';
+import { formatCompactRelativeTime, sessionDisplayTitle } from '@/features/session/recovery-state';
+import { runConfirmedMutation } from '@/features/session/form-mutation';
 import { cn } from '@/shared/lib/cn';
 import { SessionRowAccessory } from './sidebar-parts';
 

@@ -1,7 +1,7 @@
 import { For, Show } from 'solid-js';
 import { Button, Dialog, DialogContent, DialogTitle, TextField } from '@/shared/ui';
-import { runConfirmedMutation } from '../../panel/lib/form-mutation';
-import { projectNameFromPath } from '../../panel/lib/project-path';
+import { runConfirmedMutation } from '@/features/session/form-mutation';
+import { projectNameFromPath } from '@/shared/lib/project-path';
 import { isLocalMachine } from '@/entities/machine/machine-view';
 import { projects, remoteDirectoryBrowsePorts } from '@/store';
 import { RemoteDirectoryDialog } from './RemoteDirectoryDialog';

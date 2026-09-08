@@ -1,10 +1,10 @@
 import { For, Show, createMemo, createSignal } from 'solid-js';
 import { Button, Dialog, DialogContent, DialogTitle, LoadingState, Textarea } from '@/shared/ui';
-import { mutateGitResource, openGitDiffPreview, openMoreGitChanges, resourceWorkspace, retryGitRepositoryMutation, retryGitResourceMutation } from '../../panel/store';
-import type { RepositoryState } from '../../panel/lib/resource-store';
-import { readOnly } from '../../panel/lib/auth-state';
+import { mutateGitResource, openGitDiffPreview, openMoreGitChanges, resourceWorkspace, retryGitRepositoryMutation, retryGitResourceMutation } from '@/store';
+import type { RepositoryState } from '@/features/resource/resource-store';
+import { readOnly } from '@/features/auth/auth-state';
 import { ConfirmDialog } from '@/widgets/shell/shared/ConfirmDialog';
-import { MAX_COMMIT_MESSAGE_BYTES } from '../../panel/lib/resource-mutations';
+import { MAX_COMMIT_MESSAGE_BYTES } from '@/features/resource/resource-mutations';
 import { GitBranch } from 'lucide-solid';
 import { GitChangeGroup, GitChangeTree } from './git';
 import { ResourceSectionTitle } from './ResourceSectionTitle';

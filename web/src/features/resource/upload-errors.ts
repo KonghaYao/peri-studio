@@ -1,4 +1,4 @@
-import type { ResourceFailure } from '../../panel/lib/resource-protocol';
+import type { ResourceFailure } from './resource-protocol';
 
 export interface UploadUserFacingError {
   message: string;

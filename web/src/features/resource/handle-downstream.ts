@@ -1,7 +1,7 @@
 // ysync.update / resource_result 下行帧（store 组合根委托）。
 import type * as H from '@/shared/protocol/client';
-import type { DocStore } from '../../panel/lib/doc-store';
-import type { ResourceResultFrame } from '../../panel/lib/resource-protocol';
+import type { DocStore } from '@/shared/yjs/doc-store';
+import type { ResourceResultFrame } from './resource-protocol';
 import type { DeleteConfirmResultFrame } from '@/shared/protocol/resource-fs-mutation';
 
 export type ResourceDownstreamDeps = {

@@ -6,7 +6,7 @@
 import { createSignal, For } from 'solid-js';
 import { Dialog, DialogContent, DialogTitle, Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
 import { connState } from '@/features/connection/connection';
-import { globalStatus, schemaVersion } from '../../panel/store';
+import { globalStatus, schemaVersion } from '@/store';
 import { serverStatusLabel } from '@/entities/topology/topology-view';
 import { MachinePanel } from '@/widgets/resource/MachinePanel';
 

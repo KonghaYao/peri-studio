@@ -6,7 +6,7 @@ import {
   principalRole,
   publishAuthInvalidation,
   readOnly,
-} from './auth-state';
+} from '@/features/auth/auth-state';
 
 afterEach(() => {
   installPrincipalRole(null);

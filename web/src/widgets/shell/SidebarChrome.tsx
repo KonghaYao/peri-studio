@@ -1,8 +1,8 @@
 import type { JSX } from 'solid-js';
 import { Show } from 'solid-js';
 import { Button, IconButton } from '@/shared/ui';
-import { useAuthActions } from '../../panel/lib/auth-hook';
-import { principalId } from '../../panel/lib/auth-state';
+import { useAuthActions } from '@/features/auth/auth-hook';
+import { principalId } from '@/features/auth/auth-state';
 import { Settings } from 'lucide-solid';
 
 interface SidebarChromeProps {

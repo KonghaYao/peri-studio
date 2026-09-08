@@ -9,8 +9,8 @@ const store = vi.hoisted(() => ({
   readOnly: vi.fn(() => false),
   selectedSessionId: vi.fn(() => null),
 }));
-vi.mock('../../panel/store', () => store);
-vi.mock('../../panel/lib/auth-state', () => ({ readOnly: store.readOnly }));
+vi.mock('@/store', () => store);
+vi.mock('@/features/auth/auth-state', () => ({ readOnly: store.readOnly }));
 
 import { SessionSearch } from './SessionSearch';
 

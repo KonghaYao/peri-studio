@@ -1,27 +1,27 @@
 // resetAuthenticatedSession 编排：调用顺序由 auth-contracts / store-session-reset 锁死。
 import type { SessionActivation } from '@/features/session/session-activation';
 import type { CommandTracker } from '@/features/connection/command-tracker';
-import type { Ack, ActionError, ActionFrame } from '../panel/lib/action-contract';
-import type { DocStore } from '../panel/lib/doc-store';
-import type { ToastStore } from '../panel/lib/toast-store';
-import type { RuntimeDocsState } from '../panel/lib/store-projection';
+import type { Ack, ActionError, ActionFrame } from '@/shared/protocol/action-contract';
+import type { DocStore } from '@/shared/yjs/doc-store';
+import type { ToastStore } from './toast-store';
+import type { RuntimeDocsState } from './store-projection';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import type { ControlView } from '@/entities/chat/control-view';
 import type { ProjectInfo, ProjectSessionInfo, SessionSummaryInfo, MachineInfo } from '@/entities/registry/registry-view';
-import type { PersistentError } from '../panel/lib/panel-errors';
-import type { SessionConfigMutation } from '../panel/lib/user-actions';
+import type { PersistentError } from '../features/message/panel-errors';
+import type { SessionConfigMutation } from '../features/message/user-actions';
 import type { Setter } from 'solid-js';
-import { installPrincipalRole } from '../panel/lib/auth-state';
+import { installPrincipalRole } from '@/features/auth/auth-state';
 import { disconnect, resetConnectionState } from '@/features/connection/connection';
 import { resetElicitationResponses } from '@/features/message/elicitation-delivery';
 import { resetQuestionResponses } from '@/features/message/question-delivery';
 import { resetMessageDelivery } from '@/features/message/message-delivery';
 import { resetPermissionDecisions } from '@/features/message/permission-delivery';
 import { resetRuntimeControls } from '@/features/runtime/runtime-control';
-import { resetPromptRecoveryState } from '../panel/lib/prompt-recovery-assembly';
-import { resetRewindState } from '../panel/lib/rewind-assembly';
+import { resetPromptRecoveryState } from '@/features/runtime/prompt-recovery-assembly';
+import { resetRewindState } from '@/features/runtime/rewind-assembly';
 import { resetTerminalSession } from '@/features/terminal/terminal-session';
-import { resetResourceProject } from '../panel/lib/resource-store';
+import { resetResourceProject } from '@/features/resource/resource-store';
 
 export type SessionCatalogBootstrap = {
   reset: () => void;

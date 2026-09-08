@@ -1,5 +1,5 @@
 import { Show } from 'solid-js';
-import { readOnly } from '../../panel/lib/auth-state';
+import { readOnly } from '@/features/auth/auth-state';
 import { SessionSearch } from './SessionSearch';
 import { SidebarChrome } from '@/widgets/shell/SidebarChrome';
 import { createProjectSidebarModel, type ProjectSidebarIntent } from './project-sidebar-model';

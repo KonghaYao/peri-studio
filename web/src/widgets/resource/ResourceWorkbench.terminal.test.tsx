@@ -5,8 +5,8 @@ import { ResourceWorkbench, type WorkbenchView } from './ResourceWorkbench';
 import {
   installResourceStore,
   resetResourceProject,
-} from '../../panel/lib/resource-store';
-import { setProjects, setProjectSessions, setSelectedSessionId } from '../../panel/store';
+} from '@/features/resource/resource-store';
+import { setProjects, setProjectSessions, setSelectedSessionId } from '@/store';
 
 const terminalMocks = vi.hoisted(() => ({
   closeTerminal: vi.fn(),

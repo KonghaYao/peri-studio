@@ -6,8 +6,8 @@
 
 import { For, Show } from 'solid-js';
 import { Badge, EmptyState, type BadgeTone } from '@/shared/ui';
-import { chatCatalog, globalStatus, instances, schemaVersion } from '../../panel/store';
-import { messageTime } from '../../panel/lib/message-time';
+import { chatCatalog, globalStatus, instances, schemaVersion } from '@/store';
+import { messageTime } from '@/shared/lib/message-time';
 import {
   buildTopologyTree,
   chatStatusLabel,

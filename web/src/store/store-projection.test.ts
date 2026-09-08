@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as Y from 'yjs';
-import { DocStore } from './doc-store';
+import { DocStore } from '@/shared/yjs/doc-store';
 import { installStoreProjection } from './store-projection';
 
 function signals() {

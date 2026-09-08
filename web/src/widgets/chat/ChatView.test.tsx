@@ -28,8 +28,8 @@ const state = vi.hoisted(() => ({
   turnActive: vi.fn(() => false),
 }));
 
-vi.mock('../../panel/store', () => state);
-vi.mock('../../panel/lib/auth-state', () => ({ readOnly: state.readOnly }));
+vi.mock('@/store', () => state);
+vi.mock('@/features/auth/auth-state', () => ({ readOnly: state.readOnly }));
 vi.mock('@/widgets/shell/StatusArea', () => ({ StatusArea: () => <section aria-label="Status area" /> }));
 vi.mock('./ChatHeader', () => ({ ChatHeader: () => null }));
 vi.mock('@/widgets/composer/Composer', () => ({ Composer: () => null }));

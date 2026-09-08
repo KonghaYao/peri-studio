@@ -1,7 +1,7 @@
 // 消息区：消息列表（自动吸底滚动）。
 //
 // 由 ChatView 拆出（中间区三块之一）；气泡内 reasoning 在前、正文在后，
-// loading feedback uses the shared LoadingState primitive.
+// 泛化 thinking gap 用 Skeleton 扫光；工具行和决策面板已经承担可见状态。
 //
 // F4（ui.md §四.6 / §3.8）：滚动区为 flex-1 + min-h-0 独立滚动，内部为
 // 居中正文列（max-w 860px，pt-6 / pb-6，底部 156px 留白随 F7 Composer
@@ -9,17 +9,17 @@
 // permission decision 值（allow/deny、按钮顺序）由 Composer 上方的决策槽位承载。
 
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, type JSX } from 'solid-js';
-import { chatEntries, chatAgentLoading, chatHead, elicitations, permissions, retryMessageSubmission, runtimeDocsHydrated, selectedCid } from '../../panel/store';
+import { chatEntries, chatAgentLoading, chatHead, elicitations, permissions, retryMessageSubmission, runtimeDocsHydrated, selectedCid } from '@/store';
 import { nextFollowState } from '@/features/message/message-follow';
-import { messageTime } from '../../panel/lib/message-time.ts';
+import { messageTime } from '@/shared/lib/message-time';
 import type { ChatEntry } from '@/entities/chat/chat-view';
-import { Button, LoadingState, Spinner } from '@/shared/ui';
+import { Button, LoadingState, Skeleton } from '@/shared/ui';
 import { ConversationMessage } from './ConversationMessage';
 import { PlanSystemEntryRow } from './PlanSystemEntryRow';
 import { isPlanSystemChatEntry } from '@/entities/chat/plan-system-entry';
 import { acknowledgeUnknownMessageDelivery, acknowledgedMessageDeliveries, canAcknowledgeUnknownMessageDelivery, dismissFailedMessageDelivery, messageSubmissionForChat } from '@/features/message/message-delivery';
 import { MessageOutbox } from './MessageOutbox';
-import { replayBoundaryAt, type ReplayBoundary } from '../../panel/lib/replay-boundary';
+import { replayBoundaryAt, type ReplayBoundary } from '@/features/runtime/replay-boundary';
 import { TranscriptWindow } from '@/entities/chat/transcript-window';
 import { visibleElicitations } from '@/features/message/elicitation-delivery';
 
@@ -44,12 +44,11 @@ function HistoryBoundary(props: { kind: VisibleHistoryBoundary }) {
 
 function ChatLoading() {
   return <div data-testid="chat-loading">
-    <div class="chat-loading message-loading mb-12 flex min-h-32 items-center gap-8 text-12 text-text-muted" data-testid="message-loading" aria-hidden="true">
-    <span class="grid size-18 shrink-0 place-items-center rounded-6 border border-border-subtle bg-surface-muted" aria-hidden="true">
-      <Spinner decorative class="size-10 text-text-muted" />
-    </span>
-    <span><strong class="font-650 text-text-primary">Peri</strong> is working</span>
-  </div>
+    <div class="chat-loading message-loading mb-12 flex min-h-32 flex-col justify-center gap-8" data-testid="message-loading" aria-hidden="true">
+      <Skeleton class="h-12 w-180" />
+      <Skeleton class="h-12 w-240" />
+      <Skeleton class="h-12 w-180" />
+    </div>
   </div>;
 }
 

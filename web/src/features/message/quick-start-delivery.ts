@@ -1,5 +1,5 @@
 import { createSignal } from 'solid-js';
-import { createSingleSlotDelivery, type DeliveryPhase } from '../../panel/lib/delivery-state';
+import { createSingleSlotDelivery, type DeliveryPhase } from './delivery-state';
 
 export type QuickStartPhase = Extract<DeliveryPhase, 'creating' | 'accepted' | 'uncertain' | 'failed'>;
 

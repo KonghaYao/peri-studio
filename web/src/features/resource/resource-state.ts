@@ -1,5 +1,5 @@
 import type { OpenResourceView } from './resource-protocol';
-import type { ResourceEntry, ResourceView } from './resource-view';
+import type { ResourceEntry, ResourceView } from '@/entities/resource/resource-view';
 
 export interface DirectoryState { generation: string; entries: ResourceEntry[]; nextCursor?: string }
 export interface RepositoryState {

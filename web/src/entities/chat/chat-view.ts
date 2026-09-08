@@ -59,6 +59,30 @@ export interface ChatEntry {
 }
 export interface ChatView { schemaVersion: unknown; projectionVersion: unknown; entries: ChatEntry[] }
 
+const TERMINAL_ASSISTANT_STATUS = new Set(['completed', 'failed', 'error', 'cancelled', 'canceled', 'interrupted']);
+
+/** 同回合 assistant 已终态时，迟到的 delivery_unknown 不再作为用户可见警告。 */
+export function visibleUserDeliveryState(
+  deliveryState: string | null | undefined,
+  turnId: string | null | undefined,
+  entries: readonly Pick<ChatEntry, 'role' | 'turnId' | 'status'>[],
+): string | null | undefined {
+  if (deliveryState !== 'delivery_unknown' || !turnId) return deliveryState;
+  const assistant = entries.find((entry) => entry.role === 'assistant' && entry.turnId === turnId);
+  if (assistant && TERMINAL_ASSISTANT_STATUS.has(String(assistant.status || '').toLowerCase())) {
+    return 'completed';
+  }
+  return deliveryState;
+}
+
+function suppressStaleUnknownDeliveries(entries: ChatEntry[]): ChatEntry[] {
+  return entries.map((entry) => {
+    if (entry.role !== 'user') return entry;
+    const nextState = visibleUserDeliveryState(entry.deliveryState, entry.turnId, entries);
+    return nextState === entry.deliveryState ? entry : { ...entry, deliveryState: nextState, deliveryErrorCode: null };
+  });
+}
+
 export interface ChatEntryRead {
   entry: ChatEntry;
   referencedToolIds: Set<string>;
@@ -253,6 +277,6 @@ export function renderChat(doc: Y.Doc): ChatView {
   return {
     schemaVersion: root.get('schema_version'),
     projectionVersion: root.get('projection_version'),
-    entries,
+    entries: suppressStaleUnknownDeliveries(entries),
   };
 }

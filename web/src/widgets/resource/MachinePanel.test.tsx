@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
-import { installPrincipalRole } from '../../panel/lib/auth-state';
-import { setGlobalStatus, setInstances, setMachines, setSchemaVersion } from '../../panel/store';
+import { installPrincipalRole } from '@/features/auth/auth-state';
+import { setGlobalStatus, setInstances, setMachines, setSchemaVersion } from '@/store';
 import { MachinePanel } from './MachinePanel';
 
 afterEach(() => {

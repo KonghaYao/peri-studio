@@ -20,6 +20,7 @@ import { SelectField } from './SelectField';
 import { EmptyState } from './EmptyState';
 import { InlineNotice } from './InlineNotice';
 import { LoadingState } from './LoadingState';
+import { Skeleton } from './Skeleton';
 import { Spinner } from './Spinner';
 import { showToast, Toaster } from './Toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip';
@@ -337,6 +338,15 @@ describe('LoadingState', () => {
     expect(loading.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
     expect(loading).not.toHaveAttribute('label');
     expect(loading).not.toHaveAttribute('description');
+  });
+});
+
+describe('Skeleton', () => {
+  it('renders a decorative shimmer placeholder', () => {
+    render(() => <Skeleton data-testid="skeleton" class="h-12 w-180" />);
+    const skeleton = screen.getByTestId('skeleton');
+    expect(skeleton).toHaveClass('ui-skeleton');
+    expect(skeleton).not.toHaveAttribute('role');
   });
 });
 

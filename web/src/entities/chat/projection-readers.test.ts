@@ -88,6 +88,43 @@ describe('renderChat tool projection', () => {
     expect(renderChat(doc).entries[0].text).toBe('你的 pwd 在哪里');
   });
 
+  it('clears a stale delivery_unknown badge once the same turn already completed', () => {
+    const doc = new Y.Doc();
+    const root = doc.getMap<unknown>('root');
+    const order = new Y.Array<string>();
+    const entries = new Y.Map<unknown>();
+    root.set('entry_order', order); root.set('entries', entries);
+
+    const user = new Y.Map<unknown>();
+    const userBlocks = new Y.Map<unknown>();
+    const userOrder = new Y.Array<string>();
+    const userText = new Y.Map<unknown>();
+    const text = new Y.Text();
+    entries.set('turn-1:user', user); order.push(['turn-1:user']);
+    user.set('role', 'user'); user.set('turn_id', 'turn-1'); user.set('status', 'pending');
+    user.set('delivery_schema_version', 2); user.set('delivery_state', 'delivery_unknown');
+    user.set('delivery_error_code', 'DELIVERY_UNKNOWN'); user.set('created_at', 'now');
+    user.set('blocks', userBlocks); user.set('block_order', userOrder);
+    userBlocks.set('text', userText); userOrder.push(['text']);
+    userText.set('kind', 'text'); userText.set('text', text); text.insert(0, 'already ran');
+
+    const assistant = new Y.Map<unknown>();
+    const assistantBlocks = new Y.Map<unknown>();
+    const assistantOrder = new Y.Array<string>();
+    const answer = new Y.Map<unknown>();
+    const answerText = new Y.Text();
+    entries.set('turn-1:assistant', assistant); order.push(['turn-1:assistant']);
+    assistant.set('role', 'assistant'); assistant.set('turn_id', 'turn-1'); assistant.set('status', 'completed');
+    assistant.set('created_at', 'now'); assistant.set('blocks', assistantBlocks); assistant.set('block_order', assistantOrder);
+    assistantBlocks.set('text', answer); assistantOrder.push(['text']);
+    answer.set('kind', 'text'); answer.set('text', answerText); answerText.insert(0, 'done');
+
+    const projected = renderChat(doc).entries;
+    expect(projected[0].deliveryState).toBe('completed');
+    expect(projected[0].deliveryErrorCode).toBeNull();
+    expect(projected[1].status).toBe('completed');
+  });
+
   it('reads exact prompt identity while keeping legacy entries compatible', () => {
     const doc = new Y.Doc();
     const root = doc.getMap<unknown>('root');

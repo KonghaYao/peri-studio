@@ -8,8 +8,8 @@ import {
   shouldOfferSshVerifyCommand,
 } from '@/features/machine/ssh-verify-command';
 import { addComputer, confirmMachineReplace, instances, machines, retryMachine, toast } from '@/store';
-import { readOnly } from '../../panel/lib/auth-state';
-import { runConfirmedMutation } from '../../panel/lib/form-mutation';
+import { readOnly } from '@/features/auth/auth-state';
+import { runConfirmedMutation } from '@/features/session/form-mutation';
 import {
   findActiveMachineByDestination,
   isMachineLiveOnline,

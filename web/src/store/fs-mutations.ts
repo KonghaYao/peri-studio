@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
-import { canMutate } from '../panel/lib/auth-role';
-import { principalRole } from '../panel/lib/auth-state';
+import { canMutate } from '@/features/auth/auth-role';
+import { principalRole } from '@/features/auth/auth-state';
 import { connectionReady, sendFrame } from '@/features/connection/connection';
 import {
   closeResourceFilePreview,
@@ -10,10 +10,10 @@ import {
   resourceFilePreview,
   resourceWorkspace,
   resourceWorkspaceGeneration,
-} from '../panel/lib/resource-store';
+} from '@/features/resource/resource-store';
 import { FsMutationController, type FsMutationState } from '@/features/resource/fs-mutation-controller';
 import type { DeleteConfirmResultFrame, FsMutationAck, FsMutationAction, FsMutationError } from '@/shared/protocol/resource-fs-mutation';
-import type { ActionFrame } from '../panel/lib/action-contract';
+import type { ActionFrame } from '@/shared/protocol/action-contract';
 
 type SendAction = (frame: ActionFrame, label: string, options: {
   cb?: (ack: FsMutationAck) => void;

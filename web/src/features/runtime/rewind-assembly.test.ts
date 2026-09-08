@@ -14,8 +14,8 @@ import {
   rewindOwnsError,
   setRewindFlow,
 } from './rewind-assembly';
-import { setPrincipalRole } from './auth-state';
-import type { ActionFrame, ActionOptions } from './action-contract';
+import { setPrincipalRole } from '@/features/auth/auth-state';
+import type { ActionFrame, ActionOptions } from '@/shared/protocol/action-contract';
 
 function installTestDeps(overrides: Partial<Parameters<typeof installRewind>[0]> = {}) {
   setPrincipalRole('full');

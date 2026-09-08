@@ -10,17 +10,17 @@
 // 模块符号直接导入。装配须在模块加载时调用一次，先于任何 UI 事件。
 
 import type { Setter } from 'solid-js';
-import { installPanelErrors, type PersistentError } from './panel-errors';
-import { installUserActions, type SessionConfigMutation } from './user-actions';
-import { installMcp } from './mcp';
-import { installMcpApps } from './mcp-apps';
-import { installRewind } from './rewind-assembly';
-import { installPromptRecovery } from './prompt-recovery-assembly';
-import { isTerminal } from './action-state';
+import { installPanelErrors, type PersistentError } from '@/features/message/panel-errors';
+import { installUserActions, type SessionConfigMutation } from '@/features/message/user-actions';
+import { installMcp } from '@/features/mcp/mcp';
+import { installMcpApps } from '@/features/mcp/mcp-apps';
+import { installRewind } from '@/features/runtime/rewind-assembly';
+import { installPromptRecovery } from '@/features/runtime/prompt-recovery-assembly';
+import { isTerminal } from '@/features/runtime/action-state';
 import { connectionReady } from '@/features/connection/connection';
 import type { DispatchResult } from '@/features/connection/command-tracker';
 import type { ControlView } from '@/entities/chat/control-view';
-import type { Ack, ActionError, ActionFrame, ActionOptions } from './action-contract';
+import type { Ack, ActionError, ActionFrame, ActionOptions } from '@/shared/protocol/action-contract';
 import type { ComposerDraftOwner } from '@/features/composer/composer-draft';
 
 export interface StoreWiringDeps {

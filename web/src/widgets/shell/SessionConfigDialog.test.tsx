@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { setPrincipalRole } from '../../panel/lib/auth-state';
+import { setPrincipalRole } from '@/features/auth/auth-state';
 import { setConnState } from '@/features/connection/connection';
-import { setChatHead, setSessionConfigMutation } from '../../panel/store';
+import { setChatHead, setSessionConfigMutation } from '@/store';
 import { SessionModelMenu } from './SessionConfigDialog';
 
 function projectModels() {

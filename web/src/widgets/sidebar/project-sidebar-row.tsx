@@ -13,7 +13,7 @@ import {
   selectedSessionId,
   turnActive,
 } from '@/store';
-import { runtimeState } from '../../panel/lib/runtime-state.ts';
+import { runtimeState } from '@/features/runtime/runtime-state';
 import { ProjectSessionRow } from './ProjectSessionRow';
 import type { ProjectSidebarModel } from './project-sidebar-model';
 

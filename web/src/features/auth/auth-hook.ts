@@ -15,7 +15,7 @@ import { createContext, createEffect, createSignal, onMount, useContext } from '
 import { connectWithCookie } from '@/features/connection/connection';
 import { parsePrincipal } from './auth-role';
 import { authFeedback } from './auth-feedback.ts';
-import { authInvalidation, clearAuthInvalidation, installPrincipalRole } from './auth-state';
+import { authInvalidation, clearAuthInvalidation, installPrincipalRole } from '@/features/auth/auth-state';
 import { parseAuthSetup, type AuthSetup } from './auth-setup';
 
 export type AuthState = 'checking' | 'signed-out' | 'signed-in';

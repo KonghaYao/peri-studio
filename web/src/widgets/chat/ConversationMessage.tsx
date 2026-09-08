@@ -1,7 +1,7 @@
 import { createEffect, createMemo, createSignal, For, Show, type Accessor } from 'solid-js';
 import type { ChatBlock, ChatEntry } from '@/entities/chat/chat-view';
-import { messageTime } from '../../panel/lib/message-time.ts';
-import { splitSystemReminders } from '../../panel/lib/system-reminder';
+import { messageTime } from '@/shared/lib/message-time';
+import { splitSystemReminders } from '@/shared/lib/system-reminder';
 import { CopyButton, IconButton, InlineNotice, Popover, PopoverContent, PopoverTrigger } from '@/shared/ui';
 import { MessageSquareQuote, MoreHorizontal } from 'lucide-solid';
 import { Markdown } from './Markdown';
@@ -11,8 +11,8 @@ import { UserBubble } from './UserBubble';
 import { Reasoning } from './Reasoning';
 import { ResourceCite } from './ResourceCite';
 import { McpAppFrame } from './McpAppFrame';
-import { isPrimaryLiveMcpApp, maybeOpenCompletedMcpTool } from '../../panel/lib/mcp-apps';
-import { requestComposerQuote } from '../../panel/lib/composer-quote';
+import { isPrimaryLiveMcpApp, maybeOpenCompletedMcpTool } from '@/features/mcp/mcp-apps';
+import { requestComposerQuote } from '@/features/composer/composer-quote';
 
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
 
@@ -140,8 +140,9 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
   const systemReminders = createMemo(() => blocks().flatMap((block) => block.kind === 'text'
     ? splitSystemReminders(block.text).flatMap((segment) => segment.kind === 'system_reminder' ? [segment.text] : [])
     : []));
+  const unknownDeliveryVisible = createMemo(() => entry().deliveryState === 'delivery_unknown');
   const userHasVisibleSurface = createMemo(() => role() !== 'user'
-    || Boolean(entry().error || entry().deliveryState === 'delivery_unknown' || entry().deliveryState === 'failed_not_delivered')
+    || Boolean(entry().error || unknownDeliveryVisible() || entry().deliveryState === 'failed_not_delivered')
     || blocks().some((block) => block.kind !== 'text'
       || splitSystemReminders(block.text).some((segment) => segment.kind === 'text' && segment.text.trim().length > 0)));
   // Replay timestamps are Hub observation time, not original message time.
@@ -274,7 +275,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
             </Show>;
           }}</For>
         </UserBubble>
-        <Show when={entry().deliveryState === 'delivery_unknown'}>
+        <Show when={unknownDeliveryVisible()}>
           <InlineNotice tone="warning" role="alert" title="Delivery result unknown">
             <span>This message may have already run. To avoid duplicate actions, it is not resent automatically.</span>
           </InlineNotice>

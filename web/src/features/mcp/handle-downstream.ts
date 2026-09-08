@@ -1,7 +1,7 @@
 // mcp_* 下行帧（store 组合根委托）。
 import type * as H from '@/shared/protocol/client';
-import { handleMcpOAuth, handleMcpOAuthAuthorization, handleMcpServers } from '../../panel/lib/mcp';
-import { handleMcpAppCallResult, handleMcpAppResource, handleMcpAppSession } from '../../panel/lib/mcp-apps';
+import { handleMcpOAuth, handleMcpOAuthAuthorization, handleMcpServers } from './mcp';
+import { handleMcpAppCallResult, handleMcpAppResource, handleMcpAppSession } from './mcp-apps';
 
 export function createMcpDownstream() {
   function handleDownstream(frame: H.DownstreamFrame): void {

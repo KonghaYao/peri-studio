@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
-import { setChatHead, setChatStatusSignal, setOpeningSession, setProjectSessions, setSelectedCid, setSelectedSessionId } from '../../panel/store';
-import { setPrincipalRole } from '../../panel/lib/auth-state';
+import { setChatHead, setChatStatusSignal, setOpeningSession, setProjectSessions, setSelectedCid, setSelectedSessionId } from '@/store';
+import { setPrincipalRole } from '@/features/auth/auth-state';
 import { resetRuntimeControls, startRuntimeControl } from '@/features/runtime/runtime-control';
 import { SessionRailActions } from './SessionRailActions';
 

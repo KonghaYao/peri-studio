@@ -2,14 +2,14 @@
 
 import { createSignal, createEffect, createRoot } from 'solid-js';
 import * as H from '@/shared/protocol/client';
-import { DocStore } from '../panel/lib/doc-store';
+import { DocStore } from '@/shared/yjs/doc-store';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import type { ControlView } from '@/entities/chat/control-view';
 import type { ChatInfo, InstanceInfo, MachineInfo, ProjectInfo, ProjectSessionInfo, SessionSummaryInfo } from '@/entities/registry/registry-view';
-import { isTerminal, isTurnActive } from '../panel/lib/action-state.ts';
+import { isTerminal, isTurnActive } from '@/features/runtime/action-state';
 import { CommandTracker } from '@/features/connection/command-tracker';
 import { SessionActivation, type OpeningSession, type OpenSessionCallbacks } from '@/features/session/session-activation';
-import { principalId, publishAuthInvalidation, readOnly } from '../panel/lib/auth-state';
+import { principalId, publishAuthInvalidation, readOnly } from '@/features/auth/auth-state';
 import { setComposerDraft } from '@/features/composer/composer-draft';
 import { messageSubmission, messageSubmissionForChat } from '@/features/message/message-delivery';
 import { createConnectionDownstream } from '@/features/connection/handle-downstream';
@@ -23,21 +23,21 @@ import { CatalogActions } from '@/features/catalog/catalog-actions';
 import { MachineActions } from '@/features/machine/machine-actions';
 import { createSessionCatalogBootstrap } from '@/features/catalog/session-catalog-bootstrap';
 import { selectActiveProjects } from '@/features/catalog/project-catalog';
-import { ToastStore } from '../panel/lib/toast-store';
-import { ACK_TIMEOUT_MS, type Ack, type ActionError, type ActionFrame, type ActionOptions } from '../panel/lib/action-contract';
-import { resetMcpState } from '../panel/lib/mcp';
-import { resetMcpAppsState } from '../panel/lib/mcp-apps';
-import { resetRewindState } from '../panel/lib/rewind-assembly';
-import { clearPromptRecoverySelection, requestPromptRecovery } from '../panel/lib/prompt-recovery-assembly';
+import { ToastStore } from './toast-store';
+import { ACK_TIMEOUT_MS, type Ack, type ActionError, type ActionFrame, type ActionOptions } from '@/shared/protocol/action-contract';
+import { resetMcpState } from '@/features/mcp/mcp';
+import { resetMcpAppsState } from '@/features/mcp/mcp-apps';
+import { resetRewindState } from '@/features/runtime/rewind-assembly';
+import { clearPromptRecoverySelection, requestPromptRecovery } from '@/features/runtime/prompt-recovery-assembly';
 import { closeTerminalBeforeTeardown, handleTerminalConnectionLost, installTerminalTransport } from '@/features/terminal/terminal-session';
 import { connectionReady, forgetRememberedSession, installConnection, promptMaxBytes, readRememberedSession, rememberSession, sendFrame } from '@/features/connection/connection';
 import { createRemoteDirectoryBrowsePorts } from '@/features/connection/remote-directory-ports';
-import { persistActionProblem, reportTransportIssue, type PersistentError } from '../panel/lib/panel-errors';
-import { sendMessage, type SessionConfigMutation } from '../panel/lib/user-actions';
+import { persistActionProblem, reportTransportIssue, type PersistentError } from '../features/message/panel-errors';
+import { sendMessage, type SessionConfigMutation } from '../features/message/user-actions';
 import { chatAgentLoading as deriveChatAgentLoading } from '@/features/chat/chat-agent-loading';
 import { installChatSubscription, reconcileCurrentRuntimeControl, refreshCurrentControlProjection, selectChat, sendSubscribe } from '@/features/connection/chat-subscription';
-import { installStoreWiring } from '../panel/lib/store-installs';
-import { installStoreProjection, type RuntimeDocsState } from '../panel/lib/store-projection';
+import { installStoreWiring } from './store-installs';
+import { installStoreProjection, type RuntimeDocsState } from './store-projection';
 import { elicitationResponses, resetElicitationResponses } from '@/features/message/elicitation-delivery';
 import { questionResponses, resetQuestionResponses } from '@/features/message/question-delivery';
 import {
@@ -50,7 +50,7 @@ import {
   installResourceStore,
   replayResourceSubscriptions,
   refreshResourceProject,
-} from '../panel/lib/resource-store';
+} from '@/features/resource/resource-store';
 import {
   bindWorkspaceUploadActionSender,
   bindWorkspaceUploadExplorerRefresh,
@@ -128,7 +128,7 @@ let sessionCatalogBootstrap: ReturnType<typeof createSessionCatalogBootstrap> | 
 export function isProjectCatalogBootstrapPending(projectId: string): boolean {
   return sessionCatalogBootstrap?.pending().has(projectId) ?? false;
 }
-export type { PromptRecoveryView } from '../panel/lib/prompt-recovery';
+export type { PromptRecoveryView } from '@/features/runtime/prompt-recovery';
 export const [sessionConfigMutation, setSessionConfigMutation] = createSignal<SessionConfigMutation | null>(null);
 
 const store = new DocStore(); // docId → Y.Doc
@@ -562,7 +562,7 @@ export function navigateProjectSession(sessionId: string, callbacks: OpenSession
 // remembered token lives in localStorage (peri_studio_token) and is replayed by
 // AuthGate only; the session itself is never recovered from Web Storage here.
 
-// P1 拆分：以下符号迁至 lib/panel-errors 与 lib/user-actions，此处
+// P1 拆分：以下符号迁至 features/message/panel-errors 与 user-actions，此处
 // re-export 保持组件与旧调用点的导入路径不变。
 export { refreshCurrentControlProjection, selectChat };
 export {
@@ -570,7 +570,7 @@ export {
   reportTransportIssue,
   retryPersistentAction,
   retainPersistentErrors,
-} from '../panel/lib/panel-errors';
+} from '../features/message/panel-errors';
 export {
   retryMessageSubmission,
   cancelTurn,
@@ -580,10 +580,10 @@ export {
   resolvePermission,
   respondElicitation,
   respondQuestion,
-} from '../panel/lib/user-actions';
+} from '../features/message/user-actions';
 export { sendMessage };
-export type { PersistentError } from '../panel/lib/panel-errors';
-export type { SessionConfigMutation } from '../panel/lib/user-actions';
+export type { PersistentError } from '../features/message/panel-errors';
+export type { SessionConfigMutation } from '../features/message/user-actions';
 
 installResourceStore({ send: sendFrame, ready: connectionReady, toast });
 export {
@@ -613,7 +613,7 @@ export {
   retryResourceFilePreview,
   resourceDiffPreview,
   resourceWorkspace,
-} from '../panel/lib/resource-store';
+} from '@/features/resource/resource-store';
 export {
   clearSubmittedWorkspaceUploads,
   createEmptyExplorerFile,

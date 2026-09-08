@@ -1,6 +1,6 @@
 import { render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
-import { reportTransportIssue, retainPersistentErrors, setPersistentErrors, type PersistentError } from '../../panel/store';
+import { reportTransportIssue, retainPersistentErrors, setPersistentErrors, type PersistentError } from '@/store';
 import { ErrorCenter } from './ErrorCenter';
 
 afterEach(() => setPersistentErrors([]));

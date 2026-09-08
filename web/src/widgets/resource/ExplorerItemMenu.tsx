@@ -34,7 +34,7 @@ export function ExplorerItemMenu(props: {
       >{icon}<span>{label}</span></DropdownMenuItem>
     );
   };
-  return <DropdownMenu open={props.open} onOpenChange={props.onOpenChange}>
+  return <DropdownMenu placement="bottom-start" open={props.open} onOpenChange={props.onOpenChange}>
     <DropdownMenuTrigger as="span" class="inline-flex">
       {props.trigger ?? <IconButton label="More actions" size="compact" showTooltip={false}><MoreHorizontal size={14} /></IconButton>}
     </DropdownMenuTrigger>

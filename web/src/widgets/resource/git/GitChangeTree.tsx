@@ -2,7 +2,7 @@ import { createSignal } from 'solid-js';
 import { Minus, Plus, Trash2 } from 'lucide-solid';
 import { IconButton } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
-import { resourceWorkspace } from '../../../panel/store';
+import { resourceWorkspace } from '@/store';
 import { buildPathTree, folderPathsFromItems } from '../build-path-tree';
 import { FileTree } from '../FileTree';
 import { VSCodeFileIcon } from '../VSCodeFileIcon';

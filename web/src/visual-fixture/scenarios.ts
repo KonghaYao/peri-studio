@@ -1,7 +1,7 @@
 import type { ChatEntry, ToolCallInfo } from '@/entities/chat/chat-view';
 import type { ControlView, PendingPermission } from '@/entities/chat/control-view';
 import type { ProjectInfo, ProjectSessionInfo, SessionSummaryInfo } from '@/entities/registry/registry-view';
-import { setMcpAuthorization, setMcpOAuthEvents, setMcpServers } from '../panel/lib/mcp';
+import { setMcpAuthorization, setMcpOAuthEvents, setMcpServers } from '@/features/mcp/mcp';
 import { setConnState, setPromptDeliveryReady } from '@/features/connection/connection';
 import {
   resetAuthenticatedSession,
@@ -17,14 +17,14 @@ import {
   setRuntimeDocsState,
   setSelectedCid,
   setSelectedSessionId,
-} from '../panel/store';
-import { installPrincipalRole } from '../panel/lib/auth-state';
+} from '@/store';
+import { installPrincipalRole } from '@/features/auth/auth-state';
 import { acquireFixtureClock } from './fixture-clock';
-import { resourceWorkspace, setResourceDiffPreview, setResourceFilePreview, setResourceWorkspace } from '../panel/lib/resource-store';
-import type { ResourceDiffPreviewState, ResourceFilePreviewState } from '../panel/lib/resource-preview';
-import type { ResourceEntry } from '../panel/lib/resource-view';
+import { resourceWorkspace, setResourceDiffPreview, setResourceFilePreview, setResourceWorkspace } from '@/features/resource/resource-store';
+import type { ResourceDiffPreviewState, ResourceFilePreviewState } from '@/features/resource/resource-preview';
+import type { ResourceEntry } from '@/entities/resource/resource-view';
 import { markElicitationResponseUncertain, startElicitationResponse } from '@/features/message/elicitation-delivery';
-import { setComposerAssets } from '../panel/lib/composer-assets';
+import { setComposerAssets } from '@/features/composer/composer-assets';
 import { createLongConversationEntries } from './long-conversation';
 import {
   setVisualToolAcceptancePhase as installToolAcceptancePhase,
@@ -429,7 +429,7 @@ export function installVisualScenario(value: string | null | undefined): { scena
             { id: 'c2', path: 'web/src/widgets/resource/ResourceWorkbench.tsx', status: 'modified' },
             { id: 'c3', path: 'docs/design/remote-fs-git-protocol.md', status: 'modified' },
           ] },
-          untracked: { count: 1, revision: 'new-1', changes: [{ id: 'c4', path: 'web/src/panel/lib/resource-view.ts', status: 'untracked' }] },
+          untracked: { count: 1, revision: 'new-1', changes: [{ id: 'c4', path: 'web/src/entities/resource/resource-view.ts', status: 'untracked' }] },
         },
       }],
     });

@@ -1,10 +1,10 @@
 import { Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import { ProjectSidebar } from '../../widgets/sidebar/ProjectSidebar';
 import { ChatView } from '@/widgets/chat/ChatView';
-import { compactViewportQuery, mediumViewportQuery } from '../../panel/lib/breakpoints';
+import { compactViewportQuery, mediumViewportQuery } from '@/shared/lib/breakpoints';
 import { ProjectDrawer } from './shared/ProjectDrawer';
 import { ResourceWorkbench, type ResourcePreviewOrigin, type WorkbenchView } from '@/widgets/resource/ResourceWorkbench';
-import { closeResourceDiffPreview, closeResourceFilePreview, resourceDiffPreview, resourceFilePreview } from '../../panel/store';
+import { closeResourceDiffPreview, closeResourceFilePreview, resourceDiffPreview, resourceFilePreview } from '@/store';
 import { resourceWorkbenchRequest } from '@/store';
 import { ResourceDiffEditor } from '@/widgets/resource/ResourceDiffEditor';
 import { ResourceFileEditor } from '@/widgets/resource/ResourceFileEditor';

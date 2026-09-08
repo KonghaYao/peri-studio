@@ -3,7 +3,7 @@ import type { ProjectInfo, SessionSummaryInfo } from '@/entities/registry/regist
 import { Button, Dialog, DialogContent, DialogTitle, EmptyState, InlineNotice, Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel, LoadingState, TextField } from '@/shared/ui';
 import { MessageSquare } from 'lucide-solid';
 import { importCandidates } from '../../features/session/session-import.ts';
-import { cleanSessionTitle, formatRelativeTime, shortSessionId } from '../../panel/lib/recovery-state.ts';
+import { cleanSessionTitle, formatRelativeTime, shortSessionId } from '@/features/session/recovery-state';
 
 export interface SessionImportDialogProps {
   open: boolean;

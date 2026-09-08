@@ -1,8 +1,8 @@
 import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { Maximize2, Minimize2 } from 'lucide-solid';
 import { IconButton } from '@/shared/ui';
-import { bindMcpAppHost } from '../../panel/lib/mcp-app-host';
-import { liveMcpApp, liveMcpAppHeight } from '../../panel/lib/mcp-apps';
+import { bindMcpAppHost } from '@/features/mcp/mcp-app-host';
+import { liveMcpApp, liveMcpAppHeight } from '@/features/mcp/mcp-apps';
 
 export function McpAppFrame(props: { toolCallId: string }) {
   let sandboxRef: HTMLIFrameElement | undefined;

@@ -1,7 +1,7 @@
 import { For, Show } from 'solid-js';
 import { FileText, Image as ImageIcon, Link2, X } from 'lucide-solid';
 import { IconButton } from '@/shared/ui';
-import { composerAssets, removeComposerAsset, type ComposerAssetKind } from '../../panel/lib/composer-assets';
+import { composerAssets, removeComposerAsset, type ComposerAssetKind } from '@/features/composer/composer-assets';
 
 function AssetIcon(props: { kind: ComposerAssetKind }) {
   if (props.kind === 'image') return <ImageIcon size={21} strokeWidth={1.7} />;
@@ -9,7 +9,7 @@ function AssetIcon(props: { kind: ComposerAssetKind }) {
   return <FileText size={21} strokeWidth={1.7} />;
 }
 
-/** Composer 顶部 staged assets 横条（panel/lib composerAssets 夹具）。 */
+/** Composer 顶部 staged assets 横条（composerAssets 夹具）。 */
 export function ComposerStagedAssets() {
   return (
     <Show when={composerAssets().length > 0}>

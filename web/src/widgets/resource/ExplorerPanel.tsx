@@ -59,6 +59,19 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
   const [deleteNode, setDeleteNode] = createSignal<FileTreeNode | null>(null);
   const [contextNodePath, setContextNodePath] = createSignal<string | null>(null);
   const [rootMenuOpen, setRootMenuOpen] = createSignal(false);
+
+  const openNodeMenu = (path: string) => {
+    setRootMenuOpen(false);
+    setContextNodePath(path);
+  };
+  const openRootMenu = () => {
+    setContextNodePath(null);
+    setRootMenuOpen(true);
+  };
+  const closeExplorerMenus = () => {
+    setContextNodePath(null);
+    setRootMenuOpen(false);
+  };
   const activePath = () => props.activePath ?? localActivePath();
   const setActivePath = (path: string) => {
     if (props.activePath === undefined) setLocalActivePath(path);
@@ -336,7 +349,7 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
       onContextMenu={(event) => {
         if ((event.target as HTMLElement).closest('[role="treeitem"]')) return;
         event.preventDefault();
-        setRootMenuOpen(true);
+        openRootMenu();
       }}
       onScroll={(event) => { if (acceptingScroll) props.onScrollTopChange?.(event.currentTarget.scrollTop); }}
       onDragEnter={(event) => {
@@ -371,12 +384,12 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
           onToggleFolder={toggleFolder}
           activePath={activePath()}
           onActivePathChange={setActivePath}
-          renderFileTrailing={(node) => <ExplorerItemMenu context="file" disabled={!mutationAvailability().available} disabledReason={mutationAvailability().reason} newFileDisabled={!newFileAvailable()} newFileDisabledReason={newFileBlockedMessage()} open={contextNodePath() === node.path} onOpenChange={(open) => setContextNodePath(open ? node.path : null)} onAction={(action) => handleMenuAction(action, node)} />}
-          renderFolderTrailing={(node) => <ExplorerItemMenu context="folder" disabled={!mutationAvailability().available} disabledReason={mutationAvailability().reason} newFileDisabled={!newFileAvailable()} newFileDisabledReason={newFileBlockedMessage()} open={contextNodePath() === node.path} onOpenChange={(open) => setContextNodePath(open ? node.path : null)} onAction={(action) => handleMenuAction(action, node)} />}
+          renderFileTrailing={(node) => <ExplorerItemMenu context="file" disabled={!mutationAvailability().available} disabledReason={mutationAvailability().reason} newFileDisabled={!newFileAvailable()} newFileDisabledReason={newFileBlockedMessage()} open={contextNodePath() === node.path} onOpenChange={(open) => { if (open) openNodeMenu(node.path); else if (contextNodePath() === node.path) closeExplorerMenus(); }} onAction={(action) => handleMenuAction(action, node)} />}
+          renderFolderTrailing={(node) => <ExplorerItemMenu context="folder" disabled={!mutationAvailability().available} disabledReason={mutationAvailability().reason} newFileDisabled={!newFileAvailable()} newFileDisabledReason={newFileBlockedMessage()} open={contextNodePath() === node.path} onOpenChange={(open) => { if (open) openNodeMenu(node.path); else if (contextNodePath() === node.path) closeExplorerMenus(); }} onAction={(action) => handleMenuAction(action, node)} />}
           onNodeContextMenu={(node, event) => {
             event.preventDefault();
             setActivePath(node.path);
-            setContextNodePath(node.path);
+            openNodeMenu(node.path);
           }}
           onNodeMount={handleNodeMount}
           folderLoadingPaths={folderLoadingPaths(expanded())}
@@ -414,8 +427,8 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
         newFileDisabled={!newFileAvailable()}
         newFileDisabledReason={newFileBlockedMessage()}
         open={rootMenuOpen()}
-        onOpenChange={setRootMenuOpen}
-        trigger={<span class="sr-only">Workspace actions</span>}
+        onOpenChange={(open) => { if (open) openRootMenu(); else setRootMenuOpen(false); }}
+        trigger={<button type="button" class="sr-only" aria-label="Workspace root actions">Workspace root actions</button>}
         onAction={(action) => handleMenuAction(action, null)}
       />
     </div>

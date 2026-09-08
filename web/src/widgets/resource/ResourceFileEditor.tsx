@@ -6,7 +6,7 @@ import {
   downloadPreviewedFile,
   resourceFilePreview,
   retryResourceFilePreview,
-} from '../../panel/store';
+} from '@/store';
 import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_TITLE_CLASS } from './resource-panel-layout';
 
 function CloseIcon() {

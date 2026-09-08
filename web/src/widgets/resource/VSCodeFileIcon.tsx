@@ -54,7 +54,7 @@ import folderTest from '@iconify-icons/vscode-icons/folder-type-test';
 import folderTestOpened from '@iconify-icons/vscode-icons/folder-type-test-opened';
 import folderVscode from '@iconify-icons/vscode-icons/folder-type-vscode';
 import folderVscodeOpened from '@iconify-icons/vscode-icons/folder-type-vscode-opened';
-import { vscodeFileIconKind, vscodeFolderIconKind, type VSCodeFileIconKind, type VSCodeFolderIconKind } from '../../panel/lib/vscode-file-icons';
+import { vscodeFileIconKind, vscodeFolderIconKind, type VSCodeFileIconKind, type VSCodeFolderIconKind } from '@/shared/lib/vscode-file-icons';
 
 type VSCodeIconData = typeof defaultFile;
 

@@ -1,4 +1,4 @@
-import { isTerminal } from '../../panel/lib/action-state';
+import { isTerminal } from '@/features/runtime/action-state';
 import { isLocalMachine } from '@/entities/machine/machine-view';
 import type { ChatInfo, InstanceInfo, MachineInfo, ProjectInfo, ProjectSessionInfo } from '@/entities/registry/registry-view';
 

@@ -1,6 +1,6 @@
 import { astToJSX, parser, RuleType, type MarkdownToJSX, type SolidOptions, type SolidOverrides } from 'markdown-to-jsx/solid';
 import { createMemo, For, Show, splitProps, type Accessor, type JSX } from 'solid-js';
-import { safeHref } from '../../panel/lib/markdown';
+import { safeHref } from '@/shared/lib/markdown';
 import { CodeBlock } from './markdown/CodeBlock';
 import { MathExpression } from './markdown/Math';
 import { SafeImage } from './markdown/SafeImage';

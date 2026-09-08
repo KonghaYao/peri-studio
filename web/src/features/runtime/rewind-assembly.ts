@@ -11,9 +11,9 @@
 
 import { createSignal } from 'solid-js';
 import * as H from '@/shared/protocol/client';
-import { readOnly } from './auth-state';
+import { readOnly } from '@/features/auth/auth-state';
 import type { ControlView } from '@/entities/chat/control-view';
-import type { Ack, ActionError, ActionFrame, ActionOptions } from './action-contract';
+import type { Ack, ActionError, ActionFrame, ActionOptions } from '@/shared/protocol/action-contract';
 import {
   closedRewindFlow,
   completeRewind,

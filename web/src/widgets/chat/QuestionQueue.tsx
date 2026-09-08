@@ -1,6 +1,6 @@
 import { For, Show, createSignal, createUniqueId } from 'solid-js';
 import type { PendingQuestion } from '@/entities/chat/control-view';
-import { createIdentitySelection } from '../../panel/lib/identity-selection';
+import { createIdentitySelection } from '@/features/message/identity-selection';
 import type { QuestionDeliveryState } from '@/features/message/question-delivery';
 import type { QuestionAnswerPayload } from '@/shared/protocol/client';
 import {

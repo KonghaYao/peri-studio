@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { installPrincipalRole, principalRole } from './lib/auth-state';
-import { promptRecovery, setPromptRecovery } from './lib/prompt-recovery-assembly';
+import { installPrincipalRole, principalRole } from '@/features/auth/auth-state';
+import { promptRecovery, setPromptRecovery } from '@/features/runtime/prompt-recovery-assembly';
 import { busy, connState, connectionProblem, heartbeatCount, setBusy, setConnState, setConnectionProblem, setHeartbeatCount } from '@/features/connection/connection';
 import {
   chatEntries,
@@ -36,7 +36,7 @@ import {
   setSelectedSessionId,
   toast,
   toasts,
-} from './store';
+} from '@/store';
 
 afterEach(() => {
   resetAuthenticatedSession();

@@ -1,7 +1,7 @@
 import { Show } from 'solid-js';
-import { chatHead, projectSessions, selectedSessionId } from '../../panel/store';
+import { chatHead, projectSessions, selectedSessionId } from '@/store';
 import { IconButton } from '@/shared/ui';
-import { sessionDisplayTitle } from '../../panel/lib/recovery-state.ts';
+import { sessionDisplayTitle } from '@/features/session/recovery-state';
 import { FileText, Menu, PanelRight } from 'lucide-solid';
 
 export type ChatHeaderProps = { launch?: boolean; onOpenNavigation?: () => void; onOpenResources?: () => void };

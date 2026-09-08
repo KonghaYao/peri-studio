@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { DocStore } from '@/shared/yjs/doc-store';
 import * as H from '@/shared/protocol/client';
 import { installChatSubscription, refreshCurrentControlProjection, selectChat, sendSubscribe } from './chat-subscription';
-import { installMcpApps, liveMcpApp, openMcpApp, resetMcpAppsState } from '../../panel/lib/mcp-apps';
-import { setPrincipalRole } from '../../panel/lib/auth-state';
+import { installMcpApps, liveMcpApp, openMcpApp, resetMcpAppsState } from '@/features/mcp/mcp-apps';
+import { setPrincipalRole } from '@/features/auth/auth-state';
 
 describe('chat subscription control refresh', () => {
   it('sendSubscribe replays ysync.subscribe with desiredDocs (G3 reconnect path)', () => {

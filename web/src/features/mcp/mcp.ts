@@ -10,9 +10,9 @@
 
 import { createSignal } from 'solid-js';
 import * as H from '@/shared/protocol/client';
-import { readOnly } from './auth-state';
+import { readOnly } from '@/features/auth/auth-state';
 import type { McpOAuthAuthorizationFrame, McpOAuthFrame, McpServerInfo } from '@/shared/protocol/client';
-import type { Ack, ActionFrame, ActionOptions } from './action-contract';
+import type { Ack, ActionFrame, ActionOptions } from '@/shared/protocol/action-contract';
 
 export const [mcpServers, setMcpServers] = createSignal<McpServerInfo[]>([]);
 export const [mcpOAuthEvents, setMcpOAuthEvents] = createSignal<Record<string, McpOAuthFrame>>({});

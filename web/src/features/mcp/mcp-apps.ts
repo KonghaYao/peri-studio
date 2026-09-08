@@ -3,13 +3,13 @@
 
 import { createSignal } from 'solid-js';
 import * as H from '@/shared/protocol/client';
-import { readOnly } from './auth-state';
+import { readOnly } from '@/features/auth/auth-state';
 import type {
   McpAppCallResultFrame,
   McpAppResourceFrame,
   McpAppSessionFrame,
 } from '@/shared/protocol/client';
-import type { Ack, ActionError, ActionFrame, ActionOptions } from './action-contract';
+import type { Ack, ActionError, ActionFrame, ActionOptions } from '@/shared/protocol/action-contract';
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
 
 export interface LiveMcpAppSession {

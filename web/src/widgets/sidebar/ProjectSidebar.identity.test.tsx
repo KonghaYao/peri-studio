@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { installPrincipalRole } from '../../panel/lib/auth-state';
+import { installPrincipalRole } from '@/features/auth/auth-state';
 import {
   setInstances,
   setMachines,
@@ -11,7 +11,7 @@ import {
   setRuntimeDocsState,
   setSelectedCid,
   setSelectedSessionId,
-} from '../../panel/store';
+} from '@/store';
 import { ProjectSidebar } from './ProjectSidebar';
 
 const instance = (heartbeat: string) => ({

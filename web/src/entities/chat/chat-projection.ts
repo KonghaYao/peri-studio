@@ -1,5 +1,5 @@
 import * as Y from 'yjs';
-import { readChatEntry, readChatToolCall, type ChatEntry, type ChatView } from './chat-view';
+import { readChatEntry, readChatToolCall, visibleUserDeliveryState, type ChatEntry, type ChatView } from './chat-view';
 import { asArray, asMap, getStr } from '@/shared/yjs/yjs-values';
 
 export interface ChatProjectionResult {
@@ -317,12 +317,17 @@ export class ChatProjection {
   }
 
   private view(): ChatView {
+    const raw = this.order.flatMap((id) => {
+      const entry = this.entries.get(id);
+      return entry ? [entry] : [];
+    });
     return {
       schemaVersion: this.root?.get('schema_version'),
       projectionVersion: this.root?.get('projection_version'),
-      entries: this.order.flatMap((id) => {
-        const entry = this.entries.get(id);
-        return entry ? [entry] : [];
+      entries: raw.map((entry) => {
+        if (entry.role !== 'user') return entry;
+        const nextState = visibleUserDeliveryState(entry.deliveryState, entry.turnId, raw);
+        return nextState === entry.deliveryState ? entry : { ...entry, deliveryState: nextState, deliveryErrorCode: null };
       }),
     };
   }

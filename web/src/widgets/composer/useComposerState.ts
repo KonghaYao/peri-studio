@@ -13,10 +13,10 @@ import {
   sendMessage,
   sessionConfigMutation,
   turnActive,
-} from '../../panel/store';
-import { isTerminal } from '../../panel/lib/action-state';
+} from '@/store';
+import { isTerminal } from '@/features/runtime/action-state';
 import { promptDeliveryReady, promptMaxBytes } from '@/features/connection/connection';
-import { principalId, readOnly } from '../../panel/lib/auth-state';
+import { principalId, readOnly } from '@/features/auth/auth-state';
 import {
   composerDraft,
   hydrateComposerDraft,
@@ -41,7 +41,7 @@ import {
   composerQuoteRequest,
   consumeComposerQuoteRequest,
   formatComposerQuote,
-} from '../../panel/lib/composer-quote';
+} from '@/features/composer/composer-quote';
 
 /** tokens 数值 → "12k"/"200k" 缩写（>=1000 取 k；非法值 → null）。 */
 function fmtTokens(n: number | null): string | null {

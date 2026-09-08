@@ -84,6 +84,43 @@ describe('ChatProjection', () => {
     projection.dispose();
   });
 
+  it('hides a stale unknown user delivery after the assistant turn is already terminal', () => {
+    const doc = chatDoc();
+    const root = doc.getMap<unknown>('root');
+    const entries = root.get('entries') as Y.Map<unknown>;
+    const order = root.get('entry_order') as Y.Array<string>;
+    const user = new Y.Map<unknown>();
+    const blocks = new Y.Map<unknown>();
+    const blockOrder = new Y.Array<string>();
+    const block = new Y.Map<unknown>();
+    const text = new Y.Text();
+    entries.set('turn-1:user', user);
+    order.insert(0, ['turn-1:user']);
+    user.set('turn_id', 'turn-1');
+    user.set('kind', 'message');
+    user.set('role', 'user');
+    user.set('status', 'pending');
+    user.set('delivery_schema_version', 2);
+    user.set('delivery_state', 'delivery_unknown');
+    user.set('created_at', '2026-08-24T00:00:00Z');
+    user.set('blocks', blocks);
+    user.set('block_order', blockOrder);
+    blocks.set('text', block);
+    blockOrder.push(['text']);
+    block.set('kind', 'text');
+    block.set('text', text);
+    text.insert(0, 'already ran');
+    addMessage(doc, 'turn-1:assistant', 'done');
+    (entries.get('turn-1:assistant') as Y.Map<unknown>).set('turn_id', 'turn-1');
+    (entries.get('turn-1:assistant') as Y.Map<unknown>).set('status', 'completed');
+
+    const projection = new ChatProjection();
+    const view = projection.project(doc).view;
+    expect(view.entries[0]?.deliveryState).toBe('completed');
+    expect(view.entries[1]?.status).toBe('completed');
+    projection.dispose();
+  });
+
   it('reprojects only the entry that owns an updated tool call', () => {
     const doc = chatDoc();
     addMessage(doc, 'first', 'one');

@@ -17,10 +17,10 @@ import {
   resourceWorkspace,
   resetResourceProject,
   setResourceWorkspace,
-} from '../../panel/lib/resource-store';
-import { installPrincipalRole } from '../../panel/lib/auth-state';
-import { DocStore } from '../../panel/lib/doc-store';
-import { setChatCatalog, setGlobalStatus, setInstances, setMachines, setProjects, setProjectSessions, setSchemaVersion, setSelectedSessionId } from '../../panel/store';
+} from '@/features/resource/resource-store';
+import { installPrincipalRole } from '@/features/auth/auth-state';
+import { DocStore } from '@/shared/yjs/doc-store';
+import { setChatCatalog, setGlobalStatus, setInstances, setMachines, setProjects, setProjectSessions, setSchemaVersion, setSelectedSessionId } from '@/store';
 import { resetWorkspaceUploadAssembly } from '@/store';
 
 afterEach(() => {

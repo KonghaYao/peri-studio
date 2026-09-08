@@ -1,10 +1,10 @@
 import { createEffect, createSignal, Show } from 'solid-js';
 import { History, Power, RotateCcw } from 'lucide-solid';
 import { Dialog, DialogContent, DialogTitle } from '@/shared/ui';
-import { chatHead, chatStatusSignal, closeChat, navigateProjectSession, openingSessionId, projectSessions, selectedCid, selectedSessionId, turnActive } from '../../panel/store';
-import { isTerminal } from '../../panel/lib/action-state';
-import { readOnly } from '../../panel/lib/auth-state';
-import { canRewindCurrentChat, openRewindFlow } from '../../panel/lib/rewind-assembly';
+import { chatHead, chatStatusSignal, closeChat, navigateProjectSession, openingSessionId, projectSessions, selectedCid, selectedSessionId, turnActive } from '@/store';
+import { isTerminal } from '@/features/runtime/action-state';
+import { readOnly } from '@/features/auth/auth-state';
+import { canRewindCurrentChat, openRewindFlow } from '@/features/runtime/rewind-assembly';
 import { runtimeControlFor } from '@/features/runtime/runtime-control';
 import { ConfirmDialog } from './shared/ConfirmDialog';
 import { ResourceRailButton } from '@/widgets/resource/ResourceRailButton';

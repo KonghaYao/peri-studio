@@ -20,9 +20,9 @@ import {
   setMcpServers,
   startMcpOAuth,
 } from './mcp';
-import { setPrincipalRole } from './auth-state';
+import { setPrincipalRole } from '@/features/auth/auth-state';
 
-import type { ActionFrame, ActionOptions } from './action-contract';
+import type { ActionFrame, ActionOptions } from '@/shared/protocol/action-contract';
 
 function installTestDeps(overrides: Partial<Parameters<typeof installMcp>[0]> = {}) {
   setPrincipalRole('full');

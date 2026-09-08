@@ -2,9 +2,9 @@ import { Show } from 'solid-js';
 import type { SessionConfigOptionInfo } from '@/entities/chat/control-view';
 import { Select } from '@/shared/ui/Select';
 import { composerModelLabel } from '@/features/composer/composer-model-label';
-import { readOnly } from '../../panel/lib/auth-state';
+import { readOnly } from '@/features/auth/auth-state';
 import { connState } from '@/features/connection/connection';
-import { chatHead, sessionConfigMutation, setSessionConfig, turnActive } from '../../panel/store';
+import { chatHead, sessionConfigMutation, setSessionConfig, turnActive } from '@/store';
 
 export function SessionModelMenu(props: {
   open?: boolean;

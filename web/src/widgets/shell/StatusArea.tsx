@@ -2,8 +2,8 @@ import { For, Show, createMemo, createSignal } from 'solid-js';
 import type { AgentActivityInfo, AgentPlanEntryInfo, PeriTaskInfo } from '@/entities/chat/control-view';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { selectChatFileChanges } from '@/entities/chat/chat-file-changes';
-import { Ban, Bot, Check, Circle, CircleAlert, GitBranch, Info, ListTodo, Pause, Workflow, X } from 'lucide-solid';
-import { Badge } from '@/shared/ui';
+import { Ban, Bot, Check, ChevronDown, ChevronUp, Circle, CircleAlert, GitBranch, Info, ListTodo, Pause, Workflow, X } from 'lucide-solid';
+import { Badge, IconButton } from '@/shared/ui';
 import { VSCodeFileIcon } from '@/widgets/resource/VSCodeFileIcon';
 
 type StatusTab = 'todo' | 'async' | 'changes';
@@ -53,6 +53,7 @@ function stateLabel(status: string) {
 
 export function StatusArea(props: StatusAreaProps) {
   const [activeTab, setActiveTab] = createSignal<StatusTab>('todo');
+  const [panelExpanded, setPanelExpanded] = createSignal(true);
   const asyncItems = createMemo(() => {
     const tasks = props.tasks ?? [];
     if (tasks.length > 0) {
@@ -94,16 +95,28 @@ export function StatusArea(props: StatusAreaProps) {
   return <Show when={tabs().length > 0}>
     <section data-testid="status-area" class="status-area chat-column mb-8" aria-label="Status area">
       <div class="overflow-hidden rounded-12 border border-border-subtle bg-surface-overlay shadow-decision">
-        <div class="flex min-h-34 items-center gap-2 border-b border-divider px-5" role="tablist" aria-label="Work status">
-          <For each={tabs()}>{(tab) => <button
-            type="button"
-            role="tab"
-            aria-selected={visibleTab() === tab.id}
-            aria-controls={`status-panel-${tab.id}`}
-            class={`inline-flex min-h-(--control-height-compact) items-center gap-5 rounded-7 border-0 px-7 text-10 font-600 transition-colors ${visibleTab() === tab.id ? 'bg-selected text-text-primary' : 'bg-transparent text-text-muted hover:bg-hover hover:text-text-primary'}`}
-            onClick={() => setActiveTab(tab.id)}
-          ><tab.icon size={13} strokeWidth={1.8} /><span>{tab.label}</span><Badge tone="neutral" class="min-w-0 px-6">{tab.id === 'todo' && tab.count ? `${completedTodos()}/${tab.count}` : tab.count}</Badge></button>}</For>
+        <div class="flex min-h-34 items-center gap-2 border-b border-divider px-5">
+          <div class="flex min-w-0 flex-1 items-center gap-2" role="tablist" aria-label="Work status">
+            <For each={tabs()}>{(tab) => <button
+              type="button"
+              role="tab"
+              aria-selected={visibleTab() === tab.id}
+              aria-controls={`status-panel-${tab.id}`}
+              class={`inline-flex min-h-(--control-height-compact) items-center gap-5 rounded-7 border-0 px-7 text-10 font-600 transition-colors ${visibleTab() === tab.id ? 'bg-selected text-text-primary' : 'bg-transparent text-text-muted hover:bg-hover hover:text-text-primary'}`}
+              onClick={() => setActiveTab(tab.id)}
+            ><tab.icon size={13} strokeWidth={1.8} /><span>{tab.label}</span><Badge tone="neutral" class="min-w-0 px-6">{tab.id === 'todo' && tab.count ? `${completedTodos()}/${tab.count}` : tab.count}</Badge></button>}</For>
+          </div>
+          <IconButton
+            label={panelExpanded() ? 'Collapse status panel' : 'Expand status panel'}
+            size="compact"
+            showTooltip={false}
+            class="shrink-0 border-0 bg-transparent text-text-muted hover:text-text-primary"
+            onClick={() => setPanelExpanded((current) => !current)}
+          >
+            {panelExpanded() ? <ChevronDown size={14} strokeWidth={1.8} /> : <ChevronUp size={14} strokeWidth={1.8} />}
+          </IconButton>
         </div>
+        <Show when={panelExpanded()}>
         <div class="ui-scrollbar max-h-(--status-panel-max-height) overflow-auto px-8 py-6 text-11" role="tabpanel" id={`status-panel-${visibleTab()}`}>
           <Show when={visibleTab() === 'todo'}>
             <ol class="m-0 grid list-none gap-4 p-0"><For each={props.plan}>{(entry) => <li class="grid min-h-24 grid-cols-status-row items-center gap-7 rounded-7 px-6 py-4">
@@ -134,6 +147,7 @@ export function StatusArea(props: StatusAreaProps) {
             </li>}</For></ol>
           </Show>
         </div>
+        </Show>
       </div>
     </section>
   </Show>;

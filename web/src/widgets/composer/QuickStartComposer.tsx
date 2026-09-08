@@ -1,7 +1,7 @@
 import { createEffect, createSignal, createUniqueId, Show } from 'solid-js';
 import { Button, IconButton, InlineNotice, Textarea } from '@/shared/ui';
-import { createSessionWithFirstMessage, creatingSessionProjectId, retryQuickStart, clearSubmittedWorkspaceUploads } from '../../panel/store';
-import { readOnly } from '../../panel/lib/auth-state';
+import { createSessionWithFirstMessage, creatingSessionProjectId, retryQuickStart, clearSubmittedWorkspaceUploads } from '@/store';
+import { readOnly } from '@/features/auth/auth-state';
 import { dismissFailedQuickStart, quickStartSubmission } from '@/features/message/quick-start-delivery';
 import { promptMaxBytes } from '@/features/connection/connection';
 import { promptByteLength, promptFitsBudget } from '@/shared/lib/prompt-budget';

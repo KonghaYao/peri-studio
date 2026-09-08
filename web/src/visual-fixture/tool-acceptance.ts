@@ -1,7 +1,7 @@
 import type { ChatEntry, ToolCallInfo } from '@/entities/chat/chat-view';
 import type { ControlView, PendingPermission } from '@/entities/chat/control-view';
 import { setConnState, setPromptDeliveryReady } from '@/features/connection/connection';
-import { setChatEntries, setChatHead, setPermissions } from '../panel/store';
+import { setChatEntries, setChatHead, setPermissions } from '@/store';
 
 export type VisualToolAcceptancePhase =
   | 'semantic'

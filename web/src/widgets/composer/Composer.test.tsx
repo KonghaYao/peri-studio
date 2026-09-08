@@ -9,14 +9,14 @@ import {
   setRuntimeDocsState,
   setSelectedCid,
   setSelectedSessionId,
-} from '../../panel/store';
-import { setPrincipalRole } from '../../panel/lib/auth-state';
+} from '@/store';
+import { setPrincipalRole } from '@/features/auth/auth-state';
 import { composerDraft, setComposerDraft } from '@/features/composer/composer-draft';
 import { acknowledgeUnknownMessageDelivery, blockUnknownMessageDelivery, failMessageDelivery, markMessageDeliveryUncertain, messageSubmission, reconcileMessageProjection, resetMessageDelivery, startMessageDelivery } from '@/features/message/message-delivery';
 import { markRuntimeControlUncertain, resetRuntimeControls, startRuntimeControl } from '@/features/runtime/runtime-control';
 import { Composer } from './Composer';
 import { SessionModelMenu } from '@/widgets/shell/SessionConfigDialog';
-import { requestComposerQuote, resetComposerQuoteRequest } from '../../panel/lib/composer-quote';
+import { requestComposerQuote, resetComposerQuoteRequest } from '@/features/composer/composer-quote';
 import { resetWorkspaceUploadAssembly } from '@/store';
 
 const draftOwner = (sessionId = 'session-1') => ({ principalId: 'test-full', projectId: 'project-1', sessionId });

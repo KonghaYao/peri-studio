@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogTitle } from '@/shared/ui';
-import { runConfirmedMutation } from '../../panel/lib/form-mutation';
-import { sessionDisplayTitle } from '../../panel/lib/recovery-state.ts';
+import { runConfirmedMutation } from '@/features/session/form-mutation';
+import { sessionDisplayTitle } from '@/features/session/recovery-state';
 import { ArchivedBrowserDialog } from './ArchivedBrowserDialog';
 import { ConfirmDialog } from '@/widgets/shell/shared/ConfirmDialog';
 import type { ProjectSidebarModel } from './project-sidebar-model';

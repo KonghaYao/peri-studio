@@ -5,8 +5,8 @@
 // context 提供（P4）。
 
 import { Show, type JSX } from 'solid-js';
-import { AuthActionsContext, useAuth } from '../../panel/lib/auth-hook';
-import { resetAuthenticatedSession } from '../../panel/store';
+import { AuthActionsContext, useAuth } from '@/features/auth/auth-hook';
+import { resetAuthenticatedSession } from '@/store';
 import { Button, CopyButton, InlineNotice, LoadingState, TextField } from '@/shared/ui';
 
 export function AuthGate(props: { children: JSX.Element }) {

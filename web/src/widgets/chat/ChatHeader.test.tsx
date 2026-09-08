@@ -10,11 +10,11 @@ import {
   setRuntimeDocsState,
   setSelectedCid,
   setSelectedSessionId,
-} from '../../panel/store';
+} from '@/store';
 import { setConnState } from '@/features/connection/connection';
 import { ChatHeader } from './ChatHeader';
 import { resetRuntimeControls } from '@/features/runtime/runtime-control';
-import { setPrincipalRole } from '../../panel/lib/auth-state';
+import { setPrincipalRole } from '@/features/auth/auth-state';
 
 const session = {
   id: 'acp-1',

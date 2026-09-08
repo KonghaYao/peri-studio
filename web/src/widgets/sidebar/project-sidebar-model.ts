@@ -24,11 +24,11 @@ import {
   restoreProjectSession,
   selectedSessionId,
 } from '@/store';
-import { principalId, readOnly } from '../../panel/lib/auth-state';
-import { runConfirmedMutation } from '../../panel/lib/form-mutation';
+import { principalId, readOnly } from '@/features/auth/auth-state';
+import { runConfirmedMutation } from '@/features/session/form-mutation';
 import { pickProjectDirectory } from '@/shared/lib/pick-directory';
-import { projectNameFromPath } from '../../panel/lib/project-path';
-import { reconcileInstanceGroups, type InstanceGroup } from '../../panel/lib/instance-groups';
+import { projectNameFromPath } from '@/shared/lib/project-path';
+import { reconcileInstanceGroups, type InstanceGroup } from '@/features/session/instance-groups';
 import { selectActiveProjects } from '@/features/catalog/project-catalog';
 import { listArchivedEntries } from '@/features/catalog/archived-search';
 import type { ProjectSessionInfo } from '@/entities/registry/registry-view';

@@ -11,7 +11,7 @@ import {
   resetPromptRecoveryState,
   setPromptRecovery,
 } from './prompt-recovery-assembly';
-import type { ActionFrame, ActionOptions } from './action-contract';
+import type { ActionFrame, ActionOptions } from '@/shared/protocol/action-contract';
 
 function installTestDeps(overrides: Partial<Parameters<typeof installPromptRecovery>[0]> = {}) {
   let lastFrame: ActionFrame | null = null;

@@ -4,7 +4,7 @@ import {
   openResourceView,
   releaseResourceView,
   type ResourceResultFrame,
-} from '../../panel/lib/resource-protocol';
+} from '@/features/resource/resource-protocol';
 
 /** Server accepts instance-scoped `resource/open-view` for remote directory browse. */
 export function supportsInstanceScopedBrowse(): boolean {

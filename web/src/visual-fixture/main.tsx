@@ -4,7 +4,7 @@ import '../styles.css';
 import './fixture.css';
 import { AppShell } from '@/widgets/shell/AppShell';
 import { Toasts } from '@/widgets/shell/Toasts';
-import { installResourceStore } from '../panel/lib/resource-store';
+import { installResourceStore } from '@/features/resource/resource-store';
 import { appendVisualResourceEntries, DEFAULT_VISUAL_SCENARIO, installVisualScenario, removeVisualResourceEntry, setVisualDiffPreview, setVisualElicitationUnknown, setVisualFilePreview, setVisualToolAcceptancePhase, setVisualTranscriptCount, visualResourceEntryExists, visualScenarios } from './scenarios';
 import { VisualScenarioSidebar } from './VisualScenarioSidebar';
 

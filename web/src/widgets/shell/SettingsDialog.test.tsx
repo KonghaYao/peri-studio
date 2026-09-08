@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { setChatCatalog, setGlobalStatus, setInstances, setMachines, setSchemaVersion } from '../../panel/store';
+import { setChatCatalog, setGlobalStatus, setInstances, setMachines, setSchemaVersion } from '@/store';
 import { setConnState } from '@/features/connection/connection';
 import { SettingsDialog } from './SettingsDialog';
 

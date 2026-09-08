@@ -12,12 +12,12 @@
 
 import type { Setter } from 'solid-js';
 import * as H from '@/shared/protocol/client';
-import { isTerminal } from './action-state';
+import { isTerminal } from '@/features/runtime/action-state';
 import { connectionReady, promptDeliveryReady, promptMaxBytes } from '@/features/connection/connection';
 import { promptFitsBudget } from '@/shared/lib/prompt-budget';
-import { readOnly } from './auth-state';
+import { readOnly } from '@/features/auth/auth-state';
 import type { ControlView } from '@/entities/chat/control-view';
-import type { ActionFrame, ActionOptions } from './action-contract';
+import type { ActionFrame, ActionOptions } from '@/shared/protocol/action-contract';
 import {
   acceptMessageDelivery,
   blockUnknownMessageDelivery,
@@ -28,7 +28,7 @@ import {
   retryMessageDelivery,
   startMessageDelivery,
 } from '@/features/message/message-delivery';
-import { tearDownMcpAppsForChat } from './mcp-apps';
+import { tearDownMcpAppsForChat } from '@/features/mcp/mcp-apps';
 import {
   acceptRuntimeControl,
   confirmRuntimeControl,

@@ -1,9 +1,9 @@
 import { createSignal } from 'solid-js';
-import { DocStore } from './doc-store';
+import { DocStore } from '@/shared/yjs/doc-store';
 import { openResourceFile, openResourceGitDiff, openResourceView, releaseResourceView, type GitActionKind, type GitGraphActionPayload, type GitGroupId, type ResourceResultFrame } from './resource-protocol';
 import { GitMutationController } from './resource-mutations';
 import { downloadResourceUrl, loadFilePreview, loadGitDiff, type ResourceDiffPreviewState, type ResourceFilePreviewState } from './resource-preview';
-import { renderResourceView, type ResourceEntry, type ResourceView } from './resource-view';
+import { renderResourceView, type ResourceEntry, type ResourceView } from '@/entities/resource/resource-view';
 import { initialResourceWorkspace as initial, reduceResourceView, type ResourceWorkspaceState } from './resource-state';
 export type { DirectoryState, RepositoryState, ResourceWorkspaceState } from './resource-state';
 

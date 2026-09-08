@@ -129,6 +129,23 @@ describe('StatusArea', () => {
     expect(screen.getByRole('tabpanel')).toHaveTextContent('Running');
   });
 
+  it('collapses and expands the status panel from the header control', async () => {
+    render(() => <StatusArea
+      active
+      plan={[]}
+      activities={[
+        { id: 'task-1', kind: 'subagent', status: 'running', label: 'Reviewing UI', isBackground: true, metrics: { tool_count: 3 }, attributes: {}, createdAt: null, updatedAt: null },
+      ]}
+      entries={changedEntries}
+    />);
+
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('Reviewing UI');
+    await fireEvent.click(screen.getByRole('button', { name: 'Collapse status panel' }));
+    expect(screen.queryByRole('tabpanel')).not.toBeInTheDocument();
+    await fireEvent.click(screen.getByRole('button', { name: 'Expand status panel' }));
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('Reviewing UI');
+  });
+
   it('hides the async tab when the turn is inactive and only terminal tasks remain', () => {
     render(() => <StatusArea
       active={false}

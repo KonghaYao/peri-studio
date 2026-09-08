@@ -6,7 +6,7 @@ import {
   setGlobalStatus,
   setInstances,
   setSchemaVersion,
-} from '../../panel/store';
+} from '@/store';
 import { TopologyView } from './TopologyView';
 
 function resetStore() {

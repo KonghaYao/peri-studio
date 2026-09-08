@@ -13,7 +13,7 @@ vi.mock('./shared/ProjectDrawer', () => ({
 }));
 
 import { AppShell } from './AppShell';
-import { resetResourceProject, setResourceFilePreview } from '../../panel/lib/resource-store';
+import { resetResourceProject, setResourceFilePreview } from '@/features/resource/resource-store';
 
 function shell() {
   return screen.getByTestId('app-shell');

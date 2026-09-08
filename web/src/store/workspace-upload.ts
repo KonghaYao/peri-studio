@@ -1,8 +1,8 @@
 import { createEffect, createRoot, createSignal } from 'solid-js';
 import { connectionReady, sendFrame } from '@/features/connection/connection';
-import { canMutate, type PrincipalRole } from '../panel/lib/auth-role';
-import { principalRole } from '../panel/lib/auth-state';
-import { activateResourceProject, openFilePreview, resourceWorkspace, resourceWorkspaceGeneration } from '../panel/lib/resource-store';
+import { canMutate, type PrincipalRole } from '@/features/auth/auth-role';
+import { principalRole } from '@/features/auth/auth-state';
+import { activateResourceProject, openFilePreview, resourceWorkspace, resourceWorkspaceGeneration } from '@/features/resource/resource-store';
 import { putResourceUploadBytes } from '@/features/resource/upload-http-put';
 import {
   forwardWorkspaceUploadActionAck,
@@ -14,7 +14,7 @@ import {
   type WorkspaceUploadItemView,
 } from '@/features/resource/upload-workspace-file';
 import { composerWorkspaceUploadPath, pickLocalUploadFiles } from '@/features/resource/upload-path';
-import type { ActionFrame } from '../panel/lib/action-contract';
+import type { ActionFrame } from '@/shared/protocol/action-contract';
 
 export type WorkspaceUploadOrigin = 'composer' | 'explorer' | 'quickstart';
 

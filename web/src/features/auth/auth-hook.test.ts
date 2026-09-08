@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authInvalidation, clearAuthInvalidation, installPrincipalRole, principalRole } from './auth-state';
+import { authInvalidation, clearAuthInvalidation, installPrincipalRole, principalRole } from '@/features/auth/auth-state';
 import { createAuthController, type AuthControllerDeps } from './auth-hook';
 
 const transport = vi.hoisted(() => ({

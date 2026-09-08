@@ -10,14 +10,14 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 test('authentication invalidation survives UI cleanup and reaches the login surface', () => {
-  const root = join(import.meta.dirname, '..', 'src', 'panel');
+  const authRoot = join(import.meta.dirname, '..', 'src', 'features', 'auth');
   const storeRoot = join(import.meta.dirname, '..', 'src', 'store');
   const store = readFileSync(join(storeRoot, 'index.ts'), 'utf8');
-  // P4：鉴权行为（requestEpoch 竞态 / invalidation 恢复）在 lib/auth-hook，
+  // P4：鉴权行为（requestEpoch 竞态 / invalidation 恢复）在 features/auth/auth-hook，
   // AuthGate 只保留渲染绑定（auth.problem() → auth-problem 区域）。
-  const hook = readFileSync(join(root, 'lib', 'auth-hook.ts'), 'utf8');
+  const hook = readFileSync(join(authRoot, 'auth-hook.ts'), 'utf8');
   const gate = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'auth', 'AuthGate.tsx'), 'utf8');
-  const authState = readFileSync(join(root, 'lib', 'auth-state.ts'), 'utf8');
+  const authState = readFileSync(join(authRoot, 'auth-state.ts'), 'utf8');
   const invalidator = store.slice(store.indexOf('function invalidateAuthentication('), store.indexOf('export function cancelTurn'));
   assert.ok(invalidator.indexOf('resetAuthenticatedSession()') < invalidator.indexOf('publishAuthInvalidation(reason)'));
   assert.match(authState, /setInvalidation\(\{ id: \+\+invalidationSequence, reason \}\)/);
@@ -43,24 +43,25 @@ test('authentication invalidation survives UI cleanup and reaches the login surf
   ];
   for (const [file, directory] of migratedComponents) {
     const feature = readFileSync(join(directory, file), 'utf8');
-    assert.match(feature, /from '\.\.\/\.\.\/panel\/lib\/auth-state'/, file);
+    assert.match(feature, /from '@\/features\/auth\/auth-state'/, file);
     assert.doesNotMatch(feature, /import \{[^}]*\breadOnly\b[^}]*\} from '\.\.\/store'/, file);
   }
   for (const [file, directory] of panelComponents) {
     const feature = readFileSync(join(directory, file), 'utf8');
-    assert.match(feature, /from '\.\.\/\.\.\/panel\/lib\/auth-state'/, file);
+    assert.match(feature, /from '@\/features\/auth\/auth-state'/, file);
     assert.doesNotMatch(feature, /import \{[^}]*\breadOnly\b[^}]*\} from '\.\.\/store'/, file);
   }
 });
 
 test('authenticated-session cleanup is a complete identity boundary, not reconnect cleanup', () => {
-  const root = join(import.meta.dirname, '..', 'src', 'panel');
+  const authRoot = join(import.meta.dirname, '..', 'src', 'features', 'auth');
+  const panelRoot = join(import.meta.dirname, '..', 'src', 'panel');
   const storeRoot = join(import.meta.dirname, '..', 'src', 'store');
   const store = readFileSync(join(storeRoot, 'index.ts'), 'utf8');
   const resetModule = readFileSync(join(storeRoot, 'reset-session.ts'), 'utf8');
   const connectionModule = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'connection', 'connection.ts'), 'utf8');
-  const hook = readFileSync(join(root, 'lib', 'auth-hook.ts'), 'utf8');
-  const toastStore = readFileSync(join(root, 'lib', 'toast-store.ts'), 'utf8');
+  const hook = readFileSync(join(authRoot, 'auth-hook.ts'), 'utf8');
+  const toastStore = readFileSync(join(storeRoot, 'toast-store.ts'), 'utf8');
   const resetFactory = resetModule.slice(resetModule.indexOf('export function createResetAuthenticatedSession'), resetModule.lastIndexOf('}'));
   const disconnect = connectionModule.slice(connectionModule.indexOf('export function disconnect('), connectionModule.indexOf('export function resetConnectionState'));
 

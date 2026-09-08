@@ -1,7 +1,7 @@
 // prompt_status / rewind_* 下行帧（store 组合根委托）。
 import type * as H from '@/shared/protocol/client';
-import { handlePromptStatus } from '../../panel/lib/prompt-recovery-assembly';
-import { handleRewindCandidates, handleRewindPreview } from '../../panel/lib/rewind-assembly';
+import { handlePromptStatus } from '@/features/runtime/prompt-recovery-assembly';
+import { handleRewindCandidates, handleRewindPreview } from '@/features/runtime/rewind-assembly';
 
 export function createSessionDownstream() {
   function handleDownstream(frame: H.DownstreamFrame): void {

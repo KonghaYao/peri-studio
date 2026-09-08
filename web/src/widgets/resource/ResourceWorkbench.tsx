@@ -7,7 +7,7 @@ import {
   refreshResourceProject,
   resourceWorkspace,
   selectedSessionId,
-} from '../../panel/store';
+} from '@/store';
 import { refreshGitLog } from '@/store';
 import { ExplorerPanel } from './ExplorerPanel';
 import { SourceControlPanel } from './SourceControlPanel';

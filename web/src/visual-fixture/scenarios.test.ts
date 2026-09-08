@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { chatEntries, chatHead, elicitations, permissions, projects, projectSessions, registryHydrated, selectedCid, selectedSessionId } from '../panel/store';
-import { principalRole } from '../panel/lib/auth-state';
-import { composerAssets } from '../panel/lib/composer-assets';
-import * as store from '../panel/store';
-import { resourceWorkspace } from '../panel/lib/resource-store';
+import { chatEntries, chatHead, elicitations, permissions, projects, projectSessions, registryHydrated, selectedCid, selectedSessionId } from '@/store';
+import { principalRole } from '@/features/auth/auth-state';
+import { composerAssets } from '@/features/composer/composer-assets';
+import * as store from '@/store';
+import { resourceWorkspace } from '@/features/resource/resource-store';
 import { DEFAULT_VISUAL_SCENARIO, installVisualScenario, removeVisualResourceEntry, resolveVisualScenario, VISUAL_NOW, visualScenarios } from './scenarios';
 
 let dispose: (() => void) | null = null;

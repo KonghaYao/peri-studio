@@ -1,5 +1,5 @@
 import { For, Show } from 'solid-js';
-import { dismissPersistentError, persistentErrors, retryPersistentAction } from '../../panel/store';
+import { dismissPersistentError, persistentErrors, retryPersistentAction } from '@/store';
 import { Button, CopyButton, InlineNotice } from '@/shared/ui';
 
 export function ErrorCenter() {

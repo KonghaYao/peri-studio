@@ -3,7 +3,7 @@ import {
   openWorkspaceFromTool as openWorkspaceFromToolCore,
   type ResourceWorkbenchRequest,
 } from '@/features/resource/open-workspace-from-tool';
-import { openFilePreview } from '../panel/lib/resource-store';
+import { openFilePreview } from '@/features/resource/resource-store';
 
 export type { ResourceWorkbenchRequest };
 

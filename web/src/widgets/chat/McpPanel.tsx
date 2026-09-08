@@ -1,6 +1,6 @@
 import { createEffect, For, onCleanup, Show } from 'solid-js';
 import { Badge, Button, EmptyState, IconButton, InlineNotice, LoadingState } from '@/shared/ui';
-import { readOnly } from '../../panel/lib/auth-state';
+import { readOnly } from '@/features/auth/auth-state';
 import {
   cancelMcpOAuth,
   clearMcpAuthorization,
@@ -11,7 +11,7 @@ import {
   refreshMcpServers,
   requestMcpAuthorization,
   startMcpOAuth,
-} from '../../panel/lib/mcp';
+} from '@/features/mcp/mcp';
 import { RefreshCw } from 'lucide-solid';
 import { ResourceSectionTitle } from '@/widgets/resource/ResourceSectionTitle';
 

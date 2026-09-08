@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { setPrincipalRole } from '../../panel/lib/auth-state';
+import { setPrincipalRole } from '@/features/auth/auth-state';
 import {
   handleMcpAppResource,
   handleMcpAppSession,
@@ -8,12 +8,12 @@ import {
   openMcpApp,
   resetMcpAppsState,
   setMcpAppHeight,
-} from '../../panel/lib/mcp-apps';
+} from '@/features/mcp/mcp-apps';
 
 const { bindMcpAppHost } = vi.hoisted(() => ({
   bindMcpAppHost: vi.fn(async () => ({ close: vi.fn(async () => undefined) })),
 }));
-vi.mock('../../panel/lib/mcp-app-host', () => ({ bindMcpAppHost }));
+vi.mock('@/features/mcp/mcp-app-host', () => ({ bindMcpAppHost }));
 
 import { McpAppFrame } from './McpAppFrame';
 

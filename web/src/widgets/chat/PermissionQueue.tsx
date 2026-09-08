@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import type { PendingPermission } from '@/entities/chat/control-view';
-import { createIdentitySelection } from '../../panel/lib/identity-selection';
+import { createIdentitySelection } from '@/features/message/identity-selection';
 import type { PermissionDecisionState } from '@/features/message/permission-delivery';
 import { PermissionRequestCard } from './PermissionRequestCard';
 

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { setRewindFlow } from '../../panel/lib/rewind-assembly';
+import { setRewindFlow } from '@/features/runtime/rewind-assembly';
 import { RewindDialog } from './RewindDialog';
 
 afterEach(() => setRewindFlow({ kind: 'closed' }));

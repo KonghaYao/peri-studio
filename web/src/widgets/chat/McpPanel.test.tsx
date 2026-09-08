@@ -1,13 +1,13 @@
 import { render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
-import { setPrincipalRole } from '../../panel/lib/auth-state';
+import { setPrincipalRole } from '@/features/auth/auth-state';
 import {
   setMcpAuthorization,
   setMcpLoading,
   setMcpOAuthEvents,
   setMcpServers,
-} from '../../panel/lib/mcp';
-import { setSelectedCid } from '../../panel/store';
+} from '@/features/mcp/mcp';
+import { setSelectedCid } from '@/store';
 import { McpPanelContent } from './McpPanel';
 
 afterEach(() => {

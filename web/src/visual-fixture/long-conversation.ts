@@ -6,7 +6,7 @@ function tool(turn: number, step: number, overrides: Partial<ToolCallInfo>): Too
     name: 'Read source',
     kind: 'read',
     status: 'completed',
-    arguments: { path: 'web/src/panel/store.ts' },
+    arguments: { path: 'web/src/store/index.ts' },
     result: { lines: 312 },
     resultOmitted: false,
     resultBytes: 64,
@@ -52,9 +52,9 @@ export function createLongConversationEntries(base: [ChatEntry, ChatEntry]): Cha
       text: assistant ? assistantText(turn) : `Continue with checkpoint ${turn}. Preserve the public error contract and show each verification step.`,
       reasoning: assistant ? [{ text: 'Compare the new observation with the previous checkpoint before moving forward.', visibility: 'user' }] : [],
       toolCalls: assistant ? [
-        tool(turn, 1, { name: 'Read recovery projection', arguments: { path: 'web/src/panel/lib/chat-projection.ts' } }),
+        tool(turn, 1, { name: 'Read recovery projection', arguments: { path: 'web/src/entities/chat/chat-projection.ts' } }),
         tool(turn, 2, { name: 'Search runtime binding', kind: 'search', arguments: { query: 'activeChatId', path: 'server/src' }, result: { matches: 4 } }),
-        tool(turn, 3, { name: 'Update boundary', kind: 'edit', arguments: { path: 'web/src/panel/store.ts' }, result: { changed: true } }),
+        tool(turn, 3, { name: 'Update boundary', kind: 'edit', arguments: { path: 'web/src/store/index.ts' }, result: { changed: true } }),
         tool(turn, 4, turn === 18
           ? { name: 'Run focused checks', kind: 'execute', status: 'running', arguments: { command: 'bun run test' }, result: null, resultOmitted: null, resultBytes: null, completedAt: null }
           : { name: 'Run focused checks', kind: 'execute', arguments: { command: 'bun run test' }, result: { passed: 23 } }),

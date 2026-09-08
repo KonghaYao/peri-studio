@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import { Button, CopyButton, Dialog, DialogContent } from '@/shared/ui';
-import { readOnly } from '../../panel/lib/auth-state';
+import { readOnly } from '@/features/auth/auth-state';
 import { FormDialogShell } from '@/widgets/shell/shared/FormDialogShell';
 
 interface TrustHostDialogProps {

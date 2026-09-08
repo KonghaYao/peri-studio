@@ -5,20 +5,20 @@
 
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { clearAuthInvalidation, installPrincipalRole, publishAuthInvalidation } from '../../panel/lib/auth-state';
+import { clearAuthInvalidation, installPrincipalRole, publishAuthInvalidation } from '@/features/auth/auth-state';
 
 const transport = vi.hoisted(() => ({
   resetAuthenticatedSession: vi.fn(),
   connectWithCookie: vi.fn(),
 }));
 
-vi.mock('../../panel/store', () => ({
+vi.mock('@/store', () => ({
   resetAuthenticatedSession: transport.resetAuthenticatedSession,
 }));
 vi.mock('@/features/connection/connection', () => ({ connectWithCookie: transport.connectWithCookie }));
 
 import { AuthGate } from './AuthGate';
-import { useAuthActions } from '../../panel/lib/auth-hook';
+import { useAuthActions } from '@/features/auth/auth-hook';
 
 afterEach(() => {
   vi.unstubAllGlobals();

@@ -50,7 +50,7 @@ test('resource workbench keeps Explorer and Source Control directly reachable', 
   await expect(page.getByText('STAGED CHANGES')).toBeVisible();
   await expect(page.getByText('UNTRACKED CHANGES')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Unstage server/src/control/resource_service.rs' })).toBeAttached();
-  await expect(page.getByRole('button', { name: 'Stage web/src/panel/lib/resource-view.ts' })).toBeAttached();
+  await expect(page.getByRole('button', { name: 'Stage web/src/entities/resource/resource-view.ts' })).toBeAttached();
   await injectFixtureDiff(page);
   await expect(page.getByRole('region', { name: 'Git diff: web/src/widgets/resource/ResourceWorkbench.tsx, Index ↔ Working Tree' })).toBeVisible();
   await expect(page.getByRole('table', { name: 'Changes in web/src/widgets/resource/ResourceWorkbench.tsx' })).toBeVisible();

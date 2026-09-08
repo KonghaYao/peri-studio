@@ -352,7 +352,7 @@ test('responsive behavior has compact, medium and wide layout contracts', () => 
   const messageList = readWidgetTsx('MessageList.tsx');
   const composer = readFileSync(join(root, 'widgets', 'composer', 'Composer.tsx'), 'utf8');
   const theme = readFileSync(join(root, 'styles', 'theme.css'), 'utf8');
-  const breakpoints = readFileSync(join(root, 'panel', 'lib', 'breakpoints.ts'), 'utf8');
+  const breakpoints = readFileSync(join(root, 'shared', 'lib', 'breakpoints.ts'), 'utf8');
   assert.match(shell, /compactViewportQuery/);
   assert.doesNotMatch(shell, /max-width:\s*\d+px/);
   assert.match(breakpoints, /COMPACT_VIEWPORT_MAX\s*=\s*959/);

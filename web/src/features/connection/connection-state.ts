@@ -1,4 +1,4 @@
-import { connectionProblemForClose, type ConnectionProblem } from './recovery-state.ts';
+import { connectionProblemForClose, type ConnectionProblem } from '@/features/session/recovery-state';
 
 export interface ConnectionPresentation {
   ready: boolean;

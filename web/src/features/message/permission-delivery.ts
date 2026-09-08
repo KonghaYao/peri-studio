@@ -1,5 +1,5 @@
 import { createSignal } from 'solid-js';
-import { createKeyedDelivery, type DeliveryPhase } from '../../panel/lib/delivery-state';
+import { createKeyedDelivery, type DeliveryPhase } from './delivery-state';
 
 export type PermissionDecision = 'allow' | 'deny';
 export type PermissionDecisionPhase = Extract<DeliveryPhase, 'pending' | 'uncertain'>;

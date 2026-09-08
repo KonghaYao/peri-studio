@@ -14,6 +14,7 @@ export { TextField } from './Field';
 export { Popover, PopoverContent, PopoverTrigger } from './Popover';
 export { RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel } from './RadioGroup';
 export { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuGroupLabel, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from './dropdown-menu';
+export { Skeleton } from './Skeleton';
 export { Spinner } from './Spinner';
 export { Status, type StatusTone } from './Status';
 export { Terminal, type TerminalProps, type TerminalViewport } from './Terminal';
