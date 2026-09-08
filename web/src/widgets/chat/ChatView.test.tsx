@@ -1,6 +1,6 @@
 import { render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { PendingElicitation, PendingPermission } from '@/entities/chat/control-view';
+import type { PendingElicitation, PendingPermission, PendingQuestion } from '@/entities/chat/control-view';
 import type { ProjectInfo } from '@/entities/registry/registry-view';
 
 const state = vi.hoisted(() => ({
@@ -11,6 +11,8 @@ const state = vi.hoisted(() => ({
   creatingSessionProjectId: vi.fn(() => null),
   elicitationResponses: vi.fn(() => ({})),
   elicitations: vi.fn<() => PendingElicitation[]>(() => []),
+  questions: vi.fn<() => PendingQuestion[]>(() => []),
+  questionResponses: vi.fn(() => ({})),
   permissions: vi.fn<() => PendingPermission[]>(() => []),
   projects: vi.fn<() => ProjectInfo[]>(() => []),
   readOnly: vi.fn(() => false),
@@ -18,6 +20,7 @@ const state = vi.hoisted(() => ({
   resolvePermission: vi.fn(),
   registryHydrated: vi.fn(() => true),
   respondElicitation: vi.fn(),
+  respondQuestion: vi.fn(),
   retryPersistentAction: vi.fn(),
   restoringSessionId: vi.fn(() => null as string | null),
   runtimeDocsHydrated: vi.fn(() => true),
@@ -32,6 +35,7 @@ vi.mock('./ChatHeader', () => ({ ChatHeader: () => null }));
 vi.mock('@/widgets/composer/Composer', () => ({ Composer: () => null }));
 vi.mock('@/widgets/shell/ConnectionProblem', () => ({ ConnectionProblem: () => null }));
 vi.mock('./ElicitationQueue', () => ({ ElicitationQueue: () => <section aria-label="Agent question" /> }));
+vi.mock('./QuestionQueue', () => ({ QuestionQueue: () => <section aria-label="Ask user question" /> }));
 vi.mock('./PermissionQueue', () => ({ PermissionQueue: () => <section aria-label="Permissions" /> }));
 vi.mock('@/widgets/shell/ErrorCenter', () => ({ ErrorCenter: () => null }));
 vi.mock('./MessageList', () => ({ MessageList: () => null }));
@@ -111,7 +115,7 @@ describe('ChatView feedback', () => {
     expect(status.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
   });
 
-  it('shows only the blocking permission surface when permission and elicitation coexist', () => {
+  it('shows permission, elicitation, and question surfaces in parallel when all are pending', () => {
     state.elicitations.mockReturnValue([{
       elicitationId: 'ask-1', message: 'Choose an approach', status: 'pending', responseAction: null,
       createdAt: null, fields: [],
@@ -120,9 +124,22 @@ describe('ChatView feedback', () => {
       queueKey: 'permission-1', permissionId: 'permission-1', turnId: 'turn-1', toolCallId: 'tool-1', title: 'Edit file',
       description: null, options: ['allowOnce', 'deny'], status: 'pending', decision: null,
     }]);
+    state.questions.mockReturnValue([{
+      questionId: 'q-1',
+      status: 'pending',
+      description: null,
+      expiresAt: null,
+      questions: [{
+        question: 'Pick one',
+        header: null,
+        multiSelect: false,
+        options: [{ label: 'A', description: null }],
+      }],
+    }]);
     render(() => <ChatView />);
 
-    expect(screen.queryByRole('region', { name: 'Agent question' })).not.toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Permissions' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Agent question' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Ask user question' })).toBeInTheDocument();
   });
 });

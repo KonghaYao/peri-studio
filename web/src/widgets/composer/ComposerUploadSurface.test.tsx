@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { createSignal } from 'solid-js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { WorkspaceUploadBatchView } from '@/features/resource/upload-workspace-file';
-import { setPromptMaxBytes } from '../../panel/lib/connection';
+import { setPromptMaxBytes } from '@/features/connection/connection';
 
 const mocks = vi.hoisted(() => ({
   retry: vi.fn(),

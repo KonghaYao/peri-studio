@@ -2,9 +2,9 @@ import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { createSignal } from 'solid-js';
 import { afterEach, describe, expect, it } from 'vitest';
 import { installPrincipalRole } from '../../panel/lib/auth-state';
-import { failQuickStart, markQuickStartUncertain, resetQuickStart, startQuickStart } from '../../panel/lib/quick-start-delivery';
+import { failQuickStart, markQuickStartUncertain, resetQuickStart, startQuickStart } from '@/features/message/quick-start-delivery';
 import { QuickStartComposer } from './QuickStartComposer';
-import { setPromptMaxBytes } from '../../panel/lib/connection';
+import { setPromptMaxBytes } from '@/features/connection/connection';
 
 afterEach(() => {
   installPrincipalRole(null);

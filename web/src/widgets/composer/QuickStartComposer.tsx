@@ -2,9 +2,9 @@ import { createEffect, createSignal, createUniqueId, Show } from 'solid-js';
 import { Button, IconButton, InlineNotice, Textarea } from '@/shared/ui';
 import { createSessionWithFirstMessage, creatingSessionProjectId, retryQuickStart, clearSubmittedWorkspaceUploads } from '../../panel/store';
 import { readOnly } from '../../panel/lib/auth-state';
-import { dismissFailedQuickStart, quickStartSubmission } from '../../panel/lib/quick-start-delivery';
-import { promptMaxBytes } from '../../panel/lib/connection';
-import { promptByteLength, promptFitsBudget } from '../../panel/lib/prompt-budget';
+import { dismissFailedQuickStart, quickStartSubmission } from '@/features/message/quick-start-delivery';
+import { promptMaxBytes } from '@/features/connection/connection';
+import { promptByteLength, promptFitsBudget } from '@/shared/lib/prompt-budget';
 import { Plus, SendHorizontal, ShieldCheck } from 'lucide-solid';
 import { ComposerUploadSurface, openComposerUploadFilePicker } from './ComposerUploadSurface';
 

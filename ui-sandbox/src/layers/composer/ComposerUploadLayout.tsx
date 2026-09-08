@@ -171,8 +171,8 @@ export function ComposerUploadLayout() {
             <IconButton
               label="Send"
               tooltip="Send"
+              variant="primary"
               disabled={disabled()}
-              class="bg-accent-solid text-content-on-accent hover:bg-accent-hover hover:text-content-on-accent"
             >
               <Send size={16} />
             </IconButton>

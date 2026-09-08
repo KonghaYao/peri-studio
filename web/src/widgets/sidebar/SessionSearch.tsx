@@ -1,4 +1,4 @@
-import { primaryShortcut } from '../../panel/lib/keyboard';
+import { primaryShortcut } from '@/shared/lib/keyboard';
 import { createEffect, createSignal, Show } from 'solid-js';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, InlineNotice, Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel, Spinner, TextField } from '@/shared/ui';
 import { navigateProjectSession, openingSessionId, projectSessions, projects, selectedSessionId } from '../../panel/store';
@@ -50,7 +50,7 @@ export function SessionSearch(props: { open: boolean; onClose: () => void; onSel
             value={selectedSessionId() ? [selectedSessionId()!] : []}
             onChange={select}
             shouldFocusWrap
-            renderItem={(item) => <ListboxItem item={item} class="flex w-full min-h-32 cursor-pointer items-center justify-between gap-10 rounded-md border-0 bg-transparent px-10 py-6 text-left text-content-primary hover:bg-interaction-hover focus-visible:bg-interaction-hover data-[disabled]:cursor-not-allowed data-[disabled]:opacity-52 pointer-coarse:min-h-44">
+            renderItem={(item) => <ListboxItem item={item} recipe="search">
               <span class="grid min-w-0 gap-1"><ListboxItemLabel as="strong" class="overflow-hidden text-ellipsis whitespace-nowrap text-13 font-normal">{sessionDisplayTitle(item.rawValue.title, item.rawValue.id)}</ListboxItemLabel><ListboxItemDescription as="small" class="overflow-hidden text-ellipsis whitespace-nowrap text-11 text-content-muted">{item.rawValue.project?.name || 'Unknown project'} · {formatRelativeTime(item.rawValue.lastOpenedAt || item.rawValue.updatedAt)}</ListboxItemDescription></span>
               <Show when={openingSessionId() === item.rawValue.id} fallback={<code class="flex-none text-11 text-content-muted">…{shortSessionId(item.rawValue.id)}</code>}><Spinner label="Opening" /></Show>
             </ListboxItem>}

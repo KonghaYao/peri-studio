@@ -5,7 +5,7 @@ import { chatHead, chatStatusSignal, closeChat, navigateProjectSession, openingS
 import { isTerminal } from '../../panel/lib/action-state';
 import { readOnly } from '../../panel/lib/auth-state';
 import { canRewindCurrentChat, openRewindFlow } from '../../panel/lib/rewind-assembly';
-import { runtimeControlFor } from '../../panel/lib/runtime-control';
+import { runtimeControlFor } from '@/features/runtime/runtime-control';
 import { ConfirmDialog } from './shared/ConfirmDialog';
 import { ResourceRailButton } from '@/widgets/resource/ResourceRailButton';
 import { RewindDialog } from '@/widgets/chat/RewindDialog';

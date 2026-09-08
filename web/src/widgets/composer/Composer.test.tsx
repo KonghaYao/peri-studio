@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { setPromptDeliveryReady, setPromptMaxBytes } from '../../panel/lib/connection';
+import { setPromptDeliveryReady, setPromptMaxBytes } from '@/features/connection/connection';
 import {
   setChatHead,
   setChatStatusSignal,
@@ -12,13 +12,23 @@ import {
 } from '../../panel/store';
 import { setPrincipalRole } from '../../panel/lib/auth-state';
 import { composerDraft, setComposerDraft } from '@/features/composer/composer-draft';
-import { acknowledgeUnknownMessageDelivery, blockUnknownMessageDelivery, failMessageDelivery, markMessageDeliveryUncertain, messageSubmission, reconcileMessageProjection, resetMessageDelivery, startMessageDelivery } from '../../panel/lib/message-delivery';
-import { markRuntimeControlUncertain, resetRuntimeControls, startRuntimeControl } from '../../panel/lib/runtime-control';
+import { acknowledgeUnknownMessageDelivery, blockUnknownMessageDelivery, failMessageDelivery, markMessageDeliveryUncertain, messageSubmission, reconcileMessageProjection, resetMessageDelivery, startMessageDelivery } from '@/features/message/message-delivery';
+import { markRuntimeControlUncertain, resetRuntimeControls, startRuntimeControl } from '@/features/runtime/runtime-control';
 import { Composer } from './Composer';
+import { SessionModelMenu } from '@/widgets/shell/SessionConfigDialog';
 import { requestComposerQuote, resetComposerQuoteRequest } from '../../panel/lib/composer-quote';
 import { resetWorkspaceUploadAssembly } from '@/store';
 
 const draftOwner = (sessionId = 'session-1') => ({ principalId: 'test-full', projectId: 'project-1', sessionId });
+
+function mountComposer(props: { layout?: 'docked' | 'centered' } = {}) {
+  return render(() => (
+    <Composer
+      layout={props.layout}
+      renderRuntimeMenu={({ id, disabled }) => <SessionModelMenu id={id} disabled={disabled} />}
+    />
+  ));
+}
 
 function resetStore() {
   resetComposerQuoteRequest();
@@ -80,7 +90,7 @@ describe('Composer', () => {
       },
       activeTurn: null, pendingPermissions: [],
     });
-    render(() => <Composer />);
+    mountComposer();
 
     expect(screen.getByTestId('composer-surface')).toHaveClass('rounded-(--composer-radius)', 'p-2.5');
     expect(screen.getByRole('textbox')).toHaveClass('min-h-36', 'leading-normal', 'text-content-primary');
@@ -92,7 +102,7 @@ describe('Composer', () => {
   it('adds a quoted answer to the current draft without replacing existing text', async () => {
     selectReadyChat();
     setComposerDraft(draftOwner(), 'My note');
-    render(() => <Composer />);
+    mountComposer();
 
     requestComposerQuote('First line\nSecond line', 'Peri');
 
@@ -102,7 +112,7 @@ describe('Composer', () => {
   it('counts UTF-8 bytes against the negotiated prompt budget', () => {
     selectReadyChat();
     setPromptMaxBytes(5);
-    render(() => <Composer />);
+    mountComposer();
     const input = screen.getByRole('textbox');
     fireEvent.input(input, { target: { value: '你好' } });
 
@@ -114,7 +124,7 @@ describe('Composer', () => {
 
   it('does not imply that an unselected disabled editor can accept text', () => {
     setPrincipalRole('full');
-    render(() => <Composer />);
+    mountComposer();
     const input = screen.getByRole('textbox');
     expect(input).toBeDisabled();
     expect(input).toHaveAttribute('placeholder', 'Select or create a session from the left first');
@@ -123,7 +133,7 @@ describe('Composer', () => {
 
   it('keeps Enter, Shift+Enter, and IME composition distinct without creating a local message', () => {
     selectReadyChat();
-    render(() => <Composer />);
+    mountComposer();
     const input = screen.getByRole('textbox');
     fireEvent.input(input, { target: { value: 'inspect the state' } });
 
@@ -145,7 +155,7 @@ describe('Composer', () => {
 
   it('does not commit an intermediate IME value into the controlled draft', () => {
     selectReadyChat();
-    render(() => <Composer />);
+    mountComposer();
     const input = screen.getByRole('textbox') as HTMLTextAreaElement;
 
     input.value = '你的 pwd 在哪里';
@@ -170,7 +180,7 @@ describe('Composer', () => {
 
   it('enables send only after meaningful input', () => {
     selectReadyChat();
-    render(() => <Composer />);
+    mountComposer();
     const input = screen.getByRole('textbox');
     const send = screen.getByRole('button', { name: 'Send' });
     expect(input).toHaveAttribute('placeholder', 'Message the agent, or type / for commands');
@@ -182,7 +192,7 @@ describe('Composer', () => {
   it('shows a negotiated Peri prediction and Tab accepts only into the draft', () => {
     selectReadyChat();
     installPrediction();
-    render(() => <Composer />);
+    mountComposer();
     const input = screen.getByRole('textbox', { name: 'Message the agent' });
     expect(screen.getByTestId('composer-prediction')).toHaveTextContent('check failure test');
     expect(input).toHaveAccessibleDescription(/Peri suggests: check failure test/);
@@ -196,7 +206,7 @@ describe('Composer', () => {
   it('lets pointer users accept a prediction without submitting it', () => {
     selectReadyChat();
     installPrediction();
-    render(() => <Composer />);
+    mountComposer();
     fireEvent.click(screen.getByRole('button', { name: /Use suggestion/ }));
     expect(screen.getByRole('textbox')).toHaveValue('check failure test');
     expect(messageSubmission()).toBeNull();
@@ -205,7 +215,7 @@ describe('Composer', () => {
   it('hides the ghost while typing and restores it when the draft is cleared', () => {
     selectReadyChat();
     installPrediction();
-    render(() => <Composer />);
+    mountComposer();
     const input = screen.getByRole('textbox');
     fireEvent.input(input, { target: { value: 'my own input' } });
     expect(screen.queryByRole('button', { name: /Use suggestion/ })).not.toBeInTheDocument();
@@ -216,7 +226,7 @@ describe('Composer', () => {
   it('Escape dismisses only the exact session prediction', async () => {
     selectReadyChat();
     installPrediction();
-    render(() => <Composer />);
+    mountComposer();
     const input = screen.getByRole('textbox');
     fireEvent.keyDown(input, { key: 'Escape' });
     expect(input).toHaveValue('');
@@ -237,13 +247,13 @@ describe('Composer', () => {
       ...current,
       agent: current.agent ? { ...current.agent, extensions: [] } : null,
     } : null);
-    const { unmount } = render(() => <Composer />);
+    const { unmount } = mountComposer();
     expect(screen.queryByRole('button', { name: /Use suggestion/ })).not.toBeInTheDocument();
     unmount();
 
     installPrediction();
     setRuntimeDocsState({ chat: true, control: false });
-    render(() => <Composer />);
+    mountComposer();
     expect(screen.queryByRole('button', { name: /Use suggestion/ })).not.toBeInTheDocument();
   });
 
@@ -259,7 +269,7 @@ describe('Composer', () => {
       },
       activeTurn: null, pendingPermissions: [],
     });
-    render(() => <Composer />);
+    mountComposer();
     const usage = screen.getByRole('button', { name: /Context usage.*Input 1,200 · Output 345 · Cached 900/ });
     expect(usage).toHaveAttribute('data-testid', 'composer-usage');
     expect(screen.queryByRole('button', { name: /Context usage/ })).toBeInTheDocument();
@@ -292,7 +302,7 @@ describe('Composer', () => {
       },
       activeTurn: null, pendingPermissions: [],
     });
-    render(() => <Composer />);
+    mountComposer();
     fireEvent.click(screen.getByRole('button', { name: 'Browse skills (2)' }));
     const input = screen.getByRole('textbox');
     fireEvent.keyDown(input, { key: 'ArrowDown' });
@@ -318,7 +328,7 @@ describe('Composer', () => {
       },
       activeTurn: null, pendingPermissions: [],
     });
-    render(() => <Composer />);
+    mountComposer();
     fireEvent.click(screen.getByRole('button', { name: 'Browse skills (2)' }));
     expect(screen.getByRole('listbox', { name: 'Available commands and skills' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /compact/ })).not.toBeInTheDocument();
@@ -342,7 +352,7 @@ describe('Composer', () => {
       },
       activeTurn: null, pendingPermissions: [],
     });
-    render(() => <Composer />);
+    mountComposer();
     expect(screen.queryByRole('button', { name: /Skills/ })).not.toBeInTheDocument();
     const input = screen.getByRole('textbox', { name: 'Message the agent' });
     fireEvent.input(input, { target: { value: '/' } });
@@ -355,7 +365,7 @@ describe('Composer', () => {
   it('does not imply readiness before both runtime documents arrive', () => {
     selectReadyChat();
     setRuntimeDocsState({ chat: true, control: false });
-    render(() => <Composer />);
+    mountComposer();
     expect(screen.getByRole('textbox')).toBeDisabled();
     expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', 'Loading session…');
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
@@ -364,7 +374,7 @@ describe('Composer', () => {
   it('replaces send with an actionable stop control while a turn is active', () => {
     selectReadyChat();
     setChatHead({ chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: 'turn-1', createdAt: null, updatedAt: null }, agent: null, activeTurn: { turnId: 'turn-1', turnStatus: 'running', updatedAt: null }, pendingPermissions: [] });
-    render(() => <Composer />);
+    mountComposer();
     expect(screen.queryByRole('button', { name: 'Send' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Stop generation' })).toBeEnabled();
     expect(screen.getByRole('textbox')).toBeEnabled();
@@ -374,7 +384,7 @@ describe('Composer', () => {
     selectReadyChat();
     setChatHead({ chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: 'turn-1', createdAt: null, updatedAt: null }, agent: null, activeTurn: { turnId: 'turn-1', turnStatus: 'running', updatedAt: null }, pendingPermissions: [] });
     startRuntimeControl('cancel-1', 'chat-1', 'cancel');
-    render(() => <Composer />);
+    mountComposer();
     expect(screen.getByRole('button', { name: 'Stopping generation' })).toBeDisabled();
   });
 
@@ -383,7 +393,7 @@ describe('Composer', () => {
     setChatHead({ chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: 'turn-1', createdAt: null, updatedAt: null }, agent: null, activeTurn: { turnId: 'turn-1', turnStatus: 'running', updatedAt: null }, pendingPermissions: [] });
     startRuntimeControl('cancel-uncertain', 'chat-1', 'cancel');
     markRuntimeControlUncertain('cancel-uncertain');
-    render(() => <Composer />);
+    mountComposer();
     const retry = screen.getByRole('button', { name: 'Confirm stop with original request' });
     expect(retry).toBeEnabled();
   });
@@ -393,7 +403,7 @@ describe('Composer', () => {
     setComposerDraft(draftOwner(), 'preserved draft');
     startMessageDelivery('cmd-1', 'preserved draft', 'session-1', 'chat-1', draftOwner());
     markMessageDeliveryUncertain('cmd-1');
-    render(() => <Composer />);
+    mountComposer();
     await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('preserved draft'));
     expect(screen.getByRole('textbox')).toBeDisabled();
     expect(screen.getByText('Message result not confirmed')).toBeInTheDocument();
@@ -404,7 +414,7 @@ describe('Composer', () => {
   it('marks an in-flight submission as busy without rendering redundant confirmation copy', () => {
     selectReadyChat();
     startMessageDelivery('cmd-1', 'pending text', 'session-1', 'chat-1', draftOwner());
-    render(() => <Composer />);
+    mountComposer();
 
     expect(screen.getByTestId('composer-surface')).toHaveAttribute('aria-busy', 'true');
     expect(screen.queryByText('Sending message')).not.toBeInTheDocument();
@@ -416,7 +426,7 @@ describe('Composer', () => {
     selectReadyChat();
     startMessageDelivery('cmd-1', 'restore this draft', 'session-1', 'chat-1', draftOwner());
     failMessageDelivery('cmd-1', 'Message submission failed');
-    render(() => <Composer />);
+    mountComposer();
 
     fireEvent.click(screen.getByRole('button', { name: 'Back to edit' }));
     await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('restore this draft'));
@@ -428,7 +438,7 @@ describe('Composer', () => {
     selectReadyChat();
     startMessageDelivery('cmd-1', 'possibly executed', 'session-1', 'chat-1', draftOwner());
     blockUnknownMessageDelivery('cmd-1');
-    render(() => <Composer />);
+    mountComposer();
 
     expect(screen.getByText('Message delivery result unknown')).toBeInTheDocument();
     expect(screen.getByRole('textbox')).toBeDisabled();
@@ -451,7 +461,7 @@ describe('Composer', () => {
     startMessageDelivery('projected', 'already projected', 'session-1', 'chat-1', draftOwner());
     reconcileMessageProjection(new Set(['projected']));
     blockUnknownMessageDelivery('projected');
-    render(() => <Composer />);
+    mountComposer();
 
     expect(messageSubmission()).toBeNull();
     expect(screen.queryByRole('button', { name: 'Acknowledge and continue' })).not.toBeInTheDocument();
@@ -464,7 +474,7 @@ describe('Composer', () => {
       { id: 'session-1', projectId: 'project-1', acpSessionId: 'acp-1', title: 'Session A', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: 'chat-1' },
       { id: 'session-2', projectId: 'project-1', acpSessionId: 'acp-2', title: 'Session B', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: 'chat-2' },
     ]);
-    render(() => <Composer />);
+    mountComposer();
     const input = screen.getByRole('textbox');
     fireEvent.input(input, { target: { value: 'draft for session A' } });
 
@@ -489,7 +499,7 @@ describe('Composer', () => {
     markMessageDeliveryUncertain('cmd-a');
     setSelectedSessionId('session-2');
     setSelectedCid('chat-2');
-    render(() => <Composer />);
+    mountComposer();
 
     expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', 'Message the agent, or type / for commands');
     expect(screen.getByRole('textbox')).toBeEnabled();
@@ -499,7 +509,7 @@ describe('Composer', () => {
 
   it('exposes the keyboard upload entry and blocks browser default file drops', () => {
     selectReadyChat();
-    render(() => <Composer />);
+    mountComposer();
 
     expect(screen.getByRole('button', { name: 'Add attachment' })).toBeEnabled();
     expect(screen.getByTestId('composer-upload-file-input')).toBeInTheDocument();

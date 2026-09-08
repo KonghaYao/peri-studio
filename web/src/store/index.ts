@@ -1,46 +1,45 @@
 // peri-studio Web 面板组合根：装配协议、投影与领域控制器。
 
 import { createSignal, createEffect, createRoot } from 'solid-js';
-import * as H from '../panel/lib/protocol';
+import * as H from '@/shared/protocol/client';
 import { DocStore } from '../panel/lib/doc-store';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import type { ControlView } from '@/entities/chat/control-view';
 import type { ChatInfo, InstanceInfo, MachineInfo, ProjectInfo, ProjectSessionInfo, SessionSummaryInfo } from '@/entities/registry/registry-view';
 import { isTerminal, isTurnActive } from '../panel/lib/action-state.ts';
-import { CommandTracker } from '../panel/lib/command-tracker';
+import { CommandTracker } from '@/features/connection/command-tracker';
 import { SessionActivation, type OpeningSession, type OpenSessionCallbacks } from '@/features/session/session-activation';
-import { installPrincipalRole, principalId, publishAuthInvalidation, readOnly } from '../panel/lib/auth-state';
+import { principalId, publishAuthInvalidation, readOnly } from '../panel/lib/auth-state';
 import { setComposerDraft } from '@/features/composer/composer-draft';
-import { completeMessageDelivery, messageSubmission, messageSubmissionForChat, ownsMessageDeliveryError, resetMessageDelivery, settleProjectedMessageDelivery } from '../panel/lib/message-delivery';
-import { settleLateQuickStart } from '../panel/lib/quick-start-delivery';
-import { confirmRuntimeControl, resetRuntimeControls } from '../panel/lib/runtime-control';
-import { resetPermissionDecisions } from '../panel/lib/permission-delivery';
+import { messageSubmission, messageSubmissionForChat } from '@/features/message/message-delivery';
+import { createConnectionDownstream } from '@/features/connection/handle-downstream';
+import { createResourceDownstream } from '@/features/resource/handle-downstream';
+import { createSessionDownstream } from '@/features/session/handle-downstream';
+import { createMcpDownstream } from '@/features/mcp/handle-downstream';
+import { createTerminalDownstream } from '@/features/terminal/handle-downstream';
+import { createOnFrame } from './downstream';
+import { createResetAuthenticatedSession } from './reset-session';
 import { CatalogActions } from '@/features/catalog/catalog-actions';
 import { MachineActions } from '@/features/machine/machine-actions';
 import { createSessionCatalogBootstrap } from '@/features/catalog/session-catalog-bootstrap';
 import { selectActiveProjects } from '@/features/catalog/project-catalog';
 import { ToastStore } from '../panel/lib/toast-store';
 import { ACK_TIMEOUT_MS, type Ack, type ActionError, type ActionFrame, type ActionOptions } from '../panel/lib/action-contract';
-import { handleMcpOAuth, handleMcpOAuthAuthorization, handleMcpServers, resetMcpState } from '../panel/lib/mcp';
-import {
-  handleMcpAppCallResult,
-  handleMcpAppResource,
-  handleMcpAppSession,
-  ownsMcpAppsError,
-  resetMcpAppsState,
-} from '../panel/lib/mcp-apps';
-import { handleRewindCandidates, handleRewindPreview, resetRewindState, rewindOwnsError } from '../panel/lib/rewind-assembly';
-import { clearPromptRecoverySelection, handlePromptStatus, promptRecoveryOwnsError, requestPromptRecovery, resetPromptRecoveryState } from '../panel/lib/prompt-recovery-assembly';
-import { closeTerminalBeforeTeardown, handleTerminalConnectionLost, handleTerminalFrame, installTerminalTransport, resetTerminalSession } from '@/features/terminal/terminal-session';
-import type { TerminalDownstreamFrame } from '@/shared/protocol/terminal';
-import { connectionReady, disconnect, forgetRememberedSession, installConnection, promptMaxBytes, readRememberedSession, rememberSession, resetConnectionState, sendFrame } from '../panel/lib/connection';
-import { ERROR_REASONS, persistActionProblem, reportTransportIssue, type PersistentError } from '../panel/lib/panel-errors';
+import { resetMcpState } from '../panel/lib/mcp';
+import { resetMcpAppsState } from '../panel/lib/mcp-apps';
+import { resetRewindState } from '../panel/lib/rewind-assembly';
+import { clearPromptRecoverySelection, requestPromptRecovery } from '../panel/lib/prompt-recovery-assembly';
+import { closeTerminalBeforeTeardown, handleTerminalConnectionLost, installTerminalTransport } from '@/features/terminal/terminal-session';
+import { connectionReady, forgetRememberedSession, installConnection, promptMaxBytes, readRememberedSession, rememberSession, sendFrame } from '@/features/connection/connection';
+import { createRemoteDirectoryBrowsePorts } from '@/features/connection/remote-directory-ports';
+import { persistActionProblem, reportTransportIssue, type PersistentError } from '../panel/lib/panel-errors';
 import { sendMessage, type SessionConfigMutation } from '../panel/lib/user-actions';
 import { chatAgentLoading as deriveChatAgentLoading } from '@/features/chat/chat-agent-loading';
-import { installChatSubscription, reconcileCurrentRuntimeControl, refreshCurrentControlProjection, selectChat, sendSubscribe } from '../panel/lib/chat-subscription';
+import { installChatSubscription, reconcileCurrentRuntimeControl, refreshCurrentControlProjection, selectChat, sendSubscribe } from '@/features/connection/chat-subscription';
 import { installStoreWiring } from '../panel/lib/store-installs';
 import { installStoreProjection, type RuntimeDocsState } from '../panel/lib/store-projection';
-import { elicitationResponses, resetElicitationResponses } from '../panel/lib/elicitation-delivery';
+import { elicitationResponses, resetElicitationResponses } from '@/features/message/elicitation-delivery';
+import { questionResponses, resetQuestionResponses } from '@/features/message/question-delivery';
 import {
   forwardRemoteDirectoryResourceResult,
   forwardRemoteDirectoryResourceUpdate,
@@ -51,7 +50,6 @@ import {
   installResourceStore,
   replayResourceSubscriptions,
   refreshResourceProject,
-  resetResourceProject,
 } from '../panel/lib/resource-store';
 import {
   bindWorkspaceUploadActionSender,
@@ -81,14 +79,21 @@ import {
   forwardFsMutationResourceResult,
   installFsMutationCatalog,
 } from './fs-mutations';
+import { installResourceWorkbenchPorts } from './resource-workbench-request';
 
 export const [selectedCid, setSelectedCid] = createSignal<string | null>(null);
 export { connectionReady, readOnly };
+export const remoteDirectoryBrowsePorts = createRemoteDirectoryBrowsePorts({
+  ready: connectionReady,
+  send: sendFrame,
+});
 export const [chatEntries, setChatEntries] = createSignal<ChatEntry[]>([]);
 export const [chatHead, setChatHead] = createSignal<ControlView | null>(null);
 export const [permissions, setPermissions] = createSignal<ControlView['pendingPermissions']>([]);
 export const [elicitations, setElicitations] = createSignal<NonNullable<ControlView['pendingElicitations']>>([]);
 export { elicitationResponses };
+export const [questions, setQuestions] = createSignal<NonNullable<ControlView['pendingQuestions']>>([]);
+export { questionResponses };
 export const [projects, setProjects] = createSignal<ProjectInfo[]>([]);
 export const [machines, setMachines] = createSignal<MachineInfo[]>([]);
 export const [registryHydrated, setRegistryHydrated] = createSignal(false);
@@ -162,6 +167,7 @@ installChatSubscription({
   setChatHead,
   setPermissions,
   setElicitations,
+  setQuestions,
   setRuntimeDocsState,
 });
 
@@ -198,6 +204,14 @@ bindWorkspaceUploadActionSender(sendAction);
 bindWorkspaceUploadExplorerRefresh(() => refreshResourceProject());
 bindFsMutationActionSender(sendAction);
 installFsMutationCatalog({ projects, instances });
+installResourceWorkbenchPorts({
+  projectCwd: () => {
+    const sessionId = selectedSessionId();
+    const session = projectSessions().find((item) => item.id === sessionId);
+    const project = projects().find((item) => item.id === session?.projectId);
+    return project?.cwd;
+  },
+});
 
 installStoreWiring({
   setPersistentErrors,
@@ -227,138 +241,8 @@ installStoreWiring({
   fail: (err) => commands.fail(err),
 });
 
-// 身份失效处理：先整体复位身份边界，再通知 AuthGate 切换登录态。
-function invalidateAuthentication(reason: string): void {
-  resetAuthenticatedSession();
-  publishAuthInvalidation(reason);
-}
-
 // Terminal 与 chat/Yjs/resource 独立；这里只注入复用的认证 WebSocket。
 installTerminalTransport({ send: sendFrame, ready: connectionReady });
-
-// 连接装配（P3 拆分）：ws 生命周期与状态回调在 lib/connection，业务
-// 回调经 installConnection 注入回组合根。
-installConnection({
-  settleConnectionLoss: () => commands.settleConnectionLoss(),
-  onBeforeDisconnect: closeTerminalBeforeTeardown,
-  onConnectionLost: () => {
-    sessionCatalogBootstrap?.reset();
-    sessionActivation.connectionLost();
-    handleTerminalConnectionLost();
-  },
-  onAuthInvalidation: invalidateAuthentication,
-  toast,
-  sendSubscribe,
-  onReady: () => {
-    replayResourceSubscriptions();
-    // Server restart drops in-memory runtime chat docs; resubscribe alone is not
-    // enough — re-open the selected logical session so the server can spawn/load
-    // or resume the correct runtime chat instead of accepting prompts on a stale id.
-    sessionActivation.reactivateAfterReconnect();
-    if (!selectedSessionId() && registryHydrated()) reconcileSessionNavigation(projectSessions());
-    scheduleSessionCatalogBootstrap();
-    const sessionId = selectedSessionId();
-    if (sessionId) requestPromptRecovery(sessionId);
-  },
-  onFrame,
-  onProtocolIssue: reportTransportIssue,
-});
-
-function onFrame(frame: H.DownstreamFrame): void {
-  switch (frame.t) {
-    case 'ysync.update':
-      if (forwardRemoteDirectoryResourceUpdate(frame as { doc: string; update: string })) break;
-      if (!handleResourceUpdate(frame as { doc: string; update: string })) {
-        store.applyUpdateFrame(frame as { doc: string; update: string });
-      }
-      break;
-    case 'resource_result':
-      if (forwardRemoteDirectoryResourceResult(frame as import('../panel/lib/resource-protocol').ResourceResultFrame)) break;
-      if (forwardWorkspaceUploadResourceResult(frame as import('../panel/lib/resource-protocol').ResourceResultFrame)) break;
-      if (forwardFsMutationResourceResult(frame as import('@/shared/protocol/resource-fs-mutation').DeleteConfirmResultFrame)) break;
-      handleResourceResult(frame as import('../panel/lib/resource-protocol').ResourceResultFrame);
-      break;
-    case 'action_ack':
-      onAck(frame as Ack);
-      break;
-    case 'action_error':
-      onActionError(frame as ActionError);
-      break;
-    case 'prompt_status':
-      handlePromptStatus(frame);
-      break;
-    case 'rewind_candidates':
-      handleRewindCandidates(frame);
-      break;
-    case 'rewind_preview':
-      handleRewindPreview(frame);
-      break;
-    case 'mcp_servers':
-      handleMcpServers(frame);
-      break;
-    case 'mcp_oauth':
-      handleMcpOAuth(frame);
-      break;
-    case 'mcp_oauth_authorization':
-      handleMcpOAuthAuthorization(frame);
-      break;
-    case 'mcp_app_session':
-      handleMcpAppSession(frame);
-      break;
-    case 'mcp_app_resource':
-      handleMcpAppResource(frame);
-      break;
-    case 'mcp_app_call_result':
-      handleMcpAppCallResult(frame);
-      break;
-    case 'terminal_opened':
-      handleTerminalFrame(frame as TerminalDownstreamFrame);
-      break;
-    case 'terminal_output':
-      handleTerminalFrame(frame as TerminalDownstreamFrame);
-      break;
-    case 'terminal_exit':
-      handleTerminalFrame(frame as TerminalDownstreamFrame);
-      break;
-    case 'terminal_error':
-      handleTerminalFrame(frame as TerminalDownstreamFrame);
-      break;
-    case 'auth_error':
-      invalidateAuthentication('Access token is invalid, revoked, or the server restarted. Please sign in again.');
-      break;
-    default:
-      break; // 未知帧忽略（协议演进兼容）
-  }
-}
-
-function onAck(ack: Ack): void {
-  forwardWorkspaceUploadActionAck(ack);
-  const disposition = commands.acknowledge(ack);
-  // A terminal acknowledgement that arrives after timeout/disconnect can
-  // reconcile local uncertainty, but must not replay an expired continuation.
-  if (disposition === 'late_terminal') {
-    if (ack.commandId) completeMessageDelivery(ack.commandId, ack.status);
-    if (ack.commandId) settleLateQuickStart(ack.commandId, ack.status, ack.sessionId, ack.chatId);
-    if (ack.commandId && confirmRuntimeControl(ack.commandId, ack.status)) reconcileCurrentRuntimeControl();
-  }
-  if (ack.status !== 'accepted' && ack.commandId) {
-    setPersistentErrors((items) => items.filter((item) => item.commandId !== ack.commandId));
-  }
-}
-
-function onActionError(err: ActionError): void {
-  const uploadOwned = forwardWorkspaceUploadActionError(err as Record<string, unknown>);
-  if (promptRecoveryOwnsError(err)) return;
-  if (rewindOwnsError(err)) return;
-  if (ownsMcpAppsError(err)) return;
-  console.error(`[panel] action error code=${err.code || 'UNKNOWN'} command=${err.commandId ? 'present' : 'absent'}`);
-  const messageDeliveryOwnsError = ownsMessageDeliveryError(err.commandId, err.code);
-  commands.fail(err);
-  settleProjectedMessageDelivery(err.commandId);
-  if (uploadOwned || messageDeliveryOwnsError) return;
-  const reason = err.code ? ERROR_REASONS[err.code] : undefined;
-  persistActionProblem(reason || err.code || 'Operation failed', err.message || 'The server provided no further information.', err.commandId);
-}
 
 function clearCurrentSelection(): void {
   clearPromptRecoverySelection();
@@ -377,7 +261,9 @@ function clearCurrentSelection(): void {
   setChatHead(null);
   setPermissions([]);
   setElicitations([]);
+  setQuestions([]);
   resetElicitationResponses();
+  resetQuestionResponses();
   setRuntimeDocsState({ chat: false, control: false });
   resetMcpState();
   resetMcpAppsState();
@@ -436,6 +322,7 @@ installStoreProjection(
     setChatHead,
     setPermissions,
     setElicitations,
+    setQuestions,
     setProjects,
     setMachines,
     setRegistryHydrated,
@@ -499,6 +386,95 @@ createRoot(() => {
     const hydrated = registryHydrated();
     if (ready && hydrated) scheduleSessionCatalogBootstrap();
   });
+});
+
+export const resetAuthenticatedSession = createResetAuthenticatedSession({
+  setCurrentCid: (cid) => { currentCid = cid; },
+  setSelectedCid,
+  setSelectedSessionId,
+  setChatEntries,
+  setChatHead,
+  setPermissions,
+  setElicitations,
+  setQuestions,
+  setRuntimeDocsState,
+  setChatStatusSignal,
+  setProjects,
+  setMachines,
+  setProjectSessions,
+  setImportableSessions,
+  setDiscoveringSessionsProjectId,
+  setSessionConfigMutation,
+  setPersistentErrors,
+  setRegistryHydrated,
+  sessionActivation,
+  sessionCatalogBootstrap: () => sessionCatalogBootstrap,
+  commands,
+  docStore: store,
+  toastStore,
+  resetWorkspaceUploadAssembly,
+});
+
+// 身份失效处理：先整体复位身份边界，再通知 AuthGate 切换登录态。
+function invalidateAuthentication(reason: string): void {
+  resetAuthenticatedSession();
+  publishAuthInvalidation(reason);
+}
+
+const connectionDownstream = createConnectionDownstream({
+  forwardWorkspaceUploadActionAck,
+  forwardWorkspaceUploadActionError,
+  commands,
+  reconcileCurrentRuntimeControl,
+  setPersistentErrors,
+  invalidateAuthentication,
+});
+const resourceDownstream = createResourceDownstream({
+  docStore: store,
+  forwardRemoteDirectoryResourceUpdate,
+  forwardRemoteDirectoryResourceResult,
+  forwardWorkspaceUploadResourceResult,
+  forwardFsMutationResourceResult,
+  handleResourceUpdate,
+  handleResourceResult,
+});
+const sessionDownstream = createSessionDownstream();
+const mcpDownstream = createMcpDownstream();
+const terminalDownstream = createTerminalDownstream();
+const onFrame = createOnFrame({
+  connection: connectionDownstream,
+  resource: resourceDownstream,
+  session: sessionDownstream,
+  mcp: mcpDownstream,
+  terminal: terminalDownstream,
+});
+
+// 连接装配（P3 拆分）：ws 生命周期与状态回调在 lib/connection，业务
+// 回调经 installConnection 注入回组合根。
+installConnection({
+  settleConnectionLoss: () => commands.settleConnectionLoss(),
+  onBeforeDisconnect: closeTerminalBeforeTeardown,
+  onConnectionLost: () => {
+    sessionCatalogBootstrap?.reset();
+    sessionActivation.connectionLost();
+    handleTerminalConnectionLost();
+  },
+  onAuthInvalidation: invalidateAuthentication,
+  toast,
+  sendSubscribe,
+  onReady: () => {
+    replayResourceSubscriptions();
+    // Server restart drops in-memory runtime chat docs; resubscribe alone is not
+    // enough — re-open the selected logical session so the server can spawn/load
+    // or resume the correct runtime chat instead of accepting prompts on a stale id.
+    sessionActivation.reactivateAfterReconnect();
+    if (!selectedSessionId() && registryHydrated()) reconcileSessionNavigation(projectSessions());
+    scheduleSessionCatalogBootstrap();
+    const sessionId = selectedSessionId();
+    if (sessionId) requestPromptRecovery(sessionId);
+  },
+  onFrame,
+  onProtocolIssue: reportTransportIssue,
 });
 
 export const createProject = (name: string, cwd: string, instanceId?: string, onCommitted?: () => void, onFailed?: () => void) =>
@@ -578,48 +554,6 @@ export const importProjectSession = (projectId: string, acpSessionId: string, on
 export const discoverProjectSessions = (projectId: string, onCommitted?: () => void, onFailed?: (message: string) => void) =>
   catalogActions.discoverSessions(projectId, onCommitted, onFailed);
 
-export function resetAuthenticatedSession(options: { preserveLocalDrafts?: boolean } = {}): void {
-  // Revoke mutation authority before settling callbacks from the old transport.
-  // This function is intentionally idempotent: both the invalidation producer
-  // and AuthGate consumer call it to make the identity boundary fail closed.
-  installPrincipalRole(null);
-  disconnect();
-  resetConnectionState();
-  currentCid = null;
-  setSelectedCid(null);
-  setSelectedSessionId(null);
-  setChatEntries([]);
-  setChatHead(null);
-  setPermissions([]);
-  setElicitations([]);
-  resetElicitationResponses();
-  setRuntimeDocsState({ chat: false, control: false });
-  setChatStatusSignal({});
-  setProjects([]);
-  setMachines([]);
-  setProjectSessions([]);
-  setImportableSessions([]);
-  resetPromptRecoveryState();
-  resetMessageDelivery(options.preserveLocalDrafts === true);
-  sessionActivation.reset();
-  resetRuntimeControls();
-  setSessionConfigMutation(null);
-  resetRewindState();
-  resetTerminalSession();
-  setDiscoveringSessionsProjectId(null);
-  sessionCatalogBootstrap?.reset();
-  setPersistentErrors([]);
-  commands.reset();
-  resetPermissionDecisions();
-  setRegistryHydrated(false);
-  store.clear();
-  resetResourceProject();
-  resetWorkspaceUploadAssembly();
-  // Keep this last: disconnect/reset callbacks are allowed to publish feedback,
-  // but no notification from the previous principal may survive this boundary.
-  toastStore.clear();
-}
-
 export function navigateProjectSession(sessionId: string, callbacks: OpenSessionCallbacks = {}): boolean {
   return sessionActivation.navigate(sessionId, callbacks);
 }
@@ -645,6 +579,7 @@ export {
   closeChat,
   resolvePermission,
   respondElicitation,
+  respondQuestion,
 } from '../panel/lib/user-actions';
 export { sendMessage };
 export type { PersistentError } from '../panel/lib/panel-errors';
@@ -707,3 +642,8 @@ export {
   moveResourcePath,
   retryFsMutation,
 } from './fs-mutations';
+export {
+  openWorkspaceFromTool,
+  resourceWorkbenchRequest,
+} from './resource-workbench-request';
+export type { ResourceWorkbenchRequest } from './resource-workbench-request';

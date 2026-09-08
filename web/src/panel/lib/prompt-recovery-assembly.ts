@@ -10,7 +10,7 @@
 // installPromptRecovery 注入。
 
 import { createSignal } from 'solid-js';
-import * as H from './protocol';
+import * as H from '@/shared/protocol/client';
 import { ACK_TIMEOUT_MS, type Ack, type ActionError, type ActionFrame, type ActionOptions } from './action-contract';
 import { beginPromptRecovery, completePromptRecovery, failPromptRecovery, promptRecoveryDiagnostic, PromptRecoveryQueryGate, type PromptRecoveryView } from './prompt-recovery';
 

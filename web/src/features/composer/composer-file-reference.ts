@@ -1,4 +1,4 @@
-import { promptByteLength, promptFitsBudget } from '../../panel/lib/prompt-budget';
+import { promptByteLength, promptFitsBudget } from '@/shared/lib/prompt-budget';
 
 /** 规范为 Composer 引用的 workspace-relative 路径（POSIX，无 leading `./`）。 */
 export function normalizeReferencePath(relativePath: string): string {

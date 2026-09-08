@@ -81,12 +81,43 @@ export function Button(props: Props) {
   );
 }
 
-const iconButtonSizeClasses = {
-  sm: 'size-24',
-  md: 'size-32',
-  compact: 'size-24',
-  default: 'size-32',
-} as const;
+const iconButtonVariants = cva(
+  'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-6 font-medium transition-colors outline-none duration-120 focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45 pointer-coarse:min-h-44 pointer-coarse:min-w-44',
+  {
+    variants: {
+      variant: {
+        primary:
+          'border border-transparent bg-accent-solid [color:var(--content-on-accent)]! hover:bg-accent-hover active:bg-accent-active',
+        default:
+          'border border-border-strong bg-surface-overlay text-content-primary hover:border-accent-solid hover:text-accent-solid active:border-accent-active active:text-accent-active',
+        ghost:
+          'border border-transparent bg-transparent text-content-secondary hover:bg-interaction-hover hover:text-content-primary',
+        danger:
+          'border border-danger-border bg-surface text-danger hover:border-danger hover:text-danger active:border-danger',
+      },
+      size: {
+        sm: 'size-24',
+        md: 'size-32',
+        lg: 'size-40',
+      },
+    },
+    defaultVariants: { variant: 'ghost', size: 'md' },
+  },
+);
+
+type IconButtonVariantProps = VariantProps<typeof iconButtonVariants>;
+
+function resolveIconButtonVariant(variant: ButtonVariantProps['variant']) {
+  const resolved = resolveButtonVariant(variant);
+  return resolved ?? 'ghost';
+}
+
+function resolveIconButtonSize(size: ButtonVariantProps['size']): IconButtonVariantProps['size'] {
+  if (size === 'compact' || size === 'sm') return 'sm';
+  if (size === 'default') return 'md';
+  if (size === 'lg') return 'lg';
+  return size ?? 'md';
+}
 
 /* 图标按钮：圆角矩形（禁止圆形），默认 ghost；label 即 a11y 名称。 */
 export function IconButton(
@@ -111,7 +142,6 @@ export function IconButton(
   const helpId = `icon-help-${createUniqueId()}`;
   const customHelp = () => !!local.title && local.title !== local.label;
   const tooltipEnabled = () => local.showTooltip !== false;
-  const sizeKey = () => local.size ?? 'md';
   const iconButton = (
     <button
       {...button}
@@ -124,19 +154,18 @@ export function IconButton(
       data-slot="button"
       data-icon-button=""
       class={cn(
-        'inline-flex cursor-pointer items-center justify-center rounded-6 text-text-secondary transition-colors duration-120',
-        'hover:bg-hover hover:text-text-primary',
-        'focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2',
-        'disabled:cursor-not-allowed disabled:opacity-45',
-        iconButtonSizeClasses[sizeKey() as keyof typeof iconButtonSizeClasses] ?? iconButtonSizeClasses.md,
-        'pointer-coarse:min-h-44 pointer-coarse:min-w-44',
+        iconButtonVariants({
+          variant: resolveIconButtonVariant(local.variant),
+          size: resolveIconButtonSize(local.size),
+        }),
         local.class,
       )}
     >
       <Show when={local.busy}>
         <Spinner class="size-12" decorative />
+        <span class="sr-only">Processing</span>
       </Show>
-      {local.children}
+      <Show when={!local.busy}>{local.children}</Show>
     </button>
   );
 

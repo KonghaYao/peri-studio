@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { createSignal } from 'solid-js';
 import { describe, expect, it, vi } from 'vitest';
 import type { PendingPermission } from '@/entities/chat/control-view';
-import type { PermissionDecisionState } from '../../panel/lib/permission-delivery';
+import type { PermissionDecisionState } from '@/features/message/permission-delivery';
 import { PermissionQueue } from './PermissionQueue';
 
 function permission(id: string, title: string): PendingPermission {

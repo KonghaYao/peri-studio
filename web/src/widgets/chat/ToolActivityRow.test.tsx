@@ -2,10 +2,10 @@ import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { describe, expect, it, vi } from 'vitest';
 import { observedDuration, ToolCallCard } from './ToolActivityRow';
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
-import { openWorkspaceFromTool } from '../../panel/lib/open-workspace-from-tool';
+import { openWorkspaceFromTool } from '@/store';
 
-vi.mock('../../panel/lib/open-workspace-from-tool', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../panel/lib/open-workspace-from-tool')>();
+vi.mock('@/store', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/store')>();
   return { ...actual, openWorkspaceFromTool: vi.fn() };
 });
 

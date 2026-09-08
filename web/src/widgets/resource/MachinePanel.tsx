@@ -1,6 +1,6 @@
 import { createEffect, createMemo, createSignal, For, onMount, Show } from 'solid-js';
 import { Plus } from 'lucide-solid';
-import { connState } from '../../panel/lib/connection';
+import { connState } from '@/features/connection/connection';
 import { readOnly } from '../../panel/lib/auth-state';
 import { runConfirmedMutation } from '../../panel/lib/form-mutation';
 import {

@@ -35,7 +35,7 @@ export function ComposerLayout() {
           />
           <TokenUsageMeter input={12400} output={3180} cached={8200} />
           <IconButton label="Voice input" tooltip="Voice input" disabled><Mic size={16} /></IconButton>
-          <IconButton label="Send" tooltip="Send" class="bg-accent-solid text-content-on-accent hover:bg-accent-hover hover:text-content-on-accent"><Send size={16} /></IconButton>
+          <IconButton label="Send" tooltip="Send" variant="primary"><Send size={16} /></IconButton>
         </div>
       </div>
     </div>

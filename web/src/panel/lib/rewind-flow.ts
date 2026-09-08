@@ -1,4 +1,4 @@
-import type { RewindCandidate, RewindFileChange } from './protocol';
+import type { RewindCandidate, RewindFileChange } from '@/shared/protocol/client';
 
 export type RewindFlow =
   | { kind: 'closed' }

@@ -1,6 +1,6 @@
 import * as Y from 'yjs';
 import { readChatEntry, readChatToolCall, type ChatEntry, type ChatView } from './chat-view';
-import { asArray, asMap, getStr } from '../../panel/lib/yjs-values';
+import { asArray, asMap, getStr } from '@/shared/yjs/yjs-values';
 
 export interface ChatProjectionResult {
   view: ChatView;

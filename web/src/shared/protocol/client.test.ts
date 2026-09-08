@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CAP_PROMPT_DELIVERY_V2, parse, resolvePermission, rewind, rewindCandidates, rewindPreview, subscribe, type PromptStatusItem } from './protocol';
+import { CAP_PROMPT_DELIVERY_V2, parse, resolvePermission, rewind, rewindCandidates, rewindPreview, subscribe, type PromptStatusItem } from './client';
 
 describe('downstream protocol envelope parsing', () => {
   it('accepts a structurally valid known frame', () => {

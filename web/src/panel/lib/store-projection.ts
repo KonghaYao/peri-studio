@@ -1,5 +1,5 @@
 import type { Setter } from 'solid-js';
-import * as H from './protocol';
+import * as H from '@/shared/protocol/client';
 import type { DocStore } from './doc-store';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { ChatProjection } from '@/entities/chat/chat-projection';
@@ -9,10 +9,11 @@ import { RegistryProjection } from '@/entities/registry/registry-projection';
 import { unimportedSessions } from '../../features/session/session-import';
 import { isTerminal } from './action-state';
 import { retainLiveRuntimeHints } from './recovery-state';
-import { reconcileMessageProjection } from './message-delivery';
-import { reconcileRuntimeControl } from './runtime-control';
-import { retainProjectedPermissions } from './permission-delivery';
-import { retainProjectedElicitations } from './elicitation-delivery';
+import { reconcileMessageProjection } from '@/features/message/message-delivery';
+import { reconcileRuntimeControl } from '@/features/runtime/runtime-control';
+import { retainProjectedPermissions } from '@/features/message/permission-delivery';
+import { retainProjectedElicitations } from '@/features/message/elicitation-delivery';
+import { retainProjectedQuestions } from '@/features/message/question-delivery';
 
 export interface RuntimeDocsState { chat: boolean; control: boolean }
 
@@ -21,6 +22,7 @@ interface ProjectionSignals {
   setChatHead: Setter<ControlView | null>;
   setPermissions: Setter<ControlView['pendingPermissions']>;
   setElicitations: Setter<NonNullable<ControlView['pendingElicitations']>>;
+  setQuestions: Setter<NonNullable<ControlView['pendingQuestions']>>;
   setProjects: Setter<ProjectInfo[]>;
   setMachines: Setter<MachineInfo[]>;
   setRegistryHydrated: Setter<boolean>;
@@ -103,6 +105,9 @@ export function installStoreProjection(
       const elicitations = control.pendingElicitations ?? [];
       signals.setElicitations(elicitations);
       retainProjectedElicitations(elicitations);
+      const questions = control.pendingQuestions ?? [];
+      signals.setQuestions(questions);
+      retainProjectedQuestions(questions);
       signals.setRuntimeDocsState((state) => ({ ...state, control: true }));
       retainProjectedPermissions(new Set(control.pendingPermissions
         .map((item) => item.permissionId)

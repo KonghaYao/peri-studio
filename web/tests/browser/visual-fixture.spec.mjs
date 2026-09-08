@@ -339,8 +339,6 @@ test('sidebar chrome and composer match the compact input shell', async ({ page 
 
   // Legacy window toolbar traffic lights removed from sidebar chrome.
   await expect(page.getByRole('button', { name: 'Add attachment' })).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Approval mode' })).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Voice input' })).toBeDisabled();
   await expect(page.getByTestId('composer-runtime')).toBeVisible();
   await expect(page.getByRole('button', { name: /Browse skills/ })).toBeVisible();
   await expect(page.getByTestId('composer-action')).toBeVisible();

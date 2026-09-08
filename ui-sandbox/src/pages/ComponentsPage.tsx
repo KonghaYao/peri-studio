@@ -83,7 +83,7 @@ export function ComponentsPage() {
           <IconButton label="Search" tooltip="Search"><Search size={16} /></IconButton>
           <IconButton label="Settings" tooltip="Settings"><Settings size={16} /></IconButton>
           <IconButton label="Voice input" tooltip="Voice input" disabled><Mic size={16} /></IconButton>
-          <IconButton label="Send" tooltip="Send" class="bg-accent-solid text-content-on-accent hover:bg-accent-hover hover:text-content-on-accent"><Send size={16} /></IconButton>
+          <IconButton label="Send" tooltip="Send" variant="primary"><Send size={16} /></IconButton>
         </Row>
       </Demo>
 

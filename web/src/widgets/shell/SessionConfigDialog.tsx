@@ -3,7 +3,7 @@ import type { SessionConfigOptionInfo } from '@/entities/chat/control-view';
 import { Select } from '@/shared/ui/Select';
 import { composerModelLabel } from '@/features/composer/composer-model-label';
 import { readOnly } from '../../panel/lib/auth-state';
-import { connState } from '../../panel/lib/connection';
+import { connState } from '@/features/connection/connection';
 import { chatHead, sessionConfigMutation, setSessionConfig, turnActive } from '../../panel/store';
 
 export function SessionModelMenu(props: {

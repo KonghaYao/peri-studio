@@ -51,6 +51,37 @@ describe('Listbox', () => {
     const [value] = onChange.mock.calls[0] ?? [];
     expect([...value]).toEqual(['one']);
   });
+
+  it('applies search and menu item recipes from tokens', () => {
+    const options = [{ id: 'a', label: 'Alpha' }];
+    const { unmount } = render(() => (
+      <Listbox
+        options={options}
+        optionValue="id"
+        optionTextValue="label"
+        renderItem={(item) => (
+          <ListboxItem item={item} recipe="search" data-testid="listbox-item">
+            {item.rawValue.label}
+          </ListboxItem>
+        )}
+      />
+    ));
+    expect(screen.getByTestId('listbox-item')).toHaveClass('min-h-32', 'rounded-md', 'text-content-primary');
+    unmount();
+    render(() => (
+      <Listbox
+        options={options}
+        optionValue="id"
+        optionTextValue="label"
+        renderItem={(item) => (
+          <ListboxItem item={item} recipe="menu" data-testid="listbox-item">
+            {item.rawValue.label}
+          </ListboxItem>
+        )}
+      />
+    ));
+    expect(screen.getByTestId('listbox-item')).toHaveClass('rounded-lg', 'px-10', 'py-6');
+  });
 });
 
 describe('Button', () => {
@@ -101,6 +132,23 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: 'Default action' })).toHaveClass('size-32', 'rounded-6');
     expect(screen.getByRole('button', { name: 'Compact action' })).toHaveClass('size-24', 'rounded-6');
     expect(screen.getByRole('button', { name: 'Default action' })).not.toHaveClass('rounded-full');
+  });
+
+  it('maps variant and busy through icon button CVA', () => {
+    render(() => (
+      <>
+        <IconButton label="Primary action" variant="primary" data-testid="primary-icon">+</IconButton>
+        <IconButton label="Danger action" variant="danger" data-testid="danger-icon">×</IconButton>
+        <IconButton label="Working action" busy data-testid="busy-icon">×</IconButton>
+      </>
+    ));
+    expect(screen.getByTestId('primary-icon')).toHaveClass('bg-accent-solid');
+    expect(screen.getByTestId('danger-icon')).toHaveClass('text-danger');
+    const busy = screen.getByTestId('busy-icon');
+    expect(busy).toBeDisabled();
+    expect(busy).toHaveAttribute('aria-busy', 'true');
+    expect(busy).toHaveTextContent('Processing');
+    expect(busy).not.toHaveTextContent('×');
   });
 
   it('never submits a surrounding form unless submit is explicit', () => {
@@ -426,7 +474,9 @@ describe('Dialog', () => {
     const close = vi.fn();
     render(() => <Dialog open onOpenChange={(open) => { if (!open) close(); }}><DialogContent><DialogHeader><DialogTitle>Search sessions</DialogTitle><DialogClose aria-label="Close Search sessions">×</DialogClose></DialogHeader><input aria-label="Query" /></DialogContent></Dialog>);
     expect(screen.getByRole('heading', { name: 'Search sessions' })).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'Close Search sessions' }));
+    const dismiss = screen.getByRole('button', { name: 'Close Search sessions' });
+    expect(dismiss).toHaveAttribute('data-icon-button');
+    fireEvent.click(dismiss);
     expect(close).toHaveBeenCalledOnce();
   });
 });

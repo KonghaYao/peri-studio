@@ -1,6 +1,6 @@
 import { createEffect, createMemo, createSignal, createUniqueId, onCleanup, Show } from 'solid-js';
 import { parsePermissionExpiration, type PendingPermission } from '@/entities/chat/control-view';
-import type { PermissionDecisionState } from '../../panel/lib/permission-delivery';
+import type { PermissionDecisionState } from '@/features/message/permission-delivery';
 import { Button } from '@/shared/ui';
 import { CircleAlert, Clock3, RefreshCw } from 'lucide-solid';
 import { DecisionCard, type DecisionOption } from './DecisionCard';

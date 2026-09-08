@@ -9,11 +9,11 @@
 // sendFrame/retryRuntimeControl/retryPermissionDecision 直接取自 lib
 // 模块（lib 模块之间可互相 import）。
 
-import { connectionReady } from './connection';
-import { retryRuntimeControl } from './runtime-control';
-import { retryPermissionDecision } from './permission-delivery';
-import type { WsProtocolIssue } from './ws-client';
-import type { DispatchResult } from './command-tracker';
+import { connectionReady } from '@/features/connection/connection';
+import { retryRuntimeControl } from '@/features/runtime/runtime-control';
+import { retryPermissionDecision } from '@/features/message/permission-delivery';
+import type { WsProtocolIssue } from '@/features/connection/ws-client';
+import type { DispatchResult } from '@/features/connection/command-tracker';
 
 export interface PersistentError {
   id: number;

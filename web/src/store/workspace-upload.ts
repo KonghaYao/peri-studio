@@ -1,5 +1,5 @@
 import { createEffect, createRoot, createSignal } from 'solid-js';
-import { connectionReady, sendFrame } from '../panel/lib/connection';
+import { connectionReady, sendFrame } from '@/features/connection/connection';
 import { canMutate, type PrincipalRole } from '../panel/lib/auth-role';
 import { principalRole } from '../panel/lib/auth-state';
 import { activateResourceProject, openFilePreview, resourceWorkspace, resourceWorkspaceGeneration } from '../panel/lib/resource-store';

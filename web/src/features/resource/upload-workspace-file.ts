@@ -3,7 +3,7 @@ import {
   openResourceUpload,
   type ResourceResultFrame,
 } from '../../panel/lib/resource-protocol';
-import { newCommandId } from '../../panel/lib/protocol';
+import { newCommandId } from '@/shared/protocol/client';
 import type { LocalUploadCandidate } from './upload-path';
 import {
   mapActionErrorToUploadError,

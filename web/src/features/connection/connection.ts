@@ -12,12 +12,12 @@
 // principalRole 直接取自 lib/auth-state（lib 模块之间可互相 import）。
 
 import { createSignal } from 'solid-js';
-import * as H from './protocol';
+import * as H from '@/shared/protocol/client';
 import { WsClient } from './ws-client';
 import type { ConnStatus, ConnDetail, WsProtocolIssue } from './ws-client';
-import { connectionTransition } from './connection-state';
-import type { ConnectionProblem } from './recovery-state';
-import { principalRole } from './auth-state';
+import { connectionTransition } from '../../panel/lib/connection-state';
+import type { ConnectionProblem } from '../../panel/lib/recovery-state';
+import { principalRole } from '../../panel/lib/auth-state';
 
 export const [busy, setBusy] = createSignal(false);
 export const [connState, setConnState] = createSignal<{ text: string; kind: 'idle' | 'ok' | 'warn' | 'err' }>({

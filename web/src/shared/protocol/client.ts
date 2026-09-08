@@ -10,7 +10,7 @@
 // 本模块只负责帧的构造/解析与 base64 工具，不持有任何连接状态
 // （连接状态机见 ws-client.ts）。
 
-import { isResourceResult, type ResourceResultFrame } from './resource-protocol';
+import { isResourceResult, type ResourceResultFrame } from '@/shared/protocol/resource-result';
 import {
   decodeTerminalFrame,
   type TerminalErrorFrame,
@@ -19,10 +19,10 @@ import {
   type TerminalOutputFrame,
 } from '@/shared/protocol/terminal';
 import { isActionResourceResult, isDeleteConfirmResultFrame } from '@/shared/protocol/resource-fs-mutation';
-import { isServerDocId } from './doc-id';
+import { isServerDocId } from '@/shared/yjs/doc-id';
 
 /** 注册表 doc id（与 proto/src/conn.rs 的 DocId::REGISTRY 对齐），常驻订阅。 */
-export { DOC_REGISTRY, isServerDocId } from './doc-id';
+export { DOC_REGISTRY, isServerDocId } from '@/shared/yjs/doc-id';
 export const CAP_PROMPT_DELIVERY_V2 = 'prompt-delivery-v2';
 
 /** chat 派生 doc id（订阅字段透明字符串，前缀区分投影）。 */
@@ -244,6 +244,13 @@ export const respondElicitation = (
   responseAction: 'accept' | 'decline' | 'cancel',
   answers: Record<string, ElicitationAnswer> = {},
 ) => action('elicitation/respond', { chatId, elicitationId, action: responseAction, answers });
+
+export type QuestionAnswerPayload = string | string[];
+export const respondQuestion = (
+  chatId: string,
+  questionId: string,
+  answers: QuestionAnswerPayload[],
+) => action('question/respond', { chatId, questionId, answers });
 
 // ── 下行解析 ────────────────────────────────────────────────────────────
 

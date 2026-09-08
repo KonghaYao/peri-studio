@@ -1,5 +1,5 @@
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js';
-import { promptMaxBytes } from '../../panel/lib/connection';
+import { promptMaxBytes } from '@/features/connection/connection';
 import { applyFileReferenceWithBudget, draftContainsReferenceToken } from '@/features/composer/composer-file-reference';
 import {
   enqueueComposerRootUpload,

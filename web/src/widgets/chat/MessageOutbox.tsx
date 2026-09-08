@@ -1,5 +1,5 @@
 import { Show } from 'solid-js';
-import type { MessageSubmission } from '../../panel/lib/message-delivery';
+import type { MessageSubmission } from '@/features/message/message-delivery';
 import { Button, CopyButton } from '@/shared/ui';
 
 const titleFor = (phase: MessageSubmission['phase']) => phase === 'uncertain'

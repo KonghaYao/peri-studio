@@ -1,7 +1,7 @@
 import { createSignal } from 'solid-js';
 import { canMutate } from '../panel/lib/auth-role';
 import { principalRole } from '../panel/lib/auth-state';
-import { connectionReady, sendFrame } from '../panel/lib/connection';
+import { connectionReady, sendFrame } from '@/features/connection/connection';
 import {
   closeResourceFilePreview,
   openFilePreview,

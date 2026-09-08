@@ -11,10 +11,10 @@
 // import。
 
 import type { Setter } from 'solid-js';
-import * as H from './protocol';
+import * as H from '@/shared/protocol/client';
 import { isTerminal } from './action-state';
-import { connectionReady, promptDeliveryReady, promptMaxBytes } from './connection';
-import { promptFitsBudget } from './prompt-budget';
+import { connectionReady, promptDeliveryReady, promptMaxBytes } from '@/features/connection/connection';
+import { promptFitsBudget } from '@/shared/lib/prompt-budget';
 import { readOnly } from './auth-state';
 import type { ControlView } from '@/entities/chat/control-view';
 import type { ActionFrame, ActionOptions } from './action-contract';
@@ -27,7 +27,7 @@ import {
   messageSubmission,
   retryMessageDelivery,
   startMessageDelivery,
-} from './message-delivery';
+} from '@/features/message/message-delivery';
 import { tearDownMcpAppsForChat } from './mcp-apps';
 import {
   acceptRuntimeControl,
@@ -36,13 +36,13 @@ import {
   markRuntimeControlUncertain,
   runtimeControlBusy,
   startRuntimeControl,
-} from './runtime-control';
+} from '@/features/runtime/runtime-control';
 import {
   failPermissionDecision,
   markPermissionDecisionUncertain,
   startPermissionDecision,
   type PermissionDecision,
-} from './permission-delivery';
+} from '@/features/message/permission-delivery';
 import {
   completeElicitationResponse,
   elicitationResponses,
@@ -50,9 +50,18 @@ import {
   markElicitationResponseUncertain,
   rollbackElicitationResponse,
   startElicitationResponse,
-} from './elicitation-delivery';
+} from '@/features/message/elicitation-delivery';
+import {
+  completeQuestionResponse,
+  failQuestionResponse,
+  markQuestionResponseUncertain,
+  questionResponses,
+  rollbackQuestionResponse,
+  startQuestionResponse,
+} from '@/features/message/question-delivery';
+import type { QuestionAnswerPayload } from '@/shared/protocol/client';
 import { persistActionProblem, retryPersistentAction } from './panel-errors';
-import type { DispatchResult } from './command-tracker';
+import type { DispatchResult } from '@/features/connection/command-tracker';
 import type { ComposerDraftOwner } from '@/features/composer/composer-draft';
 
 /** 会话配置修改的运行时状态（SessionConfigDialog 消费）。 */
@@ -294,4 +303,31 @@ export function respondElicitation(
     },
   });
   if (!sent) rollbackElicitationResponse(frame.commandId);
+}
+
+export function respondQuestion(questionId: string, answers: QuestionAnswerPayload[]): void {
+  if (!connectionReady() || readOnly()) {
+    deps!.toast(readOnly() ? 'Read-only mode cannot answer Peri' : 'Connection not ready, try again later');
+    return;
+  }
+  const chatId = deps!.currentCid();
+  if (!chatId || questionResponses()[questionId]) return;
+  const frame = H.respondQuestion(chatId, questionId, answers);
+  if (!startQuestionResponse(questionId, frame.commandId)) return;
+  const sent = deps!.sendAction(frame, 'Answer Peri', {
+    cb: (ack) => completeQuestionResponse(ack.commandId || frame.commandId),
+    onError: (error) => {
+      if (error.code === 'DELIVERY_UNKNOWN') markQuestionResponseUncertain(frame.commandId, 'delivery_unknown');
+      else failQuestionResponse(frame.commandId);
+    },
+    onTimeout: () => {
+      markQuestionResponseUncertain(frame.commandId, 'uncertain');
+      persistActionProblem(
+        'Answer result not yet confirmed',
+        'Peri may have already received this answer. Refresh the question status; never submit the answer again.',
+        frame.commandId,
+      );
+    },
+  });
+  if (!sent) rollbackQuestionResponse(frame.commandId);
 }

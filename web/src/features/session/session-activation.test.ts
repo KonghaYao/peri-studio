@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resetQuickStart } from '../../panel/lib/quick-start-delivery';
+import { resetQuickStart } from '@/features/message/quick-start-delivery';
 import { SessionActivation, type ActivationSendOptions } from './session-activation';
 
 interface HarnessOverrides {

@@ -12,7 +12,7 @@
 // resetAuthenticatedSession 经依赖注入传入（本 lib 不反向依赖 store）。
 
 import { createContext, createEffect, createSignal, onMount, useContext } from 'solid-js';
-import { connectWithCookie } from './connection';
+import { connectWithCookie } from '@/features/connection/connection';
 import { parsePrincipal } from './auth-role';
 import { authFeedback } from './auth-feedback.ts';
 import { authInvalidation, clearAuthInvalidation, installPrincipalRole } from './auth-state';

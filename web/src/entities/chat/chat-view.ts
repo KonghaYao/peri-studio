@@ -1,5 +1,6 @@
 import * as Y from 'yjs';
-import { asArray, asMap, getNum, getStr, safeTime, yText, yValue } from '../../panel/lib/yjs-values';
+import { asArray, asMap, getNum, getStr, safeTime, yText, yValue } from '@/shared/yjs/yjs-values';
+import type { ChatPlanEntryInfo } from './plan-system-entry';
 
 export interface ReasoningBlock { id?: string; text: string; visibility: string | null }
 export type ToolCallKind = 'read' | 'edit' | 'delete' | 'move' | 'search' | 'execute' | 'think' | 'fetch' | 'switch_mode' | 'other';
@@ -53,12 +54,39 @@ export interface ChatEntry {
   toolCalls: ToolCallInfo[];
   resources: ResourceInfo[];
   error: { code: string | null; message: string | null } | null;
+  /** Chat `plan:{turn|global}` system entry payload（G3 双写）。 */
+  planEntries?: ChatPlanEntryInfo[];
 }
 export interface ChatView { schemaVersion: unknown; projectionVersion: unknown; entries: ChatEntry[] }
 
 export interface ChatEntryRead {
   entry: ChatEntry;
   referencedToolIds: Set<string>;
+}
+
+function readPlanEntries(map: Y.Map<unknown> | null): ChatPlanEntryInfo[] | undefined {
+  const raw = map?.get('plan_entries');
+  if (typeof raw !== 'string' || !raw.trim()) return undefined;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return undefined;
+    const entries: ChatPlanEntryInfo[] = [];
+    for (const item of parsed) {
+      if (!item || typeof item !== 'object') continue;
+      const record = item as Record<string, unknown>;
+      const content = typeof record.content === 'string' ? record.content : null;
+      const status = record.status;
+      if (!content || !['pending', 'in_progress', 'completed'].includes(String(status))) continue;
+      entries.push({
+        content,
+        status: status as ChatPlanEntryInfo['status'],
+        activeForm: typeof record.active_form === 'string' ? record.active_form : null,
+      });
+    }
+    return entries.length > 0 ? entries : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function readChatToolCall(id: string, map: Y.Map<unknown> | null): ToolCallInfo {
@@ -129,6 +157,8 @@ export function readChatEntry(
   };
   const error = asMap(map.get('error'));
   if (error) entry.error = { code: getStr(error, 'code'), message: getStr(error, 'message') };
+  const planEntries = readPlanEntries(map);
+  if (planEntries) entry.planEntries = planEntries;
 
   const blocks = asMap(map.get('blocks'));
   const seenBlockIds = new Set<string>();

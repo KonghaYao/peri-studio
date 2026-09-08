@@ -10,7 +10,7 @@
 // store 组合根通过 installRewind 注入；readOnly 直接取自 lib/auth-state。
 
 import { createSignal } from 'solid-js';
-import * as H from './protocol';
+import * as H from '@/shared/protocol/client';
 import { readOnly } from './auth-state';
 import type { ControlView } from '@/entities/chat/control-view';
 import type { Ack, ActionError, ActionFrame, ActionOptions } from './action-contract';

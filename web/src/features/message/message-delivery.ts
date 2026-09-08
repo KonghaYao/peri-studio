@@ -1,5 +1,5 @@
 import { createSignal } from 'solid-js';
-import type { DeliveryPhase } from './delivery-state';
+import type { DeliveryPhase } from '../../panel/lib/delivery-state';
 import { clearComposerDraft, composerDraft, resetComposerDrafts, restoreComposerDraft, type ComposerDraftOwner } from '@/features/composer/composer-draft';
 
 export type MessageDeliveryPhase = Extract<

@@ -17,4 +17,25 @@ describe('tool-file-link', () => {
     expect(compactToolInput({ file_path: '/x', limit: 10 })).toBe('/x');
     expect(compactToolInput({ pattern: '*.ts' })).toBe('*.ts');
   });
+
+  describe('G2 characterization — linkable path vs search tools (today behavior)', () => {
+    it('does not treat Grep/Glob pattern-only args as linkable file paths', () => {
+      expect(extractLinkableFilePath('Grep', 'execute', { pattern: '*.ts' })).toBeNull();
+      expect(extractLinkableFilePath('Glob', 'execute', { pattern: '**/*.rs' })).toBeNull();
+      expect(compactToolInput({ pattern: '*.ts' })).toBe('*.ts');
+      expect(extractLinkableFilePath('Grep', 'execute', { pattern: '*.ts' })).toBeNull();
+    });
+
+    it('locks Grep with explicit file_path as linkable (legacy name rule)', () => {
+      expect(
+        extractLinkableFilePath('Grep', 'execute', { pattern: '*.ts', file_path: '/workspace/a.ts' }),
+      ).toBe('/workspace/a.ts');
+    });
+
+    it('links filesystem tools by kind or normalized tool name', () => {
+      expect(extractLinkableFilePath('Write', 'edit', { file_path: 'src/x.ts' })).toBe('src/x.ts');
+      expect(extractLinkableFilePath('custom_read', 'read', { path: 'b.rs' })).toBe('b.rs');
+      expect(extractLinkableFilePath('Glob', 'execute', { file_path: 'only/with/path.ts' })).toBeNull();
+    });
+  });
 });

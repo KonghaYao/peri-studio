@@ -12,7 +12,7 @@ function makeAuth(deps: Partial<AuthControllerDeps> = {}) {
   return createAuthController({ resetSession: transport.resetAuthenticatedSession, ...deps });
 }
 
-vi.mock('./connection', () => ({ connectWithCookie: transport.connectWithCookie }));
+vi.mock('@/features/connection/connection', () => ({ connectWithCookie: transport.connectWithCookie }));
 
 afterEach(() => {
   vi.unstubAllGlobals();

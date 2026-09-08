@@ -1,4 +1,4 @@
-import type { PromptStatusItem } from './protocol';
+import type { PromptStatusItem } from '@/shared/protocol/client';
 
 export interface PromptRecoveryView {
   sessionId: string;

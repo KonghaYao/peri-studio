@@ -1,13 +1,13 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { setBusy, setConnectionProblem } from '../../panel/lib/connection';
+import { setBusy, setConnectionProblem } from '@/features/connection/connection';
 
-vi.mock('../../panel/lib/connection', async (original) => {
-  const actual = await original<typeof import('../../panel/lib/connection')>();
+vi.mock('@/features/connection/connection', async (original) => {
+  const actual = await original<typeof import('@/features/connection/connection')>();
   return { ...actual, reconnect: vi.fn() };
 });
 
-import { reconnect } from '../../panel/lib/connection';
+import { reconnect } from '@/features/connection/connection';
 import { ConnectionProblem } from './ConnectionProblem';
 
 afterEach(() => {

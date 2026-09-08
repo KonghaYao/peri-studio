@@ -4,7 +4,7 @@
 // 装配模块通过同一组下行 ack/error 类型协作；类型定义收敛在共享模块，
 // 避免装配模块为了类型而反向 import store.ts。
 
-import * as H from './protocol';
+import * as H from '@/shared/protocol/client';
 
 /** CommandTracker 的 ack 超时（毫秒）。查询表的失效窗口以它为基准。 */
 export const ACK_TIMEOUT_MS = 30000;

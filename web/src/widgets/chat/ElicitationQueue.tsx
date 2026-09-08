@@ -1,8 +1,8 @@
 import { For, Show, createSignal, createUniqueId } from 'solid-js';
 import type { PendingElicitation } from '@/entities/chat/control-view';
 import { createIdentitySelection } from '../../panel/lib/identity-selection';
-import type { ElicitationDeliveryState } from '../../panel/lib/elicitation-delivery';
-import type { ElicitationAnswer } from '../../panel/lib/protocol';
+import type { ElicitationDeliveryState } from '@/features/message/elicitation-delivery';
+import type { ElicitationAnswer } from '@/shared/protocol/client';
 import { Button, Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel, IconButton, RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel, Textarea } from '@/shared/ui';
 import { Clock3, LockKeyhole, X } from 'lucide-solid';
 import { DecisionCard } from './DecisionCard';

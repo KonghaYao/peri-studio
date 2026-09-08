@@ -11,9 +11,9 @@ import {
   setSelectedCid,
   setSelectedSessionId,
 } from '../../panel/store';
-import { setConnState } from '../../panel/lib/connection';
+import { setConnState } from '@/features/connection/connection';
 import { ChatHeader } from './ChatHeader';
-import { resetRuntimeControls } from '../../panel/lib/runtime-control';
+import { resetRuntimeControls } from '@/features/runtime/runtime-control';
 import { setPrincipalRole } from '../../panel/lib/auth-state';
 
 const session = {

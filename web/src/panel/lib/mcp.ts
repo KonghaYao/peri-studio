@@ -9,9 +9,9 @@
 // 直接取自 lib/auth-state（lib 模块之间可互相 import）。
 
 import { createSignal } from 'solid-js';
-import * as H from './protocol';
+import * as H from '@/shared/protocol/client';
 import { readOnly } from './auth-state';
-import type { McpOAuthAuthorizationFrame, McpOAuthFrame, McpServerInfo } from './protocol';
+import type { McpOAuthAuthorizationFrame, McpOAuthFrame, McpServerInfo } from '@/shared/protocol/client';
 import type { Ack, ActionFrame, ActionOptions } from './action-contract';
 
 export const [mcpServers, setMcpServers] = createSignal<McpServerInfo[]>([]);

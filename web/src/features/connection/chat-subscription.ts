@@ -13,16 +13,17 @@
 // 旧 doc 的 Y.Doc；registry doc 常驻，永不 drop。
 
 import type { Setter } from 'solid-js';
-import * as H from './protocol';
-import type { DocStore } from './doc-store';
-import { reconcileRuntimeControl } from './runtime-control';
-import { isTerminal, isTurnActive } from './action-state';
-import { resetMcpState } from './mcp';
-import { tearDownMcpAppsForChat } from './mcp-apps';
-import { resetRewindState } from './rewind-assembly';
+import * as H from '@/shared/protocol/client';
+import type { DocStore } from '@/shared/yjs/doc-store';
+import { reconcileRuntimeControl } from '@/features/runtime/runtime-control';
+import { isTerminal, isTurnActive } from '../../panel/lib/action-state';
+import { resetMcpState } from '../../panel/lib/mcp';
+import { tearDownMcpAppsForChat } from '../../panel/lib/mcp-apps';
+import { resetRewindState } from '../../panel/lib/rewind-assembly';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import type { ControlView } from '@/entities/chat/control-view';
-import { resetElicitationResponses } from './elicitation-delivery';
+import { resetElicitationResponses } from '@/features/message/elicitation-delivery';
+import { resetQuestionResponses } from '@/features/message/question-delivery';
 
 export interface ChatSubscriptionDeps {
   /** 选中对话（重连后恢复订阅）；状态归 store 组合根所有。 */
@@ -41,6 +42,7 @@ export interface ChatSubscriptionDeps {
   setChatHead: (head: ControlView | null) => void;
   setPermissions: (permissions: ControlView['pendingPermissions']) => void;
   setElicitations: (items: NonNullable<ControlView['pendingElicitations']>) => void;
+  setQuestions: (items: NonNullable<ControlView['pendingQuestions']>) => void;
   setRuntimeDocsState: Setter<{ chat: boolean; control: boolean }>;
 }
 
@@ -97,7 +99,9 @@ export function selectChat(cid: string): void {
   deps!.setChatHead(null);
   deps!.setPermissions([]);
   deps!.setElicitations([]);
+  deps!.setQuestions([]);
   resetElicitationResponses();
+  resetQuestionResponses();
   deps!.setRuntimeDocsState({ chat: false, control: false });
   resetMcpState();
   tearDownMcpAppsForChat(previousCid);
@@ -114,6 +118,7 @@ export function refreshCurrentControlProjection(): boolean {
   deps!.setChatHead(null);
   deps!.setPermissions([]);
   deps!.setElicitations([]);
+  deps!.setQuestions([]);
   deps!.setRuntimeDocsState((state) => ({ ...state, control: false }));
   const sent = deps!.sendFrame(H.subscribe([docId]));
   if (!sent) deps!.toast('Connection not ready, question status will refresh after reconnect');

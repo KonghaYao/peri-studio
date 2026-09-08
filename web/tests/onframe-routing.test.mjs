@@ -39,15 +39,15 @@ const FEATURE_OWNERS = {
 };
 
 function protocolFrameTags() {
-  const protocol = source('panel/lib/protocol.ts');
+  const protocol = source('shared/protocol/client.ts');
   const downstream = protocol.slice(
     protocol.indexOf('export type DownstreamFrame'),
     protocol.indexOf('export const parse'),
   );
-  const resourceProtocol = source('panel/lib/resource-protocol.ts');
+  const resourceProtocol = source('shared/protocol/resource-result.ts');
   const resourceDownstream = resourceProtocol.slice(
     resourceProtocol.indexOf('export interface ResourceResultFrame'),
-    resourceProtocol.indexOf('export function openResourceView'),
+    resourceProtocol.indexOf('export function isResourceResult'),
   );
   const terminalProtocol = source('shared/protocol/terminal.ts');
   const terminalDownstream = terminalProtocol.slice(
@@ -63,10 +63,10 @@ function protocolFrameTags() {
 }
 
 function onFrameSwitch() {
-  const store = source('store/index.ts');
-  const start = store.indexOf('function onFrame(');
-  const end = store.indexOf('function onAck(');
-  assert.ok(start !== -1 && end !== -1 && start < end, 'store.ts onFrame block must exist');
+  const store = source('store/downstream.ts');
+  const start = store.indexOf('return function onFrame(');
+  const end = store.lastIndexOf('}');
+  assert.ok(start !== -1 && end !== -1 && start < end, 'store/downstream.ts onFrame block must exist');
   return store.slice(start, end);
 }
 
@@ -103,26 +103,31 @@ test('every onFrame case has a substantive handler (inline or delegated)', () =>
 });
 
 test('feature frame cases are handled by their owning module handlers', () => {
-  const store = source('store/index.ts');
+  const resource = source('features/resource/handle-downstream.ts');
+  const session = source('features/session/handle-downstream.ts');
+  const mcp = source('features/mcp/handle-downstream.ts');
+  const terminal = source('features/terminal/handle-downstream.ts');
   for (const [tag, owner] of Object.entries(FEATURE_OWNERS)) {
     const body = caseBody(tag);
-    const call = body.match(/(handle[A-Za-z]+)\(frame(?:\s+as\s+[^)]+)?\)/);
+    assert.match(body, /\.handleDownstream\(frame\)/, `${tag} must route through a family handleDownstream`);
+    const moduleText = source(owner.module);
     if (tag === 'ysync.update') {
-      // Resource documents are offered to their independent reader first;
-      // every other Yjs document still goes through the primary DocStore.
-      assert.match(body, /handleResourceUpdate\(/, 'ysync.update must route resource documents independently');
-      assert.match(body, /store\.applyUpdateFrame\(/, 'ysync.update must go through store.applyUpdateFrame');
-      assert.match(source(owner.module), /applyUpdateFrame\(frame: \{ doc: string; update: string \}\)/,
+      assert.match(body, /resource\.handleDownstream/, 'ysync.update must route to resource family');
+      assert.match(resource, /handleResourceUpdate\(/);
+      assert.match(resource, /docStore\.applyUpdateFrame\(/);
+      assert.match(moduleText, /applyUpdateFrame\(frame: \{ doc: string; update: string \}\)/,
         `${owner.module} must provide applyUpdateFrame`);
-    } else if (call) {
-      // 拆分后：case 委托给模块 handler，模块必须导出同名函数。
-      assert.equal(call[1], owner.prefix, `${tag} must delegate to ${owner.prefix}(frame)`);
-      const moduleText = source(owner.module);
+    } else if (tag === 'resource_result') {
+      assert.match(resource, new RegExp(`export function ${owner.prefix}\\(|deps\\.${owner.prefix}\\(`));
+    } else if (tag.startsWith('prompt_') || tag.startsWith('rewind_')) {
+      assert.match(session, new RegExp(`${owner.prefix}\\(`));
       assert.match(moduleText, new RegExp(`export function ${owner.prefix}\\(`), `${owner.module} must export ${owner.prefix}`);
-    } else {
-      // 拆分前：case 内联处理（直接操作模块信号或 commands）。
-      assert.ok(/\bset[A-Z]\w+\(|commands\.|mcpQueries|rewindQueries|promptRecoveryQueries/.test(body),
-        `${tag} case must contain an inline handler statement`);
+    } else if (tag.startsWith('mcp_')) {
+      assert.match(mcp, new RegExp(`${owner.prefix}\\(`));
+      assert.match(moduleText, new RegExp(`export function ${owner.prefix}\\(`), `${owner.module} must export ${owner.prefix}`);
+    } else if (tag.startsWith('terminal_')) {
+      assert.match(terminal, new RegExp(`${owner.prefix}\\(|handleTerminalFrame`));
+      assert.match(moduleText, new RegExp(`export function ${owner.prefix}\\(`), `${owner.module} must export ${owner.prefix}`);
     }
   }
 });

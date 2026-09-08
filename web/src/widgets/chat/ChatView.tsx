@@ -14,21 +14,28 @@ import { Composer } from '@/widgets/composer/Composer';
 import { MessageList } from './MessageList';
 import { ChatEmptyWorkspace, CHAT_EMPTY_TITLE } from './ChatEmptyWorkspace';
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
-import { chatEntries, chatAgentLoading, chatHead, elicitationResponses, elicitations, permissions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, restoringSessionId, retryPersistentAction, runtimeDocsHydrated, selectedSessionId, turnActive } from '../../panel/store';
+import { chatEntries, chatAgentLoading, chatHead, elicitationResponses, elicitations, permissions, questionResponses, questions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, respondQuestion, restoringSessionId, retryPersistentAction, runtimeDocsHydrated, selectedSessionId, turnActive } from '../../panel/store';
 import { readOnly } from '../../panel/lib/auth-state';
 import { LoadingState } from '@/shared/ui';
 import { ConnectionProblem } from '@/widgets/shell/ConnectionProblem';
 import { ErrorCenter } from '@/widgets/shell/ErrorCenter';
 import { LaunchWorkspace } from '@/widgets/shell/LaunchWorkspace';
+import { SessionModelMenu } from '@/widgets/shell/SessionConfigDialog';
 import { StatusArea } from '@/widgets/shell/StatusArea';
 import { ElicitationQueue } from './ElicitationQueue';
-import { dismissUncertainElicitation, visibleElicitations } from '../../panel/lib/elicitation-delivery';
+import { QuestionQueue } from './QuestionQueue';
+import { dismissUncertainElicitation, visibleElicitations } from '@/features/message/elicitation-delivery';
+import { dismissUncertainQuestion, visibleQuestions } from '@/features/message/question-delivery';
 import { PermissionQueue } from './PermissionQueue';
-import { permissionDecisions } from '../../panel/lib/permission-delivery';
-import { messageSubmission } from '../../panel/lib/message-delivery';
+import { permissionDecisions } from '@/features/message/permission-delivery';
+import { messageSubmission } from '@/features/message/message-delivery';
 import { isConversationEmpty } from '@/features/chat/conversation-empty';
 
 const EMPTY_HINT = 'Enter to send · Shift+Enter for newline';
+
+function composerRuntimeMenu(ctx: { id: string; disabled: boolean }) {
+  return <SessionModelMenu id={ctx.id} disabled={ctx.disabled} />;
+}
 
 type ChatViewProps = {
   onOpenNavigation?: () => void;
@@ -43,6 +50,7 @@ export function ChatView(props: ChatViewProps) {
   let composerObserver: ResizeObserver | undefined;
   const hasPendingPermission = () => permissions().some((permission) => permission.status === 'pending');
   const hasPendingElicitation = () => visibleElicitations(elicitations()).length > 0;
+  const hasPendingQuestion = () => visibleQuestions(questions()).length > 0;
   const conversationEmpty = createMemo(() => isConversationEmpty({
     runtimeDocsHydrated: runtimeDocsHydrated(),
     entryCount: chatEntries().length,
@@ -89,7 +97,7 @@ export function ChatView(props: ChatViewProps) {
                     onRetry={retryPersistentAction}
                   />
                 </Show>
-                <Show when={!hasPendingPermission()}>
+                <Show when={hasPendingElicitation()}>
                   <ElicitationQueue
                     elicitations={visibleElicitations(elicitations())}
                     responses={elicitationResponses()}
@@ -99,10 +107,20 @@ export function ChatView(props: ChatViewProps) {
                     onRespond={respondElicitation}
                   />
                 </Show>
-                <Show when={!hasPendingPermission() && !hasPendingElicitation()}>
+                <Show when={hasPendingQuestion()}>
+                  <QuestionQueue
+                    questions={visibleQuestions(questions())}
+                    responses={questionResponses()}
+                    readOnly={readOnly()}
+                    onRefreshStatus={refreshCurrentControlProjection}
+                    onDismissUncertain={dismissUncertainQuestion}
+                    onRespond={respondQuestion}
+                  />
+                </Show>
+                <Show when={!hasPendingPermission() && !hasPendingElicitation() && !hasPendingQuestion()}>
                   <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} tasks={chatHead()?.tasks ?? []} entries={chatEntries()} />
                 </Show>
-                <Composer />
+                <Composer renderRuntimeMenu={composerRuntimeMenu} />
               </div>
             </>
           )}>
@@ -116,7 +134,7 @@ export function ChatView(props: ChatViewProps) {
                   onRetry={retryPersistentAction}
                 />
               </Show>
-              <Show when={!hasPendingPermission()}>
+              <Show when={hasPendingElicitation()}>
                 <ElicitationQueue
                   elicitations={visibleElicitations(elicitations())}
                   responses={elicitationResponses()}
@@ -126,8 +144,18 @@ export function ChatView(props: ChatViewProps) {
                   onRespond={respondElicitation}
                 />
               </Show>
+              <Show when={hasPendingQuestion()}>
+                <QuestionQueue
+                  questions={visibleQuestions(questions())}
+                  responses={questionResponses()}
+                  readOnly={readOnly()}
+                  onRefreshStatus={refreshCurrentControlProjection}
+                  onDismissUncertain={dismissUncertainQuestion}
+                  onRespond={respondQuestion}
+                />
+              </Show>
               <ChatEmptyWorkspace title={CHAT_EMPTY_TITLE} hint={EMPTY_HINT}>
-                <Composer layout="centered" />
+                <Composer layout="centered" renderRuntimeMenu={composerRuntimeMenu} />
               </ChatEmptyWorkspace>
             </div>
           </Show>

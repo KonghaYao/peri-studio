@@ -1,11 +1,36 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DocStore } from './doc-store';
-import * as H from './protocol';
-import { installChatSubscription, refreshCurrentControlProjection, selectChat } from './chat-subscription';
-import { installMcpApps, liveMcpApp, openMcpApp, resetMcpAppsState } from './mcp-apps';
-import { setPrincipalRole } from './auth-state';
+import { DocStore } from '@/shared/yjs/doc-store';
+import * as H from '@/shared/protocol/client';
+import { installChatSubscription, refreshCurrentControlProjection, selectChat, sendSubscribe } from './chat-subscription';
+import { installMcpApps, liveMcpApp, openMcpApp, resetMcpAppsState } from '../../panel/lib/mcp-apps';
+import { setPrincipalRole } from '../../panel/lib/auth-state';
 
 describe('chat subscription control refresh', () => {
+  it('sendSubscribe replays ysync.subscribe with desiredDocs (G3 reconnect path)', () => {
+    const store = new DocStore();
+    const sendFrame = vi.fn(() => true);
+    installChatSubscription({
+      getCurrentCid: () => 'chat-42',
+      setCurrentCid: vi.fn(),
+      docStore: store,
+      sendFrame,
+      toast: vi.fn(),
+      chatStatusSignal: () => ({}),
+      chatHead: () => null,
+      setSelectedCid: vi.fn(),
+      setChatEntries: vi.fn(),
+      setChatHead: vi.fn(),
+      setPermissions: vi.fn(),
+      setElicitations: vi.fn(),
+      setQuestions: vi.fn(),
+      setRuntimeDocsState: vi.fn(),
+    });
+    sendSubscribe();
+    expect(sendFrame).toHaveBeenCalledWith(
+      H.subscribe([H.DOC_REGISTRY, H.chatDoc('chat-42'), H.sessionDoc('chat-42')]),
+    );
+  });
+
   it('drops and re-subscribes only the current Control Doc', () => {
     const store = new DocStore();
     const original = store.docFor(H.sessionDoc('chat-1'));
@@ -13,6 +38,7 @@ describe('chat subscription control refresh', () => {
     const setChatHead = vi.fn();
     const setPermissions = vi.fn();
     const setElicitations = vi.fn();
+    const setQuestions = vi.fn();
     let runtimeState = { chat: true, control: true };
     const setRuntimeDocsState = vi.fn((update) => {
       runtimeState = typeof update === 'function' ? update(runtimeState) : update;
@@ -20,7 +46,7 @@ describe('chat subscription control refresh', () => {
     installChatSubscription({
       getCurrentCid: () => 'chat-1', setCurrentCid: vi.fn(), docStore: store, sendFrame, toast: vi.fn(),
       chatStatusSignal: () => ({}), chatHead: () => null, setSelectedCid: vi.fn(), setChatEntries: vi.fn(),
-      setChatHead, setPermissions, setElicitations, setRuntimeDocsState,
+      setChatHead, setPermissions, setElicitations, setQuestions, setRuntimeDocsState,
     });
 
     expect(refreshCurrentControlProjection()).toBe(true);
@@ -32,6 +58,7 @@ describe('chat subscription control refresh', () => {
     expect(setChatHead).toHaveBeenCalledWith(null);
     expect(setPermissions).toHaveBeenCalledWith([]);
     expect(setElicitations).toHaveBeenCalledWith([]);
+    expect(setQuestions).toHaveBeenCalledWith([]);
     expect(setRuntimeDocsState).toHaveBeenCalledOnce();
     expect(runtimeState).toEqual({ chat: true, control: false });
   });
@@ -62,6 +89,7 @@ describe('chat subscription control refresh', () => {
       setChatHead: vi.fn(),
       setPermissions: vi.fn(),
       setElicitations: vi.fn(),
+      setQuestions: vi.fn(),
       setRuntimeDocsState: vi.fn(),
     });
 

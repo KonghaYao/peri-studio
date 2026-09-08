@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { describe, expect, it, vi } from 'vitest';
-import type { MessageSubmission } from '../../panel/lib/message-delivery';
+import type { MessageSubmission } from '@/features/message/message-delivery';
 import { MessageOutbox } from './MessageOutbox';
 
 const submission = (phase: MessageSubmission['phase']): MessageSubmission => ({

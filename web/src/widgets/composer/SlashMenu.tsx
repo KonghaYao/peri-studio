@@ -67,9 +67,10 @@ export function SlashMenu(props: Props) {
             <ListboxItem
               id={slashMenuOptionId(props.id, command.name)}
               item={item}
+              recipe="menu"
               aria-selected={active()}
               class={cn(
-                'slash-menu__item mx-6 cursor-pointer rounded-lg border-0 bg-transparent px-10 py-6 text-left transition-colors duration-(--duration-fast) data-[selected]:bg-sidebar-selected data-[highlighted]:bg-sidebar-selected pointer-coarse:min-h-44',
+                'slash-menu__item transition-colors duration-(--duration-fast)',
                 active() && 'bg-sidebar-selected',
               )}
               onPointerMove={() => props.onActiveIndex(index())}

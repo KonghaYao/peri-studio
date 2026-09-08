@@ -32,7 +32,7 @@ test('authentication invalidation survives UI cleanup and reaches the login surf
   assert.doesNotMatch(gate, /fetch\(|localStorage\./);
   assert.doesNotMatch(store, /export \{[^}]*authInvalidation/);
   const migratedComponents = [
-    ['Composer.tsx', join(import.meta.dirname, '..', 'src', 'widgets', 'composer')],
+    ['useComposerState.ts', join(import.meta.dirname, '..', 'src', 'widgets', 'composer')],
     ['QuickStartComposer.tsx', join(import.meta.dirname, '..', 'src', 'widgets', 'composer')],
     ['ProjectSidebar.tsx', join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar')],
     ['SessionSearch.tsx', join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar')],
@@ -57,11 +57,12 @@ test('authenticated-session cleanup is a complete identity boundary, not reconne
   const root = join(import.meta.dirname, '..', 'src', 'panel');
   const storeRoot = join(import.meta.dirname, '..', 'src', 'store');
   const store = readFileSync(join(storeRoot, 'index.ts'), 'utf8');
+  const resetModule = readFileSync(join(storeRoot, 'reset-session.ts'), 'utf8');
+  const connectionModule = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'connection', 'connection.ts'), 'utf8');
   const hook = readFileSync(join(root, 'lib', 'auth-hook.ts'), 'utf8');
   const toastStore = readFileSync(join(root, 'lib', 'toast-store.ts'), 'utf8');
-  const resetMarker = 'export function resetAuthenticatedSession';
-  const disconnect = store.slice(store.indexOf('export function disconnect()'), store.indexOf(resetMarker));
-  const reset = store.slice(store.indexOf(resetMarker), store.indexOf('export function navigateProjectSession'));
+  const resetFactory = resetModule.slice(resetModule.indexOf('export function createResetAuthenticatedSession'), resetModule.lastIndexOf('}'));
+  const disconnect = connectionModule.slice(connectionModule.indexOf('export function disconnect('), connectionModule.indexOf('export function resetConnectionState'));
 
   assert.doesNotMatch(disconnect, /setProjects|setProjectSessions|setChats|store\.clear|toastStore\.clear/);
   for (const statement of [
@@ -70,16 +71,16 @@ test('authenticated-session cleanup is a complete identity boundary, not reconne
     'setRuntimeDocsState', 'setChatStatusSignal', 'setProjects', 'setProjectSessions',
     'setImportableSessions', 'resetMessageDelivery', 'sessionActivation.reset',
     'resetRuntimeControls', 'setPersistentErrors', 'commands.reset',
-    'resetPermissionDecisions', 'resetConnectionState()', 'store.clear', 'toastStore.clear',
-  ]) assert.match(reset, new RegExp(statement.replace(/[().]/g, '\\$&')), statement);
+    'resetPermissionDecisions', 'resetConnectionState()', 'docStore.clear', 'toastStore.clear',
+  ]) assert.match(resetFactory, new RegExp(statement.replace(/[().]/g, '\\$&')), statement);
   // 连接信号（connState/heartbeatCount/connectionProblem）归 resetConnectionState（lib/connection）。
-  const resetConnection = readFileSync(join(root, 'lib', 'connection.ts'), 'utf8');
+  const resetConnection = connectionModule;
   const resetStateFn = resetConnection.slice(resetConnection.indexOf('export function resetConnectionState'), resetConnection.indexOf('export function rememberSession'));
   assert.match(resetStateFn, /setConnState\(/);
   assert.match(resetStateFn, /setHeartbeatCount\(0\)/);
   assert.match(resetStateFn, /setConnectionProblem\(null\)/);
-  assert.ok(reset.indexOf('installPrincipalRole(null)') < reset.indexOf('disconnect()'));
-  assert.ok(reset.indexOf('store.clear()') < reset.indexOf('toastStore.clear()'));
+  assert.ok(resetFactory.indexOf('installPrincipalRole(null)') < resetFactory.indexOf('disconnect()'));
+  assert.ok(resetFactory.indexOf('docStore.clear()') < resetFactory.indexOf('toastStore.clear()'));
   assert.match(toastStore, /for \(const timer of this\.timers\.values\(\)\) clearTimeout\(timer\)/);
   assert.match(toastStore, /this\.timers\.clear\(\)/);
   // P4：身份边界行为在 lib/auth-hook——挂载检查链与 invalidation 处理链。

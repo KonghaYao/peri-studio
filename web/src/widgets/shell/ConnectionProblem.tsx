@@ -1,5 +1,5 @@
 import { Show } from 'solid-js';
-import { busy, connectionProblem, reconnect } from '../../panel/lib/connection';
+import { busy, connectionProblem, reconnect } from '@/features/connection/connection';
 import { Button, InlineNotice } from '@/shared/ui';
 
 export function ConnectionProblem() {

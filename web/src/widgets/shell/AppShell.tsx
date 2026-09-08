@@ -5,7 +5,7 @@ import { compactViewportQuery, mediumViewportQuery } from '../../panel/lib/break
 import { ProjectDrawer } from './shared/ProjectDrawer';
 import { ResourceWorkbench, type ResourcePreviewOrigin, type WorkbenchView } from '@/widgets/resource/ResourceWorkbench';
 import { closeResourceDiffPreview, closeResourceFilePreview, resourceDiffPreview, resourceFilePreview } from '../../panel/store';
-import { resourceWorkbenchRequest } from '../../panel/lib/open-workspace-from-tool';
+import { resourceWorkbenchRequest } from '@/store';
 import { ResourceDiffEditor } from '@/widgets/resource/ResourceDiffEditor';
 import { ResourceFileEditor } from '@/widgets/resource/ResourceFileEditor';
 import { ResourceFloatingPanel } from '@/widgets/resource/ResourceFloatingPanel';

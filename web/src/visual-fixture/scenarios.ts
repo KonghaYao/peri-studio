@@ -2,7 +2,7 @@ import type { ChatEntry, ToolCallInfo } from '@/entities/chat/chat-view';
 import type { ControlView, PendingPermission } from '@/entities/chat/control-view';
 import type { ProjectInfo, ProjectSessionInfo, SessionSummaryInfo } from '@/entities/registry/registry-view';
 import { setMcpAuthorization, setMcpOAuthEvents, setMcpServers } from '../panel/lib/mcp';
-import { setConnState, setPromptDeliveryReady } from '../panel/lib/connection';
+import { setConnState, setPromptDeliveryReady } from '@/features/connection/connection';
 import {
   resetAuthenticatedSession,
   setChatEntries,
@@ -23,7 +23,7 @@ import { acquireFixtureClock } from './fixture-clock';
 import { resourceWorkspace, setResourceDiffPreview, setResourceFilePreview, setResourceWorkspace } from '../panel/lib/resource-store';
 import type { ResourceDiffPreviewState, ResourceFilePreviewState } from '../panel/lib/resource-preview';
 import type { ResourceEntry } from '../panel/lib/resource-view';
-import { markElicitationResponseUncertain, startElicitationResponse } from '../panel/lib/elicitation-delivery';
+import { markElicitationResponseUncertain, startElicitationResponse } from '@/features/message/elicitation-delivery';
 import { setComposerAssets } from '../panel/lib/composer-assets';
 import { createLongConversationEntries } from './long-conversation';
 import {

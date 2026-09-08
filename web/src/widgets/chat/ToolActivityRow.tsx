@@ -7,7 +7,7 @@ import {
   formatToolDisplayName,
   formatToolPathLabel,
 } from '@/features/chat/tool-file-link';
-import { openWorkspaceFromTool } from '../../panel/lib/open-workspace-from-tool';
+import { openWorkspaceFromTool } from '@/store';
 import { CopyButton } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
 

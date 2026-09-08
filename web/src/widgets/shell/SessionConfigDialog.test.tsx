@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { setPrincipalRole } from '../../panel/lib/auth-state';
-import { setConnState } from '../../panel/lib/connection';
+import { setConnState } from '@/features/connection/connection';
 import { setChatHead, setSessionConfigMutation } from '../../panel/store';
 import { SessionModelMenu } from './SessionConfigDialog';
 

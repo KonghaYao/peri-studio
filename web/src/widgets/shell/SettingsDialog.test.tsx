@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setChatCatalog, setGlobalStatus, setInstances, setMachines, setSchemaVersion } from '../../panel/store';
-import { setConnState } from '../../panel/lib/connection';
+import { setConnState } from '@/features/connection/connection';
 import { SettingsDialog } from './SettingsDialog';
 
 function resetStore() {

@@ -15,7 +15,7 @@ const transport = vi.hoisted(() => ({
 vi.mock('../../panel/store', () => ({
   resetAuthenticatedSession: transport.resetAuthenticatedSession,
 }));
-vi.mock('../../panel/lib/connection', () => ({ connectWithCookie: transport.connectWithCookie }));
+vi.mock('@/features/connection/connection', () => ({ connectWithCookie: transport.connectWithCookie }));
 
 import { AuthGate } from './AuthGate';
 import { useAuthActions } from '../../panel/lib/auth-hook';

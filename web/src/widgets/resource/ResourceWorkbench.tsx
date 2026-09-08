@@ -21,7 +21,7 @@ import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_TITLE_CLASS } from './resou
 import { ResourceFloatingPanel } from './ResourceFloatingPanel';
 import { GitGraphView } from './git/GitGraphView';
 import { cn } from '@/shared/lib/cn';
-import { resourceWorkbenchRequest } from '../../panel/lib/open-workspace-from-tool';
+import { resourceWorkbenchRequest } from '@/store';
 
 export type WorkbenchView = 'explorer' | 'scm' | 'mcp' | 'graph' | 'terminal' | null;
 export type ResourcePreviewOrigin = {

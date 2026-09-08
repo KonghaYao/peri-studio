@@ -16,7 +16,7 @@ import { isTurnActive } from '../src/panel/lib/action-state.ts';
 import { cleanSessionTitle, connectionProblemForClose, formatRelativeTime, retainLiveRuntimeHints, sessionDisplayTitle, shortSessionId } from '../src/panel/lib/recovery-state.ts';
 import { messageTime } from '../src/panel/lib/message-time.ts';
 import { parseMarkdown, safeHref } from '../src/panel/lib/markdown.ts';
-import { messageActivity, nextFollowState } from '../src/panel/lib/message-follow.ts';
+import { messageActivity, nextFollowState } from '../src/features/message/message-follow.ts';
 import { authFeedback } from '../src/panel/lib/auth-feedback.ts';
 import { searchProjectSessions } from '../src/features/session/session-search.ts';
 import { connectedRuntimeState, runtimeState } from '../src/panel/lib/runtime-state.ts';
@@ -63,7 +63,7 @@ test('principal parsing and mutation policy are closed by default', async () => 
 test('prompt recovery is owned by CommandTracker rather than an ad-hoc frame cache', () => {
   const store = readFileSync(join(import.meta.dirname, '..', 'src', 'store', 'index.ts'), 'utf8');
   const actions = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'user-actions.ts'), 'utf8');
-  const delivery = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'message-delivery.ts'), 'utf8');
+  const delivery = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'message', 'message-delivery.ts'), 'utf8');
   const activation = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'session', 'session-activation.ts'), 'utf8');
   assert.match(actions, /sendAction\(frame, 'prompt', \{\s*acceptedStartsInactivityLease: true,\s*retryOnUncertain: true/);
   assert.match(activation, /this\.deps\.send\(frame, 'session\/create', \{\s*retryOnUncertain: true/);
@@ -89,7 +89,7 @@ test('permission delivery uncertainty remains locked in the security surface', (
   const store = readFileSync(join(import.meta.dirname, '..', 'src', 'store', 'index.ts'), 'utf8');
   const projection = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'store-projection.ts'), 'utf8');
   const actions = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'user-actions.ts'), 'utf8');
-  const delivery = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'permission-delivery.ts'), 'utf8');
+  const delivery = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'message', 'permission-delivery.ts'), 'utf8');
   assert.match(actions, /startPermissionDecision\(frame\.commandId, permissionId, decision\)/);
   assert.match(actions, /retryOnError: true/);
   assert.match(actions, /onTimeout:\s*\(\)\s*=>\s*\{[\s\S]*?markPermissionDecisionUncertain\(frame\.commandId\)[\s\S]*?do not submit the opposite decision/);
@@ -189,9 +189,8 @@ test('authentication feedback does not blame credentials for server failures', (
 });
 
 test('connection loss settles pending actions instead of silently discarding their callbacks', () => {
-  const root = join(import.meta.dirname, '..', 'src', 'panel');
-  const connection = readFileSync(join(root, 'lib', 'connection.ts'), 'utf8');
-  const tracker = readFileSync(join(root, 'lib', 'command-tracker.ts'), 'utf8');
+  const connection = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'connection', 'connection.ts'), 'utf8');
+  const tracker = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'connection', 'command-tracker.ts'), 'utf8');
   assert.match(tracker, /settleConnectionLoss\(\): void/);
   assert.match(tracker, /for \(const commandId of \[\.\.\.this\.pending\.keys\(\)\]\)/);
   assert.match(connection, /case 'reconnecting':[\s\S]*?deps!\.settleConnectionLoss\(\)/);
@@ -206,7 +205,7 @@ test('connection loss settles pending actions instead of silently discarding the
 });
 
 test('replaced websocket callbacks cannot mutate the new connection state', () => {
-  const connection = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'connection.ts'), 'utf8');
+  const connection = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'connection', 'connection.ts'), 'utf8');
   assert.match(connection, /let connectionEpoch = 0/);
   assert.match(connection, /const epoch = \+\+connectionEpoch/);
   assert.match(connection, /onStatus: \(state, detail\) => \{ if \(epoch === connectionEpoch\) handleStatus\(state, detail\); \}/);
@@ -214,7 +213,7 @@ test('replaced websocket callbacks cannot mutate the new connection state', () =
 });
 
 test('routine connection readiness stays in persistent status instead of interrupting with a toast', () => {
-  const connection = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'connection.ts'), 'utf8');
+  const connection = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'connection', 'connection.ts'), 'utf8');
   const state = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'connection-state.ts'), 'utf8');
   assert.match(connection, /const transition = connectionTransition\(state, detail, !!principalRole\(\)\)/);
   assert.match(state, /case 'ready':[\s\S]*?ready: true,[\s\S]*?busy: false,[\s\S]*?text: 'Ready'/);
@@ -225,7 +224,7 @@ test('routine connection readiness stays in persistent status instead of interru
 
 test('browser diagnostics never print raw protocol or user payloads', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
-  const ws = readFileSync(join(root, 'lib', 'ws-client.ts'), 'utf8');
+  const ws = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'connection', 'ws-client.ts'), 'utf8');
   const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
   const yjsValues = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'yjs', 'yjs-values.ts'), 'utf8');
   assert.doesNotMatch(ws, /console\.(?:error|warn)\([^\n]*(?:ev\.data|frame\)|ev\.reason|,\s*ev\b)/);
@@ -234,8 +233,8 @@ test('browser diagnostics never print raw protocol or user payloads', () => {
 });
 
 test('downstream parsing rejects unsafe JSON shapes while preserving future tags', () => {
-  const protocol = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'protocol.ts'), 'utf8');
-  const ws = readFileSync(join(import.meta.dirname, '..', 'src', 'panel', 'lib', 'ws-client.ts'), 'utf8');
+  const protocol = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'protocol', 'client.ts'), 'utf8');
+  const ws = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'connection', 'ws-client.ts'), 'utf8');
   assert.match(protocol, /!value \|\| typeof value !== 'object' \|\| Array\.isArray\(value\)/);
   assert.match(protocol, /typeof frame\.t !== 'string' \|\| !frame\.t\.trim\(\)/);
   assert.doesNotMatch(protocol, /FRAME_TAGS|KNOWN_TAGS/);
@@ -271,18 +270,20 @@ test('all empty-session creation entry points share one store-level single-fligh
   const store = readFileSync(join(root, 'store', 'index.ts'), 'utf8');
   const activation = readFileSync(join(root, 'features', 'session', 'session-activation.ts'), 'utf8');
   const sidebar = readFileSync(join(root, 'widgets', 'sidebar', 'ProjectSidebar.tsx'), 'utf8');
+  const sidebarTree = readFileSync(join(root, 'widgets', 'sidebar', 'project-sidebar-tree.tsx'), 'utf8');
   const launchWorkspace = readFileSync(join(root, 'widgets', 'shell', 'LaunchWorkspace.tsx'), 'utf8');
   assert.match(activation, /this\.deps\.creatingProjectId\(\)/);
   assert.match(activation, /this\.deps\.setCreatingProjectId\(projectId\)/);
-  assert.match(sidebar, /busy=\{creatingSessionProjectId\(\) === projectId\}/);
+  assert.match(sidebarTree, /busy=\{creatingSessionProjectId\(\) === projectId\}/);
   assert.match(launchWorkspace, /busy=\{creatingSessionProjectId\(\) === activeProjects\(\)\[0\]\.id\}/);
 });
 
 test('uncertain metadata retries preserve the original frame identity and are identity-scoped', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
   const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
+  const resetSession = readFileSync(join(root, '..', 'store', 'reset-session.ts'), 'utf8');
   const errors = readFileSync(join(root, 'lib', 'panel-errors.ts'), 'utf8');
-  const tracker = readFileSync(join(root, 'lib', 'command-tracker.ts'), 'utf8');
+  const tracker = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'connection', 'command-tracker.ts'), 'utf8');
   const catalog = readFileSync(join(root, '..', 'features', 'catalog', 'catalog-actions.ts'), 'utf8');
   const activation = readFileSync(join(root, '..', 'features', 'session', 'session-activation.ts'), 'utf8');
   assert.match(tracker, /this\.uncertain\.set\(commandId, request\)/);
@@ -290,7 +291,7 @@ test('uncertain metadata retries preserve the original frame identity and are id
   assert.match(tracker, /frame: tracked\.frame/);
   assert.match(errors, /const sent = deps!\.retry\(commandId\) === 'sent'/);
   assert.match(errors, /if \(sent\) deps!\.setPersistentErrors/);
-  assert.match(store, /commands\.reset\(\)/);
+  assert.match(resetSession, /commands\.reset\(\)/);
   assert.match(activation, /this\.deps\.hasUncertainMetadata\(\)/);
   assert.match(store, /onUncertainCountChange: setUncertainMetadataCount/);
   assert.match(store, /new CatalogActions\(\{/);
@@ -312,7 +313,7 @@ test('project session discovery is an explicit cold-start read path', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
   const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
   const catalog = readFileSync(join(root, '..', 'features', 'catalog', 'catalog-actions.ts'), 'utf8');
-  const protocol = readFileSync(join(root, 'lib', 'protocol.ts'), 'utf8');
+  const protocol = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'protocol', 'client.ts'), 'utf8');
   const dialog = readFileSync(join(root, '..', 'widgets', 'shell', 'SessionImportDialog.tsx'), 'utf8');
   assert.match(protocol, /action\('session\/discover', \{ projectId \}\)/);
   assert.match(store, /catalogActions\.discoverSessions/);
@@ -325,11 +326,13 @@ test('project session discovery is an explicit cold-start read path', () => {
 test('terminal action effects have one owner and late acknowledgements cannot resume quick start', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
   const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
+  const connectionDownstream = readFileSync(join(root, '..', 'features', 'connection', 'handle-downstream.ts'), 'utf8');
+  const resetSession = readFileSync(join(root, '..', 'store', 'reset-session.ts'), 'utf8');
   const actions = readFileSync(join(root, 'lib', 'user-actions.ts'), 'utf8');
-  const tracker = readFileSync(join(root, 'lib', 'command-tracker.ts'), 'utf8');
+  const tracker = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'connection', 'command-tracker.ts'), 'utf8');
   const activation = readFileSync(join(root, '..', 'features', 'session', 'session-activation.ts'), 'utf8');
-  const ackHandler = store.slice(store.indexOf('function onAck('), store.indexOf('function onActionError('));
-  const errorHandler = store.slice(store.indexOf('function onActionError('), store.indexOf('// ── 渲染入口'));
+  const ackHandler = connectionDownstream.slice(connectionDownstream.indexOf('function onAck('), connectionDownstream.indexOf('function onActionError('));
+  const errorHandler = connectionDownstream.slice(connectionDownstream.indexOf('function onActionError('), connectionDownstream.indexOf('function handleDownstream('));
   const lateBranch = ackHandler.slice(ackHandler.indexOf("if (disposition === 'late_terminal')"));
   assert.ok(ackHandler.indexOf('commands.acknowledge(ack)') < ackHandler.indexOf("if (disposition === 'late_terminal')"));
   assert.doesNotMatch(lateBranch, /selectChat\(|sendMessage\(/);
@@ -353,7 +356,7 @@ test('runtime controls are chat-scoped and reconcile through projection truth', 
   const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
   const projection = readFileSync(join(root, 'lib', 'store-projection.ts'), 'utf8');
   const actions = readFileSync(join(root, 'lib', 'user-actions.ts'), 'utf8');
-  const control = readFileSync(join(root, 'lib', 'runtime-control.ts'), 'utf8');
+  const control = readFileSync(join(import.meta.dirname, '..', 'src', 'features', 'runtime', 'runtime-control.ts'), 'utf8');
   assert.doesNotMatch(store, /cancellingTurn|closingChat|setCancellingTurn|setClosingChat/);
   assert.match(actions, /startRuntimeControl\(frame\.commandId, chatId, 'cancel'\)/);
   assert.match(actions, /startRuntimeControl\(frame\.commandId, chatId, 'close'\)/);
@@ -394,13 +397,13 @@ test('global session search matches durable metadata and excludes empty queries'
 test('session navigation closes only after a server-authoritative open commits', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
   const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
-  const sidebar = readFileSync(join(root, '..', 'widgets', 'sidebar', 'ProjectSidebar.tsx'), 'utf8');
+  const sidebarRow = readFileSync(join(root, '..', 'widgets', 'sidebar', 'project-sidebar-row.tsx'), 'utf8');
   const sessionRow = readFileSync(join(root, '..', 'widgets', 'sidebar', 'ProjectSessionRow.tsx'), 'utf8');
   const search = readFileSync(join(root, '..', 'widgets', 'sidebar', 'SessionSearch.tsx'), 'utf8');
   const activation = readFileSync(join(root, '..', 'features', 'session', 'session-activation.ts'), 'utf8');
   assert.match(activation, /export interface OpenSessionCallbacks/);
   assert.match(activation, /callbacks\.onCommitted\?\.\(\)/);
-  assert.match(sidebar, /onOpen=\{\(sessionId, onCommitted\) => \{ navigateProjectSession\(sessionId, \{ onCommitted \}\); \}\}/);
+  assert.match(sidebarRow, /onOpen=\{\(sessionId, onCommitted\) => \{ navigateProjectSession\(sessionId, \{ onCommitted \}\); \}\}/);
   assert.match(sessionRow, /props\.onOpen\(props\.session\.id, props\.onNavigate\)/);
   assert.doesNotMatch(sessionRow, /props\.onOpen\(props\.session\.id[^;]*;\s*props\.onNavigate\(\)/);
   assert.match(search, /onCommitted: \(\) => \{ props\.onClose\(\)/);

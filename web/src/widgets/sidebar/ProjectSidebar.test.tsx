@@ -56,6 +56,12 @@ const store = vi.hoisted(() => ({
   runtimeDocsHydrated: vi.fn(() => true),
   renameProject: vi.fn(),
   renameProjectSession: vi.fn(),
+  remoteDirectoryBrowsePorts: {
+    ready: () => true,
+    send: vi.fn(() => true),
+    subscribe: vi.fn(),
+    unsubscribe: vi.fn(),
+  },
   restoreProject: vi.fn(),
   restoreProjectSession: vi.fn(),
   selectedCid: vi.fn(() => null as string | null),
@@ -63,12 +69,12 @@ const store = vi.hoisted(() => ({
   turnActive: vi.fn(() => false),
 }));
 
-vi.mock('../../panel/store', () => store);
+vi.mock('@/store', () => store);
 vi.mock('../../panel/lib/auth-state', () => ({ principalId: () => 'test-principal', readOnly: store.readOnly }));
 vi.mock('@/widgets/auth/AuthGate', () => ({ useAuthActions: () => ({ logout: vi.fn() }) }));
 
 import { ProjectSidebar } from './ProjectSidebar';
-import { primaryShortcut } from '../../panel/lib/keyboard';
+import { primaryShortcut } from '@/shared/lib/keyboard';
 
 function sessionButton() {
   return screen.getByRole('button', { name: /^Architecture refactor/ });

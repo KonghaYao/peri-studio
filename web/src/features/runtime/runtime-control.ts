@@ -1,5 +1,5 @@
 import { createSignal } from 'solid-js';
-import { createKeyedDelivery, type DeliveryPhase } from './delivery-state';
+import { createKeyedDelivery, type DeliveryPhase } from '../../panel/lib/delivery-state';
 
 export type RuntimeControlKind = 'cancel' | 'close';
 export type RuntimeControlPhase = Extract<DeliveryPhase, 'sending' | 'accepted' | 'uncertain' | 'confirmed' | 'failed'>;

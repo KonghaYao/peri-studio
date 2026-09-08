@@ -95,11 +95,10 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
       data-session-id={props.session.id}
       data-testid="session-row"
       class={cn(
-        'session-row group/row relative flex min-w-0 items-center rounded-md transition-colors duration-(--duration-fast)',
+        'session-row group/row relative flex min-h-32 min-w-0 items-center rounded-md transition-colors duration-(--duration-fast)',
         props.selected ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
       )}
       style={{
-        'min-height': '32px',
         'padding-left': props.indent ? `calc(10px + ${props.indent}px)` : undefined,
       }}
     >

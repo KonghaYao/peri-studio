@@ -15,7 +15,7 @@
 //            'reconnecting' | 'fatal' | 'closed'
 //   onFrame(frame)   —— 每个非 keep_alive 下行帧（已 parse 的对象）。
 
-import { auth, parse, pong, type DownstreamFrame } from './protocol';
+import { auth, parse, pong, type DownstreamFrame } from '@/shared/protocol/client';
 
 export type ConnStatus =
   | 'connecting'

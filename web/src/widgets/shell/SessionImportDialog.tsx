@@ -103,7 +103,7 @@ export function SessionImportDialog(props: SessionImportDialogProps) {
           value={selectedId() ? [selectedId()!] : []}
           onChange={selectCandidate}
           shouldFocusWrap
-          renderItem={(item) => <ListboxItem item={item} class="grid w-full min-h-54 grid-cols-import items-center gap-10 rounded-10 border border-transparent bg-transparent px-10 py-9 text-left cursor-pointer hover:bg-hover data-[selected]:border-border-strong data-[selected]:bg-selected">
+          renderItem={(item) => <ListboxItem item={item} recipe="plain" class="grid grid-cols-import items-center gap-10">
             <ChatIcon />
             <span class="flex min-w-0 flex-col gap-3"><ListboxItemLabel as="strong" class="overflow-hidden text-ellipsis whitespace-nowrap text-13">{cleanSessionTitle(item.rawValue.title)}</ListboxItemLabel><ListboxItemDescription as="small" class="text-11 text-text-secondary">{formatRelativeTime(item.rawValue.updatedAt)} · ID …{shortSessionId(item.rawValue.sessionId)}</ListboxItemDescription></span>
             <Show when={selectedId() === item.rawValue.sessionId}><span class="grid place-items-center w-18 h-18 rounded-full bg-btn-primary text-surface text-11" aria-hidden="true">✓</span></Show>

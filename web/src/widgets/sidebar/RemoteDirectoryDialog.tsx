@@ -4,15 +4,16 @@ import type { ProjectInfo } from '@/entities/registry/registry-view';
 import {
   installActiveRemoteDirectoryBrowser,
   RemoteDirectoryBrowser,
+  type RemoteDirectoryBrowseDependencies,
   type RemoteDirectorySnapshot,
 } from '@/features/machine/remote-directory-browse';
-import { connectionReady, sendFrame } from '../../panel/lib/connection';
 import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, LoadingState } from '@/shared/ui';
 
 export function RemoteDirectoryDialog(props: {
   open: boolean;
   instanceId: string;
   projects: readonly ProjectInfo[];
+  browsePorts: RemoteDirectoryBrowseDependencies;
   onClose: () => void;
   onSelect: (absolutePath: string) => void;
 }) {
@@ -21,12 +22,7 @@ export function RemoteDirectoryDialog(props: {
 
   const ensureBrowser = () => {
     if (browser) return browser;
-    browser = new RemoteDirectoryBrowser({
-      ready: connectionReady,
-      send: sendFrame,
-      subscribe: (docId) => { sendFrame({ t: 'ysync.subscribe', docs: [docId], clientCapabilities: [] }); },
-      unsubscribe: (docId) => { sendFrame({ t: 'ysync.unsubscribe', docs: [docId] }); },
-    });
+    browser = new RemoteDirectoryBrowser(props.browsePorts);
     browser.setOnChange(setSnapshot);
     return browser;
   };

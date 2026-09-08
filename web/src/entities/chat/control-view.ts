@@ -127,6 +127,24 @@ export interface PendingElicitation {
   fields: ElicitationField[];
   createdAt: string | null;
 }
+export interface QuestionOption {
+  label: string;
+  description: string | null;
+}
+export interface PendingQuestionItem {
+  question: string;
+  header: string | null;
+  options: QuestionOption[];
+  multiSelect: boolean;
+}
+/** AskUserQuestion 投影；与 ACP form elicitation 分列，不共用 schema。 */
+export interface PendingQuestion {
+  questionId: string;
+  status: 'pending' | 'responding';
+  description: string | null;
+  expiresAt: string | null;
+  questions: PendingQuestionItem[];
+}
 export interface ControlView {
   chat: ChatHeadInfo | null;
   agent: AgentInfo | null;
@@ -134,6 +152,8 @@ export interface ControlView {
   pendingPermissions: PendingPermission[];
   /** Additive Registry v2 surface; omitted by older fixtures/doc readers. */
   pendingElicitations?: PendingElicitation[];
+  /** Session Doc `pending_questions`；与 elicitation 独立。 */
+  pendingQuestions?: PendingQuestion[];
   /** Session Doc `tasks` / `task_order`；旧快照缺省为空。 */
   tasks?: PeriTaskInfo[];
 }
@@ -142,7 +162,16 @@ export interface ControlView {
 export function renderControl(doc: Y.Doc): ControlView {
   const root = doc.getMap<unknown>('root');
   const pendingElicitations: PendingElicitation[] = [];
-  const result: ControlView = { chat: null, agent: null, activeTurn: null, pendingPermissions: [], pendingElicitations, tasks: readPeriTasks(root) };
+  const pendingQuestions: PendingQuestion[] = [];
+  const result: ControlView = {
+    chat: null,
+    agent: null,
+    activeTurn: null,
+    pendingPermissions: [],
+    pendingElicitations,
+    pendingQuestions,
+    tasks: readPeriTasks(root),
+  };
   const session = asMap(root.get('session'));
   if (session) {
     result.chat = {
@@ -378,6 +407,50 @@ export function renderControl(doc: Y.Doc): ControlView {
     });
   });
   pendingElicitations.sort((left, right) => (left.createdAt || '').localeCompare(right.createdAt || ''));
+  asMap(root.get('pending_questions'))?.forEach((value) => {
+    const item = asMap(value);
+    const questionId = getStr(item, 'question_id');
+    const status = getStr(item, 'status');
+    if (!item || !questionId || !['pending', 'responding'].includes(status || '')) return;
+    const questionsMap = asMap(item.get('questions'));
+    const questionOrder = (asArray(item.get('question_order'))?.toArray() ?? [])
+      .filter((key): key is string => typeof key === 'string')
+      .slice(0, 8);
+    const questions: PendingQuestionItem[] = [];
+    for (const key of questionOrder) {
+      const questionItem = questionsMap ? asMap(questionsMap.get(key)) : null;
+      const question = getStr(questionItem, 'question');
+      if (!questionItem || !question) continue;
+      const optionsMap = asMap(questionItem.get('options'));
+      const optionOrder = (asArray(questionItem.get('option_order'))?.toArray() ?? [])
+        .filter((optionKey): optionKey is string => typeof optionKey === 'string')
+        .slice(0, 16);
+      const options: QuestionOption[] = [];
+      for (const optionKey of optionOrder) {
+        const option = optionsMap ? asMap(optionsMap.get(optionKey)) : null;
+        const label = getStr(option, 'label');
+        if (!option || !label) continue;
+        options.push({ label, description: getStr(option, 'description') });
+      }
+      if (options.length === 0) continue;
+      questions.push({
+        question,
+        header: getStr(questionItem, 'header'),
+        options,
+        multiSelect: questionItem.get('multi_select') === true,
+      });
+    }
+    if (questions.length === 0) return;
+    pendingQuestions.push({
+      questionId,
+      status: status as PendingQuestion['status'],
+      description: getStr(item, 'description'),
+      expiresAt: getStr(item, 'expires_at'),
+      questions,
+    });
+  });
+  pendingQuestions.sort((left, right) => (left.expiresAt || '').localeCompare(right.expiresAt || '')
+    || left.questionId.localeCompare(right.questionId));
   return result;
 }
 

@@ -1,4 +1,4 @@
-import * as H from '../../panel/lib/protocol';
+import * as H from '@/shared/protocol/client';
 import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
 import { SessionNavigator, type OpeningSession, type SessionNavigationEffect, type SessionNavigationSnapshot } from './session-navigator';
 import {
@@ -11,8 +11,8 @@ import {
   resetQuickStart,
   retryQuickStartDelivery,
   startQuickStart,
-} from '../../panel/lib/quick-start-delivery';
-import { promptFitsBudget } from '../../panel/lib/prompt-budget';
+} from '@/features/message/quick-start-delivery';
+import { promptFitsBudget } from '@/shared/lib/prompt-budget';
 
 type ActionFrame = ReturnType<typeof H.action>;
 export interface ActivationAck {

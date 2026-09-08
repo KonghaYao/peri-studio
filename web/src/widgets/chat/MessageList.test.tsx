@@ -4,7 +4,7 @@ import { createSignal } from 'solid-js';
 import { setChatEntries, setChatHead, setElicitations, setPermissions, setRuntimeDocsState, setSelectedCid } from '../../panel/store';
 import { MessageList } from './MessageList';
 import type { ChatEntry } from '@/entities/chat/chat-view';
-import { blockUnknownMessageDelivery, messageSubmission, resetMessageDelivery, startMessageDelivery } from '../../panel/lib/message-delivery';
+import { blockUnknownMessageDelivery, messageSubmission, resetMessageDelivery, startMessageDelivery } from '@/features/message/message-delivery';
 
 function message(id: string, origin: ChatEntry['origin'], replayVerified: boolean | null): ChatEntry {
   return {
@@ -302,6 +302,7 @@ describe('MessageList hydration', () => {
 
     const loading = document.querySelector('[data-testid="message-loading"]')!;
     expect(loading).toHaveClass('message-loading');
+    expect(loading.querySelector('.ui-spinner')).not.toBeNull();
     expect(loading).not.toHaveClass('sr-only');
     expect(loading).toHaveTextContent('Peri is working');
     expect(document.querySelectorAll('[data-testid="message-loading"]')).toHaveLength(1);

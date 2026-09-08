@@ -5,6 +5,7 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { transform } from 'lightningcss';
@@ -44,6 +45,12 @@ const readWidgetTsx = (name) => {
   assert.ok(path, `missing widget component ${name}`);
   return readFileSync(path, 'utf8');
 };
+const readComposerBundle = () => {
+  const dir = join(sourceRoot(), 'widgets', 'composer');
+  return ['Composer.tsx', 'ComposerEditor.tsx', 'ComposerToolbar.tsx', 'useComposerState.ts']
+    .map((file) => readFileSync(join(dir, file), 'utf8'))
+    .join('\n');
+};
 const allFiles = (directory) => readdirSync(directory, { withFileTypes: true }).flatMap((item) => {
   const path = join(directory, item.name);
   return item.isDirectory() ? allFiles(path) : [path];
@@ -59,21 +66,105 @@ const ARBITRARY_BREAKPOINT_VARIANT = /(?<![\w-])(?:min|max)-\[[^\]]+\]:/g;
 const findArbitraryBracketViolations = (source) => {
   const violations = new Set();
   for (const match of source.matchAll(ARBITRARY_SIZING_UTILITY)) {
-    const token = match[0].trim();
-    if (!/\[&/.test(token)) violations.add(token);
+    violations.add(match[0].trim());
   }
   for (const match of source.matchAll(ARBITRARY_BREAKPOINT_VARIANT)) {
     violations.add(match[0].trim());
   }
   return [...violations];
 };
+const ARBITRARY_SELECTOR_BRACKET = /\[&[^\]]+\]/g;
+const WIDGET_ARBITRARY_SELECTOR_ALLOWLIST = new Set([
+  'widgets/resource/git/GitGraphRefBadge.tsx',
+]);
+const listLayerSourceFiles = (layerDirs) => layerDirs.flatMap((segment) => {
+  const layerRoot = join(sourceRoot(), segment);
+  if (!existsSync(layerRoot)) return [];
+  return allFiles(layerRoot).filter((path) => (
+    (path.endsWith('.tsx') || path.endsWith('.ts'))
+    && !path.endsWith('.test.tsx')
+    && !path.endsWith('.test.ts')
+  ));
+});
+const relativeFromSrc = (absolutePath) => absolutePath.slice(sourceRoot().length + 1);
 
 test('widgets must not use arbitrary tailwind bracket utilities', () => {
   const offenders = listWidgetSourceTsx().flatMap((path) => {
+    const rel = relativeFromSrc(path);
     const violations = findArbitraryBracketViolations(readFileSync(path, 'utf8'));
-    return violations.map((token) => `${path.split('/').slice(-3).join('/')}: ${token}`);
+    return violations.map((token) => `${rel}: ${token}`);
   });
   assert.deepEqual(offenders, []);
+});
+
+test('widgets must not use arbitrary selector bracket utilities except tracked legacy', () => {
+  const offenders = listWidgetSourceTsx().flatMap((path) => {
+    const rel = relativeFromSrc(path);
+    if (WIDGET_ARBITRARY_SELECTOR_ALLOWLIST.has(rel)) return [];
+    const hits = [...readFileSync(path, 'utf8').matchAll(ARBITRARY_SELECTOR_BRACKET)].map((match) => match[0]);
+    return hits.map((token) => `${rel}: ${token}`);
+  });
+  assert.deepEqual(offenders, []);
+});
+
+test('features, pages, and app must not use arbitrary tailwind bracket utilities', () => {
+  const offenders = listLayerSourceFiles(['features', 'pages', 'app']).flatMap((path) => {
+    const rel = relativeFromSrc(path);
+    const violations = findArbitraryBracketViolations(readFileSync(path, 'utf8'));
+    return violations.map((token) => `${rel}: ${token}`);
+  });
+  assert.deepEqual(offenders, []);
+});
+
+test('shared/ui must not use arbitrary tailwind bracket utilities', () => {
+  const offenders = listLayerSourceFiles(['shared/ui']).flatMap((path) => {
+    const rel = relativeFromSrc(path);
+    const violations = findArbitraryBracketViolations(readFileSync(path, 'utf8'));
+    return violations.map((token) => `${rel}: ${token}`);
+  });
+  assert.deepEqual(offenders, []);
+});
+
+test('fractional Tailwind spacing utilities resolve to an explicit product token', () => {
+  const source = join(import.meta.dirname, '..', 'src');
+  const files = [];
+  const walk = (directory) => {
+    for (const item of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, item.name);
+      if (item.isDirectory()) walk(path);
+      else if (/\.(?:ts|tsx|css)$/.test(item.name)) files.push(path);
+    }
+  };
+  walk(source);
+  const used = new Set();
+  const utility = /(?:^|[\s:"`])(?:-?(?:m|p)[trblxy]?|gap(?:-x|-y)?|top|right|bottom|left|inset(?:-x|-y)?)-(\d+\.\d+)(?=[^\d]|$)/g;
+  for (const file of files) {
+    for (const match of readFileSync(file, 'utf8').matchAll(utility)) used.add(match[1]);
+  }
+  const theme = readFileSync(join(source, 'styles', 'theme.css'), 'utf8');
+  const declared = new Set([...theme.matchAll(/--spacing-(\d+\.\d+)\s*:/g)].map((match) => match[1]));
+  assert.deepEqual([...used].filter((token) => !declared.has(token)).sort(), []);
+});
+
+const EXTRA_CSS_BASELINE = {
+  lineCount: 435,
+  sha256: 'dca0388cd42e0578c0e9fc7bb35fd3b17e97479d2e306123e24f15df5a38c2af',
+};
+
+function lineCountLikeWc(content) {
+  if (content.length === 0) return 0;
+  const lines = content.split(/\r?\n/);
+  if (lines[lines.length - 1] === '') return lines.length - 1;
+  return lines.length;
+}
+
+test('extra.css stays at the WP-BOUND line and hash baseline until intentionally revised', () => {
+  const extraPath = join(webRoot(), 'src', 'styles', 'extra.css');
+  const content = readFileSync(extraPath, 'utf8');
+  const lineCount = lineCountLikeWc(content);
+  const sha256 = createHash('sha256').update(content).digest('hex');
+  assert.equal(lineCount, EXTRA_CSS_BASELINE.lineCount, 'extra.css line count grew; revise baseline in css-contracts or move rules to tokens/Tailwind');
+  assert.equal(sha256, EXTRA_CSS_BASELINE.sha256, 'extra.css content changed; update EXTRA_CSS_BASELINE.sha256 when the change is intentional');
 });
 
 test('styles entry imports extra.css for non-utility exceptions', () => {
@@ -151,15 +242,16 @@ test('dialog size belongs to DialogContent rather than an overflowing child', ()
 
 test('Composer and quick start expose one labeled textarea and keyboard submit guidance', () => {
   const root = join(import.meta.dirname, '..', 'src', 'widgets', 'composer');
-  const composer = readFileSync(join(root, 'Composer.tsx'), 'utf8');
+  const composerEditor = readFileSync(join(root, 'ComposerEditor.tsx'), 'utf8');
+  const composerShell = readFileSync(join(root, 'Composer.tsx'), 'utf8');
   const quickStart = readFileSync(join(root, 'QuickStartComposer.tsx'), 'utf8');
-  assert.match(composer, /<Textarea[\s\S]*?aria-label="Message the agent"/);
-  assert.match(composer, /aria-autocomplete="list"/);
-  assert.match(composer, /if \(e\.key === 'Enter' && !e\.shiftKey\) \{\s*e\.preventDefault\(\);\s*submit\(\);/);
+  assert.match(composerEditor, /<Textarea[\s\S]*?aria-label="Message the agent"/);
+  assert.match(composerEditor, /aria-autocomplete="list"/);
+  assert.match(composerEditor, /if \(e\.key === 'Enter' && !e\.shiftKey\) \{\s*e\.preventDefault\(\);\s*s\(\)\.submit\(\);/);
   assert.match(quickStart, /<Textarea[\s\S]*?aria-label="First message"/);
   assert.match(quickStart, /variant="bare"/);
   assert.match(quickStart, /if \(event\.key === 'Enter' && !event\.shiftKey\) \{ event\.preventDefault\(\); submit\(\); \}/);
-  assert.doesNotMatch(composer, /shadow-float/);
+  assert.doesNotMatch(composerShell, /shadow-float/);
   assert.doesNotMatch(quickStart, /shadow-float/);
 });
 
@@ -194,7 +286,9 @@ test('MessageList delegates entry semantics through stable entry-id slots to one
   const list = readWidgetTsx('MessageList.tsx');
   const message = readWidgetTsx('ConversationMessage.tsx');
   assert.match(list, /const chatEntryIds = createMemo\(\(\) => chatEntries\(\)\.map\(\(entry\) => entry\.id\)\)/);
-  assert.match(list, /<Show when=\{chatEntries\(\)\[globalIndex\(\)\]\}>\{\(entry\) => <ConversationMessage entry=\{entry\} \/>\}<\/Show>/);
+  assert.match(list, /<Show when=\{chatEntries\(\)\[globalIndex\(\)\]\}>\{\(entry\) =>/);
+  assert.match(list, /<ConversationMessage entry=\{entry\} \/>/);
+  assert.match(list, /<PlanSystemEntryRow entry=\{entry\(\)\} \/>/);
   assert.doesNotMatch(list, /function MessageBubble|<Markdown|<ToolCallCard/);
   assert.match(message, /conversation-message--\$\{role\(\)\}/);
   assert.match(message, /role="alert" aria-label="Message error"/);
@@ -207,7 +301,7 @@ test('the permission surface exposes a queue and never resolves an empty identit
   const card = readWidgetTsx('PermissionRequestCard.tsx');
   assert.doesNotMatch(messageList, /<PermissionQueue/);
   assert.match(chatView, /<PermissionQueue/);
-  assert.ok(chatView.indexOf('<PermissionQueue') < chatView.indexOf('<Composer />'));
+  assert.ok(chatView.indexOf('<PermissionQueue') < chatView.indexOf('<Composer '));
   assert.doesNotMatch(messageList, /permissions\(\)\[0\]/);
   assert.match(queue, /if \(id\) props\.onResolve\(id, decision, optionId\)/);
   assert.match(card, /primaryDisabled=\{primaryDisabled\(\)\}/);
@@ -290,11 +384,12 @@ test('coarse pointers expose sidebar actions without hover and keep controls tou
   assert.match(sessionAccessory, /pointer-coarse:pointer-events-auto pointer-coarse:opacity-100/);
   assert.match(sessionRow, /pointer-coarse:min-h-44/);
   assert.match(button, /pointer-coarse:min-h-44/);
-  assert.match(dialog, /pointer-coarse:w-48 pointer-coarse:min-h-44/);
+  assert.match(button, /pointer-coarse:min-w-44/);
+  assert.match(dialog, /as=\{IconButton\}/);
 });
 
 test('P0 interaction architecture cannot regress to hidden cancel or viewport-breaking overlays', () => {
-  const composer = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'composer', 'Composer.tsx'), 'utf8');
+  const composer = readComposerBundle();
   const sidebarChrome = readWidgetTsx('SidebarChrome.tsx');
   const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Dialog.tsx'), 'utf8');
   const styles = featureCss();
@@ -310,17 +405,21 @@ test('P0 interaction architecture cannot regress to hidden cancel or viewport-br
 
 test('composer keeps the writing surface quiet and keyboard behavior discoverable', () => {
   const root = join(import.meta.dirname, '..', 'src');
-  const composer = readFileSync(join(root, 'widgets', 'composer', 'Composer.tsx'), 'utf8');
+  const composerShell = readFileSync(join(root, 'widgets', 'composer', 'Composer.tsx'), 'utf8');
+  const composerParts = readComposerBundle();
   const base = readFileSync(join(root, 'styles', 'base.css'), 'utf8');
-  assert.match(composer, /Enter to send · Shift \+ Enter for newline/);
-  assert.match(composer, /runtimeSummary/);
-  assert.doesNotMatch(composer, />\s*effort：/);
-  assert.doesNotMatch(composer, />\s*上下文：/);
-  assert.doesNotMatch(composer, /focus-within:border-focus-ring/);
-  assert.doesNotMatch(composer, /has-\[\.composer-input:focus-visible\]:shadow-/);
-  assert.doesNotMatch(composer, /shadow-float/);
-  assert.match(composer, /composer-toolbar flex min-h-36 min-w-0 items-center/);
-  assert.match(composer, /rounded-\(--composer-radius\)/);
+  assert.match(composerParts, /Enter to send · Shift \+ Enter for newline/);
+  assert.match(composerParts, /runtimeSummary/);
+  assert.doesNotMatch(composerShell, />\s*effort：/);
+  assert.doesNotMatch(composerShell, />\s*上下文：/);
+  assert.doesNotMatch(composerShell, /focus-within:border-focus-ring/);
+  assert.doesNotMatch(composerShell, /has-\[\.composer-input:focus-visible\]:shadow-/);
+  assert.doesNotMatch(composerShell, /shadow-float/);
+  assert.match(composerParts, /composer-toolbar flex min-h-36 min-w-0 items-center/);
+  assert.match(composerShell, /rounded-\(--composer-radius\)/);
+  const composerToolbar = readFileSync(join(root, 'widgets', 'composer', 'ComposerToolbar.tsx'), 'utf8');
+  assert.doesNotMatch(composerToolbar, /bg-accent-solid/);
+  assert.match(composerToolbar, /variant="primary"/);
   assert.match(base, /:focus-visible\s*\{\s*outline:\s*2px solid var\(--focus-ring\)/);
 });
 
@@ -457,8 +556,8 @@ test('icon-only actions use one rounded rectangular geometry and never circular 
   const sourceRoot = join(import.meta.dirname, '..', 'src');
   const button = readFileSync(join(sourceRoot, 'shared', 'ui', 'Button.tsx'), 'utf8');
   assert.match(button, /rounded-6/);
-  assert.match(button, /compact: 'size-24'/);
-  assert.match(button, /default: 'size-32'/);
+  assert.match(button, /sm: 'size-24'/);
+  assert.match(button, /md: 'size-32'/);
   assert.doesNotMatch(button, /rounded-full/);
   for (const file of allFiles(sourceRoot).filter((path) => path.endsWith('.tsx'))) {
     const source = readFileSync(file, 'utf8');

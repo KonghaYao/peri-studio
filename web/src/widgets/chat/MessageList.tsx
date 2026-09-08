@@ -10,16 +10,18 @@
 
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, type JSX } from 'solid-js';
 import { chatEntries, chatAgentLoading, chatHead, elicitations, permissions, retryMessageSubmission, runtimeDocsHydrated, selectedCid } from '../../panel/store';
-import { nextFollowState } from '../../panel/lib/message-follow.ts';
+import { nextFollowState } from '@/features/message/message-follow';
 import { messageTime } from '../../panel/lib/message-time.ts';
 import type { ChatEntry } from '@/entities/chat/chat-view';
-import { Button, LoadingState } from '@/shared/ui';
+import { Button, LoadingState, Spinner } from '@/shared/ui';
 import { ConversationMessage } from './ConversationMessage';
-import { acknowledgeUnknownMessageDelivery, acknowledgedMessageDeliveries, canAcknowledgeUnknownMessageDelivery, dismissFailedMessageDelivery, messageSubmissionForChat } from '../../panel/lib/message-delivery';
+import { PlanSystemEntryRow } from './PlanSystemEntryRow';
+import { isPlanSystemChatEntry } from '@/entities/chat/plan-system-entry';
+import { acknowledgeUnknownMessageDelivery, acknowledgedMessageDeliveries, canAcknowledgeUnknownMessageDelivery, dismissFailedMessageDelivery, messageSubmissionForChat } from '@/features/message/message-delivery';
 import { MessageOutbox } from './MessageOutbox';
 import { replayBoundaryAt, type ReplayBoundary } from '../../panel/lib/replay-boundary';
 import { TranscriptWindow } from '@/entities/chat/transcript-window';
-import { visibleElicitations } from '../../panel/lib/elicitation-delivery';
+import { visibleElicitations } from '@/features/message/elicitation-delivery';
 
 
 type VisibleHistoryBoundary = Exclude<ReplayBoundary, null | 'inferred_history'>;
@@ -44,7 +46,7 @@ function ChatLoading() {
   return <div data-testid="chat-loading">
     <div class="chat-loading message-loading mb-12 flex min-h-32 items-center gap-8 text-12 text-text-muted" data-testid="message-loading" aria-hidden="true">
     <span class="grid size-18 shrink-0 place-items-center rounded-6 border border-border-subtle bg-surface-muted" aria-hidden="true">
-      <i class="h-10 w-2 rounded-full bg-text-muted animate-pulse motion-reduce:animate-none" />
+      <Spinner decorative class="size-10 text-text-muted" />
     </span>
     <span><strong class="font-650 text-text-primary">Peri</strong> is working</span>
   </div>
@@ -355,7 +357,11 @@ export function MessageList(props: { footerHeight?: number }) {
               const globalIndex = () => visibleTranscript().start + localIndex();
               return <TranscriptRow id={id} position={globalIndex() + 1} size={chatEntryIds().length} onMeasure={measureTranscriptRow}>
                 <Show when={visibleHistoryBoundary(replayBoundaryAt(chatEntries(), globalIndex()))}>{(kind) => <HistoryBoundary kind={kind()} />}</Show>
-                <Show when={chatEntries()[globalIndex()]}>{(entry) => <ConversationMessage entry={entry} />}</Show>
+                <Show when={chatEntries()[globalIndex()]}>{(entry) =>
+                  <Show when={isPlanSystemChatEntry(entry())} fallback={<ConversationMessage entry={entry} />}>
+                    <PlanSystemEntryRow entry={entry()} />
+                  </Show>
+                }</Show>
               </TranscriptRow>;
             }}
           </For>

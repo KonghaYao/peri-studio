@@ -1,4 +1,4 @@
-import * as H from '../../panel/lib/protocol';
+import * as H from '@/shared/protocol/client';
 
 export type CatalogFrame = ReturnType<typeof H.action>;
 

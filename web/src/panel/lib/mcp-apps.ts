@@ -2,13 +2,13 @@
 // 不 import store.ts；依赖由 store 通过 installMcpApps 注入。
 
 import { createSignal } from 'solid-js';
-import * as H from './protocol';
+import * as H from '@/shared/protocol/client';
 import { readOnly } from './auth-state';
 import type {
   McpAppCallResultFrame,
   McpAppResourceFrame,
   McpAppSessionFrame,
-} from './protocol';
+} from '@/shared/protocol/client';
 import type { Ack, ActionError, ActionFrame, ActionOptions } from './action-contract';
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
 

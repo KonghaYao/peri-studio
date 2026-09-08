@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { installPrincipalRole, principalRole } from './lib/auth-state';
 import { promptRecovery, setPromptRecovery } from './lib/prompt-recovery-assembly';
-import { busy, connState, connectionProblem, heartbeatCount, setBusy, setConnState, setConnectionProblem, setHeartbeatCount } from './lib/connection';
+import { busy, connState, connectionProblem, heartbeatCount, setBusy, setConnState, setConnectionProblem, setHeartbeatCount } from '@/features/connection/connection';
 import {
   chatEntries,
   chatHead,

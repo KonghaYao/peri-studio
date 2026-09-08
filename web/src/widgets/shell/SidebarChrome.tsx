@@ -2,6 +2,7 @@ import type { JSX } from 'solid-js';
 import { Show } from 'solid-js';
 import { Button, IconButton } from '@/shared/ui';
 import { useAuthActions } from '../../panel/lib/auth-hook';
+import { principalId } from '../../panel/lib/auth-state';
 import { Settings } from 'lucide-solid';
 
 interface SidebarChromeProps {
@@ -28,13 +29,15 @@ export function SidebarChrome(props: SidebarChromeProps) {
       </div>
       <div class="sidebar-mist-divider" aria-hidden="true" />
       <div class="sidebar-footer flex h-48 shrink-0 items-center gap-8 px-10">
-        <span
-          class="account-avatar grid size-28 shrink-0 place-items-center rounded-full bg-surface-muted text-11 font-medium text-content-secondary"
-          aria-hidden="true"
-        >
-          A
-        </span>
-        <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Account</span>
+        <Show when={principalId()} fallback={<span class="min-w-0 flex-1" aria-hidden="true" />}>
+          <span
+            class="account-avatar grid size-28 shrink-0 place-items-center rounded-full bg-surface-muted text-11 font-medium text-content-secondary"
+            aria-hidden="true"
+          >
+            A
+          </span>
+          <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Account</span>
+        </Show>
         <IconButton
           size="sm"
           showTooltip={false}
