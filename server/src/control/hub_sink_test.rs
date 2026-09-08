@@ -223,6 +223,7 @@ async fn mirror_snapshot_accumulates_live_updates() {
         epoch: 0,
         ts: "2026-08-07T00:00:00Z".to_string(),
         provenance: Default::default(),
+        source_agent_id: None,
         body: crate::state::normalized::EventBody::MessageDelta {
             turn_id: "t1".into(),
             entry_id: "t1:assistant".into(),
@@ -282,6 +283,7 @@ async fn broadcast_stream_delivers_updates() {
         epoch: 0,
         ts: "2026-08-07T00:00:00Z".to_string(),
         provenance: Default::default(),
+        source_agent_id: None,
         body: crate::state::normalized::EventBody::AgentStatus {
             status: "idle".into(),
             public_error: None,

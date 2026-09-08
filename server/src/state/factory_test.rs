@@ -73,6 +73,16 @@ fn create_chat_doc_has_full_structure() {
         root_map.get(&txn, "session_list_loaded"),
         Some(yrs::Out::Any(false.into()))
     );
+    assert!(root_map
+        .get(&txn, "tasks")
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .is_ok());
+    assert!(root_map
+        .get(&txn, "task_order")
+        .unwrap()
+        .cast::<yrs::ArrayRef>()
+        .is_ok());
 }
 
 #[test]

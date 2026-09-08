@@ -676,6 +676,8 @@ struct SessionDocRoot {
     active_turn: Option<ActiveTurnProjection>,  // turnId + turnStatus + updatedAt —— 权威；同时驱动 chat.loading
     pending_permissions: Map<String, PermissionProjection>,
     sessions: Map<String, SessionSummaryProjection>,  // agent 磁盘历史会话列表（10s 轮询全量同步，旧条目删除自愈）——与 Registry Doc chats 语义不同（§5.2）
+    tasks: Map<String, PeriTaskViewProjection>,       // Peri Subagent/Background 轻量视图（additive）
+    task_order: Array<String>,                        // 创建顺序；子 agent 正文/工具不进主 Chat Doc
 }
 
 struct PermissionProjection {

@@ -47,6 +47,7 @@ pub(crate) use super::chat_writer_turn::{
     bump_projection_version, migrate_assistant_segments_terminal, migrate_entry_terminal,
     set_active_turn, set_active_turn_status_if, turn_status_str,
 };
+pub use super::chat_writer_tasks::upsert_peri_task_view;
 
 /// 内容块种类（`append_text_delta` 的目标块类型）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

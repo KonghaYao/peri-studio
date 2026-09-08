@@ -71,6 +71,7 @@ async fn command_permission_resolve_cas() {
         epoch: 0,
         ts: "2026-08-07T00:00:00Z".to_string(),
         provenance: Default::default(),
+        source_agent_id: None,
         body: EventBody::PermissionRequested {
             permission_id: "p1".to_string(),
             turn_id: "t1".to_string(),
@@ -120,6 +121,7 @@ async fn command_permission_resolution_updates_linked_tool_projection() {
         epoch: 0,
         ts: "2026-08-07T00:00:00Z".into(),
         provenance: Default::default(),
+        source_agent_id: None,
         body: EventBody::ToolCallStarted {
             turn_id: "t1".into(),
             tool_call_id: "tc1".into(),
@@ -136,6 +138,7 @@ async fn command_permission_resolution_updates_linked_tool_projection() {
         epoch: 0,
         ts: "2026-08-07T00:00:00Z".into(),
         provenance: Default::default(),
+        source_agent_id: None,
         body: EventBody::PermissionRequested {
             permission_id: "p1".into(),
             turn_id: "t1".into(),

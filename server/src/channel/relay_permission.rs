@@ -69,6 +69,7 @@ impl RelayEventHandler {
             epoch,
             ts: now.to_string(),
             provenance: EventProvenance::Unspecified,
+            source_agent_id: None,
             body: EventBody::PermissionRequested {
                 permission_id: req.permission_id.clone(),
                 turn_id,

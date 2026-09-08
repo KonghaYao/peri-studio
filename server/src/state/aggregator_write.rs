@@ -92,6 +92,7 @@ impl Aggregator {
         } else {
             None
         };
+        if !ev.subagent_scoped() {
         // chat 侧写入（一次事务）。
         {
             let mut txn = pair.chat_txn();
@@ -296,8 +297,12 @@ impl Aggregator {
                 | EventBody::AgentPlan { .. }
                 | EventBody::Capabilities { .. }
                 | EventBody::SessionInfo { .. }
-                | EventBody::SessionListResponse { .. } => {}
+                | EventBody::SessionListResponse { .. }
+                | EventBody::PeriTaskStarted { .. }
+                | EventBody::PeriTaskCompleted { .. }
+                | EventBody::PeriTaskCancelled { .. } => {}
             }
+        }
         }
         self.write_control_side(pair, ev, replay_active);
     }

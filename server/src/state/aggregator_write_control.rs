@@ -40,6 +40,30 @@ impl Aggregator {
         ev: &NormalizedEvent,
         replay_active: bool,
     ) {
+        if matches!(
+            &ev.body,
+            EventBody::PeriTaskStarted { .. }
+                | EventBody::PeriTaskCompleted { .. }
+                | EventBody::PeriTaskCancelled { .. }
+        ) {
+            let active_turn_id = self
+                .read_active_turn(pair)
+                .map(|active| active.turn_id);
+            let mut txn = pair.session_txn();
+            let root = txn.get_or_insert_map(ROOT);
+            if self.apply_peri_task_event(
+                &mut txn,
+                &root,
+                ev,
+                active_turn_id.as_deref(),
+            ) {
+                chat_writer::bump_projection_version(&mut txn, &root);
+            }
+            return;
+        }
+        if ev.subagent_scoped() {
+            return;
+        }
         // control 侧写入：CAS 类自开事务（permission 原语内部管理），其余在
         // 一次 control 事务内；须在 chat 事务 drop 后（§6.4 固定顺序）。
         match &ev.body {
@@ -416,6 +440,11 @@ impl Aggregator {
                     | EventBody::PermissionExpired { .. } => {
                         // 纯 chat 事件或已在外层单独处理（CAS）：无 control
                         // 写入。
+                    }
+                    EventBody::PeriTaskStarted { .. }
+                    | EventBody::PeriTaskCompleted { .. }
+                    | EventBody::PeriTaskCancelled { .. } => {
+                        unreachable!("Peri task 已在外层分支处理")
                     }
                 }
             }

@@ -177,6 +177,8 @@ pub(crate) fn control_root() -> SessionDocRoot {
         pending_elicitations: HashMap::new(),
         sessions: chats,
         session_list_loaded: false,
+        tasks: HashMap::new(),
+        task_order: Vec::new(),
     }
 }
 

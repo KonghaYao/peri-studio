@@ -25,6 +25,22 @@ fn legacy_control_doc_defaults_missing_session_list_loaded() {
 }
 
 #[test]
+fn legacy_control_doc_defaults_missing_tasks() {
+    let mut value = serde_json::to_value(control_root()).unwrap();
+    value
+        .as_object_mut()
+        .expect("control root object")
+        .remove("tasks");
+    value
+        .as_object_mut()
+        .expect("control root object")
+        .remove("taskOrder");
+    let decoded: crate::schema::SessionDocRoot = serde_json::from_value(value).unwrap();
+    assert!(decoded.tasks.is_empty());
+    assert!(decoded.task_order.is_empty());
+}
+
+#[test]
 fn session_config_catalog_roundtrip_uses_bounded_projection_shape() {
     let option = crate::schema::SessionConfigOptionProjection {
         id: "thinking_effort".into(),

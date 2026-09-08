@@ -20,6 +20,8 @@ mod permission;
 mod projection;
 #[path = "aggregator_stream_test.rs"]
 mod stream;
+#[path = "aggregator_task_test.rs"]
+mod task;
 #[path = "aggregator_tool_test.rs"]
 mod tool;
 #[path = "aggregator_tool_patch_test.rs"]

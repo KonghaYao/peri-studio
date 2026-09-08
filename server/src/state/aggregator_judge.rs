@@ -181,6 +181,24 @@ impl Aggregator {
         ev: &NormalizedEvent,
         active: Option<&ActiveTurnProjection>,
     ) -> Result<(), ApplyReason> {
+        if ev.subagent_scoped() {
+            if matches!(
+                ev.body,
+                EventBody::MessageDelta { .. }
+                    | EventBody::ReasoningDelta { .. }
+                    | EventBody::UserMessage { .. }
+                    | EventBody::ToolCallStarted { .. }
+                    | EventBody::ToolCallUpdated { .. }
+                    | EventBody::ToolCallCompleted { .. }
+                    | EventBody::ToolCallPatched { .. }
+                    | EventBody::PermissionRequested { .. }
+                    | EventBody::PermissionResolved { .. }
+                    | EventBody::PermissionExpired { .. }
+                    | EventBody::AgentUsage { .. }
+            ) {
+                return Ok(());
+            }
+        }
         match &ev.body {
             EventBody::MessageDelta { entry_id, .. }
             | EventBody::ReasoningDelta { entry_id, .. } => {
@@ -313,6 +331,9 @@ impl Aggregator {
             | EventBody::AgentConfig { .. }
             | EventBody::AgentUsage { .. }
             | EventBody::AgentActivity { .. }
+            | EventBody::PeriTaskStarted { .. }
+            | EventBody::PeriTaskCompleted { .. }
+            | EventBody::PeriTaskCancelled { .. }
             | EventBody::InputPrediction { .. }
             | EventBody::AgentPlan { .. }
             | EventBody::Capabilities { .. }

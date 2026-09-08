@@ -256,6 +256,7 @@ fn epoch_mismatch_marks_uncalibratable_and_rejects() {
         epoch: 1,
         ts: "2026-08-07T00:00:00Z".to_string(),
         provenance: Default::default(),
+        source_agent_id: None,
         body: user_msg("t2", "t2:user", "b"),
     };
     let r = agg.apply(&mut p, &e);
@@ -271,6 +272,7 @@ fn epoch_mismatch_marks_uncalibratable_and_rejects() {
             epoch: 1,
             ts: "2026-08-07T00:00:00Z".to_string(),
             provenance: Default::default(),
+            source_agent_id: None,
             body: user_msg("t3", "t3:user", "c"),
         },
     );
@@ -312,6 +314,7 @@ fn fresh_chat_first_event_adopts_epoch_baseline() {
             epoch: 1,
             ts: "2026-08-07T00:00:00Z".to_string(),
             provenance: Default::default(),
+            source_agent_id: None,
             body: msg_delta("t1", "t1:assistant", "b1", "chunk_1"),
         },
     );
@@ -332,6 +335,7 @@ fn fresh_chat_first_event_adopts_epoch_baseline() {
             epoch: 1,
             ts: "2026-08-07T00:00:00Z".to_string(),
             provenance: Default::default(),
+            source_agent_id: None,
             body: turn_terminal("t1", TurnStatus::Cancelled),
         },
     );

@@ -186,6 +186,12 @@ impl Factory {
                 if root.get(txn, session_list::SESSION_LIST_LOADED_KEY).is_none() {
                     root.insert(txn, session_list::SESSION_LIST_LOADED_KEY, false);
                 }
+                if root.get(txn, "tasks").is_none() {
+                    root.insert(txn, "tasks", yrs::MapPrelim::default());
+                }
+                if root.get(txn, "task_order").is_none() {
+                    root.insert(txn, "task_order", yrs::ArrayPrelim::default());
+                }
             }
             DocKind::Registry => {
                 if root.get(txn, "instances").is_none() {

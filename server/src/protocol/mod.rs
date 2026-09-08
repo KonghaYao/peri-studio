@@ -18,6 +18,7 @@ mod acp_channel_config;
 mod acp_channel_elicitation;
 mod acp_channel_map;
 mod acp_channel_parse;
+mod acp_channel_task;
 mod acp_channel_tool;
 mod mcp_name;
 mod ssh_destination;

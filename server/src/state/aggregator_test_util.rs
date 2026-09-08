@@ -32,6 +32,19 @@ pub(crate) fn ev(chat: &str, seq: u64, body: EventBody) -> NormalizedEvent {
         epoch: 0,
         ts: "2026-08-07T00:00:00Z".to_string(),
         provenance: Default::default(),
+        source_agent_id: None,
+        body,
+    }
+}
+
+pub(crate) fn ev_subagent(chat: &str, seq: u64, agent: &str, body: EventBody) -> NormalizedEvent {
+    NormalizedEvent {
+        chat_id: chat.to_string(),
+        seq,
+        epoch: 0,
+        ts: "2026-08-07T00:00:00Z".to_string(),
+        provenance: Default::default(),
+        source_agent_id: Some(agent.to_string()),
         body,
     }
 }

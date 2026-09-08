@@ -14,7 +14,8 @@ use serde::{Deserialize, Serialize};
 use peri_studio_proto::action::PermissionDecision;
 use peri_studio_proto::schema::{
     AgentActivityKind, AgentActivityStatus, AgentPlanEntryProjection, BlockVisibility, ChatStatus,
-    PermissionOptions, PublicError, SessionConfigOptionProjection, SessionSummaryProjection,
+    PermissionOptions, PeriTaskDetailAvailability, PeriTaskKind, PeriTaskSubtype,
+    PublicError, SessionConfigOptionProjection, SessionSummaryProjection,
     ToolCallKind, ToolCallStatus, TurnStatus,
 };
 
@@ -45,6 +46,9 @@ pub struct NormalizedEvent {
     /// retained beyond normalization.
     #[serde(default)]
     pub provenance: EventProvenance,
+    /// 非空表示子 Agent 流量：主 Chat Doc 不投影；Peri Task 事件不受此字段影响。
+    #[serde(default)]
+    pub source_agent_id: Option<String>,
     pub body: EventBody,
 }
 
@@ -153,6 +157,13 @@ impl NormalizedEvent {
     /// 事件种类标识（脱敏日志用；不暴露正文/参数）。
     pub fn kind(&self) -> &'static str {
         self.body.kind()
+    }
+
+    /// 子 Agent 归属：非空且非空串时主 Chat/主 agent 用量快照拒绝写入。
+    pub fn subagent_scoped(&self) -> bool {
+        self.source_agent_id
+            .as_ref()
+            .is_some_and(|id| !id.is_empty())
     }
 }
 
@@ -367,6 +378,38 @@ pub enum EventBody {
         completed_at: String,
         public_error: Option<PublicError>,
     },
+    /// Peri Task 开始 → Session Doc `tasks` 投影（与 turn 解耦）。
+    PeriTaskStarted {
+        task_id: String,
+        kind: PeriTaskKind,
+        #[serde(default)]
+        task_subtype: Option<PeriTaskSubtype>,
+        title: String,
+        #[serde(default)]
+        summary: Option<String>,
+        #[serde(default)]
+        source_started_at: Option<String>,
+        is_background: bool,
+        detail_availability: PeriTaskDetailAvailability,
+    },
+    /// Peri Task 结束 → 终态投影（success=false → failed）。
+    PeriTaskCompleted {
+        task_id: String,
+        kind: PeriTaskKind,
+        success: bool,
+        #[serde(default)]
+        summary: Option<String>,
+        #[serde(default)]
+        duration_ms: Option<u64>,
+        detail_availability: PeriTaskDetailAvailability,
+    },
+    /// Peri Task 取消（reason_code 不落盘）。
+    PeriTaskCancelled {
+        task_id: String,
+        kind: PeriTaskKind,
+        #[serde(default)]
+        reason_code: Option<String>,
+    },
 }
 
 fn pending_tool_status() -> ToolCallStatus {
@@ -397,6 +440,9 @@ impl EventBody {
             EventBody::SessionInfo { .. } => "session_info",
             EventBody::SessionListResponse { .. } => "session_list_response",
             EventBody::TurnTerminal { .. } => "turn_terminal",
+            EventBody::PeriTaskStarted { .. } => "peri_task_started",
+            EventBody::PeriTaskCompleted { .. } => "peri_task_completed",
+            EventBody::PeriTaskCancelled { .. } => "peri_task_cancelled",
         }
     }
 }

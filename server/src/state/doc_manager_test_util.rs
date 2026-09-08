@@ -79,6 +79,7 @@ pub(crate) fn delta(chat: &str, seq: u64, turn: &str, text: &str) -> NormalizedE
         epoch: 0,
         ts: "2026-08-07T00:00:00Z".to_string(),
         provenance: Default::default(),
+        source_agent_id: None,
         body: EventBody::MessageDelta {
             turn_id: turn.to_string(),
             entry_id: format!("{turn}:assistant"),
@@ -95,6 +96,7 @@ pub(crate) fn user_msg(chat: &str, seq: u64, turn: &str) -> NormalizedEvent {
         epoch: 0,
         ts: "2026-08-07T00:00:00Z".to_string(),
         provenance: Default::default(),
+        source_agent_id: None,
         body: EventBody::UserMessage {
             turn_id: turn.to_string(),
             entry_id: format!("{turn}:user"),
@@ -113,6 +115,7 @@ pub(crate) fn replay_user(chat: &str, seq: u64, text: &str) -> NormalizedEvent {
         epoch: 0,
         ts: "2026-08-07T00:00:00Z".to_string(),
         provenance: Default::default(),
+        source_agent_id: None,
         body: EventBody::UserMessage {
             turn_id: String::new(),
             entry_id: String::new(),
@@ -130,6 +133,7 @@ pub(crate) fn replay_delta(chat: &str, seq: u64, text: &str) -> NormalizedEvent 
         epoch: 0,
         ts: "2026-08-07T00:00:00Z".to_string(),
         provenance: Default::default(),
+        source_agent_id: None,
         body: EventBody::MessageDelta {
             turn_id: String::new(),
             entry_id: String::new(),

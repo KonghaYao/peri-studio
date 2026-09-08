@@ -36,6 +36,9 @@ use crate::state::normalized::{
 };
 
 use super::acp_channel_elicitation::{normalize_elicitation_request, ElicitationMapError};
+use super::acp_channel_task::{
+    extract_source_agent_id, PERI_AGENT_EVENT_METHOD, PERI_UNSTABLE_EVENT_METHOD,
+};
 use super::acp_channel_parse::{
     acp_replay_provenance, jsonrpc_id_as_string, jsonrpc_response_id, number_field, public_error,
     raw_replay_provenance, string_field, MapError,
@@ -180,6 +183,27 @@ impl Default for AcpChannel {
 }
 
 impl AcpChannel {
+    fn normalized_event(
+        &self,
+        chat_id: &str,
+        epoch: u64,
+        seq: u64,
+        now_rfc3339: &str,
+        provenance: EventProvenance,
+        source_agent_id: Option<String>,
+        body: EventBody,
+    ) -> NormalizeOutcome {
+        NormalizeOutcome::Event(Box::new(NormalizedEvent {
+            chat_id: chat_id.to_string(),
+            seq,
+            epoch,
+            ts: now_rfc3339.to_string(),
+            provenance,
+            source_agent_id,
+            body,
+        }))
+    }
+
     /// 主入口：原始 ACP 帧 → 规范化事件（§6.1）。
     ///
     /// `chat_id` 为 **hub 侧** id（调用方已按 binding 翻译与校验）；`epoch`/
@@ -222,14 +246,15 @@ impl AcpChannel {
             None => serde_json::Map::new(),
         };
         match self.map_raw(kind, &payload, now_rfc3339) {
-            Ok(body) => NormalizeOutcome::Event(Box::new(NormalizedEvent {
-                chat_id: chat_id.to_string(),
-                seq,
+            Ok(body) => self.normalized_event(
+                chat_id,
                 epoch,
-                ts: now_rfc3339.to_string(),
-                provenance: raw_replay_provenance(kind, &payload),
+                seq,
+                now_rfc3339,
+                raw_replay_provenance(kind, &payload),
+                None,
                 body,
-            })),
+            ),
             Err(MapError::Unsupported) => NormalizeOutcome::Dropped(DropReason::UnsupportedFrame),
             Err(MapError::MissingField) => NormalizeOutcome::Dropped(DropReason::MissingField),
         }
@@ -270,17 +295,19 @@ impl AcpChannel {
         //   b) agent-client-protocol `{sessionId, update: {sessionUpdate, ...}}`
         //      （真实 peri 实测；照抄 @fenix/chat-channel acp-channel.ts 映射）。
         if method == "session/update" {
+            let source_agent_id = extract_source_agent_id(&params);
             if let Some(update) = params.get("update").and_then(|v| v.as_object()) {
                 if update.get("sessionUpdate").is_some() {
                     return match self.map_acp_update(update, now_rfc3339) {
-                        Ok(body) => NormalizeOutcome::Event(Box::new(NormalizedEvent {
-                            chat_id: chat_id.to_string(),
-                            seq,
+                        Ok(body) => self.normalized_event(
+                            chat_id,
                             epoch,
-                            ts: now_rfc3339.to_string(),
-                            provenance: acp_replay_provenance(update),
+                            seq,
+                            now_rfc3339,
+                            acp_replay_provenance(update),
+                            source_agent_id,
                             body,
-                        })),
+                        ),
                         Err(MapError::Unsupported) => {
                             NormalizeOutcome::Dropped(DropReason::UnsupportedFrame)
                         }
@@ -299,14 +326,49 @@ impl AcpChannel {
                 None => serde_json::Map::new(),
             };
             return match self.map_raw(kind, &payload, now_rfc3339) {
-                Ok(body) => NormalizeOutcome::Event(Box::new(NormalizedEvent {
-                    chat_id: chat_id.to_string(),
-                    seq,
+                Ok(body) => self.normalized_event(
+                    chat_id,
                     epoch,
-                    ts: now_rfc3339.to_string(),
-                    provenance: raw_replay_provenance(kind, &payload),
+                    seq,
+                    now_rfc3339,
+                    raw_replay_provenance(kind, &payload),
+                    source_agent_id,
                     body,
-                })),
+                ),
+                Err(MapError::Unsupported) => {
+                    NormalizeOutcome::Dropped(DropReason::UnsupportedFrame)
+                }
+                Err(MapError::MissingField) => NormalizeOutcome::Dropped(DropReason::MissingField),
+            };
+        }
+        if method == PERI_AGENT_EVENT_METHOD {
+            return match AcpChannel::parse_peri_agent_event(&params) {
+                Ok(body) => self.normalized_event(
+                    chat_id,
+                    epoch,
+                    seq,
+                    now_rfc3339,
+                    EventProvenance::Unspecified,
+                    None,
+                    body,
+                ),
+                Err(MapError::Unsupported) => {
+                    NormalizeOutcome::Dropped(DropReason::UnsupportedFrame)
+                }
+                Err(MapError::MissingField) => NormalizeOutcome::Dropped(DropReason::MissingField),
+            };
+        }
+        if method == PERI_UNSTABLE_EVENT_METHOD {
+            return match AcpChannel::parse_peri_unstable_event(&params) {
+                Ok(body) => self.normalized_event(
+                    chat_id,
+                    epoch,
+                    seq,
+                    now_rfc3339,
+                    EventProvenance::Unspecified,
+                    None,
+                    body,
+                ),
                 Err(MapError::Unsupported) => {
                     NormalizeOutcome::Dropped(DropReason::UnsupportedFrame)
                 }
@@ -315,14 +377,15 @@ impl AcpChannel {
         }
         if method == "peri/agent_activity" {
             return match self.parse_agent_activity(&params) {
-                Ok(body) => NormalizeOutcome::Event(Box::new(NormalizedEvent {
-                    chat_id: chat_id.to_string(),
-                    seq,
+                Ok(body) => self.normalized_event(
+                    chat_id,
                     epoch,
-                    ts: now_rfc3339.to_string(),
-                    provenance: EventProvenance::Unspecified,
+                    seq,
+                    now_rfc3339,
+                    EventProvenance::Unspecified,
+                    None,
                     body,
-                })),
+                ),
                 Err(MapError::Unsupported) => {
                     NormalizeOutcome::Dropped(DropReason::UnsupportedFrame)
                 }
@@ -331,14 +394,15 @@ impl AcpChannel {
         }
         if method == "peri/prediction_ready" {
             return match self.parse_input_prediction(&params) {
-                Ok(body) => NormalizeOutcome::Event(Box::new(NormalizedEvent {
-                    chat_id: chat_id.to_string(),
-                    seq,
+                Ok(body) => self.normalized_event(
+                    chat_id,
                     epoch,
-                    ts: now_rfc3339.to_string(),
-                    provenance: EventProvenance::Unspecified,
+                    seq,
+                    now_rfc3339,
+                    EventProvenance::Unspecified,
+                    None,
                     body,
-                })),
+                ),
                 Err(MapError::Unsupported) => {
                     NormalizeOutcome::Dropped(DropReason::UnsupportedFrame)
                 }
@@ -347,21 +411,21 @@ impl AcpChannel {
         }
         // agent 状态通知（`agent/status`）。
         if method == "agent/status" {
-            return NormalizeOutcome::Event(Box::new(NormalizedEvent {
-                chat_id: chat_id.to_string(),
-                seq,
+            return self.normalized_event(
+                chat_id,
                 epoch,
-                ts: now_rfc3339.to_string(),
-                provenance: EventProvenance::Unspecified,
-                body: EventBody::AgentStatus {
+                seq,
+                now_rfc3339,
+                EventProvenance::Unspecified,
+                None,
+                EventBody::AgentStatus {
                     status: string_field(&params, "status", "status").unwrap_or_default(),
                     public_error: public_error(&params),
-                    // 模型/上下文（跨任务契约 §1）：缺省 None（不覆盖 agent map）。
                     model: string_field(&params, "model", "model"),
                     context_window: number_field(&params, "contextWindow", "context_window"),
                     context_used: number_field(&params, "contextUsed", "context_used"),
                 },
-            }));
+            );
         }
         // 官方 `session/request_permission` request（#1 权限机制官方化，
         // schema v1）：agent→client 请求权限。带 id（须回响应，§4.4 响应

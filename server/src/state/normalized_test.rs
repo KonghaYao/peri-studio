@@ -8,7 +8,8 @@ use serde_json::json;
 
 use peri_studio_proto::action::PermissionDecision;
 use peri_studio_proto::schema::{
-    BlockVisibility, PermissionOptions, SessionSummaryProjection, ToolCallStatus, TurnStatus,
+    BlockVisibility, PermissionOptions, PeriTaskDetailAvailability, PeriTaskKind,
+    SessionSummaryProjection, ToolCallStatus, TurnStatus,
 };
 
 use crate::state::normalized::{EventBody, EventProvenance, NormalizedEvent};
@@ -21,6 +22,7 @@ fn serde_tag_and_envelope_shape() {
         epoch: 1,
         ts: "2026-08-07T00:00:00Z".to_string(),
         provenance: EventProvenance::Unspecified,
+        source_agent_id: None,
         body: EventBody::MessageDelta {
             turn_id: "t1".into(),
             entry_id: "t1:assistant".into(),
@@ -152,6 +154,29 @@ fn serde_roundtrip_all_variants() {
             completed_at: "2026-08-07T00:00:00Z".into(),
             public_error: None,
         },
+        EventBody::PeriTaskStarted {
+            task_id: "task-1".into(),
+            kind: PeriTaskKind::Subagent,
+            task_subtype: None,
+            title: "Task".into(),
+            summary: None,
+            source_started_at: None,
+            is_background: false,
+            detail_availability: PeriTaskDetailAvailability::Unavailable,
+        },
+        EventBody::PeriTaskCompleted {
+            task_id: "task-1".into(),
+            kind: PeriTaskKind::Background,
+            success: true,
+            summary: Some("ok".into()),
+            duration_ms: Some(100),
+            detail_availability: PeriTaskDetailAvailability::Preview,
+        },
+        EventBody::PeriTaskCancelled {
+            task_id: "task-2".into(),
+            kind: PeriTaskKind::Background,
+            reason_code: Some("cancelled".into()),
+        },
     ];
     for body in bodies {
         let s = serde_json::to_string(&body).unwrap();
@@ -213,4 +238,16 @@ fn legacy_permission_event_defaults_missing_tool_snapshot() {
             ..
         } if id == "tc1"
     ));
+}
+
+#[test]
+fn legacy_normalized_event_defaults_missing_source_agent_id() {
+    let v = json!({
+        "sessionId": "s1",
+        "seq": 1,
+        "epoch": 0,
+        "body": { "type": "message_delta", "turn_id": "t", "entry_id": "e", "block_id": "b", "text": "x" }
+    });
+    let ev: NormalizedEvent = serde_json::from_value(v).unwrap();
+    assert!(ev.source_agent_id.is_none());
 }
