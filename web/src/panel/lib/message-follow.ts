@@ -14,6 +14,8 @@ export interface FollowStateInput {
   hasNewContent: boolean;
   previousActivity: string | null;
   activity: string;
+  /** 用户刚发出本会话消息：即使已上翻也恢复吸底。 */
+  forceFollow?: boolean;
 }
 
 export interface FollowState {
@@ -22,8 +24,8 @@ export interface FollowState {
   activity: string;
 }
 
-export const nextFollowState = ({ stick, hasNewContent, previousActivity, activity }: FollowStateInput): FollowState => {
-  if (stick) return { stick: true, hasNewContent: false, activity };
+export const nextFollowState = ({ stick, hasNewContent, previousActivity, activity, forceFollow }: FollowStateInput): FollowState => {
+  if (forceFollow || stick) return { stick: true, hasNewContent: false, activity };
   return {
     stick: false,
     hasNewContent: hasNewContent || (!!previousActivity && activity !== previousActivity),

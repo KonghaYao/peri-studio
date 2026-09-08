@@ -94,6 +94,8 @@ export function MessageList(props: { footerHeight?: number }) {
   let prefixHeight = 0;
   let mounted = true;
   let previousActivity = '';
+  let previousOutboxKey = '';
+  let previousTailUserId = '';
   let previousEntryProjection: readonly ChatEntry[] | undefined;
   let entryProjectionRevision = 0;
   let transcriptChatId = selectedCid();
@@ -260,9 +262,28 @@ export function MessageList(props: { footerHeight?: number }) {
     const outbox = outboxForChat();
     const outboxActivity = outbox ? `${outbox.commandId}:${outbox.phase}` : '';
     const activity = `${entryProjectionRevision}|${outboxActivity}`;
-    const follow = nextFollowState({ stick: stick(), hasNewContent: hasNewContent(), previousActivity, activity });
+    const tail = list.at(-1);
+    const tailUserId = tail?.role === 'user' ? tail.id : '';
+    const outboxKey = outbox?.commandId ?? '';
+    const userSent = (outboxKey !== '' && outboxKey !== previousOutboxKey)
+      || (tailUserId !== '' && tailUserId !== previousTailUserId);
+    previousOutboxKey = outboxKey;
+    previousTailUserId = tailUserId;
+    const follow = nextFollowState({
+      stick: stick(),
+      hasNewContent: hasNewContent(),
+      previousActivity,
+      activity,
+      forceFollow: userSent,
+    });
+    if (follow.stick) setStick(true);
     if (follow.stick && areaRef && (list.length || outbox)) {
       scrollToBottom();
+      if (userSent) {
+        queueMicrotask(() => {
+          if (mounted && stick()) scrollToBottom();
+        });
+      }
     }
     setHasNewContent(follow.hasNewContent);
     previousActivity = follow.activity;

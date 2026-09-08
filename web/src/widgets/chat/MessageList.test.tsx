@@ -60,6 +60,24 @@ describe('MessageList timeline follow', () => {
     expect(screen.getByRole('button', { name: '↓ New content' })).toBeInTheDocument();
   });
 
+  it('returns to the latest message when the user sends, even after scrolling up', async () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    setSelectedCid('chat-1');
+    setChatEntries([message('assistant-1', 'live', null)]);
+    render(() => <MessageList />);
+    const area = screen.getByRole('region', { name: 'Conversation messages' });
+    configureScrollArea(area);
+    fireEvent.scroll(area);
+    const scrollTo = vi.mocked(area.scrollTo);
+    scrollTo.mockClear();
+
+    startMessageDelivery('cmd-send', 'hello from composer', 'session-1', 'chat-1');
+    await Promise.resolve();
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 500, behavior: 'auto' });
+    expect(screen.queryByRole('button', { name: /New content|latest/i })).not.toBeInTheDocument();
+  });
+
   it('returns to the latest message without motion when reduced motion is requested', () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
     setRuntimeDocsState({ chat: true, control: true });

@@ -173,6 +173,9 @@ test('message follow pauses without losing the new-content signal', () => {
   assert.equal(nextFollowState({ stick: false, hasNewContent: false, previousActivity: before, activity: after }).hasNewContent, true);
   assert.equal(nextFollowState({ stick: false, hasNewContent: true, previousActivity: after, activity: after }).hasNewContent, true);
   assert.equal(nextFollowState({ stick: true, hasNewContent: true, previousActivity: before, activity: after }).hasNewContent, false);
+  const forced = nextFollowState({ stick: false, hasNewContent: true, previousActivity: before, activity: after, forceFollow: true });
+  assert.equal(forced.stick, true);
+  assert.equal(forced.hasNewContent, false);
 });
 
 test('authentication feedback does not blame credentials for server failures', () => {
