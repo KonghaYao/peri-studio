@@ -41,6 +41,8 @@ export interface AgentInfo {
   configOptions?: SessionConfigOptionInfo[];
   contextWindow: number | null;
   contextUsed: number | null;
+  /** Control Doc agent.public_error；旧投影可能缺失。 */
+  publicError?: { code: string | null; message: string | null } | null;
 }
 export interface AgentPlanEntryInfo {
   id: string;
@@ -303,6 +305,10 @@ export function renderControl(doc: Y.Doc): ControlView {
     configOptions,
     contextWindow: getNum(agent, 'context_window'),
     contextUsed: getNum(agent, 'context_used'),
+    publicError: (() => {
+      const error = asMap(agent.get('public_error'));
+      return error ? { code: getStr(error, 'code'), message: getStr(error, 'message') } : null;
+    })(),
     };
   }
 

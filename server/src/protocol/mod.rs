@@ -31,6 +31,7 @@ pub use acp_channel::{
     PermissionRequestFields, PERMISSION_TIMEOUT,
 };
 pub(crate) use acp_channel_parse::jsonrpc_response_id;
+pub(crate) use acp_channel_parse::{public_error, truncate_text};
 pub use mcp_name::{parse_mcp_tool_name, ParsedMcpToolName};
 pub use ssh_destination::{validate_identity_file_path, validate_ssh_destination};
 pub(crate) use translator::permission_option_matches;

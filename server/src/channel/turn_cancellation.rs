@@ -255,6 +255,7 @@ impl TurnCancellation {
                         turn_id,
                         status: TurnStatus::Cancelled,
                         completed_at: Utc::now().to_rfc3339(),
+                        public_error: None,
                     },
                 )
                 .await;

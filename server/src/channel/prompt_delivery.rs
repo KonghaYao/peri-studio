@@ -392,5 +392,7 @@ fn unknown(message: &str) -> PromptDeliveryFailure {
     }
 }
 
+#[path = "prompt_delivery_public_error.rs"]
+mod prompt_delivery_public_error;
 #[path = "prompt_delivery_finalize.rs"]
 mod prompt_delivery_finalize;

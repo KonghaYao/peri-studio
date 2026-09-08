@@ -254,3 +254,38 @@ pub(crate) async fn projected_user_delivery_state(
         .and_then(|entry| entry.get(&txn, "delivery_state"))
         .and_then(|value| value.cast::<String>().ok())
 }
+
+pub(crate) async fn projected_assistant_entry_error(
+    sink: &MemSink,
+    chat: &str,
+    entry_id: &str,
+) -> Option<(String, String)> {
+    use yrs::updates::decoder::Decode as _;
+
+    let mirror = yrs::Doc::new();
+    for (doc, update) in sink.updates.lock().await.iter() {
+        if *doc != DocId::chat(chat) {
+            continue;
+        }
+        mirror
+            .transact_mut()
+            .apply_update(yrs::Update::decode_v1(update).unwrap())
+            .unwrap();
+    }
+    let txn = mirror.transact();
+    let entry = txn
+        .get_map("root")
+        .and_then(|root| root.get(&txn, "entries"))
+        .and_then(|value| value.cast::<yrs::MapRef>().ok())
+        .and_then(|entries| entries.get(&txn, entry_id))
+        .and_then(|value| value.cast::<yrs::MapRef>().ok())?;
+    let error = entry.get(&txn, "error")?.cast::<yrs::MapRef>().ok()?;
+    Some((
+        error
+            .get(&txn, "code")
+            .and_then(|value| value.cast::<String>().ok())?,
+        error
+            .get(&txn, "message")
+            .and_then(|value| value.cast::<String>().ok())?,
+    ))
+}

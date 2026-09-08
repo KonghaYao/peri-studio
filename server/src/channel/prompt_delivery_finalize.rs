@@ -26,6 +26,7 @@ use crate::state::doc_manager::{DocCommand, SubmitResult};
 use super::{
     unknown, PromptDelivery, PromptDeliveryFailure, PromptDeliveryOutcome, PromptDeliveryRequest,
 };
+use super::prompt_delivery_public_error::public_error_from_prompt_response;
 
 impl PromptDelivery {
     pub(super) async fn await_terminal(
@@ -118,6 +119,8 @@ impl PromptDelivery {
             "failed" | "error" => TurnStatus::Failed,
             _ => TurnStatus::Completed,
         };
+        let turn_failed = matches!(terminal_status, TurnStatus::Failed);
+        let public_error = public_error_from_prompt_response(&rpc_response, turn_failed);
         let terminal = self
             .doc
             .submit_command(
@@ -126,6 +129,7 @@ impl PromptDelivery {
                     turn_id: turn_id.to_string(),
                     status: terminal_status,
                     completed_at: Utc::now().to_rfc3339(),
+                    public_error,
                 },
             )
             .await;
@@ -475,6 +479,7 @@ impl PromptDelivery {
                     turn_id: turn_id.to_string(),
                     status: TurnStatus::Failed,
                     completed_at: Utc::now().to_rfc3339(),
+                    public_error: None,
                 },
             )
             .await;

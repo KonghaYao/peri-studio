@@ -16,7 +16,8 @@ import { ChatEmptyWorkspace, CHAT_EMPTY_TITLE } from './ChatEmptyWorkspace';
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { chatEntries, chatAgentLoading, chatHead, elicitationResponses, elicitations, permissions, questionResponses, questions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, respondQuestion, restoringSessionId, retryPersistentAction, runtimeDocsHydrated, selectedSessionId, turnActive } from '@/store';
 import { readOnly } from '@/features/auth/auth-state';
-import { LoadingState } from '@/shared/ui';
+import { InlineNotice, LoadingState } from '@/shared/ui';
+import { selectAgentPublicErrorNotice } from '@/features/chat/agent-public-error-notice';
 import { ConnectionProblem } from '@/widgets/shell/ConnectionProblem';
 import { ErrorCenter } from '@/widgets/shell/ErrorCenter';
 import { LaunchWorkspace } from '@/widgets/shell/LaunchWorkspace';
@@ -59,6 +60,28 @@ export function ChatView(props: ChatViewProps) {
     restoring: !!restoringSessionId(),
     chatLoading: chatAgentLoading(),
   }));
+  const agentPublicErrorNotice = createMemo(() => selectAgentPublicErrorNotice(
+    chatHead()?.agent,
+    turnActive(),
+    chatEntries(),
+  ));
+  const agentPublicErrorBanner = () => {
+    const notice = agentPublicErrorNotice();
+    if (!notice) return null;
+    return (
+      <InlineNotice
+        tone="danger"
+        role="alert"
+        aria-label="Agent error"
+        class="chat-column mx-auto mb-8 w-full max-w-(--chat-content-max)"
+        data-testid="agent-public-error-notice"
+      >
+        <code class="whitespace-pre-wrap wrap-anywhere font-mono text-12 leading-normal">
+          {notice.code || 'UNKNOWN'}{notice.message ? `: ${notice.message}` : ''}
+        </code>
+      </InlineNotice>
+    );
+  };
   onMount(() => {
     if (!composerStack || typeof ResizeObserver === 'undefined') return;
     const updateHeight = () => setComposerHeight(composerStack?.getBoundingClientRect().height ?? 0);
@@ -117,6 +140,7 @@ export function ChatView(props: ChatViewProps) {
                     onRespond={respondQuestion}
                   />
                 </Show>
+                {agentPublicErrorBanner()}
                 <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} tasks={chatHead()?.tasks ?? []} entries={chatEntries()} />
                 <Composer renderRuntimeMenu={composerRuntimeMenu} />
               </div>
@@ -152,6 +176,7 @@ export function ChatView(props: ChatViewProps) {
                   onRespond={respondQuestion}
                 />
               </Show>
+              {agentPublicErrorBanner()}
               <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} tasks={chatHead()?.tasks ?? []} entries={chatEntries()} />
               <ChatEmptyWorkspace title={CHAT_EMPTY_TITLE} hint={EMPTY_HINT}>
                 <Composer layout="centered" renderRuntimeMenu={composerRuntimeMenu} />

@@ -475,6 +475,7 @@ async fn turn_terminal_is_idempotent_only_for_the_same_persisted_outcome() {
         turn_id: "t1".into(),
         status,
         completed_at: "2026-08-14T00:00:01Z".into(),
+        public_error: None,
     };
     assert!(matches!(
         mgr.submit_command(
@@ -547,6 +548,7 @@ async fn late_delivery_unknown_does_not_override_an_already_terminal_turn() {
                 turn_id: "turn-1".into(),
                 status: peri_studio_proto::schema::TurnStatus::Completed,
                 completed_at: "2026-08-14T00:00:01Z".into(),
+                public_error: None,
             },
         )
         .await,
@@ -572,5 +574,55 @@ async fn late_delivery_unknown_does_not_override_an_already_terminal_turn() {
         projected_user_delivery_state(&sink, "s1", "turn-1:user").await,
         Some("pending".into()),
         "迟到 unknown 不得覆盖已完成回合的 user delivery"
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn set_turn_terminal_failed_writes_entry_public_error() {
+    use peri_studio_proto::schema::PublicError;
+
+    let sink = MemSink::default();
+    let mgr = DocManager::new(cfg(), Arc::new(sink.clone()));
+    open(&mgr, "s1").await;
+    assert!(matches!(
+        mgr.submit_command(
+            "s1",
+            DocCommand::RegisterUserEntry {
+                turn_id: "t1".into(),
+                entry_id: "t1:user".into(),
+                text: "prompt".into(),
+                author_user_id: None,
+                source_command_id: "command-1".into(),
+                created_at: "2026-08-14T00:00:00Z".into(),
+            },
+        )
+        .await,
+        SubmitResult::Applied(result) if result.applied
+    ));
+    assert!(matches!(
+        mgr.submit_event(delta("s1", 1, "t1", "partial answer")).await,
+        SubmitResult::Applied(_)
+    ));
+    tokio::time::advance(TokioDuration::from_millis(20)).await;
+    tokio::task::yield_now().await;
+    assert!(matches!(
+        mgr.submit_command(
+            "s1",
+            DocCommand::SetTurnTerminal {
+                turn_id: "t1".into(),
+                status: peri_studio_proto::schema::TurnStatus::Failed,
+                completed_at: "2026-08-14T00:00:01Z".into(),
+                public_error: Some(PublicError {
+                    code: "AGENT_ERROR".into(),
+                    message: "upstream unavailable".into(),
+                }),
+            },
+        )
+        .await,
+        SubmitResult::Applied(result) if result.applied
+    ));
+    assert_eq!(
+        projected_assistant_entry_error(&sink, "s1", "t1:assistant").await,
+        Some(("AGENT_ERROR".into(), "upstream unavailable".into())),
     );
 }

@@ -423,7 +423,19 @@ describe('renderControl Peri extension projection', () => {
   it('keeps old control docs readable', () => {
     const doc = new Y.Doc();
     doc.getMap<unknown>('root').set('agent', new Y.Map<unknown>());
-    expect(renderControl(doc).agent).toMatchObject({ extensions: [], commandCatalog: [], latestUsage: null });
+    expect(renderControl(doc).agent).toMatchObject({ extensions: [], commandCatalog: [], latestUsage: null, publicError: null });
+  });
+
+  it('reads agent public_error from control projection', () => {
+    const doc = new Y.Doc();
+    const root = doc.getMap<unknown>('root');
+    const agent = new Y.Map<unknown>();
+    const error = new Y.Map<unknown>();
+    error.set('code', 'RATE_LIMITED');
+    error.set('message', 'safe message');
+    agent.set('public_error', error);
+    root.set('agent', agent);
+    expect(renderControl(doc).agent?.publicError).toEqual({ code: 'RATE_LIMITED', message: 'safe message' });
   });
 
   it('reads bounded safe activity only after exact extension negotiation', () => {

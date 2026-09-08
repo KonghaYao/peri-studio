@@ -10,8 +10,8 @@
 
 use peri_studio_proto::schema::InstanceStatus;
 use peri_studio_proto::schema::{
-    ChatStatus, ChatSummary, SessionConfigOptionProjection, SessionSummaryProjection, TurnStatus,
-    WorkspaceSummary,
+    ChatStatus, ChatSummary, PublicError, SessionConfigOptionProjection, SessionSummaryProjection,
+    TurnStatus, WorkspaceSummary,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -112,6 +112,8 @@ pub enum DocCommand {
         turn_id: String,
         status: TurnStatus,
         completed_at: String,
+        /// turn 失败时写入 assistant entry.error；成功/取消路径应为 None。
+        public_error: Option<PublicError>,
     },
     /// 标题更新（§7.4 规则 5：可独立排队，仍经服务端命令写入）。
     UpdateTitle {

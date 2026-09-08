@@ -127,10 +127,11 @@ describe('ConversationMessage', () => {
     expect(writeText).toHaveBeenCalledWith('Incomplete result\n\n[Partial response: interrupted]');
   });
 
-  it.each(['cancelled', 'failed'])('labels %s partial output with its terminal state', (status) => {
+  it.each(['cancelled', 'failed', 'error'])('labels %s partial output with its terminal state', (status) => {
     render(() => <ConversationMessage entry={entry({ status, text: 'Partial output' })} />);
+    const failedLabel = status === 'failed' || status === 'error';
     expect(screen.getByLabelText('Assistant message')).toHaveTextContent(
-      `Response ${status === 'cancelled' ? 'cancelled' : 'failed'}. The output above may be incomplete.`,
+      `Response ${status === 'cancelled' ? 'cancelled' : failedLabel ? 'failed' : status}. The output above may be incomplete.`,
     );
   });
 
@@ -204,13 +205,13 @@ describe('ConversationMessage', () => {
 
     const message = screen.getByLabelText('Assistant message');
     const before = screen.getByText('Before tool');
-    const toolGroup = message.querySelector('[data-testid="tool-activity-group"]')!;
+    const toolGroup = message.querySelector('[data-testid="chat-activity-chain"] [data-testid="tool-activity-group"]')!;
     const after = screen.getByText('After tool');
     expect(before.compareDocumentPosition(toolGroup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(toolGroup.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('groups adjacent tool activity rows with one card per tool', () => {
+  it('groups adjacent tool activity rows as compact rows without card borders', () => {
     const first = { ...baseTool('tool-1'), name: 'Read config' };
     const second = { ...baseTool('tool-2'), name: 'Run checks' };
     render(() => <ConversationMessage entry={entry({
@@ -221,11 +222,28 @@ describe('ConversationMessage', () => {
       ],
     })} />);
 
-    const group = screen.getByLabelText('Assistant message').querySelector('[data-testid="tool-activity-group"]')!;
-    expect(group).toHaveClass('flex-col', 'gap-6');
+    const group = screen.getByLabelText('Assistant message').querySelector('[data-testid="chat-activity-chain"] [data-testid="tool-activity-group"]')!;
+    expect(group).toHaveClass('tool-activity-group--activity', 'gap-4');
     const rows = group.querySelectorAll('[data-testid="tool-activity-row"]');
     expect(rows).toHaveLength(2);
-    expect(rows[0]).toHaveClass('rounded-lg', 'border', 'bg-surface-overlay');
+    expect(rows[0]).toHaveClass('tool-activity-row--activity');
+    expect(rows[0].querySelector('.tool-activity-row__card')).toBeNull();
+    expect(rows[0].querySelector('.tool-activity-row__summary')).toHaveClass('rounded-md');
+  });
+
+  it('shows only empty activity thinking with the left timeline label', () => {
+    const tool = { ...baseTool('tool-1'), name: 'Bash', arguments: { command: 'pwd' } };
+    render(() => <ConversationMessage entry={entry({
+      toolCalls: [tool],
+      blocks: [
+        { kind: 'reasoning', id: 'reasoning-empty', reasoning: { id: 'reasoning-empty', text: '   ', visibility: 'visible' } },
+        { kind: 'tool_call', id: 'tool-1', toolCall: tool },
+      ],
+    })} />);
+
+    const message = screen.getByLabelText('Assistant message');
+    expect(message.querySelector('.message-reasoning__activity-label')).toBeInTheDocument();
+    expect(message.querySelector('.message-reasoning--activity')).toBeNull();
   });
 
   it('renders reasoning before grouped tool activity', () => {
@@ -240,8 +258,9 @@ describe('ConversationMessage', () => {
     })} />);
 
     const message = screen.getByLabelText('Assistant message');
-    const reasoning = screen.getByTestId('message-reasoning');
+    const reasoning = message.querySelector('[data-testid="chat-activity-chain"] [data-testid="message-reasoning"]')!;
     const toolRow = message.querySelector('[data-testid="tool-activity-row-summary"]')!;
+    expect(reasoning.className).toContain('message-reasoning');
     expect(reasoning.compareDocumentPosition(toolRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 

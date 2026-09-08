@@ -1,5 +1,11 @@
 import { createEffect, createMemo, createSignal, For, Show, type Accessor } from 'solid-js';
 import type { ChatBlock, ChatEntry } from '@/entities/chat/chat-view';
+import {
+  buildAssistantLayoutUnits,
+  buildConversationRowGroups,
+  layoutUnitActivityDensity,
+  type AssistantLayoutUnit,
+} from '@/features/chat/chat-render-blocks';
 import { messageTime } from '@/shared/lib/message-time';
 import { splitSystemReminders } from '@/shared/lib/system-reminder';
 import { CopyButton, IconButton, InlineNotice, Popover, PopoverContent, PopoverTrigger } from '@/shared/ui';
@@ -21,6 +27,7 @@ function McpToolBlock(props: {
   origin: Accessor<'live' | 'replay' | null>;
   siblingTools: Accessor<ToolCallInfo[]>;
   duplicate: boolean;
+  variant?: 'default' | 'activity';
 }) {
   createEffect(() => {
     if (props.duplicate) return;
@@ -29,7 +36,7 @@ function McpToolBlock(props: {
   const toolCallId = () => props.toolCall().toolCallId || '';
   return (
     <Show when={!props.duplicate}>
-      <Show when={isPrimaryLiveMcpApp(toolCallId(), props.siblingTools())} fallback={<ToolCallCard toolCall={props.toolCall} />}>
+      <Show when={isPrimaryLiveMcpApp(toolCallId(), props.siblingTools())} fallback={<ToolCallCard toolCall={props.toolCall} variant={props.variant} />}>
         <McpAppFrame toolCallId={toolCallId()} />
       </Show>
     </Show>
@@ -37,10 +44,6 @@ function McpToolBlock(props: {
 }
 
 type ChatEntrySource = ChatEntry | Accessor<ChatEntry>;
-
-function isToolCallBlock(block: ChatBlock | undefined): boolean {
-  return block?.kind === 'tool_call';
-}
 
 function MessageBlock(props: {
   block: () => ChatBlock;
@@ -51,6 +54,8 @@ function MessageBlock(props: {
   toolCallsInBlocks: () => ToolCallInfo[];
   blockIds: () => string[];
   blocksById: () => Map<string, ChatBlock>;
+  reasoningVariant?: 'default' | 'activity';
+  toolVariant?: 'default' | 'activity';
 }) {
   const toolCall = () => {
     const current = props.block();
@@ -81,6 +86,7 @@ function MessageBlock(props: {
         origin={() => (props.entry().origin === 'session_replay' ? 'replay' as const : props.entry().origin === 'live' ? 'live' as const : null)}
         siblingTools={props.toolCallsInBlocks}
         duplicate={duplicateToolBlock()}
+        variant={props.toolVariant}
       /></Show>
     }>{
       <div class="conversation-message__text text-13 leading-normal text-content-primary" data-testid="conversation-message-text">
@@ -98,7 +104,7 @@ function MessageBlock(props: {
     }</Show>
   }>{(() => {
     const reasoning = () => (props.block() as Extract<ChatBlock, { kind: 'reasoning' }>).reasoning;
-    return <Reasoning>{reasoning().text}</Reasoning>;
+    return <Reasoning variant={props.reasoningVariant} streaming={props.streaming()}>{reasoning().text}</Reasoning>;
   })()}</Show>;
 }
 
@@ -119,6 +125,77 @@ function SystemReminderBadge(props: { reminders: string[] }) {
   </Popover>;
 }
 
+function AssistantLayoutUnitView(props: {
+  unitId: string;
+  unitsById: () => Map<string, AssistantLayoutUnit>;
+  blocks: () => ChatBlock[];
+  blocksById: () => Map<string, ChatBlock>;
+  blockIds: () => string[];
+  role: () => 'user' | 'assistant' | 'system';
+  streaming: () => boolean;
+  entry: () => ChatEntry;
+  toolCallsInBlocks: () => ToolCallInfo[];
+}) {
+  const unit = () => props.unitsById().get(props.unitId)!;
+  const activityVariant = () => {
+    const current = unit();
+    if (layoutUnitActivityDensity(props.blocks(), current) !== 'activity') return 'default' as const;
+    return 'activity' as const;
+  };
+
+  return (
+    <Show when={unit().kind === 'tool_group'} fallback={(() => {
+      const blockUnit = () => unit() as Extract<AssistantLayoutUnit, { kind: 'block' }>;
+      const block = () => props.blocksById().get(blockUnit().blockId)!;
+      const blockIndex = () => Math.max(0, props.blockIds().indexOf(blockUnit().blockId));
+      return (
+        <div class="conversation-message__block">
+          <MessageBlock
+            block={block}
+            blockIndex={blockIndex}
+            role={props.role}
+            streaming={props.streaming}
+            entry={props.entry}
+            toolCallsInBlocks={props.toolCallsInBlocks}
+            blockIds={props.blockIds}
+            blocksById={props.blocksById}
+            reasoningVariant={activityVariant()}
+            toolVariant={activityVariant()}
+          />
+        </div>
+      );
+    })()}>
+      <ToolActivityGroup variant="activity">
+        <For each={(unit() as Extract<AssistantLayoutUnit, { kind: 'tool_group' }>).blockIds}>{(toolBlockId) => {
+          const block = () => props.blocksById().get(toolBlockId)! as Extract<ChatBlock, { kind: 'tool_call' }>;
+          const blockIndex = () => Math.max(0, props.blockIds().indexOf(toolBlockId));
+          const toolCall = () => block().toolCall;
+          const duplicateToolBlock = () => {
+            const toolId = toolCall().toolCallId || '';
+            if (!toolId) return false;
+            const ids = props.blockIds();
+            const byId = props.blocksById();
+            for (let index = 0; index < blockIndex(); index += 1) {
+              const previous = byId.get(ids[index]);
+              if (previous?.kind === 'tool_call' && (previous.toolCall.toolCallId || '') === toolId) return true;
+            }
+            return false;
+          };
+          return (
+            <McpToolBlock
+              toolCall={toolCall}
+              origin={() => (props.entry().origin === 'session_replay' ? 'replay' as const : props.entry().origin === 'live' ? 'live' as const : null)}
+              siblingTools={props.toolCallsInBlocks}
+              duplicate={duplicateToolBlock()}
+              variant="activity"
+            />
+          );
+        }}</For>
+      </ToolActivityGroup>
+    </Show>
+  );
+}
+
 /** Owns the visual and semantic hierarchy of one server-projected entry. */
 export function ConversationMessage(props: { entry: ChatEntrySource }) {
   let articleRef: HTMLElement | undefined;
@@ -127,8 +204,8 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
   const entry = () => typeof props.entry === 'function' ? props.entry() : props.entry;
   const legacyBlocks = (): ChatBlock[] => [
     ...entry().reasoning.map((reasoning, index) => ({ kind: 'reasoning' as const, id: reasoning.id || `${entry().id}:reasoning:${index}`, reasoning })),
-    ...(entry().text ? [{ kind: 'text' as const, id: `${entry().id}:text`, text: entry().text }] : []),
     ...entry().toolCalls.map((toolCall, index) => ({ kind: 'tool_call' as const, id: toolCall.toolCallId || `${entry().id}:tool:${index}`, toolCall })),
+    ...(entry().text ? [{ kind: 'text' as const, id: `${entry().id}:text`, text: entry().text }] : []),
     ...entry().resources.map((resource, index) => ({ kind: 'resource' as const, id: resource.resourceId || `${entry().id}:resource:${index}`, resource })),
   ];
   // 旧快照与开发 fixture 可能尚无 blocks；只在该兼容边界回退到旧分组模型。
@@ -137,6 +214,11 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
   const role = createMemo(() => entry().role === 'user' ? 'user' : entry().role === 'system' ? 'system' : 'assistant');
   const blockIds = createMemo(() => blocks().map((block) => block.id));
   const blocksById = createMemo(() => new Map(blocks().map((block) => [block.id, block])));
+  const layoutUnits = createMemo(() => buildAssistantLayoutUnits(blocks()));
+  const layoutUnitsById = createMemo(() => new Map(layoutUnits().map((unit) => [unit.id, unit])));
+  const rowGroups = createMemo(() => buildConversationRowGroups(blocks()));
+  const rowGroupIds = createMemo(() => rowGroups().map((group) => group.id));
+  const rowGroupsById = createMemo(() => new Map(rowGroups().map((group) => [group.id, group])));
   const systemReminders = createMemo(() => blocks().flatMap((block) => block.kind === 'text'
     ? splitSystemReminders(block.text).flatMap((segment) => segment.kind === 'system_reminder' ? [segment.text] : [])
     : []));
@@ -153,7 +235,7 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
   const partialTerminal = createMemo(() => {
     if (role() !== 'assistant' || !(entry().text || entry().reasoning.length || entry().toolCalls.length || entry().resources.length)) return null;
     const status = String(entry().status || '').toLowerCase();
-    if (status === 'failed') return { label: 'Response failed', state: 'failed', tone: 'danger' as const };
+    if (status === 'failed' || status === 'error') return { label: 'Response failed', state: 'failed', tone: 'danger' as const };
     if (status === 'interrupted') return { label: 'Response interrupted', state: 'interrupted', tone: 'warning' as const };
     if (status === 'cancelled' || status === 'canceled') return { label: 'Response cancelled', state: 'cancelled', tone: 'warning' as const };
     return null;
@@ -197,58 +279,31 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
     <Show when={userHasVisibleSurface()}>
       <Show when={role() === 'user'} fallback={
         <div class={`conversation-message__surface flex max-w-(--chat-content-max) min-w-0 flex-col gap-8 ${role() === 'system' ? 'max-w-(--chat-system-max) rounded-full bg-surface-muted px-12 py-4 text-12 text-content-secondary' : 'w-full'}`} data-testid="conversation-message-surface">
-          <For each={blockIds()}>{(id, blockIndex) => {
-            const block = () => blocksById().get(id)!;
-            const startsToolRun = () => block().kind === 'tool_call' && !isToolCallBlock(blocksById().get(blockIds()[blockIndex() - 1]));
-            const toolRun = (): Extract<ChatBlock, { kind: 'tool_call' }>[] => {
-              if (!startsToolRun()) return [];
-              const ids = blockIds();
-              const byId = blocksById();
-              const run: Extract<ChatBlock, { kind: 'tool_call' }>[] = [];
-              for (let index = blockIndex(); index < ids.length; index += 1) {
-                const current = byId.get(ids[index]);
-                if (current?.kind !== 'tool_call') break;
-                run.push(current);
-              }
-              return run;
+          <For each={rowGroupIds()}>{(groupId) => {
+            const group = () => rowGroupsById().get(groupId)!;
+            const unitViewProps = {
+              unitsById: layoutUnitsById,
+              blocks,
+              blocksById,
+              blockIds,
+              role,
+              streaming,
+              entry,
+              toolCallsInBlocks,
             };
-            return <Show when={block().kind !== 'tool_call' || startsToolRun()} fallback={null}>
-              <Show when={block().kind === 'tool_call'} fallback={
-                <div class="conversation-message__block">
-                  <MessageBlock
-                    block={block}
-                    blockIndex={() => blockIndex()}
-                    role={role}
-                    streaming={streaming}
-                    entry={entry}
-                    toolCallsInBlocks={toolCallsInBlocks}
-                    blockIds={blockIds}
-                    blocksById={blocksById}
-                  />
-                </div>
+            return (
+              <Show when={group().kind === 'activity'} fallback={
+                <For each={group().unitIds}>{(unitId) =>
+                  <AssistantLayoutUnitView unitId={unitId} {...unitViewProps} />
+                }</For>
               }>
-                <ToolActivityGroup>
-                  <For each={toolRun()}>{(toolBlock) => {
-                    const toolCall = () => toolBlock.toolCall;
-                    const duplicateToolBlock = () => {
-                      const toolId = toolCall().toolCallId || '';
-                      if (!toolId) return false;
-                      const ids = blockIds();
-                      const byId = blocksById();
-                      const firstIndex = ids.findIndex((candidate) => byId.get(candidate)?.kind === 'tool_call' && (byId.get(candidate) as Extract<ChatBlock, { kind: 'tool_call' }>).toolCall.toolCallId === toolId);
-                      const currentIndex = ids.findIndex((candidate) => candidate === toolBlock.id);
-                      return firstIndex >= 0 && currentIndex > firstIndex;
-                    };
-                    return <McpToolBlock
-                      toolCall={toolCall}
-                      origin={() => (entry().origin === 'session_replay' ? 'replay' as const : entry().origin === 'live' ? 'live' as const : null)}
-                      siblingTools={toolCallsInBlocks}
-                      duplicate={duplicateToolBlock()}
-                    />;
-                  }}</For>
-                </ToolActivityGroup>
+                <div class="chat-activity-chain" data-testid="chat-activity-chain">
+                  <For each={group().unitIds}>{(unitId) =>
+                    <AssistantLayoutUnitView unitId={unitId} {...unitViewProps} />
+                  }</For>
+                </div>
               </Show>
-            </Show>;
+            );
           }}</For>
           <Show when={partialTerminal()}>{(terminal) => <InlineNotice tone={terminal().tone} role="status" title="Partial response">
             <span>{terminal().label}. The output above may be incomplete.</span>

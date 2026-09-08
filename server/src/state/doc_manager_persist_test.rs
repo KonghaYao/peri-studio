@@ -155,6 +155,7 @@ async fn mark_turn_cancelling_sets_cancelling_state() {
                 turn_id: "t1".into(),
                 status: peri_studio_proto::schema::TurnStatus::Cancelled,
                 completed_at: "2026-08-10T00:00:01Z".into(),
+                public_error: None,
             },
         )
         .await;

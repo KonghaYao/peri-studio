@@ -95,6 +95,7 @@ pub(crate) fn apply_turn_group(
             turn_id,
             status,
             completed_at,
+            public_error,
         } => {
             // 终态守卫（§7.2）：active_turn 存在、turn_id 匹配且非终态才迁移。
             let (active_tid, active_status) = read_session_active_turn(pair);
@@ -141,7 +142,7 @@ pub(crate) fn apply_turn_group(
                     turn_id,
                     entry_status,
                     completed_at,
-                    None,
+                    public_error.as_ref(),
                 );
                 let tool_status = match status {
                     TurnStatus::Completed => peri_studio_proto::schema::ToolCallStatus::Completed,
