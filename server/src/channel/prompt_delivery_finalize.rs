@@ -293,6 +293,33 @@ impl PromptDelivery {
                 "prompt unknown projection persist failed"
             );
         }
+        // 官方 ACP：回合只由 session/prompt 的 JSON-RPC result 结束。L3 丢失/
+        // 超时不等于 turn 仍在跑——必须投影终态，否则 session.loading 卡住输入框。
+        let turn_id = entry_id
+            .strip_suffix(":user")
+            .filter(|id| !id.is_empty())
+            .unwrap_or(entry_id);
+        let terminal = self
+            .doc
+            .submit_command(
+                &request.chat_id,
+                DocCommand::SetTurnTerminal {
+                    turn_id: turn_id.to_string(),
+                    status: TurnStatus::Failed,
+                    completed_at: Utc::now().to_rfc3339(),
+                },
+            )
+            .await;
+        if !matches!(
+            terminal,
+            SubmitResult::Applied(ref result)
+                if result.applied || result.reason == Some(ApplyReason::DuplicateIdempotent)
+        ) {
+            warn!(
+                chat_id = request.chat_id,
+                "prompt unknown did not terminalize session.loading"
+            );
+        }
         self.chats.clear_active_turn(&request.chat_id).await;
         PromptDeliveryOutcome::Failed(unknown(message))
     }

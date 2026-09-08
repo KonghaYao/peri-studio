@@ -28,6 +28,7 @@ pub use acp_channel::{
     ConfigCatalogError, DropReason, ElicitationRequestFields, NormalizeOutcome,
     PermissionRequestFields, PERMISSION_TIMEOUT,
 };
+pub(crate) use acp_channel_parse::jsonrpc_response_id;
 pub use mcp_name::{parse_mcp_tool_name, ParsedMcpToolName};
 pub use ssh_destination::{validate_identity_file_path, validate_ssh_destination};
 pub(crate) use translator::permission_option_matches;

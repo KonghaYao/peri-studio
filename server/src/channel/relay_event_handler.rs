@@ -247,9 +247,12 @@ impl RelayEventHandler {
             None => false,
         };
         if !binding_ok {
-            // 无帧内 sessionId（或未命中 binding）：仅 JSON-RPC 形态（有
-            // jsonrpc 键，与 child.rs C1 同判据）按信封兜底投递。
-            if ev.frame.get("jsonrpc").is_none() {
+            // 无帧内 sessionId（或未命中 binding）：JSON-RPC 形态按信封兜底。
+            // 官方 session/prompt 终态是 {id, result:{stopReason}}，部分实现
+            // 省略 jsonrpc 键；不得按 binding_missing 丢掉，否则 loading 不落。
+            let jsonrpc_shape = ev.frame.get("jsonrpc").is_some()
+                || crate::protocol::jsonrpc_response_id(&ev.frame).is_some();
+            if !jsonrpc_shape {
                 let _ = self
                     .observe_non_projected_frame(&hub_chat_id, ev.epoch, ev.seq)
                     .await;

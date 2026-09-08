@@ -50,27 +50,31 @@ describe('composerInputState', () => {
     expect(state.placeholder).toBe('Conversation ended (history is read-only)');
   });
 
-  it('does not repeat the running state already expressed by the stop control', () => {
+  it('lets the user type while a turn is active and only locks send', () => {
     const state = composerInputState(base({ turnActive: true }));
-    expect(state.disabled).toBe(true);
+    expect(state.disabled).toBe(false);
+    expect(state.sendLocked).toBe(true);
     expect(state.placeholder).toBe('');
   });
 
-  it('does not add placeholder copy for current-session confirmation', () => {
+  it('locks edit during current-session confirmation without extra placeholder copy', () => {
     const state = composerInputState(base({ submissionForSession: true }));
     expect(state.disabled).toBe(true);
+    expect(state.sendLocked).toBe(true);
     expect(state.placeholder).toBe('');
   });
 
   it('does not block the selected session for another session confirmation', () => {
     const state = composerInputState(base());
     expect(state.disabled).toBe(false);
+    expect(state.sendLocked).toBe(false);
     expect(state.placeholder).toBe('Message the agent, or type / for commands');
   });
 
   it('is enabled with the default placeholder when everything is ready', () => {
     const state = composerInputState(base());
     expect(state.disabled).toBe(false);
+    expect(state.sendLocked).toBe(false);
     expect(state.placeholder).toBe('Message the agent, or type / for commands');
   });
 });

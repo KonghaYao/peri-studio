@@ -87,7 +87,7 @@ export function TokenUsageMeter(props: {
         data-testid="composer-usage"
         aria-label={`Context usage ${Math.round(ratio() * 100)}% · ${STATE_LABEL[state()]} · ${breakdown()}`}
         class={cn(
-          'composer-usage inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md',
+          'composer-usage inline-flex size-(--control-height-sm) shrink-0 cursor-pointer items-center justify-center rounded-md',
           'text-content-secondary transition-colors duration-(--duration-fast)',
           'hover:bg-interaction-hover hover:text-content-primary',
           'focus-visible:shadow-(--shadow-focus-ring) focus-visible:outline-none',
@@ -98,14 +98,8 @@ export function TokenUsageMeter(props: {
         onClick={() => setPinned((value) => !value)}
       >
         <span
-          class="rounded-full"
-          style={{
-            width: '14px',
-            height: '14px',
-            background: ring(),
-            mask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
-            '-webkit-mask': 'radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))',
-          }}
+          class="token-usage-meter__ring"
+          style={{ background: ring() }}
           aria-hidden="true"
         />
       </KPopover.Trigger>
@@ -115,7 +109,7 @@ export function TokenUsageMeter(props: {
           onPointerEnter={() => setHovering(true)}
           onPointerLeave={() => setHovering(false)}
         >
-          <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center justify-between gap-8">
             <p class="text-10 font-medium tracking-caps uppercase text-content-faint">Context usage</p>
             <span
               class={cn(
@@ -128,14 +122,14 @@ export function TokenUsageMeter(props: {
               {STATE_LABEL[state()]}
             </span>
           </div>
-          <div class="mt-2 flex items-baseline justify-between gap-2 text-12">
+          <div class="mt-8 flex items-baseline justify-between gap-8 text-12">
             <span class="text-content-muted">Used</span>
             <span class="font-mono tabular-nums text-content-primary">
               {formatCount(used())}
               <span class="text-content-faint"> / {formatCount(limit())}</span>
             </span>
           </div>
-          <div class="mt-1 h-1 overflow-hidden rounded-full bg-border-subtle">
+          <div class="mt-4 h-4 overflow-hidden rounded-full bg-border-subtle">
             <div
               class={cn(
                 'token-usage-meter__fill h-full rounded-full',
@@ -146,13 +140,13 @@ export function TokenUsageMeter(props: {
               style={{ width: `${Math.round(ratio() * 100)}%` }}
             />
           </div>
-          <p class="mt-1 text-10 text-content-faint">{formatCount(remaining())} remaining</p>
-          <dl class="mt-3 flex flex-col gap-1.5 border-t border-border-subtle pt-2">
+          <p class="mt-4 text-10 text-content-faint">{formatCount(remaining())} remaining</p>
+          <dl class="mt-12 flex flex-col gap-6 border-t border-border-subtle pt-8">
             <p class="text-10 text-content-faint">Latest request</p>
             <For each={SEGMENTS}>
               {(segment) => (
-                <div class="flex items-center gap-2 text-12">
-                  <span class={cn('size-2 shrink-0 rounded-full', segment.tone)} aria-hidden="true" />
+                <div class="flex items-center gap-8 text-12">
+                  <span class={cn('size-8 shrink-0 rounded-full', segment.tone)} aria-hidden="true" />
                   <dt class="flex-1 text-content-muted">{segment.label}</dt>
                   <dd class="font-mono text-11 tabular-nums text-content-primary">
                     {formatCount(values()[segment.key])}

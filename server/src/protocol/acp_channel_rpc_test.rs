@@ -41,6 +41,34 @@ fn rpc_response_ok() {
 }
 
 #[test]
+fn rpc_response_accepts_numeric_id() {
+    // 官方 ACP Prompt Turn 示例：`"id": 2` + `result.stopReason`。
+    // 数字 id 不得当 Malformed 丢掉，否则 session/prompt 终态到不了 L3。
+    let f = json!({"jsonrpc": "2.0", "id": 2, "result": {"stopReason": "end_turn"}});
+    match norm(f) {
+        NormalizeOutcome::RpcResponse { id, is_error } => {
+            assert_eq!(id, "2");
+            assert!(!is_error);
+        }
+        other => panic!("expected numeric-id rpc response, got {other:?}"),
+    }
+}
+
+#[test]
+fn rpc_response_accepts_prompt_result_without_jsonrpc_member() {
+    // 部分 ACP 实现省略 jsonrpc 键，只回 {id, result:{stopReason}}。
+    // 这仍是 session/prompt 的官方终态，不得当 {type,payload} 丢掉。
+    let f = json!({"id": "hub-9", "result": {"stopReason": "end_turn"}});
+    match norm(f) {
+        NormalizeOutcome::RpcResponse { id, is_error } => {
+            assert_eq!(id, "hub-9");
+            assert!(!is_error);
+        }
+        other => panic!("expected prompt-result rpc response, got {other:?}"),
+    }
+}
+
+#[test]
 fn rpc_response_error() {
     let f =
         json!({"jsonrpc": "2.0", "id": "hub-4", "error": {"code": -32601, "message": "unknown"}});

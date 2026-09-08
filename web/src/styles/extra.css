@@ -419,6 +419,15 @@ body.workbench-panel-resizing * {
   transition: width var(--duration-fast) var(--ease-standard);
 }
 
+/* Token 圆环：conic + mask 无法用 Tailwind utility 表达（尺寸用 token）。 */
+.token-usage-meter__ring {
+  width: var(--space-14);
+  height: var(--space-14);
+  border-radius: 999px;
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
+}
+
 /* ── 拓扑子节点连线 ───────────────────────────────────────────────────── */
 
 .topology-instance-children {

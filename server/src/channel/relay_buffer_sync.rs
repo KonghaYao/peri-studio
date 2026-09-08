@@ -78,10 +78,11 @@ impl RelayEventHandler {
             };
             if !binding_ok {
                 // 同构（on_instance_event C2）：无帧内 sessionId 的 JSON-RPC
-                // 形态帧（有 jsonrpc 键）按信封兜底（投递路径与下方 Some
-                // 分支合并）；方法面帧另要求信封 chat 登记；原始形态仍拒
-                // （§6.1）。
-                if bf.frame.get("jsonrpc").is_none()
+                // 形态按信封兜底。session/prompt 的 {id, result:{stopReason}}
+                // 即使省略 jsonrpc 键也必须到达 L3，否则 loading 不落。
+                let jsonrpc_shape = bf.frame.get("jsonrpc").is_some()
+                    || crate::protocol::jsonrpc_response_id(&bf.frame).is_some();
+                if !jsonrpc_shape
                     || (bf.frame.get("method").is_some()
                         && self.inner.chats.entry(&hub_chat_id).await.is_none())
                 {

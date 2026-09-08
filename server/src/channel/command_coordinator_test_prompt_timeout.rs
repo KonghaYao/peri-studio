@@ -153,4 +153,32 @@ async fn prompt_l3_inactivity_timeout_delivery_unknown() {
         env.chats.active_turn(S2).await.is_none(),
         "delivery_unknown → 活动 turn 表项清理"
     );
+    let (snapshot, _) = env
+        .sink
+        .snapshot(&peri_studio_proto::conn::DocId::session(S2))
+        .await
+        .expect("session 镜像快照");
+    use yrs::updates::decoder::Decode as _;
+    use yrs::{Map as _, ReadTxn as _, Transact as _};
+    let mirror = yrs::Doc::new();
+    mirror
+        .transact_mut()
+        .apply_update(yrs::Update::decode_v1(&snapshot).unwrap())
+        .unwrap();
+    let txn = mirror.transact();
+    let sm = txn
+        .get_map("root")
+        .unwrap()
+        .get(&txn, "session")
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap();
+    let loading = sm
+        .get(&txn, "loading")
+        .and_then(|v| v.cast::<bool>().ok())
+        .unwrap_or(true);
+    assert!(
+        !loading,
+        "session/prompt L3 丢失后仍须投影终态并清除 loading，否则输入框锁定"
+    );
 }

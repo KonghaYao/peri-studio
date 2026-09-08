@@ -119,6 +119,31 @@ pub(crate) fn field(obj: &serde_json::Map<String, Value>, names: &[&str]) -> Opt
         .find_map(|n| obj.get(*n).and_then(Value::as_str).map(str::to_string))
 }
 
+/// JSON-RPC 2.0 / 官方 ACP `RequestId`：`string | number | null`。
+/// `session/prompt` 响应靠此 id 匹配 pending_rpc（L3）；`as_str` 丢掉数字 id
+/// 会使官方 `stopReason` 永远到不了 PromptDelivery，Session Doc `loading` 不落。
+pub(crate) fn jsonrpc_id_as_string(value: &Value) -> Option<String> {
+    match value {
+        Value::String(id) if !id.is_empty() => Some(id.clone()),
+        Value::Number(n) => Some(n.to_string()),
+        _ => None,
+    }
+}
+
+/// 官方 JSON-RPC response：有 id、无 method，且带 result 或 error。
+/// `session/prompt` 的 `{ stopReason }` 只走这条面（L3），不进聚合器。
+pub(crate) fn jsonrpc_response_id(frame: &Value) -> Option<(String, bool)> {
+    let obj = frame.as_object()?;
+    if obj.contains_key("method") {
+        return None;
+    }
+    if !obj.contains_key("result") && !obj.contains_key("error") {
+        return None;
+    }
+    let id = jsonrpc_id_as_string(obj.get("id")?)?;
+    Some((id, obj.contains_key("error")))
+}
+
 pub(crate) fn string_field(
     obj: &serde_json::Map<String, Value>,
     camel: &str,

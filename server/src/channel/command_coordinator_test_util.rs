@@ -355,6 +355,14 @@ pub(super) async fn drive_prompt_l3(
         .unwrap()
         .cast::<yrs::MapRef>()
         .unwrap();
+    let loading = sm
+        .get(&txn, "loading")
+        .and_then(|v| v.cast::<bool>().ok())
+        .unwrap_or(true);
+    assert!(
+        !loading,
+        "ACP session/prompt L3 stopReason 必须清除 session.loading，否则输入框保持锁定"
+    );
     sm.get(&txn, "active_turn_status")
         .and_then(|v| v.cast::<String>().ok())
         .unwrap_or_default()

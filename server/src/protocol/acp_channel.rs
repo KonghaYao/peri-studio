@@ -37,8 +37,8 @@ use crate::state::normalized::{
 
 use super::acp_channel_elicitation::{normalize_elicitation_request, ElicitationMapError};
 use super::acp_channel_parse::{
-    acp_replay_provenance, number_field, public_error, raw_replay_provenance, string_field,
-    MapError,
+    acp_replay_provenance, jsonrpc_id_as_string, jsonrpc_response_id, number_field, public_error,
+    raw_replay_provenance, string_field, MapError,
 };
 
 // 测试经 `use super::*` 引用（拆分前为 acp_channel 模块私有符号；现位于各
@@ -194,11 +194,17 @@ impl AcpChannel {
         now_rfc3339: &str,
         frame: &Value,
     ) -> NormalizeOutcome {
-        // 1. JSON-RPC 形态判定：有 "jsonrpc" 键 → 通知（method）/ response（id）。
+        // 1. JSON-RPC response 优先：官方 ACP v1 回合结束是 session/prompt
+        //    的 result（`{id, result:{stopReason}}`）。id 为 string|number；
+        //    有的实现省略 `jsonrpc` 键。不得走 {type,payload} 当 Malformed。
+        if let Some((id, is_error)) = jsonrpc_response_id(frame) {
+            return NormalizeOutcome::RpcResponse { id, is_error };
+        }
+        // 2. JSON-RPC 形态判定：有 "jsonrpc" 键 → 通知（method）/ request。
         if frame.get("jsonrpc").is_some() {
             return self.normalize_json_rpc(chat_id, epoch, seq, now_rfc3339, frame);
         }
-        // 2. 原始 {type, payload} 形态。
+        // 3. 原始 {type, payload} 形态。
         let Some(obj) = frame.as_object() else {
             return NormalizeOutcome::Dropped(DropReason::Malformed);
         };
@@ -241,16 +247,14 @@ impl AcpChannel {
         let Some(obj) = frame.as_object() else {
             return NormalizeOutcome::Dropped(DropReason::Malformed);
         };
-        // response：有 id、无 method。
+        // response：有 id、无 method（normalize 入口已处理带 result/error 的
+        // 完整响应；此处兜底 id-only / 非法 id）。
         if obj.contains_key("id") && !obj.contains_key("method") {
-            let Some(id) = obj.get("id").and_then(Value::as_str) else {
+            let Some(id) = obj.get("id").and_then(jsonrpc_id_as_string) else {
                 return NormalizeOutcome::Dropped(DropReason::Malformed);
             };
             let is_error = obj.get("error").is_some();
-            return NormalizeOutcome::RpcResponse {
-                id: id.to_string(),
-                is_error,
-            };
+            return NormalizeOutcome::RpcResponse { id, is_error };
         }
         // notification：method。
         let Some(method) = obj.get("method").and_then(Value::as_str) else {

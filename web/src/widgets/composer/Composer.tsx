@@ -152,6 +152,7 @@ export function Composer(props: { layout?: 'docked' | 'centered' }) {
     submissionForSession: !!submissionForSession(),
   });
   const inputDisabled = () => inputState().disabled;
+  const sendLocked = () => inputState().sendLocked;
   const inputPlaceholder = () => inputState().placeholder;
   const inputDescribedBy = () => [
     prediction.activePrediction() ? 'composer-prediction-description' : null,
@@ -243,6 +244,7 @@ export function Composer(props: { layout?: 'docked' | 'centered' }) {
   });
 
   function submit() {
+    if (inputDisabled() || sendLocked()) return;
     const owner = draftOwner();
     const text = composerDraft(owner).trim();
     if (!text || !promptFitsBudget(text, promptMaxBytes())) return;
@@ -455,7 +457,7 @@ export function Composer(props: { layout?: 'docked' | 'centered' }) {
             </IconButton>
           </span>
           <Show when={turnActive()} fallback={
-            <span class="shrink-0"><IconButton data-testid="composer-action" tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || !composerDraft(draftOwner()).trim() || promptOverBudget()} label="Send" class="composer-action flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-accent-solid text-content-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:w-48 max-narrow:min-h-44">
+            <span class="shrink-0"><IconButton data-testid="composer-action" tooltipPlacement="end" variant="primary" type="button" onClick={submit} disabled={inputDisabled() || sendLocked() || !composerDraft(draftOwner()).trim() || promptOverBudget()} label="Send" class="composer-action flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-accent-solid text-content-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint max-narrow:w-48 max-narrow:min-h-44">
               <SendHorizontal size={18} strokeWidth={1.7} />
             </IconButton></span>
           }>

@@ -3,6 +3,9 @@
 // 优先级顺序与原组件一致：只读 > 打开中 > 未选择会话 > 载入中 > 升级
 // 提示 > 已结束 > 工作中/确认中 > 默认。工作中与确认中已有明确控件或异常面板，
 // 不再用占位文案重复状态。
+//
+// turnActive：输入框可打草稿，发送由 Stop 接管。
+// 本会话提交确认中仍锁编辑，避免重复发送。
 
 export interface ComposerPlaceholderInput {
   readOnly: boolean;
@@ -16,19 +19,23 @@ export interface ComposerPlaceholderInput {
 }
 
 export interface ComposerInputState {
+  /** 会话未就绪 / 终态 / 只读：整框禁用（含附件）。 */
   disabled: boolean;
+  /** 当前 turn 进行中或本会话提交中：不可发送（Stop / 确认面板接管）。 */
+  sendLocked: boolean;
   placeholder: string;
 }
 
 export function composerInputState(input: ComposerPlaceholderInput): ComposerInputState {
-  const disabled = !input.selectedCid
+  const sessionBlocked = !input.selectedCid
     || !input.runtimeDocsHydrated
     || input.terminal
     || !!input.openingSessionId
     || input.readOnly
-    || !input.promptDeliveryReady
-    || input.turnActive
-    || input.submissionForSession;
+    || !input.promptDeliveryReady;
+  const sendLocked = !sessionBlocked && (input.turnActive || input.submissionForSession);
+  // 提交确认/未知投递仍锁编辑，避免重复发送；turn 进行中只锁发送。
+  const disabled = sessionBlocked || input.submissionForSession;
   let placeholder: string;
   if (input.readOnly) {
     placeholder = '';
@@ -47,5 +54,5 @@ export function composerInputState(input: ComposerPlaceholderInput): ComposerInp
   } else {
     placeholder = 'Message the agent, or type / for commands';
   }
-  return { disabled, placeholder };
+  return { disabled, sendLocked, placeholder };
 }

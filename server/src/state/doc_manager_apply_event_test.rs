@@ -456,7 +456,8 @@ async fn load_replay_clears_stale_session_loading() {
 
 #[tokio::test(start_paused = true)]
 async fn turn_terminal_is_idempotent_only_for_the_same_persisted_outcome() {
-    let mgr = DocManager::new(cfg(), Arc::new(MemSink::default()));
+    let sink = MemSink::default();
+    let mgr = DocManager::new(cfg(), Arc::new(sink.clone()));
     open(&mgr, "s1").await;
     let register = DocCommand::RegisterUserEntry {
         turn_id: "t1".into(),
@@ -483,6 +484,11 @@ async fn turn_terminal_is_idempotent_only_for_the_same_persisted_outcome() {
         .await,
         SubmitResult::Applied(result) if result.applied
     ));
+    assert_eq!(
+        projected_session_loading(&sink, "s1").await,
+        Some(false),
+        "ACP session/prompt StopReason 终态必须清除 session.loading"
+    );
     assert!(matches!(
         mgr.submit_command(
             "s1",

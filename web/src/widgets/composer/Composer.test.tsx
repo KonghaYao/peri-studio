@@ -367,7 +367,7 @@ describe('Composer', () => {
     render(() => <Composer />);
     expect(screen.queryByRole('button', { name: 'Send' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Stop generation' })).toBeEnabled();
-    expect(screen.getByRole('textbox')).toBeDisabled();
+    expect(screen.getByRole('textbox')).toBeEnabled();
   });
 
   it('keeps stop locked while its exact runtime control is unresolved', () => {
