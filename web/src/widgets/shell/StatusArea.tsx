@@ -36,6 +36,10 @@ function stateTone(status: string): 'success' | 'info' | 'neutral' | 'warning' |
   return 'neutral';
 }
 
+function isAsyncInFlight(status: string) {
+  return status === 'in_progress' || status === 'running';
+}
+
 function stateLabel(status: string) {
   if (status === 'completed') return 'Done';
   if (status === 'in_progress' || status === 'running') return 'Running';
@@ -74,9 +78,15 @@ export function StatusArea(props: StatusAreaProps) {
   });
   const changes = createMemo(() => selectChatFileChanges(props.entries));
   const completedTodos = createMemo(() => props.plan.filter((entry) => entry.status === 'completed').length);
+  const showAsyncTab = createMemo(() => {
+    const items = asyncItems();
+    if (items.length === 0) return false;
+    if (props.active) return true;
+    return items.some((item) => isAsyncInFlight(item.status));
+  });
   const tabs = createMemo(() => [
     props.active && props.plan.length > 0 ? { id: 'todo' as const, label: 'Todo', count: props.plan.length, icon: ListTodo } : null,
-    props.active && asyncItems().length > 0 ? { id: 'async' as const, label: 'Async', count: asyncItems().length, icon: Workflow } : null,
+    showAsyncTab() ? { id: 'async' as const, label: 'Async', count: asyncItems().length, icon: Workflow } : null,
     changes().length > 0 ? { id: 'changes' as const, label: 'Changes', count: changes().length, icon: GitBranch } : null,
   ].filter((tab): tab is NonNullable<typeof tab> => tab !== null));
   const visibleTab = () => tabs().some((tab) => tab.id === activeTab()) ? activeTab() : tabs()[0]?.id;

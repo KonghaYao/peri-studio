@@ -117,9 +117,7 @@ export function ChatView(props: ChatViewProps) {
                     onRespond={respondQuestion}
                   />
                 </Show>
-                <Show when={!hasPendingPermission() && !hasPendingElicitation() && !hasPendingQuestion()}>
-                  <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} tasks={chatHead()?.tasks ?? []} entries={chatEntries()} />
-                </Show>
+                <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} tasks={chatHead()?.tasks ?? []} entries={chatEntries()} />
                 <Composer renderRuntimeMenu={composerRuntimeMenu} />
               </div>
             </>
@@ -154,6 +152,7 @@ export function ChatView(props: ChatViewProps) {
                   onRespond={respondQuestion}
                 />
               </Show>
+              <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} tasks={chatHead()?.tasks ?? []} entries={chatEntries()} />
               <ChatEmptyWorkspace title={CHAT_EMPTY_TITLE} hint={EMPTY_HINT}>
                 <Composer layout="centered" renderRuntimeMenu={composerRuntimeMenu} />
               </ChatEmptyWorkspace>

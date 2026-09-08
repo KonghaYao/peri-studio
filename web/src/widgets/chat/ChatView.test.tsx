@@ -30,7 +30,7 @@ const state = vi.hoisted(() => ({
 
 vi.mock('../../panel/store', () => state);
 vi.mock('../../panel/lib/auth-state', () => ({ readOnly: state.readOnly }));
-vi.mock('@/widgets/shell/StatusArea', () => ({ StatusArea: () => null }));
+vi.mock('@/widgets/shell/StatusArea', () => ({ StatusArea: () => <section aria-label="Status area" /> }));
 vi.mock('./ChatHeader', () => ({ ChatHeader: () => null }));
 vi.mock('@/widgets/composer/Composer', () => ({ Composer: () => null }));
 vi.mock('@/widgets/shell/ConnectionProblem', () => ({ ConnectionProblem: () => null }));
@@ -141,5 +141,31 @@ describe('ChatView feedback', () => {
     expect(screen.getByRole('region', { name: 'Permissions' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Agent question' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Ask user question' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Status area' })).toBeInTheDocument();
+  });
+
+  it('keeps the status area visible while a permission prompt is open', () => {
+    state.permissions.mockReturnValue([{
+      queueKey: 'permission-1', permissionId: 'permission-1', turnId: 'turn-1', toolCallId: 'tool-1', title: 'Edit file',
+      description: null, options: ['allowOnce', 'deny'], status: 'pending', decision: null,
+    }]);
+    state.questions.mockReturnValue([{
+      questionId: 'q-1',
+      status: 'pending',
+      description: null,
+      expiresAt: null,
+      questions: [{
+        question: 'Pick one',
+        header: null,
+        multiSelect: false,
+        options: [{ label: 'A', description: null }],
+      }],
+    }]);
+
+    render(() => <ChatView />);
+
+    expect(screen.getByRole('region', { name: 'Permissions' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Ask user question' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Status area' })).toBeInTheDocument();
   });
 });

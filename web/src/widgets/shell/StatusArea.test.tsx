@@ -112,4 +112,35 @@ describe('StatusArea', () => {
     expect(panel).toHaveTextContent('Workflow');
     expect(panel).not.toHaveTextContent('Legacy activity');
   });
+
+  it('shows the async tab with a running label when the turn is inactive but a task is still running', async () => {
+    render(() => <StatusArea
+      active={false}
+      plan={[]}
+      activities={[]}
+      tasks={[
+        { taskId: 'task-run', kind: 'subagent', taskSubtype: 'agent', title: 'Background reviewer', summary: null, status: 'running', isBackground: true, startedAt: null, completedAt: null, updatedAt: null },
+      ]}
+      entries={[]}
+    />);
+
+    expect(screen.getByRole('tab', { name: /Async/ })).toBeInTheDocument();
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('Background reviewer');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('Running');
+  });
+
+  it('hides the async tab when the turn is inactive and only terminal tasks remain', () => {
+    render(() => <StatusArea
+      active={false}
+      plan={[]}
+      activities={[]}
+      tasks={[
+        { taskId: 'task-done', kind: 'subagent', taskSubtype: 'agent', title: 'Finished reviewer', summary: null, status: 'completed', isBackground: true, startedAt: null, completedAt: null, updatedAt: null },
+      ]}
+      entries={[]}
+    />);
+
+    expect(screen.queryByRole('region', { name: 'Status area' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Async/ })).not.toBeInTheDocument();
+  });
 });
