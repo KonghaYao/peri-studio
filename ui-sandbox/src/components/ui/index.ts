@@ -11,6 +11,7 @@ export { InlineNotice, type NoticeTone } from './InlineNotice';
 export { Input } from './Input';
 export { RadioGroup } from './RadioGroup';
 export { Select, type SelectOption } from './Select';
+export { Skeleton } from './Skeleton';
 export { Spinner } from './Spinner';
 export { Status } from './Status';
 export { Tabs } from './Tabs';

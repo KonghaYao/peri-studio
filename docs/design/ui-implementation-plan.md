@@ -30,7 +30,7 @@ date: 2026-08-30
 ### P1-B · 操作类组件
 - `Button`、`IconButton`：对齐 sandbox 尺寸、圆角、primary/ghost
 - `Badge`、`Status`：状态点 + 中性灰字规则
-- `Spinner`、`CopyButton`
+- `Spinner`、`Skeleton`、`CopyButton`
 - 更新 `shared/ui/components.test.tsx`
 
 ### P1-C · 浮层与导航

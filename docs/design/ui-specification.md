@@ -139,6 +139,7 @@ widgets/*           ← 业务组合；禁止深层 import 单个 ui 文件，�
 
 - 默认过渡：`120ms ease`（按钮、边框、背景），见 `Button` base classes。
 - **Spinner**：`.ui-spinner`（`primitives.css`），按钮 `busy` 时展示并 `aria-busy`。
+- **Skeleton**：`.ui-skeleton`（`primitives.css`）shadcn 式扫光占位；对话 thinking gap 用 Skeleton 条，不用 spinner 文案行。`prefers-reduced-motion` 下停扫光。
 - **Reduced motion**：streaming / ping 动画须尊重 `prefers-reduced-motion`（见 chat 工作状态行实现）。
 - 禁止无意义入场动画；`fade-in` 仅用于轻量出现（popover）。
 
@@ -161,6 +162,7 @@ widgets/*           ← 业务组合；禁止深层 import 单个 ui 文件，�
 | `InlineNotice` | 流内告警条 | `info` / `success` / `warning` / `danger` |
 | `EmptyState` / `LoadingState` | 空与加载 | 必须覆盖错误/重试路径 |
 | `Spinner` | 内联等待 | 非按钮场景 |
+| `Skeleton` | 扫光占位 | 对话 thinking gap、列表预载；须另有 live region |
 | `CopyButton` | 复制代码/ID | 成功反馈 toast |
 | `Collapsible` | 可折叠区块 | 侧栏归档区等 |
 
@@ -224,7 +226,7 @@ Widget **可以**读 `store`；**不得**直发 WebSocket 帧。复杂逻辑下�
 - 按钮：**动词开头**（`Open`, `Retry`, `Allow once`）；破坏性用 `danger` variant，文案明确（`Delete`, `Revoke`）。
 - 错误：说明发生了什么 + 单一主恢复动作；`delivery_unknown` 保留证据 + acknowledge 路径。
 - 空状态：一句说明 + 可选主 CTA；不用俏皮语气。
-- 加载：`Loading…` / `Connecting…` / `Calibrating…` 区分语义；禁止无限 spinner 无文案。
+- 加载：`Loading…` / `Connecting…` / `Calibrating…` 区分语义；禁止无限 spinner 无文案。thinking gap 用 `Skeleton` 扫光，文案只进 live region。
 
 ---
 

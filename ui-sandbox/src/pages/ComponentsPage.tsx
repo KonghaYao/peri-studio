@@ -13,6 +13,7 @@ import {
   Input,
   RadioGroup,
   Select,
+  Skeleton,
   Spinner,
   Status,
   Tabs,
@@ -207,11 +208,18 @@ export function ComponentsPage() {
         </div>
       </Demo>
 
-      <Demo id="spinner" title="Spinner & EmptyState">
+      <Demo id="spinner" title="Spinner, Skeleton & EmptyState">
         <Row>
           <Spinner class="text-accent-solid" />
           <Spinner class="text-content-muted" />
           <span class="text-12 text-content-muted">Loading…</span>
+        </Row>
+        <Row label="Shimmer">
+          <div class="flex w-72 flex-col gap-2">
+            <Skeleton class="h-3 w-40" />
+            <Skeleton class="h-3 w-56" />
+            <Skeleton class="h-3 w-48" />
+          </div>
         </Row>
         <div class="max-w-sm rounded-lg border border-border-subtle">
           <EmptyState
