@@ -279,8 +279,8 @@ pub enum EventBody {
         #[serde(default)]
         config_options: Option<Vec<SessionConfigOptionProjection>>,
     },
-    /// Agent 上下文用量快照 → Control Doc agent.context_window/context_used
-    /// （`usage_update` 通知；每次 LLM 调用结束发送，全量覆盖）。
+    /// Agent 上下文用量快照：Control Doc agent 全量覆盖；可写 turn 上另写
+    /// Chat Doc `{turnId}:assistant`.token_usage（`usage_update` 双写）。
     AgentUsage {
         /// 上下文窗口大小（token 数）。
         context_window: u32,

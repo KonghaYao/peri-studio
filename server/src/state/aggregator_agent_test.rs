@@ -1,6 +1,6 @@
 //! 聚合器控制侧写入测试（对应 `aggregator_write_control.rs` 的 agent
 //! map）：AgentConfig 部分更新语义（None 不覆盖）、AgentUsage 快照
-//! 覆写、CommandCatalog 描述投影与 negotiated local skill 能力门控
+//! 覆写与 Chat Entry token_usage 双写、CommandCatalog 描述投影与 negotiated local skill 能力门控
 //! （跨任务契约 §1 / §8.5）。
 
 use super::util::*;
@@ -12,6 +12,65 @@ use crate::state::chat_writer;
 use crate::state::doc_pair::DocPair;
 use crate::state::factory::ROOT;
 use crate::state::normalized::EventBody;
+use peri_studio_proto::schema::TurnStatus;
+
+fn agent_usage(context_used: u32) -> EventBody {
+    EventBody::AgentUsage {
+        context_window: 200_000,
+        context_used,
+        input_tokens: Some(100),
+        output_tokens: Some(50),
+        cache_creation_tokens: None,
+        cache_read_tokens: Some(900),
+        request_id: None,
+        model: None,
+        stop_reason: None,
+    }
+}
+
+fn seed_writable_assistant(p: &mut DocPair, agg: &mut Aggregator) {
+    seed_user_msg(p, "t1", "t1:user", "hi");
+    assert!(agg.apply(p, &ev("s1", 1, msg_delta("t1", "t1:assistant", "b1", "hello"))).applied);
+}
+
+fn entry_token_usage(pair: &DocPair, entry_id: &str) -> Option<(u32, u32, Option<u32>, Option<u32>)> {
+    let txn = pair.chat.transact();
+    let root = chat_writer::root_map_read(&txn).unwrap();
+    let entry = root
+        .get(&txn, "entries")
+        .and_then(|value| value.cast::<yrs::MapRef>().ok())
+        .and_then(|entries| entries.get(&txn, entry_id))
+        .and_then(|value| value.cast::<yrs::MapRef>().ok())?;
+    let usage = entry
+        .get(&txn, "token_usage")
+        .and_then(|value| value.cast::<yrs::MapRef>().ok())?;
+    Some((
+        usage.get(&txn, "total_tokens")?.cast::<u32>().ok()?,
+        usage
+            .get(&txn, "context_window")?
+            .cast::<u32>()
+            .ok()?,
+        usage
+            .get(&txn, "input_tokens")
+            .and_then(|value| value.cast::<u32>().ok()),
+        usage
+            .get(&txn, "output_tokens")
+            .and_then(|value| value.cast::<u32>().ok()),
+    ))
+}
+
+fn control_context_used(pair: &DocPair) -> u32 {
+    let txn = pair.session.transact();
+    let root = chat_writer::root_map_read(&txn).unwrap();
+    root.get(&txn, "agent")
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap()
+        .get(&txn, "context_used")
+        .unwrap()
+        .cast::<u32>()
+        .unwrap()
+}
 
 // ---------------------------------------------------------------------------
 // 17. AgentConfig/AgentUsage → Control Doc agent map（跨任务契约 §1）
@@ -175,6 +234,60 @@ fn agent_usage_snapshot_overwrites() {
         "usage_update 全量覆盖 context_used"
     );
     let _ = root;
+}
+
+#[test]
+fn agent_usage_writes_entry_token_usage_on_writable_turn() {
+    let mut p = pair();
+    let mut agg = Aggregator;
+    seed_writable_assistant(&mut p, &mut agg);
+    assert!(agg.apply(&mut p, &ev("s1", 2, agent_usage(12_345))).applied);
+    assert_eq!(
+        entry_token_usage(&p, "t1:assistant"),
+        Some((12_345, 200_000, Some(100), Some(50)))
+    );
+    assert_eq!(control_context_used(&p), 12_345);
+}
+
+#[test]
+fn agent_usage_skips_entry_on_terminal_turn_but_writes_agent_snapshot() {
+    let mut p = pair();
+    let mut agg = Aggregator;
+    seed_writable_assistant(&mut p, &mut agg);
+    assert!(agg.apply(&mut p, &ev("s1", 2, agent_usage(1_000))).applied);
+    assert!(entry_token_usage(&p, "t1:assistant").is_some());
+    assert!(
+        agg.apply(
+            &mut p,
+            &ev("s1", 3, turn_terminal("t1", TurnStatus::Completed))
+        )
+        .applied
+    );
+    assert!(agg.apply(&mut p, &ev("s1", 4, agent_usage(9_999))).applied);
+    assert_eq!(entry_token_usage(&p, "t1:assistant"), Some((1_000, 200_000, Some(100), Some(50))));
+    assert_eq!(control_context_used(&p), 9_999);
+}
+
+#[test]
+fn agent_usage_skips_entry_without_active_turn() {
+    let mut p = pair();
+    let mut agg = Aggregator;
+    assert!(agg.apply(&mut p, &ev("s1", 1, agent_usage(777))).applied);
+    assert!(entry_token_usage(&p, "t1:assistant").is_none());
+    assert_eq!(control_context_used(&p), 777);
+}
+
+#[test]
+fn agent_usage_overwrites_entry_token_usage() {
+    let mut p = pair();
+    let mut agg = Aggregator;
+    seed_writable_assistant(&mut p, &mut agg);
+    assert!(agg.apply(&mut p, &ev("s1", 2, agent_usage(1_111))).applied);
+    assert!(agg.apply(&mut p, &ev("s1", 3, agent_usage(2_222))).applied);
+    assert_eq!(
+        entry_token_usage(&p, "t1:assistant"),
+        Some((2_222, 200_000, Some(100), Some(50)))
+    );
 }
 
 #[test]

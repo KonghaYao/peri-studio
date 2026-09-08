@@ -26,7 +26,7 @@ pub use agent::{
     AgentStatusProjection, AgentUsageProjection, SessionConfigCategory,
     SessionConfigChoiceProjection, SessionConfigOptionProjection,
 };
-pub use chat::{ChatDocRoot, ChatEntry, ContentBlock, ToolCallProjection};
+pub use chat::{ChatDocRoot, ChatEntry, ContentBlock, EntryTokenUsage, ToolCallProjection};
 pub use control::{
     ActiveTurnProjection, ChatInfoProjection, PermissionProjection, SessionDocRoot,
     SessionSummaryProjection,

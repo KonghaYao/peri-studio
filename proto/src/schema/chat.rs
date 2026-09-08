@@ -58,6 +58,23 @@ pub struct ChatEntry {
     pub blocks: HashMap<String, ContentBlock>,
     /// 脱敏公开错误，不含内部细节。
     pub error: Option<PublicError>,
+    /// 当前 assistant entry 的 token 用量快照（`usage_update` 双写；additive
+    /// optional，旧快照缺省）。
+    #[serde(default)]
+    pub token_usage: Option<EntryTokenUsage>,
+}
+
+/// Chat Entry 上的 token 用量（镜像 Fenix entry tokenUsage；不含 cache 字段）。
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EntryTokenUsage {
+    /// 当前已用上下文（来自 `context_used`）。
+    pub total_tokens: u32,
+    pub context_window: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub input_tokens: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub output_tokens: Option<u32>,
 }
 
 /// 内容块（§5.3）。镜像内部判别形态（tag `"kind"`），非线协议。

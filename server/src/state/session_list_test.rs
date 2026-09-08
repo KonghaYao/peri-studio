@@ -7,7 +7,7 @@ use yrs::{Map, ReadTxn, Transact, WriteTxn};
 use peri_studio_proto::schema::SessionSummaryProjection;
 
 use crate::state::factory::{Factory, ROOT};
-use crate::state::session_list::{apply_diff, diff, SessionListDiff};
+use crate::state::session_list::{apply_diff, diff, should_write_after_list_response, SessionListDiff};
 
 fn sum(id: &str, title: &str, updated: &str) -> SessionSummaryProjection {
     SessionSummaryProjection {
@@ -71,10 +71,31 @@ fn diff_no_change_is_noop() {
 }
 
 #[test]
-fn diff_empty_incoming_removes_all() {
+fn diff_empty_incoming_is_noop() {
     let current = map_of(&[sum("s1", "a", "t0")]);
     let d = diff(&current, &[]);
-    assert_eq!(d.remove, vec!["s1".to_string()]);
+    assert_eq!(
+        d,
+        SessionListDiff {
+            upsert: vec![],
+            remove: vec![]
+        }
+    );
+}
+
+#[test]
+fn should_write_only_when_map_changes_or_not_loaded() {
+    let empty = SessionListDiff {
+        upsert: vec![],
+        remove: vec![],
+    };
+    assert!(!should_write_after_list_response(true, &empty));
+    assert!(should_write_after_list_response(false, &empty));
+    let with_upsert = SessionListDiff {
+        upsert: vec![sum("s1", "a", "t0")],
+        remove: vec![],
+    };
+    assert!(should_write_after_list_response(true, &with_upsert));
 }
 
 #[test]

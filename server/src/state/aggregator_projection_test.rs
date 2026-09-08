@@ -14,6 +14,14 @@ use crate::state::chat_writer;
 use crate::state::doc_pair::DocPair;
 use crate::state::normalized::EventBody;
 
+fn session_projection_version(pair: &DocPair) -> u32 {
+    let txn = pair.session.transact();
+    chat_writer::root_map_read(&txn)
+        .and_then(|root| root.get(&txn, "projection_version"))
+        .and_then(|v| v.cast::<u32>().ok())
+        .unwrap_or(0)
+}
+
 // ---------------------------------------------------------------------------
 // 11. 视图读取：reasoning 可见性
 // ---------------------------------------------------------------------------
@@ -135,6 +143,96 @@ fn session_list_full_sync_removes_stale() {
     let keys: std::collections::BTreeSet<&str> = sessions.iter(&txn).map(|(k, _)| k).collect();
     assert_eq!(keys, ["s1", "s3"].into_iter().collect());
     let _ = root;
+}
+
+#[test]
+fn session_list_empty_response_preserves_sessions_and_sets_loaded() {
+    let mut p = pair();
+    let mut agg = Aggregator;
+    let sum = |id: &str, title: &str| peri_studio_proto::schema::SessionSummaryProjection {
+        session_id: id.to_string(),
+        title: title.to_string(),
+        status: "completed".to_string(),
+        updated_at: "2026-08-07T00:00:00Z".to_string(),
+        cwd: String::new(),
+        bound_chat_id: None,
+    };
+    assert!(
+        agg.apply(
+            &mut p,
+            &ev("s1", 1, EventBody::SessionListResponse { entries: vec![] })
+        )
+        .applied
+    );
+    assert_eq!(session_projection_version(&p), 1);
+    let txn = p.session.transact();
+    let root = chat_writer::root_map_read(&txn).unwrap();
+    assert_eq!(
+        root.get(&txn, "session_list_loaded"),
+        Some(yrs::Out::Any(true.into()))
+    );
+    drop(txn);
+
+    assert!(
+        agg.apply(
+            &mut p,
+            &ev(
+                "s1",
+                2,
+                EventBody::SessionListResponse {
+                    entries: vec![sum("s1", "a")],
+                }
+            )
+        )
+        .applied
+    );
+    let v_with_session = session_projection_version(&p);
+    assert!(
+        agg.apply(
+            &mut p,
+            &ev("s1", 3, EventBody::SessionListResponse { entries: vec![] })
+        )
+        .applied
+    );
+    let txn = p.session.transact();
+    let root = chat_writer::root_map_read(&txn).unwrap();
+    let sessions = root
+        .get(&txn, "sessions")
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap();
+    assert_eq!(sessions.len(&txn), 1);
+    drop(txn);
+    assert_eq!(session_projection_version(&p), v_with_session);
+    assert!(
+        agg.apply(
+            &mut p,
+            &ev("s1", 4, EventBody::SessionListResponse { entries: vec![] })
+        )
+        .applied
+    );
+    assert_eq!(session_projection_version(&p), v_with_session);
+}
+
+#[test]
+fn session_list_repeat_identical_does_not_bump_projection_version() {
+    let mut p = pair();
+    let mut agg = Aggregator;
+    let sum = peri_studio_proto::schema::SessionSummaryProjection {
+        session_id: "s1".to_string(),
+        title: "a".to_string(),
+        status: "completed".to_string(),
+        updated_at: "2026-08-07T00:00:00Z".to_string(),
+        cwd: String::new(),
+        bound_chat_id: None,
+    };
+    let body = EventBody::SessionListResponse {
+        entries: vec![sum.clone()],
+    };
+    assert!(agg.apply(&mut p, &ev("s1", 1, body.clone())).applied);
+    let v = session_projection_version(&p);
+    assert!(agg.apply(&mut p, &ev("s1", 2, body)).applied);
+    assert_eq!(session_projection_version(&p), v);
 }
 
 // ---------------------------------------------------------------------------

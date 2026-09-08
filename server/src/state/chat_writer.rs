@@ -41,7 +41,7 @@ pub(crate) use super::chat_writer_blocks::{
 };
 pub(crate) use super::chat_writer_entries::{
     clear_input_prediction, create_pending_prompt_entry, create_user_entry, prompt_entry_turn_id,
-    record_entry_origin, set_prompt_entry_delivery,
+    record_entry_origin, set_entry_token_usage, set_prompt_entry_delivery,
 };
 pub(crate) use super::chat_writer_turn::{
     bump_projection_version, migrate_assistant_segments_terminal, migrate_entry_terminal,

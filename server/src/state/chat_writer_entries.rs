@@ -15,7 +15,7 @@ use std::collections::HashSet;
 
 use yrs::{Array, Map};
 
-use peri_studio_proto::schema::{ChatEntry, ContentBlock, EntryKind, EntryRole, EntryStatus};
+use peri_studio_proto::schema::{ChatEntry, ContentBlock, EntryKind, EntryRole, EntryStatus, EntryTokenUsage};
 
 use crate::state::chat_writer::{
     ensure_user_entry_indexed, entry_kind_str, entry_role_str, entry_status_str,
@@ -80,6 +80,9 @@ pub fn ensure_entry(txn: &mut TransactionCtx<'_>, root: &yrs::MapRef, entry: &Ch
             entry_map.insert(txn, "error", yrs::Any::Null);
         }
     };
+    if let Some(usage) = &entry.token_usage {
+        write_entry_token_usage_map(txn, &entry_map, usage);
+    }
     let block_order = entry_map.get_or_init::<_, yrs::ArrayRef>(txn, "block_order");
     let blocks = entry_map.get_or_init::<_, yrs::MapRef>(txn, "blocks");
     let mut written = HashSet::new();
@@ -104,6 +107,42 @@ pub fn ensure_entry(txn: &mut TransactionCtx<'_>, root: &yrs::MapRef, entry: &Ch
     let order = root.get_or_init::<_, yrs::ArrayRef>(txn, "entry_order");
     order.push_back(txn, entry.entry_id.clone());
     true
+}
+
+/// 覆盖已存在 entry 的 `token_usage`（Y.Map snake_case 键）。entry 不存在时不
+/// 创建 assistant 骨架，返回 false。
+pub fn set_entry_token_usage(
+    txn: &mut TransactionCtx<'_>,
+    root: &yrs::MapRef,
+    entry_id: &str,
+    usage: &EntryTokenUsage,
+) -> bool {
+    let entries = root.get_or_init::<_, yrs::MapRef>(txn, "entries");
+    let Some(entry_map) = entries
+        .get(txn, entry_id)
+        .and_then(|value| value.cast::<yrs::MapRef>().ok())
+    else {
+        return false;
+    };
+    entry_map.remove(txn, "token_usage");
+    write_entry_token_usage_map(txn, &entry_map, usage);
+    true
+}
+
+fn write_entry_token_usage_map(
+    txn: &mut TransactionCtx<'_>,
+    entry_map: &yrs::MapRef,
+    usage: &EntryTokenUsage,
+) {
+    let usage_map = entry_map.insert(txn, "token_usage", yrs::MapPrelim::default());
+    usage_map.insert(txn, "total_tokens", usage.total_tokens);
+    usage_map.insert(txn, "context_window", usage.context_window);
+    if let Some(value) = usage.input_tokens {
+        usage_map.insert(txn, "input_tokens", value);
+    }
+    if let Some(value) = usage.output_tokens {
+        usage_map.insert(txn, "output_tokens", value);
+    }
 }
 
 /// Set durable entry provenance without allowing later live traffic to erase
@@ -200,6 +239,7 @@ pub fn create_user_entry(
         .into_iter()
         .collect(),
         error: None,
+        token_usage: None,
     };
     if ensure_entry(txn, root, &entry) {
         // 创建成功 → 索引随条目同事务写入（§P1-6）。
@@ -272,6 +312,7 @@ pub fn create_pending_prompt_entry(
         .into_iter()
         .collect(),
         error: None,
+        token_usage: None,
     };
     if !ensure_entry(txn, root, &entry) {
         // `ensure_entry` 冲突（entry_id 已被占用）不写索引：防污染（同

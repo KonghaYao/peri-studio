@@ -571,7 +571,7 @@ delivery_confirmed → projection_committed → completed（终态）
 **chats 投影位职责裁决**【审查：架构 P1-5】：
 
 - **Registry Doc `chats`** = 侧栏对话列表的**唯一权威源**：活跃 chat 摘要（id/instance_id/title/status/gap/updated_at），由 **server 状态源单写**（chat 生命周期事件驱动：create/binding/终态/close 时更新），不从 Control Doc 聚合。
-- **Control Doc `sessions`** = 该 ACP 进程的**磁盘历史会话列表**（`session_list` 10s 轮询投影，chat §5.3 语义在本架构下的正确对应——每 chat 一进程，返回的是 agent 侧历史），供 `chat/load`/resume 历史浏览，与 Registry 的活跃 chat 摘要**语义不同、互不替代**。
+- **Control Doc `sessions`** = 该 ACP 进程的**磁盘历史会话列表**（`session_list` 10s 轮询投影，chat §5.3 语义在本架构下的正确对应——每 chat 一进程，返回的是 agent 侧历史），供 `chat/load`/resume 历史浏览，与 Registry 的活跃 chat 摘要**语义不同、互不替代**。空 `session_list` 响应**不得**清空已有 `sessions`（瞬时空 list 保护）；根键 `session_list_loaded` 表示 agent 侧列表已权威确认（含「确认无会话」），与「列表尚未到达」区分。
 - §15 映射表该行标注差异（非「同构」）。
 
 ### 5.3 Chat Doc schema（chat §5.2）
@@ -601,6 +601,7 @@ struct ChatEntry {
     block_order: Vec<String>,       // Y.Array<String>
     blocks: Map<String, ContentBlock>,
     error: Option<PublicError>,     // 脱敏公开错误，不含内部细节
+    token_usage: Option<EntryTokenUsage>, // additive：`usage_update` 双写至当前 assistant entry
 }
 
 enum ContentBlock {

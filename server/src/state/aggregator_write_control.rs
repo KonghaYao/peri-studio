@@ -97,18 +97,26 @@ impl Aggregator {
             }
             EventBody::SessionListResponse { entries } => {
                 // 预读（写事务前完成，避免并发事务 panic，§7.4）。
-                let current = {
+                let (current, loaded) = {
                     let rt = pair.session.transact();
                     match chat_writer::root_map_read(&rt) {
-                        Some(rr) => session_list::read_current(&rt, &rr),
-                        None => std::collections::HashMap::new(),
+                        Some(rr) => (
+                            session_list::read_current(&rt, &rr),
+                            session_list::read_loaded(&rt, &rr),
+                        ),
+                        None => (std::collections::HashMap::new(), false),
                     }
                 };
                 let d = session_list::diff(&current, entries);
-                if !d.upsert.is_empty() || !d.remove.is_empty() {
+                if session_list::should_write_after_list_response(loaded, &d) {
                     let mut txn = pair.session_txn();
                     let root = txn.get_or_insert_map(ROOT);
-                    session_list::apply_diff(&mut txn, &root, &d);
+                    if session_list::diff_has_map_changes(&d) {
+                        session_list::apply_diff(&mut txn, &root, &d);
+                    }
+                    if !loaded {
+                        session_list::mark_loaded(&mut txn, &root);
+                    }
                     chat_writer::bump_projection_version(&mut txn, &root);
                 }
             }

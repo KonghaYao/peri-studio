@@ -9,6 +9,7 @@ use peri_studio_proto::version::{
 };
 
 use crate::state::chat_writer;
+use crate::state::session_list;
 use crate::state::doc_pair::{DocPair, StreamState};
 use crate::state::view_store::TransactionCtx;
 
@@ -182,6 +183,9 @@ impl Factory {
                 if root.get(txn, "sessions").is_none() {
                     root.insert(txn, "sessions", yrs::MapPrelim::default());
                 }
+                if root.get(txn, session_list::SESSION_LIST_LOADED_KEY).is_none() {
+                    root.insert(txn, session_list::SESSION_LIST_LOADED_KEY, false);
+                }
             }
             DocKind::Registry => {
                 if root.get(txn, "instances").is_none() {
@@ -195,6 +199,9 @@ impl Factory {
                 }
                 if root.get(txn, "sessions").is_none() {
                     root.insert(txn, "sessions", yrs::MapPrelim::default());
+                }
+                if root.get(txn, session_list::SESSION_LIST_LOADED_KEY).is_none() {
+                    root.insert(txn, session_list::SESSION_LIST_LOADED_KEY, false);
                 }
                 if root.get(txn, "global").is_none() {
                     root.insert(txn, "global", yrs::MapPrelim::from([("status", "healthy")]));

@@ -30,8 +30,11 @@ pub struct SessionDocRoot {
     /// 由 server schema initializer 补结构。
     #[serde(default)]
     pub pending_elicitations: HashMap<String, ElicitationProjection>,
-    /// agent 磁盘历史会话条目（§5.2 裁决：与 Registry 活跃会话语义不同、互不替代）。
+    /// agent 磁盘历史会话条目（§5.4）。
     pub sessions: HashMap<String, SessionSummaryProjection>,
+    /// agent 侧 `session_list` 已权威确认；空列表亦表示确认无会话（additive，旧快照 default false）。
+    #[serde(default)]
+    pub session_list_loaded: bool,
 }
 
 /// 会话元信息投影（§5.4）。

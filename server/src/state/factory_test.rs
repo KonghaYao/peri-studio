@@ -69,6 +69,10 @@ fn create_chat_doc_has_full_structure() {
         .unwrap()
         .cast::<yrs::MapRef>()
         .is_ok());
+    assert_eq!(
+        root_map.get(&txn, "session_list_loaded"),
+        Some(yrs::Out::Any(false.into()))
+    );
 }
 
 #[test]
@@ -161,6 +165,10 @@ fn registry_doc_has_global_status() {
     assert_eq!(
         global.get(&txn, "status"),
         Some(yrs::Out::Any("healthy".into()))
+    );
+    assert_eq!(
+        root_map.get(&txn, "session_list_loaded"),
+        Some(yrs::Out::Any(false.into()))
     );
 }
 

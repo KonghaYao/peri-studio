@@ -12,8 +12,18 @@ use crate::state::{
     factory::ROOT,
     normalized::{EventBody, EventProvenance, NormalizedEvent},
 };
-use peri_studio_proto::schema::{EntryKind, EntryRole, EntryStatus, TurnStatus};
+use peri_studio_proto::schema::{EntryKind, EntryRole, EntryStatus, EntryTokenUsage, TurnStatus};
 use yrs::WriteTxn;
+
+fn active_turn_writable_for_entry_usage(status: TurnStatus) -> bool {
+    !matches!(
+        status,
+        TurnStatus::Cancelling
+            | TurnStatus::Completed
+            | TurnStatus::Failed
+            | TurnStatus::Cancelled
+    )
+}
 
 impl Aggregator {
     pub(crate) fn write(&self, pair: &mut DocPair, ev: &NormalizedEvent) {
@@ -73,6 +83,12 @@ impl Aggregator {
                 }
                 _ => None,
             }
+        } else {
+            None
+        };
+        // 预读：AgentUsage 双写 entry token_usage 依赖 active_turn（§7.4 借位纪律）。
+        let usage_active_turn = if matches!(ev.body, EventBody::AgentUsage { .. }) {
+            self.read_active_turn(pair)
         } else {
             None
         };
@@ -235,6 +251,33 @@ impl Aggregator {
                     );
                     chat_writer::bump_projection_version(&mut txn, &root);
                 }
+                EventBody::AgentUsage {
+                    context_window,
+                    context_used,
+                    input_tokens,
+                    output_tokens,
+                    ..
+                } => {
+                    if let Some(active) = usage_active_turn.as_ref() {
+                        if active_turn_writable_for_entry_usage(active.turn_status) {
+                            let entry_id = format!("{}:assistant", active.turn_id);
+                            let usage = EntryTokenUsage {
+                                total_tokens: *context_used,
+                                context_window: *context_window,
+                                input_tokens: *input_tokens,
+                                output_tokens: *output_tokens,
+                            };
+                            if chat_writer::set_entry_token_usage(
+                                &mut txn,
+                                &root,
+                                &entry_id,
+                                &usage,
+                            ) {
+                                chat_writer::bump_projection_version(&mut txn, &root);
+                            }
+                        }
+                    }
+                }
                 EventBody::PermissionRequested { .. }
                 | EventBody::PermissionResolved { .. }
                 | EventBody::PermissionExpired { .. } => self.write_tool_chat_event(
@@ -248,7 +291,6 @@ impl Aggregator {
                 // 不涉 chat doc 的事件：无 chat 写入。
                 EventBody::AgentStatus { .. }
                 | EventBody::AgentConfig { .. }
-                | EventBody::AgentUsage { .. }
                 | EventBody::AgentActivity { .. }
                 | EventBody::InputPrediction { .. }
                 | EventBody::AgentPlan { .. }

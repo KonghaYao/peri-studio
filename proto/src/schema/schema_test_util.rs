@@ -38,6 +38,7 @@ pub(crate) fn chat_root() -> ChatDocRoot {
             block_order: vec!["b1".into()],
             blocks,
             error: None,
+            token_usage: None,
         },
     );
     let mut tool_calls = HashMap::new();
@@ -175,6 +176,7 @@ pub(crate) fn control_root() -> SessionDocRoot {
         pending_permissions: pending,
         pending_elicitations: HashMap::new(),
         sessions: chats,
+        session_list_loaded: false,
     }
 }
 

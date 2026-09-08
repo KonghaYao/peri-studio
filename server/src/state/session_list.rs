@@ -9,6 +9,9 @@ use peri_studio_proto::schema::SessionSummaryProjection;
 
 use crate::state::view_store::TransactionCtx;
 
+/// Session / Registry Doc 根键：agent 侧列表已权威确认（空响应亦表示「确认无会话」）。
+pub const SESSION_LIST_LOADED_KEY: &str = "session_list_loaded";
+
 /// `session_list` diff 结果。
 #[derive(Debug, Clone, PartialEq)]
 pub struct SessionListDiff {
@@ -28,12 +31,21 @@ pub struct SessionListDiff {
 /// 数据但按 cwd 分面——不同 workspace 目录的会话互不相交。upsert 按
 /// (session_id, cwd) 对匹配；remove 按 cwd 隔离：仅删除「与 incoming 同 cwd
 /// 但不在响应中」的条目，跨 cwd 条目不受影响；cwd 为空串的条目（历史遗留/
-/// 孤儿数据）随任意一次轮询删除（§6.3 自愈），非空 cwd 但暂无轮询响应面的
+/// 孤儿数据）随任意一次**非空**轮询删除（§6.3 自愈），非空 cwd 但暂无轮询响应面的
 /// 条目保留（无活跃对话即无响应面，硬约束；误删会使历史列表显示为空）。
+/// **空 incoming 为 no-op**（不清空、不删 stale、不 upsert）。
 pub fn diff(
     current: &HashMap<String, SessionSummaryProjection>,
     incoming: &[SessionSummaryProjection],
 ) -> SessionListDiff {
+    // 空响应保护：瞬时空 list 不得清空已有 sessions（真实删除由后续非空响应 per-cwd 自愈）。
+    if incoming.is_empty() {
+        return SessionListDiff {
+            upsert: vec![],
+            remove: vec![],
+        };
+    }
+
     let mut upsert = Vec::new();
     let mut remove = Vec::new();
 
@@ -86,6 +98,28 @@ pub fn diff(
         }
     }
     SessionListDiff { upsert, remove }
+}
+
+/// 读取根 map 上 `session_list_loaded`（缺键视为 false）。
+pub fn read_loaded<T: ReadTxn>(txn: &T, root: &yrs::MapRef) -> bool {
+    root.get(txn, SESSION_LIST_LOADED_KEY)
+        .and_then(|v| v.cast::<bool>().ok())
+        .unwrap_or(false)
+}
+
+/// 写入 `session_list_loaded = true`（合法 list 响应后的权威确认）。
+pub fn mark_loaded(txn: &mut TransactionCtx<'_>, root: &yrs::MapRef) {
+    root.insert(txn, SESSION_LIST_LOADED_KEY, true);
+}
+
+/// sessions map 是否有 upsert/remove。
+pub fn diff_has_map_changes(diff: &SessionListDiff) -> bool {
+    !diff.upsert.is_empty() || !diff.remove.is_empty()
+}
+
+/// 合法 session list 响应是否应产生 Yjs 写入（map 变化或 loaded 首次置 true）。
+pub fn should_write_after_list_response(loaded: bool, diff: &SessionListDiff) -> bool {
+    diff_has_map_changes(diff) || !loaded
 }
 
 /// 应用 diff 到 Session Doc `sessions`（Y.Map 写；upsert 覆盖、remove 删键）。

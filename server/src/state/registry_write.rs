@@ -71,12 +71,18 @@ impl RegistryApplier {
             }
             DocCommand::RegistryApplySessions { entries } => {
                 // 与 chat 控制面 SessionListResponse 同构（§6.3）：预读当前
-                // 投影 → diff → 有变化才写（幂等，无变化 no-op）。sessions
-                // 是 instance 级数据，投影到 Registry Doc `sessions` map。
+                // 投影 → diff → 有变化或首次 loaded 确认才写（幂等轮询零 update）。
+                // sessions 是 instance 级数据，投影到 Registry Doc `sessions` map。
+                let loaded = session_list::read_loaded(&txn, &root);
                 let current = session_list::read_current(&txn, &root);
                 let d = session_list::diff(&current, entries);
-                if !d.upsert.is_empty() || !d.remove.is_empty() {
-                    session_list::apply_diff(&mut txn, &root, &d);
+                if session_list::should_write_after_list_response(loaded, &d) {
+                    if session_list::diff_has_map_changes(&d) {
+                        session_list::apply_diff(&mut txn, &root, &d);
+                    }
+                    if !loaded {
+                        session_list::mark_loaded(&mut txn, &root);
+                    }
                 }
                 Ok(())
             }
