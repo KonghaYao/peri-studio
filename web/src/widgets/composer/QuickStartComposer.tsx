@@ -5,8 +5,11 @@ import { readOnly } from '@/features/auth/auth-state';
 import { dismissFailedQuickStart, quickStartSubmission } from '@/features/message/quick-start-delivery';
 import { promptMaxBytes } from '@/features/connection/connection';
 import { promptByteLength, promptFitsBudget } from '@/shared/lib/prompt-budget';
-import { Plus, SendHorizontal, ShieldCheck } from 'lucide-solid';
+import { Plus, SendHorizontal } from 'lucide-solid';
 import { ComposerUploadSurface, openComposerUploadFilePicker } from './ComposerUploadSurface';
+
+const sendActionClass =
+  'composer-action flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 max-narrow:w-48 max-narrow:min-h-44';
 
 export function QuickStartComposer(props: { projects: Array<{ id: string; name: string }>; initialProjectId?: string }) {
   const [draft, setDraft] = createSignal('');
@@ -89,28 +92,31 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
             : 'Secure message delivery is not enabled on the server. Refresh or upgrade the server before starting a session.'}</span>
         </InlineNotice>
       </Show>
-      <div class="quick-start__footer composer-toolbar flex min-h-36 items-center gap-4">
+      <div class="quick-start__footer composer-toolbar flex min-h-36 min-w-0 items-center gap-4">
         <IconButton
           label="Add attachment"
           title="Upload files to this project"
           disabled={inputDisabled() || !projectId()}
+          class="composer-attachment max-narrow:hidden shrink-0 border-0 bg-transparent text-content-primary disabled:opacity-55"
           onClick={() => {
             openComposerUploadFilePicker(uploadFileInputRef);
             queueMicrotask(() => textareaRef?.focus());
           }}
-        ><Plus size={16} strokeWidth={1.7} /></IconButton>
-        <IconButton label="Approval mode" title="Approval mode is not connected yet" disabled><ShieldCheck size={16} strokeWidth={1.7} /></IconButton>
+        >
+          <Plus size={18} strokeWidth={1.7} />
+        </IconButton>
         <span class="flex-1" />
         <IconButton
+          data-testid="composer-action"
+          tooltipPlacement="end"
           variant="primary"
           label="Start session"
           busy={pending()?.phase === 'creating' || pending()?.phase === 'accepted'}
           disabled={readOnly() || locked() || !!pending() || !draft().trim() || promptOverBudget()}
           onClick={submit}
-          class="composer-action flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 border-0 bg-accent-solid text-content-on-accent hover:bg-accent-hover max-narrow:w-48 max-narrow:min-h-44"
-          data-testid="composer-action"
+          class={sendActionClass}
         >
-          <SendHorizontal size={16} strokeWidth={1.7} />
+          <SendHorizontal size={18} strokeWidth={1.7} />
         </IconButton>
       </div>
     </div>

@@ -3,8 +3,10 @@
 // 这里展示只读运行拓扑和版本信息，不承载可修改偏好，因此界面使用
 // “System”语义，避免把诊断信息伪装成 Settings。
 
-import { createSignal, For } from 'solid-js';
-import { Dialog, DialogContent, DialogTitle, Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
+import { createSignal, For, Show } from 'solid-js';
+import { Button, Dialog, DialogContent, DialogTitle, Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
+import { useAuthActions } from '@/features/auth/auth-hook';
+import { principalId } from '@/features/auth/auth-state';
 import { connState } from '@/features/connection/connection';
 import { globalStatus, schemaVersion } from '@/store';
 import { serverStatusLabel } from '@/entities/topology/topology-view';
@@ -19,6 +21,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
 
 export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
   const [tab, setTab] = createSignal<SettingsTab>('machines');
+  const auth = useAuthActions();
   return (
     <Dialog open={props.open} onOpenChange={(open) => { if (!open) props.onClose(); }}><DialogContent size="settings"><DialogTitle class="sr-only">System</DialogTitle>
       <Tabs value={tab()} onChange={(value) => setTab(value as SettingsTab)}>
@@ -41,6 +44,13 @@ export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
               <dd>{String(schemaVersion() ?? '—')}</dd>
             </dl>
             <p class="mt-13 text-text-muted text-12 leading-15">Instance and conversation metadata comes from the hub:registry projection; the topology panel does not issue extra requests to the server.</p>
+            <Show when={principalId() && auth?.logout}>
+              <div class="mt-16 flex justify-end border-t border-divider pt-16">
+                <Button variant="secondary" size="compact" class="account-logout" onClick={() => auth?.logout()}>
+                  Log out
+                </Button>
+              </div>
+            </Show>
           </TabsContent>
         </div>
       </Tabs>

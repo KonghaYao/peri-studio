@@ -188,7 +188,7 @@ web/src/
 "@/app/*"      → web/src/app/*
 ```
 
-迁移期间保留 `@/panel/*` shim 指向旧路径，标记 `/** @deprecated use @/widgets */`。
+~~迁移期间保留 `@/panel/*` shim 指向旧路径，标记 `/** @deprecated use @/widgets */`。~~ **`web/src/panel` 已删除**（frontend-rewrite Phase 6+）；勿再添加 `@/panel` 路径。
 
 ## 9. 测试布局
 
@@ -219,14 +219,19 @@ web/src/
 - [x] `entities/{registry,chat,resource,topology}` 承载只读投影；`shared/yjs` 承载 doc-store 基元。
 - [x] 剩余 `panel/components` 迁至 `widgets/{shell,chat,auth,resource}`。
 - [x] `store/index.ts` 为组合根；`app/main.tsx` + `pages/panel` 为入口装配。
-- [x] Phase 2–3 无引用 shim 已删除；`panel/store.ts`、`panel/main.tsx` 保留 deprecated 重导出。
+- [x] Phase 2–3 无引用 shim 已删除；`panel/` 目录已删除（原 `panel/store.ts`、`panel/main.tsx` deprecated 重导出已随目录移除）。
 - [x] `bun run test` 通过。
 
 ### 后续（Phase 6+）
 
-Phase 1–5 只完成了目录脚手架与部分垂直切片；`panel/lib` 仍是领域实现所在。**停止无限期 shim / 绞杀。** 执行策略、CSS/Tailwind 硬约束、社区无头优先、以及「只迁不改业务逻辑」见 [`frontend-rewrite-program.md`](frontend-rewrite-program.md)。
+Phase 1–5 只完成了目录脚手架与部分垂直切片；领域实现已迁入 `features/*`。**停止无限期 shim / 绞杀。** 执行策略、CSS/Tailwind 硬约束、社区无头优先、以及「只迁不改业务逻辑」见 [`frontend-rewrite-program.md`](frontend-rewrite-program.md)。
 
-- [ ] 按重写纲领包 A–H 物理迁移并删除 `web/src/panel`（先 characterization 测试，禁止夹带行为变更）。
-- [ ] `entities/*` 去除对 `panel/lib` 的依赖，只认 `@/shared`。
+- [x] 按重写纲领包 A–H 物理迁移并删除 `web/src/panel`（2026-09-08：`panel/` 目录已移除；`@/panel/*` shim 已删）。
+- [x] `entities/*` 去除对 `panel/lib` 的依赖，只认 `@/shared` 与 `entities` 内模块（生产 import 已清零；层边界测试仍保留历史 baseline 描述字符串）。
 - [ ] ESLint import 边界规则强制执行五层依赖表。
-- [ ] `css-contracts` 覆盖任意值、未声明 spacing、`shared/ui` 与禁止新增 `extra.css`。
+- [x] `css-contracts` 扩展：任意值 bracket、小数 spacing、`shared/ui`、widgets `<style>`、`extra.css` 行数/hash 冻结（WP-BOUND）。
+- [ ] `store/index.ts` 继续瘦身（当前约 **570 行**组合根；纯再导出已拆至 `store/{message-facade,resource-facade,workspace-upload-public}.ts`）。
+- [ ] widgets 统一 `@/features/*` 别名（仍存 **3** 处相对路径：`LaunchWorkspace.tsx`、`SessionImportDialog.tsx`、`SessionSearch.tsx`）。
+- [ ] WP-H / WP-CSS / WP-VIS（`extra.css` 相对 435 行基线净减、sandbox 刻度、视觉收敛）。
+
+迁移期间 ~~保留 `@/panel/*` shim~~ → **已删除**；新代码仅使用 `@/widgets`、`@/features`、`@/store` 等别名。

@@ -418,8 +418,12 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
   assert.match(composerParts, /composer-toolbar flex min-h-36 min-w-0 items-center/);
   assert.match(composerShell, /rounded-\(--composer-radius\)/);
   const composerToolbar = readFileSync(join(root, 'widgets', 'composer', 'ComposerToolbar.tsx'), 'utf8');
+  const quickStartComposer = readFileSync(join(root, 'widgets', 'composer', 'QuickStartComposer.tsx'), 'utf8');
   assert.doesNotMatch(composerToolbar, /bg-accent-solid/);
   assert.match(composerToolbar, /variant="primary"/);
+  assert.doesNotMatch(quickStartComposer, /bg-accent-solid/);
+  assert.doesNotMatch(quickStartComposer, /Approval mode/);
+  assert.match(quickStartComposer, /variant="primary"/);
   assert.match(base, /:focus-visible\s*\{\s*outline:\s*2px solid var\(--focus-ring\)/);
 });
 

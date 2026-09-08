@@ -1,8 +1,6 @@
 import type { JSX } from 'solid-js';
 import { Show } from 'solid-js';
-import { Button, IconButton } from '@/shared/ui';
-import { useAuthActions } from '@/features/auth/auth-hook';
-import { principalId } from '@/features/auth/auth-state';
+import { IconButton } from '@/shared/ui';
 import { Settings } from 'lucide-solid';
 
 interface SidebarChromeProps {
@@ -12,8 +10,6 @@ interface SidebarChromeProps {
 }
 
 export function SidebarChrome(props: SidebarChromeProps) {
-  const auth = useAuthActions();
-
   return (
     <nav
       data-testid="project-sidebar"
@@ -29,15 +25,7 @@ export function SidebarChrome(props: SidebarChromeProps) {
       </div>
       <div class="sidebar-mist-divider" aria-hidden="true" />
       <div class="sidebar-footer flex h-48 shrink-0 items-center gap-8 px-10">
-        <Show when={principalId()} fallback={<span class="min-w-0 flex-1" aria-hidden="true" />}>
-          <span
-            class="account-avatar grid size-28 shrink-0 place-items-center rounded-full bg-surface-muted text-11 font-medium text-content-secondary"
-            aria-hidden="true"
-          >
-            A
-          </span>
-          <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Account</span>
-        </Show>
+        <span class="min-w-0 flex-1" aria-hidden="true" />
         <IconButton
           size="sm"
           showTooltip={false}
@@ -48,7 +36,6 @@ export function SidebarChrome(props: SidebarChromeProps) {
         >
           <Settings size={16} strokeWidth={1.7} />
         </IconButton>
-        <Button class="account-logout sr-only" onClick={auth?.logout}>Log out</Button>
       </div>
     </nav>
   );

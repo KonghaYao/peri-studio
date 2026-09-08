@@ -32,10 +32,10 @@ import { clearPromptRecoverySelection, requestPromptRecovery } from '@/features/
 import { closeTerminalBeforeTeardown, handleTerminalConnectionLost, installTerminalTransport } from '@/features/terminal/terminal-session';
 import { connectionReady, forgetRememberedSession, installConnection, promptMaxBytes, readRememberedSession, rememberSession, sendFrame } from '@/features/connection/connection';
 import { createRemoteDirectoryBrowsePorts } from '@/features/connection/remote-directory-ports';
-import { persistActionProblem, reportTransportIssue, type PersistentError } from '../features/message/panel-errors';
-import { sendMessage, type SessionConfigMutation } from '../features/message/user-actions';
+import { persistActionProblem, reportTransportIssue, type PersistentError } from '@/features/message/panel-errors';
+import { sendMessage, type SessionConfigMutation } from '@/features/message/user-actions';
 import { chatAgentLoading as deriveChatAgentLoading } from '@/features/chat/chat-agent-loading';
-import { installChatSubscription, reconcileCurrentRuntimeControl, refreshCurrentControlProjection, selectChat, sendSubscribe } from '@/features/connection/chat-subscription';
+import { installChatSubscription, reconcileCurrentRuntimeControl, selectChat, sendSubscribe } from '@/features/connection/chat-subscription';
 import { installStoreWiring } from './store-installs';
 import { installStoreProjection, type RuntimeDocsState } from './store-projection';
 import { elicitationResponses, resetElicitationResponses } from '@/features/message/elicitation-delivery';
@@ -54,25 +54,10 @@ import {
 import {
   bindWorkspaceUploadActionSender,
   bindWorkspaceUploadExplorerRefresh,
-  clearSubmittedWorkspaceUploads,
-  createEmptyExplorerFile,
-  enqueueComposerRootUpload,
-  enqueueExplorerUpload,
-  enqueueQuickStartRootUpload,
-  explorerCreatedFileFocus,
   forwardWorkspaceUploadActionAck,
   forwardWorkspaceUploadActionError,
   forwardWorkspaceUploadResourceResult,
-  markWorkspaceUploadReferenceInjected,
   resetWorkspaceUploadAssembly,
-  retryWorkspaceUpload,
-  workspaceUploadAvailable,
-  workspaceUploadBlockedMessage,
-  workspaceUploadBatch,
-  workspaceUploadLiveMessage,
-  workspaceUploadOrigin,
-  workspaceUploadProgressPercent,
-  workspaceUploadTileStatus,
 } from './workspace-upload';
 import {
   bindFsMutationActionSender,
@@ -562,77 +547,12 @@ export function navigateProjectSession(sessionId: string, callbacks: OpenSession
 // remembered token lives in localStorage (peri_studio_token) and is replayed by
 // AuthGate only; the session itself is never recovered from Web Storage here.
 
-// P1 拆分：以下符号迁至 features/message/panel-errors 与 user-actions，此处
-// re-export 保持组件与旧调用点的导入路径不变。
-export { refreshCurrentControlProjection, selectChat };
-export {
-  dismissPersistentError,
-  reportTransportIssue,
-  retryPersistentAction,
-  retainPersistentErrors,
-} from '../features/message/panel-errors';
-export {
-  retryMessageSubmission,
-  cancelTurn,
-  setSessionConfig,
-  retrySessionConfigMutation,
-  closeChat,
-  resolvePermission,
-  respondElicitation,
-  respondQuestion,
-} from '../features/message/user-actions';
-export { sendMessage };
-export type { PersistentError } from '../features/message/panel-errors';
-export type { SessionConfigMutation } from '../features/message/user-actions';
-
 installResourceStore({ send: sendFrame, ready: connectionReady, toast });
-export {
-  activateResourceProject,
-  closeResourceFilePreview,
-  downloadResourceFile,
-  downloadPreviewedFile,
-  closeResourceDiffPreview,
-  mutateGitResource,
-  mutateGitGraphResource,
-  retryGitRepositoryMutation,
-  retryGitResourceMutation,
-  openGitDiffPreview,
-  openFilePreview,
-  openMoreGitChanges,
-  openGitLog,
-  openMoreGitLog,
-  refreshGitLog,
-  gitLogCommits,
-  gitLogHeadOid,
-  gitLogLoading,
-  canLoadMoreGitLog,
-  openResourceDirectory,
-  refreshResourceProject,
-  resourceFilePreview,
-  retryGitDiffPreview,
-  retryResourceFilePreview,
-  resourceDiffPreview,
-  resourceWorkspace,
-} from '@/features/resource/resource-store';
-export {
-  clearSubmittedWorkspaceUploads,
-  createEmptyExplorerFile,
-  enqueueComposerRootUpload,
-  enqueueExplorerUpload,
-  enqueueQuickStartRootUpload,
-  explorerCreatedFileFocus,
-  markWorkspaceUploadReferenceInjected,
-  retryWorkspaceUpload,
-  workspaceUploadAvailable,
-  workspaceUploadBlockedMessage,
-  workspaceUploadBatch,
-  workspaceUploadLiveMessage,
-  workspaceUploadOrigin,
-  workspaceUploadProgressPercent,
-  workspaceUploadTileStatus,
-  resetWorkspaceUploadAssembly,
-};
-export type { WorkspaceUploadOrigin } from './workspace-upload';
+
+// P1 拆分：消息/资源/上传 再导出见各 facade 模块。
+export * from './message-facade';
+export * from './resource-facade';
+export * from './workspace-upload-public';
 export {
   clearFsMutation,
   createResourceDirectory,
@@ -645,5 +565,6 @@ export {
 export {
   openWorkspaceFromTool,
   resourceWorkbenchRequest,
+  type ResourceWorkbenchRequest,
 } from './resource-workbench-request';
-export type { ResourceWorkbenchRequest } from './resource-workbench-request';
+

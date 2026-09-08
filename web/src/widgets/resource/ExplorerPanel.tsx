@@ -8,7 +8,7 @@ import {
   workspaceUploadProgressPercent,
 } from '@/store';
 import type { ResourceEntry } from '@/entities/resource/resource-view';
-import { FilePlus, FolderPlus, RefreshCw } from 'lucide-solid';
+import { FilePlus, FolderPlus, MoreHorizontal, RefreshCw } from 'lucide-solid';
 import { FileTree, type FileTreeNode } from './FileTree';
 import { ExplorerDeleteDialog, ExplorerInlineEditor, ExplorerMoveDialog, type ExplorerEdit } from './ExplorerMutationDialogs';
 import { ExplorerItemMenu, type ExplorerMenuAction } from './ExplorerItemMenu';
@@ -17,6 +17,11 @@ import { createExplorerTreeFocus } from './explorer-tree-focus';
 import { dataTransferHasFiles, parseFileDropTransfer, preventBrowserFileDrop } from '../composer/composer-upload-drop';
 import { cn } from '@/shared/lib/cn';
 function RefreshIcon() { return <RefreshCw size={14} strokeWidth={1.8} />; }
+
+type ExplorerMenuTarget =
+  | { scope: 'root'; node: null; x: number; y: number }
+  | { scope: 'file' | 'folder'; node: FileTreeNode; x: number; y: number };
+
 type ExplorerPanelProps = {
   expanded?: Set<string>; onExpandedChange?: (expanded: Set<string>) => void;
   activePath?: string; onActivePathChange?: (path: string) => void;
@@ -57,21 +62,51 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
   const [edit, setEdit] = createSignal<ExplorerEdit | null>(null);
   const [moveNode, setMoveNode] = createSignal<FileTreeNode | null>(null);
   const [deleteNode, setDeleteNode] = createSignal<FileTreeNode | null>(null);
-  const [contextNodePath, setContextNodePath] = createSignal<string | null>(null);
-  const [rootMenuOpen, setRootMenuOpen] = createSignal(false);
+  const [menuTarget, setMenuTarget] = createSignal<ExplorerMenuTarget | null>(null);
+  let menuAnchor: HTMLSpanElement | undefined;
 
-  const openNodeMenu = (path: string) => {
-    setRootMenuOpen(false);
-    setContextNodePath(path);
+  const menuOpen = () => menuTarget() !== null;
+  const menuContext = createMemo(() => menuTarget()?.scope ?? 'root');
+  const menuNode = () => menuTarget()?.node ?? null;
+  const positionMenuAnchor = (x: number, y: number) => {
+    if (!menuAnchor) return;
+    menuAnchor.style.left = `${x}px`;
+    menuAnchor.style.top = `${y}px`;
   };
-  const openRootMenu = () => {
-    setContextNodePath(null);
-    setRootMenuOpen(true);
+  const openMenuAt = (target: ExplorerMenuTarget) => {
+    queueMicrotask(() => {
+      positionMenuAnchor(target.x, target.y);
+      setMenuTarget(target);
+    });
   };
-  const closeExplorerMenus = () => {
-    setContextNodePath(null);
-    setRootMenuOpen(false);
+  const closeMenu = () => setMenuTarget(null);
+  const openNodeMenu = (node: FileTreeNode, event: MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openMenuAt({ scope: node.kind === 'folder' ? 'folder' : 'file', node, x: event.clientX, y: event.clientY });
   };
+  const openRootMenu = (event: MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openMenuAt({ scope: 'root', node: null, x: event.clientX, y: event.clientY });
+  };
+  const renderRowActions = (node: FileTreeNode) => (
+    <IconButton
+      label="More actions"
+      size="compact"
+      showTooltip={false}
+      class="border-0 bg-transparent text-content-muted opacity-0 hover:text-content-primary group-hover/tree-file:opacity-100 focus-visible:opacity-100"
+      onClick={(event) => {
+        event.stopPropagation();
+        setActivePath(node.path);
+        const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+        openMenuAt({ scope: node.kind === 'folder' ? 'folder' : 'file', node, x: rect.left, y: rect.bottom });
+      }}
+    >
+      <MoreHorizontal size={14} />
+    </IconButton>
+  );
+
   const activePath = () => props.activePath ?? localActivePath();
   const setActivePath = (path: string) => {
     if (props.activePath === undefined) setLocalActivePath(path);
@@ -348,8 +383,7 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
       onKeyDown={navigateTree}
       onContextMenu={(event) => {
         if ((event.target as HTMLElement).closest('[role="treeitem"]')) return;
-        event.preventDefault();
-        openRootMenu();
+        openRootMenu(event);
       }}
       onScroll={(event) => { if (acceptingScroll) props.onScrollTopChange?.(event.currentTarget.scrollTop); }}
       onDragEnter={(event) => {
@@ -384,12 +418,11 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
           onToggleFolder={toggleFolder}
           activePath={activePath()}
           onActivePathChange={setActivePath}
-          renderFileTrailing={(node) => <ExplorerItemMenu context="file" disabled={!mutationAvailability().available} disabledReason={mutationAvailability().reason} newFileDisabled={!newFileAvailable()} newFileDisabledReason={newFileBlockedMessage()} open={contextNodePath() === node.path} onOpenChange={(open) => { if (open) openNodeMenu(node.path); else if (contextNodePath() === node.path) closeExplorerMenus(); }} onAction={(action) => handleMenuAction(action, node)} />}
-          renderFolderTrailing={(node) => <ExplorerItemMenu context="folder" disabled={!mutationAvailability().available} disabledReason={mutationAvailability().reason} newFileDisabled={!newFileAvailable()} newFileDisabledReason={newFileBlockedMessage()} open={contextNodePath() === node.path} onOpenChange={(open) => { if (open) openNodeMenu(node.path); else if (contextNodePath() === node.path) closeExplorerMenus(); }} onAction={(action) => handleMenuAction(action, node)} />}
+          renderFileTrailing={renderRowActions}
+          renderFolderTrailing={renderRowActions}
           onNodeContextMenu={(node, event) => {
-            event.preventDefault();
             setActivePath(node.path);
-            openNodeMenu(node.path);
+            openNodeMenu(node, event);
           }}
           onNodeMount={handleNodeMount}
           folderLoadingPaths={folderLoadingPaths(expanded())}
@@ -420,18 +453,28 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
         />
         <Show when={nextCursor()}>{(cursor) => <button type="button" class="h-(--tree-row-height) w-full border-0 bg-transparent text-left text-11 text-accent hover:bg-hover pointer-coarse:h-44" style={{ 'padding-left': '26px' }} onClick={() => openResourceDirectory('', cursor())}>Load more…</button>}</Show>
       </Show>
-      <ExplorerItemMenu
-        context="root"
-        disabled={!mutationAvailability().available}
-        disabledReason={mutationAvailability().reason}
-        newFileDisabled={!newFileAvailable()}
-        newFileDisabledReason={newFileBlockedMessage()}
-        open={rootMenuOpen()}
-        onOpenChange={(open) => { if (open) openRootMenu(); else setRootMenuOpen(false); }}
-        trigger={<button type="button" class="sr-only" aria-label="Workspace root actions">Workspace root actions</button>}
-        onAction={(action) => handleMenuAction(action, null)}
-      />
     </div>
+    <ExplorerItemMenu
+      context={menuContext()}
+      disabled={!mutationAvailability().available}
+      disabledReason={mutationAvailability().reason}
+      newFileDisabled={!newFileAvailable()}
+      newFileDisabledReason={newFileBlockedMessage()}
+      open={menuOpen()}
+      onOpenChange={(open) => { if (!open) closeMenu(); }}
+      trigger={(
+        <span
+          ref={(element) => { menuAnchor = element; }}
+          class="pointer-events-none fixed z-(--z-overlay) size-1 opacity-0"
+          aria-hidden="true"
+          style={{ left: '0px', top: '0px' }}
+        />
+      )}
+      onAction={(action) => {
+        void handleMenuAction(action, menuNode());
+        closeMenu();
+      }}
+    />
     <ExplorerMoveDialog
       node={moveNode()}
       onClose={() => setMoveNode(null)}

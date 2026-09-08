@@ -257,6 +257,22 @@ describe('VS Code-style resource panels', () => {
     expect(document.querySelectorAll('[role="treeitem"][tabindex="0"]')).toHaveLength(1);
   });
 
+  it('uses one shared explorer context menu for row actions', async () => {
+    installPrincipalRole('full');
+    installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
+    setResourceWorkspace({
+      projectId: 'project-1', repositories: [], loading: [], error: null,
+      directories: {
+        '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory', revision: 'rev' }] },
+        src: { generation: 'g2', entries: [{ id: 'note', name: 'note.txt', path: 'src/note.txt', kind: 'file', revision: 'rev-file' }] },
+      },
+    });
+    render(() => <ExplorerPanel expanded={new Set(['', 'src'])} />);
+    await fireEvent.contextMenu(screen.getByRole('treeitem', { name: /note\.txt/i }));
+    await waitFor(() => expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeInTheDocument());
+    expect(document.querySelectorAll('[aria-label="Explorer item actions"]')).toHaveLength(1);
+  });
+
   it('lazy-loads a directory when its tree row expands', async () => {
     const sent: unknown[] = [];
     const bytes = new TextEncoder().encode('export const ready = true;\n');
