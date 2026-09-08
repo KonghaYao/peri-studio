@@ -89,4 +89,27 @@ describe('StatusArea', () => {
     expect(panel).toHaveTextContent('Info');
     expect(panel).not.toHaveTextContent('Queued');
   });
+
+  it('prefers Session Doc tasks over activity fallback for the async tab', async () => {
+    render(() => <StatusArea
+      active
+      plan={[]}
+      activities={[
+        { id: 'legacy', kind: 'subagent', status: 'running', label: 'Legacy activity', isBackground: true, metrics: { tool_count: 2 }, attributes: {}, createdAt: null, updatedAt: null },
+      ]}
+      tasks={[
+        { taskId: 'task-1', kind: 'subagent', taskSubtype: 'agent', title: 'Reviewer', summary: null, status: 'running', isBackground: true, startedAt: null, completedAt: null, updatedAt: null },
+        { taskId: 'task-2', kind: 'background', taskSubtype: 'shell', title: 'Compile', summary: null, status: 'completed', isBackground: true, startedAt: null, completedAt: null, updatedAt: null },
+      ]}
+      entries={[]}
+    />);
+
+    await fireEvent.click(screen.getByRole('tab', { name: /Async/ }));
+    const panel = screen.getByRole('tabpanel');
+    expect(panel).toHaveTextContent('Reviewer');
+    expect(panel).toHaveTextContent('Compile');
+    expect(panel).toHaveTextContent('Agent');
+    expect(panel).toHaveTextContent('Workflow');
+    expect(panel).not.toHaveTextContent('Legacy activity');
+  });
 });

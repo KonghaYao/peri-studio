@@ -464,3 +464,54 @@ describe('renderControl Peri extension projection', () => {
     ]);
   });
 });
+
+describe('renderControl Peri task projection', () => {
+  it('reads Session Doc tasks in task_order and skips unknown kinds', () => {
+    const doc = new Y.Doc();
+    const root = doc.getMap<unknown>('root');
+    const order = new Y.Array<unknown>();
+    order.push(['task-a', 'task-b', 'task-bad']);
+    const tasks = new Y.Map<unknown>();
+    const a = new Y.Map<unknown>();
+    a.set('kind', 'subagent');
+    a.set('status', 'running');
+    a.set('title', 'Reviewer');
+    a.set('summary', 'Checking UI');
+    a.set('task_subtype', 'agent');
+    a.set('is_background', true);
+    a.set('started_at', '2026-08-15T00:00:00Z');
+    a.set('updated_at', '2026-08-15T00:00:01Z');
+    const b = new Y.Map<unknown>();
+    b.set('kind', 'background');
+    b.set('status', 'completed');
+    b.set('title', 'Shell job');
+    b.set('task_subtype', 'shell');
+    b.set('is_background', true);
+    b.set('completed_at', '2026-08-15T00:01:00Z');
+    const bad = new Y.Map<unknown>();
+    bad.set('kind', 'cron');
+    bad.set('status', 'running');
+    bad.set('title', 'Ignored');
+    tasks.set('task-a', a);
+    tasks.set('task-b', b);
+    tasks.set('task-bad', bad);
+    root.set('task_order', order);
+    root.set('tasks', tasks);
+
+    expect(renderControl(doc).tasks).toEqual([
+      {
+        taskId: 'task-a', kind: 'subagent', taskSubtype: 'agent', title: 'Reviewer', summary: 'Checking UI',
+        status: 'running', isBackground: true, startedAt: '2026-08-15T00:00:00Z', completedAt: null, updatedAt: '2026-08-15T00:00:01Z',
+      },
+      {
+        taskId: 'task-b', kind: 'background', taskSubtype: 'shell', title: 'Shell job', summary: null,
+        status: 'completed', isBackground: true, startedAt: null, completedAt: '2026-08-15T00:01:00Z', updatedAt: null,
+      },
+    ]);
+  });
+
+  it('defaults missing tasks to an empty list', () => {
+    const doc = new Y.Doc();
+    expect(renderControl(doc).tasks).toEqual([]);
+  });
+});

@@ -1,6 +1,9 @@
 import * as Y from 'yjs';
-import { parseStrictRfc3339 } from '../../panel/lib/rfc3339';
-import { asArray, asMap, getNum, getStr } from '../../panel/lib/yjs-values';
+import { parseStrictRfc3339 } from '@/shared/lib/rfc3339';
+import { asArray, asMap, getNum, getStr } from '@/shared/yjs/yjs-values';
+import { readPeriTasks, type PeriTaskInfo } from './peri-task-view';
+
+export type { PeriTaskInfo, PeriTaskKind, PeriTaskStatus, PeriTaskSubtype } from './peri-task-view';
 
 export interface ChatHeadInfo {
   chatId: string;
@@ -131,13 +134,15 @@ export interface ControlView {
   pendingPermissions: PendingPermission[];
   /** Additive Registry v2 surface; omitted by older fixtures/doc readers. */
   pendingElicitations?: PendingElicitation[];
+  /** Session Doc `tasks` / `task_order`；旧快照缺省为空。 */
+  tasks?: PeriTaskInfo[];
 }
 
 /** Read-only browser projection of one session:{id} control document. */
 export function renderControl(doc: Y.Doc): ControlView {
   const root = doc.getMap<unknown>('root');
   const pendingElicitations: PendingElicitation[] = [];
-  const result: ControlView = { chat: null, agent: null, activeTurn: null, pendingPermissions: [], pendingElicitations };
+  const result: ControlView = { chat: null, agent: null, activeTurn: null, pendingPermissions: [], pendingElicitations, tasks: readPeriTasks(root) };
   const session = asMap(root.get('session'));
   if (session) {
     result.chat = {

@@ -1,5 +1,5 @@
 import { For, Show, createMemo, createSignal } from 'solid-js';
-import type { AgentActivityInfo, AgentPlanEntryInfo } from '@/entities/chat/control-view';
+import type { AgentActivityInfo, AgentPlanEntryInfo, PeriTaskInfo } from '@/entities/chat/control-view';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { selectChatFileChanges } from '@/entities/chat/chat-file-changes';
 import { Ban, Bot, Check, Circle, CircleAlert, GitBranch, Info, ListTodo, Pause, Workflow, X } from 'lucide-solid';
@@ -11,6 +11,8 @@ type StatusTab = 'todo' | 'async' | 'changes';
 export interface StatusAreaProps {
   plan: AgentPlanEntryInfo[];
   activities: AgentActivityInfo[];
+  /** Session Doc Peri Task 视图；有数据时 Async 页优先用它。 */
+  tasks?: PeriTaskInfo[];
   entries: ChatEntry[];
   active: boolean;
 }
@@ -47,12 +49,34 @@ function stateLabel(status: string) {
 
 export function StatusArea(props: StatusAreaProps) {
   const [activeTab, setActiveTab] = createSignal<StatusTab>('todo');
-  const taskActivities = createMemo(() => props.activities.filter((activity) => ['subagent', 'background_task', 'workflow'].includes(activity.kind)));
+  const asyncItems = createMemo(() => {
+    const tasks = props.tasks ?? [];
+    if (tasks.length > 0) {
+      return tasks.map((task) => ({
+        id: task.taskId,
+        kind: task.kind,
+        status: task.status,
+        label: task.title || task.summary || 'Background task',
+        badgeKind: task.kind === 'subagent' || task.taskSubtype === 'agent' ? 'agent' : 'workflow',
+        toolCount: null as number | null,
+      }));
+    }
+    return props.activities
+      .filter((activity) => ['subagent', 'background_task', 'workflow'].includes(activity.kind))
+      .map((activity) => ({
+        id: activity.id,
+        kind: activity.kind,
+        status: activity.status,
+        label: activity.label || 'Background task',
+        badgeKind: activity.kind === 'subagent' ? 'agent' : 'workflow',
+        toolCount: Number.isFinite(activity.metrics.tool_count) ? activity.metrics.tool_count : null,
+      }));
+  });
   const changes = createMemo(() => selectChatFileChanges(props.entries));
   const completedTodos = createMemo(() => props.plan.filter((entry) => entry.status === 'completed').length);
   const tabs = createMemo(() => [
     props.active && props.plan.length > 0 ? { id: 'todo' as const, label: 'Todo', count: props.plan.length, icon: ListTodo } : null,
-    props.active && taskActivities().length > 0 ? { id: 'async' as const, label: 'Async', count: taskActivities().length, icon: Workflow } : null,
+    props.active && asyncItems().length > 0 ? { id: 'async' as const, label: 'Async', count: asyncItems().length, icon: Workflow } : null,
     changes().length > 0 ? { id: 'changes' as const, label: 'Changes', count: changes().length, icon: GitBranch } : null,
   ].filter((tab): tab is NonNullable<typeof tab> => tab !== null));
   const visibleTab = () => tabs().some((tab) => tab.id === activeTab()) ? activeTab() : tabs()[0]?.id;
@@ -79,16 +103,16 @@ export function StatusArea(props: StatusAreaProps) {
             </li>}</For></ol>
           </Show>
           <Show when={visibleTab() === 'async'}>
-            <ol class="m-0 grid list-none gap-4 p-0"><For each={taskActivities()}>{(activity) => <li class="grid min-h-24 grid-cols-status-activity items-center gap-7 rounded-7 px-6 py-4">
-              <span class="grid size-14 place-items-center"><StateIcon status={activity.status} /></span>
+            <ol class="m-0 grid list-none gap-4 p-0"><For each={asyncItems()}>{(item) => <li class="grid min-h-24 grid-cols-status-activity items-center gap-7 rounded-7 px-6 py-4">
+              <span class="grid size-14 place-items-center"><StateIcon status={item.status} /></span>
               <span class="inline-flex items-center gap-4 text-9 font-650 uppercase tracking-4 text-text-muted">
-                <Show when={activity.kind === 'subagent'} fallback={<Workflow size={12} strokeWidth={1.8} />}><Bot size={12} strokeWidth={1.8} /></Show>
-                {activity.kind === 'subagent' ? 'Agent' : 'Workflow'}
+                <Show when={item.badgeKind === 'agent'} fallback={<Workflow size={12} strokeWidth={1.8} />}><Bot size={12} strokeWidth={1.8} /></Show>
+                {item.badgeKind === 'agent' ? 'Agent' : 'Workflow'}
               </span>
-              <span class="overflow-hidden text-ellipsis whitespace-nowrap text-text-primary">{activity.label || 'Background task'}</span>
+              <span class="overflow-hidden text-ellipsis whitespace-nowrap text-text-primary">{item.label}</span>
               <span class="inline-flex items-center gap-5 whitespace-nowrap">
-                <Badge tone={stateTone(activity.status)}>{stateLabel(activity.status)}</Badge>
-                <Show when={activity.metrics.tool_count}><span class="text-9 tabular-nums text-text-muted">{activity.metrics.tool_count} tools</span></Show>
+                <Badge tone={stateTone(item.status)}>{stateLabel(item.status)}</Badge>
+                <Show when={item.toolCount}><span class="text-9 tabular-nums text-text-muted">{item.toolCount} tools</span></Show>
               </span>
             </li>}</For></ol>
           </Show>

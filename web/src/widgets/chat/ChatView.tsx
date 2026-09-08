@@ -100,7 +100,7 @@ export function ChatView(props: ChatViewProps) {
                   />
                 </Show>
                 <Show when={!hasPendingPermission() && !hasPendingElicitation()}>
-                  <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} entries={chatEntries()} />
+                  <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} tasks={chatHead()?.tasks ?? []} entries={chatEntries()} />
                 </Show>
                 <Composer />
               </div>
