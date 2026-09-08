@@ -58,6 +58,99 @@ fn interactive_question_normalizes_to_question_requested() {
 }
 
 #[test]
+fn question_resolved_normalizes_to_event() {
+    let frame = json!({
+        "type": "question_resolved",
+        "payload": {
+            "sessionId": "ses_1",
+            "questionId": "iqa_1",
+            "answers": ["production"]
+        }
+    });
+    match norm(frame) {
+        NormalizeOutcome::Event(ev) => match ev.body {
+            EventBody::QuestionResolved {
+                question_id,
+                answers,
+            } => {
+                assert_eq!(question_id, "iqa_1");
+                assert_eq!(
+                    answers,
+                    vec![peri_studio_proto::schema::QuestionAnswer::Single(
+                        "production".into()
+                    )]
+                );
+            }
+            other => panic!("expected question_resolved, got {other:?}"),
+        },
+        other => panic!("expected event, got {other:?}"),
+    }
+}
+
+#[test]
+fn question_resolved_accepts_option_ids_compat() {
+    let frame = json!({
+        "type": "question_resolved",
+        "payload": {
+            "sessionId": "ses_1",
+            "questionId": "iqa_2",
+            "optionIds": ["staging", ["a", "b"]]
+        }
+    });
+    match norm(frame) {
+        NormalizeOutcome::Event(ev) => match ev.body {
+            EventBody::QuestionResolved { answers, .. } => {
+                assert_eq!(answers.len(), 2);
+                assert_eq!(
+                    answers[0],
+                    peri_studio_proto::schema::QuestionAnswer::Single("staging".into())
+                );
+                assert_eq!(
+                    answers[1],
+                    peri_studio_proto::schema::QuestionAnswer::Multiple(vec![
+                        "a".into(),
+                        "b".into()
+                    ])
+                );
+            }
+            other => panic!("expected question_resolved, got {other:?}"),
+        },
+        other => panic!("expected event, got {other:?}"),
+    }
+}
+
+#[test]
+fn question_resolved_missing_question_id_is_dropped() {
+    let frame = json!({
+        "type": "question_resolved",
+        "payload": {
+            "sessionId": "ses_1",
+            "answers": ["production"]
+        }
+    });
+    assert!(matches!(
+        norm(frame),
+        NormalizeOutcome::Dropped(DropReason::MissingField)
+    ));
+}
+
+#[test]
+fn question_resolved_without_valid_answers_is_dropped() {
+    let frame = json!({
+        "type": "question_resolved",
+        "payload": {
+            "sessionId": "ses_1",
+            "questionId": "iqa_1",
+            "answers": []
+        }
+    });
+    assert!(matches!(
+        norm(frame),
+        NormalizeOutcome::Dropped(DropReason::MissingField)
+    ));
+}
+
+#[test]
 fn interactive_question_missing_question_id_is_dropped() {
     let mut frame = interactive_question_frame("iqa_1");
     frame["payload"].as_object_mut().unwrap().remove("questionId");

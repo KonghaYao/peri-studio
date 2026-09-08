@@ -19,7 +19,7 @@ use peri_studio_proto::schema::{BlockVisibility, ChatStatus, TurnStatus};
 
 use crate::state::normalized::EventBody;
 
-use super::acp_channel_question::map_interactive_question;
+use super::acp_channel_question::{map_interactive_question, map_question_resolved};
 use super::acp_channel::AcpChannel;
 use super::acp_channel_config::{
     normalize_agent_config, parse_agent_plan, parse_available_commands,
@@ -279,6 +279,13 @@ impl AcpChannel {
                     description: fields.description,
                     questions: fields.questions,
                     expires_at: fields.expires_at,
+                }
+            }
+            "question_resolved" => {
+                let (question_id, answers) = map_question_resolved(payload)?;
+                B::QuestionResolved {
+                    question_id,
+                    answers,
                 }
             }
             // Fenix 私有 `{type:"plan", payload:{entries}}`（G4.1）；与

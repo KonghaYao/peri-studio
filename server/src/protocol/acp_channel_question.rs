@@ -7,7 +7,7 @@ use chrono::DateTime;
 use serde_json::Value;
 
 use peri_studio_proto::schema::{
-    QuestionItemProjection, QuestionOptionProjection,
+    QuestionAnswer, QuestionItemProjection, QuestionOptionProjection,
 };
 
 use super::acp_channel_parse::{string_field, truncate_identifier, truncate_text, MapError};
@@ -53,6 +53,80 @@ pub(crate) fn map_interactive_question(
         description: optional_bounded(payload, "description", "description", QUESTION_DESCRIPTION_MAX_BYTES),
         questions,
         expires_at,
+    })
+}
+
+/// Fenix 私有 `question_resolved` → [`EventBody::QuestionResolved`]（G4.3）。
+pub(crate) fn map_question_resolved(
+    payload: &serde_json::Map<String, Value>,
+) -> Result<(String, Vec<QuestionAnswer>), MapError> {
+    let question_id = required_bounded(payload, "questionId", "question_id", QUESTION_ID_MAX_BYTES)?;
+    let answers = extract_question_resolved_answers(payload)?;
+    if !has_nonempty_question_answer(&answers) {
+        return Err(MapError::MissingField);
+    }
+    Ok((question_id, answers))
+}
+
+fn extract_question_resolved_answers(
+    payload: &serde_json::Map<String, Value>,
+) -> Result<Vec<QuestionAnswer>, MapError> {
+    let raw = if payload
+        .get("answers")
+        .is_some_and(|v| v.is_array())
+    {
+        payload.get("answers").unwrap()
+    } else if payload
+        .get("optionIds")
+        .or_else(|| payload.get("option_ids"))
+        .is_some_and(|v| v.is_array())
+    {
+        payload
+            .get("optionIds")
+            .or_else(|| payload.get("option_ids"))
+            .unwrap()
+    } else if let Some(single) = string_field(payload, "optionId", "option_id")
+        .filter(|s| !s.is_empty())
+    {
+        return Ok(vec![QuestionAnswer::Single(truncate_identifier(&single))]);
+    } else {
+        return Err(MapError::MissingField);
+    };
+    let Some(entries) = raw.as_array() else {
+        return Err(MapError::MissingField);
+    };
+    normalize_question_answers(entries)
+}
+
+fn normalize_question_answers(entries: &[Value]) -> Result<Vec<QuestionAnswer>, MapError> {
+    if entries.is_empty() {
+        return Err(MapError::MissingField);
+    }
+    Ok(entries.iter().map(normalize_one_question_answer).collect())
+}
+
+fn normalize_one_question_answer(entry: &Value) -> QuestionAnswer {
+    match entry {
+        Value::String(s) => QuestionAnswer::Single(truncate_text(s)),
+        Value::Array(arr) => {
+            let options: Vec<String> = arr
+                .iter()
+                .filter_map(|v| {
+                    v.as_str()
+                        .filter(|s| !s.is_empty())
+                        .map(|s| truncate_text(s).into())
+                })
+                .collect();
+            QuestionAnswer::Multiple(options)
+        }
+        _ => QuestionAnswer::Single(String::new()),
+    }
+}
+
+fn has_nonempty_question_answer(answers: &[QuestionAnswer]) -> bool {
+    answers.iter().any(|answer| match answer {
+        QuestionAnswer::Single(s) => !s.is_empty(),
+        QuestionAnswer::Multiple(opts) => !opts.is_empty(),
     })
 }
 
