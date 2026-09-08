@@ -23,6 +23,7 @@ fn serde_tag_and_envelope_shape() {
         ts: "2026-08-07T00:00:00Z".to_string(),
         provenance: EventProvenance::Unspecified,
         source_agent_id: None,
+        callback_entry_id: None,
         body: EventBody::MessageDelta {
             turn_id: "t1".into(),
             entry_id: "t1:assistant".into(),

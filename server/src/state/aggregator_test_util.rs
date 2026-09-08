@@ -33,6 +33,7 @@ pub(crate) fn ev(chat: &str, seq: u64, body: EventBody) -> NormalizedEvent {
         ts: "2026-08-07T00:00:00Z".to_string(),
         provenance: Default::default(),
         source_agent_id: None,
+        callback_entry_id: None,
         body,
     }
 }
@@ -45,8 +46,93 @@ pub(crate) fn ev_subagent(chat: &str, seq: u64, agent: &str, body: EventBody) ->
         ts: "2026-08-07T00:00:00Z".to_string(),
         provenance: Default::default(),
         source_agent_id: Some(agent.to_string()),
+        callback_entry_id: None,
         body,
     }
+}
+
+pub(crate) fn ev_callback(
+    chat: &str,
+    seq: u64,
+    callback_id: &str,
+    body: EventBody,
+) -> NormalizedEvent {
+    NormalizedEvent {
+        chat_id: chat.to_string(),
+        seq,
+        epoch: 0,
+        ts: "2026-08-07T00:00:00Z".to_string(),
+        provenance: Default::default(),
+        source_agent_id: None,
+        callback_entry_id: Some(callback_id.to_string()),
+        body,
+    }
+}
+
+pub(crate) fn callback_user_msg(callback_id: &str, text: &str) -> EventBody {
+    EventBody::UserMessage {
+        turn_id: String::new(),
+        entry_id: callback_id.to_string(),
+        text: text.to_string(),
+        author_user_id: None,
+        created_at: "2026-08-07T00:00:00Z".to_string(),
+    }
+}
+
+pub(crate) fn question_requested(question_id: &str) -> EventBody {
+    EventBody::QuestionRequested {
+        question_id: question_id.to_string(),
+        tool_id: None,
+        tool_name: None,
+        description: Some("Pick".into()),
+        questions: vec![peri_studio_proto::schema::QuestionItemProjection {
+            question: "Choose".into(),
+            header: None,
+            multi_select: false,
+            options: vec![peri_studio_proto::schema::QuestionOptionProjection {
+                label: "A".into(),
+                description: None,
+            }],
+        }],
+        expires_at: "2026-09-08T12:01:00Z".to_string(),
+    }
+}
+
+pub(crate) fn active_turn_id(pair: &DocPair) -> Option<String> {
+    let txn = pair.session.transact();
+    chat_writer::root_map_read(&txn).and_then(|root| {
+        root.get(&txn, "session")
+            .and_then(|v| v.cast::<yrs::MapRef>().ok())
+            .and_then(|m| m.get(&txn, "active_turn_id"))
+            .and_then(|t| t.cast::<String>().ok())
+    })
+}
+
+pub(crate) fn entry_order(pair: &DocPair) -> Vec<String> {
+    let txn = pair.chat.transact();
+    chat_writer::root_map_read(&txn)
+        .and_then(|root| root.get(&txn, "entry_order"))
+        .and_then(|v| v.cast::<yrs::ArrayRef>().ok())
+        .map(|order| {
+            (0..order.len(&txn))
+                .filter_map(|i| {
+                    order
+                        .get(&txn, i)
+                        .and_then(|v| v.cast::<String>().ok())
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+pub(crate) fn pending_question_status(pair: &DocPair, question_id: &str) -> Option<String> {
+    let txn = pair.session.transact();
+    let root = chat_writer::root_map_read(&txn)?;
+    let all = root.get(&txn, "pending_questions")?.cast::<yrs::MapRef>().ok()?;
+    all.get(&txn, question_id)
+        .and_then(|v| v.cast::<yrs::MapRef>().ok())
+        .and_then(|item| item.get(&txn, "status"))
+        .and_then(|s| s.cast::<String>().ok())
 }
 
 pub(crate) fn msg_delta(turn: &str, entry: &str, block: &str, text: &str) -> EventBody {

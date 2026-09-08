@@ -16,6 +16,7 @@ mod acp_channel;
 mod acp_channel_activity;
 mod acp_channel_config;
 mod acp_channel_elicitation;
+mod acp_channel_question;
 mod acp_channel_map;
 mod acp_channel_parse;
 mod acp_channel_task;

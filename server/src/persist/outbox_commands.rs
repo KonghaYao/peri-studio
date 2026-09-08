@@ -189,7 +189,7 @@ impl OutboxStore {
         if record.status != OutboxStatus::IntentDurable
             || !matches!(
                 record.command_type,
-                CommandType::Resolve | CommandType::ElicitationRespond
+                CommandType::Resolve | CommandType::ElicitationRespond | CommandType::QuestionRespond
             )
             || record.recovery.is_none()
             || record.dispatch_barrier_at.is_none()

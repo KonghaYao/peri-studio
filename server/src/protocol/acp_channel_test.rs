@@ -164,6 +164,8 @@ fn truncated_text() {
 mod config;
 #[path = "acp_channel_map_test.rs"]
 mod map;
+#[path = "acp_channel_question_test.rs"]
+mod acp_channel_question;
 #[path = "acp_channel_permission_test.rs"]
 mod permission;
 #[path = "acp_channel_replay_test.rs"]

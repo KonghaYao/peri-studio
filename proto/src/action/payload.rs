@@ -8,7 +8,9 @@
 
 use std::collections::BTreeMap;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
+
+use crate::schema::QuestionAnswer;
 
 /// 浏览器与 server 共同执行的 prompt UTF-8 字节上限。
 ///
@@ -184,6 +186,50 @@ pub struct RespondElicitationPayload {
     pub action: ElicitationResponseAction,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub answers: BTreeMap<String, ElicitationAnswer>,
+}
+
+/// `question/respond` payload。权威字段 `answers`；入站兼容 `optionIds` / `optionId`。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RespondQuestionPayload {
+    pub chat_id: String,
+    pub question_id: String,
+    pub answers: Vec<QuestionAnswer>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RespondQuestionPayloadWire {
+    chat_id: String,
+    question_id: String,
+    #[serde(default)]
+    answers: Vec<QuestionAnswer>,
+    #[serde(default, rename = "optionIds")]
+    option_ids: Vec<QuestionAnswer>,
+    #[serde(default, rename = "optionId")]
+    option_id: Option<String>,
+}
+
+impl<'de> Deserialize<'de> for RespondQuestionPayload {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let wire = RespondQuestionPayloadWire::deserialize(deserializer)?;
+        let mut answers = wire.answers;
+        if answers.is_empty() {
+            if !wire.option_ids.is_empty() {
+                answers = wire.option_ids;
+            } else if let Some(single) = wire.option_id.filter(|s| !s.is_empty()) {
+                answers = vec![QuestionAnswer::Single(single)];
+            }
+        }
+        Ok(Self {
+            chat_id: wire.chat_id,
+            question_id: wire.question_id,
+            answers,
+        })
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

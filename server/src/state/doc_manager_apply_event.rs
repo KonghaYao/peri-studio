@@ -74,6 +74,8 @@ pub(crate) fn command_kind(cmd: &DocCommand) -> &'static str {
         DocCommand::BeginElicitationResponse { .. } => "begin_elicitation_response",
         DocCommand::CompleteElicitationResponse { .. } => "complete_elicitation_response",
         DocCommand::ExpirePendingElicitations { .. } => "expire_pending_elicitations",
+        DocCommand::ResolveQuestion { .. } => "resolve_question",
+        DocCommand::ExpireQuestion { .. } => "expire_question",
         DocCommand::MarkTurnInterrupted { .. } => "mark_turn_interrupted",
         DocCommand::MarkTurnCancelling { .. } => "mark_turn_cancelling",
         DocCommand::SetTurnTerminal { .. } => "set_turn_terminal",

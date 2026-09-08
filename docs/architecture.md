@@ -777,6 +777,16 @@ text/single-select/multi-select DTO；任意 raw schema、`_meta`、URL mode 或
 只能进入 `DELIVERY_UNKNOWN`，禁止以新命令盲目重答。Web 必须保持原命令门禁并允许强制重取 Control Doc；用户仅可在保留不可重放证据的前提下本地隐藏未知表单，刷新页面后仍从 `responding` 权威事实恢复未知锁。待回答表单最多 4 个，超过上限或
 schema 不支持时必须向 agent 返回 JSON-RPC error，不能静默丢弃令 Peri 永久等待。
 
+Peri `AskUserQuestion` 的私有 ACP 帧 `interactive_question` **不得**并入
+`elicitation/create` schema。Hub 将其规范化为 `QuestionRequested`，独立写入 Session
+Doc `pending_questions`（pending → resolved/expired CAS），Relay 持有 60s 过期定时器
+与 `question_id → chat` 回投材料；仅 CAS 成功后才向 instance 发 `control_response`。
+Web 通过独立的 `QuestionQueue` + `question/respond` 应答，与 elicitation 队列并列、
+不共用 fingerprint 或 response 生命周期。无 prompt turn 的 callback 流由 Relay 装饰
+`callback_entry_id`，Chat 写入 `{id}` user + `{id}:assistant` 对且不注册
+`active_turn`。`AgentPlan` 双写 Control `agent.plan` 与 Chat `plan:{turnId|global}`
+system entry。
+
 标准 ACP `configOptions` 是会话运行配置的唯一目录事实源。Hub 首期只接受有界的
 select option，把完整有序目录投影到 Control Doc `agent.config_options` /
 `agent.config_option_order`，同时从 category 派生兼容的 model/effort 展示字段；Web

@@ -199,6 +199,9 @@ impl Translator {
             ActionEnvelope::RespondElicitation { .. } => Err(TranslateError::UnsupportedAction(
                 "elicitation/respond (client response)",
             )),
+            ActionEnvelope::RespondQuestion { .. } => Err(TranslateError::UnsupportedAction(
+                "question/respond (client response)",
+            )),
             // chat/session-new（§8.5 当前对话内新建会话）：等价 create 序列
             // 的 `session/new` 一步——进程已存在，直接向目标会话发
             // session/new；响应含新 sessionId（coordinator 据此更新 binding）。

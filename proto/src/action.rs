@@ -175,6 +175,12 @@ pub enum ActionEnvelope {
         command_id: String,
         payload: RespondElicitationPayload,
     },
+    /// 回答 AskUserQuestion（CAS + control_response；WP-C 实现应答路径）。
+    #[serde(rename = "question/respond", rename_all = "camelCase")]
+    RespondQuestion {
+        command_id: String,
+        payload: RespondQuestionPayload,
+    },
     /// 原始 ACP 事件订阅（M3，类型保留；`from_seq` 缺省 = 实时起）。
     #[serde(rename = "events/subscribe", rename_all = "camelCase")]
     SubscribeEvents {
@@ -366,6 +372,7 @@ impl ActionEnvelope {
             ActionEnvelope::Rewind { .. } => "chat/rewind",
             ActionEnvelope::ResolvePermission { .. } => "permission/resolve",
             ActionEnvelope::RespondElicitation { .. } => "elicitation/respond",
+            ActionEnvelope::RespondQuestion { .. } => "question/respond",
             ActionEnvelope::SubscribeEvents { .. } => "events/subscribe",
             ActionEnvelope::UnsubscribeEvents { .. } => "events/unsubscribe",
             ActionEnvelope::WorkspaceCreate { .. } => "workspace/create",
@@ -424,6 +431,7 @@ impl ActionEnvelope {
             | ActionEnvelope::Rewind { command_id, .. }
             | ActionEnvelope::ResolvePermission { command_id, .. }
             | ActionEnvelope::RespondElicitation { command_id, .. }
+            | ActionEnvelope::RespondQuestion { command_id, .. }
             | ActionEnvelope::SubscribeEvents { command_id, .. }
             | ActionEnvelope::UnsubscribeEvents { command_id, .. }
             | ActionEnvelope::WorkspaceCreate { command_id, .. }

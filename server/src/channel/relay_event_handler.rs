@@ -40,6 +40,7 @@ use crate::state::registry::RegistryState;
 use crate::control::{ChatRegistry, InstanceRegistry};
 
 use super::oauth_control::OAuthControl;
+use super::relay_question::PendingQuestionReq;
 
 /// 消费结果（gateway 记录日志/计数用；脱敏，不携带正文）。
 #[derive(Debug, Clone, PartialEq)]
@@ -168,6 +169,9 @@ pub(super) struct RelayInner {
     /// 与 pending_rpc 并列，coordinator resolve 时一次性 take）。
     pub(super) pending_permissions: RwLock<HashMap<String, PendingPermissionReq>>,
     pub(super) pending_elicitations: RwLock<HashMap<String, PendingElicitationReq>>,
+    /// O-001：无 prompt turn 的 callback 流（chat_id → `callback_{uuid}`）。
+    pub(super) callback_entry_by_chat: RwLock<HashMap<String, String>>,
+    pub(super) pending_questions: RwLock<HashMap<String, PendingQuestionReq>>,
     pub(super) oauth: OAuthControl,
     /// MCP App 首屏 CallToolResult（chat_id → tool_call_id → result）。
     /// Chat Doc 4KB 会省略；随 chat tear-down 丢弃，不落盘。
@@ -198,6 +202,8 @@ impl RelayEventHandler {
                 pending_rpc: RwLock::new(HashMap::new()),
                 pending_permissions: RwLock::new(HashMap::new()),
                 pending_elicitations: RwLock::new(HashMap::new()),
+                callback_entry_by_chat: RwLock::new(HashMap::new()),
+                pending_questions: RwLock::new(HashMap::new()),
                 oauth: OAuthControl::new(),
                 mcp_app_tool_results: RwLock::new(HashMap::new()),
                 mcp_app_tool_inputs: RwLock::new(HashMap::new()),

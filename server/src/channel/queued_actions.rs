@@ -19,6 +19,9 @@ use crate::channel::coordinator_helpers::extract_command_id;
 use crate::channel::elicitation_response::{
     ElicitationResponseOutcome, ElicitationResponseRequest,
 };
+use crate::channel::question_response::{
+    QuestionResponseOutcome, QuestionResponseRequest,
+};
 use crate::channel::permission_resolution::{
     PermissionResolutionOutcome, PermissionResolutionRequest,
 };
@@ -39,6 +42,9 @@ impl CommandCoordinator {
             ActionEnvelope::ResolvePermission { .. } => self.exec_resolve(chat_id, cmd).await,
             ActionEnvelope::RespondElicitation { .. } => {
                 self.exec_respond_elicitation(chat_id, cmd).await
+            }
+            ActionEnvelope::RespondQuestion { .. } => {
+                self.exec_respond_question(chat_id, cmd).await
             }
             _ => {
                 // M1 action type 白名单外的 action（Load/SubscribeEvents/
@@ -339,6 +345,81 @@ impl CommandCoordinator {
             Err(failure) => {
                 audit(
                     "elicitation.respond",
+                    Some(&command_id_text),
+                    Some(&cmd.ctx.token_id),
+                    failure.audit_outcome,
+                    started.elapsed(),
+                    None,
+                );
+                self.send_error(cmd, failure.code, &failure.message, failure.retryable)
+                    .await;
+            }
+        }
+    }
+
+    pub(super) async fn exec_respond_question(&self, _chat_id: &str, cmd: &ExecCmd) {
+        let command_id_text = extract_command_id(&cmd.action).unwrap_or_default();
+        let command_id = match Uuid::parse_str(&command_id_text) {
+            Ok(command_id) => command_id,
+            Err(_) => {
+                self.send_error(cmd, ErrorCode::InvalidState, "invalid commandId", false)
+                    .await;
+                return;
+            }
+        };
+        let payload = match &cmd.action {
+            ActionEnvelope::RespondQuestion { payload, .. } => payload.clone(),
+            _ => unreachable!("dispatch guarantees question response"),
+        };
+        let started = std::time::Instant::now();
+        match self
+            .inner
+            .question_response
+            .execute(QuestionResponseRequest {
+                command_id,
+                payload,
+            })
+            .await
+        {
+            Ok(QuestionResponseOutcome::Committed) => {
+                audit(
+                    "question.respond",
+                    Some(&command_id_text),
+                    Some(&cmd.ctx.token_id),
+                    "ok",
+                    started.elapsed(),
+                    None,
+                );
+                self.send_committed(cmd, None, None).await;
+            }
+            Ok(QuestionResponseOutcome::Duplicate) => {
+                audit(
+                    "question.respond",
+                    Some(&command_id_text),
+                    Some(&cmd.ctx.token_id),
+                    "duplicate",
+                    started.elapsed(),
+                    None,
+                );
+                let _ = cmd
+                    .tx
+                    .send(OutboundMsg::Frame(Frame::ActionAck(ActionAck {
+                        command_id: command_id_text,
+                        status: AckStatus::Duplicate,
+                        turn_id: None,
+                        chat_id: None,
+                        project_id: None,
+                        instance_id: None,
+                        session_id: None,
+                        acp_session_id: None,
+                        committed_projection_version: None,
+                        resource_result: None,
+                    })))
+                    .await;
+            }
+            Err(failure) => {
+                audit(
+                    "question.respond",
                     Some(&command_id_text),
                     Some(&cmd.ctx.token_id),
                     failure.audit_outcome,

@@ -194,6 +194,9 @@ impl Aggregator {
                     | EventBody::PermissionRequested { .. }
                     | EventBody::PermissionResolved { .. }
                     | EventBody::PermissionExpired { .. }
+                    | EventBody::QuestionRequested { .. }
+                    | EventBody::QuestionResolved { .. }
+                    | EventBody::QuestionExpired { .. }
                     | EventBody::AgentUsage { .. }
             ) {
                 return Ok(());
@@ -202,6 +205,22 @@ impl Aggregator {
         match &ev.body {
             EventBody::MessageDelta { entry_id, .. }
             | EventBody::ReasoningDelta { entry_id, .. } => {
+                if let Some(callback_id) = ev.callback_semantics() {
+                    let assistant_id = format!("{callback_id}:assistant");
+                    let txn = pair.chat.transact();
+                    let exists = chat_writer::root_map_read(&txn)
+                        .and_then(|root| {
+                            root.get(&txn, "entries")
+                                .and_then(|v| v.cast::<yrs::MapRef>().ok())
+                        })
+                        .and_then(|entries| entries.get(&txn, assistant_id.as_str()))
+                        .is_some();
+                    if !exists {
+                        return Err(ApplyReason::UnknownTurn);
+                    }
+                    let _ = entry_id;
+                    return Ok(());
+                }
                 if !pair.stream.replay_active {
                     self.judge_turn_guard(active, &ev.body)?;
                 }
@@ -221,6 +240,11 @@ impl Aggregator {
                 }
                 // 用户消息只由服务端单写注入（§6.5 RegisterUserEntry /
                 // RegisterPendingPromptEntry，携带 server 生成 turn_id）。
+                // 例外：无 turnId 且 envelope 带 callback 语义（O-001 §6.5）。
+                if turn_id.is_empty() && ev.callback_semantics().is_some() {
+                    let _ = entry_id;
+                    return Ok(());
+                }
                 // ACP 回显一律拒绝：真实 peri 不回声 user_message_chunk，
                 // 且 v2 通道强制（chat_channel 对无 prompt-delivery-v2 的
                 // 客户端直接断连），回声携带 agent 自造 turn_id/entry_id
@@ -327,6 +351,9 @@ impl Aggregator {
                 }
                 Ok(())
             }
+            EventBody::QuestionRequested { .. }
+            | EventBody::QuestionResolved { .. }
+            | EventBody::QuestionExpired { .. } => Ok(()),
             EventBody::AgentStatus { .. }
             | EventBody::AgentConfig { .. }
             | EventBody::AgentUsage { .. }

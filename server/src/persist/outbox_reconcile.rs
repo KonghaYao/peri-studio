@@ -244,6 +244,10 @@ impl OutboxStore {
         self.converge_one_shot_after_restart(CommandType::ElicitationRespond)
     }
 
+    pub fn reconcile_question_after_restart(&mut self) -> Result<usize, StoreError> {
+        self.converge_one_shot_after_restart(CommandType::QuestionRespond)
+    }
+
     /// Converge prompt-delivery records before the gateway accepts clients.
     ///
     /// A v2 prompt that never crossed the durable dispatch barrier is known

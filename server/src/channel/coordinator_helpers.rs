@@ -41,6 +41,7 @@ pub(super) fn command_type_of(action: &ActionEnvelope) -> CommandType {
         ActionEnvelope::Close { .. } => CommandType::Close,
         ActionEnvelope::ResolvePermission { .. } => CommandType::Resolve,
         ActionEnvelope::RespondElicitation { .. } => CommandType::ElicitationRespond,
+        ActionEnvelope::RespondQuestion { .. } => CommandType::QuestionRespond,
         // 白名单外 action 在 gateway/chat_channel 已拦（review #10：此前的
         // 静默 Prompt 降级会把未知命令持久化到 outbox、获得 turn_id 进入
         // prompt 语义——错误被掩盖；改为 unreachable 让防御路径在测试期
@@ -80,6 +81,7 @@ pub(crate) fn extract_command_id(action: &ActionEnvelope) -> Option<String> {
         | ActionEnvelope::Rewind { command_id, .. }
         | ActionEnvelope::ResolvePermission { command_id, .. }
         | ActionEnvelope::RespondElicitation { command_id, .. }
+        | ActionEnvelope::RespondQuestion { command_id, .. }
         | ActionEnvelope::SubscribeEvents { command_id, .. }
         | ActionEnvelope::UnsubscribeEvents { command_id, .. }
         | ActionEnvelope::WorkspaceCreate { command_id, .. }
@@ -123,6 +125,7 @@ pub(super) fn extract_chat_id(action: &ActionEnvelope) -> Option<String> {
         ActionEnvelope::Close { payload, .. } => Some(payload.chat_id.clone()),
         ActionEnvelope::ResolvePermission { payload, .. } => Some(payload.chat_id.clone()),
         ActionEnvelope::RespondElicitation { payload, .. } => Some(payload.chat_id.clone()),
+        ActionEnvelope::RespondQuestion { payload, .. } => Some(payload.chat_id.clone()),
         ActionEnvelope::Load { payload, .. } => Some(payload.chat_id.clone()),
         ActionEnvelope::SessionNew { payload, .. } => Some(payload.chat_id.clone()),
         ActionEnvelope::Create { .. } => None,

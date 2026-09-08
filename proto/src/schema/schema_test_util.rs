@@ -175,6 +175,7 @@ pub(crate) fn control_root() -> SessionDocRoot {
         }),
         pending_permissions: pending,
         pending_elicitations: HashMap::new(),
+        pending_questions: HashMap::new(),
         sessions: chats,
         session_list_loaded: false,
         tasks: HashMap::new(),

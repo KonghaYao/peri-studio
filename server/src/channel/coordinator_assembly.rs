@@ -14,6 +14,7 @@ use crate::channel::command_coordinator::{
 };
 use crate::channel::command_outcome_broker::CommandOutcomeBroker;
 use crate::channel::elicitation_response::ElicitationResponse;
+use crate::channel::question_response::QuestionResponse;
 use crate::channel::machine_command_processor::MachineCommandProcessor;
 use crate::channel::mcp_apps_control::McpAppsControl;
 use crate::channel::mcp_control::McpControl;
@@ -195,6 +196,13 @@ impl CommandCoordinator {
             relay.clone(),
             instance.clone(),
         );
+        let question_response = QuestionResponse::new(
+            store.clone(),
+            doc.clone(),
+            chats.clone(),
+            relay.clone(),
+            instance.clone(),
+        );
         let runtime_closure =
             RuntimeClosure::new(store.clone(), doc.clone(), instance.clone(), chats.clone());
         let turn_cancellation = TurnCancellation::new(
@@ -238,6 +246,7 @@ impl CommandCoordinator {
                 session_operations,
                 permission_resolution,
                 elicitation_response,
+                question_response,
                 runtime_closure,
                 turn_cancellation,
                 prompt_delivery,

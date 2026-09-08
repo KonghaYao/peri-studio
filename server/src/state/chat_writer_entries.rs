@@ -13,6 +13,8 @@
 
 use std::collections::HashSet;
 
+use std::collections::HashMap;
+
 use yrs::{Array, Map};
 
 use peri_studio_proto::schema::{ChatEntry, ContentBlock, EntryKind, EntryRole, EntryStatus, EntryTokenUsage};
@@ -107,6 +109,121 @@ pub fn ensure_entry(txn: &mut TransactionCtx<'_>, root: &yrs::MapRef, entry: &Ch
     let order = root.get_or_init::<_, yrs::ArrayRef>(txn, "entry_order");
     order.push_back(txn, entry.entry_id.clone());
     true
+}
+
+/// 无 prompt turn 的 callback 流：建 `{callback_id}` user + `{callback_id}:assistant`
+/// 对；`turn_id` 为 null，不注册 active_turn（§6.5 / O-001 G2）。
+pub fn create_callback_stream_entries(
+    txn: &mut TransactionCtx<'_>,
+    root: &yrs::MapRef,
+    callback_entry_id: &str,
+    text: &str,
+    created_at: &str,
+) -> bool {
+    let entries = root.get_or_init::<_, yrs::MapRef>(txn, "entries");
+    if entries.get(txn, callback_entry_id).is_some() {
+        return false;
+    }
+    let assistant_id = format!("{callback_entry_id}:assistant");
+    let user_entry = ChatEntry {
+        entry_id: callback_entry_id.to_string(),
+        turn_id: None,
+        kind: EntryKind::Message,
+        role: EntryRole::User,
+        status: EntryStatus::Completed,
+        author_user_id: None,
+        source_command_id: None,
+        origin: None,
+        replay_verified: None,
+        created_at: created_at.to_string(),
+        completed_at: Some(created_at.to_string()),
+        block_order: if text.is_empty() {
+            vec![]
+        } else {
+            vec![format!("{callback_entry_id}:text")]
+        },
+        blocks: if text.is_empty() {
+            HashMap::new()
+        } else {
+            [(
+                format!("{callback_entry_id}:text"),
+                ContentBlock::Text {
+                    block_id: format!("{callback_entry_id}:text"),
+                    text: text.to_string(),
+                },
+            )]
+            .into_iter()
+            .collect()
+        },
+        error: None,
+        token_usage: None,
+    };
+    let assistant_entry = ChatEntry {
+        entry_id: assistant_id.clone(),
+        turn_id: None,
+        kind: EntryKind::Message,
+        role: EntryRole::Assistant,
+        status: EntryStatus::Streaming,
+        author_user_id: None,
+        source_command_id: None,
+        origin: None,
+        replay_verified: None,
+        created_at: created_at.to_string(),
+        completed_at: None,
+        block_order: vec![],
+        blocks: HashMap::new(),
+        error: None,
+        token_usage: None,
+    };
+    let created_user = ensure_entry(txn, root, &user_entry);
+    let _ = ensure_entry(txn, root, &assistant_entry);
+    created_user
+}
+
+/// Chat 时间线 plan system entry（`plan:{turnId|global}`）原位覆盖（G3 双写之一）。
+pub fn upsert_plan_system_entry(
+    txn: &mut TransactionCtx<'_>,
+    root: &yrs::MapRef,
+    entry_id: &str,
+    turn_id: Option<&str>,
+    entries: &[peri_studio_proto::schema::AgentPlanEntryProjection],
+    created_at: &str,
+) {
+    let entries_map = root.get_or_init::<_, yrs::MapRef>(txn, "entries");
+    if entries_map.get(txn, entry_id).is_none() {
+        let entry = ChatEntry {
+            entry_id: entry_id.to_string(),
+            turn_id: turn_id.map(str::to_string),
+            kind: EntryKind::System,
+            role: EntryRole::System,
+            status: EntryStatus::Completed,
+            author_user_id: None,
+            source_command_id: None,
+            origin: None,
+            replay_verified: None,
+            created_at: created_at.to_string(),
+            completed_at: Some(created_at.to_string()),
+            block_order: vec![],
+            blocks: HashMap::new(),
+            error: None,
+            token_usage: None,
+        };
+        ensure_entry(txn, root, &entry);
+    } else if let Some(entry_map) = entries_map
+        .get(txn, entry_id)
+        .and_then(|v| v.cast::<yrs::MapRef>().ok())
+    {
+        entry_map.insert(txn, "status", entry_status_str(EntryStatus::Completed));
+        entry_map.insert(txn, "completed_at", created_at.to_string());
+    }
+    let Some(entry_map) = entries_map
+        .get(txn, entry_id)
+        .and_then(|v| v.cast::<yrs::MapRef>().ok())
+    else {
+        return;
+    };
+    let payload = serde_json::to_string(entries).unwrap_or_else(|_| "[]".to_string());
+    entry_map.insert(txn, "plan_entries", payload);
 }
 
 /// 覆盖已存在 entry 的 `token_usage`（Y.Map snake_case 键）。entry 不存在时不

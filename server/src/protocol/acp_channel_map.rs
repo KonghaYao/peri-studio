@@ -19,6 +19,7 @@ use peri_studio_proto::schema::{BlockVisibility, ChatStatus, TurnStatus};
 
 use crate::state::normalized::EventBody;
 
+use super::acp_channel_question::map_interactive_question;
 use super::acp_channel::AcpChannel;
 use super::acp_channel_config::{
     normalize_agent_config, parse_agent_plan, parse_available_commands,
@@ -269,6 +270,23 @@ impl AcpChannel {
                     _ => return Err(MapError::MissingField),
                 },
             },
+            "interactive_question" => {
+                let fields = map_interactive_question(payload, now_rfc3339)?;
+                B::QuestionRequested {
+                    question_id: fields.question_id,
+                    tool_id: fields.tool_id,
+                    tool_name: fields.tool_name,
+                    description: fields.description,
+                    questions: fields.questions,
+                    expires_at: fields.expires_at,
+                }
+            }
+            // Fenix 私有 `{type:"plan", payload:{entries}}`（G4.1）；与
+            // session/update `sessionUpdate:"plan"` 共用 parse_agent_plan。
+            "plan" => B::AgentPlan {
+                entries: parse_agent_plan(payload)?,
+            },
+            "plan_removed" => B::AgentPlan { entries: vec![] },
             // ---- Session 元信息 / 能力（§5.4，部分更新）----
             "session_update" => B::SessionInfo {
                 title: string_field(payload, "title", "title"),

@@ -12,6 +12,12 @@
 mod activity;
 #[path = "aggregator_agent_test.rs"]
 mod agent;
+#[path = "aggregator_callback_test.rs"]
+mod callback;
+#[path = "aggregator_plan_chat_test.rs"]
+mod plan_chat;
+#[path = "aggregator_question_test.rs"]
+mod question;
 #[path = "aggregator_judge_test.rs"]
 mod judge;
 #[path = "aggregator_permission_test.rs"]

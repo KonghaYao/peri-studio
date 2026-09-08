@@ -49,7 +49,19 @@ pub struct NormalizedEvent {
     /// 非空表示子 Agent 流量：主 Chat Doc 不投影；Peri Task 事件不受此字段影响。
     #[serde(default)]
     pub source_agent_id: Option<String>,
+    /// 无 prompt turn 的 callback 流 entry 对 id（§6.5 例外；relay WP-C 注入）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub callback_entry_id: Option<String>,
     pub body: EventBody,
+}
+
+impl NormalizedEvent {
+    /// 非空且非空白即视为 callback 语义（O-001 §6.5 单写 user 例外边界）。
+    pub fn callback_semantics(&self) -> Option<&str> {
+        self.callback_entry_id
+            .as_deref()
+            .filter(|id| !id.is_empty())
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -264,6 +276,26 @@ pub enum EventBody {
     /// 来源两条：ACP 事件流 / server 定时器（§4.7 判定性时间戳）——都落到
     /// 同一 CAS 原语。
     PermissionExpired { permission_id: String },
+    /// AskUserQuestion 请求 → Control Doc `pending_questions`（按 question_id upsert）。
+    QuestionRequested {
+        question_id: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        tool_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        tool_name: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        description: Option<String>,
+        questions: Vec<peri_studio_proto::schema::QuestionItemProjection>,
+        /// RFC3339；normalize 层注入 60s 窗口（与 acp-link 对齐）。
+        expires_at: String,
+    },
+    /// Question CAS 决议（server 内部或规范化 replay）。
+    QuestionResolved {
+        question_id: String,
+        answers: Vec<peri_studio_proto::schema::QuestionAnswer>,
+    },
+    /// Question 超时 → pending → expired（CAS；answer 保持 null）。
+    QuestionExpired { question_id: String },
     /// Agent 状态覆盖 → Control Doc agent.status/public_error（§6.3）。
     /// 能力未确认前保持不可用（见 Capabilities）。
     AgentStatus {
@@ -430,6 +462,9 @@ impl EventBody {
             EventBody::PermissionRequested { .. } => "permission_requested",
             EventBody::PermissionResolved { .. } => "permission_resolved",
             EventBody::PermissionExpired { .. } => "permission_expired",
+            EventBody::QuestionRequested { .. } => "question_requested",
+            EventBody::QuestionResolved { .. } => "question_resolved",
+            EventBody::QuestionExpired { .. } => "question_expired",
             EventBody::AgentStatus { .. } => "agent_status",
             EventBody::AgentConfig { .. } => "agent_config",
             EventBody::AgentUsage { .. } => "agent_usage",

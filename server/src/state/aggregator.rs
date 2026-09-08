@@ -98,6 +98,8 @@ pub enum ApplyReason {
     ElicitationResponseConflict,
     /// The runtime disconnected or reset before this form was answered.
     ElicitationExpired,
+    /// 同一 AskUserQuestion 答案已落库（CAS Duplicate + 答案一致）。
+    QuestionAnswerReplay,
     /// 终态守卫：turn 处于 cancelling/completed/failed/cancelled，晚到增量丢弃
     /// （§6.3）。
     TurnTerminalGuard,
@@ -115,6 +117,8 @@ pub enum ApplyReason {
     UnknownToolCall,
     /// permission_id 未知。
     UnknownPermission,
+    /// question_id 未知（`pending_questions` 无此条目）。
+    UnknownQuestion,
     /// 防御性：epoch 与当前流不一致（§4.5.1 帧直接丢弃并计数）。
     EpochMismatch,
     /// 防御性：seq 回退（低于 last_seq；补推纪律下不应出现，§8.5）。

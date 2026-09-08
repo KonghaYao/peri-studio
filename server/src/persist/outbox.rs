@@ -66,6 +66,9 @@ pub enum CommandType {
     /// `elicitation/respond`（非幂等 agent→client request response）。
     #[serde(rename = "elicitation/respond")]
     ElicitationRespond,
+    /// `question/respond`（非幂等 control_response 路径）。
+    #[serde(rename = "question/respond")]
+    QuestionRespond,
 }
 
 impl CommandType {
@@ -80,7 +83,8 @@ impl CommandType {
             | CommandType::Prompt
             | CommandType::Cancel
             | CommandType::Resolve
-            | CommandType::ElicitationRespond => RetryableClass::NoAutoRedeliver,
+            | CommandType::ElicitationRespond
+            | CommandType::QuestionRespond => RetryableClass::NoAutoRedeliver,
         }
     }
 }

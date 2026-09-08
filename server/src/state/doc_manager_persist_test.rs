@@ -37,6 +37,7 @@ async fn expire_pending_permissions_batch_expires_all() {
             ts: "2026-08-07T00:00:00Z".to_string(),
             provenance: Default::default(),
             source_agent_id: None,
+            callback_entry_id: None,
             body: EventBody::PermissionRequested {
                 permission_id: pid.to_string(),
                 turn_id: "t1".to_string(),

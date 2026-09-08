@@ -193,6 +193,7 @@ async fn control_event_flushes_buffered_batch_first() {
         ts: "2026-08-07T00:00:00Z".to_string(),
         provenance: Default::default(),
         source_agent_id: None,
+        callback_entry_id: None,
         body: EventBody::ToolCallStarted {
             turn_id: "t1".to_string(),
             tool_call_id: "tc1".to_string(),
@@ -243,6 +244,7 @@ async fn concurrent_submits_no_panic_and_serial_equivalent() {
                     ts: "2026-08-07T00:00:00Z".to_string(),
                     provenance: Default::default(),
                     source_agent_id: None,
+                    callback_entry_id: None,
                     body: EventBody::ToolCallStarted {
                         turn_id: "t1".to_string(),
                         tool_call_id: format!("tc{i}"),

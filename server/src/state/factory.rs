@@ -180,6 +180,9 @@ impl Factory {
                 if root.get(txn, "pending_elicitations").is_none() {
                     root.insert(txn, "pending_elicitations", yrs::MapPrelim::default());
                 }
+                if root.get(txn, "pending_questions").is_none() {
+                    root.insert(txn, "pending_questions", yrs::MapPrelim::default());
+                }
                 if root.get(txn, "sessions").is_none() {
                     root.insert(txn, "sessions", yrs::MapPrelim::default());
                 }

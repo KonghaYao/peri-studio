@@ -14,8 +14,13 @@ mod agent;
 mod chat;
 mod control;
 mod elicitation;
+mod question;
 mod peri_task;
 mod registry;
+
+#[cfg(test)]
+#[path = "schema_question_test.rs"]
+mod schema_question_test;
 
 #[cfg(test)]
 #[path = "schema_test.rs"]
@@ -39,6 +44,10 @@ pub use peri_task::{
 pub use elicitation::{
     ElicitationFieldKind, ElicitationFieldProjection, ElicitationOptionProjection,
     ElicitationProjection, ElicitationResponseAction, ElicitationStatus,
+};
+pub use question::{
+    QuestionAnswer, QuestionItemProjection, QuestionOptionProjection, QuestionProjection,
+    QuestionStatus,
 };
 pub use registry::{
     ChatSummary, InstanceView, MachineSummary, ProjectSessionSummary, ProjectSummary,

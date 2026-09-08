@@ -55,21 +55,63 @@ impl Aggregator {
         let tool_context =
             self.prepare_tool_chat_context(pair, ev, replay_active, replay_producer_verified);
         // 预读：帧无 id（真实 peri 增量）按 active_turn 归位（§7.2；读
-        // control doc 须在 chat 写事务之前，§7.4 借位纪律）。
-        let resolved = match &ev.body {
-            EventBody::MessageDelta {
-                turn_id,
-                entry_id,
-                block_id,
-                ..
-            } => Some(self.resolve_entry_ids(pair, turn_id, entry_id, block_id, "text")),
-            EventBody::ReasoningDelta {
-                turn_id,
-                entry_id,
-                block_id,
-                ..
-            } => Some(self.resolve_entry_ids(pair, turn_id, entry_id, block_id, "reasoning")),
-            _ => None,
+        // control doc 须在 chat 写事务之前，§7.4 借位纪律）。callback 语义走
+        // `callback_entry_id:assistant`（G2），不借 active_turn。
+        let resolved = if ev.callback_semantics().is_some() {
+            match &ev.body {
+                EventBody::MessageDelta { block_id, .. } => ev.callback_semantics().map(|callback_id| {
+                    (
+                        String::new(),
+                        format!("{callback_id}:assistant"),
+                        if block_id.is_empty() {
+                            "text".to_string()
+                        } else {
+                            block_id.clone()
+                        },
+                    )
+                }),
+                EventBody::ReasoningDelta { block_id, .. } => {
+                    ev.callback_semantics().map(|callback_id| {
+                        (
+                            String::new(),
+                            format!("{callback_id}:assistant"),
+                            if block_id.is_empty() {
+                                "reasoning".to_string()
+                            } else {
+                                block_id.clone()
+                            },
+                        )
+                    })
+                }
+                _ => None,
+            }
+        } else {
+            match &ev.body {
+                EventBody::MessageDelta {
+                    turn_id,
+                    entry_id,
+                    block_id,
+                    ..
+                } => Some(self.resolve_entry_ids(pair, turn_id, entry_id, block_id, "text")),
+                EventBody::ReasoningDelta {
+                    turn_id,
+                    entry_id,
+                    block_id,
+                    ..
+                } => Some(self.resolve_entry_ids(
+                    pair,
+                    turn_id,
+                    entry_id,
+                    block_id,
+                    "reasoning",
+                )),
+                _ => None,
+            }
+        };
+        let plan_active_turn = if matches!(ev.body, EventBody::AgentPlan { .. }) {
+            self.read_active_turn(pair).map(|active| active.turn_id)
+        } else {
+            None
         };
         // 预读：回放模式（§8.5）历史 user 消息的归位 turn（chat 事务前
         // 计算——事务借用与 stream 可变借用互斥，§7.4）。
@@ -108,13 +150,14 @@ impl Aggregator {
                     // 帧无 id（真实 peri 增量）：按 active_turn 归位（§7.2；
                     // chat-channel ASSISTANT_ENTRY 派生规则）。
                     let (turn_id, entry_id, block_id) = resolved.clone().unwrap();
+                    let turn_for_entry = (!turn_id.is_empty()).then_some(turn_id.as_str());
                     chat_writer::ensure_entry_with_blocks(
                         &mut txn,
                         &root,
                         &entry_id,
                         EntryKind::Message,
                         EntryRole::Assistant,
-                        Some(&turn_id),
+                        turn_for_entry,
                         &ev.ts,
                     );
                     chat_writer::append_text_delta(
@@ -138,13 +181,14 @@ impl Aggregator {
                     text, visibility, ..
                 } => {
                     let (turn_id, entry_id, block_id) = resolved.clone().unwrap();
+                    let turn_for_entry = (!turn_id.is_empty()).then_some(turn_id.as_str());
                     chat_writer::ensure_entry_with_blocks(
                         &mut txn,
                         &root,
                         &entry_id,
                         EntryKind::Message,
                         EntryRole::Assistant,
-                        Some(&turn_id),
+                        turn_for_entry,
                         &ev.ts,
                     );
                     chat_writer::append_text_delta(
@@ -178,6 +222,32 @@ impl Aggregator {
                     author_user_id,
                     created_at,
                 } => {
+                    if let Some(callback_id) = ev.callback_semantics() {
+                        if turn_id.is_empty() {
+                            chat_writer::create_callback_stream_entries(
+                                &mut txn,
+                                &root,
+                                callback_id,
+                                text,
+                                created_at,
+                            );
+                            chat_writer::record_entry_origin(
+                                &mut txn,
+                                &root,
+                                callback_id,
+                                replay_active,
+                                replay_producer_verified,
+                            );
+                            chat_writer::record_entry_origin(
+                                &mut txn,
+                                &root,
+                                &format!("{callback_id}:assistant"),
+                                replay_active,
+                                replay_producer_verified,
+                            );
+                            chat_writer::bump_projection_version(&mut txn, &root);
+                        }
+                    } else {
                     // 回放模式（§8.5）：历史 user 消息无 turn_id——按回放序
                     // 生成归位 turn（`load:{seq}`；seq 水位单调，天然幂等），
                     // 后续 agent chunk 归位到该 turn。turn 在预读区计算。
@@ -203,6 +273,7 @@ impl Aggregator {
                         replay_producer_verified,
                     );
                     chat_writer::bump_projection_version(&mut txn, &root);
+                    }
                 }
                 EventBody::ToolCallStarted { .. }
                 | EventBody::ToolCallUpdated { .. }
@@ -289,15 +360,30 @@ impl Aggregator {
                         .as_ref()
                         .expect("permission 事件必须具有预读上下文"),
                 ),
+                EventBody::AgentPlan { entries } => {
+                    let scope = plan_active_turn.as_deref().unwrap_or("global");
+                    let entry_id = format!("plan:{scope}");
+                    chat_writer::upsert_plan_system_entry(
+                        &mut txn,
+                        &root,
+                        &entry_id,
+                        plan_active_turn.as_deref(),
+                        entries,
+                        &ev.ts,
+                    );
+                    chat_writer::bump_projection_version(&mut txn, &root);
+                }
                 // 不涉 chat doc 的事件：无 chat 写入。
                 EventBody::AgentStatus { .. }
                 | EventBody::AgentConfig { .. }
                 | EventBody::AgentActivity { .. }
                 | EventBody::InputPrediction { .. }
-                | EventBody::AgentPlan { .. }
                 | EventBody::Capabilities { .. }
                 | EventBody::SessionInfo { .. }
                 | EventBody::SessionListResponse { .. }
+                | EventBody::QuestionRequested { .. }
+                | EventBody::QuestionResolved { .. }
+                | EventBody::QuestionExpired { .. }
                 | EventBody::PeriTaskStarted { .. }
                 | EventBody::PeriTaskCompleted { .. }
                 | EventBody::PeriTaskCancelled { .. } => {}

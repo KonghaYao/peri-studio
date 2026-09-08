@@ -29,6 +29,7 @@ mod aggregator_write;
 mod aggregator_write_catalog;
 mod aggregator_write_control;
 mod aggregator_write_helpers;
+mod aggregator_write_question;
 mod aggregator_write_task;
 mod aggregator_write_tool;
 mod aggregator_write_tool_patch;
@@ -49,6 +50,7 @@ pub mod factory;
 pub mod normalized;
 pub mod permission;
 mod permission_evidence;
+pub mod question;
 pub mod registry;
 mod registry_write;
 pub mod session_list;
@@ -68,6 +70,8 @@ mod factory_test;
 mod normalized_test;
 #[cfg(test)]
 mod permission_test;
+#[cfg(test)]
+mod question_test;
 #[cfg(test)]
 mod registry_test;
 #[cfg(test)]

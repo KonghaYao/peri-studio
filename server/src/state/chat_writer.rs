@@ -40,8 +40,9 @@ pub(crate) use super::chat_writer_blocks::{
     set_reasoning_visibility, settle_nonterminal_tools_for_turn, upsert_tool_call,
 };
 pub(crate) use super::chat_writer_entries::{
-    clear_input_prediction, create_pending_prompt_entry, create_user_entry, prompt_entry_turn_id,
-    record_entry_origin, set_entry_token_usage, set_prompt_entry_delivery,
+    clear_input_prediction, create_callback_stream_entries, create_pending_prompt_entry,
+    create_user_entry, prompt_entry_turn_id, record_entry_origin, set_entry_token_usage,
+    set_prompt_entry_delivery, upsert_plan_system_entry,
 };
 pub(crate) use super::chat_writer_turn::{
     bump_projection_version, migrate_assistant_segments_terminal, migrate_entry_terminal,

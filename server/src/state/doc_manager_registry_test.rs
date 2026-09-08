@@ -146,6 +146,7 @@ async fn resume_after_gap_uncalibratable_rejected() {
         ts: "2026-08-07T00:00:00Z".to_string(),
         provenance: Default::default(),
         source_agent_id: None,
+        callback_entry_id: None,
         body: EventBody::UserMessage {
             turn_id: "t2".into(),
             entry_id: "t2:user".into(),

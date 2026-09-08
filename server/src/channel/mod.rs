@@ -43,6 +43,11 @@ mod mutation_admission_test;
 mod oauth_command_ledger;
 mod oauth_control;
 mod permission_resolution;
+mod question_response;
+#[path = "relay_callback.rs"]
+mod relay_callback;
+#[path = "relay_question.rs"]
+mod relay_question;
 mod prompt_delivery;
 mod prompt_recovery;
 mod queued_actions;

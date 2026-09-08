@@ -37,7 +37,8 @@ impl RelayEventHandler {
     }
 
     /// 规范化事件投递（delta 类入队即返；控制类挂 oneshot 等投递确认）。
-    pub(super) async fn submit(&self, chat_id: &str, nev: NormalizedEvent) -> ConsumeResult {
+    pub(super) async fn submit(&self, chat_id: &str, mut nev: NormalizedEvent) -> ConsumeResult {
+        self.decorate_callback_envelope(chat_id, &mut nev).await;
         let kind = nev.kind();
         let seq = nev.seq;
         let config_catalog = match &nev.body {
@@ -48,6 +49,7 @@ impl RelayEventHandler {
             _ => None,
         };
         let app_snapshot = mcp_app_patch_snapshot(&nev.body);
+        let submitted = nev.clone();
         match self.inner.doc.submit_event(nev).await {
             SubmitResult::Applied(r) => {
                 // #3 增量窗口续命（issue #3）：事件投递成功（聚合器接受）
@@ -70,12 +72,14 @@ impl RelayEventHandler {
                         }
                     }
                 }
-                ConsumeResult::Delivered {
+                let delivered = ConsumeResult::Delivered {
                     chat_id: chat_id.to_string(),
                     kind,
                     seq,
                     applied: r.applied,
-                }
+                };
+                self.after_event_submitted(chat_id, &submitted, &delivered).await;
+                delivered
             }
             SubmitResult::Rejected(_) => ConsumeResult::Dropped {
                 reason: "submit_rejected",

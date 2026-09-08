@@ -3,6 +3,17 @@
 use super::util::control_root;
 
 #[test]
+fn legacy_control_doc_defaults_missing_questions() {
+    let mut value = serde_json::to_value(control_root()).unwrap();
+    value
+        .as_object_mut()
+        .expect("control root object")
+        .remove("pendingQuestions");
+    let decoded: crate::schema::SessionDocRoot = serde_json::from_value(value).unwrap();
+    assert!(decoded.pending_questions.is_empty());
+}
+
+#[test]
 fn legacy_control_doc_defaults_missing_elicitations() {
     let mut value = serde_json::to_value(control_root()).unwrap();
     value

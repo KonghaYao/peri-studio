@@ -41,6 +41,7 @@ use crate::channel::command_outcome_broker::CommandOutcomeBroker;
 // （chat_channel/gateway/metadata_*/runtime_creation 等仍按旧路径引用）。
 pub(super) use crate::channel::coordinator_helpers::{action_error, extract_command_id};
 use crate::channel::elicitation_response::ElicitationResponse;
+use crate::channel::question_response::QuestionResponse;
 use crate::channel::machine_command_processor::MachineCommandProcessor;
 use crate::channel::mcp_apps_control::McpAppsControl;
 use crate::channel::mcp_control::McpControl;
@@ -131,6 +132,7 @@ pub(super) struct CoordInner {
     /// semantics behind one lifecycle interface.
     pub(super) permission_resolution: PermissionResolution,
     pub(super) elicitation_response: ElicitationResponse,
+    pub(super) question_response: QuestionResponse,
     /// Runtime close owns idempotent kill, projection, closed marker and
     /// durable terminal repair behind one lifecycle interface.
     pub(super) runtime_closure: RuntimeClosure,

@@ -200,6 +200,7 @@ impl AcpChannel {
             ts: now_rfc3339.to_string(),
             provenance,
             source_agent_id,
+            callback_entry_id: None,
             body,
         }))
     }

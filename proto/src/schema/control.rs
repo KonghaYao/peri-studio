@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use super::agent::AgentStatusProjection;
 use super::elicitation::ElicitationProjection;
+use super::question::QuestionProjection;
 use super::peri_task::PeriTaskViewProjection;
 use super::{ChatStatus, PermissionOptions, PermissionStatus, TurnStatus};
 use crate::action::PermissionDecision;
@@ -31,6 +32,9 @@ pub struct SessionDocRoot {
     /// 由 server schema initializer 补结构。
     #[serde(default)]
     pub pending_elicitations: HashMap<String, ElicitationProjection>,
+    /// AskUserQuestion 交互问题（additive；Yjs 键 `pending_questions`）。
+    #[serde(default)]
+    pub pending_questions: HashMap<String, QuestionProjection>,
     /// agent 磁盘历史会话条目（§5.4）。
     pub sessions: HashMap<String, SessionSummaryProjection>,
     /// agent 侧 `session_list` 已权威确认；空列表亦表示确认无会话（additive，旧快照 default false）。

@@ -20,12 +20,14 @@ use crate::state::factory::ROOT;
 use crate::state::normalized::{EventBody, NormalizedEvent};
 use crate::state::permission::{self, CasOutcome};
 use crate::state::permission_evidence::summarize_tool_input;
+use crate::state::question::{self, QuestionCasOutcome};
 use crate::state::session_list;
 
 use super::aggregator::Aggregator;
 use super::aggregator_write_catalog::{
     write_agent_activity, write_agent_plan, write_capabilities, write_chat_info, AgentActivityWrite,
 };
+use super::aggregator_write_question::write_question_requested;
 use super::aggregator_write_helpers::{
     write_agent_config, write_agent_status, write_agent_usage, write_input_prediction,
     write_permission_request, AgentUsageWrite,
@@ -119,6 +121,42 @@ impl Aggregator {
                     chat_writer::bump_projection_version(&mut txn, &root);
                 }
             }
+            EventBody::QuestionRequested {
+                question_id,
+                description,
+                questions,
+                expires_at,
+                ..
+            } => {
+                let mut txn = pair.session_txn();
+                let root = txn.get_or_insert_map(ROOT);
+                write_question_requested(
+                    &mut txn,
+                    &root,
+                    question_id,
+                    questions,
+                    description.as_deref(),
+                    expires_at,
+                );
+                chat_writer::bump_projection_version(&mut txn, &root);
+            }
+            EventBody::QuestionResolved {
+                question_id,
+                answers,
+            } => {
+                if question::respond(pair, question_id, answers) == QuestionCasOutcome::Migrated {
+                    let mut txn = pair.session_txn();
+                    let root = txn.get_or_insert_map(ROOT);
+                    chat_writer::bump_projection_version(&mut txn, &root);
+                }
+            }
+            EventBody::QuestionExpired { question_id } => {
+                if question::expire(pair, question_id) == QuestionCasOutcome::Migrated {
+                    let mut txn = pair.session_txn();
+                    let root = txn.get_or_insert_map(ROOT);
+                    chat_writer::bump_projection_version(&mut txn, &root);
+                }
+            }
             EventBody::SessionListResponse { entries } => {
                 // 预读（写事务前完成，避免并发事务 panic，§7.4）。
                 let (current, loaded) = {
@@ -163,11 +201,19 @@ impl Aggregator {
                     EventBody::SessionListResponse { .. } => {
                         unreachable!("SessionListResponse 已在外层分支处理")
                     }
+                    EventBody::QuestionRequested { .. }
+                    | EventBody::QuestionResolved { .. }
+                    | EventBody::QuestionExpired { .. } => {
+                        unreachable!("Question 事件已在外层分支处理")
+                    }
                     EventBody::UserMessage {
                         turn_id,
                         created_at,
                         ..
                     } => {
+                        if turn_id.is_empty() && ev.callback_semantics().is_some() {
+                            // callback 流不注册 active_turn（§6.5 例外）。
+                        } else {
                         chat_writer::clear_input_prediction(&mut txn, &root);
                         // active_turn 注册（§7.2：turn 从 accepting 开始）。
                         let active = ActiveTurnProjection {
@@ -177,6 +223,7 @@ impl Aggregator {
                         };
                         chat_writer::set_active_turn(&mut txn, &root, Some(&active));
                         chat_writer::bump_projection_version(&mut txn, &root);
+                        }
                     }
                     EventBody::PermissionRequested {
                         permission_id,

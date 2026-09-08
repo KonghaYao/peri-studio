@@ -55,7 +55,9 @@ pub(crate) async fn apply_command(
         | DocCommand::RegisterElicitation { .. }
         | DocCommand::BeginElicitationResponse { .. }
         | DocCommand::CompleteElicitationResponse { .. }
-        | DocCommand::ExpirePendingElicitations { .. } => apply_entry_group(pair, agg, &cmd),
+        | DocCommand::ExpirePendingElicitations { .. }
+        | DocCommand::ResolveQuestion { .. }
+        | DocCommand::ExpireQuestion { .. } => apply_entry_group(pair, agg, &cmd),
         _ => {
             // 短路拒绝（结构拆分时从 apply_turn_group 提升，保持 HEAD 语义：
             // 直接返回 Rejected，不执行 persist 收尾）。条件为纯读
@@ -482,6 +484,63 @@ fn apply_entry_group(pair: &mut DocPair, agg: &mut Aggregator, cmd: &DocCommand)
             ApplyResult {
                 applied: migrated > 0,
                 reason: None,
+            }
+        }
+        DocCommand::ResolveQuestion {
+            question_id,
+            answers,
+        } => {
+            let prior = crate::state::question::context(pair, question_id);
+            match crate::state::question::respond(pair, question_id, answers) {
+                crate::state::question::QuestionCasOutcome::Migrated => {
+                    crate::state::question::bump_projection(pair);
+                    ApplyResult {
+                        applied: true,
+                        reason: None,
+                    }
+                }
+                crate::state::question::QuestionCasOutcome::Duplicate => ApplyResult {
+                    applied: false,
+                    reason: Some(
+                        if prior.as_deref() == Some("resolved")
+                            && crate::state::question::answers_match_stored(
+                                pair, question_id, answers,
+                            )
+                        {
+                            ApplyReason::QuestionAnswerReplay
+                        } else {
+                            ApplyReason::DuplicateIdempotent
+                        },
+                    ),
+                },
+                crate::state::question::QuestionCasOutcome::Expired => ApplyResult {
+                    applied: false,
+                    reason: Some(ApplyReason::DuplicateIdempotent),
+                },
+                crate::state::question::QuestionCasOutcome::Unknown => ApplyResult {
+                    applied: false,
+                    reason: Some(ApplyReason::UnknownQuestion),
+                },
+            }
+        }
+        DocCommand::ExpireQuestion { question_id } => {
+            match crate::state::question::expire(pair, question_id) {
+                crate::state::question::QuestionCasOutcome::Migrated => {
+                    crate::state::question::bump_projection(pair);
+                    ApplyResult {
+                        applied: true,
+                        reason: None,
+                    }
+                }
+                crate::state::question::QuestionCasOutcome::Duplicate
+                | crate::state::question::QuestionCasOutcome::Expired => ApplyResult {
+                    applied: false,
+                    reason: Some(ApplyReason::DuplicateIdempotent),
+                },
+                crate::state::question::QuestionCasOutcome::Unknown => ApplyResult {
+                    applied: false,
+                    reason: Some(ApplyReason::UnknownQuestion),
+                },
             }
         }
         // entry 组外命令由 apply_command 分派到 apply_turn_group；Registry 系

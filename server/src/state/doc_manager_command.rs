@@ -86,6 +86,15 @@ pub enum DocCommand {
     ExpirePendingElicitations {
         updated_at: String,
     },
+    /// AskUserQuestion CAS：pending → resolved（WP-C / O-001）。
+    ResolveQuestion {
+        question_id: String,
+        answers: Vec<peri_studio_proto::schema::QuestionAnswer>,
+    },
+    /// AskUserQuestion CAS：pending → expired（独立 60s 定时器）。
+    ExpireQuestion {
+        question_id: String,
+    },
     /// 断链 → 活动 turn 置 interrupted（§7.3 分区恢复；turn 级终态）。
     MarkTurnInterrupted {
         turn_id: String,

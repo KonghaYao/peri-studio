@@ -74,6 +74,7 @@ pub const M1_ACTION_TYPES: &[&str] = &[
     "chat/close",
     "permission/resolve",
     "elicitation/respond",
+    "question/respond",
     "workspace/create",
     "workspace/remove",
     "session/list",
