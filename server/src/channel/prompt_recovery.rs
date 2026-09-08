@@ -146,7 +146,16 @@ impl PromptRecovery {
                         "failed_not_delivered",
                         record.last_error.as_ref().map(|error| error.code.as_str()),
                     ),
-                    OutboxStatus::DeliveryUnknown => ("delivery_unknown", Some("DELIVERY_UNKNOWN")),
+                    OutboxStatus::DeliveryUnknown => {
+                        if evidence
+                            .get(&record.command_id)
+                            .is_some_and(|projected| projected.terminal && !projected.conflicted)
+                        {
+                            ("completed", None)
+                        } else {
+                            ("delivery_unknown", Some("DELIVERY_UNKNOWN"))
+                        }
+                    }
                     _ => continue,
                 };
                 sink.reconcile_prompt_entry_delivery(

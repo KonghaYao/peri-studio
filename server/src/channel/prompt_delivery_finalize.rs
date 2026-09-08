@@ -58,6 +58,11 @@ impl PromptDelivery {
         };
         let Some(rpc_response) = rpc_result else {
             self.relay.cancel_rpc(rpc_id).await;
+            if self.projected_turn_is_terminal(&request.chat_id, turn_id).await {
+                return self
+                    .commit_existing_terminal(request, store, entry_id, turn_id)
+                    .await;
+            }
             return self
                 .delivery_unknown(
                     request,
@@ -68,6 +73,11 @@ impl PromptDelivery {
                 .await;
         };
         if rpc_response.get("error").is_some() {
+            if self.projected_turn_is_terminal(&request.chat_id, turn_id).await {
+                return self
+                    .commit_existing_terminal(request, store, entry_id, turn_id)
+                    .await;
+            }
             return self
                 .delivery_unknown(
                     request,
@@ -124,6 +134,11 @@ impl PromptDelivery {
             SubmitResult::Applied(ref result)
                 if result.applied || result.reason == Some(ApplyReason::DuplicateIdempotent)
         ) {
+            if self.projected_turn_is_terminal(&request.chat_id, turn_id).await {
+                return self
+                    .commit_existing_terminal(request, store, entry_id, turn_id)
+                    .await;
+            }
             return self
                 .delivery_unknown(
                     request,
@@ -194,6 +209,159 @@ impl PromptDelivery {
         }
         self.chats.clear_active_turn(&request.chat_id).await;
         PromptDeliveryOutcome::Committed { turn_id }
+    }
+
+    async fn projected_turn_is_terminal(&self, chat_id: &str, turn_id: Uuid) -> bool {
+        let turn = turn_id.to_string();
+        if self
+            .doc
+            .read_session_active_turn(chat_id)
+            .await
+            .is_some_and(|(active_id, status)| {
+                active_id.as_deref() == Some(turn.as_str())
+                    && matches!(
+                        status.as_str(),
+                        "completed" | "failed" | "cancelled" | "interrupted"
+                    )
+            })
+        {
+            return true;
+        }
+        // Session active_turn 可能已切走或清空；Chat Doc assistant 终态仍是精确证据。
+        self.doc.read_chat_turn_terminal(chat_id, &turn).await
+    }
+
+    async fn commit_existing_terminal(
+        &self,
+        request: &PromptDeliveryRequest,
+        store: &Arc<ChatStore>,
+        entry_id: &str,
+        turn_id: Uuid,
+    ) -> PromptDeliveryOutcome {
+        if let Err(error) = store
+            .outbox()
+            .lock()
+            .await
+            .mark_delivery_confirmed(request.command_id)
+        {
+            if !self
+                .outbox_reached(
+                    store,
+                    request.command_id,
+                    &[
+                        OutboxStatus::DeliveryConfirmed,
+                        OutboxStatus::ProjectionCommitted,
+                        OutboxStatus::Completed,
+                    ],
+                )
+                .await
+            {
+                warn!(
+                    chat_id = request.chat_id,
+                    ?error,
+                    "mark_delivery_confirmed after existing terminal failed"
+                );
+                return self
+                    .delivery_unknown(
+                        request,
+                        store,
+                        entry_id,
+                        "prompt completed but its delivery confirmation could not be persisted",
+                    )
+                    .await;
+            }
+        }
+        if matches!(
+            self.doc
+                .submit_command(
+                    &request.chat_id,
+                    DocCommand::SetPromptEntryDelivery {
+                        entry_id: entry_id.to_string(),
+                        delivery_state: "completed".to_string(),
+                        delivery_error_code: None,
+                        completed_at: Some(Utc::now().to_rfc3339()),
+                    },
+                )
+                .await,
+            SubmitResult::PersistFailed | SubmitResult::Rejected(_)
+        ) {
+            return self
+                .delivery_unknown(
+                    request,
+                    store,
+                    entry_id,
+                    "prompt completed but durable projection is uncertain",
+                )
+                .await;
+        }
+        if let Err(error) = store
+            .outbox()
+            .lock()
+            .await
+            .mark_projection_committed(request.command_id)
+        {
+            if !self
+                .outbox_reached(
+                    store,
+                    request.command_id,
+                    &[OutboxStatus::ProjectionCommitted, OutboxStatus::Completed],
+                )
+                .await
+            {
+                warn!(
+                    chat_id = request.chat_id,
+                    ?error,
+                    "mark_projection_committed after existing terminal failed"
+                );
+                return self
+                    .delivery_unknown(
+                        request,
+                        store,
+                        entry_id,
+                        "prompt projection exists but its commit barrier is uncertain",
+                    )
+                    .await;
+            }
+        }
+        if let Err(error) = store
+            .outbox()
+            .lock()
+            .await
+            .mark_completed(request.command_id)
+        {
+            if !self
+                .outbox_reached(store, request.command_id, &[OutboxStatus::Completed])
+                .await
+            {
+                warn!(
+                    chat_id = request.chat_id,
+                    ?error,
+                    "mark_completed after existing terminal failed"
+                );
+                return self
+                    .delivery_unknown(
+                        request,
+                        store,
+                        entry_id,
+                        "prompt projection is durable but command completion is uncertain",
+                    )
+                    .await;
+            }
+        }
+        self.chats.clear_active_turn(&request.chat_id).await;
+        PromptDeliveryOutcome::Committed { turn_id }
+    }
+
+    async fn outbox_reached(
+        &self,
+        store: &Arc<ChatStore>,
+        command_id: Uuid,
+        accepted: &[OutboxStatus],
+    ) -> bool {
+        store
+            .outbox_get(command_id)
+            .await
+            .is_some_and(|record| accepted.contains(&record.status))
     }
 
     pub(super) async fn fail_before_dispatch(

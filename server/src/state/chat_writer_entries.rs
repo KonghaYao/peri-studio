@@ -21,7 +21,7 @@ use peri_studio_proto::schema::{ChatEntry, ContentBlock, EntryKind, EntryRole, E
 
 use crate::state::chat_writer::{
     ensure_user_entry_indexed, entry_kind_str, entry_role_str, entry_status_str,
-    user_entry_for_turn, UserEntryRegistration,
+    turn_has_terminal_assistant, user_entry_for_turn, UserEntryRegistration,
 };
 use crate::state::chat_writer_blocks::{write_content_block, write_public_error};
 use crate::state::view_store::TransactionCtx;
@@ -516,6 +516,25 @@ pub fn set_prompt_entry_delivery(
     if previous.as_deref() == Some(delivery_state)
         && previous_error.as_deref() == delivery_error_code
     {
+        return false;
+    }
+    // 回合已有精确完成证据后，不得被迟到的 L3 超时/对账降级成 unknown。
+    // assistant 终态也算完成证据：user entry 的 delivery_state 可能仍是 pending。
+    if delivery_state == "delivery_unknown" {
+        if previous.as_deref() == Some("completed") {
+            return false;
+        }
+        let turn_id = entry_map
+            .get(txn, "turn_id")
+            .and_then(|value| value.cast::<String>().ok());
+        if turn_id
+            .as_deref()
+            .is_some_and(|turn_id| turn_has_terminal_assistant(txn, turn_id))
+        {
+            return false;
+        }
+    }
+    if previous.as_deref() == Some("completed") && delivery_state != "completed" {
         return false;
     }
     entry_map.insert(txn, "delivery_state", delivery_state.to_string());

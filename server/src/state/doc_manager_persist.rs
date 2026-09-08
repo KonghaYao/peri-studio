@@ -148,6 +148,12 @@ pub(crate) async fn chat_writer_loop(
                 Some(ChatMsg::ReadSessionActiveTurn(reply)) => {
                     let _ = reply.send(read_session_active_turn(&pair));
                 }
+                Some(ChatMsg::ReadChatTurnTerminal(turn_id, reply)) => {
+                    let txn = pair.chat.transact();
+                    let _ = reply.send(crate::state::chat_writer::turn_has_terminal_assistant(
+                        &txn, &turn_id,
+                    ));
+                }
                 Some(ChatMsg::Command(cmd, reply)) => {
                     // 控制类先 flush（§6.4）。
                     flush_batch(&chat_id, &mut pair, &mut agg, &mut batch, &mut batch_bytes,

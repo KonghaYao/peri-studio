@@ -182,3 +182,110 @@ async fn prompt_l3_inactivity_timeout_delivery_unknown() {
         "session/prompt L3 丢失后仍须投影终态并清除 loading，否则输入框锁定"
     );
 }
+
+/// 流式回合已通过 `prompt_complete` 终态化后，迟到的 L3 超时不得再盖
+/// `delivery_unknown`（用户可见误报）。
+#[tokio::test]
+async fn prompt_l3_timeout_does_not_unknown_after_stream_terminal() {
+    let mut env = env().await;
+    bound_session(&env, S3, "acp-3").await;
+    let (tx, mut rx) = mpsc::channel(16);
+    let cid = uuid::Uuid::new_v4().to_string();
+    let r = env
+        .coordinator
+        .submit(&ctx("c"), prompt_action(&cid, S3), tx.clone())
+        .await;
+    assert!(matches!(r, SubmitAck::Accepted { .. }), "{r:?}");
+    let fwd = tokio::time::timeout(Duration::from_secs(2), env.instance_rx.recv())
+        .await
+        .expect("forward received")
+        .expect("rx alive");
+    match &fwd {
+        OutboundMsg::Frame(Frame::InstanceForward(f)) => {
+            env.instance
+                .on_ack(
+                    "local",
+                    &f.command_id,
+                    InstanceAck::Forward(InstanceForwardAck {
+                        command_id: f.command_id.clone(),
+                        chat_id: f.chat_id.clone(),
+                        ok: true,
+                        error: None,
+                    }),
+                )
+                .await;
+        }
+        other => panic!("expected forward frame, got {other:?}"),
+    }
+    let turn_id = tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            if let Some(turn) = env.chats.active_turn(S3).await {
+                break turn;
+            }
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .expect("prompt 执行中登记活动 turn");
+
+    let consumed = env
+        .relay
+        .on_instance_event(
+            "local",
+            &peri_studio_proto::instance::InstanceEvent {
+                chat_id: S3.into(),
+                epoch: 0,
+                seq: 2,
+                frame: serde_json::json!({
+                    "type": "prompt_complete",
+                    "sessionId": "acp-3",
+                    "payload": { "turnId": turn_id },
+                }),
+            },
+        )
+        .await;
+    assert!(
+        matches!(consumed, crate::channel::ConsumeResult::Delivered { .. }),
+        "{consumed:?}"
+    );
+
+    match tokio::time::timeout(Duration::from_secs(3), rx.recv()).await {
+        Ok(Some(OutboundMsg::Frame(Frame::ActionAck(ack)))) => {
+            assert_eq!(ack.status, peri_studio_proto::ack::AckStatus::Committed);
+        }
+        other => panic!("expected committed ack after existing terminal, got {other:?}"),
+    }
+
+    let (snapshot, _) = env
+        .sink
+        .snapshot(&peri_studio_proto::conn::DocId::chat(S3))
+        .await
+        .expect("chat 镜像快照");
+    use yrs::updates::decoder::Decode as _;
+    use yrs::{Map as _, ReadTxn as _, Transact as _};
+    let mirror = yrs::Doc::new();
+    mirror
+        .transact_mut()
+        .apply_update(yrs::Update::decode_v1(&snapshot).unwrap())
+        .unwrap();
+    let txn = mirror.transact();
+    let user = txn
+        .get_map("root")
+        .unwrap()
+        .get(&txn, "entries")
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap()
+        .get(&txn, &format!("{turn_id}:user"))
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap();
+    let delivery = user
+        .get(&txn, "delivery_state")
+        .and_then(|value| value.cast::<String>().ok())
+        .unwrap_or_default();
+    assert_ne!(
+        delivery, "delivery_unknown",
+        "流式终态后不得把 user delivery 标成 unknown"
+    );
+}

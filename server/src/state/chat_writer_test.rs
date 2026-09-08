@@ -6,8 +6,8 @@ use peri_studio_proto::schema::{ActiveTurnProjection, TurnStatus};
 use yrs::{Array, Map, Transact, WriteTxn};
 
 use crate::state::chat_writer::{
-    create_user_entry, set_active_turn, set_active_turn_status_if, user_entry_for_turn,
-    UserEntryRegistration, USER_ENTRY_INDEX,
+    create_pending_prompt_entry, create_user_entry, set_active_turn, set_active_turn_status_if,
+    set_prompt_entry_delivery, user_entry_for_turn, UserEntryRegistration, USER_ENTRY_INDEX,
 };
 use crate::state::factory::ROOT;
 
@@ -346,5 +346,64 @@ fn user_entry_index_stale_entry_falls_back_to_scan() {
     assert_eq!(
         index.get(&txn, "t1").unwrap().cast::<String>().unwrap(),
         "t1:user"
+    );
+}
+
+#[test]
+fn prompt_delivery_unknown_refuses_after_assistant_already_terminal() {
+    let doc = yrs::Doc::new();
+    let mut txn = doc.transact_mut();
+    let root = txn.get_or_insert_map(ROOT);
+    assert_eq!(
+        create_pending_prompt_entry(
+            &mut txn,
+            &root,
+            "t1",
+            "t1:user",
+            "already ran",
+            None,
+            "11111111-1111-1111-1111-111111111111",
+            "fingerprint",
+            "now",
+        ),
+        UserEntryRegistration::Created
+    );
+    let entries = root
+        .get(&txn, "entries")
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap();
+    entries.insert(
+        &mut txn,
+        "t1:assistant",
+        yrs::MapPrelim::from([
+            ("role", "assistant"),
+            ("turn_id", "t1"),
+            ("status", "completed"),
+        ]),
+    );
+
+    assert!(
+        !set_prompt_entry_delivery(
+            &mut txn,
+            &root,
+            "t1:user",
+            "delivery_unknown",
+            Some("DELIVERY_UNKNOWN"),
+            None,
+        ),
+        "同回合 assistant 已终态时不得再盖 delivery_unknown"
+    );
+    let user = entries
+        .get(&txn, "t1:user")
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap();
+    assert_eq!(
+        user.get(&txn, "delivery_state")
+            .unwrap()
+            .cast::<String>()
+            .unwrap(),
+        "pending"
     );
 }

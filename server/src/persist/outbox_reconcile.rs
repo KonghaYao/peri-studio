@@ -271,7 +271,9 @@ impl OutboxStore {
                     {
                         OutboxStatus::Failed
                     }
-                    OutboxStatus::DeliveryConfirmed | OutboxStatus::ProjectionCommitted
+                    OutboxStatus::Dispatched
+                    | OutboxStatus::DeliveryConfirmed
+                    | OutboxStatus::ProjectionCommitted
                         if record.delivery_protocol_version == Some(2)
                             && record.payload_fingerprint.is_some()
                             && exact_terminal_evidence.contains(&record.command_id) =>

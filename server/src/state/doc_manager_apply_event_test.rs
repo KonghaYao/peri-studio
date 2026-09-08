@@ -512,3 +512,65 @@ async fn turn_terminal_is_idempotent_only_for_the_same_persisted_outcome() {
                     == Some(crate::state::aggregator::ApplyReason::TerminalProjectionConflict)
     ));
 }
+
+#[tokio::test(start_paused = true)]
+async fn late_delivery_unknown_does_not_override_an_already_terminal_turn() {
+    let sink = MemSink::default();
+    let mgr = DocManager::new(cfg(), Arc::new(sink.clone()));
+    open(&mgr, "s1").await;
+    assert!(matches!(
+        mgr.submit_command(
+            "s1",
+            DocCommand::RegisterPendingPromptEntry {
+                turn_id: "turn-1".into(),
+                entry_id: "turn-1:user".into(),
+                text: "already answered".into(),
+                author_user_id: None,
+                source_command_id: "11111111-1111-1111-1111-111111111111".into(),
+                payload_fingerprint: "fingerprint".into(),
+                created_at: "2026-08-14T00:00:00Z".into(),
+            },
+        )
+        .await,
+        SubmitResult::Applied(result) if result.applied
+    ));
+    assert!(matches!(
+        mgr.submit_event(delta("s1", 1, "turn-1", "done")).await,
+        SubmitResult::Applied(_)
+    ));
+    tokio::time::advance(TokioDuration::from_millis(20)).await;
+    tokio::task::yield_now().await;
+    assert!(matches!(
+        mgr.submit_command(
+            "s1",
+            DocCommand::SetTurnTerminal {
+                turn_id: "turn-1".into(),
+                status: peri_studio_proto::schema::TurnStatus::Completed,
+                completed_at: "2026-08-14T00:00:01Z".into(),
+            },
+        )
+        .await,
+        SubmitResult::Applied(result) if result.applied
+    ));
+    assert!(matches!(
+        mgr.submit_command(
+            "s1",
+            DocCommand::SetPromptEntryDelivery {
+                entry_id: "turn-1:user".into(),
+                delivery_state: "delivery_unknown".into(),
+                delivery_error_code: Some("DELIVERY_UNKNOWN".into()),
+                completed_at: None,
+            },
+        )
+        .await,
+        SubmitResult::Applied(result)
+            if !result.applied
+                && result.reason
+                    == Some(crate::state::aggregator::ApplyReason::DuplicateIdempotent)
+    ));
+    assert_eq!(
+        projected_user_delivery_state(&sink, "s1", "turn-1:user").await,
+        Some("pending".into()),
+        "迟到 unknown 不得覆盖已完成回合的 user delivery"
+    );
+}

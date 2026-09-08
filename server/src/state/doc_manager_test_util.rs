@@ -227,3 +227,30 @@ pub(crate) async fn projected_session_loading(sink: &MemSink, chat: &str) -> Opt
         .and_then(|session| session.get(&txn, "loading"))
         .and_then(|value| value.cast::<bool>().ok())
 }
+
+pub(crate) async fn projected_user_delivery_state(
+    sink: &MemSink,
+    chat: &str,
+    entry_id: &str,
+) -> Option<String> {
+    use yrs::updates::decoder::Decode as _;
+
+    let mirror = yrs::Doc::new();
+    for (doc, update) in sink.updates.lock().await.iter() {
+        if *doc != DocId::chat(chat) {
+            continue;
+        }
+        mirror
+            .transact_mut()
+            .apply_update(yrs::Update::decode_v1(update).unwrap())
+            .unwrap();
+    }
+    let txn = mirror.transact();
+    txn.get_map("root")
+        .and_then(|root| root.get(&txn, "entries"))
+        .and_then(|value| value.cast::<yrs::MapRef>().ok())
+        .and_then(|entries| entries.get(&txn, entry_id))
+        .and_then(|value| value.cast::<yrs::MapRef>().ok())
+        .and_then(|entry| entry.get(&txn, "delivery_state"))
+        .and_then(|value| value.cast::<String>().ok())
+}

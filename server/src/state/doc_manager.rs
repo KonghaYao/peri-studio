@@ -153,6 +153,8 @@ pub(crate) enum ChatMsg {
     Shutdown(oneshot::Sender<()>),
     /// 只读：Session Doc 当前 active turn 投影（cancel 等控制路径与 Yjs 对账）。
     ReadSessionActiveTurn(oneshot::Sender<(Option<String>, String)>),
+    /// 只读：Chat Doc 同回合 assistant 是否已终态（L3 超时防误报）。
+    ReadChatTurnTerminal(String, oneshot::Sender<bool>),
 }
 
 /// 唯一提交边界（§5.6）。
@@ -412,6 +414,25 @@ impl DocManager {
         }
         drop(chats);
         rx.await.ok()
+    }
+
+    /// 读 Chat Doc：同回合 assistant 是否已终态（completed / error / cancelled）。
+    pub async fn read_chat_turn_terminal(&self, chat_id: &str, turn_id: &str) -> bool {
+        let chats = self.chats.read().await;
+        let Some(handle) = chats.get(chat_id) else {
+            return false;
+        };
+        let (reply, rx) = oneshot::channel();
+        if handle
+            .tx
+            .send(ChatMsg::ReadChatTurnTerminal(turn_id.to_string(), reply))
+            .await
+            .is_err()
+        {
+            return false;
+        }
+        drop(chats);
+        rx.await.unwrap_or(false)
     }
 
     async fn submit_registry_command(&self, cmd: DocCommand) -> SubmitResult {

@@ -208,6 +208,41 @@ fn scan_user_entry<T: ReadTxn>(
     })
 }
 
+/// 同回合 assistant 已终态（completed / error / cancelled）即视为精确完成证据。
+/// L3 超时/对账不得再把 user entry 降级成 `delivery_unknown`。
+pub fn turn_has_terminal_assistant<T: ReadTxn>(txn: &T, turn_id: &str) -> bool {
+    let Some(root) = root_map_read(txn) else {
+        return false;
+    };
+    let Some(entries) = root
+        .get(txn, "entries")
+        .and_then(|value| value.cast::<yrs::MapRef>().ok())
+    else {
+        return false;
+    };
+    entries.iter(txn).any(|(_, value)| {
+        let Ok(entry) = value.cast::<yrs::MapRef>() else {
+            return false;
+        };
+        let is_assistant = entry
+            .get(txn, "role")
+            .and_then(|value| value.cast::<String>().ok())
+            .as_deref()
+            == Some("assistant");
+        let same_turn = entry
+            .get(txn, "turn_id")
+            .and_then(|value| value.cast::<String>().ok())
+            .as_deref()
+            == Some(turn_id);
+        let terminal = entry
+            .get(txn, "status")
+            .and_then(|value| value.cast::<String>().ok())
+            .as_deref()
+            .is_some_and(|status| matches!(status, "completed" | "error" | "cancelled"));
+        is_assistant && same_turn && terminal
+    })
+}
+
 /// 查询 turn 的 user entry：索引 map 存在 → 索引查询（O(1)，miss 即不存在）；
 /// 索引 map 缺失（异常 doc 兜底）→ 全量扫描（原行为）。
 ///
