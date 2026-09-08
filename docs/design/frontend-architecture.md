@@ -9,6 +9,7 @@ date: 2026-08-30
 > 关联 ADR：[0004-web-frontend-layered-architecture](../adr/0004-web-frontend-layered-architecture.md)
 > **Agent 入口**：根目录 [`AGENTS.md`](../../AGENTS.md)（检查清单）；[`CLAUDE.md`](../../CLAUDE.md) §Web 前端分层规范。
 > **UI 规范**：[`ui-specification.md`](ui-specification.md)（色彩、组件、微文案）。
+> **Phase 6+ 执行（拆 `panel/lib`、CSS/无头约束、业务等价）**：[`frontend-rewrite-program.md`](frontend-rewrite-program.md)。
 
 ## 1. 问题
 
@@ -223,6 +224,9 @@ web/src/
 
 ### 后续（Phase 6+）
 
-- [ ] `panel/lib` 剩余模块按 features 域继续迁移（connection、message、runtime、mcp、auth…）。
-- [ ] `entities/chat` 去除对 `panel/lib/rfc3339` 的临时依赖，迁入 `shared/lib`。
+Phase 1–5 只完成了目录脚手架与部分垂直切片；`panel/lib` 仍是领域实现所在。**停止无限期 shim / 绞杀。** 执行策略、CSS/Tailwind 硬约束、社区无头优先、以及「只迁不改业务逻辑」见 [`frontend-rewrite-program.md`](frontend-rewrite-program.md)。
+
+- [ ] 按重写纲领包 A–H 物理迁移并删除 `web/src/panel`（先 characterization 测试，禁止夹带行为变更）。
+- [ ] `entities/*` 去除对 `panel/lib` 的依赖，只认 `@/shared`。
 - [ ] ESLint import 边界规则强制执行五层依赖表。
+- [ ] `css-contracts` 覆盖任意值、未声明 spacing、`shared/ui` 与禁止新增 `extra.css`。

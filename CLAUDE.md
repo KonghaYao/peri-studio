@@ -89,7 +89,7 @@ cargo run -q -p peri-studio -- status --json | --ready
 
 ## Web 前端分层规范（必读）
 
-**权威文档**：`docs/design/frontend-architecture.md`（目录、依赖、迁移）；`docs/design/ui-specification.md`（**视觉、token、组件、微文案**）；`docs/design/ui-implementation-plan.md`（**sandbox → web 映射与落地阶段**）；`AGENTS.md`（Agent 检查清单与工作流）。ADR：`docs/adr/0004-web-frontend-layered-architecture.md`。
+**权威文档**：`docs/design/frontend-architecture.md`（目录、依赖、迁移）；`docs/design/frontend-rewrite-program.md`（**Phase 6+：拆 `panel/`、只 Tailwind、社区无头、业务逻辑只迁不改**）；`docs/design/ui-specification.md`（**视觉、token、组件、微文案**）；`docs/design/ui-implementation-plan.md`（**sandbox → web 映射与落地阶段**）；`AGENTS.md`（Agent 检查清单与工作流）。ADR：`docs/adr/0004-web-frontend-layered-architecture.md`。
 
 | 层 | 路径 | 职责 |
 |----|------|------|

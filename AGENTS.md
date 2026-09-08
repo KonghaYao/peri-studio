@@ -11,6 +11,7 @@
 | 全栈架构、server 契约、Yjs 投影 | `docs/architecture.md` |
 | 术语（session / chat / project session 等） | `docs/terminology.md` |
 | **Web 目录、分层、依赖方向、新代码放哪** | **`docs/design/frontend-architecture.md`（权威）** |
+| **Web Phase 6+ 重写（拆 panel、CSS/无头、业务等价）** | **`docs/design/frontend-rewrite-program.md`** |
 | **Web 视觉、token、组件、微文案、a11y** | **`docs/design/ui-specification.md`（权威）** |
 | **设计稿 → 生产落地计划与映射表** | **`docs/design/ui-implementation-plan.md`** |
 | **Git Graph 数据面（machine → server → web）** | **`docs/design/git-graph-protocol.md`（权威）** |

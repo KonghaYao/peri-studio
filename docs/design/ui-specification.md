@@ -7,7 +7,7 @@ date: 2026-09-05
 
 > **本文是产品视觉与交互组件的单一事实源。** 实现以代码为准：`web/src/styles/tokens.css`、`web/src/shared/ui/`、`web/tests/css-contracts.test.mjs`。
 >
-> 关联：[frontend-architecture.md](frontend-architecture.md)（目录分层）、[audit-chat-uiux-2026-08.md](../audit-chat-uiux-2026-08.md)（UX 审计与修复记录）、ADR [0004](../adr/0004-web-frontend-layered-architecture.md)。
+> 关联：[frontend-architecture.md](frontend-architecture.md)（目录分层）、[frontend-rewrite-program.md](frontend-rewrite-program.md)（Phase 6+：只 Tailwind、禁任意值、社区无头、业务等价）、[audit-chat-uiux-2026-08.md](../audit-chat-uiux-2026-08.md)（UX 审计与修复记录）、ADR [0004](../adr/0004-web-frontend-layered-architecture.md)。
 
 ---
 

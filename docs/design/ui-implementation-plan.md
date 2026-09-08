@@ -7,7 +7,8 @@ date: 2026-08-30
 
 > 设计权威：`ui-sandbox/`（Tokens / Base UI / Blocks / Layers）  
 > 落地目标：`web/src/shared/ui` + `web/src/widgets/*`  
-> 规范：`docs/design/ui-specification.md`、`docs/design/frontend-architecture.md`
+> 规范：`docs/design/ui-specification.md`、`docs/design/frontend-architecture.md`  
+> Phase 6+ 执行顺序（搬家与 primitive 先于像素对齐）：[`frontend-rewrite-program.md`](frontend-rewrite-program.md)
 
 ## 阶段总览
 
