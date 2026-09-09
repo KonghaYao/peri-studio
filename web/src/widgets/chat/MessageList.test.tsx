@@ -247,7 +247,10 @@ describe('MessageList entry updates', () => {
     expect(details).not.toHaveAttribute('open');
     expect(reasoning).not.toBeVisible();
     expect(reasoning).toHaveClass('pl-32');
-    expect(screen.getAllByTestId('chat-activity-rail')).toHaveLength(2);
+    const rails = screen.getAllByTestId('chat-activity-rail');
+    expect(rails).toHaveLength(2);
+    expect(rails[0]).toHaveClass('-bottom-16');
+    expect(rails[1]).toHaveClass('-top-10');
   });
 
   it('keeps the same message, reasoning, and tool DOM nodes open while its server projection updates', () => {

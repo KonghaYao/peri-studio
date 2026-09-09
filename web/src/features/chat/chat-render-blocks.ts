@@ -177,6 +177,41 @@ export function activityBoundaryAt(entries: readonly ChatEntry[], entryIndex: nu
   };
 }
 
+function sameAssistantTurn(current: ChatEntry | undefined, neighbor: ChatEntry | undefined): boolean {
+  return Boolean(
+    current?.role === 'assistant'
+    && neighbor?.role === 'assistant'
+    && current.turnId
+    && neighbor.turnId === current.turnId,
+  );
+}
+
+function entryActivityEdges(entries: readonly ChatEntry[], entryIndex: number) {
+  const entry = entries[entryIndex];
+  if (!entry) return { first: false, last: false };
+  const groups = buildConversationRowGroups(entryBlocksForActivity(entry), activityBoundaryAt(entries, entryIndex));
+  return {
+    first: groups[0]?.kind === 'activity',
+    last: groups.at(-1)?.kind === 'activity',
+  };
+}
+
+/** 同一 turn 的相邻 assistant entry 各自渲染轨道时，标记需要跨消息间距续接的边缘。 */
+export function activityContinuationAt(
+  entries: readonly ChatEntry[],
+  entryIndex: number,
+): { before: boolean; after: boolean } {
+  const current = entries[entryIndex];
+  const currentEdges = entryActivityEdges(entries, entryIndex);
+  const previousContinues = sameAssistantTurn(current, entries[entryIndex - 1])
+    && currentEdges.first
+    && entryActivityEdges(entries, entryIndex - 1).last;
+  const nextContinues = sameAssistantTurn(current, entries[entryIndex + 1])
+    && currentEdges.last
+    && entryActivityEdges(entries, entryIndex + 1).first;
+  return { before: previousContinues, after: nextContinues };
+}
+
 /** Reasoning 与同回合邻接 tool 同属紧凑活动轨；带正文的 reasoning 若不与 tool 相邻则保持正文节奏。 */
 export function blockActivityDensity(
   blocks: readonly ChatBlock[],

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ChatBlock, ChatEntry } from '@/entities/chat/chat-view';
-import { activityBoundaryAt, blockActivityDensity, buildAssistantLayoutUnits, buildConversationRowGroups, buildConversationSegments, shouldRenderActivityReasoningBlock } from './chat-render-blocks';
+import { activityBoundaryAt, activityContinuationAt, blockActivityDensity, buildAssistantLayoutUnits, buildConversationRowGroups, buildConversationSegments, shouldRenderActivityReasoningBlock } from './chat-render-blocks';
 
 function reasoning(id: string, text: string): Extract<ChatBlock, { kind: 'reasoning' }> {
   return { kind: 'reasoning', id, reasoning: { id, text, visibility: 'visible' } };
@@ -73,6 +73,22 @@ describe('chat-render-blocks', () => {
 
     const user = { ...chatEntry('user-entry', 'turn-1', []), role: 'user' };
     expect(activityBoundaryAt([differentTurn[0], user, chatEntry('tool-entry', 'turn-1', [tool('t1')])], 0).nextTool).toBe(false);
+  });
+
+  it('为同 turn 相邻 activity entry 标记跨消息间距续线', () => {
+    const entries = [
+      chatEntry('tool-entry', 'turn-1', [tool('t1')]),
+      chatEntry('reasoning-entry', 'turn-1', [reasoning('r1', 'inspect')]),
+      chatEntry('next-tool-entry', 'turn-1', [tool('t2')]),
+    ];
+
+    expect(activityContinuationAt(entries, 0)).toEqual({ before: false, after: true });
+    expect(activityContinuationAt(entries, 1)).toEqual({ before: true, after: true });
+    expect(activityContinuationAt(entries, 2)).toEqual({ before: true, after: false });
+    expect(activityContinuationAt([
+      entries[0],
+      chatEntry('other-turn', 'turn-2', [tool('t3')]),
+    ], 0).after).toBe(false);
   });
 
   it('跨 entry 的空 reasoning 仍使用 activity 空正文规则', () => {

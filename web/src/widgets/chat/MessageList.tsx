@@ -14,7 +14,7 @@ import { nextFollowState } from '@/features/message/message-follow';
 import { messageTime } from '@/shared/lib/message-time';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { Button, LoadingState, Skeleton } from '@/shared/ui';
-import { activityBoundaryAt } from '@/features/chat/chat-render-blocks';
+import { activityBoundaryAt, activityContinuationAt } from '@/features/chat/chat-render-blocks';
 import { ConversationMessage } from './ConversationMessage';
 import { PlanSystemEntryRow } from './PlanSystemEntryRow';
 import { isPlanSystemChatEntry } from '@/entities/chat/plan-system-entry';
@@ -362,6 +362,7 @@ export function MessageList(props: { footerHeight?: number }) {
                     <ConversationMessage
                       entry={entry}
                       activityBoundary={() => activityBoundaryAt(chatEntries(), globalIndex())}
+                      activityContinuation={() => activityContinuationAt(chatEntries(), globalIndex())}
                     />
                   }>
                     <PlanSystemEntryRow entry={entry()} />

@@ -9,6 +9,7 @@ import {
   type AssistantLayoutUnit,
 } from '@/features/chat/chat-render-blocks';
 import { messageTime } from '@/shared/lib/message-time';
+import { cn } from '@/shared/lib/cn';
 import { splitSystemReminders } from '@/shared/lib/system-reminder';
 import { CopyButton, IconButton, InlineNotice, Popover, PopoverContent, PopoverTrigger } from '@/shared/ui';
 import { MessageSquareQuote, MoreHorizontal } from 'lucide-solid';
@@ -229,6 +230,7 @@ function AssistantLayoutUnitView(props: {
 export function ConversationMessage(props: {
   entry: ChatEntrySource;
   activityBoundary?: Accessor<ActivityBoundary>;
+  activityContinuation?: Accessor<{ before: boolean; after: boolean }>;
 }) {
   let articleRef: HTMLElement | undefined;
   const [selectionAction, setSelectionAction] = createSignal<{ text: string; left: number; top: number } | null>(null);
@@ -247,6 +249,7 @@ export function ConversationMessage(props: {
   const blockIds = createMemo(() => blocks().map((block) => block.id));
   const blocksById = createMemo(() => new Map(blocks().map((block) => [block.id, block])));
   const activityBoundary = () => props.activityBoundary?.() ?? { previousTool: false, nextTool: false };
+  const activityContinuation = () => props.activityContinuation?.() ?? { before: false, after: false };
   const layoutUnits = createMemo(() => buildAssistantLayoutUnits(blocks(), activityBoundary()));
   const layoutUnitsById = createMemo(() => new Map(layoutUnits().map((unit) => [unit.id, unit])));
   const rowGroups = createMemo(() => buildConversationRowGroups(blocks(), activityBoundary()));
@@ -312,9 +315,11 @@ export function ConversationMessage(props: {
     <Show when={userHasVisibleSurface()}>
       <Show when={role() === 'user'} fallback={
         <div class={`conversation-message__surface flex max-w-(--chat-content-max) min-w-0 flex-col gap-8 ${role() === 'system' ? 'max-w-(--chat-system-max) rounded-full bg-surface-muted px-12 py-4 text-12 text-content-secondary' : 'w-full'}`} data-testid="conversation-message-surface">
-          <For each={rowGroupIds()}>{(groupIdItem) => {
+          <For each={rowGroupIds()}>{(groupIdItem, groupIndex) => {
             const rowGroupId = () => readForItem(groupIdItem);
             const rowGroup = () => rowGroupsById().get(rowGroupId())!;
+            const continuesBefore = () => groupIndex() === 0 && activityContinuation().before;
+            const continuesAfter = () => groupIndex() === rowGroupIds().length - 1 && activityContinuation().after;
             const unitViewProps = {
               unitsById: layoutUnitsById,
               blocks,
@@ -337,7 +342,11 @@ export function ConversationMessage(props: {
               >
                 <div class="chat-activity-chain relative isolate my-2 mb-8 grid w-full min-w-0 gap-8" data-testid="chat-activity-chain">
                   <span
-                    class="absolute inset-y-0 left-(--chat-activity-rail-left) z-0 w-px bg-border-strong"
+                    class={cn(
+                      'absolute left-(--chat-activity-rail-left) z-0 w-px bg-border-strong',
+                      continuesBefore() ? '-top-10' : 'top-0',
+                      continuesAfter() ? '-bottom-16' : 'bottom-0',
+                    )}
                     data-testid="chat-activity-rail"
                     aria-hidden="true"
                   />
