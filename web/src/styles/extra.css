@@ -331,8 +331,33 @@ body.workbench-panel-resizing * {
 
 /* ── Composer：与正文 text-13 行高对齐（textarea 默认 leading 会偏大） ── */
 
+.composer-editor {
+  display: grid;
+  min-width: 0;
+}
+
+.composer-editor__hint,
+.composer-input {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.composer-editor__hint {
+  pointer-events: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.composer-editor__hint--prediction {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .composer-input {
   line-height: var(--leading-normal);
+  color: var(--content-primary);
+  caret-color: var(--content-primary);
 }
 
 /* ── Composer skills 窄屏降级为「/」 ─────────────────────────────────── */

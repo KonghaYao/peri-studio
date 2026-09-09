@@ -25,12 +25,37 @@ function expandControl() {
 }
 
 describe('ToolActivityRow', () => {
+  it('uses a bordered card in default variant and a compact row in activity variant', () => {
+    const { unmount } = render(() => <ToolCallCard toolCall={base} />);
+    const defaultRow = document.querySelector('[data-testid="tool-activity-row"]')!;
+    expect(defaultRow).toHaveClass('border', 'rounded-lg');
+    expect(defaultRow.querySelector('.tool-activity-row__card')).toBeNull();
+    unmount();
+
+    render(() => <ToolCallCard toolCall={base} variant="activity" />);
+    const activityRow = document.querySelector('[data-testid="tool-activity-row"]')!;
+    expect(activityRow).toHaveClass('tool-activity-row--activity');
+    expect(activityRow).not.toHaveClass('border');
+    expect(activityRow.querySelector('.tool-call-row-icon')).toHaveClass('relative', 'z-1', 'bg-surface-canvas');
+    expect(activityRow.querySelector('.tool-call-row-compact')).not.toHaveClass('-ml-32');
+  });
+
+  it('renders the Fenix-style tool icon selected by semantic tool kind', () => {
+    render(() => <ToolCallCard toolCall={{ ...base, name: 'Grep', kind: 'other', arguments: { pattern: 'ToolCall', path: 'web/src' } }} />);
+    const icon = document.querySelector('[data-tool-kind="grep"]');
+    expect(icon).toBeInTheDocument();
+    expect(icon?.querySelector('.lucide-search')).toBeInTheDocument();
+    expect(summary()).toHaveTextContent('Searched "ToolCall"');
+    expect(summary()).toHaveTextContent('in src');
+  });
+
   it('shows structured execution facts and honest observed duration', () => {
     render(() => <ToolCallCard toolCall={base} />);
-    expect(screen.getByText('shell')).toBeInTheDocument();
-    expect(screen.getByText('Done')).toBeInTheDocument();
-    expect(screen.getByText('1.3 s')).toBeInTheDocument();
-    expect(screen.getAllByText('pwd')).toHaveLength(1);
+    expect(screen.getByText(/Ran \$ pwd/)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Done' })).toBeInTheDocument();
+    expect(screen.queryByText('Done')).not.toBeInTheDocument();
+    expect(screen.getByText('1.3s')).toBeInTheDocument();
+    expect(document.querySelector('.tool-call-row-title')).toHaveTextContent(/pwd/);
     expect(document.querySelector('[data-testid="tool-activity-row-body"]')).toBeNull();
     fireEvent.click(expandControl());
     expect(document.querySelector('[data-testid="tool-activity-row-body"]')).toBeInTheDocument();
@@ -41,7 +66,8 @@ describe('ToolActivityRow', () => {
 
   it('keeps public errors compact until requested and never renders payload markup as HTML', () => {
     render(() => <ToolCallCard toolCall={{ ...base, status: 'error', result: null, publicError: { code: 'DENIED', message: '<img src=x onerror=alert(1)>' } }} />);
-    expect(screen.getByText('Failed')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Failed' })).toBeInTheDocument();
+    expect(screen.queryByText('Failed')).not.toBeInTheDocument();
     expect(screen.getByText(/DENIED:/)).toBeInTheDocument();
     expect(document.querySelector('[data-testid="tool-activity-row-body"]')).toBeNull();
     fireEvent.click(expandControl());
@@ -85,33 +111,48 @@ describe('ToolActivityRow', () => {
 
   it('renders the server-authoritative permission wait without claiming an empty result', () => {
     render(() => <ToolCallCard toolCall={{ ...base, status: 'awaitingPermission', result: null, resultOmitted: false, completedAt: null }} />);
-    expect(screen.getByText('Approval')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Approval' })).toBeInTheDocument();
+    expect(screen.queryByText('Approval')).not.toBeInTheDocument();
     expect(screen.queryByText('The tool returned no displayable output.')).not.toBeInTheDocument();
+  });
+
+  it('uses status icons for every lifecycle state', () => {
+    const cases = [
+      { status: 'pending', label: 'Queued' },
+      { status: 'running', label: 'Running' },
+      { status: 'cancelled', label: 'Cancelled' },
+    ];
+
+    for (const [index, item] of cases.entries()) {
+      const { unmount } = render(() => <ToolCallCard toolCall={{ ...base, status: item.status, completedAt: index === 2 ? base.completedAt : null }} />);
+      expect(screen.getByRole('img', { name: item.label })).toBeInTheDocument();
+      expect(screen.queryByText(item.label)).not.toBeInTheDocument();
+      unmount();
+    }
   });
 
   it('uses the production token geometry and highlights only active work', () => {
     const { unmount } = render(() => <ToolCallCard toolCall={{ ...base, status: 'running', completedAt: null }} />);
-    const active = summary();
-    expect(active).toHaveClass('min-h-(--pattern-row-height)', 'bg-sidebar-selected');
-    expect(active).toHaveClass('flex');
+    const active = summary().closest('.tool-call-row-compact')!;
+    expect(active).toHaveClass('is-running', 'bg-sidebar-selected');
     unmount();
 
     render(() => <ToolCallCard toolCall={base} />);
-    expect(summary()).not.toHaveClass('bg-sidebar-selected');
+    expect(summary().closest('.tool-call-row-compact')).not.toHaveClass('is-running');
   });
 
-  it('keeps the compact input immediately after the tool title', () => {
+  it('narrates shell commands in the Fenix-style title row', () => {
     render(() => <ToolCallCard toolCall={{ ...base, name: 'Bash', arguments: { command: 'pwd && git status' } }} />);
     const row = document.querySelector('[data-testid="tool-activity-row-summary"]')!;
-    expect(row).toHaveTextContent('Bash');
-    expect(row).toHaveTextContent('pwd && git status');
+    expect(row).toHaveTextContent('Ran $ pwd && git status');
+    expect(screen.getByRole('img', { name: 'Done' })).toBeInTheDocument();
   });
 
-  it('keeps long tool names from displacing the compact input and status', () => {
+  it('keeps long narrations truncatable without displacing status', () => {
     render(() => <ToolCallCard toolCall={{ ...base, name: 'An unexpectedly long namespaced tool implementation', arguments: { command: 'pwd' } }} />);
-    const row = document.querySelector('[data-testid="tool-activity-row-summary"] .tool-activity-row__title')!;
-    expect(row).toHaveClass('truncate');
-    expect(screen.getByText('Done')).toBeInTheDocument();
+    const row = document.querySelector('.tool-call-row-title')!;
+    expect(row).toHaveClass('tool-call-row-title');
+    expect(screen.getByRole('img', { name: 'Done' })).toBeInTheDocument();
   });
 
   it('opens workspace preview when clicking a file path link', () => {
@@ -133,7 +174,7 @@ describe('ToolActivityRow', () => {
       arguments: { limit: 2_000, offset: 0, file_path: '/workspace/src/main.rs' },
     }} />);
 
-    expect(summary()).toHaveTextContent('/workspace/src/main.rs');
+    expect(summary()).toHaveTextContent('main.rs');
     expect(summary()).not.toHaveTextContent('2000');
   });
 

@@ -4,6 +4,8 @@ import {
   buildAssistantLayoutUnits,
   buildConversationRowGroups,
   layoutUnitActivityDensity,
+  shouldRenderActivityReasoningBlock,
+  type ActivityBoundary,
   type AssistantLayoutUnit,
 } from '@/features/chat/chat-render-blocks';
 import { messageTime } from '@/shared/lib/message-time';
@@ -21,6 +23,11 @@ import { isPrimaryLiveMcpApp, maybeOpenCompletedMcpTool } from '@/features/mcp/m
 import { requestComposerQuote } from '@/features/composer/composer-quote';
 
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
+
+/** Solid `<For>` 在本项目测试运行时传入的是字符串而非 accessor，统一解包。 */
+function readForItem<T>(item: T | (() => T)): T {
+  return typeof item === 'function' ? (item as () => T)() : item;
+}
 
 function McpToolBlock(props: {
   toolCall: Accessor<ToolCallInfo>;
@@ -54,6 +61,7 @@ function MessageBlock(props: {
   toolCallsInBlocks: () => ToolCallInfo[];
   blockIds: () => string[];
   blocksById: () => Map<string, ChatBlock>;
+  activityBoundary: () => ActivityBoundary;
   reasoningVariant?: 'default' | 'activity';
   toolVariant?: 'default' | 'activity';
 }) {
@@ -104,7 +112,24 @@ function MessageBlock(props: {
     }</Show>
   }>{(() => {
     const reasoning = () => (props.block() as Extract<ChatBlock, { kind: 'reasoning' }>).reasoning;
-    return <Reasoning variant={props.reasoningVariant} streaming={props.streaming()}>{reasoning().text}</Reasoning>;
+    const reasoningStreaming = () => {
+      if (!props.streaming()) return false;
+      const text = reasoning().text;
+      if (props.reasoningVariant === 'activity' && !text.trim()) return true;
+      return props.blockIndex() === props.blockIds().length - 1;
+    };
+    const orderedBlocks = () => props.blockIds().map((id) => props.blocksById().get(id)!);
+    const showReasoning = () => shouldRenderActivityReasoningBlock(
+      orderedBlocks(),
+      props.blockIndex(),
+      props.streaming(),
+      props.activityBoundary(),
+    );
+    return (
+      <Show when={showReasoning()}>
+        <Reasoning variant={props.reasoningVariant} streaming={reasoningStreaming()}>{reasoning().text}</Reasoning>
+      </Show>
+    );
   })()}</Show>;
 }
 
@@ -126,7 +151,7 @@ function SystemReminderBadge(props: { reminders: string[] }) {
 }
 
 function AssistantLayoutUnitView(props: {
-  unitId: string;
+  unitId: () => string;
   unitsById: () => Map<string, AssistantLayoutUnit>;
   blocks: () => ChatBlock[];
   blocksById: () => Map<string, ChatBlock>;
@@ -135,20 +160,22 @@ function AssistantLayoutUnitView(props: {
   streaming: () => boolean;
   entry: () => ChatEntry;
   toolCallsInBlocks: () => ToolCallInfo[];
+  activityBoundary: () => ActivityBoundary;
 }) {
-  const unit = () => props.unitsById().get(props.unitId)!;
+  const unit = () => props.unitsById().get(props.unitId())!;
   const activityVariant = () => {
     const current = unit();
-    if (layoutUnitActivityDensity(props.blocks(), current) !== 'activity') return 'default' as const;
+    if (layoutUnitActivityDensity(props.blocks(), current, props.activityBoundary()) !== 'activity') return 'default' as const;
     return 'activity' as const;
   };
+  const blockUnit = () => unit() as Extract<AssistantLayoutUnit, { kind: 'block' }>;
+  const block = () => props.blocksById().get(blockUnit().blockId)!;
+  const blockIndex = () => Math.max(0, props.blockIds().indexOf(blockUnit().blockId));
 
   return (
-    <Show when={unit().kind === 'tool_group'} fallback={(() => {
-      const blockUnit = () => unit() as Extract<AssistantLayoutUnit, { kind: 'block' }>;
-      const block = () => props.blocksById().get(blockUnit().blockId)!;
-      const blockIndex = () => Math.max(0, props.blockIds().indexOf(blockUnit().blockId));
-      return (
+    <Show
+      when={unit().kind === 'tool_group'}
+      fallback={(
         <div class="conversation-message__block">
           <MessageBlock
             block={block}
@@ -159,25 +186,27 @@ function AssistantLayoutUnitView(props: {
             toolCallsInBlocks={props.toolCallsInBlocks}
             blockIds={props.blockIds}
             blocksById={props.blocksById}
+            activityBoundary={props.activityBoundary}
             reasoningVariant={activityVariant()}
             toolVariant={activityVariant()}
           />
         </div>
-      );
-    })()}>
+      )}
+    >
       <ToolActivityGroup variant="activity">
-        <For each={(unit() as Extract<AssistantLayoutUnit, { kind: 'tool_group' }>).blockIds}>{(toolBlockId) => {
-          const block = () => props.blocksById().get(toolBlockId)! as Extract<ChatBlock, { kind: 'tool_call' }>;
-          const blockIndex = () => Math.max(0, props.blockIds().indexOf(toolBlockId));
-          const toolCall = () => block().toolCall;
+        <For each={(unit() as Extract<AssistantLayoutUnit, { kind: 'tool_group' }>).blockIds}>{(toolBlockIdItem) => {
+          const toolId = () => readForItem(toolBlockIdItem);
+          const toolBlock = () => props.blocksById().get(toolId())! as Extract<ChatBlock, { kind: 'tool_call' }>;
+          const toolIndex = () => Math.max(0, props.blockIds().indexOf(toolId()));
+          const toolCall = () => toolBlock().toolCall;
           const duplicateToolBlock = () => {
-            const toolId = toolCall().toolCallId || '';
-            if (!toolId) return false;
+            const duplicateId = toolCall().toolCallId || '';
+            if (!duplicateId) return false;
             const ids = props.blockIds();
             const byId = props.blocksById();
-            for (let index = 0; index < blockIndex(); index += 1) {
+            for (let index = 0; index < toolIndex(); index += 1) {
               const previous = byId.get(ids[index]);
-              if (previous?.kind === 'tool_call' && (previous.toolCall.toolCallId || '') === toolId) return true;
+              if (previous?.kind === 'tool_call' && (previous.toolCall.toolCallId || '') === duplicateId) return true;
             }
             return false;
           };
@@ -197,7 +226,10 @@ function AssistantLayoutUnitView(props: {
 }
 
 /** Owns the visual and semantic hierarchy of one server-projected entry. */
-export function ConversationMessage(props: { entry: ChatEntrySource }) {
+export function ConversationMessage(props: {
+  entry: ChatEntrySource;
+  activityBoundary?: Accessor<ActivityBoundary>;
+}) {
   let articleRef: HTMLElement | undefined;
   const [selectionAction, setSelectionAction] = createSignal<{ text: string; left: number; top: number } | null>(null);
   const [actionsOpen, setActionsOpen] = createSignal(false);
@@ -214,9 +246,10 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
   const role = createMemo(() => entry().role === 'user' ? 'user' : entry().role === 'system' ? 'system' : 'assistant');
   const blockIds = createMemo(() => blocks().map((block) => block.id));
   const blocksById = createMemo(() => new Map(blocks().map((block) => [block.id, block])));
-  const layoutUnits = createMemo(() => buildAssistantLayoutUnits(blocks()));
+  const activityBoundary = () => props.activityBoundary?.() ?? { previousTool: false, nextTool: false };
+  const layoutUnits = createMemo(() => buildAssistantLayoutUnits(blocks(), activityBoundary()));
   const layoutUnitsById = createMemo(() => new Map(layoutUnits().map((unit) => [unit.id, unit])));
-  const rowGroups = createMemo(() => buildConversationRowGroups(blocks()));
+  const rowGroups = createMemo(() => buildConversationRowGroups(blocks(), activityBoundary()));
   const rowGroupIds = createMemo(() => rowGroups().map((group) => group.id));
   const rowGroupsById = createMemo(() => new Map(rowGroups().map((group) => [group.id, group])));
   const systemReminders = createMemo(() => blocks().flatMap((block) => block.kind === 'text'
@@ -279,8 +312,9 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
     <Show when={userHasVisibleSurface()}>
       <Show when={role() === 'user'} fallback={
         <div class={`conversation-message__surface flex max-w-(--chat-content-max) min-w-0 flex-col gap-8 ${role() === 'system' ? 'max-w-(--chat-system-max) rounded-full bg-surface-muted px-12 py-4 text-12 text-content-secondary' : 'w-full'}`} data-testid="conversation-message-surface">
-          <For each={rowGroupIds()}>{(groupId) => {
-            const group = () => rowGroupsById().get(groupId)!;
+          <For each={rowGroupIds()}>{(groupIdItem) => {
+            const rowGroupId = () => readForItem(groupIdItem);
+            const rowGroup = () => rowGroupsById().get(rowGroupId())!;
             const unitViewProps = {
               unitsById: layoutUnitsById,
               blocks,
@@ -290,16 +324,25 @@ export function ConversationMessage(props: { entry: ChatEntrySource }) {
               streaming,
               entry,
               toolCallsInBlocks,
+              activityBoundary,
             };
             return (
-              <Show when={group().kind === 'activity'} fallback={
-                <For each={group().unitIds}>{(unitId) =>
-                  <AssistantLayoutUnitView unitId={unitId} {...unitViewProps} />
-                }</For>
-              }>
-                <div class="chat-activity-chain" data-testid="chat-activity-chain">
-                  <For each={group().unitIds}>{(unitId) =>
-                    <AssistantLayoutUnitView unitId={unitId} {...unitViewProps} />
+              <Show
+                when={rowGroup().kind === 'activity'}
+                fallback={
+                  <For each={rowGroup().unitIds}>{(unitIdItem) =>
+                    <AssistantLayoutUnitView unitId={() => readForItem(unitIdItem)} {...unitViewProps} />
+                  }</For>
+                }
+              >
+                <div class="chat-activity-chain relative isolate my-2 mb-8 grid w-full min-w-0 gap-8" data-testid="chat-activity-chain">
+                  <span
+                    class="absolute inset-y-0 left-(--chat-activity-rail-left) z-0 w-px bg-border-strong"
+                    data-testid="chat-activity-rail"
+                    aria-hidden="true"
+                  />
+                  <For each={rowGroup().unitIds}>{(unitIdItem) =>
+                    <AssistantLayoutUnitView unitId={() => readForItem(unitIdItem)} {...unitViewProps} />
                   }</For>
                 </div>
               </Show>

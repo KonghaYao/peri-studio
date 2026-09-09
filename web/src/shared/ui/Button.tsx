@@ -94,6 +94,8 @@ const iconButtonVariants = cva(
           'border border-transparent bg-transparent text-content-secondary hover:bg-interaction-hover hover:text-content-primary',
         danger:
           'border border-danger-border bg-surface text-danger hover:border-danger hover:text-danger active:border-danger',
+        stop:
+          'border-0 bg-btn-primary text-surface hover:bg-btn-primary-hover disabled:bg-border-subtle disabled:text-text-faint',
       },
       size: {
         sm: 'size-24',
@@ -107,7 +109,8 @@ const iconButtonVariants = cva(
 
 type IconButtonVariantProps = VariantProps<typeof iconButtonVariants>;
 
-function resolveIconButtonVariant(variant: ButtonVariantProps['variant']) {
+function resolveIconButtonVariant(variant: IconButtonVariantProps['variant']) {
+  if (variant === 'stop') return 'stop';
   const resolved = resolveButtonVariant(variant);
   return resolved ?? 'ghost';
 }
@@ -121,7 +124,8 @@ function resolveIconButtonSize(size: ButtonVariantProps['size']): IconButtonVari
 
 /* 图标按钮：圆角矩形（禁止圆形），默认 ghost；label 即 a11y 名称。 */
 export function IconButton(
-  props: Props & {
+  props: Omit<Props, 'variant'> & {
+    variant?: IconButtonVariantProps['variant'];
     label: string;
     title?: string;
     showTooltip?: boolean;

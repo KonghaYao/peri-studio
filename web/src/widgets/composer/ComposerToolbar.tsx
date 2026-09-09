@@ -108,12 +108,13 @@ export function ComposerToolbar(props: {
             <IconButton
               data-testid="composer-action"
               tooltipPlacement="end"
+              variant="stop"
               type="button"
               onClick={s().requestCancel}
               disabled={s().cancelLocked() || s().readOnly()}
               busy={s().cancelControl()?.phase === 'sending' || s().cancelControl()?.phase === 'accepted'}
               label={s().cancelLabel()}
-              class={`${stopActionClass} border-0 bg-btn-primary text-surface cursor-pointer hover:bg-btn-primary-hover disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-text-faint ${s().cancelControl()?.phase === 'uncertain' ? 'bg-warning hover:bg-warning-strong' : ''}`}
+              class={`${stopActionClass}${s().cancelControl()?.phase === 'uncertain' ? ' bg-warning hover:bg-warning-strong' : ''}`}
             >
               <Show
                 when={

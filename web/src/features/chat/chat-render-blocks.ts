@@ -1,4 +1,14 @@
-import type { ChatBlock } from '@/entities/chat/chat-view';
+import type { ChatBlock, ChatEntry } from '@/entities/chat/chat-view';
+
+export type ActivityBoundary = {
+  previousTool: boolean;
+  nextTool: boolean;
+};
+
+const NO_ACTIVITY_BOUNDARY: ActivityBoundary = {
+  previousTool: false,
+  nextTool: false,
+};
 
 export type ActivitySegmentItem =
   | { kind: 'reasoning'; block: Extract<ChatBlock, { kind: 'reasoning' }> }
@@ -32,19 +42,23 @@ export type ConversationRowGroup =
 export function layoutUnitActivityDensity(
   blocks: readonly ChatBlock[],
   unit: AssistantLayoutUnit,
+  boundary: ActivityBoundary = NO_ACTIVITY_BOUNDARY,
 ): 'activity' | 'normal' {
   if (unit.kind === 'tool_group') return 'activity';
   const index = blocks.findIndex((block) => block.id === unit.blockId);
   if (index < 0) return 'normal';
-  return blockActivityDensity(blocks, index);
+  return blockActivityDensity(blocks, index, boundary);
 }
 
 /** 将 blocks 拆成稳定 id 的 layout unit（连续 activity tool 合并为一组）。 */
-export function buildAssistantLayoutUnits(blocks: readonly ChatBlock[]): AssistantLayoutUnit[] {
+export function buildAssistantLayoutUnits(
+  blocks: readonly ChatBlock[],
+  boundary: ActivityBoundary = NO_ACTIVITY_BOUNDARY,
+): AssistantLayoutUnit[] {
   const units: AssistantLayoutUnit[] = [];
   let index = 0;
   while (index < blocks.length) {
-    const density = blockActivityDensity(blocks, index);
+    const density = blockActivityDensity(blocks, index, boundary);
     if (density === 'normal') {
       const block = blocks[index];
       units.push({ kind: 'block', id: `block:${block.id}`, blockId: block.id });
@@ -54,7 +68,7 @@ export function buildAssistantLayoutUnits(blocks: readonly ChatBlock[]): Assista
 
     if (isToolBlock(blocks[index])) {
       const blockIds: string[] = [];
-      while (index < blocks.length && isToolBlock(blocks[index]) && blockActivityDensity(blocks, index) === 'activity') {
+      while (index < blocks.length && isToolBlock(blocks[index]) && blockActivityDensity(blocks, index, boundary) === 'activity') {
         blockIds.push(blocks[index].id);
         index += 1;
       }
@@ -63,6 +77,10 @@ export function buildAssistantLayoutUnits(blocks: readonly ChatBlock[]): Assista
     }
 
     const block = blocks[index];
+    if (skipConsecutiveEmptyActivityReasoning(blocks, units, index, boundary)) {
+      index += 1;
+      continue;
+    }
     units.push({ kind: 'block', id: `block:${block.id}`, blockId: block.id });
     index += 1;
   }
@@ -70,8 +88,11 @@ export function buildAssistantLayoutUnits(blocks: readonly ChatBlock[]): Assista
 }
 
 /** 将 layout unit 按 activity 轨分组，供 chat-activity-chain 容器使用。 */
-export function buildConversationRowGroups(blocks: readonly ChatBlock[]): ConversationRowGroup[] {
-  const units = buildAssistantLayoutUnits(blocks);
+export function buildConversationRowGroups(
+  blocks: readonly ChatBlock[],
+  boundary: ActivityBoundary = NO_ACTIVITY_BOUNDARY,
+): ConversationRowGroup[] {
+  const units = buildAssistantLayoutUnits(blocks, boundary);
   const groups: ConversationRowGroup[] = [];
   let activityUnitIds: string[] = [];
 
@@ -82,7 +103,7 @@ export function buildConversationRowGroups(blocks: readonly ChatBlock[]): Conver
   };
 
   for (const unit of units) {
-    if (layoutUnitActivityDensity(blocks, unit) === 'activity') {
+    if (layoutUnitActivityDensity(blocks, unit, boundary) === 'activity') {
       activityUnitIds.push(unit.id);
       continue;
     }
@@ -101,8 +122,67 @@ function isReasoningBlock(block: ChatBlock | undefined): block is Extract<ChatBl
   return block?.kind === 'reasoning';
 }
 
-/** Reasoning 与邻接 tool 同属紧凑活动轨；带正文的 reasoning 若不与 tool 相邻则保持正文节奏。 */
-export function blockActivityDensity(blocks: readonly ChatBlock[], index: number): 'activity' | 'normal' {
+function entryBlocksForActivity(entry: ChatEntry): ChatBlock[] {
+  if (entry.blocks.length > 0) return entry.blocks;
+  return [
+    ...entry.reasoning.map((reasoning, index) => ({
+      kind: 'reasoning' as const,
+      id: reasoning.id || `${entry.id}:reasoning:${index}`,
+      reasoning,
+    })),
+    ...entry.toolCalls.map((toolCall, index) => ({
+      kind: 'tool_call' as const,
+      id: toolCall.toolCallId || `${entry.id}:tool:${index}`,
+      toolCall,
+    })),
+    ...(entry.text ? [{ kind: 'text' as const, id: `${entry.id}:text`, text: entry.text }] : []),
+    ...entry.resources.map((resource, index) => ({
+      kind: 'resource' as const,
+      id: resource.resourceId || `${entry.id}:resource:${index}`,
+      resource,
+    })),
+  ];
+}
+
+function nearestCrossEntryBlockIsTool(
+  entries: readonly ChatEntry[],
+  entryIndex: number,
+  direction: -1 | 1,
+): boolean {
+  const current = entries[entryIndex];
+  if (current?.role !== 'assistant' || !current.turnId) return false;
+
+  for (let index = entryIndex + direction; index >= 0 && index < entries.length; index += direction) {
+    const entry = entries[index];
+    if (entry.role !== 'assistant' || entry.turnId !== current.turnId) return false;
+    const blocks = entryBlocksForActivity(entry);
+    for (
+      let blockIndex = direction < 0 ? blocks.length - 1 : 0;
+      blockIndex >= 0 && blockIndex < blocks.length;
+      blockIndex += direction
+    ) {
+      const block = blocks[blockIndex];
+      if (block.kind === 'reasoning') continue;
+      return block.kind === 'tool_call';
+    }
+  }
+  return false;
+}
+
+/** 同一 turn 可投影为多条 assistant entry；在 entry 边界补齐 Reasoning 与 tool 的邻接关系。 */
+export function activityBoundaryAt(entries: readonly ChatEntry[], entryIndex: number): ActivityBoundary {
+  return {
+    previousTool: nearestCrossEntryBlockIsTool(entries, entryIndex, -1),
+    nextTool: nearestCrossEntryBlockIsTool(entries, entryIndex, 1),
+  };
+}
+
+/** Reasoning 与同回合邻接 tool 同属紧凑活动轨；带正文的 reasoning 若不与 tool 相邻则保持正文节奏。 */
+export function blockActivityDensity(
+  blocks: readonly ChatBlock[],
+  index: number,
+  boundary: ActivityBoundary = NO_ACTIVITY_BOUNDARY,
+): 'activity' | 'normal' {
   const block = blocks[index];
   if (block.kind === 'tool_call') return 'activity';
   if (block.kind !== 'reasoning') return 'normal';
@@ -112,8 +192,44 @@ export function blockActivityDensity(blocks: readonly ChatBlock[], index: number
   let next = index + 1;
   while (next < blocks.length && blocks[next].kind === 'reasoning') next += 1;
 
-  const adjacentTool = isToolBlock(blocks[prev]) || isToolBlock(blocks[next]);
+  const adjacentTool = isToolBlock(blocks[prev])
+    || isToolBlock(blocks[next])
+    || (prev < 0 && boundary.previousTool)
+    || (next >= blocks.length && boundary.nextTool);
   return adjacentTool ? 'activity' : 'normal';
+}
+
+function isEmptyReasoningBlock(block: ChatBlock): boolean {
+  return block.kind === 'reasoning' && !block.reasoning.text.trim();
+}
+
+/** 活动轨内 Reasoning 始终保留渲染槽位；空正文由组件渲染为无文案轨道段。 */
+export function shouldRenderActivityReasoningBlock(
+  blocks: readonly ChatBlock[],
+  blockIndex: number,
+  entryStreaming: boolean,
+  boundary: ActivityBoundary = NO_ACTIVITY_BOUNDARY,
+): boolean {
+  const block = blocks[blockIndex];
+  if (!block || block.kind !== 'reasoning') return true;
+  if (blockActivityDensity(blocks, blockIndex, boundary) !== 'activity') return true;
+  if (!isEmptyReasoningBlock(block)) return true;
+  return entryStreaming || blockActivityDensity(blocks, blockIndex, boundary) === 'activity';
+}
+
+function skipConsecutiveEmptyActivityReasoning(
+  blocks: readonly ChatBlock[],
+  units: AssistantLayoutUnit[],
+  index: number,
+  boundary: ActivityBoundary,
+): boolean {
+  const block = blocks[index];
+  if (!isReasoningBlock(block) || !isEmptyReasoningBlock(block)) return false;
+  if (blockActivityDensity(blocks, index, boundary) !== 'activity') return false;
+  const prev = units[units.length - 1];
+  if (prev?.kind !== 'block') return false;
+  const prevBlock = blocks.find((candidate) => candidate.id === prev.blockId);
+  return Boolean(prevBlock && isReasoningBlock(prevBlock) && isEmptyReasoningBlock(prevBlock));
 }
 
 function pushActivityItem(items: ActivitySegmentItem[], item: ActivitySegmentItem) {

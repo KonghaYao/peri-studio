@@ -14,6 +14,7 @@ import { nextFollowState } from '@/features/message/message-follow';
 import { messageTime } from '@/shared/lib/message-time';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { Button, LoadingState, Skeleton } from '@/shared/ui';
+import { activityBoundaryAt } from '@/features/chat/chat-render-blocks';
 import { ConversationMessage } from './ConversationMessage';
 import { PlanSystemEntryRow } from './PlanSystemEntryRow';
 import { isPlanSystemChatEntry } from '@/entities/chat/plan-system-entry';
@@ -357,7 +358,12 @@ export function MessageList(props: { footerHeight?: number }) {
               return <TranscriptRow id={id} position={globalIndex() + 1} size={chatEntryIds().length} onMeasure={measureTranscriptRow}>
                 <Show when={visibleHistoryBoundary(replayBoundaryAt(chatEntries(), globalIndex()))}>{(kind) => <HistoryBoundary kind={kind()} />}</Show>
                 <Show when={chatEntries()[globalIndex()]}>{(entry) =>
-                  <Show when={isPlanSystemChatEntry(entry())} fallback={<ConversationMessage entry={entry} />}>
+                  <Show when={isPlanSystemChatEntry(entry())} fallback={
+                    <ConversationMessage
+                      entry={entry}
+                      activityBoundary={() => activityBoundaryAt(chatEntries(), globalIndex())}
+                    />
+                  }>
                     <PlanSystemEntryRow entry={entry()} />
                   </Show>
                 }</Show>

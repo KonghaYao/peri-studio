@@ -213,6 +213,43 @@ describe('MessageList completion announcement', () => {
 });
 
 describe('MessageList entry updates', () => {
+  it('uses one activity track when same-turn reasoning and tools arrive in separate entries', () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    const reasoningEntry = {
+      ...message('reasoning-entry', 'live', null),
+      turnId: 'turn-1',
+      text: '',
+      reasoning: [{ id: 'reasoning-1', text: 'Inspect the projection', visibility: 'visible' }],
+      blocks: [{
+        kind: 'reasoning' as const,
+        id: 'reasoning-1',
+        reasoning: { id: 'reasoning-1', text: 'Inspect the projection', visibility: 'visible' },
+      }],
+    };
+    const toolCall = {
+      toolCallId: 'tool-1', name: 'Read', kind: 'read' as const, status: 'completed',
+      arguments: { file_path: 'ConversationMessage.tsx' }, result: null,
+      resultOmitted: false, resultBytes: 0, publicError: null, startedAt: null, completedAt: null,
+    };
+    const toolEntry = {
+      ...message('tool-entry', 'live', null),
+      turnId: 'turn-1',
+      text: '',
+      blocks: [{ kind: 'tool_call' as const, id: 'tool-1', toolCall }],
+      toolCalls: [toolCall],
+    };
+    setChatEntries([reasoningEntry, toolEntry]);
+
+    render(() => <MessageList />);
+
+    const details = screen.getByText('Reasoning').closest('details')!;
+    const reasoning = screen.getByText('Inspect the projection').closest('.message-reasoning__body--activity-rail');
+    expect(details).not.toHaveAttribute('open');
+    expect(reasoning).not.toBeVisible();
+    expect(reasoning).toHaveClass('pl-32');
+    expect(screen.getAllByTestId('chat-activity-rail')).toHaveLength(2);
+  });
+
   it('keeps the same message, reasoning, and tool DOM nodes open while its server projection updates', () => {
     setRuntimeDocsState({ chat: true, control: true });
     const initial = {
@@ -227,11 +264,14 @@ describe('MessageList entry updates', () => {
     render(() => <MessageList />);
 
     const messageRow = screen.getByLabelText('Assistant message');
-    const reasoning = screen.getByText('Thinking').closest('details')!;
+    const reasoning = screen.getByTestId('message-reasoning');
+    const reasoningSummary = screen.getByText('Reasoning');
     const tool = messageRow.querySelector<HTMLButtonElement>('[data-testid="tool-activity-row-expand"]')!;
-    fireEvent.click(reasoning.querySelector('summary')!);
-    fireEvent.click(tool);
+    expect(screen.getByText('Inspecting the current state')).not.toBeVisible();
+    fireEvent.click(reasoningSummary);
     expect(reasoning).toHaveAttribute('open');
+    expect(screen.getByText('Inspecting the current state')).toBeVisible();
+    fireEvent.click(tool);
     expect(tool).toHaveAttribute('aria-expanded', 'true');
 
     setChatEntries([{
@@ -242,12 +282,14 @@ describe('MessageList entry updates', () => {
     }]);
 
     const updatedMessageRow = screen.getByLabelText('Assistant message');
-    const updatedReasoning = screen.getByText('Thinking').closest('details')!;
+    const updatedReasoning = screen.getByTestId('message-reasoning');
     const updatedTool = updatedMessageRow.querySelector<HTMLButtonElement>('[data-testid="tool-activity-row-expand"]')!;
     expect(updatedMessageRow).toBe(messageRow);
     expect(updatedReasoning).toBe(reasoning);
     expect(updatedReasoning).toHaveAttribute('open');
-    fireEvent.click(updatedTool);
+    expect(updatedTool).toBe(tool);
+    expect(screen.getByText('Updated reasoning')).toBeVisible();
+    expect(updatedTool).toHaveAttribute('aria-expanded', 'true');
     expect(updatedTool).toHaveAttribute('aria-expanded', 'true');
     expect(updatedMessageRow).toHaveTextContent('Updated answer');
     expect(updatedMessageRow).toHaveTextContent('Updated reasoning');

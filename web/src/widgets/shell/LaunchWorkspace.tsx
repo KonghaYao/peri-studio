@@ -2,7 +2,7 @@ import { createMemo, Show } from 'solid-js';
 import { Button } from '@/shared/ui';
 import { ChatEmptyWorkspace, CHAT_EMPTY_TITLE } from '@/widgets/chat/ChatEmptyWorkspace';
 import { readOnly } from '@/features/auth/auth-state';
-import { selectActiveProjects, selectArchivedProjects } from '../../features/catalog/project-catalog';
+import { selectActiveProjects, selectArchivedProjects } from '@/features/catalog/project-catalog';
 import { createProjectSession, creatingSessionProjectId, projects } from '@/store';
 import { QuickStartComposer } from '@/widgets/composer/QuickStartComposer';
 

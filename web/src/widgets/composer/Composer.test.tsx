@@ -30,6 +30,11 @@ function mountComposer(props: { layout?: 'docked' | 'centered' } = {}) {
   ));
 }
 
+function expectEnabledComposerPlaceholder(text: string) {
+  expect(screen.getByTestId('composer-placeholder-hint')).toHaveTextContent(text);
+  expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', '');
+}
+
 function resetStore() {
   resetComposerQuoteRequest();
   setSelectedCid(null);
@@ -93,7 +98,7 @@ describe('Composer', () => {
     mountComposer();
 
     expect(screen.getByTestId('composer-surface')).toHaveClass('rounded-(--composer-radius)', 'p-2.5');
-    expect(screen.getByRole('textbox')).toHaveClass('min-h-36', 'leading-normal', 'text-content-primary');
+    expect(screen.getByRole('textbox')).toHaveClass('composer-input', 'min-h-32', 'leading-normal');
     expect(screen.getByTestId('composer-runtime')).toHaveTextContent('Nova 4.1');
     expect(screen.getByTestId('composer-runtime')).toHaveClass('text-content-secondary');
     expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('w-36', 'min-h-32', 'rounded-8');
@@ -183,7 +188,7 @@ describe('Composer', () => {
     mountComposer();
     const input = screen.getByRole('textbox');
     const send = screen.getByRole('button', { name: 'Send' });
-    expect(input).toHaveAttribute('placeholder', 'Message the agent, or type / for commands');
+    expectEnabledComposerPlaceholder('Message the agent, or type / for commands');
     expect(send).toBeDisabled();
     fireEvent.input(input, { target: { value: '  inspect the state  ' } });
     expect(send).toBeEnabled();
@@ -501,7 +506,7 @@ describe('Composer', () => {
     setSelectedCid('chat-2');
     mountComposer();
 
-    expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', 'Message the agent, or type / for commands');
+    expectEnabledComposerPlaceholder('Message the agent, or type / for commands');
     expect(screen.getByRole('textbox')).toBeEnabled();
     expect(screen.queryByText('Another session is still confirming')).not.toBeInTheDocument();
     expect(screen.queryByText('private draft A')).not.toBeInTheDocument();

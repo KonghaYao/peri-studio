@@ -45,7 +45,8 @@ describe('ConversationMessage', () => {
     expect(message).toHaveTextContent('**literal user input**');
     expect(message.querySelector('strong')).toBeNull();
     expect(message.querySelector('[data-testid="conversation-message-meta"]')).toHaveClass('flex');
-    expect(message.querySelector('[class*="max-w-(--chat-bubble-max)"]')).toHaveClass('rounded-xl', 'bg-surface-overlay', 'text-content-primary');
+    expect(message.querySelector('.flex.w-full.justify-end')).not.toBeNull();
+    expect(message.querySelector('[class*="max-w-(--chat-bubble-max)"]')).toHaveClass('rounded-xl', 'bg-surface-overlay', 'text-content-primary', 'min-w-0');
     expect(screen.queryByRole('button', { name: 'Copy answer' })).not.toBeInTheDocument();
     view.unmount();
   });
@@ -223,17 +224,21 @@ describe('ConversationMessage', () => {
     })} />);
 
     const group = screen.getByLabelText('Assistant message').querySelector('[data-testid="chat-activity-chain"] [data-testid="tool-activity-group"]')!;
-    expect(group).toHaveClass('tool-activity-group--activity', 'gap-4');
+    const rail = screen.getByTestId('chat-activity-rail');
+    expect(rail).toHaveClass('left-(--chat-activity-rail-left)', 'bg-border-strong');
+    expect(group).toHaveClass('tool-activity-group--activity', 'tool-call-group-list');
     const rows = group.querySelectorAll('[data-testid="tool-activity-row"]');
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveClass('tool-activity-row--activity');
-    expect(rows[0].querySelector('.tool-activity-row__card')).toBeNull();
-    expect(rows[0].querySelector('.tool-activity-row__summary')).toHaveClass('rounded-md');
+    expect(rows[0].querySelector('.tool-call-row-icon')).toBeInTheDocument();
+    expect(rows[0].querySelector('[data-testid="tool-activity-row-summary"]')).toHaveClass('chat-tool-call-row');
   });
 
-  it('shows only empty activity thinking with the left timeline label', () => {
+  it('shows skeleton thinking gap only while the turn is still streaming', () => {
     const tool = { ...baseTool('tool-1'), name: 'Bash', arguments: { command: 'pwd' } };
     render(() => <ConversationMessage entry={entry({
+      status: 'streaming',
+      completedAt: null,
       toolCalls: [tool],
       blocks: [
         { kind: 'reasoning', id: 'reasoning-empty', reasoning: { id: 'reasoning-empty', text: '   ', visibility: 'visible' } },
@@ -242,8 +247,62 @@ describe('ConversationMessage', () => {
     })} />);
 
     const message = screen.getByLabelText('Assistant message');
-    expect(message.querySelector('.message-reasoning__activity-label')).toBeInTheDocument();
-    expect(message.querySelector('.message-reasoning--activity')).toBeNull();
+    expect(message.querySelector('[data-testid="thinking-gap"]')).toHaveClass('relative', 'z-1', 'pl-32');
+    expect(message.querySelector('[data-testid="chat-activity-rail"]')).toBeInTheDocument();
+    expect(message.querySelector('.message-reasoning__activity-label')).toBeNull();
+    expect(message.querySelector('[data-testid="chat-activity-chain"]')).not.toHaveClass('chat-activity-chain--thinking-rail');
+  });
+
+  it('hides completed empty thinking placeholders in the activity chain', () => {
+    const tool = { ...baseTool('tool-1'), name: 'Bash', arguments: { command: 'pwd' } };
+    render(() => <ConversationMessage entry={entry({
+      toolCalls: [tool],
+      blocks: [
+        { kind: 'reasoning', id: 'reasoning-empty', reasoning: { id: 'reasoning-empty', text: '', visibility: 'visible' } },
+        { kind: 'tool_call', id: 'tool-1', toolCall: tool },
+      ],
+    })} />);
+
+    expect(screen.queryByTestId('message-reasoning')).toBeNull();
+    expect(screen.getByTestId('chat-activity-rail')).toBeInTheDocument();
+    expect(screen.getByTestId('tool-activity-row')).toBeInTheDocument();
+  });
+
+  it('keeps activity reasoning collapsed by default and expands it on demand', () => {
+    const tool = { ...baseTool('tool-1'), name: 'Bash', arguments: { command: 'pwd' } };
+    render(() => <ConversationMessage entry={entry({
+      toolCalls: [tool],
+      blocks: [
+        { kind: 'reasoning', id: 'reasoning-1', reasoning: { id: 'reasoning-1', text: 'Check imports first.', visibility: 'visible' } },
+        { kind: 'tool_call', id: 'tool-1', toolCall: tool },
+      ],
+    })} />);
+
+    const details = screen.getByText('Reasoning').closest('details')!;
+    const body = screen.getByText('Check imports first.');
+    expect(details).not.toHaveAttribute('open');
+    expect(body).not.toBeVisible();
+    expect(body.closest('.message-reasoning__body--activity-rail')).toHaveClass('relative', 'z-1', 'pl-32', 'font-normal');
+    expect(screen.getByTestId('chat-activity-rail')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Reasoning'));
+    expect(details).toHaveAttribute('open');
+    expect(body).toBeVisible();
+  });
+
+  it('does not show thinking gap when the activity chain has only tools', () => {
+    const first = { ...baseTool('tool-1'), name: 'Read config' };
+    const second = { ...baseTool('tool-2'), name: 'Run checks' };
+    render(() => <ConversationMessage entry={entry({
+      toolCalls: [first, second],
+      blocks: [
+        { kind: 'tool_call', id: 'tool-1', toolCall: first },
+        { kind: 'tool_call', id: 'tool-2', toolCall: second },
+      ],
+    })} />);
+
+    const message = screen.getByLabelText('Assistant message');
+    expect(message.querySelector('[data-testid="thinking-gap"]')).toBeNull();
   });
 
   it('renders reasoning before grouped tool activity', () => {
@@ -278,7 +337,7 @@ describe('ConversationMessage', () => {
       error: { code: 'TOOL_FAILED', message: 'exit 1' },
     })} />);
 
-    expect(screen.getByText('Thinking').closest('details')).not.toHaveAttribute('open');
+    expect(screen.getByText('Reasoning').closest('details')).not.toHaveAttribute('open');
     expect(screen.getByText('checked repository state')).toBeInTheDocument();
     expect(screen.getByLabelText('main.rs')).toHaveTextContent('text/rust');
     expect(screen.getByTitle('file:///workspace/src/main.rs')).toBeInTheDocument();
@@ -556,6 +615,6 @@ describe('Markdown', () => {
     })} />);
     expect(screen.getAllByTitle('MCP App sandbox')).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Open fullscreen' })).toBeInTheDocument();
-    expect(screen.getByText('mcp__sales-dashboard__get_dashboard')).toBeInTheDocument();
+    expect(screen.getByText(/Used mcp__sales-dashboard__get_dashboard/)).toBeInTheDocument();
   });
 });

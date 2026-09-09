@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, InlineNot
 import { navigateProjectSession, openingSessionId, projectSessions, projects, selectedSessionId } from '@/store';
 import { readOnly } from '@/features/auth/auth-state';
 import { formatRelativeTime, sessionDisplayTitle, shortSessionId } from '@/features/session/recovery-state';
-import { searchProjectSessions } from '../../features/session/session-search.ts';
+import { searchProjectSessions } from '@/features/session/session-search';
 import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
 
 type SearchResult = ProjectSessionInfo & { project: { name: string } | null };

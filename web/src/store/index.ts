@@ -1,6 +1,6 @@
 // peri-studio Web 面板组合根：装配协议、投影与领域控制器。
 
-import { createSignal, createEffect, createRoot } from 'solid-js';
+import { createSignal } from 'solid-js';
 import * as H from '@/shared/protocol/client';
 import { DocStore } from '@/shared/yjs/doc-store';
 import type { ChatEntry } from '@/entities/chat/chat-view';
@@ -8,7 +8,7 @@ import type { ControlView } from '@/entities/chat/control-view';
 import type { ChatInfo, InstanceInfo, MachineInfo, ProjectInfo, ProjectSessionInfo, SessionSummaryInfo } from '@/entities/registry/registry-view';
 import { isTerminal, isTurnActive } from '@/features/runtime/action-state';
 import { CommandTracker } from '@/features/connection/command-tracker';
-import { SessionActivation, type OpeningSession, type OpenSessionCallbacks } from '@/features/session/session-activation';
+import { SessionActivation, type OpeningSession } from '@/features/session/session-activation';
 import { principalId, publishAuthInvalidation, readOnly } from '@/features/auth/auth-state';
 import { setComposerDraft } from '@/features/composer/composer-draft';
 import { messageSubmission, messageSubmissionForChat } from '@/features/message/message-delivery';
@@ -21,8 +21,13 @@ import { createOnFrame } from './downstream';
 import { createResetAuthenticatedSession } from './reset-session';
 import { CatalogActions } from '@/features/catalog/catalog-actions';
 import { MachineActions } from '@/features/machine/machine-actions';
-import { createSessionCatalogBootstrap } from '@/features/catalog/session-catalog-bootstrap';
-import { selectActiveProjects } from '@/features/catalog/project-catalog';
+import {
+  getSessionCatalogBootstrap,
+  resetSessionCatalogBootstrap,
+  scheduleSessionCatalogBootstrap,
+  wireSessionCatalogBootstrap,
+} from './catalog-bootstrap';
+import { wireCatalogMachineApi } from './catalog-machine-api';
 import { ToastStore } from './toast-store';
 import { ACK_TIMEOUT_MS, type Ack, type ActionError, type ActionFrame, type ActionOptions } from '@/shared/protocol/action-contract';
 import { resetMcpState } from '@/features/mcp/mcp';
@@ -108,11 +113,7 @@ export const chatAgentLoading = () => deriveChatAgentLoading(chatHead()?.chat?.l
 export const [restoringSessionId, setRestoringSessionId] = createSignal<string | null>(null);
 export const [creatingSessionProjectId, setCreatingSessionProjectId] = createSignal<string | null>(null);
 export const [discoveringSessionsProjectId, setDiscoveringSessionsProjectId] = createSignal<string | null>(null);
-let scheduleSessionCatalogBootstrap: () => void = () => {};
-let sessionCatalogBootstrap: ReturnType<typeof createSessionCatalogBootstrap> | null = null;
-export function isProjectCatalogBootstrapPending(projectId: string): boolean {
-  return sessionCatalogBootstrap?.pending().has(projectId) ?? false;
-}
+export { isProjectCatalogBootstrapPending } from './catalog-bootstrap';
 export type { PromptRecoveryView } from '@/features/runtime/prompt-recovery';
 export const [sessionConfigMutation, setSessionConfigMutation] = createSignal<SessionConfigMutation | null>(null);
 
@@ -355,23 +356,15 @@ const machineActions = new MachineActions({
   persistProblem: persistActionProblem,
 });
 
-sessionCatalogBootstrap = createSessionCatalogBootstrap({
-  isReady: connectionReady,
-  isReadOnly: readOnly,
-  activeProjectIds: () => selectActiveProjects(projects()).map((project) => project.id),
-  discover: (projectId, onSettled) => {
-    return catalogActions.discoverSessions(projectId, onSettled, onSettled);
-  },
+wireSessionCatalogBootstrap({
+  connectionReady,
+  readOnly,
+  projects,
+  registryHydrated,
+  catalogActions,
 });
-scheduleSessionCatalogBootstrap = () => sessionCatalogBootstrap?.schedule();
 
-createRoot(() => {
-  createEffect(() => {
-    const ready = connectionReady();
-    const hydrated = registryHydrated();
-    if (ready && hydrated) scheduleSessionCatalogBootstrap();
-  });
-});
+wireCatalogMachineApi({ catalogActions, machineActions, sessionActivation });
 
 export const resetAuthenticatedSession = createResetAuthenticatedSession({
   setCurrentCid: (cid) => { currentCid = cid; },
@@ -393,7 +386,7 @@ export const resetAuthenticatedSession = createResetAuthenticatedSession({
   setPersistentErrors,
   setRegistryHydrated,
   sessionActivation,
-  sessionCatalogBootstrap: () => sessionCatalogBootstrap,
+  sessionCatalogBootstrap: getSessionCatalogBootstrap,
   commands,
   docStore: store,
   toastStore,
@@ -440,7 +433,7 @@ installConnection({
   settleConnectionLoss: () => commands.settleConnectionLoss(),
   onBeforeDisconnect: closeTerminalBeforeTeardown,
   onConnectionLost: () => {
-    sessionCatalogBootstrap?.reset();
+    resetSessionCatalogBootstrap();
     sessionActivation.connectionLost();
     handleTerminalConnectionLost();
   },
@@ -462,87 +455,6 @@ installConnection({
   onProtocolIssue: reportTransportIssue,
 });
 
-export const createProject = (name: string, cwd: string, instanceId?: string, onCommitted?: () => void, onFailed?: () => void) =>
-  catalogActions.createProject(name, cwd, instanceId, { onCommitted, onFailed });
-
-export const addComputer = (
-  destination: string,
-  displayName?: string,
-  port?: number,
-  identityFile?: string,
-  onCommitted?: () => void,
-  onFailed?: () => void,
-): boolean => machineActions.add(destination, displayName, port, identityFile, { onCommitted, onFailed });
-
-export const connectMachine = (instanceId: string, onCommitted?: () => void, onFailed?: () => void) =>
-  machineActions.connect(instanceId, { onCommitted, onFailed });
-
-export const disconnectMachine = (instanceId: string, onCommitted?: () => void, onFailed?: () => void) =>
-  machineActions.disconnect(instanceId, { onCommitted, onFailed });
-
-export const stopMachine = (instanceId: string, onCommitted?: () => void, onFailed?: () => void) =>
-  machineActions.stop(instanceId, { onCommitted, onFailed });
-
-export const cancelMachine = (instanceId: string, onCommitted?: () => void, onFailed?: () => void) =>
-  machineActions.cancel(instanceId, { onCommitted, onFailed });
-
-export const retryMachine = (instanceId: string, onCommitted?: () => void, onFailed?: () => void) =>
-  machineActions.retry(instanceId, { onCommitted, onFailed });
-
-export const trustMachineHost = (
-  instanceId: string,
-  fingerprint: string,
-  onCommitted?: () => void,
-  onFailed?: () => void,
-) => machineActions.trustHost(instanceId, fingerprint, { onCommitted, onFailed });
-
-export const confirmMachineReplace = (
-  instanceId: string,
-  onCommitted?: () => void,
-  onFailed?: () => void,
-) => machineActions.confirmReplace(instanceId, { onCommitted, onFailed });
-
-export const renameMachine = (instanceId: string, name: string, onCommitted?: () => void, onFailed?: () => void) =>
-  machineActions.rename(instanceId, name, { onCommitted, onFailed });
-
-export const setMachineAutoReconnect = (
-  instanceId: string,
-  enabled: boolean,
-  onCommitted?: () => void,
-  onFailed?: () => void,
-) => machineActions.setAutoReconnect(instanceId, enabled, { onCommitted, onFailed });
-
-export const removeMachine = (instanceId: string, onCommitted?: () => void, onFailed?: () => void) =>
-  machineActions.remove(instanceId, { onCommitted, onFailed });
-
-export const restoreMachine = (instanceId: string, onCommitted?: () => void, onFailed?: () => void) =>
-  machineActions.restore(instanceId, { onCommitted, onFailed });
-export const archiveProject = (projectId: string, onCommitted?: () => void, onFailed?: () => void) =>
-  catalogActions.archiveProject(projectId, { onCommitted, onFailed });
-export const restoreProject = (projectId: string, onCommitted?: () => void, onFailed?: () => void) =>
-  catalogActions.restoreProject(projectId, { onCommitted, onFailed });
-export const renameProject = (projectId: string, name: string, onCommitted?: () => void, onFailed?: () => void) =>
-  catalogActions.renameProject(projectId, name, { onCommitted, onFailed });
-
-export const createProjectSession = (projectId: string, title?: string): boolean => sessionActivation.create(projectId, title);
-export const createSessionWithFirstMessage = (projectId: string, text: string): boolean => sessionActivation.quickStart(projectId, text);
-export const retryQuickStart = (): void => sessionActivation.retryQuickStart();
-
-export const renameProjectSession = (sessionId: string, name: string, onCommitted?: () => void, onFailed?: () => void) =>
-  catalogActions.renameSession(sessionId, name, { onCommitted, onFailed });
-export const archiveProjectSession = (sessionId: string, onCommitted?: () => void, onFailed?: () => void) =>
-  catalogActions.setSessionArchived(sessionId, true, { onCommitted, onFailed });
-export const restoreProjectSession = (sessionId: string, onCommitted?: () => void, onFailed?: () => void) =>
-  catalogActions.setSessionArchived(sessionId, false, { onCommitted, onFailed });
-export const importProjectSession = (projectId: string, acpSessionId: string, onCommitted?: () => void, onFailed?: (kind: 'failed' | 'uncertain') => void) =>
-  catalogActions.importSession(projectId, acpSessionId, onCommitted, onFailed);
-export const discoverProjectSessions = (projectId: string, onCommitted?: () => void, onFailed?: (message: string) => void) =>
-  catalogActions.discoverSessions(projectId, onCommitted, onFailed);
-
-export function navigateProjectSession(sessionId: string, callbacks: OpenSessionCallbacks = {}): boolean {
-  return sessionActivation.navigate(sessionId, callbacks);
-}
-
 // Browser UI authenticates through AuthGate and an HttpOnly cookie. The
 // remembered token lives in localStorage (peri_studio_token) and is replayed by
 // AuthGate only; the session itself is never recovered from Web Storage here.
@@ -550,6 +462,7 @@ export function navigateProjectSession(sessionId: string, callbacks: OpenSession
 installResourceStore({ send: sendFrame, ready: connectionReady, toast });
 
 // P1 拆分：消息/资源/上传 再导出见各 facade 模块。
+export * from './catalog-machine-api';
 export * from './message-facade';
 export * from './resource-facade';
 export * from './workspace-upload-public';

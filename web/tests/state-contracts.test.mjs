@@ -312,11 +312,13 @@ test('uncertain metadata retries preserve the original frame identity and are id
 test('project session discovery is an explicit cold-start read path', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
   const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
+  const catalogBootstrap = readFileSync(join(root, '..', 'store', 'catalog-bootstrap.ts'), 'utf8');
   const catalog = readFileSync(join(root, '..', 'features', 'catalog', 'catalog-actions.ts'), 'utf8');
   const protocol = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'protocol', 'client.ts'), 'utf8');
   const dialog = readFileSync(join(root, '..', 'widgets', 'shell', 'SessionImportDialog.tsx'), 'utf8');
   assert.match(protocol, /action\('session\/discover', \{ projectId \}\)/);
-  assert.match(store, /catalogActions\.discoverSessions/);
+  assert.match(store, /wireSessionCatalogBootstrap/);
+  assert.match(catalogBootstrap, /catalogActions\.discoverSessions/);
   assert.match(catalog, /this\.deps\.send\(frame, 'session\/discover'/);
   assert.match(dialog, /props\.onDiscover\(projectId/);
   assert.match(dialog, /Reading ACP sessions/);
@@ -413,11 +415,13 @@ test('session navigation closes only after a server-authoritative open commits',
 test('session activation policy is a deep module rather than store callback sprawl', () => {
   const root = join(import.meta.dirname, '..', 'src', 'panel');
   const store = readFileSync(join(root, '..', 'store', 'index.ts'), 'utf8');
+  const catalogMachineApi = readFileSync(join(root, '..', 'store', 'catalog-machine-api.ts'), 'utf8');
   const activation = readFileSync(join(root, '..', 'features', 'session', 'session-activation.ts'), 'utf8');
   assert.match(store, /new SessionActivation\(\{/);
-  assert.match(store, /sessionActivation\.create\(projectId, title\)/);
-  assert.match(store, /sessionActivation\.quickStart\(projectId, text\)/);
-  assert.match(store, /sessionActivation\.navigate\(sessionId, callbacks\)/);
+  assert.match(store, /wireCatalogMachineApi/);
+  assert.match(catalogMachineApi, /sessionActivation\.create\(projectId, title\)/);
+  assert.match(catalogMachineApi, /sessionActivation\.quickStart\(projectId, text\)/);
+  assert.match(catalogMachineApi, /sessionActivation\.navigate\(sessionId, callbacks\)/);
   assert.doesNotMatch(store, /H\.persistedSession(?:Create|Open)\(/);
   assert.doesNotMatch(store, /new SessionNavigator|sessionNavigator\.transition/);
   assert.match(activation, /class SessionActivation/);

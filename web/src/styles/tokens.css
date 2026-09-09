@@ -190,6 +190,7 @@
   --chat-tool-activity-max: var(--tool-activity-max);
   --chat-bubble-max: 72%;
   --chat-reasoning-max: 680px;
+  --chat-activity-rail-left: 12.5px;
   --chat-system-max: 70%;
 
   /* Resource 资源树 */
@@ -477,7 +478,7 @@
   --grid-cols-preview-line: 44px minmax(0, 1fr);
   --grid-cols-editor-line: 54px minmax(0, 1fr);
   --grid-cols-code-line: auto 1fr;
-  --grid-cols-tool-row: 16px minmax(0, 1fr) auto 14px;
+  --grid-cols-tool-row: 22px minmax(0, 1fr) auto 22px;
   --grid-cols-status-row: 14px minmax(0, 1fr) auto;
   --grid-cols-status-activity: 14px 54px minmax(0, 1fr) auto;
   --grid-rows-fill: minmax(0, 1fr);

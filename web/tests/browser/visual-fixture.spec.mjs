@@ -160,7 +160,7 @@ test('assistant actions stay contextual and tool rows have no divider', async ({
     try { return [...sheet.cssRules].some((rule) => rule.cssText.includes('.conversation-message--assistant:hover')); }
     catch { return false; }
   }))).toBe(true);
-  await expect(message.getByTestId('tool-activity-row').first()).toHaveCSS('border-width', '1px');
+  await expect(message.getByTestId('tool-activity-row').first()).toHaveCSS('border-width', '0px');
 });
 
 test('slash surface uses the shared overlay radius', async ({ page }) => {

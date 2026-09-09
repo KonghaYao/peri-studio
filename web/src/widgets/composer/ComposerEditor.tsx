@@ -4,6 +4,13 @@ import { cn } from '@/shared/lib/cn';
 import { slashMenuOptionId } from '@/features/composer/slash-menu';
 import type { ComposerState } from './useComposerState';
 
+function composerFieldClasses(centered: boolean) {
+  return cn(
+    'composer-editor__field block w-full resize-none overflow-y-auto border-0 bg-transparent px-1 py-8 outline-0',
+    centered ? 'min-h-72 max-h-180 text-14 leading-22' : 'min-h-32 max-h-180 text-13 leading-normal',
+  );
+}
+
 export function ComposerEditor(props: {
   centered: boolean;
   state: ComposerState;
@@ -11,23 +18,39 @@ export function ComposerEditor(props: {
   focusInput: () => void;
 }) {
   const s = () => props.state;
+  const draftText = () => s().composerDraft(s().draftOwner());
+  const enabledHint = () => {
+    if (s().inputDisabled() || draftText().length > 0) return null;
+    const prediction = s().prediction.activePrediction();
+    if (prediction) return { kind: 'prediction' as const, text: prediction.text };
+    const placeholder = s().inputPlaceholder();
+    if (!placeholder) return null;
+    return { kind: 'placeholder' as const, text: placeholder };
+  };
+  const fieldClass = () => composerFieldClasses(props.centered);
 
   return (
     <>
       <div class="composer-editor relative">
-        <Show when={s().prediction.activePrediction()}>
-          {(prediction) => (
+        <Show when={enabledHint()}>
+          {(hint) => (
             <>
-              <span
-                data-testid="composer-prediction"
-                class="composer-prediction absolute z-0 top-10 right-8 left-8 overflow-hidden text-text-faint text-12 leading-18 pointer-events-none text-ellipsis whitespace-nowrap"
+              <div
+                data-testid={hint().kind === 'prediction' ? 'composer-prediction' : 'composer-placeholder-hint'}
+                class={cn(
+                  'composer-editor__hint',
+                  fieldClass(),
+                  hint().kind === 'prediction' ? 'text-content-faint composer-editor__hint--prediction' : 'text-content-muted',
+                )}
                 aria-hidden="true"
               >
-                {prediction().text}
-              </span>
-              <span id="composer-prediction-description" class="sr-only">
-                Peri suggests: {prediction().text}. Press Tab to use it, or Escape to ignore.
-              </span>
+                {hint().text}
+              </div>
+              <Show when={hint().kind === 'prediction'}>
+                <span id="composer-prediction-description" class="sr-only">
+                  Peri suggests: {hint().text}. Press Tab to use it, or Escape to ignore.
+                </span>
+              </Show>
             </>
           )}
         </Show>
@@ -35,7 +58,8 @@ export function ComposerEditor(props: {
           ref={props.taRef}
           autoResize
           maxHeight={180}
-          value={s().composerDraft(s().draftOwner())}
+          variant="bare"
+          value={draftText()}
           onInput={(e) => {
             if (e.isComposing) return;
             s().commitInputValue(e.currentTarget);
@@ -61,7 +85,7 @@ export function ComposerEditor(props: {
               s().submit();
             }
           }}
-          placeholder={s().prediction.activePrediction() ? '' : s().inputPlaceholder()}
+          placeholder={s().inputDisabled() ? s().inputPlaceholder() : ''}
           disabled={s().inputDisabled()}
           aria-label="Message the agent"
           aria-autocomplete="list"
@@ -79,8 +103,8 @@ export function ComposerEditor(props: {
           spellcheck={false}
           data-testid="composer-input"
           class={cn(
-            'composer-input ui-scrollbar relative z-1 block w-full resize-none overflow-y-auto border-0 bg-transparent px-1 py-8 text-13 leading-normal text-content-primary outline-0 placeholder:text-content-muted disabled:bg-transparent disabled:text-content-secondary focus-visible:outline-0',
-            props.centered ? 'min-h-72 max-h-180 text-14 leading-22' : 'min-h-36 max-h-180',
+            'composer-input ui-scrollbar relative z-1 placeholder:text-content-muted disabled:bg-transparent disabled:text-content-secondary focus-visible:outline-0',
+            fieldClass(),
           )}
         />
       </div>

@@ -230,8 +230,8 @@ Phase 1–5 只完成了目录脚手架与部分垂直切片；领域实现已�
 - [x] `entities/*` 去除对 `panel/lib` 的依赖，只认 `@/shared` 与 `entities` 内模块（生产 import 已清零；层边界测试仍保留历史 baseline 描述字符串）。
 - [ ] ESLint import 边界规则强制执行五层依赖表。
 - [x] `css-contracts` 扩展：任意值 bracket、小数 spacing、`shared/ui`、widgets `<style>`、`extra.css` 行数/hash 冻结（WP-BOUND）。
-- [ ] `store/index.ts` 继续瘦身（当前约 **570 行**组合根；纯再导出已拆至 `store/{message-facade,resource-facade,workspace-upload-public}.ts`）。
-- [ ] widgets 统一 `@/features/*` 别名（仍存 **3** 处相对路径：`LaunchWorkspace.tsx`、`SessionImportDialog.tsx`、`SessionSearch.tsx`）。
+- [x] `store/index.ts` 继续瘦身（570→**483** 行；新增 `store/catalog-bootstrap.ts`、`store/catalog-machine-api.ts`，经 `index` 再导出）。
+- [x] widgets 统一 `@/features/*` 别名（`LaunchWorkspace`、`SessionImportDialog`、`SessionSearch` 及 `store/reset-session` 相对路径已清零）。
 - [ ] WP-H / WP-CSS / WP-VIS（`extra.css` 相对 435 行基线净减、sandbox 刻度、视觉收敛）。
 
 迁移期间 ~~保留 `@/panel/*` shim~~ → **已删除**；新代码仅使用 `@/widgets`、`@/features`、`@/store` 等别名。

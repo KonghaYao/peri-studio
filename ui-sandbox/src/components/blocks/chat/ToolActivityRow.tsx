@@ -1,23 +1,48 @@
-import { Check, ChevronRight, Circle, X } from 'lucide-solid';
+import {
+  Check,
+  ChevronRight,
+  CircleX,
+  Clock3,
+  Loader2,
+  ShieldQuestion,
+  Wrench,
+  type LucideIcon,
+} from 'lucide-solid';
 import { createMemo, createSignal, Show } from 'solid-js';
+import { Dynamic } from 'solid-js/web';
 import { CopyButton } from '@/components/ui';
 import { cn } from '@/lib/cn';
 
 export type ToolCallStatus = 'queued' | 'running' | 'done' | 'failed' | 'approval';
 
-const STATUS: Record<ToolCallStatus, { label: string; tone: 'pending' | 'running' | 'success' | 'error' | 'permission' }> = {
-  queued: { label: 'Queued', tone: 'pending' },
-  running: { label: 'Running', tone: 'running' },
-  done: { label: 'Done', tone: 'success' },
-  failed: { label: 'Failed', tone: 'error' },
-  approval: { label: 'Approval', tone: 'permission' },
+const STATUS: Record<ToolCallStatus, string> = {
+  queued: 'Queued',
+  running: 'Running',
+  done: 'Done',
+  failed: 'Failed',
+  approval: 'Approval',
 };
 
-function StatusMark(props: { tone: string }) {
-  if (props.tone === 'success') return <Check size={12} strokeWidth={2.5} class="text-success-solid" />;
-  if (props.tone === 'error') return <X size={11} strokeWidth={2.2} class="text-danger-solid" />;
-  const color = props.tone === 'permission' ? 'text-warning-solid' : props.tone === 'running' ? 'text-accent-solid' : 'text-content-faint';
-  return <Circle size={9} strokeWidth={2} class={color} />;
+function ToolStatusIcon(props: { status: ToolCallStatus; label: string }) {
+  return (
+    <span
+      class={cn(
+        'grid size-5.5 shrink-0 place-items-center rounded-md text-content-muted',
+        props.status === 'done' && 'text-success-solid',
+        props.status === 'failed' && 'text-danger-solid',
+        props.status === 'approval' && 'text-accent-solid',
+      )}
+      role="img"
+      aria-label={props.label}
+      title={props.label}
+    >
+      <Show when={props.status === 'done'}><Check size={14} strokeWidth={2.4} /></Show>
+      <Show when={props.status === 'failed'}><CircleX size={14} strokeWidth={2} /></Show>
+      <Show when={props.status === 'approval'}><ShieldQuestion size={14} strokeWidth={1.9} /></Show>
+      <Show when={props.status === 'running'}><Loader2 size={14} strokeWidth={2} class="animate-spin" /></Show>
+      <Show when={props.status === 'queued'}><Clock3 size={14} strokeWidth={1.9} /></Show>
+    </span>
+  );
 }
 
 function EvidenceBlock(props: { label: string; value: string; tone?: 'error' }) {
@@ -28,16 +53,21 @@ function EvidenceBlock(props: { label: string; value: string; tone?: 'error' }) 
         <span class="flex-1" />
         <CopyButton text={props.value} label={`Copy ${props.label}`} />
       </div>
-      <pre class={`m-0 max-h-40 overflow-auto font-mono text-11 leading-relaxed whitespace-pre-wrap ${props.tone === 'error' ? 'text-danger-solid' : 'text-content-primary'}`}>
+      <pre class={cn(
+        'm-0 max-h-40 overflow-auto font-mono text-11 leading-relaxed whitespace-pre-wrap',
+        props.tone === 'error' ? 'text-danger-solid' : 'text-content-primary',
+      )}>
         <code>{props.value}</code>
       </pre>
     </div>
   );
 }
 
-/** 工具活动行：时间线摘要，非 card；running 用浅灰底。 */
+/** 工具活动行：Fenix 风格 icon + 说明摘要；证据区只用于 sandbox 演示。 */
 export function ToolActivityRow(props: {
-  name: string;
+  icon?: LucideIcon;
+  title: string;
+  subtitle?: string;
   input?: string;
   output?: string;
   error?: string;
@@ -45,39 +75,50 @@ export function ToolActivityRow(props: {
   duration?: string;
 }) {
   const [open, setOpen] = createSignal(false);
-  const state = createMemo(() => STATUS[props.status]);
-  const hasEvidence = () => props.input || props.output || props.error;
+  const statusLabel = createMemo(() => STATUS[props.status]);
+  const hasEvidence = () => Boolean(props.input || props.output || props.error);
+  const isRunning = () => props.status === 'running';
 
   return (
     <div class="min-w-0">
-      <button
-        type="button"
-        disabled={!hasEvidence()}
-        class={cn(
-          'grid w-full min-h-7 grid-cols-tool-row items-center gap-2 rounded-md px-2 text-left transition-colors duration-(--duration-fast)',
-          props.status === 'running' ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
-          !hasEvidence() && 'cursor-default',
-        )}
-        aria-expanded={open()}
-        onClick={() => hasEvidence() && setOpen((v) => !v)}
-      >
-        <span class="grid size-4 place-items-center">
-          <StatusMark tone={state().tone} />
+      <div class={cn(
+        'grid w-full grid-cols-tool-row items-center gap-2 rounded-md p-0.5 text-left',
+        isRunning() && 'bg-sidebar-selected',
+      )}>
+        <span class="relative z-1 grid size-5.5 place-items-center rounded-full bg-surface-canvas text-content-muted" aria-hidden="true">
+          <Dynamic component={props.icon ?? Wrench} size={15} strokeWidth={1.8} />
         </span>
-        <span class="min-w-0 truncate text-12 text-content-primary">
-          <span class="font-medium">{props.name}</span>
-          <Show when={props.input}>
-            <code class="ml-1.5 font-mono text-10 text-content-muted">{props.input}</code>
+
+        <span class="flex min-w-0 items-baseline gap-2 overflow-hidden">
+          <span class="min-w-0 truncate text-12 font-normal text-content-muted" title={props.title}>{props.title}</span>
+          <Show when={props.subtitle}>
+            <span class="min-w-0 truncate text-11 text-content-faint">{props.subtitle}</span>
+          </Show>
+          <Show when={props.error}>
+            <span class="min-w-0 truncate text-11 text-danger-solid">{props.error}</span>
           </Show>
         </span>
-        <span class="flex-none text-10 text-content-muted tabular-nums">
-          {state().label}
-          <Show when={props.duration}><span class="ml-1">{props.duration}</span></Show>
+
+        <span class="flex shrink-0 items-center justify-self-end gap-3 text-10 font-medium text-content-muted">
+          <Show when={props.duration}>
+            <span class="min-w-10.5 text-right tabular-nums">{props.duration}</span>
+          </Show>
+          <ToolStatusIcon status={props.status} label={statusLabel()} />
         </span>
+
         <Show when={hasEvidence()}>
-          <ChevronRight size={13} class={cn('text-content-faint transition-transform duration-(--duration-fast)', open() && 'rotate-90')} />
+          <button
+            type="button"
+            class="grid size-5.5 place-items-center rounded-md text-content-faint hover:bg-interaction-hover"
+            aria-label={open() ? 'Collapse tool details' : 'Expand tool details'}
+            aria-expanded={open()}
+            onClick={() => setOpen((value) => !value)}
+          >
+            <ChevronRight size={13} class={cn('transition-transform duration-(--duration-fast)', open() && 'rotate-90')} />
+          </button>
         </Show>
-      </button>
+      </div>
+
       <Show when={open() && hasEvidence()}>
         <div class="mt-1 flex flex-col gap-1.5 pb-1 pl-6 pr-2">
           <Show when={props.input}><EvidenceBlock label="Input" value={props.input!} /></Show>
@@ -89,10 +130,11 @@ export function ToolActivityRow(props: {
   );
 }
 
-/** 聊天 transcript 里的工具活动组容器。 */
+/** 聊天 transcript 里的 Fenix 风格工具活动组。 */
 export function ToolActivityGroup(props: { children: unknown }) {
   return (
-    <div class="flex max-w-(--chat-tool-activity-max) flex-col gap-0.5 rounded-lg border border-border-subtle bg-surface-overlay p-1.5">
+    <div class="tool-activity-chain relative isolate grid w-full max-w-(--chat-tool-activity-max) min-w-0 gap-px">
+      <span class="absolute inset-y-0 left-(--chat-activity-rail-left) z-0 w-px bg-border-strong" aria-hidden="true" />
       {props.children as never}
     </div>
   );

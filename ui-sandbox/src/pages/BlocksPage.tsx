@@ -18,7 +18,7 @@ import {
   ToolActivityRow,
   UserBubble,
 } from '@/components/blocks';
-import { Folder } from 'lucide-solid';
+import { FileText, Folder, FolderSearch, Terminal } from 'lucide-solid';
 import { DemoSection, DomainSection, TierHeader } from '@/pages/shared/DemoSection';
 
 const MARKDOWN_SAMPLE = `# Markdown rendering lab
@@ -90,11 +90,11 @@ export function BlocksPage() {
           </div>
         </DemoSection>
 
-        <DemoSection id="tool-activity" title="ToolActivityRow" description="工具活动时间线行；running 浅灰底，可展开证据。">
+        <DemoSection id="tool-activity" title="ToolActivityRow" description="Fenix 风格工具 icon + 动作说明；running 浅灰底，可展开证据。">
           <ToolActivityGroup>
-            <ToolActivityRow name="Read build configuration" input="vite.config.ts" output={'{\n  "lines": 84\n}'} status="done" duration="120 ms" />
-            <ToolActivityRow name="Run production build" input="bun run build:web" status="running" />
-            <ToolActivityRow name="Previous build attempt" input="bun run build:web" error="BUILD_IMPORT_ERROR: Browser bundle imported a Node-only module" status="failed" duration="1.8 s" />
+            <ToolActivityRow icon={FileText} title="Opened vite.config.ts" subtitle="Lines 1–84" input="vite.config.ts" output={'{\n  "lines": 84\n}'} status="done" duration="120ms" />
+            <ToolActivityRow icon={Terminal} title="Running $ bun run build:web" input="bun run build:web" status="running" />
+            <ToolActivityRow icon={FolderSearch} title={'Matched "src/**/*.tsx"'} error="BUILD_IMPORT_ERROR: Browser bundle imported a Node-only module" input="src/**/*.tsx" status="failed" duration="1.8s" />
           </ToolActivityGroup>
         </DemoSection>
 

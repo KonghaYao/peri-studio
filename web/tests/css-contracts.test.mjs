@@ -147,8 +147,8 @@ test('fractional Tailwind spacing utilities resolve to an explicit product token
 });
 
 const EXTRA_CSS_BASELINE = {
-  lineCount: 435,
-  sha256: 'dca0388cd42e0578c0e9fc7bb35fd3b17e97479d2e306123e24f15df5a38c2af',
+  lineCount: 460,
+  sha256: '6160f797ad78c69bbba5fb1835ab4160aae1d57a29c116b673eeb4ceb88902c5',
 };
 
 function lineCountLikeWc(content) {
@@ -287,7 +287,7 @@ test('MessageList delegates entry semantics through stable entry-id slots to one
   const message = readWidgetTsx('ConversationMessage.tsx');
   assert.match(list, /const chatEntryIds = createMemo\(\(\) => chatEntries\(\)\.map\(\(entry\) => entry\.id\)\)/);
   assert.match(list, /<Show when=\{chatEntries\(\)\[globalIndex\(\)\]\}>\{\(entry\) =>/);
-  assert.match(list, /<ConversationMessage entry=\{entry\} \/>/);
+  assert.match(list, /<ConversationMessage\s+entry=\{entry\}\s+activityBoundary=\{\(\) => activityBoundaryAt\(chatEntries\(\), globalIndex\(\)\)\}\s+\/>/);
   assert.match(list, /<PlanSystemEntryRow entry=\{entry\(\)\} \/>/);
   assert.doesNotMatch(list, /function MessageBubble|<Markdown|<ToolCallCard/);
   assert.match(message, /conversation-message--\$\{role\(\)\}/);
