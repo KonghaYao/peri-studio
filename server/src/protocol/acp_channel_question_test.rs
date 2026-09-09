@@ -47,7 +47,10 @@ fn interactive_question_normalizes_to_question_requested() {
                     Some("Please answer the following questions")
                 );
                 assert_eq!(questions.len(), 1);
-                assert_eq!(questions[0].question, "Which deployment target should I use?");
+                assert_eq!(
+                    questions[0].question,
+                    "Which deployment target should I use?"
+                );
                 assert_eq!(questions[0].options.len(), 2);
                 assert!(!expires_at.is_empty());
             }
@@ -153,7 +156,10 @@ fn question_resolved_without_valid_answers_is_dropped() {
 #[test]
 fn interactive_question_missing_question_id_is_dropped() {
     let mut frame = interactive_question_frame("iqa_1");
-    frame["payload"].as_object_mut().unwrap().remove("questionId");
+    frame["payload"]
+        .as_object_mut()
+        .unwrap()
+        .remove("questionId");
     assert!(matches!(
         norm(frame),
         NormalizeOutcome::Dropped(DropReason::MissingField)

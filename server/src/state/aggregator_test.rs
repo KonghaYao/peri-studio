@@ -14,16 +14,16 @@ mod activity;
 mod agent;
 #[path = "aggregator_callback_test.rs"]
 mod callback;
-#[path = "aggregator_plan_chat_test.rs"]
-mod plan_chat;
-#[path = "aggregator_question_test.rs"]
-mod question;
 #[path = "aggregator_judge_test.rs"]
 mod judge;
 #[path = "aggregator_permission_test.rs"]
 mod permission;
+#[path = "aggregator_plan_chat_test.rs"]
+mod plan_chat;
 #[path = "aggregator_projection_test.rs"]
 mod projection;
+#[path = "aggregator_question_test.rs"]
+mod question;
 #[path = "aggregator_stream_test.rs"]
 mod stream;
 #[path = "aggregator_task_test.rs"]

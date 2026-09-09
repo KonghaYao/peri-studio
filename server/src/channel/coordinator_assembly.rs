@@ -14,7 +14,6 @@ use crate::channel::command_coordinator::{
 };
 use crate::channel::command_outcome_broker::CommandOutcomeBroker;
 use crate::channel::elicitation_response::ElicitationResponse;
-use crate::channel::question_response::QuestionResponse;
 use crate::channel::machine_command_processor::MachineCommandProcessor;
 use crate::channel::mcp_apps_control::McpAppsControl;
 use crate::channel::mcp_control::McpControl;
@@ -22,6 +21,7 @@ use crate::channel::metadata_command_processor::MetadataCommandProcessor;
 use crate::channel::permission_resolution::PermissionResolution;
 use crate::channel::prompt_delivery::{PromptDelivery, PromptDeliveryDeps};
 use crate::channel::prompt_recovery::PromptRecovery;
+use crate::channel::question_response::QuestionResponse;
 use crate::channel::relay_event_handler::RelayEventHandler;
 use crate::channel::runtime_closure::RuntimeClosure;
 use crate::channel::runtime_creation::{

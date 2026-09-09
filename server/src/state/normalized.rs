@@ -14,9 +14,9 @@ use serde::{Deserialize, Serialize};
 use peri_studio_proto::action::PermissionDecision;
 use peri_studio_proto::schema::{
     AgentActivityKind, AgentActivityStatus, AgentPlanEntryProjection, BlockVisibility, ChatStatus,
-    PermissionOptions, PeriTaskDetailAvailability, PeriTaskKind, PeriTaskSubtype,
-    PublicError, SessionConfigOptionProjection, SessionSummaryProjection,
-    ToolCallKind, ToolCallStatus, TurnStatus,
+    PeriTaskDetailAvailability, PeriTaskKind, PeriTaskSubtype, PermissionOptions, PublicError,
+    SessionConfigOptionProjection, SessionSummaryProjection, ToolCallKind, ToolCallStatus,
+    TurnStatus,
 };
 
 /// 规范化事件（§6.1）：ACPChannel 产物的统一形态。

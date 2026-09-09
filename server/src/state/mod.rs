@@ -44,6 +44,7 @@ mod doc_manager_apply_event;
 mod doc_manager_apply_turn;
 mod doc_manager_command;
 mod doc_manager_persist;
+mod doc_manager_registry_persist;
 pub mod doc_pair;
 pub mod elicitation;
 pub mod factory;

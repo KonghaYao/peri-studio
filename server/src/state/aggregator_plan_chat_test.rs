@@ -24,11 +24,19 @@ fn plan_body(content: &str) -> EventBody {
 fn agent_plan_writes_control_and_chat_system_entry() {
     let mut pair = pair();
     seed_user_msg(&mut pair, "turn_1", "turn_1:user", "go");
-    assert!(Aggregator.apply(&mut pair, &ev("s1", 2, plan_body("Step 1"))).applied);
+    assert!(
+        Aggregator
+            .apply(&mut pair, &ev("s1", 2, plan_body("Step 1")))
+            .applied
+    );
 
     let txn = pair.session.transact();
     let root = chat_writer::root_map_read(&txn).unwrap();
-    let agent = root.get(&txn, "agent").unwrap().cast::<yrs::MapRef>().unwrap();
+    let agent = root
+        .get(&txn, "agent")
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap();
     assert!(agent.get(&txn, "plan_entries").is_some());
 
     let chat_txn = pair.chat.transact();
@@ -41,16 +49,36 @@ fn agent_plan_writes_control_and_chat_system_entry() {
         .expect("plan chat entry");
     assert_eq!(entry.get(&chat_txn, "kind"), Some("system".into()));
     assert!(entry.get(&chat_txn, "plan_entries").is_some());
-    assert_eq!(entry_order(&pair).iter().filter(|id| *id == "plan:turn_1").count(), 1);
+    assert_eq!(
+        entry_order(&pair)
+            .iter()
+            .filter(|id| *id == "plan:turn_1")
+            .count(),
+        1
+    );
 }
 
 #[test]
 fn agent_plan_updates_same_chat_entry_in_place() {
     let mut pair = pair();
     seed_user_msg(&mut pair, "turn_1", "turn_1:user", "go");
-    assert!(Aggregator.apply(&mut pair, &ev("s1", 2, plan_body("v1"))).applied);
-    assert!(Aggregator.apply(&mut pair, &ev("s1", 3, plan_body("v2"))).applied);
-    assert_eq!(entry_order(&pair).iter().filter(|id| *id == "plan:turn_1").count(), 1);
+    assert!(
+        Aggregator
+            .apply(&mut pair, &ev("s1", 2, plan_body("v1")))
+            .applied
+    );
+    assert!(
+        Aggregator
+            .apply(&mut pair, &ev("s1", 3, plan_body("v2")))
+            .applied
+    );
+    assert_eq!(
+        entry_order(&pair)
+            .iter()
+            .filter(|id| *id == "plan:turn_1")
+            .count(),
+        1
+    );
 
     let chat_txn = pair.chat.transact();
     let chat_root = chat_writer::root_map_read(&chat_txn).unwrap();
@@ -68,6 +96,10 @@ fn agent_plan_updates_same_chat_entry_in_place() {
 #[test]
 fn agent_plan_without_active_turn_uses_global_entry() {
     let mut pair = pair();
-    assert!(Aggregator.apply(&mut pair, &ev("s1", 1, plan_body("global step"))).applied);
+    assert!(
+        Aggregator
+            .apply(&mut pair, &ev("s1", 1, plan_body("global step")))
+            .applied
+    );
     assert!(entry_order(&pair).contains(&"plan:global".to_string()));
 }

@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip';
 /* AntD 方向：primary 实底白字（hover 浅档）；default 白底灰边，
    hover 时边框与文字同时染主色；danger 红字红边。尺寸对齐 sandbox T2（24/32/40）。 */
 const buttonVariants = cva(
-  'inline-flex cursor-pointer items-center justify-center gap-6 whitespace-nowrap rounded-6 font-medium transition-colors outline-none duration-120 focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45 pointer-coarse:min-h-44',
+  'inline-flex cursor-pointer items-center justify-center gap-6 whitespace-nowrap rounded-6 font-medium transition-colors outline-none duration-120 focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45 pointer-coarse:min-h-44',
   {
     variants: {
       variant: {
@@ -82,7 +82,7 @@ export function Button(props: Props) {
 }
 
 const iconButtonVariants = cva(
-  'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-6 font-medium transition-colors outline-none duration-120 focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45 pointer-coarse:min-h-44 pointer-coarse:min-w-44',
+  'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-6 font-medium transition-colors outline-none duration-120 focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45 pointer-coarse:min-h-44 pointer-coarse:min-w-44',
   {
     variants: {
       variant: {

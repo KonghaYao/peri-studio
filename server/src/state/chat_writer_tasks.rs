@@ -132,7 +132,10 @@ fn evict_tasks_if_needed(txn: &mut TransactionCtx<'_>, root: &MapRef) {
                 .and_then(|v| v.cast::<MapRef>().ok())
                 .and_then(|m| m.get(txn, "status"))
                 .and_then(|s| s.cast::<String>().ok());
-            if matches!(status.as_deref(), Some("completed" | "failed" | "cancelled")) {
+            if matches!(
+                status.as_deref(),
+                Some("completed" | "failed" | "cancelled")
+            ) {
                 evict_index = i;
                 break;
             }

@@ -6,9 +6,7 @@
 use chrono::DateTime;
 use serde_json::Value;
 
-use peri_studio_proto::schema::{
-    QuestionAnswer, QuestionItemProjection, QuestionOptionProjection,
-};
+use peri_studio_proto::schema::{QuestionAnswer, QuestionItemProjection, QuestionOptionProjection};
 
 use super::acp_channel_parse::{string_field, truncate_identifier, truncate_text, MapError};
 
@@ -36,7 +34,8 @@ pub(crate) fn map_interactive_question(
     payload: &serde_json::Map<String, Value>,
     now_rfc3339: &str,
 ) -> Result<QuestionRequestedFields, MapError> {
-    let question_id = required_bounded(payload, "questionId", "question_id", QUESTION_ID_MAX_BYTES)?;
+    let question_id =
+        required_bounded(payload, "questionId", "question_id", QUESTION_ID_MAX_BYTES)?;
     let questions_raw = payload
         .get("questions")
         .or_else(|| payload.get("Questions"))
@@ -50,7 +49,12 @@ pub(crate) fn map_interactive_question(
         question_id,
         tool_id: optional_bounded(payload, "toolId", "tool_id", QUESTION_ID_MAX_BYTES),
         tool_name: optional_bounded(payload, "toolName", "tool_name", QUESTION_HEADER_MAX_BYTES),
-        description: optional_bounded(payload, "description", "description", QUESTION_DESCRIPTION_MAX_BYTES),
+        description: optional_bounded(
+            payload,
+            "description",
+            "description",
+            QUESTION_DESCRIPTION_MAX_BYTES,
+        ),
         questions,
         expires_at,
     })
@@ -60,7 +64,8 @@ pub(crate) fn map_interactive_question(
 pub(crate) fn map_question_resolved(
     payload: &serde_json::Map<String, Value>,
 ) -> Result<(String, Vec<QuestionAnswer>), MapError> {
-    let question_id = required_bounded(payload, "questionId", "question_id", QUESTION_ID_MAX_BYTES)?;
+    let question_id =
+        required_bounded(payload, "questionId", "question_id", QUESTION_ID_MAX_BYTES)?;
     let answers = extract_question_resolved_answers(payload)?;
     if !has_nonempty_question_answer(&answers) {
         return Err(MapError::MissingField);
@@ -71,10 +76,7 @@ pub(crate) fn map_question_resolved(
 fn extract_question_resolved_answers(
     payload: &serde_json::Map<String, Value>,
 ) -> Result<Vec<QuestionAnswer>, MapError> {
-    let raw = if payload
-        .get("answers")
-        .is_some_and(|v| v.is_array())
-    {
+    let raw = if payload.get("answers").is_some_and(|v| v.is_array()) {
         payload.get("answers").unwrap()
     } else if payload
         .get("optionIds")
@@ -85,8 +87,8 @@ fn extract_question_resolved_answers(
             .get("optionIds")
             .or_else(|| payload.get("option_ids"))
             .unwrap()
-    } else if let Some(single) = string_field(payload, "optionId", "option_id")
-        .filter(|s| !s.is_empty())
+    } else if let Some(single) =
+        string_field(payload, "optionId", "option_id").filter(|s| !s.is_empty())
     {
         return Ok(vec![QuestionAnswer::Single(truncate_identifier(&single))]);
     } else {
@@ -111,11 +113,7 @@ fn normalize_one_question_answer(entry: &Value) -> QuestionAnswer {
         Value::Array(arr) => {
             let options: Vec<String> = arr
                 .iter()
-                .filter_map(|v| {
-                    v.as_str()
-                        .filter(|s| !s.is_empty())
-                        .map(|s| truncate_text(s).into())
-                })
+                .filter_map(|v| v.as_str().filter(|s| !s.is_empty()).map(truncate_text))
                 .collect();
             QuestionAnswer::Multiple(options)
         }

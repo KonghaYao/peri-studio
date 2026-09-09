@@ -49,11 +49,7 @@ fn user_message_without_turn_or_callback_is_rejected() {
     let mut pair = pair();
     let r = Aggregator.apply(
         &mut pair,
-        &ev(
-            "s1",
-            1,
-            callback_user_msg("ignored", "nope"),
-        ),
+        &ev("s1", 1, callback_user_msg("ignored", "nope")),
     );
     assert!(!r.applied);
     assert_eq!(r.reason, Some(ApplyReason::UnknownTurn));

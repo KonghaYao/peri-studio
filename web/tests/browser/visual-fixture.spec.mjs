@@ -338,7 +338,7 @@ test('sidebar chrome and composer match the compact input shell', async ({ page 
   await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
 
   // Legacy window toolbar traffic lights removed from sidebar chrome.
-  await expect(page.getByRole('button', { name: 'Add attachment' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Add attachment' })).toBeEnabled();
   await expect(page.getByTestId('composer-runtime')).toBeVisible();
   await expect(page.getByRole('button', { name: /Browse skills/ })).toBeVisible();
   await expect(page.getByTestId('composer-action')).toBeVisible();
@@ -398,7 +398,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 768
     expect(rightInset).toBeGreaterThanOrEqual(-insetSlack);
     expect(Math.abs(leftInset - rightInset)).toBeLessThanOrEqual(geometry.scrollbarReserve + 1);
     expect(leftInset).toBeLessThanOrEqual(56);
-    await expect(page.getByTestId('elicitation-card')).toHaveCount(0);
+    await expect(page.getByTestId('elicitation-card')).toBeVisible();
   });
 }
 

@@ -1,6 +1,9 @@
 //! Question CAS 测试（WP-C；镜像 Fenix `state/question.ts` 语义）。
 
-use peri_studio_proto::schema::{QuestionAnswer, QuestionItemProjection, QuestionOptionProjection, QuestionProjection, QuestionStatus};
+use peri_studio_proto::schema::{
+    QuestionAnswer, QuestionItemProjection, QuestionOptionProjection, QuestionProjection,
+    QuestionStatus,
+};
 
 use crate::state::doc_pair::DocPair;
 use crate::state::factory::Factory;
@@ -64,7 +67,11 @@ fn respond_after_expired_is_expired_outcome() {
 fn unknown_question_is_unknown() {
     let mut p = pair_with_question("q4");
     assert_eq!(
-        respond(&mut p, "missing", &[QuestionAnswer::Single("x".to_string())]),
+        respond(
+            &mut p,
+            "missing",
+            &[QuestionAnswer::Single("x".to_string())]
+        ),
         QuestionCasOutcome::Unknown
     );
 }

@@ -1,8 +1,7 @@
-//! DocManager apply_event 测试·投递判定与回放（§8.5 命令路径上的
-//! 事件应用）：delivery failed/unknown 对 active_turn 的终态化判定
-//! （不误伤更新的 turn）、`session/load` 回放命令流（BeginLoadReplay →
-//! 历史 chunk 归位 → EndLoadReplay 终态化）、回放首帧增量合成占位
-//! turn（REPLAY_NEEDS_TURN）、turn_terminal 仅对同一持久化结果幂等。
+//! DocManager apply_event 投递判定与回放测试（§8.5 命令路径）：delivery
+//! failed/unknown 精确终态化且不误伤新 turn；session/load 回放命令流（BeginLoadReplay →
+//! 历史 chunk 归位 → EndLoadReplay）、首帧增量合成占位 turn（REPLAY_NEEDS_TURN），
+//! turn_terminal 仅对同一持久化结果幂等。
 
 use std::sync::Arc;
 
@@ -600,7 +599,8 @@ async fn set_turn_terminal_failed_writes_entry_public_error() {
         SubmitResult::Applied(result) if result.applied
     ));
     assert!(matches!(
-        mgr.submit_event(delta("s1", 1, "t1", "partial answer")).await,
+        mgr.submit_event(delta("s1", 1, "t1", "partial answer"))
+            .await,
         SubmitResult::Applied(_)
     ));
     tokio::time::advance(TokioDuration::from_millis(20)).await;

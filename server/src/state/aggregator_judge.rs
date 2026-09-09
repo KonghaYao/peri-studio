@@ -181,8 +181,8 @@ impl Aggregator {
         ev: &NormalizedEvent,
         active: Option<&ActiveTurnProjection>,
     ) -> Result<(), ApplyReason> {
-        if ev.subagent_scoped() {
-            if matches!(
+        if ev.subagent_scoped()
+            && matches!(
                 ev.body,
                 EventBody::MessageDelta { .. }
                     | EventBody::ReasoningDelta { .. }
@@ -198,9 +198,9 @@ impl Aggregator {
                     | EventBody::QuestionResolved { .. }
                     | EventBody::QuestionExpired { .. }
                     | EventBody::AgentUsage { .. }
-            ) {
-                return Ok(());
-            }
+            )
+        {
+            return Ok(());
         }
         match &ev.body {
             EventBody::MessageDelta { entry_id, .. }

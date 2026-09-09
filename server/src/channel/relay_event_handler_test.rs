@@ -157,6 +157,83 @@ async fn binding_mismatch_dropped() {
 }
 
 #[tokio::test]
+async fn load_replay_without_producer_marker_bypasses_callback_stream() {
+    let env = env().await;
+    env.relay
+        .inner
+        .callback_entry_by_chat
+        .write()
+        .await
+        .insert(S1.to_string(), "callback_stale".to_string());
+    assert!(matches!(
+        env.doc
+            .submit_command(
+                S1,
+                DocCommand::BeginLoadReplay {
+                    acp_session_id: "acp-1".to_string(),
+                },
+            )
+            .await,
+        SubmitResult::Applied(_)
+    ));
+
+    let mut replay = crate::state::normalized::NormalizedEvent {
+        chat_id: S1.to_string(),
+        seq: 1,
+        epoch: 0,
+        ts: "2026-08-07T00:00:00Z".to_string(),
+        provenance: Default::default(),
+        source_agent_id: None,
+        callback_entry_id: None,
+        body: crate::state::normalized::EventBody::UserMessage {
+            turn_id: String::new(),
+            entry_id: String::new(),
+            text: "restored prompt".to_string(),
+            author_user_id: None,
+            created_at: "2026-08-07T00:00:00Z".to_string(),
+        },
+    };
+    env.relay.decorate_callback_envelope(S1, &mut replay).await;
+
+    assert_eq!(replay.callback_entry_id, None);
+    assert!(env
+        .relay
+        .inner
+        .callback_entry_by_chat
+        .read()
+        .await
+        .get(S1)
+        .is_none());
+}
+
+#[tokio::test]
+async fn replay_marker_outside_load_window_still_uses_callback_stream() {
+    let env = env().await;
+    let mut callback = crate::state::normalized::NormalizedEvent {
+        chat_id: S1.to_string(),
+        seq: 1,
+        epoch: 0,
+        ts: "2026-08-07T00:00:00Z".to_string(),
+        provenance: crate::state::normalized::EventProvenance::PeriReplay,
+        source_agent_id: None,
+        callback_entry_id: None,
+        body: crate::state::normalized::EventBody::UserMessage {
+            turn_id: String::new(),
+            entry_id: String::new(),
+            text: "live callback".to_string(),
+            author_user_id: None,
+            created_at: "2026-08-07T00:00:00Z".to_string(),
+        },
+    };
+
+    env.relay
+        .decorate_callback_envelope(S1, &mut callback)
+        .await;
+
+    assert!(callback.callback_entry_id.is_some());
+}
+
+#[tokio::test]
 async fn event_delivered_to_aggregator() {
     let env = env().await;
     let e = ev(

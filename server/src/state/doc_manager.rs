@@ -1,16 +1,7 @@
-//! DocManager：唯一提交边界（§5.6）+ 每 chat 单写者（§7.4）+ 16ms 微批次
-//! （§6.4）+ 广播 + 唯一提交边界。
+//! DocManager：Y.Doc 唯一提交边界（§5.6）与每 chat 单写者 API（§7.4）。
 //!
-//! 所有 Y.Doc 写入（聚合投影、控制面状态迁移、权限 CAS、定时器、Registry
-//! 更新）都必须经 DocManager 的进程内单写通道；任何路径不得绕过 DocManager
-//! 直写 yrs（§6.5）。yrs `transact_mut()` 并发 panic 由每 chat 单写者排除。
-
-//! 拆分说明（结构拆分，行为不变）：本文件保留类型面与 API 面（含
-//! [`DocManager`] 唯一提交边界句柄）；命令面 → `doc_manager_command.rs`，
-//! 写者循环/persist/广播 → `doc_manager_persist.rs`，事件/命令应用 →
-//! `doc_manager_apply_event.rs` / `doc_manager_apply_command.rs` /
-//! `doc_manager_apply_turn.rs`。`DocCommand` 经 `pub(crate) use`
-//! re-export，调用方路径不变。
+//! 命令、事件应用、写者持久化分别位于 `doc_manager_command.rs`、
+//! `doc_manager_apply_*.rs`、`doc_manager_*_persist.rs`；本文件保留类型和 API。
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -31,7 +22,8 @@ use crate::state::normalized::NormalizedEvent;
 use crate::state::registry::{RegistryError, RegistryMsg, RegistryState};
 
 pub use super::doc_manager_command::DocCommand;
-use super::doc_manager_persist::{chat_writer_loop, is_batchable, registry_writer_loop};
+use super::doc_manager_persist::{chat_writer_loop, is_batchable};
+use super::doc_manager_registry_persist::registry_writer_loop;
 
 /// 微批次/队列参数（§6.4/§8.6）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -155,6 +147,8 @@ pub(crate) enum ChatMsg {
     ReadSessionActiveTurn(oneshot::Sender<(Option<String>, String)>),
     /// 只读：Chat Doc 同回合 assistant 是否已终态（L3 超时防误报）。
     ReadChatTurnTerminal(String, oneshot::Sender<bool>),
+    /// 只读：当前 chat 是否处于 session/load 回放窗口。
+    ReadLoadReplayActive(oneshot::Sender<bool>),
 }
 
 /// 唯一提交边界（§5.6）。
@@ -433,6 +427,20 @@ impl DocManager {
         }
         drop(chats);
         rx.await.unwrap_or(false)
+    }
+
+    /// 读当前 chat 是否处于 session/load 回放窗口；writer 缺失或关闭时返回 `None`。
+    pub async fn read_load_replay_active(&self, chat_id: &str) -> Option<bool> {
+        let chats = self.chats.read().await;
+        let handle = chats.get(chat_id)?;
+        let (reply, rx) = oneshot::channel();
+        handle
+            .tx
+            .send(ChatMsg::ReadLoadReplayActive(reply))
+            .await
+            .ok()?;
+        drop(chats);
+        rx.await.ok()
     }
 
     async fn submit_registry_command(&self, cmd: DocCommand) -> SubmitResult {

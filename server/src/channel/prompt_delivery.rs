@@ -5,12 +5,11 @@
 //! and receive one already-adjudicated terminal result; they do not need to
 //! know which side-effect boundary was crossed.
 //!
-//! 本文件按主题拆分（原 707 行 → 两个文件，均 ≤500 行）：类型定义、构造与
+//! 本文件按主题拆分（原 707 行 → 三个文件，均 ≤500 行）：类型定义、构造与
 //! `execute` 主流程（前置校验、pending 投影、dispatch 屏障）保留在本文件；
-//! 响应等待与终态收尾（`await_terminal`）及失败终结方法
-//! （fail_before_dispatch/delivery_unknown 系列）见 [`super::prompt_delivery_finalize`]，
-//! 其方法以 `pub(super)` 暴露（等价于拆分前父模块内的私有可见域），
-//! 不改变任何分支语义。
+//! 响应等待与 dispatch 后终态收尾见 `prompt_delivery_finalize.rs`，dispatch 前
+//! 失败处理见 `prompt_delivery_failure.rs`。Sibling 模块中的方法以 `pub(super)`
+//! 暴露（等价于拆分前父模块内的私有可见域），不改变分支语义。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -392,7 +391,9 @@ fn unknown(message: &str) -> PromptDeliveryFailure {
     }
 }
 
-#[path = "prompt_delivery_public_error.rs"]
-mod prompt_delivery_public_error;
+#[path = "prompt_delivery_failure.rs"]
+mod prompt_delivery_failure;
 #[path = "prompt_delivery_finalize.rs"]
 mod prompt_delivery_finalize;
+#[path = "prompt_delivery_public_error.rs"]
+mod prompt_delivery_public_error;

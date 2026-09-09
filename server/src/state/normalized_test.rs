@@ -8,7 +8,7 @@ use serde_json::json;
 
 use peri_studio_proto::action::PermissionDecision;
 use peri_studio_proto::schema::{
-    BlockVisibility, PermissionOptions, PeriTaskDetailAvailability, PeriTaskKind,
+    BlockVisibility, PeriTaskDetailAvailability, PeriTaskKind, PermissionOptions,
     SessionSummaryProjection, ToolCallStatus, TurnStatus,
 };
 

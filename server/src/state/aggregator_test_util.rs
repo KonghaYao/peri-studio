@@ -115,11 +115,7 @@ pub(crate) fn entry_order(pair: &DocPair) -> Vec<String> {
         .and_then(|v| v.cast::<yrs::ArrayRef>().ok())
         .map(|order| {
             (0..order.len(&txn))
-                .filter_map(|i| {
-                    order
-                        .get(&txn, i)
-                        .and_then(|v| v.cast::<String>().ok())
-                })
+                .filter_map(|i| order.get(&txn, i).and_then(|v| v.cast::<String>().ok()))
                 .collect()
         })
         .unwrap_or_default()
@@ -128,7 +124,10 @@ pub(crate) fn entry_order(pair: &DocPair) -> Vec<String> {
 pub(crate) fn pending_question_status(pair: &DocPair, question_id: &str) -> Option<String> {
     let txn = pair.session.transact();
     let root = chat_writer::root_map_read(&txn)?;
-    let all = root.get(&txn, "pending_questions")?.cast::<yrs::MapRef>().ok()?;
+    let all = root
+        .get(&txn, "pending_questions")?
+        .cast::<yrs::MapRef>()
+        .ok()?;
     all.get(&txn, question_id)
         .and_then(|v| v.cast::<yrs::MapRef>().ok())
         .and_then(|item| item.get(&txn, "status"))

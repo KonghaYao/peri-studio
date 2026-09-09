@@ -2,9 +2,7 @@
 
 use serde_json::{Map, Value};
 
-use peri_studio_proto::schema::{
-    PeriTaskDetailAvailability, PeriTaskKind, PeriTaskSubtype,
-};
+use peri_studio_proto::schema::{PeriTaskDetailAvailability, PeriTaskKind, PeriTaskSubtype};
 
 use crate::state::normalized::EventBody;
 
@@ -49,7 +47,9 @@ pub(crate) fn bounded_summary(raw: &Value) -> Option<String> {
 }
 
 impl AcpChannel {
-    pub(crate) fn parse_peri_agent_event(params: &Map<String, Value>) -> Result<EventBody, MapError> {
+    pub(crate) fn parse_peri_agent_event(
+        params: &Map<String, Value>,
+    ) -> Result<EventBody, MapError> {
         let event_json = params
             .get("event_json")
             .and_then(Value::as_str)
@@ -57,7 +57,9 @@ impl AcpChannel {
         normalize_peri_agent_event_json(event_json)
     }
 
-    pub(crate) fn parse_peri_unstable_event(params: &Map<String, Value>) -> Result<EventBody, MapError> {
+    pub(crate) fn parse_peri_unstable_event(
+        params: &Map<String, Value>,
+    ) -> Result<EventBody, MapError> {
         let event_name = params.get("event").ok_or(MapError::MissingField)?;
         let data = params.get("data").ok_or(MapError::MissingField)?;
         normalize_peri_unstable_event(event_name, data)
@@ -67,11 +69,17 @@ impl AcpChannel {
 fn normalize_peri_agent_event_json(event_json: &str) -> Result<EventBody, MapError> {
     let parsed: Value = serde_json::from_str(event_json).map_err(|_| MapError::Unsupported)?;
     let record = parsed.as_object().ok_or(MapError::Unsupported)?;
-    let event_type = record.get("type").and_then(Value::as_str).ok_or(MapError::Unsupported)?;
+    let event_type = record
+        .get("type")
+        .and_then(Value::as_str)
+        .ok_or(MapError::Unsupported)?;
     if event_type != "subagent_started" && event_type != "subagent_stopped" {
         return Err(MapError::Unsupported);
     }
-    let value = record.get("value").and_then(Value::as_object).ok_or(MapError::MissingField)?;
+    let value = record
+        .get("value")
+        .and_then(Value::as_object)
+        .ok_or(MapError::MissingField)?;
     let task_id = non_empty_string(value, "instance_id").ok_or(MapError::MissingField)?;
 
     if event_type == "subagent_started" {
@@ -115,7 +123,10 @@ fn normalize_peri_agent_event_json(event_json: &str) -> Result<EventBody, MapErr
     })
 }
 
-fn normalize_peri_unstable_event(event_name: &Value, raw_data: &Value) -> Result<EventBody, MapError> {
+fn normalize_peri_unstable_event(
+    event_name: &Value,
+    raw_data: &Value,
+) -> Result<EventBody, MapError> {
     let event_name = event_name.as_str().ok_or(MapError::Unsupported)?;
     if !matches!(
         event_name,
@@ -133,9 +144,7 @@ fn normalize_peri_unstable_event(event_name: &Value, raw_data: &Value) -> Result
         let title = summary
             .as_ref()
             .map(|s| truncate_chars(s, PERI_TASK_TITLE_MAX_CHARS))
-            .or_else(|| {
-                kind_label.map(|k| truncate_chars(k, PERI_TASK_TITLE_MAX_CHARS))
-            })
+            .or_else(|| kind_label.map(|k| truncate_chars(k, PERI_TASK_TITLE_MAX_CHARS)))
             .unwrap_or_else(|| TASK_FALLBACK_TITLE.to_string());
         let detail_availability = if summary.is_some() {
             PeriTaskDetailAvailability::Preview
@@ -155,7 +164,10 @@ fn normalize_peri_unstable_event(event_name: &Value, raw_data: &Value) -> Result
     }
 
     if event_name == "bg-task-completed" {
-        let success = data.get("success").and_then(Value::as_bool).unwrap_or(false);
+        let success = data
+            .get("success")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
         let summary = data.get("output_preview").and_then(bounded_summary);
         let duration_ms = parse_duration_ms(data.get("duration_ms"));
         let detail_availability = if summary.is_some() {
@@ -216,11 +228,10 @@ fn redact_urls(s: &str) -> String {
     let mut i = 0;
     while i < bytes.len() {
         let rest = &s[i..];
-        if rest.starts_with("http://") || rest.starts_with("https://") || rest.starts_with("wss://") {
+        if rest.starts_with("http://") || rest.starts_with("https://") || rest.starts_with("wss://")
+        {
             out.push_str("[REDACTED_URL]");
-            i += rest
-                .find(|c: char| c.is_whitespace())
-                .unwrap_or(rest.len());
+            i += rest.find(|c: char| c.is_whitespace()).unwrap_or(rest.len());
             continue;
         }
         let ch = rest.chars().next().unwrap();
@@ -264,7 +275,15 @@ fn redact_bearer(s: &str) -> String {
 
 fn redact_paths(s: &str) -> String {
     let prefixes = [
-        "~/", "/Users/", "/home/", "/var/", "/tmp/", "/private/", "/etc/", "/opt/", "/srv/",
+        "~/",
+        "/Users/",
+        "/home/",
+        "/var/",
+        "/tmp/",
+        "/private/",
+        "/etc/",
+        "/opt/",
+        "/srv/",
         "/workspace/",
     ];
     let mut out = s.to_string();

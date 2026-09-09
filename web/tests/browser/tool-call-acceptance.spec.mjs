@@ -26,7 +26,7 @@ test.describe('tool-call evidence acceptance', () => {
     await expect(bash.getByTestId('tool-activity-row-body')).toHaveCount(0);
 
     await expand(bash);
-    await expect(bash.getByText('bash-input-sentinel')).toBeVisible();
+    await expect(bash.getByTestId('tool-activity-row-body').getByText('bash-input-sentinel')).toBeVisible();
     await expect(bash.getByText(/bash stdout sentinel/)).toBeVisible();
     await expect(bash.getByText(/bash stderr sentinel/)).toBeVisible();
     await expect(bash).toContainText(/"exitCode": 7/);
@@ -78,7 +78,7 @@ test.describe('loading transition acceptance', () => {
     await expect(page.getByTestId('chat-loading')).toHaveCount(0);
 
     await installPhase(page, 'completed-gap');
-    await expect(rowById(page, 'acceptance-tool')).toContainText('Done');
+    await expect(rowById(page, 'acceptance-tool').getByRole('img', { name: 'Done' })).toBeVisible();
     await expect(page.getByTestId('chat-loading')).toHaveCount(1);
     await expect(page.getByRole('status', { name: 'Agent activity' })).toHaveText('Peri is working');
 
@@ -100,7 +100,7 @@ test.describe('loading transition acceptance', () => {
 
     await installPhase(page, 'recovered');
     await expect(page.getByTestId('chat-loading')).toHaveCount(0);
-    await expect(rowById(page, 'acceptance-tool')).toContainText('Done');
+    await expect(rowById(page, 'acceptance-tool').getByRole('img', { name: 'Done' })).toBeVisible();
     await expect(page.getByTestId('composer-input')).toBeEnabled();
   });
 });
@@ -111,13 +111,11 @@ test('expanded output at the tail remains fully visible above the composer and s
   const scroll = page.getByTestId('message-list-scroll');
   await scroll.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
 
-  const diagnostics = rowById(page, 'acceptance-diagnostics').or(
-    page.getByTestId('tool-activity-row').filter({ hasText: 'Final diagnostics' }),
-  );
-  await expect(diagnostics.first()).toBeVisible();
-  await expect(diagnostics.first().getByTestId('tool-activity-row-body')).toHaveCount(0);
-  await expand(diagnostics.first());
-  await expect(diagnostics.first().getByText(/final diagnostic tail sentinel/)).toBeVisible();
+  const diagnostics = rowById(page, 'long-tool-18-5');
+  await expect(diagnostics).toBeVisible();
+  await expect(diagnostics.getByTestId('tool-activity-row-body')).toHaveCount(0);
+  await expand(diagnostics);
+  await expect(diagnostics.getByText(/final diagnostic tail sentinel/)).toBeVisible();
 
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   const layout = await page.evaluate(() => {

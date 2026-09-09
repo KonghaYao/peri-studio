@@ -35,7 +35,11 @@ impl RelayEventHandler {
             },
         );
         drop(pending);
-        self.arm_question_expiry(chat_id.to_string(), question_id.to_string(), expires_at.to_string());
+        self.arm_question_expiry(
+            chat_id.to_string(),
+            question_id.to_string(),
+            expires_at.to_string(),
+        );
     }
 
     pub async fn pending_question_chat(&self, question_id: &str) -> Option<String> {
@@ -79,9 +83,7 @@ impl RelayEventHandler {
                 let now = Utc::now();
                 let deadline = deadline.with_timezone(&Utc);
                 if deadline > now {
-                    let wait = (deadline - now)
-                        .to_std()
-                        .unwrap_or(Duration::from_secs(60));
+                    let wait = (deadline - now).to_std().unwrap_or(Duration::from_secs(60));
                     tokio::time::sleep(wait).await;
                 }
             } else {

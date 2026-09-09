@@ -198,6 +198,7 @@ export function ToolActivityRow(props: {
   };
 }) {
   const [open, setOpen] = createSignal(false);
+  let evidenceBody: HTMLDivElement | undefined;
   const hasEvidence = () => props.evidence.input !== undefined && props.evidence.input !== null
     || props.evidence.inputOmitted
     || props.evidence.output !== undefined && props.evidence.output !== null
@@ -212,8 +213,15 @@ export function ToolActivityRow(props: {
 
   const toggle = () => {
     if (!hasEvidence()) return;
-    if (!open()) props.onOpenEvidence();
-    setOpen((value) => !value);
+    if (!open()) {
+      props.onOpenEvidence();
+      setOpen(true);
+      requestAnimationFrame(() => {
+        evidenceBody?.scrollIntoView?.({ block: 'nearest' });
+      });
+      return;
+    }
+    setOpen(false);
   };
 
   const openPath = (event: MouseEvent) => {
@@ -321,6 +329,7 @@ export function ToolActivityRow(props: {
       </div>
       <Show when={open() && hasEvidence() && props.evidenceLoaded}>
         <div
+          ref={evidenceBody}
           class={cn(
             'tool-activity-row__body flex flex-col gap-6 pb-8 pl-16 pr-10',
             activity() ? 'mt-0 border-t border-border-faint pt-8' : 'mt-4 pb-4 pr-8',

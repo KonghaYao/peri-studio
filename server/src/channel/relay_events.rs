@@ -78,7 +78,8 @@ impl RelayEventHandler {
                     seq,
                     applied: r.applied,
                 };
-                self.after_event_submitted(chat_id, &submitted, &delivered).await;
+                self.after_event_submitted(chat_id, &submitted, &delivered)
+                    .await;
                 delivered
             }
             SubmitResult::Rejected(_) => ConsumeResult::Dropped {

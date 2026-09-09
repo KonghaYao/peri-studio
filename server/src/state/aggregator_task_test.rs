@@ -4,9 +4,7 @@ use super::util::*;
 
 use yrs::{Array, ArrayRef, Map, MapRef, Transact};
 
-use peri_studio_proto::schema::{
-    PeriTaskDetailAvailability, PeriTaskKind, PeriTaskSubtype,
-};
+use peri_studio_proto::schema::{PeriTaskDetailAvailability, PeriTaskKind, PeriTaskSubtype};
 
 use crate::state::aggregator::Aggregator;
 use crate::state::chat_writer;
@@ -77,9 +75,17 @@ fn started_creates_running_and_appends_task_order_without_active_turn() {
 #[test]
 fn duplicate_started_does_not_append_task_order_again() {
     let mut pair = pair();
-    assert!(Aggregator.apply(&mut pair, &ev("s1", 1, peri_started("bg-1", "A"))).applied);
+    assert!(
+        Aggregator
+            .apply(&mut pair, &ev("s1", 1, peri_started("bg-1", "A")))
+            .applied
+    );
     let v0 = session_projection_version(&pair);
-    assert!(Aggregator.apply(&mut pair, &ev("s1", 2, peri_started("bg-1", "B"))).applied);
+    assert!(
+        Aggregator
+            .apply(&mut pair, &ev("s1", 2, peri_started("bg-1", "B")))
+            .applied
+    );
     assert_eq!(task_order_len(&pair), 1);
     assert!(session_projection_version(&pair) > v0);
 }
@@ -87,10 +93,17 @@ fn duplicate_started_does_not_append_task_order_again() {
 #[test]
 fn completed_updates_status_and_summary_without_reordering() {
     let mut pair = pair();
-    assert!(Aggregator.apply(&mut pair, &ev("s1", 1, peri_started("bg-1", "A"))).applied);
     assert!(
         Aggregator
-            .apply(&mut pair, &ev("s1", 2, peri_completed("bg-1", true, "done")))
+            .apply(&mut pair, &ev("s1", 1, peri_started("bg-1", "A")))
+            .applied
+    );
+    assert!(
+        Aggregator
+            .apply(
+                &mut pair,
+                &ev("s1", 2, peri_completed("bg-1", true, "done"))
+            )
             .applied
     );
     assert_eq!(task_status(&pair, "bg-1").as_deref(), Some("completed"));
@@ -105,14 +118,22 @@ fn completed_updates_status_and_summary_without_reordering() {
 #[test]
 fn started_after_terminal_does_not_bump_projection() {
     let mut pair = pair();
-    assert!(Aggregator.apply(&mut pair, &ev("s1", 1, peri_started("bg-1", "A"))).applied);
+    assert!(
+        Aggregator
+            .apply(&mut pair, &ev("s1", 1, peri_started("bg-1", "A")))
+            .applied
+    );
     assert!(
         Aggregator
             .apply(&mut pair, &ev("s1", 2, peri_completed("bg-1", true, "ok")))
             .applied
     );
     let v = session_projection_version(&pair);
-    assert!(Aggregator.apply(&mut pair, &ev("s1", 3, peri_started("bg-1", "late"))).applied);
+    assert!(
+        Aggregator
+            .apply(&mut pair, &ev("s1", 3, peri_started("bg-1", "late")))
+            .applied
+    );
     assert_eq!(session_projection_version(&pair), v);
     assert_eq!(task_status(&pair, "bg-1").as_deref(), Some("completed"));
 }
@@ -122,10 +143,7 @@ fn conflicting_terminal_preserves_first_terminal() {
     let mut pair = pair();
     assert!(
         Aggregator
-            .apply(
-                &mut pair,
-                &ev("s1", 1, peri_completed("bg-1", true, "ok")),
-            )
+            .apply(&mut pair, &ev("s1", 1, peri_completed("bg-1", true, "ok")),)
             .applied
     );
     assert_eq!(task_status(&pair, "bg-1").as_deref(), Some("completed"));

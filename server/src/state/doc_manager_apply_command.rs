@@ -1,13 +1,10 @@
 //! 命令应用（`doc_manager.rs` 拆分，§8.2 提交点纪律）。
 //!
-//! 职责边界：[`apply_command`]（DocCommand 应用：命令分派 → 写 doc →
-//! persist 落盘/广播 → gap 上报，§6.4 事务顺序）与 entry 侧命令分组
-//! [`apply_entry_group`]（entry/权限/elicitation 命令组）；turn 侧命令组
-//! 见 `doc_manager_apply_turn.rs`（[`apply_turn_group`]）。
+//! 职责边界：[`apply_command`] 负责命令分派、写 doc、persist/广播与 gap 上报；
+//! [`apply_entry_group`] 处理 entry/权限/elicitation，turn 命令见 [`apply_turn_group`]。
 //!
-//! 拆分动机（结构拆分，行为不变）：原 `doc_manager.rs` 2014 行超限，`match`
-//! 分支按主题提取为两个同步分组函数（分支体逐字保留，参数仅 `pair/agg/cmd`，
-//! 无 await），分派与 persist 收尾保持原语义。
+//! 从原 2014 行 `doc_manager.rs` 按主题拆分；同步分组无 await，分派和 persist
+//! 收尾保持原语义。
 
 use std::sync::Arc;
 
@@ -504,7 +501,9 @@ fn apply_entry_group(pair: &mut DocPair, agg: &mut Aggregator, cmd: &DocCommand)
                     reason: Some(
                         if prior.as_deref() == Some("resolved")
                             && crate::state::question::answers_match_stored(
-                                pair, question_id, answers,
+                                pair,
+                                question_id,
+                                answers,
                             )
                         {
                             ApplyReason::QuestionAnswerReplay

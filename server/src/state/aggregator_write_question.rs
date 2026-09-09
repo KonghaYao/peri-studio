@@ -6,17 +6,15 @@ use crate::state::question;
 use crate::state::view_store::TransactionCtx;
 
 /// 防御性过滤（对齐 Fenix `extractQuestionItems`）：normalize 已校验，聚合层再滤一遍。
-pub(crate) fn filter_question_items(items: &[QuestionItemProjection]) -> Vec<QuestionItemProjection> {
+pub(crate) fn filter_question_items(
+    items: &[QuestionItemProjection],
+) -> Vec<QuestionItemProjection> {
     items
         .iter()
         .filter(|item| !item.question.is_empty())
         .map(|item| QuestionItemProjection {
             question: item.question.clone(),
-            header: item
-                .header
-                .as_ref()
-                .filter(|h| !h.is_empty())
-                .cloned(),
+            header: item.header.as_ref().filter(|h| !h.is_empty()).cloned(),
             options: item
                 .options
                 .iter()

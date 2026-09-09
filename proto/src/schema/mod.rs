@@ -14,8 +14,8 @@ mod agent;
 mod chat;
 mod control;
 mod elicitation;
-mod question;
 mod peri_task;
+mod question;
 mod registry;
 
 #[cfg(test)]
@@ -37,13 +37,13 @@ pub use control::{
     ActiveTurnProjection, ChatInfoProjection, PermissionProjection, SessionDocRoot,
     SessionSummaryProjection,
 };
-pub use peri_task::{
-    PeriTaskDetailAvailability, PeriTaskKind, PeriTaskStatus, PeriTaskSubtype,
-    PeriTaskViewProjection,
-};
 pub use elicitation::{
     ElicitationFieldKind, ElicitationFieldProjection, ElicitationOptionProjection,
     ElicitationProjection, ElicitationResponseAction, ElicitationStatus,
+};
+pub use peri_task::{
+    PeriTaskDetailAvailability, PeriTaskKind, PeriTaskStatus, PeriTaskSubtype,
+    PeriTaskViewProjection,
 };
 pub use question::{
     QuestionAnswer, QuestionItemProjection, QuestionOptionProjection, QuestionProjection,

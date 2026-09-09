@@ -75,6 +75,7 @@ export function ToolActivityRow(props: {
   duration?: string;
 }) {
   const [open, setOpen] = createSignal(false);
+  let evidenceBody: HTMLDivElement | undefined;
   const statusLabel = createMemo(() => STATUS[props.status]);
   const hasEvidence = () => Boolean(props.input || props.output || props.error);
   const isRunning = () => props.status === 'running';
@@ -112,7 +113,14 @@ export function ToolActivityRow(props: {
             class="grid size-5.5 place-items-center rounded-md text-content-faint hover:bg-interaction-hover"
             aria-label={open() ? 'Collapse tool details' : 'Expand tool details'}
             aria-expanded={open()}
-            onClick={() => setOpen((value) => !value)}
+            onClick={() => {
+              if (open()) {
+                setOpen(false);
+                return;
+              }
+              setOpen(true);
+              requestAnimationFrame(() => evidenceBody?.scrollIntoView({ block: 'nearest' }));
+            }}
           >
             <ChevronRight size={13} class={cn('transition-transform duration-(--duration-fast)', open() && 'rotate-90')} />
           </button>
@@ -120,7 +128,7 @@ export function ToolActivityRow(props: {
       </div>
 
       <Show when={open() && hasEvidence()}>
-        <div class="mt-1 flex flex-col gap-1.5 pb-1 pl-6 pr-2">
+        <div ref={evidenceBody} class="mt-1 flex flex-col gap-1.5 pb-1 pl-6 pr-2">
           <Show when={props.input}><EvidenceBlock label="Input" value={props.input!} /></Show>
           <Show when={props.output}><EvidenceBlock label="Output" value={props.output!} /></Show>
           <Show when={props.error}><EvidenceBlock label="Error" value={props.error!} tone="error" /></Show>

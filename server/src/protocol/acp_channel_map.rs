@@ -19,7 +19,6 @@ use peri_studio_proto::schema::{BlockVisibility, ChatStatus, TurnStatus};
 
 use crate::state::normalized::EventBody;
 
-use super::acp_channel_question::{map_interactive_question, map_question_resolved};
 use super::acp_channel::AcpChannel;
 use super::acp_channel_config::{
     normalize_agent_config, parse_agent_plan, parse_available_commands,
@@ -28,6 +27,7 @@ use super::acp_channel_parse::{
     number_field, permission_options, public_error, required, string_field, truncate_identifier,
     truncate_text, MapError,
 };
+use super::acp_channel_question::{map_interactive_question, map_question_resolved};
 
 impl AcpChannel {
     pub(crate) fn map_acp_update(

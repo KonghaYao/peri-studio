@@ -19,13 +19,11 @@ use crate::channel::coordinator_helpers::extract_command_id;
 use crate::channel::elicitation_response::{
     ElicitationResponseOutcome, ElicitationResponseRequest,
 };
-use crate::channel::question_response::{
-    QuestionResponseOutcome, QuestionResponseRequest,
-};
 use crate::channel::permission_resolution::{
     PermissionResolutionOutcome, PermissionResolutionRequest,
 };
 use crate::channel::prompt_delivery::{PromptDeliveryOutcome, PromptDeliveryRequest};
+use crate::channel::question_response::{QuestionResponseOutcome, QuestionResponseRequest};
 use crate::channel::runtime_closure::CloseRuntimeRequest;
 use crate::channel::turn_cancellation::CancelTurnRequest;
 

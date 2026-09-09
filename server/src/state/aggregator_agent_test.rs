@@ -30,10 +30,19 @@ fn agent_usage(context_used: u32) -> EventBody {
 
 fn seed_writable_assistant(p: &mut DocPair, agg: &mut Aggregator) {
     seed_user_msg(p, "t1", "t1:user", "hi");
-    assert!(agg.apply(p, &ev("s1", 1, msg_delta("t1", "t1:assistant", "b1", "hello"))).applied);
+    assert!(
+        agg.apply(
+            p,
+            &ev("s1", 1, msg_delta("t1", "t1:assistant", "b1", "hello"))
+        )
+        .applied
+    );
 }
 
-fn entry_token_usage(pair: &DocPair, entry_id: &str) -> Option<(u32, u32, Option<u32>, Option<u32>)> {
+fn entry_token_usage(
+    pair: &DocPair,
+    entry_id: &str,
+) -> Option<(u32, u32, Option<u32>, Option<u32>)> {
     let txn = pair.chat.transact();
     let root = chat_writer::root_map_read(&txn).unwrap();
     let entry = root
@@ -46,10 +55,7 @@ fn entry_token_usage(pair: &DocPair, entry_id: &str) -> Option<(u32, u32, Option
         .and_then(|value| value.cast::<yrs::MapRef>().ok())?;
     Some((
         usage.get(&txn, "total_tokens")?.cast::<u32>().ok()?,
-        usage
-            .get(&txn, "context_window")?
-            .cast::<u32>()
-            .ok()?,
+        usage.get(&txn, "context_window")?.cast::<u32>().ok()?,
         usage
             .get(&txn, "input_tokens")
             .and_then(|value| value.cast::<u32>().ok()),
@@ -264,7 +270,10 @@ fn agent_usage_skips_entry_on_terminal_turn_but_writes_agent_snapshot() {
         .applied
     );
     assert!(agg.apply(&mut p, &ev("s1", 4, agent_usage(9_999))).applied);
-    assert_eq!(entry_token_usage(&p, "t1:assistant"), Some((1_000, 200_000, Some(100), Some(50))));
+    assert_eq!(
+        entry_token_usage(&p, "t1:assistant"),
+        Some((1_000, 200_000, Some(100), Some(50)))
+    );
     assert_eq!(control_context_used(&p), 9_999);
 }
 

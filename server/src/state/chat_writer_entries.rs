@@ -11,13 +11,13 @@
 //! 投影（`chat_writer_turn.rs`）；函数经 `chat_writer.rs` `pub use`
 //! re-export，调用方 `chat_writer::xxx` 路径不变。
 
-use std::collections::HashSet;
-
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use yrs::{Array, Map};
 
-use peri_studio_proto::schema::{ChatEntry, ContentBlock, EntryKind, EntryRole, EntryStatus, EntryTokenUsage};
+use peri_studio_proto::schema::{
+    ChatEntry, ContentBlock, EntryKind, EntryRole, EntryStatus, EntryTokenUsage,
+};
 
 use crate::state::chat_writer::{
     ensure_user_entry_indexed, entry_kind_str, entry_role_str, entry_status_str,

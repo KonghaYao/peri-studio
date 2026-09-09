@@ -102,11 +102,7 @@ pub fn context(pair: &DocPair, question_id: &str) -> Option<String> {
         .and_then(|value| value.cast::<String>().ok())
 }
 
-pub fn answers_match_stored(
-    pair: &DocPair,
-    question_id: &str,
-    answers: &[QuestionAnswer],
-) -> bool {
+pub fn answers_match_stored(pair: &DocPair, question_id: &str, answers: &[QuestionAnswer]) -> bool {
     let txn = pair.session.transact();
     let Some(root) = chat_writer::root_map_read(&txn) else {
         return false;
@@ -206,11 +202,7 @@ fn cas_migrate(
     }
 }
 
-fn write_question_map(
-    txn: &mut TransactionCtx<'_>,
-    all: &yrs::MapRef,
-    value: &QuestionProjection,
-) {
+fn write_question_map(txn: &mut TransactionCtx<'_>, all: &yrs::MapRef, value: &QuestionProjection) {
     let item = all.get_or_init::<_, yrs::MapRef>(txn, value.question_id.as_str());
     item.insert(txn, "question_id", value.question_id.clone());
     item.insert(txn, "status", value.status.as_str());

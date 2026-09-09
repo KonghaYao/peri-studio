@@ -12,7 +12,10 @@ fn respond_question_prefers_answers_over_option_ids() {
         "optionIds": ["staging"]
     });
     let decoded: RespondQuestionPayload = serde_json::from_value(raw).unwrap();
-    assert_eq!(decoded.answers, vec![QuestionAnswer::Single("production".into())]);
+    assert_eq!(
+        decoded.answers,
+        vec![QuestionAnswer::Single("production".into())]
+    );
 }
 
 #[test]
@@ -24,7 +27,10 @@ fn respond_question_falls_back_to_option_ids() {
     });
     let decoded: RespondQuestionPayload = serde_json::from_value(raw).unwrap();
     assert_eq!(decoded.answers.len(), 2);
-    assert_eq!(decoded.answers[0], QuestionAnswer::Single("production".into()));
+    assert_eq!(
+        decoded.answers[0],
+        QuestionAnswer::Single("production".into())
+    );
     assert_eq!(
         decoded.answers[1],
         QuestionAnswer::Multiple(vec!["a".into(), "b".into()])
@@ -39,5 +45,8 @@ fn respond_question_falls_back_to_option_id() {
         "optionId": "production"
     });
     let decoded: RespondQuestionPayload = serde_json::from_value(raw).unwrap();
-    assert_eq!(decoded.answers, vec![QuestionAnswer::Single("production".into())]);
+    assert_eq!(
+        decoded.answers,
+        vec![QuestionAnswer::Single("production".into())]
+    );
 }

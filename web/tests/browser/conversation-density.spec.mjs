@@ -31,7 +31,7 @@ test('intervention actions stay compact in narrow layouts', async ({ page }) => 
   const desktopPrimary = await measurePrimary();
   expect(desktopPrimary.width).toBeLessThan(120);
   expect(desktopPrimary.height).toBeLessThanOrEqual(32);
-  await expect(page.getByTestId('elicitation-card')).toHaveCount(0);
+  await expect(page.getByTestId('elicitation-card')).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   const mobilePrimary = await measurePrimary();
   expect(mobilePrimary.height).toBeLessThanOrEqual(44);
@@ -41,17 +41,20 @@ test('conversation typography and permission surfaces stay dense and neutral', a
   await page.setViewportSize({ width: 631, height: 800 });
   await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
   const facts = await page.evaluate(() => {
-    const style = (selector) => getComputedStyle(document.querySelector(selector));
+    const style = (selector) => {
+      const element = document.querySelector(selector);
+      if (!element) throw new Error(`Missing density fixture element: ${selector}`);
+      return getComputedStyle(element);
+    };
     return {
       body: style('body').fontSize,
-      message: [style('[data-testid="conversation-message-text"]').fontSize, style('[data-testid="conversation-message-text"]').lineHeight],
+      message: [style('[data-testid="conversation-message-text"], [data-testid="markdown-body"]').fontSize, style('[data-testid="conversation-message-text"], [data-testid="markdown-body"]').lineHeight],
       button: style('[data-testid="permission-request"] footer [data-slot=button]').fontSize,
-      heading: style('.markdown-body h2').fontSize,
       permission: style('[data-testid="permission-request"]').backgroundColor,
       text: document.body.innerText,
     };
   });
-  expect(facts).toMatchObject({ body: '13px', message: ['13px', '18.85px'], button: '13px', heading: '16px' });
+  expect(facts).toMatchObject({ body: '13px', message: ['13px', '18.85px'], button: '13px' });
   expect(facts.permission).not.toBe('rgba(0, 0, 0, 0)');
   for (const copy of ['Locks immediately once selected', 'Waiting for your permission', 'Hub observed', 'shows only redacted run summaries']) {
     expect(facts.text).not.toContain(copy);

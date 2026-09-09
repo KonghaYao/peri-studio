@@ -41,13 +41,13 @@ use crate::channel::command_outcome_broker::CommandOutcomeBroker;
 // （chat_channel/gateway/metadata_*/runtime_creation 等仍按旧路径引用）。
 pub(super) use crate::channel::coordinator_helpers::{action_error, extract_command_id};
 use crate::channel::elicitation_response::ElicitationResponse;
-use crate::channel::question_response::QuestionResponse;
 use crate::channel::machine_command_processor::MachineCommandProcessor;
 use crate::channel::mcp_apps_control::McpAppsControl;
 use crate::channel::mcp_control::McpControl;
 use crate::channel::metadata_command_processor::MetadataCommandProcessor;
 use crate::channel::permission_resolution::PermissionResolution;
 use crate::channel::prompt_delivery::PromptDelivery;
+use crate::channel::question_response::QuestionResponse;
 use crate::channel::runtime_closure::RuntimeClosure;
 use crate::channel::runtime_creation::RuntimeCreation;
 use crate::channel::session_catalog_sync::SessionCatalogSync;

@@ -36,12 +36,12 @@ use crate::state::normalized::{
 };
 
 use super::acp_channel_elicitation::{normalize_elicitation_request, ElicitationMapError};
-use super::acp_channel_task::{
-    extract_source_agent_id, PERI_AGENT_EVENT_METHOD, PERI_UNSTABLE_EVENT_METHOD,
-};
 use super::acp_channel_parse::{
     acp_replay_provenance, jsonrpc_id_as_string, jsonrpc_response_id, number_field, public_error,
     raw_replay_provenance, string_field, MapError,
+};
+use super::acp_channel_task::{
+    extract_source_agent_id, PERI_AGENT_EVENT_METHOD, PERI_UNSTABLE_EVENT_METHOD,
 };
 
 // 测试经 `use super::*` 引用（拆分前为 acp_channel 模块私有符号；现位于各
@@ -183,6 +183,7 @@ impl Default for AcpChannel {
 }
 
 impl AcpChannel {
+    #[allow(clippy::too_many_arguments)] // envelope fields mirror NormalizedEvent construction
     fn normalized_event(
         &self,
         chat_id: &str,

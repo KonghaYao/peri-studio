@@ -7,7 +7,9 @@ use yrs::{Map, ReadTxn, Transact, WriteTxn};
 use peri_studio_proto::schema::SessionSummaryProjection;
 
 use crate::state::factory::{Factory, ROOT};
-use crate::state::session_list::{apply_diff, diff, should_write_after_list_response, SessionListDiff};
+use crate::state::session_list::{
+    apply_diff, diff, should_write_after_list_response, SessionListDiff,
+};
 
 fn sum(id: &str, title: &str, updated: &str) -> SessionSummaryProjection {
     SessionSummaryProjection {

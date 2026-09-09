@@ -27,11 +27,11 @@ use super::aggregator::Aggregator;
 use super::aggregator_write_catalog::{
     write_agent_activity, write_agent_plan, write_capabilities, write_chat_info, AgentActivityWrite,
 };
-use super::aggregator_write_question::write_question_requested;
 use super::aggregator_write_helpers::{
     write_agent_config, write_agent_status, write_agent_usage, write_input_prediction,
     write_permission_request, AgentUsageWrite,
 };
+use super::aggregator_write_question::write_question_requested;
 
 impl Aggregator {
     // control 侧写入：CAS 类自开事务（permission 原语内部管理），其余在
@@ -48,17 +48,10 @@ impl Aggregator {
                 | EventBody::PeriTaskCompleted { .. }
                 | EventBody::PeriTaskCancelled { .. }
         ) {
-            let active_turn_id = self
-                .read_active_turn(pair)
-                .map(|active| active.turn_id);
+            let active_turn_id = self.read_active_turn(pair).map(|active| active.turn_id);
             let mut txn = pair.session_txn();
             let root = txn.get_or_insert_map(ROOT);
-            if self.apply_peri_task_event(
-                &mut txn,
-                &root,
-                ev,
-                active_turn_id.as_deref(),
-            ) {
+            if self.apply_peri_task_event(&mut txn, &root, ev, active_turn_id.as_deref()) {
                 chat_writer::bump_projection_version(&mut txn, &root);
             }
             return;
@@ -214,15 +207,15 @@ impl Aggregator {
                         if turn_id.is_empty() && ev.callback_semantics().is_some() {
                             // callback 流不注册 active_turn（§6.5 例外）。
                         } else {
-                        chat_writer::clear_input_prediction(&mut txn, &root);
-                        // active_turn 注册（§7.2：turn 从 accepting 开始）。
-                        let active = ActiveTurnProjection {
-                            turn_id: turn_id.clone(),
-                            turn_status: TurnStatus::Accepting,
-                            updated_at: created_at.clone(),
-                        };
-                        chat_writer::set_active_turn(&mut txn, &root, Some(&active));
-                        chat_writer::bump_projection_version(&mut txn, &root);
+                            chat_writer::clear_input_prediction(&mut txn, &root);
+                            // active_turn 注册（§7.2：turn 从 accepting 开始）。
+                            let active = ActiveTurnProjection {
+                                turn_id: turn_id.clone(),
+                                turn_status: TurnStatus::Accepting,
+                                updated_at: created_at.clone(),
+                            };
+                            chat_writer::set_active_turn(&mut txn, &root, Some(&active));
+                            chat_writer::bump_projection_version(&mut txn, &root);
                         }
                     }
                     EventBody::PermissionRequested {
