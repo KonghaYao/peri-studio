@@ -1,4 +1,4 @@
-import { For, Show, createMemo, createSignal } from 'solid-js';
+import { For, Show, createEffect, createMemo, createSignal } from 'solid-js';
 import type { AgentActivityInfo, AgentPlanEntryInfo, PeriTaskInfo } from '@/entities/chat/control-view';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { selectChatFileChanges } from '@/entities/chat/chat-file-changes';
@@ -53,6 +53,16 @@ function stateLabel(status: string) {
   return 'Queued';
 }
 
+function planAutoExpandSignature(plan: AgentPlanEntryInfo[]) {
+  return plan.map((entry) =>
+    `${entry.id}:${entry.status}:${entry.content}:${entry.activeForm ?? ''}`,
+  ).join('\0');
+}
+
+function asyncAutoExpandSignature(items: Array<{ id: string; status: string; label: string }>) {
+  return items.map((item) => `${item.id}:${item.status}:${item.label}`).join('\0');
+}
+
 export function StatusArea(props: StatusAreaProps) {
   const [activeTab, setActiveTab] = createSignal<StatusTab>('todo');
   const [panelExpanded, setPanelExpanded] = createSignal(true);
@@ -93,6 +103,34 @@ export function StatusArea(props: StatusAreaProps) {
     changes().length > 0 ? { id: 'changes' as const, label: 'Changes', count: changes().length, icon: GitBranch } : null,
   ].filter((tab): tab is NonNullable<typeof tab> => tab !== null));
   const visibleTab = () => tabs().some((tab) => tab.id === activeTab()) ? activeTab() : tabs()[0]?.id;
+
+  let lastPlanSig: string | undefined;
+  let lastAsyncSig: string | undefined;
+
+  createEffect(() => {
+    const planSig = props.active && props.plan.length > 0
+      ? planAutoExpandSignature(props.plan)
+      : '';
+    const asyncSig = showAsyncTab()
+      ? asyncAutoExpandSignature(asyncItems())
+      : '';
+
+    const planChanged = lastPlanSig !== undefined && planSig !== lastPlanSig;
+    const asyncChanged = lastAsyncSig !== undefined && asyncSig !== lastAsyncSig;
+
+    if (planChanged && planSig) {
+      setPanelExpanded(true);
+      setActiveTab('todo');
+    } else if (asyncChanged && asyncSig) {
+      setPanelExpanded(true);
+      if (asyncItems().some((item) => isAsyncInFlight(item.status))) {
+        setActiveTab('async');
+      }
+    }
+
+    lastPlanSig = planSig;
+    lastAsyncSig = asyncSig;
+  });
 
   return <Show when={tabs().length > 0}>
     <section data-testid="status-area" class="status-area chat-column mb-8" aria-label="Status area">

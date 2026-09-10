@@ -1,5 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
+import { createSignal } from 'solid-js';
 import { afterEach, describe, expect, it } from 'vitest';
+import type { AgentPlanEntryInfo, PeriTaskInfo } from '@/entities/chat/control-view';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 
 import { StatusArea } from './StatusArea';
@@ -11,6 +13,17 @@ const changedEntries = [{
   createdAt: '', completedAt: null, text: '', blocks: [], reasoning: [], resources: [], error: null,
   toolCalls: [{ toolCallId: 'edit-1', name: 'Edit', kind: 'edit', status: 'completed', arguments: { file_path: 'src/app.ts' }, result: null, locations: [{ path: 'src/app.ts' }], resultOmitted: false, resultBytes: null, publicError: null, startedAt: null, completedAt: null }],
 }] satisfies ChatEntry[];
+
+const secondChangedEntry = {
+  id: 'assistant-2', turnId: 'turn-1', kind: 'message', role: 'assistant', status: 'completed',
+  authorUserId: null, sourceCommandId: null, createdAt: '', completedAt: null, text: '',
+  blocks: [], reasoning: [], resources: [], error: null,
+  toolCalls: [{
+    toolCallId: 'edit-2', name: 'Edit', kind: 'edit', status: 'completed',
+    arguments: { file_path: 'src/other.ts' }, result: null, locations: [{ path: 'src/other.ts' }],
+    resultOmitted: false, resultBytes: null, publicError: null, startedAt: null, completedAt: null,
+  }],
+} satisfies ChatEntry;
 
 describe('StatusArea', () => {
   it('keeps todo, asynchronous work, and changed files in separate tabs', async () => {
@@ -146,6 +159,58 @@ describe('StatusArea', () => {
     expect(screen.getByRole('tabpanel')).toHaveTextContent('Reviewing UI');
   });
 
+  it('keeps the panel collapsed when only file changes update', async () => {
+    const [entries, setEntries] = createSignal(changedEntries);
+    render(() => <StatusArea active plan={[]} activities={[]} entries={entries()} />);
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Collapse status panel' }));
+    expect(screen.queryByRole('tabpanel')).not.toBeInTheDocument();
+
+    setEntries([changedEntries[0], secondChangedEntry]);
+    await Promise.resolve();
+
+    expect(screen.queryByRole('tabpanel')).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Changes/ })).toBeInTheDocument();
+  });
+
+  it('expands the panel when todo data updates while collapsed', async () => {
+    const [plan, setPlan] = createSignal<AgentPlanEntryInfo[]>([
+      { id: 'todo-1', content: 'Run tests', status: 'pending', activeForm: null },
+    ]);
+    render(() => <StatusArea active plan={plan()} activities={[]} entries={[]} />);
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Collapse status panel' }));
+    expect(screen.queryByRole('tabpanel')).not.toBeInTheDocument();
+
+    setPlan([{ id: 'todo-1', content: 'Run tests', status: 'in_progress', activeForm: 'Running tests' }]);
+    await Promise.resolve();
+
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('Running tests');
+    expect(screen.getByRole('tab', { name: /Todo/ })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('expands the panel when a background task updates while collapsed', async () => {
+    const [tasks, setTasks] = createSignal<PeriTaskInfo[]>([
+      {
+        taskId: 'task-1', kind: 'subagent', taskSubtype: 'agent', title: 'Reviewer', summary: null,
+        status: 'running', isBackground: true, startedAt: null, completedAt: null, updatedAt: null,
+      },
+    ]);
+    render(() => <StatusArea active plan={[]} activities={[]} tasks={tasks()} entries={[]} />);
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Collapse status panel' }));
+    expect(screen.queryByRole('tabpanel')).not.toBeInTheDocument();
+
+    setTasks([{
+      taskId: 'task-1', kind: 'subagent', taskSubtype: 'agent', title: 'Reviewer finished', summary: null,
+      status: 'completed', isBackground: true, startedAt: null, completedAt: '2026-01-01T00:00:00Z', updatedAt: null,
+    }]);
+    await Promise.resolve();
+
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('Reviewer finished');
+    expect(screen.getByRole('tab', { name: /Async/ })).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('hides the async tab when the turn is inactive and only terminal tasks remain', () => {
     render(() => <StatusArea
       active={false}
@@ -160,7 +225,6 @@ describe('StatusArea', () => {
     expect(screen.queryByRole('region', { name: 'Status area' })).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /Async/ })).not.toBeInTheDocument();
   });
-
 
   it('shows absolute changed paths under the project cwd as full relative paths', () => {
     const path = '/workspace/project/web/src/widgets/shell/StatusArea.tsx';
