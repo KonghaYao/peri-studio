@@ -257,7 +257,6 @@ export class SessionActivation {
     if (this.deps.isReadOnly()) return 'Read-only mode cannot open running sessions';
     if (!this.deps.isReady()) return 'Connection not ready';
     if (this.navigator.snapshot().opening) return 'Another session is already opening';
-    if (this.deps.hasUncertainMetadata()) return 'Confirm the previous operation first';
     return null;
   }
 

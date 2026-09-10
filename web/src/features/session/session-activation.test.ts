@@ -107,6 +107,24 @@ describe('SessionActivation', () => {
     expect(subject.activate).not.toHaveBeenCalled();
   });
 
+  it('allows session switching while an earlier metadata operation remains uncertain', () => {
+    const subject = harness({
+      uncertain: true,
+      sessions: [{
+        id: 'another-session', projectId: 'project', title: 'title', lifecycle: 'ready',
+        updatedAt: null, lastOpenedAt: null, activeChatId: null,
+      }],
+    });
+
+    expect(subject.activation.navigate('another-session')).toBe(true);
+    const frame = subject.sentFrame()!;
+    expect(frame.type).toBe('session/open');
+    expect(frame.payload).toEqual({ sessionId: 'another-session' });
+    subject.options()!.cb?.({ commandId: frame.commandId, status: 'committed', chatId: 'another-chat' });
+    expect(subject.activate).toHaveBeenCalledWith('another-session', 'another-chat');
+    expect(subject.toast).not.toHaveBeenCalled();
+  });
+
   it('quick start activates then submits the exact preserved source text', () => {
     const subject = harness();
     expect(subject.activation.quickStart('project', '  First line 🚀\nSecond line  ')).toBe(true);
