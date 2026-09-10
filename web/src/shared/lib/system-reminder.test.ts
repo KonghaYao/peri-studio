@@ -15,4 +15,18 @@ describe('splitSystemReminders', () => {
       { kind: 'text', text: 'literal <system-reminder> fragment' },
     ]);
   });
+
+  it('matches opening tags case-insensitively', () => {
+    expect(splitSystemReminders('<System-Reminder>note</System-Reminder>')).toEqual([
+      { kind: 'system_reminder', text: 'note' },
+    ]);
+  });
+
+  it('allows attributes on the opening tag', () => {
+    expect(splitSystemReminders('hi<system-reminder data-x="1">inner</system-reminder>bye')).toEqual([
+      { kind: 'text', text: 'hi' },
+      { kind: 'system_reminder', text: 'inner' },
+      { kind: 'text', text: 'bye' },
+    ]);
+  });
 });
