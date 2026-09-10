@@ -14,7 +14,7 @@ import { Composer } from '@/widgets/composer/Composer';
 import { MessageList } from './MessageList';
 import { ChatEmptyWorkspace, CHAT_EMPTY_TITLE } from './ChatEmptyWorkspace';
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
-import { chatEntries, chatAgentLoading, chatHead, elicitationResponses, elicitations, permissions, questionResponses, questions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, respondQuestion, restoringSessionId, retryPersistentAction, runtimeDocsHydrated, selectedSessionId, turnActive } from '@/store';
+import { chatCatalog, chatEntries, chatAgentLoading, chatHead, elicitationResponses, elicitations, permissions, questionResponses, questions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, respondQuestion, restoringSessionId, retryPersistentAction, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '@/store';
 import { readOnly } from '@/features/auth/auth-state';
 import { InlineNotice, LoadingState } from '@/shared/ui';
 import { selectAgentPublicErrorNotice } from '@/features/chat/agent-public-error-notice';
@@ -52,6 +52,7 @@ export function ChatView(props: ChatViewProps) {
   const hasPendingPermission = () => permissions().some((permission) => permission.status === 'pending');
   const hasPendingElicitation = () => visibleElicitations(elicitations()).length > 0;
   const hasPendingQuestion = () => visibleQuestions(questions()).length > 0;
+  const projectCwd = createMemo(() => chatCatalog().find((chat) => chat.id === selectedCid())?.cwd ?? null);
   const conversationEmpty = createMemo(() => isConversationEmpty({
     runtimeDocsHydrated: runtimeDocsHydrated(),
     entryCount: chatEntries().length,
@@ -141,7 +142,7 @@ export function ChatView(props: ChatViewProps) {
                   />
                 </Show>
                 {agentPublicErrorBanner()}
-                <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} tasks={chatHead()?.tasks ?? []} entries={chatEntries()} />
+                <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} tasks={chatHead()?.tasks ?? []} entries={chatEntries()} projectCwd={projectCwd()} />
                 <Composer renderRuntimeMenu={composerRuntimeMenu} />
               </div>
             </>
@@ -177,7 +178,7 @@ export function ChatView(props: ChatViewProps) {
                 />
               </Show>
               {agentPublicErrorBanner()}
-              <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} tasks={chatHead()?.tasks ?? []} entries={chatEntries()} />
+              <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} tasks={chatHead()?.tasks ?? []} entries={chatEntries()} projectCwd={projectCwd()} />
               <ChatEmptyWorkspace title={CHAT_EMPTY_TITLE} hint={EMPTY_HINT}>
                 <Composer layout="centered" renderRuntimeMenu={composerRuntimeMenu} />
               </ChatEmptyWorkspace>

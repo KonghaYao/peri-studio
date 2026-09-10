@@ -155,15 +155,16 @@ describe('ToolActivityRow', () => {
     expect(screen.getByRole('img', { name: 'Done' })).toBeInTheDocument();
   });
 
-  it('opens workspace preview when clicking a file path link', () => {
-    render(() => <ToolCallCard toolCall={{
+  it('shows a cwd-relative label but opens the original absolute file path', () => {
+    render(() => <ToolCallCard projectCwd="/workspace/project" toolCall={{
       ...base,
       name: 'Read',
       kind: 'read',
-      arguments: { file_path: 'web/src/main.ts' },
+      arguments: { file_path: '/workspace/project/web/src/main.ts' },
     }} />);
+    expect(screen.getByTestId('tool-activity-file-link')).toHaveTextContent('web/src/main.ts');
     fireEvent.click(screen.getByTestId('tool-activity-file-link'));
-    expect(openWorkspaceFromTool).toHaveBeenCalledWith('web/src/main.ts');
+    expect(openWorkspaceFromTool).toHaveBeenCalledWith('/workspace/project/web/src/main.ts');
   });
 
   it('prefers the Read file path over pagination arguments in the compact row', () => {

@@ -2,6 +2,7 @@ import { For, Show, createMemo, createSignal } from 'solid-js';
 import type { AgentActivityInfo, AgentPlanEntryInfo, PeriTaskInfo } from '@/entities/chat/control-view';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { selectChatFileChanges } from '@/entities/chat/chat-file-changes';
+import { formatWorkspacePathLabel } from '@/features/chat/tool-file-link';
 import { Ban, Bot, Check, ChevronDown, ChevronUp, Circle, CircleAlert, GitBranch, Info, ListTodo, Pause, Workflow, X } from 'lucide-solid';
 import { Badge, IconButton } from '@/shared/ui';
 import { VSCodeFileIcon } from '@/widgets/resource/VSCodeFileIcon';
@@ -14,6 +15,7 @@ export interface StatusAreaProps {
   /** Session Doc Peri Task 视图；有数据时 Async 页优先用它。 */
   tasks?: PeriTaskInfo[];
   entries: ChatEntry[];
+  projectCwd?: string | null;
   active: boolean;
 }
 
@@ -142,7 +144,7 @@ export function StatusArea(props: StatusAreaProps) {
           <Show when={visibleTab() === 'changes'}>
             <ol class="m-0 grid list-none gap-4 p-0 font-mono"><For each={changes()}>{(change) => <li class="grid min-h-24 grid-cols-status-row items-center gap-7 rounded-7 px-6 py-4">
               <VSCodeFileIcon path={change.path} size={15} class="size-14" />
-              <span class="overflow-hidden text-ellipsis whitespace-nowrap text-text-primary">{change.path}</span>
+              <span title={change.path} class="overflow-hidden text-ellipsis whitespace-nowrap text-text-primary">{formatWorkspacePathLabel(change.path, props.projectCwd)}</span>
               <span class="uppercase text-9 tracking-4 text-text-muted">{change.operation}</span>
             </li>}</For></ol>
           </Show>

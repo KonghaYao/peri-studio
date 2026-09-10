@@ -13,13 +13,15 @@ export function ChatTranscriptLayout() {
       <div class="text-13 leading-normal text-content-primary">
         The failure comes from a browser-only import crossing the build boundary. I isolated the import and verified the production bundle.
       </div>
-      <ToolActivityGroup>
-        <ToolActivityRow icon={Search} title={'Searched "runtime binding"'} subtitle="in server/src · 3 matches" input="server/src" output="3 matches" status="done" duration="84ms" />
-        <Reasoning variant="activity">I found the browser boundary and will update only the affected adapter.</Reasoning>
-        <Reasoning variant="activity" streaming>{' '}</Reasoning>
-        <ToolActivityRow icon={FilePen} title="Edited store.ts" subtitle="1 change" input="web/src/panel/store.ts" status="done" duration="42ms" />
-        <ToolActivityRow icon={Terminal} title="Running $ bun run test" input="bun run test" status="running" />
-      </ToolActivityGroup>
+      <div class="my-0.25 mb-1">
+        <ToolActivityGroup>
+          <ToolActivityRow icon={Search} title={'Searched "runtime binding"'} subtitle="in server/src · 3 matches" input="server/src" output="3 matches" status="done" duration="84ms" />
+          <Reasoning variant="activity">I found the browser boundary and will update only the affected adapter.</Reasoning>
+          <Reasoning variant="activity" streaming>{' '}</Reasoning>
+          <ToolActivityRow icon={FilePen} title="Edited store.ts" subtitle="1 change" input="web/src/panel/store.ts" status="done" duration="42ms" />
+          <ToolActivityRow icon={Terminal} title="Running $ bun run test" input="bun run test" status="running" />
+        </ToolActivityGroup>
+      </div>
     </div>
   );
 }

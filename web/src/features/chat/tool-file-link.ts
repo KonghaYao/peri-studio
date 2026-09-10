@@ -14,6 +14,24 @@ export function normalizeWorkspaceRelativePath(raw: string, projectCwd?: string 
   return trimmed.replace(/^\//, '');
 }
 
+function normalizeSlashes(path: string): string {
+  return path.replace(/\\/g, '/');
+}
+
+/** 工作区路径展示：项目 cwd 内显示完整相对路径；根外绝对路径不伪装成相对路径。 */
+export function formatWorkspacePathLabel(raw: string, projectCwd?: string | null): string {
+  const trimmed = normalizeSlashes(raw.trim());
+  if (!trimmed) return trimmed;
+  const cwd = normalizeSlashes(projectCwd?.trim() ?? '').replace(/\/$/, '');
+  if (cwd && (trimmed === cwd || trimmed.startsWith(`${cwd}/`))) {
+    return trimmed.slice(cwd.length).replace(/^\//, '') || '.';
+  }
+  if (!trimmed.startsWith('/') && !/^[A-Za-z]:\//.test(trimmed)) {
+    return trimmed;
+  }
+  return trimmed;
+}
+
 function argumentRecord(args: unknown): Record<string, unknown> | null {
   if (!args || typeof args !== 'object' || Array.isArray(args)) return null;
   return args as Record<string, unknown>;

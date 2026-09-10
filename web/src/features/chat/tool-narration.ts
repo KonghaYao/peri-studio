@@ -1,5 +1,5 @@
 import type { ToolCallInfo, ToolCallKind } from '@/entities/chat/chat-view';
-import { formatToolDisplayName } from '@/features/chat/tool-file-link';
+import { formatWorkspacePathLabel, formatToolDisplayName } from '@/features/chat/tool-file-link';
 
 export type ToolCardKind =
   | 'read-file'
@@ -171,7 +171,13 @@ function editChangeCount(tool: ToolCallInfo): number | undefined {
 
 export function narrateToolCall(
   tool: ToolCallInfo,
-  options: { tone: string; statusLabel: string; running: boolean; terminal: boolean },
+  options: {
+    tone: string;
+    statusLabel: string;
+    running: boolean;
+    terminal: boolean;
+    projectCwd?: string | null;
+  },
 ): ToolNarration {
   const kind = resolveToolCardKind(tool);
   const record = argsRecord(tool.arguments);
@@ -276,12 +282,11 @@ export function narrateToolCall(
   }
 
   if (pathFromArgs && supportsFilePreview(kind) && narrationStatus !== 'waiting_for_confirmation' && !errorDetail) {
-    const file = pathFromArgs.split('/').pop() || pathFromArgs;
     const verbRunning = kind === 'write' ? 'Writing' : kind === 'edit' ? 'Editing' : 'Opening';
     const verbDone = kind === 'write' ? 'Wrote' : kind === 'edit' ? 'Edited' : 'Opened';
     filePreview = {
       prefix: running ? `${verbRunning} ` : `${verbDone} `,
-      pathLabel: file,
+      pathLabel: formatWorkspacePathLabel(pathFromArgs, options.projectCwd),
       path: pathFromArgs,
     };
     const range = extractLineRange(tool.arguments);

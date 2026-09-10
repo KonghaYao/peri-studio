@@ -44,7 +44,7 @@ export function Reasoning(props: {
           <summary
             class={cn(
               'relative z-1 inline-flex min-h-24 cursor-pointer list-none items-center text-11 font-normal tracking-wide text-content-muted hover:text-content-secondary',
-              activity() && 'pl-32',
+              activity() && 'min-h-16 pl-32',
               !hasText() && !props.streaming && 'cursor-default hover:text-content-muted',
             )}
           >

@@ -141,7 +141,7 @@ export function ToolActivityRow(props: {
 /** 聊天 transcript 里的 Fenix 风格工具活动组。 */
 export function ToolActivityGroup(props: { children: unknown }) {
   return (
-    <div class="tool-activity-chain relative isolate grid w-full max-w-(--chat-tool-activity-max) min-w-0 gap-px">
+    <div class="tool-activity-chain relative isolate grid w-full max-w-(--chat-tool-activity-max) min-w-0 gap-0.5">
       <span class="absolute inset-y-0 left-(--chat-activity-rail-left) z-0 w-px bg-border-strong" aria-hidden="true" />
       {props.children as never}
     </div>

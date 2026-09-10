@@ -7,6 +7,10 @@ import { Markdown } from './Markdown';
 import { composerQuoteRequest, resetComposerQuoteRequest } from '@/features/composer/composer-quote';
 import { setPrincipalRole } from '@/features/auth/auth-state';
 import {
+  setChatCatalog,
+  setSelectedCid,
+} from '@/store';
+import {
   handleMcpAppResource,
   handleMcpAppSession,
   installMcpApps,
@@ -37,6 +41,8 @@ describe('ConversationMessage', () => {
   afterEach(() => {
     resetMcpAppsState();
     setPrincipalRole(null);
+    setSelectedCid(null);
+    setChatCatalog([]);
   });
   it('keeps user text plain and visually separate from assistant Markdown', () => {
     const view = render(() => <ConversationMessage entry={entry({ role: 'user', text: '**literal user input**' })} />);
@@ -227,11 +233,38 @@ describe('ConversationMessage', () => {
     const rail = screen.getByTestId('chat-activity-rail');
     expect(rail).toHaveClass('left-(--chat-activity-rail-left)', 'bg-border-strong');
     expect(group).toHaveClass('tool-activity-group--activity', 'tool-call-group-list');
+    expect(group.closest('[data-testid="chat-activity-chain"]')).toHaveClass('my-1', 'mb-4', 'gap-2');
     const rows = group.querySelectorAll('[data-testid="tool-activity-row"]');
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveClass('tool-activity-row--activity');
     expect(rows[0].querySelector('.tool-call-row-icon')).toBeInTheDocument();
     expect(rows[0].querySelector('[data-testid="tool-activity-row-summary"]')).toHaveClass('chat-tool-call-row');
+  });
+
+  it('passes the selected chat cwd through the activity tool chain', () => {
+    setSelectedCid('chat-1');
+    setChatCatalog([{
+      id: 'chat-1',
+      instanceId: 'instance-1',
+      title: 'Project chat',
+      status: 'ready',
+      gap: null,
+      updatedAt: null,
+      cwd: '/workspace/project',
+      workspaceId: null,
+    }]);
+    const tool = {
+      ...baseTool('tool-1'),
+      name: 'Read',
+      kind: 'read' as const,
+      arguments: { file_path: '/workspace/project/web/src/main.ts' },
+    };
+    render(() => <ConversationMessage entry={entry({
+      toolCalls: [tool],
+      blocks: [{ kind: 'tool_call', id: 'tool-1', toolCall: tool }],
+    })} />);
+
+    expect(screen.getByTestId('tool-activity-file-link')).toHaveTextContent('web/src/main.ts');
   });
 
   it('shows skeleton thinking gap only while the turn is still streaming', () => {
@@ -279,7 +312,9 @@ describe('ConversationMessage', () => {
     })} />);
 
     const details = screen.getByText('Reasoning').closest('details')!;
+    const summary = screen.getByText('Reasoning');
     const body = screen.getByText('Check imports first.');
+    expect(summary).toHaveClass('min-h-16');
     expect(details).not.toHaveAttribute('open');
     expect(body).not.toBeVisible();
     expect(body.closest('.message-reasoning__body--activity-rail')).toHaveClass('relative', 'z-1', 'pl-32', 'font-normal');

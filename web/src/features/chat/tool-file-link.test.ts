@@ -1,10 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { compactToolInput, extractLinkableFilePath, normalizeWorkspaceRelativePath } from './tool-file-link';
+import {
+  compactToolInput,
+  extractLinkableFilePath,
+  formatWorkspacePathLabel,
+  normalizeWorkspaceRelativePath,
+} from './tool-file-link';
 
 describe('tool-file-link', () => {
   it('normalizes absolute paths under project cwd', () => {
     expect(normalizeWorkspaceRelativePath('/workspace/src/main.rs', '/workspace')).toBe('src/main.rs');
     expect(normalizeWorkspaceRelativePath('web/foo.ts', '/workspace')).toBe('web/foo.ts');
+  });
+
+  it('formats workspace paths without hiding location context', () => {
+    expect(formatWorkspacePathLabel('/workspace/project/web/src/main.ts', '/workspace/project')).toBe('web/src/main.ts');
+    expect(formatWorkspacePathLabel('/workspace/other/main.ts', '/workspace/project')).toBe('/workspace/other/main.ts');
+    expect(formatWorkspacePathLabel('web/src/main.ts', '/workspace/project')).toBe('web/src/main.ts');
   });
 
   it('extracts file paths for read/edit tools', () => {

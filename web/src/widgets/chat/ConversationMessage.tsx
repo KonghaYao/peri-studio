@@ -11,6 +11,7 @@ import {
 import { messageTime } from '@/shared/lib/message-time';
 import { cn } from '@/shared/lib/cn';
 import { splitSystemReminders } from '@/shared/lib/system-reminder';
+import { chatCatalog, selectedCid } from '@/store';
 import { CopyButton, IconButton, InlineNotice, Popover, PopoverContent, PopoverTrigger } from '@/shared/ui';
 import { MessageSquareQuote, MoreHorizontal } from 'lucide-solid';
 import { Markdown } from './Markdown';
@@ -36,6 +37,7 @@ function McpToolBlock(props: {
   siblingTools: Accessor<ToolCallInfo[]>;
   duplicate: boolean;
   variant?: 'default' | 'activity';
+  projectCwd: Accessor<string | null>;
 }) {
   createEffect(() => {
     if (props.duplicate) return;
@@ -44,7 +46,7 @@ function McpToolBlock(props: {
   const toolCallId = () => props.toolCall().toolCallId || '';
   return (
     <Show when={!props.duplicate}>
-      <Show when={isPrimaryLiveMcpApp(toolCallId(), props.siblingTools())} fallback={<ToolCallCard toolCall={props.toolCall} variant={props.variant} />}>
+      <Show when={isPrimaryLiveMcpApp(toolCallId(), props.siblingTools())} fallback={<ToolCallCard toolCall={props.toolCall} variant={props.variant} projectCwd={props.projectCwd()} />}>
         <McpAppFrame toolCallId={toolCallId()} />
       </Show>
     </Show>
@@ -65,6 +67,7 @@ function MessageBlock(props: {
   activityBoundary: () => ActivityBoundary;
   reasoningVariant?: 'default' | 'activity';
   toolVariant?: 'default' | 'activity';
+  projectCwd: Accessor<string | null>;
 }) {
   const toolCall = () => {
     const current = props.block();
@@ -96,6 +99,7 @@ function MessageBlock(props: {
         siblingTools={props.toolCallsInBlocks}
         duplicate={duplicateToolBlock()}
         variant={props.toolVariant}
+        projectCwd={props.projectCwd}
       /></Show>
     }>{
       <div class="conversation-message__text text-13 leading-normal text-content-primary" data-testid="conversation-message-text">
@@ -162,6 +166,7 @@ function AssistantLayoutUnitView(props: {
   entry: () => ChatEntry;
   toolCallsInBlocks: () => ToolCallInfo[];
   activityBoundary: () => ActivityBoundary;
+  projectCwd: Accessor<string | null>;
 }) {
   const unit = () => props.unitsById().get(props.unitId())!;
   const activityVariant = () => {
@@ -190,6 +195,7 @@ function AssistantLayoutUnitView(props: {
             activityBoundary={props.activityBoundary}
             reasoningVariant={activityVariant()}
             toolVariant={activityVariant()}
+            projectCwd={props.projectCwd}
           />
         </div>
       )}
@@ -218,6 +224,7 @@ function AssistantLayoutUnitView(props: {
               siblingTools={props.toolCallsInBlocks}
               duplicate={duplicateToolBlock()}
               variant="activity"
+              projectCwd={props.projectCwd}
             />
           );
         }}</For>
@@ -237,6 +244,11 @@ export function ConversationMessage(props: {
   const [selectionAction, setSelectionAction] = createSignal<{ text: string; left: number; top: number } | null>(null);
   const [actionsOpen, setActionsOpen] = createSignal(false);
   const entry = () => typeof props.entry === 'function' ? props.entry() : props.entry;
+  const projectCwd = createMemo(() => {
+    const cid = selectedCid();
+    if (!cid) return null;
+    return chatCatalog().find((chat) => chat.id === cid)?.cwd ?? null;
+  });
   const legacyBlocks = (): ChatBlock[] => [
     ...entry().reasoning.map((reasoning, index) => ({ kind: 'reasoning' as const, id: reasoning.id || `${entry().id}:reasoning:${index}`, reasoning })),
     ...entry().toolCalls.map((toolCall, index) => ({ kind: 'tool_call' as const, id: toolCall.toolCallId || `${entry().id}:tool:${index}`, toolCall })),
@@ -334,6 +346,7 @@ export function ConversationMessage(props: {
               entry,
               toolCallsInBlocks,
               activityBoundary,
+              projectCwd,
             };
             return (
               <Show
@@ -344,7 +357,7 @@ export function ConversationMessage(props: {
                   }</For>
                 }
               >
-                <div class="chat-activity-chain relative isolate my-2 mb-8 grid w-full min-w-0 gap-8" data-testid="chat-activity-chain">
+                <div class="chat-activity-chain relative isolate my-1 mb-4 grid w-full min-w-0 gap-2" data-testid="chat-activity-chain">
                   <span
                     class={cn(
                       'absolute left-(--chat-activity-rail-left) z-0 w-px bg-border-strong',

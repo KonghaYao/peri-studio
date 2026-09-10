@@ -37,8 +37,8 @@ export function Reasoning(props: {
           data-testid="message-reasoning"
         >
           <summary class={cn(
-            'relative z-1 inline-flex min-h-24 cursor-pointer list-none items-center text-11 font-normal tracking-wide text-content-muted hover:text-content-secondary',
-            activity() && 'pl-8',
+            'relative z-1 inline-flex min-h-6 cursor-pointer list-none items-center text-11 font-normal tracking-wide text-content-muted hover:text-content-secondary',
+            activity() && 'min-h-4 pl-8',
           )}>
             Reasoning
           </summary>

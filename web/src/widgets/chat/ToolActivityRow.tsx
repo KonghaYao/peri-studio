@@ -408,7 +408,11 @@ export function ToolActivityGroup(props: { children: unknown; variant?: 'default
 type ToolCallSource = ToolCallInfo | Accessor<ToolCallInfo>;
 
 /** 将 Hub 投影的 tool call 映射为 ToolActivityRow。 */
-export function ToolCallCard(props: { toolCall: ToolCallSource; variant?: 'default' | 'activity' }) {
+export function ToolCallCard(props: {
+  toolCall: ToolCallSource;
+  variant?: 'default' | 'activity';
+  projectCwd?: string | null;
+}) {
   const [evidenceLoaded, setEvidenceLoaded] = createSignal(false);
   const tool = () => typeof props.toolCall === 'function' ? props.toolCall() : props.toolCall;
   const state = createMemo(() => STATUS[(tool().status || '').toLowerCase()] || { label: tool().status || 'Unknown status', tone: 'neutral' as ToolCallStatus });
@@ -426,6 +430,7 @@ export function ToolCallCard(props: { toolCall: ToolCallSource; variant?: 'defau
     statusLabel: state().label,
     running: tone() === 'running',
     terminal: ['done', 'failed', 'neutral'].includes(tone()),
+    projectCwd: props.projectCwd,
   }));
   const evidence = createMemo(() => toolEvidence(tool().kind, tool().arguments, tool().result));
   const showEmptyOutput = () => tool().resultOmitted === false

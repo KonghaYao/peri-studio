@@ -4,6 +4,7 @@ import type { PendingElicitation, PendingPermission, PendingQuestion } from '@/e
 import type { ProjectInfo } from '@/entities/registry/registry-view';
 
 const state = vi.hoisted(() => ({
+  chatCatalog: vi.fn(() => []),
   chatEntries: vi.fn(() => [] as never[]),
   chatHead: vi.fn(() => null),
   chatAgentLoading: vi.fn(() => false),
@@ -24,6 +25,7 @@ const state = vi.hoisted(() => ({
   retryPersistentAction: vi.fn(),
   restoringSessionId: vi.fn(() => null as string | null),
   runtimeDocsHydrated: vi.fn(() => true),
+  selectedCid: vi.fn(() => null),
   selectedSessionId: vi.fn(() => 'session-1' as string | null),
   turnActive: vi.fn(() => false),
 }));
@@ -44,10 +46,12 @@ vi.mock('@/widgets/composer/QuickStartComposer', () => ({ QuickStartComposer: ()
 import { ChatView } from './ChatView';
 
 afterEach(() => {
+  state.chatCatalog.mockReturnValue([]);
   state.projects.mockReturnValue([]);
   state.permissions.mockReturnValue([]);
   state.registryHydrated.mockReturnValue(true);
   state.restoringSessionId.mockReturnValue(null);
+  state.selectedCid.mockReturnValue(null);
   state.selectedSessionId.mockReturnValue('session-1');
 });
 

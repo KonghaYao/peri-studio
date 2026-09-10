@@ -160,4 +160,40 @@ describe('StatusArea', () => {
     expect(screen.queryByRole('region', { name: 'Status area' })).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /Async/ })).not.toBeInTheDocument();
   });
+
+
+  it('shows absolute changed paths under the project cwd as full relative paths', () => {
+    const path = '/workspace/project/web/src/widgets/shell/StatusArea.tsx';
+    const entries = [{
+      ...changedEntries[0],
+      toolCalls: [{
+        ...changedEntries[0].toolCalls[0],
+        arguments: { file_path: path },
+        locations: [{ path }],
+      }],
+    }] satisfies ChatEntry[];
+
+    render(() => <StatusArea active plan={[]} activities={[]} entries={entries} projectCwd="/workspace/project" />);
+
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('web/src/widgets/shell/StatusArea.tsx');
+    expect(screen.getByRole('tabpanel')).not.toHaveTextContent('/workspace/project');
+    expect(screen.getByTitle(path)).toHaveTextContent('web/src/widgets/shell/StatusArea.tsx');
+  });
+
+  it('keeps absolute changed paths outside the project cwd unchanged', () => {
+    const path = '/workspace/other/src/main.ts';
+    const entries = [{
+      ...changedEntries[0],
+      toolCalls: [{
+        ...changedEntries[0].toolCalls[0],
+        arguments: { file_path: path },
+        locations: [{ path }],
+      }],
+    }] satisfies ChatEntry[];
+
+    render(() => <StatusArea active plan={[]} activities={[]} entries={entries} projectCwd="/workspace/project" />);
+
+    expect(screen.getByRole('tabpanel')).toHaveTextContent(path);
+    expect(screen.getByTitle(path)).toHaveTextContent(path);
+  });
 });
