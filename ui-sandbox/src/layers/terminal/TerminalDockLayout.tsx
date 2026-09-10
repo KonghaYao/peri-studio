@@ -1,5 +1,5 @@
 import { createSignal, Show } from 'solid-js';
-import { Badge, Button, IconButton, InlineNotice, Status } from '@/components/ui';
+import { Button, IconButton, InlineNotice, Status } from '@/components/ui';
 import { ChevronDown, ChevronUp, FolderRoot, Terminal } from 'lucide-solid';
 
 /** 沙箱演示：PTY 生命周期，无后端。 */
@@ -10,14 +10,14 @@ const MOCK_CWD = '~/code/peri-studio';
 
 const lifecycleMeta: Record<
   TerminalLifecycle,
-  { statusLabel: string; tone: 'success' | 'neutral' | 'danger'; live: boolean; badge: string }
+  { statusLabel: string; tone: 'success' | 'neutral' | 'danger'; live: boolean }
 > = {
-  running: { statusLabel: 'Running', tone: 'success', live: true, badge: 'Running' },
-  exited: { statusLabel: 'Exited', tone: 'neutral', live: false, badge: 'Exited' },
-  error: { statusLabel: 'Error', tone: 'danger', live: false, badge: 'Error' },
+  running: { statusLabel: 'Running', tone: 'success', live: true },
+  exited: { statusLabel: 'Exited', tone: 'neutral', live: false },
+  error: { statusLabel: 'Error', tone: 'danger', live: false },
 };
 
-/** Tier 4 · Terminal Dock：折叠仅隐藏 viewport，PTY 语义保留在紧凑 header。 */
+/** Tier 4 · Terminal Dock：折叠仅隐藏 viewport，状态与路径放在紧凑 footer。 */
 export function TerminalDockLayout() {
   const [expanded, setExpanded] = createSignal(true);
   const [lifecycle, setLifecycle] = createSignal<TerminalLifecycle>('running');
@@ -44,9 +44,7 @@ export function TerminalDockLayout() {
           aria-label="Terminal dock"
           class="border-t border-terminal-dock-border bg-terminal-dock-surface"
         >
-          <header
-            class="flex h-(--terminal-header-height) min-w-0 items-center gap-2 border-b border-border-subtle px-2"
-          >
+          <header class="flex h-32 min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap border-b border-border-subtle px-2">
             <IconButton
               label={expanded() ? 'Collapse terminal viewport' : 'Expand terminal viewport'}
               size="sm"
@@ -58,26 +56,6 @@ export function TerminalDockLayout() {
             <Terminal size={14} class="shrink-0 text-content-muted" aria-hidden="true" />
 
             <span class="truncate text-12 font-medium text-content-primary">zsh</span>
-
-            <span
-              class="hidden min-w-0 items-center gap-1 truncate text-11 text-content-muted sm:inline-flex"
-              title="Terminal is fixed to the project where it was created"
-            >
-              <FolderRoot size={12} class="shrink-0" aria-hidden="true" />
-              <span class="truncate">Bound to {MOCK_PROJECT}</span>
-            </span>
-
-            <Badge tone="neutral" class="hidden sm:inline-flex">
-              {MOCK_CWD}
-            </Badge>
-
-            <span class="flex-1" />
-
-            <Status tone={meta().tone} label={meta().statusLabel} live={meta().live} class="shrink-0" />
-
-            <Badge tone={meta().tone === 'danger' ? 'danger' : meta().tone === 'success' ? 'success' : 'neutral'}>
-              {meta().badge}
-            </Badge>
           </header>
 
           <Show when={expanded()}>
@@ -132,6 +110,18 @@ export function TerminalDockLayout() {
               </Show>
             </div>
           </Show>
+
+          <footer class="flex h-32 min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap border-t border-border-subtle px-2 text-11 text-content-muted">
+            <Status tone={meta().tone} label={meta().statusLabel} live={meta().live} class="shrink-0" />
+            <span
+              class="inline-flex min-w-0 items-center gap-1 overflow-hidden"
+              title="Terminal is fixed to the project where it was created"
+            >
+              <FolderRoot size={12} class="shrink-0" aria-hidden="true" />
+              <span class="truncate">Bound to {MOCK_PROJECT}</span>
+            </span>
+            <span class="min-w-0 truncate font-mono" title={MOCK_CWD}>{MOCK_CWD}</span>
+          </footer>
         </section>
       </div>
 

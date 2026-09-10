@@ -277,7 +277,6 @@
   /* Terminal 底栏 Dock（折叠仅隐藏 viewport；将来镜像 web production Tier 2） */
   --terminal-dock-surface: var(--palette-neutral-0);
   --terminal-dock-border: var(--border-faint);
-  --terminal-header-height: var(--control-height-md);
   --terminal-viewport-height: 180px;
   --terminal-viewport-bg: var(--palette-neutral-950);
   --terminal-viewport-fg: var(--palette-neutral-100);

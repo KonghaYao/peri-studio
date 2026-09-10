@@ -1,6 +1,6 @@
 import { FolderRoot, PanelRightClose, Play, RotateCcw, SquareTerminal, X } from 'lucide-solid';
 import { createEffect, createMemo, createSignal, onCleanup, Show } from 'solid-js';
-import { Badge, Button, IconButton, Status, Terminal, type TerminalViewport } from '@/shared/ui';
+import { Button, IconButton, Status, Terminal, type TerminalViewport } from '@/shared/ui';
 import {
   attachTerminalOutput,
   closeTerminal,
@@ -151,22 +151,10 @@ export function TerminalPanel(props: { onClosePanel?: () => void; visible?: bool
 
   return (
     <section aria-label="Terminal" class="flex min-h-0 min-w-0 flex-1 basis-0 flex-col bg-terminal-dock-surface">
-      <header class="flex h-(--terminal-header-height) min-w-0 shrink-0 items-center gap-6 border-b border-border-subtle px-8">
+      <header class="flex h-32 min-w-0 shrink-0 items-center gap-6 overflow-hidden whitespace-nowrap border-b border-border-subtle px-8">
         <SquareTerminal size={14} class="shrink-0 text-text-muted" aria-hidden="true" />
         <span class="truncate text-12 font-medium text-text-primary">Terminal</span>
-        <Show when={boundProject()}>
-          {(project) => (
-            <span class="inline-flex min-w-0 items-center gap-4 truncate text-11 text-text-muted max-compact:hidden" title="Terminal stays bound to the project where it was created">
-              <FolderRoot size={12} class="shrink-0" aria-hidden="true" />
-              <span class="truncate">Bound to {project().name}</span>
-            </span>
-          )}
-        </Show>
-        <Show when={state().cwd}>
-          <Badge tone="neutral" class="max-compact:hidden">{state().cwd}</Badge>
-        </Show>
         <span class="flex-1" />
-        <Status tone={statusMeta().tone} live={statusMeta().live} class="shrink-0">{statusMeta().label}</Status>
         <Show when={state().phase === 'idle' || state().phase === 'closed'}>
           <Button size="sm" variant="ghost" disabled={startDisabled()} title={terminalDescription()} onClick={start}>
             <Play size={13} aria-hidden="true" /> {startQueued() ? 'Starting…' : 'Start'}
@@ -218,6 +206,21 @@ export function TerminalPanel(props: { onClosePanel?: () => void; visible?: bool
           }}
         />
       </div>
+
+      <footer class="flex h-32 min-w-0 shrink-0 items-center gap-8 overflow-hidden whitespace-nowrap border-t border-border-subtle px-8 text-11 text-text-muted">
+        <Status tone={statusMeta().tone} live={statusMeta().live} class="shrink-0">{statusMeta().label}</Status>
+        <Show when={boundProject()}>
+          {(project) => (
+            <span class="inline-flex min-w-0 items-center gap-4 overflow-hidden" title="Terminal stays bound to the project where it was created">
+              <FolderRoot size={12} class="shrink-0" aria-hidden="true" />
+              <span class="truncate">Bound to {project().name}</span>
+            </span>
+          )}
+        </Show>
+        <Show when={state().cwd}>
+          <span class="min-w-0 truncate font-mono" title={state().cwd ?? undefined}>{state().cwd}</span>
+        </Show>
+      </footer>
     </section>
   );
 }
