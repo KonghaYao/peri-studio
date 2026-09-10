@@ -212,6 +212,31 @@ export function activityContinuationAt(
   return { before: previousContinues, after: nextContinues };
 }
 
+function hasAssistantResponseSurface(entry: ChatEntry): boolean {
+  return Boolean(
+    entry.text
+    || entry.blocks.length
+    || entry.reasoning.length
+    || entry.toolCalls.length
+    || entry.resources.length,
+  );
+}
+
+/** 同一 turn 的终态与 error 会投影到所有 assistant 分段；只让最后一个可见分段拥有提示面。 */
+export function isTurnTerminalNoticeOwner(entries: readonly ChatEntry[], entryIndex: number): boolean {
+  const current = entries[entryIndex];
+  if (current?.role !== 'assistant' || !current.turnId) return true;
+
+  let lastAssistantIndex = -1;
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    const entry = entries[index];
+    if (entry.role !== 'assistant' || entry.turnId !== current.turnId) continue;
+    if (lastAssistantIndex < 0) lastAssistantIndex = index;
+    if (hasAssistantResponseSurface(entry)) return index === entryIndex;
+  }
+  return lastAssistantIndex === entryIndex;
+}
+
 /** Reasoning 与同回合邻接 tool 同属紧凑活动轨；带正文的 reasoning 若不与 tool 相邻则保持正文节奏。 */
 export function blockActivityDensity(
   blocks: readonly ChatBlock[],

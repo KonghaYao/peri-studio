@@ -231,6 +231,7 @@ export function ConversationMessage(props: {
   entry: ChatEntrySource;
   activityBoundary?: Accessor<ActivityBoundary>;
   activityContinuation?: Accessor<{ before: boolean; after: boolean }>;
+  terminalNoticeOwner?: Accessor<boolean>;
 }) {
   let articleRef: HTMLElement | undefined;
   const [selectionAction, setSelectionAction] = createSignal<{ text: string; left: number; top: number } | null>(null);
@@ -250,6 +251,7 @@ export function ConversationMessage(props: {
   const blocksById = createMemo(() => new Map(blocks().map((block) => [block.id, block])));
   const activityBoundary = () => props.activityBoundary?.() ?? { previousTool: false, nextTool: false };
   const activityContinuation = () => props.activityContinuation?.() ?? { before: false, after: false };
+  const terminalNoticeOwner = () => props.terminalNoticeOwner?.() ?? true;
   const layoutUnits = createMemo(() => buildAssistantLayoutUnits(blocks(), activityBoundary()));
   const layoutUnitsById = createMemo(() => new Map(layoutUnits().map((unit) => [unit.id, unit])));
   const rowGroups = createMemo(() => buildConversationRowGroups(blocks(), activityBoundary()));
@@ -279,6 +281,8 @@ export function ConversationMessage(props: {
   const copyText = () => partialTerminal()
     ? `${entry().text}\n\n[Partial response: ${partialTerminal()!.state}]`
     : entry().text;
+  const terminalNotice = createMemo(() => terminalNoticeOwner() ? partialTerminal() : null);
+  const visibleEntryError = createMemo(() => terminalNoticeOwner() ? entry().error : null);
   const quoteSource = () => role() === 'user' ? 'You' : role() === 'system' ? 'System' : 'Peri';
   const captureSelection = () => {
     const selection = window.getSelection();
@@ -357,10 +361,10 @@ export function ConversationMessage(props: {
               </Show>
             );
           }}</For>
-          <Show when={partialTerminal()}>{(terminal) => <InlineNotice tone={terminal().tone} role="status" title="Partial response">
+          <Show when={terminalNotice()}>{(terminal) => <InlineNotice tone={terminal().tone} role="status" title="Partial response">
             <span>{terminal().label}. The output above may be incomplete.</span>
           </InlineNotice>}</Show>
-          <Show when={entry().error}>{(error) => <InlineNotice tone="danger" role="alert" aria-label="Message error"><code class="whitespace-pre-wrap wrap-anywhere font-mono text-12 leading-normal">{error().code || 'UNKNOWN'}{error().message ? `: ${error().message}` : ''}</code></InlineNotice>}</Show>
+          <Show when={visibleEntryError()}>{(error) => <InlineNotice tone="danger" role="alert" aria-label="Message error"><code class="whitespace-pre-wrap wrap-anywhere font-mono text-12 leading-normal">{error().code || 'UNKNOWN'}{error().message ? `: ${error().message}` : ''}</code></InlineNotice>}</Show>
           <Show when={role() === 'assistant' && entry().text && !streaming()}><>
             <IconButton label="Message actions" size="sm" variant="ghost" class="conversation-message__actions-trigger absolute top-0 right-0 z-10 hidden border-0 bg-surface-overlay text-content-muted shadow-subtle pointer-coarse:inline-flex" aria-expanded={actionsOpen()} aria-controls={actionsId()} onClick={() => setActionsOpen((open) => !open)}><MoreHorizontal size={17} strokeWidth={1.7} /></IconButton>
             <div id={actionsId()} class={`conversation-message__actions absolute top-full left-0 z-20 flex min-h-28 items-center gap-8 rounded-lg border border-border-subtle bg-surface-overlay px-8 py-4 text-content-muted shadow-overlay transition-opacity duration-150 ${actionsOpen() ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`} data-testid="conversation-message-actions"><CopyButton text={copyText()} label="Copy answer" class="border-0 bg-transparent text-content-muted hover:bg-interaction-hover pointer-coarse:min-h-44" /><IconButton label="Quote answer" size="sm" variant="ghost" class="border-0 bg-transparent text-content-muted hover:bg-interaction-hover pointer-coarse:min-h-44 pointer-coarse:min-w-44" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-4 text-11 font-medium text-content-muted">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-content-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div>

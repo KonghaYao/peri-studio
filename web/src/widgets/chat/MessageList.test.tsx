@@ -253,6 +253,30 @@ describe('MessageList entry updates', () => {
     expect(rails[1]).toHaveClass('-top-10');
   });
 
+  it('shows one terminal error surface for assistant segments from the same turn', () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    const turnError = { code: 'AGENT_ERROR', message: 'upstream unavailable' };
+    const segment = (id: string, text: string): ChatEntry => ({
+      ...message(id, 'live', null),
+      turnId: 'turn-1',
+      status: 'error',
+      text,
+      error: turnError,
+    });
+    setChatEntries([
+      segment('answer-before', 'Before the tool'),
+      segment('tool-segment', 'Tool activity'),
+      segment('answer-after', 'After the tool'),
+    ]);
+
+    render(() => <MessageList />);
+
+    expect(screen.getAllByText('Partial response')).toHaveLength(1);
+    expect(screen.getAllByRole('alert', { name: 'Message error' })).toHaveLength(1);
+    expect(screen.getByRole('alert', { name: 'Message error' })).toHaveTextContent('AGENT_ERROR: upstream unavailable');
+    expect(screen.getAllByLabelText('Assistant message')[2]).toHaveTextContent('Response failed. The output above may be incomplete.');
+  });
+
   it('keeps the same message, reasoning, and tool DOM nodes open while its server projection updates', () => {
     setRuntimeDocsState({ chat: true, control: true });
     const initial = {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ChatBlock, ChatEntry } from '@/entities/chat/chat-view';
-import { activityBoundaryAt, activityContinuationAt, blockActivityDensity, buildAssistantLayoutUnits, buildConversationRowGroups, buildConversationSegments, shouldRenderActivityReasoningBlock } from './chat-render-blocks';
+import { activityBoundaryAt, activityContinuationAt, blockActivityDensity, buildAssistantLayoutUnits, buildConversationRowGroups, buildConversationSegments, isTurnTerminalNoticeOwner, shouldRenderActivityReasoningBlock } from './chat-render-blocks';
 
 function reasoning(id: string, text: string): Extract<ChatBlock, { kind: 'reasoning' }> {
   return { kind: 'reasoning', id, reasoning: { id, text, visibility: 'visible' } };
@@ -89,6 +89,24 @@ describe('chat-render-blocks', () => {
       entries[0],
       chatEntry('other-turn', 'turn-2', [tool('t3')]),
     ], 0).after).toBe(false);
+  });
+
+  it('同一 turn 只有最后一个 assistant 分段拥有终态提示面', () => {
+    const entries = [
+      chatEntry('answer-before', 'turn-1', [text('before', 'before')]),
+      chatEntry('tool-entry', 'turn-1', [tool('t1')]),
+      chatEntry('answer-after', 'turn-1', [text('after', 'after')]),
+      chatEntry('other-turn', 'turn-2', [text('other', 'other')]),
+    ];
+
+    expect(isTurnTerminalNoticeOwner(entries, 0)).toBe(false);
+    expect(isTurnTerminalNoticeOwner(entries, 1)).toBe(false);
+    expect(isTurnTerminalNoticeOwner(entries, 2)).toBe(true);
+    expect(isTurnTerminalNoticeOwner(entries, 3)).toBe(true);
+  });
+
+  it('非 turn assistant entry 保持自身终态提示面', () => {
+    expect(isTurnTerminalNoticeOwner([chatEntry('callback', null, [text('reply', 'reply')])], 0)).toBe(true);
   });
 
   it('跨 entry 的空 reasoning 仍使用 activity 空正文规则', () => {
