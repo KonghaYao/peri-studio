@@ -15,7 +15,7 @@ type ResourceRailButtonProps = {
 export function ResourceRailButton(props: ResourceRailButtonProps) {
   return <IconButton
     label={props.label}
-    tooltipPlacement="end"
+    showTooltip={false}
     aria-pressed={props.active}
     disabled={props.disabled}
     onClick={props.onClick}
