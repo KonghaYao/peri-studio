@@ -110,4 +110,23 @@ describe('store projection progress seam', () => {
     store.onUpdate?.('session:chat-1');
     expect(activity).toEqual({ 'chat-1': false });
   });
+
+  it('clears last-known turn activity when registry proves the runtime is gone', () => {
+    const store = new DocStore();
+    const projected = signals();
+    let activity: Record<string, boolean> = { 'chat-gap': true };
+    projected.setChatTurnActiveSignal.mockImplementation((update: unknown) => {
+      activity = typeof update === 'function' ? (update as (value: Record<string, boolean>) => Record<string, boolean>)(activity) : update as Record<string, boolean>;
+    });
+    installStoreProjection(store, () => null, projected, vi.fn(), vi.fn(), vi.fn());
+    const root = store.docFor('hub:registry').getMap<unknown>('root');
+    for (const section of ['instances', 'chats', 'sessions', 'workspaces', 'projects', 'project_sessions']) {
+      root.set(section, new Y.Map<unknown>());
+    }
+    const chat = new Y.Map<unknown>();
+    chat.set('status', 'gap');
+    (root.get('chats') as Y.Map<unknown>).set('chat-gap', chat);
+    store.onUpdate?.('hub:registry');
+    expect(activity).toEqual({ 'chat-gap': false });
+  });
 });

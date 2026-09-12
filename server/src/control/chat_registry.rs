@@ -87,6 +87,16 @@ pub struct ChatRecord {
     pub runtime_confirmed: bool,
 }
 
+impl ChatRecord {
+    /// 归档与侧栏「运行中」权威：必须有存活证据，且不是 Gap。
+    ///
+    /// Gap 保留 binding 以便恢复 open（§8.3），但进程已不在，不得阻止归档。
+    /// 未确认的 Accepting（视图重建）同样不算 live。
+    pub fn has_live_runtime(&self) -> bool {
+        self.runtime_confirmed && !self.state.is_terminal() && self.state != ChatState::Gap
+    }
+}
+
 /// chat 操作错误。
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum ChatError {
@@ -309,17 +319,19 @@ impl ChatRegistry {
         self.inner.chats.read().await.get(chat_id).cloned()
     }
 
-    /// Whether a project/workspace still owns any non-terminal runtime.
+    /// Whether a project/workspace still owns any live runtime process.
     /// Project archival uses this in-memory runtime authority rather than the
     /// persisted `last_chat_id` hint, which can be stale after close/restart.
+    /// Gap / unconfirmed chats do not count — the process is already gone.
     pub async fn has_live_workspace(&self, workspace_id: &str) -> bool {
         self.inner.chats.read().await.values().any(|chat| {
-            chat.workspace_id.as_deref() == Some(workspace_id) && !chat.state.is_terminal()
+            chat.workspace_id.as_deref() == Some(workspace_id) && chat.has_live_runtime()
         })
     }
 
     /// Runtime authority for a durable ACP session. Persisted last_chat_id is
-    /// only a hint; archival must inspect the in-memory binding and chat state.
+    /// only a hint; archival must inspect the in-memory binding and live
+    /// process evidence (`runtime_confirmed`, not merely non-terminal).
     pub async fn has_live_acp_session(&self, session_id: &str) -> bool {
         let Some(chat_id) = self.inner.bindings.read().await.get(session_id).cloned() else {
             return false;
@@ -329,7 +341,7 @@ impl ChatRegistry {
             .read()
             .await
             .get(&chat_id)
-            .is_some_and(|chat| !chat.state.is_terminal())
+            .is_some_and(ChatRecord::has_live_runtime)
     }
 
     /// instance offline 时的 close（§7.6）：返回 pending_close 标记（Registry
@@ -375,6 +387,11 @@ impl ChatRegistry {
         }
         entry.state = state;
         entry.updated_at = Utc::now();
+        if state == ChatState::Gap {
+            // 断链/对账 missing：无进程存活证据。binding 仍保留供恢复 open，
+            // 但归档不得再把该 chat 当成 running instance。
+            entry.runtime_confirmed = false;
+        }
         if state == ChatState::Closed {
             // pending_close 完成：补发集合清除（§7.6）。
             self.inner.pending_close.write().await.remove(chat_id);

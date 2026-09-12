@@ -48,9 +48,11 @@ async fn live_workspace_scan_uses_runtime_state_not_session_hints() {
     reg.register("active", "m1", None, "/", Some("project-a"))
         .await
         .unwrap();
+    reg.bind("active", "acp-a", true).await.unwrap();
     reg.register("other", "m1", None, "/", Some("project-b"))
         .await
         .unwrap();
+    reg.bind("other", "acp-b", true).await.unwrap();
     assert!(reg.has_live_workspace("project-a").await);
     assert!(!reg.has_live_workspace("missing").await);
     reg.transition("active", ChatState::Closed).await.unwrap();
@@ -117,6 +119,25 @@ async fn terminal_transition_releases_binding() {
     reg.bind("s2", "acp-2", true).await.unwrap();
     reg.transition("s2", ChatState::Gap).await.unwrap();
     assert_eq!(reg.resolve("acp-2").await.as_deref(), Some("s2"));
+    assert!(
+        !reg.entry("s2").await.unwrap().runtime_confirmed,
+        "Gap 必须撤销存活证据"
+    );
+    assert!(
+        !reg.has_live_acp_session("acp-2").await,
+        "Gap 不得阻止归档：进程已不在"
+    );
+}
+
+#[tokio::test]
+async fn live_acp_session_ignores_unconfirmed_binding() {
+    let (reg, _doc) = test_registry().await;
+    let reg = ChatRegistry::new(reg);
+    reg.register("s1", "m1", None, "/", None).await.unwrap();
+    reg.bind("s1", "acp-1", false).await.unwrap();
+    assert!(!reg.has_live_acp_session("acp-1").await);
+    reg.bind("s1", "acp-1", true).await.unwrap();
+    assert!(reg.has_live_acp_session("acp-1").await);
 }
 
 /// 恢复 open 接管语义（§8.3 恢复场景）：视图重建 + 对账 missing 的 stale

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const store = vi.hoisted(() => ({
   archiveProject: vi.fn(),
   archiveProjectSession: vi.fn(),
+  toast: vi.fn(),
   chatStatusSignal: vi.fn(() => ({})),
   connState: vi.fn(() => ({ kind: 'ok', text: 'Connected' })),
   createProject: vi.fn(),
@@ -140,11 +141,16 @@ describe('ProjectSidebar registry hydration', () => {
     store.navigateProjectSession.mockReset();
     store.archiveProjectSession.mockReset();
     store.archiveProject.mockReset();
+    store.toast.mockReset();
     store.openingSessionId.mockReturnValue(null);
     store.instances.mockReturnValue([{ id: 'local', hostname: 'Local instance', status: 'online' }]);
     store.readOnly.mockReturnValue(false);
     store.selectedSessionId.mockReturnValue(null);
     store.selectedCid.mockReturnValue(null);
+    store.turnActive.mockReturnValue(false);
+    store.chatStatusSignal.mockReturnValue({});
+    store.chatTurnActiveSignal.mockReturnValue({});
+    store.runtimeDocsHydrated.mockReturnValue(true);
     store.projectSessions.mockReturnValue([{
       id: 'acp-12345678',
       projectId: 'p1',
@@ -210,8 +216,11 @@ describe('ProjectSidebar registry hydration', () => {
     render(() => <ProjectSidebar />);
 
     expect(screen.getByText('Pinned')).toBeInTheDocument();
-    const pinnedList = screen.getByText('Pinned').closest('div')!.nextElementSibling!;
-    expect(pinnedList.querySelector('[data-session-id="session-a"]')).toBeInTheDocument();
+    const pinnedList = screen.getByTestId('pinned-list');
+    const pinnedSession = pinnedList.querySelector('[data-session-id="session-a"]') as HTMLElement;
+    const workspaceSession = screen.getByTestId('session-list').querySelector('[data-session-id="session-a"]') as HTMLElement;
+    expect(pinnedSession).toBeInTheDocument();
+    expect(pinnedSession.style.paddingLeft).toBe(workspaceSession.style.paddingLeft);
     expect(pinnedList.querySelector('[data-session-id="session-b"]')).not.toBeInTheDocument();
   });
 
@@ -336,6 +345,29 @@ describe('ProjectSidebar registry hydration', () => {
     expect(screen.queryByText(/Ready/)).not.toBeInTheDocument();
   });
 
+  it('does not flash a busy lamp while switching into an idle live session', () => {
+    store.projectSessions.mockReturnValue([{
+      id: 'acp-12345678',
+      projectId: 'p1',
+      title: 'Architecture refactor',
+      lifecycle: 'ready',
+      updatedAt: '2026-08-13T10:00:00Z',
+      lastOpenedAt: null,
+      activeChatId: 'chat-live',
+      archivedAt: null,
+    }]);
+    store.selectedSessionId.mockReturnValue('acp-12345678');
+    store.selectedCid.mockReturnValue('chat-previous');
+    store.openingSessionId.mockReturnValue('acp-12345678');
+    store.runtimeDocsHydrated.mockReturnValue(false);
+    store.chatStatusSignal.mockReturnValue({ 'chat-live': 'accepting' });
+    store.turnActive.mockReturnValue(true);
+
+    render(() => <ProjectSidebar />);
+
+    expect(screen.queryByTestId('session-loading-wave')).not.toBeInTheDocument();
+  });
+
   it('keeps an unselected working runtime visible as that session’s own status lamp', () => {
     store.projectSessions.mockReturnValue([{
       id: 'acp-12345678',
@@ -385,6 +417,53 @@ describe('ProjectSidebar registry hydration', () => {
 
     expect(store.archiveProjectSession).toHaveBeenCalledWith('acp-12345678', expect.any(Function), expect.any(Function));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('toasts instead of archiving while the selected live runtime is still working', () => {
+    store.projectSessions.mockReturnValue([{
+      id: 'acp-12345678',
+      projectId: 'p1',
+      title: 'Architecture refactor',
+      lifecycle: 'ready',
+      updatedAt: '2026-08-13T10:00:00Z',
+      lastOpenedAt: null,
+      activeChatId: 'chat-live',
+      archivedAt: null,
+    }]);
+    store.selectedSessionId.mockReturnValue('acp-12345678');
+    store.chatStatusSignal.mockReturnValue({ 'chat-live': 'accepting' });
+    store.turnActive.mockReturnValue(true);
+
+    render(() => <ProjectSidebar />);
+    fireEvent.click(screen.getByRole('button', { name: 'Archive session' }));
+
+    expect(store.toast).toHaveBeenCalledWith('This session is still loading. Close the running instance before archiving.');
+    expect(store.archiveProjectSession).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('archives a selected session whose leftover turn is stale after the runtime is gone', () => {
+    store.archiveProjectSession.mockReturnValue(true);
+    store.projectSessions.mockReturnValue([{
+      id: 'acp-12345678',
+      projectId: 'p1',
+      title: 'Architecture refactor',
+      lifecycle: 'ready',
+      updatedAt: '2026-08-13T10:00:00Z',
+      lastOpenedAt: null,
+      activeChatId: null,
+      archivedAt: null,
+    }]);
+    store.selectedSessionId.mockReturnValue('acp-12345678');
+    store.turnActive.mockReturnValue(true);
+    store.chatTurnActiveSignal.mockReturnValue({ 'chat-gone': true });
+
+    render(() => <ProjectSidebar />);
+    fireEvent.click(screen.getByRole('button', { name: 'Archive session' }));
+
+    expect(store.toast).not.toHaveBeenCalled();
+    expect(store.archiveProjectSession).toHaveBeenCalledWith('acp-12345678', expect.any(Function), expect.any(Function));
+    expect(screen.queryByTestId('session-loading-wave')).not.toBeInTheDocument();
   });
 
   it('keeps archived sessions out of the workspace session list', () => {

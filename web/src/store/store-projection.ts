@@ -8,7 +8,7 @@ import type { ChatInfo, InstanceInfo, MachineInfo, ProjectInfo, ProjectSessionIn
 import { RegistryProjection } from '@/entities/registry/registry-projection';
 import { unimportedSessions } from '@/features/session/session-import';
 import { isTerminal, isTurnActive } from '@/features/runtime/action-state';
-import { retainLiveRuntimeHints } from '@/features/session/recovery-state';
+import { isLiveRuntimeStatus, retainLiveRuntimeHints } from '@/features/session/recovery-state';
 import { reconcileMessageProjection } from '@/features/message/message-delivery';
 import { reconcileRuntimeControl } from '@/features/runtime/runtime-control';
 import { retainProjectedPermissions } from '@/features/message/permission-delivery';
@@ -71,12 +71,13 @@ export function installStoreProjection(
       signals.setChatTurnActiveSignal((previous) => {
         let changed = false;
         const next = { ...previous };
-        registry.chats.forEach((chat) => {
-          if (isTerminal(chat.status || undefined) && next[chat.id]) {
-            next[chat.id] = false;
+        for (const chatId of Object.keys(next)) {
+          if (!next[chatId]) continue;
+          if (!(chatId in statusMap) || !isLiveRuntimeStatus(statusMap[chatId])) {
+            next[chatId] = false;
             changed = true;
           }
-        });
+        }
         return changed ? next : previous;
       });
       signals.setInstances(registry.instances);

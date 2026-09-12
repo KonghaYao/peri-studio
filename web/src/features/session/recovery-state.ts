@@ -3,12 +3,25 @@
 // 的 activeChatId（ChatRegistry 运行态）过滤为「确实在运行」的 runtime hint。
 const TERMINAL_RUNTIME = new Set(['ended', 'closed', 'crashed', 'gap']);
 
+/** Registry chat 是否仍有进程存活证据（与 `retainLiveRuntimeHints` 同一集合）。 */
+export function isLiveRuntimeStatus(status: string | null | undefined): boolean {
+  return !TERMINAL_RUNTIME.has(String(status || '').toLowerCase());
+}
+
+export function sessionHasLiveRuntime(
+  session: { activeChatId?: string | null },
+  chatStatuses: Record<string, string>,
+): boolean {
+  const chatId = session.activeChatId;
+  return !!chatId && isLiveRuntimeStatus(chatStatuses[chatId]);
+}
+
 export const retainLiveRuntimeHints = <S extends { id: string; activeChatId: string | null }>(
   sessions: S[],
   chats: Array<{ id: string; status: string | null }>,
   previous: readonly S[] = [],
 ): S[] => {
-  const live = new Set(chats.filter((chat) => !TERMINAL_RUNTIME.has(String(chat.status || ''))).map((chat) => chat.id));
+  const live = new Set(chats.filter((chat) => isLiveRuntimeStatus(chat.status)).map((chat) => chat.id));
   const previousById = new Map(previous.map((session) => [session.id, session]));
   const filtered = sessions.map((session) => {
     const activeChatId = session.activeChatId && live.has(session.activeChatId) ? session.activeChatId : null;

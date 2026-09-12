@@ -35,13 +35,15 @@ export function runtimeState(input: RuntimeStateInput): RuntimeStateView {
   if (!input.hasSession) return { label: '', tone: 'idle' };
   if (input.lifecycle === 'reconciliation_required') return { label: 'Reconcile', tone: 'attention', detail: 'Reconciliation required' };
   if (input.lifecycle === 'failed') return { label: 'Failed', tone: 'danger', detail: 'Failed to open' };
-  if (input.isOpening || ['activating', 'pending'].includes(input.lifecycle || '')) return { label: 'Opening', tone: 'busy', detail: 'Restoring ACP session' };
+  if (['activating', 'pending'].includes(input.lifecycle || '')) return { label: 'Opening', tone: 'busy', detail: 'Restoring ACP session' };
+  // 已有活 runtime 时的 session/open 只是切过去，不是恢复进程；浏览器
+  // hydrate Control Doc 也不是 agent loading。二者都不得点亮忙碌灯。
+  if (input.isOpening && !input.hasRuntime) return { label: 'Opening', tone: 'busy', detail: 'Restoring ACP session' };
   if (!input.hasRuntime) return { label: 'Idle', tone: 'idle', detail: 'Not started · session saved' };
 
   const chatStatus = String(input.chatStatus || '').toLowerCase();
   if (TERMINAL_STATES[chatStatus]) return TERMINAL_STATES[chatStatus];
   if (input.hasPendingPermission) return { label: 'Approval', tone: 'attention', detail: 'Awaiting your permission' };
-  if (input.isHydrated === false) return { label: 'Loading', tone: 'busy', detail: 'Loading session' };
   if (input.turnActive) return { label: 'Working', tone: 'busy', detail: 'Agent is working' };
   // Live runtime on an unselected row: process exists, but this browser has
   // not hydrated it. Do not advertise “Ready” (can type) on every live row.

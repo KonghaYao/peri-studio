@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CatalogActions, type CatalogActionsDependencies, type CatalogSendOptions } from './catalog-actions';
+import { CatalogActions, catalogOwnsArchiveInvalidState, type CatalogActionsDependencies, type CatalogSendOptions } from './catalog-actions';
 
 function harness(overrides: Partial<CatalogActionsDependencies> = {}) {
   let ready = true;
@@ -118,5 +118,22 @@ describe('CatalogActions', () => {
       expect.stringContaining('original request'),
       request.frame.commandId,
     );
+  });
+
+  it('swallows live-runtime archive rejection as a toast instead of the error center', () => {
+    const h = harness();
+    h.actions.setSessionArchived('s1', true);
+    const commandId = String(h.sent[0]?.frame.commandId);
+    expect(catalogOwnsArchiveInvalidState({
+      commandId,
+      code: 'INVALID_STATE',
+      message: 'session has a running instance; close it before archiving',
+    })).toBe(true);
+    expect(h.deps.toast).toHaveBeenCalledWith('Close the running instance before archiving this session.');
+    expect(catalogOwnsArchiveInvalidState({
+      commandId,
+      code: 'INVALID_STATE',
+      message: 'session has a running instance; close it before archiving',
+    })).toBe(false);
   });
 });

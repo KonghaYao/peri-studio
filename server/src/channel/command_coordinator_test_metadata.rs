@@ -322,6 +322,41 @@ async fn session_archive_rejects_a_live_runtime() {
 }
 
 #[tokio::test]
+async fn session_archive_succeeds_after_runtime_gap() {
+    let env = env().await;
+    env.metadata
+        .create_project("p1", "Demo", env._tmp.path().to_str().unwrap(), "local")
+        .await
+        .unwrap();
+    seed_catalog_session(&env.projects, "p1", "acp-1", "Active").await;
+    bound_session(&env, S1, "acp-1").await;
+    env.chats.transition(S1, ChatState::Gap).await.unwrap();
+    assert!(!env.chats.has_live_acp_session("acp-1").await);
+
+    let (tx, mut rx) = mpsc::channel(4);
+    let result = env
+        .coordinator
+        .submit(
+            &ctx("catalog"),
+            ActionEnvelope::PersistedSessionArchive {
+                command_id: uuid::Uuid::new_v4().to_string(),
+                payload: peri_studio_proto::action::PersistedSessionOpenPayload {
+                    session_id: "acp-1".into(),
+                },
+            },
+            tx,
+        )
+        .await;
+    assert!(matches!(result, SubmitAck::Handled));
+    assert!(
+        matches!(rx.recv().await, Some(OutboundMsg::Frame(Frame::ActionAck(ref ack))) if ack.status == AckStatus::Accepted)
+    );
+    assert!(
+        matches!(rx.recv().await, Some(OutboundMsg::Frame(Frame::ActionAck(ref ack))) if ack.status == AckStatus::Committed)
+    );
+}
+
+#[tokio::test]
 async fn project_rename_commits_after_projection_without_changing_identity() {
     let env = env().await;
     let cwd = env._tmp.path().to_str().unwrap();

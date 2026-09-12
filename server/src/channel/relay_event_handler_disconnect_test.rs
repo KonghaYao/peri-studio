@@ -74,6 +74,7 @@ async fn disconnect_cleanup_interrupts_turn_and_gaps() {
 #[tokio::test]
 async fn process_exit_sets_terminal() {
     let env = env().await;
+    inject_user_entry(&env, S1).await;
     let exit = peri_studio_proto::instance::InstanceProcessExit {
         chat_id: S1.into(),
         code: 0,
@@ -88,4 +89,31 @@ async fn process_exit_sets_terminal() {
     ));
     let e = env.chats.entry(S1).await.unwrap();
     assert_eq!(e.state, crate::control::ChatState::Ended);
+
+    let (snapshot, _) = env
+        .sink
+        .snapshot(&peri_studio_proto::conn::DocId::session(S1))
+        .await
+        .expect("session 镜像快照");
+    use yrs::updates::decoder::Decode as _;
+    use yrs::{Map as _, ReadTxn as _, Transact as _};
+    let mirror = yrs::Doc::new();
+    let parsed = yrs::Update::decode_v1(&snapshot).unwrap();
+    mirror.transact_mut().apply_update(parsed).unwrap();
+    let txn = mirror.transact();
+    let root = txn.get_map("root").unwrap();
+    let sm = root
+        .get(&txn, "session")
+        .unwrap()
+        .cast::<yrs::MapRef>()
+        .unwrap();
+    assert_eq!(
+        sm.get(&txn, "loading").and_then(|value| value.cast::<bool>().ok()),
+        Some(false),
+        "process_exit 必须清掉 Session Doc loading"
+    );
+    assert!(
+        sm.get(&txn, "active_turn_id").is_none(),
+        "process_exit 必须清掉 active_turn"
+    );
 }

@@ -203,6 +203,9 @@ pub(crate) fn apply_turn_group(
                 "status",
                 crate::state::aggregator::chat_status_str(*status),
             );
+            // 进程已退出：清掉 Session Doc 活动 turn / loading，避免前端
+            // isTurnActive 把残留 accepting/running 当成「仍在工作」。
+            chat_writer::set_active_turn(&mut txn, &root, None);
             chat_writer::bump_projection_version(&mut txn, &root);
             ApplyResult {
                 applied: true,

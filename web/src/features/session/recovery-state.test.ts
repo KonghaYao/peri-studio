@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { retainLiveRuntimeHints } from './recovery-state.ts';
+import { isLiveRuntimeStatus, retainLiveRuntimeHints } from './recovery-state.ts';
 
 const chat = (id: string, status: string | null) => ({ id, status });
 
@@ -32,6 +32,14 @@ describe('retainLiveRuntimeHints', () => {
     // §8.3 对账 missing → server 置 gap：进程已死，会话不再显示「运行中」。
     const result = retainLiveRuntimeHints([session('chat-gap')], [chat('chat-gap', 'gap')]);
     expect(result[0].activeChatId).toBeNull();
+  });
+
+  it('treats ended/closed/crashed/gap as non-live runtime statuses', () => {
+    expect(isLiveRuntimeStatus('accepting')).toBe(true);
+    expect(isLiveRuntimeStatus('gap')).toBe(false);
+    expect(isLiveRuntimeStatus('ended')).toBe(false);
+    expect(isLiveRuntimeStatus('closed')).toBe(false);
+    expect(isLiveRuntimeStatus('crashed')).toBe(false);
   });
 
   it('keeps the hint when the chat status is unknown (conservative)', () => {

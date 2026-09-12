@@ -9,11 +9,12 @@ import {
   permissions,
   readOnly,
   renameProjectSession,
-  runtimeDocsHydrated,
+  selectedCid,
   selectedSessionId,
   turnActive,
 } from '@/store';
 import { runtimeState } from '@/features/runtime/runtime-state';
+import { sessionHasLiveRuntime } from '@/features/session/recovery-state';
 import { ProjectSessionRow } from './ProjectSessionRow';
 import type { ProjectSidebarModel } from './project-sidebar-model';
 
@@ -31,16 +32,19 @@ export function ProjectSidebarRow(props: ProjectSidebarRowProps) {
   const menuKey = `${props.options?.pinned ? 'pinned' : 'workspace'}:${sessionId}`;
   const selected = () => selectedSessionId() === sessionId;
   const chatId = () => props.session.activeChatId;
+  const liveRuntime = () => sessionHasLiveRuntime(props.session, chatStatusSignal());
   const state = () => runtimeState({
     hasSession: true,
     lifecycle: props.session.lifecycle,
-    isOpening: openingSessionId() === sessionId,
+    isOpening: openingSessionId() === sessionId && !liveRuntime(),
     hasRuntime: !!chatId(),
     isSelected: selected(),
-    isHydrated: selected() ? runtimeDocsHydrated() : undefined,
     chatStatus: chatId() ? chatStatusSignal()[chatId()!] ?? null : null,
     hasPendingPermission: selected() && permissions().some((permission) => permission.status === 'pending'),
-    turnActive: !!chatId() && (chatTurnActiveSignal()[chatId()!] === true || (selected() && turnActive())),
+    turnActive: liveRuntime() && (
+      chatTurnActiveSignal()[chatId()!] === true
+      || (selected() && selectedCid() === chatId() && turnActive())
+    ),
   });
 
   return (

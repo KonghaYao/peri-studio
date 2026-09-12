@@ -15,6 +15,7 @@ import {
   isTerminal,
   machines,
   navigateProjectSession,
+  openingSessionId,
   projects,
   projectSessions,
   registryHydrated,
@@ -23,7 +24,10 @@ import {
   restoreProject,
   restoreProjectSession,
   selectedSessionId,
+  toast,
+  turnActive,
 } from '@/store';
+import { sessionArchiveLooksLoading } from '@/features/session/session-archive-state';
 import { principalId, readOnly } from '@/features/auth/auth-state';
 import { runConfirmedMutation } from '@/features/session/form-mutation';
 import { pickProjectDirectory } from '@/shared/lib/pick-directory';
@@ -223,6 +227,21 @@ export function createProjectSidebarModel(intent: () => ProjectSidebarIntent | n
 
   const requestArchiveSession = (sessionId: string) => {
     if (sessionLifecycleBusy()) return;
+    const session = projectSessions().find((item) => item.id === sessionId);
+    if (!session) return;
+    const loading = sessionArchiveLooksLoading({
+      sessionId,
+      lifecycle: session.lifecycle,
+      activeChatId: session.activeChatId,
+      openingSessionId: openingSessionId(),
+      selectedSessionId: selectedSessionId(),
+      chatStatuses: chatStatusSignal(),
+      selectedTurnActive: turnActive(),
+    });
+    if (loading) {
+      toast('This session is still loading. Close the running instance before archiving.');
+      return;
+    }
     runConfirmedMutation(
       () => setSessionLifecycleBusy(sessionId),
       () => setSessionLifecycleBusy(null),

@@ -13,6 +13,7 @@ import { confirmRuntimeControl } from '@/features/runtime/runtime-control';
 import { promptRecoveryOwnsError } from '@/features/runtime/prompt-recovery-assembly';
 import { rewindOwnsError } from '@/features/runtime/rewind-assembly';
 import { ownsMcpAppsError } from '@/features/mcp/mcp-apps';
+import { catalogOwnsArchiveInvalidState } from '@/features/catalog/catalog-actions';
 import type { PersistentError } from '../message/panel-errors';
 import type { Setter } from 'solid-js';
 
@@ -46,6 +47,10 @@ export function createConnectionDownstream(deps: ConnectionDownstreamDeps) {
     if (promptRecoveryOwnsError(err)) return;
     if (rewindOwnsError(err)) return;
     if (ownsMcpAppsError(err)) return;
+    if (catalogOwnsArchiveInvalidState(err)) {
+      deps.commands.fail(err);
+      return;
+    }
     console.error(`[panel] action error code=${err.code || 'UNKNOWN'} command=${err.commandId ? 'present' : 'absent'}`);
     const messageDeliveryOwnsError = ownsMessageDeliveryError(err.commandId, err.code);
     deps.commands.fail(err);

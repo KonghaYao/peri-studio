@@ -1,4 +1,5 @@
 import * as H from '@/shared/protocol/client';
+import type { ActionError } from '@/shared/protocol/action-contract';
 
 export type CatalogFrame = ReturnType<typeof H.action>;
 
@@ -43,6 +44,16 @@ export interface MutationCallbacks {
 }
 
 const committed = (ack: CatalogAck) => ack.status === 'committed' || ack.status === 'duplicate';
+const sessionArchiveCommands = new Set<string>();
+let toastArchiveBlock: ((message: string) => void) | null = null;
+
+/** session/archive 被 live runtime 拒绝时由目录模块消化，不进全局错误中心。 */
+export function catalogOwnsArchiveInvalidState(err: ActionError): boolean {
+  if (err.code !== 'INVALID_STATE' || !err.commandId || !sessionArchiveCommands.has(err.commandId)) return false;
+  sessionArchiveCommands.delete(err.commandId);
+  toastArchiveBlock?.('Close the running instance before archiving this session.');
+  return true;
+}
 
 /**
  * Owns the complete browser lifecycle for project/session catalog commands.
@@ -51,7 +62,9 @@ const committed = (ack: CatalogAck) => ack.status === 'committed' || ack.status 
  * Registry projection; the browser only sends metadata mutations.
  */
 export class CatalogActions {
-  constructor(private readonly deps: CatalogActionsDependencies) {}
+  constructor(private readonly deps: CatalogActionsDependencies) {
+    toastArchiveBlock = deps.toast;
+  }
 
   createProject(name: string, cwd: string, instanceId?: string, callbacks: MutationCallbacks = {}): boolean {
     if (!this.canMutate('Read-only mode cannot create projects')) return false;
@@ -105,6 +118,8 @@ export class CatalogActions {
     const frame = archive
       ? H.persistedSessionArchive(sessionId)
       : H.persistedSessionRestore(sessionId);
+    if (archive) sessionArchiveCommands.add(frame.commandId);
+    const forgetArchive = () => { if (archive) sessionArchiveCommands.delete(frame.commandId); };
     return this.sendMutation(
       frame,
       archive ? 'session/archive' : 'session/restore',
@@ -115,7 +130,16 @@ export class CatalogActions {
           ? 'The session may already be archived. Wait for the sidebar to sync before retrying.'
           : 'The session may already be restored. Wait for the sidebar to sync before retrying.',
       },
-      callbacks,
+      {
+        onCommitted: () => {
+          forgetArchive();
+          callbacks.onCommitted?.();
+        },
+        onFailed: () => {
+          forgetArchive();
+          callbacks.onFailed?.();
+        },
+      },
       archive ? () => this.deps.onSessionArchived(sessionId) : undefined,
     );
   }
