@@ -5,7 +5,20 @@
 // token_id 为脱敏标识，不展示 token 本体。
 
 import { For, Show } from 'solid-js';
-import { Badge, EmptyState } from '@peri/ui';
+import {
+  Badge,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemGroup,
+  ItemTitle,
+} from '@peri/ui';
 import {
   topologyChatBadgeTone,
   topologyInstanceBadgeTone,
@@ -33,46 +46,58 @@ export function TopologyView() {
       }
     >
       <div class="grid gap-8 mt-14">
-        <article class="border border-divider rounded-12 bg-surface">
-          <div class="flex items-center gap-10 px-14 py-12">
+        <Card class="rounded-12 border-divider">
+          <CardHeader class="flex-row items-center gap-10 px-14 py-12">
             <span class="w-9 h-9 shrink-0 rounded-full bg-accent" aria-hidden="true" />
             <div class="grid min-w-0 flex-1 gap-2">
-              <strong class="overflow-hidden text-text-primary text-14 text-ellipsis whitespace-nowrap">Peri Studio server</strong>
-              <span class="overflow-hidden text-text-muted font-mono text-11 text-ellipsis whitespace-nowrap">hub:registry · schema {String(schemaVersion() ?? '—')}</span>
+              <CardTitle class="overflow-hidden text-ellipsis whitespace-nowrap">Peri Studio server</CardTitle>
+              <CardDescription class="overflow-hidden font-mono text-11 text-text-muted text-ellipsis whitespace-nowrap">
+                hub:registry · schema {String(schemaVersion() ?? '—')}
+              </CardDescription>
             </div>
             <Badge tone={topologyServerBadgeTone(globalStatus())}>{serverStatusLabel(globalStatus())}</Badge>
-          </div>
-        </article>
+          </CardHeader>
+        </Card>
         <For each={nodes()}>{(node) => {
           const registered = () => messageTime(node.registeredAt);
           const heartbeat = () => messageTime(node.lastHeartbeat);
           return (
-            <article class="border border-divider rounded-12 bg-surface-muted">
-              <div class="flex items-center gap-10 px-14 py-12">
+            <Card class="rounded-12 border-divider bg-surface-muted">
+              <CardHeader class="flex-row items-center gap-10 px-14 py-12">
                 <span class="w-9 h-9 shrink-0 rounded-full bg-success" aria-hidden="true" />
                 <div class="grid min-w-0 flex-1 gap-2">
-                  <strong class="overflow-hidden text-text-primary text-14 text-ellipsis whitespace-nowrap">{node.hostname || node.id}</strong>
-                  <span class="overflow-hidden text-text-muted font-mono text-11 text-ellipsis whitespace-nowrap">{node.id} · token {node.tokenId || '—'}</span>
+                  <CardTitle class="overflow-hidden text-ellipsis whitespace-nowrap">{node.hostname || node.id}</CardTitle>
+                  <CardDescription class="overflow-hidden font-mono text-11 text-text-muted text-ellipsis whitespace-nowrap">
+                    {node.id} · token {node.tokenId || '—'}
+                  </CardDescription>
                 </div>
                 <Badge tone={topologyInstanceBadgeTone(node.status)}>{instanceStatusLabel(node.status)}</Badge>
-              </div>
-              <div class="flex flex-wrap gap-x-14 gap-y-5 px-14 pb-11 text-text-secondary text-12">
-                <span>{node.chats.length} conversations</span>
-                <span>Registered {registered()?.label ?? '—'}</span>
-                <span>Last heartbeat {heartbeat()?.label ?? '—'}</span>
-              </div>
-              <Show when={node.chats.length > 0}>
-                <ul class="topology-instance-children grid gap-2 mx-14 mb-11 pt-7 pl-13 border-t border-dashed border-l-2 border-solid-l border-divider list-none">
-                  <For each={node.chats}>{(chat) => (
-                    <li class="flex items-center gap-8 px-6 py-4 rounded-8 hover:bg-hover">
-                      <span class="min-w-0 overflow-hidden flex-1 text-text-primary text-12p5 text-ellipsis whitespace-nowrap">{chat.title || chat.id}</span>
-                      <span class="overflow-hidden max-w-2/5 text-text-muted font-mono text-10p5 text-ellipsis whitespace-nowrap">{chat.id}</span>
-                      <Badge tone={topologyChatBadgeTone(chat.status)}>{chatStatusLabel(chat.status)}</Badge>
-                    </li>
-                  )}</For>
-                </ul>
-              </Show>
-            </article>
+              </CardHeader>
+              <CardContent class="px-14 py-0">
+                <div class="flex flex-wrap gap-x-14 gap-y-5 pb-11 text-text-secondary text-12">
+                  <span>{node.chats.length} conversations</span>
+                  <span>Registered {registered()?.label ?? '—'}</span>
+                  <span>Last heartbeat {heartbeat()?.label ?? '—'}</span>
+                </div>
+                <Show when={node.chats.length > 0}>
+                  <ItemGroup class="topology-instance-children grid gap-2 mx-0 mb-11 pt-7 pl-13 border-t border-dashed border-l-2 border-solid-l border-divider">
+                    <For each={node.chats}>{(chat) => (
+                      <Item class="gap-8 px-6 py-4 hover:bg-hover">
+                        <ItemContent class="min-w-0 flex-row items-center gap-8">
+                          <ItemTitle class="min-w-0 overflow-hidden flex-1 text-12p5 text-text-primary text-ellipsis whitespace-nowrap">
+                            {chat.title || chat.id}
+                          </ItemTitle>
+                          <span class="overflow-hidden max-w-2/5 text-text-muted font-mono text-10p5 text-ellipsis whitespace-nowrap">{chat.id}</span>
+                        </ItemContent>
+                        <ItemActions>
+                          <Badge tone={topologyChatBadgeTone(chat.status)}>{chatStatusLabel(chat.status)}</Badge>
+                        </ItemActions>
+                      </Item>
+                    )}</For>
+                  </ItemGroup>
+                </Show>
+              </CardContent>
+            </Card>
           );
         }}</For>
       </div>

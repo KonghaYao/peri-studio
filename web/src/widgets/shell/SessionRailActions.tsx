@@ -1,6 +1,5 @@
 import { createEffect, createSignal, Show } from 'solid-js';
 import { History, Power, RotateCcw } from 'lucide-solid';
-import { Dialog, DialogContent, DialogTitle } from '@peri/ui';
 import { chatHead, chatStatusSignal, closeChat, navigateProjectSession, openingSessionId, projectSessions, selectedCid, selectedSessionId, turnActive } from '@/store';
 import { isTerminal } from '@/features/runtime/action-state';
 import { readOnly } from '@/features/auth/auth-state';
@@ -38,19 +37,19 @@ export function SessionRailActions() {
         }}><RotateCcw size={17} strokeWidth={1.7} /></ResourceRailButton>
       </Show>
     </Show>
-    <Dialog open={confirmClose()} onOpenChange={(open) => { if (!open && !closeLocked()) setConfirmClose(false); }}><DialogContent dismissible={!closeLocked()}><DialogTitle class="sr-only">Close current running instance</DialogTitle>
-      <ConfirmDialog
-        title="Close the current running instance?"
-        description="Sessions and history on the left are kept. Next time you open it, Peri Studio starts a new runtime instance and loads the same ACP session."
-        warning={turnActive() ? 'Agent is still working. Closing the instance will stop the current generation and running tools.' : undefined}
-        cancelDisabled={closeLocked()}
-        confirmLabel="Close instance"
-        confirmDisabled={runtimeControlLocked()}
-        confirmBusy={closing()?.phase === 'sending' || closing()?.phase === 'accepted'}
-        onCancel={() => setConfirmClose(false)}
-        onConfirm={() => closeChat(() => setConfirmClose(false))}
-      />
-    </DialogContent></Dialog>
+    <ConfirmDialog
+      open={confirmClose()}
+      onOpenChange={(open) => { if (!open && !closeLocked()) setConfirmClose(false); }}
+      title="Close the current running instance?"
+      description="Sessions and history on the left are kept. Next time you open it, Peri Studio starts a new runtime instance and loads the same ACP session."
+      warning={turnActive() ? 'Agent is still working. Closing the instance will stop the current generation and running tools.' : undefined}
+      cancelDisabled={closeLocked()}
+      confirmLabel="Close instance"
+      confirmDisabled={runtimeControlLocked()}
+      confirmBusy={closing()?.phase === 'sending' || closing()?.phase === 'accepted'}
+      onCancel={() => setConfirmClose(false)}
+      onConfirm={() => closeChat(() => setConfirmClose(false))}
+    />
     <RewindDialog open={rewindOpen()} onClose={() => setRewindOpen(false)} />
   </>;
 }

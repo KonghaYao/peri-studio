@@ -1,5 +1,15 @@
 import { createEffect, For, onCleanup, Show } from 'solid-js';
-import { Badge, Button, EmptyState, IconButton, InlineNotice, LoadingState } from '@peri/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  cn,
+  EmptyState,
+  IconButton,
+  InlineNotice,
+  LoadingState,
+  ResourceSectionTitle,
+} from '@peri/ui';
 import { mcpConnectionBadgeTone } from '@/features/shell/runtime-status-badge';
 import { readOnly } from '@/features/auth/auth-state';
 import {
@@ -14,7 +24,15 @@ import {
   startMcpOAuth,
 } from '@/features/mcp/mcp';
 import { RefreshCw } from 'lucide-solid';
-import { ResourceSectionTitle } from '@peri/ui';
+
+const authLinkClass = (embedded?: boolean) =>
+  cn(
+    'inline-flex cursor-pointer items-center justify-center gap-6 whitespace-nowrap rounded-6 font-medium no-underline transition-colors outline-none duration-120',
+    'border border-transparent bg-accent-solid [color:var(--content-on-accent)]! hover:bg-accent-hover active:bg-accent-active',
+    'focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2',
+    'pointer-coarse:min-h-44',
+    embedded ? 'h-28 px-10 text-12' : 'h-36 px-16 text-13 max-compact:min-h-44 max-compact:flex-1',
+  );
 
 export function McpPanelContent(props: { embedded?: boolean } = {}) {
   createEffect(() => {
@@ -46,7 +64,7 @@ export function McpPanelContent(props: { embedded?: boolean } = {}) {
               const grant = mcpAuthorization();
               return grant && grant.flowId === server.activeFlowId ? grant : null;
             };
-            return <article class={props.embedded ? 'border-b border-divider bg-surface px-8 py-7' : 'rounded-12 border border-divider bg-surface p-15'}>
+            return <Card class={props.embedded ? 'rounded-0 border-0 border-b border-divider bg-surface px-8 py-7 shadow-none' : 'rounded-12 border-divider p-15 shadow-none'}>
               <div class={`flex items-start justify-between ${props.embedded ? 'gap-6' : 'gap-12'}`}>
                 <div class={`grid min-w-0 ${props.embedded ? 'gap-1' : 'gap-2'}`}><strong class={`overflow-hidden text-ellipsis whitespace-nowrap text-text-primary ${props.embedded ? 'text-11 font-600' : 'text-14'}`}>{server.name}</strong><span class={`font-mono text-text-secondary ${props.embedded ? 'text-9' : 'text-12'}`}>{server.transport}</span></div>
                 <Badge tone={mcpConnectionBadgeTone(server.connectionStatus)}>{connectionLabel(server.connectionStatus)}</Badge>
@@ -64,10 +82,19 @@ export function McpPanelContent(props: { embedded?: boolean } = {}) {
                   <Button variant="primary" size={props.embedded ? 'compact' : undefined} class={props.embedded ? 'min-h-28! text-10!' : 'max-compact:min-h-44 max-compact:flex-1'} disabled={readOnly()} onClick={() => requestMcpAuthorization(server.activeFlowId!)}>{props.embedded ? 'Open link' : 'Get authorization link'}</Button>
                   <Button size={props.embedded ? 'compact' : undefined} class={props.embedded ? 'min-h-28! text-10!' : 'max-compact:min-h-44 max-compact:flex-1'} disabled={readOnly()} onClick={() => cancelMcpOAuth(server.activeFlowId!)}>{props.embedded ? 'Cancel' : 'Cancel authorization'}</Button>
                 </Show>
-                <Show when={exactAuthorization()}>{(grant) => <a class={`mcp-auth-link inline-flex items-center justify-center rounded-8 border border-transparent bg-btn-primary font-500 text-surface no-underline cursor-pointer hover:bg-btn-primary-hover active:translate-y-1 pointer-coarse:min-h-44 ${props.embedded ? 'min-h-28 px-8 text-10' : 'min-h-36 gap-8 px-12 text-14 max-compact:min-h-44 max-compact:flex-1'}`} href={grant().authorizationUrl} target="_blank" rel="noopener noreferrer">Open authorization page</a>}</Show>
+                <Show when={exactAuthorization()}>{(grant) => (
+                  <a
+                    class={authLinkClass(props.embedded)}
+                    href={grant().authorizationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open authorization page
+                  </a>
+                )}</Show>
               </div>
               <Show when={exactAuthorization()}><InlineNotice class="mt-10" tone="info">The authorization URL is kept in memory for this page only and expires soon. After opening it, come back here to check the connection result.</InlineNotice></Show>
-            </article>;
+            </Card>;
           }}</For>
         </div>
       </Show>

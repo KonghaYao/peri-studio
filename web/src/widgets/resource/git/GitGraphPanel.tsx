@@ -1,7 +1,13 @@
 import { createEffect, createMemo, createSignal, For, onCleanup, Show } from 'solid-js';
 import { RefreshCw } from 'lucide-solid';
-import { IconButton } from '@peri/ui';
-import { cn } from '@peri/ui';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  IconButton,
+  cn,
+} from '@peri/ui';
 import {
   GIT_GRAPH_COLORS,
   GIT_GRAPH_HEADER_HEIGHT,
@@ -10,7 +16,7 @@ import {
   type GitGraphLayoutCommit,
 } from '@peri/ui';
 import { GitGraphRefBadge } from '@peri/ui';
-import type { GitGraphCommit, GitGraphRef } from './types';
+import type { GitGraphCommit } from './types';
 import { gitLogHasIncompleteDag } from '@/features/resource/map-git-log';
 import type { GitGraphActionKind, GitGraphActionParams } from '@/features/resource/git-graph-mutations';
 import { GitGraphBranchDialog, GitGraphConfirmDialog } from './GitGraphActionDialog';
@@ -20,13 +26,6 @@ type TableMetrics = {
   rowHeight: number;
   rowCenters: number[];
   tableHeight: number;
-};
-
-type ContextMenuState = {
-  x: number;
-  y: number;
-  commit: GitGraphCommit;
-  ref?: GitGraphRef;
 };
 
 type BranchDialogState = {
@@ -68,7 +67,6 @@ export function GitGraphPanel(props: {
 }) {
   const [hovered, setHovered] = createSignal<number | null>(null);
   const [selected, setSelected] = createSignal(0);
-  const [menu, setMenu] = createSignal<ContextMenuState | null>(null);
   const [branchDialog, setBranchDialog] = createSignal<BranchDialogState | null>(null);
   const [resetConfirm, setResetConfirm] = createSignal<{ commit: GitGraphCommit; mode: 'soft' | 'mixed' | 'hard' } | null>(null);
   const [metrics, setMetrics] = createSignal<TableMetrics>({
@@ -79,26 +77,6 @@ export function GitGraphPanel(props: {
   });
 
   let tableRef: HTMLTableElement | undefined;
-
-  const closeMenu = () => setMenu(null);
-
-  createEffect(() => {
-    if (!menu()) return;
-    const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target?.closest('[data-git-graph-menu]')) return;
-      closeMenu();
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeMenu();
-    };
-    window.addEventListener('pointerdown', onPointerDown);
-    window.addEventListener('keydown', onKeyDown);
-    onCleanup(() => {
-      window.removeEventListener('pointerdown', onPointerDown);
-      window.removeEventListener('keydown', onKeyDown);
-    });
-  });
 
   const measureTable = () => {
     const table = tableRef;
@@ -169,40 +147,8 @@ export function GitGraphPanel(props: {
   const incompleteDag = createMemo(() => gitLogHasIncompleteDag(props.commits));
 
   const dispatch = (action: GitGraphActionKind, params: GitGraphActionParams) => {
-    closeMenu();
     props.onGraphAction?.(action, params);
   };
-
-  const openCommitMenu = (event: MouseEvent, commit: GitGraphCommit) => {
-    event.preventDefault();
-    setMenu({ x: event.clientX, y: event.clientY, commit });
-  };
-
-  const openRefMenu = (event: MouseEvent, commit: GitGraphCommit, gitRef: GitGraphRef) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setMenu({ x: event.clientX, y: event.clientY, commit, ref: gitRef });
-  };
-
-  const menuItems = createMemo(() => {
-    const state = menu();
-    if (!state) return [];
-    const oid = commitOid(state.commit);
-    if (state.ref?.tone === 'branch') {
-      return [
-        { label: 'Checkout branch', onClick: () => dispatch('checkout', { refName: state.ref!.label }) },
-        { label: 'Rename branch…', onClick: () => setBranchDialog({ mode: 'rename', commit: state.commit, refName: state.ref!.label }) },
-      ];
-    }
-    return [
-      { label: 'Checkout commit', onClick: () => dispatch('checkout', { targetOid: oid }) },
-      { label: 'Create branch…', onClick: () => setBranchDialog({ mode: 'create', commit: state.commit }) },
-      { label: 'Reset current branch (soft)', onClick: () => setResetConfirm({ commit: state.commit, mode: 'soft' }) },
-      { label: 'Reset current branch (mixed)', onClick: () => setResetConfirm({ commit: state.commit, mode: 'mixed' }) },
-      { label: 'Reset current branch (hard)', onClick: () => setResetConfirm({ commit: state.commit, mode: 'hard' }) },
-      { label: 'Revert commit', onClick: () => dispatch('revert', { targetOid: oid }) },
-    ];
-  });
 
   return (
     <div class="ui-git-graph-panel flex h-full min-h-0 flex-col bg-surface-overlay" aria-label="Git Graph">
@@ -295,49 +241,90 @@ export function GitGraphPanel(props: {
                   };
 
                   return (
-                    <tr
-                      class={cn(
-                        'ui-git-graph-row',
-                        rowState(),
-                        isCurrent() && 'current',
-                      )}
-                      data-color={colorIndex()}
-                      onMouseEnter={() => setHovered(index())}
-                      onMouseLeave={() => setHovered(null)}
-                      onClick={() => setSelected(index())}
-                      onContextMenu={(event) => openCommitMenu(event, commit)}
-                    >
-                      <td class="ui-git-graph-td ui-git-graph-graph-col" />
-                      <td class="ui-git-graph-td ui-git-graph-desc-col">
-                        <span class="ui-git-graph-description">
-                          <Show when={isCurrent()}>
-                            <span
-                              class="ui-git-graph-head-dot"
-                              style={{ 'border-color': `var(--git-graph-color-${colorIndex() % 12})` }}
-                              aria-hidden="true"
-                            />
-                          </Show>
-                          <Show when={commit.refs?.length}>
-                            <For each={commit.refs!}>
-                              {(ref) => (
-                                <span onContextMenu={(event) => openRefMenu(event, commit, ref)}>
-                                  <GitGraphRefBadge
-                                    gitRef={ref}
-                                    active={ref.tone === 'branch'}
-                                  />
-                                </span>
-                              )}
-                            </For>
-                          </Show>
-                          <span class="ui-git-graph-message">{displayMessage(commit)}</span>
-                        </span>
-                      </td>
-                      <td class="ui-git-graph-td ui-git-graph-date-col text-content-muted">{commit.time || commit.date}</td>
-                      <td class="ui-git-graph-td ui-git-graph-author-col text-content-muted">{commit.author}</td>
-                      <td class="ui-git-graph-td ui-git-graph-commit-col font-mono text-content-muted">
-                        {commit.shortHash ?? commit.hash?.slice(0, 8) ?? commit.id.slice(0, 8)}
-                      </td>
-                    </tr>
+                    <ContextMenu>
+                      <ContextMenuTrigger
+                        as="tr"
+                        class={cn(
+                          'ui-git-graph-row',
+                          rowState(),
+                          isCurrent() && 'current',
+                        )}
+                        data-color={colorIndex()}
+                        onMouseEnter={() => setHovered(index())}
+                        onMouseLeave={() => setHovered(null)}
+                        onClick={() => setSelected(index())}
+                      >
+                        <td class="ui-git-graph-td ui-git-graph-graph-col" />
+                        <td class="ui-git-graph-td ui-git-graph-desc-col">
+                          <span class="ui-git-graph-description">
+                            <Show when={isCurrent()}>
+                              <span
+                                class="ui-git-graph-head-dot"
+                                style={{ 'border-color': `var(--git-graph-color-${colorIndex() % 12})` }}
+                                aria-hidden="true"
+                              />
+                            </Show>
+                            <Show when={commit.refs?.length}>
+                              <For each={commit.refs!}>
+                                {(ref) => (
+                                  <ContextMenu>
+                                    <ContextMenuTrigger
+                                      as="span"
+                                      onContextMenu={(event) => event.stopPropagation()}
+                                    >
+                                      <GitGraphRefBadge
+                                        gitRef={ref}
+                                        active={ref.tone === 'branch'}
+                                      />
+                                    </ContextMenuTrigger>
+                                    <ContextMenuContent
+                                      data-git-graph-menu
+                                      aria-label="Branch actions"
+                                    >
+                                      <ContextMenuItem onSelect={() => dispatch('checkout', { refName: ref.label })}>
+                                        Checkout branch
+                                      </ContextMenuItem>
+                                      <ContextMenuItem onSelect={() => setBranchDialog({ mode: 'rename', commit, refName: ref.label })}>
+                                        Rename branch…
+                                      </ContextMenuItem>
+                                    </ContextMenuContent>
+                                  </ContextMenu>
+                                )}
+                              </For>
+                            </Show>
+                            <span class="ui-git-graph-message">{displayMessage(commit)}</span>
+                          </span>
+                        </td>
+                        <td class="ui-git-graph-td ui-git-graph-date-col text-content-muted">{commit.time || commit.date}</td>
+                        <td class="ui-git-graph-td ui-git-graph-author-col text-content-muted">{commit.author}</td>
+                        <td class="ui-git-graph-td ui-git-graph-commit-col font-mono text-content-muted">
+                          {commit.shortHash ?? commit.hash?.slice(0, 8) ?? commit.id.slice(0, 8)}
+                        </td>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent
+                        data-git-graph-menu
+                        aria-label="Commit actions"
+                      >
+                        <ContextMenuItem onSelect={() => dispatch('checkout', { targetOid: commitOid(commit) })}>
+                          Checkout commit
+                        </ContextMenuItem>
+                        <ContextMenuItem onSelect={() => setBranchDialog({ mode: 'create', commit })}>
+                          Create branch…
+                        </ContextMenuItem>
+                        <ContextMenuItem onSelect={() => setResetConfirm({ commit, mode: 'soft' })}>
+                          Reset current branch (soft)
+                        </ContextMenuItem>
+                        <ContextMenuItem onSelect={() => setResetConfirm({ commit, mode: 'mixed' })}>
+                          Reset current branch (mixed)
+                        </ContextMenuItem>
+                        <ContextMenuItem onSelect={() => setResetConfirm({ commit, mode: 'hard' })}>
+                          Reset current branch (hard)
+                        </ContextMenuItem>
+                        <ContextMenuItem onSelect={() => dispatch('revert', { targetOid: commitOid(commit) })}>
+                          Revert commit
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                   );
                 }}
               </For>
@@ -345,30 +332,6 @@ export function GitGraphPanel(props: {
           </table>
         </div>
       </div>
-
-      <Show when={menu()}>
-        {(state) => (
-          <div
-            data-git-graph-menu
-            class="fixed z-50 min-w-52 rounded-8 border border-border-subtle bg-surface-overlay py-4 shadow-overlay"
-            style={{ top: `${state().y}px`, left: `${state().x}px` }}
-            role="menu"
-          >
-            <For each={menuItems()}>
-              {(item) => (
-                <button
-                  type="button"
-                  role="menuitem"
-                  class="block w-full border-0 bg-transparent px-12 py-8 text-left text-12 text-content-primary hover:bg-interaction-hover"
-                  onClick={item.onClick}
-                >
-                  {item.label}
-                </button>
-              )}
-            </For>
-          </div>
-        )}
-      </Show>
 
       <Show when={branchDialog()}>
         {(dialog) => (

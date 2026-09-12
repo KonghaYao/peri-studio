@@ -174,8 +174,8 @@ test('fractional Tailwind spacing utilities resolve to an explicit product token
 });
 
 const EXTRA_CSS_BASELINE = {
-  lineCount: 164,
-  sha256: '1cae442e8e87c8b64d9fcf30cde68c8874577b0b5fa81f7787875f5c65306989',
+  lineCount: 147,
+  sha256: '2ccd832945fb95ee3d4c7dc67ed13da38498f8e7ce40a0846982adf9f523dd88',
 };
 
 function lineCountLikeWc(content) {
@@ -274,8 +274,8 @@ test('Composer and quick start expose one labeled textarea and keyboard submit g
   assert.match(composerShell, /<ComposerInputField[\s\S]*?aria-label="Message the agent"/);
   assert.match(composerShell, /aria-autocomplete="list"/);
   assert.match(composerShell, /if \(e\.key === 'Enter' && !e\.shiftKey\) \{\s*e\.preventDefault\(\);\s*state\.submit\(\);/);
-  assert.match(quickStart, /<Textarea[\s\S]*?aria-label="First message"/);
-  assert.match(quickStart, /variant="bare"/);
+  assert.match(quickStart, /<ComposerInputField[\s\S]*?aria-label="First message"/);
+  assert.match(quickStart, /ComposerSendStopAction/);
   assert.match(quickStart, /if \(event\.key === 'Enter' && !event\.shiftKey\) \{ event\.preventDefault\(\); submit\(\); \}/);
   assert.doesNotMatch(composerShell, /shadow-float/);
   assert.doesNotMatch(quickStart, /shadow-float/);
@@ -449,7 +449,7 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
   assert.match(composerControls, /'primary'/);
   assert.doesNotMatch(quickStartComposer, /bg-accent-solid/);
   assert.doesNotMatch(quickStartComposer, /Approval mode/);
-  assert.match(quickStartComposer, /variant="primary"/);
+  assert.match(quickStartComposer, /ComposerSendStopAction[\s\S]*?mode="send"/);
   assert.match(base, /:focus-visible\s*\{\s*outline:\s*2px solid var\(--focus-ring\)/);
 });
 

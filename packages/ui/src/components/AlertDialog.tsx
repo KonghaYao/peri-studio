@@ -84,15 +84,17 @@ type ActionProps<T extends ValidComponent = 'button'> = AlertDialogPrimitive.Ale
   class?: string;
   children?: JSX.Element;
   variant?: 'primary' | 'danger';
+  busy?: boolean;
   'aria-label'?: string;
 };
 export function AlertDialogAction<T extends ValidComponent = 'button'>(props: PolymorphicProps<T, ActionProps<T>>) {
-  const [local, rest] = splitProps(props as ActionProps, ['class', 'children', 'variant', 'aria-label']);
+  const [local, rest] = splitProps(props as ActionProps, ['class', 'children', 'variant', 'busy', 'aria-label']);
   const label = local['aria-label'] ?? (typeof local.children === 'string' ? local.children : 'Confirm');
   return (
     <AlertDialogPrimitive.CloseButton
       as={Button}
       variant={local.variant ?? 'primary'}
+      busy={local.busy}
       class={local.class}
       aria-label={label}
       {...rest}

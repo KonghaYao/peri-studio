@@ -454,7 +454,7 @@ describe('VS Code-style resource panels', () => {
     render(() => <SourceControlPanel />);
 
     await fireEvent.click(screen.getByRole('button', { name: 'Discard src/main.ts' }));
-    expect(screen.getByRole('dialog', { name: 'Discard changes' })).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog', { name: 'Discard changes?' })).toBeInTheDocument();
     expect(sent).toHaveLength(0);
     await fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
     expect(sent).toContainEqual(expect.objectContaining({

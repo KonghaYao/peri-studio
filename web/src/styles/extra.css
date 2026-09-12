@@ -108,17 +108,6 @@ body.workbench-panel-resizing * {
   max-width: 100%;
 }
 
-/* ── MCP 授权外链（主按钮视觉，非 Button 组件） ───────────────────────── */
-
-.mcp-auth-link {
-  transition:
-    background var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard),
-    color var(--duration-fast) var(--ease-standard),
-    transform var(--duration-fast) var(--ease-standard),
-    opacity var(--duration-fast) var(--ease-standard);
-}
-
 /* ── 设置关于页元数据表 ───────────────────────────────────────────────── */
 
 .settings-form-meta dt {
@@ -149,12 +138,6 @@ body.workbench-panel-resizing * {
 .explorer-upload-tree--drop-root {
   outline: 2px dashed var(--accent-border-hover);
   outline-offset: 2px;
-}
-
-/* ── 消息出站气泡（相邻块间距） ───────────────────────────────────────── */
-
-.message-outbox__surface > * + * {
-  margin-top: var(--space-8);
 }
 
 /* ── 拓扑子节点连线 ───────────────────────────────────────────────────── */

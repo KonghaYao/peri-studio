@@ -1,5 +1,6 @@
 import { For, Show } from 'solid-js';
 import {
+  Button,
   buttonGroupItemClass,
   Collapsible,
   CollapsibleContent,
@@ -161,7 +162,15 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                     when={hasSessions()}
                     fallback={<Show
                       when={sessionsLoading()}
-                      fallback={<button type="button" class="session-empty sidebar-mist-hint px-2.5 py-4 pl-36 text-left text-11 hover:text-content-muted" disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(projectId)}>Start your first conversation</button>}
+                      fallback={<Button
+                        variant="ghost"
+                        size="compact"
+                        class="session-empty sidebar-mist-hint h-auto justify-start px-2.5 py-4 pl-36 text-left text-11 font-normal hover:bg-transparent hover:text-content-muted"
+                        disabled={readOnly() || !!creatingSessionProjectId()}
+                        onClick={() => createProjectSession(projectId)}
+                      >
+                        Start your first conversation
+                      </Button>}
                     >
                       <LoadingState label="Loading sessions" class="session-empty px-2.5 py-4 pl-36 text-left!" />
                     </Show>}

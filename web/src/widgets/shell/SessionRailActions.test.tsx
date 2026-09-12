@@ -59,10 +59,10 @@ describe('SessionRailActions', () => {
     prepare();
     render(() => <SessionRailActions />);
     fireEvent.click(screen.getByRole('button', { name: 'Close running instance' }));
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('alertdialog')).toBeInTheDocument());
 
     setChatStatusSignal({ 'chat-1': 'closed' });
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: 'Reopen session' })).toBeInTheDocument();
   });
 });

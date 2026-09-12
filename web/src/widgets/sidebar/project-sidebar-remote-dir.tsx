@@ -1,5 +1,5 @@
 import { For, Show } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogTitle, TextField } from '@peri/ui';
+import { Button, Dialog, DialogContent, DialogTitle, Input, SelectField, TextField } from '@peri/ui';
 import { runConfirmedMutation } from '@/features/session/form-mutation';
 import { projectNameFromPath } from '@/shared/lib/project-path';
 import { isLocalMachine } from '@/entities/machine/machine-view';
@@ -22,32 +22,30 @@ export function ProjectSidebarRemoteDir(props: { model: ProjectSidebarModel }) {
       />
       <Dialog open={model.creating()} onOpenChange={(open) => { if (!open && !model.projectCreateSubmitting()) { model.setCreating(false); model.setPickDirectoryError(null); model.setRemoteBrowseOpen(false); } }}><DialogContent dismissible={!model.projectCreateSubmitting() && !model.pickingDirectory() && !model.remoteBrowseOpen()}><DialogTitle class="sr-only">New project</DialogTitle>
         <form class="m-0 rounded-12 border-0 bg-surface p-18 shadow-none" onSubmit={model.submitProject}>
-          <div class="mb-9 flex flex-col gap-6">
-            <label class="text-12 font-semibold text-text-secondary" for="project-computer">Computer</label>
-            <select
-              id="project-computer"
-              class="box-border h-38 rounded-9 border border-border-strong bg-surface px-11 text-text-primary outline-none focus:border-focus-ring"
-              value={model.projectInstanceId()}
-              onChange={(e) => model.setProjectInstanceId(e.currentTarget.value)}
-              disabled={model.projectCreateSubmitting()}
-            >
-              <For each={model.selectableMachines()}>{(machine) => (
-                <option value={machine.instanceId} disabled={!isLocalMachine(machine) && !model.machineOnline(machine.instanceId)}>
-                  {machine.displayName}{!isLocalMachine(machine) && !model.machineOnline(machine.instanceId) ? ' (offline)' : ''}
-                </option>
-              )}</For>
-            </select>
-          </div>
+          <SelectField
+            label="Computer"
+            id="project-computer"
+            value={model.projectInstanceId()}
+            onChange={(e) => model.setProjectInstanceId(e.currentTarget.value)}
+            disabled={model.projectCreateSubmitting()}
+          >
+            <For each={model.selectableMachines()}>{(machine) => (
+              <option value={machine.instanceId} disabled={!isLocalMachine(machine) && !model.machineOnline(machine.instanceId)}>
+                {machine.displayName}{!isLocalMachine(machine) && !model.machineOnline(machine.instanceId) ? ' (offline)' : ''}
+              </option>
+            )}</For>
+          </SelectField>
           <div class="mb-9 flex flex-col gap-6">
             <label class="text-12 font-semibold text-text-secondary" for="project-directory">Working directory</label>
             <div class="flex items-center gap-6">
-              <input
+              <Input
                 id="project-directory"
-                class="box-border h-38 min-w-0 flex-1 rounded-9 border border-border-strong bg-surface px-11 text-text-primary outline-none focus:border-focus-ring focus-visible:outline-0"
+                class="min-w-0 flex-1"
                 value={model.cwd()}
                 onInput={(e) => { model.setCwd(e.currentTarget.value); model.setPickDirectoryError(null); }}
                 placeholder="/absolute/path"
                 autofocus
+                invalid={!!model.pickDirectoryError()}
               />
               <Button type="button" variant="secondary" class="shrink-0" busy={model.pickingDirectory()} disabled={model.projectCreateSubmitting() || (model.isRemoteInstance(model.projectInstanceId()) && !model.machineOnline(model.projectInstanceId()))} onClick={() => { void model.browseProjectDirectory(); }}>
                 {model.isRemoteInstance(model.projectInstanceId()) ? 'Browse remote…' : 'Browse…'}

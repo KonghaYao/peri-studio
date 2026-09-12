@@ -1,4 +1,4 @@
-import { createEffect, createSignal, For, Show } from 'solid-js';
+import { createEffect, createSignal, Show } from 'solid-js';
 import { Folder, FolderOpen } from 'lucide-solid';
 import type { ProjectInfo } from '@/entities/registry/registry-view';
 import {
@@ -7,7 +7,7 @@ import {
   type RemoteDirectoryBrowseDependencies,
   type RemoteDirectorySnapshot,
 } from '@/features/machine/remote-directory-browse';
-import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, LoadingState } from '@peri/ui';
+import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, Listbox, ListboxItem, ListboxItemLabel, LoadingState } from '@peri/ui';
 
 export function RemoteDirectoryDialog(props: {
   open: boolean;
@@ -48,6 +48,12 @@ export function RemoteDirectoryDialog(props: {
     return parts.join('/');
   };
 
+  const openFolder = (values: Set<string>) => {
+    const relativePath = values.values().next().value as string | undefined;
+    if (!relativePath) return;
+    ensureBrowser().openDirectory(relativePath);
+  };
+
   return (
     <Dialog open={props.open} onOpenChange={(open) => { if (!open) props.onClose(); }}>
       <DialogContent size="search" dismissible>
@@ -79,27 +85,30 @@ export function RemoteDirectoryDialog(props: {
                 </Button>
               </Show>
             </div>
-            <div class="max-h-72 overflow-y-auto rounded-9 border border-border-faint">
-              <Show
-                when={(snapshot()?.entries.length ?? 0) > 0}
-                fallback={<EmptyState variant="inline" class="px-10 py-16" title="No folders here" description="Pick the current path or go up one level." />}
-              >
-                <ul class="m-0 list-none p-0">
-                  <For each={snapshot()?.entries ?? []}>{(entry) => (
-                    <li>
-                      <button
-                        type="button"
-                        class="flex w-full min-h-36 items-center gap-8 px-10 py-6 text-left hover:bg-interaction-hover"
-                        onClick={() => ensureBrowser().openDirectory(entry.relativePath)}
-                      >
-                        <Folder size={15} strokeWidth={1.7} class="shrink-0 text-content-muted" />
-                        <span class="truncate text-13 text-content-primary">{entry.name}</span>
-                      </button>
-                    </li>
-                  )}</For>
-                </ul>
-              </Show>
-            </div>
+            <Show
+              when={(snapshot()?.entries.length ?? 0) > 0}
+              fallback={<EmptyState variant="inline" class="rounded-9 border border-border-faint px-10 py-16" title="No folders here" description="Pick the current path or go up one level." />}
+            >
+              <Listbox
+                class="ui-listbox remote-directory-list grid max-h-72 gap-1 overflow-y-auto rounded-9 border border-border-faint m-0 p-0 list-none"
+                aria-label="Remote folders"
+                options={snapshot()?.entries ?? []}
+                optionValue="relativePath"
+                optionTextValue={(entry) => entry.name}
+                optionDisabled={() => !!snapshot()?.loading}
+                selectionMode="single"
+                onChange={openFolder}
+                shouldFocusWrap
+                renderItem={(item) => (
+                  <ListboxItem item={item} recipe="search" class="gap-8">
+                    <span class="flex min-w-0 items-center gap-8">
+                      <Folder size={15} strokeWidth={1.7} class="shrink-0 text-content-muted" />
+                      <ListboxItemLabel class="truncate text-13 text-content-primary">{item.rawValue.name}</ListboxItemLabel>
+                    </span>
+                  </ListboxItem>
+                )}
+              />
+            </Show>
             <Show when={snapshot()?.nextCursor}>
               <Button variant="secondary" busy={snapshot()?.loading} onClick={() => ensureBrowser().loadMore()}>Load more</Button>
             </Show>

@@ -1,5 +1,5 @@
 import { Show, createEffect, createMemo, createSignal, untrack } from 'solid-js';
-import { Dialog, DialogContent, DialogTitle, IconButton } from '@peri/ui';
+import { Button, Dialog, DialogContent, DialogTitle, IconButton, cn } from '@peri/ui';
 import {
   activateResourceProject,
   projectSessions,
@@ -20,7 +20,6 @@ import { terminalSession } from '@/features/terminal/terminal-session';
 import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_TITLE_CLASS } from './resource-panel-layout';
 import { ResourceFloatingPanel } from './ResourceFloatingPanel';
 import { GitGraphView } from './git/GitGraphView';
-import { cn } from '@peri/ui';
 import { resourceWorkbenchRequest } from '@/store';
 
 export type WorkbenchView = 'explorer' | 'scm' | 'mcp' | 'graph' | 'terminal' | null;
@@ -198,7 +197,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
         <Show when={project()} fallback={<div class="p-16 text-12 text-content-muted">Select or create a project to browse its workspace.</div>}>
           <Show when={resourceWorkspace().error}>{(message) => <div role="alert" class="m-8 flex items-start gap-6 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">
             <span class="min-w-0 flex-1">{message()}</span>
-            <button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={refreshResourceProject}>Retry</button>
+            <Button size="compact" variant="ghost" class="shrink-0 border-0! bg-transparent! px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={refreshResourceProject}>Retry</Button>
           </div>}</Show>
           <Show when={view() === 'explorer'}><ExplorerPanel expanded={explorerExpanded()} onExpandedChange={setExplorerExpanded} activePath={explorerActivePath()} onActivePathChange={setExplorerActivePath} scrollTop={explorerScrollTop()} onScrollTopChange={(scrollTop) => { if (!props.compact || props.open) setExplorerScrollTop(scrollTop); }} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'explorer', key })} /></Show>
           <Show when={view() === 'scm'}><SourceControlPanel commitMessages={visibleCommitMessages()} onCommitMessageChange={setCommitMessage} onCommitSubmitted={recordSubmittedCommit} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'scm', key })} /></Show>

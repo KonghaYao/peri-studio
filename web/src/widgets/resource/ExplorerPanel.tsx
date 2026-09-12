@@ -549,7 +549,7 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
           }}
           onFolderDrop={(path, event) => handleDrop(path, event)}
         />
-        <Show when={nextCursor()}>{(cursor) => <button type="button" class="h-(--tree-row-height) w-full border-0 bg-transparent text-left text-11 text-accent hover:bg-hover pointer-coarse:h-44" style={{ 'padding-left': '26px' }} onClick={() => openResourceDirectory('', cursor())}>Load more…</button>}</Show>
+        <Show when={nextCursor()}>{(cursor) => <Button size="compact" variant="ghost" class="h-(--tree-row-height) w-full justify-start border-0! bg-transparent! text-left text-11 text-accent hover:bg-hover pointer-coarse:h-44" style={{ 'padding-left': '26px' }} onClick={() => openResourceDirectory('', cursor())}>Load more…</Button>}</Show>
       </Show>
     </div>
     <ExplorerItemMenu

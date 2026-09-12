@@ -27,7 +27,7 @@ describe('McpPanelContent', () => {
     render(() => <McpPanelContent embedded />);
 
     expect(screen.getByRole('region', { name: 'Connections' })).toHaveClass('bg-surface');
-    expect(screen.getByText('github').closest('article')).toHaveClass('border-b', 'bg-surface');
+    expect(screen.getByText('github').closest('[data-slot="card"]')).toHaveClass('border-b', 'bg-surface');
     expect(screen.getByRole('button', { name: 'Refresh MCP connections' })).toBeInTheDocument();
   });
 

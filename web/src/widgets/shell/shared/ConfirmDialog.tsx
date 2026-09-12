@@ -1,21 +1,31 @@
-// 确认弹窗内容（P4 公共组件）：runtime-dialog 结构的确认对话框主体。
+// 确认弹窗（P1）：@peri/ui AlertDialog 复合组件 + 业务 props 薄封装。
 //
 // 收敛 ChatHeader（关闭运行实例）与 ProjectSidebar（归档项目 / 归档会话）
-// 三处逐行相似的「eyebrow + 标题 + 说明 + 警告 + 取消/危险主按钮」模板。
-// Dialog 外层（open/title/dismissible/onClose）仍由调用方管理；本组件
-// 只渲染 runtime-dialog 内容，保证三处 DOM 结构一致。
+// 等处逐行相似的「眉标 + 标题 + 说明 + 警告 + 取消/危险主按钮」模板。
 
 import { Show, type JSX } from 'solid-js';
-import { Button } from '@peri/ui';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  InlineNotice,
+} from '@peri/ui';
 
 export interface ConfirmDialogProps {
-  /** 顶部眉标（dialog-eyebrow）；缺省不渲染。 */
+  open: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** 顶部眉标；缺省不渲染。 */
   eyebrow?: string;
-  /** h2 标题。 */
+  /** 标题。 */
   title: JSX.Element;
-  /** 说明段落（<p> 内容）。 */
+  /** 说明段落。 */
   description: JSX.Element;
-  /** 警告行（runtime-dialog__warning）；缺省不渲染。 */
+  /** 警告行；缺省不渲染。 */
   warning?: JSX.Element;
   /** 取消按钮禁用（如正在提交）。 */
   cancelDisabled?: boolean;
@@ -31,15 +41,30 @@ export interface ConfirmDialogProps {
 
 export function ConfirmDialog(props: ConfirmDialogProps) {
   return (
-    <div class="p-20">
-      <Show when={props.eyebrow}><span class="block mb-5 text-text-muted text-10 font-bold tracking-8 uppercase">{props.eyebrow}</span></Show>
-      <h2 class="m-0 text-19 tracking-(--tracking-dialog)">{props.title}</h2>
-      <p class="mt-9 mb-0 text-13 leading-155 text-text-secondary">{props.description}</p>
-      <Show when={props.warning}><p class="mt-9 mb-0 rounded-9 border border-warning-border bg-surface px-10 py-9 !text-warning text-13 leading-155">{props.warning}</p></Show>
-      <div class="mt-20 flex justify-end gap-6">
-        <Button disabled={props.cancelDisabled} onClick={props.onCancel}>Cancel</Button>
-        <Button variant="danger" busy={props.confirmBusy} disabled={props.confirmDisabled} onClick={props.onConfirm}>{props.confirmLabel}</Button>
-      </div>
-    </div>
+    <AlertDialog open={props.open} onOpenChange={props.onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <Show when={props.eyebrow}>
+            <span class="text-text-muted text-10 font-bold tracking-8 uppercase">{props.eyebrow}</span>
+          </Show>
+          <AlertDialogTitle>{props.title}</AlertDialogTitle>
+          <AlertDialogDescription>{props.description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <Show when={props.warning}>
+          <InlineNotice tone="warning">{props.warning}</InlineNotice>
+        </Show>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={props.cancelDisabled} onClick={props.onCancel}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            variant="danger"
+            disabled={props.confirmDisabled}
+            busy={props.confirmBusy}
+            onClick={props.onConfirm}
+          >
+            {props.confirmLabel}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

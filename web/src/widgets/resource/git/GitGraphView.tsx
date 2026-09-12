@@ -1,3 +1,4 @@
+import { Button } from '@peri/ui';
 import { Show, createEffect, createMemo, createSignal, untrack } from 'solid-js';
 import {
   canLoadMoreGitLog,
@@ -66,16 +67,17 @@ export function GitGraphView(props: GitGraphViewProps = {}) {
         {(message) => (
           <div role="alert" class="m-8 flex items-start gap-6 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">
             <span class="min-w-0 flex-1">{message()}</span>
-            <button
-              type="button"
-              class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8"
+            <Button
+              size="compact"
+              variant="ghost"
+              class="shrink-0 border-0! bg-transparent! px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8"
               onClick={() => {
                 const repoId = activeGraphRepoId();
                 if (repoId) refreshGitLog(repoId);
               }}
             >
               Retry
-            </button>
+            </Button>
           </div>
         )}
       </Show>
@@ -85,16 +87,17 @@ export function GitGraphView(props: GitGraphViewProps = {}) {
           <span class="text-11 text-content-muted">Repository</span>
           <div class="flex min-w-0 flex-wrap gap-4">
             {graphRepositories().map((repo) => (
-              <button
-                type="button"
-                class={`rounded-4 px-8 py-4 text-11 ${activeGraphRepoId() === repo.id ? 'bg-selected text-content-primary' : 'text-content-muted hover:bg-interaction-hover'}`}
+              <Button
+                size="compact"
+                variant="ghost"
+                class={`rounded-4 border-0! px-8 py-4 text-11 ${activeGraphRepoId() === repo.id ? 'bg-selected text-content-primary' : 'text-content-muted hover:bg-interaction-hover'}`}
                 onClick={() => {
                   setGraphRepoId(repo.id);
                   if (!repo.log && repo.generation) openGitLog(repo.id);
                 }}
               >
                 {repo.name}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -111,14 +114,15 @@ export function GitGraphView(props: GitGraphViewProps = {}) {
             />
             <Show when={canLoadMoreGitLog(repoId())}>
               <div class="border-t border-border-subtle px-10 py-8">
-                <button
-                  type="button"
-                  class="text-11 text-accent hover:underline pointer-coarse:min-h-44"
+                <Button
+                  size="compact"
+                  variant="ghost"
+                  class="border-0! bg-transparent! text-11 text-accent hover:underline pointer-coarse:min-h-44"
                   disabled={gitLogLoading(repoId())}
                   onClick={() => openMoreGitLog(repoId())}
                 >
                   Load more commits
-                </button>
+                </Button>
               </div>
             </Show>
           </>
