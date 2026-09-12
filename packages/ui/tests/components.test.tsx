@@ -1980,7 +1980,8 @@ describe('Command', () => {
       </Command>
     ));
 
-    expect(screen.getByTestId('command')).toHaveClass('rounded-lg', 'border-border-subtle', 'shadow-popover');
+    expect(screen.getByTestId('command')).toHaveClass('rounded-8', 'border-border-subtle');
+    expect(screen.getByTestId('command')).not.toHaveClass('shadow-popover');
     expect(screen.getByRole('searchbox', { name: 'Search commands' }).parentElement).toHaveClass('border-b', 'border-border-subtle');
 
     fireEvent.input(screen.getByRole('searchbox', { name: 'Search commands' }), { target: { value: 'find' } });

@@ -31,6 +31,8 @@ describe('DataTable', () => {
   it('renders declarative rows and cycles sort on column click', () => {
     render(() => <DataTable data={rows} columns={columns} />);
 
+    const frame = screen.getByRole('table').closest('[data-slot="data-table"]');
+    expect(frame).toHaveClass('rounded-8', 'border-border-subtle', 'bg-surface');
     expect(screen.getByRole('columnheader', { name: /Name/ })).toHaveAttribute('data-sortable', '');
     expect(screen.getAllByRole('row')).toHaveLength(4);
 

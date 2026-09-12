@@ -42,12 +42,6 @@ import {
   SwitchInput,
   SwitchLabel,
   SwitchThumb,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   Toggle,
   ToggleGroup,
   ToggleGroupItem,
@@ -210,48 +204,27 @@ export function ComponentCatalogExtras(props: { sections?: string[] }) {
       </CatalogDemo>
       </Show>
 
-      <Show when={showCatalogSection(props.sections, 'table')}>
-      <CatalogDemo id="table" title="Table · Popover · Toast" description="表格数据与浮层反馈。">
-        <Table class="max-w-lg">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Instance</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead class="text-right">Sessions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <For each={[
-              { name: 'local', status: 'Connected', count: 4 },
-              { name: 'build-agent', status: 'Idle', count: 12 },
-            ]}>
-              {(row) => (
-                <TableRow>
-                  <TableCell class="font-medium">{row.name}</TableCell>
-                  <TableCell>{row.status}</TableCell>
-                  <TableCell class="text-right tabular-nums">{row.count}</TableCell>
-                </TableRow>
-              )}
-            </For>
-          </TableBody>
-        </Table>
-        <Popover>
-          <PopoverTrigger as={Button} variant="default" size="sm">Open popover</PopoverTrigger>
-          <PopoverContent>
-            <p class="text-13 font-medium text-content-primary">Resource rail</p>
-            <p class="mt-8 text-12 leading-normal text-content-secondary">Explorer, source control, and graph share one floating panel.</p>
-          </PopoverContent>
-        </Popover>
-        <div>
-          <Toaster />
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => showToast(<span class="text-13">Settings saved</span>, 3000)}
-          >
-            Show toast
-          </Button>
-        </div>
+      <Show when={showCatalogSection(props.sections, 'popover-toast')}>
+      <CatalogDemo id="popover-toast" title="Popover · Toast" description="锚定浮层与全局 toast 反馈；表格见 Forms · Data table。">
+        <DemoRow>
+          <Popover>
+            <PopoverTrigger as={Button} variant="default" size="sm">Open popover</PopoverTrigger>
+            <PopoverContent>
+              <p class="text-13 font-medium text-content-primary">Resource rail</p>
+              <p class="mt-8 text-12 leading-normal text-content-secondary">Explorer, source control, and graph share one floating panel.</p>
+            </PopoverContent>
+          </Popover>
+          <div>
+            <Toaster />
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => showToast(<span class="text-13">Settings saved</span>, 3000)}
+            >
+              Show toast
+            </Button>
+          </div>
+        </DemoRow>
       </CatalogDemo>
       </Show>
     </>

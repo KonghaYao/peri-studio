@@ -17,8 +17,9 @@ export function ComponentsOverlaysPage() {
       <ComponentCatalogExtras sections={['card', 'accordion']} />
       <ComponentCatalogExtrasE sections={['empty']} />
       <ComponentCatalogExtrasD sections={['item']} />
-      <ComponentCatalogExtras sections={['progress', 'table']} />
+      <ComponentCatalogExtras sections={['progress']} />
       <ComponentCatalogExtrasB sections={['overlay', 'menus']} />
+      <ComponentCatalogExtras sections={['popover-toast']} />
       <ComponentCatalogExtrasE sections={['drawer']} />
       <ComponentCatalogExtrasB sections={['breadcrumb']} />
       <ComponentCatalogExtrasC sections={['menubar']} />

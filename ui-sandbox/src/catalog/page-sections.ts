@@ -157,10 +157,9 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
       ],
     },
     {
-      title: 'Feedback & data',
+      title: 'Feedback',
       items: [
         { id: 'progress', label: 'Progress & slider' },
-        { id: 'table', label: 'Table & popover' },
       ],
     },
     {
@@ -169,6 +168,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'overlay', label: 'Alert dialog & sheet' },
         { id: 'drawer', label: 'Drawer' },
         { id: 'menus', label: 'Context & hover' },
+        { id: 'popover-toast', label: 'Popover & toast' },
       ],
     },
     {
@@ -320,6 +320,10 @@ const LEGACY_MARKDOWN_SECTION_IDS: Record<string, string> = {
   'markdown-streaming': 'markdown-render',
 };
 
+const LEGACY_OVERLAYS_SECTION_IDS: Record<string, string> = {
+  table: 'popover-toast',
+};
+
 const LEGACY_BLOCKS_SECTION_ROUTES: Record<string, SandboxRoute> = {
   'slash-menu': 'components-composer',
   'token-usage': 'components-composer',
@@ -391,6 +395,8 @@ export function parseSandboxHash(hash = window.location.hash): { route: SandboxR
   let normalizedSection = section;
   if (section && route === 'components-markdown') {
     normalizedSection = LEGACY_MARKDOWN_SECTION_IDS[section] ?? section;
+  } else if (section && route === 'components-overlays') {
+    normalizedSection = LEGACY_OVERLAYS_SECTION_IDS[section] ?? section;
   } else if (section && route === 'components-explorer') {
     normalizedSection = LEGACY_EXPLORER_SECTION_IDS[section] ?? section;
   }

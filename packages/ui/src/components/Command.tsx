@@ -106,7 +106,7 @@ export const Command: Component<ComponentProps<'div'>> = (props) => {
       <div
         data-slot="command"
         class={cn(
-          'flex w-full flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface text-text-primary shadow-popover',
+          'flex w-full flex-col overflow-hidden rounded-8 border border-border-subtle bg-surface text-text-primary outline-none',
           local.class,
         )}
         {...rest}

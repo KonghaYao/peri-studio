@@ -72,7 +72,7 @@ export function ComponentCatalogExtrasC(props: { sections?: string[] }) {
             <ComboboxContent aria-label="Framework options" />
           </Combobox>
         </div>
-        <div class="max-w-md overflow-hidden rounded-lg border border-border-subtle shadow-popover">
+        <div class="max-w-md">
           <Command>
             <CommandInput placeholder="Search commands…" />
             <CommandList>

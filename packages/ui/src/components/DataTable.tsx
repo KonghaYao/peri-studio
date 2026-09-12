@@ -116,8 +116,15 @@ type DataTableProps<T> = {
   onSortChange?: (sort: DataTableSortState) => void;
   getRowKey?: (row: T, index: number) => string;
   class?: string;
+  frameClass?: string;
   children?: JSX.Element;
 };
+
+const dataTableFrameClass =
+  'overflow-hidden rounded-8 border border-border-subtle bg-surface';
+
+const dataTableTableClass =
+  '[&_tbody_tr:last-child]:border-b-0 [&_th:not(:last-child)]:border-r [&_th:not(:last-child)]:border-border-subtle [&_td:not(:last-child)]:border-r [&_td:not(:last-child)]:border-border-subtle';
 
 /** 轻量数据表：复用 Table 原语，支持列定义 props 或 children 组合与客户端排序。 */
 export function DataTable<T>(props: DataTableProps<T>) {
@@ -129,6 +136,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
     'onSortChange',
     'getRowKey',
     'class',
+    'frameClass',
     'children',
   ]);
 
@@ -161,7 +169,8 @@ export function DataTable<T>(props: DataTableProps<T>) {
 
   return (
     <DataTableContext.Provider value={context as DataTableContextValue<unknown>}>
-      <Table class={local.class} {...rest}>
+      <div data-slot="data-table" class={cn(dataTableFrameClass, local.frameClass)}>
+        <Table class={cn(dataTableTableClass, local.class)} {...rest}>
         <Show
           when={hasDeclarativeBody()}
           fallback={local.children}
@@ -197,7 +206,8 @@ export function DataTable<T>(props: DataTableProps<T>) {
             </For>
           </DataTableBody>
         </Show>
-      </Table>
+        </Table>
+      </div>
     </DataTableContext.Provider>
   );
 }
