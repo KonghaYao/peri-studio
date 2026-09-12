@@ -22,6 +22,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'spacing', label: 'Spacing' },
         { id: 'radius', label: 'Radius' },
         { id: 'typography', label: 'Typography' },
+        { id: 'shell', label: 'Shell & header' },
         { id: 'elevation', label: 'Elevation & motion' },
         { id: 'component-tokens', label: 'Component tokens' },
       ],

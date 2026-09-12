@@ -7,31 +7,57 @@ export interface TokenEntry {
   value: string;
 }
 
-/** 收集所有样式表 :root 规则上的自定义属性（声明顺序保留，后者覆盖前者）。 */
-export function readDesignTokens(): TokenEntry[] {
-  const byName = new Map<string, string>();
-  for (const sheet of Array.from(document.styleSheets)) {
-    let rules: CSSRuleList;
-    try {
-      rules = sheet.cssRules;
-    } catch {
-      continue;
-    }
-    for (const rule of Array.from(rules)) {
-      if (rule instanceof CSSStyleRule && rule.selectorText === ':root') {
+function isRootSelector(selector: string): boolean {
+  return selector.split(',').some((part) => part.trim() === ':root');
+}
+
+function collectRootRules(rules: CSSRuleList, byName: Map<string, string>): void {
+  for (const rule of Array.from(rules)) {
+    if (rule instanceof CSSStyleRule) {
+      if (isRootSelector(rule.selectorText)) {
         for (const name of Array.from(rule.style)) {
           if (name.startsWith('--')) byName.set(name, rule.style.getPropertyValue(name).trim());
         }
       }
+      continue;
+    }
+    if (rule instanceof CSSGroupingRule) {
+      collectRootRules(rule.cssRules, byName);
+    }
+  }
+}
+
+/** 收集所有样式表 :root 规则上的自定义属性（声明顺序保留，后者覆盖前者）。 */
+export function readDesignTokens(): TokenEntry[] {
+  const byName = new Map<string, string>();
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      collectRootRules(sheet.cssRules, byName);
+    } catch {
+      continue;
     }
   }
   return [...byName.entries()].map(([name, value]) => ({ name, value }));
 }
 
+/** 读取 :root 上最终生效的 token 值（含 inline 覆写）。 */
+export function getTokenCSSValue(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
 let probe: HTMLDivElement | null = null;
 
-/** 用探针元素把 var() 引用链解析为最终计算值（颜色 → rgb，长度 → px）。 */
-export function resolveToken(name: string, property: 'color' | 'width' = 'color'): string {
+export type ResolveTokenProperty =
+  | 'color'
+  | 'width'
+  | 'height'
+  | 'font-size'
+  | 'line-height'
+  | 'border-radius'
+  | 'box-shadow';
+
+/** 用探针元素把 var() 引用链解析为最终计算值。 */
+export function resolveToken(name: string, property: ResolveTokenProperty = 'color'): string {
   if (!probe) {
     probe = document.createElement('div');
     probe.style.display = 'none';

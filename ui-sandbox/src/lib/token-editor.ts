@@ -1,5 +1,6 @@
 /* 沙箱 token 运行时覆写：通过 :root inline style 操控全局 CSS 变量，支持持久化与导出。 */
 
+import { isBasicsPanelToken } from '@/lib/token-basics';
 import {
   clearAllPaletteSeeds,
   exportPaletteCss,
@@ -7,6 +8,13 @@ import {
   paletteSeedCount,
 } from '@/lib/palette-scale';
 import { readDesignTokens, resolveToken, type TokenEntry } from '@/lib/token-reader';
+
+const LEGACY_TEXT_COLOR_TOKENS = new Set([
+  '--text-primary',
+  '--text-secondary',
+  '--text-muted',
+  '--text-faint',
+]);
 
 const STORAGE_KEY = 'peri-sandbox-token-overrides';
 
@@ -183,11 +191,16 @@ export function resolvedColorHex(name: string): string | null {
 
 function categoryLabel(name: string): string {
   if (isPaletteToken(name)) return 'Palette (computed)';
+  if (isBasicsPanelToken(name)) return 'Basics (curated panel)';
+  if (LEGACY_TEXT_COLOR_TOKENS.has(name)) return 'Legacy aliases';
   if (name.startsWith('--space-')) return 'Spacing';
   if (name.startsWith('--radius-')) return 'Radius';
-  if (name.startsWith('--text-') || name.startsWith('--leading-') || name.startsWith('--font-') || name.startsWith('--tracking-')) {
-    return 'Typography';
-  }
+  if (/^--text-\d/.test(name) || /^--text-\d+p/.test(name)) return 'Typography · Size';
+  if (/^--text-(caption|body|title|display)$/.test(name)) return 'Typography · Roles';
+  if (/^--leading-(tight|snug|compact|normal|relaxed)$/.test(name)) return 'Typography · Leading roles';
+  if (name.startsWith('--leading-')) return 'Typography · Line height';
+  if (name.startsWith('--tracking-')) return 'Typography · Letter spacing';
+  if (name.startsWith('--font-')) return 'Typography · Font';
   if (name.startsWith('--shadow-') || name.startsWith('--z-') || name.startsWith('--duration-') || name.startsWith('--ease-')) {
     return 'Elevation & motion';
   }
@@ -198,6 +211,7 @@ function categoryLabel(name: string): string {
   if (name.startsWith('--accent-')) return 'Semantic · Accent';
   if (name.startsWith('--selection-') || name.startsWith('--interaction-')) return 'Semantic · Interaction';
   if (name.startsWith('--feedback-')) return 'Semantic · Feedback';
+  if (name.startsWith('--sandbox-')) return 'Shell · Sandbox chrome';
   if (name.startsWith('--shell-')) return 'Component · Shell';
   if (name.startsWith('--sidebar-')) return 'Component · Sidebar';
   if (name.startsWith('--chat-')) return 'Component · Chat';
@@ -212,7 +226,6 @@ function categoryLabel(name: string): string {
   if (name.startsWith('--kb-')) return 'Kobalte fallbacks';
   if (
     name.startsWith('--app-')
-    || name.startsWith('--text-')
     || name.startsWith('--link')
     || name.startsWith('--hover')
     || name.startsWith('--selected')
@@ -239,7 +252,8 @@ const CATEGORY_ORDER = [
   'Semantic · Feedback',
   'Spacing',
   'Radius',
-  'Typography',
+  'Typography · Line height',
+  'Typography · Letter spacing',
   'Elevation & motion',
   'Layout',
   'Component · Shell',
@@ -261,7 +275,7 @@ const CATEGORY_ORDER = [
 export function groupTokensForEditor(entries: TokenEntry[]): TokenGroup[] {
   const buckets = new Map<string, TokenEntry[]>();
   for (const entry of entries) {
-    if (isPaletteToken(entry.name)) continue;
+    if (isPaletteToken(entry.name) || isBasicsPanelToken(entry.name)) continue;
     const label = categoryLabel(entry.name);
     const list = buckets.get(label) ?? [];
     list.push(entry);

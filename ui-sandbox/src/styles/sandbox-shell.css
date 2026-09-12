@@ -2,6 +2,7 @@
 
 :root {
   --sandbox-header-height: 88px;
+  --sandbox-scroll-anchor: calc(var(--sandbox-header-height) + var(--space-16));
 }
 
 .sandbox-app {
@@ -204,6 +205,48 @@
   color: var(--content-primary);
   text-shadow: 0 0 2px var(--surface-overlay);
   pointer-events: none;
+}
+
+.curated-token-field {
+  padding: 10px;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-md);
+  background: var(--surface-canvas);
+}
+
+.curated-token-field--dirty {
+  border-color: var(--accent-border-hover);
+  background: color-mix(in oklch, var(--accent-soft) 40%, var(--surface-canvas));
+}
+
+.typography-scale-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.typography-scale-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-md);
+  background: var(--surface-overlay);
+}
+
+.typography-scale-chip__preview {
+  line-height: 1;
+  color: var(--content-primary);
+}
+
+.typography-scale-chip__label {
+  font-size: 9px;
+  line-height: 1.1;
+  color: var(--content-muted);
+  text-align: center;
 }
 
 @media (max-width: 959px) {

@@ -18,6 +18,7 @@ import {
 } from '@/lib/token-editor';
 import { readDesignTokens, resolveToken, type TokenEntry } from '@/lib/token-reader';
 import { Button, cn, CopyButton, IconButton, Input } from '@/lib/catalog-ui';
+import { isBasicsPanelToken } from '@/lib/token-basics';
 import { isPaletteToken, subscribePaletteEditor } from '@/lib/palette-scale';
 import { PaletteScaleSection } from '@/shell/PaletteScaleSection';
 
@@ -153,11 +154,13 @@ export function TokenControlPanel() {
 
   const entries = createMemo(() => readDesignTokens());
   const groups = createMemo(() => groupTokensForEditor(entries()));
-  const editableCount = createMemo(() => entries().filter((entry) => !isPaletteToken(entry.name)).length);
+  const isEditableToken = (name: string) => !isPaletteToken(name) && !isBasicsPanelToken(name);
+
+  const editableCount = createMemo(() => entries().filter((entry) => isEditableToken(entry.name)).length);
 
   const filteredCount = createMemo(() => {
     const q = query().trim().toLowerCase();
-    const editable = entries().filter((entry) => !isPaletteToken(entry.name));
+    const editable = entries().filter((entry) => isEditableToken(entry.name));
     if (!q) return editable.length;
     return editable.filter(
       (entry) => entry.name.toLowerCase().includes(q) || entry.value.toLowerCase().includes(q),

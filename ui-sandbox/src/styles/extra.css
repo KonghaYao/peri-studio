@@ -283,3 +283,235 @@
   outline: 1px solid var(--danger-border);
   outline-offset: -1px;
 }
+
+/* ── T1 Tokens 页视觉预览（纯展示 demo） ─────────────────────────────────── */
+
+.token-preview-spacing-bar {
+  height: var(--space-16);
+  min-width: 2px;
+  border-radius: var(--radius-xs);
+  background: color-mix(in oklch, var(--accent-solid) 82%, transparent);
+}
+
+.token-preview-gap-cell {
+  flex: 1;
+  height: var(--space-40);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-soft);
+}
+
+.token-preview-radius-tile {
+  width: var(--space-48);
+  height: var(--space-48);
+  border: 2px solid var(--accent-solid);
+  background: var(--accent-soft);
+}
+
+.token-preview-radius-semantic {
+  display: grid;
+  place-items: center;
+  height: var(--space-56);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-overlay);
+  font-size: var(--text-12);
+  color: var(--content-secondary);
+}
+
+.token-preview-shadow-tile {
+  display: grid;
+  height: var(--space-64);
+  place-items: center;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-overlay);
+  font-size: var(--text-11);
+  color: var(--content-muted);
+}
+
+.token-preview-shell-frame {
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-canvas);
+}
+
+.token-preview-shell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  height: var(--sandbox-header-height);
+  padding-inline: var(--space-16);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-overlay);
+  font-size: var(--text-12);
+  font-weight: 600;
+  color: var(--content-primary);
+}
+
+.token-preview-shell-header code,
+.token-preview-shell-sidebar code,
+.token-preview-shell-content code {
+  font-size: var(--text-9);
+  color: var(--content-faint);
+}
+
+.token-preview-shell-body {
+  display: grid;
+  grid-template-columns: var(--shell-sidebar-width) minmax(0, 1fr);
+  min-height: 180px;
+}
+
+.token-preview-shell-sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-12);
+  border-right: 1px solid var(--border-subtle);
+  background: var(--surface-muted);
+  font-size: var(--text-11);
+  font-weight: 500;
+  color: var(--content-secondary);
+}
+
+.token-preview-shell-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--space-8);
+  padding: var(--space-16);
+  background: var(--surface-canvas);
+  font-size: var(--text-11);
+  color: var(--content-muted);
+}
+
+.token-preview-shell-meter {
+  margin-top: var(--space-10);
+  border-radius: var(--radius-xs);
+  background: color-mix(in oklch, var(--accent-solid) 70%, transparent);
+}
+
+.token-preview-shell-meter--height {
+  width: 100%;
+  max-height: 120px;
+}
+
+.token-preview-shell-meter--width {
+  height: var(--space-12);
+  max-width: 100%;
+}
+
+@media (min-width: 720px) {
+  .compact\:grid-cols-spacing-preview {
+    grid-template-columns: 120px minmax(0, 1fr);
+  }
+
+  .compact\:grid-cols-typography-preview {
+    grid-template-columns: 88px minmax(0, 1fr) 56px;
+  }
+}
+
+/* ── T1 Semantic colors 视觉预览 ─────────────────────────────────────────── */
+
+.token-preview-surface-scene {
+  padding: var(--space-16);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in oklch, var(--palette-neutral-100) 55%, var(--surface-canvas));
+}
+
+.token-preview-surface-canvas {
+  position: relative;
+  min-height: 200px;
+  padding: var(--space-16);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-canvas);
+}
+
+.token-preview-surface-sunken {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 240px;
+  padding: var(--space-14);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-faint);
+  background: var(--surface-sunken);
+}
+
+.token-preview-surface-overlay {
+  position: absolute;
+  right: var(--space-16);
+  bottom: var(--space-16);
+  display: flex;
+  width: min(100%, 220px);
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-14);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-raised);
+}
+
+.token-preview-border-card {
+  display: flex;
+  min-height: 88px;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-14);
+  border-radius: var(--radius-md);
+  border-width: 1px;
+  border-style: solid;
+  background: var(--surface-overlay);
+}
+
+.token-preview-accent-button {
+  border: 0;
+  border-radius: var(--radius-control);
+  padding: var(--space-8) var(--space-14);
+  background: var(--accent-solid);
+  color: var(--content-on-accent);
+  font-size: var(--text-12);
+  font-weight: 600;
+}
+
+.token-preview-accent-ring {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-focus-ring);
+}
+
+.token-preview-selection-row,
+.token-preview-interaction-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  padding: var(--space-12) var(--space-14);
+  border-top: 1px solid var(--border-faint);
+  background: var(--selection-bg);
+}
+
+.token-preview-selection-row:first-child,
+.token-preview-interaction-row:first-child {
+  border-top: 0;
+}
+
+.token-preview-selection-row--selected {
+  border: 1px solid var(--selection-border);
+  border-radius: var(--radius-md);
+  margin: var(--space-4) var(--space-8);
+  padding-inline: var(--space-12);
+}
+
+.token-preview-interaction-row--hover {
+  background: color-mix(in srgb, var(--selection-bg) 88%, var(--interaction-hover));
+}
