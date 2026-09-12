@@ -11,11 +11,6 @@ export type RowAccessorySlotProps = {
   class?: string;
 };
 
-const rowCoverBg =
-  'bg-surface group-data-[selected=true]/row:bg-sidebar-selected group-hover/row:bg-sidebar-row-hover group-focus-within/row:bg-sidebar-row-hover';
-const workspaceCoverBg =
-  'bg-surface group-hover/workspace:bg-sidebar-row-hover group-focus-within/workspace:bg-sidebar-row-hover';
-
 /** 侧栏行右侧浮动槽：meta（live/unread/计数）与 actions（按钮组）叠层，不占文档流宽度。 */
 export const RowAccessorySlot: Component<RowAccessorySlotProps> = (props) => {
   const [local] = splitProps(props, ['group', 'meta', 'actions', 'actionsVisible', 'class']);
@@ -56,8 +51,7 @@ export const RowAccessorySlot: Component<RowAccessorySlotProps> = (props) => {
       </span>
       <div
         class={cn(
-          'row-accessory-slot__actions absolute inset-y-0 right-0 flex items-center justify-end pl-12 pr-4',
-          rowGroup() ? rowCoverBg : workspaceCoverBg,
+          'ui-row-accessory-cover row-accessory-slot__actions absolute inset-y-0 right-0 flex items-center justify-end pl-4 pr-4',
           'invisible opacity-0 pointer-events-none',
           actionsShown(),
         )}

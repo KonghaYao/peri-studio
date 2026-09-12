@@ -223,6 +223,8 @@
   --sidebar-selected-bg: var(--palette-neutral-25);
   /* 侧栏行 hover 遮罩：不透明底色，避免半透明 interaction-hover 与文本重影 */
   --sidebar-row-hover-bg: var(--palette-neutral-25);
+  --sidebar-row-accessory-fade-width: var(--space-24);
+  --sidebar-row-cover-bg: var(--surface);
   --sidebar-row-accessory-pr-session: var(--space-72);
   --sidebar-row-accessory-pr-workspace: var(--space-64);
 

@@ -178,7 +178,7 @@ export function SessionRowAccessory(props: {
       group="row"
       actionsVisible={actionsVisible()}
       meta={(
-        <span class="ui-row-accessory-meta flex items-center gap-6 bg-surface pl-8 tabular-nums text-11 text-content-muted">
+        <span class="ui-row-accessory-meta flex items-center gap-6 pl-4 tabular-nums text-11 text-content-muted">
           <Show when={props.live}>
             <span
               data-testid="session-loading-wave"
@@ -296,7 +296,7 @@ export function ProjectRowAccessory(props: {
       actionsVisible={props.actionsVisible}
       meta={(
         <Show when={(props.count ?? 0) > 0}>
-          <span class="ui-row-accessory-meta bg-surface pl-8 tabular-nums text-11 text-content-muted" aria-hidden="true">{props.count}</span>
+          <span class="ui-row-accessory-meta pl-4 tabular-nums text-11 text-content-muted" aria-hidden="true">{props.count}</span>
         </Show>
       )}
       actions={props.children ?? builtInActions()}

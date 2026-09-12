@@ -276,10 +276,37 @@
   text-shadow: 0 0 12px color-mix(in srgb, var(--surface-overlay) 80%, transparent);
 }
 
-/* 侧栏行 meta 小标：仅包裹指示器/计数，不铺整条遮罩 */
+/* 侧栏行 accessory：左侧渐变过渡到文本，右侧实色托底按钮 */
+.ui-row-accessory-cover,
+.ui-row-accessory-meta {
+  position: relative;
+  --sidebar-row-cover-bg: var(--surface);
+  background: var(--sidebar-row-cover-bg);
+}
+
+.ui-row-accessory-cover::before,
+.ui-row-accessory-meta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 100%;
+  bottom: 0;
+  width: var(--sidebar-row-accessory-fade-width);
+  background: linear-gradient(to right, transparent, var(--sidebar-row-cover-bg));
+  pointer-events: none;
+}
+
+.group\/row:hover .ui-row-accessory-cover,
+.group\/row:focus-within .ui-row-accessory-cover,
+.group\/workspace:hover .ui-row-accessory-cover,
+.group\/workspace:focus-within .ui-row-accessory-cover {
+  --sidebar-row-cover-bg: var(--sidebar-row-hover-bg);
+}
+
+.group\/row[data-selected='true'] .ui-row-accessory-cover,
 .group\/row[data-selected='true'] .ui-row-accessory-meta,
 .group\/workspace[data-selected='true'] .ui-row-accessory-meta {
-  background: var(--sidebar-selected-bg);
+  --sidebar-row-cover-bg: var(--sidebar-selected-bg);
 }
 
 /* ── Transcript（T3 · MessageList 虚拟化滚动壳） ───────────────────────── */
