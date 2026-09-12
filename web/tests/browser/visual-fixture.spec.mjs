@@ -125,21 +125,12 @@ test('long conversation combines rich markdown, dense tool calls, and the status
   // Legacy workbench status bar removed from conversation chrome.
 });
 
-test('assistant actions stay contextual and tool rows have no divider', async ({ page }) => {
+test('tool activity rows have no divider', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/visual-fixture.html?scenario=long-conversation', { waitUntil: 'networkidle' });
 
   const message = page.getByRole('article', { name: 'Assistant message' }).first();
-  const actions = message.getByTestId('conversation-message-actions');
-  expect(await actions.evaluate((element) => getComputedStyle(element).opacity)).toBe('0');
-  expect(await actions.evaluate((element) => getComputedStyle(element).position)).toBe('absolute');
-  const layout = await message.evaluate((element) => ({
-    messageHeight: element.getBoundingClientRect().height,
-    surfaceHeight: element.querySelector('[data-testid="conversation-message-surface"]').getBoundingClientRect().height,
-  }));
-  expect(Math.abs(layout.messageHeight - layout.surfaceHeight)).toBeLessThanOrEqual(1);
-  await actions.getByRole('button', { name: 'Copy answer' }).focus();
-  await expect(actions).toHaveCSS('opacity', '1');
+  await expect(message.getByTestId('conversation-message-actions')).toHaveCount(0);
   await expect(message.getByTestId('tool-activity-row').first()).toHaveCSS('border-width', '0px');
 });
 

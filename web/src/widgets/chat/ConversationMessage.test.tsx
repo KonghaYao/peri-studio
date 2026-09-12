@@ -57,45 +57,14 @@ describe('ConversationMessage', () => {
     view.unmount();
   });
 
-  it('renders completed assistant content as a coding reader with copy', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+  it('renders completed assistant content as a coding reader', () => {
     render(() => <ConversationMessage entry={entry({ text: '## Result\n\n`cargo test` passed.' })} />);
 
     expect(screen.getByLabelText('Assistant message')).toHaveClass('conversation-message--assistant');
     expect(screen.getByRole('heading', { name: 'Result' })).toBeInTheDocument();
     expect(screen.getByText('cargo test')).toHaveAttribute('data-testid', 'md-inline-code');
-    expect(screen.getByRole('button', { name: 'Copy answer' }).closest('[data-testid="conversation-message-actions"]')).toHaveClass(
-      'absolute', 'border', 'bg-surface-overlay', 'shadow-overlay', 'text-content-muted',
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Copy answer' }));
-    expect(writeText).toHaveBeenCalledWith('## Result\n\n`cargo test` passed.');
-  });
-
-  it('offers a quote action beside copy and sends the exact answer to the composer', () => {
-    resetComposerQuoteRequest();
-    render(() => <ConversationMessage entry={entry({ text: 'Use the focused boundary.' })} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Quote answer' }));
-
-    expect(composerQuoteRequest()).toMatchObject({ text: 'Use the focused boundary.', source: 'Peri' });
-  });
-
-  it('opens the same floating actions from a touch-sized coarse-pointer trigger', () => {
-    render(() => <ConversationMessage entry={entry({ text: 'Touch actions.' })} />);
-    const trigger = screen.getByRole('button', { name: 'Message actions' });
-    const actions = screen.getByRole('button', { name: 'Copy answer' }).closest('[data-testid="conversation-message-actions"]');
-
-    expect(trigger).toHaveClass('hidden', 'pointer-coarse:inline-flex');
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    expect(trigger).toHaveAttribute('aria-controls', actions?.id);
-    expect(actions).toHaveClass('pointer-events-none', 'opacity-0');
-    fireEvent.click(trigger);
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    expect(actions).toHaveClass('pointer-events-auto', 'opacity-100');
-    fireEvent.click(trigger);
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    expect(actions).toHaveClass('pointer-events-none', 'opacity-0');
+    expect(screen.queryByRole('button', { name: 'Copy answer' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Quote answer' })).not.toBeInTheDocument();
   });
 
   it('offers an add-to-conversation action for selected message text', () => {
@@ -123,15 +92,12 @@ describe('ConversationMessage', () => {
     getSelection.mockRestore();
   });
 
-  it('marks interrupted output as partial in both the reader and clipboard evidence', () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+  it('marks interrupted output as partial in the reader', () => {
     render(() => <ConversationMessage entry={entry({ status: 'interrupted', text: 'Incomplete result' })} />);
 
     const partial = screen.getByRole('status');
     expect(partial).toHaveTextContent('Response interrupted. The output above may be incomplete.');
-    fireEvent.click(screen.getByRole('button', { name: 'Copy answer' }));
-    expect(writeText).toHaveBeenCalledWith('Incomplete result\n\n[Partial response: interrupted]');
+    expect(screen.queryByRole('button', { name: 'Copy answer' })).not.toBeInTheDocument();
   });
 
   it.each(['cancelled', 'failed', 'error'])('labels %s partial output with its terminal state', (status) => {

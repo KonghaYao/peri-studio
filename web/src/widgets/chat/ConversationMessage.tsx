@@ -13,11 +13,9 @@ import {
   Bubble,
   BubbleContent,
   ChatActivityChain,
-  CopyButton,
   IconButton,
   InlineNotice,
   MessageArticleShell,
-  MessageAssistantActionsShell,
   MessageMetaHeader,
   MessageSurfaceShell,
   Popover,
@@ -265,7 +263,6 @@ export function ConversationMessage(props: {
 }) {
   let articleRef: HTMLElement | undefined;
   const [selectionAction, setSelectionAction] = createSignal<{ text: string; left: number; top: number } | null>(null);
-  const [actionsOpen, setActionsOpen] = createSignal(false);
   const entry = () => typeof props.entry === 'function' ? props.entry() : props.entry;
   const projectCwd = createMemo(() => {
     const cid = selectedCid();
@@ -303,7 +300,6 @@ export function ConversationMessage(props: {
   // Replay timestamps are Hub observation time, not original message time.
   const timestamp = createMemo(() => entry().origin === 'session_replay' ? null : messageTime(entry().createdAt));
   const streaming = () => entry().status === 'streaming';
-  const actionsId = () => `message-actions-${entry().id}`;
   const label = () => role() === 'user' ? 'Your message' : role() === 'system' ? 'System message' : 'Assistant message';
   const partialTerminal = createMemo(() => {
     if (role() !== 'assistant' || !(entry().text || entry().reasoning.length || entry().toolCalls.length || entry().resources.length)) return null;
@@ -313,9 +309,6 @@ export function ConversationMessage(props: {
     if (status === 'cancelled' || status === 'canceled') return { label: 'Response cancelled', state: 'cancelled', tone: 'warning' as const };
     return null;
   });
-  const copyText = () => partialTerminal()
-    ? `${entry().text}\n\n[Partial response: ${partialTerminal()!.state}]`
-    : entry().text;
   const terminalNotice = createMemo(() => terminalNoticeOwner() ? partialTerminal() : null);
   const visibleEntryError = createMemo(() => terminalNoticeOwner() ? entry().error : null);
   const quoteSource = () => role() === 'user' ? 'You' : role() === 'system' ? 'System' : 'Peri';
@@ -354,9 +347,6 @@ export function ConversationMessage(props: {
     aria-label={label()}
     onMouseUp={captureSelection}
     onKeyUp={captureSelection}
-    onFocusOut={(event) => {
-      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setActionsOpen(false);
-    }}
   >
     <Show when={userHasVisibleSurface()}>
       <Show when={role() === 'user'} fallback={
@@ -402,18 +392,6 @@ export function ConversationMessage(props: {
             <span>{terminal().label}. The output above may be incomplete.</span>
           </InlineNotice>}</Show>
           <Show when={visibleEntryError()}>{(error) => <InlineNotice tone="danger" role="alert" aria-label="Message error"><code class="whitespace-pre-wrap wrap-anywhere font-mono text-12 leading-normal">{error().code || 'UNKNOWN'}{error().message ? `: ${error().message}` : ''}</code></InlineNotice>}</Show>
-          <Show when={role() === 'assistant' && entry().text && !streaming()}>
-            <MessageAssistantActionsShell
-              open={actionsOpen()}
-              actionsId={actionsId()}
-              onToggleOpen={() => setActionsOpen((open) => !open)}
-            >
-              <CopyButton text={copyText()} label="Copy answer" class="border-0 bg-transparent text-content-muted hover:bg-interaction-hover pointer-coarse:min-h-44" />
-              <IconButton label="Quote answer" size="sm" variant="ghost" class="border-0 bg-transparent text-content-muted hover:bg-interaction-hover pointer-coarse:min-h-44 pointer-coarse:min-w-44" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton>
-              <span class="ml-4 text-11 font-medium text-content-muted">Peri</span>
-              <Show when={timestamp()}>{(time) => <time class="text-11 text-content-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show>
-            </MessageAssistantActionsShell>
-          </Show>
         </MessageSurfaceShell>
       }>
         <MessageMetaHeader>
