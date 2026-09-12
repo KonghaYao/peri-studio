@@ -16,13 +16,13 @@
 
 `dev.sh` 会依次：
 
-1. 构建 Web 前端（`web/` → `web/dist`），并默认后台 `vite build --watch`（`PERI_STUDIO_WEB_WATCH=0` 可关）
+1. 一次性构建 Web 前端（`web/` → `web/dist`），不后台 watch
 2. 以 **无内嵌前端** 的 debug 二进制启动（`cargo build -p peri-studio --no-default-features`）；静态文件由环境变量 **`PERI_STUDIO_WEB_DIST`**（默认 `web/dist`）在运行时从磁盘读取
 3. 以 `peri-studio local` 启动 server + 受监督的本地 instance
 4. 等待 instance 认证与 resync 完成
 5. 前台输出日志
 
-**只改前端时**：保存 → watch 更新 `dist` → **刷新浏览器**即可，**不必**再跑 `cargo build`。只有改 Rust 才需要重编二进制。
+**只改前端时**：`cd web && bun run build` 后刷新浏览器即可，**不必**再跑 `cargo build`。只有改 Rust 才需要重编二进制。
 
 **生产/发布**仍使用默认 feature `embed-static-web`（`cargo build --release`），`web/dist` 编译期内嵌进二进制，不依赖 `PERI_STUDIO_WEB_DIST`。
 

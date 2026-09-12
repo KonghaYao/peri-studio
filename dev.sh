@@ -1,5 +1,5 @@
 #!/bin/bash
-# Peri Studio 开发启动：Web 从磁盘提供（不重编 Rust），可选 watch 构建。
+# Peri Studio 开发启动：一次性构建 Web 产物，再从磁盘提供（不内嵌、不 watch）。
 set -euo pipefail
 cd "$(dirname "$0")"
 ROOT="$(pwd)"
@@ -19,7 +19,6 @@ LOG_DIR="${ROOT}/.tmp"
 APP_LOG="${LOG_DIR}/peri-studio.${$}.log"
 DEV_LOG_FILTER="${PERI_STUDIO_DEV_LOG:-info}"
 WEB_DIST="${PERI_STUDIO_WEB_DIST:-${ROOT}/web/dist}"
-WEB_WATCH="${PERI_STUDIO_WEB_WATCH:-1}"
 # 开发态：静态资源从 web/dist 读取，二进制不内嵌前端（--no-default-features）。
 export PERI_STUDIO_WEB_DIST="${WEB_DIST}"
 
@@ -73,13 +72,6 @@ fi
 echo "==> 构建 Web 前端（产物: ${WEB_DIST}）"
 (cd "${ROOT}/web" && bun run build)
 
-WEB_WATCH_PID=""
-if [ "${WEB_WATCH}" = "1" ]; then
-    echo "==> 后台监听 Web 变更（vite build --watch；关闭: PERI_STUDIO_WEB_WATCH=0）"
-    (cd "${ROOT}/web" && bunx vite build --watch) &
-    WEB_WATCH_PID=$!
-fi
-
 # Rust 二进制：不内嵌 web/dist；仅 Rust 源码变更时才需重编。
 echo "==> 构建 peri-studio 二进制（dev：无 embed-static-web；有 Rust 改动时需增量编译）"
 cargo build -q -p peri-studio --no-default-features
@@ -96,7 +88,6 @@ cleanup() {
     CLEANED_UP=1
     echo
     echo "==> 停止 Peri Studio ..."
-    [ -n "${WEB_WATCH_PID}" ] && kill "${WEB_WATCH_PID}" 2>/dev/null || true
     [ -n "${APP_PID}" ] && kill -- -"${APP_PID}" 2>/dev/null || true
     [ -n "${TAIL_PID}" ] && kill "${TAIL_PID}" 2>/dev/null || true
     [ -n "${APP_PID}" ] && wait "${APP_PID}" 2>/dev/null || true
@@ -135,7 +126,7 @@ fi
 
 echo
 echo "==> 已就绪：http://${LISTEN_ADDR}:${LISTEN_PORT}/（Ctrl+C 停止）"
-echo "    改前端: 保存后 vite watch 会更新 dist，刷新浏览器即可（无需 cargo build）"
+echo "    改前端后重新执行 ./dev.sh，或 cd web && bun run build 后刷新浏览器"
 echo
 tail -f "${APP_LOG}" &
 TAIL_PID=$!
