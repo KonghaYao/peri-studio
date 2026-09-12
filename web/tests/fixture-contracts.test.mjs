@@ -60,8 +60,8 @@ test('component geometry tokens are declared once and consumed by production wid
     read('widgets', 'composer', 'ComposerStagedAssets.tsx'),
     read('widgets', 'composer', 'ComposerToolbar.tsx'),
   ].join('\n');
-  const tool = read('widgets', 'chat', 'ToolActivityRow.tsx');
-  const toolActivity = read('widgets', 'chat', 'ToolActivityRow.tsx');
+  const tool = read('widgets', 'chat', 'ToolCallCard.tsx');
+  const toolActivity = read('widgets', 'chat', 'ToolCallCard.tsx');
   const mcpApp = read('widgets', 'chat', 'McpAppFrame.tsx');
   const status = read('widgets', 'shell', 'StatusArea.tsx');
   const questions = read('widgets', 'chat', 'ElicitationQueue.tsx');

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { describe, expect, it, vi } from 'vitest';
-import { observedDuration, ToolCallCard } from './ToolActivityRow';
+import { observedDuration, ToolCallCard } from './ToolCallCard';
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
 import { openWorkspaceFromTool } from '@/store';
 
@@ -24,7 +24,7 @@ function expandControl() {
   return document.querySelector('[data-testid="tool-activity-row-expand"]') as HTMLButtonElement;
 }
 
-describe('ToolActivityRow', () => {
+describe('ToolCallCard', () => {
   it('uses a bordered card in default variant and a compact row in activity variant', () => {
     const { unmount } = render(() => <ToolCallCard toolCall={base} />);
     const defaultRow = document.querySelector('[data-testid="tool-activity-row"]')!;

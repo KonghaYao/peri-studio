@@ -360,7 +360,7 @@ test('large semantic status surfaces stay white', () => {
     join(source, 'widgets', 'chat', 'PermissionQueue.tsx'),
     join(source, 'widgets', 'chat', 'PermissionRequestCard.tsx'),
     join(source, 'widgets', 'chat', 'RewindDialog.tsx'),
-    join(source, 'widgets', 'chat', 'ToolActivityRow.tsx'),
+    join(source, 'widgets', 'chat', 'ToolCallCard.tsx'),
     join(source, 'widgets', 'shell', 'shared', 'ConfirmDialog.tsx'),
   ];
   for (const file of files) {

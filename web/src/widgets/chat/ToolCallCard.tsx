@@ -167,7 +167,7 @@ function OmittedEvidence(props: { label: string; size: number | null | undefined
 }
 
 /** 工具活动行：Fenix 风格摘要行 + Peri 展开证据区。 */
-export function ToolActivityRow(props: {
+export function ToolCallRow(props: {
   narration: ToolNarration;
   status: ToolCallStatus;
   statusLabel: string;
@@ -424,7 +424,7 @@ export function ToolActivityGroup(props: { children: unknown; variant?: 'default
 
 type ToolCallSource = ToolCallInfo | Accessor<ToolCallInfo>;
 
-/** 将 Hub 投影的 tool call 映射为 ToolActivityRow。 */
+/** 将 Hub 投影的 tool call 映射为 ToolCallRow。 */
 export function ToolCallCard(props: {
   toolCall: ToolCallSource;
   variant?: 'default' | 'activity';
@@ -460,7 +460,7 @@ export function ToolCallCard(props: {
     && !['running', 'queued', 'approval'].includes(tone());
 
   return (
-    <ToolActivityRow
+    <ToolCallRow
       narration={narration()}
       status={tone()}
       statusLabel={state().label}
