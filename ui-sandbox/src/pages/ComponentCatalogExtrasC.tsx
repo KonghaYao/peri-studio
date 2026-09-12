@@ -121,7 +121,7 @@ export function ComponentCatalogExtrasC(props: { sections?: string[] }) {
                     <NavigationMenuLink href="#/components-overlays" active>Overlays</NavigationMenuLink>
                   </li>
                   <li>
-                    <NavigationMenuLink href="#/layers">Layers</NavigationMenuLink>
+                    <NavigationMenuLink href="#/components-explorer">Explorer</NavigationMenuLink>
                   </li>
                 </NavigationMenuContent>
               </NavigationMenuItem>

@@ -59,7 +59,7 @@ export function ComponentCatalogExtrasB(props: { sections?: string[] }) {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href="#/layers">Layers</BreadcrumbLink>
+              <BreadcrumbLink href="#/components-shell">Shell</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>

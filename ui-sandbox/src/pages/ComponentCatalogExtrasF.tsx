@@ -1,7 +1,8 @@
 import { Show } from 'solid-js';
 import { showCatalogSection } from '@/catalog/catalog-section';
-import { UserBubble } from '@/components/blocks';
-import { ChatTranscriptLayout } from '@/layers/chat/ChatTranscriptLayout';
+import { ChatHeader, ProjectRowAccessory, SessionRowAccessory, UserBubble } from '@/components/blocks';
+import { Folder } from 'lucide-solid';
+import { ChatShellLayout, ChatTranscriptLayout } from '@/layers';
 import {
   Avatar,
   AvatarFallback,
@@ -31,7 +32,7 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
       <CatalogDemo
         id="conversation"
         title="Conversation"
-        description="MessageScroller 滚动容器；Transcript 正文复用 Blocks UserBubble 与 AI Tool activity（见 #/blocks、#/components-ai）。"
+        description="MessageScroller 滚动容器；Transcript 正文复用 UserBubble 与 AI Tool activity。"
       >
         <div class="relative h-320 overflow-hidden rounded-8 border border-border-subtle">
           <Conversation autoScroll defaultScrollPosition="end" class="h-full">
@@ -83,6 +84,59 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
             </MessageBranch>
           </MessageContent>
         </Message>
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'chat-shell')}>
+      <CatalogDemo id="chat-shell" title="Chat shell">
+        <ChatShellLayout />
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'chat-transcript')}>
+      <CatalogDemo id="chat-transcript" title="Chat transcript">
+        <ChatTranscriptLayout />
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'chat-header')}>
+      <CatalogDemo id="chat-header" title="Chat header">
+        <div class="overflow-hidden rounded-lg border border-border-subtle">
+          <ChatHeader title="Refactor ACP session recovery and projection boundaries" />
+        </div>
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'session-row-accessory')}>
+      <CatalogDemo id="session-row-accessory" title="Session row accessory">
+        <div class="max-w-sm rounded-lg border border-border-subtle bg-surface-overlay p-8">
+          <div class="group/row relative min-h-36 rounded-md hover:bg-interaction-hover">
+            <div class="flex min-h-36 items-center px-10">
+              <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Refactor ACP session recovery</span>
+            </div>
+            <SessionRowAccessory time="18m" pinned actionsVisible />
+          </div>
+          <div class="group/row relative mt-4 min-h-36 rounded-md bg-sidebar-selected">
+            <div class="flex min-h-36 items-center px-10">
+              <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Design workspace state</span>
+            </div>
+            <SessionRowAccessory time="2m" live />
+          </div>
+        </div>
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'project-row-accessory')}>
+      <CatalogDemo id="project-row-accessory" title="Project row accessory">
+        <div class="max-w-sm rounded-lg border border-border-subtle bg-surface-overlay p-8">
+          <div class="group/workspace relative min-h-36 rounded-md hover:bg-interaction-hover">
+            <div class="flex min-h-36 items-center gap-8 px-10">
+              <Folder size={15} strokeWidth={1.7} class="shrink-0 text-content-muted" />
+              <span class="min-w-0 flex-1 truncate text-13 text-content-primary">peri-studio</span>
+            </div>
+            <ProjectRowAccessory count={3} />
+          </div>
+        </div>
       </CatalogDemo>
       </Show>
     </>

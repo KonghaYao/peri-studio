@@ -1,0 +1,220 @@
+import { For, Show } from 'solid-js';
+import { parseCodeFenceInfo } from '../lib/fence-meta';
+import { getNodeList, getString, splitParagraphChildren } from '../lib/node-helpers';
+import { getNodeCode, resolveCodeBlockMode } from '../lib/node-outlet-helpers';
+import { safeHref } from '../lib/safe';
+import type { RenderableNode } from '../lib/node-helpers';
+import type { MarkdownRenderContext } from './context';
+import { MathExpression } from './MathExpression';
+import { RenderChildren } from './RenderChildren';
+import { TableNode } from './TableNode';
+import { SafeImage } from './SafeImage';
+
+function SafeLink(props: { href?: string; title?: string | null; children?: unknown }) {
+  const href = () => safeHref(props.href);
+  return (
+    <Show
+      when={href()}
+      fallback={<span>{props.children as never} ({String(props.href || '')})</span>}
+    >
+      {(value) => (
+        <a href={value()} title={props.title ?? undefined} target={value().startsWith('#') ? undefined : '_blank'} rel={value().startsWith('#') ? undefined : 'noopener noreferrer'}>
+          {props.children as never}
+        </a>
+      )}
+    </Show>
+  );
+}
+
+function InlineCode(props: { code: string }) {
+  return (
+    <code data-testid="md-inline-code" class="md-inline-code rounded-sm border border-border-subtle bg-surface-muted px-4 py-2 text-11p5 text-content-primary">
+      {props.code}
+    </code>
+  );
+}
+
+function ParagraphNode(props: { node: RenderableNode; context: MarkdownRenderContext; indexKey: string }) {
+  const parts = () => splitParagraphChildren(getNodeList((props.node as { children?: RenderableNode[] }).children));
+  return (
+    <For each={parts()}>
+      {(part, index) => (
+        part.kind === 'inline'
+          ? (
+            <p class="mb-12 last:mb-0">
+              <RenderChildren nodes={part.nodes} context={props.context} prefix={`${props.indexKey}-${index()}`} />
+            </p>
+          )
+          : <NodeOutlet node={part.node} context={props.context} indexKey={`${props.indexKey}-${index()}`} />
+      )}
+    </For>
+  );
+}
+
+export function NodeOutlet(props: { node: RenderableNode; context: MarkdownRenderContext; indexKey?: string }) {
+  const type = () => String(props.node.type || '');
+  const indexKey = () => props.indexKey ?? 'node';
+
+  return (
+    <Show
+      when={type() !== 'text' && type() !== 'text_special'}
+      fallback={getString((props.node as { content?: string }).content ?? (props.node as { raw?: string }).raw)}
+    >
+      <SwitchNode node={props.node} context={props.context} indexKey={indexKey()} type={type()} />
+    </Show>
+  );
+}
+
+function SwitchNode(props: {
+  node: RenderableNode;
+  context: MarkdownRenderContext;
+  indexKey: string;
+  type: string;
+}) {
+  switch (props.type) {
+    case 'paragraph':
+      return <ParagraphNode node={props.node} context={props.context} indexKey={props.indexKey} />;
+    case 'heading': {
+      const level = Math.min(6, Math.max(1, Number((props.node as { level?: number }).level) || 1));
+      const children = (
+        <RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} />
+      );
+      const className = 'mb-12 font-semibold text-content-primary';
+      if (level === 1) return <h1 class={className}>{children}</h1>;
+      if (level === 2) return <h2 class={className}>{children}</h2>;
+      if (level === 3) return <h3 class={className}>{children}</h3>;
+      if (level === 4) return <h4 class={className}>{children}</h4>;
+      if (level === 5) return <h5 class={className}>{children}</h5>;
+      return <h6 class={className}>{children}</h6>;
+    }
+    case 'blockquote':
+      return (
+        <blockquote class="my-12 border-l-4 border-border-subtle pl-12 text-content-secondary">
+          <RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} />
+        </blockquote>
+      );
+    case 'list': {
+      const ordered = Boolean((props.node as { ordered?: boolean }).ordered);
+      const start = Number((props.node as { start?: number }).start);
+      const items = () => getNodeList((props.node as { items?: RenderableNode[] }).items);
+      return ordered
+        ? (
+          <ol start={Number.isFinite(start) ? start : undefined} class="my-12 list-decimal pl-24">
+            <For each={items()}>{(item) => <NodeOutlet node={item} context={props.context} indexKey={`${props.indexKey}-item`} />}</For>
+          </ol>
+        )
+        : (
+          <ul class="my-12 list-disc pl-24">
+            <For each={items()}>{(item) => <NodeOutlet node={item} context={props.context} indexKey={`${props.indexKey}-item`} />}</For>
+          </ul>
+        );
+    }
+    case 'list_item':
+      return (
+        <li class="mb-4">
+          <RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} />
+        </li>
+      );
+    case 'table':
+      return <TableNode node={props.node} context={props.context} />;
+    case 'thematic_break':
+      return <hr class="my-16 border-border-subtle" />;
+    case 'hardbreak':
+      return <br />;
+    case 'inline_code':
+      return <InlineCode code={getString((props.node as { code?: string }).code)} />;
+    case 'link':
+      return (
+        <SafeLink href={(props.node as { href?: string }).href} title={(props.node as { title?: string | null }).title ?? null}>
+          <RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} />
+        </SafeLink>
+      );
+    case 'image':
+      return (
+        <SafeImage
+          src={(props.node as { src?: string }).src}
+          alt={(props.node as { alt?: string }).alt}
+          title={(props.node as { title?: string | null }).title ?? undefined}
+        />
+      );
+    case 'strong':
+      return <strong><RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} /></strong>;
+    case 'emphasis':
+      return <em><RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} /></em>;
+    case 'strikethrough':
+      return <del><RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} /></del>;
+    case 'highlight':
+      return <mark><RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} /></mark>;
+    case 'checkbox':
+    case 'checkbox_input':
+      return (
+        <input
+          type="checkbox"
+          disabled
+          checked={Boolean((props.node as { checked?: boolean }).checked)}
+          aria-label={(props.node as { label?: string }).label ?? 'Task item'}
+        />
+      );
+    case 'math_inline':
+      return <MathExpression expression={getString((props.node as { content?: string }).content)} />;
+    case 'math_block': {
+      const loading = Boolean((props.node as { loading?: boolean }).loading) && !props.context.final;
+      const expression = getString((props.node as { content?: string }).content);
+      if (loading) {
+        return (
+          <div class="md-code-block my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-testid="md-code-block" data-incomplete="true">
+            <pre class="m-0 overflow-auto bg-surface-sunken px-12 py-10 font-mono text-12"><code>{expression}</code></pre>
+          </div>
+        );
+      }
+      return <MathExpression expression={expression} block />;
+    }
+    case 'html_block':
+    case 'html_inline':
+      return <span>{getString((props.node as { content?: string }).content ?? (props.node as { raw?: string }).raw)}</span>;
+    case 'code_block': {
+      const mode = resolveCodeBlockMode(props.node);
+      const loading = Boolean((props.node as { loading?: boolean }).loading) && !props.context.final;
+      const code = getNodeCode(props.node);
+      const fence = parseCodeFenceInfo(getString((props.node as { language?: string }).language));
+      if (mode === 'mermaid') {
+        const View = props.context.MermaidBlockView;
+        return (
+          <div class="md-code-block my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-testid="md-code-block" data-incomplete={loading ? 'true' : undefined}>
+            <View code={code} loading={loading} />
+          </div>
+        );
+      }
+      if (mode === 'math') return <MathExpression expression={code.trim()} block />;
+      const View = props.context.CodeBlockView;
+      return (
+        <View
+          language={fence.language}
+          code={code}
+          loading={loading}
+          startLine={fence.startLine}
+          lineNumbers={fence.lineNumbers}
+          filename={fence.filename}
+        />
+      );
+    }
+    case 'footnote_reference':
+      return (
+        <sup>
+          <a href={`#${getString((props.node as { id?: string }).id)}`}>
+            {getString((props.node as { label?: string }).label ?? (props.node as { id?: string }).id)}
+          </a>
+        </sup>
+      );
+    case 'footnote':
+      return (
+        <footer class="mt-16 border-t border-border-subtle pt-12 text-12 text-content-secondary">
+          <RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} />
+        </footer>
+      );
+    case 'footnote_anchor':
+      return <span id={getString((props.node as { id?: string }).id)} />;
+    default:
+      return <pre class="my-12 overflow-auto rounded-lg bg-surface-sunken p-12 text-11">{getString((props.node as { raw?: string }).raw)}</pre>;
+  }
+}

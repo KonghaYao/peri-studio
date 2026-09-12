@@ -4,11 +4,12 @@ import { TokensPage } from './pages/TokensPage';
 import { ComponentsPage } from './pages/ComponentsPage';
 import { ComponentsFormsPage } from './pages/ComponentsFormsPage';
 import { ComponentsOverlaysPage } from './pages/ComponentsOverlaysPage';
-import { ComponentsChatPage } from './pages/ComponentsChatPage';
 import { ComponentsAiPage } from './pages/ComponentsAiPage';
-import { ComponentsCodePage } from './pages/ComponentsCodePage';
-import { BlocksPage } from './pages/BlocksPage';
-import { LayersPage } from './pages/LayersPage';
+import { ComponentsMarkdownPage } from './pages/ComponentsMarkdownPage';
+import { ComponentsShellPage } from './pages/ComponentsShellPage';
+import { ComponentsComposerPage } from './pages/ComponentsComposerPage';
+import { ComponentsExplorerPage } from './pages/ComponentsExplorerPage';
+import { ComponentsGitPage } from './pages/ComponentsGitPage';
 import { SandboxShell } from './shell/SandboxShell';
 
 export function App() {
@@ -26,11 +27,12 @@ export function App() {
       <Show when={route() === 'components'}><ComponentsPage /></Show>
       <Show when={route() === 'components-forms'}><ComponentsFormsPage /></Show>
       <Show when={route() === 'components-overlays'}><ComponentsOverlaysPage /></Show>
-      <Show when={route() === 'components-chat'}><ComponentsChatPage /></Show>
       <Show when={route() === 'components-ai'}><ComponentsAiPage /></Show>
-      <Show when={route() === 'components-code'}><ComponentsCodePage /></Show>
-      <Show when={route() === 'blocks'}><BlocksPage /></Show>
-      <Show when={route() === 'layers'}><LayersPage /></Show>
+      <Show when={route() === 'components-markdown'}><ComponentsMarkdownPage /></Show>
+      <Show when={route() === 'components-shell'}><ComponentsShellPage /></Show>
+      <Show when={route() === 'components-composer'}><ComponentsComposerPage /></Show>
+      <Show when={route() === 'components-explorer'}><ComponentsExplorerPage /></Show>
+      <Show when={route() === 'components-git'}><ComponentsGitPage /></Show>
     </SandboxShell>
   );
 }

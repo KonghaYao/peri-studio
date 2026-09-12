@@ -55,8 +55,8 @@ import {
   ToolActivityGroup,
   ToolActivityRow,
 } from '@peri/ui';
-import { MARKDOWN_LAB_SAMPLE } from '@/fixtures/markdown-lab-sample';
-import { createPulseStream, StreamingControls, StreamingMarkdownDemo } from '@/lib/streaming-demo';
+import { DecisionSurfacesLayout } from '@/layers';
+import { createPulseStream, StreamingControls } from '@/lib/streaming-demo';
 import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
 
 const tableRows = [
@@ -216,6 +216,12 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </CatalogDemo>
       </Show>
 
+      <Show when={showCatalogSection(props.sections, 'decision')}>
+      <CatalogDemo id="decision" title="Decision surfaces">
+        <DecisionSurfacesLayout />
+      </CatalogDemo>
+      </Show>
+
       <Show when={showCatalogSection(props.sections, 'confirmation')}>
       <CatalogDemo id="confirmation" title="Confirmation" description="敏感操作审批 DecisionCard。">
         <div class="max-w-md">
@@ -284,14 +290,6 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
             </SnippetAddon>
           </Snippet>
         </DemoRow>
-      </CatalogDemo>
-      </Show>
-
-      <Show when={showCatalogSection(props.sections, 'markdown')}>
-      <CatalogDemo id="markdown" title="Markdown" description="与 Blocks 共用 Markdown 块；Play stream 逐字揭示并触发 incomplete fence。">
-        <ChatFrame>
-          <StreamingMarkdownDemo source={MARKDOWN_LAB_SAMPLE} />
-        </ChatFrame>
       </CatalogDemo>
       </Show>
 

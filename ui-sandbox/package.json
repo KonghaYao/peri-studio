@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@peri/markdown": "workspace:*",
     "@peri/ui": "workspace:*",
     "katex": "^0.18.4",
     "lucide-solid": "^1.34.0",

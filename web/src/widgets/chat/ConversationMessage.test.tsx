@@ -526,13 +526,8 @@ describe('Markdown', () => {
     expect(document.querySelector('[data-testid="md-code-line-number"]')).not.toBeInTheDocument();
   });
 
-  it('allows consumers to override individual Markdown components', () => {
-    render(() => <Markdown source="_custom_" overrides={{ em: { component: (props) => <em {...props} data-renderer="custom" /> } }} />);
-    expect(document.querySelector('em')).toHaveAttribute('data-renderer', 'custom');
-  });
-
-  it('keeps link and image safety when presentation overrides are provided', () => {
-    render(() => <Markdown source={'[Unsafe](javascript:alert(1))\n\n![Remote](https://example.test/image.png)'} overrides={{ a: 'div', img: 'div' }} />);
+  it('keeps link and image safety in rendered Markdown', () => {
+    render(() => <Markdown source={'[Unsafe](javascript:alert(1))\n\n![Remote](https://example.test/image.png)'} />);
     expect(screen.queryByRole('link', { name: 'Unsafe' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Load image: Remote' })).toBeInTheDocument();
   });

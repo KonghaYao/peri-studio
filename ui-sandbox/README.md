@@ -13,10 +13,10 @@ bun run dev   # http://127.0.0.1:5273/
 
 ## 导航
 
-- **顶栏**：T1 + T2（5 页）+ T3 + T4 Tab 切换 tier
+- **顶栏**：T1 · T2 · Comp Tab 切换 tier
 - **左侧章节栏**：当前页内快速跳转（如 Markdown、User bubble…）
 - **小屏**：章节栏收进抽屉，点顶栏列表图标打开
-- **深链**：`#/blocks/markdown` 直达某章节
+- **深链**：`#/components-markdown/markdown-render` 直达某章节
 
 | Tier | 路由 | 目录 | 职责 |
 |------|------|------|------|
@@ -24,12 +24,11 @@ bun run dev   # http://127.0.0.1:5273/
 | **T2 · Core** | `#/components` | `@peri/ui` | 核心原语（Button、Input、Dialog…） |
 | **T2 · Forms** | `#/components-forms` | `@peri/ui` | 表单、日期、Field、DataTable、Questionnaire |
 | **T2 · Overlays** | `#/components-overlays` | `@peri/ui` | 表面、浮层、导航、侧栏 |
-| **T2 · Chat** | `#/components-chat` | `@peri/ui` | shadcn 聊天原语（Message、Tool、Composer） |
-| **T2 · AI** | `#/components-ai` | `@peri/ui` | AI Elements 对齐组件 |
-| **T3 · Domain blocks** | `#/blocks` | `src/components/blocks/{chat,composer,chrome}/` | 单域块：Markdown、SlashMenu、ChatHeader… |
-| **T4 · Compositions** | `#/layers` | `src/layers/{shell,chat,composer,…}/` | 业务组合：侧栏、transcript、composer、决策面… |
+| **T2 · AI** | `#/components-ai` | `@peri/ui` + blocks | Chat 原语与 AI Elements |
+| **T2 · Markdown** | `#/components-markdown` | blocks | 富文本渲染与 CodeBlock |
+| **Comp · Shell / Composer / Explorer / Git** | `#/components-shell` 等 | `src/layers/` + `src/components/blocks/` | 区域组合与域块 |
 
-依赖方向：T4 → T3 → T2 → T1（禁止反向）。
+依赖方向：Comp → T2 → T1（禁止反向）。旧 `#/layers/*`、`#/blocks/*` 自动重定向。
 
 ## 设计定稿（2026-08-30）
 

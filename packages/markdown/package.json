@@ -1,0 +1,23 @@
+{
+  "name": "@peri/markdown",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Peri Studio streaming Markdown renderer (stream-markdown-parser + Solid)",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "markstream-core": "^2.0.12",
+    "stream-markdown-parser": "^1.2.16"
+  },
+  "peerDependencies": {
+    "katex": ">=0.16",
+    "mermaid": ">=11",
+    "solid-js": "^1"
+  }
+}

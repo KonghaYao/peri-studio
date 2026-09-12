@@ -1,28 +1,37 @@
+import { ComponentCatalogExtrasF } from '@/pages/ComponentCatalogExtrasF';
 import { ComponentCatalogExtrasG } from '@/pages/ComponentCatalogExtrasG';
 import { TierHeader } from '@/pages/shared/DemoSection';
 
-/** T2 · AI Elements：引用、计划、代码块、Typeset 等 AI SDK 对齐组件。 */
+const AI_SECTIONS = [
+  'conversation',
+  'message',
+  'chat-shell',
+  'chat-transcript',
+  'chat-header',
+  'session-row-accessory',
+  'project-row-accessory',
+  'suggestion',
+  'sources',
+  'citation',
+  'plan',
+  'task',
+  'decision',
+  'confirmation',
+  'queue',
+  'snippet',
+] as const;
+
+/** T2 · Chat 原语与 AI Elements。 */
 export function ComponentsAiPage() {
   return (
     <div class="mx-auto max-w-4xl">
       <TierHeader
         tier="Tier 2 · AI"
-        title="AI Elements"
-        description="AI Elements API + blocks 视觉契约；Markdown 与 Blocks 共用同一渲染块。"
+        title="Chat & AI"
+        description="会话滚动、壳层块与 AI Elements；Markdown 见 #/components-markdown，Composer 见 #/components-composer。"
       />
-      <ComponentCatalogExtrasG
-        sections={[
-          'suggestion',
-          'sources',
-          'citation',
-          'plan',
-          'task',
-          'confirmation',
-          'queue',
-          'snippet',
-          'markdown',
-        ]}
-      />
+      <ComponentCatalogExtrasF sections={[...AI_SECTIONS]} />
+      <ComponentCatalogExtrasG sections={[...AI_SECTIONS]} />
     </div>
   );
 }
