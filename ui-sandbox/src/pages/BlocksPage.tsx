@@ -15,53 +15,8 @@ import {
 } from '@/components/blocks';
 import { TranscriptReasoning } from '@peri/ui';
 import { Folder } from 'lucide-solid';
+import { MARKDOWN_LAB_SAMPLE } from '@/fixtures/markdown-lab-sample';
 import { DemoSection, DomainSection, TierHeader } from '@/pages/shared/DemoSection';
-
-const MARKDOWN_SAMPLE = `# Markdown rendering lab
-
-**Important notice.** Content continues, and ~~the old conclusion~~ has been replaced.
-
-> Streaming content stays readable while syntax is incomplete.
-
-| Capability | State | Notes |
-| :--- | :---: | ---: |
-| GFM table | Ready | Responsive |
-| Remote images | Consent | Explicit load |
-
-- [x] Parse CommonMark and GFM
-- [x] Protect remote images
-- [ ] Review the final diagram
-
-Inline code uses \`session/load\`. Inline math $E = mc^2$ and display:
-
-$$
-\\int_0^1 x^2 \\, dx = \\frac{1}{3}
-$$
-
-\`\`\`mermaid
-flowchart LR
-  Session["Project session"] --> ACP["ACP thread"]
-  ACP --> Runtime["Runtime chat"]
-\`\`\`
-
-\`\`\`math
-\\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}
-\`\`\`
-
-Links stay [external](https://example.test/architecture).
-
-\`\`\`ts startLine=7 filename=recovery.ts
-type Result = { ok: boolean };
-const result: Result = { ok: true };
-console.log(result);
-\`\`\`
-
-![Architecture diagram](https://picsum.photos/seed/peri-arch/720/360)
-
-Footnotes remain compact.[^security]
-
-[^security]: Generated content is treated as untrusted input.
-`;
 
 export function BlocksPage() {
   return (
@@ -75,7 +30,7 @@ export function BlocksPage() {
       <DomainSection title="Chat · 聊天内容" description="Transcript 内的消息与 Markdown（工具活动 / 引用卡见 T2 · AI）。">
         <DemoSection id="markdown" title="Markdown" description="GFM + KaTeX 数学 + Mermaid 图；表格 hover 浮现复制 / 下载。">
           <div class="max-w-(--chat-content-max) rounded-lg border border-border-subtle bg-surface-overlay px-16 py-16">
-            <Markdown source={MARKDOWN_SAMPLE} />
+            <Markdown source={MARKDOWN_LAB_SAMPLE} />
           </div>
         </DemoSection>
 

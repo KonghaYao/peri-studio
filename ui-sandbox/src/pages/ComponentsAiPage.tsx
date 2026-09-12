@@ -8,7 +8,7 @@ export function ComponentsAiPage() {
       <TierHeader
         tier="Tier 2 · AI"
         title="AI Elements"
-        description="AI Elements API + blocks 视觉契约：Tool activity、DecisionCard、ResourceCite、Plan shadow 等。"
+        description="AI Elements API + blocks 视觉契约；Markdown 与 Blocks 共用同一渲染块。"
       />
       <ComponentCatalogExtrasG
         sections={[
@@ -22,7 +22,7 @@ export function ComponentsAiPage() {
           'queue',
           'code-block',
           'snippet',
-          'typeset',
+          'markdown',
         ]}
       />
     </div>

@@ -140,7 +140,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'queue', label: 'Queue' },
         { id: 'code-block', label: 'Code block' },
         { id: 'snippet', label: 'Snippet' },
-        { id: 'typeset', label: 'Typeset' },
+        { id: 'markdown', label: 'Markdown' },
       ],
     },
   ],
