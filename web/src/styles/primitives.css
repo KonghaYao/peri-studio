@@ -24,7 +24,6 @@
 }
 
 .message-list-scroll {
-  scrollbar-gutter: stable;
-  min-width: 0;
-  overflow-x: clip;
+  overflow-anchor: none;
+  contain: none;
 }

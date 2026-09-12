@@ -1,22 +1,9 @@
-/* Project sidebar · 云雾分隔与空状态（对齐 ui-sandbox project-sidebar.css） */
+/* Project sidebar · 行 accessory 叠层与 hover 切换（T3 shell 样式在 @peri/ui extra.css） */
 
-.sidebar-scroll-shell {
-  position: relative;
-  min-height: 0;
-  flex: 1;
-}
-
-/* 侧栏列表：为滚动条预留沟槽，避免时间戳/操作钮与滚动条叠压。 */
-.sidebar-scroll {
-  scrollbar-gutter: stable;
-}
-
-/* 行右侧浮动操作须高于侧栏拖拽把手（z-35），且不被裁切。 */
 .project-sidebar .row-accessory-slot {
   z-index: 40;
 }
 
-/* Tailwind 扫描兜底：行 hover 时在 meta（时间/计数）与 actions（按钮组）间切换。 */
 .project-sidebar .group\/workspace:hover .row-accessory-slot__meta,
 .project-sidebar .group\/workspace:focus-within .row-accessory-slot__meta,
 .project-sidebar .group\/row:hover .row-accessory-slot__meta,
@@ -41,36 +28,4 @@
     opacity: 1;
     pointer-events: auto;
   }
-}
-
-.sidebar-scroll-mist {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  height: 28px;
-  pointer-events: none;
-  background: linear-gradient(
-    to top,
-    var(--surface-overlay) 0%,
-    color-mix(in srgb, var(--surface-overlay) 72%, transparent) 42%,
-    transparent 100%
-  );
-}
-
-.sidebar-mist-divider {
-  flex-shrink: 0;
-  height: 20px;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    color-mix(in srgb, var(--surface-overlay) 35%, transparent) 38%,
-    var(--surface-overlay) 100%
-  );
-}
-
-.sidebar-mist-hint {
-  color: var(--content-faint);
-  opacity: 0.62;
-  letter-spacing: 0.01em;
-  text-shadow: 0 0 12px color-mix(in srgb, var(--surface-overlay) 80%, transparent);
 }

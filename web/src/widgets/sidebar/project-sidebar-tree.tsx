@@ -165,7 +165,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                       fallback={<Button
                         variant="ghost"
                         size="compact"
-                        class="session-empty sidebar-mist-hint h-auto justify-start px-2.5 py-4 pl-36 text-left text-11 font-normal hover:bg-transparent hover:text-content-muted"
+                        class="session-empty ui-sidebar-mist-hint h-auto justify-start px-2.5 py-4 pl-36 text-left text-11 font-normal hover:bg-transparent hover:text-content-muted"
                         disabled={readOnly() || !!creatingSessionProjectId()}
                         onClick={() => createProjectSession(projectId)}
                       >

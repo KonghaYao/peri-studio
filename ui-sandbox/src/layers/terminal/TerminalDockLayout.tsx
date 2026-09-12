@@ -1,6 +1,7 @@
 import { createSignal, Show } from 'solid-js';
-import { Button, IconButton, InlineNotice, Status } from '@/lib/catalog-ui';
-import { ChevronDown, ChevronUp, FolderRoot, Terminal } from 'lucide-solid';
+import { Status, TerminalDockShell } from '@peri/ui';
+import { Button, InlineNotice } from '@/lib/catalog-ui';
+import { FolderRoot, Terminal } from 'lucide-solid';
 
 /** 沙箱演示：PTY 生命周期，无后端。 */
 type TerminalLifecycle = 'running' | 'exited' | 'error';
@@ -40,25 +41,18 @@ export function TerminalDockLayout() {
           Main panel · active project may differ from the terminal&apos;s bound project
         </div>
 
-        <section
+        <TerminalDockShell
           aria-label="Terminal dock"
-          class="border-t border-terminal-dock-border bg-terminal-dock-surface"
-        >
-          <header class="flex h-36 min-w-0 items-center gap-8 overflow-hidden whitespace-nowrap border-b border-border-subtle px-8">
-            <IconButton
-              label={expanded() ? 'Collapse terminal viewport' : 'Expand terminal viewport'}
-              size="sm"
-              onClick={() => setExpanded((v) => !v)}
-            >
-              {expanded() ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-            </IconButton>
-
-            <Terminal size={14} class="shrink-0 text-content-muted" aria-hidden="true" />
-
-            <span class="truncate text-12 font-medium text-content-primary">zsh</span>
-          </header>
-
-          <Show when={expanded()}>
+          class="border-t border-terminal-dock-border"
+          expanded={expanded()}
+          onExpandedChange={setExpanded}
+          title={
+            <>
+              <Terminal size={14} class="shrink-0 text-content-muted" aria-hidden="true" />
+              <span class="truncate text-12 font-medium text-content-primary">zsh</span>
+            </>
+          }
+          viewport={
             <div
               class="h-(--terminal-viewport-height) overflow-auto bg-terminal-viewport-bg px-12 py-8 font-mono text-12 leading-relaxed"
               role="log"
@@ -109,20 +103,23 @@ export function TerminalDockLayout() {
                 </p>
               </Show>
             </div>
-          </Show>
-
-          <footer class="flex h-36 min-w-0 items-center gap-8 overflow-hidden whitespace-nowrap border-t border-border-subtle px-8 text-11 text-content-muted">
-            <Status tone={meta().tone} label={meta().statusLabel} live={meta().live} class="shrink-0" />
-            <span
-              class="inline-flex min-w-0 items-center gap-4 overflow-hidden"
-              title="Terminal is fixed to the project where it was created"
-            >
-              <FolderRoot size={12} class="shrink-0" aria-hidden="true" />
-              <span class="truncate">Bound to {MOCK_PROJECT}</span>
-            </span>
-            <span class="min-w-0 truncate font-mono" title={MOCK_CWD}>{MOCK_CWD}</span>
-          </footer>
-        </section>
+          }
+          status={
+            <Status tone={meta().tone} live={meta().live} class="shrink-0">{meta().statusLabel}</Status>
+          }
+          footer={
+            <>
+              <span
+                class="inline-flex min-w-0 items-center gap-4 overflow-hidden"
+                title="Terminal is fixed to the project where it was created"
+              >
+                <FolderRoot size={12} class="shrink-0" aria-hidden="true" />
+                <span class="truncate">Bound to {MOCK_PROJECT}</span>
+              </span>
+              <span class="min-w-0 truncate font-mono" title={MOCK_CWD}>{MOCK_CWD}</span>
+            </>
+          }
+        />
       </div>
 
       {/* 演示控件：切换生命周期展示，非 Dock 生产 UI */}

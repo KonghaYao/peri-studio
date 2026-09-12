@@ -8,18 +8,19 @@
 // 悬浮再调）；消息按 role/状态呈现八类视觉。消息模型、顺序、Yjs 读取、自动吸底算法与
 // permission decision 值（allow/deny、按钮顺序）由 Composer 上方的决策槽位承载。
 
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, type JSX } from 'solid-js';
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { chatEntries, chatAgentLoading, chatHead, elicitations, permissions, retryMessageSubmission, runtimeDocsHydrated, selectedCid } from '@/store';
 import { nextFollowState } from '@/features/message/message-follow';
 import { messageTime } from '@/shared/lib/message-time';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import {
   Button,
+  HistoryBoundary,
   LoadingState,
-  MessageScroller,
-  MessageScrollerProvider,
-  MessageScrollerViewport,
   Skeleton,
+  TranscriptRowShell,
+  TranscriptViewportShell,
+  type TranscriptHistoryBoundaryKind,
 } from '@peri/ui';
 import { activityBoundaryAt, activityContinuationAt, isTurnTerminalNoticeOwner } from '@/features/chat/chat-render-blocks';
 import { ConversationMessage } from './ConversationMessage';
@@ -32,22 +33,8 @@ import { TranscriptWindow } from '@/entities/chat/transcript-window';
 import { visibleElicitations } from '@/features/message/elicitation-delivery';
 
 
-type VisibleHistoryBoundary = Exclude<ReplayBoundary, null | 'inferred_history'>;
-
-function visibleHistoryBoundary(kind: ReplayBoundary): VisibleHistoryBoundary | null {
+function visibleHistoryBoundary(kind: ReplayBoundary): TranscriptHistoryBoundaryKind | null {
   return kind === 'verified_history' || kind === 'live_runtime' ? kind : null;
-}
-
-function HistoryBoundary(props: { kind: VisibleHistoryBoundary }) {
-  const label = () => props.kind === 'live_runtime'
-    ? 'Current'
-    : 'Verified history';
-  const accessibleLabel = () => props.kind === 'live_runtime'
-    ? 'Current run'
-    : 'Peri-verified recovered history';
-  return <div class="history-boundary grid grid-cols-boundary items-center gap-8 mt-4 mb-4 text-text-muted text-10 tracking-25 text-center before:h-px before:bg-divider before:content-[''] after:h-px after:bg-divider after:content-['']" data-testid="history-boundary" role="separator" aria-label={accessibleLabel()} title={accessibleLabel()}>
-    <span class="whitespace-nowrap">{label()}</span>
-  </div>;
 }
 
 function ChatLoading() {
@@ -60,39 +47,9 @@ function ChatLoading() {
   </div>;
 }
 
-function TranscriptRow(props: {
-  id: string;
-  position: number;
-  size: number;
-  onMeasure: (id: string, height: number) => void;
-  children: JSX.Element;
-}) {
-  let row: HTMLDivElement | undefined;
-  let observer: ResizeObserver | undefined;
-  const measure = () => {
-    const height = row?.getBoundingClientRect().height ?? 0;
-    if (height > 0) props.onMeasure(props.id, height);
-  };
-  onMount(() => {
-    measure();
-    if (!row || typeof ResizeObserver === 'undefined') return;
-    observer = new ResizeObserver(measure);
-    observer.observe(row);
-  });
-  onCleanup(() => observer?.disconnect());
-  return <div
-    ref={row}
-    class="transcript-row flow-root"
-    role="listitem"
-    aria-posinset={props.position}
-    aria-setsize={props.size}
-    data-transcript-id={props.id}
-  >{props.children}</div>;
-}
-
 // ── 消息滚动区 ──────────────────────────────────────────────────────────
 //
-// 仅复用 @peri/ui MessageScroller 外框与 Viewport（scroll-fade、ui-scrollbar）。
+// TranscriptViewportShell / TranscriptRowShell / HistoryBoundary 提供 T3 滚动与行壳；
 // Provider 关闭 autoScroll：吸底 / hasNewContent / 40px 阈值与 TranscriptWindow
 // 虚拟化锚定仍由本组件与 nextFollowState 承担；未采用 MessageScrollerItem /
 // MessageScrollerContent（与 spacer 窗口化及 outbox 尾部布局不兼容）。
@@ -343,18 +300,17 @@ export function MessageList(props: { footerHeight?: number }) {
   };
 
   return (
-    <MessageScrollerProvider autoScroll={false}>
-    <MessageScroller class="message-list-shell min-h-0 min-w-0 flex-1">
-    <MessageScrollerViewport
-      ref={areaRef}
+    <TranscriptViewportShell
       aria-label="Conversation messages"
+      viewportRef={(element) => { areaRef = element; }}
       onScroll={(e) => {
         const el = e.currentTarget;
         setStick(el.scrollHeight - el.scrollTop - el.clientHeight < 40);
         updateViewport(el.scrollTop);
       }}
-      class="message-list-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden [overflow-anchor:none] contain-none"
-      data-testid="message-list-scroll"
+      trailing={<Show when={(!stick() || hasNewContent()) && permissions().length === 0 && visibleElicitations(elicitations()).length === 0}>
+        <Button type="button" size="compact" class="jump-latest absolute bottom-12 z-12 left-1/2 -translate-x-1/2 min-h-36 px-13 border border-border-subtle rounded-full bg-surface-translucent text-text-secondary shadow-popover cursor-pointer text-12 backdrop-blur-sm hover:text-text-primary pointer-coarse:min-h-44 pointer-coarse:px-16" onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button>
+      </Show>}
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
       <div class="sr-only" role="status" aria-label="Agent activity" aria-live="polite" aria-atomic="true">{agentActivityAnnouncement()}</div>
@@ -369,7 +325,7 @@ export function MessageList(props: { footerHeight?: number }) {
           <For each={visibleTranscript().ids}>
             {(id, localIndex) => {
               const globalIndex = () => visibleTranscript().start + localIndex();
-              return <TranscriptRow id={id} position={globalIndex() + 1} size={chatEntryIds().length} onMeasure={measureTranscriptRow}>
+              return <TranscriptRowShell id={id} position={globalIndex() + 1} size={chatEntryIds().length} onMeasure={measureTranscriptRow}>
                 <Show when={visibleHistoryBoundary(replayBoundaryAt(chatEntries(), globalIndex()))}>{(kind) => <HistoryBoundary kind={kind()} />}</Show>
                 <Show when={chatEntries()[globalIndex()]}>{(entry) =>
                   <Show when={isPlanSystemChatEntry(entry())} fallback={
@@ -383,7 +339,7 @@ export function MessageList(props: { footerHeight?: number }) {
                     <PlanSystemEntryRow entry={entry()} />
                   </Show>
                 }</Show>
-              </TranscriptRow>;
+              </TranscriptRowShell>;
             }}
           </For>
           <div class="transcript-spacer" aria-hidden="true" style={{ height: `${visibleTranscript().afterHeight}px` }} />
@@ -396,9 +352,6 @@ export function MessageList(props: { footerHeight?: number }) {
           <MessageOutbox submission={submission()} onRetry={retryMessageSubmission} onEdit={() => dismissFailedMessageDelivery(submission().commandId)} acknowledgeDisabled={!canAcknowledgeUnknownMessageDelivery(submission().commandId)} onAcknowledge={() => acknowledgeUnknownMessageDelivery(submission().commandId)} />
         }</Show>
       </div>
-    </MessageScrollerViewport>
-    <Show when={(!stick() || hasNewContent()) && permissions().length === 0 && visibleElicitations(elicitations()).length === 0}><Button type="button" size="compact" class="jump-latest absolute bottom-12 z-12 left-1/2 -translate-x-1/2 min-h-36 px-13 border border-border-subtle rounded-full bg-surface-translucent text-text-secondary shadow-popover cursor-pointer text-12 backdrop-blur-sm hover:text-text-primary pointer-coarse:min-h-44 pointer-coarse:px-16" onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button></Show>
-    </MessageScroller>
-    </MessageScrollerProvider>
+    </TranscriptViewportShell>
   );
 }

@@ -1,6 +1,6 @@
 import { FolderRoot, PanelRightClose, Play, RotateCcw, SquareTerminal, X } from 'lucide-solid';
 import { createEffect, createMemo, createSignal, onCleanup, Show } from 'solid-js';
-import { Button, IconButton, Status, Terminal, type TerminalViewport } from '@peri/ui';
+import { Button, IconButton, Status, Terminal, TerminalDockShell, type TerminalViewport } from '@peri/ui';
 import {
   attachTerminalOutput,
   closeTerminal,
@@ -150,77 +150,84 @@ export function TerminalPanel(props: { onClosePanel?: () => void; visible?: bool
   };
 
   return (
-    <section aria-label="Terminal" class="flex min-h-0 min-w-0 flex-1 basis-0 flex-col bg-terminal-dock-surface">
-      <header class="flex h-36 min-w-0 shrink-0 items-center gap-6 overflow-hidden whitespace-nowrap border-b border-border-subtle px-8">
-        <SquareTerminal size={14} class="shrink-0 text-text-muted" aria-hidden="true" />
-        <span class="truncate text-12 font-medium text-text-primary">Terminal</span>
-        <span class="flex-1" />
-        <Show when={state().phase === 'idle' || state().phase === 'closed'}>
-          <Button size="sm" variant="ghost" disabled={startDisabled()} title={terminalDescription()} onClick={start}>
-            <Play size={13} aria-hidden="true" /> {startQueued() ? 'Starting…' : 'Start'}
-          </Button>
-        </Show>
-        <Show when={state().phase === 'exited' || state().phase === 'error'}>
-          <IconButton label={startLabel()} size="sm" showTooltip={false} disabled={startDisabled()} onClick={start}>
-            <RotateCcw size={14} aria-hidden="true" />
-          </IconButton>
-        </Show>
-        <Show when={state().phase === 'opening' || state().phase === 'running'}>
-          <IconButton label="Close terminal" size="sm" showTooltip={false} onClick={closeTerminal}>
-            <X size={14} aria-hidden="true" />
-          </IconButton>
-        </Show>
-        <Show when={props.onClosePanel}>
-          <IconButton label="Close panel" size="sm" showTooltip={false} onClick={() => props.onClosePanel?.()}>
-            <PanelRightClose size={14} aria-hidden="true" />
-          </IconButton>
-        </Show>
-      </header>
-
-      <Show when={engineError()}>
-        <div role="alert" class="shrink-0 border-b border-danger-border bg-danger-soft px-10 py-6 text-11 text-danger">
-          {engineError()}
-        </div>
-      </Show>
-
-      <Show when={state().phase === 'error'}>
-        <div role="alert" class="shrink-0 border-b border-danger-border bg-danger-soft px-10 py-6 text-11 text-danger">
-          {state().error ?? 'Terminal unavailable.'}
-        </div>
-      </Show>
-
-      <div
-        ref={viewportHost}
-        class="flex min-h-0 flex-1 basis-0 flex-col p-8 focus-within:outline-1 focus-within:outline-focus-ring focus-within:outline-offset--1"
-      >
-        <Terminal
-          visible={isVisible()}
-          onData={sendTerminalInput}
-          onBinary={sendTerminalBinaryInput}
-          onResize={(cols, rows) => resizeTerminal(cols, rows)}
-          onReady={bindViewport}
-          onError={(error) => {
-            setStartQueued(false);
-            const message = error instanceof Error ? error.message : 'Terminal failed to initialize.';
-            setEngineError(message);
-          }}
-        />
-      </div>
-
-      <footer class="flex h-36 min-w-0 shrink-0 items-center gap-8 overflow-hidden whitespace-nowrap border-t border-border-subtle px-8 text-11 text-text-muted">
-        <Status tone={statusMeta().tone} live={statusMeta().live} class="shrink-0">{statusMeta().label}</Status>
-        <Show when={boundProject()}>
-          {(project) => (
-            <span class="inline-flex min-w-0 items-center gap-4 overflow-hidden" title="Terminal stays bound to the project where it was created">
-              <FolderRoot size={12} class="shrink-0" aria-hidden="true" />
-              <span class="truncate">Bound to {project().name}</span>
-            </span>
-          )}
-        </Show>
-        <Show when={state().cwd}>
-          <span class="min-w-0 truncate font-mono" title={state().cwd ?? undefined}>{state().cwd}</span>
-        </Show>
-      </footer>
-    </section>
+    <TerminalDockShell
+      aria-label="Terminal"
+      title={
+        <>
+          <SquareTerminal size={14} class="shrink-0 text-text-muted" aria-hidden="true" />
+          <span class="truncate text-12 font-medium text-text-primary">Terminal</span>
+        </>
+      }
+      headerActions={
+        <>
+          <Show when={state().phase === 'idle' || state().phase === 'closed'}>
+            <Button size="sm" variant="ghost" disabled={startDisabled()} title={terminalDescription()} onClick={start}>
+              <Play size={13} aria-hidden="true" /> {startQueued() ? 'Starting…' : 'Start'}
+            </Button>
+          </Show>
+          <Show when={state().phase === 'exited' || state().phase === 'error'}>
+            <IconButton label={startLabel()} size="sm" showTooltip={false} disabled={startDisabled()} onClick={start}>
+              <RotateCcw size={14} aria-hidden="true" />
+            </IconButton>
+          </Show>
+          <Show when={state().phase === 'opening' || state().phase === 'running'}>
+            <IconButton label="Close terminal" size="sm" showTooltip={false} onClick={closeTerminal}>
+              <X size={14} aria-hidden="true" />
+            </IconButton>
+          </Show>
+          <Show when={props.onClosePanel}>
+            <IconButton label="Close panel" size="sm" showTooltip={false} onClick={() => props.onClosePanel?.()}>
+              <PanelRightClose size={14} aria-hidden="true" />
+            </IconButton>
+          </Show>
+        </>
+      }
+      viewport={
+        <>
+          <Show when={engineError()}>
+            <div role="alert" class="shrink-0 border-b border-danger-border bg-danger-soft px-10 py-6 text-11 text-danger">
+              {engineError()}
+            </div>
+          </Show>
+          <Show when={state().phase === 'error'}>
+            <div role="alert" class="shrink-0 border-b border-danger-border bg-danger-soft px-10 py-6 text-11 text-danger">
+              {state().error ?? 'Terminal unavailable.'}
+            </div>
+          </Show>
+          <div ref={viewportHost} class="flex min-h-0 flex-1 basis-0 flex-col">
+            <Terminal
+              visible={isVisible()}
+              onData={sendTerminalInput}
+              onBinary={sendTerminalBinaryInput}
+              onResize={(cols, rows) => resizeTerminal(cols, rows)}
+              onReady={bindViewport}
+              onError={(error) => {
+                setStartQueued(false);
+                const message = error instanceof Error ? error.message : 'Terminal failed to initialize.';
+                setEngineError(message);
+              }}
+            />
+          </div>
+        </>
+      }
+      status={
+        <Status tone={statusMeta().tone} live={statusMeta().live}>{statusMeta().label}</Status>
+      }
+      footer={
+        <>
+          <Show when={boundProject()}>
+            {(project) => (
+              <span class="inline-flex min-w-0 items-center gap-4 overflow-hidden" title="Terminal stays bound to the project where it was created">
+                <FolderRoot size={12} class="shrink-0" aria-hidden="true" />
+                <span class="truncate">Bound to {project().name}</span>
+              </span>
+            )}
+          </Show>
+          <Show when={state().cwd}>
+            <span class="min-w-0 truncate font-mono" title={state().cwd ?? undefined}>{state().cwd}</span>
+          </Show>
+        </>
+      }
+    />
   );
 }

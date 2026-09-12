@@ -203,6 +203,103 @@
   scrollbar-gutter: stable;
 }
 
+/* 贴底 composer 区：渐隐遮罩，避免消息与输入框硬切。 */
+.ui-chat-workspace__bottom-stack {
+  padding-top: var(--space-28);
+  background: linear-gradient(
+    0deg,
+    var(--app-bg) 0%,
+    color-mix(in srgb, var(--app-bg) 94%, transparent) 72%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.ui-chat-workspace__bottom-stack > * {
+  pointer-events: auto;
+}
+
+/* ── Project sidebar shell（T3 · ProjectSidebarShell） ─────────────────── */
+
+.ui-sidebar-scroll-shell {
+  position: relative;
+  min-height: 0;
+  flex: 1;
+}
+
+.ui-sidebar-scroll {
+  scrollbar-gutter: stable;
+}
+
+.ui-sidebar-scroll-mist {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 28px;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    var(--surface-overlay) 0%,
+    color-mix(in srgb, var(--surface-overlay) 72%, transparent) 42%,
+    transparent 100%
+  );
+}
+
+.ui-sidebar-mist-divider {
+  flex-shrink: 0;
+  height: 20px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--surface-overlay) 35%, transparent) 38%,
+    var(--surface-overlay) 100%
+  );
+}
+
+.ui-sidebar-mist-hint {
+  color: var(--content-faint);
+  opacity: 0.62;
+  letter-spacing: 0.01em;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--surface-overlay) 80%, transparent);
+}
+
+/* ── Transcript（T3 · MessageList 虚拟化滚动壳） ───────────────────────── */
+
+.ui-transcript-scroll {
+  scrollbar-gutter: stable;
+  min-width: 0;
+  overflow-x: clip;
+  overflow-anchor: none;
+  contain: none;
+}
+
+.ui-transcript-history-boundary,
+.history-boundary {
+  display: grid;
+  grid-template-columns: var(--grid-cols-boundary);
+  align-items: center;
+  gap: var(--space-8);
+  margin-block: var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--text-10);
+  letter-spacing: var(--tracking-25);
+  text-align: center;
+}
+
+.ui-transcript-history-boundary::before,
+.ui-transcript-history-boundary::after,
+.history-boundary::before,
+.history-boundary::after {
+  height: 1px;
+  background: var(--divider);
+  content: '';
+}
+
+.ui-transcript-row,
+.transcript-row {
+  display: flow-root;
+}
+
 /* ── Mermaid 注入 SVG ────────────────────────────────────────────────── */
 
 .md-mermaid__canvas svg,
@@ -705,6 +802,86 @@
   gap: var(--space-2);
 }
 
+/* ── Terminal dock shell（T3 · PTY 面板壳） ─────────────────────────────── */
+
+.ui-terminal-dock-shell {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+  background: var(--terminal-dock-surface);
+}
+
+.ui-terminal-dock-shell__header {
+  display: flex;
+  height: var(--space-36);
+  min-width: 0;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-8);
+  overflow: hidden;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-inline: var(--space-8);
+}
+
+.ui-terminal-dock-shell__title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-6);
+  overflow: hidden;
+}
+
+.ui-terminal-dock-shell__spacer {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.ui-terminal-dock-shell__header-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.ui-terminal-dock-shell__viewport {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+  padding: var(--space-8);
+}
+
+.ui-terminal-dock-shell__viewport:focus-within {
+  outline: 1px solid var(--focus-ring);
+  outline-offset: -1px;
+}
+
+.ui-terminal-dock-shell__viewport--collapsed {
+  display: none;
+}
+
+.ui-terminal-dock-shell__footer {
+  display: flex;
+  height: var(--space-36);
+  min-width: 0;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-8);
+  overflow: hidden;
+  white-space: nowrap;
+  border-top: 1px solid var(--border-subtle);
+  padding-inline: var(--space-8);
+  font-size: var(--text-11);
+  color: var(--text-muted);
+}
+
+.ui-terminal-dock-shell__status {
+  flex-shrink: 0;
+}
+
 /* ── Decision queue shell（T3 · composer 上方决策叠层） ─────────────────── */
 
 .ui-decision-queue-shell {
@@ -1039,6 +1216,10 @@ body.ui-workbench-panel-resizing * {
 
 [data-testid='message-reasoning'] summary::-webkit-details-marker {
   display: none;
+}
+
+.message-reasoning--activity[open] .message-reasoning__chevron {
+  transform: rotate(90deg);
 }
 
 

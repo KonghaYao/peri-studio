@@ -83,6 +83,21 @@
   padding: 0;
 }
 
+/* ── Composer wrap 变体（web 应用级，子选择器编排） ───────────────────── */
+
+.composer-wrap--overlay .ui-composer-shell {
+  max-width: var(--composer-max);
+}
+
+.composer-wrap--overlay .ui-composer-surface-v2 {
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-composer-overlay);
+}
+
+.composer-wrap--centered .ui-composer-shell {
+  max-width: var(--composer-launch-max);
+}
+
 /* ── 拓扑子节点连线 ───────────────────────────────────────────────────── */
 
 .topology-instance-children {

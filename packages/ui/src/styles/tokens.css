@@ -516,6 +516,7 @@
   --font-weight-750: 750;
 
   /* Letter-spacing scale (em). Negative values use -tracking-* utilities. */
+  --tracking-25: 0.025em;
   --tracking-35: 0.035em;
   --tracking-6: 0.06em;
   --tracking-7: 0.07em;

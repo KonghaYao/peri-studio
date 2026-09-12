@@ -1,4 +1,4 @@
-import { Brain, ChevronDown } from 'lucide-solid';
+import { Brain, ChevronDown, ChevronRight } from 'lucide-solid';
 import {
   createContext,
   createEffect,
@@ -196,8 +196,10 @@ export const Reasoning: Component<ReasoningRootProps> = (props) => {
             <Show when={showThinkingGap()} fallback={(
               <details
                 class={cn(
-                  'message-reasoning max-w-(--chat-reasoning-max) font-normal text-content-secondary',
-                  activity() && 'message-reasoning--activity',
+                  'message-reasoning font-normal text-content-secondary',
+                  activity()
+                    ? 'message-reasoning--activity tool-activity-row tool-activity-row--activity min-w-0 max-w-(--chat-tool-activity-max)'
+                    : 'max-w-(--chat-reasoning-max)',
                   local.class,
                 )}
                 data-testid="message-reasoning"
@@ -261,12 +263,66 @@ export const ReasoningTrigger: Component<ReasoningTriggerProps> = (props) => {
   const hasText = () => transcriptText().trim().length > 0;
 
   if (appearance() === 'transcript') {
+    if (activity()) {
+      const label = () => (local.children ?? (
+        <Show when={isStreaming() && !hasText()} fallback="Reasoning">
+          Reasoning…
+        </Show>
+      ));
+      return (
+        <summary
+          data-slot="reasoning-trigger"
+          class={cn(
+            'relative z-1 list-none cursor-pointer',
+            !hasText() && !isStreaming() && 'cursor-default',
+            local.class,
+          )}
+          {...rest}
+        >
+          <div class="tool-call-row-compact min-h-(--pattern-row-height) rounded-6 p-2">
+            <div class="chat-tool-call-row grid w-full min-w-0 grid-cols-tool-row items-center gap-9 text-left text-inherit">
+              <span
+                class="tool-call-row-icon relative z-1 grid size-22 shrink-0 place-items-center rounded-md bg-surface text-content-muted"
+                aria-hidden="true"
+              >
+                <Brain size={15} strokeWidth={1.8} />
+              </span>
+              <span class="tool-call-row-copy block min-w-0 overflow-hidden">
+                <span class="tool-call-row-heading flex min-w-0 items-baseline gap-9 overflow-hidden">
+                  <Show
+                    when={isStreaming() && !hasText()}
+                    fallback={(
+                      <span class="tool-call-row-title min-w-0 truncate text-12 font-normal text-content-muted">
+                        {label()}
+                      </span>
+                    )}
+                  >
+                    <Shimmer as="span" duration={1} spread={2} class="tool-call-row-title min-w-0 max-w-full truncate text-12 font-normal">
+                      Reasoning…
+                    </Shimmer>
+                  </Show>
+                </span>
+              </span>
+              <span class="tool-call-row-end flex shrink-0 items-center justify-self-end gap-12" />
+              <Show when={hasText()}>
+                <ChevronRight
+                  size={13}
+                  strokeWidth={1.8}
+                  class="message-reasoning__chevron size-22 shrink-0 text-content-faint transition-transform duration-(--duration-fast)"
+                  aria-hidden="true"
+                />
+              </Show>
+            </div>
+          </div>
+        </summary>
+      );
+    }
+
     return (
       <summary
         data-slot="reasoning-trigger"
         class={cn(
           'relative z-1 inline-flex min-h-24 cursor-pointer list-none items-center text-11 font-normal tracking-wide text-content-muted hover:text-content-secondary',
-          activity() && 'min-h-16 pl-32',
           !hasText() && !isStreaming() && 'cursor-default hover:text-content-muted',
           local.class,
         )}
@@ -321,8 +377,10 @@ export const ReasoningContent: Component<ComponentProps<typeof CollapsibleConten
         <p
           data-slot="reasoning-content"
           class={cn(
-            'message-reasoning__body m-0 mt-4 whitespace-pre-wrap text-12 font-normal leading-normal text-content-secondary',
-            activity() && 'message-reasoning__body--activity-rail relative z-1 pl-32',
+            'message-reasoning__body m-0 whitespace-pre-wrap text-12 font-normal leading-normal text-content-secondary',
+            activity()
+              ? 'tool-activity-row__body relative z-1 mt-0 border-t border-border-faint pt-8 pb-8 pl-16 pr-10'
+              : 'mt-4',
             local.class,
           )}
           {...rest}

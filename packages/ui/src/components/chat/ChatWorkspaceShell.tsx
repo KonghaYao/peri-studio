@@ -51,7 +51,7 @@ export const ChatWorkspaceShell: Component<ChatWorkspaceShellProps> = (props) =>
           <Show when={local.composerStack}>
             <div
               ref={local.composerStackRef}
-              class="ui-chat-workspace__composer-stack composer-stack relative z-20 flex-none min-w-0 overflow-x-hidden bg-app-bg"
+              class="ui-chat-workspace__bottom-stack composer-stack relative z-20 flex-none min-w-0 overflow-x-hidden bg-app-bg"
               data-testid="composer-stack"
             >
               {local.composerStack}

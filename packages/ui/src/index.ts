@@ -328,6 +328,30 @@ export {
   ChatWorkspaceShell,
   type ChatWorkspaceShellProps,
 } from './components/chat/ChatWorkspaceShell';
+export {
+  HistoryBoundary,
+  type HistoryBoundaryProps,
+  type TranscriptHistoryBoundaryKind,
+} from './components/transcript/HistoryBoundary';
+export {
+  TranscriptRowShell,
+  type TranscriptRowShellProps,
+} from './components/transcript/TranscriptRowShell';
+export { useTranscriptRowMeasure } from './components/transcript/transcript-row-shell';
+export {
+  TranscriptViewportShell,
+  type TranscriptViewportShellProps,
+} from './components/transcript/TranscriptViewportShell';
+export {
+  MessageArticleShell,
+  type MessageArticleShellProps,
+} from './components/chat/MessageArticleShell';
+export { MessageAssistantActionsShell, type MessageAssistantActionsShellProps } from './components/chat/MessageAssistantActionsShell';
+export { MessageMetaHeader } from './components/chat/MessageMetaHeader';
+export {
+  MessageSurfaceShell,
+  type MessageSurfaceShellProps,
+} from './components/chat/MessageSurfaceShell';
 export { RowAccessorySlot, type RowAccessorySlotProps } from './components/RowAccessorySlot';
 export {
   NavAction,
@@ -338,6 +362,10 @@ export {
   SidebarNavBar,
   type SidebarChromeMenuItem,
 } from './components/SidebarChrome';
+export {
+  ProjectSidebarShell,
+  type ProjectSidebarShellProps,
+} from './components/sidebar/ProjectSidebarShell';
 export { layoutGitGraph, GIT_GRAPH_COLORS, GIT_GRAPH_GRID, GIT_GRAPH_HEADER_HEIGHT, GIT_GRAPH_ROW_HEIGHT, GitGraphStyle } from './lib/git-graph-engine';
 export type { GitGraphLayout, GitGraphLayoutCommit, GitGraphNode, GitGraphPathSegment } from './lib/git-graph-engine';
 export { memoizeAsync } from './lib/memoize-async';
@@ -459,6 +487,10 @@ export {
   DecisionQueueShell,
   type DecisionQueueShellProps,
 } from './components/decision/DecisionQueueShell';
+export {
+  TerminalDockShell,
+  type TerminalDockShellProps,
+} from './components/terminal/TerminalDockShell';
 export type { ComposerQueueItem } from './components/composer/composer-queue-types';
 export {
   SlashMenu,

@@ -243,10 +243,11 @@ describe('MessageList entry updates', () => {
     render(() => <MessageList />);
 
     const details = screen.getByText('Reasoning').closest('details')!;
-    const reasoning = screen.getByText('Inspect the projection').closest('.message-reasoning__body--activity-rail');
+    const reasoning = screen.getByText('Inspect the projection').closest('.tool-activity-row__body');
+    expect(details).toHaveClass('tool-activity-row--activity');
     expect(details).not.toHaveAttribute('open');
     expect(reasoning).not.toBeVisible();
-    expect(reasoning).toHaveClass('pl-32');
+    expect(reasoning).toHaveClass('pl-16');
     const rails = screen.getAllByTestId('chat-activity-rail');
     expect(rails).toHaveLength(2);
     expect(rails[0]).toHaveClass('-bottom-16');

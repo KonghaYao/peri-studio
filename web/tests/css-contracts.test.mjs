@@ -175,8 +175,8 @@ test('fractional Tailwind spacing utilities resolve to an explicit product token
 });
 
 const EXTRA_CSS_BASELINE = {
-  lineCount: 90,
-  sha256: '42298dc36dd306ef182f0e8dec24c16aa41131a08f6bf01bc379846145d43a2e',
+  lineCount: 105,
+  sha256: '52c2b043232d619be1df82384b82b6ea69884d00b3d95b9d570a21de070efaf7',
 };
 
 function lineCountLikeWc(content) {
@@ -317,7 +317,9 @@ test('MessageList delegates entry semantics through stable entry-id slots to one
   assert.match(list, /<ConversationMessage\s+entry=\{entry\}\s+activityBoundary=\{\(\) => activityBoundaryAt\(chatEntries\(\), globalIndex\(\)\)\}\s+activityContinuation=\{\(\) => activityContinuationAt\(chatEntries\(\), globalIndex\(\)\)\}\s+terminalNoticeOwner=\{\(\) => isTurnTerminalNoticeOwner\(chatEntries\(\), globalIndex\(\)\)\}\s+\/>/);
   assert.match(list, /<PlanSystemEntryRow entry=\{entry\(\)\} \/>/);
   assert.doesNotMatch(list, /function MessageBubble|<Markdown|<ToolCallActivity/);
-  assert.match(message, /conversation-message--\$\{role\(\)\}/);
+  assert.match(message, /<MessageArticleShell[\s\S]*from=\{role\(\)\}/);
+  const articleShell = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'chat', 'MessageArticleShell.tsx'), 'utf8');
+  assert.match(articleShell, /conversation-message--\$\{local\.from\}/);
   assert.match(message, /role="alert" aria-label="Message error"/);
 });
 
@@ -418,6 +420,10 @@ test('coarse pointers expose sidebar actions without hover and keep controls tou
 test('P0 interaction architecture cannot regress to hidden cancel or viewport-breaking overlays', () => {
   const composer = readComposerBundle();
   const sidebarChrome = readWidgetTsx('SidebarChrome.tsx');
+  const projectSidebarShell = readFileSync(
+    join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'sidebar', 'ProjectSidebarShell.tsx'),
+    'utf8',
+  );
   const dialog = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Dialog.tsx'), 'utf8');
   const styles = featureCss();
   assert.match(composer, /cancelTurn/);
@@ -425,7 +431,7 @@ test('P0 interaction architecture cannot regress to hidden cancel or viewport-br
   assert.match(composer, /control\?\.phase === 'uncertain'[\s\S]*?retryPersistentAction\(control\.commandId\)/);
   assert.match(composer, /Confirm stop with original request/);
   assert.match(dialog, /DialogPrimitive\.Portal/);
-  assert.match(sidebarChrome, /sidebar-footer/);
+  assert.match(projectSidebarShell, /sidebar-footer/);
   assert.doesNotMatch(sidebarChrome, /Pull requests|Sites are not connected|Scheduled tasks|Plugin management|label="Voice"/);
   assert.doesNotMatch(styles, /logout-button[^}]*position\s*:\s*fixed/s);
 });

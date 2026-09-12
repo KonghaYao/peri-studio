@@ -314,10 +314,11 @@ describe('ConversationMessage', () => {
     const details = screen.getByText('Reasoning').closest('details')!;
     const summary = screen.getByText('Reasoning');
     const body = screen.getByText('Check imports first.');
-    expect(summary).toHaveClass('min-h-16');
+    expect(summary).toHaveClass('tool-call-row-title', 'text-12', 'text-content-muted');
+    expect(details).toHaveClass('tool-activity-row--activity');
     expect(details).not.toHaveAttribute('open');
     expect(body).not.toBeVisible();
-    expect(body.closest('.message-reasoning__body--activity-rail')).toHaveClass('relative', 'z-1', 'pl-32', 'font-normal');
+    expect(body.closest('.tool-activity-row__body')).toHaveClass('relative', 'z-1', 'pl-16', 'font-normal');
     expect(screen.getByTestId('chat-activity-rail')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Reasoning'));

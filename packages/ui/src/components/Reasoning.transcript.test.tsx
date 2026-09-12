@@ -39,10 +39,11 @@ describe('Reasoning transcript appearance', () => {
 
     const details = screen.getByText('Reasoning').closest('details')!;
     const body = screen.getByText('Check imports first.');
-    expect(screen.getByText('Reasoning')).toHaveClass('min-h-16');
+    expect(screen.getByText('Reasoning')).toHaveClass('tool-call-row-title', 'text-12', 'text-content-muted');
+    expect(details).toHaveClass('tool-activity-row--activity');
     expect(details).not.toHaveAttribute('open');
     expect(body).not.toBeVisible();
-    expect(body.closest('.message-reasoning__body--activity-rail')).toHaveClass('relative', 'z-1', 'pl-32');
+    expect(body.closest('.tool-activity-row__body')).toHaveClass('relative', 'z-1', 'pl-16', 'border-t');
 
     fireEvent.click(screen.getByText('Reasoning'));
     expect(details).toHaveAttribute('open');

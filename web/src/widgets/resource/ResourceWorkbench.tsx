@@ -201,25 +201,24 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
     </>
   );
   const panelBody = () => (
-    <>
-      <Show when={view() !== 'terminal'}>
-        <WorkbenchPanelChrome title={<strong>{panelTitle()}</strong>} actions={panelHeaderActions()} />
-      </Show>
-      <Show when={view() === 'mcp'}><McpPanelContent embedded /></Show>
-      <Show when={view() === 'graph'}>
-        <GitGraphView embedded />
-      </Show>
-      <Show when={view() === 'explorer' || view() === 'scm'}>
-        <Show when={project()} fallback={<div class="p-16 text-12 text-content-muted">Select or create a project to browse its workspace.</div>}>
-          <Show when={resourceWorkspace().error}>{(message) => <div role="alert" class="m-8 flex items-start gap-6 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">
-            <span class="min-w-0 flex-1">{message()}</span>
-            <Button size="compact" variant="ghost" class="shrink-0 border-0! bg-transparent! px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={refreshResourceProject}>Retry</Button>
-          </div>}</Show>
-          <Show when={view() === 'explorer'}><ExplorerPanel expanded={explorerExpanded()} onExpandedChange={setExplorerExpanded} activePath={explorerActivePath()} onActivePathChange={setExplorerActivePath} scrollTop={explorerScrollTop()} onScrollTopChange={(scrollTop) => { if (!props.compact || props.open) setExplorerScrollTop(scrollTop); }} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'explorer', key })} /></Show>
-          <Show when={view() === 'scm'}><SourceControlPanel commitMessages={visibleCommitMessages()} onCommitMessageChange={setCommitMessage} onCommitSubmitted={recordSubmittedCommit} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'scm', key })} /></Show>
+    <Show when={view() !== 'terminal'}>
+      <WorkbenchPanelChrome title={<strong>{panelTitle()}</strong>} actions={panelHeaderActions()}>
+        <Show when={view() === 'mcp'}><McpPanelContent embedded /></Show>
+        <Show when={view() === 'graph'}>
+          <GitGraphView embedded />
         </Show>
-      </Show>
-    </>
+        <Show when={view() === 'explorer' || view() === 'scm'}>
+          <Show when={project()} fallback={<div class="p-16 text-12 text-content-muted">Select or create a project to browse its workspace.</div>}>
+            <Show when={resourceWorkspace().error}>{(message) => <div role="alert" class="m-8 flex items-start gap-6 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">
+              <span class="min-w-0 flex-1">{message()}</span>
+              <Button size="compact" variant="ghost" class="shrink-0 border-0! bg-transparent! px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={refreshResourceProject}>Retry</Button>
+            </div>}</Show>
+            <Show when={view() === 'explorer'}><ExplorerPanel expanded={explorerExpanded()} onExpandedChange={setExplorerExpanded} activePath={explorerActivePath()} onActivePathChange={setExplorerActivePath} scrollTop={explorerScrollTop()} onScrollTopChange={(scrollTop) => { if (!props.compact || props.open) setExplorerScrollTop(scrollTop); }} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'explorer', key })} /></Show>
+            <Show when={view() === 'scm'}><SourceControlPanel commitMessages={visibleCommitMessages()} onCommitMessageChange={setCommitMessage} onCommitSubmitted={recordSubmittedCommit} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'scm', key })} /></Show>
+          </Show>
+        </Show>
+      </WorkbenchPanelChrome>
+    </Show>
   );
   const rail = () => (
     <WorkbenchRail>

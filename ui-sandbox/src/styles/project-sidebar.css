@@ -1,14 +1,4 @@
-/* Project sidebar · 云雾分隔与空状态 */
-
-.sidebar-scroll-shell {
-  position: relative;
-  min-height: 0;
-  flex: 1;
-}
-
-.sidebar-scroll {
-  scrollbar-gutter: stable;
-}
+/* Project sidebar · 行 accessory 叠层与 hover 切换（T3 shell 样式在 @peri/ui extra.css） */
 
 .project-sidebar .row-accessory-slot {
   z-index: 40;
@@ -38,36 +28,4 @@
     opacity: 1;
     pointer-events: auto;
   }
-}
-
-.sidebar-scroll-mist {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  height: 28px;
-  pointer-events: none;
-  background: linear-gradient(
-    to top,
-    var(--surface-overlay) 0%,
-    color-mix(in srgb, var(--surface-overlay) 72%, transparent) 42%,
-    transparent 100%
-  );
-}
-
-.sidebar-mist-divider {
-  flex-shrink: 0;
-  height: 20px;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    color-mix(in srgb, var(--surface-overlay) 35%, transparent) 38%,
-    var(--surface-overlay) 100%
-  );
-}
-
-.sidebar-mist-hint {
-  color: var(--content-faint);
-  opacity: 0.62;
-  letter-spacing: 0.01em;
-  text-shadow: 0 0 12px color-mix(in srgb, var(--surface-overlay) 80%, transparent);
 }
