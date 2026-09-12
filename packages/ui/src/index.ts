@@ -321,6 +321,7 @@ export {
   type VSCodeFileIconKind,
   type VSCodeFolderIconKind,
 } from './lib/vscode-file-icons';
+export { ChatHeader, type ChatHeaderProps } from './components/ChatHeader';
 export { RowAccessorySlot, type RowAccessorySlotProps } from './components/RowAccessorySlot';
 export { UserBubble } from './components/UserBubble';
 export { GitGraphRefBadge, type GitGraphRefBadgeProps } from './components/git/GitGraphRefBadge';
