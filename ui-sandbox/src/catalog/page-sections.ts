@@ -93,6 +93,38 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'direction', label: 'Direction' },
       ],
     },
+    {
+      title: 'Round 4 · Chat / AI',
+      items: [
+        { id: 'scroll-utils', label: 'scroll-fade · shimmer' },
+        { id: 'marker', label: 'Marker' },
+        { id: 'bubble', label: 'Bubble' },
+        { id: 'message', label: 'Message' },
+        { id: 'conversation', label: 'Conversation' },
+        { id: 'reasoning', label: 'Reasoning' },
+        { id: 'tool', label: 'Tool' },
+        { id: 'chain-of-thought', label: 'Chain of thought' },
+        { id: 'prompt-input', label: 'Prompt input' },
+        { id: 'attachments', label: 'Attachments' },
+      ],
+    },
+    {
+      title: 'Round 5 · AI Elements',
+      items: [
+        { id: 'suggestion', label: 'Suggestion' },
+        { id: 'sources', label: 'Sources' },
+        { id: 'citation', label: 'Inline citation' },
+        { id: 'plan', label: 'Plan' },
+        { id: 'task', label: 'Task' },
+        { id: 'confirmation', label: 'Confirmation' },
+        { id: 'queue', label: 'Queue' },
+        { id: 'code-block', label: 'Code block' },
+        { id: 'snippet', label: 'Snippet' },
+        { id: 'typeset', label: 'Typeset' },
+        { id: 'data-table', label: 'Data table' },
+        { id: 'questionnaire', label: 'Questionnaire' },
+      ],
+    },
   ],
   blocks: [
     {

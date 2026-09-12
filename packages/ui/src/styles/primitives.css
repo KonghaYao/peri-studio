@@ -64,6 +64,60 @@
   transform: rotate(180deg);
 }
 
+.ui-reasoning-chevron,
+.ui-tool-chevron,
+.ui-chain-of-thought-chevron,
+.ui-plan-chevron,
+.ui-sources-chevron {
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.ui-reasoning-trigger[data-expanded] .ui-reasoning-chevron,
+.ui-tool-trigger[data-expanded] .ui-tool-chevron,
+.ui-chain-of-thought-trigger[data-expanded] .ui-chain-of-thought-chevron,
+.ui-plan-trigger[data-expanded] .ui-plan-chevron,
+.ui-sources-trigger[data-expanded] .ui-sources-chevron {
+  transform: rotate(180deg);
+}
+
+.ui-chain-of-thought-step:last-child .ui-chain-of-thought-connector,
+.ui-plan-step:last-child .ui-plan-step-connector {
+  display: none;
+}
+
+@keyframes ui-reasoning-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.ui-reasoning-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--content-muted) 0%,
+    var(--content-secondary) 50%,
+    var(--content-muted) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: ui-reasoning-shimmer 1.6s var(--ease-standard) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-reasoning-shimmer {
+    animation: none;
+    background-image: none;
+    background-clip: border-box;
+    -webkit-background-clip: border-box;
+    color: var(--content-muted);
+  }
+}
+
 /* Kobalte Progress.Fill exposes --kb-progress-fill-width (percentage width). */
 .ui-progress-fill {
   width: var(--kb-progress-fill-width);

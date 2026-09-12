@@ -1,4 +1,4 @@
-import type { ValidComponent } from 'solid-js';
+import type { JSX, ValidComponent } from 'solid-js';
 import { splitProps } from 'solid-js';
 import {
   Combobox as KCombobox,
@@ -6,12 +6,29 @@ import {
   type ComboboxControlProps,
   type ComboboxInputProps,
   type ComboboxItemProps,
+  type ComboboxRootProps,
 } from '@kobalte/core/combobox';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import { cn } from '../lib/cn';
 
-/** Kobalte Combobox 根：选项与 itemComponent 在 Root 上声明。 */
-export const Combobox = KCombobox;
+/**
+ * Kobalte Combobox 根：选项与 itemComponent 在 Root 上声明。
+ * 未传 optionLabel 时回退到 optionTextValue，避免对象选项在输入框显示为 [object Object]。
+ */
+function ComboboxRoot<Option, OptGroup = never>(
+  props: ComboboxRootProps<Option, OptGroup> & { children?: JSX.Element },
+) {
+  const [local, rest] = splitProps(props, ['optionLabel', 'optionTextValue']);
+  return (
+    <KCombobox
+      optionLabel={local.optionLabel ?? local.optionTextValue}
+      optionTextValue={local.optionTextValue}
+      {...rest}
+    />
+  );
+}
+
+export const Combobox = ComboboxRoot as typeof KCombobox;
 
 type ControlProps<Option, T extends ValidComponent = 'div'> = PolymorphicProps<
   T,

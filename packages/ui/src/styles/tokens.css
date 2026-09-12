@@ -473,6 +473,37 @@
   /* Motion and z-index */
   --z-12: 12;
 
+  /* ------------------------------------------------------------------
+     CSS utilities · scroll-fade / shimmer（默认值；可在元素上覆盖）
+     ------------------------------------------------------------------ */
+
+  --scroll-fade-size: min(12%, var(--space-40));
+  --scroll-fade-reveal: calc(var(--space-40) + var(--space-56));
+  --scroll-fade-t-size: var(--scroll-fade-size);
+  --scroll-fade-b-size: var(--scroll-fade-size);
+  --scroll-fade-s-size: var(--scroll-fade-size);
+  --scroll-fade-e-size: var(--scroll-fade-size);
+  --scroll-fade-t: 0px;
+  --scroll-fade-b: 0px;
+  --scroll-fade-s: 0px;
+  --scroll-fade-e: 0px;
+  --scroll-fade-mask: unset;
+  --scroll-fade-block: unset;
+  --scroll-fade-inline: unset;
+
+  --shimmer-duration: 2s;
+  --shimmer-spread: calc(3ch + var(--space-40));
+  --shimmer-angle: 20deg;
+  --shimmer-color: unset;
+  --shimmer-image: unset;
+  --shimmer-text-fill: transparent;
+  --shimmer-highlight-mix: 20%;
+  --shimmer-highlight: color-mix(
+    in srgb,
+    var(--shimmer-color, currentColor) var(--shimmer-highlight-mix),
+    transparent
+  );
+
   /* Grid templates (semantic column layouts) */
   --grid-cols-shell: 280px minmax(0, 1fr);
   --grid-cols-shell-desk: 240px minmax(0, 1fr);

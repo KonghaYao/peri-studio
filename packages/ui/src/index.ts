@@ -5,7 +5,52 @@ export { AspectRatio } from './components/AspectRatio';
 export { Breadcrumb, BreadcrumbEllipsis, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from './components/Breadcrumb';
 export { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './components/Pagination';
 export { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './components/Accordion';
+export {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from './components/Conversation';
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from './components/Collapsible';
+export {
+  Attachment,
+  AttachmentInfo,
+  AttachmentPreview,
+  AttachmentRemove,
+  Attachments,
+  formatAttachmentSize,
+  getAttachmentLabel,
+  getMediaCategory,
+  type AttachmentData,
+  type AttachmentMediaCategory,
+  type AttachmentVariant,
+} from './components/Attachments';
+export {
+  ChainOfThought,
+  ChainOfThoughtContent,
+  ChainOfThoughtHeader,
+  ChainOfThoughtStep,
+  type ChainOfThoughtStepStatus,
+} from './components/ChainOfThought';
+export {
+  Confirmation,
+  ConfirmationActions,
+  ConfirmationTitle,
+  type ConfirmationApproval,
+} from './components/Confirmation';
+export { Reasoning, ReasoningContent, ReasoningTrigger, useReasoning } from './components/Reasoning';
+export { InlineCitation, InlineCitationCard, InlineCitationQuote } from './components/InlineCitation';
+export { Suggestion, SuggestionItem } from './components/Suggestion';
+export { SourceItem, Sources, SourcesContent, SourcesTrigger } from './components/Sources';
+export {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+  getStatusBadge,
+  type ToolState,
+} from './components/Tool';
 export { Button, IconButton } from './components/Button';
 export { ButtonGroup, buttonGroupItemClass } from './components/ButtonGroup';
 export { CheckIcon, CodeIcon, CopyIcon, DownloadIcon, ErrorIcon, ExpandIcon, Icon, RefreshIcon } from './components/Icon';
@@ -13,12 +58,70 @@ export { Alert, AlertDescription, AlertTitle, type AlertVariant } from './compon
 export { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './components/AlertDialog';
 export { Avatar, AvatarFallback, AvatarImage } from './components/Avatar';
 export { Badge, type BadgeTone } from './components/Badge';
+export {
+  Bubble,
+  BubbleContent,
+  BubbleGroup,
+  BubbleReactions,
+  bubbleVariants,
+  type BubbleAlign,
+  type BubbleReactionAlign,
+  type BubbleReactionSide,
+  type BubbleVariant,
+} from './components/Bubble';
+export {
+  Marker,
+  MarkerContent,
+  MarkerIcon,
+  MarkerSeparator,
+  markerVariants,
+  type MarkerVariant,
+} from './components/Marker';
+export {
+  Message,
+  MessageAvatar,
+  MessageContent,
+  MessageFooter,
+  MessageGroup,
+  MessageHeader,
+  type MessageAlign,
+} from './components/Message';
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './components/Card';
 export { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, useCarousel, type CarouselApi } from './components/Carousel';
+export {
+  CodeBlock,
+  CodeBlockActions,
+  CodeBlockBody,
+  CodeBlockCopyButton,
+  CodeBlockHeader,
+  CodeBlockTitle,
+  useCodeBlock,
+} from './components/CodeBlock';
 export { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from './components/Checkbox';
 export { Combobox, ComboboxControl, ComboboxContent, ComboboxInput, ComboboxItem } from './components/Combobox';
 export { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator, CommandShortcut } from './components/Command';
 export { Kbd } from './components/Kbd';
+export {
+  Plan,
+  PlanContent,
+  PlanHeader,
+  PlanStep,
+  type PlanStepStatus,
+} from './components/Plan';
+export {
+  PromptInput,
+  PromptInputFooter,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputToolbar,
+  usePromptInput,
+  type PromptInputSubmitData,
+} from './components/PromptInput';
+export {
+  Queue,
+  QueueItem,
+  QueueItemIndicator,
+} from './components/Queue';
 export { Progress, ProgressFill, ProgressLabel, ProgressTrack, ProgressValueLabel } from './components/Progress';
 export { Slider, SliderFill, SliderLabel, SliderThumb, SliderTrack } from './components/Slider';
 export { Calendar, CalendarCell, CalendarDay, CalendarGrid, CalendarHeader, CalendarNav } from './components/Calendar';
@@ -83,14 +186,55 @@ export { ContextMenu, ContextMenuCheckboxItem, ContextMenuContent, ContextMenuGr
 export { RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel } from './components/RadioGroup';
 export { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './components/Resizable';
 export { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuGroupLabel, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from './components/dropdown-menu';
+export {
+  MessageScroller,
+  MessageScrollerButton,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerProvider,
+  MessageScrollerViewport,
+  useMessageScroller,
+  useMessageScrollerScrollable,
+  useMessageScrollerVisibility,
+  type MessageScrollerProviderProps,
+  type MessageScrollerScrollOptions,
+} from './components/MessageScroller';
 export { Menubar, MenubarCheckboxItem, MenubarContent, MenubarItem, MenubarMenu, MenubarRadioGroup, MenubarRadioItem, MenubarSeparator, MenubarShortcut, MenubarSub, MenubarSubContent, MenubarSubTrigger, MenubarTrigger } from './components/Menubar';
 export { NavigationMenu, NavigationMenuContent, NavigationMenuIndicator, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, NavigationMenuViewport, navigationMenuTriggerStyle } from './components/NavigationMenu';
 export { Skeleton } from './components/Skeleton';
+export { Snippet } from './components/Snippet';
 export { Spinner } from './components/Spinner';
 export { Switch, SwitchControl, SwitchInput, SwitchLabel, SwitchThumb } from './components/Switch';
 export { Status, type StatusTone } from './components/Status';
 export { Terminal, type TerminalProps, type TerminalViewport as TerminalViewportExport } from './components/Terminal';
 export { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow } from './components/Table';
+export {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTableRow,
+  useDataTable,
+  type DataTableColumn,
+  type DataTableSortState,
+  type SortDirection,
+} from './components/DataTable';
+export {
+  Questionnaire,
+  QuestionnaireNavigation,
+  QuestionnaireProgress,
+  QuestionnaireStep,
+  type QuestionnaireAnswer,
+  type QuestionnaireChoice,
+  type QuestionnaireStepConfig,
+} from './components/Questionnaire';
+export {
+  Task,
+  TaskItem,
+  TaskItemDescription,
+  TaskItemTitle,
+} from './components/Task';
 export { Tabs, TabsContent, TabsIndicator, TabsList, TabsTrigger } from './components/Tabs';
 export { Toggle } from './components/Toggle';
 export { ToggleGroup, ToggleGroupItem } from './components/ToggleGroup';

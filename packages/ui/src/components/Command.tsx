@@ -133,8 +133,10 @@ export function CommandInput(props: ComponentProps<'input'> & { wrapperClass?: s
       <Search size={14} class="shrink-0 text-content-muted" strokeWidth={1.8} aria-hidden="true" />
       <input
         {...input}
-        type="search"
+        type="text"
         role="searchbox"
+        inputMode="search"
+        enterkeyhint="search"
         data-slot="command-input"
         value={typeof local.value === 'string' ? local.value : context.search()}
         onInput={(event) => {

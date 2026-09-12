@@ -40,7 +40,31 @@ const cssFiles = () => [
   'styles/theme.css',
   'styles/primitives.css',
   'styles/extra.css',
+  'styles/typeset.css',
+  'styles/utilities.css',
 ].map((file) => join(srcRoot, file));
+
+const SCROLL_FADE_UTILITIES = [
+  'scroll-fade',
+  'scroll-fade-y',
+  'scroll-fade-x',
+  'scroll-fade-t',
+  'scroll-fade-b',
+  'scroll-fade-l',
+  'scroll-fade-r',
+  'scroll-fade-s',
+  'scroll-fade-e',
+];
+
+const SHIMMER_UTILITIES = [
+  'shimmer',
+  'shimmer-once',
+  'shimmer-reverse',
+  'shimmer-none',
+];
+
+const ARBITRARY_TAILWIND_LITERAL = /(?<![\w-])-\[[^\]]+\]/;
+const HEX_COLOR_LITERAL = /#[0-9a-fA-F]{3,8}\b/;
 
 const cssSelectors = (source) => {
   const selectors = [];
@@ -61,9 +85,23 @@ const cssSelectors = (source) => {
 
 const read = (file) => readFileSync(file, 'utf8');
 
-test('package stylesheet entry order is tokens → theme → primitives → extra', () => {
+test('package stylesheet entry order is tokens → theme → primitives → extra → typeset', () => {
   const entry = read(join(srcRoot, 'styles', 'index.css'));
-  assert.match(entry, /@import '\.\/tokens\.css';\s*@import '\.\/theme\.css';\s*@import '\.\/primitives\.css';\s*@import '\.\/extra\.css';/s);
+  assert.match(
+    entry,
+    /@import '\.\/tokens\.css';\s*@import '\.\/theme\.css';\s*@import '\.\/primitives\.css';\s*@import '\.\/extra\.css';\s*@import '\.\/typeset\.css';/s,
+  );
+});
+
+test('typeset.css defines streaming-safe markdown typography', () => {
+  const typeset = read(join(srcRoot, 'styles', 'typeset.css')).replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(typeset, /\.typeset\b/);
+  assert.match(typeset, /\.typeset-chat\b/);
+  assert.match(typeset, /\.typeset-scroll\b/);
+  assert.match(typeset, /\.not-typeset\b/);
+  assert.match(typeset, /container-type:\s*inline-size/);
+  assert.match(typeset, /\.typeset > \* \+ \*/);
+  assert.doesNotMatch(typeset, /:last-child|:first-child/);
 });
 
 test('theme.css is the only Tailwind import and sources package T2', () => {
@@ -129,4 +167,28 @@ test('package source does not import web, sandbox, store, protocol, Yjs, or serv
 
 test('duplicate component tests and consumer T2 copies are gone', () => {
   assert.equal(existsSync(join(srcRoot, 'components', 'components.test.tsx')), false);
+});
+
+test('extra.css imports scroll-fade and shimmer utilities', () => {
+  const extra = read(join(srcRoot, 'styles', 'extra.css'));
+  assert.match(extra, /@import '\.\/utilities\.css';/);
+});
+
+test('scroll-fade and shimmer utility classes are defined', () => {
+  const utilities = read(join(srcRoot, 'styles', 'utilities.css'));
+  for (const utility of [...SCROLL_FADE_UTILITIES, ...SHIMMER_UTILITIES]) {
+    assert.match(utilities, new RegExp(`\\.${utility}\\b`), `missing .${utility} utility`);
+  }
+  assert.match(utilities, /@supports \(animation-timeline: scroll\(\)\)/);
+  assert.match(utilities, /@supports not \(animation-timeline: scroll\(\)\)/);
+  assert.match(utilities, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(utilities, /background-clip:\s*text/);
+  assert.match(utilities, /mask-image:/);
+});
+
+test('utility CSS does not use bracket literals or hex colors', () => {
+  const utilities = read(join(srcRoot, 'styles', 'utilities.css'));
+  const withoutComments = utilities.replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.doesNotMatch(withoutComments, ARBITRARY_TAILWIND_LITERAL);
+  assert.doesNotMatch(withoutComments, HEX_COLOR_LITERAL);
 });

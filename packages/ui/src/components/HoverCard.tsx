@@ -18,7 +18,7 @@ const HoverCardContent = <T extends ValidComponent = "div">(
     <HoverCardPrimitive.Portal>
       <HoverCardPrimitive.Content
         class={cn(
-          "absolute z-50 box-border w-(--container-popover) origin-[var(--kb-hovercard-content-transform-origin)] rounded-8 border border-border-subtle bg-surface px-20 py-16 text-13 leading-normal text-text-primary shadow-popover outline-none focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2 data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95",
+          "absolute z-50 box-border w-(--container-popover) min-w-(--container-menu-min) origin-[var(--kb-hovercard-content-transform-origin)] rounded-8 border border-border-subtle bg-surface px-16 py-12 text-13 leading-normal text-text-primary shadow-popover outline-none focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2 data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95",
           local.class
         )}
         {...others}

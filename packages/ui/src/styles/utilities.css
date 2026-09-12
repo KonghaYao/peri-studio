@@ -1,0 +1,452 @@
+/* shadcn 对齐的 scroll-fade / shimmer 工具类（mask-image + scroll-driven animations）。
+ * 仅引用 tokens.css 的 var(--*)；mask 梯度使用 black/transparent 关键字（非设计色）。
+ * 由 extra.css 导入；不在 theme.css 中注册 Tailwind utility。 */
+
+/* ── scroll-fade：可动画 mask 边距寄存器 ─────────────────────────────── */
+
+@property --scroll-fade-t {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --scroll-fade-b {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --scroll-fade-s {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --scroll-fade-e {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --scroll-fade-mask {
+  syntax: '*';
+  inherits: false;
+}
+
+@keyframes scroll-fade-reveal-t {
+  from {
+    --scroll-fade-t: 0px;
+  }
+
+  to {
+    --scroll-fade-t: var(--scroll-fade-t-size);
+  }
+}
+
+@keyframes scroll-fade-reveal-b {
+  from {
+    --scroll-fade-b: var(--scroll-fade-b-size);
+  }
+
+  to {
+    --scroll-fade-b: 0px;
+  }
+}
+
+@keyframes scroll-fade-reveal-s {
+  from {
+    --scroll-fade-s: 0px;
+  }
+
+  to {
+    --scroll-fade-s: var(--scroll-fade-s-size);
+  }
+}
+
+@keyframes scroll-fade-reveal-e {
+  from {
+    --scroll-fade-e: var(--scroll-fade-e-size);
+  }
+
+  to {
+    --scroll-fade-e: 0px;
+  }
+}
+
+.scroll-fade,
+.scroll-fade-y {
+  --scroll-fade-block: linear-gradient(
+    to bottom,
+    transparent 0,
+    black var(--scroll-fade-t),
+    black calc(100% - var(--scroll-fade-b)),
+    transparent 100%
+  );
+  -webkit-mask-image: var(--scroll-fade-mask, var(--scroll-fade-block));
+  mask-image: var(--scroll-fade-mask, var(--scroll-fade-block));
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.scroll-fade-x {
+  --scroll-fade-inline: linear-gradient(
+    to right,
+    transparent 0,
+    black var(--scroll-fade-s),
+    black calc(100% - var(--scroll-fade-e)),
+    transparent 100%
+  );
+}
+
+.scroll-fade-x:where([dir='rtl'], [dir='rtl'] *) {
+  --scroll-fade-inline: linear-gradient(
+    to left,
+    transparent 0,
+    black var(--scroll-fade-s),
+    black calc(100% - var(--scroll-fade-e)),
+    transparent 100%
+  );
+}
+
+.scroll-fade-x {
+  -webkit-mask-image: var(--scroll-fade-mask, var(--scroll-fade-inline));
+  mask-image: var(--scroll-fade-mask, var(--scroll-fade-inline));
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.scroll-fade-t {
+  --scroll-fade-mask: linear-gradient(
+    to bottom,
+    transparent 0,
+    black var(--scroll-fade-t),
+    black 100%
+  );
+  -webkit-mask-image: var(--scroll-fade-mask);
+  mask-image: var(--scroll-fade-mask);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.scroll-fade-b {
+  --scroll-fade-mask: linear-gradient(
+    to bottom,
+    black 0,
+    black calc(100% - var(--scroll-fade-b)),
+    transparent 100%
+  );
+  -webkit-mask-image: var(--scroll-fade-mask);
+  mask-image: var(--scroll-fade-mask);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.scroll-fade-l {
+  --scroll-fade-mask: linear-gradient(
+    to right,
+    transparent 0,
+    black var(--scroll-fade-s),
+    black 100%
+  );
+  -webkit-mask-image: var(--scroll-fade-mask);
+  mask-image: var(--scroll-fade-mask);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.scroll-fade-r {
+  --scroll-fade-mask: linear-gradient(
+    to right,
+    black 0,
+    black calc(100% - var(--scroll-fade-e)),
+    transparent 100%
+  );
+  -webkit-mask-image: var(--scroll-fade-mask);
+  mask-image: var(--scroll-fade-mask);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.scroll-fade-s {
+  --scroll-fade-mask: linear-gradient(
+    to right,
+    transparent 0,
+    black var(--scroll-fade-s),
+    black 100%
+  );
+}
+
+.scroll-fade-s:where([dir='rtl'], [dir='rtl'] *) {
+  --scroll-fade-mask: linear-gradient(
+    to left,
+    transparent 0,
+    black var(--scroll-fade-s),
+    black 100%
+  );
+}
+
+.scroll-fade-s {
+  -webkit-mask-image: var(--scroll-fade-mask);
+  mask-image: var(--scroll-fade-mask);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.scroll-fade-e {
+  --scroll-fade-mask: linear-gradient(
+    to right,
+    black 0,
+    black calc(100% - var(--scroll-fade-e)),
+    transparent 100%
+  );
+}
+
+.scroll-fade-e:where([dir='rtl'], [dir='rtl'] *) {
+  --scroll-fade-mask: linear-gradient(
+    to left,
+    black 0,
+    black calc(100% - var(--scroll-fade-e)),
+    transparent 100%
+  );
+}
+
+.scroll-fade-e {
+  -webkit-mask-image: var(--scroll-fade-mask);
+  mask-image: var(--scroll-fade-mask);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+@supports (animation-timeline: scroll()) {
+  .scroll-fade,
+  .scroll-fade-y {
+    animation:
+      scroll-fade-reveal-t 1ms var(--ease-standard),
+      scroll-fade-reveal-b 1ms var(--ease-standard);
+    animation-timeline: scroll(self y), scroll(self y);
+    animation-range:
+      0 var(--scroll-fade-reveal),
+      calc(100% - var(--scroll-fade-reveal)) 100%;
+    animation-fill-mode: both;
+  }
+
+  .scroll-fade-x {
+    animation:
+      scroll-fade-reveal-s 1ms var(--ease-standard),
+      scroll-fade-reveal-e 1ms var(--ease-standard);
+    animation-timeline: scroll(self inline), scroll(self inline);
+    animation-range:
+      0 var(--scroll-fade-reveal),
+      calc(100% - var(--scroll-fade-reveal)) 100%;
+    animation-fill-mode: both;
+  }
+
+  .scroll-fade-t {
+    animation: scroll-fade-reveal-t 1ms var(--ease-standard);
+    animation-timeline: scroll(self y);
+    animation-range: 0 var(--scroll-fade-reveal);
+    animation-fill-mode: both;
+  }
+
+  .scroll-fade-b {
+    animation: scroll-fade-reveal-b 1ms var(--ease-standard);
+    animation-timeline: scroll(self y);
+    animation-range: calc(100% - var(--scroll-fade-reveal)) 100%;
+    animation-fill-mode: both;
+  }
+
+  .scroll-fade-l {
+    animation: scroll-fade-reveal-s 1ms var(--ease-standard);
+    animation-timeline: scroll(self x);
+    animation-range: 0 var(--scroll-fade-reveal);
+    animation-fill-mode: both;
+  }
+
+  .scroll-fade-r {
+    animation: scroll-fade-reveal-e 1ms var(--ease-standard);
+    animation-timeline: scroll(self x);
+    animation-range: calc(100% - var(--scroll-fade-reveal)) 100%;
+    animation-fill-mode: both;
+  }
+
+  .scroll-fade-s {
+    animation: scroll-fade-reveal-s 1ms var(--ease-standard);
+    animation-timeline: scroll(self inline);
+    animation-range: 0 var(--scroll-fade-reveal);
+    animation-fill-mode: both;
+  }
+
+  .scroll-fade-e {
+    animation: scroll-fade-reveal-e 1ms var(--ease-standard);
+    animation-timeline: scroll(self inline);
+    animation-range: calc(100% - var(--scroll-fade-reveal)) 100%;
+    animation-fill-mode: both;
+  }
+}
+
+@supports not (animation-timeline: scroll()) {
+  .scroll-fade,
+  .scroll-fade-y {
+    --scroll-fade-t: var(--scroll-fade-t-size);
+    --scroll-fade-b: var(--scroll-fade-b-size);
+  }
+
+  .scroll-fade-x {
+    --scroll-fade-s: var(--scroll-fade-s-size);
+    --scroll-fade-e: var(--scroll-fade-e-size);
+  }
+
+  .scroll-fade-t {
+    --scroll-fade-t: var(--scroll-fade-t-size);
+  }
+
+  .scroll-fade-b {
+    --scroll-fade-b: var(--scroll-fade-b-size);
+  }
+
+  .scroll-fade-l,
+  .scroll-fade-s {
+    --scroll-fade-s: var(--scroll-fade-s-size);
+  }
+
+  .scroll-fade-r,
+  .scroll-fade-e {
+    --scroll-fade-e: var(--scroll-fade-e-size);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-fade,
+  .scroll-fade-y,
+  .scroll-fade-x,
+  .scroll-fade-t,
+  .scroll-fade-b,
+  .scroll-fade-l,
+  .scroll-fade-r,
+  .scroll-fade-s,
+  .scroll-fade-e {
+    animation: none;
+  }
+
+  .scroll-fade,
+  .scroll-fade-y {
+    --scroll-fade-t: var(--scroll-fade-t-size);
+    --scroll-fade-b: var(--scroll-fade-b-size);
+  }
+
+  .scroll-fade-x {
+    --scroll-fade-s: var(--scroll-fade-s-size);
+    --scroll-fade-e: var(--scroll-fade-e-size);
+  }
+
+  .scroll-fade-t {
+    --scroll-fade-t: var(--scroll-fade-t-size);
+  }
+
+  .scroll-fade-b {
+    --scroll-fade-b: var(--scroll-fade-b-size);
+  }
+
+  .scroll-fade-l,
+  .scroll-fade-s {
+    --scroll-fade-s: var(--scroll-fade-s-size);
+  }
+
+  .scroll-fade-r,
+  .scroll-fade-e {
+    --scroll-fade-e: var(--scroll-fade-e-size);
+  }
+}
+
+/* ── shimmer：文本扫光（Thinking… 状态；非 skeleton） ─────────────────── */
+
+@property --shimmer-angle {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 20deg;
+}
+
+@property --shimmer-image {
+  syntax: '*';
+  inherits: false;
+}
+
+@property --shimmer-text-fill {
+  syntax: '*';
+  inherits: false;
+}
+
+@keyframes ui-text-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: 0 0;
+  }
+}
+
+.shimmer {
+  background-image: var(
+    --shimmer-image,
+    linear-gradient(
+      calc(90deg + var(--shimmer-angle)),
+      currentColor calc(50% - var(--shimmer-spread)),
+      color-mix(in srgb, var(--shimmer-highlight), currentColor 50%)
+        calc(50% - var(--shimmer-spread) * 0.5),
+      var(--shimmer-highlight) 50%,
+      color-mix(in srgb, var(--shimmer-highlight), currentColor 50%)
+        calc(50% + var(--shimmer-spread) * 0.5),
+      currentColor calc(50% + var(--shimmer-spread))
+    )
+  );
+  background-repeat: no-repeat;
+  background-size: calc(200% + var(--shimmer-spread) * 2) 100%;
+  background-position: 0 0;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: var(--shimmer-text-fill);
+  animation: ui-text-shimmer var(--shimmer-duration) linear infinite;
+}
+
+.shimmer:where([dir='rtl'], [dir='rtl'] *) {
+  animation-direction: reverse;
+}
+
+.shimmer-once {
+  animation-iteration-count: 1;
+}
+
+.shimmer-reverse {
+  animation-direction: reverse;
+}
+
+.shimmer-none {
+  --shimmer-image: none;
+  --shimmer-text-fill: currentColor;
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer {
+    animation: none;
+    background-image: none;
+    -webkit-text-fill-color: currentColor;
+  }
+}

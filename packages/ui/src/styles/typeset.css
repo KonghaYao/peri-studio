@@ -1,0 +1,207 @@
+/* Container-scaled markdown typography for streaming chat.
+   Streaming-safe: sibling spacing only, no forward-looking layout selectors. */
+
+@layer components {
+  .typeset {
+    container-type: inline-size;
+    min-width: 0;
+    font-family: var(--font-sans);
+    font-size: 1em;
+    line-height: var(--leading-normal);
+    color: var(--content-primary);
+  }
+
+  @container (max-width: 30rem) {
+    .typeset {
+      font-size: 1.125em;
+    }
+  }
+
+  .typeset-chat {
+    line-height: var(--leading-compact);
+  }
+
+  .typeset > * + * {
+    margin-block-start: var(--chat-markdown-rhythm);
+  }
+
+  .typeset :where(p) {
+    margin-block: 0;
+  }
+
+  .typeset :where(h1) {
+    margin-block: 0;
+    font-size: var(--text-18);
+    font-weight: 600;
+    letter-spacing: var(--tracking-dialog);
+    line-height: var(--leading-snug);
+  }
+
+  .typeset :where(h2) {
+    margin-block: 0;
+    font-size: var(--text-16);
+    font-weight: 600;
+    line-height: var(--leading-snug);
+  }
+
+  .typeset :where(h3) {
+    margin-block: 0;
+    font-size: var(--text-15);
+    font-weight: 600;
+    line-height: var(--leading-snug);
+  }
+
+  .typeset :where(h4) {
+    margin-block: 0;
+    font-size: var(--text-14);
+    font-weight: 600;
+    line-height: var(--leading-compact);
+  }
+
+  .typeset :where(h5, h6) {
+    margin-block: 0;
+    font-size: var(--text-13);
+    font-weight: 600;
+    line-height: var(--leading-compact);
+  }
+
+  .typeset :where(h6) {
+    color: var(--content-secondary);
+  }
+
+  .typeset :where(ul, ol) {
+    margin-block: 0;
+    padding-left: var(--space-22);
+  }
+
+  .typeset :where(ul) {
+    list-style: disc;
+  }
+
+  .typeset :where(ol) {
+    list-style: decimal;
+  }
+
+  .typeset :where(li) {
+    margin-block: 0;
+  }
+
+  .typeset :where(li + li) {
+    margin-block-start: var(--space-4);
+  }
+
+  .typeset :where(li > ul, li > ol) {
+    margin-block-start: var(--space-4);
+  }
+
+  .typeset :where(li:has(> input[type='checkbox'])) {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .typeset :where(input[type='checkbox']) {
+    margin-right: var(--space-8);
+    accent-color: var(--accent-solid);
+  }
+
+  .typeset :where(blockquote) {
+    margin-block: 0;
+    padding: var(--space-2) 0 var(--space-2) var(--space-14);
+    border-left: 2px solid var(--border-strong);
+    color: var(--content-secondary);
+  }
+
+  .typeset :where(hr) {
+    margin-block: 0;
+    height: 1px;
+    border: 0;
+    background: var(--border-subtle);
+  }
+
+  .typeset :where(a) {
+    color: var(--content-link);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .typeset :where(:not(pre) > code) {
+    border-radius: var(--radius-4);
+    background: var(--surface-muted);
+    padding: var(--space-2) var(--space-6);
+    font-family: var(--font-mono);
+    font-size: var(--text-12);
+    font-weight: 600;
+    color: var(--content-primary);
+  }
+
+  .typeset :where(pre) {
+    margin-block: 0;
+    overflow: auto;
+    border-radius: var(--radius-8);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-sunken);
+    padding: var(--space-12);
+    font-family: var(--font-mono);
+    font-size: var(--text-12);
+    line-height: var(--leading-relaxed);
+    color: var(--content-primary);
+  }
+
+  .typeset :where(pre code) {
+    background: transparent;
+    padding: 0;
+    font-size: inherit;
+    font-weight: inherit;
+    color: inherit;
+  }
+
+  .typeset :where(table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-13);
+  }
+
+  .typeset :where(th) {
+    padding: var(--space-8) var(--space-12);
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--surface-muted);
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .typeset :where(td) {
+    padding: var(--space-8) var(--space-12);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .typeset :where(del) {
+    color: var(--content-muted);
+  }
+
+  .typeset :where(footer) {
+    margin-block-start: var(--space-20);
+    padding-top: var(--space-12);
+    border-top: 1px solid var(--border-subtle);
+    font-size: var(--text-12);
+    color: var(--content-secondary);
+  }
+
+  .typeset :where(sup) {
+    font-size: var(--text-10);
+  }
+
+  .typeset :where(sup a) {
+    text-decoration: none;
+  }
+
+  .typeset-scroll {
+    overflow-x: auto;
+  }
+
+  .not-typeset,
+  [data-not-typeset] {
+    all: revert;
+    font: inherit;
+    color: inherit;
+  }
+}

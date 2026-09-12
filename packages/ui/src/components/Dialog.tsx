@@ -23,7 +23,7 @@ export function DialogClose<T extends ValidComponent = 'button'>(props: Polymorp
       variant="ghost"
       size="compact"
       showTooltip={false}
-      class={cn('text-22 font-300 text-text-muted hover:text-text-primary', local.class)}
+      class={cn('ml-auto shrink-0 text-22 font-300 text-text-muted hover:text-text-primary', local.class)}
       aria-label={label}
       {...rest}
     >
@@ -74,12 +74,21 @@ export function DialogContent<T extends ValidComponent = 'div'>(props: Polymorph
   </DialogPortal>;
 }
 
-export const DialogTitle = DialogPrimitive.Title;
+type TitleProps<T extends ValidComponent = 'h2'> = DialogPrimitive.DialogTitleProps<T> & { class?: string };
+export function DialogTitle<T extends ValidComponent = 'h2'>(props: PolymorphicProps<T, TitleProps<T>>) {
+  const [local, rest] = splitProps(props as TitleProps, ['class']);
+  return (
+    <DialogPrimitive.Title
+      class={cn('min-w-0 flex-1 text-14 font-semibold leading-20 text-text-primary', local.class)}
+      {...rest}
+    />
+  );
+}
 export const DialogDescription = DialogPrimitive.Description;
 
 export const DialogHeader: Component<ComponentProps<'header'>> = (props) => {
   const [local, rest] = splitProps(props, ['class']);
-  return <header class={cn('flex min-h-0 items-center gap-12 border-b border-border-subtle px-20 py-14 pr-12', local.class)} {...rest} />;
+  return <header class={cn('flex min-h-0 items-center gap-8 border-b border-border-subtle px-20 py-14', local.class)} {...rest} />;
 };
 
 export const DialogFooter: Component<ComponentProps<'footer'>> = (props) => {

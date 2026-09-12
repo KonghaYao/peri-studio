@@ -243,7 +243,9 @@ describe('Accordion', () => {
     ));
     const trigger = screen.getByRole('button', { name: 'Session details' });
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    expect(trigger).toHaveClass('border-border-subtle', 'justify-between');
+    expect(trigger).toHaveClass('justify-between', 'px-16', 'py-12');
+    expect(trigger).not.toHaveClass('border-b');
+    expect(trigger.parentElement?.parentElement).toHaveClass('border-b', 'border-border-subtle');
     expect(screen.queryByText('Expanded copy')).not.toBeInTheDocument();
     fireEvent.click(trigger);
     expect(onChange).toHaveBeenCalledWith(['details']);
@@ -1377,9 +1379,12 @@ describe('Dialog', () => {
   it('can own a visible title and explicit close action', async () => {
     const close = vi.fn();
     render(() => <Dialog open onOpenChange={(open) => { if (!open) close(); }}><DialogContent><DialogHeader><DialogTitle>Search sessions</DialogTitle><DialogClose aria-label="Close Search sessions">×</DialogClose></DialogHeader><input aria-label="Query" /></DialogContent></Dialog>);
-    expect(screen.getByRole('heading', { name: 'Search sessions' })).toBeVisible();
+    const title = screen.getByRole('heading', { name: 'Search sessions' });
+    expect(title).toBeVisible();
+    expect(title).toHaveClass('flex-1', 'min-w-0');
     const dismiss = screen.getByRole('button', { name: 'Close Search sessions' });
     expect(dismiss).toHaveAttribute('data-icon-button');
+    expect(dismiss).toHaveClass('ml-auto', 'shrink-0');
     fireEvent.click(dismiss);
     expect(close).toHaveBeenCalledOnce();
   });
@@ -1566,12 +1571,17 @@ describe('Checkbox disabled', () => {
     render(() => (
       <Checkbox disabled checked={false} onChange={onChange}>
         <CheckboxInput />
-        <CheckboxControl />
+        <CheckboxControl data-testid="checkbox-control" />
         <CheckboxLabel>Notify</CheckboxLabel>
       </Checkbox>
     ));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Notify' }));
     expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByTestId('checkbox-control')).toHaveClass(
+      'data-disabled:bg-surface-sunken',
+      'data-disabled:border-border-subtle',
+    );
+    expect(screen.getByText('Notify')).toHaveClass('data-disabled:text-content-muted');
   });
 });
 
@@ -1861,6 +1871,27 @@ describe('Combobox', () => {
     fireEvent.input(input, { target: { value: 'Re' } });
     fireEvent.click(await screen.findByRole('option', { name: 'React' }));
     expect(onChange).toHaveBeenCalledWith(frameworks[1]);
+  });
+
+  it('shows the selected option label in the input for controlled object values', () => {
+    render(() => (
+      <Combobox
+        options={frameworks}
+        optionValue="value"
+        optionTextValue="label"
+        value={frameworks[0]}
+        itemComponent={(itemProps) => (
+          <ComboboxItem item={itemProps.item}>{itemProps.item.rawValue.label}</ComboboxItem>
+        )}
+      >
+        <ComboboxControl>
+          <ComboboxInput aria-label="Framework" />
+        </ComboboxControl>
+        <ComboboxContent aria-label="Framework options" />
+      </Combobox>
+    ));
+
+    expect(screen.getByRole('combobox', { name: 'Framework' })).toHaveValue('SolidJS');
   });
 
   it('exposes popover list styling aligned with Select', async () => {

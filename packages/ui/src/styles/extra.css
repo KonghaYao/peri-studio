@@ -1,4 +1,5 @@
 @import '@xterm/xterm/css/xterm.css';
+@import './utilities.css';
 
 /* 无法（或不宜）用 Tailwind token utility 表达的样式例外。
  *
