@@ -1,5 +1,5 @@
 import { Show } from 'solid-js';
-import { Button } from '@/shared/ui';
+import { Button } from '@peri/ui';
 
 export interface QuitConfirmDialogProps {
   open: boolean;

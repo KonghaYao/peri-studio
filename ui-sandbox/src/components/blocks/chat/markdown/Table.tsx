@@ -1,6 +1,6 @@
 import type { JSX } from 'solid-js';
 import { Download } from 'lucide-solid';
-import { CopyButton, IconButton } from '@/components/ui';
+import { CopyButton, IconButton } from '@/lib/catalog-ui';
 import { downloadText } from './download';
 
 function tableText(table: HTMLTableElement, separator: string) {

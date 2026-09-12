@@ -1,7 +1,7 @@
 import { For, Show } from 'solid-js';
 import { CodeXml, FileImage, X } from 'lucide-solid';
-import { IconButton } from '@/components/ui';
-import { cn } from '@/lib/cn';
+import { IconButton } from '@/lib/catalog-ui';
+import { cn } from '@/lib/catalog-ui';
 
 export type PreviewLine = { kind: 'plain' | 'add' | 'del'; text: string };
 

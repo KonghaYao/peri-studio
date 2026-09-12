@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
-import { Dialog, DialogContent } from '@/shared/ui';
+import { Dialog, DialogContent } from '@peri/ui';
 import { FormDialogShell } from './FormDialogShell';
 
 afterEach(cleanup);

@@ -1,5 +1,5 @@
 import { Show } from 'solid-js';
-import { Button, Dialog } from '@/components/ui';
+import { Button, Dialog } from '@/lib/catalog-ui';
 
 /** 永久删除确认（文件 / 空目录 / 非空目录 recursive）。 */
 export function ExplorerDeleteDialog(props: {

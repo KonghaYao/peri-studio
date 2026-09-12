@@ -1,5 +1,5 @@
 import { createEffect, createSignal, createUniqueId, Show } from 'solid-js';
-import { CodeIcon, CopyButton, Dialog, DialogContent, DialogHeader, DialogTitle, DownloadIcon, ExpandIcon, IconButton, RefreshIcon } from '@/shared/ui';
+import { CodeIcon, CopyButton, Dialog, DialogContent, DialogHeader, DialogTitle, DownloadIcon, ExpandIcon, IconButton, RefreshIcon } from '@peri/ui';
 import { downloadText } from './download';
 
 function sanitizeSvg(source: string) {

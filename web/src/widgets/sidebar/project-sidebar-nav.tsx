@@ -1,4 +1,4 @@
-import { DropdownMenuItem } from '@/shared/ui';
+import { DropdownMenuItem } from '@peri/ui';
 import { MessageSquarePlus, Search } from 'lucide-solid';
 import { Show } from 'solid-js';
 import { NavAction, SidebarNavBar } from './sidebar-parts';

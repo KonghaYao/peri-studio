@@ -34,8 +34,8 @@ import {
   IconButton,
   InlineNotice,
   Status,
-} from '@/shared/ui';
-import { cn } from '@/shared/lib/cn';
+} from '@peri/ui';
+import { cn } from '@peri/ui';
 
 interface MachineRowProps {
   machine: MachineInfo;

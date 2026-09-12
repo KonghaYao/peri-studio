@@ -1,5 +1,5 @@
 import { Show, createEffect, createMemo, createSignal, untrack } from 'solid-js';
-import { Dialog, DialogContent, DialogTitle, IconButton } from '@/shared/ui';
+import { Dialog, DialogContent, DialogTitle, IconButton } from '@peri/ui';
 import {
   activateResourceProject,
   projectSessions,
@@ -20,7 +20,7 @@ import { terminalSession } from '@/features/terminal/terminal-session';
 import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_TITLE_CLASS } from './resource-panel-layout';
 import { ResourceFloatingPanel } from './ResourceFloatingPanel';
 import { GitGraphView } from './git/GitGraphView';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '@peri/ui';
 import { resourceWorkbenchRequest } from '@/store';
 
 export type WorkbenchView = 'explorer' | 'scm' | 'mcp' | 'graph' | 'terminal' | null;

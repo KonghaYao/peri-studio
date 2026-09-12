@@ -1,6 +1,6 @@
 import { createEffect, createSignal, createUniqueId, Show } from 'solid-js';
 import { Code2, Download, Expand, RefreshCw } from 'lucide-solid';
-import { CopyButton, Dialog, IconButton } from '@/components/ui';
+import { CopyButton, Dialog, IconButton } from '@/lib/catalog-ui';
 import { downloadText } from './download';
 
 function sanitizeSvg(source: string) {

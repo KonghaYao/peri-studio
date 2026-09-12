@@ -16,23 +16,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@peri/ui": "workspace:*",
     "@iconify-icon/solid": "3.0.3",
     "@iconify-icons/vscode-icons": "2.0.2",
-    "@kobalte/core": "^0.13.13",
     "@modelcontextprotocol/ext-apps": "^1.7.5",
-    "@xterm/addon-fit": "0.12.0-beta.301",
-    "@xterm/addon-image": "0.10.0-beta.301",
-    "@xterm/addon-web-links": "0.13.0-beta.301",
-    "@xterm/xterm": "6.1.0-beta.304",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
     "katex": "^0.18.4",
     "lucide-solid": "^1.34.0",
     "markdown-to-jsx": "^9.9.0",
     "mermaid": "^11.17.0",
     "shiki": "^4.4.3",
     "solid-js": "^1",
-    "tailwind-merge": "^3.6.0",
     "yjs": "^13"
   },
   "devDependencies": {

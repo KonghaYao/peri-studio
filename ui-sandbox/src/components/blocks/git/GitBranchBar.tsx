@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import { GitBranch } from 'lucide-solid';
-import { cn } from '@/lib/cn';
+import { cn } from '@/lib/catalog-ui';
 
 function SyncAction(props: {
   label: string;

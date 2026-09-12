@@ -1,4 +1,4 @@
-import { cn } from '@/lib/cn';
+import { cn } from '@/lib/catalog-ui';
 
 /** Git 变更 diff 预览块。 */
 export function GitDiffPanel(props: {

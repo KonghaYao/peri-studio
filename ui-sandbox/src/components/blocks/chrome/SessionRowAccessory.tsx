@@ -1,7 +1,7 @@
 import { Show } from 'solid-js';
 import { Archive, MoreHorizontal, Pin } from 'lucide-solid';
-import { ButtonGroup, buttonGroupItemClass, IconButton } from '@/components/ui';
-import { cn } from '@/lib/cn';
+import { ButtonGroup, buttonGroupItemClass, IconButton } from '@/lib/catalog-ui';
+import { cn } from '@/lib/catalog-ui';
 import { RowAccessorySlot } from './RowAccessorySlot';
 
 /** Session 行右侧：时间戳 + Pin / Archive / More 浮动按钮组。 */

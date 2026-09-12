@@ -1,5 +1,5 @@
-import { Badge, type BadgeTone } from '@/shared/ui';
-import { cn } from '@/shared/lib/cn';
+import { Badge, type BadgeTone } from '@peri/ui';
+import { cn } from '@peri/ui';
 import type { GitGraphRef } from './types';
 
 function toneForRef(gitRef: GitGraphRef): BadgeTone {

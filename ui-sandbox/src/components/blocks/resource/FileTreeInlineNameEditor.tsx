@@ -1,6 +1,6 @@
 import { File, Folder } from 'lucide-solid';
 import { createSignal, onMount } from 'solid-js';
-import { cn } from '@/lib/cn';
+import { cn } from '@/lib/catalog-ui';
 
 /** 行内新建 / 重命名编辑器（与树行同高、同缩进）。 */
 export function FileTreeInlineNameEditor(props: {

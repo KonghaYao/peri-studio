@@ -7,7 +7,7 @@ import {
   type RemoteDirectoryBrowseDependencies,
   type RemoteDirectorySnapshot,
 } from '@/features/machine/remote-directory-browse';
-import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, LoadingState } from '@/shared/ui';
+import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, LoadingState } from '@peri/ui';
 
 export function RemoteDirectoryDialog(props: {
   open: boolean;

@@ -1,6 +1,6 @@
 import { primaryShortcut } from '@/shared/lib/keyboard';
 import { createEffect, createSignal, Show } from 'solid-js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, InlineNotice, Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel, Spinner, TextField } from '@/shared/ui';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, InlineNotice, Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel, Spinner, TextField } from '@peri/ui';
 import { navigateProjectSession, openingSessionId, projectSessions, projects, selectedSessionId } from '@/store';
 import { readOnly } from '@/features/auth/auth-state';
 import { formatRelativeTime, sessionDisplayTitle, shortSessionId } from '@/features/session/recovery-state';

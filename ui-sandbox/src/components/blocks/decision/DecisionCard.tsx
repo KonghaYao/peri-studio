@@ -1,7 +1,7 @@
 import { createSignal, For, Show, type JSX } from 'solid-js';
 import { ChevronDown, ChevronLeft, ChevronRight, CornerDownLeft } from 'lucide-solid';
-import { Button, IconButton } from '@/components/ui';
-import { cn } from '@/lib/cn';
+import { Button, IconButton } from '@/lib/catalog-ui';
+import { cn } from '@/lib/catalog-ui';
 
 export type DecisionOption = {
   id: string;

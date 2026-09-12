@@ -1,7 +1,7 @@
 import { Show } from 'solid-js';
 import { MoreHorizontal, Plus } from 'lucide-solid';
-import { ButtonGroup, buttonGroupItemClass, DropdownMenu, IconButton, type MenuItem } from '@/components/ui';
-import { cn } from '@/lib/cn';
+import { ButtonGroup, buttonGroupItemClass, DropdownMenu, IconButton, type MenuItem } from '@/lib/catalog-ui';
+import { cn } from '@/lib/catalog-ui';
 import { RowAccessorySlot } from './RowAccessorySlot';
 
 /** 项目行右侧：会话计数 + More / New session 浮动按钮组。 */

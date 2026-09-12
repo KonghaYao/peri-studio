@@ -11,6 +11,18 @@ const fieldControlClasses = (invalid?: boolean, className?: string) => cn(
   className,
 );
 
+/** Bare text control without label chrome. */
+export function Input(props: JSX.InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }) {
+  const [local, input] = splitProps(props, ['class', 'invalid']);
+  return (
+    <input
+      {...input}
+      aria-invalid={local.invalid ? 'true' : undefined}
+      class={fieldControlClasses(!!local.invalid, local.class)}
+    />
+  );
+}
+
 export function TextField(props: JSX.InputHTMLAttributes<HTMLInputElement> & { label?: string; hint?: string; error?: string }) {
   const [local, input] = splitProps(props, ['label', 'hint', 'error', 'class', 'id', 'aria-describedby']);
   const generated = createUniqueId();
@@ -21,7 +33,7 @@ export function TextField(props: JSX.InputHTMLAttributes<HTMLInputElement> & { l
   return (
     <div class="mb-9 flex flex-col gap-6">
       <Show when={local.label}><label class="text-12 font-semibold text-text-secondary" for={id()}>{local.label}</label></Show>
-      <input {...input} id={id()} aria-invalid={local.error ? 'true' : undefined} aria-describedby={describedBy()} class={fieldControlClasses(!!local.error, local.class)} />
+      <Input {...input} id={id()} invalid={!!local.error} aria-describedby={describedBy()} class={local.class} />
       <Show when={local.hint}><span id={hintId()} class="text-11 text-text-muted">{local.hint}</span></Show>
       <Show when={local.error}><span id={errorId()} class="m-0 text-13 text-danger">{local.error}</span></Show>
     </div>

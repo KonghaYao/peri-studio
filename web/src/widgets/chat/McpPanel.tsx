@@ -1,5 +1,5 @@
 import { createEffect, For, onCleanup, Show } from 'solid-js';
-import { Badge, Button, EmptyState, IconButton, InlineNotice, LoadingState } from '@/shared/ui';
+import { Badge, Button, EmptyState, IconButton, InlineNotice, LoadingState } from '@peri/ui';
 import { readOnly } from '@/features/auth/auth-state';
 import {
   cancelMcpOAuth,

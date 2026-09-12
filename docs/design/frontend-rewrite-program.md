@@ -5,10 +5,11 @@ date: 2026-09-08
 
 # Web 前端重写纲领
 
-> **本文是 Phase 6+ 的执行策略**（拆假分层、换无头底层、冻结 CSS 闸门）。  
-> **目录与依赖的单一事实源仍是** [`frontend-architecture.md`](frontend-architecture.md)。  
-> **视觉与组件契约仍是** [`ui-specification.md`](ui-specification.md)。  
-> **sandbox → 生产映射仍是** [`ui-implementation-plan.md`](ui-implementation-plan.md)。  
+> **本文是 Phase 6+ 的执行策略**（拆假分层、换无头底层、冻结 CSS 闸门）。
+> **目录与依赖的单一事实源仍是** [`frontend-architecture.md`](frontend-architecture.md)。
+> **视觉与组件契约仍是** [`ui-specification.md`](ui-specification.md)。
+> **T1/T2 包边界与 Catalog 工作流是** [`ui-package-migration.md`](ui-package-migration.md)。
+> **sandbox → 生产的历史映射证据是** [`ui-implementation-plan.md`](ui-implementation-plan.md)。
 > 关联 ADR：[0004](../adr/0004-web-frontend-layered-architecture.md)。
 
 ---
@@ -37,7 +38,7 @@ date: 2026-09-08
 
 ---
 
-## 1. 诊断（2026-09）
+## 1. 诊断（2026-09，迁移前历史快照）
 
 五层目录已搭好，运行时真相仍是 `panel/lib` 单体：
 
@@ -71,7 +72,7 @@ date: 2026-09-08
 
 ## 3. CSS / Tailwind（零手写、零任意值）
 
-业务与组件层 **禁止手写 CSS**。布局、状态、密度只走 Tailwind utility。`tokens.css` / `theme.css` 是唯一数值源。
+业务与组件层 **禁止手写 CSS**。布局、状态、密度只走 Tailwind utility。`packages/ui/src/styles/tokens.css` / `theme.css` 是唯一数值源。
 
 | 允许 | 禁止 |
 |------|------|
@@ -82,7 +83,7 @@ date: 2026-09-08
 
 `extra.css` / `primitives.css` 政策为 **冻结清单**：只许删除，或把规则升格为 token + 具名 utility。新增一行必须证明 Tailwind v4 `@theme` **表达不了**（WebKit scrollbar、第三方 Mermaid SVG 等）。证明不了就不写。升格时不得改变计算后的像素/颜色，除非对照表证明等价。
 
-`css-contracts` 覆盖 `web/src/**/*.{tsx,ts}` 与 `ui-sandbox`，含 `shared/ui`。现有 `[color:var(--content-on-accent)]` 等必须消灭为 theme 色或具名 utility。
+`css-contracts` 覆盖 `packages/ui`、`web/src/**/*.{tsx,ts}` 与 `ui-sandbox`。现有 `[color:var(--content-on-accent)]` 等必须消灭为 theme 色或具名 utility。
 
 ---
 
@@ -94,7 +95,7 @@ date: 2026-09-08
 
 1. **无头行为**（焦点、键盘、typeahead、modal、roving tabindex）→ 社区实现。默认继续 **Kobalte**。若某 primitive 在封装上已不可救（`IconButton`、`Listbox`、`Collapsible`、手写 `DialogClose`），允许换成同一生态内更完整的一层（维护中的 Solid + Kobalte 设计系统），**整组替换**，禁止单文件混两套无头库。
 2. **皮肤** → 本仓库 token + CVA variant。剥掉社区默认色/间距。
-3. **Peri 语义**（Session 行、Composer toolbar、投递错误）→ `widgets` / `features`，不得做进 `shared/ui`。
+3. **Peri 语义**（Session 行、Composer toolbar、投递错误）→ `widgets` / `features`，不得做进 `@peri/ui`。
 4. **禁止自研：** 自定义 focus trap、自定义 menu 键盘、自定义 toast 队列（社区 Toast 已覆盖时）、自定义 Combobox 过滤核心、再写一套 Select。
 5. **领域特例才自研：** xterm、Mermaid、Shiki、MCP App iframe、Git graph 画布。容器与主题仍走 token，不准为此重开 `extra.css` 闸门。
 
@@ -107,7 +108,7 @@ date: 2026-09-08
 
 换底层的交互契约：**只许等于或严格包含旧行为**（Esc 关、focus trap、disabled 时机）。社区默认不同时，必须配置到与当前产品一致，或先补测试再改，不在「换库」PR 里改交互契约。
 
-sandbox 与 web **共用同一包装模块**，禁止各写一套 Button。
+sandbox 与 web **共用 `@peri/ui` 包内的同一包装模块**，禁止各写一套 Button。
 
 ---
 
@@ -116,6 +117,8 @@ sandbox 与 web **共用同一包装模块**，禁止各写一套 Button。
 与 [`frontend-architecture.md`](frontend-architecture.md) §3 一致。落地后不允许第二真相：
 
 ```
+packages/ui/      T1 token/theme + T2 Base UI；唯一公共入口 @peri/ui
+
 web/src/
   app/            bootstrap
   pages/          薄装配
@@ -130,14 +133,13 @@ web/src/
     resource/     从 resource-store 切开
   entities/       只依赖 @/shared
   shared/
-    ui/           社区无头 + token 皮肤；唯一入口 index.ts
-    lib/          cn、keyboard、rfc3339、pick-directory
+    lib/          keyboard、rfc3339、pick-directory
     protocol/     全部 Action/Ack（现 panel/lib/protocol.ts）
     yjs/
   store/          信号 + install* + 一行委托
 ```
 
-`panel/` 最终删除。widget 与 `shared/ui` **没有** 并列 css。
+`panel/` 已删除。widget 与 `@peri/ui` **不并列维护 T2 CSS**；Web 只拥有应用/widget 样式。
 
 ---
 
@@ -198,10 +200,10 @@ web/src/
 - `store/index.ts` 无按帧业务分支。
 - `web/src/**/*.{tsx,css}` 无任意值 class；`extra.css` 相对本文基线只减不增。
 - Composer Send 无 `bg-accent-solid` 长 class，只靠 `IconButton variant="primary"`。
-- `shared/ui` 每个导出组件的行为来自社区无头，或已记录的领域特例（Terminal / Markdown 高亮）。
+- `@peri/ui` 每个导出组件的行为来自社区无头，或已记录的基础设施特例（Terminal）。
 - 每个已迁模块：旧测试以新路径全绿，断言未改弱。
 - `onFrame` 帧类型集合与处理函数对照表齐全；reset 模块列表有测试锁顺序。
-- `cd web && bun run test`、`cd ui-sandbox && bun run typecheck` 全绿。
+- `cd packages/ui && bun run test`、`cd ui-sandbox && bun run typecheck && bun run build`、`cd web && bun run test && bun run build` 全绿。
 - 本文取代「继续绞杀、无限期保留 shim」；`frontend-architecture.md` Phase 6+ 指向本文。
 
 ---

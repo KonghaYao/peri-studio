@@ -1,5 +1,5 @@
 import { For, Show } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogTitle, TextField } from '@/shared/ui';
+import { Button, Dialog, DialogContent, DialogTitle, TextField } from '@peri/ui';
 import { runConfirmedMutation } from '@/features/session/form-mutation';
 import { projectNameFromPath } from '@/shared/lib/project-path';
 import { isLocalMachine } from '@/entities/machine/machine-view';

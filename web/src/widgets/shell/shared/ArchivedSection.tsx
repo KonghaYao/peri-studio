@@ -1,5 +1,5 @@
 import type { JSX } from 'solid-js';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger, Icon } from '@/shared/ui';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger, Icon } from '@peri/ui';
 
 export interface ArchivedSectionProps {
   label: string;

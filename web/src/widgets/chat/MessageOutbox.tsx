@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import type { MessageSubmission } from '@/features/message/message-delivery';
-import { Button, CopyButton } from '@/shared/ui';
+import { Button, CopyButton } from '@peri/ui';
 
 const titleFor = (phase: MessageSubmission['phase']) => phase === 'uncertain'
   ? 'Result not confirmed yet'

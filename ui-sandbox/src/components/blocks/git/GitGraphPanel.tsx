@@ -1,7 +1,7 @@
 import { createEffect, createMemo, createSignal, For, onCleanup, Show } from 'solid-js';
 import { RefreshCw, Search, Settings2, Terminal } from 'lucide-solid';
-import { IconButton } from '@/components/ui';
-import { cn } from '@/lib/cn';
+import { IconButton } from '@/lib/catalog-ui';
+import { cn } from '@/lib/catalog-ui';
 import {
   GIT_GRAPH_COLORS,
   GIT_GRAPH_HEADER_HEIGHT,

@@ -1,7 +1,7 @@
 // Store owns expiry; Kobalte owns live-region and visual behavior.
 import { createEffect, onCleanup } from 'solid-js';
 import { toasts } from '@/store';
-import { dismissToast, showToast, Toaster } from '@/shared/ui';
+import { dismissToast, showToast, Toaster } from '@peri/ui';
 
 export function Toasts() {
   const rendered = new Map<number, number>();

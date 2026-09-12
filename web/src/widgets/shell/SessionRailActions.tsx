@@ -1,6 +1,6 @@
 import { createEffect, createSignal, Show } from 'solid-js';
 import { History, Power, RotateCcw } from 'lucide-solid';
-import { Dialog, DialogContent, DialogTitle } from '@/shared/ui';
+import { Dialog, DialogContent, DialogTitle } from '@peri/ui';
 import { chatHead, chatStatusSignal, closeChat, navigateProjectSession, openingSessionId, projectSessions, selectedCid, selectedSessionId, turnActive } from '@/store';
 import { isTerminal } from '@/features/runtime/action-state';
 import { readOnly } from '@/features/auth/auth-state';

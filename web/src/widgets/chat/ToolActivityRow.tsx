@@ -31,8 +31,8 @@ import {
   type ToolNarration,
 } from '@/features/chat/tool-narration';
 import { openWorkspaceFromTool } from '@/store';
-import { CopyButton } from '@/shared/ui';
-import { cn } from '@/shared/lib/cn';
+import { CopyButton } from '@peri/ui';
+import { cn } from '@peri/ui';
 
 export type ToolCallStatus = 'queued' | 'running' | 'done' | 'failed' | 'approval' | 'neutral';
 

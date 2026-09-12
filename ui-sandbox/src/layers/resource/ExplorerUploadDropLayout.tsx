@@ -1,8 +1,8 @@
 import { createSignal, For, Show } from 'solid-js';
 import { File, FolderOpen } from 'lucide-solid';
-import { Button } from '@/components/ui';
-import { ButtonGroup } from '@/components/ui/ButtonGroup';
-import { cn } from '@/lib/cn';
+import { Button } from '@/lib/catalog-ui';
+import { ButtonGroup } from '@/lib/catalog-ui';
+import { cn } from '@/lib/catalog-ui';
 
 type DropTargetKind = 'none' | 'root' | 'folder';
 

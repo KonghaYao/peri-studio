@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import { chatHead, projectSessions, selectedSessionId } from '@/store';
-import { IconButton } from '@/shared/ui';
+import { IconButton } from '@peri/ui';
 import { sessionDisplayTitle } from '@/features/session/recovery-state';
 import { FileText, Menu, PanelRight } from 'lucide-solid';
 

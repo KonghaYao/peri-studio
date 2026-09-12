@@ -3,7 +3,7 @@ import type { PendingElicitation } from '@/entities/chat/control-view';
 import { createIdentitySelection } from '@/features/message/identity-selection';
 import type { ElicitationDeliveryState } from '@/features/message/elicitation-delivery';
 import type { ElicitationAnswer } from '@/shared/protocol/client';
-import { Button, Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel, IconButton, RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel, Textarea } from '@/shared/ui';
+import { Button, Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel, IconButton, RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel, Textarea } from '@peri/ui';
 import { Clock3, LockKeyhole, X } from 'lucide-solid';
 import { DecisionCard } from './DecisionCard';
 

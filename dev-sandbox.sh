@@ -2,6 +2,7 @@
 # UI Sandbox 开发启动：独立 Vite 设计稿沙箱（不启动 server / instance）。
 set -euo pipefail
 cd "$(dirname "$0")"
+ROOT="$(pwd)"
 
 for REQUIRED_COMMAND in bun lsof; do
     if ! command -v "${REQUIRED_COMMAND}" >/dev/null 2>&1; then
@@ -10,7 +11,7 @@ for REQUIRED_COMMAND in bun lsof; do
     fi
 done
 
-SANDBOX_DIR="$(pwd)/ui-sandbox"
+SANDBOX_DIR="${ROOT}/ui-sandbox"
 HOST="${PERI_UI_SANDBOX_HOST:-127.0.0.1}"
 PORT="${PERI_UI_SANDBOX_PORT:-5273}"
 
@@ -81,9 +82,9 @@ if lsof -nP -iTCP:"${PORT}" -sTCP:LISTEN >/dev/null 2>&1; then
     exit 1
 fi
 
-if [ ! -d "${SANDBOX_DIR}/node_modules" ]; then
-    echo "==> 安装 ui-sandbox 依赖"
-    (cd "${SANDBOX_DIR}" && bun install)
+if [ ! -d "${ROOT}/node_modules" ] || [ ! -e "${SANDBOX_DIR}/node_modules/@peri/ui" ]; then
+    echo "==> 从 workspace 根安装依赖"
+    (cd "${ROOT}" && bun install --frozen-lockfile)
 fi
 
 DEV_PID=""

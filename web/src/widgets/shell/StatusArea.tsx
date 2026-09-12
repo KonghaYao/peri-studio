@@ -4,7 +4,7 @@ import type { ChatEntry } from '@/entities/chat/chat-view';
 import { selectChatFileChanges } from '@/entities/chat/chat-file-changes';
 import { formatWorkspacePathLabel } from '@/features/chat/tool-file-link';
 import { Ban, Bot, Check, ChevronDown, ChevronUp, Circle, CircleAlert, GitBranch, Info, ListTodo, Pause, Workflow, X } from 'lucide-solid';
-import { Badge, IconButton } from '@/shared/ui';
+import { Badge, IconButton } from '@peri/ui';
 import { VSCodeFileIcon } from '@/widgets/resource/VSCodeFileIcon';
 
 type StatusTab = 'todo' | 'async' | 'changes';

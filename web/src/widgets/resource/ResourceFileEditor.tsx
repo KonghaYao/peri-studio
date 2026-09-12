@@ -1,5 +1,5 @@
 import { For, Match, Show, Switch, createMemo, onCleanup, onMount } from 'solid-js';
-import { Button, DownloadIcon, IconButton, LoadingState } from '@/shared/ui';
+import { Button, DownloadIcon, IconButton, LoadingState } from '@peri/ui';
 import { X } from 'lucide-solid';
 import {
   closeResourceFilePreview,

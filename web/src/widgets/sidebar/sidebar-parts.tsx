@@ -1,8 +1,8 @@
 import type { JSX } from 'solid-js';
 import { Show } from 'solid-js';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '@peri/ui';
 import { Archive, MoreHorizontal, Pin } from 'lucide-solid';
-import { ButtonGroup, buttonGroupItemClass, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, IconButton } from '@/shared/ui';
+import { ButtonGroup, buttonGroupItemClass, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, IconButton } from '@peri/ui';
 
 export function SectionHeader(props: { title: string; icon?: JSX.Element; children?: JSX.Element }) {
   return (

@@ -1,7 +1,7 @@
 import { Show } from 'solid-js';
 import { AlertCircle, Check, FileText, Image as ImageIcon, X } from 'lucide-solid';
-import { Button, IconButton, Spinner } from '@/shared/ui';
-import { cn } from '@/shared/lib/cn';
+import { Button, IconButton, Spinner } from '@peri/ui';
+import { cn } from '@peri/ui';
 import type { UploadAssetTileProps } from './upload-asset-tile-types';
 
 function isImageName(name: string) {

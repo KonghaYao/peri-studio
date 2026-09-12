@@ -1,7 +1,7 @@
 import { For, Show } from 'solid-js';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { isPlanSystemChatEntry } from '@/entities/chat/plan-system-entry';
-import { Badge } from '@/shared/ui';
+import { Badge } from '@peri/ui';
 import { Check, Circle, ListTodo, X } from 'lucide-solid';
 
 function StateIcon(props: { status: string }) {

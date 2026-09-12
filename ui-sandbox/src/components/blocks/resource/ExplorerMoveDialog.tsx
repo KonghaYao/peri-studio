@@ -1,5 +1,5 @@
 import { createSignal, Show } from 'solid-js';
-import { Button, Dialog, Input } from '@/components/ui';
+import { Button, Dialog, Input } from '@/lib/catalog-ui';
 
 /** Move to… 目标路径对话框（v1 无树内 DnD）。 */
 export function ExplorerMoveDialog(props: {

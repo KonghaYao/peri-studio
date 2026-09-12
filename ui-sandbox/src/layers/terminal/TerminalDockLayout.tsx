@@ -1,5 +1,5 @@
 import { createSignal, Show } from 'solid-js';
-import { Button, IconButton, InlineNotice, Status } from '@/components/ui';
+import { Button, IconButton, InlineNotice, Status } from '@/lib/catalog-ui';
 import { ChevronDown, ChevronUp, FolderRoot, Terminal } from 'lucide-solid';
 
 /** 沙箱演示：PTY 生命周期，无后端。 */

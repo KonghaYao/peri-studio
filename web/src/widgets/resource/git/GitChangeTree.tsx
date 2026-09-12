@@ -1,7 +1,7 @@
 import { createSignal } from 'solid-js';
 import { Minus, Plus, Trash2 } from 'lucide-solid';
-import { IconButton } from '@/shared/ui';
-import { cn } from '@/shared/lib/cn';
+import { IconButton } from '@peri/ui';
+import { cn } from '@peri/ui';
 import { resourceWorkspace } from '@/store';
 import { buildPathTree, folderPathsFromItems } from '../build-path-tree';
 import { FileTree } from '../FileTree';

@@ -4,7 +4,7 @@
 // “System”语义，避免把诊断信息伪装成 Settings。
 
 import { createSignal, For, Show } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogTitle, Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
+import { Button, Dialog, DialogContent, DialogTitle, Tabs, TabsContent, TabsList, TabsTrigger } from '@peri/ui';
 import { useAuthActions } from '@/features/auth/auth-hook';
 import { principalId } from '@/features/auth/auth-state';
 import { connState } from '@/features/connection/connection';

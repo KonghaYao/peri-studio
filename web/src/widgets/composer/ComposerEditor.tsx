@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
-import { Button, InlineNotice, Textarea } from '@/shared/ui';
-import { cn } from '@/shared/lib/cn';
+import { Button, InlineNotice, Textarea } from '@peri/ui';
+import { cn } from '@peri/ui';
 import { slashMenuOptionId } from '@/features/composer/slash-menu';
 import type { ComposerState } from './useComposerState';
 

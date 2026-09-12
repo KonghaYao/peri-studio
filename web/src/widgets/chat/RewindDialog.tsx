@@ -1,5 +1,5 @@
 import { For, Match, Show, Switch } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogTitle, EmptyState, IconButton, Listbox, ListboxItem, LoadingState } from '@/shared/ui';
+import { Button, Dialog, DialogContent, DialogTitle, EmptyState, IconButton, Listbox, ListboxItem, LoadingState } from '@peri/ui';
 import { closeRewindFlow, executeRewind, openRewindFlow, previewRewind, rewindFlow } from '@/features/runtime/rewind-assembly';
 import { X } from 'lucide-solid';
 import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_SURFACE_CLASS, RESOURCE_PANEL_TITLE_CLASS } from '@/widgets/resource/resource-panel-layout';

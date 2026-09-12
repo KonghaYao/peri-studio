@@ -12,7 +12,7 @@ import {
   EmptyState,
   InlineNotice,
   TextField,
-} from '@/shared/ui';
+} from '@peri/ui';
 
 export function ArchivedBrowserDialog(props: {
   open: boolean;

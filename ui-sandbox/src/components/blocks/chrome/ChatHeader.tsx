@@ -1,5 +1,5 @@
 import { FileText, Menu } from 'lucide-solid';
-import { IconButton } from '@/components/ui';
+import { IconButton } from '@/lib/catalog-ui';
 
 export function ChatHeader(props: { title: string }) {
   return (

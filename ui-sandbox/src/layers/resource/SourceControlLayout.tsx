@@ -1,6 +1,6 @@
 import { For } from 'solid-js';
 import { GitBranchBar, GitChangeGroup, GitChangeTree, GitCommitBar } from '@/components/blocks/git';
-import { cn } from '@/lib/cn';
+import { cn } from '@/lib/catalog-ui';
 import {
   DEMO_REPO,
   DEMO_STAGED,

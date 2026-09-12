@@ -1,7 +1,7 @@
 import { createSignal, Show } from 'solid-js';
 import { Files, GitBranch, X } from 'lucide-solid';
-import { IconButton } from '@/components/ui';
-import { cn } from '@/lib/cn';
+import { IconButton } from '@/lib/catalog-ui';
+import { cn } from '@/lib/catalog-ui';
 import { DEMO_STAGED, DEMO_UNTRACKED, DEMO_WORKING } from './git-demo-data';
 import { SourceControlLayout } from './SourceControlLayout';
 import { WorkbenchExplorerLayout } from './WorkbenchExplorerLayout';

@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
-import { cn } from '@/shared/lib/cn';
-import { Skeleton } from '@/shared/ui';
+import { cn } from '@peri/ui';
+import { Skeleton } from '@peri/ui';
 
 /** 流式 thinking gap：扫光 Skeleton，不用 “Thinking” 文案行（ui-specification §5）。 */
 function ThinkingGap() {

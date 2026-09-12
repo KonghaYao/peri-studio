@@ -13,10 +13,9 @@ import postcss from 'postcss';
 
 const webRoot = () => join(import.meta.dirname, '..');
 
-// styles.css is the cascade entry now: it imports styles/base.css, styles/theme.css,
-// styles/primitives.css and styles/extra.css. Feature assertions run against the
-// concatenated source so the cascade contract stays covered per selector.
-// 第三方包样式（如 @wterm/dom/css）在 app/main.tsx 侧载，不纳入 product token 断言。
+// styles.css is the cascade entry now: it imports styles/base.css, @peri/ui/styles.css,
+// styles/primitives.css and styles/extra.css. Feature assertions run against local
+// stylesheets; package CSS（含 xterm 基础样式）由 packages/ui tests 负责。
 const cssFiles = () => {
   const source = join(webRoot(), 'src');
   const entry = readFileSync(join(source, 'styles.css'), 'utf8');
@@ -116,13 +115,38 @@ test('features, pages, and app must not use arbitrary tailwind bracket utilities
   assert.deepEqual(offenders, []);
 });
 
-test('shared/ui must not use arbitrary tailwind bracket utilities', () => {
-  const offenders = listLayerSourceFiles(['shared/ui']).flatMap((path) => {
-    const rel = relativeFromSrc(path);
-    const violations = findArbitraryBracketViolations(readFileSync(path, 'utf8'));
-    return violations.map((token) => `${rel}: ${token}`);
-  });
-  assert.deepEqual(offenders, []);
+test('consumer T2 copies are gone and consumers use public package exports', () => {
+  const sandboxRoot = join(webRoot(), '..', 'ui-sandbox', 'src');
+  const removedPaths = [
+    join(sourceRoot(), 'shared', 'ui'),
+    join(sourceRoot(), 'styles', 'tokens.css'),
+    join(sourceRoot(), 'styles', 'theme.css'),
+    join(sandboxRoot, 'components', 'ui'),
+    join(sandboxRoot, 'styles', 'tokens.css'),
+    join(sandboxRoot, 'styles', 'theme.css'),
+  ];
+  for (const path of removedPaths) assert.equal(existsSync(path), false, `${path} must stay removed`);
+
+  const consumerSources = [sourceRoot(), sandboxRoot].flatMap(allFiles);
+  const legacy = consumerSources
+    .filter((path) => /\.(?:ts|tsx)$/.test(path))
+    .filter((path) => /@\/shared\/ui|@\/shared\/lib\/cn|@\/components\/ui/.test(readFileSync(path, 'utf8')))
+    .map((path) => path.slice(join(webRoot(), '..').length + 1));
+  assert.deepEqual(legacy, []);
+
+  const deepComponentImports = consumerSources
+    .filter((path) => /\.(?:ts|tsx)$/.test(path))
+    .filter((path) => /from\s+['"]@peri\/ui\//.test(readFileSync(path, 'utf8')))
+    .map((path) => path.slice(join(webRoot(), '..').length + 1));
+  assert.deepEqual(deepComponentImports, []);
+
+  const allowedStyleExports = new Set(['@peri/ui/styles.css', '@peri/ui/tokens.css']);
+  const undeclaredPackageSubpaths = consumerSources
+    .filter((path) => /\.(?:ts|tsx|css)$/.test(path))
+    .flatMap((path) => [...readFileSync(path, 'utf8').matchAll(/['"](@peri\/ui\/[^'"]+)['"]/g)]
+      .filter((match) => !allowedStyleExports.has(match[1]))
+      .map((match) => `${path.slice(join(webRoot(), '..').length + 1)}: ${match[1]}`));
+  assert.deepEqual(undeclaredPackageSubpaths, []);
 });
 
 test('fractional Tailwind spacing utilities resolve to an explicit product token', () => {
@@ -141,14 +165,14 @@ test('fractional Tailwind spacing utilities resolve to an explicit product token
   for (const file of files) {
     for (const match of readFileSync(file, 'utf8').matchAll(utility)) used.add(match[1]);
   }
-  const theme = readFileSync(join(source, 'styles', 'theme.css'), 'utf8');
+  const theme = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'styles', 'theme.css'), 'utf8');
   const declared = new Set([...theme.matchAll(/--spacing-(\d+\.\d+)\s*:/g)].map((match) => match[1]));
   assert.deepEqual([...used].filter((token) => !declared.has(token)).sort(), []);
 });
 
 const EXTRA_CSS_BASELINE = {
-  lineCount: 460,
-  sha256: '6160f797ad78c69bbba5fb1835ab4160aae1d57a29c116b673eeb4ceb88902c5',
+  lineCount: 428,
+  sha256: 'eed8cac9802f2ce1663c67731e01df27e694646598550d4f993dd622f5f78194',
 };
 
 function lineCountLikeWc(content) {
@@ -188,14 +212,14 @@ test('numeric Tailwind spacing utilities resolve to an explicit product token', 
   for (const file of files) {
     for (const match of readFileSync(file, 'utf8').matchAll(utility)) used.add(match[1]);
   }
-  const theme = readFileSync(join(source, 'styles', 'theme.css'), 'utf8');
+  const theme = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'styles', 'theme.css'), 'utf8');
   const declared = new Set([...theme.matchAll(/--spacing-(\d+)\s*:/g)].map((match) => match[1]));
   assert.deepEqual([...used].filter((token) => token !== '0' && !declared.has(token)).sort((left, right) => Number(left) - Number(right)), []);
 });
 
 test('source stylesheets are structurally valid and consume only declared design tokens', () => {
   const source = join(import.meta.dirname, '..', 'src');
-  const files = ['styles.css', 'styles/base.css', 'styles/primitives.css', 'styles/extra.css', 'styles/tokens.css'];
+  const files = ['styles.css', 'styles/base.css', 'styles/primitives.css', 'styles/extra.css'];
   const stylesheets = files.filter((file) => file !== 'styles/tokens.css');
   const roots = files.map((file) => {
     const css = readFileSync(join(source, file), 'utf8');
@@ -209,14 +233,14 @@ test('source stylesheets are structurally valid and consume only declared design
       assert.deepEqual(directDeclarations.map((decl) => `${decl.source?.start?.line}:${decl.prop}`), [], `${media.source?.input.file} has declarations outside a rule`);
     });
   }
-  const tokenSource = readFileSync(join(source, 'styles', 'tokens.css'), 'utf8');
+  const tokenSource = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'styles', 'tokens.css'), 'utf8');
   const defined = new Set([...tokenSource.matchAll(/(--[\w-]+)\s*:/g)].map((match) => match[1]));
   const used = new Set(stylesheets.flatMap((file) => [...readFileSync(join(source, file), 'utf8').matchAll(/var\((--[\w-]+)/g)].map((match) => match[1])));
   assert.deepEqual([...used].filter((token) => !defined.has(token)).sort(), []);
 });
 
 test('Kobalte dialog composes an independently layered portal overlay and content', () => {
-  const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Dialog.tsx'), 'utf8');
+  const dialog = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Dialog.tsx'), 'utf8');
   assert.match(dialog, /return <DialogPrimitive\.Portal \{\.\.\.props\} \/>;/);
   assert.match(
     dialog,
@@ -230,7 +254,7 @@ test('Kobalte dialog composes an independently layered portal overlay and conten
 });
 
 test('dialog size belongs to DialogContent rather than an overflowing child', () => {
-  const dialog = readFileSync(join(sourceRoot(), 'shared', 'ui', 'Dialog.tsx'), 'utf8');
+  const dialog = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Dialog.tsx'), 'utf8');
   const dialogConsumers = listWidgetTsx()
     .map((path) => [path, readFileSync(path, 'utf8')])
     .filter(([, code]) => code.includes('<DialogContent'));
@@ -267,7 +291,7 @@ test('feature-owned SVG geometry always uses the shared finite icon canvas', () 
     .filter((path) => /<svg\b/.test(readFileSync(path, 'utf8')))
     .map((path) => path.split('/').pop());
   assert.deepEqual(offenders, []);
-  const icon = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Icon.tsx'), 'utf8');
+  const icon = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Icon.tsx'), 'utf8');
   assert.match(icon, /<svg/);
   assert.match(icon, /viewBox="0 0 20 20"/);
   assert.match(icon, /aria-hidden="true"/);
@@ -309,7 +333,7 @@ test('the permission surface exposes a queue and never resolves an empty identit
 });
 
 test('the shared Button defaults to non-submitting behavior', () => {
-  const button = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Button.tsx'), 'utf8');
+  const button = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Button.tsx'), 'utf8');
   assert.match(button, /type=\{button\.type \?\? 'button'\}/);
 });
 
@@ -331,16 +355,16 @@ test('feature components never introduce literal colors', () => {
 test('large semantic status surfaces stay white', () => {
   const source = sourceRoot();
   const files = [
-    'shared/ui/InlineNotice.tsx',
-    'widgets/chat/MessageOutbox.tsx',
-    'widgets/chat/PermissionQueue.tsx',
-    'widgets/chat/PermissionRequestCard.tsx',
-    'widgets/chat/RewindDialog.tsx',
-    'widgets/chat/ToolActivityRow.tsx',
-    'widgets/shell/shared/ConfirmDialog.tsx',
+    join(webRoot(), '..', 'packages', 'ui', 'src', 'components', 'InlineNotice.tsx'),
+    join(source, 'widgets', 'chat', 'MessageOutbox.tsx'),
+    join(source, 'widgets', 'chat', 'PermissionQueue.tsx'),
+    join(source, 'widgets', 'chat', 'PermissionRequestCard.tsx'),
+    join(source, 'widgets', 'chat', 'RewindDialog.tsx'),
+    join(source, 'widgets', 'chat', 'ToolActivityRow.tsx'),
+    join(source, 'widgets', 'shell', 'shared', 'ConfirmDialog.tsx'),
   ];
   for (const file of files) {
-    const code = readFileSync(join(source, file), 'utf8');
+    const code = readFileSync(file, 'utf8');
     assert.doesNotMatch(code, /bg-(?:warning|danger|success)-soft/, `${file} uses a tinted status canvas`);
   }
 });
@@ -351,7 +375,7 @@ test('responsive behavior has compact, medium and wide layout contracts', () => 
   const drawer = readFileSync(join(root, 'widgets', 'shell', 'shared', 'ProjectDrawer.tsx'), 'utf8');
   const messageList = readWidgetTsx('MessageList.tsx');
   const composer = readFileSync(join(root, 'widgets', 'composer', 'Composer.tsx'), 'utf8');
-  const theme = readFileSync(join(root, 'styles', 'theme.css'), 'utf8');
+  const theme = readFileSync(join(webRoot(), '..', 'packages', 'ui', 'src', 'styles', 'theme.css'), 'utf8');
   const breakpoints = readFileSync(join(root, 'shared', 'lib', 'breakpoints.ts'), 'utf8');
   assert.match(shell, /compactViewportQuery/);
   assert.doesNotMatch(shell, /max-width:\s*\d+px/);
@@ -376,8 +400,8 @@ test('responsive behavior has compact, medium and wide layout contracts', () => 
 test('coarse pointers expose sidebar actions without hover and keep controls touch-sized', () => {
   const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'ProjectSessionRow.tsx'), 'utf8');
   const sessionAccessory = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'sidebar-parts.tsx'), 'utf8');
-  const button = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Button.tsx'), 'utf8');
-  const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Dialog.tsx'), 'utf8');
+  const button = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Button.tsx'), 'utf8');
+  const dialog = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Dialog.tsx'), 'utf8');
   assert.match(sessionAccessory, /group-hover\/workspace:opacity-100/);
   assert.match(sessionAccessory, /group-hover\/row/);
   assert.match(sessionAccessory, /group-focus-within\/row/);
@@ -391,7 +415,7 @@ test('coarse pointers expose sidebar actions without hover and keep controls tou
 test('P0 interaction architecture cannot regress to hidden cancel or viewport-breaking overlays', () => {
   const composer = readComposerBundle();
   const sidebarChrome = readWidgetTsx('SidebarChrome.tsx');
-  const dialog = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'Dialog.tsx'), 'utf8');
+  const dialog = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Dialog.tsx'), 'utf8');
   const styles = featureCss();
   assert.match(composer, /cancelTurn/);
   assert.match(composer, /Stop generation/);
@@ -428,7 +452,7 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
 });
 
 test('design tokens cannot directly reference themselves', () => {
-  const css = readFileSync(join(import.meta.dirname, '..', 'src', 'styles', 'tokens.css'), 'utf8');
+  const css = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'styles', 'tokens.css'), 'utf8');
   const selfReferences = [...css.matchAll(/--([a-z0-9-]+)\s*:\s*var\(--\1\)/gi)].map((match) => match[1]);
   assert.deepEqual(selfReferences, []);
 });
@@ -436,15 +460,15 @@ test('design tokens cannot directly reference themselves', () => {
 test('reusable design tokens have one UI-library source', () => {
   const root = join(import.meta.dirname, '..', 'src');
   const styles = readFileSync(join(root, 'styles.css'), 'utf8');
-  const theme = readFileSync(join(root, 'styles', 'theme.css'), 'utf8');
+  const theme = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'styles', 'theme.css'), 'utf8');
   const featureStyles = featureCss();
   const primitives = readFileSync(join(root, 'styles', 'primitives.css'), 'utf8');
-  const tokens = readFileSync(join(root, 'styles', 'tokens.css'), 'utf8');
+  const tokens = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'styles', 'tokens.css'), 'utf8');
   // 产品基线必须先于 Tailwind 加载，避免无 layer 的 reset 覆盖
   // Tailwind utilities layer 生成的原子化边框宽度。
-  assert.match(styles, /^@import '\.\/styles\/base\.css';\n@import '\.\/styles\/theme\.css';\n@import '\.\/styles\/primitives\.css';/);
+  assert.match(styles, /^@import '\.\/styles\/base\.css';\n@import '@peri\/ui\/styles\.css';\n@import '\.\/styles\/primitives\.css';/);
   assert.doesNotMatch(styles, /@import '\.\/styles\/tokens\.css'/);
-  assert.match(primitives, /^@import '\.\/tokens\.css';/);
+  assert.match(primitives, /^@import '\.\/project-sidebar\.css';/);
   assert.doesNotMatch(styles, /:root\s*\{/);
   assert.match(tokens, /:root\s*\{/);
   assert.match(tokens, /--composer-border:/);
@@ -476,7 +500,7 @@ test('product CSS owns its browser baseline and semantic layout', () => {
   const source = join(root, 'src');
   const styles = featureCss();
   const base = readFileSync(join(source, 'styles', 'base.css'), 'utf8');
-  const theme = readFileSync(join(source, 'styles', 'theme.css'), 'utf8');
+  const theme = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'styles', 'theme.css'), 'utf8');
   const manifest = readFileSync(join(root, 'package.json'), 'utf8');
   const vite = readFileSync(join(root, 'vite.config.ts'), 'utf8');
 
@@ -503,11 +527,12 @@ test('product CSS owns its browser baseline and semantic layout', () => {
   assert.doesNotMatch(styles, /\.message-list-shell>section>div/);
 });
 
-test('primitive visuals remain in shared UI components', () => {
+test('primitive visuals remain in the UI package', () => {
   const root = join(import.meta.dirname, '..', 'src');
-  const primitives = readFileSync(join(root, 'styles', 'primitives.css'), 'utf8');
-  const button = readFileSync(join(root, 'shared', 'ui', 'Button.tsx'), 'utf8');
-  const dialog = readFileSync(join(root, 'shared', 'ui', 'Dialog.tsx'), 'utf8');
+  const packageRoot = join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src');
+  const primitives = readFileSync(join(packageRoot, 'styles', 'primitives.css'), 'utf8');
+  const button = readFileSync(join(packageRoot, 'components', 'Button.tsx'), 'utf8');
+  const dialog = readFileSync(join(packageRoot, 'components', 'Dialog.tsx'), 'utf8');
   const drawer = readFileSync(join(root, 'widgets', 'shell', 'shared', 'ProjectDrawer.tsx'), 'utf8');
   assert.match(primitives, /\.ui-scrollbar\s*\{/);
   assert.match(primitives, /\*::\-webkit-scrollbar\s*\{/);
@@ -521,7 +546,7 @@ test('primitive visuals remain in shared UI components', () => {
 test('domain status inference delegates visual rendering to the shared Badge', () => {
   const root = join(import.meta.dirname, '..', 'src');
   const adapter = readFileSync(join(root, 'widgets', 'shell', 'Badge.tsx'), 'utf8');
-  const primitive = readFileSync(join(root, 'shared', 'ui', 'Badge.tsx'), 'utf8');
+  const primitive = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Badge.tsx'), 'utf8');
   assert.match(adapter, /Badge as UiBadge/);
   assert.doesNotMatch(adapter, /bg-\[|text-\[/);
   assert.match(primitive, /export type BadgeTone/);
@@ -538,7 +563,7 @@ test('sidebar row accessories use static named group hover classes', () => {
 });
 
 test('icon-only controls receive visible help from the shared Tooltip', () => {
-  const root = join(import.meta.dirname, '..', 'src', 'shared', 'ui');
+  const root = join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components');
   const button = readFileSync(join(root, 'Button.tsx'), 'utf8');
   const tooltip = readFileSync(join(root, 'Tooltip.tsx'), 'utf8');
   assert.match(button, /<Tooltip placement=/);
@@ -550,7 +575,7 @@ test('icon-only controls receive visible help from the shared Tooltip', () => {
   const sessionAccessory = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'sidebar-parts.tsx'), 'utf8');
   assert.match(sessionAccessory, /<DropdownMenuTrigger[\s\S]*?as=\{IconButton\}[\s\S]*?session-menu/);
   assert.match(sessionAccessory, /ButtonGroup[\s\S]*?buttonGroupItemClass/);
-  const buttonGroup = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'ui', 'ButtonGroup.tsx'), 'utf8');
+  const buttonGroup = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'ButtonGroup.tsx'), 'utf8');
   assert.match(buttonGroup, /ui-button-group inline-flex/);
   assert.match(buttonGroup, /bg-transparent/);
   assert.doesNotMatch(buttonGroup, /bg-surface-overlay|shadow-sm/);
@@ -558,7 +583,7 @@ test('icon-only controls receive visible help from the shared Tooltip', () => {
 
 test('icon-only actions use one rounded rectangular geometry and never circular buttons', () => {
   const sourceRoot = join(import.meta.dirname, '..', 'src');
-  const button = readFileSync(join(sourceRoot, 'shared', 'ui', 'Button.tsx'), 'utf8');
+  const button = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Button.tsx'), 'utf8');
   assert.match(button, /rounded-6/);
   assert.match(button, /sm: 'size-24'/);
   assert.match(button, /md: 'size-32'/);

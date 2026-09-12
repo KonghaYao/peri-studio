@@ -1,0 +1,10 @@
+{
+  "name": "peri-studio",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "web",
+    "ui-sandbox",
+    "scripts"
+  ]
+}

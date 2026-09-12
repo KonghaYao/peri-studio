@@ -146,7 +146,7 @@ Web 的逻辑会话导航由 `SessionNavigator` 状态机唯一裁决。Registry
 
 Registry 中的 `active_chat_id` 只证明某个 runtime 仍可复用，不证明当前浏览器已经选择、水合或能够向它输入。侧栏未选中的 live runtime 必须显示为“运行中，可切换”；只有当前选中、非终态且完成 Chat/Control 两份文档水合的 runtime 才能宣称“可输入”。默认标题必须在 sidebar、search 与 header 使用同一稳定身份消歧规则，避免多个“新对话”在切换后失去可识别性。
 
-Web 组件库以 `shared/ui/index.ts`（`@/shared/ui`）为唯一公共代码入口，以 `src/styles/tokens.css` 和 `src/styles/base.css` 为视觉入口；完整 UI 规范见 `docs/design/ui-specification.md`。基础组件必须独立拥有默认、交互、禁用、错误、焦点与响应式触控状态；Feature 组件不得深层导入 UI 实现、创建裸 SVG canvas，或依赖偶然的页面样式才能让 Dialog、Drawer、Button、Field、Menu、Tooltip、Status、Toast、Skeleton 等基础能力正确渲染。该边界由源码架构契约与真实 Solid DOM 测试共同执行。
+Web 组件库以私有 workspace package `packages/ui`（`@peri/ui`）为唯一公共代码入口，以 `packages/ui/src/styles/tokens.css` 和 `web/src/styles/base.css` 为视觉入口；完整 UI 规范见 `docs/design/ui-specification.md`。基础组件必须独立拥有默认、交互、禁用、错误、焦点与响应式触控状态；Feature 组件不得 deep import UI 实现、创建裸 SVG canvas，或依赖偶然的页面样式才能让 Dialog、Drawer、Button、Field、Menu、Tooltip、Status、Toast、Skeleton 等基础能力正确渲染。该边界由 package/Web 源码架构契约与真实 Solid DOM 测试共同执行。
 
 源样式必须在测试中通过 Lightning CSS 的无错误恢复严格解析，并由 PostCSS AST 检查媒体查询结构与设计令牌引用。Composer 与 quick-start 的容器焦点外观只能由一条共享规则拥有：指针焦点保持中性，只有内部输入命中 `:focus-visible` 时才显示高对比键盘焦点环；Feature 样式不得重新引入已淘汰的焦点令牌或失效选择器。
 
@@ -199,7 +199,7 @@ Composer 草稿由独立 IndexedDB store 以 `{principalId, projectId, acpSessio
 | `peri-studio` 应用 | `app/` | 唯一 CLI 与发布入口；选择 `local`/`serve`/`connect`；持有信号、就绪、本地 `connect` 监督与【v2.16】`SshBackend`（OpenSSH 隧道，随 studio 退出） | 每个平台发布一个原生 `peri-studio` 文件（Windows 为 `.exe`）；默认命令 = `local`；server 库禁止 spawn ssh |
 | server 角色 | `server/`（库） | 认证、HTTP 面与静态托管、控制面、ACPChannel 规范化、聚合器、DocManager、instance 注册表、SQLite 元数据、【v2.16】`MachineService` | `peri-studio serve`；`--local` 要求同时拉起本地 instance |
 | instance 角色 | `instance/`（库） | outbound 连 server（`/instance`）、收 spawn/kill/forward 指令、管理 ACP 进程树、透明转发 + 断线缓冲 | `peri-studio connect <URL>`；child 进程组 + fingerprint 孤儿清理（§3.3） |
-| Web 面板 | `web/`（`src/panel` + `src/components/ui`） | SolidJS 视图层：yjs 只读投影渲染 + Action/Ack 操作；`src/components/ui` 为可复用组件库 | 构建产物经 Vite 生成 `web/dist`，**不单独部署**；原规划 `peri-studio-tui` 未实现 |
+| Web 面板 | `web/` + `packages/ui/` | SolidJS 分层视图：Yjs 只读投影渲染 + Action/Ack 操作；`@peri/ui` 提供共享 T1/T2 | 构建产物经 Vite 生成 `web/dist`，**不单独部署**；原规划 `peri-studio-tui` 未实现 |
 
 共享 crate：`peri-studio-proto`（帧定义、Action/Ack 信封、instance 协议类型、HMAC 原语、Y.Doc schema 的 Rust 类型镜像、schema registry）。`app` 可依赖 server 与 instance；server 与 instance 仍互不依赖，只共享 proto。
 
@@ -994,12 +994,13 @@ chat/create 或 load ──► accepting ──► ... （turn 状态机驱动�
 
 ### 7.4 并发规则（chat §8.2 + 审查修订）
 
-1. 同一 chat 的命令按**有界队列严格串行**执行（上限默认 64，超出返回 `RATE_LIMITED`）；串行性由进程内队列保证。
-2. 默认每 chat**仅一个活动 turn**；若未来支持并行 turn，必须先引入独立 branch/thread 聚合，不能直接放宽约束。
-3. `commandId` 去重记录在内存 outbox（§4.4），覆盖客户端进程内重试窗口；**不覆盖 server 重启**（重启即空，命令不重发，§8.4.1）。
-4. **Permission resolution 使用 compare-and-set**：仅 `pending → resolved` 原子迁移一次，重复或过期回答返回幂等结果（`duplicate` ack）；迁移成功后才向 ACP 进程发 `permission.resolve`。官方 request 在首次裁决时同时申领 `(commandId, decision)` 唯一投递权；明确未送达只能以同一 commandId 和同一 decision 在同一存活 runtime 恢复，新 commandId 即使决策相同也不得重放安全副作用。`dispatched` 之后没有确认的结果属于 delivery unknown；server 重启后旧 runtime 按§8.3 终止，因此恢复证据不授权自动重放，只供运维对账。
+1. 同一 chat 的命令共享一个**有界 admission 与执行器**（上限默认 64，超出返回 `RATE_LIMITED`）；所有命令均先经过同一 `try_reserve`、outbox 与 Accepted 屏障，普通命令保持 FIFO。
+2. `chat/cancel` 是唯一的受控中断例外：active `chat/prompt` 等待 L3 时，同一执行器可优先消费 cancel，但必须先确认该 prompt 已写入 instance、记录 `dispatched` 并登记精确 active turn，禁止 cancel 越过尚未 dispatch 的 prompt。其余命令暂存但保留原 reserve 与 FIFO；首个 cancel 清除或替换该 active turn 后立即关闭优先窗口，后续 cancel 不得继续越过更早的普通命令。不得另建不受原 64 条上限约束的 cancel lane。
+3. 默认每 chat**仅一个活动 turn**；若未来支持并行 turn，必须先引入独立 branch/thread 聚合，不能直接放宽约束。
+4. `commandId` 去重记录在内存 outbox（§4.4），覆盖客户端进程内重试窗口；**不覆盖 server 重启**（重启即空，命令不重发，§8.4.1）。
+5. **Permission resolution 使用 compare-and-set**：仅 `pending → resolved` 原子迁移一次，重复或过期回答返回幂等结果（`duplicate` ack）；迁移成功后才向 ACP 进程发 `permission.resolve`。官方 request 在首次裁决时同时申领 `(commandId, decision)` 唯一投递权；明确未送达只能以同一 commandId 和同一 decision 在同一存活 runtime 恢复，新 commandId 即使决策相同也不得重放安全副作用。`dispatched` 之后没有确认的结果属于 delivery unknown；server 重启后旧 runtime 按§8.3 终止，因此恢复证据不授权自动重放，只供运维对账。
    Control Doc 将官方 ACP option 的 opaque ID 按 `allowOnce` / `allowSession` / `deny` scope 投影；现代 Web 必须显示实际范围，并在 `permission/resolve` 回传用户所选的精确 `optionId`。server 在 CAS 和投递前验证 permission 与 optionId 属于 action 指定的同一 chat、同一原 pending request，且 scope 与 Allow/Deny 一致；恢复证据绑定同一 ID。未知、跨 chat、跨 scope 或脱离 pending/recovery 的 ID fail closed。若官方请求未提供 reject option，Deny 仍必须可用，并按 ACP 契约发送 `cancelled`（无 optionId）。只有旧客户端缺省 `optionId` 时，translator 才保留 Allow 的兼容选档：优先 `allow_once`、不存在时最多选择明确的 `allow_always`，不得按数组顺序选择或回退到无关 option。
-5. 标题更新等非 Agent 操作可独立排队，但仍经服务端命令写入；不能借 YJS client update 绕过授权。
+6. 标题更新等非 Agent 操作可独立排队，但仍经服务端命令写入；不能借 YJS client update 绕过授权。
 
 **每 chat 单写者（Y.Doc 写入串行化）**【审查：开发 P0-2】：
 
@@ -1217,23 +1218,24 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 | 业务组件 | `widgets/` | Solid 组合块（`shell` / `chat` / `composer` / `sidebar` / `auth` / `resource`） |
 | 特性 | `features/` | 可测试领域用例（`session` / `catalog` / `composer` 等）；禁止 import `store` |
 | 实体 | `entities/` | Yjs 只读投影（`chat` / `registry` / `resource` / `topology`） |
-| 共享 | `shared/` | `ui` 设计系统、`lib`、`protocol`、`yjs`（`doc-store` 等） |
+| 共享 | `shared/` | `lib`、`protocol`、`yjs`（`doc-store` 等）；不含 UI |
+| 设计系统 | `packages/ui/` | `@peri/ui`：T1 token、Tailwind theme、T2 Base UI 与 `cn` |
 | 组合根 | `store/index.ts` | 全局信号与 `install*` 接线 |
 
-`web/src/panel/` 仅保留 **deprecated shim** 与尚未迁入 `features/` 的 `lib/`（connection、message、runtime、mcp、auth 等）；**新代码不得写入 `panel/`**。设计系统唯一入口：`shared/ui/index.ts`（`components/ui` 仅 re-export）。**视觉与组件规范**：[`ui-specification.md`](design/ui-specification.md)。
+`web/src/panel/` 与 `web/src/shared/ui/` 已删除，禁止恢复 deprecated shim。设计系统唯一入口是 `@peri/ui` barrel，CSS 入口是 `@peri/ui/styles.css`；Web 只保留应用级 `styles/{base,primitives,extra,project-sidebar}.css`。**视觉与组件规范**：[`ui-specification.md`](design/ui-specification.md)。
 
 | 区域 / 模块 | 代码位置（现行） | 数据源 | 说明 |
 |------|--------|------|------|
-| `AuthGate` + auth-state | `widgets/auth` + `panel/lib/auth-*`（待迁 `features/auth`） | `/api/auth/session` | 浏览器认证门（§3.0） |
+| `AuthGate` + auth-state | `widgets/auth` + `features/auth` | `/api/auth/session` | 浏览器认证门（§3.0） |
 | `ProjectSidebar` + catalog | `widgets/sidebar` + `features/catalog` | Registry Doc + IndexedDB 偏好 | 左栏目录（§3.0） |
 | `MessageList` / `ConversationMessage` | `widgets/chat` + `entities/chat` | Chat Doc + Control Doc | 投影见 `chat-projection`、`transcript-window`（§3.0） |
-| `Composer` + 投递/草稿 | `widgets/composer` + `features/composer` + `panel/lib/message-delivery` | Chat Doc + command tracker + IndexedDB | 草稿隔离；session single-flight（§3.0） |
-| `PermissionQueue` / `ElicitationQueue` | `widgets/chat` + `panel/lib/*-delivery` | Control Doc | 权限与追问（§3.0） |
+| `Composer` + 投递/草稿 | `widgets/composer` + `features/composer` + `features/message` | Chat Doc + command tracker + IndexedDB | 草稿隔离；session single-flight（§3.0） |
+| `PermissionQueue` / `ElicitationQueue` | `widgets/chat` + `features/message` | Control Doc | 权限与追问（§3.0） |
 | `RewindDialog` / `McpPanel` / `TopologyView` 等 | `widgets/chat` | Control Doc / 查询帧 | rewind（§6.2）、MCP、拓扑 |
-| `ErrorCenter` + 连接状态 | `widgets/shell` + `panel/lib/connection-*` | ws 生命周期 | 连接世代、错误中心（§3.0） |
+| `ErrorCenter` + 连接状态 | `widgets/shell` + `features/connection` | ws 生命周期 | 连接世代、错误中心（§3.0） |
 | 状态栏 | `widgets/shell/StatusArea` | `keep_alive` / 连接状态 | 重连与校准指示（§4.6） |
 
-关键模块与层的对应（§3.0）：`shared/yjs/doc-store`（Yjs 边界）、`entities/registry/registry-projection`（目录读投影）、`entities/chat/chat-projection`（消息增量读）、`entities/chat/transcript-window`（窗口化）、`panel/lib/command-tracker`（命令生命周期）、`panel/lib/message-delivery`（投递恢复）、`features/session/*`（导航与激活）、`features/catalog/catalog-actions`（目录动作）、`panel/lib/ws-client` + `protocol`（传输边界，待迁 `shared/protocol` + `features/connection`）。
+关键模块与层的对应（§3.0）：`shared/yjs/doc-store`（Yjs 边界）、`entities/registry/registry-projection`（目录读投影）、`entities/chat/chat-projection`（消息增量读）、`entities/chat/transcript-window`（窗口化）、`features/connection/command-tracker`（命令生命周期）、`features/message/message-delivery`（投递恢复）、`features/session/*`（导航与激活）、`features/catalog/catalog-actions`（目录动作）、`features/connection/ws-client` + `shared/protocol`（传输边界）。
 
 ### 10.3 断线恢复
 
@@ -1417,7 +1419,7 @@ peri-studio/
 | `channel/broadcaster.ts`（fan-out+64KB 背压） | `server/src/channel/broadcaster` | 同构 |
 | `channel/connection-registry.ts`（配额） | `server/src/channel/connection-registry` | 同构 |
 | `persist/redis.ts`（Redis 快照 CAS） | `server/src/persist`（内存 store + metadata.sqlite3） | **差异**：M1–M3 单节点无需 Redis；无投影日志（§8.4：无落盘契约），唯一持久化产物为 metadata.sqlite3 |
-| `transport/ws.ts`（前端同构 WS 客户端） | `web/src/panel/lib/ws-client` + `peri-studio-proto`【v2.6：原 tui/src/transport 未实现】 | 同构 |
+| `transport/ws.ts`（前端同构 WS 客户端） | `web/src/features/connection/ws-client` + `peri-studio-proto`【v2.6：原 tui/src/transport 未实现】 | 同构 |
 | Chat Doc / Control Doc schema | 同 schema（§5.3/§5.4） | Registry Doc 为 peri-studio 新增；**Chat Doc 不含去重记录**（peri-studio 去重记录在 outbox，§4.4）【顾问：P0-1】 |
 | 事件日志体系/租约 | 不实现 | 同 chat Q5 评审决策；内存 outbox 去重（§4.4）替代进程内 Map |
 | 4004 关闭码 | 已删除 | chat 对应 environment 概念，peri-studio 无（§4.7） |

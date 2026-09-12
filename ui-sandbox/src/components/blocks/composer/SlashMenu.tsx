@@ -1,5 +1,5 @@
 import { For, Show } from 'solid-js';
-import { cn } from '@/lib/cn';
+import { cn } from '@/lib/catalog-ui';
 import { Box, SlidersHorizontal } from 'lucide-solid';
 
 export type SlashKind = 'command' | 'skill' | 'mcp_skill';

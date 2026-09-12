@@ -1,5 +1,5 @@
 import { createEffect, createSignal, Show } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, TextField } from '@/shared/ui';
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, TextField } from '@peri/ui';
 import { joinPath, parentPath, validateMutationName } from '@/features/resource/fs-mutation-controller';
 import type { FileTreeNode } from './FileTree';
 

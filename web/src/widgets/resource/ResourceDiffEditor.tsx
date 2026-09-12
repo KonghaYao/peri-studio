@@ -1,5 +1,5 @@
 import { For, Show, createMemo, onCleanup, onMount } from 'solid-js';
-import { Button, IconButton, LoadingState } from '@/shared/ui';
+import { Button, IconButton, LoadingState } from '@peri/ui';
 import { X } from 'lucide-solid';
 import { closeResourceDiffPreview, refreshResourceProject, resourceDiffPreview, retryGitDiffPreview } from '@/store';
 import { MAX_RENDERED_DIFF_ROWS, parseUnifiedDiff, type DiffRow } from '@/features/resource/resource-diff';

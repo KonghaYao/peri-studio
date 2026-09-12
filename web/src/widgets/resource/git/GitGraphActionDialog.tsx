@@ -1,5 +1,5 @@
 import { createSignal, Show } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogTitle, TextField } from '@/shared/ui';
+import { Button, Dialog, DialogContent, DialogTitle, TextField } from '@peri/ui';
 
 type BranchDialogMode = 'create' | 'rename';
 

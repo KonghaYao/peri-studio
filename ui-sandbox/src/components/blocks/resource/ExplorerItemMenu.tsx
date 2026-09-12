@@ -8,8 +8,8 @@ import {
   Trash2,
 } from 'lucide-solid';
 import type { JSX } from 'solid-js';
-import { DropdownMenu, type MenuItem } from '@/components/ui/DropdownMenu';
-import { IconButton } from '@/components/ui';
+import { DropdownMenu, type MenuItem } from '@/lib/catalog-ui';
+import { IconButton } from '@/lib/catalog-ui';
 
 export type ExplorerMenuContext = 'file' | 'folder' | 'root';
 

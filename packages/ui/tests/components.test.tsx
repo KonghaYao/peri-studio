@@ -1,29 +1,34 @@
-import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
+import { cleanup, fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { createSignal } from 'solid-js';
-import { describe, expect, it, vi } from 'vitest';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './Collapsible';
-import { Button, IconButton } from './Button';
-import { Icon } from './Icon';
-import { Badge } from './Badge';
-import { CopyButton } from './CopyButton';
-import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from './Dialog';
-import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from './Checkbox';
-import { TextField } from './Field';
-import { Listbox, ListboxItem } from './Listbox';
-import { Popover, PopoverContent, PopoverTrigger } from './Popover';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './dropdown-menu';
-import { Status } from './Status';
-import { RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel } from './RadioGroup';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './Tabs';
-import { Textarea } from './Textarea';
-import { SelectField } from './SelectField';
-import { EmptyState } from './EmptyState';
-import { InlineNotice } from './InlineNotice';
-import { LoadingState } from './LoadingState';
-import { Skeleton } from './Skeleton';
-import { Spinner } from './Spinner';
-import { showToast, Toaster } from './Toast';
-import { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../src/components/Collapsible';
+import { Button, IconButton } from '../src/components/Button';
+import { ButtonGroup } from '../src/components/ButtonGroup';
+import { Select } from '../src/components/Select';
+import { Terminal } from '../src/components/Terminal';
+import { Icon } from '../src/components/Icon';
+import { Badge } from '../src/components/Badge';
+import { CopyButton } from '../src/components/CopyButton';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '../src/components/Dialog';
+import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from '../src/components/Checkbox';
+import { TextField } from '../src/components/Field';
+import { Listbox, ListboxItem } from '../src/components/Listbox';
+import { Popover, PopoverContent, PopoverTrigger } from '../src/components/Popover';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../src/components/dropdown-menu';
+import { Status } from '../src/components/Status';
+import { RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel } from '../src/components/RadioGroup';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../src/components/Tabs';
+import { Textarea } from '../src/components/Textarea';
+import { SelectField } from '../src/components/SelectField';
+import { EmptyState } from '../src/components/EmptyState';
+import { InlineNotice } from '../src/components/InlineNotice';
+import { LoadingState } from '../src/components/LoadingState';
+import { Skeleton } from '../src/components/Skeleton';
+import { Spinner } from '../src/components/Spinner';
+import { dismissToast, showToast, Toaster } from '../src/components/Toast';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../src/components/Tooltip';
+
+afterEach(() => cleanup());
 
 describe('Collapsible', () => {
   it('keeps controlled disclosure state and the trigger relationship intact', () => {
@@ -525,5 +530,165 @@ describe('DropdownMenu', () => {
     expect(screen.getByRole('menuitem', { name: 'First' })).toHaveFocus();
     fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
+  });
+});
+
+describe('ButtonGroup', () => {
+  it('exposes a labeled group role for segmented icon actions', () => {
+    render(() => (
+      <ButtonGroup aria-label="Session actions">
+        <IconButton label="Pin" showTooltip={false}>P</IconButton>
+        <IconButton label="Archive" showTooltip={false}>A</IconButton>
+      </ButtonGroup>
+    ));
+    const group = screen.getByRole('group', { name: 'Session actions' });
+    expect(group).toHaveClass('ui-button-group');
+    expect(screen.getByRole('button', { name: 'Pin' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Archive' })).toBeInTheDocument();
+  });
+});
+
+describe('Select (Kobalte)', () => {
+  const modelOptions = [
+    { value: 'fast', label: 'Fast', description: 'Lower latency' },
+    { value: 'smart', label: 'Smart' },
+  ];
+
+  it('selects an option and reports the value without leaking list props', async () => {
+    const onChange = vi.fn();
+    render(() => (
+      <Select
+        options={modelOptions}
+        value="fast"
+        onChange={onChange}
+        aria-label="Model"
+        placeholder="Choose model"
+      />
+    ));
+    const trigger = screen.getByRole('button', { name: /Model/ });
+    expect(trigger).toHaveTextContent('Fast');
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+    fireEvent.click(await screen.findByRole('option', { name: 'Smart' }));
+    expect(onChange).toHaveBeenCalledWith('smart');
+  });
+
+  it('respects disabled and shows placeholder when value is missing', () => {
+    render(() => (
+      <Select
+        options={modelOptions}
+        disabled
+        placeholder="Choose model"
+        aria-label="Model"
+      />
+    ));
+    const trigger = screen.getByRole('button', { name: /Model/ });
+    expect(trigger).toBeDisabled();
+    expect(trigger).toHaveTextContent('Choose model');
+  });
+});
+
+describe('Terminal', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('exposes an accessible host before xterm mounts', () => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    });
+    const { container } = render(() => <Terminal visible={false} />);
+    expect(screen.getByLabelText('Interactive terminal')).toHaveClass('terminal-xterm-host');
+    expect(container.querySelector('.xterm')).toBeNull();
+  });
+});
+
+describe('Badge legacy tones', () => {
+  it('maps ok, warn, and err to semantic dot colors', () => {
+    const { unmount } = render(() => <Badge tone="ok" data-testid="ok">Ok</Badge>);
+    expect(screen.getByTestId('ok').querySelector('.ui-badge__dot')).toHaveClass('bg-success');
+    unmount();
+    render(() => <Badge tone="err" data-testid="err">Err</Badge>);
+    expect(screen.getByTestId('err').querySelector('.ui-badge__dot')).toHaveClass('bg-danger');
+  });
+});
+
+describe('TextField edge cases', () => {
+  it('marks disabled controls and keeps error semantics', () => {
+    render(() => <TextField label="Token" disabled error="Required" />);
+    const input = screen.getByRole('textbox', { name: 'Token' });
+    expect(input).toBeDisabled();
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+  });
+});
+
+describe('SelectField edge cases', () => {
+  it('marks disabled native select without leaking field props', () => {
+    render(() => (
+      <SelectField label="Project" disabled>
+        <option value="p1">One</option>
+      </SelectField>
+    ));
+    expect(screen.getByRole('combobox', { name: 'Project' })).toBeDisabled();
+  });
+});
+
+describe('CopyButton edge cases', () => {
+  it('does not copy when disabled', async () => {
+    const writeText = vi.fn();
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    render(() => <CopyButton text="secret" label="Copy" disabled />);
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+    expect(writeText).not.toHaveBeenCalled();
+  });
+});
+
+describe('Toast dismissal', () => {
+  it('can dismiss a shown toast by id', async () => {
+    render(() => <Toaster />);
+    const id = showToast('Temporary');
+    expect(await screen.findByText('Temporary')).toBeInTheDocument();
+    dismissToast(id);
+    await waitFor(() => expect(screen.queryByText('Temporary')).not.toBeInTheDocument());
+  });
+});
+
+describe('EmptyState page variant', () => {
+  it('renders page layout without leaking variant to the DOM', () => {
+    render(() => (
+      <EmptyState
+        variant="page"
+        title="Nothing here"
+        description="Create a session to begin."
+        data-testid="empty-page"
+      />
+    ));
+    const empty = screen.getByTestId('empty-page');
+    expect(empty).toHaveClass('flex-1');
+    expect(empty).not.toHaveAttribute('variant');
+    expect(screen.getByRole('heading', { name: 'Nothing here' })).toBeInTheDocument();
+  });
+});
+
+describe('Checkbox disabled', () => {
+  it('blocks interaction when disabled', () => {
+    const onChange = vi.fn();
+    render(() => (
+      <Checkbox disabled checked={false} onChange={onChange}>
+        <CheckboxInput />
+        <CheckboxControl />
+        <CheckboxLabel>Notify</CheckboxLabel>
+      </Checkbox>
+    ));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Notify' }));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('IconButton stop variant', () => {
+  it('uses stop styling for streaming cancel actions', () => {
+    render(() => <IconButton label="Stop" variant="stop">■</IconButton>);
+    expect(screen.getByRole('button', { name: 'Stop' })).toHaveClass('bg-btn-primary');
   });
 });

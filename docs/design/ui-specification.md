@@ -5,7 +5,7 @@ date: 2026-09-05
 
 # Peri Studio Web UI 规范（权威版）
 
-> **本文是产品视觉与交互组件的单一事实源。** 实现以代码为准：`web/src/styles/tokens.css`、`web/src/shared/ui/`、`web/tests/css-contracts.test.mjs`。
+> **本文是产品视觉与交互组件的单一事实源。** T1/T2 实现以 `packages/ui/src/styles/`、`packages/ui/src/components/` 与 package 测试为准；Web 应用例外由 `web/src/styles/` 和 `web/tests/css-contracts.test.mjs` 约束。
 >
 > 关联：[frontend-architecture.md](frontend-architecture.md)（目录分层）、[frontend-rewrite-program.md](frontend-rewrite-program.md)（Phase 6+：只 Tailwind、禁任意值、社区无头、业务等价）、[audit-chat-uiux-2026-08.md](../audit-chat-uiux-2026-08.md)（UX 审计与修复记录）、ADR [0004](../adr/0004-web-frontend-layered-architecture.md)。
 
@@ -17,7 +17,7 @@ date: 2026-09-05
 |------|------|------|
 | [`../arch/workspace-ui-concept.html`](../arch/workspace-ui-concept.html) | **概念稿** | Workspace/Project/Session 信息架构讨论用；颜色与组件均非生产规范 |
 | 全局 App 顶栏填满品牌名、Session 切换迁出 `ProjectSidebar` | **已否决** | 侧栏 instance 行 + `SidebarNavBar` 为定稿；见 §10.1 |
-| 任意截图 / Figma 未回写 token | **无效** | 必须以 `tokens.css` 与 `shared/ui` 为准 |
+| 任意截图 / Figma 未回写 token | **无效** | 必须以 `packages/ui/src/styles/tokens.css` 与 `@peri/ui` 为准 |
 
 **现行视觉身份**：白底画布 + AntD 冷灰发丝线 + **湛蓝 accent**（`#2563eb`，`--palette-accent-600`），层次靠间距与边框而非大面积灰底块。权威 token 与 `ui-sandbox` Layers 对齐。深色主题尚未在产品中启用。
 
@@ -31,7 +31,7 @@ date: 2026-09-05
 4. **语义色克制**：accent 仅用于主操作与正向强调；`success` / `warning` / `danger` 仅用于状态与告警，不装饰化。
 5. **英文 UI 文案**：按钮、标签、toast、空状态、错误信息一律英文；文档与代码注释用中文。
 6. **可访问性默认**：焦点环可见、触控目标 ≥ 44px（`pointer-coarse`）、`forced-colors` 安全边界、模态焦点陷阱由 Kobalte 基元保证。
-7. **组件自给自足**：基础组件在 `shared/ui` 内具备 default / hover / disabled / focus / error 全套状态，**不得**依赖页面偶然样式才能用。
+7. **组件自给自足**：基础组件在 `@peri/ui` 内具备 default / hover / disabled / focus / error 全套状态，**不得**依赖页面偶然样式才能用。
 
 ### 2.1 Explorer structural mutation
 
@@ -42,21 +42,22 @@ Explorer Files 区头固定提供 `New File`、`New Folder`、`Refresh Explorer`
 ## 3. 事实源栈（实现顺序）
 
 ```
-tokens.css          ← 颜色、间距、半径、字阶、阴影、布局容器的唯一数值源
+packages/ui/src/styles/tokens.css      ← 颜色、间距、半径、字阶、阴影、布局容器的唯一数值源
     ↓
-theme.css           ← Tailwind v4 @theme inline，把 token 映射为 bg-* / text-* / p-* 等 utility
+packages/ui/src/styles/theme.css       ← Tailwind v4 @theme inline 与 package @source
     ↓
-base.css            ← 浏览器 reset；不含产品色
-primitives.css      ← .ui-spinner、滚动条、状态点等跨组件原子 class
+packages/ui/src/styles/{primitives,extra}.css
+                                      ← T2 原子与第三方注入 DOM 例外
     ↓
-panel/styles/*.css  ← 功能域布局（chat、sidebar、composer…）；只消费 token utility
+packages/ui/src/components/*.tsx       ← Kobalte 封装；公共入口 @peri/ui
     ↓
-shared/ui/*.tsx     ← Kobalte 封装；对外唯一入口 shared/ui/index.ts（@/shared/ui）
+web/src/styles/{base,primitives,extra}.css
+                                      ← 浏览器 reset 与应用/widget 所有样式
     ↓
-widgets/*           ← 业务组合；禁止深层 import 单个 ui 文件，禁止裸 SVG 图标画布
+widgets/*                              ← 业务组合；禁止 @peri/ui deep import
 ```
 
-**契约测试**：`web/tests/css-contracts.test.mjs` 强制执行 spacing token 完备性、样式只引用已声明 token、widget 对 ui barrel 的消费边界。
+**契约测试**：`packages/ui/tests/css-contracts.test.mjs` 约束 T1/T2 所有权；`web/tests/css-contracts.test.mjs` 约束应用样式、spacing token 与 package barrel 消费边界。
 
 ---
 
@@ -113,7 +114,7 @@ widgets/*           ← 业务组合；禁止深层 import 单个 ui 文件，�
 
 - **间距**：仅使用 `--space-*` 映射的 Tailwind 数字 utility（`p-12`、`gap-8`…）；`css-contracts` 禁止未声明数字。
 - **控件高度**：`--control-height-default`（34px）、`compact`（28px）；触控加粗 `pointer-coarse:min-h-44`。
-- **圆角**：交互控件 `rounded-8`；Composer `rounded-[var(--composer-radius)]`（18px）；Pill `rounded-full`。
+- **圆角**：交互控件 `rounded-8`；Composer `rounded-(--composer-radius)`（18px）；Pill `rounded-full`。
 - **内容宽度**：聊天 `--container-chat`（960px）；Composer `--composer-max`（864px）；弹窗见 `--container-*` 系列。
 - **壳层网格**：`--grid-cols-shell`（280px 侧栏 + 1fr）；桌面收窄 `240px`。
 
@@ -145,7 +146,7 @@ widgets/*           ← 业务组合；禁止深层 import 单个 ui 文件，�
 
 ---
 
-## 9. 组件目录（`shared/ui`）
+## 9. 组件目录（`packages/ui/src/components`，公共入口 `@peri/ui`）
 
 | 组件 | 用途 | 关键 variant / 约定 |
 |------|------|---------------------|
@@ -168,7 +169,7 @@ widgets/*           ← 业务组合；禁止深层 import 单个 ui 文件，�
 
 **图标**：统一 `Icon` 组件 + lucide 路径；**禁止**在 widget 内联 `<svg>` 画布（css-contracts 约束）。
 
-**业务 Badge**：`widgets/shell/Badge` 的 `MessageStatusBadge` 等领域适配器允许存在，但视觉须委托 `shared/ui` token。
+**业务 Badge**：`widgets/shell/Badge` 的 `MessageStatusBadge` 等领域适配器允许存在，但视觉须委托 `@peri/ui` token 与基础组件。
 
 ---
 
@@ -235,10 +236,10 @@ Widget **可以**读 `store`；**不得**直发 WebSocket 帧。复杂逻辑下�
 - [ ] 颜色/间距/半径仅来自 token utility，无魔法数 hex（除 token 文件自身）
 - [ ] 交互状态完整：default、hover、focus-visible、disabled、error（如适用）
 - [ ] 文案英文；日志英文
-- [ ] 使用 `@/shared/ui` barrel，不 deep import
+- [ ] 使用 `@peri/ui` barrel，不 deep import
 - [ ] 单文件 &lt; 500 行；超复杂则拆 widget + feature
 - [ ] `cd web && bun run test` 与相关浏览器契约通过
-- [ ] 若引入新 token，先加 `tokens.css` + `theme.css`，再写组件
+- [ ] 若引入新 token，先改 `packages/ui/src/styles/tokens.css` + `theme.css`，再写组件
 
 ---
 

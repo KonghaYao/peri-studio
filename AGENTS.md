@@ -15,6 +15,7 @@
 | **Web 视觉、token、组件、微文案、a11y** | **`docs/design/ui-specification.md`（权威）** |
 | **设计稿 → 生产落地计划与映射表** | **`docs/design/ui-implementation-plan.md`** |
 | **Git Graph 数据面（machine → server → web）** | **`docs/design/git-graph-protocol.md`（权威）** |
+| **`@peri/ui` 设计系统包、移除 `shared/ui`（一步到位）** | **`docs/design/ui-package-migration.md`（权威）** |
 | Web 分层 ADR | `docs/adr/0004-web-frontend-layered-architecture.md` |
 | MCP Apps 宿主 | `docs/design/mcp-apps-host.md` |
 
@@ -22,20 +23,22 @@
 
 ## Web 前端分层（重点）
 
-> **所有 `web/` 改动必须遵守五层目录与单向依赖。** 详细规则、路径别名与迁移状态见 [`docs/design/frontend-architecture.md`](docs/design/frontend-architecture.md)。
+> **所有 `web/` 改动必须遵守五层目录与单向依赖。** T2 设计系统见 **`packages/ui`（`@peri/ui`）**，不在 `web/src/shared/ui`（迁移见 [`ui-package-migration.md`](docs/design/ui-package-migration.md)）。详细规则见 [`frontend-architecture.md`](docs/design/frontend-architecture.md)。
 
 ### 目录与职责
 
 ```
+packages/ui/     @peri/ui：T1 样式 + T2 组件 + cn（Barrel 唯一出口）
+ui-sandbox/      Storybook 式 demos；消费 @peri/ui，不复制 T2 源码
+
 web/src/
   app/           bootstrap、全局样式入口（main.tsx）
   pages/         页面级装配，只组合 widgets
   widgets/       业务 UI 组合块（Solid JSX，可读 store）
   features/      可测试领域用例（纯 TS 优先，依赖注入）
   entities/      Yjs 只读投影与视图类型
-  shared/        ui（设计系统）、lib、protocol、yjs
+  shared/        lib、protocol、yjs（迁移后无 ui 子目录）
   store/         全局组合根（index.ts）
-  panel/         遗留 shim + 待迁 lib（逐步空心化，勿新增业务）
 ```
 
 ### 依赖方向（强制）
@@ -52,7 +55,7 @@ web/src/
 
 ### 新代码放置（决策树）
 
-1. **无业务语义的 Button / Dialog / cn** → `shared/ui` 或 `shared/lib`
+1. **无业务语义的 Button / Dialog / cn** → `packages/ui`，仅从 `@peri/ui` barrel 导出
 2. **Yjs Doc → 只读视图类型 / render\*** → `entities/<domain>/`
 3. **用户可描述的用例逻辑（可单测、无 JSX）** → `features/<name>/`
 4. **多块 UI 组合（侧栏、Chat、Composer）** → `widgets/<area>/`
@@ -67,16 +70,16 @@ web/src/
 
 | Sandbox Tier | 路径 | 生产落点 |
 |--------------|------|----------|
-| **T1 · Tokens** | `ui-sandbox/src/styles/tokens.css` | `web/src/styles/tokens.css` + `theme.css` |
-| **T2 · Base UI** | `ui-sandbox/src/components/ui/` | `web/src/shared/ui/` |
-| **T3 · Blocks** | `ui-sandbox/src/components/blocks/` | `web/src/widgets/*` 或 `shared/ui`（无业务语义时） |
+| **T1 · Tokens** | `packages/ui/src/styles/tokens.css` | `@peri/ui/styles.css`（Web 与 Sandbox 共用） |
+| **T2 · Base UI** | `packages/ui/src/components/` | Web 与 Sandbox 均从 `@peri/ui` barrel 消费 |
+| **T3 · Blocks** | `ui-sandbox/src/components/blocks/` | `web/src/widgets/*` 或 `packages/ui`（确属无业务语义时） |
 | **T4 · Layers** | `ui-sandbox/src/layers/` | `widgets` 组合参考（不直接 import） |
 | **Extra** | `ui-sandbox/src/styles/extra.css` | `web/src/styles/extra.css`（Tailwind 无法表达的例外） |
 
 **工作流（强制）**
 
-1. 在 `ui-sandbox` 新增/调整组件与 demo（`#/components`、`#/blocks`、`#/layers`）。
-2. `cd ui-sandbox && bun run typecheck` 通过。
+1. 在 `packages/ui` 调整 T1/T2 契约与测试，在 `ui-sandbox` 新增/调整 demo（`#/components`、`#/blocks`、`#/layers`）。
+2. `cd packages/ui && bun run test`、`cd ui-sandbox && bun run typecheck` 通过。
 3. 将同等视觉契约镜像到 `web/`（类名、token、交互语义一致；**间距用生产像素刻度**，见下）。
 4. `cd web && bun run test` 全绿；涉及壳层/侧栏时补 widget 测或 `css-contracts`。
 
@@ -97,7 +100,7 @@ cd ui-sandbox && bun run typecheck
 
 | 模式 | Sandbox | 生产 |
 |------|---------|------|
-| 分段按钮组 | `components/ui/ButtonGroup.tsx` | `shared/ui/ButtonGroup.tsx` |
+| 分段按钮组 | `packages/ui/src/components/ButtonGroup.tsx` + Components demo | `@peri/ui` |
 | 侧栏行浮动 accessory | `blocks/chrome/RowAccessorySlot.tsx` | `widgets/sidebar/sidebar-parts.tsx` |
 | Session 行操作 | `SessionRowAccessory`（Pin \| Archive \| More） | 同上 + `ProjectSessionRow` |
 | Project 行操作 | `ProjectRowAccessory`（计数 + More \| New session） | `ProjectSidebar` |
@@ -122,11 +125,10 @@ cd ui-sandbox && bun run typecheck
 生产 Web 样式四级级联（入口 `web/src/styles.css`）：
 
 ```
-tokens.css   → 设计值唯一来源（颜色、间距、容器、--grid-cols-*）
-theme.css    → Tailwind v4 @theme inline（utility 与命名断点 max-desk / max-compact 等）
-primitives.css → 跨组件原子（滚动条、ui-spinner、ui-control-transition、git-graph）
-extra.css    → 无法纳入 Tailwind 的语义 class（子选择器、WebKit hack、Mermaid SVG 等）
+@peri/ui tokens/theme/primitives/extra → web/src/styles/primitives.css → web/src/styles/extra.css
 ```
+
+`packages/ui/src/styles/tokens.css` 是设计值唯一来源，`theme.css` 负责 Tailwind v4 utility 与命名断点；Web 只保留应用级 primitives/extra。
 
 **JSX 写法**
 
@@ -137,7 +139,7 @@ extra.css    → 无法纳入 Tailwind 的语义 class（子选择器、WebKit h
 
 **契约**：`web/tests/css-contracts.test.mjs`（widgets 无 bracket utility、spacing 数字须在 theme 声明、extra.css 被入口 import）。
 
-**Sandbox 对齐**：`ui-sandbox` 与 `web` 共用同一 CSS 级联规则（`extra.css` 登记例外）；演示页禁止 bracket utility，新 token 先改 sandbox `tokens.css` 再同步 `web`。
+**Sandbox 对齐**：`ui-sandbox` 与 `web` 共用 `@peri/ui/styles.css` 的 T1/T2 级联；各自 `extra.css` 只登记应用或 catalog 例外。演示页禁止 bracket utility，新 token 先改 `packages/ui/src/styles/tokens.css` 与 `theme.css`，两个 consumer 同时验证。
 
 ### 测试落点
 
@@ -160,7 +162,7 @@ extra.css    → 无法纳入 Tailwind 的语义 class（子选择器、WebKit h
 
 - [ ] 视觉变更是否已在 `ui-sandbox` 定稿并 typecheck 通过
 - [ ] 新文件落在正确层，未违反依赖表
-- [ ] `features` 未 import `store`；`shared/ui` 未 import 业务模块
+- [ ] `features` 未 import `store`；`packages/ui` 未 import Web 业务模块
 - [ ] 颜色/间距来自 `tokens.css` utility，符合 `ui-specification.md`；sandbox→web 间距已按生产刻度换算
 - [ ] JSX 无任意 Tailwind bracket（`w-[…]`、`[&_…]`）；例外已登记 `web/src/styles/extra.css`
 - [ ] 单文件 < 500 行；UI 文案英文，注释中文，**log 英文**

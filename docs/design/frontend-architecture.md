@@ -26,7 +26,7 @@ date: 2026-08-30
 1. **五层清晰**：外壳（app）→ 页面（pages）→ 组合块（widgets）→ 特性（features）→ 实体/共享（entities / shared）。
 2. **依赖单向**：下层不得 import 上层；`shared` 零业务、零 store。
 3. **可测试**：`features` 与 `entities` 以纯 TS 为主，vitest / node --test 不依赖 jsdom 即可覆盖核心路径。
-4. **可渐进迁移**：旧路径通过 `index.ts` 重导出保持兼容，直至调用方迁完再删 shim。
+4. **迁移完成即删旧路径**：历史阶段允许过 shim；现行 `web/src/panel` 与 `web/src/shared/ui` 均不存在，禁止恢复。
 5. **单页产品**：仍是一个 Solid SPA + 内嵌 sandbox；不引入路由框架除非产品需要。
 
 ## 3. 目标目录（`web/src/`）
@@ -68,9 +68,8 @@ web/src/
     resource/               # resource-view
     topology/               # topology-view
 
-  shared/                   # 跨特性基础设施
-    ui/                     # 原 components/ui（Kobalte 封装，design system）
-    lib/                    # cn, keyboard, rfc3339, pick-directory
+  shared/                   # 跨特性基础设施；不含 UI
+    lib/                    # keyboard, rfc3339, pick-directory
     protocol/               # Action/Ack 帧、常量（原 panel/lib/protocol.ts）
     yjs/                    # yjs-values, doc-store 基元
 
@@ -81,6 +80,8 @@ web/src/
 
   test/                     # vitest setup
 ```
+
+`packages/ui/` 位于 Web 分层之外，是私有 buildless workspace package：拥有 T1 token、Tailwind theme、T2 Base UI 与 `cn`，Web 与 `ui-sandbox` 均只从 `@peri/ui` barrel 消费。
 
 ## 4. 依赖规则（强制）
 
@@ -100,11 +101,11 @@ web/src/
 
 ## 5. 组件分级定义
 
-### 5.1 `shared/ui`（基础组件）
+### 5.1 `@peri/ui`（基础组件）
 
-- 无 server 语义、无 session/project/chat 概念。
+- 源码位于仓库顶层 `packages/ui`，无 server 语义、无 session/project/chat 概念。
 - Props 为通用 UI 契约（`Button`, `Listbox`, `Dialog`）。
-- 唯一公共入口：`shared/ui/index.ts`。
+- 唯一公共代码入口：`@peri/ui`；禁止组件 deep import。
 
 ### 5.2 `entities`（实体投影）
 
@@ -142,7 +143,7 @@ web/src/
 
 禁止在 store 内新增业务分支；新逻辑先进 feature，再由 store 挂一行委托。
 
-## 7. 迁移策略（绞杀者）
+## 7. 历史迁移策略（Phase 0–5 已完成）
 
 ### Phase 0（本文档 + ADR）
 
@@ -208,7 +209,7 @@ web/src/
 
 ## 11. 验收
 
-### Phase 1–3（已完成）
+### Phase 1–3（历史阶段；已完成，T1/T2 后由 `@peri/ui` 迁移取代）
 
 - [x] `shared/ui` 为唯一设计系统入口；`components/ui` 仅 re-export。
 - [x] Composer 全链路文件位于 `features/composer` + `widgets/composer`。

@@ -2,7 +2,7 @@
 // 编排留在本 shell；工具行 / 附件条 / 编辑器拆至同目录子组件。
 
 import { Show, type JSX } from 'solid-js';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '@peri/ui';
 import { SlashMenu } from './SlashMenu';
 import { ComposerUploadSurface } from './ComposerUploadSurface';
 import { ComposerStagedAssets } from './ComposerStagedAssets';

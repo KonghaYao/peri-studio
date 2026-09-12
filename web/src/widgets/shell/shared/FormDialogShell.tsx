@@ -2,7 +2,7 @@
 // Dialog 外层（open/dismissible/onOpenChange）仍由调用方管理。
 
 import { Show, type JSX } from 'solid-js';
-import { DialogTitle } from '@/shared/ui';
+import { DialogTitle } from '@peri/ui';
 
 export interface FormDialogShellProps {
   /** 弹窗标题（DialogTitle / h2）。 */

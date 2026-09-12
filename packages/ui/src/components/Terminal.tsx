@@ -3,12 +3,12 @@ import { ImageAddon } from '@xterm/addon-image';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { createEffect, onCleanup, onMount } from 'solid-js';
-import { cn } from '@/shared/lib/cn';
-import { openTerminalWebLink } from '@/shared/lib/terminal-web-link';
-import { readXtermFontFamily, readXtermTheme } from '@/shared/lib/xterm-theme';
-import type { TerminalViewport } from '@/shared/lib/terminal-viewport';
+import { cn } from '../lib/cn';
+import { openTerminalWebLink } from '../lib/terminal-web-link';
+import { readXtermFontFamily, readXtermTheme } from '../lib/xterm-theme';
+import type { TerminalViewport } from '../lib/terminal-viewport';
 
-export type { TerminalViewport } from '@/shared/lib/terminal-viewport';
+export type { TerminalViewport } from '../lib/terminal-viewport';
 
 export type TerminalProps = {
   class?: string;

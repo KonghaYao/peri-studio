@@ -1,6 +1,6 @@
 import { createSignal, For, Show } from 'solid-js';
 import { ArchivedBrowserList, ProjectRowAccessory, SessionRowAccessory } from '@/components/blocks/chrome';
-import { cn } from '@/lib/cn';
+import { cn } from '@/lib/catalog-ui';
 import {
   Archive,
   CloudOff,
@@ -15,7 +15,7 @@ import {
   Settings,
   Workflow,
 } from 'lucide-solid';
-import { Dialog, IconButton, Input } from '@/components/ui';
+import { Dialog, IconButton, Input } from '@/lib/catalog-ui';
 
 const ARCHIVED_DEMO = [
   { id: 'arch-1', title: 'legacy-ws-proto', subtitle: 'Session · peri-studio' },

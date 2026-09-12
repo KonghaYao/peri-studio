@@ -1,6 +1,6 @@
 import { createEffect, createMemo, createSignal, Show, untrack } from 'solid-js';
 import type { ProjectInfo, SessionSummaryInfo } from '@/entities/registry/registry-view';
-import { Button, Dialog, DialogContent, DialogTitle, EmptyState, InlineNotice, Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel, LoadingState, TextField } from '@/shared/ui';
+import { Button, Dialog, DialogContent, DialogTitle, EmptyState, InlineNotice, Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel, LoadingState, TextField } from '@peri/ui';
 import { MessageSquare } from 'lucide-solid';
 import { importCandidates } from '@/features/session/session-import';
 import { cleanSessionTitle, formatRelativeTime, shortSessionId } from '@/features/session/recovery-state';

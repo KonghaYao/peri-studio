@@ -1,5 +1,5 @@
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js';
-import { Button, CopyButton, Dialog, DialogContent, InlineNotice, Spinner, TextField } from '@/shared/ui';
+import { Button, CopyButton, Dialog, DialogContent, InlineNotice, Spinner, TextField } from '@peri/ui';
 import { FormDialogShell } from '@/widgets/shell/shared/FormDialogShell';
 import { applyParsedSshToFields } from '@/features/machine/ssh-command-parse';
 import {

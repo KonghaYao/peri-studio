@@ -1,5 +1,5 @@
 import type { JSX } from 'solid-js';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '@peri/ui';
 
 export function ResourceSectionTitle(props: { children: JSX.Element; compact?: boolean }) {
   return (

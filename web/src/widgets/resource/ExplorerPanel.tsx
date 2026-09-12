@@ -1,5 +1,5 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup } from 'solid-js';
-import { Button, IconButton, InlineNotice, LoadingState } from '@/shared/ui';
+import { Button, IconButton, InlineNotice, LoadingState } from '@peri/ui';
 import {
   createEmptyExplorerFile, createResourceDirectory, deleteResourcePath, enqueueExplorerUpload,
   fsMutationAvailability, fsMutationState, moveResourcePath, openFilePreview,
@@ -15,7 +15,7 @@ import { ExplorerItemMenu, type ExplorerMenuAction } from './ExplorerItemMenu';
 import { ResourceSectionTitle } from './ResourceSectionTitle';
 import { createExplorerTreeFocus } from './explorer-tree-focus';
 import { dataTransferHasFiles, parseFileDropTransfer, preventBrowserFileDrop } from '../composer/composer-upload-drop';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '@peri/ui';
 function RefreshIcon() { return <RefreshCw size={14} strokeWidth={1.8} />; }
 
 type ExplorerMenuTarget =

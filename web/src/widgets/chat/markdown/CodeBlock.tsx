@@ -1,5 +1,5 @@
 import { createMemo, createResource, For, Show, type JSX } from 'solid-js';
-import { CopyButton, DownloadIcon, IconButton, RefreshIcon } from '@/shared/ui';
+import { CopyButton, DownloadIcon, IconButton, RefreshIcon } from '@peri/ui';
 import { memoizeAsync } from './async-cache';
 import { downloadText, safeFilename } from './download';
 import { MathExpression } from './Math';

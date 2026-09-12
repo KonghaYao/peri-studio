@@ -1,34 +1,6 @@
-@import './tokens.css';
 @import './project-sidebar.css';
 
-/* Tailwind v4 的 border-width utility 会读取此变量。产品基线将边框宽度
-   reset 为零，因此这里显式保留 solid 样式。 */
-*,
-*::before,
-*::after {
-  --tw-border-style: solid;
-}
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb) transparent;
-}
-*:hover {
-  scrollbar-color: var(--scrollbar-thumb-hover) transparent;
-}
-*::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-*::-webkit-scrollbar-thumb {
-  min-height: 28px;
-  border: 2px solid transparent;
-  border-radius: var(--radius-full);
-  background: var(--scrollbar-thumb);
-  background-clip: padding-box;
-}
+/* App / widget layout primitives (not in @peri/ui). */
 
 /* 助手操作以浮层呈现；精确指针使用 hover / focus，粗指针由显式触发器控制。 */
 @media (hover: hover) and (pointer: fine) {
@@ -38,19 +10,6 @@
     opacity: 1 !important;
   }
 }
-*:hover::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb-hover);
-  background-clip: padding-box;
-}
-.ui-scrollbar {
-  scrollbar-gutter: auto;
-}
-.message-list-scroll {
-  scrollbar-gutter: stable;
-  min-width: 0;
-  overflow-x: clip;
-}
-
 /* Chat 正文与 Composer 共享水平轨道（max-width + padding 与 message-list-content 一致）。 */
 .chat-column {
   box-sizing: border-box;
@@ -238,56 +197,9 @@
     display: none;
   }
 }
-@keyframes ui-tooltip-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
 
-.ui-tooltip-animate {
-  animation: ui-tooltip-in var(--duration-fast) var(--ease-out);
-}
-
-.ui-control-transition {
-  transition:
-    border-color var(--duration-fast) var(--ease-standard),
-    background-color var(--duration-fast) var(--ease-standard),
-    box-shadow var(--duration-fast) var(--ease-standard);
-}
-
-/* shadcn 式扫光占位：斜向高光扫过 muted 底。 */
-@keyframes ui-skeleton-shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.ui-skeleton {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius-md);
-  background: var(--surface-muted);
-}
-
-.ui-skeleton::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  transform: translateX(-100%);
-  background-image: linear-gradient(
-    90deg,
-    transparent,
-    var(--surface-overlay),
-    transparent
-  );
-  animation: ui-skeleton-shimmer 1.6s var(--ease-standard) infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ui-skeleton::after {
-    animation: none;
-  }
+.message-list-scroll {
+  scrollbar-gutter: stable;
+  min-width: 0;
+  overflow-x: clip;
 }

@@ -1,6 +1,6 @@
 import type { JSX } from 'solid-js';
 import { Show } from 'solid-js';
-import { IconButton } from '@/shared/ui';
+import { IconButton } from '@peri/ui';
 import { Settings } from 'lucide-solid';
 
 interface SidebarChromeProps {

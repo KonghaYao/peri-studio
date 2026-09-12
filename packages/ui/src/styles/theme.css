@@ -4,6 +4,8 @@
    exact pixel/color values the legacy rules used. */
 
 @import 'tailwindcss';
+@source '../components';
+@source '../lib';
 
 /*
  * `inline` mode: utilities resolve directly to the tokens' var() references

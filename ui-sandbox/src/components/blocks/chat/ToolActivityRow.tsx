@@ -10,8 +10,8 @@ import {
 } from 'lucide-solid';
 import { createMemo, createSignal, Show } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
-import { CopyButton } from '@/components/ui';
-import { cn } from '@/lib/cn';
+import { CopyButton } from '@/lib/catalog-ui';
+import { cn } from '@/lib/catalog-ui';
 
 export type ToolCallStatus = 'queued' | 'running' | 'done' | 'failed' | 'approval';
 

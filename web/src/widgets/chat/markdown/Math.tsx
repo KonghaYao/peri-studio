@@ -1,5 +1,5 @@
 import { createResource, Show } from 'solid-js';
-import { IconButton, RefreshIcon } from '@/shared/ui';
+import { IconButton, RefreshIcon } from '@peri/ui';
 import { memoizeAsync } from './async-cache';
 
 async function loadMath(expression: string, displayMode: boolean) {

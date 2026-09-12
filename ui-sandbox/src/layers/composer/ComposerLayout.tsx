@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
 import { TokenUsageMeter, UploadAssetTile } from '@/components/blocks/composer';
-import { IconButton, Select, Textarea } from '@/components/ui';
+import { IconButton, Select, Textarea } from '@/lib/catalog-ui';
 import { Mic, Plus, Send, ShieldCheck } from 'lucide-solid';
 
 /** Tier 4 · Composer 输入区组合。 */

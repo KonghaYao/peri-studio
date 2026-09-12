@@ -16,7 +16,7 @@ import { ChatEmptyWorkspace, CHAT_EMPTY_TITLE } from './ChatEmptyWorkspace';
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { chatCatalog, chatEntries, chatAgentLoading, chatHead, elicitationResponses, elicitations, permissions, questionResponses, questions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, respondQuestion, restoringSessionId, retryPersistentAction, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '@/store';
 import { readOnly } from '@/features/auth/auth-state';
-import { InlineNotice, LoadingState } from '@/shared/ui';
+import { InlineNotice, LoadingState } from '@peri/ui';
 import { selectAgentPublicErrorNotice } from '@/features/chat/agent-public-error-notice';
 import { ConnectionProblem } from '@/widgets/shell/ConnectionProblem';
 import { ErrorCenter } from '@/widgets/shell/ErrorCenter';

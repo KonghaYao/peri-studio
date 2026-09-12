@@ -1,6 +1,6 @@
 import { Show, type JSX } from 'solid-js';
 import { Check, Plus, ScanLine, SendHorizontal } from 'lucide-solid';
-import { Button, IconButton } from '@/shared/ui';
+import { Button, IconButton } from '@peri/ui';
 import { TokenUsageMeter } from '@/widgets/chat/TokenUsageMeter';
 import { openComposerUploadFilePicker } from './ComposerUploadSurface';
 import type { ComposerState } from './useComposerState';

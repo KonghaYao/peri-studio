@@ -1,7 +1,7 @@
 import { createEffect, Show } from 'solid-js';
 import { Box, SlidersHorizontal } from 'lucide-solid';
-import { Listbox, ListboxItem } from '@/shared/ui';
-import { cn } from '@/shared/lib/cn';
+import { Listbox, ListboxItem } from '@peri/ui';
+import { cn } from '@peri/ui';
 import type { AgentCommandInfo } from '@/entities/chat/control-view';
 import { slashMenuOptionId } from '@/features/composer/slash-menu';
 

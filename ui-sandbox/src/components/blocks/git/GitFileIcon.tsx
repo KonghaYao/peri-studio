@@ -1,5 +1,5 @@
 import { File, FileCode2, FileJson, FileText, FileType2 } from 'lucide-solid';
-import { cn } from '@/lib/cn';
+import { cn } from '@/lib/catalog-ui';
 
 function iconForPath(path: string) {
   const ext = path.split('.').pop()?.toLowerCase() ?? '';

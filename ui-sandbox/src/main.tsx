@@ -1,7 +1,6 @@
 import { render } from 'solid-js/web';
-import './styles/theme.css';
-import './styles/tokens.css';
 import './styles/base.css';
+import '@peri/ui/styles.css';
 import './styles/extra.css';
 import './styles/sandbox-shell.css';
 import './styles/git-graph.css';

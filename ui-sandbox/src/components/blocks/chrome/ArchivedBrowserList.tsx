@@ -1,6 +1,6 @@
 import { For } from 'solid-js';
-import { Button } from '@/components/ui';
-import { cn } from '@/lib/cn';
+import { Button } from '@/lib/catalog-ui';
+import { cn } from '@/lib/catalog-ui';
 
 export type ArchivedBrowserItem = {
   id: string;

@@ -1,6 +1,6 @@
 import { FolderRoot, PanelRightClose, Play, RotateCcw, SquareTerminal, X } from 'lucide-solid';
 import { createEffect, createMemo, createSignal, onCleanup, Show } from 'solid-js';
-import { Button, IconButton, Status, Terminal, type TerminalViewport } from '@/shared/ui';
+import { Button, IconButton, Status, Terminal, type TerminalViewport } from '@peri/ui';
 import {
   attachTerminalOutput,
   closeTerminal,

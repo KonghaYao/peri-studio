@@ -1,13 +1,15 @@
 ---
-status: active
+status: superseded
 date: 2026-08-30
 ---
 
 # UI 设计稿 → 生产 web 实施计划
 
-> 设计权威：`ui-sandbox/`（Tokens / Base UI / Blocks / Layers）  
-> 落地目标：`web/src/shared/ui` + `web/src/widgets/*`  
-> 规范：`docs/design/ui-specification.md`、`docs/design/frontend-architecture.md`  
+> **状态**：本文保留 2026-08 的 sandbox → Web 落地证据；当前 T1/T2 源码与工作流已由 [`ui-package-migration.md`](ui-package-migration.md) 取代。`packages/ui` 是唯一 T1/T2 实现，Web 与 Sandbox 均消费 `@peri/ui`；下文旧 `shared/ui`、独立 token/theme 路径只作历史记录。
+>
+> 历史设计权威：`ui-sandbox/`（Tokens / Base UI / Blocks / Layers）
+> 历史落地目标：`web/src/shared/ui` + `web/src/widgets/*`
+> 规范：`docs/design/ui-specification.md`、`docs/design/frontend-architecture.md`
 > Phase 6+ 执行顺序（搬家与 primitive 先于像素对齐）：[`frontend-rewrite-program.md`](frontend-rewrite-program.md)
 
 ## 阶段总览

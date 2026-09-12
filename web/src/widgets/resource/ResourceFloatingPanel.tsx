@@ -1,5 +1,5 @@
 import { type JSX, createEffect, createSignal, onCleanup } from 'solid-js';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '@peri/ui';
 import {
   WORKBENCH_PANEL_KEYBOARD_STEP,
   RESOURCE_PANEL_FLOATING_SHELL_CLASS,

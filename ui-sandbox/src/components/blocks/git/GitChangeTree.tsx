@@ -1,9 +1,9 @@
 import { createSignal } from 'solid-js';
 import { Minus, Plus, Trash2 } from 'lucide-solid';
-import { IconButton } from '@/components/ui';
+import { IconButton } from '@/lib/catalog-ui';
 import { FileTree, buildPathTree, folderPathsFromItems } from '@/components/blocks/resource';
 import { GitFileIcon } from './GitFileIcon';
-import { cn } from '@/lib/cn';
+import { cn } from '@/lib/catalog-ui';
 import type { GitChange, GitChangeGroupId, GitChangeStatus } from './types';
 
 const STATUS_TAIL: Record<GitChangeStatus, { letter: string; className: string }> = {

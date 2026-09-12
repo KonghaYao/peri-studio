@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogTitle } from '@/shared/ui';
+import { Dialog, DialogContent, DialogTitle } from '@peri/ui';
 import { runConfirmedMutation } from '@/features/session/form-mutation';
 import { sessionDisplayTitle } from '@/features/session/recovery-state';
 import { ArchivedBrowserDialog } from './ArchivedBrowserDialog';

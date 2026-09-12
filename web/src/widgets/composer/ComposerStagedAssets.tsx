@@ -1,6 +1,6 @@
 import { For, Show } from 'solid-js';
 import { FileText, Image as ImageIcon, Link2, X } from 'lucide-solid';
-import { IconButton } from '@/shared/ui';
+import { IconButton } from '@peri/ui';
 import { composerAssets, removeComposerAsset, type ComposerAssetKind } from '@/features/composer/composer-assets';
 
 function AssetIcon(props: { kind: ComposerAssetKind }) {

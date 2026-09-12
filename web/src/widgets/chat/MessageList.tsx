@@ -13,7 +13,7 @@ import { chatEntries, chatAgentLoading, chatHead, elicitations, permissions, ret
 import { nextFollowState } from '@/features/message/message-follow';
 import { messageTime } from '@/shared/lib/message-time';
 import type { ChatEntry } from '@/entities/chat/chat-view';
-import { Button, LoadingState, Skeleton } from '@/shared/ui';
+import { Button, LoadingState, Skeleton } from '@peri/ui';
 import { activityBoundaryAt, activityContinuationAt, isTurnTerminalNoticeOwner } from '@/features/chat/chat-render-blocks';
 import { ConversationMessage } from './ConversationMessage';
 import { PlanSystemEntryRow } from './PlanSystemEntryRow';

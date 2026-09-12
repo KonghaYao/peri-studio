@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
-import { Button } from '@/components/ui';
-import { cn } from '@/lib/cn';
+import { Button } from '@/lib/catalog-ui';
+import { cn } from '@/lib/catalog-ui';
 
 /** Commit 输入：sidebar 密度，无厚重边框控件。 */
 export function GitCommitBar(props: {

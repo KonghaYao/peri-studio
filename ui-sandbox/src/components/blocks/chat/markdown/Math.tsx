@@ -1,5 +1,5 @@
 import { createResource, Show } from 'solid-js';
-import { IconButton } from '@/components/ui';
+import { IconButton } from '@/lib/catalog-ui';
 import { memoizeAsync } from './async-cache';
 import { RefreshCw } from 'lucide-solid';
 

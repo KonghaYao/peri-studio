@@ -1,5 +1,5 @@
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
-import { Button, InlineNotice } from '@/components/ui';
+import { Button, InlineNotice } from '@/lib/catalog-ui';
 import { ExplorerDeleteDialog } from './ExplorerDeleteDialog';
 import { ExplorerMoveDialog } from './ExplorerMoveDialog';
 import { ExplorerSectionHeader } from './ExplorerSectionHeader';

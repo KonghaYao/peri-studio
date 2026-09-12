@@ -1,0 +1,46 @@
+@import '@xterm/xterm/css/xterm.css';
+
+/* 无法（或不宜）用 Tailwind token utility 表达的样式例外。
+ *
+ * 准入条件（须满足其一）：
+ * - 子选择器编排（如 Markdown 富文本、表单 dt/dd）
+ * - 浏览器私有属性（如 -webkit-line-clamp 栈）
+ * - 跨子树响应式组合（如 compact 断点下按钮行重排）
+ * - 第三方注入 DOM 的后代选择器（如 Mermaid SVG）
+ *
+ * 禁止：新颜色/间距/字号字面量——一律引用 tokens.css 的 var(--*)。
+ * JSX 默认只用 Tailwind；新增例外须加语义 class 并在此登记实现。 */
+
+/* ── 文本截断（WebKit 栈，Tailwind 无等价 token） ─────────────────────── */
+
+.ui-line-clamp-2 {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* ── xterm 在 flex 浮窗内须铺满 host ───────────────────────────────────── */
+
+.terminal-xterm-host,
+.terminal-xterm-host .xterm,
+.terminal-xterm-host .xterm-viewport {
+  height: 100%;
+  width: 100%;
+}
+
+.terminal-xterm-host .xterm-screen {
+  cursor: text;
+}
+
+.terminal-xterm-host .xterm-screen canvas {
+  image-rendering: auto;
+}
+
+.terminal-xterm-host .xterm-link {
+  color: var(--content-link);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+}
+

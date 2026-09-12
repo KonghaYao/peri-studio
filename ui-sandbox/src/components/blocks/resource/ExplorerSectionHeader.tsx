@@ -1,8 +1,8 @@
 import { FilePlus, FolderPlus, RefreshCw } from 'lucide-solid';
 import type { JSX } from 'solid-js';
 import { Show } from 'solid-js';
-import { IconButton } from '@/components/ui';
-import { cn } from '@/lib/cn';
+import { IconButton } from '@/lib/catalog-ui';
+import { cn } from '@/lib/catalog-ui';
 
 /** Files 区头：New File / New Folder / Refresh Explorer。 */
 export function ExplorerSectionHeader(props: {

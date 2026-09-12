@@ -1,7 +1,7 @@
 import { Popover as KPopover } from '@kobalte/core/popover';
 import { createMemo, createSignal, For } from 'solid-js';
 import type { AgentInfo } from '@/entities/chat/control-view';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '@peri/ui';
 
 type TokenUsage = NonNullable<AgentInfo['latestUsage']>;
 

@@ -1,5 +1,5 @@
 import { For, Show, type JSX } from 'solid-js';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '@peri/ui';
 import { VSCodeFileIcon } from './VSCodeFileIcon';
 
 export type FileTreeNode = {

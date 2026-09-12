@@ -11,7 +11,7 @@ import {
   EmptyState,
   IconButton,
   LoadingState,
-} from '@/shared/ui';
+} from '@peri/ui';
 import { CloudOff, Folder, FolderOpen, ListFilter, Pin } from 'lucide-solid';
 import { createProjectSession, creatingSessionProjectId, discoveringSessionsProjectId, isProjectCatalogBootstrapPending, projectSessions, readOnly } from '@/store';
 import { ProjectRowAccessory, ProjectRowActionGroup, SectionHeader } from './sidebar-parts';

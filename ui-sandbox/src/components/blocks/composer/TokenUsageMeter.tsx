@@ -1,6 +1,6 @@
 import { Popover as KPopover } from '@kobalte/core/popover';
 import { createMemo, createSignal, For } from 'solid-js';
-import { cn } from '@/lib/cn';
+import { cn } from '@/lib/catalog-ui';
 
 function formatCount(value: number) {
   return value.toLocaleString('en-US');

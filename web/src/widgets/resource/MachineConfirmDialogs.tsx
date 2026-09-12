@@ -1,5 +1,5 @@
 import { ConfirmDialog } from '@/widgets/shell/shared/ConfirmDialog';
-import { Dialog, DialogContent, DialogTitle } from '@/shared/ui';
+import { Dialog, DialogContent, DialogTitle } from '@peri/ui';
 
 interface ConfirmProps {
   open: boolean;

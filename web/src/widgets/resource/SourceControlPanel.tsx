@@ -1,5 +1,5 @@
 import { For, Show, createMemo, createSignal } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogTitle, LoadingState, Textarea } from '@/shared/ui';
+import { Button, Dialog, DialogContent, DialogTitle, LoadingState, Textarea } from '@peri/ui';
 import { mutateGitResource, openGitDiffPreview, openMoreGitChanges, resourceWorkspace, retryGitRepositoryMutation, retryGitResourceMutation } from '@/store';
 import type { RepositoryState } from '@/features/resource/resource-store';
 import { readOnly } from '@/features/auth/auth-state';

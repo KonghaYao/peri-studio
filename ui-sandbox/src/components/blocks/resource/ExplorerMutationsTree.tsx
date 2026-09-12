@@ -1,6 +1,6 @@
 import { For, Show, type JSX } from 'solid-js';
 import { File, Folder, FolderOpen } from 'lucide-solid';
-import { cn } from '@/lib/cn';
+import { cn } from '@/lib/catalog-ui';
 import type { FileTreeNode } from './FileTree';
 import { FileTreeInlineNameEditor } from './FileTreeInlineNameEditor';
 import { ExplorerItemMenu, type ExplorerMenuAction } from './ExplorerItemMenu';

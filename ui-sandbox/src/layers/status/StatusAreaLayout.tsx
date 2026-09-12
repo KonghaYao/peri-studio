@@ -1,5 +1,5 @@
 import { createSignal, For } from 'solid-js';
-import { Badge, Tabs } from '@/components/ui';
+import { Badge, Tabs } from '@/lib/catalog-ui';
 import { Check, Circle, GitBranch, ListTodo, Workflow } from 'lucide-solid';
 
 /** Tier 4 · 状态区组合：Tabs + 任务列表。 */

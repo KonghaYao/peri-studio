@@ -1,6 +1,6 @@
 import { Download } from 'lucide-solid';
 import { createMemo, For, Show, type JSX } from 'solid-js';
-import { CopyButton, IconButton } from '@/components/ui';
+import { CopyButton, IconButton } from '@/lib/catalog-ui';
 import { downloadText, safeFilename } from './download';
 import { MathExpression } from './Math';
 import { MermaidBlock } from './MermaidBlock';

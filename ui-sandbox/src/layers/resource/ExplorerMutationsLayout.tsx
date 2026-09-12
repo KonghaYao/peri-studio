@@ -1,5 +1,5 @@
 import { createSignal, For } from 'solid-js';
-import { Button } from '@/components/ui';
+import { Button } from '@/lib/catalog-ui';
 import { ExplorerMutationsPanel } from '@/components/blocks/resource/ExplorerMutationsPanel';
 import {
   EXPLORER_MUTATIONS_DEMO_MODES,

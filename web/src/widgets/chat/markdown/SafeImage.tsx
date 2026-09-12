@@ -1,5 +1,5 @@
 import { createSignal, Show, type JSX } from 'solid-js';
-import { Button } from '@/shared/ui';
+import { Button } from '@peri/ui';
 import { safeRemoteImageSource } from './source';
 
 export function SafeImage(props: JSX.ImgHTMLAttributes<HTMLImageElement>) {

@@ -1,5 +1,5 @@
 import type { JSX } from 'solid-js';
-import { cn } from '@/lib/cn';
+import { cn } from '@/lib/catalog-ui';
 
 type RowAccessorySlotProps = {
   /** Tailwind group 名，例如 group/row、group/workspace。 */

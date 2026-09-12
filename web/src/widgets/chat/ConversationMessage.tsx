@@ -9,10 +9,10 @@ import {
   type AssistantLayoutUnit,
 } from '@/features/chat/chat-render-blocks';
 import { messageTime } from '@/shared/lib/message-time';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '@peri/ui';
 import { splitSystemReminders } from '@/shared/lib/system-reminder';
 import { chatCatalog, selectedCid } from '@/store';
-import { CopyButton, IconButton, InlineNotice, Popover, PopoverContent, PopoverTrigger } from '@/shared/ui';
+import { CopyButton, IconButton, InlineNotice, Popover, PopoverContent, PopoverTrigger } from '@peri/ui';
 import { MessageSquareQuote, MoreHorizontal } from 'lucide-solid';
 import { Markdown } from './Markdown';
 import { ToolCallCard } from './ToolActivityRow';

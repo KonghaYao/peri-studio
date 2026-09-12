@@ -40,9 +40,13 @@ vi.mock('@/features/terminal/terminal-session', async (importOriginal) => {
   };
 });
 
-vi.mock('@/shared/ui/Terminal', () => ({
-  Terminal: () => null,
-}));
+vi.mock('@peri/ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@peri/ui')>();
+  return {
+    ...actual,
+    Terminal: () => null,
+  };
+});
 
 afterEach(() => {
   cleanup();

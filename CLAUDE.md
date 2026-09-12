@@ -25,8 +25,9 @@ Peri Studio 是 ACP agent 的持久 Web 工作台（仓库名 peri-studio，产�
 - `proto/`（peri-studio-proto）：共享协议 crate——ws 帧、HMAC 双向认证、RPC schema、Yjs 同步，三端共用的事实源
 - `server/`（peri-studio-server library）：中心控制面运行时，模块按职责拆分：`auth`（token/审计）、`channel`（命令协调、runtime 生命周期、catalog 同步）、`control`（registry、心跳）、`persist`（SQLite、outbox）、`protocol`（ACP 通道）、`state`、`web`；`build.rs` 编译期内嵌 `web/dist` 产物
 - `instance/`（peri-instance library）：运行 ACP 子进程的宿主运行时；仅测试辅助二进制 `test-child` 独立存在
-- `web/`：SolidJS 单页 SPA（**五层目录**：`app` / `pages` / `widgets` / `features` / `entities` / `shared` + `store`；权威规范见 `docs/design/frontend-architecture.md` 与根目录 `AGENTS.md`）。`panel/` 仅遗留 shim 与待迁 `lib`，**禁止在此新增业务实现**
-- `ui-sandbox/`：设计稿沙箱（T1 Tokens → T2 Base UI → T3 Blocks → T4 Layers），与 `web/` 构建隔离；**新 UI 须先在此定稿**再镜像生产（见 `docs/design/ui-implementation-plan.md`）
+- `web/`：SolidJS 单页 SPA（**五层目录**：`app` / `pages` / `widgets` / `features` / `entities` / `shared` + `store`；权威规范见 `docs/design/frontend-architecture.md` 与根目录 `AGENTS.md`）。`panel/` 已删除，禁止恢复兼容 shim
+- `packages/ui/`：私有 buildless workspace package `@peri/ui`，统一拥有 T1 token、Tailwind theme、T2 Base UI 与 `cn`
+- `ui-sandbox/`：手写 UI Catalog（Tokens / Components / Blocks / Layers），消费 `@peri/ui`；与 `web/` 构建隔离，**新 UI 须先在此定稿**再镜像生产（见 `docs/design/ui-package-migration.md`）
 - `docs/`：`architecture.md`（权威架构基准，v2.14 与实现对齐）、`terminology.md`（唯一权威术语表）、`topology.md`、`adr/`、`design/`（设计决策与验证证据）
 - `scripts/`：契约测试与端到端验证脚本（含 release 打包）
 - `dev.sh`：一键启动 server + instance 并校验就绪
@@ -57,9 +58,9 @@ cd web && bun run test        # typecheck + node --test + vitest + 生产边界�
 bun run test:browser          # Playwright 浏览器契约
 bun run build                 # 生成 web/dist（cargo 构建前必须先执行）
 
-# UI Sandbox（Bun）
-cd ui-sandbox && bun run typecheck
-cd ui-sandbox && bun run dev    # 等价于 dev-sandbox.sh，须用户手动执行
+# UI package / Catalog（Bun workspace；先在仓库根 bun install）
+cd packages/ui && bun run test
+cd ../../ui-sandbox && bun run typecheck && bun run build
 
 # Rust workspace
 cargo test -p peri-studio-proto
@@ -89,7 +90,7 @@ cargo run -q -p peri-studio -- status --json | --ready
 
 ## Web 前端分层规范（必读）
 
-**权威文档**：`docs/design/frontend-architecture.md`（目录、依赖、迁移）；`docs/design/frontend-rewrite-program.md`（**Phase 6+：拆 `panel/`、只 Tailwind、社区无头、业务逻辑只迁不改**）；`docs/design/ui-specification.md`（**视觉、token、组件、微文案**）；`docs/design/ui-implementation-plan.md`（**sandbox → web 映射与落地阶段**）；`AGENTS.md`（Agent 检查清单与工作流）。ADR：`docs/adr/0004-web-frontend-layered-architecture.md`。
+**权威文档**：`docs/design/frontend-architecture.md`（目录、依赖、迁移）；`docs/design/frontend-rewrite-program.md`（**Phase 6+：拆 `panel/`、只 Tailwind、社区无头、业务逻辑只迁不改**）；`docs/design/ui-specification.md`（**视觉、token、组件、微文案**）；`docs/design/ui-package-migration.md`（**`@peri/ui` 包边界与 Catalog 工作流**）；`docs/design/ui-implementation-plan.md`（历史 sandbox → web 落地证据）；`AGENTS.md`（Agent 检查清单与工作流）。ADR：`docs/adr/0004-web-frontend-layered-architecture.md`。
 
 | 层 | 路径 | 职责 |
 |----|------|------|
@@ -98,15 +99,16 @@ cargo run -q -p peri-studio -- status --json | --ready
 | 业务组件 | `web/src/widgets/` | Solid 组合块（shell / chat / composer / sidebar / auth / resource） |
 | 特性 | `web/src/features/` | 纯 TS 领域用例；**禁止 import store**（依赖注入） |
 | 实体 | `web/src/entities/` | Yjs 只读投影（chat / registry / resource / topology） |
-| 共享 | `web/src/shared/` | `ui` 设计系统、`lib`、`protocol`、`yjs` |
+| 共享 | `web/src/shared/` | `lib`、`protocol`、`yjs`；不含 UI |
+| 设计系统 | `packages/ui/` | `@peri/ui`：T1/T2、无业务语义组件与 `cn` |
 | 组合根 | `web/src/store/index.ts` | 全局信号与 `install*` 装配；业务逻辑委托 features |
 
 **UI Sandbox 与生产对齐**（细节见 `AGENTS.md` §UI Sandbox）：
 
-- 设计权威：`ui-sandbox/` 四级体系（T1 `styles/tokens.css` → T2 `components/ui` → T3 `components/blocks` → T4 `layers`）。
-- 落地映射：T2 → `web/src/shared/ui`；T3/T4 视觉 → `web/src/widgets/*`（禁止从生产 import sandbox）。
-- 流程：sandbox 定稿 → `bun run typecheck` → 镜像 `web` → `cd web && bun run test`。
-- **间距**：`web` 用 `--space-N` 像素 utility；勿把 sandbox 的 Tailwind class 原样抄到 `web` 而不换算。
+- T1/T2 唯一事实源：`packages/ui/src/styles` 与 `packages/ui/src/components`；Web 和 Catalog 只从 `@peri/ui` 公共入口消费。
+- Catalog：`ui-sandbox/` 保存 Components demo、T3 `components/blocks` 与 T4 `layers`，不复制 T2 实现。
+- 流程：先改 `@peri/ui` 契约与测试 → sandbox 定稿 → `bun run typecheck && bun run build` → 镜像 `web` → `cd web && bun run test && bun run build`。
+- **间距**：两个 consumer 都使用 package 的 `--space-N` 像素 utility；禁止重新引入独立 Tailwind 数值源。
 - 缺后端：sandbox/widget 用 mock；生产用 `features` + 测试，不在浏览器伪造 server 事实。
 
 **硬规则**：依赖只能自上而下（`shared` → `entities` → `features` → `widgets` → `pages` → `app`）；`widgets` 不得直发协议帧；新代码用 `@/` 路径别名，勿在 `panel/` 下新增实现。UI 颜色/间距/组件须符合 `ui-specification.md`；改 Web 结构须同步 `architecture.md` §10.2。
@@ -115,11 +117,11 @@ cargo run -q -p peri-studio -- status --json | --ready
 
 | 层级 | 文件 | 职责 |
 |------|------|------|
-| T1 · Token | `web/src/styles/tokens.css` | 颜色/间距/半径/容器/栅格模板的唯一数值源 |
-| T2 · Theme | `web/src/styles/theme.css` | Tailwind v4 `@theme inline` 映射（`bg-*`、`p-*`、`grid-cols-*`、`max-desk:` 等） |
-| T3 · Primitives | `web/src/styles/primitives.css` | 跨组件原子 class（滚动条、`.ui-spinner`、`.ui-control-transition`、Git graph） |
-| T4 · Extra | `web/src/styles/extra.css` | **无法纳入 Tailwind 的例外**：子选择器编排、WebKit 私有属性、第三方注入 DOM、复合响应式组合 |
-| 入口 | `web/src/styles.css` | `base → theme → primitives → extra` 级联顺序 |
+| T1 · Token | `packages/ui/src/styles/tokens.css` | 颜色/间距/半径/容器/栅格模板的唯一数值源 |
+| T2 · Theme / Base UI | `packages/ui/src/styles/theme.css`、`packages/ui/src/components/` | Tailwind v4 utility 映射与无业务语义组件 |
+| Web Primitives | `web/src/styles/primitives.css` | 应用级跨组件原子与布局；T2 原子属于 package |
+| Web Extra | `web/src/styles/extra.css` | **无法纳入 Tailwind 的应用例外**：子选择器、第三方注入 DOM、复合响应式组合 |
+| 入口 | `web/src/styles.css` | `base → @peri/ui → web primitives → web extra` 级联顺序 |
 
 - **JSX 默认只用 Tailwind token utility**（`w-(--container-*)`、`gap-8`、`max-desk:`）；禁止 `w-[…]`、`max-[640px]:` 等任意 bracket 写法（`css-contracts` 对 `widgets/` 扫描）。
 - **重复栅格**优先在 `tokens.css` 声明 `--grid-cols-*` 并在 `theme.css` 映射为 `grid-cols-*` utility，而非 bracket。

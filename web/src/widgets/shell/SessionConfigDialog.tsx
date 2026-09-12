@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import type { SessionConfigOptionInfo } from '@/entities/chat/control-view';
-import { Select } from '@/shared/ui/Select';
+import { Select } from '@peri/ui';
 import { composerModelLabel } from '@/features/composer/composer-model-label';
 import { readOnly } from '@/features/auth/auth-state';
 import { connState } from '@/features/connection/connection';

@@ -1,6 +1,6 @@
 import { Show, type JSX } from 'solid-js';
-import { Dialog, DialogContent, DialogTitle } from '@/shared/ui';
-import { cn } from '@/shared/lib/cn';
+import { Dialog, DialogContent, DialogTitle } from '@peri/ui';
+import { cn } from '@peri/ui';
 
 interface ProjectDrawerProps {
   open: boolean;

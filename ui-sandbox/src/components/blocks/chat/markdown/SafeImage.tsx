@@ -1,5 +1,5 @@
 import { createSignal, Show, type JSX } from 'solid-js';
-import { Button } from '@/components/ui';
+import { Button } from '@/lib/catalog-ui';
 import { safeRemoteImageSource } from './safe';
 
 /** 沙箱默认直出远程图；生产可设 requireConsent。 */

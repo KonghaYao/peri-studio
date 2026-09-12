@@ -1,4 +1,4 @@
-import { cn } from '@/lib/cn';
+import { cn } from '@/lib/catalog-ui';
 import type { GitChangeStatus } from './types';
 
 const STATUS_META: Record<GitChangeStatus, { letter: string; className: string }> = {

@@ -52,9 +52,9 @@ test('the visual fixture is a development-only entry and cannot bypass productio
 });
 
 test('component geometry tokens are declared once and consumed by production widgets', () => {
-  const root = join(import.meta.dirname, '..', 'src');
-  const read = (...parts) => readFileSync(join(root, ...parts), 'utf8');
-  const tokens = read('styles', 'tokens.css');
+  const webRoot = join(import.meta.dirname, '..', 'src');
+  const read = (...parts) => readFileSync(join(webRoot, ...parts), 'utf8');
+  const tokens = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'styles', 'tokens.css'), 'utf8');
   const composer = [
     read('widgets', 'composer', 'Composer.tsx'),
     read('widgets', 'composer', 'ComposerStagedAssets.tsx'),
@@ -70,7 +70,7 @@ test('component geometry tokens are declared once and consumed by production wid
   const decisionCard = read('widgets', 'chat', 'DecisionCard.tsx');
   const explorer = read('widgets', 'resource', 'ExplorerPanel.tsx');
   const sourceControl = read('widgets', 'resource', 'SourceControlPanel.tsx');
-  const button = read('shared', 'ui', 'Button.tsx');
+  const button = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Button.tsx'), 'utf8');
 
   for (const token of [
     'control-height-compact', 'pattern-row-height', 'tree-row-height',

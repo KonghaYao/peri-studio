@@ -7,11 +7,11 @@ import {
   PopoverTrigger,
   TextField,
   Button,
-} from '@/shared/ui';
+} from '@peri/ui';
 import { Pencil } from 'lucide-solid';
 import { formatCompactRelativeTime, sessionDisplayTitle } from '@/features/session/recovery-state';
 import { runConfirmedMutation } from '@/features/session/form-mutation';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '@peri/ui';
 import { SessionRowAccessory } from './sidebar-parts';
 
 export interface SessionRowState {

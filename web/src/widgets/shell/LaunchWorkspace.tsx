@@ -1,5 +1,5 @@
 import { createMemo, Show } from 'solid-js';
-import { Button } from '@/shared/ui';
+import { Button } from '@peri/ui';
 import { ChatEmptyWorkspace, CHAT_EMPTY_TITLE } from '@/widgets/chat/ChatEmptyWorkspace';
 import { readOnly } from '@/features/auth/auth-state';
 import { selectActiveProjects, selectArchivedProjects } from '@/features/catalog/project-catalog';

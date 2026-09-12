@@ -1,5 +1,5 @@
 import { splitProps, type JSX } from 'solid-js';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '@peri/ui';
 
 /** 空会话主标题（输入框上方）。 */
 export const CHAT_EMPTY_TITLE = 'What do you want to build?';

@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   IconButton,
-} from '@/shared/ui';
+} from '@peri/ui';
 
 export type ExplorerMenuAction = 'new-file' | 'new-folder' | 'rename' | 'move' | 'copy-path' | 'delete';
 

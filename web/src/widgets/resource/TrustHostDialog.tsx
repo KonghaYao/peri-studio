@@ -1,5 +1,5 @@
 import { Show } from 'solid-js';
-import { Button, CopyButton, Dialog, DialogContent } from '@/shared/ui';
+import { Button, CopyButton, Dialog, DialogContent } from '@peri/ui';
 import { readOnly } from '@/features/auth/auth-state';
 import { FormDialogShell } from '@/widgets/shell/shared/FormDialogShell';
 

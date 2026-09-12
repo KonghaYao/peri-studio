@@ -4,8 +4,8 @@ import {
   TokenUsageMeter,
   UploadAssetTile,
 } from '@/components/blocks/composer';
-import { Button } from '@/components/ui';
-import { IconButton, Select, Textarea } from '@/components/ui';
+import { Button } from '@/lib/catalog-ui';
+import { IconButton, Select, Textarea } from '@/lib/catalog-ui';
 import { Mic, Plus, Send, ShieldCheck } from 'lucide-solid';
 import type { UploadAssetTileStatus } from '@/components/blocks/composer/upload-asset-tile-types';
 

@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
-import { cn } from '@/lib/cn';
-import { Skeleton } from '@/components/ui';
+import { cn } from '@/lib/catalog-ui';
+import { Skeleton } from '@/lib/catalog-ui';
 
 function ThinkingGap() {
   return (

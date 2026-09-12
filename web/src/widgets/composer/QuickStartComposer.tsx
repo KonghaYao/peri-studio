@@ -1,5 +1,5 @@
 import { createEffect, createSignal, createUniqueId, Show } from 'solid-js';
-import { Button, IconButton, InlineNotice, Textarea } from '@/shared/ui';
+import { Button, IconButton, InlineNotice, Textarea } from '@peri/ui';
 import { createSessionWithFirstMessage, creatingSessionProjectId, retryQuickStart, clearSubmittedWorkspaceUploads } from '@/store';
 import { readOnly } from '@/features/auth/auth-state';
 import { dismissFailedQuickStart, quickStartSubmission } from '@/features/message/quick-start-delivery';

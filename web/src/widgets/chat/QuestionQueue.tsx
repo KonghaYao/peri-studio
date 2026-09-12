@@ -14,7 +14,7 @@ import {
   RadioGroupItemControl,
   RadioGroupItemInput,
   RadioGroupItemLabel,
-} from '@/shared/ui';
+} from '@peri/ui';
 import { Clock3, LockKeyhole } from 'lucide-solid';
 import { DecisionCard } from './DecisionCard';
 

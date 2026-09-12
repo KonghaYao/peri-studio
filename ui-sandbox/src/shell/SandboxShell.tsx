@@ -1,19 +1,19 @@
 import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { PAGE_CATALOG, parseSandboxHash, ROUTE_META, sandboxHref, scrollToSection, type SandboxRoute } from '@/catalog/page-sections';
-import { cn } from '@/lib/cn';
-import { IconButton } from '@/components/ui';
+import { cn } from '@/lib/catalog-ui';
+import { IconButton } from '@/lib/catalog-ui';
 import { List, X } from 'lucide-solid';
 
 function ChapterNav(props: { route: SandboxRoute; activeSection?: string; onNavigate?: () => void }) {
   const groups = () => PAGE_CATALOG[props.route];
 
   return (
-    <nav class="flex flex-col gap-3 p-3" aria-label="Page sections">
+    <nav class="flex flex-col gap-12 p-12" aria-label="Page sections">
       <For each={groups()}>
         {(group) => (
           <div>
             <Show when={group.title}>
-              <div class="px-2 pb-1 text-10 font-medium tracking-caps uppercase text-content-faint">{group.title}</div>
+              <div class="px-8 pb-4 text-10 font-medium tracking-caps uppercase text-content-faint">{group.title}</div>
             </Show>
             <ul class="flex flex-col gap-0.5">
               <For each={group.items}>
@@ -22,7 +22,7 @@ function ChapterNav(props: { route: SandboxRoute; activeSection?: string; onNavi
                     <a
                       href={sandboxHref(props.route, item.id)}
                       class={cn(
-                        'block rounded-md px-2 py-1.5 text-12 no-underline transition-colors duration-(--duration-fast)',
+                        'block rounded-md px-8 py-6 text-12 no-underline transition-colors duration-(--duration-fast)',
                         props.activeSection === item.id
                           ? 'bg-sidebar-selected font-medium text-content-primary'
                           : 'text-content-secondary hover:bg-interaction-hover hover:text-content-primary',
@@ -68,14 +68,14 @@ export function SandboxShell(props: { children: unknown }) {
 
   const tabClass = (active: boolean) =>
     cn(
-      'relative flex-none px-3 py-2.5 text-13 no-underline transition-colors duration-(--duration-fast)',
+      'relative flex-none px-12 py-10 text-13 no-underline transition-colors duration-(--duration-fast)',
       active ? 'font-medium text-accent-solid' : 'text-content-secondary hover:text-content-primary',
     );
 
   return (
     <div class="sandbox-app">
       <header class="sandbox-header">
-        <div class="flex min-h-12 items-center gap-3 px-4">
+        <div class="flex min-h-48 items-center gap-12 px-16">
           <div class="min-w-0 flex-1">
             <div class="text-14 font-semibold tracking-tight text-content-primary">Peri Studio</div>
             <div class="text-10 text-content-muted">UI Sandbox</div>
@@ -88,7 +88,7 @@ export function SandboxShell(props: { children: unknown }) {
             <List size={18} />
           </IconButton>
         </div>
-        <nav class="flex gap-1 overflow-x-auto border-t border-border-subtle px-3" aria-label="Tiers">
+        <nav class="flex gap-4 overflow-x-auto border-t border-border-subtle px-12" aria-label="Tiers">
           <For each={(['tokens', 'components', 'blocks', 'layers'] as SandboxRoute[])}>
             {(id) => {
               const meta = ROUTE_META[id];
@@ -96,9 +96,9 @@ export function SandboxShell(props: { children: unknown }) {
               return (
                 <a href={sandboxHref(id)} class={tabClass(active())} aria-current={active() ? 'page' : undefined}>
                   <span class="text-10 text-content-faint">{meta.tier}</span>
-                  <span class="ml-1">{meta.label}</span>
+                  <span class="ml-4">{meta.label}</span>
                   <Show when={active()}>
-                    <span class="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-accent-solid" aria-hidden="true" />
+                    <span class="absolute inset-x-8 bottom-0 h-2 rounded-full bg-accent-solid" aria-hidden="true" />
                   </Show>
                 </a>
               );
@@ -124,7 +124,7 @@ export function SandboxShell(props: { children: unknown }) {
             onClick={() => setDrawerOpen(false)}
           />
           <aside class="sandbox-chapters sandbox-chapters-drawer" aria-label="Section navigation">
-            <div class="flex items-center justify-between border-b border-border-subtle px-3 py-2">
+            <div class="flex items-center justify-between border-b border-border-subtle px-12 py-8">
               <span class="text-12 font-medium text-content-primary">Sections</span>
               <IconButton label="Close section menu" size="sm" onClick={() => setDrawerOpen(false)}>
                 <X size={16} />
