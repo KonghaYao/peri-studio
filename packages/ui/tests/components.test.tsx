@@ -1,6 +1,25 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { createSignal } from 'solid-js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { AspectRatio } from '../src/components/AspectRatio';
+import {
+  Breadcrumb,
+  BreadcrumbEllipsis,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '../src/components/Breadcrumb';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '../src/components/Pagination';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../src/components/Accordion';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../src/components/Collapsible';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '../src/components/Table';
@@ -13,7 +32,9 @@ import { Terminal } from '../src/components/Terminal';
 import { Icon } from '../src/components/Icon';
 import { Badge } from '../src/components/Badge';
 import { CopyButton } from '../src/components/CopyButton';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../src/components/AlertDialog';
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '../src/components/Dialog';
+import { Sheet, SheetClose, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '../src/components/Sheet';
 import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from '../src/components/Checkbox';
 import { Label } from '../src/components/Label';
 import { Separator } from '../src/components/Separator';
@@ -22,6 +43,7 @@ import { Kbd } from '../src/components/Kbd';
 import { Progress, ProgressFill, ProgressLabel, ProgressTrack, ProgressValueLabel } from '../src/components/Progress';
 import { Slider, SliderFill, SliderThumb, SliderTrack } from '../src/components/Slider';
 import { TextField } from '../src/components/Field';
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput, InputGroupText } from '../src/components/InputGroup';
 import { Listbox, ListboxItem } from '../src/components/Listbox';
 import { Popover, PopoverContent, PopoverTrigger } from '../src/components/Popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../src/components/dropdown-menu';
@@ -40,8 +62,106 @@ import { Skeleton } from '../src/components/Skeleton';
 import { Spinner } from '../src/components/Spinner';
 import { dismissToast, showToast, Toaster } from '../src/components/Toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../src/components/Tooltip';
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '../src/components/context-menu';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '../src/components/HoverCard';
+import { ScrollArea, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport } from '../src/components/ScrollArea';
 
 afterEach(() => cleanup());
+
+describe('Breadcrumb', () => {
+  it('renders semantic nav/ol/li structure with muted typography', () => {
+    render(() => (
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Home</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Settings</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+    ));
+    const nav = screen.getByRole('navigation', { name: 'breadcrumb' });
+    expect(nav.querySelector('ol')).toHaveClass('text-12', 'text-content-muted', 'gap-8');
+    expect(screen.getByRole('link', { name: 'Home' })).toHaveClass('hover:text-content-primary');
+    const current = screen.getByText('Settings');
+    expect(current).toHaveAttribute('aria-current', 'page');
+    expect(current).toHaveClass('font-medium', 'text-content-primary');
+    expect(nav.querySelectorAll('li')).toHaveLength(3);
+  });
+
+  it('renders ellipsis with accessible hidden label', () => {
+    render(() => (
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbEllipsis data-testid="ellipsis" />
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+    ));
+    expect(screen.getByTestId('ellipsis')).toHaveClass('size-24');
+    expect(screen.getByText('More')).toHaveClass('sr-only');
+  });
+});
+
+describe('Pagination', () => {
+  it('renders navigation with active page semantics', () => {
+    render(() => (
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious href="#" />
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationLink href="#" isActive>2</PaginationLink>
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationNext href="#" />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    ));
+    expect(screen.getByRole('navigation', { name: 'pagination' })).toBeInTheDocument();
+    const active = screen.getByRole('link', { name: '2' });
+    expect(active).toHaveAttribute('aria-current', 'page');
+    expect(active).toHaveClass('border-border-strong', 'bg-surface-overlay');
+    expect(active).not.toHaveAttribute('isActive');
+    expect(screen.getByRole('link', { name: 'Go to previous page' })).toHaveTextContent('Previous');
+    expect(screen.getByRole('link', { name: 'Go to next page' })).toHaveTextContent('Next');
+  });
+
+  it('renders ellipsis without leaking component props', () => {
+    render(() => (
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationEllipsis data-testid="ellipsis" />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    ));
+    expect(screen.getByTestId('ellipsis')).toHaveClass('size-32');
+    expect(screen.getByText('More pages')).toHaveClass('sr-only');
+  });
+});
+
+describe('AspectRatio', () => {
+  it('locks child content to the requested ratio with overflow hidden', () => {
+    render(() => (
+      <AspectRatio ratio={16 / 9} data-testid="ratio">
+        <img src="/preview.png" alt="Preview" />
+      </AspectRatio>
+    ));
+    const root = screen.getByTestId('ratio');
+    expect(root).toHaveStyle({ 'aspect-ratio': '1.7777777777777777' });
+    const inner = root.firstElementChild;
+    expect(inner).toHaveClass('absolute', 'inset-0', 'overflow-hidden');
+    expect(screen.getByRole('img', { name: 'Preview' })).toBeInTheDocument();
+  });
+});
 
 describe('Accordion', () => {
   it('keeps controlled expansion and trigger semantics', () => {
@@ -334,6 +454,58 @@ describe('Badge', () => {
     expect(badge).not.toHaveAttribute('tone');
     expect(badge).toHaveClass('text-text-secondary');
     expect(badge.querySelector('.ui-badge__dot')).toHaveClass('bg-warning');
+  });
+});
+
+describe('InputGroup', () => {
+  it('composes addon and input without leaking align', () => {
+    render(() => (
+      <InputGroup data-testid="group">
+        <InputGroupInput aria-label="Search" placeholder="Find sessions" />
+        <InputGroupAddon data-testid="prefix">
+          <InputGroupText>$</InputGroupText>
+        </InputGroupAddon>
+        <InputGroupAddon align="inline-end" data-testid="suffix">
+          <InputGroupButton aria-label="Clear">×</InputGroupButton>
+        </InputGroupAddon>
+      </InputGroup>
+    ));
+    const group = screen.getByTestId('group');
+    expect(group).toHaveClass('rounded-6', 'border-border-strong', 'focus-within:border-focus-ring');
+    expect(screen.getByTestId('prefix')).toHaveAttribute('data-align', 'inline-start');
+    expect(screen.getByTestId('prefix')).toHaveClass('order-first', 'px-12', 'text-content-muted');
+    expect(screen.getByTestId('suffix')).toHaveAttribute('data-align', 'inline-end');
+    expect(screen.getByTestId('suffix')).toHaveClass('order-last');
+    expect(screen.getByRole('textbox', { name: 'Search' })).toHaveClass('border-0', 'bg-transparent');
+    expect(screen.getByTestId('prefix')).not.toHaveAttribute('align');
+  });
+
+  it('highlights the group border when the input is focused', () => {
+    render(() => (
+      <InputGroup data-testid="group">
+        <InputGroupInput aria-label="Amount" />
+        <InputGroupAddon>
+          <InputGroupText>USD</InputGroupText>
+        </InputGroupAddon>
+      </InputGroup>
+    ));
+    const input = screen.getByRole('textbox', { name: 'Amount' });
+    fireEvent.focusIn(input);
+    expect(screen.getByTestId('group')).toHaveClass('focus-within:border-focus-ring');
+  });
+
+  it('reflects disabled state on the group shell', () => {
+    render(() => (
+      <InputGroup data-testid="group">
+        <InputGroupInput aria-label="Token" disabled />
+        <InputGroupAddon>
+          <InputGroupText>key</InputGroupText>
+        </InputGroupAddon>
+      </InputGroup>
+    ));
+    const group = screen.getByTestId('group');
+    expect(screen.getByRole('textbox', { name: 'Token' })).toBeDisabled();
+    expect(group).toHaveClass('has-[:disabled]:opacity-45', 'has-[:disabled]:cursor-not-allowed');
   });
 });
 
@@ -630,6 +802,57 @@ describe('DropdownMenuItem', () => {
   });
 });
 
+describe('ContextMenu', () => {
+  it('opens on contextmenu and uses shared menu item styling', async () => {
+    render(() => (
+      <ContextMenu>
+        <ContextMenuTrigger data-testid="trigger">Workspace</ContextMenuTrigger>
+        <ContextMenuContent aria-label="Workspace actions">
+          <ContextMenuItem>Rename</ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+    ));
+    fireEvent.contextMenu(screen.getByTestId('trigger'));
+    const item = await screen.findByRole('menuitem', { name: 'Rename' });
+    expect(item).toHaveClass('min-h-32', 'rounded-6', 'text-13');
+    expect(document.body.contains(item)).toBe(true);
+  });
+});
+
+describe('HoverCard', () => {
+  it('renders portal-mounted hover content with popover-like styling', async () => {
+    render(() => (
+      <HoverCard open>
+        <HoverCardTrigger>Profile</HoverCardTrigger>
+        <HoverCardContent aria-label="Profile details">Contributor since 2024</HoverCardContent>
+      </HoverCard>
+    ));
+    const content = await screen.findByText('Contributor since 2024');
+    expect(content).toHaveClass('rounded-8', 'border-border-subtle', 'bg-surface', 'shadow-popover');
+    expect(document.body.contains(content)).toBe(true);
+  });
+});
+
+describe('ScrollArea', () => {
+  it('composes viewport overflow with the shared scrollbar recipe', () => {
+    render(() => (
+      <ScrollArea class="max-h-120" data-testid="scroll-area">
+        <ScrollAreaViewport data-testid="scroll-viewport">
+          <div>Row one</div>
+          <div>Row two</div>
+        </ScrollAreaViewport>
+        <ScrollAreaScrollbar orientation="vertical" data-testid="scroll-bar">
+          <ScrollAreaThumb data-testid="scroll-thumb" />
+        </ScrollAreaScrollbar>
+      </ScrollArea>
+    ));
+    expect(screen.getByTestId('scroll-area')).toHaveClass('relative', 'overflow-hidden', 'max-h-120');
+    expect(screen.getByTestId('scroll-viewport')).toHaveClass('overflow-auto', 'ui-scrollbar');
+    expect(screen.getByTestId('scroll-bar')).toHaveAttribute('data-orientation', 'vertical');
+    expect(screen.getByTestId('scroll-thumb')).toHaveClass('rounded-full', 'bg-scrollbar-thumb');
+  });
+});
+
 describe('CopyButton', () => {
   it('reports success and writes the exact source', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
@@ -646,6 +869,81 @@ describe('CopyButton', () => {
     render(() => <CopyButton text="source" label="Copy" />);
     fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Copy failed' })).toBeInTheDocument());
+  });
+});
+
+describe('AlertDialog', () => {
+  it('renders open alertdialog with cancel and action buttons', async () => {
+    render(() => (
+      <AlertDialog open>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete session?</AlertDialogTitle>
+            <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="danger">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    ));
+    await waitFor(() => expect(screen.getByRole('alertdialog')).toBeInTheDocument());
+    expect(screen.getByRole('heading', { name: 'Delete session?' })).toBeInTheDocument();
+    expect(screen.getByText('This cannot be undone.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toHaveClass('border-border-strong', 'bg-surface-overlay');
+    expect(screen.getByRole('button', { name: 'Delete' })).toHaveClass('text-danger');
+    expect(document.querySelector('[data-alert-dialog-overlay]')).toBeInTheDocument();
+  });
+
+  it('exposes trigger dialog semantics before opening', () => {
+    render(() => (
+      <AlertDialog>
+        <AlertDialogTrigger>Remove session</AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogTitle>Remove session?</AlertDialogTitle>
+        </AlertDialogContent>
+      </AlertDialog>
+    ));
+    const trigger = screen.getByRole('button', { name: 'Remove session' });
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+describe('Sheet', () => {
+  it('renders open drawer content with side token width', async () => {
+    render(() => (
+      <Sheet open>
+        <SheetContent side="right">
+          <SheetHeader>
+            <SheetTitle>Session details</SheetTitle>
+            <SheetClose aria-label="Close session details" />
+          </SheetHeader>
+          <SheetFooter>
+            <button type="button">Save</button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+    ));
+    const dialog = await waitFor(() => screen.getByRole('dialog', { name: 'Session details' }));
+    expect(dialog).toHaveClass('w-(--container-drawer)', 'data-[expanded]:slide-in-from-right');
+    expect(document.querySelector('[data-sheet-overlay]')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Close session details' })).toBeInTheDocument();
+  });
+
+  it('exposes trigger dialog semantics before opening', () => {
+    render(() => (
+      <Sheet>
+        <SheetTrigger>Open panel</SheetTrigger>
+        <SheetContent>
+          <SheetTitle>Panel</SheetTitle>
+        </SheetContent>
+      </Sheet>
+    ));
+    const trigger = screen.getByRole('button', { name: 'Open panel' });
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 });
 

@@ -21,6 +21,7 @@ import {
   Tooltip,
 } from '@/lib/catalog-ui';
 import { ComponentCatalogExtras } from '@/pages/ComponentCatalogExtras';
+import { ComponentCatalogExtrasB } from '@/pages/ComponentCatalogExtrasB';
 import { CatalogDemo, DemoRow, TierHeader } from '@/pages/shared/DemoSection';
 import { Bell, Archive, Inbox, Mic, MoreHorizontal, Pencil, Pin, Plus, Search, Send, Settings, Trash2 } from 'lucide-solid';
 
@@ -93,7 +94,7 @@ export function ComponentsPage() {
           <Input placeholder="Error state" invalid />
           <Input placeholder="Disabled" disabled />
         </div>
-        <Textarea rows={3} placeholder="Multi-line input…" class="max-w-xl" />
+        <Textarea rows={3} placeholder="Multi-line input…" class="max-w-xl" aria-label="Multi-line input" />
       </CatalogDemo>
 
       <CatalogDemo id="select" title="Select · Checkbox · Radio" description="Kobalte 基元保证键盘导航与焦点陷阱。">
@@ -214,6 +215,7 @@ export function ComponentsPage() {
       </CatalogDemo>
 
       <ComponentCatalogExtras />
+      <ComponentCatalogExtrasB />
     </div>
   );
 }

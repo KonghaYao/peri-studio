@@ -5,6 +5,19 @@ import * as DropdownMenuPrimitive from "@kobalte/core/dropdown-menu"
 import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 
 import { cn } from '../lib/cn';
+import {
+  menuCheckboxItemClass,
+  menuContentClass,
+  menuGroupLabelClass,
+  menuItemClass,
+  menuItemIndicatorClass,
+  menuLabelClass,
+  menuRadioItemClass,
+  menuSeparatorClass,
+  menuShortcutClass,
+  menuSubContentClass,
+  menuSubTriggerClass,
+} from './menu-styles';
 
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
 const DropdownMenuPortal = DropdownMenuPrimitive.Portal
@@ -28,10 +41,7 @@ const DropdownMenuContent = <T extends ValidComponent = "div">(
   return (
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
-        class={cn(
-          "absolute z-50 flex min-w-(--container-menu-min) flex-col overflow-hidden rounded-8 border border-border-subtle bg-surface p-4 text-text-primary shadow-popover outline-none origin-[var(--kb-menu-content-transform-origin)] animate-content-hide data-[expanded]:animate-content-show",
-          props.class
-        )}
+        class={cn(menuContentClass, props.class)}
         {...rest}
       />
     </DropdownMenuPrimitive.Portal>
@@ -49,10 +59,7 @@ const DropdownMenuItem = <T extends ValidComponent = "div">(
   const [, rest] = splitProps(props as DropdownMenuItemProps, ["class"])
   return (
     <DropdownMenuPrimitive.Item
-      class={cn(
-        "relative flex w-full min-h-32 cursor-pointer select-none items-center gap-8 rounded-6 border-0 bg-transparent px-12 text-left text-13 text-text-primary outline-none transition-colors data-[highlighted]:bg-hover focus-visible:bg-hover focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-45 [@media(pointer:coarse)]:min-h-44 [@media(pointer:coarse)]:w-full",
-        props.class
-      )}
+      class={cn(menuItemClass, props.class)}
       {...rest}
     />
   )
@@ -60,14 +67,14 @@ const DropdownMenuItem = <T extends ValidComponent = "div">(
 
 const DropdownMenuShortcut: Component<ComponentProps<"span">> = (props) => {
   const [, rest] = splitProps(props, ["class"])
-  return <span class={cn("ml-auto text-11 tracking-widest text-text-muted opacity-60", props.class)} {...rest} />
+  return <span class={cn(menuShortcutClass, props.class)} {...rest} />
 }
 
 const DropdownMenuLabel: Component<ComponentProps<"div"> & { inset?: boolean }> = (props) => {
   const [, rest] = splitProps(props, ["class", "inset"])
   return (
     <div
-      class={cn("px-12 py-8 text-11 font-600 text-text-muted", props.inset && "pl-32", props.class)}
+      class={cn(menuLabelClass, props.inset && "pl-32", props.class)}
       {...rest}
     />
   )
@@ -84,7 +91,7 @@ const DropdownMenuSeparator = <T extends ValidComponent = "hr">(
   const [, rest] = splitProps(props as DropdownMenuSeparatorProps, ["class"])
   return (
     <DropdownMenuPrimitive.Separator
-      class={cn("-mx-4 my-4 h-px bg-divider", props.class)}
+      class={cn(menuSeparatorClass, props.class)}
       {...rest}
     />
   )
@@ -102,10 +109,7 @@ const DropdownMenuSubTrigger = <T extends ValidComponent = "div">(
   const [, rest] = splitProps(props as DropdownMenuSubTriggerProps, ["class", "children"])
   return (
     <DropdownMenuPrimitive.SubTrigger
-      class={cn(
-        "flex min-h-32 cursor-default select-none items-center rounded-6 px-12 text-13 text-text-primary outline-none data-[highlighted]:bg-hover data-[state=open]:bg-hover",
-        props.class
-      )}
+      class={cn(menuSubTriggerClass, props.class)}
       {...rest}
     >
       {props.children}
@@ -136,10 +140,7 @@ const DropdownMenuSubContent = <T extends ValidComponent = "div">(
   const [, rest] = splitProps(props as DropdownMenuSubContentProps, ["class"])
   return (
     <DropdownMenuPrimitive.SubContent
-      class={cn(
-        "z-50 min-w-(--container-menu-min) origin-[var(--kb-menu-content-transform-origin)] overflow-hidden rounded-8 border border-border-subtle bg-surface p-4 text-text-primary shadow-popover outline-none animate-content-hide data-[expanded]:animate-content-show",
-        props.class
-      )}
+      class={cn(menuSubContentClass, props.class)}
       {...rest}
     />
   )
@@ -157,13 +158,10 @@ const DropdownMenuCheckboxItem = <T extends ValidComponent = "div">(
   const [, rest] = splitProps(props as DropdownMenuCheckboxItemProps, ["class", "children"])
   return (
     <DropdownMenuPrimitive.CheckboxItem
-      class={cn(
-        "relative flex min-h-32 cursor-default select-none items-center rounded-6 py-8 pl-32 pr-12 text-13 text-text-primary outline-none transition-colors data-[highlighted]:bg-hover focus-visible:bg-hover data-[disabled]:pointer-events-none data-[disabled]:opacity-45",
-        props.class
-      )}
+      class={cn(menuCheckboxItemClass, props.class)}
       {...rest}
     >
-      <span class="absolute left-12 flex size-14 items-center justify-center">
+      <span class={menuItemIndicatorClass}>
         <DropdownMenuPrimitive.ItemIndicator>
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -195,7 +193,7 @@ const DropdownMenuGroupLabel = <T extends ValidComponent = "span">(
   const [, rest] = splitProps(props as DropdownMenuGroupLabelProps, ["class"])
   return (
     <DropdownMenuPrimitive.GroupLabel
-      class={cn("px-12 py-8 text-11 font-600 text-text-muted", props.class)}
+      class={cn(menuGroupLabelClass, props.class)}
       {...rest}
     />
   )
@@ -213,13 +211,10 @@ const DropdownMenuRadioItem = <T extends ValidComponent = "div">(
   const [, rest] = splitProps(props as DropdownMenuRadioItemProps, ["class", "children"])
   return (
     <DropdownMenuPrimitive.RadioItem
-      class={cn(
-        "relative flex min-h-32 cursor-default select-none items-center rounded-6 py-8 pl-32 pr-12 text-13 text-text-primary outline-none transition-colors data-[highlighted]:bg-hover focus-visible:bg-hover data-[disabled]:pointer-events-none data-[disabled]:opacity-45",
-        props.class
-      )}
+      class={cn(menuRadioItemClass, props.class)}
       {...rest}
     >
-      <span class="absolute left-12 flex size-14 items-center justify-center">
+      <span class={menuItemIndicatorClass}>
         <DropdownMenuPrimitive.ItemIndicator>
           <svg
             xmlns="http://www.w3.org/2000/svg"
