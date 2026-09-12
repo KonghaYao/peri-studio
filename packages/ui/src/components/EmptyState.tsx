@@ -20,7 +20,7 @@ export function EmptyState(props: Props) {
     <div {...div} class={cn('flex min-h-0 flex-col items-center justify-center gap-8 py-48 text-center', VARIANT_CLASS[local.variant ?? 'page'], local.class)}>
       {local.icon && <div class="mb-4 text-text-faint" aria-hidden="true">{local.icon}</div>}
       <h2 class="text-13 font-medium text-text-primary">{local.title}</h2>
-      {local.description && <p class="max-w-72 text-12 leading-normal text-text-muted">{local.description}</p>}
+      {local.description && <p class="max-w-360 text-12 leading-normal text-text-muted">{local.description}</p>}
       {local.action && <div class="mt-12">{local.action}</div>}
     </div>
   );

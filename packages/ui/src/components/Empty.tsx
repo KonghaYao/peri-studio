@@ -23,7 +23,7 @@ export const EmptyHeader: Component<ComponentProps<'div'>> = (props) => {
   return (
     <div
       data-slot="empty-header"
-      class={cn('flex max-w-72 flex-col items-center gap-8 text-center', local.class)}
+      class={cn('flex w-full max-w-360 flex-col items-center gap-8 text-center', local.class)}
       {...rest}
     />
   );

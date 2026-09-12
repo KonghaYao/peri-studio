@@ -1060,7 +1060,7 @@ describe('Empty compound', () => {
       'border-dashed',
       'text-center',
     );
-    expect(screen.getByTestId('header')).toHaveClass('items-center', 'gap-8');
+    expect(screen.getByTestId('header')).toHaveClass('items-center', 'gap-8', 'max-w-360');
     const media = screen.getByTestId('media');
     expect(media).toHaveAttribute('data-variant', 'icon');
     expect(media).toHaveClass('size-40', 'rounded-8', 'bg-surface-muted');
@@ -1582,8 +1582,8 @@ describe('Switch', () => {
       return (
         <Switch checked={checked()} onChange={setChecked}>
           <SwitchInput />
-          <SwitchControl>
-            <SwitchThumb />
+          <SwitchControl data-testid="switch-control">
+            <SwitchThumb data-testid="switch-thumb" />
           </SwitchControl>
           <SwitchLabel>Airplane mode</SwitchLabel>
         </Switch>
@@ -1592,6 +1592,8 @@ describe('Switch', () => {
     render(() => <Harness />);
     const control = screen.getByRole('switch', { name: 'Airplane mode' });
     expect(control).not.toBeChecked();
+    expect(screen.getByTestId('switch-control')).toHaveClass('bg-border-strong');
+    expect(screen.getByTestId('switch-thumb')).toHaveClass('bg-surface');
     fireEvent.click(control);
     expect(control).toBeChecked();
   });

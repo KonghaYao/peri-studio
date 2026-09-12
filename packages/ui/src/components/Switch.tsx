@@ -20,7 +20,7 @@ export function SwitchControl<T extends ValidComponent = 'div'>(props: Polymorph
   return (
     <SwitchPrimitive.Control
       class={cn(
-        'inline-flex h-20 w-36 flex-none items-center rounded-full border border-border-strong bg-surface px-2 ui-control-transition',
+        'inline-flex h-20 w-36 flex-none items-center rounded-full border border-border-strong bg-border-strong px-2 ui-control-transition',
         'hover:border-accent peer-focus-visible:shadow-accent-ring',
         'data-checked:border-accent data-checked:bg-accent',
         'data-disabled:cursor-not-allowed data-disabled:border-border-strong data-disabled:bg-surface-sunken',
