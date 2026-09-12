@@ -170,7 +170,7 @@ describe('MessageList footer resize', () => {
     const { container } = render(() => <MessageList footerHeight={160} />);
 
     expect(container.querySelector('[data-testid="message-list-content"]')).toHaveClass('chat-column', 'pb-32');
-    expect(screen.getByRole('region', { name: 'Conversation messages' })).toHaveClass('message-list-scroll');
+    expect(screen.getByRole('region', { name: 'Conversation messages' })).toHaveClass('ui-transcript-scroll');
   });
 
   it('keeps following the true bottom when the in-flow footer grows', async () => {

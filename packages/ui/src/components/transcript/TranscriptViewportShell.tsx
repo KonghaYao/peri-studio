@@ -37,14 +37,14 @@ export const TranscriptViewportShell: Component<TranscriptViewportShellProps> = 
     <MessageScrollerProvider autoScroll={false}>
       <MessageScroller
         data-slot="transcript-viewport-shell"
-        class={cn('ui-transcript-viewport-shell message-list-shell min-h-0 min-w-0 flex-1', local.class)}
+        class={cn('ui-transcript-viewport-shell min-h-0 min-w-0 flex-1', local.class)}
       >
         <MessageScrollerViewport
           {...rest}
           ref={local.viewportRef}
           onScroll={local.onScroll}
           data-testid={local.viewportTestId ?? rest['data-testid'] ?? 'message-list-scroll'}
-          class={cn('ui-transcript-scroll message-list-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden', local.viewportClass)}
+          class={cn('ui-transcript-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden', local.viewportClass)}
         >
           {local.children}
           <Show when={(local.footerSpacerHeight ?? 0) > 0}>

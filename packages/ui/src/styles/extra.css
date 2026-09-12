@@ -1218,7 +1218,7 @@ body.ui-workbench-panel-resizing * {
   display: none;
 }
 
-.message-reasoning--activity[open] .message-reasoning__chevron {
+[data-testid='message-reasoning'].ui-message-reasoning--activity[open] .ui-message-reasoning__chevron {
   transform: rotate(90deg);
 }
 

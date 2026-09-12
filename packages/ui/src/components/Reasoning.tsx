@@ -196,9 +196,9 @@ export const Reasoning: Component<ReasoningRootProps> = (props) => {
             <Show when={showThinkingGap()} fallback={(
               <details
                 class={cn(
-                  'message-reasoning font-normal text-content-secondary',
+                  'ui-message-reasoning font-normal text-content-secondary',
                   activity()
-                    ? 'message-reasoning--activity tool-activity-row tool-activity-row--activity min-w-0 max-w-(--chat-tool-activity-max)'
+                    ? 'ui-message-reasoning--activity tool-activity-row tool-activity-row--activity min-w-0 max-w-(--chat-tool-activity-max)'
                     : 'max-w-(--chat-reasoning-max)',
                   local.class,
                 )}
@@ -308,7 +308,7 @@ export const ReasoningTrigger: Component<ReasoningTriggerProps> = (props) => {
                 <ChevronRight
                   size={13}
                   strokeWidth={1.8}
-                  class="message-reasoning__chevron size-22 shrink-0 text-content-faint transition-transform duration-(--duration-fast)"
+                  class="ui-message-reasoning__chevron size-22 shrink-0 text-content-faint transition-transform duration-(--duration-fast)"
                   aria-hidden="true"
                 />
               </Show>
@@ -377,7 +377,7 @@ export const ReasoningContent: Component<ComponentProps<typeof CollapsibleConten
         <p
           data-slot="reasoning-content"
           class={cn(
-            'message-reasoning__body m-0 whitespace-pre-wrap text-12 font-normal leading-normal text-content-secondary',
+            'ui-message-reasoning__body m-0 whitespace-pre-wrap text-12 font-normal leading-normal text-content-secondary',
             activity()
               ? 'tool-activity-row__body relative z-1 mt-0 border-t border-border-faint pt-8 pb-8 pl-16 pr-10'
               : 'mt-4',

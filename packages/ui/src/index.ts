@@ -400,6 +400,11 @@ export {
   type ComposerDropOverlayProps,
 } from './components/composer/ComposerDropOverlay';
 export {
+  ComposerSurface,
+  composerSurfaceClass,
+  type ComposerSurfaceProps,
+} from './components/composer/ComposerSurface';
+export {
   ComposerShell,
   type ComposerShellFieldContext,
   type ComposerShellProps,

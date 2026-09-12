@@ -14,10 +14,7 @@ describe('TranscriptViewportShell', () => {
       </TranscriptViewportShell>
     ));
 
-    expect(screen.getByRole('region', { name: 'Conversation messages' })).toHaveClass(
-      'ui-transcript-scroll',
-      'message-list-scroll',
-    );
+    expect(screen.getByRole('region', { name: 'Conversation messages' })).toHaveClass('ui-transcript-scroll');
     expect(screen.getByTestId('transcript-body')).toBeInTheDocument();
   });
 

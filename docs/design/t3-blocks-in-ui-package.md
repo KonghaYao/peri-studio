@@ -43,6 +43,9 @@ T3 组件必须：
 | 组件 | 说明 |
 |------|------|
 | `ChatWorkspaceShell` | Chat 列布局壳（header + transcript + composer 槽） |
+| `TranscriptViewportShell` / `TranscriptRowShell` | 消息列表滚动视口 + 虚拟化行壳 |
+| `HistoryBoundary` | Verified / Current 历史分隔 |
+| `MessageArticleShell` / `MessageMetaHeader` / `MessageSurfaceShell` / `MessageAssistantActionsShell` | 单条消息布局壳（T4 仍拥有 block 语义） |
 | `ChatHeader` | 会话标题栏 |
 | `UserBubble` | 用户消息气泡 |
 | `MarkdownTable` | Markdown 表格 |
@@ -52,9 +55,16 @@ T3 组件必须：
 
 | 组件 | 说明 |
 |------|------|
+| `ProjectSidebarShell` | 侧栏 navbar + body + footer 布局壳（mist / scroll） |
 | `RowAccessorySlot` | 行浮动 accessory 叠层 |
 | `ArchivedBrowserList` | 归档浏览列表 |
 | `NavAction` / `ProjectRowAccessory` / `ProjectRowActionGroup` / `SectionHeader` / `SessionRowAccessory` / `SidebarNavBar` | 侧栏 chrome 族 |
+
+### Terminal
+
+| 组件 | 说明 |
+|------|------|
+| `TerminalDockShell` | PTY 面板折叠壳（viewport 隐藏不卸载） |
 
 ### Git（SCM）
 
@@ -106,8 +116,9 @@ T3 组件必须：
 | 区域 | T3（package） | T4（web widgets / sandbox layers） |
 |------|---------------|-------------------------------------|
 | Composer | `ComposerShell` 等 | `widgets/composer/Composer.tsx` |
-| Chat | `ChatWorkspaceShell` | `widgets/chat/ChatView.tsx` |
-| 侧栏 | `SidebarChrome` 族 | `widgets/sidebar/*` |
+| Chat | `ChatWorkspaceShell` + transcript / message shells | `widgets/chat/ChatView.tsx`, `MessageList.tsx`, `ConversationMessage.tsx` |
+| 侧栏 | `ProjectSidebarShell` + `SidebarChrome` 族 | `widgets/sidebar/*`, `SidebarChrome.tsx` |
+| Terminal | `TerminalDockShell` | `widgets/terminal/TerminalPanel.tsx` |
 | SCM | `GitChangeTree` + git 条 | `widgets/resource/SourceControlPanel.tsx`（mutation busy / focus 键） |
 | Workbench | `WorkbenchShell` 等 | `widgets/resource/ResourceWorkbench.tsx` |
 | Status | `StatusAreaShell` | `widgets/shell/StatusArea.tsx` |
@@ -127,7 +138,7 @@ Sandbox `components/blocks/*`：T3 条 **barrel 重导出** `@peri/ui`；layers 
 | `ExplorerMutationsPanel` / `ExplorerMutationsTree` / move·delete dialog | sandbox resource blocks | Catalog mutations 演示 |
 | `ChatHeader` 默认包装 | `ui-sandbox/blocks/chrome/ChatHeader.tsx` | Catalog 默认 props |
 | SCM mutation / preview 接线 | `web/widgets/resource/SourceControlPanel.tsx` | store + features |
-| Transcript 消息行 / ToolCall | `web/widgets/chat/*` | Yjs 投影 + 业务语义 |
+| 消息 block 渲染 / ToolCall / MCP | `ConversationMessage.tsx` 内 `MessageBlock` 等 | Yjs 投影 + 业务语义（壳已 T3，内容仍 T4） |
 
 ## Catalog 去重
 

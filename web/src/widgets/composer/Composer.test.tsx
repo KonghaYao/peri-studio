@@ -97,11 +97,13 @@ describe('Composer', () => {
     });
     mountComposer();
 
-    expect(screen.getByTestId('composer-surface')).toHaveClass('ui-composer-surface-v2', 'ui-composer-surface-v2--compact');
-    expect(screen.getByRole('textbox')).toHaveClass('ui-composer-surface-v2__field', 'ui-composer-surface-v2__field--compact');
+    expect(screen.getByTestId('composer-surface')).toHaveAttribute('data-slot', 'composer-surface');
+    expect(screen.getByTestId('composer-surface')).toHaveClass('rounded-(--composer-radius)', 'bg-surface-overlay');
+    expect(screen.getByTestId('composer-toolbar')).toHaveClass('ui-composer-toolbar');
+    expect(screen.getByRole('textbox')).toHaveClass('ui-composer-input');
     expect(screen.getByTestId('composer-runtime')).toHaveTextContent('Nova 4.1');
     expect(screen.getByTestId('composer-runtime')).toHaveClass('text-content-secondary');
-    expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('ui-composer-send-btn');
+    expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('ui-composer-action');
   });
 
   it('adds a quoted answer to the current draft without replacing existing text', async () => {
@@ -516,7 +518,7 @@ describe('Composer', () => {
     selectReadyChat();
     mountComposer();
 
-    expect(screen.getByRole('button', { name: 'Slash commands' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Add attachment' })).toBeEnabled();
     expect(screen.getByTestId('composer-upload-file-input')).toBeInTheDocument();
 
     const surface = screen.getByTestId('composer-surface');

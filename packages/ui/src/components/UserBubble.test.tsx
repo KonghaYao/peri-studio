@@ -8,6 +8,6 @@ describe('UserBubble', () => {
   it('renders right-aligned wireframe bubble', () => {
     render(() => <UserBubble>Hello</UserBubble>);
     const bubble = screen.getByText('Hello').closest('.border-border-subtle');
-    expect(bubble).toHaveClass('max-w-(--chat-bubble-max)', 'bg-surface-overlay');
+    expect(bubble).toHaveClass('max-w-(--chat-bubble-max)', 'border', 'border-border-subtle', 'bg-surface-overlay');
   });
 });
