@@ -1,7 +1,14 @@
 import { createEffect, createMemo, createSignal, For, onCleanup, Show } from 'solid-js';
 import { RefreshCw, Search, Settings2, Terminal } from 'lucide-solid';
-import { IconButton } from '@/lib/catalog-ui';
-import { cn } from '@/lib/catalog-ui';
+import {
+  IconButton,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  cn,
+} from '@peri/ui';
 import {
   GIT_GRAPH_COLORS,
   GIT_GRAPH_HEADER_HEIGHT,
@@ -32,7 +39,7 @@ function headHash(commits: GitGraphCommit[]) {
   return head?.hash ?? head?.id ?? commits[0]?.hash ?? commits[0]?.id ?? null;
 }
 
-/** VS Code Git Graph 插件风格：HTML table + 绝对定位 SVG 叠加层。 */
+/** Git Graph：Table 原语 + 绝对定位 SVG 叠加；hover / 选中交互不变。 */
 export function GitGraphPanel(props: { commits: GitGraphCommit[] }) {
   const [hovered, setHovered] = createSignal<number | null>(null);
   const [selected, setSelected] = createSignal(0);
@@ -112,29 +119,31 @@ export function GitGraphPanel(props: { commits: GitGraphCommit[] }) {
   };
 
   return (
-    <div class="git-graph-panel flex h-full min-h-0 flex-col bg-surface-overlay" aria-label="Git Graph">
-      <div class="git-graph-controls flex h-36 shrink-0 items-center border-b border-[rgba(128,128,128,0.5)] px-10">
-        <span class="text-13 text-content-primary">Git Graph</span>
-        <div class="ml-auto flex items-center">
-          <IconButton size="sm" label="Find" class="git-graph-control-btn">
-            <Search size={16} strokeWidth={1.8} />
+    <div class="flex h-full min-h-0 flex-col bg-surface-overlay" aria-label="Git Graph">
+      <div class="flex h-36 shrink-0 items-center gap-8 border-b border-border-subtle px-12">
+        <span class="min-w-0 flex-1 truncate text-11 font-semibold uppercase tracking-wide text-content-muted">
+          Git Graph
+        </span>
+        <div class="flex shrink-0 items-center gap-2">
+          <IconButton size="sm" label="Find">
+            <Search size={14} strokeWidth={1.8} />
           </IconButton>
-          <IconButton size="sm" label="Terminal" class="git-graph-control-btn">
-            <Terminal size={16} strokeWidth={1.8} />
+          <IconButton size="sm" label="Terminal">
+            <Terminal size={14} strokeWidth={1.8} />
           </IconButton>
-          <IconButton size="sm" label="Settings" class="git-graph-control-btn">
-            <Settings2 size={16} strokeWidth={1.8} />
+          <IconButton size="sm" label="Settings">
+            <Settings2 size={14} strokeWidth={1.8} />
           </IconButton>
-          <IconButton size="sm" label="Refresh" class="git-graph-control-btn">
-            <RefreshCw size={16} strokeWidth={1.8} />
+          <IconButton size="sm" label="Refresh">
+            <RefreshCw size={14} strokeWidth={1.8} />
           </IconButton>
         </div>
       </div>
 
-      <div class="git-graph-content min-h-0 flex-1 overflow-auto">
-        <div class="git-graph-scroll relative" style={{ height: `${svgHeight()}px` }}>
+      <div class="min-h-0 flex-1 overflow-auto">
+        <div class="relative min-w-full" style={{ height: `${svgHeight()}px` }}>
           <svg
-            class="git-graph-svg pointer-events-none absolute left-0 top-0 z-[2]"
+            class="git-graph-svg pointer-events-none absolute top-0 left-0"
             width={graphColWidth()}
             height={svgHeight()}
             aria-hidden="true"
@@ -167,8 +176,7 @@ export function GitGraphPanel(props: { commits: GitGraphCommit[] }) {
 
           <table
             ref={tableRef}
-            class="git-graph-table w-full border-collapse"
-            style={{ 'table-layout': 'fixed' }}
+            class="git-graph-table w-full table-fixed caption-bottom border-collapse text-left text-12"
           >
             <colgroup>
               <col style={{ width: `${graphColWidth()}px` }} />
@@ -177,45 +185,39 @@ export function GitGraphPanel(props: { commits: GitGraphCommit[] }) {
               <col style={{ width: '124px' }} />
               <col style={{ width: '80px' }} />
             </colgroup>
-            <thead>
-              <tr>
-                <th class="git-graph-th git-graph-graph-col">Graph</th>
-                <th class="git-graph-th">Description</th>
-                <th class="git-graph-th git-graph-date-col">Date</th>
-                <th class="git-graph-th git-graph-author-col">Author</th>
-                <th class="git-graph-th git-graph-commit-col">Commit</th>
-              </tr>
-            </thead>
-            <tbody>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Graph</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Author</TableHead>
+                <TableHead>Commit</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               <For each={props.commits}>
                 {(commit, index) => {
                   const colorIndex = () => layout().vertexColors[index()] ?? 0;
                   const isCurrent = () => commit.isHead;
-                  const rowState = () => {
-                    if (selected() === index()) return 'selected';
-                    if (hovered() === index()) return 'hover';
-                    return '';
-                  };
+                  const isSelected = () => selected() === index();
+                  const isHovered = () => hovered() === index();
 
                   return (
-                    <tr
-                      class={cn(
-                        'git-graph-row',
-                        rowState(),
-                        isCurrent() && 'current',
-                      )}
+                    <TableRow
+                      class={cn('cursor-default', !isSelected() && isHovered() && 'bg-interaction-hover')}
+                      aria-selected={isSelected()}
                       data-color={colorIndex()}
                       onMouseEnter={() => setHovered(index())}
                       onMouseLeave={() => setHovered(null)}
                       onClick={() => setSelected(index())}
                     >
-                      <td class="git-graph-td git-graph-graph-col" />
-                      <td class="git-graph-td git-graph-desc-col">
-                        <span class="git-graph-description">
+                      <TableCell class="p-0" />
+                      <TableCell class="min-w-0 overflow-hidden">
+                        <span class="flex min-w-0 items-center gap-4 overflow-hidden">
                           <Show when={isCurrent()}>
                             <span
-                              class="git-graph-head-dot"
-                              style={{ '--git-graph-color': `var(--git-graph-color-${colorIndex() % 12})` }}
+                              class="inline-block size-6 shrink-0 rounded-full border-2"
+                              style={{ 'border-color': `var(--git-graph-color-${colorIndex() % 12})` }}
                               aria-hidden="true"
                             />
                           </Show>
@@ -229,19 +231,21 @@ export function GitGraphPanel(props: { commits: GitGraphCommit[] }) {
                               )}
                             </For>
                           </Show>
-                          <span class="git-graph-message">{commit.message}</span>
+                          <span class={cn('min-w-0 truncate text-content-primary', isCurrent() && 'font-semibold')}>
+                            {commit.message}
+                          </span>
                         </span>
-                      </td>
-                      <td class="git-graph-td git-graph-date-col text-content-muted">{commit.date ?? commit.time}</td>
-                      <td class="git-graph-td git-graph-author-col text-content-muted">{commit.author}</td>
-                      <td class="git-graph-td git-graph-commit-col font-mono text-content-muted">
+                      </TableCell>
+                      <TableCell class="truncate text-content-muted">{commit.date ?? commit.time}</TableCell>
+                      <TableCell class="truncate text-content-muted">{commit.author}</TableCell>
+                      <TableCell class="truncate font-mono text-content-muted">
                         {commit.hash ?? commit.id.slice(0, 8)}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 }}
               </For>
-            </tbody>
+            </TableBody>
           </table>
         </div>
       </div>

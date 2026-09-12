@@ -7,15 +7,12 @@ function toneForRef(gitRef: GitGraphRef): BadgeTone {
   return 'info';
 }
 
-/** Git Graph ref 标签：复用设计系统 Badge（状态点 + 中性灰字）。 */
+/** Git Graph ref 标签：直接复用设计系统 Badge，不改默认尺寸。 */
 export function GitGraphRefBadge(props: { gitRef: GitGraphRef; active?: boolean }) {
   return (
     <Badge
       tone={toneForRef(props.gitRef)}
-      class={cn(
-        'mr-4 h-72 shrink-0 px-6 text-10',
-        props.active && 'git-ref-badge--active',
-      )}
+      class={cn('shrink-0', props.active && 'git-ref-badge--active')}
     >
       <span class={cn(props.gitRef.tone === 'remote' && 'italic', props.active && 'font-semibold')}>
         {props.gitRef.label}

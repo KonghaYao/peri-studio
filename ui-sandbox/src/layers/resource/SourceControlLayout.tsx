@@ -1,6 +1,4 @@
-import { For } from 'solid-js';
 import { GitBranchBar, GitChangeGroup, GitChangeTree, GitCommitBar } from '@/components/blocks/git';
-import { cn } from '@/lib/catalog-ui';
 import {
   DEMO_REPO,
   DEMO_STAGED,
@@ -20,7 +18,7 @@ export function SourceControlLayout(props: {
       class="flex h-full w-full flex-col bg-surface-overlay"
       aria-label="Source Control"
     >
-      <div class={cn('min-h-0 flex-1 overflow-auto pb-8', props.embedded ? 'px-4 pt-4' : 'px-6 pt-8')}>
+      <div class="min-h-0 flex-1 overflow-auto px-4 pt-4 pb-8">
         <GitBranchBar
           repoName={DEMO_REPO.name}
           branch={DEMO_REPO.branch}
