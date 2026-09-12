@@ -1,20 +1,14 @@
 import { For } from 'solid-js';
-import {
-  HOME_ATLAS,
-  HOME_INDEX,
-  HOME_PLATES,
-  HOME_PRINCIPLES,
-  type HomePlate,
-} from '@/pages/home/home-data';
+import { HOME_FIGURES, HOME_INDEX, HOME_PRINCIPLES, type HomeFigure } from '@/pages/home/home-data';
 
-function PlateImage(props: { plate: HomePlate; class?: string }) {
+function Figure(props: { figure: HomeFigure; class?: string }) {
   return (
     <img
       class={props.class}
-      src={props.plate.src}
-      width={props.plate.width}
-      height={props.plate.height}
-      alt={props.plate.alt}
+      src={props.figure.src}
+      width={props.figure.width}
+      height={props.figure.height}
+      alt={props.figure.alt}
       decoding="async"
     />
   );
@@ -23,32 +17,53 @@ function PlateImage(props: { plate: HomePlate; class?: string }) {
 export function HomePage() {
   return (
     <article class="sandbox-home">
-      <section id="hero" class="sandbox-home__hero demo-scroll-anchor">
-        <PlateImage plate={HOME_PLATES.hero} class="sandbox-home__hero-image" />
-        <div class="sandbox-home__hero-copy">
-          <p class="sandbox-home__kicker">UI Catalog · T1–T4</p>
-          <div class="sandbox-home__hero-title-row">
-            <span class="sandbox-home__rule" aria-hidden="true" />
-            <h1 class="sandbox-home__display">Signal</h1>
-          </div>
-          <p class="sandbox-home__lede">
-            Tokens, components, and compositions for a persistent ACP workbench.
-          </p>
-          <div class="sandbox-home__hero-actions">
-            <a class="sandbox-home__cta sandbox-home__cta--solid" href="#/tokens">
-              Enter Tokens
-            </a>
-            <a class="sandbox-home__cta sandbox-home__cta--ghost" href="#/components">
-              Browse components
-            </a>
-          </div>
-        </div>
+      <section id="who" class="sandbox-home__who demo-scroll-anchor">
+        <p class="sandbox-home__kicker">Who we are</p>
+        <h1 class="sandbox-home__display">Peri Studio</h1>
+        <p class="sandbox-home__lede">A design catalog for a calm, dense interface.</p>
+        <p class="sandbox-home__body">
+          This site is the visual authority — not a product tour. Tokens, components, and
+          compositions are designed here first. Color, space, and type have one source: @peri/ui.
+        </p>
       </section>
 
-      <section id="manifesto" class="sandbox-home__manifesto demo-scroll-anchor">
-        <div class="sandbox-home__manifesto-copy">
-          <p class="sandbox-home__kicker">System</p>
-          <h2 class="sandbox-home__section-title">How it holds</h2>
+      <figure class="sandbox-home__hero-figure">
+        <Figure figure={HOME_FIGURES.hero} class="sandbox-home__photo" />
+      </figure>
+
+      <section id="stance" class="sandbox-home__split demo-scroll-anchor">
+        <div class="sandbox-home__copy">
+          <p class="sandbox-home__kicker">Stance</p>
+          <h2 class="sandbox-home__section-title">
+            White canvas.
+            <br />
+            Hairline structure.
+          </h2>
+          <p class="sandbox-home__body">
+            We design by restraint. One azure accent. No decorative fill. If a surface needs a gray
+            block to be understood, the type and spacing are not finished.
+          </p>
+        </div>
+        <Figure figure={HOME_FIGURES.stance} class="sandbox-home__photo sandbox-home__photo--frame" />
+      </section>
+
+      <section id="problem" class="sandbox-home__band demo-scroll-anchor">
+        <div class="sandbox-home__copy sandbox-home__copy--narrow">
+          <p class="sandbox-home__kicker">The problem</p>
+          <h2 class="sandbox-home__section-title">Interfaces decorate first.</h2>
+          <p class="sandbox-home__body">
+            Hierarchy gets painted on with slabs of gray. Accent becomes a theme. Components only
+            look right on the page that invented them. The catalog and production drift into two
+            styles.
+          </p>
+        </div>
+        <Figure figure={HOME_FIGURES.problem} class="sandbox-home__photo" />
+      </section>
+
+      <section id="philosophy" class="sandbox-home__split sandbox-home__split--reverse demo-scroll-anchor">
+        <div class="sandbox-home__copy">
+          <p class="sandbox-home__kicker">Design philosophy</p>
+          <h2 class="sandbox-home__section-title">Calm. Dense. Precise.</h2>
           <ol class="sandbox-home__principles">
             <For each={HOME_PRINCIPLES}>
               {(item) => (
@@ -63,55 +78,40 @@ export function HomePage() {
             </For>
           </ol>
         </div>
-        <a class="sandbox-home__manifesto-plate" href="#/tokens">
-          <PlateImage plate={HOME_PLATES.tokens} class="sandbox-home__fill-image" />
-          <span class="sandbox-home__plate-caption">
-            <span class="sandbox-home__kicker">T1 · Tokens</span>
-            <span class="sandbox-home__plate-title">Color, space, type</span>
-          </span>
-        </a>
+        <Figure figure={HOME_FIGURES.philosophy} class="sandbox-home__photo sandbox-home__photo--frame" />
       </section>
 
-      <section id="atlas" class="sandbox-home__atlas demo-scroll-anchor">
-        <header class="sandbox-home__atlas-head">
-          <p class="sandbox-home__kicker">Fields</p>
-          <h2 class="sandbox-home__section-title">Open a surface</h2>
-        </header>
-        <div class="sandbox-home__atlas-grid">
-          <For each={HOME_ATLAS}>
-            {(entry) => {
-              const plate = () => HOME_PLATES[entry.plate];
-              return (
-                <a
-                  class={`sandbox-home__plate sandbox-home__plate--${entry.plate}`}
-                  href={entry.href}
-                >
-                  <PlateImage plate={plate()} class="sandbox-home__fill-image" />
-                  <span class="sandbox-home__plate-caption">
-                    <span class="sandbox-home__kicker">{entry.kicker}</span>
-                    <span class="sandbox-home__plate-title">{entry.title}</span>
-                    <span class="sandbox-home__plate-body">{entry.body}</span>
-                  </span>
-                </a>
-              );
-            }}
-          </For>
+      <section id="solution" class="sandbox-home__band demo-scroll-anchor">
+        <div class="sandbox-home__copy sandbox-home__copy--narrow">
+          <p class="sandbox-home__kicker">The solution</p>
+          <h2 class="sandbox-home__section-title">One system. Four tiers.</h2>
+          <p class="sandbox-home__body">
+            Tokens, then base UI, then blocks, then layers. Vision is finished here and mirrored
+            out. A component carries its own states. Accent speaks only when the surface must.
+          </p>
+          <div class="sandbox-home__actions">
+            <a class="sandbox-home__cta sandbox-home__cta--solid" href="#/tokens">
+              Enter Tokens
+            </a>
+            <a class="sandbox-home__cta sandbox-home__cta--ghost" href="#/components">
+              Browse components
+            </a>
+          </div>
         </div>
+        <Figure figure={HOME_FIGURES.solution} class="sandbox-home__photo" />
       </section>
 
       <section id="index" class="sandbox-home__index demo-scroll-anchor">
         <header class="sandbox-home__index-head">
-          <p class="sandbox-home__kicker">Index</p>
-          <h2 class="sandbox-home__section-title">Every tier, in order</h2>
+          <p class="sandbox-home__kicker">Catalog</p>
+          <h2 class="sandbox-home__section-title">Open a tier</h2>
         </header>
         <ol class="sandbox-home__index-list">
           <For each={HOME_INDEX}>
             {(item, index) => (
               <li>
                 <a class="sandbox-home__index-row" href={item.href}>
-                  <span class="sandbox-home__numeral">
-                    {String(index() + 1).padStart(2, '0')}
-                  </span>
+                  <span class="sandbox-home__numeral">{String(index() + 1).padStart(2, '0')}</span>
                   <span class="sandbox-home__index-label">{item.label}</span>
                   <span class="sandbox-home__index-tier">{item.tier}</span>
                 </a>
@@ -120,11 +120,6 @@ export function HomePage() {
           </For>
         </ol>
       </section>
-
-      <footer class="sandbox-home__colophon">
-        <p>T1 Tokens · T2 Base UI · T3 Blocks · T4 Layers</p>
-        <p>Values live in @peri/ui. Compositions are settled here first.</p>
-      </footer>
     </article>
   );
 }

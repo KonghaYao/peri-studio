@@ -1,14 +1,8 @@
 import { ROUTE_META, SANDBOX_ROUTES, type SandboxRoute } from '@/catalog/page-sections';
 
-export type HomePlateId =
-  | 'hero'
-  | 'tokens'
-  | 'composer'
-  | 'explorer'
-  | 'git'
-  | 'dialogue';
+export type HomeFigureId = 'hero' | 'stance' | 'problem' | 'philosophy' | 'solution';
 
-export type HomePlate = {
+export type HomeFigure = {
   src: string;
   width: number;
   height: number;
@@ -17,14 +11,6 @@ export type HomePlate = {
 
 export type HomePrinciple = {
   id: string;
-  title: string;
-  body: string;
-};
-
-export type HomeAtlasEntry = {
-  plate: Exclude<HomePlateId, 'hero' | 'tokens'>;
-  href: string;
-  kicker: string;
   title: string;
   body: string;
 };
@@ -42,42 +28,36 @@ function homeAsset(file: string): string {
   return `${base}home/${file}`;
 }
 
-export const HOME_PLATES: Record<HomePlateId, HomePlate> = {
+export const HOME_FIGURES: Record<HomeFigureId, HomeFigure> = {
   hero: {
-    src: homeAsset('hero-signal.jpg'),
+    src: homeAsset('apple-hero.jpg'),
     width: 1280,
     height: 720,
-    alt: 'A colossal azure glass plane cutting through darkness, throwing sharp blue caustics',
+    alt: 'A single sheet of optical glass on white, one edge anodized azure',
   },
-  tokens: {
-    src: homeAsset('field-tokens.jpg'),
+  stance: {
+    src: homeAsset('apple-stance.jpg'),
     width: 1152,
     height: 864,
-    alt: 'Frosted glass tiles hovering in a dark field, a cluster glowing azure',
+    alt: 'Two parallel sheets of optical glass, light passing through like a lens',
   },
-  composer: {
-    src: homeAsset('field-composer.jpg'),
+  problem: {
+    src: homeAsset('apple-problem.jpg'),
     width: 1280,
     height: 720,
-    alt: 'A razor azure light stroke racing across a dark field',
+    alt: 'Four white plates, one shifted a few millimeters off-register',
   },
-  explorer: {
-    src: homeAsset('field-explorer.jpg'),
-    width: 864,
-    height: 1152,
-    alt: 'Nested translucent cubes in a dark void, inner cells glowing azure',
-  },
-  git: {
-    src: homeAsset('field-git.jpg'),
+  philosophy: {
+    src: homeAsset('apple-philosophy.jpg'),
     width: 1152,
     height: 864,
-    alt: 'Branching fiber-optic traces on graphite, one path lit azure',
+    alt: 'Stacked white material planes with a single azure point',
   },
-  dialogue: {
-    src: homeAsset('field-dialogue.jpg'),
+  solution: {
+    src: homeAsset('apple-solution.jpg'),
     width: 1280,
     height: 720,
-    alt: 'Two opposing beams of white and azure light colliding in mid-air',
+    alt: 'Four frosted-glass layers in a precise exploded stack',
   },
 };
 
@@ -85,48 +65,17 @@ export const HOME_PRINCIPLES: HomePrinciple[] = [
   {
     id: '01',
     title: 'Calm & dense',
-    body: 'Quiet by default. Contrast rises only for streaming, permission, and error — never for decoration.',
+    body: 'The interface stays quiet. Contrast rises only when something is happening — never to decorate a resting surface.',
   },
   {
     id: '02',
-    title: 'Facts, not fiction',
-    body: 'The catalog renders contracts. Production never invents server history in the browser.',
+    title: 'Line before fill',
+    body: 'Hierarchy is spacing and hairline. Surfaces stay white. We do not paint gray slabs to invent regions.',
   },
   {
     id: '03',
-    title: 'Line before fill',
-    body: 'Surfaces stay white. Hierarchy is spacing and hairline, not gray slabs or accent walls.',
-  },
-];
-
-export const HOME_ATLAS: HomeAtlasEntry[] = [
-  {
-    plate: 'composer',
-    href: '#/components-composer',
-    kicker: 'Comp',
-    title: 'Composer',
-    body: 'A turn starts here — attach, slash, send.',
-  },
-  {
-    plate: 'explorer',
-    href: '#/components-explorer',
-    kicker: 'Comp',
-    title: 'Explorer',
-    body: 'Nested structure. One node is hot; the rest stays quiet.',
-  },
-  {
-    plate: 'git',
-    href: '#/components-git',
-    kicker: 'Comp',
-    title: 'Git',
-    body: 'Branches as live traces. Follow the lit path.',
-  },
-  {
-    plate: 'dialogue',
-    href: '#/components-ai',
-    kicker: 'T2',
-    title: 'Dialogue',
-    body: 'Two signals crossing. Wait for the next line.',
+    title: 'Accent is a signal',
+    body: 'Azure marks a primary action or a live state. Success, warning, and danger stay on status. Color is not a theme.',
   },
 ];
 

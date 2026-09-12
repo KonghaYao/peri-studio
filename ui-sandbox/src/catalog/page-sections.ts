@@ -73,10 +73,12 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
     {
       title: 'Cover',
       items: [
-        { id: 'hero', label: 'Signal' },
-        { id: 'manifesto', label: 'System' },
-        { id: 'atlas', label: 'Fields' },
-        { id: 'index', label: 'Index' },
+        { id: 'who', label: 'Who we are' },
+        { id: 'stance', label: 'Stance' },
+        { id: 'problem', label: 'Problem' },
+        { id: 'philosophy', label: 'Philosophy' },
+        { id: 'solution', label: 'Solution' },
+        { id: 'index', label: 'Catalog' },
       ],
     },
   ],
