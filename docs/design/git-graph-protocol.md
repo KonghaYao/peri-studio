@@ -297,8 +297,8 @@ GitLogPage(GitLogPage),
 | --- | --- |
 | `entities/resource/resource-view.ts` | `VIEW_TYPES` 增加 `git_log_page`；解析 §4.2.1 字段 |
 | `features/resource/map-git-log.ts` | Wire → `GitGraphCommit`；oid 布局键；相对时间 |
-| `panel/lib/resource-state.ts` | `RepositoryState.log?: { commits, nextCursor, sourceGeneration, headOid }`；**独立 `if (view.viewType === 'git_log_page')` 分支** |
-| `panel/lib/resource-store.ts` | `openGitLog` / `openMoreGitLog`；`requested` 键 `log:${repoId}:${cursor??'start'}` |
+| `features/resource/resource-state.ts` | `RepositoryState.log?: { commits, nextCursor, sourceGeneration, headOid }`；**独立 `if (view.viewType === 'git_log_page')` 分支** |
+| `features/resource/resource-store.ts` | `openGitLog` / `openMoreGitLog`；`requested` 键 `log:${repoId}:${cursor??'start'}` |
 | `widgets/resource/git/GitGraphPanel.tsx` | 读 store；Refresh 调用 `refreshGitLog(repoId)` |
 | `widgets/resource/ResourceWorkbench.tsx` | `view === 'graph'` 时 `activateResourceProject` |
 

@@ -23,7 +23,7 @@ export function MessageOutbox(props: {
   const inFlight = () => ['sending', 'accepted', 'committed'].includes(props.submission.phase);
 
   return <article
-    class={`conversation-message conversation-message--user message-outbox message-outbox--${props.submission.phase} min-w-0 mb-12`}
+    class="conversation-message conversation-message--user min-w-0 mb-12"
     aria-label={props.acknowledged ? 'Your unresolved message' : 'Your pending-confirmation message'}
     role={props.acknowledged ? 'group' : actionable() ? 'alert' : 'status'}
     aria-busy={inFlight() ? 'true' : undefined}
@@ -32,11 +32,11 @@ export function MessageOutbox(props: {
       <div class="flex flex-col gap-8">
         <span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{props.submission.text}</span>
         <Show when={actionable() || props.acknowledged}>
-          <footer data-testid="message-outbox-status" class="message-outbox__status flex items-center gap-7 text-text-secondary text-12 leading-14">
-            <span class={`message-outbox__indicator w-7 h-7 shrink-0 rounded-full ${props.submission.phase === 'uncertain' ? 'bg-warning-strong' : props.submission.phase === 'failed' ? 'bg-danger' : 'bg-text-muted'}`} aria-hidden="true" />
+          <footer data-testid="message-outbox-status" class="flex items-center gap-7 text-text-secondary text-12 leading-14">
+            <span class={`w-7 h-7 shrink-0 rounded-full ${props.submission.phase === 'uncertain' ? 'bg-warning-strong' : props.submission.phase === 'failed' ? 'bg-danger' : 'bg-text-muted'}`} aria-hidden="true" />
             <span><strong class="text-text-primary font-semibold">{props.acknowledged ? 'Unconfirmed delivery retained' : titleFor(props.submission.phase)}</strong><Show when={props.submission.detail}> · {props.submission.detail}</Show></span>
           </footer>
-          <div class="message-outbox__actions flex flex-wrap justify-end gap-6">
+          <div class="flex flex-wrap justify-end gap-6">
             <CopyButton class="pointer-coarse:min-h-44" text={props.submission.text} label="Copy original" size="compact" />
             <Show when={props.submission.retryable}>
               <Button variant="primary" size="compact" class="pointer-coarse:min-h-44" onClick={props.onRetry}>Confirm with the same request</Button>

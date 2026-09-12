@@ -10,10 +10,11 @@ date: 2026-08-30
 > **Agent 入口**：根目录 [`AGENTS.md`](../../AGENTS.md)（检查清单）；[`CLAUDE.md`](../../CLAUDE.md) §Web 前端分层规范。
 > **UI 规范**：[`ui-specification.md`](ui-specification.md)（色彩、组件、微文案）。
 > **Phase 6+ 执行（拆 `panel/lib`、CSS/无头约束、业务等价）**：[`frontend-rewrite-program.md`](frontend-rewrite-program.md)。
+> **有意延后项（MessageScroller 外壳、Sidebar 折叠 vs resize、测试边界）**：[`web-ui-deferrals.md`](web-ui-deferrals.md)。
 
-## 1. 问题
+## 1. 问题（迁移前，2026-08）
 
-当前 `web/src/panel` 将页面、业务组件、领域控制器与协议边界混在同一扁平目录：
+以下描述 Phase 0 之前的 `web/src/panel` 单体问题态；**现行目录见 §3，旧路径已删除。**
 
 - `components/` 与 `lib/` 职责重叠（如 `composer-slash` 在 lib、`SlashMenu` 在 components，边界靠约定而非结构）。
 - `components/shared/` 仅少量抽取，多数「可复用块」仍散落在 panel 根下。
@@ -211,7 +212,7 @@ web/src/
 
 ### Phase 1–3（历史阶段；已完成，T1/T2 后由 `@peri/ui` 迁移取代）
 
-- [x] `shared/ui` 为唯一设计系统入口；`components/ui` 仅 re-export。
+- [x] `@peri/ui` 为唯一 T2 入口（`web/src/shared/ui` 已删除）。
 - [x] Composer 全链路文件位于 `features/composer` + `widgets/composer`。
 - [x] Session 侧栏相关位于 `features/session|catalog` + `widgets/sidebar`。
 
@@ -230,7 +231,7 @@ Phase 1–5 只完成了目录脚手架与部分垂直切片；领域实现已�
 - [x] 按重写纲领包 A–H 物理迁移并删除 `web/src/panel`（2026-09-08：`panel/` 目录已移除；`@/panel/*` shim 已删）。
 - [x] `entities/*` 去除对 `panel/lib` 的依赖，只认 `@/shared` 与 `entities` 内模块（生产 import 已清零；层边界测试仍保留历史 baseline 描述字符串）。
 - [ ] ESLint import 边界规则强制执行五层依赖表。
-- [x] `css-contracts` 扩展：任意值 bracket、小数 spacing、`shared/ui`、widgets `<style>`、`extra.css` 行数/hash 冻结（WP-BOUND）。
+- [x] `css-contracts` 扩展：任意值 bracket、小数 spacing、`@peri/ui` 消费边界、widgets `<style>`、`extra.css` 行数/hash 冻结（WP-BOUND）。
 - [x] `store/index.ts` 继续瘦身（570→**483** 行；新增 `store/catalog-bootstrap.ts`、`store/catalog-machine-api.ts`，经 `index` 再导出）。
 - [x] widgets 统一 `@/features/*` 别名（`LaunchWorkspace`、`SessionImportDialog`、`SessionSearch` 及 `store/reset-session` 相对路径已清零）。
 - [ ] WP-H / WP-CSS / WP-VIS（`extra.css` 相对 435 行基线净减、sandbox 刻度、视觉收敛）。

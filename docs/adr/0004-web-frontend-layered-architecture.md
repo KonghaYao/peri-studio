@@ -13,7 +13,7 @@ date: 2026-08-30
 
 采用 **app → pages → widgets → features → entities/shared** 五层结构（详见 [frontend-architecture.md](../design/frontend-architecture.md)）：
 
-1. **shared**：设计系统（ui）与无业务工具（lib、protocol 帧类型）。
+1. **shared**：无业务工具（lib、protocol 帧类型）；**不含 UI**（T2 见 `@peri/ui`）。
 2. **entities**：Yjs 只读投影类型与 `render*` 函数。
 3. **features**：可测试领域控制器（禁止 import store，依赖注入）。
 4. **widgets**：Solid 业务组合块（可读 store，不直发协议）。

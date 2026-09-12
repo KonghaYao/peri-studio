@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
+import { fireEvent, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { installPrincipalRole } from '@/features/auth/auth-state';
 import {
@@ -12,7 +12,10 @@ import {
   setSelectedCid,
   setSelectedSessionId,
 } from '@/store';
+import { renderWithSidebarProvider } from '@/widgets/shell/sidebar-test-shell';
 import { ProjectSidebar } from './ProjectSidebar';
+
+const render = renderWithSidebarProvider;
 
 const instance = (heartbeat: string) => ({
   id: 'local', hostname: 'Local instance', status: 'online', tokenId: null,

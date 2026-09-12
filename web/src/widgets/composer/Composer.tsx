@@ -12,6 +12,7 @@ import {
   ComposerQueue,
   ComposerSendStopAction,
   ComposerSkillsButton,
+  ComposerSurface,
   ComposerToolbarShell,
   InlineNotice,
   SlashMenuListbox,
@@ -30,7 +31,7 @@ export function Composer(props: {
 }) {
   const centered = () => props.layout === 'centered';
   let taRef: HTMLTextAreaElement | undefined;
-  let composerSurfaceRef: HTMLElement | undefined;
+  let composerSurfaceRef: HTMLDivElement | undefined;
   const state = useComposerState(() => taRef);
 
   const focusInput = () => {
@@ -96,12 +97,11 @@ export function Composer(props: {
           shellClass="slash-menu absolute z-35 right-20 bottom-full left-20 mb-8 max-tight:right-10 max-tight:left-10"
         />
       </Show>
-      <section
+      <ComposerSurface
         ref={composerSurfaceRef}
         data-testid="composer-surface"
         aria-busy={state.submissionIsInFlight() || undefined}
         aria-disabled={state.inputDisabled()}
-        class="composer-surface relative overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface-overlay p-2.5 max-narrow:rounded-16"
       >
         <ComposerUploadSurface
           origin="composer"
@@ -285,7 +285,7 @@ export function Composer(props: {
             </>
           )}
         />
-      </section>
+      </ComposerSurface>
     </div>
   );
 }

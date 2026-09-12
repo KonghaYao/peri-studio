@@ -10,6 +10,7 @@ date: 2026-09-08
 > **视觉与组件契约仍是** [`ui-specification.md`](ui-specification.md)。
 > **T1/T2 包边界与 Catalog 工作流是** [`ui-package-migration.md`](ui-package-migration.md)。
 > **sandbox → 生产的历史映射证据是** [`ui-implementation-plan.md`](ui-implementation-plan.md)。
+> **有意延后项** [`web-ui-deferrals.md`](web-ui-deferrals.md)。
 > 关联 ADR：[0004](../adr/0004-web-frontend-layered-architecture.md)。
 
 ---
@@ -48,7 +49,7 @@ date: 2026-09-08
 | `store` 薄组合根 | `store/index.ts` ~710 行：`onFrame` 巨 switch + 全站 reset + 30+ `panel/lib` import |
 | widgets 只装配 | Composer / MessageList / Sidebar / AppShell 直连 `panel/store` 与 `panel/lib`；`RemoteDirectoryDialog` 直调 `sendFrame` |
 | `entities` 只读投影 | 仍 import deprecated `panel/lib/yjs-values` |
-| `shared/ui` 自给自足 | `IconButton` 吞掉 `variant`/`busy`；`ListboxItem` 无行配方；控件高度 32/34 三处打架 |
+| `shared/ui`（已迁至 `@peri/ui`） | 迁移前 IconButton 吞掉 `variant`/`busy`；ListboxItem 无行配方；控件高度 32/34 三处打架 |
 | Tailwind 唯一表达 | `extra.css` 仍开口；`p-2.5` 等未入 theme 的小数；bracket 任意值漏检 |
 | 自研 Kobalte 包装 | 无头半用，皮肤与 API 残缺，widget 在替设计系统打工 |
 

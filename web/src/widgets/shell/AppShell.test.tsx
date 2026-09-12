@@ -61,6 +61,17 @@ describe('AppShell desktop sidebar', () => {
     expect(shell().style.gridTemplateColumns).toBe('480px minmax(0, 1fr) auto');
   });
 
+  it('collapses the desktop sidebar column from the keyboard shortcut', () => {
+    render(() => <AppShell />);
+
+    expect(shell().style.gridTemplateColumns).toBe('242px minmax(0, 1fr) auto');
+    fireEvent.keyDown(window, { key: 'b', metaKey: true });
+    expect(shell().style.gridTemplateColumns).toBe('0px minmax(0, 1fr) auto');
+    expect(screen.queryByRole('separator', { name: 'Resize sidebar' })).not.toBeInTheDocument();
+    fireEvent.keyDown(window, { key: 'b', metaKey: true });
+    expect(shell().style.gridTemplateColumns).toBe('242px minmax(0, 1fr) auto');
+  });
+
   it('keeps the desktop sidebar at its current width', () => {
     render(() => <AppShell />);
 

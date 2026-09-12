@@ -158,6 +158,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
       title: 'Data',
       items: [
         { id: 'data-table', label: 'Data table' },
+        { id: 'questionnaire-option-row', label: 'Questionnaire option row' },
         { id: 'questionnaire', label: 'Questionnaire' },
       ],
     },
@@ -199,7 +200,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
       title: 'Utilities',
       items: [
         { id: 'direction', label: 'Direction' },
-        { id: 'sidebar', label: 'Sidebar', status: 'not-implemented' },
+        { id: 'sidebar', label: 'Sidebar' },
       ],
     },
   ],

@@ -4,6 +4,7 @@ import {
   ComposerAttachmentButton,
   ComposerInputField,
   ComposerSendStopAction,
+  ComposerSurface,
   ComposerToolbarShell,
   InlineNotice,
 } from '@peri/ui';
@@ -57,10 +58,9 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
   };
 
   return <section data-testid="quick-start-docked" class="quick-start quick-start--docked w-full text-left" aria-label="Start new session">
-    <div
+    <ComposerSurface
       ref={quickStartSurfaceRef}
       data-testid="quick-start-surface"
-      class="quick-start__surface relative overflow-hidden border border-composer-border rounded-(--composer-radius) bg-surface-overlay p-2.5 max-narrow:rounded-16"
       aria-busy={pendingIsInFlight() || undefined}
     >
       <ComposerUploadSurface
@@ -90,7 +90,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
         placeholder="Message the agent, or type / for commands"
         aria-label="First message"
         aria-describedby={inputDescribedBy()}
-        fieldClass="quick-start__textarea text-14 leading-22 text-text-primary"
+        fieldClass="text-14 leading-22 text-text-primary"
       />
       <Show when={promptOverBudget()}>
         <InlineNotice id={budgetId} class="mb-8" tone="danger" role="alert" title="First message is too large">
@@ -100,7 +100,6 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
         </InlineNotice>
       </Show>
       <ComposerToolbarShell
-        class="quick-start__footer"
         left={(
           <ComposerAttachmentButton
             disabled={inputDisabled() || !projectId()}
@@ -120,11 +119,11 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
           />
         )}
       />
-    </div>
-    <Show when={pendingNeedsAttention() ? pending() : null}>{(submission) => <InlineNotice id={statusId} class="quick-start__state mt-8" tone={submission().phase === 'failed' ? 'danger' : 'warning'} role="alert" title={submission().phase === 'uncertain' ? 'Creation result not confirmed yet' : 'Failed to create session'}>
+    </ComposerSurface>
+    <Show when={pendingNeedsAttention() ? pending() : null}>{(submission) => <InlineNotice id={statusId} class="mt-8" tone={submission().phase === 'failed' ? 'danger' : 'warning'} role="alert" title={submission().phase === 'uncertain' ? 'Creation result not confirmed yet' : 'Failed to create session'}>
       <span>{submission().phase === 'uncertain' ? 'Re-confirming uses the original request and will not create a duplicate project session.' : 'The draft remains local until you choose to start again.'}</span>
-      <Show when={submission().detail}><small>{submission().detail}</small></Show>
-      <div class="quick-start__actions flex flex-wrap gap-6">
+      <Show when={submission().detail}><small class="min-w-0">{submission().detail}</small></Show>
+      <div class="flex flex-wrap gap-6">
         <Show when={(submission().phase === 'failed' || submission().phase === 'uncertain') && submission().retryable}><Button size="compact" variant="secondary" onClick={retryQuickStart}>Re-confirm with the same request</Button></Show>
         <Show when={submission().phase === 'failed'}><Button size="compact" onClick={dismissFailedQuickStart}>Back to edit</Button></Show>
       </div>

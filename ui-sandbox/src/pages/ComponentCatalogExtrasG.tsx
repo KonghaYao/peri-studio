@@ -47,6 +47,7 @@ import {
 } from '@peri/ui';
 import { DecisionSurfacesLayout } from '@/layers';
 import { createPulseStream, StreamingControls } from '@/lib/streaming-demo';
+import { QuestionnaireOptionRowDemo } from '@/pages/demos/QuestionnaireOptionRowDemo';
 import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
 
 const tableRows = [
@@ -276,6 +277,16 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
             { id: 'status', header: 'Status', accessor: (r) => r.status, sortable: true },
           ]}
         />
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'questionnaire-option-row')}>
+      <CatalogDemo
+        id="questionnaire-option-row"
+        title="Questionnaire option row"
+        description="A/B/C 键位徽章、主副文案与单选/多选控件行。"
+      >
+        <QuestionnaireOptionRowDemo />
       </CatalogDemo>
       </Show>
 

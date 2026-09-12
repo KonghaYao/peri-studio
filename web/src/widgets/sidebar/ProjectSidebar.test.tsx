@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
+import { fireEvent, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const store = vi.hoisted(() => ({
@@ -73,8 +73,11 @@ vi.mock('@/store', () => store);
 vi.mock('@/features/auth/auth-state', () => ({ principalId: () => 'test-principal', readOnly: store.readOnly }));
 vi.mock('@/widgets/auth/AuthGate', () => ({ useAuthActions: () => ({ logout: vi.fn() }) }));
 
+import { renderWithSidebarProvider } from '@/widgets/shell/sidebar-test-shell';
 import { ProjectSidebar } from './ProjectSidebar';
 import { primaryShortcut } from '@/shared/lib/keyboard';
+
+const render = renderWithSidebarProvider;
 
 function sessionButton() {
   return screen.getByRole('button', { name: /^Architecture refactor/ });

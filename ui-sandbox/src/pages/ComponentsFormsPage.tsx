@@ -20,7 +20,7 @@ export function ComponentsFormsPage() {
       <ComponentCatalogExtrasC sections={['combobox', 'typography', 'resizable']} />
       <ComponentCatalogExtrasD sections={['calendar', 'date-picker', 'form']} />
       <ComponentCatalogExtrasE sections={['field']} />
-      <ComponentCatalogExtrasG sections={['data-table', 'questionnaire']} />
+      <ComponentCatalogExtrasG sections={['data-table', 'questionnaire-option-row', 'questionnaire']} />
     </div>
   );
 }

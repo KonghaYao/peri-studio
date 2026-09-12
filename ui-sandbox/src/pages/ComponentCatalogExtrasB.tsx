@@ -46,6 +46,7 @@ import {
   SheetTrigger,
 } from '@peri/ui';
 import { Search } from 'lucide-solid';
+import { SidebarLayoutDemo } from '@/pages/demos/SidebarLayoutDemo';
 import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
 
 export function ComponentCatalogExtrasB(props: { sections?: string[] }) {
@@ -160,6 +161,16 @@ export function ComponentCatalogExtrasB(props: { sections?: string[] }) {
         <AspectRatio ratio={16 / 9} class="max-w-md overflow-hidden rounded-lg border border-border-subtle bg-surface-muted">
           <div class="grid h-full place-items-center text-12 text-content-muted">16:9 preview frame</div>
         </AspectRatio>
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'sidebar')}>
+      <CatalogDemo
+        id="sidebar"
+        title="Sidebar"
+        description="应用壳侧栏原语（Provider、菜单、Inset）。产品组合见 T4 · Project sidebar。"
+      >
+        <SidebarLayoutDemo />
       </CatalogDemo>
       </Show>
 

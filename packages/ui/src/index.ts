@@ -53,7 +53,6 @@ export {
   ConfirmationTitle,
   type ConfirmationApproval,
 } from './components/Confirmation';
-export { DecisionCard, type DecisionCardProps, type DecisionOption } from './components/DecisionCard';
 export { QuestionnaireFrame, type QuestionnaireFrameProps, type QuestionnaireOption } from './components/QuestionnaireFrame';
 export {
   QuestionnaireCheckboxOption,
@@ -109,7 +108,7 @@ export {
   type ToolActivityRowProps,
   type ToolCallStatus,
 } from './components/ToolActivity';
-export { Button, IconButton } from './components/Button';
+export { Button, IconButton, LinkButton } from './components/Button';
 export { ButtonGroup, buttonGroupItemClass } from './components/ButtonGroup';
 export { CheckIcon, CodeIcon, CopyIcon, DownloadIcon, ErrorIcon, ExpandIcon, Icon, RefreshIcon } from './components/Icon';
 export { Alert, AlertDescription, AlertTitle, type AlertVariant } from './components/Alert';
@@ -361,6 +360,7 @@ export {
   ComposerDropOverlay,
   type ComposerDropOverlayProps,
 } from './components/composer/ComposerDropOverlay';
+export { ComposerSurface, composerSurfaceClass, type ComposerSurfaceProps } from './components/composer/ComposerSurface';
 export {
   ComposerInputField,
   type ComposerInputFieldProps,

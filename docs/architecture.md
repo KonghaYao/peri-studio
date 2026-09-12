@@ -1228,9 +1228,9 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 |------|--------|------|------|
 | `AuthGate` + auth-state | `widgets/auth` + `features/auth` | `/api/auth/session` | 浏览器认证门（§3.0） |
 | `ProjectSidebar` + catalog | `widgets/sidebar` + `features/catalog` | Registry Doc + IndexedDB 偏好 | 左栏目录（§3.0） |
-| `ChatView` / `MessageList` / `ConversationMessage` / `ToolCallActivity` | `widgets/chat` + `entities/chat` + `features/chat` | Chat Doc + Control Doc | 投影见 `chat-projection`、`transcript-window`；工具卡见 `tool-call-activity.ts`（§3.0） |
+| `ChatView` / `MessageList` / `ConversationMessage` / `ToolCallActivity` | `widgets/chat` + `entities/chat` + `features/chat` | Chat Doc + Control Doc | 投影见 `chat-projection`、`transcript-window`；列表仅复用 `@peri/ui` MessageScroller 外壳（见 [`web-ui-deferrals.md`](design/web-ui-deferrals.md)）；工具卡见 `tool-call-activity.ts`（§3.0） |
 | `Composer` + 投递/草稿 | `widgets/composer/Composer.tsx` + `features/composer` + `features/message` | Chat Doc + command tracker + IndexedDB | 内联 editor/toolbar + `@peri/ui` `SlashMenuListbox`；草稿隔离；session single-flight（§3.0） |
-| `PermissionQueue` / `ElicitationQueue` | `widgets/chat` + `features/message` | Control Doc | 权限与追问（§3.0） |
+| `PermissionQueue` / `ElicitationQueue` | `widgets/chat` + `features/message` | Control Doc | 权限与追问；壳层 `@peri/ui` `QuestionnaireFrame`（§3.0） |
 | `RewindDialog` / `McpPanel` / `TopologyView` 等 | `widgets/chat` | Control Doc / 查询帧 | rewind（§6.2）、MCP、拓扑 |
 | `ErrorCenter` + 连接状态 | `widgets/shell` + `features/connection` | ws 生命周期 | 连接世代、错误中心（§3.0） |
 | 状态栏 | `widgets/shell/StatusArea` | `keep_alive` / 连接状态 | 重连与校准指示（§4.6） |
@@ -1300,7 +1300,7 @@ peri-studio/
 ├── instance/              # instance 运行时库（无独立发布二进制）：child（进程组+fingerprint）/ buffer（断线缓冲+watermark）/
 │                         #   transport（重连循环）/ hub（daemon 主循环）/ auth / router / global；tests/child_test.rs
 ├── web/                   # SolidJS SPA（§10.2）：app / pages / widgets / features / entities / shared / store；
-│                         #   panel/ 遗留 shim + 待迁 lib；vitest + tests/*.test.mjs + Playwright；见 AGENTS.md
+│                         #   T2 消费 @peri/ui；vitest + tests/*.test.mjs + Playwright；见 AGENTS.md
 ├── scripts/               # install.sh / package-release-binary / verify-release-binary / verify-unified-runtime
 ├── dev.sh                 # 一键开发：构建 Web → 启动 peri-studio local → 就绪校验
 └── docs/                  # architecture.md（本文）/ terminology.md（唯一权威术语表）/ topology.md /

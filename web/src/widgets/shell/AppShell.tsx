@@ -1,4 +1,5 @@
 import { Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
+import { SidebarProvider } from '@peri/ui';
 import { ProjectSidebar } from '../../widgets/sidebar/ProjectSidebar';
 import { ChatView } from '@/widgets/chat/ChatView';
 import { compactViewportQuery, mediumViewportQuery } from '@/shared/lib/breakpoints';
@@ -12,15 +13,14 @@ import { ResourceFloatingPanel } from '@/widgets/resource/ResourceFloatingPanel'
 
 import { workbenchFilePreviewLeftOffset } from '@/widgets/resource/resource-panel-layout';
 import { SettingsDialog } from './SettingsDialog';
-
-const SIDEBAR_MIN_WIDTH = 220;
-const SIDEBAR_MAX_WIDTH = 480;
-const SIDEBAR_DEFAULT_WIDTH = 242;
-const SIDEBAR_KEYBOARD_STEP = 24;
-
-function clampSidebarWidth(width: number) {
-  return Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, width));
-}
+import {
+  SHELL_SIDEBAR_DEFAULT_WIDTH,
+  SHELL_SIDEBAR_KEYBOARD_STEP,
+  SHELL_SIDEBAR_MAX_WIDTH,
+  SHELL_SIDEBAR_MIN_WIDTH,
+  clampShellSidebarWidth,
+  shellSidebarColumnWidth,
+} from './shell-sidebar-layout';
 
 export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
   const [open, setOpen] = createSignal(false);
@@ -34,7 +34,8 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
   });
   const [mobile, setMobile] = createSignal(false);
   const [medium, setMedium] = createSignal(false);
-  const [sidebarWidth, setSidebarWidth] = createSignal(SIDEBAR_DEFAULT_WIDTH);
+  const [sidebarOpen, setSidebarOpen] = createSignal(true);
+  const [sidebarWidth, setSidebarWidth] = createSignal(SHELL_SIDEBAR_DEFAULT_WIDTH);
   const [sidebarResizing, setSidebarResizing] = createSignal(false);
   const [sidebarIntent, setSidebarIntent] = createSignal<{ kind: 'create-project' | 'import'; projectId?: string; nonce: number } | null>(null);
   let drawer: HTMLElement | undefined;
@@ -43,7 +44,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
   let restoreResourceFocus = false;
   let resourceViewBeforePreview: Exclude<WorkbenchView, null> | null = null;
 
-  const setClampedSidebarWidth = (width: number) => setSidebarWidth(clampSidebarWidth(width));
+  const setClampedSidebarWidth = (width: number) => setSidebarWidth(clampShellSidebarWidth(width));
   const stopSidebarResize = () => {
     window.removeEventListener('pointermove', resizeSidebar);
     window.removeEventListener('pointerup', stopSidebarResize);
@@ -62,11 +63,11 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
     window.addEventListener('pointercancel', stopSidebarResize);
   };
   const resizeSidebarWithKeyboard = (event: KeyboardEvent) => {
-    const step = event.shiftKey ? SIDEBAR_KEYBOARD_STEP * 2 : SIDEBAR_KEYBOARD_STEP;
+    const step = event.shiftKey ? SHELL_SIDEBAR_KEYBOARD_STEP * 2 : SHELL_SIDEBAR_KEYBOARD_STEP;
     if (event.key === 'ArrowLeft') setClampedSidebarWidth(sidebarWidth() - step);
     else if (event.key === 'ArrowRight') setClampedSidebarWidth(sidebarWidth() + step);
-    else if (event.key === 'Home') setClampedSidebarWidth(SIDEBAR_MIN_WIDTH);
-    else if (event.key === 'End') setClampedSidebarWidth(SIDEBAR_MAX_WIDTH);
+    else if (event.key === 'Home') setClampedSidebarWidth(SHELL_SIDEBAR_MIN_WIDTH);
+    else if (event.key === 'End') setClampedSidebarWidth(SHELL_SIDEBAR_MAX_WIDTH);
     else return;
     event.preventDefault();
   };
@@ -164,12 +165,22 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
       setResourceView(restore);
     }
   });
+  const sidebarColumnWidth = () => shellSidebarColumnWidth(sidebarOpen(), sidebarWidth());
   const sidebarGridTemplate = () => mobile()
     ? 'minmax(0, 1fr)'
-    : `${sidebarWidth()}px minmax(0, 1fr) auto`;
+    : `${sidebarColumnWidth()}px minmax(0, 1fr) auto`;
 
   return (
-    <div data-testid="app-shell" class="app-shell relative grid h-dvh grid-rows-fill overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide" style={{ 'grid-template-columns': sidebarGridTemplate() }}>
+    <SidebarProvider
+      data-testid="app-shell"
+      open={sidebarOpen()}
+      onOpenChange={setSidebarOpen}
+      class="app-shell group/sidebar-wrapper relative grid h-dvh grid-rows-fill overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide"
+      style={{
+        '--sidebar-width': `${sidebarWidth()}px`,
+        'grid-template-columns': sidebarGridTemplate(),
+      }}
+    >
       <ProjectDrawer ref={(element) => { drawer = element; }} open={open()} modal={mobile()} onOpenChange={setOpen}>
         <ProjectSidebar
           onNavigate={() => setOpen(false)}
@@ -177,23 +188,25 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
           intent={sidebarIntent()}
         />
       </ProjectDrawer>
-      <div
-        class={`sidebar-resize-handle group pointer-events-none absolute z-35 top-0 bottom-0 w-12 -translate-x-1/2 touch-none max-desk:hidden ${sidebarResizing() ? 'sidebar-resize-handle--dragging' : ''}`}
-        style={{ left: `${sidebarWidth()}px` }}
-        role="separator"
-        aria-label="Resize sidebar"
-        aria-orientation="vertical"
-        aria-valuemin={SIDEBAR_MIN_WIDTH}
-        aria-valuemax={SIDEBAR_MAX_WIDTH}
-        aria-valuenow={sidebarWidth()}
-        aria-valuetext={`${sidebarWidth()} pixels wide`}
-        tabIndex={0}
-        onKeyDown={resizeSidebarWithKeyboard}
-      ><span
-        aria-hidden="true"
-        class="absolute top-0 bottom-0 left-5 w-2 cursor-col-resize rounded-full bg-transparent transition-colors pointer-events-auto group-hover:bg-sidebar-resize-handle-hover group-focus-visible:bg-sidebar-resize-handle-hover"
-        onPointerDown={startSidebarResize}
-      /></div>
+      <Show when={!mobile() && sidebarOpen()}>
+        <div
+          class={`sidebar-resize-handle group pointer-events-none absolute z-35 top-0 bottom-0 w-12 -translate-x-1/2 touch-none ${sidebarResizing() ? 'sidebar-resize-handle--dragging' : ''}`}
+          style={{ left: `${sidebarColumnWidth()}px` }}
+          role="separator"
+          aria-label="Resize sidebar"
+          aria-orientation="vertical"
+          aria-valuemin={SHELL_SIDEBAR_MIN_WIDTH}
+          aria-valuemax={SHELL_SIDEBAR_MAX_WIDTH}
+          aria-valuenow={sidebarWidth()}
+          aria-valuetext={`${sidebarWidth()} pixels wide`}
+          tabIndex={0}
+          onKeyDown={resizeSidebarWithKeyboard}
+        ><span
+          aria-hidden="true"
+          class="absolute top-0 bottom-0 left-5 w-2 cursor-col-resize rounded-full bg-transparent transition-colors pointer-events-auto group-hover:bg-sidebar-resize-handle-hover group-focus-visible:bg-sidebar-resize-handle-hover"
+          onPointerDown={startSidebarResize}
+        /></div>
+      </Show>
       <main ref={main} data-testid="conversation-pane" class="conversation-pane flex min-w-0 min-h-0 flex-col overflow-hidden">
         <div class="min-h-0 flex-1">
           <Show
@@ -211,7 +224,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
       <Show when={!mobile() && resourceFilePreview()}>
         <ResourceFloatingPanel
           anchor="left"
-          leftOffset={workbenchFilePreviewLeftOffset(sidebarWidth())}
+          leftOffset={workbenchFilePreviewLeftOffset(sidebarColumnWidth())}
           widthProfile="preview"
           data-testid="resource-file-preview-panel"
         >
@@ -230,6 +243,6 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
         onCompactCloseAutoFocus={overrideDialogFocusRestore}
       />
       <SettingsDialog open={systemOpen()} onClose={() => setSystemOpen(false)} />
-    </div>
+    </SidebarProvider>
   );
 }

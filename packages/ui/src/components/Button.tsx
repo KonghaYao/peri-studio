@@ -81,6 +81,29 @@ export function Button(props: Props) {
   );
 }
 
+type LinkButtonProps = JSX.AnchorHTMLAttributes<HTMLAnchorElement> & ButtonVariantProps;
+
+/** Anchor styled as a button (external links, downloads). */
+export function LinkButton(props: LinkButtonProps) {
+  const [local, variants, rest] = splitProps(props, ['class', 'children'], ['variant', 'size']);
+  return (
+    <a
+      class={cn(
+        buttonVariants({
+          variant: resolveButtonVariant(variants.variant ?? 'primary'),
+          size: resolveButtonSize(variants.size),
+        }),
+        'no-underline',
+        local.class,
+      )}
+      data-slot="link-button"
+      {...rest}
+    >
+      {local.children}
+    </a>
+  );
+}
+
 const iconButtonVariants = cva(
   'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-6 font-medium transition-colors outline-none duration-120 focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45 pointer-coarse:min-h-44 pointer-coarse:min-w-44',
   {

@@ -5,7 +5,7 @@ date: 2026-08-30
 
 # UI 设计稿 → 生产 web 实施计划
 
-> **状态**：本文保留 2026-08 的 sandbox → Web 落地证据；当前 T1/T2 源码与工作流已由 [`ui-package-migration.md`](ui-package-migration.md) 取代。`packages/ui` 是唯一 T1/T2 实现，Web 与 Sandbox 均消费 `@peri/ui`；下文旧 `shared/ui`、独立 token/theme 路径只作历史记录。
+> **状态**：本文保留 2026-08 的 sandbox → Web 落地证据；当前 T1/T2 源码与工作流已由 [`ui-package-migration.md`](ui-package-migration.md) 取代。有意延后项见 [`web-ui-deferrals.md`](web-ui-deferrals.md)。`packages/ui` 是唯一 T1/T2 实现，Web 与 Sandbox 均消费 `@peri/ui`；下文旧 `shared/ui`、独立 token/theme 路径只作历史记录。
 >
 > 历史设计权威：`ui-sandbox/`（Tokens / Base UI / Blocks / Layers）
 > 历史落地目标：`web/src/shared/ui` + `web/src/widgets/*`
@@ -64,7 +64,7 @@ date: 2026-08-30
 - **Git Graph 数据面**（非 UI）：wire 与投影契约见 [`git-graph-protocol.md`](git-graph-protocol.md)；视觉已落地，待接 `git-log-page` 替换 mock
 
 ### P2-D · Decision + Status
-- Questions/Permissions `DecisionCard`、Status area
+- Questions/Permissions `QuestionnaireFrame`（`@peri/ui`；生产 `QuestionQueue` / `ElicitationQueue` / `PermissionRequestCard`）、Status area
 
 ## P3 验收清单
 
@@ -79,7 +79,7 @@ date: 2026-08-30
 ## P4 清理
 
 - [x] `panel/components` shim 已删除
-- [x] `components/ui`、`lib/cn` shim 已删除；widgets 统一 `@/shared/ui`
+- [x] `components/ui`、`lib/cn` shim 已删除；T2 统一 `@peri/ui` barrel
 - [x] `layer-boundaries.test.mjs` 门禁五层依赖
 - [x] visual-fixture 场景路径更新为 `widgets/*`（无重复 token 板）
 
@@ -87,6 +87,6 @@ date: 2026-08-30
 
 | Sandbox | Web 目标 |
 |---------|----------|
-| `ui-sandbox/src/components/ui/*` | `web/src/shared/ui/*` |
+| `ui-sandbox` T2 demo（消费 `@peri/ui`） | `web/src/widgets/*` 从 `@peri/ui` 消费（`web/src/shared/ui` 已删除） |
 | `ui-sandbox/src/components/blocks/*` | `web/src/widgets/*` 或 `shared`（无业务语义块） |
 | `ui-sandbox/src/layers/*` | `widgets` 组合参考 |

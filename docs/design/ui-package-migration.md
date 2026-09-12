@@ -343,7 +343,7 @@ Sandbox：
    - 历史计划 `ui-implementation-plan.md` 可保留原阶段证据，但必须标注 superseded，并把新工作流指向本文。
 
 8. **验证与人工审阅**
-   - 完成下列自动验收；`web` 的 `bun run test` 覆盖 typecheck、契约与 vitest。
+   - 完成下列自动验收；`web` 的 `bun run test` 覆盖 typecheck、契约与 vitest（二次 build 边界已移除，见 [`web-ui-deferrals.md`](web-ui-deferrals.md) §3）。
    - 用户手动启动 `./dev-sandbox.sh`，审阅 Components / Blocks / Layers。
 
 迁移步骤 2–6 必须在同一变更中完成：不允许合入“新包 + 旧实现长期并存”的中间态。实施时可分 commit，但每个 commit 必须可被后续 commit 在同一 PR 内验证，最终 PR 才是可合入单元。

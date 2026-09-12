@@ -3,10 +3,10 @@ import {
   Badge,
   Button,
   Card,
-  cn,
   EmptyState,
   IconButton,
   InlineNotice,
+  LinkButton,
   LoadingState,
   ResourceSectionTitle,
 } from '@peri/ui';
@@ -24,15 +24,6 @@ import {
   startMcpOAuth,
 } from '@/features/mcp/mcp';
 import { RefreshCw } from 'lucide-solid';
-
-const authLinkClass = (embedded?: boolean) =>
-  cn(
-    'inline-flex cursor-pointer items-center justify-center gap-6 whitespace-nowrap rounded-6 font-medium no-underline transition-colors outline-none duration-120',
-    'border border-transparent bg-accent-solid [color:var(--content-on-accent)]! hover:bg-accent-hover active:bg-accent-active',
-    'focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2',
-    'pointer-coarse:min-h-44',
-    embedded ? 'h-28 px-10 text-12' : 'h-36 px-16 text-13 max-compact:min-h-44 max-compact:flex-1',
-  );
 
 export function McpPanelContent(props: { embedded?: boolean } = {}) {
   createEffect(() => {
@@ -83,14 +74,16 @@ export function McpPanelContent(props: { embedded?: boolean } = {}) {
                   <Button size={props.embedded ? 'compact' : undefined} class={props.embedded ? 'min-h-28! text-10!' : 'max-compact:min-h-44 max-compact:flex-1'} disabled={readOnly()} onClick={() => cancelMcpOAuth(server.activeFlowId!)}>{props.embedded ? 'Cancel' : 'Cancel authorization'}</Button>
                 </Show>
                 <Show when={exactAuthorization()}>{(grant) => (
-                  <a
-                    class={authLinkClass(props.embedded)}
+                  <LinkButton
+                    variant="primary"
+                    size={props.embedded ? 'compact' : undefined}
+                    class={props.embedded ? 'min-h-28! text-10!' : 'max-compact:min-h-44 max-compact:flex-1'}
                     href={grant().authorizationUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     Open authorization page
-                  </a>
+                  </LinkButton>
                 )}</Show>
               </div>
               <Show when={exactAuthorization()}><InlineNotice class="mt-10" tone="info">The authorization URL is kept in memory for this page only and expires soon. After opening it, come back here to check the connection result.</InlineNotice></Show>
