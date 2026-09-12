@@ -1,4 +1,5 @@
-import type { GitChange, GitGraphCommit } from '@/components/blocks/git';
+import type { GitChange } from '@peri/ui';
+import type { GitGraphCommit } from '@/components/blocks/git';
 
 export const DEMO_REPO = {
   name: 'peri-studio',

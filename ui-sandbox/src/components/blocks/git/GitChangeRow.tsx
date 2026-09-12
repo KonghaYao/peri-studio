@@ -1,7 +1,6 @@
 import { Show } from 'solid-js';
 import { cn } from '@/lib/catalog-ui';
-import { GitChangeActions } from './GitChangeActions';
-import { GitFileIcon } from './GitFileIcon';
+import { GitChangeActions, VSCodeFileIcon as GitFileIcon } from '@peri/ui';
 import type { GitChange, GitChangeGroupId } from './types';
 
 function basename(path: string) {

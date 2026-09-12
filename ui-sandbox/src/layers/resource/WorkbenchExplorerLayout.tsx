@@ -1,6 +1,5 @@
 import { createSignal } from 'solid-js';
-import { FileTree, type FileTreeNode } from '@/components/blocks/resource';
-import { GitFileIcon } from '@/components/blocks/git';
+import { FileTree, VSCodeFileIcon as GitFileIcon, type FileTreeNode } from '@peri/ui';
 
 export const WORKBENCH_EXPLORER_DEMO: FileTreeNode[] = [
   {

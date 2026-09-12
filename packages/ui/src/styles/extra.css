@@ -28,6 +28,11 @@
   transform: translateY(-50%);
 }
 
+.explorer-upload-tree--drop-root {
+  outline: 2px dashed var(--accent-border-hover);
+  outline-offset: 2px;
+}
+
 /* ── Navigation menu viewport（Kobalte 运行时 CSS 变量） ───────────────── */
 
 .ui-navigation-menu-viewport {
@@ -105,6 +110,26 @@
   }
 }
 
+/* ── 屏幕阅读器专用 ───────────────────────────────────────────────────── */
+
+.ui-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── 代码块 tab 宽度 ─────────────────────────────────────────────────── */
+
+.code-tab-size {
+  tab-size: 4;
+}
+
 /* ── 文本截断（WebKit 栈，Tailwind 无等价 token） ─────────────────────── */
 
 .ui-line-clamp-2 {
@@ -146,6 +171,45 @@
 
 [data-shell-aside][data-side='right'][data-collapsible='offcanvas'][data-state='collapsed'] .ui-aside-container {
   right: calc(var(--sidebar-width) * -1);
+}
+
+/* ── Chat workspace（T3 · 正文与 Composer 共享水平轨道） ───────────────── */
+
+.ui-chat-column,
+.chat-column {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--chat-content-max);
+  min-width: 0;
+  margin-inline: auto;
+  padding-inline: var(--space-20);
+}
+
+@media (min-width: 960px) and (max-width: 1199px) {
+  .ui-chat-column,
+  .chat-column {
+    padding-inline: var(--space-18);
+  }
+}
+
+@media (max-width: 479px) {
+  .ui-chat-column,
+  .chat-column {
+    padding-inline: var(--space-10);
+  }
+}
+
+.ui-chat-workspace__transcript-scroll {
+  scrollbar-gutter: stable;
+}
+
+/* ── Mermaid 注入 SVG ────────────────────────────────────────────────── */
+
+.md-mermaid__canvas svg,
+.md-mermaid__canvas--dialog svg {
+  display: block;
+  margin-inline: auto;
+  max-width: 100%;
 }
 
 /* ── Composer upload / token usage（无法用 Tailwind 表达的 conic + mask） ── */
@@ -387,6 +451,208 @@
   outline-offset: 2px;
 }
 
+/* ── Composer shell（T3 · 双形态胶囊） ─────────────────────────────────── */
+
+.ui-composer-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+  width: 100%;
+  max-width: var(--composer-launch-max);
+}
+
+.ui-composer-surface-v2 {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-canvas);
+  box-shadow: none;
+}
+
+.ui-composer-surface-v2--compact {
+  min-height: var(--composer-pill-height);
+  border-radius: var(--composer-pill-radius);
+  padding: 0 var(--space-8);
+}
+
+.ui-composer-surface-v2--expanded {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--composer-active-radius);
+}
+
+.ui-composer-surface-v2__attachments {
+  padding: var(--space-10) var(--space-14) 0;
+}
+
+.ui-composer-surface-v2__body {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.ui-composer-surface-v2--compact .ui-composer-surface-v2__body {
+  height: var(--composer-pill-height);
+}
+
+.ui-composer-surface-v2--expanded .ui-composer-surface-v2__body {
+  flex: 0 0 auto;
+  align-items: stretch;
+  flex-direction: column;
+  padding: var(--space-10) var(--space-14) var(--space-4);
+}
+
+.ui-composer-surface-v2--expanded .ui-composer-surface-v2__attachments + .ui-composer-surface-v2__body {
+  padding-top: var(--space-4);
+}
+
+.ui-composer-plus-btn {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--border-subtle);
+  color: var(--content-secondary);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.ui-composer-plus-btn:hover {
+  background: var(--border-strong);
+  color: var(--content-primary);
+}
+
+.ui-composer-surface-v2__field {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  resize: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: var(--text-13);
+  line-height: var(--leading-normal);
+  color: var(--content-primary);
+  outline: none;
+}
+
+.ui-composer-surface-v2__field--compact {
+  min-height: 0;
+  max-height: var(--control-height-sm);
+  overflow: hidden;
+}
+
+.ui-composer-surface-v2--expanded .ui-composer-surface-v2__field {
+  flex: 0 0 auto;
+}
+
+.ui-composer-surface-v2__field--expanded {
+  min-height: var(--composer-field-line-height);
+  max-height: var(--composer-expanded-field-max-height);
+  overflow-y: auto;
+}
+
+.ui-composer-surface-v2__field::placeholder {
+  color: var(--content-muted);
+}
+
+.ui-composer-surface-v2__toolbar {
+  display: flex;
+  min-height: var(--composer-pill-height);
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-8);
+  padding: 0 var(--space-8) var(--space-8);
+}
+
+.ui-composer-attachment-float {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+
+.ui-composer-attachment-chip {
+  display: inline-flex;
+  max-width: 180px;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-8);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  background: transparent;
+  font-size: var(--text-11);
+  line-height: var(--leading-tight);
+  color: var(--content-primary);
+}
+
+.ui-composer-attachment-chip__remove {
+  display: inline-flex;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--content-faint);
+  cursor: pointer;
+}
+
+.ui-composer-attachment-chip__remove:hover {
+  color: var(--content-secondary);
+}
+
+.ui-composer-attachment-chip--failed {
+  border-color: var(--danger-border);
+  color: var(--feedback-danger-strong);
+}
+
+.ui-composer-attachment-chip--busy {
+  color: var(--content-secondary);
+}
+
+.ui-composer-send-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: var(--radius-full) !important;
+}
+
+.ui-composer-meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: 0 var(--space-4);
+}
+
+.ui-composer-slash-popover {
+  width: min(var(--container-popover), 100vw);
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+}
+
+.ui-composer-slash-upload {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  padding: var(--space-6) var(--space-10);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui-composer-slash-upload:hover {
+  background: var(--interaction-hover);
+}
+
+.ui-composer-slash-popover .overflow-hidden.rounded-xl {
+  border: 0;
+  border-radius: 0;
+}
+
+.ui-composer-slash-popover .overflow-hidden.rounded-xl > ul {
+  padding-top: 0;
+}
+
 @media (max-width: 640px) {
   .ui-composer-toolbar {
     flex-wrap: wrap;
@@ -417,6 +683,39 @@
     display: none;
   }
 }
+
+/* ── Status area shell（T3 · plan / async / changes） ───────────────────── */
+
+.ui-status-area-shell {
+  width: 100%;
+  min-width: 0;
+}
+
+.ui-status-area-shell__card {
+  overflow: hidden;
+}
+
+.ui-status-area-shell__header {
+  gap: var(--space-8);
+}
+
+.ui-status-area-shell__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ── Decision queue shell（T3 · composer 上方决策叠层） ─────────────────── */
+
+.ui-decision-queue-shell {
+  width: 100%;
+  min-width: 0;
+}
+
+.ui-decision-queue-shell__surface {
+  margin-bottom: var(--space-12);
+}
+
 /* ── Git Graph panel（mhutchie/vscode-git-graph 对齐） ─────────────────── */
 
 .ui-git-graph-control-btn {
@@ -569,6 +868,171 @@
   .ui-git-graph-panel .ui-git-graph-date-col {
     display: none;
   }
+}
+
+/* ── Workbench shell（T3 · rail + 浮动面板） ───────────────────────────── */
+
+.ui-workbench-shell {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  border-left: 1px solid var(--border-subtle);
+  background: var(--surface-overlay);
+}
+
+.ui-workbench-shell:not(.ui-workbench-shell--compact) {
+  position: relative;
+  width: var(--workbench-rail-width);
+  flex-shrink: 0;
+}
+
+.ui-workbench-shell--compact {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+}
+
+.ui-workbench-rail {
+  display: flex;
+  width: var(--workbench-rail-width);
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  background: var(--surface-overlay);
+  padding: var(--space-8) 0;
+}
+
+.ui-workbench-rail-button--active-left::before,
+.ui-workbench-rail-button--active-right::before {
+  content: '';
+  position: absolute;
+  top: var(--space-6);
+  bottom: var(--space-6);
+  width: 2px;
+  border-radius: var(--radius-2);
+  background: var(--accent-solid);
+}
+
+.ui-workbench-rail-button--active-left::before {
+  left: -3px;
+}
+
+.ui-workbench-rail-button--active-right::before {
+  right: -3px;
+}
+
+.ui-workbench-rail-button__badge {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  min-width: 14px;
+  border-radius: var(--radius-6);
+  background: var(--accent-solid);
+  padding: 0 var(--space-4);
+  text-align: center;
+  font-size: var(--text-9);
+  line-height: 14px;
+  color: var(--content-on-accent);
+}
+
+.ui-workbench-panel-chrome {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.ui-workbench-panel-chrome__header {
+  display: flex;
+  height: var(--control-height-md);
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-8);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 var(--space-12);
+}
+
+.ui-workbench-panel-chrome__title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-11);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--content-muted);
+}
+
+.ui-workbench-panel-chrome__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.ui-workbench-panel-chrome__body {
+  min-height: 0;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.ui-workbench-panel-surface {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  background: var(--surface-overlay);
+}
+
+.ui-workbench-floating-panel {
+  position: absolute;
+  z-index: 30;
+  top: var(--space-8);
+  bottom: var(--space-8);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-14);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-overlay);
+}
+
+.ui-workbench-floating-panel--right {
+  right: 52px;
+}
+
+.ui-workbench-floating-panel--left {
+  left: 0;
+}
+
+.ui-workbench-panel-resize-handle--dragging,
+.ui-workbench-panel-resize-handle--dragging * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+.ui-workbench-panel-resize-handle--dragging > .ui-workbench-panel-resize-handle__grip {
+  background: var(--sidebar-resize-handle-hover);
+}
+
+body.ui-workbench-panel-resizing,
+body.ui-workbench-panel-resizing * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+.ui-workbench-embedded-panel {
+  display: flex;
+  height: 100%;
+  width: var(--workbench-panel-width);
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface-overlay);
 }
 
 /* ── 推理折叠摘要（隐藏 WebKit marker） ───────────────────────────────── */

@@ -175,8 +175,8 @@ test('fractional Tailwind spacing utilities resolve to an explicit product token
 });
 
 const EXTRA_CSS_BASELINE = {
-  lineCount: 122,
-  sha256: 'be0e3bf950792294fc54ab22ba680196483ad03b7b31745864b0798cdb21b40f',
+  lineCount: 90,
+  sha256: '42298dc36dd306ef182f0e8dec24c16aa41131a08f6bf01bc379846145d43a2e',
 };
 
 function lineCountLikeWc(content) {
@@ -534,9 +534,13 @@ test('primitive visuals remain in the UI package', () => {
   const root = join(import.meta.dirname, '..', 'src');
   const packageRoot = join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src');
   const primitives = readFileSync(join(packageRoot, 'styles', 'primitives.css'), 'utf8');
+  const packageExtra = readFileSync(join(packageRoot, 'styles', 'extra.css'), 'utf8');
+  const webPrimitives = readFileSync(join(root, 'styles', 'primitives.css'), 'utf8');
   const button = readFileSync(join(packageRoot, 'components', 'Button.tsx'), 'utf8');
   const dialog = readFileSync(join(packageRoot, 'components', 'Dialog.tsx'), 'utf8');
   const drawer = readFileSync(join(root, 'widgets', 'shell', 'shared', 'ProjectDrawer.tsx'), 'utf8');
+  assert.match(packageExtra, /\.ui-chat-column,\s*\n\.chat-column\s*\{/);
+  assert.doesNotMatch(webPrimitives, /\.chat-column\s*\{/);
   assert.match(primitives, /\.ui-scrollbar\s*\{/);
   assert.match(primitives, /\*::\-webkit-scrollbar\s*\{/);
   assert.match(primitives, /scrollbar-color:\s*var\(--scrollbar-thumb\) transparent/);

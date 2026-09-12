@@ -1,8 +1,7 @@
-// 右区组装层：@peri/ui ChatHeader + resolveChatHeaderTitle、MessageList、Composer。
-// 三段式 flex column：顶栏固定、消息区 flex-1 滚动、Composer 贴底。
-// onOpenNavigation / onOpenResources 透传给 ChatHeader，供中窄屏打开 drawer。
+// 右区组装层：@peri/ui ChatWorkspaceShell + ChatHeader、MessageList、Composer。
+// T4 保留 store/features 逻辑；布局 chrome 下沉 T3 ChatWorkspaceShell。
 
-import { ChatHeader as ChatHeaderBase } from '@peri/ui';
+import { ChatHeader as ChatHeaderBase, ChatWorkspaceShell, InlineNotice, LoadingState } from '@peri/ui';
 import { resolveChatHeaderTitle } from '@/features/chat/chat-header-title';
 import { Composer } from '@/widgets/composer/Composer';
 import { MessageList } from './MessageList';
@@ -10,7 +9,6 @@ import { ChatEmptyWorkspace, CHAT_EMPTY_TITLE } from './ChatEmptyWorkspace';
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { chatCatalog, chatEntries, chatAgentLoading, chatHead, elicitationResponses, elicitations, permissions, projectSessions, questionResponses, questions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, respondQuestion, restoringSessionId, retryPersistentAction, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '@/store';
 import { readOnly } from '@/features/auth/auth-state';
-import { InlineNotice, LoadingState } from '@peri/ui';
 import { selectAgentPublicErrorNotice } from '@/features/chat/agent-public-error-notice';
 import { ConnectionProblem } from '@/widgets/shell/ConnectionProblem';
 import { ErrorCenter } from '@/widgets/shell/ErrorCenter';
@@ -82,6 +80,41 @@ export function ChatView(props: ChatViewProps) {
       </InlineNotice>
     );
   };
+  const queueAndStatus = () => (
+    <>
+      <Show when={hasPendingPermission()}>
+        <PermissionQueue
+          permissions={permissions().filter((permission) => permission.status === 'pending')}
+          decisions={permissionDecisions()}
+          readOnly={readOnly()}
+          onResolve={resolvePermission}
+          onRetry={retryPersistentAction}
+        />
+      </Show>
+      <Show when={hasPendingElicitation()}>
+        <ElicitationQueue
+          elicitations={visibleElicitations(elicitations())}
+          responses={elicitationResponses()}
+          readOnly={readOnly()}
+          onRefreshStatus={refreshCurrentControlProjection}
+          onDismissUncertain={dismissUncertainElicitation}
+          onRespond={respondElicitation}
+        />
+      </Show>
+      <Show when={hasPendingQuestion()}>
+        <QuestionQueue
+          questions={visibleQuestions(questions())}
+          responses={questionResponses()}
+          readOnly={readOnly()}
+          onRefreshStatus={refreshCurrentControlProjection}
+          onDismissUncertain={dismissUncertainQuestion}
+          onRespond={respondQuestion}
+        />
+      </Show>
+      {agentPublicErrorBanner()}
+      <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} tasks={chatHead()?.tasks ?? []} entries={chatEntries()} projectCwd={projectCwd()} />
+    </>
+  );
   onMount(() => {
     if (!composerStack || typeof ResizeObserver === 'undefined') return;
     const updateHeight = () => setComposerHeight(composerStack?.getBoundingClientRect().height ?? 0);
@@ -91,106 +124,61 @@ export function ChatView(props: ChatViewProps) {
   });
   onCleanup(() => composerObserver?.disconnect());
   return (
-    <section class={`chat-view relative flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden bg-app-bg ${selectedSessionId() ? '' : 'chat-view--launch'}`} data-testid="chat-view">
-      <ChatHeaderBase
-        title={headerTitle()}
-        launch={!selectedSessionId()}
-        class={`chat-header ${!selectedSessionId() ? 'chat-header--launch' : ''}`}
-        titleClass="chat-title"
-        navButtonClass="mobile-nav-button hidden"
-        showMobileNav
-        showMobileResources
-        onOpenNavigation={props.onOpenNavigation}
-        onOpenResources={props.onOpenResources}
-      />
-      <ConnectionProblem />
-      <ErrorCenter />
-      <Show when={restoringSessionId()}><LoadingState label="Restoring last session and ACP context…" class="restore-banner justify-center mt-12 mx-20 max-narrow:m-10" data-testid="restore-banner" /></Show>
-      <Show when={selectedSessionId()} fallback={<Show
-        when={registryHydrated()}
-        fallback={<LoadingState label="Loading projects" class="flex-1 justify-center text-center" />}
-      >
-        <LaunchWorkspace onOpenNavigation={props.onOpenNavigation} onCreateProject={props.onCreateProject} onImport={props.onImport} />
-      </Show>}>
-        <div class="chat-workspace relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
-          <Show when={conversationEmpty()} fallback={(
-            <>
-              <MessageList footerHeight={composerHeight()} />
-              <div ref={composerStack} class="composer-stack relative z-20 flex-none min-w-0 overflow-x-hidden bg-app-bg" data-testid="composer-stack">
-                <Show when={hasPendingPermission()}>
-                  <PermissionQueue
-                    permissions={permissions().filter((permission) => permission.status === 'pending')}
-                    decisions={permissionDecisions()}
-                    readOnly={readOnly()}
-                    onResolve={resolvePermission}
-                    onRetry={retryPersistentAction}
-                  />
-                </Show>
-                <Show when={hasPendingElicitation()}>
-                  <ElicitationQueue
-                    elicitations={visibleElicitations(elicitations())}
-                    responses={elicitationResponses()}
-                    readOnly={readOnly()}
-                    onRefreshStatus={refreshCurrentControlProjection}
-                    onDismissUncertain={dismissUncertainElicitation}
-                    onRespond={respondElicitation}
-                  />
-                </Show>
-                <Show when={hasPendingQuestion()}>
-                  <QuestionQueue
-                    questions={visibleQuestions(questions())}
-                    responses={questionResponses()}
-                    readOnly={readOnly()}
-                    onRefreshStatus={refreshCurrentControlProjection}
-                    onDismissUncertain={dismissUncertainQuestion}
-                    onRespond={respondQuestion}
-                  />
-                </Show>
-                {agentPublicErrorBanner()}
-                <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} tasks={chatHead()?.tasks ?? []} entries={chatEntries()} projectCwd={projectCwd()} />
-                <Composer renderRuntimeMenu={composerRuntimeMenu} />
-              </div>
-            </>
-          )}>
-            <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
-              <Show when={hasPendingPermission()}>
-                <PermissionQueue
-                  permissions={permissions().filter((permission) => permission.status === 'pending')}
-                  decisions={permissionDecisions()}
-                  readOnly={readOnly()}
-                  onResolve={resolvePermission}
-                  onRetry={retryPersistentAction}
-                />
-              </Show>
-              <Show when={hasPendingElicitation()}>
-                <ElicitationQueue
-                  elicitations={visibleElicitations(elicitations())}
-                  responses={elicitationResponses()}
-                  readOnly={readOnly()}
-                  onRefreshStatus={refreshCurrentControlProjection}
-                  onDismissUncertain={dismissUncertainElicitation}
-                  onRespond={respondElicitation}
-                />
-              </Show>
-              <Show when={hasPendingQuestion()}>
-                <QuestionQueue
-                  questions={visibleQuestions(questions())}
-                  responses={questionResponses()}
-                  readOnly={readOnly()}
-                  onRefreshStatus={refreshCurrentControlProjection}
-                  onDismissUncertain={dismissUncertainQuestion}
-                  onRespond={respondQuestion}
-                />
-              </Show>
-              {agentPublicErrorBanner()}
-              <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} tasks={chatHead()?.tasks ?? []} entries={chatEntries()} projectCwd={projectCwd()} />
-              <ChatEmptyWorkspace title={CHAT_EMPTY_TITLE} hint={EMPTY_HINT}>
-                <Composer layout="centered" renderRuntimeMenu={composerRuntimeMenu} />
-              </ChatEmptyWorkspace>
-            </div>
+    <ChatWorkspaceShell
+      data-testid="chat-view"
+      launch={!selectedSessionId()}
+      header={(
+        <ChatHeaderBase
+          title={headerTitle()}
+          launch={!selectedSessionId()}
+          class={`chat-header ${!selectedSessionId() ? 'chat-header--launch' : ''}`}
+          titleClass="chat-title"
+          navButtonClass="mobile-nav-button hidden"
+          showMobileNav
+          showMobileResources
+          onOpenNavigation={props.onOpenNavigation}
+          onOpenResources={props.onOpenResources}
+        />
+      )}
+      banner={(
+        <>
+          <ConnectionProblem />
+          <ErrorCenter />
+          <Show when={restoringSessionId()}>
+            <LoadingState label="Restoring last session and ACP context…" class="restore-banner justify-center mt-12 mx-20 max-narrow:m-10" data-testid="restore-banner" />
           </Show>
-        </div>
-      </Show>
-    </section>
+        </>
+      )}
+      launchBody={(
+        <Show
+          when={registryHydrated()}
+          fallback={<LoadingState label="Loading projects" class="flex-1 justify-center text-center" />}
+        >
+          <LaunchWorkspace onOpenNavigation={props.onOpenNavigation} onCreateProject={props.onCreateProject} onImport={props.onImport} />
+        </Show>
+      )}
+      transcript={selectedSessionId() ? (
+        <Show
+          when={conversationEmpty()}
+          fallback={<MessageList footerHeight={composerHeight()} />}
+        >
+          <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
+            {queueAndStatus()}
+            <ChatEmptyWorkspace title={CHAT_EMPTY_TITLE} hint={EMPTY_HINT}>
+              <Composer layout="centered" renderRuntimeMenu={composerRuntimeMenu} />
+            </ChatEmptyWorkspace>
+          </div>
+        </Show>
+      ) : undefined}
+      composerStack={selectedSessionId() && !conversationEmpty() ? (
+        <>
+          {queueAndStatus()}
+          <Composer renderRuntimeMenu={composerRuntimeMenu} />
+        </>
+      ) : undefined}
+      composerStackRef={(element) => {
+        composerStack = element;
+      }}
+    />
   );
 }

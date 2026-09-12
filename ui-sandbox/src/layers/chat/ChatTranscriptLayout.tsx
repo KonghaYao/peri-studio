@@ -1,4 +1,4 @@
-import { UserBubble } from '@/components/blocks';
+import { UserBubble } from '@peri/ui';
 import { FilePen, Search, Terminal } from 'lucide-solid';
 import { ToolActivityGroup, ToolActivityRow } from '@peri/ui';
 

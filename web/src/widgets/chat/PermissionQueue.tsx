@@ -1,3 +1,4 @@
+import { DecisionQueueShell } from '@peri/ui';
 import { Show } from 'solid-js';
 import type { PendingPermission } from '@/entities/chat/control-view';
 import { createIdentitySelection } from '@/features/message/identity-selection';
@@ -21,28 +22,28 @@ export function PermissionQueue(props: PermissionQueueProps) {
       {(permission) => {
         const permissionId = () => permission().permissionId;
         return (
-          <aside
-            class="permission-queue chat-column pb-10"
+          <DecisionQueueShell
+            element="aside"
+            class="chat-column pb-10"
             data-testid="permission-queue"
+            surfaceTestId="permission-queue-surface"
             aria-label={`Pending permission requests, ${props.permissions.length} total`}
           >
-            <div class="permission-queue__surface mb-12" data-testid="permission-queue-surface">
-              <PermissionRequestCard
-                permission={permission()}
-                decision={permissionId() ? props.decisions.get(permissionId()!) : undefined}
-                readOnly={props.readOnly}
-                currentIndex={selection.index()}
-                total={props.permissions.length}
-                onPrevious={() => selection.select(selection.index() - 1)}
-                onNext={() => selection.select(selection.index() + 1)}
-                onResolve={(decision, optionId) => {
-                  const id = permissionId();
-                  if (id) props.onResolve(id, decision, optionId);
-                }}
-                onRetry={props.onRetry}
-              />
-            </div>
-          </aside>
+            <PermissionRequestCard
+              permission={permission()}
+              decision={permissionId() ? props.decisions.get(permissionId()!) : undefined}
+              readOnly={props.readOnly}
+              currentIndex={selection.index()}
+              total={props.permissions.length}
+              onPrevious={() => selection.select(selection.index() - 1)}
+              onNext={() => selection.select(selection.index() + 1)}
+              onResolve={(decision, optionId) => {
+                const id = permissionId();
+                if (id) props.onResolve(id, decision, optionId);
+              }}
+              onRetry={props.onRetry}
+            />
+          </DecisionQueueShell>
         );
       }}
     </Show>

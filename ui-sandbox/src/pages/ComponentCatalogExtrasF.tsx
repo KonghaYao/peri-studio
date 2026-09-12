@@ -1,6 +1,7 @@
 import { Show } from 'solid-js';
 import { showCatalogSection } from '@/catalog/catalog-section';
-import { ChatHeader, ProjectRowAccessory, SessionRowAccessory, UserBubble } from '@/components/blocks';
+import { ProjectRowAccessory, SessionRowAccessory, UserBubble } from '@peri/ui';
+import { ChatHeader } from '@/components/blocks/chrome';
 import { Folder } from 'lucide-solid';
 import { ChatShellLayout, ChatTranscriptLayout } from '@/layers';
 import {

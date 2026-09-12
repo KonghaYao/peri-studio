@@ -1,5 +1,5 @@
 import { createSignal, Show } from 'solid-js';
-import { FileTree, type FileTreeNode } from '@/components/blocks/resource';
+import { FileTree, type FileTreeNode } from '@peri/ui';
 import { Button } from '@/lib/catalog-ui';
 import { ButtonGroup } from '@/lib/catalog-ui';
 import { cn } from '@/lib/catalog-ui';

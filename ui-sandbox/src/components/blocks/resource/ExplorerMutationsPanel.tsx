@@ -9,8 +9,12 @@ import {
   inlineCreateAtParent,
   type InlineEditState,
 } from './ExplorerMutationsTree';
-import { ExplorerItemMenu, type ExplorerMenuAction } from './ExplorerItemMenu';
-import type { FileTreeNode } from '@peri/ui';
+import {
+  ExplorerItemMenu,
+  FileTreeInlineNameEditor,
+  type ExplorerMenuAction,
+  type FileTreeNode,
+} from '@peri/ui';
 import {
   createExplorerMutationsDemoTree,
   type ExplorerMutationsDemoMode,
@@ -28,7 +32,6 @@ import {
   siblingBasenames,
   validateExplorerBasename,
 } from './explorer-mutations-tree-utils';
-import { FileTreeInlineNameEditor } from './FileTreeInlineNameEditor';
 
 export function ExplorerMutationsPanel(props: {
   demoMode?: ExplorerMutationsDemoMode;

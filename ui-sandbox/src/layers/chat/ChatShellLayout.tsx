@@ -1,16 +1,21 @@
-import { ChatHeader } from '@/components/blocks/chrome';
+import { ChatHeader, ChatWorkspaceShell } from '@peri/ui';
 import { ChatTranscriptLayout } from './ChatTranscriptLayout';
 
-/** Tier 4 · Chat 工作区：顶栏标题 + 消息流（不含 Composer）。 */
+/** Tier 4 · Chat 工作区：消费 @peri/ui ChatWorkspaceShell（T3），mock 标题与消息流。 */
 export function ChatShellLayout() {
   return (
-    <div class="flex h-(--catalog-layer-chat-height) flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface-canvas">
-      <ChatHeader title="Refactor ACP session recovery and projection boundaries" />
-      <div class="ui-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto py-16">
-        <div class="chat-column">
-          <ChatTranscriptLayout />
+    <ChatWorkspaceShell
+      class="h-(--catalog-layer-chat-height) overflow-hidden rounded-lg border border-border-subtle bg-surface-canvas"
+      header={(
+        <ChatHeader title="Refactor ACP session recovery and projection boundaries" />
+      )}
+      transcript={(
+        <div class="ui-chat-workspace__transcript ui-scrollbar ui-chat-workspace__transcript-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto py-16">
+          <div class="ui-chat-column">
+            <ChatTranscriptLayout />
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    />
   );
 }

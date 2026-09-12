@@ -1,11 +1,16 @@
-import { Spinner } from '@/lib/catalog-ui';
 import { AlertCircle, FileText, X } from 'lucide-solid';
-import { Show } from 'solid-js';
-import { cn } from '@/lib/catalog-ui';
-import type { ComposerAttachment } from './composer-shell-data';
+import { Show, type Component } from 'solid-js';
+import { cn } from '../../lib/cn';
+import { Spinner } from '../Spinner';
+import type { ComposerAttachmentItem } from './composer-attachment-types';
+
+export type ComposerAttachmentChipProps = Pick<
+  ComposerAttachmentItem,
+  'name' | 'status' | 'errorMessage' | 'progress' | 'onRemove' | 'onRetry'
+>;
 
 /** Composer 浮动附件 chip（ready / uploading / failed 等态）。 */
-export function ComposerAttachmentChip(props: ComposerAttachment) {
+export const ComposerAttachmentChip: Component<ComposerAttachmentChipProps> = (props) => {
   const busy = () =>
     props.status === 'pending' || props.status === 'uploading' || props.status === 'committing';
   const failed = () => props.status === 'failed';
@@ -20,9 +25,9 @@ export function ComposerAttachmentChip(props: ComposerAttachment) {
   return (
     <span
       class={cn(
-        'composer-attachment-chip',
-        failed() && 'composer-attachment-chip--failed',
-        busy() && 'composer-attachment-chip--busy',
+        'ui-composer-attachment-chip',
+        failed() && 'ui-composer-attachment-chip--failed',
+        busy() && 'ui-composer-attachment-chip--busy',
       )}
       title={title()}
       role={failed() ? 'alert' : undefined}
@@ -56,7 +61,7 @@ export function ComposerAttachmentChip(props: ComposerAttachment) {
       <Show when={props.status === 'ready' && props.onRemove}>
         <button
           type="button"
-          class="composer-attachment-chip__remove"
+          class="ui-composer-attachment-chip__remove"
           aria-label={`Remove ${props.name}`}
           onClick={props.onRemove}
         >
@@ -65,4 +70,4 @@ export function ComposerAttachmentChip(props: ComposerAttachment) {
       </Show>
     </span>
   );
-}
+};

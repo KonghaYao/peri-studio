@@ -66,22 +66,6 @@
   background: var(--sidebar-resize-handle-hover);
 }
 
-.workbench-panel-resize-handle--dragging,
-.workbench-panel-resize-handle--dragging * {
-  cursor: col-resize !important;
-  user-select: none;
-}
-
-.workbench-panel-resize-handle--dragging > span {
-  background: var(--sidebar-resize-handle-hover);
-}
-
-body.workbench-panel-resizing,
-body.workbench-panel-resizing * {
-  cursor: col-resize !important;
-  user-select: none;
-}
-
 /* 关闭 Terminal 浮窗但 PTY 仍在跑：0 尺寸停放，避免卸载终端视口。 */
 .terminal-workbench-park {
   position: fixed;
@@ -97,22 +81,6 @@ body.workbench-panel-resizing * {
   border: 0;
   box-shadow: none;
   padding: 0;
-}
-
-/* ── Mermaid 注入 SVG ────────────────────────────────────────────────── */
-
-.md-mermaid__canvas svg,
-.md-mermaid__canvas--dialog svg {
-  display: block;
-  margin-inline: auto;
-  max-width: 100%;
-}
-
-/* ── Workspace file upload (Explorer) ───────────────────────────────────── */
-
-.explorer-upload-tree--drop-root {
-  outline: 2px dashed var(--accent-border-hover);
-  outline-offset: 2px;
 }
 
 /* ── 拓扑子节点连线 ───────────────────────────────────────────────────── */

@@ -1,4 +1,4 @@
-import { Check, Plus, ScanLine, SendHorizontal } from 'lucide-solid';
+import { ArrowUp, Check, Plus, ScanLine, SendHorizontal } from 'lucide-solid';
 import { Show, splitProps, type Component } from 'solid-js';
 import { cn } from '../../lib/cn';
 import { Button, IconButton } from '../Button';
@@ -69,12 +69,15 @@ export type ComposerSendStopActionProps = {
   busy?: boolean;
   uncertain?: boolean;
   showStopGlyph?: boolean;
+  /** pill：ComposerShell compact 内联圆形发送钮 */
+  shape?: 'default' | 'pill';
   onClick: () => void;
 };
 
 export const ComposerSendStopAction: Component<ComposerSendStopActionProps> = (props) => {
-  const [local] = splitProps(props, ['mode', 'label', 'disabled', 'busy', 'uncertain', 'showStopGlyph', 'onClick']);
+  const [local] = splitProps(props, ['mode', 'label', 'disabled', 'busy', 'uncertain', 'showStopGlyph', 'shape', 'onClick']);
   const variant = () => (local.mode === 'send' ? 'primary' : 'stop') as 'primary' | 'stop';
+  const pill = () => local.shape === 'pill';
 
   return (
     <span class="shrink-0">
@@ -82,18 +85,22 @@ export const ComposerSendStopAction: Component<ComposerSendStopActionProps> = (p
         data-testid="composer-action"
         tooltipPlacement="end"
         variant={variant()}
+        size={pill() ? 'sm' : undefined}
+        showTooltip={!pill()}
         type="button"
         onClick={local.onClick}
         disabled={local.disabled}
         busy={local.busy}
         label={local.label}
         class={cn(
-          local.mode === 'send' ? sendActionClass : stopActionClass,
+          pill() ? 'ui-composer-send-btn' : local.mode === 'send' ? sendActionClass : stopActionClass,
           local.mode === 'stop' && local.uncertain && 'bg-warning hover:bg-warning-strong',
         )}
       >
         <Show when={local.mode === 'send'}>
-          <SendHorizontal size={18} strokeWidth={1.7} />
+          <Show when={pill()} fallback={<SendHorizontal size={18} strokeWidth={1.7} />}>
+            <ArrowUp size={16} strokeWidth={2.2} />
+          </Show>
         </Show>
         <Show when={local.mode === 'stop' && (local.showStopGlyph ?? true)}>
           <span aria-hidden="true" class="size-10 rounded-2 bg-current" />

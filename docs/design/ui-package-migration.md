@@ -20,7 +20,7 @@ review_gate: passed
 | 主题 | 决策 |
 |------|------|
 | npm 包 | 建立顶层 `packages/ui`，包名 `@peri/ui`。V1 是 `private`、buildless 的 Bun workspace npm 包，不发布 registry。 |
-| “所有 component” | 仅指**无业务语义的 T2 Base UI**；Chat、Composer、Sidebar、Resource 等业务组件仍属于 `web/src/widgets`，不得为了“统一”搬进 UI 包。 |
+| “所有 component” | **T2** 为无业务语义 Base UI；**T3** 为无 store/协议的可复用复合块（如 `ComposerShell`），归属 `packages/ui` 并通过 slot 供 T4 装配；**T4** 业务 widgets 仍留在 `web/src/widgets`。详见 [`t3-blocks-in-ui-package.md`](t3-blocks-in-ui-package.md)。 |
 | Storybook | 不引入 Storybook 依赖；沿用手写的 Solid + Vite UI Catalog，作为 Storybook-equivalent。 |
 | Demo 站 | `ui-sandbox` 只保存 catalog 壳、demo、T3 Blocks 与 T4 Layers；T2 demo 必须消费 `@peri/ui`，不得复制实现。 |
 | 默认端口 | **5273**。历史原文中的 8888 已过时；`dev-sandbox.sh` 可用 `PERI_UI_SANDBOX_PORT` 覆盖。 |

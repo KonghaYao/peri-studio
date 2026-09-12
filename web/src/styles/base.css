@@ -170,7 +170,7 @@ code {
 
   .conversation-message__surface,
   .permission-request,
-  .resource-workbench {
+  .ui-workbench-shell {
     border-color: CanvasText;
   }
 }

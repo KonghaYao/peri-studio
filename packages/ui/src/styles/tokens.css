@@ -427,6 +427,10 @@
   --asset-tile-size: 68px;
   --status-panel-max-height: 132px;
   --composer-radius: var(--radius-xl);
+  --composer-pill-height: 44px;
+  --composer-pill-radius: calc(var(--composer-pill-height) / 2);
+  --composer-field-line-height: calc(var(--text-13) * var(--leading-145));
+  --composer-expanded-field-max-height: calc(var(--composer-field-line-height) * 3);
   --composer-active-radius: 22px;
   --composer-drop-overlay-bg: var(--scrim);
   --explorer-drop-accent-width: 3px;

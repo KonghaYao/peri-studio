@@ -107,7 +107,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
   const findResourceOrigin = (key: string) => Array.from(document.querySelectorAll<HTMLElement>('[data-resource-focus-key]'))
     .find((element) => element.dataset.resourceFocusKey === key);
   const findResourceViewFallback = (view: ResourcePreviewOrigin['view']) => document
-    .querySelector<HTMLElement>(`.resource-workbench [aria-label="${view === 'explorer' ? 'Explorer' : 'Source Control'}"]`);
+    .querySelector<HTMLElement>(`.ui-workbench-shell [aria-label="${view === 'explorer' ? 'Explorer' : 'Source Control'}"]`);
   const restorePreviewOrigin = (event: Event) => {
     if (!restoreResourceFocus || !resourceFocusOrigin) return;
     const origin = resourceFocusOrigin;

@@ -47,10 +47,12 @@ test('component geometry tokens are declared once and consumed by production wid
   const webRoot = join(import.meta.dirname, '..', 'src');
   const read = (...parts) => readFileSync(join(webRoot, ...parts), 'utf8');
   const tokens = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'styles', 'tokens.css'), 'utf8');
+  const pkgUi = (...parts) => readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', ...parts), 'utf8');
   const composer = [
     read('widgets', 'composer', 'Composer.tsx'),
-    readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'composer', 'ComposerSurface.tsx'), 'utf8'),
-    readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'composer', 'ComposerToolbarControls.tsx'), 'utf8'),
+    pkgUi('components', 'composer', 'ComposerShell.tsx'),
+    pkgUi('components', 'composer', 'ComposerSurface.tsx'),
+    pkgUi('components', 'composer', 'ComposerToolbarControls.tsx'),
   ].join('\n');
   const tool = read('widgets', 'chat', 'ToolCallActivity.tsx');
   const toolActivity = readFileSync(
@@ -58,7 +60,11 @@ test('component geometry tokens are declared once and consumed by production wid
     'utf8',
   );
   const mcpApp = read('widgets', 'chat', 'McpAppFrame.tsx');
-  const status = read('widgets', 'shell', 'StatusArea.tsx');
+  const status = [
+    read('widgets', 'shell', 'StatusArea.tsx'),
+    pkgUi('components', 'status', 'StatusAreaShell.tsx'),
+    pkgUi('components', 'status', 'status-area-shell-utils.ts'),
+  ].join('\n');
   const questions = read('widgets', 'chat', 'ElicitationQueue.tsx');
   const permissions = read('widgets', 'chat', 'PermissionQueue.tsx');
   const permissionCard = read('widgets', 'chat', 'PermissionRequestCard.tsx');

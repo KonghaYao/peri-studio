@@ -1,5 +1,5 @@
 import { Show } from 'solid-js';
-import { SlashMenu, TokenUsageMeter } from '@/components/blocks';
+import { SlashMenu, TokenUsageMeter } from '@peri/ui';
 import { showCatalogSection } from '@/catalog/catalog-section';
 import { ComposerLayout, ComposerUploadLayout } from '@/layers';
 import { CatalogDemo } from '@/pages/shared/DemoSection';

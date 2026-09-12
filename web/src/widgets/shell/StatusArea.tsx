@@ -4,21 +4,20 @@ import type { ChatEntry } from '@/entities/chat/chat-view';
 import { selectChatFileChanges } from '@/entities/chat/chat-file-changes';
 import { mapPlanStepStatus } from '@/features/chat/plan-step-status';
 import { formatWorkspacePathLabel } from '@/features/chat/tool-file-link';
-import { Ban, Bot, Check, ChevronDown, Circle, CircleAlert, GitBranch, Info, ListTodo, Pause, Workflow, X } from 'lucide-solid';
+import { Ban, Bot, Check, Circle, CircleAlert, GitBranch, Info, ListTodo, Pause, Workflow, X } from 'lucide-solid';
 import {
   Badge,
-  Card,
-  CardHeader,
-  IconButton,
   PlanStep,
-  Tabs,
+  StatusAreaShell,
   TabsContent,
-  TabsList,
   TabsTrigger,
   TaskItem,
   TaskItemFile,
   VSCodeFileIcon,
   cn,
+  statusAreaPanelClass,
+  statusAreaRowClass,
+  statusAreaTabTriggerClass,
 } from '@peri/ui';
 
 type StatusTab = 'todo' | 'async' | 'changes';
@@ -80,14 +79,6 @@ function planAutoExpandSignature(plan: AgentPlanEntryInfo[]) {
 function asyncAutoExpandSignature(items: Array<{ id: string; status: string; label: string }>) {
   return items.map((item) => `${item.id}:${item.status}:${item.label}`).join('\0');
 }
-
-const tabTriggerClass = cn(
-  'inline-flex h-28 max-w-full items-center gap-6 rounded-md border-0 border-b-0 px-8 py-0 text-12 transition-colors duration-(--duration-fast)',
-  'text-content-muted hover:bg-interaction-hover hover:text-content-primary',
-  'data-selected:bg-accent-soft data-selected:font-medium data-selected:text-content-primary',
-);
-
-const statusRowClass = 'flex min-h-36 w-full items-center gap-12 rounded-md px-8 py-6 text-left transition-colors duration-(--duration-fast) hover:bg-interaction-hover';
 
 export function StatusArea(props: StatusAreaProps) {
   const [activeTab, setActiveTab] = createSignal<StatusTab>('todo');
@@ -162,52 +153,35 @@ export function StatusArea(props: StatusAreaProps) {
     tab.id === 'todo' && tab.count ? `${completedTodos()}/${tab.count}` : String(tab.count);
 
   return <Show when={tabs().length > 0}>
-    <section data-testid="status-area" class="status-area chat-column mb-8" aria-label="Status area">
-      <Card class="overflow-hidden rounded-14 border-border-subtle bg-surface-overlay shadow-none">
-        <Tabs
-          value={visibleTab() ?? ''}
-          onChange={(value) => setActiveTab(value as StatusTab)}
-        >
-          <CardHeader class="gap-8 px-16 pt-14 pb-8">
-            <div class="flex min-h-28 items-center gap-12">
-              <span class="text-12 font-medium text-content-secondary">Work status</span>
-              <IconButton
-                size="sm"
-                label={panelExpanded() ? 'Collapse status panel' : 'Expand status panel'}
-                showTooltip={false}
-                class="ml-auto border-0 bg-transparent text-content-muted hover:bg-transparent hover:text-content-primary"
-                aria-expanded={panelExpanded()}
-                onClick={() => setPanelExpanded((current) => !current)}
-              >
-                <ChevronDown
-                  size={14}
-                  strokeWidth={1.8}
-                  class={cn('transition-transform duration-(--duration-fast)', !panelExpanded() && 'rotate-180')}
-                />
-              </IconButton>
-            </div>
-            <TabsList class="flex min-w-0 flex-wrap items-center gap-2 border-0" aria-label="Work status">
-              <For each={tabs()}>{(tab) => (
-                <TabsTrigger
-                  value={tab.id}
-                  id={`status-tab-${tab.id}`}
-                  aria-controls={`status-panel-${tab.id}`}
-                  class={tabTriggerClass}
-                >
-                  <tab.icon size={14} strokeWidth={1.8} aria-hidden="true" />
-                  <span class="truncate">{tab.label}</span>
-                  <span class="tabular-nums text-11 text-content-muted">{tabCountLabel(tab)}</span>
-                </TabsTrigger>
-              )}</For>
-            </TabsList>
-          </CardHeader>
-          <Show when={panelExpanded()}>
-            <TabsContent
-              value="todo"
-              id="status-panel-todo"
-              aria-labelledby="status-tab-todo"
-              class="ui-scrollbar max-h-(--status-panel-max-height) overflow-auto px-16 pb-14 pt-4 outline-none"
-            >
+    <StatusAreaShell
+      class="chat-column mb-8"
+      data-testid="status-area"
+      aria-label="Status area"
+      tabsValue={visibleTab() ?? ''}
+      onTabsChange={(value) => setActiveTab(value as StatusTab)}
+      expanded={panelExpanded()}
+      onExpandedChange={setPanelExpanded}
+      tabBar={(
+        <For each={tabs()}>{(tab) => (
+          <TabsTrigger
+            value={tab.id}
+            id={`status-tab-${tab.id}`}
+            aria-controls={`status-panel-${tab.id}`}
+            class={statusAreaTabTriggerClass}
+          >
+            <tab.icon size={14} strokeWidth={1.8} aria-hidden="true" />
+            <span class="truncate">{tab.label}</span>
+            <span class="tabular-nums text-11 text-content-muted">{tabCountLabel(tab)}</span>
+          </TabsTrigger>
+        )}</For>
+      )}
+    >
+      <TabsContent
+        value="todo"
+        id="status-panel-todo"
+        aria-labelledby="status-tab-todo"
+        class={statusAreaPanelClass}
+      >
               <div class="flex flex-col gap-2">
                 <For each={props.plan}>{(entry) => (
                   <PlanStep
@@ -221,17 +195,17 @@ export function StatusArea(props: StatusAreaProps) {
                   </PlanStep>
                 )}</For>
               </div>
-            </TabsContent>
-            <TabsContent
-              value="async"
-              id="status-panel-async"
-              aria-labelledby="status-tab-async"
-              class="ui-scrollbar max-h-(--status-panel-max-height) overflow-auto px-16 pb-14 pt-4 outline-none"
-            >
+      </TabsContent>
+      <TabsContent
+        value="async"
+        id="status-panel-async"
+        aria-labelledby="status-tab-async"
+        class={statusAreaPanelClass}
+      >
               <ul class="m-0 flex list-none flex-col gap-2 p-0">
                 <For each={asyncItems()}>{(item) => (
                   <li>
-                    <TaskItem class={cn(statusRowClass, 'text-12 text-content-primary')}>
+                    <TaskItem class={cn(statusAreaRowClass, 'text-12 text-content-primary')}>
                       <span class="grid size-20 shrink-0 place-items-center"><StateIcon status={item.status} /></span>
                       <span class="inline-flex w-54 shrink-0 items-center gap-4 text-10 font-semibold uppercase tracking-wide text-content-muted">
                         <Show when={item.badgeKind === 'agent'} fallback={<Workflow size={12} strokeWidth={1.8} aria-hidden="true" />}>
@@ -250,17 +224,17 @@ export function StatusArea(props: StatusAreaProps) {
                   </li>
                 )}</For>
               </ul>
-            </TabsContent>
-            <TabsContent
-              value="changes"
-              id="status-panel-changes"
-              aria-labelledby="status-tab-changes"
-              class="ui-scrollbar max-h-(--status-panel-max-height) overflow-auto px-16 pb-14 pt-4 outline-none"
-            >
+      </TabsContent>
+      <TabsContent
+        value="changes"
+        id="status-panel-changes"
+        aria-labelledby="status-tab-changes"
+        class={statusAreaPanelClass}
+      >
               <ul class="m-0 flex list-none flex-col gap-2 p-0">
                 <For each={changes()}>{(change) => (
                   <li>
-                    <TaskItem class={cn(statusRowClass, 'font-mono text-12 text-content-primary')}>
+                    <TaskItem class={cn(statusAreaRowClass, 'font-mono text-12 text-content-primary')}>
                       <VSCodeFileIcon path={change.path} size={16} class="size-16 shrink-0" />
                       <TaskItemFile class="min-w-0 flex-1 truncate border-0 bg-transparent px-0 py-0" title={change.path}>
                         {formatWorkspacePathLabel(change.path, props.projectCwd)}
@@ -270,10 +244,7 @@ export function StatusArea(props: StatusAreaProps) {
                   </li>
                 )}</For>
               </ul>
-            </TabsContent>
-          </Show>
-        </Tabs>
-      </Card>
-    </section>
+      </TabsContent>
+    </StatusAreaShell>
   </Show>;
 }

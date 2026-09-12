@@ -324,6 +324,10 @@ export {
   type VSCodeFolderIconKind,
 } from './lib/vscode-file-icons';
 export { ChatHeader, type ChatHeaderProps } from './components/ChatHeader';
+export {
+  ChatWorkspaceShell,
+  type ChatWorkspaceShellProps,
+} from './components/chat/ChatWorkspaceShell';
 export { RowAccessorySlot, type RowAccessorySlotProps } from './components/RowAccessorySlot';
 export {
   NavAction,
@@ -345,22 +349,84 @@ export { downloadText, safeFilename } from './lib/download';
 export { markdownCodeFilename, parseMarkdownPreChild, type MarkdownPreDetails } from './lib/parse-markdown-pre-child';
 export { UserBubble } from './components/UserBubble';
 export { GitChangeActions } from './components/git/GitChangeActions';
+export { GitChangeTree, type GitChangeTreeProps } from './components/git/GitChangeTree';
 export { GitChangeGroup } from './components/git/GitChangeGroup';
 export { GitBranchBar, type GitSyncAction } from './components/git/GitBranchBar';
 export { GitCommitBar, type GitCommitShortcut } from './components/git/GitCommitBar';
 export { GitGraphRefBadge, type GitGraphRefBadgeProps } from './components/git/GitGraphRefBadge';
+export { GitGraphPanel, type GitGraphPanelProps } from './components/git/GitGraphPanel';
+export { GitGraphBranchDialog, GitGraphConfirmDialog } from './components/git/GitGraphActionDialog';
 export type {
   GitChange,
   GitChangeGroupId,
   GitChangeStatus,
+  GitGraphActionKind,
+  GitGraphActionParams,
+  GitGraphCommit,
   GitGraphRef,
   GitGraphRefTone,
+  GitResetMode,
 } from './components/git/types';
 export {
   ComposerDropOverlay,
   type ComposerDropOverlayProps,
 } from './components/composer/ComposerDropOverlay';
-export { ComposerSurface, composerSurfaceClass, type ComposerSurfaceProps } from './components/composer/ComposerSurface';
+export {
+  ComposerShell,
+  type ComposerShellFieldContext,
+  type ComposerShellProps,
+} from './components/composer/ComposerShell';
+export { ComposerAttachmentChip, type ComposerAttachmentChipProps } from './components/composer/ComposerAttachmentChip';
+export { ComposerPlusMenu, type ComposerPlusMenuProps } from './components/composer/ComposerPlusMenu';
+export {
+  WorkbenchShell,
+  type WorkbenchShellProps,
+} from './components/workbench/WorkbenchShell';
+export {
+  WorkbenchRail,
+  type WorkbenchRailProps,
+} from './components/workbench/WorkbenchRail';
+export {
+  WorkbenchRailButton,
+  type WorkbenchRailButtonProps,
+} from './components/workbench/WorkbenchRailButton';
+export {
+  WorkbenchPanelChrome,
+  workbenchPanelChromeHeaderClass,
+  workbenchPanelChromeTitleClass,
+  type WorkbenchPanelChromeProps,
+} from './components/workbench/WorkbenchPanelChrome';
+export {
+  WorkbenchFloatingPanel,
+  type WorkbenchFloatingPanelProps,
+} from './components/workbench/WorkbenchFloatingPanel';
+export {
+  WORKBENCH_PANEL_DEFAULT_WIDTH,
+  WORKBENCH_PANEL_EDGE_INSET,
+  WORKBENCH_PANEL_GRAPH_DEFAULT_WIDTH,
+  WORKBENCH_PANEL_GRAPH_MAX_WIDTH,
+  WORKBENCH_PANEL_GRAPH_MIN_WIDTH,
+  WORKBENCH_PANEL_GRAPH_WIDTH_STORAGE_KEY,
+  WORKBENCH_PANEL_KEYBOARD_STEP,
+  WORKBENCH_PANEL_MAX_WIDTH,
+  WORKBENCH_PANEL_MIN_WIDTH,
+  WORKBENCH_PANEL_PREVIEW_DEFAULT_WIDTH,
+  WORKBENCH_PANEL_PREVIEW_MAX_WIDTH,
+  WORKBENCH_PANEL_PREVIEW_MIN_WIDTH,
+  WORKBENCH_PANEL_PREVIEW_WIDTH_STORAGE_KEY,
+  WORKBENCH_PANEL_TERMINAL_DEFAULT_WIDTH,
+  WORKBENCH_PANEL_TERMINAL_MAX_WIDTH,
+  WORKBENCH_PANEL_TERMINAL_MIN_WIDTH,
+  WORKBENCH_PANEL_TERMINAL_WIDTH_STORAGE_KEY,
+  WORKBENCH_PANEL_WIDTH_STORAGE_KEY,
+  clampWorkbenchPanelWidth,
+  persistWorkbenchPanelWidth,
+  readStoredWorkbenchPanelWidth,
+  workbenchFilePreviewLeftOffset,
+  workbenchPanelWidthLimits,
+  type WorkbenchPanelWidthLimits,
+  type WorkbenchPanelWidthProfile,
+} from './components/workbench/workbench-panel-layout';
 export {
   ComposerInputField,
   type ComposerInputFieldProps,
@@ -380,6 +446,19 @@ export {
   type ComposerAttachmentKind,
 } from './components/composer/composer-attachment-types';
 export { ComposerQueue, type ComposerQueueProps } from './components/composer/ComposerQueue';
+export {
+  StatusAreaShell,
+  type StatusAreaShellProps,
+} from './components/status/StatusAreaShell';
+export {
+  statusAreaPanelClass,
+  statusAreaRowClass,
+  statusAreaTabTriggerClass,
+} from './components/status/status-area-shell-utils';
+export {
+  DecisionQueueShell,
+  type DecisionQueueShellProps,
+} from './components/decision/DecisionQueueShell';
 export type { ComposerQueueItem } from './components/composer/composer-queue-types';
 export {
   SlashMenu,

@@ -1,24 +1,14 @@
-import { Popover, PopoverContent, PopoverTrigger } from '@peri/ui';
-import { createEffect, createSignal, For, Show, type JSX } from 'solid-js';
 import {
-  ComposerAttachmentList,
-  ComposerDropOverlay,
+  ComposerPlusMenu,
   ComposerQueue,
+  ComposerSendStopAction,
+  ComposerShell as ComposerShellBase,
   SlashMenu,
   TokenUsageMeter,
-} from '@/components/blocks/composer';
-import type { ComposerQueueItem } from '@/components/blocks/composer';
-import { IconButton, Select, Textarea, cn } from '@/lib/catalog-ui';
-import {
-  ArrowUp,
-  ChevronDown,
-  GitBranch,
-  Laptop,
-  Mic,
-  Paperclip,
-  Plus,
-} from 'lucide-solid';
-import { ComposerAttachmentChip } from './ComposerAttachmentChip';
+} from '@peri/ui';
+import { createEffect, createSignal } from 'solid-js';
+import { GitBranch, Laptop } from 'lucide-solid';
+import { Select, cn } from '@/lib/catalog-ui';
 import type { ComposerAttachment } from './composer-shell-data';
 import {
   COMPOSER_BRANCH_OPTIONS,
@@ -28,321 +18,100 @@ import {
   COMPOSER_SLASH_ITEMS,
 } from './composer-shell-data';
 
-/** 与 extra.css --composer-field-line-height / --composer-expanded-field-max-height 对齐 */
-const COMPOSER_FIELD_LINE_HEIGHT_PX = Math.ceil(14 * 1.45);
-const COMPOSER_EXPANDED_FIELD_MAX_HEIGHT_PX = COMPOSER_FIELD_LINE_HEIGHT_PX * 3;
-
 export type ComposerAttachmentLayout = 'chip' | 'tile';
 
+/** T4 · Catalog demo：消费 @peri/ui ComposerShell（T3），mock 数据与 meta 行。 */
 export function ComposerShell(props: {
   draft?: string;
   onDraftChange?: (value: string) => void;
   attachments?: ComposerAttachment[];
   attachmentLayout?: ComposerAttachmentLayout;
   showQueue?: boolean;
-  queueItems?: ComposerQueueItem[];
   streaming?: boolean;
   disabled?: boolean;
   dropActive?: boolean;
   dropDescribedById?: string;
   onUploadRequest?: () => void;
-  textareaRef?: (element: HTMLTextAreaElement) => void;
-  fileInputRef?: (element: HTMLInputElement) => void;
+  fileInputRef?: (element: HTMLInputElement | undefined) => void;
   onFilesPicked?: (files: FileList | null) => void;
   class?: string;
 }) {
   const [model, setModel] = createSignal('composer-2.5');
   const [branch, setBranch] = createSignal('main');
   const [location, setLocation] = createSignal('this-mac');
-  const [slashOpen, setSlashOpen] = createSignal(false);
+  const [plusOpen, setPlusOpen] = createSignal(false);
   const [draft, setDraft] = createSignal(props.draft ?? '');
-  const [wrapped, setWrapped] = createSignal(false);
-  let fieldRef: HTMLTextAreaElement | undefined;
-
-  const attachments = () => props.attachments ?? [];
-  const attachmentLayout = () => props.attachmentLayout ?? 'chip';
-  const disabled = () => props.disabled ?? false;
-  const draftValue = () => props.draft ?? draft();
-
-  const expanded = () =>
-    attachments().length > 0
-    || draftValue().includes('\n')
-    || wrapped();
-
-  const setDraftValue = (value: string) => {
-    setDraft(value);
-    props.onDraftChange?.(value);
-    queueMicrotask(measureField);
-  };
-
-  const measureField = () => {
-    const element = fieldRef;
-    const value = draftValue();
-    if (!element || !value.trim()) {
-      setWrapped(false);
-      return;
-    }
-    if (value.includes('\n')) {
-      setWrapped(false);
-      return;
-    }
-    setWrapped(element.scrollHeight > element.clientHeight + 1);
-  };
 
   createEffect(() => {
     if (props.draft !== undefined) setDraft(props.draft);
-    queueMicrotask(measureField);
   });
 
-  const resizeField = () => {
-    const element = fieldRef;
-    if (!element) return;
-    element.style.height = 'auto';
-    const maxHeight = expanded()
-      ? COMPOSER_EXPANDED_FIELD_MAX_HEIGHT_PX
-      : COMPOSER_FIELD_LINE_HEIGHT_PX;
-    element.style.height = `${Math.min(element.scrollHeight, maxHeight)}px`;
-    measureField();
+  const attachments = () => props.attachments ?? [];
+  const setDraftValue = (value: string) => {
+    setDraft(value);
+    props.onDraftChange?.(value);
   };
 
-  createEffect(() => {
-    expanded();
-    queueMicrotask(resizeField);
-  });
-
-  const bindFieldRef = (element: HTMLTextAreaElement | undefined) => {
-    fieldRef = element;
-    if (element) props.textareaRef?.(element);
-    queueMicrotask(measureField);
-  };
+  const branchLabel = () => COMPOSER_BRANCH_OPTIONS.find((option) => option.value === branch())?.label ?? branch();
+  const locationLabel = () => COMPOSER_LOCATION_OPTIONS.find((option) => option.value === location())?.label ?? location();
 
   return (
-    <div class={cn('composer-shell', props.class, disabled() && 'opacity-60')}>
-      <Show when={props.showQueue}>
-        <ComposerQueue items={props.queueItems ?? COMPOSER_QUEUE_DEMO} />
-      </Show>
-
-      <div
-        data-testid="composer-surface"
-        class={cn(
-          'composer-surface-v2',
-          expanded() ? 'composer-surface-v2--expanded' : 'composer-surface-v2--compact',
-          props.dropActive && 'composer-surface--drop-target',
-        )}
-        aria-dropeffect={props.dropActive ? 'copy' : undefined}
-        aria-describedby={props.dropActive ? props.dropDescribedById : undefined}
-        data-composer-expanded={expanded() ? 'true' : 'false'}
-      >
-        <ComposerDropOverlay
-          active={!!props.dropActive}
-          describedById={props.dropDescribedById ?? 'composer-drop-desc'}
-        />
-
-        <Show when={expanded() && attachments().length > 0}>
-          <div class="composer-surface-v2__attachments">
-            <Show
-              when={attachmentLayout() === 'tile'}
-              fallback={
-                <div class="composer-attachment-float" aria-label="Attached files">
-                  <For each={attachments()}>
-                    {(attachment) => <ComposerAttachmentChip {...attachment} />}
-                  </For>
-                </div>
-              }
-            >
-              <ComposerAttachmentList items={attachments()} />
-            </Show>
-          </div>
-        </Show>
-
-        <div class="composer-surface-v2__body">
-          <Show when={!expanded()}>
-            <ComposerPlusMenu
-              open={slashOpen()}
-              disabled={disabled()}
-              onOpenChange={setSlashOpen}
-              onUpload={props.onUploadRequest}
-            />
-          </Show>
-
-          <Textarea
-            ref={bindFieldRef}
-            variant="bare"
-            autoResize
-            maxHeight={expanded()
-              ? COMPOSER_EXPANDED_FIELD_MAX_HEIGHT_PX
-              : COMPOSER_FIELD_LINE_HEIGHT_PX}
-            rows={1}
-            value={draftValue()}
-            onInput={(event) => setDraftValue(event.currentTarget.value)}
-            placeholder="Send follow-up"
-            aria-label="Message the agent"
-            disabled={disabled()}
-            class={cn(
-              'composer-surface-v2__field',
-              expanded() ? 'composer-surface-v2__field--expanded' : 'composer-surface-v2__field--compact',
-            )}
-          />
-
-          <Show when={!expanded()}>
-            <ComposerControls
-              model={model()}
-              onModelChange={setModel}
-              streaming={props.streaming}
-              disabled={disabled()}
-              showModelOnIdle
-            />
-          </Show>
-        </div>
-
-        <Show when={expanded()}>
-          <div class="composer-surface-v2__toolbar">
-            <ComposerPlusMenu
-              open={slashOpen()}
-              disabled={disabled()}
-              onOpenChange={setSlashOpen}
-              onUpload={props.onUploadRequest}
-            />
-            <span class="flex-1" />
-            <ComposerControls
-              model={model()}
-              onModelChange={setModel}
-              streaming={props.streaming}
-              disabled={disabled()}
-            />
-          </div>
-        </Show>
-
-        <Show when={props.onFilesPicked}>
-          <input
-            ref={(element) => {
-              if (element) props.fileInputRef?.(element);
-            }}
-            type="file"
-            multiple
-            class="ui-sr-only"
-            aria-hidden="true"
-            tabindex={-1}
-            disabled={disabled()}
-            onChange={(event) => props.onFilesPicked?.(event.currentTarget.files)}
-          />
-        </Show>
-      </div>
-
-      <div class="composer-meta-row">
-        <MetaSelect
-          ariaLabel="Branch"
-          icon={<GitBranch size={12} strokeWidth={1.7} />}
-          value={branch()}
-          onChange={setBranch}
-          options={COMPOSER_BRANCH_OPTIONS}
-        />
-        <MetaSelect
-          ariaLabel="Runtime location"
-          icon={<Laptop size={12} strokeWidth={1.7} />}
-          value={location()}
-          onChange={setLocation}
-          options={COMPOSER_LOCATION_OPTIONS}
-        />
-        <span class="flex-1" />
-        <TokenUsageMeter input={12400} output={3180} cached={8200} limit={200000} />
-      </div>
-    </div>
-  );
-}
-
-function ComposerPlusMenu(props: {
-  open: boolean;
-  disabled?: boolean;
-  onOpenChange: (open: boolean) => void;
-  onUpload?: () => void;
-}) {
-  return (
-    <Popover open={props.open} onOpenChange={props.onOpenChange}>
-      <PopoverTrigger
-        class="composer-plus-btn inline-flex shrink-0 items-center justify-center focus-visible:shadow-(--shadow-focus-ring) focus-visible:outline-none"
-        aria-label="Slash commands"
-        aria-expanded={props.open}
-        disabled={props.disabled}
-      >
-        <Plus size={16} strokeWidth={1.8} aria-hidden="true" />
-      </PopoverTrigger>
-      <PopoverContent class="composer-slash-popover p-0 shadow-overlay">
-        <button
-          type="button"
-          class="composer-slash-upload"
+    <ComposerShellBase
+      class={cn(props.class, props.disabled && 'opacity-60')}
+      disabled={props.disabled}
+      dropActive={props.dropActive}
+      dropDescribedById={props.dropDescribedById}
+      draft={draft()}
+      onDraftChange={setDraftValue}
+      attachments={attachments()}
+      attachmentLayout={props.attachmentLayout ?? 'chip'}
+      fieldPlaceholder="Send follow-up"
+      queue={props.showQueue ? <ComposerQueue items={COMPOSER_QUEUE_DEMO} /> : undefined}
+      compactLeading={(
+        <ComposerPlusMenu
+          open={plusOpen()}
+          onOpenChange={setPlusOpen}
           disabled={props.disabled}
-          onClick={() => {
-            props.onOpenChange(false);
-            props.onUpload?.();
-          }}
-        >
-          <div class="grid min-w-0 grid-cols-slash-menu items-center gap-x-10">
-            <span class="grid size-16 shrink-0 place-items-center">
-              <Paperclip size={14} strokeWidth={1.7} class="text-content-muted" aria-hidden="true" />
-            </span>
-            <span class="min-w-0 truncate text-13 font-medium text-content-primary">Upload files</span>
-            <span class="min-w-0 truncate text-12 text-content-muted">
-              Attach images, docs, or code
-            </span>
-          </div>
-        </button>
-        <SlashMenu items={COMPOSER_SLASH_ITEMS} activeIndex={3} />
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function ComposerControls(props: {
-  model: string;
-  onModelChange: (value: string) => void;
-  streaming?: boolean;
-  disabled?: boolean;
-  showModelOnIdle?: boolean;
-}) {
-  return (
-    <div class="composer-controls flex min-w-0 shrink-0 items-center gap-4">
-      <Select
-        variant="plain"
-        aria-label="Model"
-        value={props.model}
-        onChange={props.onModelChange}
-        options={COMPOSER_MODEL_OPTIONS}
-        disabled={props.disabled}
-        class={cn('composer-model-select', props.showModelOnIdle ? '' : 'max-w-40')}
-      />
-      <IconButton label="Voice input" showTooltip={false} size="sm" variant="ghost" disabled class="composer-mic-btn">
-        <Mic size={16} strokeWidth={1.7} />
-      </IconButton>
-      <IconButton
-        label={props.streaming ? 'Stop' : 'Send'}
-        showTooltip={false}
-        size="sm"
-        variant={props.streaming ? 'stop' : 'primary'}
-        disabled={props.disabled}
-        class="composer-send-btn"
-      >
-        <Show when={props.streaming} fallback={<ArrowUp size={16} strokeWidth={2.2} />}>
-          <span class="size-10 rounded-2 bg-current" aria-hidden="true" />
-        </Show>
-      </IconButton>
-    </div>
-  );
-}
-
-function MetaSelect(props: {
-  ariaLabel: string;
-  icon: JSX.Element;
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-}) {
-  const label = () => props.options.find((option) => option.value === props.value)?.label ?? props.value;
-  return (
-    <button type="button" class="composer-meta-chip" aria-label={props.ariaLabel}>
-      {props.icon}
-      <span class="truncate">{label()}</span>
-      <ChevronDown size={12} strokeWidth={1.7} class="shrink-0 text-content-faint" aria-hidden="true" />
-    </button>
+          upload={props.onUploadRequest ? { onClick: props.onUploadRequest } : undefined}
+          slashMenu={<SlashMenu items={COMPOSER_SLASH_ITEMS} activeIndex={3} />}
+        />
+      )}
+      compactTrailing={(
+        <>
+          <Select
+            variant="plain"
+            aria-label="Model"
+            value={model()}
+            onChange={setModel}
+            options={COMPOSER_MODEL_OPTIONS}
+            disabled={props.disabled}
+            class="ui-composer-model-select max-w-40"
+          />
+          <ComposerSendStopAction
+            mode={props.streaming ? 'stop' : 'send'}
+            label={props.streaming ? 'Stop' : 'Send'}
+            shape="pill"
+            disabled={props.disabled}
+            onClick={() => {}}
+          />
+        </>
+      )}
+      registerFileInput={props.fileInputRef}
+      onFilesPicked={props.onFilesPicked}
+      metaRow={(
+        <>
+          <button type="button" class="ui-composer-meta-chip" aria-label="Branch">
+            <GitBranch size={12} strokeWidth={1.7} />
+            <span class="truncate">{branchLabel()}</span>
+          </button>
+          <button type="button" class="ui-composer-meta-chip" aria-label="Runtime location">
+            <Laptop size={12} strokeWidth={1.7} />
+            <span class="truncate">{locationLabel()}</span>
+          </button>
+          <span class="flex-1" />
+          <TokenUsageMeter input={12400} output={3180} cached={8200} limit={200000} />
+        </>
+      )}
+    />
   );
 }

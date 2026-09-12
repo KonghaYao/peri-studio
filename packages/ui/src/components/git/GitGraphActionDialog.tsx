@@ -1,5 +1,7 @@
 import { createSignal, Show } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogTitle, TextField } from '@peri/ui';
+import { Button } from '../Button';
+import { Dialog, DialogContent, DialogTitle } from '../Dialog';
+import { TextField } from '../Field';
 
 type BranchDialogMode = 'create' | 'rename';
 
@@ -27,8 +29,8 @@ export function GitGraphBranchDialog(props: {
         <TextField
           label="Branch name"
           value={value()}
-          onInput={(event) => setValue(event.currentTarget.value)}
-          onKeyDown={(event) => {
+          onInput={(event: InputEvent & { currentTarget: HTMLInputElement }) => setValue(event.currentTarget.value)}
+          onKeyDown={(event: KeyboardEvent) => {
             if (event.key === 'Enter') {
               event.preventDefault();
               submit();

@@ -63,6 +63,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '../src/components/Popov
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../src/components/dropdown-menu';
 import { Status } from '../src/components/Status';
 import { RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel } from '../src/components/RadioGroup';
+import { DecisionQueueShell } from '../src/components/decision/DecisionQueueShell';
+import { StatusAreaShell } from '../src/components/status/StatusAreaShell';
+import { statusAreaPanelClass, statusAreaTabTriggerClass } from '../src/components/status/status-area-shell-utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../src/components/Tabs';
 import { Textarea } from '../src/components/Textarea';
 import { SelectField } from '../src/components/SelectField';
@@ -2038,5 +2041,51 @@ describe('NativeSelect', () => {
     expect(select).toHaveClass('border-danger');
     expect(select).toBeDisabled();
     expect(select).not.toHaveAttribute('invalid');
+  });
+});
+
+describe('StatusAreaShell', () => {
+  it('renders collapsible work status chrome with tab panels', async () => {
+    render(() => (
+      <StatusAreaShell
+        data-testid="status-shell"
+        aria-label="Work status"
+        tabsValue="todo"
+        onTabsChange={() => {}}
+        tabBar={<TabsTrigger value="todo" class={statusAreaTabTriggerClass}>Todo</TabsTrigger>}
+      >
+        <TabsContent value="todo" class={statusAreaPanelClass}>Plan step</TabsContent>
+      </StatusAreaShell>
+    ));
+
+    const shell = screen.getByTestId('status-shell');
+    expect(shell).toHaveClass('ui-status-area-shell');
+    expect(shell).toHaveAttribute('aria-label', 'Work status');
+    expect(screen.getByRole('tab', { name: 'Todo' })).toBeInTheDocument();
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('Plan step');
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Collapse status panel' }));
+    expect(screen.queryByRole('tabpanel')).not.toBeInTheDocument();
+  });
+});
+
+describe('DecisionQueueShell', () => {
+  it('wraps decision surfaces with package shell classes and test ids', () => {
+    render(() => (
+      <DecisionQueueShell
+        element="aside"
+        data-testid="permission-queue"
+        surfaceTestId="permission-queue-surface"
+        aria-label="Pending permission requests, 1 total"
+      >
+        <div>Permission card</div>
+      </DecisionQueueShell>
+    ));
+
+    const shell = screen.getByTestId('permission-queue');
+    expect(shell.tagName).toBe('ASIDE');
+    expect(shell).toHaveClass('ui-decision-queue-shell');
+    expect(screen.getByTestId('permission-queue-surface')).toHaveClass('ui-decision-queue-shell__surface');
+    expect(screen.getByText('Permission card')).toBeInTheDocument();
   });
 });

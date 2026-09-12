@@ -9,25 +9,33 @@ export type ComposerInputHint = {
 
 export type ComposerInputFieldProps = {
   centered?: boolean;
+  /** ComposerShell 内联字段：尺寸由 shell extra.css 控制 */
+  shell?: boolean;
   hint?: ComposerInputHint | null;
   fieldClass?: string;
   class?: string;
   ref?: (el: HTMLTextAreaElement | undefined) => void;
 } & Omit<JSX.TextareaHTMLAttributes<HTMLTextAreaElement>, 'class'>;
 
-function fieldClasses(centered: boolean, fieldClass?: string) {
+function fieldClasses(centered: boolean, shell: boolean, fieldClass?: string) {
   return cn(
-    'ui-composer-editor__field block w-full resize-none overflow-y-auto border-0 bg-transparent px-1 py-8 outline-0',
-    centered ? 'min-h-72 max-h-180 text-14 leading-22' : 'min-h-36 max-h-180 text-13 leading-normal',
+    'ui-composer-editor__field block w-full resize-none overflow-y-auto border-0 bg-transparent outline-0',
+    shell
+      ? 'px-0 py-0'
+      : cn(
+          'px-1 py-8',
+          centered ? 'min-h-72 max-h-180 text-14 leading-22' : 'min-h-36 max-h-180 text-13 leading-normal',
+        ),
     fieldClass,
   );
 }
 
 /** Composer 输入区视觉壳：placeholder / prediction 叠层 + bare Textarea。 */
 export const ComposerInputField: Component<ComposerInputFieldProps> = (props) => {
-  const [local, textarea] = splitProps(props, ['centered', 'hint', 'fieldClass', 'class', 'ref']);
+  const [local, textarea] = splitProps(props, ['centered', 'shell', 'hint', 'fieldClass', 'class', 'ref']);
   const centered = () => local.centered ?? false;
-  const resolvedFieldClass = () => fieldClasses(centered(), local.fieldClass);
+  const shell = () => local.shell ?? false;
+  const resolvedFieldClass = () => fieldClasses(centered(), shell(), local.fieldClass);
 
   return (
     <div class="ui-composer-editor relative">

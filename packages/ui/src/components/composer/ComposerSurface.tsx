@@ -7,7 +7,7 @@ export const composerSurfaceClass =
 
 export type ComposerSurfaceProps = ComponentProps<'div'>;
 
-/** Presentational composer input surface; drop-target styling toggles via `ui-composer-surface--drop-target`. */
+/** @deprecated 使用 {@link ComposerShell}（T3 双形态壳）。 */
 export function ComposerSurface(props: ComposerSurfaceProps) {
   const [local, rest] = splitProps(props, ['class', 'children']);
   return (

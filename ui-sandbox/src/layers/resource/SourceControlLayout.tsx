@@ -1,4 +1,5 @@
-import { GitBranchBar, GitChangeGroup, GitChangeTree, GitCommitBar } from '@/components/blocks/git';
+import { GitBranchBar, GitChangeGroup, GitCommitBar } from '@peri/ui';
+import { GitChangeTree } from '@/components/blocks/git';
 import {
   DEMO_REPO,
   DEMO_STAGED,
@@ -29,13 +30,13 @@ export function SourceControlLayout(props: {
         />
         <GitCommitBar stagedCount={stagedCount()} />
         <GitChangeGroup label="Staged Changes" count={DEMO_STAGED.length}>
-          <GitChangeTree changes={DEMO_STAGED} groupId="index" onFileSelect={props.onPreviewPath} />
+          <GitChangeTree changes={DEMO_STAGED} groupId="index" onFileSelect={(change) => props.onPreviewPath?.(change.path)} />
         </GitChangeGroup>
         <GitChangeGroup label="Changes" count={DEMO_WORKING.length}>
-          <GitChangeTree changes={DEMO_WORKING} groupId="working_tree" onFileSelect={props.onPreviewPath} />
+          <GitChangeTree changes={DEMO_WORKING} groupId="working_tree" onFileSelect={(change) => props.onPreviewPath?.(change.path)} />
         </GitChangeGroup>
         <GitChangeGroup label="Untracked" count={DEMO_UNTRACKED.length}>
-          <GitChangeTree changes={DEMO_UNTRACKED} groupId="untracked" onFileSelect={props.onPreviewPath} />
+          <GitChangeTree changes={DEMO_UNTRACKED} groupId="untracked" onFileSelect={(change) => props.onPreviewPath?.(change.path)} />
         </GitChangeGroup>
       </div>
     </aside>

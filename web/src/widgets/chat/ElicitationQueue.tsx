@@ -5,6 +5,7 @@ import type { ElicitationDeliveryState } from '@/features/message/elicitation-de
 import type { ElicitationAnswer } from '@/shared/protocol/client';
 import {
   Button,
+  DecisionQueueShell,
   IconButton,
   QuestionnaireCheckboxOption,
   QuestionnaireRadioOption,
@@ -99,12 +100,12 @@ function AskUserQuestionDialog(props: {
     props.onRespond(props.elicitation.elicitationId, 'accept', answers());
   };
 
-  return <section
-    class="elicitation-inline chat-column pb-10"
+  return <DecisionQueueShell
+    class="chat-column pb-10"
     aria-label="Agent question"
   >
     <form
-      class="scroll-mt-12 mb-12"
+      class="scroll-mt-12"
       data-elicitation-id={props.elicitation.elicitationId}
       noValidate
       onSubmit={submit}
@@ -212,5 +213,5 @@ function AskUserQuestionDialog(props: {
         </div>
       </QuestionnaireFrame>
     </form>
-  </section>;
+  </DecisionQueueShell>;
 }

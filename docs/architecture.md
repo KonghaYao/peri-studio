@@ -1219,7 +1219,7 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 | 特性 | `features/` | 可测试领域用例（`session` / `catalog` / `composer` 等）；禁止 import `store` |
 | 实体 | `entities/` | Yjs 只读投影（`chat` / `registry` / `resource` / `topology`） |
 | 共享 | `shared/` | `lib`、`protocol`、`yjs`（`doc-store` 等）；不含 UI |
-| 设计系统 | `packages/ui/` | `@peri/ui`：T1 token、Tailwind theme、T2 Base UI 与 `cn` |
+| 设计系统 | `packages/ui/` | `@peri/ui`：T1 token、T2 Base UI、**T3 无 store 复合块**与 `cn`（清单见 [`t3-blocks-in-ui-package.md`](design/t3-blocks-in-ui-package.md)） |
 | 组合根 | `store/index.ts` | 全局信号与 `install*` 接线 |
 
 `web/src/panel/` 与 `web/src/shared/ui/` 已删除，禁止恢复 deprecated shim。设计系统唯一入口是 `@peri/ui` barrel，CSS 入口是 `@peri/ui/styles.css`；Web 只保留应用级 `styles/{base,primitives,extra,project-sidebar}.css`。**视觉与组件规范**：[`ui-specification.md`](design/ui-specification.md)。

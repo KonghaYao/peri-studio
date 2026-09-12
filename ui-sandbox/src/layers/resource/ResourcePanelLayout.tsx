@@ -1,7 +1,6 @@
 import { createSignal } from 'solid-js';
 import { CodeXml } from 'lucide-solid';
-import { FileTree, type FileTreeNode } from '@/components/blocks/resource';
-import { GitFileIcon } from '@/components/blocks/git';
+import { FileTree, VSCodeFileIcon as GitFileIcon, type FileTreeNode } from '@peri/ui';
 
 const EXPLORER_DEMO: FileTreeNode[] = [
   {

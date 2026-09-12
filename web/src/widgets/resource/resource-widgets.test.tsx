@@ -1,8 +1,7 @@
 import { render, screen } from '@solidjs/testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildPathTree, FileTree } from '@peri/ui';
-import { GitGraphPanel } from './git/GitGraphPanel';
-import type { GitGraphCommit } from './git/types';
+import { GitGraphPanel, type GitGraphCommit } from '@peri/ui';
 
 describe('resource tree widgets', () => {
   beforeEach(() => {

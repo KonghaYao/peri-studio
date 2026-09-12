@@ -1,7 +1,11 @@
 import { type JSX } from 'solid-js';
-import { FileTree, type FileTreeNode } from '@peri/ui';
-import { FileTreeInlineNameEditor } from './FileTreeInlineNameEditor';
-import { ExplorerItemMenu, type ExplorerMenuAction } from './ExplorerItemMenu';
+import {
+  ExplorerItemMenu,
+  FileTree,
+  FileTreeInlineNameEditor,
+  type ExplorerMenuAction,
+  type FileTreeNode,
+} from '@peri/ui';
 import { basename, findExplorerNode } from './explorer-mutations-tree-utils';
 
 export type InlineEditState =

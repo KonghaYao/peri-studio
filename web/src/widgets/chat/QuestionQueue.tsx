@@ -5,6 +5,7 @@ import type { QuestionDeliveryState } from '@/features/message/question-delivery
 import type { QuestionAnswerPayload } from '@/shared/protocol/client';
 import {
   Button,
+  DecisionQueueShell,
   QuestionnaireCheckboxOption,
   QuestionnaireRadioOption,
   questionnaireOptionListClass,
@@ -115,8 +116,8 @@ function QuestionDialog(props: {
   };
 
   return (
-    <section class="question-queue chat-column pb-10" aria-label="Pending questions">
-      <form class="scroll-mt-12 mb-12" onSubmit={submit}>
+    <DecisionQueueShell class="chat-column pb-10" aria-label="Pending questions">
+      <form class="scroll-mt-12" onSubmit={submit}>
         <QuestionnaireFrame
           class="question-card elicitation-card"
           data-testid="question-queue-card"
@@ -196,6 +197,6 @@ function QuestionDialog(props: {
           </Show>
         </QuestionnaireFrame>
       </form>
-    </section>
+    </DecisionQueueShell>
   );
 }

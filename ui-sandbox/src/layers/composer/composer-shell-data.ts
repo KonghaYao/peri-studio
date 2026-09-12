@@ -1,5 +1,4 @@
-import type { ComposerAttachmentItem, ComposerQueueItem } from '@/components/blocks/composer';
-import type { SlashMenuItem } from '@/components/blocks/composer/SlashMenu';
+import type { ComposerAttachmentItem, ComposerQueueItem, SlashMenuItem } from '@peri/ui';
 
 /** Catalog 演示用图片缩略图占位（SVG data URI）。 */
 function demoImagePreview(label: string, fill = '#e8e8e8') {

@@ -18,7 +18,8 @@ describe('RewindDialog', () => {
     expect(panel).not.toHaveClass('w-(--container-dialog-default)');
     expect(panel).toHaveClass('max-desk:inset-y-0', 'max-desk:w-(--container-rewind-compact)', 'max-desk:rounded-none');
     expect(document.querySelector('[data-dialog-overlay]')).toHaveClass('bg-transparent', 'max-desk:bg-scrim');
-    expect(screen.getByRole('heading', { name: 'Rewind session' })).toHaveClass('uppercase', 'text-11');
+    expect(document.querySelector('.ui-workbench-panel-chrome__title')).toHaveTextContent('Rewind session');
+    expect(screen.getByRole('heading', { name: 'Rewind session', hidden: true })).toHaveClass('sr-only');
     expect(screen.getByRole('button', { name: 'Close rewind panel' })).toBeInTheDocument();
     const target = screen.getByRole('option', { name: /Fix the login flow/ });
     expect(screen.getByRole('listbox', { name: 'Rewind target message' })).toContainElement(target);
