@@ -398,7 +398,7 @@ export function installVisualScenario(value: string | null | undefined): { scena
       id: 'repo-long', root: '', name: 'peri-studio', headName: 'main', generation: 'long-1', ahead: 0, behind: 0,
       groups: {
         index: { count: 1, revision: 'index-long', changes: [{ id: 'long-a', path: 'web/src/widgets/shell/StatusArea.tsx', status: 'modified' }] },
-        working_tree: { count: 2, revision: 'work-long', changes: [{ id: 'long-b', path: 'web/src/widgets/chat/ToolCallCard.tsx', status: 'modified' }, { id: 'long-c', path: 'web/src/visual-fixture/long-conversation.ts', status: 'untracked' }] },
+        working_tree: { count: 2, revision: 'work-long', changes: [{ id: 'long-b', path: 'web/src/widgets/chat/ToolCallActivity.tsx', status: 'modified' }, { id: 'long-c', path: 'web/src/visual-fixture/long-conversation.ts', status: 'untracked' }] },
         untracked: { count: 0, revision: 'new-long', changes: [] },
       },
     }] });

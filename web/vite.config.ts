@@ -63,7 +63,6 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('/node_modules/')) return undefined;
           if (id.includes('/yjs/') || id.includes('/lib0/')) return 'vendor-crdt';
-          if (id.includes('/markdown-to-jsx/')) return 'vendor-markdown';
           if (id.includes('/@kobalte/')) return 'vendor-interactions';
           if (id.includes('/@xterm/')) return 'vendor-xterm';
           if (id.includes('/solid-js/')) return 'vendor-solid';

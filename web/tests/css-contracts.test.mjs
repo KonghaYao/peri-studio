@@ -549,7 +549,8 @@ test('domain status inference delegates visual rendering to the shared Badge', (
   const root = join(import.meta.dirname, '..', 'src');
   const adapter = readFileSync(join(root, 'features', 'shell', 'runtime-status-badge.ts'), 'utf8');
   const primitive = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Badge.tsx'), 'utf8');
-  assert.match(adapter, /BadgeTone/);
+  assert.match(adapter, /runtimeStatusBadgeTone/);
+  assert.match(adapter, /topologyServerBadgeTone/);
   assert.doesNotMatch(adapter, /bg-\[|text-\[/);
   assert.match(primitive, /export type BadgeTone/);
   assert.match(primitive, /'ok'/);

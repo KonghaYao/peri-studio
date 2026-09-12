@@ -2,6 +2,7 @@ import { For, Show, createEffect, createMemo, createSignal } from 'solid-js';
 import type { AgentActivityInfo, AgentPlanEntryInfo, PeriTaskInfo } from '@/entities/chat/control-view';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { selectChatFileChanges } from '@/entities/chat/chat-file-changes';
+import { mapPlanStepStatus } from '@/features/chat/plan-step-status';
 import { formatWorkspacePathLabel } from '@/features/chat/tool-file-link';
 import { Ban, Bot, Check, ChevronDown, Circle, CircleAlert, GitBranch, Info, ListTodo, Pause, Workflow, X } from 'lucide-solid';
 import {
@@ -16,7 +17,6 @@ import {
   TaskItemFile,
   VSCodeFileIcon,
   cn,
-  type PlanStepStatus,
 } from '@peri/ui';
 
 type StatusTab = 'todo' | 'async' | 'changes';
@@ -63,12 +63,6 @@ function stateLabel(status: string) {
   if (status === 'cancelled') return 'Cancelled';
   if (status === 'info') return 'Info';
   return 'Queued';
-}
-
-function planStepStatus(status: string): PlanStepStatus {
-  if (status === 'completed') return 'complete';
-  if (status === 'in_progress' || status === 'running') return 'active';
-  return 'pending';
 }
 
 function planEntryLabel(entry: AgentPlanEntryInfo) {
@@ -218,7 +212,7 @@ export function StatusArea(props: StatusAreaProps) {
               <div class="flex flex-col gap-2">
                 <For each={props.plan}>{(entry) => (
                   <PlanStep
-                    status={planStepStatus(entry.status)}
+                    status={mapPlanStepStatus(entry.status)}
                     label={planEntryLabel(entry)}
                     class="min-h-36 rounded-md px-8 py-6 transition-colors duration-(--duration-fast) hover:bg-interaction-hover"
                   >

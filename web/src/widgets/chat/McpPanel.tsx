@@ -1,5 +1,6 @@
 import { createEffect, For, onCleanup, Show } from 'solid-js';
 import { Badge, Button, EmptyState, IconButton, InlineNotice, LoadingState } from '@peri/ui';
+import { mcpConnectionBadgeTone } from '@/features/shell/runtime-status-badge';
 import { readOnly } from '@/features/auth/auth-state';
 import {
   cancelMcpOAuth,
@@ -48,7 +49,7 @@ export function McpPanelContent(props: { embedded?: boolean } = {}) {
             return <article class={props.embedded ? 'border-b border-divider bg-surface px-8 py-7' : 'rounded-12 border border-divider bg-surface p-15'}>
               <div class={`flex items-start justify-between ${props.embedded ? 'gap-6' : 'gap-12'}`}>
                 <div class={`grid min-w-0 ${props.embedded ? 'gap-1' : 'gap-2'}`}><strong class={`overflow-hidden text-ellipsis whitespace-nowrap text-text-primary ${props.embedded ? 'text-11 font-600' : 'text-14'}`}>{server.name}</strong><span class={`font-mono text-text-secondary ${props.embedded ? 'text-9' : 'text-12'}`}>{server.transport}</span></div>
-                <Badge tone={server.connectionStatus === 'connected' ? 'ok' : server.connectionStatus === 'failed' ? 'err' : 'neutral'}>{connectionLabel(server.connectionStatus)}</Badge>
+                <Badge tone={mcpConnectionBadgeTone(server.connectionStatus)}>{connectionLabel(server.connectionStatus)}</Badge>
               </div>
               <div class={`${props.embedded ? 'mt-4 gap-x-8 gap-y-2 text-10' : 'mt-10 gap-x-14 gap-y-5 text-12'} flex flex-wrap text-text-secondary`}>
                 <span>{server.toolsCount} tools</span><span>{server.resourcesCount} resources</span>

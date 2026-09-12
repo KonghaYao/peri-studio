@@ -15,7 +15,7 @@ import { join } from 'node:path';
 import { isTurnActive } from '../src/features/runtime/action-state.ts';
 import { cleanSessionTitle, connectionProblemForClose, formatRelativeTime, retainLiveRuntimeHints, sessionDisplayTitle, shortSessionId } from '../src/features/session/recovery-state.ts';
 import { messageTime } from '../src/shared/lib/message-time.ts';
-import { parseMarkdown, safeHref } from '../src/shared/lib/markdown.ts';
+import { safeHref } from '../../packages/markdown/src/lib/safe.ts';
 import { messageActivity, nextFollowState } from '../src/features/message/message-follow.ts';
 import { authFeedback } from '../src/features/auth/auth-feedback.ts';
 import { searchProjectSessions } from '../src/features/session/session-search.ts';
@@ -150,21 +150,6 @@ test('markdown links allow explicit public protocols and reject active content',
   for (const href of ['javascript:alert(1)', ' JAVASCRIPT:alert(1)', 'data:text/html,x', 'file:///tmp/x', '//evil.example']) {
     assert.equal(safeHref(href), null, href);
   }
-});
-
-test('markdown parser keeps raw html inert and structures coding content', () => {
-  const blocks = parseMarkdown('# Title\n\n<script>alert(1)</script>\n\n```ts unsafe meta\nconst x = 1;\n```\n\n- one\n- two');
-  assert.equal(blocks[0].type, 'heading');
-  assert.deepEqual(blocks[1], { type: 'paragraph', children: [{ type: 'text', text: '<script>alert(1)</script>' }] });
-  assert.deepEqual(blocks[2], { type: 'code', language: 'ts', text: 'const x = 1;' });
-  assert.equal(blocks[3].type, 'list');
-  assert.equal(blocks[3].items.length, 2);
-});
-
-test('unsafe markdown links degrade to readable inert text', () => {
-  const [paragraph] = parseMarkdown('[run this](javascript:alert(1))');
-  assert.equal(paragraph.children.some((token) => token.type === 'link'), false);
-  assert.equal(paragraph.children.map((token) => token.text || '').join(''), 'run this (javascript:alert(1))');
 });
 
 test('message follow pauses without losing the new-content signal', () => {

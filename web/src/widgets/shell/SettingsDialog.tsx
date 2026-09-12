@@ -10,6 +10,7 @@ import { principalId } from '@/features/auth/auth-state';
 import { connState } from '@/features/connection/connection';
 import { globalStatus, schemaVersion } from '@/store';
 import { serverStatusLabel } from '@/entities/topology/topology-view';
+import { TopologyView } from '@/widgets/chat/TopologyView';
 import { MachinePanel } from '@/widgets/resource/MachinePanel';
 
 type SettingsTab = 'machines' | 'about';
@@ -43,6 +44,9 @@ export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
               <dt>Registry schema version</dt>
               <dd>{String(schemaVersion() ?? '—')}</dd>
             </dl>
+            <div class="mt-14 min-h-0">
+              <TopologyView />
+            </div>
             <p class="mt-13 text-text-muted text-12 leading-15">Instance and conversation metadata comes from the hub:registry projection; the topology panel does not issue extra requests to the server.</p>
             <Show when={principalId() && auth?.logout}>
               <div class="mt-16 flex justify-end border-t border-divider pt-16">

@@ -1,6 +1,6 @@
 export function safeHref(value: string | undefined | null) {
   const href = String(value ?? '').trim();
-  if (!href) return null;
+  if (!href || href.startsWith('//')) return null;
   if (href.startsWith('#')) return href;
   try {
     const url = new URL(href, 'https://peri.invalid');

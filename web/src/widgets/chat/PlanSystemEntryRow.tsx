@@ -1,20 +1,14 @@
 import { For, Show } from 'solid-js';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { isPlanSystemChatEntry } from '@/entities/chat/plan-system-entry';
+import { mapPlanStepStatus } from '@/features/chat/plan-step-status';
 import {
   Plan,
   PlanContent,
   PlanHeader,
   PlanStep,
   PlanTitle,
-  type PlanStepStatus,
 } from '@peri/ui';
-
-function mapPlanStepStatus(status: string): PlanStepStatus {
-  if (status === 'completed') return 'complete';
-  if (status === 'in_progress') return 'active';
-  return 'pending';
-}
 
 /** Chat timeline row for `plan:{turn|global}` system entries (Control plan stays in StatusArea). */
 export function PlanSystemEntryRow(props: { entry: ChatEntry }) {
