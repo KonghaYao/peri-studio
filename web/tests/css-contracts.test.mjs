@@ -47,14 +47,17 @@ const readWidgetTsx = (name) => {
 const readComposerBundle = () => {
   const dir = join(sourceRoot(), 'widgets', 'composer');
   const pkgComposer = join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'composer');
+  const pkgStyles = join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'styles', 'extra.css');
   const webExtra = readFileSync(join(webRoot(), 'src', 'styles', 'extra.css'), 'utf8');
   return [
     ...['Composer.tsx', 'useComposerState.ts']
       .map((file) => readFileSync(join(dir, file), 'utf8')),
     webExtra,
+    readFileSync(join(pkgComposer, 'ComposerShell.tsx'), 'utf8'),
     readFileSync(join(pkgComposer, 'ComposerToolbarShell.tsx'), 'utf8'),
     readFileSync(join(pkgComposer, 'ComposerInputField.tsx'), 'utf8'),
     readFileSync(join(pkgComposer, 'ComposerToolbarControls.tsx'), 'utf8'),
+    readFileSync(pkgStyles, 'utf8'),
   ].join('\n');
 };
 const allFiles = (directory) => readdirSync(directory, { withFileTypes: true }).flatMap((item) => {
@@ -176,8 +179,8 @@ test('fractional Tailwind spacing utilities resolve to an explicit product token
 });
 
 const EXTRA_CSS_BASELINE = {
-  lineCount: 111,
-  sha256: '23b66afd00b7e0a61974fe1e8295badd9a4a43cf493d0dbb32fc443087a42b57',
+  lineCount: 52,
+  sha256: 'ee96573d70e892844b20d3c6efe570943c6f472c98bdaf64b7e77bb4a49ea964',
 };
 
 function lineCountLikeWc(content) {
@@ -275,10 +278,10 @@ test('Composer and quick start expose one labeled textarea and keyboard submit g
   const quickStart = readFileSync(join(root, 'QuickStartComposer.tsx'), 'utf8');
   assert.match(composerShell, /<ComposerInputField[\s\S]*?aria-label="Message the agent"/);
   assert.match(composerShell, /aria-autocomplete="list"/);
-  assert.match(composerShell, /if \(e\.key === 'Enter' && !e\.shiftKey\) \{\s*e\.preventDefault\(\);\s*state\.submit\(\);/);
+  assert.match(composerShell, /if \(e\.key === 'Enter' && !e\.shiftKey\) \{\s*e\.preventDefault\(\);\s*props\.state\.submit\(\);/);
   assert.match(quickStart, /<ComposerInputField[\s\S]*?aria-label="First message"/);
   assert.match(quickStart, /ComposerSendStopAction/);
-  assert.match(quickStart, /if \(event\.key === 'Enter' && !event\.shiftKey\) \{ event\.preventDefault\(\); submit\(\); \}/);
+  assert.match(quickStart, /if \(event\.key === 'Enter' && !event\.shiftKey\) \{\s*event\.preventDefault\(\);\s*props\.onSubmit\(\);/);
   assert.doesNotMatch(composerShell, /shadow-float/);
   assert.doesNotMatch(quickStart, /shadow-float/);
 });
@@ -396,9 +399,9 @@ test('responsive behavior has compact, medium and wide layout contracts', () => 
   assert.match(drawer, /<aside[^>]*class=\{drawerPanelClass\}/);
   assert.match(drawer, /<Dialog open=\{props\.open\}/);
   assert.match(drawer, /max-desk:fixed[^']*max-desk:w-\(--container-drawer\)/);
-  // 正文与 Composer 共享 chat-column 水平轨道。
-  assert.match(messageList, /chat-column/);
-  assert.match(composer, /chat-column/);
+  // 正文与 Composer 共享 ui-chat-column 水平轨道。
+  assert.match(messageList, /ui-chat-column/);
+  assert.match(composer, /ui-chat-column/);
   assert.doesNotMatch(composer, /max-w-\(--container-chat\)/);
   assert.doesNotMatch(drawer, /project-drawer\s*\{[^}]*position\s*:\s*fixed/);
 });
@@ -449,8 +452,8 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
   assert.doesNotMatch(composerShell, /focus-within:border-focus-ring/);
   assert.doesNotMatch(composerShell, /has-\[\.composer-input:focus-visible\]:shadow-/);
   assert.doesNotMatch(composerShell, /shadow-float/);
-  assert.match(composerParts, /ui-composer-toolbar flex min-h-36 min-w-0 items-center/);
-  assert.match(composerParts, /var\(--composer-radius\)/);
+  assert.match(composerParts, /ui-composer-surface-v2/);
+  assert.match(composerParts, /var\(--composer-pill-radius\)/);
   const composerControls = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'composer', 'ComposerToolbarControls.tsx'), 'utf8');
   const quickStartComposer = readFileSync(join(root, 'widgets', 'composer', 'QuickStartComposer.tsx'), 'utf8');
   assert.doesNotMatch(composerControls, /bg-accent-solid/);
@@ -546,7 +549,10 @@ test('primitive visuals remain in the UI package', () => {
   const button = readFileSync(join(packageRoot, 'components', 'Button.tsx'), 'utf8');
   const dialog = readFileSync(join(packageRoot, 'components', 'Dialog.tsx'), 'utf8');
   const drawer = readFileSync(join(root, 'widgets', 'shell', 'shared', 'ProjectDrawer.tsx'), 'utf8');
-  assert.match(packageExtra, /\.ui-chat-column,\s*\n\.chat-column\s*\{/);
+  assert.match(packageExtra, /\.ui-chat-column\s*\{/);
+  assert.doesNotMatch(packageExtra, /\.chat-column\s*\{/);
+  assert.doesNotMatch(packageExtra, /\.history-boundary\s*\{/);
+  assert.doesNotMatch(packageExtra, /\.transcript-row\s*\{/);
   assert.doesNotMatch(webPrimitives, /\.chat-column\s*\{/);
   assert.match(primitives, /\.ui-scrollbar\s*\{/);
   assert.match(primitives, /\*::\-webkit-scrollbar\s*\{/);

@@ -20,7 +20,7 @@ export const TranscriptRowShell: Component<TranscriptRowShellProps> = (props) =>
     <div
       {...rest}
       ref={rowRef}
-      class={cn('ui-transcript-row transcript-row flow-root', local.class)}
+      class={cn('ui-transcript-row flow-root', local.class)}
       role="listitem"
       aria-posinset={local.position}
       aria-setsize={local.size}

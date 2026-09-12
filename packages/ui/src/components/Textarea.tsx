@@ -39,10 +39,15 @@ export function Textarea(props: Props) {
     element.style.height = 'auto';
     element.style.height = `${Math.min(element.scrollHeight, local.maxHeight ?? 180)}px`;
   };
-  createEffect(() => { textarea.value; queueMicrotask(resize); });
+  createEffect(() => {
+    const next = `${textarea.value ?? ''}`;
+    if (element && element.value !== next) element.value = next;
+    queueMicrotask(resize);
+  });
   const control = (
     <textarea
       {...textarea}
+      value={textarea.value ?? ''}
       id={id()}
       aria-invalid={local.error ? 'true' : undefined}
       aria-describedby={describedBy()}
@@ -53,8 +58,19 @@ export function Textarea(props: Props) {
       }}
       onInput={(event) => {
         resize();
-        const handler = textarea.onInput;
-        if (typeof handler === 'function') handler(event);
+        if (typeof textarea.onInput === 'function') textarea.onInput(event);
+      }}
+      onKeyDown={(event) => {
+        if (typeof textarea.onKeyDown === 'function') textarea.onKeyDown(event);
+      }}
+      onCompositionEnd={(event) => {
+        if (typeof textarea.onCompositionEnd === 'function') textarea.onCompositionEnd(event);
+      }}
+      onSelect={(event) => {
+        if (typeof textarea.onSelect === 'function') textarea.onSelect(event);
+      }}
+      onBlur={(event) => {
+        if (typeof textarea.onBlur === 'function') textarea.onBlur(event);
       }}
       class={cn(
         'ui-textarea',

@@ -1,5 +1,19 @@
 import { For, Match, Show, Switch } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogTitle, EmptyState, IconButton, Listbox, ListboxItem, LoadingState, WorkbenchPanelChrome } from '@peri/ui';
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  EmptyState,
+  IconButton,
+  Listbox,
+  ListboxItem,
+  LoadingState,
+  RewindPanelActions,
+  RewindPanelState,
+  WorkbenchPanelChrome,
+  rewindPanelStateClass,
+} from '@peri/ui';
 import { closeRewindFlow, executeRewind, openRewindFlow, previewRewind, rewindFlow } from '@/features/runtime/rewind-assembly';
 import { X } from 'lucide-solid';
 import { RESOURCE_PANEL_SURFACE_CLASS } from '@/widgets/resource/resource-panel-layout';
@@ -26,13 +40,13 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
     <section class="box-border min-h-0 flex-1 overflow-auto px-10 py-10">
       <Switch>
         <Match when={state().kind === 'loading_candidates'}>
-          <LoadingState class="rewind-panel__state" label="Reading rewindable messages" description="Reading user messages from the Peri session history." />
+          <LoadingState class={rewindPanelStateClass} label="Reading rewindable messages" description="Reading user messages from the Peri session history." />
         </Match>
         <Match when={state().kind === 'select_target' && state()} keyed>{(current) => {
           if (current.kind !== 'select_target') return null;
           return <>
             <div class="pt-8 pb-16"><strong class="text-15 text-text-primary">Choose the message to rewind to</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">Messages after it will be removed. You will see the file impact first; nothing executes immediately.</p></div>
-            <Show when={current.candidates.length} fallback={<EmptyState variant="inline" class="rewind-panel__state" title="No user messages" description="The current session has no user messages to rewind to." />}>
+            <Show when={current.candidates.length} fallback={<EmptyState variant="inline" class={rewindPanelStateClass} title="No user messages" description="The current session has no user messages to rewind to." />}>
               <Listbox class="grid gap-7 m-0 p-0 list-none" aria-label="Rewind target message" options={current.candidates} optionValue="messageId" optionTextValue={(candidate) => candidate.preview || 'Empty message'} selectionMode="single" onChange={(selected) => {
                 const id = [...selected][0];
                 const candidate = current.candidates.find((item) => item.messageId === id);
@@ -44,7 +58,7 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
           </>;
         }}</Match>
         <Match when={state().kind === 'loading_preview'}>
-          <LoadingState class="rewind-panel__state" label="Generating rewind preview" description="Checking the session history and workspace file impact." />
+          <LoadingState class={rewindPanelStateClass} label="Generating rewind preview" description="Checking the session history and workspace file impact." />
         </Match>
         <Match when={state().kind === 'confirm' && state()} keyed>{(current) => {
           if (current.kind !== 'confirm') return null;
@@ -58,22 +72,22 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
               </Show>
             </section>
             <p class="mt-18 mb-0 rounded-10 border border-danger-border bg-surface px-12 py-10 text-12 leading-15 !text-danger">This is a destructive action. Do not repeat it after confirming; if the result is unknown, reopen the session to check.</p>
-            <div class="rewind-panel__actions"><Button onClick={close}>Cancel</Button><Button variant="danger" onClick={executeRewind}>Rewind session and files</Button></div>
+            <RewindPanelActions><Button onClick={close}>Cancel</Button><Button variant="danger" onClick={executeRewind}>Rewind session and files</Button></RewindPanelActions>
           </>;
         }}</Match>
         <Match when={state().kind === 'executing'}>
-          <LoadingState class="rewind-panel__state" label="Executing rewind" description="Keep the page open. This operation will not retry automatically.">Rewinding and reloading the session</LoadingState>
+          <LoadingState class={rewindPanelStateClass} label="Executing rewind" description="Keep the page open. This operation will not retry automatically.">Rewinding and reloading the session</LoadingState>
         </Match>
         <Match when={state().kind === 'completed'}>
-          <div class="rewind-panel__state text-success"><strong class="text-15 text-text-primary">Rewind complete</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">The session history and file projection have been reloaded.</p><Button class="mt-18" variant="primary" onClick={close}>Done</Button></div>
+          <RewindPanelState class="text-success"><strong class="text-15 text-text-primary">Rewind complete</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">The session history and file projection have been reloaded.</p><Button class="mt-18" variant="primary" onClick={close}>Done</Button></RewindPanelState>
         </Match>
         <Match when={state().kind === 'delivery_unknown' && state()} keyed>{(current) => {
           if (current.kind !== 'delivery_unknown') return null;
-          return <div class="rewind-panel__state justify-items-start rounded-12 border border-warning-border bg-surface text-left" role="alert"><strong class="text-15 text-text-primary">Rewind result not confirmed</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">{current.detail}</p><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">To avoid duplicate changes, re-execution is not offered. Close this window and reopen the session to check the history and files.</p><Button class="mt-18" onClick={close}>Got it</Button></div>;
+          return <RewindPanelState class="justify-items-start rounded-12 border border-warning-border bg-surface text-left" role="alert"><strong class="text-15 text-text-primary">Rewind result not confirmed</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">{current.detail}</p><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">To avoid duplicate changes, re-execution is not offered. Close this window and reopen the session to check the history and files.</p><Button class="mt-18" onClick={close}>Got it</Button></RewindPanelState>;
         }}</Match>
         <Match when={state().kind === 'error' && state()} keyed>{(current) => {
           if (current.kind !== 'error') return null;
-          return <div class="rewind-panel__state" role="alert"><strong class="text-15 text-text-primary">{current.stage === 'execute' ? 'Rewind incomplete' : 'Could not generate rewind preview'}</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">{current.detail}</p><div class="rewind-panel__actions"><Button onClick={close}>Close</Button><Show when={current.stage !== 'execute'}><Button variant="primary" onClick={restart}>Query again</Button></Show></div></div>;
+          return <RewindPanelState role="alert"><strong class="text-15 text-text-primary">{current.stage === 'execute' ? 'Rewind incomplete' : 'Could not generate rewind preview'}</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">{current.detail}</p><RewindPanelActions><Button onClick={close}>Close</Button><Show when={current.stage !== 'execute'}><Button variant="primary" onClick={restart}>Query again</Button></Show></RewindPanelActions></RewindPanelState>;
         }}</Match>
       </Switch>
     </section>

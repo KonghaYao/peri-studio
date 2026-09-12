@@ -149,10 +149,10 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
         </PopoverContent>
       </Popover>
       <Show when={props.session.lifecycle === 'failed'}>
-        <div class="session-problem basis-full px-10 pb-4 text-11 text-danger">Failed to open · <Button size="compact" class="cursor-pointer border-0! bg-transparent p-0! text-inherit underline" busy={props.replacementBusy} disabled={props.readOnly || props.replacementBusy} onClick={() => props.onCreateReplacement(props.session.title)}>Create replacement session</Button></div>
+        <div data-testid="session-problem" class="basis-full px-10 pb-4 text-11 text-danger">Failed to open · <Button size="compact" class="cursor-pointer border-0! bg-transparent p-0! text-inherit underline" busy={props.replacementBusy} disabled={props.readOnly || props.replacementBusy} onClick={() => props.onCreateReplacement(props.session.title)}>Create replacement session</Button></div>
       </Show>
       <Show when={props.session.lifecycle === 'reconciliation_required'}>
-        <div class="session-problem session-problem--warn basis-full px-10 pb-4 text-11 text-warning">Server-side reconciliation required, retry not available</div>
+        <div data-testid="session-problem-warn" class="basis-full px-10 pb-4 text-11 text-warning">Server-side reconciliation required, retry not available</div>
       </Show>
     </div>
   );

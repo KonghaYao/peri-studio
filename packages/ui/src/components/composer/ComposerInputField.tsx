@@ -13,9 +13,10 @@ export type ComposerInputFieldProps = {
   shell?: boolean;
   hint?: ComposerInputHint | null;
   fieldClass?: string;
+  maxHeight?: number;
   class?: string;
   ref?: (el: HTMLTextAreaElement | undefined) => void;
-} & Omit<JSX.TextareaHTMLAttributes<HTMLTextAreaElement>, 'class'>;
+} & Omit<JSX.TextareaHTMLAttributes<HTMLTextAreaElement>, 'class' | 'maxHeight'>;
 
 function fieldClasses(centered: boolean, shell: boolean, fieldClass?: string) {
   return cn(
@@ -32,7 +33,7 @@ function fieldClasses(centered: boolean, shell: boolean, fieldClass?: string) {
 
 /** Composer 输入区视觉壳：placeholder / prediction 叠层 + bare Textarea。 */
 export const ComposerInputField: Component<ComposerInputFieldProps> = (props) => {
-  const [local, textarea] = splitProps(props, ['centered', 'shell', 'hint', 'fieldClass', 'class', 'ref']);
+  const [local, textarea] = splitProps(props, ['centered', 'shell', 'hint', 'fieldClass', 'maxHeight', 'class', 'ref']);
   const centered = () => local.centered ?? false;
   const shell = () => local.shell ?? false;
   const resolvedFieldClass = () => fieldClasses(centered(), shell(), local.fieldClass);
@@ -67,7 +68,7 @@ export const ComposerInputField: Component<ComposerInputFieldProps> = (props) =>
         {...textarea}
         ref={local.ref}
         autoResize
-        maxHeight={180}
+        maxHeight={local.maxHeight ?? 180}
         variant="bare"
         data-testid="composer-input"
         class={cn(

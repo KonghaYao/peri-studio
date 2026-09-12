@@ -116,10 +116,9 @@ function QuestionDialog(props: {
   };
 
   return (
-    <DecisionQueueShell class="chat-column pb-10" aria-label="Pending questions">
+    <DecisionQueueShell class="ui-chat-column pb-10" aria-label="Pending questions">
       <form class="scroll-mt-12" onSubmit={submit}>
         <QuestionnaireFrame
-          class="question-card elicitation-card"
           data-testid="question-queue-card"
           title="Questions"
           prompt={props.question.description || 'Peri needs your input to continue.'}

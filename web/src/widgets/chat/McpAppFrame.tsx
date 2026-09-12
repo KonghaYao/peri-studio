@@ -54,7 +54,7 @@ export function McpAppFrame(props: { toolCallId: string }) {
   return (
     <Dialog open={fullscreen()} onOpenChange={setFullscreen}>
       <div
-        class="mcp-app-slot w-full max-w-(--tool-activity-max)"
+        class="w-full max-w-(--tool-activity-max)"
         style={fullscreen() ? { height: `${inlineHeight()}px` } : undefined}
       >
         <div
@@ -62,7 +62,7 @@ export function McpAppFrame(props: { toolCallId: string }) {
             inlineHostRef = element;
             syncIframeHost();
           }}
-          class="mcp-app-frame relative w-full overflow-hidden rounded-9 border border-divider bg-surface"
+          class="relative w-full overflow-hidden rounded-9 border border-divider bg-surface"
           classList={{ hidden: fullscreen() }}
         >
           <Show when={!fullscreen()}>
@@ -100,7 +100,7 @@ export function McpAppFrame(props: { toolCallId: string }) {
                 fullscreenHostRef = element;
                 syncIframeHost();
               }}
-              class="mcp-app-frame mcp-app-frame--fullscreen flex min-h-0 flex-1 flex-col bg-surface"
+              class="flex min-h-0 flex-1 flex-col bg-surface"
             />
           </DialogContent>
         </Show>

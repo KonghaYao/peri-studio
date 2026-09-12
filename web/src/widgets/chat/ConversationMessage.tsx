@@ -117,11 +117,11 @@ function MessageBlock(props: {
         projectCwd={props.projectCwd}
       /></Show>
     }>{
-      <Bubble variant="ghost" align="start" class="conversation-message__text w-full" data-testid="conversation-message-text">
+      <Bubble variant="ghost" align="start" class="w-full" data-testid="conversation-message-text">
         <BubbleContent>
           <Show when={props.role() === 'assistant'} fallback={<For each={splitSystemReminders((props.block() as Extract<ChatBlock, { kind: 'text' }>).text)}>{(segment) =>
             <Show when={segment.kind === 'text'}>
-              <span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{segment.text}</span>
+              <span class="whitespace-pre-wrap wrap-anywhere">{segment.text}</span>
             </Show>
           }</For>}>
             <Markdown
@@ -207,22 +207,20 @@ function AssistantLayoutUnitView(props: {
     <Show
       when={unit().kind === 'tool_group'}
       fallback={(
-        <div class="conversation-message__block">
-          <MessageBlock
-            block={block}
-            blockIndex={blockIndex}
-            role={props.role}
-            streaming={props.streaming}
-            entry={props.entry}
-            toolCallsInBlocks={props.toolCallsInBlocks}
-            blockIds={props.blockIds}
-            blocksById={props.blocksById}
-            activityBoundary={props.activityBoundary}
-            reasoningVariant={activityVariant()}
-            toolVariant={activityVariant()}
-            projectCwd={props.projectCwd}
-          />
-        </div>
+        <MessageBlock
+          block={block}
+          blockIndex={blockIndex}
+          role={props.role}
+          streaming={props.streaming}
+          entry={props.entry}
+          toolCallsInBlocks={props.toolCallsInBlocks}
+          blockIds={props.blockIds}
+          blocksById={props.blocksById}
+          activityBoundary={props.activityBoundary}
+          reasoningVariant={activityVariant()}
+          toolVariant={activityVariant()}
+          projectCwd={props.projectCwd}
+        />
       )}
     >
       <ToolActivityGroup variant="activity" showRail={false}>
@@ -433,7 +431,7 @@ export function ConversationMessage(props: {
             return <Show when={block().kind === 'text'}>
               <For each={splitSystemReminders((block() as Extract<ChatBlock, { kind: 'text' }>).text)}>{(segment) =>
                 <Show when={segment.kind === 'text'}>
-                  <span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{segment.text}</span>
+                  <span class="whitespace-pre-wrap wrap-anywhere">{segment.text}</span>
                 </Show>
               }</For>
             </Show>;

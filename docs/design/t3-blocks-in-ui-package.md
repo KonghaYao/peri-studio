@@ -25,7 +25,7 @@ T3 组件必须：
 
 | 组件 | 说明 |
 |------|------|
-| `ComposerShell` | 双形态输入壳（compact / expanded） |
+| `ComposerShell` | 双形态输入壳（compact / expanded；生产 docked 与 Quick Start） |
 | `ComposerPlusMenu` | 「+」附件菜单 |
 | `ComposerAttachmentChip` | 附件 chip |
 | `ComposerDropOverlay` | 拖放覆盖层 |
@@ -47,6 +47,7 @@ T3 组件必须：
 | `HistoryBoundary` | Verified / Current 历史分隔 |
 | `MessageArticleShell` / `MessageMetaHeader` / `MessageSurfaceShell` / `MessageAssistantActionsShell` | 单条消息布局壳（T4 仍拥有 block 语义） |
 | `ChatHeader` | 会话标题栏 |
+| `RewindPanelState` / `RewindPanelActions` | Rewind 面板状态区与底栏操作行 |
 | `UserBubble` | 用户消息气泡 |
 | `MarkdownTable` | Markdown 表格 |
 | `SafeImage` | 远程图片安全渲染 |
@@ -109,13 +110,14 @@ T3 组件必须：
 
 ### Wave 3 已删除
 
-- `ComposerSurface`（v1 矩形壳）：已从 `@peri/ui` 移除；生产矩形壳样式登记于 `web/src/styles/extra.css`（`.composer-rect-surface`）；新 T3 壳使用 `ComposerShell`。
+- `ComposerSurface`（v1 矩形壳）与 `ComposerRectSurface`（Wave 2 中间态）：已移除；生产 docked / Quick Start 均使用 `ComposerShell`（样式在 package `extra.css`）。
 
 ## 生产 / Catalog 装配
 
 | 区域 | T3（package） | T4（web widgets / sandbox layers） |
 |------|---------------|-------------------------------------|
-| Composer | `ComposerShell` 等 | `widgets/composer/Composer.tsx` |
+| Composer | `ComposerShell` 族 | `widgets/composer/Composer.tsx`、`QuickStartComposer.tsx` |
+| Rewind | `RewindPanelState` / `RewindPanelActions` | `widgets/chat/RewindDialog.tsx` |
 | Chat | `ChatWorkspaceShell` + transcript / message shells | `widgets/chat/ChatView.tsx`, `MessageList.tsx`, `ConversationMessage.tsx` |
 | 侧栏 | `ProjectSidebarShell` + `SidebarChrome` 族 | `widgets/sidebar/*`, `SidebarChrome.tsx` |
 | Terminal | `TerminalDockShell` | `widgets/terminal/TerminalPanel.tsx` |

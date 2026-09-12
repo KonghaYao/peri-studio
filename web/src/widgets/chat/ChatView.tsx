@@ -71,7 +71,7 @@ export function ChatView(props: ChatViewProps) {
         tone="danger"
         role="alert"
         aria-label="Agent error"
-        class="chat-column mx-auto mb-8 w-full max-w-(--chat-content-max)"
+        class="ui-chat-column mx-auto mb-8 w-full max-w-(--chat-content-max)"
         data-testid="agent-public-error-notice"
       >
         <code class="whitespace-pre-wrap wrap-anywhere font-mono text-12 leading-normal">
@@ -131,9 +131,7 @@ export function ChatView(props: ChatViewProps) {
         <ChatHeaderBase
           title={headerTitle()}
           launch={!selectedSessionId()}
-          class={`chat-header ${!selectedSessionId() ? 'chat-header--launch' : ''}`}
-          titleClass="chat-title"
-          navButtonClass="mobile-nav-button hidden"
+          navButtonClass="hidden"
           showMobileNav
           showMobileResources
           onOpenNavigation={props.onOpenNavigation}
@@ -172,7 +170,9 @@ export function ChatView(props: ChatViewProps) {
       ) : undefined}
       composerStack={selectedSessionId() && !conversationEmpty() ? (
         <>
-          {queueAndStatus()}
+          <div class="ui-chat-workspace__decision-panel" data-testid="decision-panel">
+            {queueAndStatus()}
+          </div>
           <Composer renderRuntimeMenu={composerRuntimeMenu} />
         </>
       ) : undefined}

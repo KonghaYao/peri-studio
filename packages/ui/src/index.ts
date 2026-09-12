@@ -329,6 +329,14 @@ export {
   type ChatWorkspaceShellProps,
 } from './components/chat/ChatWorkspaceShell';
 export {
+  RewindPanelActions,
+  RewindPanelState,
+  rewindPanelActionsClass,
+  rewindPanelStateClass,
+  type RewindPanelActionsProps,
+  type RewindPanelStateProps,
+} from './components/chat/RewindPanelShell';
+export {
   HistoryBoundary,
   type HistoryBoundaryProps,
   type TranscriptHistoryBoundaryKind,

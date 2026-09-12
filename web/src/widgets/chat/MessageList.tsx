@@ -39,7 +39,7 @@ function visibleHistoryBoundary(kind: ReplayBoundary): TranscriptHistoryBoundary
 
 function ChatLoading() {
   return <div data-testid="chat-loading">
-    <div class="chat-loading message-loading mb-12 flex min-h-36 flex-col justify-center gap-8" data-testid="message-loading" aria-hidden="true">
+    <div class="mb-12 flex min-h-36 flex-col justify-center gap-8" data-testid="message-loading" aria-hidden="true">
       <Skeleton class="h-12 w-180" />
       <Skeleton class="h-12 w-240" />
       <Skeleton class="h-12 w-180" />
@@ -314,14 +314,14 @@ export function MessageList(props: { footerHeight?: number }) {
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
       <div class="sr-only" role="status" aria-label="Agent activity" aria-live="polite" aria-atomic="true">{agentActivityAnnouncement()}</div>
-      <div class="message-list-content chat-column pt-32 pb-32" data-testid="message-list-content">
-        <div ref={prefixRef} class="transcript-prefix">
+      <div class="message-list-content ui-chat-column pt-32 pb-32" data-testid="message-list-content">
+        <div ref={prefixRef} data-testid="transcript-prefix">
           <Show when={!runtimeDocsHydrated()}>
             <LoadingState label="Loading session" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />
           </Show>
         </div>
-        <div ref={transcriptRef} class="transcript-window" role="list" aria-label="Conversation transcript">
-          <div class="transcript-spacer" aria-hidden="true" style={{ height: `${visibleTranscript().beforeHeight}px` }} />
+        <div ref={transcriptRef} data-testid="transcript-window" role="list" aria-label="Conversation transcript">
+          <div data-testid="transcript-spacer" data-transcript-spacer="before" aria-hidden="true" style={{ height: `${visibleTranscript().beforeHeight}px` }} />
           <For each={visibleTranscript().ids}>
             {(id, localIndex) => {
               const globalIndex = () => visibleTranscript().start + localIndex();
@@ -342,7 +342,7 @@ export function MessageList(props: { footerHeight?: number }) {
               </TranscriptRowShell>;
             }}
           </For>
-          <div class="transcript-spacer" aria-hidden="true" style={{ height: `${visibleTranscript().afterHeight}px` }} />
+          <div data-testid="transcript-spacer" data-transcript-spacer="after" aria-hidden="true" style={{ height: `${visibleTranscript().afterHeight}px` }} />
         </div>
         <Show when={showChatLoading()}><ChatLoading /></Show>
         <For each={acknowledgedForChat()}>{(submission) =>

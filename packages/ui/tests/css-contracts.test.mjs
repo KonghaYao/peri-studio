@@ -190,6 +190,14 @@ test('extra.css imports scroll-fade and shimmer utilities', () => {
   assert.match(extra, /@import '\.\/utilities\.css';/);
 });
 
+test('extra.css does not keep legacy ui-* alias selectors', () => {
+  const extra = read(join(srcRoot, 'styles', 'extra.css'));
+  assert.match(extra, /\.ui-chat-column\s*\{/);
+  assert.doesNotMatch(extra, /\.chat-column\s*\{/);
+  assert.doesNotMatch(extra, /\.history-boundary\s*\{/);
+  assert.doesNotMatch(extra, /\.transcript-row\s*\{/);
+});
+
 test('overlay motion recipes are defined', () => {
   const motion = read(join(srcRoot, 'styles', 'motion.css'));
   for (const utility of [

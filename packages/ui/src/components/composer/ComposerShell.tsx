@@ -1,4 +1,5 @@
 import { createEffect, createSignal, For, Show, splitProps, type Component, type JSX } from 'solid-js';
+import { Dynamic } from 'solid-js/web';
 import { cn } from '../../lib/cn';
 import { ComposerAttachmentChip } from './ComposerAttachmentChip';
 import { ComposerAttachmentList } from './ComposerAttachmentList';
@@ -34,7 +35,9 @@ export type ComposerShellProps = {
   /** 置于 surface 内最前（如上传拖放层） */
   innerLeading?: JSX.Element;
   /** T4 自定义输入区（prediction/placeholder 叠层等） */
-  renderField?: (ctx: ComposerShellFieldContext) => JSX.Element;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- T4 field slot merges ctx with app props via Dynamic
+  renderField?: Component<any>;
+  renderFieldProps?: Record<string, unknown>;
   fieldPlaceholder?: string;
   fieldDisabled?: boolean;
   fieldAriaLabel?: string;
@@ -74,6 +77,7 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
     'overlay',
     'innerLeading',
     'renderField',
+    'renderFieldProps',
     'fieldPlaceholder',
     'fieldDisabled',
     'fieldAriaLabel',
@@ -186,6 +190,7 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
       {local.overlay}
       <div
         ref={(element) => local.surfaceRef?.(element)}
+        data-slot="composer-surface"
         aria-busy={surfaceAria()['aria-busy']}
         aria-disabled={surfaceAria()['aria-disabled']}
         data-testid={surfaceAria()['data-testid'] ?? 'composer-surface'}
@@ -223,7 +228,12 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
 
         <div class="ui-composer-surface-v2__body">
           <Show when={!expanded()}>{local.compactLeading}</Show>
-          {local.renderField ? local.renderField(fieldCtx()) : defaultField()}
+          <Show
+            when={local.renderField}
+            fallback={defaultField()}
+          >
+            <Dynamic component={local.renderField!} ctx={fieldCtx()} {...(local.renderFieldProps ?? {})} />
+          </Show>
           <Show when={!expanded()}>{local.compactTrailing}</Show>
         </div>
 

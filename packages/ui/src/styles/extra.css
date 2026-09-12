@@ -175,8 +175,7 @@
 
 /* ── Chat workspace（T3 · 正文与 Composer 共享水平轨道） ───────────────── */
 
-.ui-chat-column,
-.chat-column {
+.ui-chat-column {
   box-sizing: border-box;
   width: 100%;
   max-width: var(--chat-content-max);
@@ -186,25 +185,24 @@
 }
 
 @media (min-width: 960px) and (max-width: 1199px) {
-  .ui-chat-column,
-  .chat-column {
+  .ui-chat-column {
     padding-inline: var(--space-18);
   }
 }
 
 @media (max-width: 479px) {
-  .ui-chat-column,
-  .chat-column {
+  .ui-chat-column {
     padding-inline: var(--space-10);
   }
 }
 
-.ui-chat-workspace__transcript-scroll {
-  scrollbar-gutter: stable;
-}
-
 /* 贴底 composer 区：渐隐遮罩，避免消息与输入框硬切。 */
 .ui-chat-workspace__bottom-stack {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 72dvh;
   padding-top: var(--space-28);
   background: linear-gradient(
     0deg,
@@ -217,6 +215,15 @@
 
 .ui-chat-workspace__bottom-stack > * {
   pointer-events: auto;
+}
+
+.ui-chat-workspace__decision-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 /* ── Project sidebar shell（T3 · ProjectSidebarShell） ─────────────────── */
@@ -273,8 +280,7 @@
   contain: none;
 }
 
-.ui-transcript-history-boundary,
-.history-boundary {
+.ui-transcript-history-boundary {
   display: grid;
   grid-template-columns: var(--grid-cols-boundary);
   align-items: center;
@@ -287,16 +293,13 @@
 }
 
 .ui-transcript-history-boundary::before,
-.ui-transcript-history-boundary::after,
-.history-boundary::before,
-.history-boundary::after {
+.ui-transcript-history-boundary::after {
   height: 1px;
   background: var(--divider);
   content: '';
 }
 
-.ui-transcript-row,
-.transcript-row {
+.ui-transcript-row {
   display: flow-root;
 }
 
@@ -540,7 +543,9 @@
 }
 
 .ui-composer-runtime-slot {
+  flex: 0 1 auto;
   max-width: var(--model-badge-max);
+  min-width: 0;
 }
 
 .ui-composer-surface--drop-target {
@@ -880,6 +885,51 @@
 
 .ui-terminal-dock-shell__status {
   flex-shrink: 0;
+}
+
+/* ── Rewind panel shell（T3 · RewindDialog 状态区与操作行） ─────────────── */
+
+.ui-rewind-panel__state {
+  display: grid;
+  min-height: var(--space-180);
+  place-content: center;
+  justify-items: center;
+  padding: var(--space-24);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .ui-rewind-panel__state {
+    padding: var(--space-20) var(--space-8);
+  }
+}
+
+.ui-rewind-panel__state .ui-spinner {
+  margin-bottom: var(--space-12);
+  width: var(--space-22);
+  height: var(--space-22);
+}
+
+.ui-rewind-panel__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+  margin-top: var(--space-20);
+}
+
+@media (max-width: 640px) {
+  .ui-rewind-panel__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .ui-rewind-panel__actions [data-slot='button'] {
+    min-height: var(--space-44);
+  }
+
+  .ui-rewind-panel__actions [data-slot='button']:last-child {
+    grid-row-start: 1;
+  }
 }
 
 /* ── Decision queue shell（T3 · composer 上方决策叠层） ─────────────────── */

@@ -98,12 +98,11 @@ describe('Composer', () => {
     mountComposer();
 
     expect(screen.getByTestId('composer-surface')).toHaveAttribute('data-slot', 'composer-surface');
-    expect(screen.getByTestId('composer-surface')).toHaveClass('composer-rect-surface');
-    expect(screen.getByTestId('composer-toolbar')).toHaveClass('ui-composer-toolbar');
+    expect(screen.getByTestId('composer-surface')).toHaveClass('ui-composer-surface-v2');
     expect(screen.getByRole('textbox')).toHaveClass('ui-composer-input');
     expect(screen.getByTestId('composer-runtime')).toHaveTextContent('Nova 4.1');
     expect(screen.getByTestId('composer-runtime')).toHaveClass('text-content-secondary');
-    expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('ui-composer-action');
+    expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('ui-composer-send-btn');
   });
 
   it('adds a quoted answer to the current draft without replacing existing text', async () => {
@@ -310,11 +309,9 @@ describe('Composer', () => {
       activeTurn: null, pendingPermissions: [],
     });
     mountComposer();
-    fireEvent.click(screen.getByRole('button', { name: 'Browse skills (2)' }));
     const input = screen.getByRole('textbox');
-    fireEvent.keyDown(input, { key: 'ArrowDown' });
-    expect(screen.getByRole('option', { name: /mcp__docs__search.*Search docs/ })).toHaveClass('bg-sidebar-selected');
-    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.input(input, { target: { value: '/' } });
+    fireEvent.click(screen.getByRole('option', { name: /mcp__docs__search.*Search docs/ }));
     await waitFor(() => expect(input).toHaveValue('/mcp__docs__search '));
   });
 
@@ -336,17 +333,37 @@ describe('Composer', () => {
       activeTurn: null, pendingPermissions: [],
     });
     mountComposer();
-    fireEvent.click(screen.getByRole('button', { name: 'Browse skills (2)' }));
-    expect(screen.getByRole('listbox', { name: 'Available commands and skills' })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: /compact/ })).not.toBeInTheDocument();
     const input = screen.getByRole('textbox');
-    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.input(input, { target: { value: '/' } });
+    expect(screen.getByRole('listbox', { name: 'Available commands and skills' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('option', { name: /auto-issue-fixer.*Fix an issue/ }));
     await waitFor(() => expect(input).toHaveValue('/auto-issue-fixer '));
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled();
   });
 
-  it('keeps the Peri Skills affordance hidden without negotiation', () => {
+  it('does not render a dedicated skills browse button', () => {
+    selectReadyChat();
+    setChatHead({
+      chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
+      agent: {
+        instanceId: 'local', sessionId: 'acp-1', status: 'ready', lastActivityAt: null,
+        availableCommands: ['compact', 'auto-issue-fixer', 'mcp__docs__search'],
+        commandCatalog: [
+          { name: 'compact', description: 'Compress context', kind: 'command' },
+          { name: 'auto-issue-fixer', description: 'Fix an issue', kind: 'skill' },
+          { name: 'mcp__docs__search', description: 'Search docs', kind: 'mcp_skill' },
+        ],
+        extensions: ['peri.skillNames'], activities: [], inputPrediction: null, latestUsage: null,
+        model: 'model', effort: 'high', contextWindow: 200_000, contextUsed: 42_000,
+      },
+      activeTurn: null, pendingPermissions: [],
+    });
+    mountComposer();
+    expect(screen.queryByRole('button', { name: /Browse skills/ })).not.toBeInTheDocument();
+  });
+
+  it('keeps slash commands available without peri.skillNames negotiation', () => {
     selectReadyChat();
     setChatHead({
       chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },

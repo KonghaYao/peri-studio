@@ -101,7 +101,7 @@ function AskUserQuestionDialog(props: {
   };
 
   return <DecisionQueueShell
-    class="chat-column pb-10"
+    class="ui-chat-column pb-10"
     aria-label="Agent question"
   >
     <form
@@ -112,7 +112,6 @@ function AskUserQuestionDialog(props: {
     >
       <QuestionnaireFrame
         data-testid="elicitation-card"
-        class="elicitation-card"
         title="Questions"
         prompt={props.elicitation.message}
         currentIndex={props.currentIndex}
@@ -147,12 +146,12 @@ function AskUserQuestionDialog(props: {
           </IconButton>
         )}
       >
-        <div id={bodyId} class="ui-scrollbar elicitation-card__body mt-6 max-h-300 overflow-y-auto max-narrow:px-0">
+        <div id={bodyId} class="ui-scrollbar mt-6 max-h-300 overflow-y-auto max-narrow:px-0">
           <div class="grid">
             <For each={props.elicitation.fields.map((field) => field.id)}>{(fieldId) => {
               const field = () => props.elicitation.fields.find((candidate) => candidate.id === fieldId)!;
               return (
-              <fieldset class="elicitation-field min-w-0 m-0 py-10 border-0 border-t border-divider first:border-t-0 first:pt-0 last:pb-0">
+              <fieldset class="min-w-0 m-0 py-10 border-0 border-t border-divider first:border-t-0 first:pt-0 last:pb-0">
                 <legend class="p-0 text-text-secondary text-11 font-600">{field().title}{field().required ? <span class="text-text-muted" aria-label="Required"> *</span> : null}</legend>
                 <Show when={field().description}><p class="mt-3 mb-7 text-text-muted text-11 leading-15">{field().description}</p></Show>
                 <Show when={field().kind === 'text'}>

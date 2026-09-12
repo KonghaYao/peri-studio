@@ -9,51 +9,6 @@
  * 禁止：新颜色/间距/字号字面量——一律引用 tokens.css 的 var(--*)。
  * JSX 默认只用 Tailwind；新增例外须加语义 class 并在此登记实现。 */
 
-/* ── Rewind 面板 ─────────────────────────────────────────────────────── */
-
-.rewind-panel__state {
-  display: grid;
-  min-height: var(--space-180);
-  place-content: center;
-  justify-items: center;
-  padding: var(--space-24);
-  text-align: center;
-}
-
-@media (max-width: 640px) {
-  .rewind-panel__state {
-    padding: var(--space-20) var(--space-8);
-  }
-}
-
-.rewind-panel__state .ui-spinner {
-  margin-bottom: var(--space-12);
-  width: var(--space-22);
-  height: var(--space-22);
-}
-
-.rewind-panel__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-8);
-  margin-top: var(--space-20);
-}
-
-@media (max-width: 640px) {
-  .rewind-panel__actions {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .rewind-panel__actions [data-slot='button'] {
-    min-height: var(--space-44);
-  }
-
-  .rewind-panel__actions [data-slot='button']:last-child {
-    grid-row-start: 1;
-  }
-}
-
 /* ── 侧栏拖拽把手（激活态光标） ───────────────────────────────────────── */
 
 .sidebar-resize-handle--dragging,
@@ -85,22 +40,8 @@
 
 /* ── Composer wrap 变体（web 应用级，子选择器编排） ───────────────────── */
 
-.composer-rect-surface {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--composer-border);
-  border-radius: var(--composer-radius);
-  background: var(--surface-overlay);
-  padding: var(--space-10);
-}
-
-@media (max-width: 480px) {
-  .composer-rect-surface {
-    border-radius: var(--radius-16);
-  }
-}
-
-.composer-wrap--overlay [data-slot='composer-surface'] {
+.composer-wrap--overlay [data-slot='composer-surface'],
+.composer-wrap--overlay .ui-composer-surface-v2 {
   box-shadow: var(--shadow-composer-overlay);
 }
 

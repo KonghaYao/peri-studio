@@ -58,7 +58,7 @@ const tableRows = [
 
 function ChatFrame(props: { children: unknown }) {
   return (
-    <div class="chat-column max-w-(--chat-content-max) rounded-lg border border-border-subtle bg-surface-overlay px-16 py-16">
+    <div class="ui-chat-column max-w-(--chat-content-max) rounded-lg border border-border-subtle bg-surface-overlay px-16 py-16">
       {props.children as never}
     </div>
   );

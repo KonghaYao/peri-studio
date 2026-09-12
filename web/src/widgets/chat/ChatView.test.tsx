@@ -45,7 +45,7 @@ vi.mock('./QuestionQueue', () => ({ QuestionQueue: () => <section aria-label="As
 vi.mock('./PermissionQueue', () => ({ PermissionQueue: () => <section aria-label="Permissions" /> }));
 vi.mock('@/widgets/shell/ErrorCenter', () => ({ ErrorCenter: () => null }));
 vi.mock('./MessageList', () => ({ MessageList: () => null }));
-vi.mock('@/widgets/composer/QuickStartComposer', () => ({ QuickStartComposer: () => <section aria-label="Start new session" data-testid="quick-start-docked" class="quick-start quick-start--docked" /> }));
+vi.mock('@/widgets/composer/QuickStartComposer', () => ({ QuickStartComposer: () => <section aria-label="Start new session" data-testid="quick-start-docked" /> }));
 
 import { ChatView } from './ChatView';
 

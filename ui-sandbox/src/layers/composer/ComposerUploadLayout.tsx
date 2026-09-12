@@ -78,7 +78,7 @@ export function ComposerUploadLayout() {
         </For>
       </div>
 
-      <div class="chat-column">
+      <div class="ui-chat-column">
         <ComposerShell
           draft={mode() === 'idle' ? '' : draft()}
           onDraftChange={setDraft}

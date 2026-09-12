@@ -297,19 +297,19 @@ test('sidebar chrome and composer match the compact input shell', async ({ page 
   // Legacy window toolbar traffic lights removed from sidebar chrome.
   await expect(page.getByRole('button', { name: 'Add attachment' })).toBeEnabled();
   await expect(page.getByTestId('composer-runtime')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Browse skills/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Browse skills/ })).toHaveCount(0);
   await expect(page.getByTestId('composer-action')).toBeVisible();
 
   const geometry = await page.evaluate(() => {
     const surface = document.querySelector('[data-testid="composer-surface"]');
     const input = document.querySelector('[data-testid="composer-input"]');
-    const toolbar = document.querySelector('[data-testid="composer-toolbar"]');
+    const body = surface?.querySelector('.ui-composer-surface-v2__body');
     return {
       surfaceHeight: surface.getBoundingClientRect().height,
       inputHeight: input.getBoundingClientRect().height,
       radius: getComputedStyle(surface).borderRadius,
-      toolbarBorder: getComputedStyle(toolbar).borderTopWidth,
-      overflowingIcons: [...toolbar.querySelectorAll('button svg')].filter((icon) => {
+      bodyBorder: body ? getComputedStyle(body).borderTopWidth : '0px',
+      overflowingIcons: [...(body ?? surface).querySelectorAll('button svg')].filter((icon) => {
         const iconBox = icon.getBoundingClientRect();
         const buttonBox = icon.closest('button').getBoundingClientRect();
         return iconBox.left < buttonBox.left
@@ -320,10 +320,10 @@ test('sidebar chrome and composer match the compact input shell', async ({ page 
     };
   });
 
-  expect(geometry.surfaceHeight).toBeLessThanOrEqual(116);
-  expect(geometry.inputHeight).toBeLessThanOrEqual(64);
-  expect(geometry.radius).toBe('12px');
-  expect(geometry.toolbarBorder).toBe('0px');
+  expect(geometry.surfaceHeight).toBeLessThanOrEqual(64);
+  expect(geometry.inputHeight).toBeLessThanOrEqual(44);
+  expect(geometry.radius).toBe('22px');
+  expect(geometry.bodyBorder).toBe('0px');
   expect(geometry.overflowingIcons).toBe(0);
 });
 

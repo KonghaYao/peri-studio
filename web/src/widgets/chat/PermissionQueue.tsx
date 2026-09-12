@@ -24,7 +24,7 @@ export function PermissionQueue(props: PermissionQueueProps) {
         return (
           <DecisionQueueShell
             element="aside"
-            class="chat-column pb-10"
+            class="ui-chat-column pb-10"
             data-testid="permission-queue"
             surfaceTestId="permission-queue-surface"
             aria-label={`Pending permission requests, ${props.permissions.length} total`}

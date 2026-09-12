@@ -53,6 +53,7 @@ test('component geometry tokens are declared once and consumed by production wid
     readFileSync(join(import.meta.dirname, '..', 'src', 'styles', 'extra.css'), 'utf8'),
     pkgUi('components', 'composer', 'ComposerShell.tsx'),
     pkgUi('components', 'composer', 'ComposerToolbarControls.tsx'),
+    pkgUi('styles', 'extra.css'),
   ].join('\n');
   const tool = read('widgets', 'chat', 'ToolCallActivity.tsx');
   const toolActivity = readFileSync(
@@ -79,7 +80,7 @@ test('component geometry tokens are declared once and consumed by production wid
   const webUi = `${composer}\n${tool}\n${toolActivity}\n${mcpApp}\n${status}\n${questions}\n${permissions}\n${permissionCard}\n${decisionCard}\n${explorer}\n${sourceControl}\n${button}`;
   for (const token of [
     'control-height-compact', 'pattern-row-height', 'tree-row-height',
-    'status-panel-max-height', 'composer-radius',
+    'status-panel-max-height', 'composer-pill-radius',
     'decision-radius', 'permission-card-min-height', 'tool-activity-max',
   ]) {
     assert.match(tokens, new RegExp(`--${token}:`));

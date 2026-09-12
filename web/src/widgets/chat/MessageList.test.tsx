@@ -131,7 +131,7 @@ describe('MessageList timeline follow', () => {
     configureScrollArea(area);
     area.scrollTop = 100;
     fireEvent.scroll(area);
-    const prefix = observed.find(({ target }) => target.classList.contains('transcript-prefix'))!;
+    const prefix = observed.find(({ target }) => target.getAttribute('data-testid') === 'transcript-prefix')!;
 
     prefix.callback([{ contentRect: { height: 40 } } as ResizeObserverEntry], {} as ResizeObserver);
     prefix.callback([{ contentRect: { height: 100 } } as ResizeObserverEntry], {} as ResizeObserver);
@@ -169,7 +169,7 @@ describe('MessageList footer resize', () => {
     setChatEntries([message('assistant-1', 'live', null)]);
     const { container } = render(() => <MessageList footerHeight={160} />);
 
-    expect(container.querySelector('[data-testid="message-list-content"]')).toHaveClass('chat-column', 'pb-32');
+    expect(container.querySelector('[data-testid="message-list-content"]')).toHaveClass('ui-chat-column', 'pb-32');
     expect(screen.getByRole('region', { name: 'Conversation messages' })).toHaveClass('ui-transcript-scroll');
   });
 
@@ -355,7 +355,7 @@ describe('MessageList hydration', () => {
     expect(screen.queryByTestId('chat-empty-workspace')).not.toBeInTheDocument();
     expect(screen.queryByText('Start this conversation')).not.toBeInTheDocument();
     expect(screen.queryByText('Loading session')).not.toBeInTheDocument();
-    expect(document.querySelector('.transcript-window [role="listitem"]')).toBeNull();
+    expect(document.querySelector('[data-testid="transcript-window"] [role="listitem"]')).toBeNull();
   });
 
   it('keeps one generic working state through the gap after completed tool output', () => {
@@ -371,7 +371,6 @@ describe('MessageList hydration', () => {
     render(() => <MessageList />);
 
     const loading = document.querySelector('[data-testid="message-loading"]')!;
-    expect(loading).toHaveClass('message-loading');
     expect(loading.querySelectorAll('.ui-skeleton')).toHaveLength(3);
     expect(loading).not.toHaveClass('sr-only');
     expect(loading).not.toHaveTextContent('Peri is working');

@@ -97,7 +97,7 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
       <Show when={showCatalogSection(props.sections, 'chat-transcript')}>
       <CatalogDemo id="chat-transcript" title="Chat transcript">
         <div class="max-h-(--catalog-layer-chat-height) overflow-auto rounded-lg border border-border-subtle bg-surface-canvas px-16 py-16">
-          <div class="chat-column">
+          <div class="ui-chat-column">
             <ChatTranscriptLayout />
           </div>
         </div>

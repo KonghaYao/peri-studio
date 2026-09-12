@@ -154,7 +154,7 @@ export function StatusArea(props: StatusAreaProps) {
 
   return <Show when={tabs().length > 0}>
     <StatusAreaShell
-      class="chat-column mb-8"
+      class="ui-chat-column mb-8"
       data-testid="status-area"
       aria-label="Status area"
       tabsValue={visibleTab() ?? ''}

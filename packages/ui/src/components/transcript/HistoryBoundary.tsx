@@ -26,7 +26,7 @@ export const HistoryBoundary: Component<HistoryBoundaryProps> = (props) => {
     <div
       {...rest}
       data-testid={rest['data-testid'] ?? 'history-boundary'}
-      class={cn('ui-transcript-history-boundary history-boundary', local.class)}
+      class={cn('ui-transcript-history-boundary', local.class)}
       role="separator"
       aria-label={accessibleLabel()}
       title={accessibleLabel()}

@@ -12,7 +12,7 @@ export function ComposerLayout() {
   };
 
   return (
-    <div class="chat-column flex flex-col gap-12">
+    <div class="ui-chat-column flex flex-col gap-12">
       <p class="text-12 text-content-muted">
         Type a single line to stay compact; press Enter for a new line, add attachments, or wrap text to expand.
       </p>

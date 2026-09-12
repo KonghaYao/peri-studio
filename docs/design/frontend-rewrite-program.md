@@ -98,7 +98,7 @@ date: 2026-09-08
 2. **皮肤** → 本仓库 token + CVA variant。剥掉社区默认色/间距。
 3. **Peri 语义**（Session 行、Composer toolbar、投递错误）→ `widgets` / `features`，不得做进 `@peri/ui`。
 4. **禁止自研：** 自定义 focus trap、自定义 menu 键盘、自定义 toast 队列（社区 Toast 已覆盖时）、自定义 Combobox 过滤核心、再写一套 Select。
-5. **领域特例才自研：** xterm、Mermaid、Shiki、MCP App iframe、Git graph 画布。容器与主题仍走 token，不准为此重开 `extra.css` 闸门。
+5. **领域特例才自研：** xterm、Mermaid、`@tanstack/highlight`（fence 着色）、MCP App iframe、Git graph 画布。容器与主题仍走 token，不准为此重开 `extra.css` 闸门。
 
 替换判据（满足任一条就换底层，不要继续补丁）：
 

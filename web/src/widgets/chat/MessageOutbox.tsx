@@ -23,14 +23,15 @@ export function MessageOutbox(props: {
   const inFlight = () => ['sending', 'accepted', 'committed'].includes(props.submission.phase);
 
   return <article
-    class="conversation-message conversation-message--user min-w-0 mb-12"
+    data-testid="message-outbox"
+    class="min-w-0 mb-12"
     aria-label={props.acknowledged ? 'Your unresolved message' : 'Your pending-confirmation message'}
     role={props.acknowledged ? 'group' : actionable() ? 'alert' : 'status'}
     aria-busy={inFlight() ? 'true' : undefined}
   >
     <UserBubble>
       <div class="flex flex-col gap-8">
-        <span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{props.submission.text}</span>
+        <span class="whitespace-pre-wrap wrap-anywhere">{props.submission.text}</span>
         <Show when={actionable() || props.acknowledged}>
           <footer data-testid="message-outbox-status" class="flex items-center gap-7 text-text-secondary text-12 leading-14">
             <span class={`w-7 h-7 shrink-0 rounded-full ${props.submission.phase === 'uncertain' ? 'bg-warning-strong' : props.submission.phase === 'failed' ? 'bg-danger' : 'bg-text-muted'}`} aria-hidden="true" />
