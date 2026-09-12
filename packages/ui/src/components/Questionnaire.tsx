@@ -1,5 +1,6 @@
 import {
   createContext,
+  createEffect,
   createMemo,
   createSignal,
   For,
@@ -18,12 +19,13 @@ import { cn } from '../lib/cn';
 import { Button } from './Button';
 import { Progress, ProgressFill, ProgressTrack } from './Progress';
 import { Textarea } from './Textarea';
-import { QuestionnaireFrame } from './QuestionnaireFrame';
+import { QuestionnaireFrame, type QuestionnaireFrameProps } from './QuestionnaireFrame';
 
 export type QuestionnaireChoice = {
   value: string;
   label: string;
   description?: string;
+  disabled?: boolean;
 };
 
 export type QuestionnaireAnswer = string | string[] | null;
@@ -47,6 +49,8 @@ type NavigationLabels = {
   nextLabel?: string;
   skipLabel?: string;
   submitLabel?: string;
+  submitDisabled?: boolean;
+  submitBusy?: boolean;
 };
 
 type QuestionnaireContextValue = {
@@ -117,7 +121,24 @@ type QuestionnaireProps = {
   onExpandedChange?: (expanded: boolean) => void;
   class?: string;
   children?: JSX.Element;
-};
+} & Pick<
+  QuestionnaireFrameProps,
+  | 'promptId'
+  | 'currentIndex'
+  | 'total'
+  | 'onPrevious'
+  | 'onNext'
+  | 'pagerPreviousLabel'
+  | 'pagerNextLabel'
+  | 'pagerShowNext'
+  | 'collapseExpandedLabel'
+  | 'collapseCollapsedLabel'
+  | 'footer'
+  | 'aria-label'
+  | 'aria-describedby'
+  | 'aria-busy'
+  | 'data-testid'
+>;
 
 /** 多步问卷：决策面卡壳 + 分页与选项键位样式。 */
 export const Questionnaire: ParentComponent<QuestionnaireProps> = (props) => {
@@ -160,7 +181,16 @@ export const Questionnaire: ParentComponent<QuestionnaireProps> = (props) => {
   };
 
   const registerNavigation = (labels: NavigationLabels) => {
-    setNavigationLabels(labels);
+    setNavigationLabels((current) => (
+      current.previousLabel === labels.previousLabel
+      && current.nextLabel === labels.nextLabel
+      && current.skipLabel === labels.skipLabel
+      && current.submitLabel === labels.submitLabel
+      && current.submitDisabled === labels.submitDisabled
+      && current.submitBusy === labels.submitBusy
+        ? current
+        : labels
+    ));
   };
 
   const unregisterNavigation = () => {
@@ -336,6 +366,8 @@ function QuestionnaireFooter() {
           size="sm"
           variant="primary"
           class="rounded-full border-0 px-14 focus-visible:shadow-(--shadow-focus-ring)"
+          disabled={labels().submitDisabled}
+          busy={labels().submitBusy}
           onClick={() => (context.isLastStep() ? context.submit() : context.goNext())}
         >
           {context.isLastStep() ? (labels().submitLabel ?? 'Submit') : (labels().nextLabel ?? 'Next')}
@@ -454,6 +486,7 @@ export const QuestionnaireStep: Component<QuestionnaireStepProps> = (props) => {
                   label={choice.label}
                   description={choice.description}
                   selected={answer() === choice.value}
+                  disabled={choice.disabled}
                   onClick={() => context.setAnswer(local.id, choice.value)}
                 />
               )}
@@ -473,6 +506,7 @@ export const QuestionnaireStep: Component<QuestionnaireStepProps> = (props) => {
                     description={choice.description}
                     selected={selected()}
                     multiple
+                    disabled={choice.disabled}
                     onClick={() => toggleMultiple(choice.value)}
                   />
                 );
@@ -528,18 +562,32 @@ type QuestionnaireNavigationProps = {
   nextLabel?: string;
   skipLabel?: string;
   submitLabel?: string;
+  submitDisabled?: boolean;
+  submitBusy?: boolean;
 };
 
 /** 注册问卷导航文案；按钮由 QuestionnaireFooter 渲染。 */
 export const QuestionnaireNavigation: Component<QuestionnaireNavigationProps> = (props) => {
-  const [local] = splitProps(props, ['class', 'previousLabel', 'nextLabel', 'skipLabel', 'submitLabel']);
+  const [local] = splitProps(props, [
+    'class',
+    'previousLabel',
+    'nextLabel',
+    'skipLabel',
+    'submitLabel',
+    'submitDisabled',
+    'submitBusy',
+  ]);
   const context = useQuestionnaireContext('QuestionnaireNavigation');
 
-  context.registerNavigation({
-    previousLabel: local.previousLabel,
-    nextLabel: local.nextLabel,
-    skipLabel: local.skipLabel,
-    submitLabel: local.submitLabel,
+  createEffect(() => {
+    context.registerNavigation({
+      previousLabel: local.previousLabel,
+      nextLabel: local.nextLabel,
+      skipLabel: local.skipLabel,
+      submitLabel: local.submitLabel,
+      submitDisabled: local.submitDisabled,
+      submitBusy: local.submitBusy,
+    });
   });
   onCleanup(() => context.unregisterNavigation());
 

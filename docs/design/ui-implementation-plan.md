@@ -53,7 +53,7 @@ date: 2026-08-30
 - **不在范围**：全局顶栏填满 app 名、把 New session / Search / More 迁出侧栏
 
 ### P2-B · Chat + Composer
-- `widgets/chat/*`、`widgets/composer/*` ← Markdown、ToolActivity、UserBubble、SlashMenu、TokenUsageMeter
+- `widgets/chat/*`、`widgets/composer/*` ← Markdown、`ToolCallActivity`（`ToolActivityRow` + `features/chat/tool-call-activity.ts`）、UserBubble、`Composer.tsx` 内联 editor/toolbar + `@peri/ui` `SlashMenuListbox` + `features/composer/slash-menu-catalog.ts`、`TokenUsageMeter`
 - [x] Composer 与 QuickStart 已镜像 sandbox 上传 overlay/tile；drop 与 Add attachment 复用 feature 队列，commit 成功后插入 `@relative/path` 且不自动发送
 
 ### P2-C · Resource + Git

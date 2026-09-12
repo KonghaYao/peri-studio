@@ -16,7 +16,7 @@ import {
   RadioGroupItemLabel,
 } from '@peri/ui';
 import { Clock3, LockKeyhole } from 'lucide-solid';
-import { DecisionCard } from '@peri/ui';
+import { QuestionnaireFrame } from '@peri/ui';
 
 interface Props {
   questions: PendingQuestion[];
@@ -122,7 +122,7 @@ function QuestionDialog(props: {
   return (
     <section class="question-queue chat-column pb-10" aria-label="Pending questions">
       <form class="scroll-mt-12 mb-12" onSubmit={submit}>
-        <DecisionCard
+        <QuestionnaireFrame
           class="question-card elicitation-card"
           data-testid="question-queue-card"
           title="Questions"
@@ -201,7 +201,7 @@ function QuestionDialog(props: {
               }}</For>
             </div>
           </Show>
-        </DecisionCard>
+        </QuestionnaireFrame>
       </form>
     </section>
   );

@@ -1228,8 +1228,8 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 |------|--------|------|------|
 | `AuthGate` + auth-state | `widgets/auth` + `features/auth` | `/api/auth/session` | 浏览器认证门（§3.0） |
 | `ProjectSidebar` + catalog | `widgets/sidebar` + `features/catalog` | Registry Doc + IndexedDB 偏好 | 左栏目录（§3.0） |
-| `MessageList` / `ConversationMessage` | `widgets/chat` + `entities/chat` | Chat Doc + Control Doc | 投影见 `chat-projection`、`transcript-window`（§3.0） |
-| `Composer` + 投递/草稿 | `widgets/composer` + `features/composer` + `features/message` | Chat Doc + command tracker + IndexedDB | 草稿隔离；session single-flight（§3.0） |
+| `ChatView` / `MessageList` / `ConversationMessage` / `ToolCallActivity` | `widgets/chat` + `entities/chat` + `features/chat` | Chat Doc + Control Doc | 投影见 `chat-projection`、`transcript-window`；工具卡见 `tool-call-activity.ts`（§3.0） |
+| `Composer` + 投递/草稿 | `widgets/composer/Composer.tsx` + `features/composer` + `features/message` | Chat Doc + command tracker + IndexedDB | 内联 editor/toolbar + `@peri/ui` `SlashMenuListbox`；草稿隔离；session single-flight（§3.0） |
 | `PermissionQueue` / `ElicitationQueue` | `widgets/chat` + `features/message` | Control Doc | 权限与追问（§3.0） |
 | `RewindDialog` / `McpPanel` / `TopologyView` 等 | `widgets/chat` | Control Doc / 查询帧 | rewind（§6.2）、MCP、拓扑 |
 | `ErrorCenter` + 连接状态 | `widgets/shell` + `features/connection` | ws 生命周期 | 连接世代、错误中心（§3.0） |

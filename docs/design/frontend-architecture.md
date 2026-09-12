@@ -45,8 +45,8 @@ web/src/
   widgets/                  # 业务组合块：有 JSX，可读 store，不直接发 Action
     auth/                   # AuthGate
     sidebar/                # ProjectSidebar, SessionSearch, …
-    chat/                   # ChatView, MessageList, ConversationMessage, …
-    composer/               # Composer, SlashMenu, QuickStartComposer
+    chat/                   # ChatView, MessageList, ConversationMessage, ToolCallActivity, …
+    composer/               # Composer（内联 editor/toolbar + @peri/ui SlashMenuListbox）, QuickStartComposer
     resource/               # ResourceWorkbench, …
     shell/                  # AppShell, SidebarChrome, ErrorCenter, …
 
@@ -158,7 +158,7 @@ web/src/
 ### Phase 2 — 垂直切片：Composer
 
 - `features/composer/*` ← slash-menu, composer-slash, composer-prediction, composer-draft, composer-placeholder
-- `widgets/composer/*` ← Composer, SlashMenu, QuickStartComposer
+- `widgets/composer/*` ← Composer（内联 editor/toolbar + `@peri/ui` `SlashMenuListbox`）、QuickStartComposer；slash 目录在 `features/composer/slash-menu-catalog.ts`
 - 测试与 import 一并迁移。
 
 ### Phase 3 — 垂直切片：Session / Catalog

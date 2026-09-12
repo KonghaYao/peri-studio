@@ -5,6 +5,8 @@ import { Show, type JSX } from 'solid-js';
 import {
   Button,
   ComposerAttachmentButton,
+  ComposerAttachmentList,
+  type ComposerAttachmentItem,
   ComposerInputField,
   ComposerPredictionButton,
   ComposerQueue,
@@ -16,10 +18,10 @@ import {
   TokenUsageMeter,
   cn,
 } from '@peri/ui';
+import { composerAssets, removeComposerAsset } from '@/features/composer/composer-assets';
 import { agentCommandToSlashMenuItem } from '@/features/composer/slash-menu-catalog';
 import { slashMenuOptionId } from '@/features/composer/slash-menu';
 import { ComposerUploadSurface, openComposerUploadFilePicker } from './ComposerUploadSurface';
-import { ComposerStagedAssets } from './ComposerStagedAssets';
 import { useComposerState } from './useComposerState';
 
 export function Composer(props: {
@@ -50,6 +52,15 @@ export function Composer(props: {
     if (!placeholder) return null;
     return { kind: 'placeholder' as const, text: placeholder };
   };
+
+  const stagedAssetItems = (): ComposerAttachmentItem[] => composerAssets().map((asset) => ({
+    id: asset.id,
+    name: asset.name,
+    kind: asset.kind === 'image' ? 'image' : 'file',
+    status: 'ready',
+    previewUrl: asset.previewUrl,
+    onRemove: () => removeComposerAsset(asset.id),
+  }));
 
   return (
     <div
@@ -109,7 +120,7 @@ export function Composer(props: {
             end: taRef?.selectionEnd ?? state.composerDraft(state.draftOwner()).length,
           })}
         />
-        <ComposerStagedAssets />
+        <ComposerAttachmentList items={stagedAssetItems()} />
         <ComposerInputField
           centered={centered()}
           hint={enabledHint()}

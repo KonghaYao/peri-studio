@@ -5,7 +5,7 @@ import type { ElicitationDeliveryState } from '@/features/message/elicitation-de
 import type { ElicitationAnswer } from '@/shared/protocol/client';
 import { Button, Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel, IconButton, RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel, Textarea } from '@peri/ui';
 import { Clock3, LockKeyhole, X } from 'lucide-solid';
-import { DecisionCard } from '@peri/ui';
+import { QuestionnaireFrame } from '@peri/ui';
 
 interface Props {
   elicitations: PendingElicitation[];
@@ -101,7 +101,7 @@ function AskUserQuestionDialog(props: {
       noValidate
       onSubmit={submit}
     >
-      <DecisionCard
+      <QuestionnaireFrame
         data-testid="elicitation-card"
         class="elicitation-card"
         title="Questions"
@@ -191,7 +191,7 @@ function AskUserQuestionDialog(props: {
           </div></Show>
           <Show when={props.readOnly}><span class="mt-8 inline-grid size-22 place-items-center rounded-full border border-border-subtle text-text-muted" role="status" title="Read only"><LockKeyhole size={12} strokeWidth={1.8} aria-hidden="true" /><span class="sr-only">Read only</span></span></Show>
         </div>
-      </DecisionCard>
+      </QuestionnaireFrame>
     </form>
   </section>;
 }

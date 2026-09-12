@@ -1,9 +1,8 @@
 import { createEffect, createMemo, createSignal, createUniqueId, onCleanup, Show } from 'solid-js';
 import { parsePermissionExpiration, type PendingPermission } from '@/entities/chat/control-view';
 import type { PermissionDecisionState } from '@/features/message/permission-delivery';
-import { Button } from '@peri/ui';
+import { Button, QuestionnaireFrame, type QuestionnaireOption } from '@peri/ui';
 import { CircleAlert, Clock3, RefreshCw } from 'lucide-solid';
-import { DecisionCard, type DecisionOption } from '@peri/ui';
 
 function shortId(id: string | null | undefined, length = 8): string {
   if (!id) return '';
@@ -22,7 +21,7 @@ function buildPermissionOptions(
   exactOptionRequired: () => boolean,
   locked: () => boolean,
   readOnly: boolean,
-): DecisionOption[] {
+): QuestionnaireOption[] {
   const keys = ['A', 'B', 'C', 'D', 'E'];
   let keyIndex = 0;
   const optionKeys = [...permission.options];
@@ -153,7 +152,7 @@ export function PermissionRequestCard(props: PermissionRequestCardProps) {
     || options().find((option) => option.id === selectedId())?.disabled;
 
   return (
-    <DecisionCard
+    <QuestionnaireFrame
       data-testid="permission-request"
       class={`permission-request min-h-(--permission-card-min-height) ${uncertain() ? 'permission-request--uncertain' : ''}`}
       title="Permissions"
@@ -210,6 +209,6 @@ export function PermissionRequestCard(props: PermissionRequestCardProps) {
       <Show when={props.permission.toolCallId && props.permission.toolInputSummary}>
         <code class="sr-only" title={props.permission.toolCallId || undefined}>tool {shortId(props.permission.toolCallId)}</code>
       </Show>
-    </DecisionCard>
+    </QuestionnaireFrame>
   );
 }

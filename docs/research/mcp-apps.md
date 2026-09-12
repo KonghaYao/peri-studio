@@ -244,7 +244,7 @@ peri-studio 是 Web Host，规范强制双 iframe：
 
 实现上优先 `@modelcontextprotocol/ext-apps` 的 App Bridge（与 `mcp-app` demo 相同）。不要引入 React 的 `@mcp-ui/client`。
 
-工具卡：有 live session 时在卡片内嵌 inline iframe；否则展示既有 ToolCallCard + 文本/结构化摘要。不要让 iframe 撑破 `TranscriptWindow` 的高度测量——必须订阅 `size-changed` 并设 `maxHeight`。
+工具卡：有 live session 时在卡片内嵌 inline iframe；否则展示既有 `ToolCallActivity`（`@peri/ui` `ToolActivityRow`）+ 文本/结构化摘要。不要让 iframe 撑破 `TranscriptWindow` 的高度测量——必须订阅 `size-changed` 并设 `maxHeight`。
 
 ### 6.5 与现有纪律对齐
 

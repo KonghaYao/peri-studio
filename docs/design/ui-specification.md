@@ -127,7 +127,7 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 
 | Token | 用途 |
 |-------|------|
-| `--shadow-popover` | Dropdown、SlashMenu、Popover |
+| `--shadow-popover` | Dropdown、SlashMenuListbox、Popover |
 | `--shadow-float` | 轻悬浮卡片 |
 | `--shadow-composer-overlay` | Composer 上浮层 |
 | `--shadow-recovery` | 恢复/告警条 |
@@ -170,7 +170,7 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 
 **图标**：统一 `Icon` 组件 + lucide 路径；**禁止**在 widget 内联 `<svg>` 画布（css-contracts 约束）。
 
-**业务 Badge**：`widgets/shell/Badge` 的 `MessageStatusBadge` 等领域适配器允许存在，但视觉须委托 `@peri/ui` token 与基础组件。
+**业务 Badge**：运行时/连接态等领域映射在 `features/shell/runtime-status-badge.ts`；视觉须委托 `@peri/ui` `Badge` 与 token，widget 内不得再维护独立 Badge 组件。
 
 ---
 
@@ -180,8 +180,8 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 |------|-------------|---------|
 | 壳层 | `widgets/shell` | AppShell 网格、ErrorCenter、ConnectionProblem、StatusArea |
 | 侧栏 | `widgets/sidebar` | 28px 行高、选中 `bg-selected`、`For` 稳定 key |
-| 聊天 | `widgets/chat` | Transcript 窗口化、Permission/Elicitation 队列、Markdown |
-| 输入 | `widgets/composer` | Composer 圆角容器、slash overlay、`aria-activedescendant`；drop / Add attachment 共用上传队列，ready 后仅插入 `@relative/path` |
+| 聊天 | `widgets/chat` | Transcript 窗口化、Permission/Elicitation 队列、Markdown、`ToolCallActivity`（`@peri/ui` `ToolActivityRow` + `features/chat/tool-call-activity.ts`） |
+| 输入 | `widgets/composer` | `Composer.tsx` 内联 editor/toolbar；`@peri/ui` `SlashMenuListbox` + `features/composer/slash-menu-catalog.ts`；drop / Add attachment 共用上传队列，ready 后仅插入 `@relative/path` |
 | 资源 | `widgets/resource` | 右/左 `ResourceFloatingPanel`（Explorer·SCM·Graph / 文件预览）；Explorer folder/root drop target 与批次状态；Git diff 占主区；44px 触控目标 |
 | 认证 | `widgets/auth` | AuthGate 卡片 `--container-auth-card` |
 
@@ -190,7 +190,7 @@ Widget **可以**读 `store`；**不得**直发 WebSocket 帧。复杂逻辑下�
 ### 10.1 壳层信息架构（定稿）
 
 - **侧栏为全局会话 chrome 的唯一位置**：`ProjectSidebar` 顶部保留 instance/品牌行与 `SidebarNavBar`（New session、Search、More）。**不**把这些动作迁入 AppShell 全局顶栏。
-- **`ChatHeader`**（对话区内）：当前会话标题、ACP session 切换、打开资源入口；不重复侧栏的全局新建/搜索。
+- **`ChatHeader`**（对话区内）：`ChatView` 内联 `@peri/ui` `ChatHeader`，标题由 `features/chat/chat-header-title.ts` 的 `resolveChatHeaderTitle` 解析；含 ACP session 切换与打开资源入口；不重复侧栏的全局新建/搜索。
 - 调整导航密度时只改 `widgets/sidebar` / `sidebar-parts`，勿并行维护第二套顶栏会话 UI。
 
 ### 10.2 资源工作台浮窗

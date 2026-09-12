@@ -9,7 +9,7 @@
 
 ## 1. 目标与非目标
 
-**目标：** 当 Peri 调用带 UI 的 MCP 工具并完成时，当前对话的工具卡内渲染 inline MCP App；用户在 App 里的按钮通过 Peri 的 `tools/call` 闸门回到同一 MCP server。未启用、lease 失败、刷新、回放时退回现有 ToolCallCard。
+**目标：** 当 Peri 调用带 UI 的 MCP 工具并完成时，当前对话的工具卡内渲染 inline MCP App；用户在 App 里的按钮通过 Peri 的 `tools/call` 闸门回到同一 MCP server。未启用、lease 失败、刷新、回放时退回现有 `ToolCallActivity`（`widgets/chat/ToolCallActivity.tsx`）。
 
 **非目标（首期不做）：**
 
@@ -102,7 +102,7 @@ HTML 上限建议 1 MiB（instance 单行 4 MiB，Hub 再收紧）。超限公�
 工具 **completed** 且 title/name 匹配 `mcp__{serverId}__{rest}`（`serverId` 不含 `__`，其余为 MCP `toolName`）时，Web 对当前 chat 发 `mcp/app-open`。
 
 - 成功 → `mcp/app-resource` → 渲染
-- `policy_denied` / `tool_not_app_visible` / `capability_disabled` → 保持 ToolCallCard
+- `policy_denied` / `tool_not_app_visible` / `capability_disabled` → 保持 `ToolCallActivity`
 - 未 completed、`isError`、replay 条目 → 不 open
 
 不要对每个 MCP 工具在 running 时抢 open：lease 在成功的 initial call 之后才存在。

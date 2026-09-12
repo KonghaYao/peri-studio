@@ -41,10 +41,10 @@ Peri acp（spawn 必须带 PERI_MCP_APPS=）──MCP──► MCP Server
 | 敏感瞬时 | `instance/src/hub/forward.rs`：`peri/mcp/*` + mcp-app MIME / `ui://` |
 | 沙箱 origin | `server/src/web/sandbox.rs`，默认 `LISTEN_PORT+1` 或 `PERI_STUDIO_SANDBOX_PORT` |
 | 面板 CSP | `server/src/web/http.rs` `PANEL_CSP` 的 `frame-src` |
-| Web 装配 | `web/src/panel/lib/mcp-apps.ts`、`mcp-app-host.ts`（官方 `AppBridge`）、`McpAppFrame.tsx`、`sandbox.html` |
+| Web 装配 | `web/src/features/mcp/mcp-apps.ts`、`mcp-app-host.ts`（官方 `AppBridge`）、`widgets/chat/McpAppFrame.tsx`、`web/sandbox.html` |
 | 工具卡入口 | `ConversationMessage` 的 `McpToolBlock`：有 live HTML 才换 iframe |
 
-HTML / token / CSP **不进** Yjs、SQLite、ring、日志。刷新或回放只剩 ToolCallCard。
+HTML / token / CSP **不进** Yjs、SQLite、ring、日志。刷新或回放只剩 `ToolCallActivity`（`@peri/ui` `ToolActivityRow`）。
 
 ## 3. Peri 线契约（serde 踩过的）
 
@@ -124,7 +124,7 @@ hostCapabilities: expected object, received undefined
 7. Host → View：先 `ui/notifications/tool-input`（`params.arguments` 为 object），再 `ui/notifications/tool-result`（`params` 必须是 **CallToolResult 对象**，`{ content: [...] }`）。首屏优先用 `mcp_app_resource.toolResult`；缺省才回落到 Chat Doc 里可能被 4KB 截断的 `tool.result`。用 **`addEventListener("initialized")`** 在每一次 handshake 上重推，不要赋值 `oninitialized`（setter 会覆盖并打 “handler replaced”）。canvas View 开了 React StrictMode，会二次 `ui/initialize`；`tool-result` 是一次性通知。**不要**把第一次 `initialized` 当成 `bind()` 的完成条件去 `await`。
 8. View `tools/call` → `mcp/app-call` → `peri/mcp/app`
 
-**不要**用 `Show keyed` 绑定整个 live session 对象，也**不要**在 `size-changed` 时改同一份 session 再重设 iframe `src`。高度必须独立信号。inline 默认 400px，上限 `min(720, 70vh)`；沙箱代理页内层 iframe 必须 `height: 100%`，超出时由 View 文档滚动，不能靠代理页 `overflow: hidden` 把卡片裁掉。官方 basic-host 有 `if (iframe.src) return`：给已有 `src` 的 iframe 再赋值同一 URL 仍会整页重载，于是 `sandbox-proxy-ready` → `loadView` 循环。`McpAppFrame` **只在 iframe 挂载时** `bindMcpAppHost` 一次（`onMount`），session 用 getter 读取；Yjs / liveApps 对象换新不得 abort 重连。只有组件真正卸载才 `close` 并清 `src`。全屏用 CSS `position: fixed` 放大同一 iframe，禁止再挂一个 sandbox。同一 chat 里相同 `resourceUri` 只渲染最新一份 live iframe，更早的调用退回 `ToolCallCard`。URI 尚未到达时，才退回同条消息里的同名 MCP 工具去重。
+**不要**用 `Show keyed` 绑定整个 live session 对象，也**不要**在 `size-changed` 时改同一份 session 再重设 iframe `src`。高度必须独立信号。inline 默认 400px，上限 `min(720, 70vh)`；沙箱代理页内层 iframe 必须 `height: 100%`，超出时由 View 文档滚动，不能靠代理页 `overflow: hidden` 把卡片裁掉。官方 basic-host 有 `if (iframe.src) return`：给已有 `src` 的 iframe 再赋值同一 URL 仍会整页重载，于是 `sandbox-proxy-ready` → `loadView` 循环。`McpAppFrame` **只在 iframe 挂载时** `bindMcpAppHost` 一次（`onMount`），session 用 getter 读取；Yjs / liveApps 对象换新不得 abort 重连。只有组件真正卸载才 `close` 并清 `src`。全屏用 CSS `position: fixed` 放大同一 iframe，禁止再挂一个 sandbox。同一 chat 里相同 `resourceUri` 只渲染最新一份 live iframe，更早的调用退回 `ToolCallActivity`。URI 尚未到达时，才退回同条消息里的同名 MCP 工具去重。
 
 沙箱只本地处理 `ui/notifications/sandbox-*`；其余 JSON-RPC 双向透传。`ui/open-link` 只允许 `https:`。
 
@@ -162,7 +162,7 @@ hostCapabilities: expected object, received undefined
 - **自动 open**：当前 chat、非只读、`status=completed`、name 以 `mcp__` 开头、origin 不是 replay、尚未有 live 条目。
 - **拆 iframe**：新 `chat/prompt`（Web 在 `sendMessage` 里先拆）、cancel、close、**切换 chat 时拆 previousCid**（曾经误拆新 chat，旧 iframe 留在内存）。
 - Hub 在 prompt/cancel/close 也会 `tear_down_chat`。lease 已死后再点按钮应 `stale_session` / `policy_denied`，silent，不要 toast。
-- `policy_denied` / `tool_not_app_visible` / `capability_disabled` / `unsupported` / `stale_session`：保持 ToolCallCard，不弹故障。
+- `policy_denied` / `tool_not_app_visible` / `capability_disabled` / `unsupported` / `stale_session`：保持 `ToolCallActivity`，不弹故障。
 - instance 分类必须 **精确**：`session/update` 的 `content.text` **不是** Apps HTML。把任意 JSON 键 `text` 标成 SensitiveEphemeral 会让对话重连无法重放。敏感条件：`peri/mcp/*` 方法，或 result 的 `html`，或 `resources[]`/`contents[]` 带 mcp-app MIME / `ui://`。
 - HTML 上限 1 MiB，超限公开错误，不截断渲染。
 - **首屏 CallToolResult**：ACP `rawOutput` 入站时缓存在 Relay（上限 1 MiB），随 `mcp_app_resource.toolResult` 下发。Chat Doc 仍是 4KB，canvas TSX 不得进 Yjs。chat tear-down / 刷新后缓存与 HTML 一起消失。
