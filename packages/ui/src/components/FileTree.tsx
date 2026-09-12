@@ -1,5 +1,6 @@
 import { For, Show, createContext, createMemo, useContext, type JSX } from 'solid-js';
 import { cn } from '../lib/cn';
+import { fileTreeDropAccentClass, fileTreeDropTargetRowClass } from './resource/file-tree-layout';
 import { VSCodeFileIcon } from './VSCodeFileIcon';
 
 export type FileTreeNode = {
@@ -212,14 +213,14 @@ function FileTreeFolderRow(props: {
     <div
       class={cn(
         'group/tree-file relative flex h-(--tree-row-height) w-full items-center rounded-4 pr-5 text-11 pointer-coarse:h-44',
-        isDropTarget() ? 'file-tree-row--drop-target' : '',
+        isDropTarget() ? fileTreeDropTargetRowClass : '',
         props.rowClassName,
       )}
       style={rowPadding(props.depth)}
     >
       <Show when={isDropTarget()}>
         <span
-          class="file-tree-drop-accent pointer-events-none"
+          class={fileTreeDropAccentClass}
           style={{ left: dropAccentLeft(props.depth) }}
           aria-hidden="true"
         />

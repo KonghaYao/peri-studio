@@ -1,6 +1,11 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
 import { createSignal } from 'solid-js';
 import { afterEach, describe, expect, it } from 'vitest';
+import {
+  terminalDockShellClass,
+  terminalDockViewportClass,
+  terminalDockViewportCollapsedClass,
+} from './terminal-dock-layout';
 import { TerminalDockShell } from './TerminalDockShell';
 
 afterEach(() => cleanup());
@@ -24,20 +29,21 @@ describe('TerminalDockShell', () => {
     ));
 
     const shell = screen.getByTestId('terminal-dock');
-    expect(shell).toHaveClass('ui-terminal-dock-shell');
+    expect(shell).toHaveClass(terminalDockShellClass);
     expect(shell).toHaveAttribute('aria-label', 'Terminal dock');
     expect(screen.getByText('zsh')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Restart' })).toBeInTheDocument();
     expect(screen.getByTestId('status')).toBeInTheDocument();
     expect(screen.getByTestId('footer-meta')).toBeInTheDocument();
     expect(screen.getByTestId('viewport')).toBeInTheDocument();
+    const viewportWrapper = () => screen.getByTestId('viewport').parentElement;
+    expect(viewportWrapper()).toHaveClass(terminalDockViewportClass);
 
     await fireEvent.click(screen.getByRole('button', { name: 'Collapse terminal viewport' }));
     expect(expanded()).toBe(false);
     expect(screen.getByTestId('viewport')).toBeInTheDocument();
-    expect(screen.getByTestId('viewport').closest('.ui-terminal-dock-shell__viewport')).toHaveClass(
-      'ui-terminal-dock-shell__viewport--collapsed',
-    );
+    expect(viewportWrapper()).toHaveClass(terminalDockViewportCollapsedClass);
+    expect(viewportWrapper()).toHaveClass('ui-terminal-dock-viewport');
   });
 
   it('omits collapse control without onExpandedChange', () => {

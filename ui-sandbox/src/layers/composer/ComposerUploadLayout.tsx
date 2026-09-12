@@ -95,7 +95,7 @@ export function ComposerUploadLayout() {
           }}
           onFilesPicked={onFilesPicked}
         />
-        <p class="ui-sr-only" id={DROP_DESC_ID}>
+        <p class="sr-only" id={DROP_DESC_ID}>
           Release to upload files to this project.
         </p>
       </div>

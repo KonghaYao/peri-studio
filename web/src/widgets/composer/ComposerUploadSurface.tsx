@@ -130,7 +130,10 @@ export function ComposerUploadSurface(props: ComposerUploadSurfaceProps) {
   });
 
   createEffect(() => {
-    props.surfaceRef?.classList.toggle('ui-composer-surface--drop-target', dropActive());
+    const node = props.surfaceRef;
+    if (!node) return;
+    if (dropActive()) node.setAttribute('data-drop-active', '');
+    else node.removeAttribute('data-drop-active');
   });
 
   createEffect(() => {

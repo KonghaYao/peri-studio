@@ -15,6 +15,8 @@ import {
   SlashMenuListbox,
   cn,
   chatColumnClass,
+  composerRuntimeSlotClass,
+  composerSlashOverlayClass,
 } from '@peri/ui';
 import { composerAssets, removeComposerAsset } from '@/features/composer/composer-assets';
 import { agentCommandToSlashMenuItem } from '@/features/composer/slash-menu-catalog';
@@ -172,7 +174,7 @@ export function Composer(props: {
           onActiveIndex={state.slash.onMenuActiveIndex}
           onSelect={(name) => state.slash.selectCommand(name)}
           onKeyDown={(event) => state.slash.handleKeyDown(event)}
-          shellClass="slash-menu ui-composer-slash-overlay"
+          shellClass={cn('slash-menu', composerSlashOverlayClass)}
         />
       </Show>
       <ComposerShell
@@ -251,7 +253,7 @@ export function Composer(props: {
         )}
         compactTrailing={(
           <>
-            <div class="ui-composer-model-select" title={state.runtimeSummary()}>
+            <div class={composerRuntimeSlotClass} title={state.runtimeSummary()}>
               {runtimeMenu()}
             </div>
             <Show

@@ -1,5 +1,9 @@
 import { splitProps, type Component } from 'solid-js';
 import { cn } from '../../lib/cn';
+import {
+  transcriptHistoryBoundaryClass,
+  transcriptHistoryBoundaryLineClass,
+} from './transcript-layout';
 
 export type TranscriptHistoryBoundaryKind = 'verified_history' | 'live_runtime';
 
@@ -26,12 +30,14 @@ export const HistoryBoundary: Component<HistoryBoundaryProps> = (props) => {
     <div
       {...rest}
       data-testid={rest['data-testid'] ?? 'history-boundary'}
-      class={cn('ui-transcript-history-boundary', local.class)}
+      class={cn(transcriptHistoryBoundaryClass, local.class)}
       role="separator"
       aria-label={accessibleLabel()}
       title={accessibleLabel()}
     >
-      <span class="ui-transcript-history-boundary__label whitespace-nowrap">{labelFor(local.kind)}</span>
+      <span class={transcriptHistoryBoundaryLineClass} aria-hidden="true" />
+      <span class="whitespace-nowrap">{labelFor(local.kind)}</span>
+      <span class={transcriptHistoryBoundaryLineClass} aria-hidden="true" />
     </div>
   );
 };

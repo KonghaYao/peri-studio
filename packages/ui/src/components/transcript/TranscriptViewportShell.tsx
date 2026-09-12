@@ -5,6 +5,7 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from '../MessageScroller';
+import { transcriptFooterSpacerClass, transcriptScrollClass } from './transcript-layout';
 
 export type TranscriptViewportShellProps = {
   class?: string;
@@ -44,12 +45,12 @@ export const TranscriptViewportShell: Component<TranscriptViewportShellProps> = 
           ref={local.viewportRef}
           onScroll={local.onScroll}
           data-testid={local.viewportTestId ?? rest['data-testid'] ?? 'message-list-scroll'}
-          class={cn('ui-transcript-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden', local.viewportClass)}
+          class={cn(transcriptScrollClass, 'min-h-0 min-w-0 flex-1 overflow-x-hidden', local.viewportClass)}
         >
           {local.children}
           <Show when={(local.footerSpacerHeight ?? 0) > 0}>
             <div
-              class="ui-transcript-footer-spacer"
+              class={transcriptFooterSpacerClass}
               aria-hidden="true"
               style={{ height: `${local.footerSpacerHeight}px` }}
             />

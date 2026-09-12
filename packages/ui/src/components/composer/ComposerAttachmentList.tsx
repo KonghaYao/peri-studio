@@ -1,5 +1,6 @@
 import { For, Show, splitProps, type Component } from 'solid-js';
 import { cn } from '../../lib/cn';
+import { composerAttachmentListClass, composerAttachmentListItemClass } from './composer-layout';
 import { UploadAssetTile } from './UploadAssetTile';
 import { composerAttachmentKind, type ComposerAttachmentItem } from './composer-attachment-types';
 
@@ -16,7 +17,7 @@ export const ComposerAttachmentList: Component<ComposerAttachmentListProps> = (p
   return (
     <Show when={local.items.length > 0}>
       <div
-        class={cn('ui-attachment-list', local.class)}
+        class={cn(composerAttachmentListClass, local.class)}
         role="list"
         aria-label={local['aria-label'] ?? 'Attached files'}
       >
@@ -27,7 +28,7 @@ export const ComposerAttachmentList: Component<ComposerAttachmentListProps> = (p
             const showBadge = () => item.showSuccessBadge ?? (status() === 'ready' && kind() === 'image');
 
             return (
-              <div role="listitem" class="ui-attachment-list__item">
+              <div role="listitem" class={composerAttachmentListItemClass}>
                 <UploadAssetTile
                   name={item.name}
                   status={status()}

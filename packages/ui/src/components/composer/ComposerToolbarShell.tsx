@@ -1,5 +1,6 @@
 import type { Component, JSX } from 'solid-js';
 import { cn } from '../../lib/cn';
+import { composerToolbarClass, composerToolbarLeftClass, composerToolbarRightClass } from './composer-layout';
 
 export type ComposerToolbarShellProps = {
   left: JSX.Element;
@@ -12,15 +13,15 @@ export type ComposerToolbarShellProps = {
 export const ComposerToolbarShell: Component<ComposerToolbarShellProps> = (props) => (
   <div
     data-testid="composer-toolbar"
-    class={cn('ui-composer-toolbar flex min-h-36 min-w-0 items-center gap-4', props.class)}
+    class={cn(composerToolbarClass, props.class)}
   >
-    <div class="ui-composer-toolbar__left flex min-w-0 shrink items-center gap-4 max-narrow:gap-2">
+    <div class={composerToolbarLeftClass}>
       {props.left}
     </div>
-    <span class="ui-composer-shortcut sr-only" aria-hidden="true">
+    <span class="sr-only" aria-hidden="true">
       {props.shortcut ?? 'Enter to send · Shift + Enter for newline'}
     </span>
-    <div class="ui-composer-toolbar__right ml-auto flex min-w-0 items-center justify-end gap-4">
+    <div class={composerToolbarRightClass}>
       {props.right}
     </div>
   </div>

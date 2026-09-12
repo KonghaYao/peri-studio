@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from './dropdown-menu';
 import { RowAccessorySlot } from './RowAccessorySlot';
+import { rowAccessoryMetaClass } from './sidebar/row-accessory-layout';
 
 export function SectionHeader(props: { title: string; icon?: JSX.Element; children?: JSX.Element }) {
   return (
@@ -178,7 +179,7 @@ export function SessionRowAccessory(props: {
       group="row"
       actionsVisible={actionsVisible()}
       meta={(
-        <span class="ui-row-accessory-meta flex items-center gap-6 pl-4 tabular-nums text-11 text-content-muted">
+        <span class={cn(rowAccessoryMetaClass, 'flex items-center gap-6 pl-4 tabular-nums text-11 text-content-muted')}>
           <Show when={props.live}>
             <span
               data-testid="session-loading-wave"
@@ -296,7 +297,7 @@ export function ProjectRowAccessory(props: {
       actionsVisible={props.actionsVisible}
       meta={(
         <Show when={(props.count ?? 0) > 0}>
-          <span class="ui-row-accessory-meta pl-4 tabular-nums text-11 text-content-muted" aria-hidden="true">{props.count}</span>
+          <span class={cn(rowAccessoryMetaClass, 'pl-4 tabular-nums text-11 text-content-muted')} aria-hidden="true">{props.count}</span>
         </Show>
       )}
       actions={props.children ?? builtInActions()}

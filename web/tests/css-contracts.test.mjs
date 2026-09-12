@@ -453,9 +453,10 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
   assert.doesNotMatch(composerShell, /focus-within:border-focus-ring/);
   assert.doesNotMatch(composerShell, /has-\[\.composer-input:focus-visible\]:shadow-/);
   assert.doesNotMatch(composerShell, /shadow-float/);
-  assert.match(composerParts, /ui-composer-surface-v2/);
-  assert.match(composerParts, /var\(--composer-pill-radius\)/);
-  assert.match(composerShell, /ui-composer-slash-overlay/);
+  const composerLayout = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'composer', 'composer-layout.ts'), 'utf8');
+  assert.match(composerLayout, /composerSurfaceBaseClass/);
+  assert.match(composerLayout, /rounded-\(--composer-pill-radius\)/);
+  assert.match(composerShell, /composerSlashOverlayClass/);
   assert.doesNotMatch(composerShell, /slash-menu absolute z-35 right-20 bottom-full left-20/);
   const composerControls = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'composer', 'ComposerToolbarControls.tsx'), 'utf8');
   const quickStartComposer = readFileSync(join(root, 'widgets', 'composer', 'QuickStartComposer.tsx'), 'utf8');

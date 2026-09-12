@@ -64,8 +64,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Status } from '../src/components/Status';
 import { RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel } from '../src/components/RadioGroup';
 import { DecisionQueueShell } from '../src/components/decision/DecisionQueueShell';
+import { decisionQueueShellClass, decisionQueueSurfaceClass } from '../src/components/decision/decision-queue-layout';
 import { StatusAreaShell } from '../src/components/status/StatusAreaShell';
-import { statusAreaPanelClass, statusAreaTabTriggerClass } from '../src/components/status/status-area-shell-utils';
+import { statusAreaPanelClass, statusAreaShellClass, statusAreaTabTriggerClass } from '../src/components/status/status-area-shell-utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../src/components/Tabs';
 import { Textarea } from '../src/components/Textarea';
 import { SelectField } from '../src/components/SelectField';
@@ -2079,7 +2080,7 @@ describe('StatusAreaShell', () => {
     ));
 
     const shell = screen.getByTestId('status-shell');
-    expect(shell).toHaveClass('ui-status-area-shell');
+    expect(shell).toHaveClass(statusAreaShellClass);
     expect(shell).toHaveAttribute('aria-label', 'Status area');
     expect(screen.queryByText('Work status')).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Todo' })).toBeInTheDocument();
@@ -2105,8 +2106,8 @@ describe('DecisionQueueShell', () => {
 
     const shell = screen.getByTestId('permission-queue');
     expect(shell.tagName).toBe('ASIDE');
-    expect(shell).toHaveClass('ui-decision-queue-shell');
-    expect(screen.getByTestId('permission-queue-surface')).toHaveClass('ui-decision-queue-shell__surface');
+    expect(shell).toHaveClass(decisionQueueShellClass);
+    expect(screen.getByTestId('permission-queue-surface')).toHaveClass(decisionQueueSurfaceClass);
     expect(screen.getByText('Permission card')).toBeInTheDocument();
   });
 });

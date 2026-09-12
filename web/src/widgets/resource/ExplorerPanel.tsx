@@ -10,6 +10,7 @@ import {
   InlineNotice,
   LoadingState,
   cn,
+  fileTreeDropRootClass,
   parentDirectoryPath,
   ResourceSectionTitle,
   type ExplorerMenuAction,
@@ -455,8 +456,8 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
         });
       }}
       class={cn(
-        'ui-file-tree-scroll ui-scrollbar min-h-0 flex-1 overflow-auto py-2',
-        rootDropActive() ? 'explorer-upload-tree--drop-root' : '',
+        'overflow-anchor-none ui-scrollbar min-h-0 flex-1 overflow-auto py-2',
+        rootDropActive() && fileTreeDropRootClass,
       )}
       role="tree"
       aria-label="Workspace files"

@@ -13,6 +13,9 @@ import {
   RewindPanelActions,
   RewindPanelState,
   WorkbenchPanelChrome,
+  rewindPanelActionButtonClass,
+  rewindPanelLoadingSpinnerClass,
+  rewindPanelLoadingStateClass,
   rewindPanelStateClass,
 } from '@peri/ui';
 import { closeRewindFlow, executeRewind, openRewindFlow, previewRewind, rewindFlow } from '@/features/runtime/rewind-assembly';
@@ -41,7 +44,7 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
     <section class="box-border min-h-0 flex-1 overflow-auto px-10 py-10">
       <Switch>
         <Match when={state().kind === 'loading_candidates'}>
-          <LoadingState class={rewindPanelStateClass} label="Reading rewindable messages" description="Reading user messages from the Peri session history." />
+          <LoadingState class={rewindPanelLoadingStateClass} spinnerClass={rewindPanelLoadingSpinnerClass} label="Reading rewindable messages" description="Reading user messages from the Peri session history." />
         </Match>
         <Match when={state().kind === 'select_target' && state()} keyed>{(current) => {
           if (current.kind !== 'select_target') return null;
@@ -53,13 +56,13 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
                 const candidate = current.candidates.find((item) => item.messageId === id);
                 if (candidate) previewRewind(candidate);
               }} renderItem={(item) => <ListboxItem item={item} class="grid w-full min-h-58 grid-cols-split-auto items-center gap-18 rounded-12 border border-divider bg-surface-muted px-13 py-11 text-left text-text-primary hover:border-border-strong hover:bg-selected">
-                <span class="ui-line-clamp-2 overflow-hidden text-13 leading-145">{item.rawValue.preview || 'Empty message'}</span><small class="whitespace-nowrap text-11 text-text-muted">Message {current.candidates.findIndex((candidate) => candidate.messageId === item.rawValue.messageId) + 1}</small>
+                <span class="line-clamp-2 overflow-hidden text-13 leading-145">{item.rawValue.preview || 'Empty message'}</span><small class="whitespace-nowrap text-11 text-text-muted">Message {current.candidates.findIndex((candidate) => candidate.messageId === item.rawValue.messageId) + 1}</small>
               </ListboxItem>} />
             </Show>
           </>;
         }}</Match>
         <Match when={state().kind === 'loading_preview'}>
-          <LoadingState class={rewindPanelStateClass} label="Generating rewind preview" description="Checking the session history and workspace file impact." />
+          <LoadingState class={rewindPanelLoadingStateClass} spinnerClass={rewindPanelLoadingSpinnerClass} label="Generating rewind preview" description="Checking the session history and workspace file impact." />
         </Match>
         <Match when={state().kind === 'confirm' && state()} keyed>{(current) => {
           if (current.kind !== 'confirm') return null;
@@ -75,11 +78,11 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
             <InlineNotice class="mt-18" tone="danger" role="alert" title="Destructive action">
               This is a destructive action. Do not repeat it after confirming; if the result is unknown, reopen the session to check.
             </InlineNotice>
-            <RewindPanelActions><Button onClick={close}>Cancel</Button><Button variant="danger" onClick={executeRewind}>Rewind session and files</Button></RewindPanelActions>
+            <RewindPanelActions><Button class={rewindPanelActionButtonClass} onClick={close}>Cancel</Button><Button class={rewindPanelActionButtonClass} variant="danger" onClick={executeRewind}>Rewind session and files</Button></RewindPanelActions>
           </>;
         }}</Match>
         <Match when={state().kind === 'executing'}>
-          <LoadingState class={rewindPanelStateClass} label="Executing rewind" description="Keep the page open. This operation will not retry automatically.">Rewinding and reloading the session</LoadingState>
+          <LoadingState class={rewindPanelLoadingStateClass} spinnerClass={rewindPanelLoadingSpinnerClass} label="Executing rewind" description="Keep the page open. This operation will not retry automatically.">Rewinding and reloading the session</LoadingState>
         </Match>
         <Match when={state().kind === 'completed'}>
           <RewindPanelState class="text-success"><strong class="text-15 text-text-primary">Rewind complete</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">The session history and file projection have been reloaded.</p><Button class="mt-18" variant="primary" onClick={close}>Done</Button></RewindPanelState>
@@ -107,9 +110,9 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
               >
                 <p class="mt-5 mb-0">{current.detail}</p>
                 <RewindPanelActions>
-                  <Button onClick={close}>Close</Button>
+                  <Button class={rewindPanelActionButtonClass} onClick={close}>Close</Button>
                   <Show when={current.stage !== 'execute'}>
-                    <Button variant="primary" onClick={restart}>Query again</Button>
+                    <Button class={rewindPanelActionButtonClass} variant="primary" onClick={restart}>Query again</Button>
                   </Show>
                 </RewindPanelActions>
               </InlineNotice>

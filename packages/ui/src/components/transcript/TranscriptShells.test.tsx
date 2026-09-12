@@ -1,6 +1,11 @@
 import { cleanup, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HistoryBoundary } from './HistoryBoundary';
+import {
+  transcriptFooterSpacerClass,
+  transcriptRowClass,
+  transcriptScrollClass,
+} from './transcript-layout';
 import { TranscriptRowShell } from './TranscriptRowShell';
 import { TranscriptViewportShell } from './TranscriptViewportShell';
 
@@ -14,7 +19,7 @@ describe('TranscriptViewportShell', () => {
       </TranscriptViewportShell>
     ));
 
-    expect(screen.getByRole('region', { name: 'Conversation messages' })).toHaveClass('ui-transcript-scroll');
+    expect(screen.getByRole('region', { name: 'Conversation messages' })).toHaveClass(transcriptScrollClass.split(' ')[0]);
     expect(screen.getByTestId('transcript-body')).toBeInTheDocument();
   });
 
@@ -25,7 +30,7 @@ describe('TranscriptViewportShell', () => {
       </TranscriptViewportShell>
     ));
 
-    const spacer = container.querySelector('.ui-transcript-footer-spacer');
+    const spacer = container.querySelector(`.${transcriptFooterSpacerClass}`);
     expect(spacer).toHaveAttribute('aria-hidden', 'true');
     expect(spacer).toHaveStyle({ height: '156px' });
   });
@@ -52,7 +57,7 @@ describe('TranscriptRowShell', () => {
     ));
 
     const row = screen.getByRole('listitem');
-    expect(row).toHaveClass('ui-transcript-row');
+    expect(row).toHaveClass(transcriptRowClass);
     expect(row).toHaveAttribute('aria-posinset', '2');
     expect(row).toHaveAttribute('aria-setsize', '5');
     expect(row).toHaveAttribute('data-transcript-id', 'entry-1');

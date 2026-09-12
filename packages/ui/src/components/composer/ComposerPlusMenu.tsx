@@ -1,6 +1,7 @@
 import { Paperclip, Plus } from 'lucide-solid';
 import { Show, type Component, type JSX } from 'solid-js';
 import { Popover, PopoverContent, PopoverTrigger } from '../Popover';
+import { composerPlusBtnClass, composerSlashPopoverClass, composerSlashUploadClass } from './composer-layout';
 
 export type ComposerPlusMenuProps = {
   open: boolean;
@@ -24,19 +25,19 @@ export const ComposerPlusMenu: Component<ComposerPlusMenuProps> = (props) => (
     fitViewport={false}
   >
     <PopoverTrigger
-      class="ui-composer-plus-btn inline-flex shrink-0 items-center justify-center focus-visible:shadow-(--shadow-focus-ring) focus-visible:outline-none"
+      class={composerPlusBtnClass}
       aria-label="Slash commands"
       aria-expanded={props.open}
       disabled={props.disabled}
     >
       <Plus size={16} strokeWidth={1.8} aria-hidden="true" />
     </PopoverTrigger>
-    <PopoverContent class="ui-composer-slash-popover w-(--container-slash-menu) max-w-(--container-slash-menu) min-w-0 p-0 shadow-overlay">
+    <PopoverContent class={composerSlashPopoverClass}>
       <Show when={props.upload}>
         {(upload) => (
           <button
             type="button"
-            class="ui-composer-slash-upload"
+            class={composerSlashUploadClass}
             disabled={props.disabled || upload().disabled}
             onClick={() => {
               props.onOpenChange(false);

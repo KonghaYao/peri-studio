@@ -9,6 +9,17 @@ import {
 import { For, splitProps, type Component } from 'solid-js';
 import { cn } from '../../lib/cn';
 import { IconButton } from '../Button';
+import {
+  composerQueueClass,
+  composerQueueCountClass,
+  composerQueueHeaderClass,
+  composerQueueIconActionClass,
+  composerQueueItemActionsClass,
+  composerQueueItemClass,
+  composerQueueItemIconClass,
+  composerQueueItemPreviewClass,
+  composerQueueItemTextClass,
+} from './composer-layout';
 import type { ComposerQueueItem } from './composer-queue-types';
 
 export type ComposerQueueProps = {
@@ -35,30 +46,30 @@ export const ComposerQueue: Component<ComposerQueueProps> = (props) => {
   return (
     <div
       data-slot="composer-queue"
-      class={cn('ui-queue', local.class)}
+      class={cn(composerQueueClass, local.class)}
       data-testid="composer-queue"
     >
-      <div class="ui-queue__header">
-        <span class="ui-queue__count">{count()} Queued</span>
+      <div class={composerQueueHeaderClass}>
+        <span class={composerQueueCountClass}>{count()} Queued</span>
       </div>
 
       <For each={local.items}>
         {(item) => (
-          <div class="ui-queue__item" data-testid={`composer-queue-item-${item.id}`}>
-            <div class="ui-queue__item-preview">
+          <div class={composerQueueItemClass} data-testid={`composer-queue-item-${item.id}`}>
+            <div class={composerQueueItemPreviewClass}>
               {item.hasAttachment
-                ? <Paperclip size={14} strokeWidth={1.7} class="ui-queue__item-icon" aria-hidden="true" />
-                : <FileText size={14} strokeWidth={1.7} class="ui-queue__item-icon" aria-hidden="true" />}
-              <span class="ui-queue__item-text" title={item.preview}>{item.preview}</span>
+                ? <Paperclip size={14} strokeWidth={1.7} class={composerQueueItemIconClass} aria-hidden="true" />
+                : <FileText size={14} strokeWidth={1.7} class={composerQueueItemIconClass} aria-hidden="true" />}
+              <span class={composerQueueItemTextClass} title={item.preview}>{item.preview}</span>
             </div>
 
-            <div class="ui-queue__item-actions">
+            <div class={composerQueueItemActionsClass}>
               <IconButton
                 label="Send now"
                 showTooltip={false}
                 size="sm"
                 variant="ghost"
-                class="ui-queue__icon-action"
+                class={composerQueueIconActionClass}
                 onClick={() => local.onSendNow?.(item.id)}
               >
                 <ArrowUp size={14} strokeWidth={1.7} />
@@ -68,7 +79,7 @@ export const ComposerQueue: Component<ComposerQueueProps> = (props) => {
                 showTooltip={false}
                 size="sm"
                 variant="ghost"
-                class="ui-queue__icon-action"
+                class={composerQueueIconActionClass}
                 onClick={() => local.onEdit?.(item.id)}
               >
                 <Pencil size={14} strokeWidth={1.7} />
@@ -78,7 +89,7 @@ export const ComposerQueue: Component<ComposerQueueProps> = (props) => {
                 showTooltip={false}
                 size="sm"
                 variant="ghost"
-                class="ui-queue__icon-action"
+                class={composerQueueIconActionClass}
                 onClick={() => local.onRemove?.(item.id)}
               >
                 <Trash2 size={14} strokeWidth={1.7} />
@@ -88,7 +99,7 @@ export const ComposerQueue: Component<ComposerQueueProps> = (props) => {
                 showTooltip={false}
                 size="sm"
                 variant="ghost"
-                class="ui-queue__icon-action"
+                class={composerQueueIconActionClass}
                 onClick={() => local.onMore?.(item.id)}
               >
                 <EllipsisVertical size={14} strokeWidth={1.7} />

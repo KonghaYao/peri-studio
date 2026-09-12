@@ -4,6 +4,12 @@ import { cn } from '../../lib/cn';
 import { Card, CardHeader } from '../Card';
 import { IconButton } from '../Button';
 import { Tabs, TabsList } from '../Tabs';
+import {
+  statusAreaShellBodyClass,
+  statusAreaShellCardClass,
+  statusAreaShellClass,
+  statusAreaShellHeaderClass,
+} from './status-area-shell-utils';
 
 export type StatusAreaShellProps = {
   class?: string;
@@ -44,14 +50,14 @@ export const StatusAreaShell: Component<StatusAreaShellProps> = (props) => {
     <section
       data-slot="status-area-shell"
       data-testid={rest['data-testid']}
-      class={cn('ui-status-area-shell', local.class)}
+      class={cn(statusAreaShellClass, local.class)}
       aria-label={rest['aria-label']}
     >
-      <Card class="ui-status-area-shell__card overflow-hidden rounded-14 border-border-subtle bg-surface-overlay shadow-none">
+      <Card class={cn(statusAreaShellCardClass, 'rounded-14 border-border-subtle bg-surface-overlay shadow-none')}>
         <Tabs value={local.tabsValue} onChange={local.onTabsChange}>
-          <CardHeader class="ui-status-area-shell__header flex-row items-center gap-8 p-8">
+          <CardHeader class={cn(statusAreaShellHeaderClass, 'flex-row items-center p-8')}>
             <TabsList
-              class="ui-status-area-shell__tabs flex min-w-0 flex-1 flex-wrap items-center gap-2 border-0"
+              class="flex min-w-0 flex-1 flex-wrap items-center gap-2 border-0"
               aria-label={tabsAriaLabel()}
             >
               {local.tabBar}
@@ -74,7 +80,7 @@ export const StatusAreaShell: Component<StatusAreaShellProps> = (props) => {
             </IconButton>
           </CardHeader>
           <Show when={expanded()}>
-            <div class="ui-status-area-shell__body">
+            <div class={statusAreaShellBodyClass}>
               {local.children}
             </div>
           </Show>

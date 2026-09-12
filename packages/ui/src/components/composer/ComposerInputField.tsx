@@ -1,6 +1,13 @@
 import { Show, splitProps, type Component, type JSX } from 'solid-js';
 import { cn } from '../../lib/cn';
 import { Textarea } from '../Textarea';
+import {
+  composerEditorClass,
+  composerEditorHintClass,
+  composerEditorHintPredictionClass,
+  composerEditorLayerClass,
+  composerInputClass,
+} from './composer-layout';
 
 export type ComposerInputHint = {
   kind: 'prediction' | 'placeholder';
@@ -9,7 +16,7 @@ export type ComposerInputHint = {
 
 export type ComposerInputFieldProps = {
   centered?: boolean;
-  /** ComposerShell 内联字段：尺寸由 shell extra.css 控制 */
+  /** ComposerShell 内联字段：尺寸由 composer-layout 常量控制 */
   shell?: boolean;
   hint?: ComposerInputHint | null;
   fieldClass?: string;
@@ -20,7 +27,7 @@ export type ComposerInputFieldProps = {
 
 function fieldClasses(centered: boolean, shell: boolean, fieldClass?: string) {
   return cn(
-    'ui-composer-editor__field block w-full resize-none overflow-y-auto border-0 bg-transparent outline-0',
+    'block w-full resize-none overflow-y-auto border-0 bg-transparent outline-0',
     shell
       ? 'px-0 py-0'
       : cn(
@@ -39,18 +46,17 @@ export const ComposerInputField: Component<ComposerInputFieldProps> = (props) =>
   const resolvedFieldClass = () => fieldClasses(centered(), shell(), local.fieldClass);
 
   return (
-    <div class="ui-composer-editor relative">
+    <div class={composerEditorClass}>
       <Show when={local.hint}>
         {(hint) => (
           <>
             <div
               data-testid={hint().kind === 'prediction' ? 'composer-prediction' : 'composer-placeholder-hint'}
               class={cn(
-                'ui-composer-editor__hint',
+                composerEditorLayerClass,
+                composerEditorHintClass,
                 resolvedFieldClass(),
-                hint().kind === 'prediction'
-                  ? 'text-content-faint ui-composer-editor__hint--prediction'
-                  : 'text-content-muted',
+                hint().kind === 'prediction' && composerEditorHintPredictionClass,
               )}
               aria-hidden="true"
             >
@@ -72,7 +78,9 @@ export const ComposerInputField: Component<ComposerInputFieldProps> = (props) =>
         variant="bare"
         data-testid="composer-input"
         class={cn(
-          'ui-composer-input ui-scrollbar relative z-1 min-w-0 placeholder:text-content-muted disabled:bg-transparent disabled:text-content-secondary focus-visible:outline-0',
+          composerEditorLayerClass,
+          composerInputClass,
+          'ui-scrollbar disabled:bg-transparent disabled:text-content-secondary focus-visible:outline-0',
           resolvedFieldClass(),
           local.class,
         )}

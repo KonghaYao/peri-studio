@@ -344,7 +344,10 @@ export {
 export {
   RewindPanelActions,
   RewindPanelState,
+  rewindPanelActionButtonClass,
   rewindPanelActionsClass,
+  rewindPanelLoadingSpinnerClass,
+  rewindPanelLoadingStateClass,
   rewindPanelStateClass,
   type RewindPanelActionsProps,
   type RewindPanelStateProps,
@@ -391,6 +394,33 @@ export {
   ProjectSidebarShell,
   type ProjectSidebarShellProps,
 } from './components/sidebar/ProjectSidebarShell';
+export {
+  sidebarMistDividerClass,
+  sidebarMistHintClass,
+  sidebarScrollClass,
+  sidebarScrollMistClass,
+  sidebarScrollShellClass,
+} from './components/sidebar/sidebar-layout';
+export {
+  rowAccessoryCoverClass,
+  rowAccessoryMetaClass,
+} from './components/sidebar/row-accessory-layout';
+export {
+  transcriptFooterSpacerClass,
+  transcriptHistoryBoundaryClass,
+  transcriptHistoryBoundaryLineClass,
+  transcriptRowClass,
+  transcriptScrollClass,
+} from './components/transcript/transcript-layout';
+export {
+  fileTreeDropAccentClass,
+  fileTreeDropRootClass,
+  fileTreeDropTargetRowClass,
+  fileTreeInlineNameErrorClass,
+  fileTreeInlineNameInputClass,
+  fileTreeInlineRowInvalidClass,
+  fileTreeScrollClass,
+} from './components/resource/file-tree-layout';
 export { layoutGitGraph, GIT_GRAPH_COLORS, GIT_GRAPH_GRID, GIT_GRAPH_HEADER_HEIGHT, GIT_GRAPH_ROW_HEIGHT, GitGraphStyle } from './lib/git-graph-engine';
 export type { GitGraphLayout, GitGraphLayoutCommit, GitGraphNode, GitGraphPathSegment } from './lib/git-graph-engine';
 export { memoizeAsync } from './lib/memoize-async';
@@ -447,6 +477,61 @@ export {
   type ComposerShellFieldContext,
   type ComposerShellProps,
 } from './components/composer/ComposerShell';
+export {
+  composerAttachmentChipBusyClass,
+  composerAttachmentChipClass,
+  composerAttachmentChipFailedClass,
+  composerAttachmentChipRemoveClass,
+  composerAttachmentFloatClass,
+  composerAttachmentListClass,
+  composerAttachmentListItemClass,
+  composerEditorClass,
+  composerEditorHintClass,
+  composerEditorHintPredictionClass,
+  composerEditorLayerClass,
+  composerInputClass,
+  composerMetaRowClass,
+  composerPlusBtnClass,
+  composerQueueClass,
+  composerQueueCountClass,
+  composerQueueHeaderClass,
+  composerQueueIconActionClass,
+  composerQueueItemActionsClass,
+  composerQueueItemClass,
+  composerQueueItemIconClass,
+  composerQueueItemPreviewClass,
+  composerQueueItemTextClass,
+  composerRuntimeSlotClass,
+  composerSendBtnClass,
+  composerShellClass,
+  composerSkillsButtonClass,
+  composerSkillsIconClass,
+  composerSlashOverlayClass,
+  composerSlashPopoverClass,
+  composerSlashUploadClass,
+  composerSurfaceAttachmentsClass,
+  composerSurfaceBaseClass,
+  composerSurfaceBodyClass,
+  composerSurfaceBodyCompactClass,
+  composerSurfaceBodyExpandedClass,
+  composerSurfaceBodyExpandedWithAttachmentsClass,
+  composerSurfaceClass,
+  composerSurfaceCompactClass,
+  composerSurfaceExpandedClass,
+  composerSurfaceFieldBaseClass,
+  composerSurfaceFieldClass,
+  composerSurfaceFieldCompactClass,
+  composerSurfaceFieldExpandedClass,
+  composerSurfaceFieldSlotClass,
+  composerSurfaceFieldSlotCompactClass,
+  composerSurfaceFieldSlotExpandedClass,
+  composerSurfaceLeadingClass,
+  composerSurfaceToolbarClass,
+  composerSurfaceTrailingClass,
+  composerToolbarClass,
+  composerToolbarLeftClass,
+  composerToolbarRightClass,
+} from './components/composer/composer-layout';
 export { ComposerAttachmentChip, type ComposerAttachmentChipProps } from './components/composer/ComposerAttachmentChip';
 export { ComposerPlusMenu, type ComposerPlusMenuProps } from './components/composer/ComposerPlusMenu';
 export {
@@ -499,6 +584,27 @@ export {
   type WorkbenchPanelWidthProfile,
 } from './components/workbench/workbench-panel-layout';
 export {
+  WORKBENCH_PANEL_RESIZING_BODY_CLASS,
+  workbenchEmbeddedPanelClass,
+  workbenchFloatingPanelLeftClass,
+  workbenchFloatingPanelRightClass,
+  workbenchPanelChromeActionsClass,
+  workbenchPanelChromeBodyClass,
+  workbenchPanelChromeClass,
+  workbenchPanelResizeGripClass,
+  workbenchPanelResizeGripDraggingClass,
+  workbenchPanelResizeHandleClass,
+  workbenchPanelResizeHandleDraggingClass,
+  workbenchPanelSurfaceClass,
+  workbenchRailButtonActiveLeftClass,
+  workbenchRailButtonActiveRightClass,
+  workbenchRailButtonBadgeClass,
+  workbenchRailClass,
+  workbenchShellClass,
+  workbenchShellCompactClass,
+  workbenchShellDefaultClass,
+} from './components/workbench/workbench-layout';
+export {
   ComposerInputField,
   type ComposerInputFieldProps,
   type ComposerInputHint,
@@ -524,16 +630,34 @@ export {
 export {
   statusAreaPanelClass,
   statusAreaRowClass,
+  statusAreaShellBodyClass,
+  statusAreaShellCardClass,
+  statusAreaShellClass,
+  statusAreaShellHeaderClass,
   statusAreaTabTriggerClass,
 } from './components/status/status-area-shell-utils';
 export {
   DecisionQueueShell,
+  decisionQueueShellClass,
+  decisionQueueSurfaceClass,
   type DecisionQueueShellProps,
 } from './components/decision/DecisionQueueShell';
 export {
   TerminalDockShell,
   type TerminalDockShellProps,
 } from './components/terminal/TerminalDockShell';
+export {
+  terminalDockFooterClass,
+  terminalDockHeaderActionsClass,
+  terminalDockHeaderClass,
+  terminalDockShellClass,
+  terminalDockSpacerClass,
+  terminalDockStatusClass,
+  terminalDockTitleClass,
+  terminalDockViewportClass,
+  terminalDockViewportCollapsedClass,
+  terminalDockViewportFocusClass,
+} from './components/terminal/terminal-dock-layout';
 export type { ComposerQueueItem } from './components/composer/composer-queue-types';
 export {
   SlashMenu,

@@ -8,6 +8,15 @@ import {
   workbenchPanelWidthLimits,
   type WorkbenchPanelWidthProfile,
 } from './workbench-panel-layout';
+import {
+  WORKBENCH_PANEL_RESIZING_BODY_CLASS,
+  workbenchFloatingPanelLeftClass,
+  workbenchFloatingPanelRightClass,
+  workbenchPanelResizeGripClass,
+  workbenchPanelResizeGripDraggingClass,
+  workbenchPanelResizeHandleClass,
+  workbenchPanelResizeHandleDraggingClass,
+} from './workbench-layout';
 
 export type WorkbenchFloatingPanelProps = {
   children: JSX.Element;
@@ -68,7 +77,7 @@ export const WorkbenchFloatingPanel: Component<WorkbenchFloatingPanelProps> = (p
     window.removeEventListener('pointermove', resizeWithPointer);
     window.removeEventListener('pointerup', stopResize);
     window.removeEventListener('pointercancel', stopResize);
-    document.body.classList.remove('ui-workbench-panel-resizing');
+    document.body.classList.remove(WORKBENCH_PANEL_RESIZING_BODY_CLASS);
     setResizing(false);
   };
 
@@ -89,7 +98,7 @@ export const WorkbenchFloatingPanel: Component<WorkbenchFloatingPanelProps> = (p
       panelRight = rect.right;
       panelLeft = rect.left;
     }
-    document.body.classList.add('ui-workbench-panel-resizing');
+    document.body.classList.add(WORKBENCH_PANEL_RESIZING_BODY_CLASS);
     setResizing(true);
     window.addEventListener('pointermove', resizeWithPointer);
     window.addEventListener('pointerup', stopResize);
@@ -115,8 +124,8 @@ export const WorkbenchFloatingPanel: Component<WorkbenchFloatingPanelProps> = (p
   onCleanup(stopResize);
 
   const shellClass = () => (anchor() === 'left'
-    ? 'ui-workbench-floating-panel ui-workbench-floating-panel--left'
-    : 'ui-workbench-floating-panel ui-workbench-floating-panel--right');
+    ? workbenchFloatingPanelLeftClass
+    : workbenchFloatingPanelRightClass);
 
   const panelStyle = () => {
     const base: Record<string, string> = { width: `${width()}px` };
@@ -140,9 +149,9 @@ export const WorkbenchFloatingPanel: Component<WorkbenchFloatingPanelProps> = (p
     >
       <div
         class={cn(
-          'ui-workbench-panel-resize-handle group pointer-events-none absolute z-1 top-0 bottom-0 w-12 touch-none',
+          workbenchPanelResizeHandleClass,
           resizeHandleSide() === 'left' ? 'left-0 -translate-x-1/2' : 'right-0 translate-x-1/2',
-          resizing() ? 'ui-workbench-panel-resize-handle--dragging' : '',
+          resizing() && workbenchPanelResizeHandleDraggingClass,
         )}
         role="separator"
         aria-label="Resize resource panel"
@@ -157,8 +166,9 @@ export const WorkbenchFloatingPanel: Component<WorkbenchFloatingPanelProps> = (p
         <span
           aria-hidden="true"
           class={cn(
-            'ui-workbench-panel-resize-handle__grip absolute top-0 bottom-0 w-2 cursor-col-resize rounded-full bg-transparent transition-colors pointer-events-auto group-hover:bg-sidebar-resize-handle-hover group-focus-visible:bg-sidebar-resize-handle-hover',
+            workbenchPanelResizeGripClass,
             resizeHandleSide() === 'left' ? 'left-5' : 'right-5',
+            resizing() && workbenchPanelResizeGripDraggingClass,
           )}
           onPointerDown={startResize}
         />

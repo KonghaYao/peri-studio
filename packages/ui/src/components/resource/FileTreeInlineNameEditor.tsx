@@ -1,5 +1,10 @@
 import { createSignal, onMount, Show, splitProps, type Component } from 'solid-js';
 import { cn } from '../../lib/cn';
+import {
+  fileTreeInlineNameErrorClass,
+  fileTreeInlineNameInputClass,
+  fileTreeInlineRowInvalidClass,
+} from './file-tree-layout';
 import { VSCodeFileIcon } from '../VSCodeFileIcon';
 
 function rowPadding(depth: number) {
@@ -67,7 +72,7 @@ export const FileTreeInlineNameEditor: Component<FileTreeInlineNameEditorProps> 
       data-slot="file-tree-inline-name-editor"
       class={cn(
         'group/tree-file relative flex h-(--tree-row-height) w-full items-center rounded-4 bg-selected pr-5 text-11 pointer-coarse:h-44',
-        local.invalid && 'ui-file-tree-inline-row--invalid',
+        local.invalid && fileTreeInlineRowInvalidClass,
       )}
       style={rowPadding(local.depth)}
     >
@@ -88,7 +93,8 @@ export const FileTreeInlineNameEditor: Component<FileTreeInlineNameEditorProps> 
             inputRef = el;
           }}
           class={cn(
-            'file-tree-inline-name-input min-w-0 flex-1',
+            fileTreeInlineNameInputClass,
+            'min-w-0 flex-1',
             local.kind === 'folder' && 'font-600',
           )}
           value={value()}
@@ -101,7 +107,7 @@ export const FileTreeInlineNameEditor: Component<FileTreeInlineNameEditorProps> 
       </div>
       <Show when={local.invalid && local.errorMessage}>
         <p
-          class="file-tree-inline-name-error"
+          class={fileTreeInlineNameErrorClass}
           role="alert"
           style={{ 'padding-left': errorInset(local.depth, local.kind) }}
         >

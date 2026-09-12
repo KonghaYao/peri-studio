@@ -15,6 +15,30 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '../context-menu';
+import {
+  gitGraphAuthorColClass,
+  gitGraphCommitColClass,
+  gitGraphContentClass,
+  gitGraphControlBtnClass,
+  gitGraphControlsClass,
+  gitGraphDateColClass,
+  gitGraphDescriptionClass,
+  gitGraphHeadDotClass,
+  gitGraphMessageClass,
+  gitGraphMessageCurrentClass,
+  gitGraphPanelClass,
+  gitGraphRowClass,
+  gitGraphRowHoverClass,
+  gitGraphRowSelectedClass,
+  gitGraphScrollClass,
+  gitGraphSvgClass,
+  gitGraphTableClass,
+  gitGraphTdClass,
+  gitGraphTdDescColClass,
+  gitGraphTdGraphColClass,
+  gitGraphThClass,
+  gitGraphThGraphColClass,
+} from '../git-graph/git-graph-layout';
 import { GitGraphBranchDialog, GitGraphConfirmDialog } from './GitGraphActionDialog';
 import { GitGraphRefBadge } from './GitGraphRefBadge';
 import type { GitGraphActionKind, GitGraphActionParams, GitGraphCommit } from './types';
@@ -157,18 +181,18 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
   return (
     <div
       class={cn(
-        'ui-git-graph-panel flex min-h-0 flex-col bg-surface-overlay',
+        gitGraphPanelClass,
         props.nested ? 'min-w-0 flex-1' : 'h-full',
       )}
       aria-label="Git Graph"
     >
       <Show when={!props.nested}>
-        <div class="ui-git-graph-controls flex h-36 shrink-0 items-center gap-8 border-b border-border-subtle px-12">
+        <div class={gitGraphControlsClass}>
           <span class="min-w-0 flex-1 text-11 font-semibold tracking-wide uppercase text-content-muted">Git Graph</span>
           <IconButton
             size="compact"
             label="Refresh graph"
-            class="ui-git-graph-control-btn"
+            class={gitGraphControlBtnClass}
             onClick={() => props.onRefresh?.()}
           >
             <RefreshCw size={14} strokeWidth={1.7} />
@@ -182,11 +206,11 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
         </div>
       </Show>
 
-      <div class="ui-git-graph-content ui-scrollbar min-h-0 flex-1 overflow-auto">
-        <div class="ui-git-graph-scroll relative" style={{ height: `${svgHeight()}px` }}>
+      <div class={gitGraphContentClass}>
+        <div class={gitGraphScrollClass} style={{ height: `${svgHeight()}px` }}>
           <svg
             data-testid="git-graph-svg"
-            class="ui-git-graph-svg pointer-events-none absolute top-0 left-0 z-2"
+            class={gitGraphSvgClass}
             width={graphColWidth()}
             height={svgHeight()}
             aria-hidden="true"
@@ -194,15 +218,21 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
             <For each={layout().paths}>
               {(segment) => (
                 <>
-                  <path class="ui-git-graph-path-shadow" d={segment.d} stroke={segment.shadowColor} />
-                  <path class="ui-git-graph-path-line" d={segment.d} stroke={segment.color} />
+                  <path
+                    class="fill-none"
+                    d={segment.d}
+                    stroke={segment.shadowColor}
+                    stroke-width={4}
+                    stroke-opacity={0.75}
+                  />
+                  <path class="fill-none" d={segment.d} stroke={segment.color} stroke-width={2} />
                 </>
               )}
             </For>
             <For each={layout().nodes}>
               {(node) => (
                 <circle
-                  class={cn('pointer-events-auto', node.isCurrent && 'ui-git-graph-node-current')}
+                  class="pointer-events-auto"
                   cx={node.cx}
                   cy={nodeCy(node.index)}
                   r={node.isStash ? 4.5 : 4}
@@ -220,7 +250,7 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
           <table
             ref={tableRef}
             data-testid="git-graph-table"
-            class="ui-git-graph-table w-full border-collapse"
+            class={gitGraphTableClass}
             style={{ 'table-layout': 'fixed' }}
           >
             <colgroup>
@@ -232,11 +262,11 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
             </colgroup>
             <thead>
               <tr>
-                <th class="ui-git-graph-th ui-git-graph-graph-col">Graph</th>
-                <th class="ui-git-graph-th">Description</th>
-                <th class="ui-git-graph-th ui-git-graph-date-col">Date</th>
-                <th class="ui-git-graph-th ui-git-graph-author-col">Author</th>
-                <th class="ui-git-graph-th ui-git-graph-commit-col">Commit</th>
+                <th class={cn(gitGraphThClass, gitGraphThGraphColClass)}>Graph</th>
+                <th class={gitGraphThClass}>Description</th>
+                <th class={cn(gitGraphThClass, gitGraphDateColClass)}>Date</th>
+                <th class={cn(gitGraphThClass, gitGraphAuthorColClass)}>Author</th>
+                <th class={cn(gitGraphThClass, gitGraphCommitColClass)}>Commit</th>
               </tr>
             </thead>
             <tbody>
@@ -255,21 +285,21 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
                       <ContextMenuTrigger
                         as="tr"
                         class={cn(
-                          'ui-git-graph-row',
-                          rowState(),
-                          isCurrent() && 'current',
+                          gitGraphRowClass,
+                          rowState() === 'hover' && gitGraphRowHoverClass,
+                          rowState() === 'selected' && gitGraphRowSelectedClass,
                         )}
                         data-color={colorIndex()}
                         onMouseEnter={() => setHovered(index())}
                         onMouseLeave={() => setHovered(null)}
                         onClick={() => setSelected(index())}
                       >
-                        <td class="ui-git-graph-td ui-git-graph-graph-col" />
-                        <td class="ui-git-graph-td ui-git-graph-desc-col">
-                          <span class="ui-git-graph-description">
+                        <td class={cn(gitGraphTdClass, gitGraphTdGraphColClass)} />
+                        <td class={cn(gitGraphTdClass, gitGraphTdDescColClass)}>
+                          <span class={gitGraphDescriptionClass}>
                             <Show when={isCurrent()}>
                               <span
-                                class="ui-git-graph-head-dot"
+                                class={gitGraphHeadDotClass}
                                 style={{ 'border-color': `var(--git-graph-color-${colorIndex() % 12})` }}
                                 aria-hidden="true"
                               />
@@ -302,12 +332,18 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
                                 )}
                               </For>
                             </Show>
-                            <span class="ui-git-graph-message">{displayMessage(commit)}</span>
+                            <span class={cn(gitGraphMessageClass, isCurrent() && gitGraphMessageCurrentClass)}>
+                              {displayMessage(commit)}
+                            </span>
                           </span>
                         </td>
-                        <td class="ui-git-graph-td ui-git-graph-date-col text-content-muted">{commit.time || commit.date}</td>
-                        <td class="ui-git-graph-td ui-git-graph-author-col text-content-muted">{commit.author}</td>
-                        <td class="ui-git-graph-td ui-git-graph-commit-col font-mono text-content-muted">
+                        <td class={cn(gitGraphTdClass, gitGraphDateColClass, 'text-content-muted')}>
+                          {commit.time || commit.date}
+                        </td>
+                        <td class={cn(gitGraphTdClass, gitGraphAuthorColClass, 'text-content-muted')}>
+                          {commit.author}
+                        </td>
+                        <td class={cn(gitGraphTdClass, gitGraphCommitColClass, 'font-mono text-content-muted')}>
                           {commit.shortHash ?? commit.hash?.slice(0, 8) ?? commit.id.slice(0, 8)}
                         </td>
                       </ContextMenuTrigger>

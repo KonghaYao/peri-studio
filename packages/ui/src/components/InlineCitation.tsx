@@ -273,7 +273,7 @@ export const InlineCitationSource: Component<InlineCitationSourceProps> = (props
       )}
       {local.url && <p class="truncate break-all text-11 text-content-muted">{local.url}</p>}
       {local.description && (
-        <p class="ui-line-clamp-2 text-12 leading-relaxed text-content-muted">{local.description}</p>
+        <p class="line-clamp-2 text-12 leading-relaxed text-content-muted">{local.description}</p>
       )}
       {local.children}
     </div>

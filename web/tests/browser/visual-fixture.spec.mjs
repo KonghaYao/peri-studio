@@ -279,7 +279,7 @@ test('sidebar chrome and composer match the compact input shell', async ({ page 
   const geometry = await page.evaluate(() => {
     const surface = document.querySelector('[data-testid="composer-surface"]');
     const input = document.querySelector('[data-testid="composer-input"]');
-    const body = surface?.querySelector('.ui-composer-surface-v2__body');
+    const body = surface?.querySelector('[data-slot="composer-body"]');
     return {
       surfaceHeight: surface.getBoundingClientRect().height,
       inputHeight: input.getBoundingClientRect().height,

@@ -6,6 +6,7 @@ import {
   WorkbenchRail,
   WorkbenchRailButton,
   WorkbenchShell,
+  workbenchEmbeddedPanelClass,
 } from '@peri/ui';
 import { DEMO_STAGED, DEMO_UNTRACKED, DEMO_WORKING } from './git-demo-data';
 import { SourceControlLayout } from './SourceControlLayout';
@@ -63,7 +64,7 @@ export function ResourceWorkbenchLayout() {
           </WorkbenchRail>
         )}
       >
-        <div class="ui-workbench-embedded-panel">
+        <div class={workbenchEmbeddedPanelClass}>
           <WorkbenchPanelChrome
             title={panelTitle(view())}
             actions={

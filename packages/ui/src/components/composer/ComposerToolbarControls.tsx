@@ -2,6 +2,7 @@ import { ArrowUp, Check, Plus, ScanLine, SendHorizontal } from 'lucide-solid';
 import { Show, splitProps, type Component } from 'solid-js';
 import { cn } from '../../lib/cn';
 import { Button, IconButton } from '../Button';
+import { composerSendBtnClass, composerSkillsButtonClass, composerSkillsIconClass } from './composer-layout';
 
 const sendActionClass =
   'ui-composer-action flex w-36 min-h-36 shrink-0 items-center justify-center rounded-8 max-narrow:w-48 max-narrow:min-h-44';
@@ -49,7 +50,7 @@ export const ComposerSkillsButton: Component<{
 }> = (props) => (
   <Button
     size="compact"
-    class="ui-composer-skills relative inline-flex w-34 min-h-30 items-center justify-center gap-0 rounded-7 border-0 bg-transparent p-0 text-text-primary text-11 font-normal pointer-coarse:w-48 pointer-coarse:min-h-44"
+    class={composerSkillsButtonClass}
     aria-expanded={props.expanded}
     aria-controls={props.menuId}
     aria-label={`Browse skills (${props.skillCount})`}
@@ -57,8 +58,8 @@ export const ComposerSkillsButton: Component<{
     onClick={props.onClick}
     disabled={props.disabled}
   >
-    <ScanLine size={17} strokeWidth={1.7} class="ui-composer-skills__icon" aria-hidden="true" />
-    <span class="ui-composer-skills__count sr-only">{props.skillCount}</span>
+    <ScanLine size={17} strokeWidth={1.7} class={composerSkillsIconClass} aria-hidden="true" />
+    <span class="sr-only">{props.skillCount}</span>
   </Button>
 );
 
@@ -93,7 +94,7 @@ export const ComposerSendStopAction: Component<ComposerSendStopActionProps> = (p
         busy={local.busy}
         label={local.label}
         class={cn(
-          pill() ? 'ui-composer-send-btn' : local.mode === 'send' ? sendActionClass : stopActionClass,
+          pill() ? composerSendBtnClass : local.mode === 'send' ? sendActionClass : stopActionClass,
           local.mode === 'stop' && local.uncertain && 'bg-warning hover:bg-warning-strong',
         )}
       >

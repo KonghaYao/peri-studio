@@ -12,6 +12,8 @@ import {
   EmptyState,
   IconButton,
   LoadingState,
+  cn,
+  sidebarMistHintClass,
 } from '@peri/ui';
 import { CloudOff, Folder, FolderOpen, ListFilter, Pin } from 'lucide-solid';
 import { createProjectSession, creatingSessionProjectId, discoveringSessionsProjectId, isProjectCatalogBootstrapPending, projectSessions, readOnly } from '@/store';
@@ -165,7 +167,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                       fallback={<Button
                         variant="ghost"
                         size="compact"
-                        class="ui-sidebar-mist-hint h-auto justify-start px-2.5 py-4 pl-36 text-left text-11 font-normal hover:bg-transparent hover:text-content-muted"
+                        class={cn(sidebarMistHintClass, 'h-auto justify-start px-2.5 py-4 pl-36 text-left text-11 font-normal hover:bg-transparent hover:text-content-muted')}
                         disabled={readOnly() || !!creatingSessionProjectId()}
                         onClick={() => createProjectSession(projectId)}
                       >

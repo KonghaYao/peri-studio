@@ -1,6 +1,12 @@
 import { Show, splitProps, type Component, type JSX } from 'solid-js';
 import { cn } from '../../lib/cn';
 import { SidebarContent, SidebarFooter, SidebarHeader } from '../sidebar-parts';
+import {
+  sidebarMistDividerClass,
+  sidebarScrollClass,
+  sidebarScrollMistClass,
+  sidebarScrollShellClass,
+} from './sidebar-layout';
 
 export type ProjectSidebarShellProps = {
   class?: string;
@@ -30,14 +36,14 @@ export const ProjectSidebarShell: Component<ProjectSidebarShellProps> = (props) 
           {local.navbar}
         </SidebarHeader>
       </Show>
-      <div class="ui-sidebar-scroll-shell min-h-0 flex-1 px-6">
-        <SidebarContent class="ui-sidebar-scroll min-h-0 h-full gap-0 overflow-auto p-0 pb-8">
+      <div class={cn(sidebarScrollShellClass, 'px-6')}>
+        <SidebarContent class={cn(sidebarScrollClass, 'min-h-0 h-full gap-0 overflow-auto p-0 pb-8')}>
           {local.body}
         </SidebarContent>
-        <div class="ui-sidebar-scroll-mist" aria-hidden="true" />
+        <div class={sidebarScrollMistClass} aria-hidden="true" />
       </div>
       <Show when={local.footer}>
-        <div class="ui-sidebar-mist-divider" aria-hidden="true" />
+        <div class={sidebarMistDividerClass} aria-hidden="true" />
         <SidebarFooter class="sidebar-footer flex h-48 shrink-0 flex-row items-center gap-8 border-0 p-0 px-10">
           {local.footer}
         </SidebarFooter>

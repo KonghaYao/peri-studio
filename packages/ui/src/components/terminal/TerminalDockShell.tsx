@@ -2,6 +2,17 @@ import { ChevronDown, ChevronUp } from 'lucide-solid';
 import { createSignal, Show, splitProps, type Component, type JSX } from 'solid-js';
 import { cn } from '../../lib/cn';
 import { IconButton } from '../Button';
+import {
+  terminalDockFooterClass,
+  terminalDockHeaderActionsClass,
+  terminalDockHeaderClass,
+  terminalDockShellClass,
+  terminalDockSpacerClass,
+  terminalDockStatusClass,
+  terminalDockTitleClass,
+  terminalDockViewportClass,
+  terminalDockViewportCollapsedClass,
+} from './terminal-dock-layout';
 
 export type TerminalDockShellProps = {
   class?: string;
@@ -45,10 +56,10 @@ export const TerminalDockShell: Component<TerminalDockShellProps> = (props) => {
       data-slot="terminal-dock-shell"
       data-testid={rest['data-testid']}
       data-expanded={expanded() ? 'true' : 'false'}
-      class={cn('ui-terminal-dock-shell', local.class)}
+      class={cn(terminalDockShellClass, local.class)}
       aria-label={rest['aria-label']}
     >
-      <header class="ui-terminal-dock-shell__header">
+      <header class={terminalDockHeaderClass}>
         <Show when={collapsible()}>
           <IconButton
             size="sm"
@@ -63,27 +74,27 @@ export const TerminalDockShell: Component<TerminalDockShellProps> = (props) => {
           </IconButton>
         </Show>
         <Show when={local.title}>
-          <div class="ui-terminal-dock-shell__title">{local.title}</div>
+          <div class={terminalDockTitleClass}>{local.title}</div>
         </Show>
-        <span class="ui-terminal-dock-shell__spacer" aria-hidden="true" />
+        <span class={terminalDockSpacerClass} aria-hidden="true" />
         <Show when={local.headerActions}>
-          <div class="ui-terminal-dock-shell__header-actions">{local.headerActions}</div>
+          <div class={terminalDockHeaderActionsClass}>{local.headerActions}</div>
         </Show>
       </header>
 
       <div
         class={cn(
-          'ui-terminal-dock-shell__viewport',
-          !expanded() && 'ui-terminal-dock-shell__viewport--collapsed',
+          terminalDockViewportClass,
+          !expanded() && terminalDockViewportCollapsedClass,
         )}
         aria-hidden={!expanded()}
       >
         {local.viewport}
       </div>
 
-      <footer class="ui-terminal-dock-shell__footer">
+      <footer class={terminalDockFooterClass}>
         <Show when={local.status}>
-          <div class="ui-terminal-dock-shell__status">{local.status}</div>
+          <div class={terminalDockStatusClass}>{local.status}</div>
         </Show>
         {local.footer}
       </footer>

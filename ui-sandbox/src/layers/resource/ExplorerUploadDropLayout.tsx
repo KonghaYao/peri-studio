@@ -1,5 +1,5 @@
 import { createSignal, Show } from 'solid-js';
-import { FileTree, type FileTreeNode } from '@peri/ui';
+import { FileTree, fileTreeDropRootClass, type FileTreeNode } from '@peri/ui';
 import { Button } from '@/lib/catalog-ui';
 import { ButtonGroup } from '@/lib/catalog-ui';
 import { cn } from '@/lib/catalog-ui';
@@ -95,7 +95,7 @@ export function ExplorerUploadDropLayout() {
         aria-label="Workspace files"
         class={cn(
           'explorer-upload-tree rounded-md px-4 py-8 text-12',
-          target() === 'root' && 'explorer-upload-tree--drop-root',
+          target() === 'root' && fileTreeDropRootClass,
         )}
       >
         <FileTree

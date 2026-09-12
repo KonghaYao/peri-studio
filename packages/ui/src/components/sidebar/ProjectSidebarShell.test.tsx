@@ -1,5 +1,9 @@
 import { cleanup, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
+import {
+  sidebarMistDividerClass,
+  sidebarScrollMistClass,
+} from './sidebar-layout';
 import { ProjectSidebarShell } from './ProjectSidebarShell';
 
 afterEach(() => cleanup());
@@ -21,8 +25,8 @@ describe('ProjectSidebarShell', () => {
     expect(screen.getByTestId('navbar')).toBeInTheDocument();
     expect(screen.getByTestId('body')).toBeInTheDocument();
     expect(screen.getByTestId('footer')).toBeInTheDocument();
-    expect(shell.querySelector('.ui-sidebar-scroll-mist')).not.toBeNull();
-    expect(shell.querySelector('.ui-sidebar-mist-divider')).not.toBeNull();
+    expect(shell.querySelector(`.${sidebarScrollMistClass.split(' ')[0]}`)).not.toBeNull();
+    expect(shell.querySelector(`.${sidebarMistDividerClass.split(' ')[0]}`)).not.toBeNull();
   });
 
   it('omits footer chrome when footer slot is absent', () => {
@@ -33,7 +37,7 @@ describe('ProjectSidebarShell', () => {
     ));
 
     expect(screen.getByTestId('body')).toBeInTheDocument();
-    expect(document.querySelector('.ui-sidebar-mist-divider')).toBeNull();
+    expect(document.querySelector(`.${sidebarMistDividerClass.split(' ')[0]}`)).toBeNull();
     expect(document.querySelector('.sidebar-footer')).toBeNull();
   });
 

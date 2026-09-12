@@ -197,7 +197,7 @@ describe('MessageList footer resize', () => {
     const { container } = render(() => <MessageList footerHeight={160} />);
 
     expect(container.querySelector('[data-testid="message-list-content"]')).toHaveClass('px-48', 'max-w-(--chat-content-max)');
-    expect(screen.getByRole('region', { name: 'Conversation messages' })).toHaveClass('ui-transcript-scroll');
+    expect(screen.getByRole('region', { name: 'Conversation messages' })).toHaveClass('scrollbar-gutter-stable');
   });
 
   it('keeps following the true bottom when the in-flow footer grows', async () => {

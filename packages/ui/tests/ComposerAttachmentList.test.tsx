@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ComposerAttachmentList } from '../src/components/composer/ComposerAttachmentList';
+import { composerAttachmentListClass } from '../src/components/composer/composer-layout';
 
 afterEach(() => cleanup());
 
@@ -15,7 +16,7 @@ describe('ComposerAttachmentList', () => {
       />
     ));
 
-    expect(screen.getByRole('list', { name: 'Attached files' })).toHaveClass('ui-attachment-list');
+    expect(screen.getByRole('list', { name: 'Attached files' })).toHaveClass(composerAttachmentListClass);
     expect(screen.getByText('api.ts')).toBeInTheDocument();
     expect(screen.getByText('schema.json')).toBeInTheDocument();
   });

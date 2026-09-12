@@ -1,5 +1,6 @@
 import { splitProps, type Component, type JSX } from 'solid-js';
 import { cn } from '../../lib/cn';
+import { workbenchRailClass } from './workbench-layout';
 
 export type WorkbenchRailProps = {
   class?: string;
@@ -13,7 +14,7 @@ export const WorkbenchRail: Component<WorkbenchRailProps> = (props) => {
 
   return (
     <nav
-      class={cn('ui-workbench-rail', local.class)}
+      class={cn(workbenchRailClass, local.class)}
       aria-label={local['aria-label'] ?? 'Resource views'}
     >
       {local.children}

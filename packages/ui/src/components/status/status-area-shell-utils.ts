@@ -1,5 +1,17 @@
 import { cn } from '../../lib/cn';
 
+/** 状态区根 section。 */
+export const statusAreaShellClass = 'w-full min-w-0';
+
+/** Card 壳 overflow（圆角/边框由 Card 默认 + T4 覆盖）。 */
+export const statusAreaShellCardClass = 'overflow-hidden';
+
+/** CardHeader 行间距（与 tab 折叠钮）。 */
+export const statusAreaShellHeaderClass = 'gap-8';
+
+/** 折叠后展开的面板 body。 */
+export const statusAreaShellBodyClass = 'flex flex-col gap-2';
+
 /** Status tab trigger：与生产 StatusArea / sandbox StatusAreaLayout 对齐。 */
 export const statusAreaTabTriggerClass = cn(
   'inline-flex h-28 max-w-full items-center gap-6 rounded-md border-0 border-b-0 px-8 py-0 text-12 transition-colors duration-(--duration-fast)',

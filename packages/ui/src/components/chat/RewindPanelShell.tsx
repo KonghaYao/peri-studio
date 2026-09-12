@@ -1,8 +1,17 @@
 import { splitProps, type Component, type JSX } from 'solid-js';
 import { cn } from '../../lib/cn';
+import {
+  rewindPanelActionsClass,
+  rewindPanelStateClass,
+} from './rewind-panel-layout';
 
-export const rewindPanelStateClass = 'ui-rewind-panel__state';
-export const rewindPanelActionsClass = 'ui-rewind-panel__actions';
+export {
+  rewindPanelActionButtonClass,
+  rewindPanelActionsClass,
+  rewindPanelLoadingSpinnerClass,
+  rewindPanelLoadingStateClass,
+  rewindPanelStateClass,
+} from './rewind-panel-layout';
 
 export type RewindPanelStateProps = {
   class?: string;

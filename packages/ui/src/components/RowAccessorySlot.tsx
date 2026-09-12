@@ -1,6 +1,7 @@
 import type { Component, JSX } from 'solid-js';
 import { splitProps } from 'solid-js';
 import { cn } from '../lib/cn';
+import { rowAccessoryCoverClass } from './sidebar/row-accessory-layout';
 
 export type RowAccessorySlotProps = {
   /** Tailwind group 名，例如 group/row、group/workspace。 */
@@ -51,7 +52,8 @@ export const RowAccessorySlot: Component<RowAccessorySlotProps> = (props) => {
       </span>
       <div
         class={cn(
-          'ui-row-accessory-cover row-accessory-slot__actions absolute inset-y-0 right-0 flex items-center justify-end pl-4 pr-4',
+          rowAccessoryCoverClass,
+          'row-accessory-slot__actions absolute inset-y-0 right-0 flex items-center justify-end pl-4 pr-4',
           'invisible opacity-0 pointer-events-none',
           actionsShown(),
         )}

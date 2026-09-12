@@ -84,7 +84,7 @@ export const FilePreviewPanel: Component<FilePreviewPanelProps> = (props) => {
                   <span class="select-none border-r border-border-subtle bg-surface-overlay px-8 text-right tabular-nums text-content-faint" aria-hidden="true">
                     {local.mode === 'text' ? index() + 1 : ''}
                   </span>
-                  <code class="code-tab-size whitespace-pre px-10">{line.text || ' '}</code>
+                  <code class="tab-size-4 whitespace-pre px-10">{line.text || ' '}</code>
                 </div>
               )}
             </For>

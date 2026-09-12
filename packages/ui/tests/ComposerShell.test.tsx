@@ -15,13 +15,13 @@ describe('ComposerShell', () => {
     ));
 
     const surface = screen.getByTestId('composer-surface');
-    const fieldSlot = surface.querySelector('.ui-composer-surface-v2__field-slot');
-    const trailing = surface.querySelector('.ui-composer-surface-v2__trailing');
-    const leading = surface.querySelector('.ui-composer-surface-v2__leading');
+    const textbox = screen.getByRole('textbox', { name: 'Message the agent' });
+    const modelButton = screen.getByRole('button', { name: 'Model' });
+    const slashButton = screen.getByRole('button', { name: 'Slash commands' });
 
-    expect(leading).toContainElement(screen.getByRole('button', { name: 'Slash commands' }));
-    expect(trailing).toContainElement(screen.getByRole('button', { name: 'Model' }));
-    expect(fieldSlot).not.toContainElement(screen.getByRole('button', { name: 'Model' }));
-    expect(fieldSlot).toContainElement(screen.getByRole('textbox', { name: 'Message the agent' }));
+    expect(surface).toContainElement(slashButton);
+    expect(surface).toContainElement(modelButton);
+    expect(textbox.parentElement).toContainElement(textbox);
+    expect(textbox.parentElement).not.toContainElement(modelButton);
   });
 });

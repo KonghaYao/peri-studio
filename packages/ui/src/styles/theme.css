@@ -311,6 +311,7 @@
 
   /* Letter-spacing scale */
   --tracking-35: var(--tracking-35);
+  --tracking-25: var(--tracking-25);
   --tracking-6: var(--tracking-6);
   --tracking-7: var(--tracking-7);
   --tracking-8: var(--tracking-8);
@@ -407,4 +408,82 @@
     color-mix(in srgb, var(--app-bg) 58%, transparent) 58%,
     var(--app-bg) 100%
   );
+}
+@utility bg-sidebar-scroll-mist {
+  background: linear-gradient(
+    to top,
+    var(--surface-overlay) 0%,
+    color-mix(in srgb, var(--surface-overlay) 72%, transparent) 42%,
+    transparent 100%
+  );
+}
+@utility bg-sidebar-mist-divider {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--surface-overlay) 35%, transparent) 38%,
+    var(--surface-overlay) 100%
+  );
+}
+@utility sidebar-mist-hint {
+  color: var(--content-faint);
+  opacity: 0.62;
+  letter-spacing: 0.01em;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--surface-overlay) 80%, transparent);
+}
+@utility row-accessory-fade-cover {
+  --sidebar-row-cover-bg: var(--surface);
+  position: relative;
+  background: var(--sidebar-row-cover-bg);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    right: 100%;
+    width: var(--sidebar-row-accessory-fade-width);
+    background: linear-gradient(to right, transparent, var(--sidebar-row-cover-bg));
+    pointer-events: none;
+  }
+
+  .group\/row:hover &,
+  .group\/row:focus-within &,
+  .group\/workspace:hover &,
+  .group\/workspace:focus-within & {
+    --sidebar-row-cover-bg: var(--sidebar-row-hover-bg);
+  }
+
+  .group\/row[data-selected='true'] &,
+  .group\/workspace[data-selected='true'] & {
+    --sidebar-row-cover-bg: var(--sidebar-selected-bg);
+  }
+}
+@utility row-accessory-fade-meta {
+  --sidebar-row-cover-bg: var(--surface);
+  position: relative;
+  background: var(--sidebar-row-cover-bg);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    right: 100%;
+    width: var(--sidebar-row-accessory-fade-width);
+    background: linear-gradient(to right, transparent, var(--sidebar-row-cover-bg));
+    pointer-events: none;
+  }
+
+  .group\/row[data-selected='true'] &,
+  .group\/workspace[data-selected='true'] & {
+    --sidebar-row-cover-bg: var(--sidebar-selected-bg);
+  }
+}
+@utility overflow-anchor-none {
+  overflow-anchor: none;
+}
+@utility leading-inherit {
+  line-height: inherit;
+}
+@utility outline-offset-neg-1 {
+  outline-offset: -1px;
 }

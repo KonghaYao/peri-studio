@@ -6,6 +6,19 @@ import { ComposerAttachmentList } from './ComposerAttachmentList';
 import { ComposerDropOverlay } from './ComposerDropOverlay';
 import type { ComposerAttachmentItem } from './composer-attachment-types';
 import {
+  composerAttachmentFloatClass,
+  composerMetaRowClass,
+  composerShellClass,
+  composerSurfaceAttachmentsClass,
+  composerSurfaceBodyClass,
+  composerSurfaceClass,
+  composerSurfaceFieldClass,
+  composerSurfaceFieldSlotClass,
+  composerSurfaceLeadingClass,
+  composerSurfaceToolbarClass,
+  composerSurfaceTrailingClass,
+} from './composer-layout';
+import {
   COMPOSER_EXPANDED_FIELD_MAX_HEIGHT_PX,
   COMPOSER_FIELD_LINE_HEIGHT_PX,
   composerShellExpanded,
@@ -60,13 +73,6 @@ function CompactSlot(props: { class: string; children?: JSX.Element }) {
     <Show when={slot()}>
       <div class={props.class}>{slot()}</div>
     </Show>
-  );
-}
-
-function fieldClass(expanded: boolean) {
-  return cn(
-    'ui-composer-surface-v2__field',
-    expanded ? 'ui-composer-surface-v2__field--expanded' : 'ui-composer-surface-v2__field--compact',
   );
 }
 
@@ -171,7 +177,7 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
   const fieldCtx = (): ComposerShellFieldContext => ({
     expanded: expanded(),
     bindRef: bindFieldRef,
-    fieldClass: fieldClass(expanded()),
+    fieldClass: composerSurfaceFieldClass(expanded()),
     maxHeight: expanded()
       ? COMPOSER_EXPANDED_FIELD_MAX_HEIGHT_PX
       : COMPOSER_FIELD_LINE_HEIGHT_PX,
@@ -194,7 +200,7 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
   );
 
   return (
-    <div class={cn('ui-composer-shell', local.class, disabled() && 'opacity-60')}>
+    <div class={cn(composerShellClass, local.class, disabled() && 'opacity-60')}>
       {local.queue}
       {local.overlay}
       <div
@@ -203,11 +209,8 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
         aria-busy={surfaceAria()['aria-busy']}
         aria-disabled={surfaceAria()['aria-disabled']}
         data-testid={surfaceAria()['data-testid'] ?? 'composer-surface'}
-        class={cn(
-          'ui-composer-surface-v2',
-          expanded() ? 'ui-composer-surface-v2--expanded' : 'ui-composer-surface-v2--compact',
-          local.dropActive && 'ui-composer-surface--drop-target',
-        )}
+        class={composerSurfaceClass(expanded())}
+        data-drop-active={local.dropActive ? '' : undefined}
         aria-dropeffect={local.dropActive ? 'copy' : undefined}
         aria-describedby={local.dropActive ? local.dropDescribedById : undefined}
         data-composer-expanded={expanded() ? 'true' : 'false'}
@@ -219,11 +222,11 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
         {local.innerLeading}
 
         <Show when={expanded() && attachments().length > 0}>
-          <div class="ui-composer-surface-v2__attachments">
+          <div class={composerSurfaceAttachmentsClass}>
             <Show
               when={attachmentLayout() === 'tile'}
               fallback={
-                <div class="ui-composer-attachment-float" aria-label="Attached files">
+                <div class={composerAttachmentFloatClass} aria-label="Attached files">
                   <For each={attachments()}>
                     {(attachment) => <ComposerAttachmentChip {...attachment} />}
                   </For>
@@ -235,11 +238,14 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
           </div>
         </Show>
 
-        <div class="ui-composer-surface-v2__body">
+        <div
+          data-slot="composer-body"
+          class={composerSurfaceBodyClass(expanded(), attachments().length > 0)}
+        >
           <Show when={!expanded()}>
-            <CompactSlot class="ui-composer-surface-v2__leading">{local.compactLeading}</CompactSlot>
+            <CompactSlot class={composerSurfaceLeadingClass}>{local.compactLeading}</CompactSlot>
           </Show>
-          <div class="ui-composer-surface-v2__field-slot">
+          <div class={composerSurfaceFieldSlotClass(expanded())}>
             <Show
               when={local.renderField}
               fallback={defaultField()}
@@ -248,14 +254,14 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
             </Show>
           </div>
           <Show when={!expanded()}>
-            <CompactSlot class="ui-composer-surface-v2__trailing">{local.compactTrailing}</CompactSlot>
+            <CompactSlot class={composerSurfaceTrailingClass}>{local.compactTrailing}</CompactSlot>
           </Show>
         </div>
 
         {local.notices}
 
         <Show when={expanded()}>
-          <div class="ui-composer-surface-v2__toolbar">
+          <div class={composerSurfaceToolbarClass}>
             {local.compactLeading}
             {local.expandedToolbar ?? (
               <>
@@ -271,7 +277,7 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
             ref={(element) => local.registerFileInput?.(element)}
             type="file"
             multiple
-            class="ui-sr-only"
+            class="sr-only"
             aria-hidden="true"
             tabindex={-1}
             disabled={disabled()}
@@ -281,7 +287,7 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
       </div>
 
       <Show when={local.metaRow}>
-        <div class="ui-composer-meta-row">{local.metaRow}</div>
+        <div class={composerMetaRowClass}>{local.metaRow}</div>
       </Show>
     </div>
   );

@@ -6,6 +6,7 @@ import {
   ProjectSidebarShell,
   SectionHeader,
   SessionRowAccessory,
+  sidebarMistHintClass,
 } from '@peri/ui';
 import { cn } from '@/lib/catalog-ui';
 import {
@@ -251,7 +252,7 @@ export function ProjectSidebarLayout() {
                               <span class="min-w-0 flex-1 py-2">
                                 <span class="min-w-0 flex-1 truncate text-13 text-content-primary">{workspace.name}</span>
                                 <Show when={workspace.hint && !open()}>
-                                  <span class="mt-2 block truncate text-11 ui-sidebar-mist-hint">{workspace.hint}</span>
+                                  <span class={cn('mt-2 block truncate text-11', sidebarMistHintClass)}>{workspace.hint}</span>
                                 </Show>
                               </span>
                             </button>
@@ -272,7 +273,7 @@ export function ProjectSidebarLayout() {
                               <Show
                                 when={hasSessions()}
                                 fallback={
-                                  <div class="px-10 py-4 pl-36 text-11 ui-sidebar-mist-hint">{workspace.hint ?? 'No sessions yet'}</div>
+                                  <div class={cn('px-10 py-4 pl-36 text-11', sidebarMistHintClass)}>{workspace.hint ?? 'No sessions yet'}</div>
                                 }
                               >
                                 <For each={workspace.sessions}>

@@ -1,6 +1,6 @@
 import {
-  workbenchPanelChromeHeaderClass,
-  workbenchPanelChromeTitleClass,
+  workbenchFloatingPanelLeftClass,
+  workbenchFloatingPanelRightClass,
 } from '@peri/ui';
 
 export {
@@ -35,11 +35,9 @@ export {
 export const RESOURCE_PANEL_SURFACE_CLASS = 'inset-y-8 right-52 w-(--workbench-panel-width) overflow-hidden rounded-14 border border-border-subtle bg-surface-overlay shadow-overlay wide:w-(--workbench-panel-width-wide)';
 
 /** @deprecated 使用 `WorkbenchFloatingPanel`；保留 Rewind 等固定壳契约。 */
-export const RESOURCE_PANEL_FLOATING_SHELL_CLASS = 'ui-workbench-floating-panel ui-workbench-floating-panel--right';
+export const RESOURCE_PANEL_FLOATING_SHELL_CLASS = workbenchFloatingPanelRightClass;
 
 /** @deprecated 使用 `WorkbenchFloatingPanel` anchor=left。 */
-export const RESOURCE_PANEL_FLOATING_SHELL_LEFT_CLASS = 'ui-workbench-floating-panel ui-workbench-floating-panel--left';
+export const RESOURCE_PANEL_FLOATING_SHELL_LEFT_CLASS = workbenchFloatingPanelLeftClass;
 
-export const RESOURCE_PANEL_HEADER_CLASS = workbenchPanelChromeHeaderClass;
-
-export const RESOURCE_PANEL_TITLE_CLASS = workbenchPanelChromeTitleClass;
+export { workbenchPanelChromeHeaderClass as RESOURCE_PANEL_HEADER_CLASS, workbenchPanelChromeTitleClass as RESOURCE_PANEL_TITLE_CLASS } from '@peri/ui';

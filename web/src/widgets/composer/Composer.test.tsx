@@ -14,6 +14,13 @@ import { setPrincipalRole } from '@/features/auth/auth-state';
 import { composerDraft, setComposerDraft } from '@/features/composer/composer-draft';
 import { acknowledgeUnknownMessageDelivery, blockUnknownMessageDelivery, failMessageDelivery, markMessageDeliveryUncertain, messageSubmission, reconcileMessageProjection, resetMessageDelivery, startMessageDelivery } from '@/features/message/message-delivery';
 import { markRuntimeControlUncertain, resetRuntimeControls, startRuntimeControl } from '@/features/runtime/runtime-control';
+import {
+  composerInputClass,
+  composerPlusBtnClass,
+  composerSendBtnClass,
+  composerSlashOverlayClass,
+  composerSurfaceBaseClass,
+} from '@peri/ui';
 import { Composer } from './Composer';
 import { SessionModelMenu } from '@/widgets/shell/SessionConfigDialog';
 import { requestComposerQuote, resetComposerQuoteRequest } from '@/features/composer/composer-quote';
@@ -98,12 +105,12 @@ describe('Composer', () => {
     mountComposer();
 
     expect(screen.getByTestId('composer-surface')).toHaveAttribute('data-slot', 'composer-surface');
-    expect(screen.getByTestId('composer-surface')).toHaveClass('ui-composer-surface-v2');
-    expect(screen.getByRole('textbox')).toHaveClass('ui-composer-input');
-    expect(screen.getByRole('button', { name: 'Slash commands' })).toHaveClass('ui-composer-plus-btn');
+    expect(screen.getByTestId('composer-surface')).toHaveClass(composerSurfaceBaseClass);
+    expect(screen.getByRole('textbox')).toHaveClass(composerInputClass);
+    expect(screen.getByRole('button', { name: 'Slash commands' })).toHaveClass(composerPlusBtnClass);
     expect(screen.getByTestId('composer-runtime')).toHaveTextContent('Nova 4.1');
     expect(screen.getByTestId('composer-runtime')).toHaveClass('text-content-secondary');
-    expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('ui-composer-send-btn');
+    expect(screen.getByRole('button', { name: 'Send' })).toHaveClass(composerSendBtnClass);
   });
 
   it('adds a quoted answer to the current draft without replacing existing text', async () => {
@@ -318,7 +325,7 @@ describe('Composer', () => {
     const input = screen.getByRole('textbox');
     fireEvent.input(input, { target: { value: '/' } });
     expect(screen.getByRole('listbox', { name: 'Available commands and skills' })).toBeInTheDocument();
-    expect(screen.getByTestId('slash-menu')).toHaveClass('ui-composer-slash-overlay');
+    expect(screen.getByTestId('slash-menu')).toHaveClass(composerSlashOverlayClass);
     fireEvent.click(screen.getByRole('option', { name: /auto-issue-fixer.*Fix an issue/ }));
     await waitFor(() => expect(input).toHaveValue('/auto-issue-fixer '));
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();

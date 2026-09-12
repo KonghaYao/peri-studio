@@ -10,6 +10,7 @@ import {
   InlineNotice,
   WorkbenchShell,
   cn,
+  workbenchPanelSurfaceClass,
 } from '@peri/ui';
 import {
   activateResourceProject,
@@ -175,7 +176,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   };
   const terminalSurfaceParked = () => holdTerminalSurface() && !terminalPanelVisible();
   const showPanel = () => !!view();
-  const panelSurfaceClass = 'ui-workbench-panel-surface';
+  const panelSurfaceClass = workbenchPanelSurfaceClass;
   const terminalParkedClass = 'fixed z-0 top-0 left-0 w-0 h-0 min-h-0 overflow-hidden opacity-0 pointer-events-none border-0 p-0 shadow-none';
   const panelHeaderActions = () => (
     <>

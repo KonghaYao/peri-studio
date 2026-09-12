@@ -1,6 +1,12 @@
 import { splitProps, type Component, type JSX } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 import { cn } from '../../lib/cn';
+import { decisionQueueShellClass, decisionQueueSurfaceClass } from './decision-queue-layout';
+
+export {
+  decisionQueueShellClass,
+  decisionQueueSurfaceClass,
+} from './decision-queue-layout';
 
 export type DecisionQueueShellProps = {
   class?: string;
@@ -28,12 +34,12 @@ export const DecisionQueueShell: Component<DecisionQueueShellProps> = (props) =>
       component={tag()}
       data-slot="decision-queue-shell"
       data-testid={rest['data-testid']}
-      class={cn('ui-decision-queue-shell', local.class)}
+      class={cn(decisionQueueShellClass, local.class)}
       aria-label={rest['aria-label']}
     >
       <div
         data-testid={local.surfaceTestId}
-        class={cn('ui-decision-queue-shell__surface', local.surfaceClass)}
+        class={cn(decisionQueueSurfaceClass, local.surfaceClass)}
       >
         {local.children}
       </div>

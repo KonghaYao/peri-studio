@@ -53,6 +53,7 @@ test('component geometry tokens are declared once and consumed by production wid
     readFileSync(join(import.meta.dirname, '..', 'src', 'styles', 'extra.css'), 'utf8'),
     pkgUi('components', 'composer', 'ComposerShell.tsx'),
     pkgUi('components', 'composer', 'ComposerToolbarControls.tsx'),
+    pkgUi('components', 'composer', 'composer-layout.ts'),
     pkgUi('styles', 'extra.css'),
   ].join('\n');
   const tool = read('widgets', 'chat', 'ToolCallActivity.tsx');

@@ -2,6 +2,12 @@ import { AlertCircle, FileText, X } from 'lucide-solid';
 import { Show, type Component } from 'solid-js';
 import { cn } from '../../lib/cn';
 import { Spinner } from '../Spinner';
+import {
+  composerAttachmentChipBusyClass,
+  composerAttachmentChipClass,
+  composerAttachmentChipFailedClass,
+  composerAttachmentChipRemoveClass,
+} from './composer-layout';
 import type { ComposerAttachmentItem } from './composer-attachment-types';
 
 export type ComposerAttachmentChipProps = Pick<
@@ -25,9 +31,9 @@ export const ComposerAttachmentChip: Component<ComposerAttachmentChipProps> = (p
   return (
     <span
       class={cn(
-        'ui-composer-attachment-chip',
-        failed() && 'ui-composer-attachment-chip--failed',
-        busy() && 'ui-composer-attachment-chip--busy',
+        composerAttachmentChipClass,
+        failed() && composerAttachmentChipFailedClass,
+        busy() && composerAttachmentChipBusyClass,
       )}
       title={title()}
       role={failed() ? 'alert' : undefined}
@@ -61,7 +67,7 @@ export const ComposerAttachmentChip: Component<ComposerAttachmentChipProps> = (p
       <Show when={props.status === 'ready' && props.onRemove}>
         <button
           type="button"
-          class="ui-composer-attachment-chip__remove"
+          class={composerAttachmentChipRemoveClass}
           aria-label={`Remove ${props.name}`}
           onClick={props.onRemove}
         >

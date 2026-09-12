@@ -1,5 +1,9 @@
 import { Show, splitProps, type Component, type JSX } from 'solid-js';
 import { cn } from '../../lib/cn';
+import {
+  workbenchShellCompactClass,
+  workbenchShellDefaultClass,
+} from './workbench-layout';
 
 export type WorkbenchShellProps = {
   class?: string;
@@ -26,8 +30,7 @@ export const WorkbenchShell: Component<WorkbenchShellProps> = (props) => {
   return (
     <aside
       class={cn(
-        'ui-workbench-shell',
-        local.compact && 'ui-workbench-shell--compact',
+        local.compact ? workbenchShellCompactClass : workbenchShellDefaultClass,
         local.class,
       )}
       aria-label={local['aria-label'] ?? 'Workspace resources'}

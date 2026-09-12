@@ -1,6 +1,7 @@
 import { splitProps, type Component, type JSX } from 'solid-js';
 import { cn } from '../../lib/cn';
 import { useTranscriptRowMeasure } from './transcript-row-shell';
+import { transcriptRowClass } from './transcript-layout';
 
 export type TranscriptRowShellProps = {
   class?: string;
@@ -20,7 +21,7 @@ export const TranscriptRowShell: Component<TranscriptRowShellProps> = (props) =>
     <div
       {...rest}
       ref={rowRef}
-      class={cn('ui-transcript-row flow-root', local.class)}
+      class={cn(transcriptRowClass, local.class)}
       role="listitem"
       aria-posinset={local.position}
       aria-setsize={local.size}
