@@ -1,0 +1,253 @@
+/* T2 · Overlay & surface motion primitives. */
+
+/* ------------------------------------------------------------------ */
+/* Variable-driven enter / exit (collapsible regions, composable)      */
+/* ------------------------------------------------------------------ */
+
+@keyframes ui-enter {
+  from {
+    opacity: var(--ui-enter-opacity, 1);
+    transform: translate3d(var(--ui-enter-translate-x, 0), var(--ui-enter-translate-y, 0), 0)
+      scale3d(var(--ui-enter-scale, 1), var(--ui-enter-scale, 1), var(--ui-enter-scale, 1));
+  }
+}
+
+@keyframes ui-exit {
+  to {
+    opacity: var(--ui-exit-opacity, 1);
+    transform: translate3d(var(--ui-exit-translate-x, 0), var(--ui-exit-translate-y, 0), 0)
+      scale3d(var(--ui-exit-scale, 1), var(--ui-exit-scale, 1), var(--ui-exit-scale, 1));
+  }
+}
+
+.animate-in {
+  animation-name: ui-enter;
+  animation-duration: var(--ui-animation-duration, var(--duration-surface-in));
+  animation-timing-function: var(--ui-animation-easing, var(--ease-surface-in));
+  animation-fill-mode: both;
+}
+
+.animate-out {
+  animation-name: ui-exit;
+  animation-duration: var(--ui-animation-duration, var(--duration-surface-out));
+  animation-timing-function: var(--ui-animation-easing, var(--ease-surface-out));
+  animation-fill-mode: both;
+}
+
+.fade-in-0 {
+  --ui-enter-opacity: 0;
+}
+
+.fade-out-0 {
+  --ui-exit-opacity: 0;
+}
+
+.zoom-in-95 {
+  --ui-enter-scale: 0.95;
+}
+
+.zoom-out-95 {
+  --ui-exit-scale: 0.95;
+}
+
+.slide-in-from-top-1 {
+  --ui-enter-translate-y: calc(var(--motion-slide-sm) * -1);
+}
+
+.slide-in-from-top-2 {
+  --ui-enter-translate-y: calc(var(--motion-slide-md) * -1);
+}
+
+.slide-out-to-top-1 {
+  --ui-exit-translate-y: calc(var(--motion-slide-sm) * -1);
+}
+
+.slide-out-to-top-2 {
+  --ui-exit-translate-y: calc(var(--motion-slide-md) * -1);
+}
+
+.slide-in-from-bottom {
+  --ui-enter-translate-y: 100%;
+}
+
+.slide-out-to-bottom {
+  --ui-exit-translate-y: 100%;
+}
+
+.slide-in-from-top {
+  --ui-enter-translate-y: -100%;
+}
+
+.slide-out-to-top {
+  --ui-exit-translate-y: -100%;
+}
+
+.slide-in-from-left {
+  --ui-enter-translate-x: -100%;
+}
+
+.slide-out-to-left {
+  --ui-exit-translate-x: -100%;
+}
+
+.slide-in-from-right {
+  --ui-enter-translate-x: 100%;
+}
+
+.slide-out-to-right {
+  --ui-exit-translate-x: 100%;
+}
+
+.duration-overlay-scrim-in {
+  --ui-animation-duration: var(--duration-overlay-scrim-in);
+  --ui-animation-easing: var(--ease-overlay-in);
+}
+
+.duration-overlay-scrim-out {
+  --ui-animation-duration: var(--duration-overlay-scrim-out);
+  --ui-animation-easing: var(--ease-overlay-out);
+}
+
+.duration-surface-in {
+  --ui-animation-duration: var(--duration-surface-in);
+  --ui-animation-easing: var(--ease-surface-in);
+}
+
+.duration-surface-out {
+  --ui-animation-duration: var(--duration-surface-out);
+  --ui-animation-easing: var(--ease-surface-out);
+}
+
+.duration-panel-in {
+  --ui-animation-duration: var(--duration-panel-in);
+  --ui-animation-easing: var(--ease-panel-in);
+}
+
+.duration-panel-out {
+  --ui-animation-duration: var(--duration-panel-out);
+  --ui-animation-easing: var(--ease-panel-out);
+}
+
+/* ------------------------------------------------------------------ */
+/* Overlay motion recipes (Kobalte data-expanded / data-closed)        */
+/* ------------------------------------------------------------------ */
+
+@keyframes ui-modal-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + var(--motion-modal-enter-offset))) scale(0.96);
+  }
+}
+
+@keyframes ui-modal-out {
+  to {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + var(--motion-modal-exit-offset))) scale(0.98);
+  }
+}
+
+@keyframes ui-content-show {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes ui-content-hide {
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes ui-tooltip-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.ui-overlay-scrim-motion[data-expanded] {
+  animation: ui-enter var(--duration-overlay-scrim-in) var(--ease-overlay-in) both;
+  --ui-enter-opacity: 0;
+}
+
+.ui-overlay-scrim-motion[data-closed] {
+  animation: ui-exit var(--duration-overlay-scrim-out) var(--ease-overlay-out) both;
+  --ui-exit-opacity: 0;
+}
+
+.ui-modal-dialog-motion[data-expanded] {
+  animation: ui-modal-in var(--duration-overlay-in) var(--ease-overlay-in) both;
+}
+
+.ui-modal-dialog-motion[data-closed] {
+  animation: ui-modal-out var(--duration-overlay-out) var(--ease-overlay-out) both;
+}
+
+.ui-surface-popover-motion[data-expanded] {
+  animation: ui-enter var(--duration-surface-in) var(--ease-surface-in) both;
+  --ui-enter-opacity: 0;
+  --ui-enter-scale: 0.95;
+}
+
+.ui-surface-popover-motion[data-closed] {
+  animation: ui-exit var(--duration-surface-out) var(--ease-surface-out) both;
+  --ui-exit-opacity: 0;
+  --ui-exit-scale: 0.95;
+}
+
+.ui-menu-surface-motion[data-expanded] {
+  animation: ui-content-show var(--duration-surface-in) var(--ease-surface-in) both;
+}
+
+.ui-menu-surface-motion[data-closed],
+.ui-menu-surface-motion:not([data-expanded]) {
+  animation: ui-content-hide var(--duration-surface-out) var(--ease-surface-out) both;
+}
+
+.ui-panel-sheet-motion[data-expanded] {
+  animation: ui-enter var(--duration-panel-in) var(--ease-panel-in) both;
+}
+
+.ui-panel-sheet-motion[data-closed] {
+  animation: ui-exit var(--duration-panel-out) var(--ease-panel-out) both;
+}
+
+.ui-tooltip-motion[data-expanded] {
+  animation: ui-tooltip-enter var(--duration-fast) var(--ease-surface-in) both;
+}
+
+.ui-disclosure-motion[data-expanded] {
+  animation: ui-enter var(--duration-fast) var(--ease-standard) both;
+  --ui-enter-opacity: 0;
+  --ui-enter-translate-y: calc(var(--motion-slide-sm) * -1);
+}
+
+.ui-disclosure-motion[data-closed] {
+  animation: ui-exit var(--duration-fast) var(--ease-standard) both;
+  --ui-exit-opacity: 0;
+  --ui-exit-translate-y: calc(var(--motion-slide-sm) * -1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .animate-out,
+  .ui-overlay-scrim-motion[data-expanded],
+  .ui-overlay-scrim-motion[data-closed],
+  .ui-modal-dialog-motion[data-expanded],
+  .ui-modal-dialog-motion[data-closed],
+  .ui-surface-popover-motion[data-expanded],
+  .ui-surface-popover-motion[data-closed],
+  .ui-menu-surface-motion[data-expanded],
+  .ui-menu-surface-motion[data-closed],
+  .ui-menu-surface-motion:not([data-expanded]),
+  .ui-panel-sheet-motion[data-expanded],
+  .ui-panel-sheet-motion[data-closed],
+  .ui-tooltip-motion[data-expanded],
+  .ui-disclosure-motion[data-expanded],
+  .ui-disclosure-motion[data-closed],
+  .ui-tooltip-animate {
+    animation: none !important;
+  }
+}

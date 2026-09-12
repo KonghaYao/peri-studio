@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
+import { cleanup, fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { createSignal } from 'solid-js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -6,6 +6,7 @@ import {
   PromptInputFooter,
   PromptInputSubmit,
   PromptInputTextarea,
+  PromptInputTools,
   PromptInputToolbar,
 } from './PromptInput';
 
@@ -14,21 +15,21 @@ afterEach(() => {
 });
 
 describe('PromptInput', () => {
-  it('disables submit when empty and submits trimmed text on Enter', () => {
+  it('disables submit when empty and submits trimmed text on Enter', async () => {
     const onSubmit = vi.fn();
 
     render(() => (
       <PromptInput onSubmit={onSubmit}>
         <PromptInputTextarea aria-label="Message" />
         <PromptInputFooter>
-          <PromptInputToolbar />
+          <PromptInputTools />
           <PromptInputSubmit />
         </PromptInputFooter>
       </PromptInput>
     ));
 
     const textarea = screen.getByRole('textbox', { name: 'Message' });
-    const submit = screen.getByRole('button', { name: 'Send message' });
+    const submit = screen.getByRole('button', { name: 'Submit' });
 
     expect(submit).toBeDisabled();
 
@@ -36,7 +37,9 @@ describe('PromptInput', () => {
     expect(submit).not.toBeDisabled();
 
     fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
-    expect(onSubmit).toHaveBeenCalledWith({ text: 'hello' });
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith({ text: 'hello', files: [] });
+    });
     expect(textarea).toHaveValue('');
   });
 
@@ -91,8 +94,47 @@ describe('PromptInput', () => {
 
     expect(document.querySelector('[data-slot="prompt-input"]')).toBeInTheDocument();
     expect(document.querySelector('[data-slot="prompt-input-textarea"]')).toHaveClass('min-h-36');
-    expect(screen.getByTestId('toolbar')).toHaveAttribute('data-slot', 'prompt-input-toolbar');
+    expect(screen.getByTestId('toolbar')).toHaveAttribute('data-slot', 'prompt-input-tools');
     expect(document.querySelector('[data-slot="prompt-input-submit"]')).toBeInTheDocument();
     expect(document.querySelector('[data-slot="prompt-input-footer"]')).toBeInTheDocument();
+  });
+
+  it('includes files in submit payload and supports ChatStatus stop', () => {
+    const onSubmit = vi.fn();
+    const onStop = vi.fn();
+
+    render(() => (
+      <PromptInput onSubmit={onSubmit}>
+        <PromptInputTextarea aria-label="Message" />
+        <PromptInputSubmit status="streaming" onStop={onStop} />
+      </PromptInput>
+    ));
+
+    const stopButton = screen.getByRole('button', { name: 'Stop' });
+    expect(stopButton).not.toBeDisabled();
+    fireEvent.click(stopButton);
+    expect(onStop).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects files that do not match accept', () => {
+    const onError = vi.fn();
+    const onSubmit = vi.fn();
+
+    render(() => (
+      <PromptInput accept="image/*" onError={onError} onSubmit={onSubmit}>
+        <PromptInputTextarea aria-label="Message" />
+        <PromptInputSubmit />
+      </PromptInput>
+    ));
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['hello'], 'notes.txt', { type: 'text/plain' });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(onError).toHaveBeenCalledWith({
+      code: 'accept',
+      message: 'No files match the accepted types.',
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 });

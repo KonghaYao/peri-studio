@@ -9,7 +9,7 @@ export const Sources: Component<ComponentProps<typeof Collapsible>> = (props) =>
   return (
     <Collapsible
       data-slot="sources"
-      class={cn('mb-8 w-full', local.class)}
+      class={cn('mb-8 w-full text-12 text-content-primary', local.class)}
       {...rest}
     >
       {local.children}
@@ -28,15 +28,14 @@ export const SourcesTrigger: Component<SourcesTriggerProps> = (props) => {
     <CollapsibleTrigger
       data-slot="sources-trigger"
       class={cn(
-        'ui-sources-trigger flex w-full cursor-pointer items-center gap-8 border-0 bg-transparent py-4 text-left text-12 text-content-muted transition-colors duration-120 outline-none hover:text-content-secondary focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2',
+        'ui-sources-trigger flex w-fit cursor-pointer items-center gap-8 border-0 bg-transparent py-4 text-left text-12 outline-none transition-colors duration-120 hover:text-content-secondary focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2',
         local.class,
       )}
       {...rest}
     >
       {local.children ?? (
         <>
-          <Book size={14} strokeWidth={1.7} class="shrink-0" aria-hidden="true" />
-          <span class="min-w-0 flex-1">Used {local.count} sources</span>
+          <span class="font-medium">Used {local.count} sources</span>
           <ChevronDown
             size={14}
             strokeWidth={1.7}
@@ -54,10 +53,13 @@ export const SourcesContent: Component<ComponentProps<typeof CollapsibleContent>
   return (
     <CollapsibleContent
       data-slot="sources-content"
-      class={cn('flex flex-col gap-8 overflow-hidden text-12 transition-all duration-120 ease-in-out', local.class)}
+      class={cn(
+        'mt-12 flex w-fit flex-col gap-8 overflow-hidden text-12 transition-all duration-120 ease-in-out',
+        local.class,
+      )}
       {...rest}
     >
-      <div class="flex flex-col gap-8 pb-8">{local.children}</div>
+      {local.children}
     </CollapsibleContent>
   );
 };
@@ -66,7 +68,7 @@ type SourceItemProps = ComponentProps<'a'> & {
   title?: string;
 };
 
-/** 单条来源链接。 */
+/** 单条来源链接（AI Elements `Source` 别名见 `Source`）。 */
 export const SourceItem: Component<SourceItemProps> = (props) => {
   const [local, rest] = splitProps(props, ['class', 'href', 'title', 'children']);
   return (
@@ -76,17 +78,20 @@ export const SourceItem: Component<SourceItemProps> = (props) => {
       target="_blank"
       rel="noreferrer"
       class={cn(
-        'flex items-start gap-8 rounded-6 px-8 py-6 text-12 text-content-secondary transition-colors duration-120 hover:bg-interaction-hover hover:text-content-primary focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2',
+        'flex items-center gap-8 text-12 text-content-secondary transition-colors duration-120 hover:text-content-primary focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2',
         local.class,
       )}
       {...rest}
     >
       {local.children ?? (
         <>
-          <Book size={14} strokeWidth={1.7} class="mt-1 shrink-0 text-content-muted" aria-hidden="true" />
-          <span class="min-w-0 flex-1 truncate">{local.title ?? local.href}</span>
+          <Book size={14} strokeWidth={1.7} class="shrink-0 text-content-muted" aria-hidden="true" />
+          <span class="block min-w-0 truncate font-medium">{local.title ?? local.href}</span>
         </>
       )}
     </a>
   );
 };
+
+/** AI Elements `Source` 别名。 */
+export const Source = SourceItem;

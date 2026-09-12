@@ -10,6 +10,7 @@ import {
 } from 'solid-js';
 import { cn } from '../lib/cn';
 import { CopyButton } from './CopyButton';
+import { Select, type SelectOption } from './Select';
 
 interface CodeBlockContextValue {
   code: () => string;
@@ -58,70 +59,35 @@ const LANGUAGE_LABELS: Record<string, string> = {
   yaml: 'YAML',
   yml: 'YAML',
   zsh: 'Zsh',
+  text: 'Plain text',
 };
 
 function formatLanguage(language: string) {
   const normalized = language.toLowerCase();
-  return LANGUAGE_LABELS[normalized] ?? (normalized === 'text' ? 'Plain text' : language);
+  return LANGUAGE_LABELS[normalized] ?? language;
 }
 
-type CodeBlockRootProps = ComponentProps<'div'> & {
-  code: string;
-  language?: string;
-  filename?: string;
-  showLineNumbers?: boolean;
-  startLine?: number;
+type CodeBlockContainerProps = ComponentProps<'div'> & {
+  language: string;
 };
 
-/** 代码块容器：提供 code 上下文，默认渲染语言标签、复制按钮与 pre/code 正文。 */
-export const CodeBlock: Component<CodeBlockRootProps> = (props) => {
-  const [local, rest] = splitProps(props, [
-    'class',
-    'code',
-    'language',
-    'filename',
-    'showLineNumbers',
-    'startLine',
-    'children',
-  ]);
-  const context: CodeBlockContextValue = {
-    code: () => local.code.replace(/\n$/, ''),
-  };
-
+export const CodeBlockContainer: Component<CodeBlockContainerProps> = (props) => {
+  const [local, rest] = splitProps(props, ['class', 'language', 'style']);
   return (
-    <CodeBlockContext.Provider value={context}>
-      <div
-        data-slot="code-block"
-        class={cn(
-          'my-16 overflow-hidden rounded-8 border border-border-subtle bg-surface-overlay',
-          local.class,
-        )}
-        {...rest}
-      >
-        <Show
-          when={local.children}
-          fallback={
-            <>
-              <CodeBlockHeader>
-                <CodeBlockTitle language={local.language} />
-                <Show when={local.filename}>
-                  <span class="min-w-0 truncate text-12 text-content-muted">{local.filename}</span>
-                </Show>
-                <CodeBlockActions>
-                  <CodeBlockCopyButton />
-                </CodeBlockActions>
-              </CodeBlockHeader>
-              <CodeBlockBody
-                showLineNumbers={local.showLineNumbers}
-                startLine={local.startLine}
-              />
-            </>
-          }
-        >
-          {local.children}
-        </Show>
-      </div>
-    </CodeBlockContext.Provider>
+    <div
+      data-slot="code-block-container"
+      data-language={local.language}
+      class={cn(
+        'group relative w-full overflow-hidden rounded-8 border border-border-subtle bg-surface text-content-primary',
+        local.class,
+      )}
+      style={{
+        'contain-intrinsic-size': 'auto 200px',
+        'content-visibility': 'auto',
+        ...(typeof local.style === 'object' && local.style !== null ? local.style : {}),
+      }}
+      {...rest}
+    />
   );
 };
 
@@ -131,7 +97,7 @@ export const CodeBlockHeader: Component<ComponentProps<'div'>> = (props) => {
     <div
       data-slot="code-block-header"
       class={cn(
-        'flex min-h-36 items-center gap-8 border-b border-border-subtle px-8 py-4',
+        'flex items-center justify-between border-b border-border-subtle bg-surface-overlay/80 px-12 py-8 text-12 text-content-muted',
         local.class,
       )}
       {...rest}
@@ -139,18 +105,25 @@ export const CodeBlockHeader: Component<ComponentProps<'div'>> = (props) => {
   );
 };
 
-export const CodeBlockTitle: Component<ComponentProps<'span'> & { language?: string }> = (props) => {
-  const [local, rest] = splitProps(props, ['class', 'language', 'children']);
-  const label = () =>
-    local.children ?? formatLanguage(local.language ?? 'text');
+export const CodeBlockTitle: Component<ComponentProps<'div'>> = (props) => {
+  const [local, rest] = splitProps(props, ['class']);
+  return (
+    <div
+      data-slot="code-block-title"
+      class={cn('flex min-w-0 items-center gap-8', local.class)}
+      {...rest}
+    />
+  );
+};
+
+export const CodeBlockFilename: Component<ComponentProps<'span'>> = (props) => {
+  const [local, rest] = splitProps(props, ['class']);
   return (
     <span
-      data-slot="code-block-title"
-      class={cn('mr-auto min-w-0 truncate text-12 font-medium text-content-secondary', local.class)}
+      data-slot="code-block-filename"
+      class={cn('font-mono text-12 text-content-secondary', local.class)}
       {...rest}
-    >
-      {label()}
-    </span>
+    />
   );
 };
 
@@ -159,22 +132,94 @@ export const CodeBlockActions: Component<ComponentProps<'div'>> = (props) => {
   return (
     <div
       data-slot="code-block-actions"
-      class={cn('flex shrink-0 items-center gap-4', local.class)}
+      class={cn('-my-4 -mr-4 flex shrink-0 items-center gap-8', local.class)}
       {...rest}
     />
   );
 };
 
 export const CodeBlockCopyButton: Component<
-  Omit<ComponentProps<typeof CopyButton>, 'text'> & { text?: string }
+  Omit<ComponentProps<typeof CopyButton>, 'text'> & {
+    text?: string;
+    onCopy?: () => void;
+    onError?: (error: Error) => void;
+    timeout?: number;
+  }
 > = (props) => {
   const { code } = useCodeBlock();
-  const [local, rest] = splitProps(props, ['text', 'label', 'size']);
+  const [local, rest] = splitProps(props, ['text', 'label', 'size', 'onCopy', 'onError', 'timeout']);
   return (
     <CopyButton
       text={local.text ?? code()}
       label={local.label ?? 'Copy code'}
       size={local.size ?? 'compact'}
+      {...rest}
+    />
+  );
+};
+
+type CodeBlockLanguageSelectorProps = {
+  options: SelectOption[];
+  value?: string;
+  onChange?: (value: string) => void;
+  class?: string;
+  disabled?: boolean;
+  'aria-label'?: string;
+};
+
+/** 代码块语言切换：Peri Select plain 变体封装。 */
+export const CodeBlockLanguageSelector: Component<CodeBlockLanguageSelectorProps> = (props) => {
+  const [local, rest] = splitProps(props, ['class']);
+  return (
+    <Select
+      variant="plain"
+      class={cn('h-28 min-w-0 px-8 text-12', local.class)}
+      {...rest}
+    />
+  );
+};
+
+export const CodeBlockLanguageSelectorTrigger: Component<ComponentProps<'div'>> = (props) => {
+  const [local, rest] = splitProps(props, ['class']);
+  return (
+    <div
+      data-slot="code-block-language-selector-trigger"
+      class={cn('inline-flex h-28 items-center', local.class)}
+      {...rest}
+    />
+  );
+};
+
+export const CodeBlockLanguageSelectorValue: Component<ComponentProps<'span'>> = (props) => {
+  const [local, rest] = splitProps(props, ['class']);
+  return (
+    <span
+      data-slot="code-block-language-selector-value"
+      class={cn('text-12 text-content-secondary', local.class)}
+      {...rest}
+    />
+  );
+};
+
+export const CodeBlockLanguageSelectorContent: Component<ComponentProps<'div'>> = (props) => {
+  const [local, rest] = splitProps(props, ['class']);
+  return (
+    <div
+      data-slot="code-block-language-selector-content"
+      class={cn('hidden', local.class)}
+      aria-hidden="true"
+      {...rest}
+    />
+  );
+};
+
+export const CodeBlockLanguageSelectorItem: Component<ComponentProps<'div'>> = (props) => {
+  const [local, rest] = splitProps(props, ['class']);
+  return (
+    <div
+      data-slot="code-block-language-selector-item"
+      class={cn('hidden', local.class)}
+      aria-hidden="true"
       {...rest}
     />
   );
@@ -203,7 +248,7 @@ export const CodeBlockBody: Component<CodeBlockBodyProps> = (props) => {
     <pre
       data-slot="code-block-body"
       class={cn(
-        'm-0 max-h-520 overflow-auto bg-surface-sunken px-0 py-12 font-mono text-12 leading-relaxed text-content-primary',
+        'm-0 overflow-auto bg-surface-sunken p-16 font-mono text-12 leading-relaxed text-content-primary',
         local.class,
       )}
       {...rest}
@@ -216,13 +261,13 @@ export const CodeBlockBody: Component<CodeBlockBodyProps> = (props) => {
               {(line, index) => (
                 <span
                   class={cn(
-                    'grid min-h-18 px-14',
+                    'grid min-h-18',
                     local.showLineNumbers ? 'grid-cols-code-line' : 'grid-cols-1',
                   )}
                 >
                   <Show when={local.showLineNumbers}>
                     <span
-                      class="mr-14 min-w-20 select-none text-right text-content-faint"
+                      class="mr-16 min-w-32 select-none text-right text-content-faint"
                       aria-hidden="true"
                     >
                       {startLine() + index()}
@@ -241,5 +286,78 @@ export const CodeBlockBody: Component<CodeBlockBodyProps> = (props) => {
         </Show>
       </code>
     </pre>
+  );
+};
+
+type CodeBlockContentProps = {
+  code?: string;
+  showLineNumbers?: boolean;
+  startLine?: number;
+  class?: string;
+};
+
+export const CodeBlockContent: Component<CodeBlockContentProps> = (props) => (
+  <div class="relative overflow-auto">
+    <CodeBlockBody
+      code={props.code}
+      showLineNumbers={props.showLineNumbers}
+      startLine={props.startLine}
+      class={props.class}
+    />
+  </div>
+);
+
+type CodeBlockRootProps = ComponentProps<'div'> & {
+  code: string;
+  language?: string;
+  showLineNumbers?: boolean;
+  startLine?: number;
+};
+
+/** 代码块根：提供 code 上下文；可组合 header/actions 或走默认布局。 */
+export const CodeBlock: Component<CodeBlockRootProps> = (props) => {
+  const [local, rest] = splitProps(props, [
+    'class',
+    'code',
+    'language',
+    'showLineNumbers',
+    'startLine',
+    'children',
+  ]);
+  const language = () => local.language ?? 'text';
+  const context: CodeBlockContextValue = {
+    code: () => local.code.replace(/\n$/, ''),
+  };
+
+  return (
+    <CodeBlockContext.Provider value={context}>
+      <CodeBlockContainer language={language()} data-slot="code-block" class={local.class} {...rest}>
+        <Show
+          when={local.children}
+          fallback={
+            <>
+              <CodeBlockHeader>
+                <CodeBlockTitle>
+                  <CodeBlockFilename>{formatLanguage(language())}</CodeBlockFilename>
+                </CodeBlockTitle>
+                <CodeBlockActions>
+                  <CodeBlockCopyButton />
+                </CodeBlockActions>
+              </CodeBlockHeader>
+              <CodeBlockContent
+                showLineNumbers={local.showLineNumbers}
+                startLine={local.startLine}
+              />
+            </>
+          }
+        >
+          {local.children}
+          <CodeBlockContent
+            showLineNumbers={local.showLineNumbers}
+            startLine={local.startLine}
+          />
+        </Show>
+      </CodeBlockContainer>
+    </CodeBlockContext.Provider>
   );
 };

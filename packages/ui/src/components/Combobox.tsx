@@ -10,6 +10,7 @@ import {
 } from '@kobalte/core/combobox';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import { cn } from '../lib/cn';
+import { menuSurfaceMotion } from '../lib/overlay-motion';
 
 /**
  * Kobalte Combobox 根：选项与 itemComponent 在 Root 上声明。
@@ -89,7 +90,8 @@ export function ComboboxContent<T extends ValidComponent = 'div'>(props: Content
       <KCombobox.Content
         class={cn(
           'z-(--z-overlay) overflow-hidden rounded-8 border border-border-subtle bg-surface p-4 text-13 text-text-primary shadow-popover outline-none',
-          'origin-[var(--kb-combobox-content-transform-origin)] animate-content-hide data-[expanded]:animate-content-show',
+          'origin-[var(--kb-combobox-content-transform-origin)]',
+          menuSurfaceMotion,
           'min-w-(--container-menu-min)',
           local.class,
         )}

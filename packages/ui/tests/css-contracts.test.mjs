@@ -38,6 +38,7 @@ const cssFiles = () => [
   'styles/index.css',
   'styles/tokens.css',
   'styles/theme.css',
+  'styles/motion.css',
   'styles/primitives.css',
   'styles/extra.css',
   'styles/typeset.css',
@@ -85,11 +86,11 @@ const cssSelectors = (source) => {
 
 const read = (file) => readFileSync(file, 'utf8');
 
-test('package stylesheet entry order is tokens → theme → primitives → extra → typeset', () => {
+test('package stylesheet entry order is tokens → theme → motion → primitives → extra → typeset', () => {
   const entry = read(join(srcRoot, 'styles', 'index.css'));
   assert.match(
     entry,
-    /@import '\.\/tokens\.css';\s*@import '\.\/theme\.css';\s*@import '\.\/primitives\.css';\s*@import '\.\/extra\.css';\s*@import '\.\/typeset\.css';/s,
+    /@import '\.\/tokens\.css';\s*@import '\.\/theme\.css';\s*@import '\.\/motion\.css';\s*@import '\.\/primitives\.css';\s*@import '\.\/extra\.css';\s*@import '\.\/typeset\.css';/s,
   );
 });
 
@@ -172,6 +173,22 @@ test('duplicate component tests and consumer T2 copies are gone', () => {
 test('extra.css imports scroll-fade and shimmer utilities', () => {
   const extra = read(join(srcRoot, 'styles', 'extra.css'));
   assert.match(extra, /@import '\.\/utilities\.css';/);
+});
+
+test('overlay motion recipes are defined', () => {
+  const motion = read(join(srcRoot, 'styles', 'motion.css'));
+  for (const utility of [
+    'ui-overlay-scrim-motion',
+    'ui-modal-dialog-motion',
+    'ui-surface-popover-motion',
+    'ui-menu-surface-motion',
+    'ui-panel-sheet-motion',
+    'animate-in',
+    'animate-out',
+  ]) {
+    assert.match(motion, new RegExp(`\\.${utility}\\b`), `missing .${utility} motion utility`);
+  }
+  assert.match(motion, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
 test('scroll-fade and shimmer utility classes are defined', () => {

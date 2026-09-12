@@ -1,53 +1,94 @@
 import {
-  createContext,
   createMemo,
+  createSignal,
+  onCleanup,
+  onMount,
   splitProps,
-  useContext,
   type Component,
   type ComponentProps,
   type JSX,
 } from 'solid-js';
-import { CornerDownLeft } from 'lucide-solid';
 import { cn } from '../lib/cn';
 import { createControllableSignal } from '../lib/controllable-state';
-import { Button } from './Button';
-import { Textarea } from './Textarea';
+import {
+  createReferencedSourcesContext,
+  LocalAttachmentsContext,
+  LocalReferencedSourcesContext,
+  useOptionalPromptInputController,
+  type PromptInputAttachmentsContext,
+} from './prompt-input/context';
+import { PromptInputFormContext } from './prompt-input/form-context';
+import {
+  convertBlobUrlToDataUrl,
+  filesToPromptInputParts,
+  revokePromptInputFileUrls,
+  validateIncomingFiles,
+} from './prompt-input/helpers';
+import type {
+  PromptInputError,
+  PromptInputFilePart,
+  PromptInputMessage,
+  PromptInputSourceDocument,
+} from './prompt-input/types';
 
-export type PromptInputSubmitData = {
-  text: string;
-};
-
-interface PromptInputContextValue {
-  text: () => string;
-  setText: (value: string) => void;
-  isEmpty: () => boolean;
-  submit: () => void;
-}
-
-const PromptInputContext = createContext<PromptInputContextValue>();
-
-function usePromptInputContext(component: string): PromptInputContextValue {
-  const context = useContext(PromptInputContext);
-  if (!context) {
-    throw new Error(`${component} must be used within PromptInput`);
-  }
-  return context;
-}
-
-export function usePromptInput() {
-  return usePromptInputContext('usePromptInput');
-}
+export type { ChatStatus, PromptInputMessage, PromptInputSubmitData } from './prompt-input/types';
+export {
+  PromptInputProvider,
+  usePromptInputAttachments,
+  usePromptInputController,
+  usePromptInputReferencedSources,
+  useProviderAttachments,
+} from './prompt-input/context';
+export { usePromptInput } from './prompt-input/form-context';
+export {
+  PromptInputActionAddAttachments,
+  PromptInputActionAddScreenshot,
+} from './prompt-input/actions';
+export {
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuItem,
+  PromptInputActionMenuTrigger,
+  PromptInputBody,
+  PromptInputButton,
+  PromptInputCommand,
+  PromptInputCommandEmpty,
+  PromptInputCommandGroup,
+  PromptInputCommandInput,
+  PromptInputCommandItem,
+  PromptInputCommandList,
+  PromptInputCommandSeparator,
+  PromptInputFooter,
+  PromptInputHeader,
+  PromptInputHoverCard,
+  PromptInputHoverCardContent,
+  PromptInputHoverCardTrigger,
+  PromptInputSubmit,
+  PromptInputTab,
+  PromptInputTabBody,
+  PromptInputTabItem,
+  PromptInputTabLabel,
+  PromptInputTabsList,
+  PromptInputTextarea,
+  PromptInputTools,
+  PromptInputToolbar,
+} from './prompt-input/parts';
 
 type PromptInputProps = Omit<ComponentProps<'form'>, 'onSubmit'> & {
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
-  onSubmit?: (data: PromptInputSubmitData) => void;
-  /** 提交成功后清空输入；默认 true。 */
+  onSubmit?: (message: PromptInputMessage) => void | Promise<void>;
   clearOnSubmit?: boolean;
+  accept?: string;
+  multiple?: boolean;
+  globalDrop?: boolean;
+  maxFiles?: number;
+  maxFileSize?: number;
+  onError?: (error: PromptInputError) => void;
 };
 
-/** Composer 根容器：管理文本状态并在表单提交时回调 onSubmit。 */
+/** Composer 根容器：管理文本、附件与表单提交。 */
 export const PromptInput: Component<PromptInputProps> = (props) => {
   const [local, rest] = splitProps(props, [
     'class',
@@ -57,147 +98,219 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     'onValueChange',
     'onSubmit',
     'clearOnSubmit',
+    'accept',
+    'multiple',
+    'globalDrop',
+    'maxFiles',
+    'maxFileSize',
+    'onError',
   ]);
 
+  const controller = useOptionalPromptInputController();
+  const usingProvider = () => Boolean(controller);
   const clearOnSubmit = () => local.clearOnSubmit ?? true;
 
+  const [localFiles, setLocalFiles] = createSignal<PromptInputFilePart[]>([]);
+  const [referencedSources, setReferencedSources] = createSignal<PromptInputSourceDocument[]>([]);
+  let fileInputNode: HTMLInputElement | undefined;
+  let formNode: HTMLFormElement | undefined;
+
+  const files = () => (usingProvider() ? controller!.attachments.files() : localFiles());
+
   const [text, setText] = createControllableSignal<string>({
-    prop: () => local.value,
+    prop: () => (usingProvider() ? controller!.textInput.value() : local.value),
     defaultProp: local.defaultValue ?? '',
-    onChange: local.onValueChange,
+    onChange: (value) => {
+      if (usingProvider()) controller!.textInput.setInput(value);
+      local.onValueChange?.(value);
+    },
   });
 
   const isEmpty = createMemo(() => text().trim().length === 0);
 
-  const submit = () => {
+  const addValidated = (fileList: File[] | FileList) => {
+    const capped = validateIncomingFiles(fileList, {
+      accept: local.accept,
+      maxFiles: local.maxFiles,
+      maxFileSize: local.maxFileSize,
+      currentCount: files().length,
+      onError: local.onError,
+    });
+    if (capped.length === 0) return;
+
+    if (usingProvider()) {
+      controller!.attachments.add(capped);
+      return;
+    }
+
+    setLocalFiles((prev) => [...prev, ...filesToPromptInputParts(capped)]);
+  };
+
+  const removeFile = (id: string) => {
+    if (usingProvider()) {
+      controller!.attachments.remove(id);
+      return;
+    }
+    setLocalFiles((prev) => {
+      const found = prev.find((file) => file.id === id);
+      if (found?.url?.startsWith('blob:')) URL.revokeObjectURL(found.url);
+      return prev.filter((file) => file.id !== id);
+    });
+  };
+
+  const clearAttachments = () => {
+    if (usingProvider()) {
+      controller!.attachments.clear();
+      return;
+    }
+    setLocalFiles((prev) => {
+      revokePromptInputFileUrls(prev);
+      return [];
+    });
+  };
+
+  const clearAll = () => {
+    clearAttachments();
+    setReferencedSources([]);
+  };
+
+  const openFileDialog = () => {
+    if (usingProvider()) {
+      controller!.attachments.openFileDialog();
+      return;
+    }
+    fileInputNode?.click();
+  };
+
+  const attachmentsCtx = createMemo<PromptInputAttachmentsContext>(() => ({
+    files,
+    add: addValidated,
+    remove: removeFile,
+    clear: clearAttachments,
+    openFileDialog,
+    fileInputRef: () => fileInputNode,
+    setFileInputRef: (node) => {
+      fileInputNode = node;
+      if (usingProvider()) controller!.attachments.setFileInputRef(node);
+    },
+    registerOpenFileDialog: (open) => {
+      if (usingProvider()) controller!.attachments.registerOpenFileDialog(open);
+    },
+  }));
+
+  const refsCtx = createMemo(() =>
+    createReferencedSourcesContext(referencedSources, setReferencedSources),
+  );
+
+  onCleanup(() => {
+    if (!usingProvider()) revokePromptInputFileUrls(localFiles());
+  });
+
+  onMount(() => {
+    attachmentsCtx().registerOpenFileDialog(() => fileInputNode?.click());
+  });
+
+  const handleFileInputChange: JSX.EventHandler<HTMLInputElement, Event> = (event) => {
+    if (event.currentTarget.files) addValidated(event.currentTarget.files);
+    event.currentTarget.value = '';
+  };
+
+  const setupDropTarget = (target: HTMLElement) => {
+    const onDragOver = (event: DragEvent) => {
+      if (event.dataTransfer?.types?.includes('Files')) event.preventDefault();
+    };
+    const onDrop = (event: DragEvent) => {
+      if (event.dataTransfer?.types?.includes('Files')) event.preventDefault();
+      if (event.dataTransfer?.files?.length) addValidated(event.dataTransfer.files);
+    };
+    target.addEventListener('dragover', onDragOver);
+    target.addEventListener('drop', onDrop);
+    onCleanup(() => {
+      target.removeEventListener('dragover', onDragOver);
+      target.removeEventListener('drop', onDrop);
+    });
+  };
+
+  onMount(() => {
+    if (local.globalDrop) {
+      setupDropTarget(document.body);
+      return;
+    }
+    if (formNode) setupDropTarget(formNode);
+  });
+
+  const submit = async () => {
     const trimmed = text().trim();
-    if (!trimmed) return;
-    local.onSubmit?.({ text: trimmed });
-    if (clearOnSubmit()) {
-      setText('');
+    if (!trimmed && files().length === 0) return;
+
+    const convertedFiles = await Promise.all(
+      files().map(async ({ id: _id, ...item }) => {
+        if (item.url?.startsWith('blob:')) {
+          const dataUrl = await convertBlobUrlToDataUrl(item.url);
+          return { ...item, url: dataUrl ?? item.url };
+        }
+        return item;
+      }),
+    );
+
+    try {
+      const result = local.onSubmit?.({ text: trimmed, files: convertedFiles });
+      if (result instanceof Promise) await result;
+      if (clearOnSubmit()) {
+        clearAll();
+        if (usingProvider()) controller!.textInput.clear();
+        else setText('');
+      }
+    } catch {
+      // 提交失败时保留输入，便于重试
     }
   };
 
   const handleSubmit: JSX.EventHandlerUnion<HTMLFormElement, SubmitEvent> = (event) => {
     event.preventDefault();
-    submit();
+    void submit();
   };
 
-  const contextValue: PromptInputContextValue = {
+  const contextValue = {
     text,
     setText,
     isEmpty,
-    submit,
+    submit: () => {
+      void submit();
+    },
   };
 
   return (
-    <PromptInputContext.Provider value={contextValue}>
-      <form
-        data-slot="prompt-input"
-        class={cn(
-          'flex w-full flex-col rounded-8 border border-border-strong bg-surface shadow-(--shadow-composer-overlay) ui-control-transition',
-          'focus-within:border-focus-ring',
-          local.class,
-        )}
-        onSubmit={handleSubmit}
-        {...rest}
-      >
-        {local.children}
-      </form>
-    </PromptInputContext.Provider>
-  );
-};
-
-type PromptInputTextareaProps = Omit<ComponentProps<typeof Textarea>, 'variant' | 'value'> & {
-  value?: string;
-};
-
-/** 自动增高输入区：Enter 提交，Shift+Enter 换行。 */
-export const PromptInputTextarea: Component<PromptInputTextareaProps> = (props) => {
-  const [local, rest] = splitProps(props, ['class', 'onKeyDown', 'onInput', 'value']);
-  const context = usePromptInputContext('PromptInputTextarea');
-
-  const handleKeyDown: JSX.EventHandlerUnion<HTMLTextAreaElement, KeyboardEvent> = (event) => {
-    const keyDown = local.onKeyDown;
-    if (typeof keyDown === 'function') keyDown(event);
-    if (event.defaultPrevented) return;
-
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      const form = event.currentTarget.form;
-      const submitButton = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null;
-      if (submitButton?.disabled) return;
-      form?.requestSubmit();
-    }
-  };
-
-  const handleInput: JSX.EventHandlerUnion<HTMLTextAreaElement, InputEvent> = (event) => {
-    context.setText(event.currentTarget.value);
-    const input = local.onInput;
-    if (typeof input === 'function') {
-      (input as (event: InputEvent) => void)(event);
-    }
-  };
-
-  return (
-    <Textarea
-      data-slot="prompt-input-textarea"
-      variant="bare"
-      autoResize
-      class={cn('min-h-36 px-12 py-8 text-13 leading-normal', local.class)}
-      value={local.value ?? context.text()}
-      onInput={handleInput}
-      onKeyDown={handleKeyDown}
-      {...rest}
-    />
-  );
-};
-
-/** 工具栏槽位：放置附件、模型选择等左侧操作。 */
-export const PromptInputToolbar: Component<ComponentProps<'div'>> = (props) => {
-  const [local, rest] = splitProps(props, ['class']);
-  return (
-    <div
-      data-slot="prompt-input-toolbar"
-      class={cn('flex min-h-36 min-w-0 shrink items-center gap-4', local.class)}
-      {...rest}
-    />
-  );
-};
-
-type PromptInputSubmitProps = ComponentProps<typeof Button> & {
-  label?: string;
-};
-
-/** 提交按钮：文本为空时自动禁用。 */
-export const PromptInputSubmit: Component<PromptInputSubmitProps> = (props) => {
-  const [local, rest] = splitProps(props, ['class', 'children', 'disabled', 'label', 'type']);
-  const context = usePromptInputContext('PromptInputSubmit');
-
-  return (
-    <Button
-      type={local.type ?? 'submit'}
-      data-slot="prompt-input-submit"
-      variant="primary"
-      size="sm"
-      class={cn('shrink-0', local.class)}
-      disabled={local.disabled || context.isEmpty()}
-      aria-label={local.label ?? 'Send message'}
-      {...rest}
-    >
-      {local.children ?? <CornerDownLeft size={16} strokeWidth={1.7} aria-hidden="true" />}
-    </Button>
-  );
-};
-
-/** 底部栏：工具栏与提交按钮的水平布局。 */
-export const PromptInputFooter: Component<ComponentProps<'div'>> = (props) => {
-  const [local, rest] = splitProps(props, ['class']);
-  return (
-    <div
-      data-slot="prompt-input-footer"
-      class={cn('flex min-h-36 items-center gap-8 px-8 pb-8', local.class)}
-      {...rest}
-    />
+    <LocalAttachmentsContext.Provider value={attachmentsCtx()}>
+      <LocalReferencedSourcesContext.Provider value={refsCtx()}>
+        <input
+          accept={local.accept}
+          aria-label="Upload files"
+          class="hidden"
+          multiple={local.multiple}
+          onChange={handleFileInputChange}
+          ref={(node) => attachmentsCtx().setFileInputRef(node)}
+          title="Upload files"
+          type="file"
+        />
+        <PromptInputFormContext.Provider value={contextValue}>
+          <form
+            data-slot="prompt-input"
+            class={cn(
+              'flex w-full flex-col overflow-hidden rounded-8 border border-border-strong bg-surface shadow-(--shadow-composer-overlay) ui-control-transition',
+              'focus-within:border-focus-ring',
+              local.class,
+            )}
+            onSubmit={handleSubmit}
+            ref={(node) => {
+              formNode = node;
+            }}
+            {...rest}
+          >
+            {local.children}
+          </form>
+        </PromptInputFormContext.Provider>
+      </LocalReferencedSourcesContext.Provider>
+    </LocalAttachmentsContext.Provider>
   );
 };

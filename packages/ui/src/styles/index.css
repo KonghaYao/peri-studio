@@ -5,6 +5,7 @@
 
 @import './tokens.css';
 @import './theme.css';
+@import './motion.css';
 @import './primitives.css';
 @import './extra.css';
 @import './typeset.css';

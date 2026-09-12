@@ -8,12 +8,20 @@ export { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 export {
   Conversation,
   ConversationContent,
+  ConversationDownload,
   ConversationEmptyState,
   ConversationScrollButton,
+  messagesToMarkdown,
+  type ConversationMessage,
+  type ConversationMessagePart,
 } from './components/Conversation';
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from './components/Collapsible';
 export {
   Attachment,
+  AttachmentEmpty,
+  AttachmentHoverCard,
+  AttachmentHoverCardContent,
+  AttachmentHoverCardTrigger,
   AttachmentInfo,
   AttachmentPreview,
   AttachmentRemove,
@@ -29,19 +37,41 @@ export {
   ChainOfThought,
   ChainOfThoughtContent,
   ChainOfThoughtHeader,
+  ChainOfThoughtImage,
+  ChainOfThoughtSearchResult,
+  ChainOfThoughtSearchResults,
   ChainOfThoughtStep,
   type ChainOfThoughtStepStatus,
 } from './components/ChainOfThought';
 export {
   Confirmation,
+  ConfirmationAccepted,
+  ConfirmationAction,
   ConfirmationActions,
+  ConfirmationRejected,
+  ConfirmationRequest,
   ConfirmationTitle,
   type ConfirmationApproval,
 } from './components/Confirmation';
 export { Reasoning, ReasoningContent, ReasoningTrigger, useReasoning } from './components/Reasoning';
-export { InlineCitation, InlineCitationCard, InlineCitationQuote } from './components/InlineCitation';
-export { Suggestion, SuggestionItem } from './components/Suggestion';
-export { SourceItem, Sources, SourcesContent, SourcesTrigger } from './components/Sources';
+export {
+  InlineCitation,
+  InlineCitationCard,
+  InlineCitationCardBody,
+  InlineCitationCardTrigger,
+  InlineCitationCarousel,
+  InlineCitationCarouselContent,
+  InlineCitationCarouselHeader,
+  InlineCitationCarouselIndex,
+  InlineCitationCarouselItem,
+  InlineCitationCarouselNext,
+  InlineCitationCarouselPrev,
+  InlineCitationQuote,
+  InlineCitationSource,
+  InlineCitationText,
+} from './components/InlineCitation';
+export { Suggestion, SuggestionItem, Suggestions } from './components/Suggestion';
+export { Source, SourceItem, Sources, SourcesContent, SourcesTrigger } from './components/Sources';
 export {
   Tool,
   ToolContent,
@@ -50,6 +80,7 @@ export {
   ToolOutput,
   getStatusBadge,
   type ToolState,
+  type ToolType,
 } from './components/Tool';
 export { Button, IconButton } from './components/Button';
 export { ButtonGroup, buttonGroupItemClass } from './components/ButtonGroup';
@@ -79,12 +110,22 @@ export {
 } from './components/Marker';
 export {
   Message,
+  MessageAction,
+  MessageActions,
   MessageAvatar,
+  MessageBranch,
+  MessageBranchContent,
+  MessageBranchNext,
+  MessageBranchPage,
+  MessageBranchPrevious,
+  MessageBranchSelector,
   MessageContent,
   MessageFooter,
   MessageGroup,
   MessageHeader,
+  MessageToolbar,
   type MessageAlign,
+  type MessageRole,
 } from './components/Message';
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './components/Card';
 export { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, useCarousel, type CarouselApi } from './components/Carousel';
@@ -92,8 +133,16 @@ export {
   CodeBlock,
   CodeBlockActions,
   CodeBlockBody,
+  CodeBlockContainer,
+  CodeBlockContent,
   CodeBlockCopyButton,
+  CodeBlockFilename,
   CodeBlockHeader,
+  CodeBlockLanguageSelector,
+  CodeBlockLanguageSelectorContent,
+  CodeBlockLanguageSelectorItem,
+  CodeBlockLanguageSelectorTrigger,
+  CodeBlockLanguageSelectorValue,
   CodeBlockTitle,
   useCodeBlock,
 } from './components/CodeBlock';
@@ -103,24 +152,76 @@ export { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 export { Kbd } from './components/Kbd';
 export {
   Plan,
+  PlanAction,
   PlanContent,
+  PlanDescription,
+  PlanFooter,
   PlanHeader,
   PlanStep,
+  PlanTitle,
+  PlanTrigger,
   type PlanStepStatus,
 } from './components/Plan';
 export {
   PromptInput,
+  PromptInputActionAddAttachments,
+  PromptInputActionAddScreenshot,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuItem,
+  PromptInputActionMenuTrigger,
+  PromptInputBody,
+  PromptInputButton,
+  PromptInputCommand,
+  PromptInputCommandEmpty,
+  PromptInputCommandGroup,
+  PromptInputCommandInput,
+  PromptInputCommandItem,
+  PromptInputCommandList,
+  PromptInputCommandSeparator,
   PromptInputFooter,
+  PromptInputHeader,
+  PromptInputHoverCard,
+  PromptInputHoverCardContent,
+  PromptInputHoverCardTrigger,
+  PromptInputProvider,
   PromptInputSubmit,
+  PromptInputTab,
+  PromptInputTabBody,
+  PromptInputTabItem,
+  PromptInputTabLabel,
+  PromptInputTabsList,
   PromptInputTextarea,
+  PromptInputTools,
   PromptInputToolbar,
   usePromptInput,
+  usePromptInputAttachments,
+  usePromptInputController,
+  usePromptInputReferencedSources,
+  useProviderAttachments,
+  type ChatStatus,
+  type PromptInputMessage,
   type PromptInputSubmitData,
 } from './components/PromptInput';
 export {
   Queue,
   QueueItem,
+  QueueItemAction,
+  QueueItemActions,
+  QueueItemAttachment,
+  QueueItemContent,
+  QueueItemDescription,
+  QueueItemFile,
+  QueueItemImage,
   QueueItemIndicator,
+  QueueList,
+  QueueSection,
+  QueueSectionContent,
+  QueueSectionLabel,
+  QueueSectionTrigger,
+  type QueueMessage,
+  type QueueMessagePart,
+  type QueueTodo,
 } from './components/Queue';
 export { Progress, ProgressFill, ProgressLabel, ProgressTrack, ProgressValueLabel } from './components/Progress';
 export { Slider, SliderFill, SliderLabel, SliderThumb, SliderTrack } from './components/Slider';
@@ -201,8 +302,15 @@ export {
 } from './components/MessageScroller';
 export { Menubar, MenubarCheckboxItem, MenubarContent, MenubarItem, MenubarMenu, MenubarRadioGroup, MenubarRadioItem, MenubarSeparator, MenubarShortcut, MenubarSub, MenubarSubContent, MenubarSubTrigger, MenubarTrigger } from './components/Menubar';
 export { NavigationMenu, NavigationMenuContent, NavigationMenuIndicator, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, NavigationMenuViewport, navigationMenuTriggerStyle } from './components/NavigationMenu';
+export { Shimmer } from './components/Shimmer';
 export { Skeleton } from './components/Skeleton';
-export { Snippet } from './components/Snippet';
+export {
+  Snippet,
+  SnippetAddon,
+  SnippetCopyButton,
+  SnippetInput,
+  SnippetText,
+} from './components/Snippet';
 export { Spinner } from './components/Spinner';
 export { Switch, SwitchControl, SwitchInput, SwitchLabel, SwitchThumb } from './components/Switch';
 export { Status, type StatusTone } from './components/Status';
@@ -231,9 +339,10 @@ export {
 } from './components/Questionnaire';
 export {
   Task,
+  TaskContent,
   TaskItem,
-  TaskItemDescription,
-  TaskItemTitle,
+  TaskItemFile,
+  TaskTrigger,
 } from './components/Task';
 export { Tabs, TabsContent, TabsIndicator, TabsList, TabsTrigger } from './components/Tabs';
 export { Toggle } from './components/Toggle';

@@ -24,6 +24,7 @@ export type CarouselApi = {
   canScrollNext: () => boolean;
   selectedScrollSnap: () => number;
   scrollSnapList: () => number[];
+  sync: () => void;
   on: (event: CarouselEvent, callback: () => void) => void;
   off: (event: CarouselEvent, callback: () => void) => void;
 };
@@ -113,11 +114,20 @@ function scrollItemIntoView(
   const item = items[index];
   if (!item) return;
 
-  item.scrollIntoView({
-    behavior: 'smooth',
-    block: orientation === 'horizontal' ? 'nearest' : 'start',
-    inline: orientation === 'horizontal' ? 'start' : 'nearest',
-  });
+  if (typeof item.scrollIntoView === 'function') {
+    item.scrollIntoView({
+      behavior: 'smooth',
+      block: orientation === 'horizontal' ? 'nearest' : 'start',
+      inline: orientation === 'horizontal' ? 'start' : 'nearest',
+    });
+    return;
+  }
+
+  if (orientation === 'horizontal') {
+    viewport.scrollLeft = item.offsetLeft;
+  } else {
+    viewport.scrollTop = item.offsetTop;
+  }
 }
 
 function createCarouselApi(
@@ -127,6 +137,18 @@ function createCarouselApi(
   onStateChange: () => void,
 ): CarouselApi {
   const events = createCarouselEventEmitter();
+  let snapIndex = 0;
+
+  const syncSnapIndex = (viewport: HTMLDivElement) => {
+    const items = getCarouselItems(viewport);
+    if (items.length === 0) {
+      snapIndex = 0;
+      return;
+    }
+    if (typeof items[0]?.scrollIntoView === 'function') {
+      snapIndex = getSelectedIndex(viewport, orientation());
+    }
+  };
 
   const withViewport = (action: (viewport: HTMLDivElement) => void) => {
     const viewport = getViewport();
@@ -141,37 +163,35 @@ function createCarouselApi(
       withViewport((viewport) => {
         const items = getCarouselItems(viewport);
         if (items.length === 0) return;
-        const current = getSelectedIndex(viewport, orientation());
-        const previous = loop()
-          ? (current - 1 + items.length) % items.length
-          : Math.max(0, current - 1);
-        scrollItemIntoView(viewport, previous, orientation());
+        snapIndex = loop()
+          ? (snapIndex - 1 + items.length) % items.length
+          : Math.max(0, snapIndex - 1);
+        scrollItemIntoView(viewport, snapIndex, orientation());
       });
     },
     scrollNext: () => {
       withViewport((viewport) => {
         const items = getCarouselItems(viewport);
         if (items.length === 0) return;
-        const current = getSelectedIndex(viewport, orientation());
-        const next = loop()
-          ? (current + 1) % items.length
-          : Math.min(items.length - 1, current + 1);
-        scrollItemIntoView(viewport, next, orientation());
+        snapIndex = loop()
+          ? (snapIndex + 1) % items.length
+          : Math.min(items.length - 1, snapIndex + 1);
+        scrollItemIntoView(viewport, snapIndex, orientation());
       });
     },
     scrollTo: (index) => {
       withViewport((viewport) => {
         const items = getCarouselItems(viewport);
         if (items.length === 0) return;
-        const clamped = Math.max(0, Math.min(items.length - 1, index));
-        scrollItemIntoView(viewport, clamped, orientation());
+        snapIndex = Math.max(0, Math.min(items.length - 1, index));
+        scrollItemIntoView(viewport, snapIndex, orientation());
       });
     },
     canScrollPrev: () => {
       const viewport = getViewport();
       if (!viewport) return false;
       if (loop()) return getCarouselItems(viewport).length > 1;
-      return getSelectedIndex(viewport, orientation()) > 0;
+      return snapIndex > 0;
     },
     canScrollNext: () => {
       const viewport = getViewport();
@@ -179,17 +199,18 @@ function createCarouselApi(
       const items = getCarouselItems(viewport);
       if (items.length === 0) return false;
       if (loop()) return items.length > 1;
-      return getSelectedIndex(viewport, orientation()) < items.length - 1;
+      return snapIndex < items.length - 1;
     },
-    selectedScrollSnap: () => {
-      const viewport = getViewport();
-      if (!viewport) return 0;
-      return getSelectedIndex(viewport, orientation());
-    },
+    selectedScrollSnap: () => snapIndex,
     scrollSnapList: () => {
       const viewport = getViewport();
       if (!viewport) return [];
       return getCarouselItems(viewport).map((_, index) => index);
+    },
+    sync: () => {
+      const viewport = getViewport();
+      if (!viewport) return;
+      syncSnapIndex(viewport);
     },
     on: events.on,
     off: events.off,
@@ -219,7 +240,8 @@ export const Carousel: Component<ComponentProps<'div'> & CarouselProps> = (props
   const syncFromViewport = () => {
     const node = viewport();
     if (!node) return;
-    setSelectedIndex(getSelectedIndex(node, orientation()));
+    api.sync();
+    setSelectedIndex(api.selectedScrollSnap());
     setItemCount(getCarouselItems(node).length);
   };
 

@@ -1,4 +1,4 @@
-import { ChevronsUpDown, ListTodo } from 'lucide-solid';
+import { ChevronsUpDown } from 'lucide-solid';
 import {
   createContext,
   splitProps,
@@ -10,7 +10,7 @@ import {
 } from 'solid-js';
 import { cn } from '../lib/cn';
 import { createControllableSignal } from '../lib/controllable-state';
-import { Card, CardHeader } from './Card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './Card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './Collapsible';
 
 interface PlanContextValue {
@@ -56,61 +56,105 @@ export const Plan: Component<PlanRootProps> = (props) => {
 
   return (
     <PlanContext.Provider value={context}>
-      <Card data-slot="plan" class={cn('mb-8 w-full overflow-hidden', local.class)} {...rest}>
-        {local.children}
-      </Card>
+      <Collapsible open={isOpen()} onOpenChange={setIsOpen}>
+        <Card data-slot="plan" class={cn('mb-8 w-full overflow-hidden shadow-none', local.class)} {...rest}>
+          {local.children}
+        </Card>
+      </Collapsible>
     </PlanContext.Provider>
   );
 };
 
 export const PlanHeader: Component<ComponentProps<'div'>> = (props) => {
   const [local, rest] = splitProps(props, ['class', 'children']);
-  const { isStreaming, isOpen, setIsOpen } = usePlan('PlanHeader');
-
   return (
-    <Collapsible open={isOpen()} onOpenChange={setIsOpen}>
-      <CardHeader data-slot="plan-header" class={cn('flex-row items-center gap-8 py-10', local.class)} {...rest}>
-        <CollapsibleTrigger
-          class={cn(
-            'ui-plan-trigger flex min-w-0 flex-1 cursor-pointer items-center gap-8 border-0 bg-transparent p-0 text-left transition-colors duration-120 outline-none',
-            'hover:text-content-secondary focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2',
-          )}
-        >
-          <ListTodo size={14} strokeWidth={1.7} class="shrink-0 text-content-muted" aria-hidden="true" />
-          <span
-            class={cn(
-              'min-w-0 flex-1 text-13 font-semibold text-content-primary',
-              isStreaming() && 'shimmer',
-            )}
-          >
-            {local.children ?? 'Plan'}
-          </span>
-          <ChevronsUpDown
-            size={14}
-            strokeWidth={1.7}
-            class="ui-plan-chevron shrink-0 text-content-muted"
-            aria-hidden="true"
-          />
-        </CollapsibleTrigger>
-      </CardHeader>
-    </Collapsible>
+    <CardHeader
+      data-slot="plan-header"
+      class={cn('flex items-start justify-between gap-8', local.class)}
+      {...rest}
+    >
+      {local.children}
+    </CardHeader>
   );
 };
 
-export const PlanContent: Component<ComponentProps<typeof CollapsibleContent>> = (props) => {
+type PlanTitleProps = Omit<ComponentProps<typeof CardTitle>, 'children'> & {
+  children: string;
+};
+
+export const PlanTitle: Component<PlanTitleProps> = (props) => {
   const [local, rest] = splitProps(props, ['class', 'children']);
-  const { isOpen } = usePlan('PlanContent');
+  const { isStreaming } = usePlan('PlanTitle');
 
   return (
-    <Collapsible open={isOpen()}>
-      <CollapsibleContent
-        data-slot="plan-content"
-        class={cn('border-t border-border-subtle px-16 py-10', local.class)}
-        {...rest}
-      >
-        <div class="space-y-8">{local.children}</div>
-      </CollapsibleContent>
-    </Collapsible>
+    <CardTitle data-slot="plan-title" class={local.class} {...rest}>
+      <span class={cn(isStreaming() && 'shimmer')}>{local.children}</span>
+    </CardTitle>
+  );
+};
+
+type PlanDescriptionProps = Omit<ComponentProps<typeof CardDescription>, 'children'> & {
+  children: string;
+};
+
+export const PlanDescription: Component<PlanDescriptionProps> = (props) => {
+  const [local, rest] = splitProps(props, ['class', 'children']);
+  const { isStreaming } = usePlan('PlanDescription');
+
+  return (
+    <CardDescription
+      data-slot="plan-description"
+      class={cn('text-balance', local.class)}
+      {...rest}
+    >
+      <span class={cn(isStreaming() && 'shimmer')}>{local.children}</span>
+    </CardDescription>
+  );
+};
+
+export const PlanAction: Component<ComponentProps<'div'>> = (props) => {
+  const [local, rest] = splitProps(props, ['class', 'children']);
+  return (
+    <div data-slot="plan-action" class={cn('flex shrink-0 items-start', local.class)} {...rest}>
+      {local.children}
+    </div>
+  );
+};
+
+export const PlanTrigger: Component<ComponentProps<typeof CollapsibleTrigger>> = (props) => {
+  const [local, rest] = splitProps(props, ['class']);
+  return (
+    <CollapsibleTrigger
+      data-slot="plan-trigger"
+      class={cn(
+        'inline-flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-6 border-0 bg-transparent text-content-muted transition-colors duration-120 outline-none hover:bg-interaction-hover hover:text-content-secondary focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2',
+        local.class,
+      )}
+      {...rest}
+    >
+      <ChevronsUpDown size={16} strokeWidth={1.7} aria-hidden="true" />
+      <span class="sr-only">Toggle plan</span>
+    </CollapsibleTrigger>
+  );
+};
+
+export const PlanContent: Component<ComponentProps<'div'>> = (props) => {
+  const [local, rest] = splitProps(props, ['class', 'children']);
+  return (
+    <CollapsibleContent as="div">
+      <CardContent data-slot="plan-content" class={local.class} {...rest}>
+        {local.children}
+      </CardContent>
+    </CollapsibleContent>
+  );
+};
+
+export const PlanFooter: Component<ComponentProps<'div'>> = (props) => {
+  const [local, rest] = splitProps(props, ['class', 'children']);
+  return (
+    <CardFooter data-slot="plan-footer" class={local.class} {...rest}>
+      {local.children}
+    </CardFooter>
   );
 };
 
@@ -128,6 +172,7 @@ type PlanStepProps = ComponentProps<'div'> & {
   status?: PlanStepStatus;
 };
 
+/** Peri 扩展：带状态指示的计划步骤时间线。 */
 export const PlanStep: Component<PlanStepProps> = (props) => {
   const [local, rest] = splitProps(props, ['class', 'label', 'description', 'status', 'children']);
   const status = () => local.status ?? 'pending';
@@ -144,7 +189,7 @@ export const PlanStep: Component<PlanStepProps> = (props) => {
           class={cn(
             'block size-8 rounded-full border-2',
             status() === 'complete' && 'border-success bg-success',
-            status() === 'active' && 'border-accent bg-accent animate-pulse',
+            status() === 'active' && 'animate-pulse border-accent bg-accent',
             status() === 'pending' && 'border-border-strong bg-transparent',
           )}
           aria-hidden="true"

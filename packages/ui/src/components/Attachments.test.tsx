@@ -2,11 +2,16 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   Attachment,
+  AttachmentEmpty,
+  AttachmentHoverCard,
+  AttachmentHoverCardContent,
+  AttachmentHoverCardTrigger,
   AttachmentInfo,
   AttachmentPreview,
   AttachmentRemove,
   Attachments,
   formatAttachmentSize,
+  getMediaCategory,
 } from './Attachments';
 
 afterEach(() => {
@@ -93,5 +98,30 @@ describe('Attachments', () => {
     expect(formatAttachmentSize(900)).toBe('900 B');
     expect(formatAttachmentSize(2048)).toBe('2.0 KB');
     expect(formatAttachmentSize(5 * 1024 * 1024)).toBe('5.0 MB');
+  });
+
+  it('renders grid and inline variants with hover card and empty state', () => {
+    render(() => (
+      <>
+        <Attachments variant="grid" data-testid="grid-attachments">
+          <Attachment data={sampleAttachment} onRemove={() => undefined}>
+            <AttachmentHoverCard open>
+              <AttachmentHoverCardTrigger>
+                <AttachmentPreview />
+              </AttachmentHoverCardTrigger>
+              <AttachmentHoverCardContent>
+                <img src={sampleAttachment.url} alt="Preview" />
+              </AttachmentHoverCardContent>
+            </AttachmentHoverCard>
+            <AttachmentRemove />
+          </Attachment>
+        </Attachments>
+        <AttachmentEmpty />
+      </>
+    ));
+
+    expect(screen.getByTestId('grid-attachments')).toHaveClass('ml-auto', 'w-fit');
+    expect(screen.getByText('No attachments')).toBeInTheDocument();
+    expect(getMediaCategory({ ...sampleAttachment, kind: 'source' })).toBe('source');
   });
 });

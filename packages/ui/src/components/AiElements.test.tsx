@@ -1,34 +1,72 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { createSignal } from 'solid-js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Button } from './Button';
 import {
   ChainOfThought,
   ChainOfThoughtContent,
   ChainOfThoughtHeader,
+  ChainOfThoughtImage,
+  ChainOfThoughtSearchResult,
+  ChainOfThoughtSearchResults,
   ChainOfThoughtStep,
 } from './ChainOfThought';
 import {
   Confirmation,
+  ConfirmationAccepted,
+  ConfirmationAction,
   ConfirmationActions,
+  ConfirmationRejected,
+  ConfirmationRequest,
   ConfirmationTitle,
 } from './Confirmation';
-import { Plan, PlanContent, PlanHeader, PlanStep } from './Plan';
-import { Queue, QueueItem, QueueItemIndicator } from './Queue';
-import { Reasoning, ReasoningContent, ReasoningTrigger } from './Reasoning';
-import { Task, TaskItem, TaskItemDescription, TaskItemTitle } from './Task';
 import {
   InlineCitation,
   InlineCitationCard,
+  InlineCitationCardBody,
+  InlineCitationCardTrigger,
+  InlineCitationCarousel,
+  InlineCitationCarouselContent,
+  InlineCitationCarouselHeader,
+  InlineCitationCarouselIndex,
+  InlineCitationCarouselItem,
+  InlineCitationCarouselNext,
+  InlineCitationCarouselPrev,
   InlineCitationQuote,
+  InlineCitationSource,
+  InlineCitationText,
 } from './InlineCitation';
 import {
+  Plan,
+  PlanAction,
+  PlanContent,
+  PlanDescription,
+  PlanHeader,
+  PlanStep,
+  PlanTitle,
+  PlanTrigger,
+} from './Plan';
+import {
+  Queue,
+  QueueItem,
+  QueueItemContent,
+  QueueItemDescription,
+  QueueItemIndicator,
+  QueueList,
+  QueueSection,
+  QueueSectionContent,
+  QueueSectionLabel,
+  QueueSectionTrigger,
+} from './Queue';
+import { Reasoning, ReasoningContent, ReasoningTrigger } from './Reasoning';
+import { Task, TaskContent, TaskItem, TaskItemFile, TaskTrigger } from './Task';
+import {
+  Source,
   SourceItem,
   Sources,
   SourcesContent,
   SourcesTrigger,
 } from './Sources';
-import { Suggestion, SuggestionItem } from './Suggestion';
+import { Suggestion, SuggestionItem, Suggestions } from './Suggestion';
 import {
   Tool,
   ToolContent,
@@ -97,7 +135,7 @@ describe('Reasoning', () => {
       </Reasoning>
     ));
 
-    expect(screen.getByText('Thinking')).toHaveClass('custom-shimmer');
+    expect(screen.getByText('Thinking...')).toHaveClass('custom-shimmer');
   });
 });
 
@@ -134,9 +172,23 @@ describe('Tool', () => {
     expect(document.querySelector('[data-slot="tool-output"]')).toHaveTextContent('Error');
   });
 
-  it('maps tool states to badge labels', () => {
+  it('maps tool states to badge labels with status icons', () => {
     render(() => getStatusBadge('output-available'));
     expect(screen.getByText('Completed')).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="tool-status-badge"]')).toBeInTheDocument();
+  });
+
+  it('derives tool title from type when title is omitted', () => {
+    render(() => (
+      <Tool state="input-streaming" defaultOpen>
+        <ToolHeader type="tool-read" state="input-streaming" />
+        <ToolContent>
+          <ToolInput input={{ path: 'README.md' }} />
+        </ToolContent>
+      </Tool>
+    ));
+
+    expect(screen.getByText('read')).toBeInTheDocument();
   });
 
   it('toggles tool details from the header trigger', () => {
@@ -164,18 +216,28 @@ describe('Suggestion', () => {
     const onClick = vi.fn();
 
     render(() => (
-      <Suggestion>
+      <Suggestions>
         <SuggestionItem suggestion="Summarize this" onClick={onClick} />
         <SuggestionItem suggestion="Draft a reply" onClick={onClick} />
-      </Suggestion>
+      </Suggestions>
     ));
 
     expect(document.querySelector('[data-slot="suggestion"]')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Summarize this' })).toHaveClass('rounded-full');
+    expect(screen.getByRole('button', { name: 'Summarize this' })).toHaveClass('rounded-full', 'px-16');
     expect(screen.getByRole('button', { name: 'Draft a reply' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Summarize this' }));
     expect(onClick).toHaveBeenCalledWith('Summarize this');
+  });
+
+  it('exports Suggestion as an alias for the scroll container', () => {
+    render(() => (
+      <Suggestion>
+        <SuggestionItem suggestion="One" />
+      </Suggestion>
+    ));
+
+    expect(document.querySelector('[data-slot="suggestion"]')).toBeInTheDocument();
   });
 });
 
@@ -186,7 +248,7 @@ describe('Sources', () => {
         <SourcesTrigger count={2} />
         <SourcesContent>
           <SourceItem href="https://example.com/docs" title="Example Docs" />
-          <SourceItem href="https://example.org/guide" title="Guide" />
+          <Source href="https://example.org/guide" title="Guide" />
         </SourcesContent>
       </Sources>
     ));
@@ -216,17 +278,57 @@ describe('InlineCitation', () => {
   it('shows hostname badge and quote content in the hover card', () => {
     render(() => (
       <InlineCitation>
-        Supporting claim
-        <InlineCitationCard open sources={['https://example.com/article', 'https://docs.example.com']}>
-          <InlineCitationQuote>Relevant excerpt from the source.</InlineCitationQuote>
+        <InlineCitationText>Supporting claim</InlineCitationText>
+        <InlineCitationCard open>
+          <InlineCitationCardTrigger sources={['https://example.com/article', 'https://docs.example.com']} />
+          <InlineCitationCardBody>
+            <InlineCitationQuote>Relevant excerpt from the source.</InlineCitationQuote>
+          </InlineCitationCardBody>
         </InlineCitationCard>
       </InlineCitation>
     ));
 
-    expect(screen.getByText('Supporting claim')).toBeInTheDocument();
+    expect(screen.getByText('Supporting claim')).toHaveClass('group-hover:bg-interaction-hover');
     expect(screen.getByText('example.com +1')).toBeInTheDocument();
     expect(screen.getByText('Relevant excerpt from the source.')).toBeInTheDocument();
     expect(document.querySelector('[data-slot="inline-citation-quote"]')).toHaveClass('italic');
+  });
+
+  it('renders carousel navigation for multiple citation sources', async () => {
+    render(() => (
+      <InlineCitationCard open>
+        <InlineCitationCardTrigger sources={['https://a.example', 'https://b.example']} />
+        <InlineCitationCardBody>
+          <InlineCitationCarousel>
+            <InlineCitationCarouselHeader>
+              <InlineCitationCarouselPrev />
+              <InlineCitationCarouselNext />
+              <InlineCitationCarouselIndex />
+            </InlineCitationCarouselHeader>
+            <InlineCitationCarouselContent>
+              <InlineCitationCarouselItem>
+                <InlineCitationSource title="Source A" url="https://a.example" description="First source" />
+              </InlineCitationCarouselItem>
+              <InlineCitationCarouselItem>
+                <InlineCitationSource title="Source B" url="https://b.example" description="Second source" />
+              </InlineCitationCarouselItem>
+            </InlineCitationCarouselContent>
+          </InlineCitationCarousel>
+        </InlineCitationCardBody>
+      </InlineCitationCard>
+    ));
+
+    expect(screen.getByText('Source A')).toBeInTheDocument();
+    expect(screen.getByLabelText('Previous')).toBeInTheDocument();
+    expect(screen.getByLabelText('Next')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('[data-slot="inline-citation-carousel-index"]')).toHaveTextContent('1/2');
+    });
+
+    fireEvent.click(screen.getByLabelText('Next'));
+    await waitFor(() => {
+      expect(document.querySelector('[data-slot="inline-citation-carousel-index"]')).toHaveTextContent('2/2');
+    });
   });
 });
 
@@ -269,13 +371,45 @@ describe('ChainOfThought', () => {
     fireEvent.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
+
+  it('renders search result badges and image caption', () => {
+    render(() => (
+      <ChainOfThought defaultOpen>
+        <ChainOfThoughtHeader />
+        <ChainOfThoughtContent>
+          <ChainOfThoughtStep label="Search">
+            <ChainOfThoughtSearchResults>
+              <ChainOfThoughtSearchResult>docs/architecture.md</ChainOfThoughtSearchResult>
+            </ChainOfThoughtSearchResults>
+          </ChainOfThoughtStep>
+          <ChainOfThoughtImage caption="Diagram preview">
+            <img src="/demo.png" alt="Demo diagram" />
+          </ChainOfThoughtImage>
+        </ChainOfThoughtContent>
+      </ChainOfThought>
+    ));
+
+    expect(
+      screen.getByText('docs/architecture.md').closest('[data-slot="chain-of-thought-search-result"]'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Diagram preview')).toBeInTheDocument();
+    expect(document.querySelector('.ui-chain-of-thought-image-frame')).toBeInTheDocument();
+  });
 });
 
 describe('Plan', () => {
-  it('renders collapsible plan steps inside a card', () => {
+  it('renders collapsible plan steps with streaming shimmer on title and description', () => {
     render(() => (
       <Plan defaultOpen isStreaming>
-        <PlanHeader>Implementation plan</PlanHeader>
+        <PlanHeader>
+          <div class="min-w-0 flex-1 space-y-4">
+            <PlanTitle>Implementation plan</PlanTitle>
+            <PlanDescription>Updating UI package components</PlanDescription>
+          </div>
+          <PlanAction>
+            <PlanTrigger />
+          </PlanAction>
+        </PlanHeader>
         <PlanContent>
           <PlanStep label="Scan repository" status="complete" />
           <PlanStep label="Draft changes" status="active" description="Updating UI package" />
@@ -284,6 +418,7 @@ describe('Plan', () => {
     ));
 
     expect(screen.getByText('Implementation plan')).toHaveClass('shimmer');
+    expect(screen.getByText('Updating UI package components')).toHaveClass('shimmer');
     expect(screen.getByText('Scan repository')).toBeInTheDocument();
     expect(screen.getByText('Draft changes')).toBeInTheDocument();
 
@@ -294,17 +429,22 @@ describe('Plan', () => {
     expect(document.querySelector('[data-slot="plan"]')).toHaveClass('rounded-8', 'border-border-subtle');
   });
 
-  it('collapses plan content from the header trigger', () => {
+  it('collapses plan content from the trigger', () => {
     render(() => (
       <Plan defaultOpen>
-        <PlanHeader>Plan</PlanHeader>
+        <PlanHeader>
+          <PlanTitle>Plan</PlanTitle>
+          <PlanAction>
+            <PlanTrigger />
+          </PlanAction>
+        </PlanHeader>
         <PlanContent>
           <PlanStep label="Step one" />
         </PlanContent>
       </Plan>
     ));
 
-    const trigger = screen.getByRole('button', { name: 'Plan' });
+    const trigger = screen.getByRole('button', { name: 'Toggle plan' });
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
     fireEvent.click(trigger);
@@ -313,25 +453,41 @@ describe('Plan', () => {
 });
 
 describe('Task', () => {
-  it('renders checklist items with checkbox controls', () => {
-    const onChange = vi.fn();
+  it('renders a collapsible search task with file chips', () => {
     render(() => (
-      <Task>
-        <TaskItem checked={false} onCheckedChange={onChange}>
-          <TaskItemTitle>Write tests</TaskItemTitle>
-          <TaskItemDescription>Cover plan and queue states</TaskItemDescription>
-        </TaskItem>
+      <Task defaultOpen>
+        <TaskTrigger title="Searching documentation" />
+        <TaskContent>
+          <TaskItem>
+            Found references in <TaskItemFile>architecture.md</TaskItemFile>
+          </TaskItem>
+          <TaskItem>
+            Matched <TaskItemFile>terminology.md</TaskItemFile>
+          </TaskItem>
+        </TaskContent>
       </Task>
     ));
 
-    expect(screen.getByText('Write tests')).toBeInTheDocument();
-    expect(screen.getByText('Cover plan and queue states')).toBeInTheDocument();
+    expect(screen.getByText('Searching documentation')).toBeInTheDocument();
+    expect(screen.getByText('architecture.md')).toBeInTheDocument();
+    expect(screen.getByText('terminology.md')).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="task-item-file"]')).toHaveClass('rounded-6');
+  });
 
-    const checkbox = screen.getByRole('checkbox');
-    expect(checkbox).not.toBeChecked();
+  it('collapses task content from the trigger', () => {
+    render(() => (
+      <Task defaultOpen>
+        <TaskTrigger title="Inspect files" />
+        <TaskContent>
+          <TaskItem>Read package manifest</TaskItem>
+        </TaskContent>
+      </Task>
+    ));
 
-    fireEvent.click(checkbox);
-    expect(onChange).toHaveBeenCalledWith(true);
+    const trigger = screen.getByRole('button', { name: 'Inspect files' });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 });
 
@@ -349,11 +505,13 @@ describe('Confirmation', () => {
   it('shows approval actions only when approval is requested', () => {
     render(() => (
       <Confirmation approval={{ id: 'approval-1' }} state="approval-requested">
-        <ConfirmationTitle>Approve file write?</ConfirmationTitle>
-        <ConfirmationActions state="approval-requested">
-          <Button variant="primary">Approve</Button>
-          <Button variant="danger">Deny</Button>
-        </ConfirmationActions>
+        <ConfirmationRequest>
+          <ConfirmationTitle>Approve file write?</ConfirmationTitle>
+          <ConfirmationActions>
+            <ConfirmationAction variant="primary">Approve</ConfirmationAction>
+            <ConfirmationAction variant="danger">Deny</ConfirmationAction>
+          </ConfirmationActions>
+        </ConfirmationRequest>
       </Confirmation>
     ));
 
@@ -362,33 +520,59 @@ describe('Confirmation', () => {
     expect(screen.getByRole('button', { name: 'Deny' })).toBeInTheDocument();
   });
 
-  it('hides approval actions after a response', () => {
+  it('shows accepted and rejected states after response', () => {
     render(() => (
-      <Confirmation approval={{ id: 'approval-1', approved: true }} state="approval-responded">
-        <ConfirmationTitle>Write approved</ConfirmationTitle>
-        <ConfirmationActions state="approval-responded">
-          <Button>Approve</Button>
-        </ConfirmationActions>
-      </Confirmation>
+      <>
+        <Confirmation approval={{ id: 'approval-1', approved: true }} state="approval-responded">
+          <ConfirmationAccepted>
+            <ConfirmationTitle>Write approved</ConfirmationTitle>
+          </ConfirmationAccepted>
+          <ConfirmationActions>
+            <ConfirmationAction>Approve</ConfirmationAction>
+          </ConfirmationActions>
+        </Confirmation>
+        <Confirmation approval={{ id: 'approval-2', approved: false }} state="output-denied">
+          <ConfirmationRejected>
+            <ConfirmationTitle>Write denied</ConfirmationTitle>
+          </ConfirmationRejected>
+        </Confirmation>
+      </>
     ));
 
     expect(screen.getByText('Write approved')).toBeInTheDocument();
+    expect(screen.getByText('Write denied')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument();
   });
 });
 
 describe('Queue', () => {
-  it('renders pending and completed queue indicators', () => {
+  it('renders pending and completed queue indicators with section list', () => {
     render(() => (
       <Queue>
-        <QueueItem>
-          <QueueItemIndicator />
-          <span>Fetch weather</span>
-        </QueueItem>
-        <QueueItem>
-          <QueueItemIndicator completed />
-          <span>Read docs</span>
-        </QueueItem>
+        <QueueSection defaultOpen>
+          <QueueSectionTrigger>
+            <QueueSectionLabel count={2} label="tasks" />
+          </QueueSectionTrigger>
+          <QueueSectionContent>
+            <QueueList>
+              <QueueItem>
+                <div class="flex items-start gap-8">
+                  <QueueItemIndicator />
+                  <QueueItemContent>Fetch weather</QueueItemContent>
+                </div>
+              </QueueItem>
+              <QueueItem>
+                <div class="flex items-start gap-8">
+                  <QueueItemIndicator completed />
+                  <div class="min-w-0 flex-1">
+                    <QueueItemContent completed>Read docs</QueueItemContent>
+                    <QueueItemDescription completed>Cached locally</QueueItemDescription>
+                  </div>
+                </div>
+              </QueueItem>
+            </QueueList>
+          </QueueSectionContent>
+        </QueueSection>
       </Queue>
     ));
 
@@ -396,7 +580,9 @@ describe('Queue', () => {
     expect(indicators).toHaveLength(2);
     expect(indicators[0]).toHaveAttribute('data-completed', 'false');
     expect(indicators[1]).toHaveAttribute('data-completed', 'true');
+    expect(screen.getByText('2 tasks')).toBeInTheDocument();
     expect(screen.getByText('Fetch weather')).toBeInTheDocument();
     expect(screen.getByText('Read docs')).toBeInTheDocument();
+    expect(screen.getByText('Cached locally')).toBeInTheDocument();
   });
 });

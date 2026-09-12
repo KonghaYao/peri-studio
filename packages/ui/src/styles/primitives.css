@@ -68,7 +68,8 @@
 .ui-tool-chevron,
 .ui-chain-of-thought-chevron,
 .ui-plan-chevron,
-.ui-sources-chevron {
+.ui-sources-chevron,
+.ui-task-chevron {
   transition: transform var(--duration-fast) var(--ease-standard);
 }
 
@@ -76,13 +77,27 @@
 .ui-tool-trigger[data-expanded] .ui-tool-chevron,
 .ui-chain-of-thought-trigger[data-expanded] .ui-chain-of-thought-chevron,
 .ui-plan-trigger[data-expanded] .ui-plan-chevron,
-.ui-sources-trigger[data-expanded] .ui-sources-chevron {
+.ui-sources-trigger[data-expanded] .ui-sources-chevron,
+.ui-task-trigger[data-expanded] .ui-task-chevron {
   transform: rotate(180deg);
+}
+
+.ui-queue-section-chevron {
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.ui-queue-section-trigger:not([data-expanded]) .ui-queue-section-chevron {
+  transform: rotate(-90deg);
 }
 
 .ui-chain-of-thought-step:last-child .ui-chain-of-thought-connector,
 .ui-plan-step:last-child .ui-plan-step-connector {
   display: none;
+}
+
+/* AI Elements chain-of-thought image frame (22rem parity). */
+.ui-chain-of-thought-image-frame {
+  max-height: var(--container-chain-of-thought-image);
 }
 
 @keyframes ui-reasoning-shimmer {

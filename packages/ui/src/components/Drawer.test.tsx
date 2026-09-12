@@ -35,7 +35,7 @@ describe('Drawer', () => {
     const dialog = await waitFor(() => screen.getByRole('dialog', { name: 'Share link' }));
     expect(dialog).toHaveAttribute('data-swipe-direction', 'down');
     expect(dialog).toHaveAttribute('data-swipe-axis', 'y');
-    expect(dialog).toHaveClass('bottom-0', 'rounded-t-8', 'data-[expanded]:slide-in-from-bottom');
+    expect(dialog).toHaveClass('bottom-0', 'rounded-t-8', 'slide-in-from-bottom', 'ui-panel-sheet-motion');
     expect(document.querySelector('[data-drawer-overlay]')).toBeInTheDocument();
     expect(document.querySelector('[data-drawer-swipe-handle]')).toBeInTheDocument();
     expect(screen.getByText('Anyone with the link can view.')).toBeInTheDocument();

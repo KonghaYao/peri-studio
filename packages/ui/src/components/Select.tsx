@@ -2,6 +2,7 @@ import { Select as KSelect } from '@kobalte/core/select';
 import { Check, ChevronDown } from 'lucide-solid';
 import { Show, splitProps } from 'solid-js';
 import { cn } from '../lib/cn';
+import { menuSurfaceMotion } from '../lib/overlay-motion';
 
 export interface SelectOption {
   value: string;
@@ -102,7 +103,8 @@ export function Select(props: {
         <KSelect.Content
           class={cn(
             'z-(--z-overlay) overflow-hidden rounded-8 border border-border-subtle bg-surface p-4 shadow-popover outline-none',
-            'origin-[var(--kb-select-content-transform-origin)] animate-content-hide data-[expanded]:animate-content-show',
+            'origin-[var(--kb-select-content-transform-origin)]',
+            menuSurfaceMotion,
             local.listClass ?? 'min-w-(--container-menu-min)',
           )}
         >

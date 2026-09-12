@@ -1296,7 +1296,7 @@ describe('Sheet', () => {
       </Sheet>
     ));
     const dialog = await waitFor(() => screen.getByRole('dialog', { name: 'Session details' }));
-    expect(dialog).toHaveClass('w-(--container-drawer)', 'data-[expanded]:slide-in-from-right');
+    expect(dialog).toHaveClass('w-(--container-drawer)', 'slide-in-from-right', 'slide-out-to-right');
     expect(document.querySelector('[data-sheet-overlay]')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Close session details' })).toBeInTheDocument();
   });

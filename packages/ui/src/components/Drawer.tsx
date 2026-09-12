@@ -3,6 +3,7 @@ import { createContext, splitProps, useContext } from 'solid-js';
 import * as DialogPrimitive from '@kobalte/core/dialog';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import { cn } from '../lib/cn';
+import { overlayScrimMotion, panelSheetMotion } from '../lib/overlay-motion';
 import { Button, IconButton } from './Button';
 
 export type DrawerSwipeDirection = 'up' | 'down' | 'left' | 'right';
@@ -44,13 +45,13 @@ export const DrawerTrigger = DialogPrimitive.Trigger;
 
 const drawerDirectionClasses: Record<DrawerSwipeDirection, string> = {
   down:
-    'inset-x-0 bottom-0 max-h-(--container-dialog-tall) rounded-t-8 border-t data-[expanded]:slide-in-from-bottom data-[closed]:slide-out-to-bottom',
+    'inset-x-0 bottom-0 max-h-(--container-dialog-tall) rounded-t-8 border-t slide-in-from-bottom slide-out-to-bottom',
   up:
-    'inset-x-0 top-0 max-h-(--container-dialog-tall) rounded-b-8 border-b data-[expanded]:slide-in-from-top data-[closed]:slide-out-to-top',
+    'inset-x-0 top-0 max-h-(--container-dialog-tall) rounded-b-8 border-b slide-in-from-top slide-out-to-top',
   left:
-    'inset-y-0 left-0 h-full w-(--container-drawer) rounded-r-8 border-r data-[expanded]:slide-in-from-left data-[closed]:slide-out-to-left',
+    'inset-y-0 left-0 h-full w-(--container-drawer) rounded-r-8 border-r slide-in-from-left slide-out-to-left',
   right:
-    'inset-y-0 right-0 h-full w-(--container-drawer) rounded-l-8 border-l data-[expanded]:slide-in-from-right data-[closed]:slide-out-to-right',
+    'inset-y-0 right-0 h-full w-(--container-drawer) rounded-l-8 border-l slide-in-from-right slide-out-to-right',
 };
 
 const drawerSwipeAxis: Record<DrawerSwipeDirection, 'x' | 'y'> = {
@@ -66,7 +67,7 @@ function DrawerOverlay<T extends ValidComponent = 'div'>(props: PolymorphicProps
   return (
     <DialogPrimitive.Overlay
       data-drawer-overlay
-      class={cn('fixed inset-0 z-60 bg-scrim', local.class)}
+      class={cn('fixed inset-0 z-60 bg-scrim', overlayScrimMotion, local.class)}
       {...rest}
     />
   );
@@ -111,7 +112,8 @@ export function DrawerContent<T extends ValidComponent = 'div'>(props: Polymorph
         data-swipe-direction={direction}
         data-swipe-axis={axis}
         class={cn(
-          'group/drawer-content fixed z-61 flex flex-col overflow-hidden border border-border-subtle bg-surface text-text-primary shadow-popover outline-none transition ease-in-out data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:duration-300 data-[expanded]:duration-500 motion-reduce:transition-none motion-reduce:animate-none',
+          'group/drawer-content fixed z-61 flex flex-col overflow-hidden border border-border-subtle bg-surface text-text-primary shadow-popover outline-none',
+          panelSheetMotion,
           drawerDirectionClasses[direction],
           local.class,
         )}

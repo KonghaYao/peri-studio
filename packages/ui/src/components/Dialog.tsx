@@ -3,6 +3,7 @@ import { splitProps } from 'solid-js';
 import * as DialogPrimitive from '@kobalte/core/dialog';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import { cn } from '../lib/cn';
+import { modalDialogMotion, overlayScrimMotion } from '../lib/overlay-motion';
 import { IconButton } from './Button';
 
 export const Dialog = DialogPrimitive.Root;
@@ -39,7 +40,13 @@ export function DialogPortal(props: DialogPrimitive.DialogPortalProps) {
 type OverlayProps<T extends ValidComponent = 'div'> = DialogPrimitive.DialogOverlayProps<T> & { class?: string };
 export function DialogOverlay<T extends ValidComponent = 'div'>(props: PolymorphicProps<T, OverlayProps<T>>) {
   const [local, rest] = splitProps(props as OverlayProps, ['class']);
-  return <DialogPrimitive.Overlay data-dialog-overlay class={cn('fixed inset-0 z-60 bg-scrim', local.class)} {...rest} />;
+  return (
+    <DialogPrimitive.Overlay
+      data-dialog-overlay
+      class={cn('fixed inset-0 z-60 bg-scrim', overlayScrimMotion, local.class)}
+      {...rest}
+    />
+  );
 }
 
 type DialogSize = 'default' | 'search' | 'settings' | 'mcp' | 'resource-compact';
@@ -59,12 +66,19 @@ export function DialogContent<T extends ValidComponent = 'div'>(props: Polymorph
     <DialogPrimitive.Content
       class={cn(
         local.size === 'resource-compact'
-          ? 'fixed top-0 right-0 bottom-0 left-auto z-61 flex h-auto max-h-none w-(--container-rewind-compact) translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border border-border-subtle border-y-0 border-r-0 bg-surface text-text-primary shadow-popover outline-none p-0'
-          : cn('fixed top-1/2 left-1/2 z-61 w-(--container-dialog-default) max-h-(--container-dialog-tall) -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-8 border border-border-subtle bg-surface text-text-primary shadow-popover outline-none', {
-              'w-(--container-search)': local.size === 'search',
-              'w-(--container-settings) max-h-(--container-settings-tall)': local.size === 'settings',
-              'w-(--container-mcp) max-h-(--container-settings-tall)': local.size === 'mcp',
-            }),
+          ? cn(
+              'fixed top-0 right-0 bottom-0 left-auto z-61 flex h-auto max-h-none w-(--container-rewind-compact) translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border border-border-subtle border-y-0 border-r-0 bg-surface text-text-primary shadow-popover outline-none p-0',
+              'ui-panel-sheet-motion slide-in-from-right motion-reduce:animate-none',
+            )
+          : cn(
+              'fixed top-1/2 left-1/2 z-61 w-(--container-dialog-default) max-h-(--container-dialog-tall) -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-8 border border-border-subtle bg-surface text-text-primary shadow-popover outline-none',
+              modalDialogMotion,
+              {
+                'w-(--container-search)': local.size === 'search',
+                'w-(--container-settings) max-h-(--container-settings-tall)': local.size === 'settings',
+                'w-(--container-mcp) max-h-(--container-settings-tall)': local.size === 'mcp',
+              },
+            ),
         local.class,
       )}
       onEscapeKeyDown={preventWhenLocked}

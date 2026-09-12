@@ -1,27 +1,63 @@
-import { createSignal, For, Show } from 'solid-js';
+import { createSignal, Show } from 'solid-js';
 import { showCatalogSection } from '@/catalog/catalog-section';
 import {
-  Button,
   CodeBlock,
+  CodeBlockActions,
+  CodeBlockCopyButton,
+  CodeBlockFilename,
+  CodeBlockHeader,
+  CodeBlockLanguageSelector,
+  CodeBlockTitle,
   Confirmation,
+  ConfirmationAccepted,
+  ConfirmationAction,
   ConfirmationActions,
+  ConfirmationRejected,
+  ConfirmationRequest,
   ConfirmationTitle,
   DataTable,
   InlineCitation,
   InlineCitationCard,
+  InlineCitationCardBody,
+  InlineCitationCardTrigger,
+  InlineCitationCarousel,
+  InlineCitationCarouselContent,
+  InlineCitationCarouselHeader,
+  InlineCitationCarouselIndex,
+  InlineCitationCarouselItem,
+  InlineCitationCarouselNext,
+  InlineCitationCarouselPrev,
   InlineCitationQuote,
+  InlineCitationSource,
+  InlineCitationText,
   Plan,
+  PlanAction,
   PlanContent,
+  PlanDescription,
   PlanHeader,
   PlanStep,
+  PlanTitle,
+  PlanTrigger,
   Questionnaire,
   QuestionnaireNavigation,
   QuestionnaireProgress,
   QuestionnaireStep,
   Queue,
   QueueItem,
+  QueueItemContent,
+  QueueItemDescription,
+  QueueItemFile,
   QueueItemIndicator,
+  QueueList,
+  QueueSection,
+  QueueSectionContent,
+  QueueSectionLabel,
+  QueueSectionTrigger,
   Snippet,
+  SnippetAddon,
+  SnippetCopyButton,
+  SnippetInput,
+  SnippetText,
   SourceItem,
   Sources,
   SourcesContent,
@@ -29,9 +65,10 @@ import {
   Suggestion,
   SuggestionItem,
   Task,
+  TaskContent,
   TaskItem,
-  TaskItemDescription,
-  TaskItemTitle,
+  TaskItemFile,
+  TaskTrigger,
 } from '@peri/ui';
 import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
 
@@ -41,8 +78,17 @@ const tableRows = [
   { id: 'p3', name: 'ui-sandbox', sessions: 8, status: 'active' },
 ];
 
+const codeSamples = {
+  typescript: 'const ready = await status("--ready");',
+  bash: 'bun run test',
+};
+
 export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
-  const [taskDone, setTaskDone] = createSignal(false);
+  const [approvalState, setApprovalState] = createSignal<'approval-requested' | 'approval-responded'>(
+    'approval-requested',
+  );
+  const [approved, setApproved] = createSignal<boolean | undefined>(undefined);
+  const [codeLanguage, setCodeLanguage] = createSignal<'typescript' | 'bash'>('typescript');
 
   return (
     <>
@@ -69,14 +115,38 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'citation')}>
-      <CatalogDemo id="citation" title="Inline citation" description="行内引用 hover 卡片。">
+      <CatalogDemo id="citation" title="Inline citation" description="行内引用 hover 卡片与轮播来源。">
         <p class="text-13 text-content-primary">
           Session recovery uses explicit load
           <InlineCitation>
-            <InlineCitationCard sources={['https://example.com/architecture']}>
-              <InlineCitationQuote>
-                Server restart does not resurrect old runtime; chat/load rebuilds the view.
-              </InlineCitationQuote>
+            <InlineCitationText>explicit session/load</InlineCitationText>
+            <InlineCitationCard>
+              <InlineCitationCardTrigger
+                sources={['https://example.com/architecture', 'https://example.com/terminology']}
+              />
+              <InlineCitationCardBody>
+                <InlineCitationCarousel>
+                  <InlineCitationCarouselHeader>
+                    <InlineCitationCarouselPrev />
+                    <InlineCitationCarouselNext />
+                    <InlineCitationCarouselIndex />
+                  </InlineCitationCarouselHeader>
+                  <InlineCitationCarouselContent>
+                    <InlineCitationCarouselItem>
+                      <InlineCitationSource
+                        title="architecture.md"
+                        url="https://example.com/architecture"
+                        description="Server restart does not resurrect old runtime."
+                      />
+                    </InlineCitationCarouselItem>
+                    <InlineCitationCarouselItem>
+                      <InlineCitationQuote>
+                        chat/load rebuilds the view per the control plane contract.
+                      </InlineCitationQuote>
+                    </InlineCitationCarouselItem>
+                  </InlineCitationCarouselContent>
+                </InlineCitationCarousel>
+              </InlineCitationCardBody>
             </InlineCitationCard>
           </InlineCitation>
           per the control plane contract.
@@ -85,9 +155,17 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'plan')}>
-      <CatalogDemo id="plan" title="Plan" description="Agent 计划时间线。">
-        <Plan defaultOpen>
-          <PlanHeader>Implementation plan</PlanHeader>
+      <CatalogDemo id="plan" title="Plan" description="可折叠计划卡与流式标题。">
+        <Plan defaultOpen isStreaming>
+          <PlanHeader>
+            <div class="min-w-0 flex-1 space-y-4">
+              <PlanTitle>Implementation plan</PlanTitle>
+              <PlanDescription>Align chat primitives with AI Elements before mirroring to web.</PlanDescription>
+            </div>
+            <PlanAction>
+              <PlanTrigger />
+            </PlanAction>
+          </PlanHeader>
           <PlanContent>
             <PlanStep status="complete" label="Audit @peri/ui gaps" />
             <PlanStep status="active" label="Add chat primitives" />
@@ -98,58 +176,136 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'task')}>
-      <CatalogDemo id="task" title="Task" description="可勾选任务列表。">
-        <Task>
-          <TaskItem checked={taskDone()} onCheckedChange={setTaskDone}>
-            <TaskItemTitle>Run packages/ui tests</TaskItemTitle>
-            <TaskItemDescription>177+ vitest cases</TaskItemDescription>
-          </TaskItem>
-          <TaskItem>
-            <TaskItemTitle>Add sandbox demos</TaskItemTitle>
-          </TaskItem>
+      <CatalogDemo id="task" title="Task" description="可折叠搜索任务与文件 chip。">
+        <Task defaultOpen>
+          <TaskTrigger title="Searching repository" />
+          <TaskContent>
+            <TaskItem>
+              Read <TaskItemFile>packages/ui/src/components/Task.tsx</TaskItemFile>
+            </TaskItem>
+            <TaskItem>
+              Matched <TaskItemFile>docs/architecture.md</TaskItemFile>
+            </TaskItem>
+          </TaskContent>
         </Task>
       </CatalogDemo>
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'confirmation')}>
-      <CatalogDemo id="confirmation" title="Confirmation" description="敏感操作审批。">
-        <Confirmation
-          state="approval-requested"
-          approval={{ id: 'delete-session' }}
-        >
-          <ConfirmationTitle>Allow deleting session "debug-42"?</ConfirmationTitle>
-          <ConfirmationActions state="approval-requested">
-            <Button size="sm" variant="primary">Approve</Button>
-            <Button size="sm" variant="ghost">Deny</Button>
-          </ConfirmationActions>
-        </Confirmation>
+      <CatalogDemo id="confirmation" title="Confirmation" description="敏感操作审批与响应态。">
+        <DemoRow>
+          <Confirmation
+            state={approvalState()}
+            approval={{ id: 'delete-session', approved: approved() }}
+          >
+            <ConfirmationRequest>
+              <ConfirmationTitle>Allow deleting session "debug-42"?</ConfirmationTitle>
+              <ConfirmationActions>
+                <ConfirmationAction
+                  variant="primary"
+                  onClick={() => {
+                    setApproved(true);
+                    setApprovalState('approval-responded');
+                  }}
+                >
+                  Approve
+                </ConfirmationAction>
+                <ConfirmationAction
+                  variant="ghost"
+                  onClick={() => {
+                    setApproved(false);
+                    setApprovalState('approval-responded');
+                  }}
+                >
+                  Deny
+                </ConfirmationAction>
+              </ConfirmationActions>
+            </ConfirmationRequest>
+            <ConfirmationAccepted>
+              <ConfirmationTitle>Delete approved.</ConfirmationTitle>
+            </ConfirmationAccepted>
+            <ConfirmationRejected>
+              <ConfirmationTitle>Delete denied.</ConfirmationTitle>
+            </ConfirmationRejected>
+          </Confirmation>
+        </DemoRow>
       </CatalogDemo>
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'queue')}>
-      <CatalogDemo id="queue" title="Queue" description="待处理工作队列。">
+      <CatalogDemo id="queue" title="Queue" description="分段待办队列与完成态。">
         <Queue>
-          <QueueItem>
-            <QueueItemIndicator completed />
-            <span class="text-13 text-content-secondary">Index repository</span>
-          </QueueItem>
-          <QueueItem>
-            <QueueItemIndicator />
-            <span class="text-13 text-content-primary">Generate summary</span>
-          </QueueItem>
+          <QueueSection defaultOpen>
+            <QueueSectionTrigger>
+              <QueueSectionLabel count={2} label="tasks" />
+            </QueueSectionTrigger>
+            <QueueSectionContent>
+              <QueueList>
+                <QueueItem>
+                  <div class="flex items-start gap-8">
+                    <QueueItemIndicator completed />
+                    <QueueItemContent completed>Index repository</QueueItemContent>
+                  </div>
+                </QueueItem>
+                <QueueItem>
+                  <div class="flex min-w-0 items-start gap-8">
+                    <QueueItemIndicator />
+                    <div class="min-w-0 flex-1">
+                      <QueueItemContent>Generate summary</QueueItemContent>
+                      <QueueItemDescription>Uses latest chat transcript</QueueItemDescription>
+                    </div>
+                  </div>
+                </QueueItem>
+              </QueueList>
+            </QueueSectionContent>
+          </QueueSection>
         </Queue>
       </CatalogDemo>
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'code-block')}>
-      <CatalogDemo id="code-block" title="Code block" description="带复制与语言标签的代码块。">
-        <CodeBlock language="typescript" code={'const ready = await status("--ready");'} />
+      <CatalogDemo id="code-block" title="Code block" description="Header、语言切换与复制。">
+        <CodeBlock
+          code={codeSamples[codeLanguage()]}
+          language={codeLanguage()}
+          showLineNumbers
+          startLine={1}
+        >
+          <CodeBlockHeader>
+            <CodeBlockTitle>
+              <CodeBlockFilename>demo.{codeLanguage() === 'typescript' ? 'ts' : 'sh'}</CodeBlockFilename>
+            </CodeBlockTitle>
+            <CodeBlockActions>
+              <CodeBlockLanguageSelector
+                aria-label="Language"
+                value={codeLanguage()}
+                onChange={(value) => setCodeLanguage(value as 'typescript' | 'bash')}
+                options={[
+                  { value: 'typescript', label: 'TypeScript' },
+                  { value: 'bash', label: 'Bash' },
+                ]}
+              />
+              <CodeBlockCopyButton />
+            </CodeBlockActions>
+          </CodeBlockHeader>
+        </CodeBlock>
       </CatalogDemo>
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'snippet')}>
-      <CatalogDemo id="snippet" title="Snippet" description="紧凑可复制代码片段。">
-        <Snippet code="bun run test" prefix="$" />
+      <CatalogDemo id="snippet" title="Snippet" description="安装命令可复制片段。">
+        <DemoRow>
+          <Snippet code="bun run test" prefix="$" />
+          <Snippet code="npx ai-elements add task">
+            <SnippetAddon>
+              <SnippetText>$</SnippetText>
+            </SnippetAddon>
+            <SnippetInput />
+            <SnippetAddon align="inline-end" class="px-4">
+              <SnippetCopyButton />
+            </SnippetAddon>
+          </Snippet>
+        </DemoRow>
       </CatalogDemo>
       </Show>
 

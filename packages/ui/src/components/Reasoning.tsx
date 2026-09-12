@@ -11,8 +11,10 @@ import {
   type JSX,
 } from 'solid-js';
 import { cn } from '../lib/cn';
+import { disclosureContentMotion } from '../lib/overlay-motion';
 import { createControllableSignal } from '../lib/controllable-state';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './Collapsible';
+import { Shimmer } from './Shimmer';
 
 interface ReasoningContextValue {
   isStreaming: Accessor<boolean>;
@@ -161,9 +163,17 @@ type ReasoningTriggerProps = ComponentProps<typeof CollapsibleTrigger> & {
   getThinkingMessage?: (isStreaming: boolean, duration?: number) => JSX.Element;
 };
 
-const defaultGetThinkingMessage = (streaming: boolean, duration?: number): JSX.Element => {
+const defaultGetThinkingMessage = (
+  streaming: boolean,
+  duration?: number,
+  shimmerClass?: string,
+): JSX.Element => {
   if (streaming || duration === 0) {
-    return <>Thinking</>;
+    return (
+      <Shimmer duration={1} class={shimmerClass}>
+        Thinking...
+      </Shimmer>
+    );
   }
   if (duration === undefined) {
     return <span>Thought for a few seconds</span>;
@@ -174,7 +184,12 @@ const defaultGetThinkingMessage = (streaming: boolean, duration?: number): JSX.E
 export const ReasoningTrigger: Component<ReasoningTriggerProps> = (props) => {
   const [local, rest] = splitProps(props, ['class', 'children', 'shimmerClass', 'getThinkingMessage']);
   const { isStreaming, duration } = useReasoning();
-  const message = () => (local.getThinkingMessage ?? defaultGetThinkingMessage)(isStreaming(), duration());
+  const message = () =>
+    (local.getThinkingMessage
+      ?? ((streaming, value) => defaultGetThinkingMessage(streaming, value, local.shimmerClass)))(
+      isStreaming(),
+      duration(),
+    );
 
   return (
     <CollapsibleTrigger
@@ -188,9 +203,7 @@ export const ReasoningTrigger: Component<ReasoningTriggerProps> = (props) => {
       {local.children ?? (
         <>
           <Brain size={14} strokeWidth={1.7} class="shrink-0" aria-hidden="true" />
-          <span class={cn(isStreaming() ? local.shimmerClass ?? 'shimmer' : undefined, 'min-w-0 flex-1')}>
-            {message()}
-          </span>
+          <span class="min-w-0 flex-1">{message()}</span>
           <ChevronDown
             size={14}
             strokeWidth={1.7}
@@ -208,7 +221,11 @@ export const ReasoningContent: Component<ComponentProps<typeof CollapsibleConten
   return (
     <CollapsibleContent
       data-slot="reasoning-content"
-      class={cn('overflow-hidden text-12 text-content-secondary transition-all duration-120 ease-in-out', local.class)}
+      class={cn(
+        'mt-16 overflow-hidden text-12 text-content-secondary',
+        disclosureContentMotion,
+        local.class,
+      )}
       {...rest}
     >
       <div class="pb-8 pt-4 whitespace-pre-wrap leading-normal">{local.children}</div>

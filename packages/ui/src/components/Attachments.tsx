@@ -10,6 +10,7 @@ import {
 import { cn } from '../lib/cn';
 import { Badge } from './Badge';
 import { IconButton } from './Button';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from './HoverCard';
 import {
   Item,
   ItemActions,
@@ -107,11 +108,11 @@ export const Attachments: Component<AttachmentsProps> = (props) => {
   const containerClass = () => {
     switch (variant()) {
       case 'grid':
-        return 'grid grid-cols-[repeat(auto-fill,minmax(var(--composer-upload-tile-width),1fr))] gap-8';
+        return 'ml-auto flex w-fit flex-wrap gap-8';
       case 'inline':
         return 'flex flex-wrap gap-6';
       default:
-        return 'flex flex-col gap-4';
+        return 'flex flex-col gap-8';
     }
   };
 
@@ -148,9 +149,9 @@ export const Attachment: Component<AttachmentProps> = (props) => {
   const shellClass = () => {
     switch (variant()) {
       case 'grid':
-        return 'relative flex aspect-square items-center justify-center overflow-hidden rounded-8 border border-border-subtle bg-surface-muted';
+        return 'group relative size-96 overflow-hidden rounded-8 border border-border-subtle bg-surface-muted';
       case 'inline':
-        return 'inline-flex max-w-full items-center gap-6';
+        return 'group inline-flex h-32 max-w-full cursor-pointer select-none items-center gap-6 rounded-6 border border-border-subtle px-6 font-medium text-13 transition-colors hover:bg-interaction-hover';
       default:
         return undefined;
     }
@@ -207,10 +208,14 @@ export const AttachmentPreview: Component<AttachmentPreviewProps> = (props) => {
             'object-cover',
             variant() === 'grid'
               ? 'size-full'
-              : 'size-32 rounded-6 border border-border-subtle',
+              : 'size-20 rounded-6 border border-border-subtle',
           )}
         />
       );
+    }
+
+    if (mediaCategory() === 'video' && data().url) {
+      return <video class="size-full object-cover" muted src={data().url} />;
     }
 
     const Icon = mediaCategoryIcons[mediaCategory()];
@@ -340,4 +345,37 @@ export const AttachmentRemove: Component<AttachmentRemoveProps> = (props) => {
   }
 
   return button;
+};
+
+/** 附件悬停预览卡片根容器。 */
+export const AttachmentHoverCard: Component<ComponentProps<typeof HoverCard>> = (props) => (
+  <HoverCard openDelay={0} closeDelay={0} {...props} />
+);
+
+export const AttachmentHoverCardTrigger = HoverCardTrigger;
+
+type AttachmentHoverCardContentProps = ComponentProps<typeof HoverCardContent>;
+
+export const AttachmentHoverCardContent: Component<AttachmentHoverCardContentProps> = (props) => {
+  const [local, rest] = splitProps(props, ['class']);
+  return <HoverCardContent align="start" class={cn('w-auto p-8', local.class)} {...rest} />;
+};
+
+type AttachmentEmptyProps = ComponentProps<'div'>;
+
+/** 附件空状态占位。 */
+export const AttachmentEmpty: Component<AttachmentEmptyProps> = (props) => {
+  const [local, rest] = splitProps(props, ['class', 'children']);
+  return (
+    <div
+      data-slot="attachment-empty"
+      class={cn(
+        'flex items-center justify-center p-16 text-13 text-content-muted',
+        local.class,
+      )}
+      {...rest}
+    >
+      {local.children ?? 'No attachments'}
+    </div>
+  );
 };

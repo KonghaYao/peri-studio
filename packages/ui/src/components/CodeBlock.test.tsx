@@ -1,14 +1,16 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
+import { createSignal } from 'solid-js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   CodeBlock,
   CodeBlockActions,
-  CodeBlockBody,
   CodeBlockCopyButton,
+  CodeBlockFilename,
   CodeBlockHeader,
+  CodeBlockLanguageSelector,
   CodeBlockTitle,
 } from './CodeBlock';
-import { Snippet } from './Snippet';
+import { Snippet, SnippetAddon, SnippetCopyButton, SnippetInput, SnippetText } from './Snippet';
 
 afterEach(() => {
   cleanup();
@@ -35,20 +37,32 @@ describe('CodeBlock', () => {
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('const answer = 42;'));
   });
 
-  it('supports composable header and optional line numbers', () => {
+  it('supports composable header, language selector, and line numbers', () => {
+    const [language, setLanguage] = createSignal('rust');
+
     render(() => (
-      <CodeBlock code={'line one\nline two'}>
+      <CodeBlock code={'line one\nline two'} language={language()} showLineNumbers startLine={10}>
         <CodeBlockHeader>
-          <CodeBlockTitle language="rust" />
+          <CodeBlockTitle>
+            <CodeBlockFilename>example.rs</CodeBlockFilename>
+          </CodeBlockTitle>
           <CodeBlockActions>
+            <CodeBlockLanguageSelector
+              aria-label="Language"
+              value={language()}
+              onChange={setLanguage}
+              options={[
+                { value: 'rust', label: 'Rust' },
+                { value: 'typescript', label: 'TypeScript' },
+              ]}
+            />
             <CodeBlockCopyButton />
           </CodeBlockActions>
         </CodeBlockHeader>
-        <CodeBlockBody showLineNumbers startLine={10} />
       </CodeBlock>
     ));
 
-    expect(screen.getByText('Rust')).toBeInTheDocument();
+    expect(screen.getByText('example.rs')).toBeInTheDocument();
     expect(screen.getByText('10')).toBeInTheDocument();
     expect(screen.getByText('11')).toBeInTheDocument();
     expect(screen.getByText('line two')).toBeInTheDocument();
@@ -72,5 +86,29 @@ describe('Snippet', () => {
     await waitFor(() =>
       expect(writeText).toHaveBeenCalledWith('npx ai-elements add snippet'),
     );
+  });
+
+  it('supports composable install command layout', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(() => (
+      <Snippet code="bun add @peri/ui">
+        <SnippetAddon>
+          <SnippetText>$</SnippetText>
+        </SnippetAddon>
+        <SnippetInput />
+        <SnippetAddon align="inline-end">
+          <SnippetCopyButton />
+        </SnippetAddon>
+      </Snippet>
+    ));
+
+    expect(screen.getByDisplayValue('bun add @peri/ui')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('bun add @peri/ui'));
   });
 });

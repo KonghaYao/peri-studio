@@ -9,6 +9,7 @@ import {
   type JSX,
 } from 'solid-js';
 import { cn } from '../lib/cn';
+import { disclosureContentMotion } from '../lib/overlay-motion';
 import { createControllableSignal } from '../lib/controllable-state';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './Collapsible';
 
@@ -102,7 +103,12 @@ export const ChainOfThoughtStep: Component<ChainOfThoughtStepProps> = (props) =>
     <div
       data-slot="chain-of-thought-step"
       data-status={status()}
-      class={cn('ui-chain-of-thought-step flex gap-8 text-12', stepStatusClasses[status()], local.class)}
+      class={cn(
+        'ui-chain-of-thought-step flex gap-8 text-12',
+        'fade-in-0 slide-in-from-top-2 animate-in motion-reduce:animate-none',
+        stepStatusClasses[status()],
+        local.class,
+      )}
       {...rest}
     >
       <div class="relative mt-2 shrink-0">
@@ -118,6 +124,33 @@ export const ChainOfThoughtStep: Component<ChainOfThoughtStepProps> = (props) =>
   );
 };
 
+export const ChainOfThoughtSearchResults: Component<ComponentProps<'div'>> = (props) => {
+  const [local, rest] = splitProps(props, ['class']);
+  return (
+    <div
+      data-slot="chain-of-thought-search-results"
+      class={cn('flex flex-wrap items-center gap-8', local.class)}
+      {...rest}
+    />
+  );
+};
+
+export const ChainOfThoughtSearchResult: Component<ComponentProps<'span'>> = (props) => {
+  const [local, rest] = splitProps(props, ['class', 'children']);
+  return (
+    <span
+      data-slot="chain-of-thought-search-result"
+      class={cn(
+        'inline-flex h-20 items-center rounded-full border border-border-strong bg-surface px-8 text-11 font-normal text-text-secondary',
+        local.class,
+      )}
+      {...rest}
+    >
+      {local.children}
+    </span>
+  );
+};
+
 export const ChainOfThoughtContent: Component<ComponentProps<typeof CollapsibleContent>> = (props) => {
   const [local, rest] = splitProps(props, ['class', 'children']);
   const { isOpen } = useChainOfThought('ChainOfThoughtContent');
@@ -126,11 +159,31 @@ export const ChainOfThoughtContent: Component<ComponentProps<typeof CollapsibleC
     <Collapsible open={isOpen()}>
       <CollapsibleContent
         data-slot="chain-of-thought-content"
-        class={cn('mt-8 space-y-12 overflow-hidden text-content-secondary', local.class)}
+        class={cn(
+          'mt-8 space-y-12 overflow-hidden text-content-secondary',
+          disclosureContentMotion,
+          local.class,
+        )}
         {...rest}
       >
         {local.children}
       </CollapsibleContent>
     </Collapsible>
+  );
+};
+
+type ChainOfThoughtImageProps = ComponentProps<'div'> & {
+  caption?: string;
+};
+
+export const ChainOfThoughtImage: Component<ChainOfThoughtImageProps> = (props) => {
+  const [local, rest] = splitProps(props, ['class', 'children', 'caption']);
+  return (
+    <div data-slot="chain-of-thought-image" class={cn('mt-8 space-y-8', local.class)} {...rest}>
+      <div class="ui-chain-of-thought-image-frame relative flex items-center justify-center overflow-hidden rounded-8 bg-surface-muted p-12">
+        {local.children}
+      </div>
+      {local.caption && <p class="text-11 text-content-muted">{local.caption}</p>}
+    </div>
   );
 };

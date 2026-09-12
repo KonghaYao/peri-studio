@@ -3,8 +3,13 @@ import { splitProps } from 'solid-js';
 import * as TooltipPrimitive from '@kobalte/core/tooltip';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import { cn } from '../lib/cn';
+import { tooltipContentMotion } from '../lib/overlay-motion';
 
-const tooltipClasses = 'fixed z-80 w-max max-w-240 rounded-6 bg-content-primary px-8 py-4 text-12 font-normal leading-snug text-surface-canvas shadow-overlay pointer-events-none whitespace-normal ui-tooltip-animate data-[placement=bottom]:-translate-x-1/2 data-[placement=bottom-start]:translate-x-0 data-[placement=bottom-end]:-translate-x-full data-[placement=top]:-translate-x-1/2 data-[placement=top]:-translate-y-full data-[placement=top-start]:-translate-y-full data-[placement=top-end]:-translate-x-full data-[placement=top-end]:-translate-y-full motion-reduce:animate-none';
+const tooltipClasses = cn(
+  'fixed z-80 w-max max-w-240 rounded-6 bg-content-primary px-8 py-4 text-12 font-normal leading-snug text-surface-canvas shadow-overlay pointer-events-none whitespace-normal',
+  tooltipContentMotion,
+  'data-[placement=bottom]:-translate-x-1/2 data-[placement=bottom-start]:translate-x-0 data-[placement=bottom-end]:-translate-x-full data-[placement=top]:-translate-x-1/2 data-[placement=top]:-translate-y-full data-[placement=top-start]:-translate-y-full data-[placement=top-end]:-translate-x-full data-[placement=top-end]:-translate-y-full',
+);
 
 /** 纯展示 tooltip：不保留 trigger↔content 安全区，移出 trigger 即关（不可悬停气泡）。 */
 const Tooltip: Component<TooltipPrimitive.TooltipRootProps> = (props) => {

@@ -164,8 +164,37 @@
   /* 动效 */
   --duration-fast: 120ms;
   --duration-base: 160ms;
+  --duration-overlay-in: 220ms;
+  --duration-overlay-out: 160ms;
+  --duration-overlay-scrim-in: 200ms;
+  --duration-overlay-scrim-out: 140ms;
+  --duration-surface-in: 180ms;
+  --duration-surface-out: 140ms;
+  --duration-panel-in: 320ms;
+  --duration-panel-out: 240ms;
   --ease-standard: cubic-bezier(0.645, 0.045, 0.355, 1);
   --ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ease-overlay-in: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-overlay-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-surface-in: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-surface-out: cubic-bezier(0.4, 0, 1, 1);
+  --ease-panel-in: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-panel-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-slide-sm: var(--space-4);
+  --motion-slide-md: var(--space-8);
+  --motion-modal-enter-offset: var(--space-8);
+  --motion-modal-exit-offset: var(--space-4);
+  /* motion.css 组合动画内部变量（由 enter/exit 类在运行时覆盖） */
+  --ui-enter-opacity: 1;
+  --ui-exit-opacity: 1;
+  --ui-enter-scale: 1;
+  --ui-exit-scale: 1;
+  --ui-enter-translate-x: 0;
+  --ui-enter-translate-y: 0;
+  --ui-exit-translate-x: 0;
+  --ui-exit-translate-y: 0;
+  --ui-animation-duration: var(--duration-surface-in);
+  --ui-animation-easing: var(--ease-surface-in);
 
   /* ------------------------------------------------------------------
      Tier 2 · Component（sandbox 几何；与 legacy 组件 token 并行）
@@ -407,6 +436,7 @@
   --container-token-usage: 200px;
   --container-mermaid: min(920px, calc(100vw - 40px));
   --container-mermaid-body: calc(100dvh - 110px);
+  --container-chain-of-thought-image: 352px;
   --container-system-reminder: min(520px, calc(100vw - 32px));
   --container-system-reminder-tall: min(420px, calc(100vh - 32px));
   --container-mcp-compact: calc(100vw - 2 * var(--space-12));

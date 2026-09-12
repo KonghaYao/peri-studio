@@ -231,8 +231,22 @@
   --z-toast: var(--z-toast);
   --duration-fast: var(--duration-fast);
   --duration-base: var(--duration-base);
+  --duration-overlay-in: var(--duration-overlay-in);
+  --duration-overlay-out: var(--duration-overlay-out);
+  --duration-overlay-scrim-in: var(--duration-overlay-scrim-in);
+  --duration-overlay-scrim-out: var(--duration-overlay-scrim-out);
+  --duration-surface-in: var(--duration-surface-in);
+  --duration-surface-out: var(--duration-surface-out);
+  --duration-panel-in: var(--duration-panel-in);
+  --duration-panel-out: var(--duration-panel-out);
   --ease-standard: var(--ease-standard);
   --ease-out: var(--ease-out);
+  --ease-overlay-in: var(--ease-overlay-in);
+  --ease-overlay-out: var(--ease-overlay-out);
+  --ease-surface-in: var(--ease-surface-in);
+  --ease-surface-out: var(--ease-surface-out);
+  --ease-panel-in: var(--ease-panel-in);
+  --ease-panel-out: var(--ease-panel-out);
 
   /* Typography */
   --font-sans: var(--font-sans);
@@ -344,6 +358,7 @@
   --container-dialog-tall: var(--container-dialog-tall);
   --container-mermaid: var(--container-mermaid);
   --container-mermaid-body: var(--container-mermaid-body);
+  --container-chain-of-thought-image: var(--container-chain-of-thought-image);
   --container-system-reminder: var(--container-system-reminder);
   --container-system-reminder-tall: var(--container-system-reminder-tall);
   --container-mcp-compact: var(--container-mcp-compact);

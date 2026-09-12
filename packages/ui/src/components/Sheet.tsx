@@ -3,6 +3,7 @@ import { splitProps } from 'solid-js';
 import * as DialogPrimitive from '@kobalte/core/dialog';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import { cn } from '../lib/cn';
+import { overlayScrimMotion, panelSheetMotion } from '../lib/overlay-motion';
 import { IconButton } from './Button';
 
 export const Sheet = DialogPrimitive.Root;
@@ -11,10 +12,10 @@ export const SheetTrigger = DialogPrimitive.Trigger;
 type SheetSide = 'top' | 'right' | 'bottom' | 'left';
 
 const sheetSideClasses: Record<SheetSide, string> = {
-  top: 'inset-x-0 top-0 max-h-(--container-dialog-tall) border-b data-[expanded]:slide-in-from-top data-[closed]:slide-out-to-top',
-  right: 'inset-y-0 right-0 h-full w-(--container-drawer) border-l data-[expanded]:slide-in-from-right data-[closed]:slide-out-to-right',
-  bottom: 'inset-x-0 bottom-0 max-h-(--container-dialog-tall) border-t data-[expanded]:slide-in-from-bottom data-[closed]:slide-out-to-bottom',
-  left: 'inset-y-0 left-0 h-full w-(--container-drawer) border-r data-[expanded]:slide-in-from-left data-[closed]:slide-out-to-left',
+  top: 'inset-x-0 top-0 max-h-(--container-dialog-tall) border-b slide-in-from-top slide-out-to-top',
+  right: 'inset-y-0 right-0 h-full w-(--container-drawer) border-l slide-in-from-right slide-out-to-right',
+  bottom: 'inset-x-0 bottom-0 max-h-(--container-dialog-tall) border-t slide-in-from-bottom slide-out-to-bottom',
+  left: 'inset-y-0 left-0 h-full w-(--container-drawer) border-r slide-in-from-left slide-out-to-left',
 };
 
 type OverlayProps<T extends ValidComponent = 'div'> = DialogPrimitive.DialogOverlayProps<T> & { class?: string };
@@ -23,7 +24,7 @@ function SheetOverlay<T extends ValidComponent = 'div'>(props: PolymorphicProps<
   return (
     <DialogPrimitive.Overlay
       data-sheet-overlay
-      class={cn('fixed inset-0 z-60 bg-scrim', local.class)}
+      class={cn('fixed inset-0 z-60 bg-scrim', overlayScrimMotion, local.class)}
       {...rest}
     />
   );
@@ -43,7 +44,8 @@ export function SheetContent<T extends ValidComponent = 'div'>(props: Polymorphi
       <SheetOverlay class={local.overlayClass} />
       <DialogPrimitive.Content
         class={cn(
-          'fixed z-61 flex flex-col overflow-hidden rounded-none border border-border-subtle bg-surface text-text-primary shadow-popover outline-none transition ease-in-out data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:duration-300 data-[expanded]:duration-500 motion-reduce:transition-none motion-reduce:animate-none',
+          'fixed z-61 flex flex-col overflow-hidden rounded-none border border-border-subtle bg-surface text-text-primary shadow-popover outline-none',
+          panelSheetMotion,
           sheetSideClasses[side()],
           local.class,
         )}
