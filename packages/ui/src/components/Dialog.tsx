@@ -1,5 +1,5 @@
 import type { Component, ComponentProps, JSX, ValidComponent } from 'solid-js';
-import { splitProps } from 'solid-js';
+import { Show, splitProps } from 'solid-js';
 import * as DialogPrimitive from '@kobalte/core/dialog';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import { cn } from '../lib/cn';
@@ -49,19 +49,35 @@ export function DialogOverlay<T extends ValidComponent = 'div'>(props: Polymorph
   );
 }
 
-type DialogSize = 'default' | 'search' | 'settings' | 'mcp' | 'resource-compact';
+type DialogSize = 'default' | 'search' | 'settings' | 'mcp' | 'resource-compact' | 'fullscreen';
 
 type ContentProps<T extends ValidComponent = 'div'> = DialogPrimitive.DialogContentProps<T> & {
   class?: string;
   children?: JSX.Element;
   dismissible?: boolean;
+  /** @deprecated 使用 dismissible */
+  maskClosable?: boolean;
+  centered?: boolean;
+  fullscreen?: boolean;
   overlayClass?: string;
   size?: DialogSize;
 };
 export function DialogContent<T extends ValidComponent = 'div'>(props: PolymorphicProps<T, ContentProps<T>>) {
-  const [local, rest] = splitProps(props as ContentProps, ['class', 'children', 'dismissible', 'overlayClass', 'size']);
-  const preventWhenLocked = (event: Event) => { if (local.dismissible === false) event.preventDefault(); };
+  const [local, rest] = splitProps(props as ContentProps, [
+    'class',
+    'children',
+    'dismissible',
+    'maskClosable',
+    'centered',
+    'fullscreen',
+    'overlayClass',
+    'size',
+  ]);
+  const dismissible = () => local.dismissible ?? local.maskClosable ?? true;
+  const preventWhenLocked = (event: Event) => { if (!dismissible()) event.preventDefault(); };
   const isSheet = () => local.size === 'resource-compact';
+  const isFullscreen = () => local.fullscreen || local.size === 'fullscreen';
+  const centered = () => local.centered ?? true;
   return <DialogPortal>
     <DialogOverlay class={local.overlayClass} />
     <DialogPrimitive.Content
@@ -71,14 +87,21 @@ export function DialogContent<T extends ValidComponent = 'div'>(props: Polymorph
               'fixed top-0 right-0 bottom-0 left-auto z-61 flex h-auto max-h-none w-(--container-rewind-compact) translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border border-border-subtle border-y-0 border-r-0 bg-surface text-text-primary shadow-popover outline-none p-0',
               'ui-panel-sheet-motion slide-in-from-right motion-reduce:animate-none',
             )
-          : 'fixed top-1/2 left-1/2 z-61 -translate-x-1/2 -translate-y-1/2 outline-none',
-        !isSheet() && local.class,
+          : cn(
+              'fixed z-61 outline-none',
+              isFullscreen()
+                ? 'inset-0'
+                : centered()
+                  ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'
+                  : 'top-16 left-1/2 -translate-x-1/2',
+            ),
+        !isSheet() && !isFullscreen() && local.class,
       )}
       onEscapeKeyDown={preventWhenLocked}
       onPointerDownOutside={preventWhenLocked}
       {...rest}
     >
-      {isSheet() ? local.children : (
+      {isSheet() || isFullscreen() ? local.children : (
         <div
           class={cn(
             'w-(--container-dialog-default) max-h-(--container-dialog-tall) overflow-auto rounded-8 border border-border-subtle bg-surface text-text-primary shadow-popover outline-none',
@@ -119,3 +142,22 @@ export const DialogFooter: Component<ComponentProps<'footer'>> = (props) => {
   const [local, rest] = splitProps(props, ['class']);
   return <footer class={cn('flex justify-end gap-8 border-t border-border-subtle px-20 py-12', local.class)} {...rest} />;
 };
+
+export type DialogPanelProps = {
+  header?: JSX.Element;
+  /** 传 null 可隐藏 footer，对齐 Ant Design Modal footer={null}。 */
+  footer?: JSX.Element | null;
+  children: JSX.Element;
+  bodyClass?: string;
+};
+
+/** Dialog 内容组合：header + body + 可选 footer。 */
+export const DialogPanel: Component<DialogPanelProps> = (props) => (
+  <>
+    {props.header}
+    <div class={cn('px-20 py-16', props.bodyClass)}>{props.children}</div>
+    <Show when={props.footer !== null}>
+      {props.footer}
+    </Show>
+  </>
+);

@@ -145,6 +145,13 @@ export const TypographyList: Component<ComponentProps<'ul'>> = (props) => {
   );
 };
 
+export {
+  TypographyText,
+  TypographyTitle,
+  TypographyParagraph,
+  type TypographyTextOptions,
+} from './typography/Text';
+
 /** 简短别名，与 shadcn Typography 导出一致。 */
 export const H1 = TypographyH1;
 export const H2 = TypographyH2;

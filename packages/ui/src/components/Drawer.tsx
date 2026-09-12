@@ -7,10 +7,19 @@ import { overlayScrimMotion, panelSheetMotion } from '../lib/overlay-motion';
 import { Button, IconButton } from './Button';
 
 export type DrawerSwipeDirection = 'up' | 'down' | 'left' | 'right';
+export type DrawerSize = 'default' | 'large' | 'full';
+
+const drawerSizeClasses: Record<DrawerSize, string> = {
+  default: 'w-(--container-drawer)',
+  large: 'w-(--container-settings)',
+  full: 'w-full max-w-full',
+};
 
 type DrawerContextValue = {
   swipeDirection: () => DrawerSwipeDirection;
   showSwipeHandle: () => boolean;
+  size: () => DrawerSize;
+  resizable: () => boolean;
 };
 
 const DrawerContext = createContext<DrawerContextValue>();
@@ -26,13 +35,17 @@ function useDrawerContext(component: string) {
 type DrawerRootProps = DialogPrimitive.DialogRootProps & {
   swipeDirection?: DrawerSwipeDirection;
   showSwipeHandle?: boolean;
+  size?: DrawerSize;
+  resizable?: boolean;
 };
 
 export function Drawer(props: DrawerRootProps) {
-  const [local, rest] = splitProps(props, ['swipeDirection', 'showSwipeHandle']);
+  const [local, rest] = splitProps(props, ['swipeDirection', 'showSwipeHandle', 'size', 'resizable']);
   const context: DrawerContextValue = {
     swipeDirection: () => local.swipeDirection ?? 'down',
     showSwipeHandle: () => local.showSwipeHandle ?? false,
+    size: () => local.size ?? 'default',
+    resizable: () => local.resizable ?? false,
   };
   return (
     <DrawerContext.Provider value={context}>
@@ -49,9 +62,9 @@ const drawerDirectionClasses: Record<DrawerSwipeDirection, string> = {
   up:
     'inset-x-0 top-0 max-h-(--container-dialog-tall) rounded-b-8 border-b slide-in-from-top slide-out-to-top',
   left:
-    'inset-y-0 left-0 h-full w-(--container-drawer) rounded-r-8 border-r slide-in-from-left slide-out-to-left',
+    'inset-y-0 left-0 h-full rounded-r-8 border-r slide-in-from-left slide-out-to-left',
   right:
-    'inset-y-0 right-0 h-full w-(--container-drawer) rounded-l-8 border-l slide-in-from-right slide-out-to-right',
+    'inset-y-0 right-0 h-full rounded-l-8 border-l slide-in-from-right slide-out-to-right',
 };
 
 const drawerSwipeAxis: Record<DrawerSwipeDirection, 'x' | 'y'> = {
@@ -101,9 +114,10 @@ type ContentProps<T extends ValidComponent = 'div'> = DialogPrimitive.DialogCont
 };
 export function DrawerContent<T extends ValidComponent = 'div'>(props: PolymorphicProps<T, ContentProps<T>>) {
   const [local, rest] = splitProps(props as ContentProps, ['class', 'children', 'overlayClass']);
-  const { swipeDirection, showSwipeHandle } = useDrawerContext('DrawerContent');
+  const { swipeDirection, showSwipeHandle, size, resizable } = useDrawerContext('DrawerContent');
   const direction = swipeDirection();
   const axis = drawerSwipeAxis[direction];
+  const horizontal = () => direction === 'left' || direction === 'right';
   return (
     <DialogPrimitive.Portal>
       <DrawerOverlay class={local.overlayClass} />
@@ -111,10 +125,13 @@ export function DrawerContent<T extends ValidComponent = 'div'>(props: Polymorph
         data-drawer-content
         data-swipe-direction={direction}
         data-swipe-axis={axis}
+        data-resizable={resizable() ? '' : undefined}
         class={cn(
           'group/drawer-content fixed z-61 flex flex-col overflow-hidden border border-border-subtle bg-surface text-text-primary shadow-popover outline-none',
           panelSheetMotion,
           drawerDirectionClasses[direction],
+          horizontal() && drawerSizeClasses[size()],
+          resizable() && horizontal() && 'resize-x overflow-auto min-w-240 max-w-full',
           local.class,
         )}
         {...rest}

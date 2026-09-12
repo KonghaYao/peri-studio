@@ -20,6 +20,8 @@ import {
   Textarea,
   Tooltip,
 } from '@/lib/catalog-ui';
+import { ComponentCatalogFeedback } from '@/pages/ComponentCatalogFeedback';
+import { ComponentCatalogGaps } from '@/pages/ComponentCatalogGaps';
 import { CatalogDemo, DemoRow, TierHeader } from '@/pages/shared/DemoSection';
 import { Bell, Archive, Inbox, Mic, MoreHorizontal, Pencil, Pin, Plus, Search, Send, Settings, Trash2 } from 'lucide-solid';
 
@@ -211,6 +213,9 @@ export function ComponentsPage() {
           />
         </div>
       </CatalogDemo>
+
+      <ComponentCatalogFeedback sections={['message', 'button-variants', 'checkbox-radio', 'avatar-scroll-aspect', 'skeleton-loading', 'toggle-kbd-command', 'copy-link-terminal-git']} />
+      <ComponentCatalogGaps sections={['checkbox-radio', 'avatar-scroll-aspect', 'skeleton-loading', 'toggle-kbd-command', 'copy-link-terminal-git']} />
     </div>
   );
 }

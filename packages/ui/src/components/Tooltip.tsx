@@ -1,5 +1,5 @@
 import type { Component, ValidComponent } from 'solid-js';
-import { splitProps } from 'solid-js';
+import { Show, splitProps } from 'solid-js';
 import * as TooltipPrimitive from '@kobalte/core/tooltip';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import { cn } from '../lib/cn';
@@ -26,9 +26,18 @@ const Tooltip: Component<TooltipPrimitive.TooltipRootProps> = (props) => {
 };
 const TooltipTrigger = TooltipPrimitive.Trigger;
 
-const TooltipContent = <T extends ValidComponent = 'div'>(props: PolymorphicProps<T, TooltipPrimitive.TooltipContentProps<T> & { class?: string }>) => {
-  const [local, others] = splitProps(props as TooltipPrimitive.TooltipContentProps & { class?: string }, ['class']);
-  return <TooltipPrimitive.Portal><TooltipPrimitive.Content class={cn(tooltipClasses, local.class)} {...others} /></TooltipPrimitive.Portal>;
+const TooltipContent = <T extends ValidComponent = 'div'>(props: PolymorphicProps<T, TooltipPrimitive.TooltipContentProps<T> & { class?: string; showArrow?: boolean }>) => {
+  const [local, others] = splitProps(props as TooltipPrimitive.TooltipContentProps & { class?: string; showArrow?: boolean; children?: unknown }, ['class', 'showArrow', 'children']);
+  return (
+    <TooltipPrimitive.Portal>
+      <TooltipPrimitive.Content class={cn(tooltipClasses, local.class)} {...others}>
+        {local.children}
+        <Show when={local.showArrow ?? true}>
+          <TooltipPrimitive.Arrow class="fill-content-primary" />
+        </Show>
+      </TooltipPrimitive.Content>
+    </TooltipPrimitive.Portal>
+  );
 };
 
 export { Tooltip, TooltipContent, TooltipTrigger };

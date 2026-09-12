@@ -2,6 +2,7 @@ export type SandboxRoute =
   | 'home'
   | 'tokens'
   | 'components'
+  | 'components-display'
   | 'components-forms'
   | 'components-overlays'
   | 'components-ai'
@@ -33,6 +34,7 @@ export const SANDBOX_ROUTES: SandboxRoute[] = [
   'home',
   'tokens',
   'components',
+  'components-display',
   'components-forms',
   'components-overlays',
   'components-ai',
@@ -47,6 +49,7 @@ export const ROUTE_META: Record<SandboxRoute, { tier: string; label: string }> =
   home: { tier: '', label: 'Home' },
   tokens: { tier: 'T1', label: 'Tokens' },
   components: { tier: 'T2', label: 'Core' },
+  'components-display': { tier: 'T2', label: 'Display' },
   'components-forms': { tier: 'T2', label: 'Forms' },
   'components-overlays': { tier: 'T2', label: 'Overlays' },
   'components-ai': { tier: 'T2', label: 'AI' },
@@ -107,6 +110,34 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
       ],
     },
   ],
+  'components-display': [
+    {
+      title: 'Data display',
+      items: [
+        { id: 'descriptions', label: 'Descriptions' },
+        { id: 'image', label: 'Image' },
+        { id: 'list', label: 'List' },
+        { id: 'qr-code', label: 'QRCode' },
+        { id: 'segmented', label: 'Segmented' },
+        { id: 'statistic', label: 'Statistic' },
+        { id: 'tag', label: 'Tag' },
+        { id: 'timeline', label: 'Timeline' },
+        { id: 'tour', label: 'Tour' },
+      ],
+    },
+    {
+      title: 'Enhanced',
+      items: [
+        { id: 'badge-display', label: 'Badge' },
+        { id: 'avatar-display', label: 'Avatar' },
+        { id: 'card-display', label: 'Card' },
+        { id: 'empty-display', label: 'Empty' },
+        { id: 'skeleton-display', label: 'Skeleton' },
+        { id: 'typography-display', label: 'Typography' },
+        { id: 'pagination-display', label: 'Pagination' },
+      ],
+    },
+  ],
   components: [
     {
       title: 'Actions',
@@ -131,6 +162,13 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'dialog', label: 'Dialog & menu' },
         { id: 'inline-notice', label: 'InlineNotice' },
         { id: 'spinner', label: 'Spinner & empty' },
+        { id: 'message', label: 'Message' },
+        { id: 'button-variants', label: 'Button variants' },
+        { id: 'checkbox-radio', label: 'Checkbox & Radio' },
+        { id: 'avatar-scroll-aspect', label: 'Avatar & scroll' },
+        { id: 'skeleton-loading', label: 'Skeleton & loading' },
+        { id: 'toggle-kbd-command', label: 'Toggle & command' },
+        { id: 'copy-link-terminal-git', label: 'Copy & terminal' },
       ],
     },
   ],
@@ -158,8 +196,27 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
       title: 'Data',
       items: [
         { id: 'data-table', label: 'Data table' },
+        { id: 'enhanced-table', label: 'Enhanced table' },
         { id: 'questionnaire-option-row', label: 'Questionnaire option row' },
         { id: 'questionnaire', label: 'Questionnaire (multi-step)' },
+      ],
+    },
+    {
+      title: 'Ant Design entry',
+      items: [
+        { id: 'input-variants', label: 'Input variants' },
+        { id: 'input-number', label: 'InputNumber' },
+        { id: 'auto-complete', label: 'AutoComplete' },
+        { id: 'cascader', label: 'Cascader' },
+        { id: 'color-picker', label: 'ColorPicker' },
+        { id: 'mentions', label: 'Mentions' },
+        { id: 'rate', label: 'Rate' },
+        { id: 'time-picker', label: 'TimePicker' },
+        { id: 'date-range-picker', label: 'Date range' },
+        { id: 'transfer', label: 'Transfer' },
+        { id: 'tree-select', label: 'TreeSelect' },
+        { id: 'select-enhanced', label: 'Select (enhanced)' },
+        { id: 'checkbox-radio-switch', label: 'Checkbox / Radio / Switch' },
       ],
     },
   ],
@@ -177,6 +234,24 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
       title: 'Feedback',
       items: [
         { id: 'progress', label: 'Progress & slider' },
+        { id: 'notification', label: 'Notification' },
+        { id: 'popconfirm', label: 'Popconfirm' },
+        { id: 'result', label: 'Result' },
+        { id: 'watermark', label: 'Watermark' },
+        { id: 'upload', label: 'Upload' },
+        { id: 'alert-types', label: 'Alert types' },
+        { id: 'progress-circle', label: 'Progress circle' },
+        { id: 'slider-marks', label: 'Slider marks' },
+        { id: 'editable-tabs', label: 'Editable tabs' },
+        { id: 'dialog-methods', label: 'Dialog methods' },
+        { id: 'toast-enhanced', label: 'Toast enhanced' },
+        { id: 'hover-context', label: 'Hover & context' },
+        { id: 'navigation-menu', label: 'Navigation menu' },
+        { id: 'select-primitives', label: 'Select primitives' },
+        { id: 'form-dialog-shell', label: 'FormDialogShell' },
+        { id: 'back-to-top', label: 'BackToTop' },
+        { id: 'ai-primitives', label: 'AI primitives' },
+        { id: 'table-primitives', label: 'Table primitives' },
       ],
     },
     {
@@ -194,6 +269,20 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'breadcrumb', label: 'Breadcrumb & pagination' },
         { id: 'menubar', label: 'Menubar & nav' },
         { id: 'carousel', label: 'Carousel' },
+      ],
+    },
+    {
+      title: 'Layout',
+      items: [
+        { id: 'flex', label: 'Flex' },
+        { id: 'grid', label: 'Grid' },
+        { id: 'layout', label: 'Layout' },
+        { id: 'space', label: 'Space' },
+        { id: 'masonry', label: 'Masonry' },
+        { id: 'affix', label: 'Affix' },
+        { id: 'anchor', label: 'Anchor' },
+        { id: 'steps', label: 'Steps' },
+        { id: 'float-button', label: 'FloatButton' },
       ],
     },
     {

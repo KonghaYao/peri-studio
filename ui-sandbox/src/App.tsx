@@ -3,6 +3,7 @@ import { parseSandboxHash, type SandboxRoute } from '@/catalog/page-sections';
 import { HomePage } from './pages/HomePage';
 import { TokensPage } from './pages/TokensPage';
 import { ComponentsPage } from './pages/ComponentsPage';
+import { ComponentsDisplayPage } from './pages/ComponentsDisplayPage';
 import { ComponentsFormsPage } from './pages/ComponentsFormsPage';
 import { ComponentsOverlaysPage } from './pages/ComponentsOverlaysPage';
 import { ComponentsAiPage } from './pages/ComponentsAiPage';
@@ -30,6 +31,7 @@ export function App() {
       <Show when={route() === 'home'}><HomePage /></Show>
       <Show when={route() === 'tokens'}><TokensPage /></Show>
       <Show when={route() === 'components'}><ComponentsPage /></Show>
+      <Show when={route() === 'components-display'}><ComponentsDisplayPage /></Show>
       <Show when={route() === 'components-forms'}><ComponentsFormsPage /></Show>
       <Show when={route() === 'components-overlays'}><ComponentsOverlaysPage /></Show>
       <Show when={route() === 'components-ai'}><ComponentsAiPage /></Show>

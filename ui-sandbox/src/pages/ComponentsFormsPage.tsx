@@ -4,6 +4,8 @@ import { ComponentCatalogExtrasC } from '@/pages/ComponentCatalogExtrasC';
 import { ComponentCatalogExtrasD } from '@/pages/ComponentCatalogExtrasD';
 import { ComponentCatalogExtrasE } from '@/pages/ComponentCatalogExtrasE';
 import { ComponentCatalogExtrasG } from '@/pages/ComponentCatalogExtrasG';
+import { ComponentCatalogExtrasForms2 } from '@/pages/ComponentCatalogExtrasForms2';
+import { ComponentCatalogFeedback } from '@/pages/ComponentCatalogFeedback';
 import { TierHeader } from '@/pages/shared/DemoSection';
 
 /** T2 · 表单与输入：开关、组合输入、日期、Field、DataTable、Questionnaire 等。 */
@@ -21,6 +23,24 @@ export function ComponentsFormsPage() {
       <ComponentCatalogExtrasD sections={['calendar', 'date-picker', 'form']} />
       <ComponentCatalogExtrasE sections={['field']} />
       <ComponentCatalogExtrasG sections={['data-table', 'questionnaire-option-row', 'questionnaire']} />
+      <ComponentCatalogExtrasForms2
+        sections={[
+          'input-variants',
+          'input-number',
+          'auto-complete',
+          'cascader',
+          'color-picker',
+          'mentions',
+          'rate',
+          'time-picker',
+          'date-range-picker',
+          'transfer',
+          'tree-select',
+          'select-enhanced',
+          'checkbox-radio-switch',
+        ]}
+      />
+      <ComponentCatalogFeedback sections={['enhanced-table']} />
     </div>
   );
 }

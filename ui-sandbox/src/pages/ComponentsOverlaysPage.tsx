@@ -1,8 +1,11 @@
 import { ComponentCatalogExtras } from '@/pages/ComponentCatalogExtras';
+import { ComponentCatalogExtrasLayout } from '@/pages/ComponentCatalogExtrasLayout';
 import { ComponentCatalogExtrasB } from '@/pages/ComponentCatalogExtrasB';
 import { ComponentCatalogExtrasC } from '@/pages/ComponentCatalogExtrasC';
 import { ComponentCatalogExtrasD } from '@/pages/ComponentCatalogExtrasD';
 import { ComponentCatalogExtrasE } from '@/pages/ComponentCatalogExtrasE';
+import { ComponentCatalogFeedback } from '@/pages/ComponentCatalogFeedback';
+import { ComponentCatalogGaps } from '@/pages/ComponentCatalogGaps';
 import { TierHeader } from '@/pages/shared/DemoSection';
 
 /** T2 · 表面、浮层与导航：Card、Sheet、菜单、侧栏、轮播等。 */
@@ -26,6 +29,31 @@ export function ComponentsOverlaysPage() {
       <ComponentCatalogExtrasD sections={['carousel']} />
       <ComponentCatalogExtrasE sections={['direction']} />
       <ComponentCatalogExtrasB sections={['sidebar']} />
+      <ComponentCatalogExtrasLayout
+        sections={['flex', 'grid', 'layout', 'space', 'masonry', 'affix', 'anchor', 'steps', 'float-button']}
+      />
+      <ComponentCatalogFeedback sections={[
+        'notification',
+        'popconfirm',
+        'result',
+        'watermark',
+        'upload',
+        'alert-types',
+        'progress-circle',
+        'slider-marks',
+        'editable-tabs',
+        'dialog-methods',
+        'toast-enhanced',
+      ]} />
+      <ComponentCatalogGaps sections={[
+        'hover-context',
+        'navigation-menu',
+        'select-primitives',
+        'form-dialog-shell',
+        'back-to-top',
+        'ai-primitives',
+        'table-primitives',
+      ]} />
     </div>
   );
 }

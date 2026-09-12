@@ -18,12 +18,14 @@ import {
   DatePickerTrigger,
   Form,
   FormControl,
+  FormDependency,
   FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
   Input,
+  Select,
   Item,
   ItemActions,
   ItemContent,
@@ -44,6 +46,9 @@ const carouselSlides = [
 export function ComponentCatalogExtrasD(props: { sections?: string[] }) {
   const [date, setDate] = createSignal<Date | undefined>(new Date(2026, 8, 12));
   const [picked, setPicked] = createSignal<Date | undefined>();
+  const [monthPicked, setMonthPicked] = createSignal<Date | undefined>();
+  const [accountType, setAccountType] = createSignal('personal');
+  const [company, setCompany] = createSignal('');
 
   return (
     <>
@@ -58,12 +63,28 @@ export function ComponentCatalogExtrasD(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'date-picker')}>
-      <CatalogDemo id="date-picker" title="Date picker" description="Popover + Calendar 组合触发器。">
-        <DemoRow label="Default">
-          <DatePicker value={picked()} onValueChange={setPicked} placeholder="Select date">
+      <CatalogDemo id="date-picker" title="Date picker" description="week/month/quarter/year、disabledDate、showTime、presets。">
+        <DemoRow label="Date + time + presets">
+          <DatePicker
+            value={picked()}
+            onValueChange={setPicked}
+            showTime
+            presets={[
+              { label: 'Today', value: new Date() },
+              { label: 'Tomorrow', value: new Date(Date.now() + 86_400_000) },
+            ]}
+            disabledDate={(day) => day.getDay() === 0 || day.getDay() === 6}
+            placeholder="Select date"
+          >
             <DatePickerTrigger />
             <DatePickerContent />
           </DatePicker>
+        </DemoRow>
+        <DemoRow label="Month / quarter / year">
+          <DatePicker picker="month" value={monthPicked()} onValueChange={setMonthPicked} placeholder="Month" />
+          <DatePicker picker="quarter" placeholder="Quarter" />
+          <DatePicker picker="year" placeholder="Year" />
+          <DatePicker picker="week" placeholder="Week" />
         </DemoRow>
       </CatalogDemo>
       </Show>
@@ -157,6 +178,35 @@ export function ComponentCatalogExtrasD(props: { sections?: string[] }) {
               <FormMessage />
             </FormItem>
           </FormField>
+          <FormField name="accountType">
+            <FormItem>
+              <FormLabel>Account type</FormLabel>
+              <FormControl>
+                <Select
+                  value={accountType()}
+                  onChange={setAccountType}
+                  options={[
+                    { value: 'personal', label: 'Personal' },
+                    { value: 'business', label: 'Business' },
+                  ]}
+                />
+              </FormControl>
+            </FormItem>
+          </FormField>
+          <FormDependency dependencies={['accountType']} values={{ accountType: accountType() }}>
+            {(deps) => (
+              <Show when={deps.accountType === 'business'}>
+                <FormField name="company">
+                  <FormItem>
+                    <FormLabel>Company</FormLabel>
+                    <FormControl>
+                      <Input value={company()} onInput={(event) => setCompany(event.currentTarget.value)} placeholder="Acme Inc." />
+                    </FormControl>
+                  </FormItem>
+                </FormField>
+              </Show>
+            )}
+          </FormDependency>
           <Button type="submit" variant="primary">Save profile</Button>
         </Form>
       </CatalogDemo>

@@ -17,6 +17,12 @@ const buttonVariants = cva(
           'border border-border-strong bg-surface-overlay text-content-primary hover:border-accent-solid hover:text-accent-solid active:border-accent-active active:text-accent-active',
         secondary:
           'border border-border-strong bg-surface-overlay text-content-primary hover:border-accent-solid hover:text-accent-solid active:border-accent-active active:text-accent-active',
+        dashed:
+          'border border-dashed border-border-strong bg-surface-overlay text-content-primary hover:border-accent-solid hover:text-accent-solid active:border-accent-active active:text-accent-active',
+        text:
+          'border border-transparent bg-transparent text-content-primary hover:bg-interaction-hover',
+        link:
+          'border border-transparent bg-transparent p-0 text-accent underline-offset-4 hover:text-accent-hover hover:underline',
         ghost:
           'border border-transparent bg-transparent text-content-secondary hover:bg-interaction-hover hover:text-content-primary',
         danger:
@@ -29,8 +35,17 @@ const buttonVariants = cva(
         compact: 'h-28 px-10 text-12',
         default: 'h-36 px-16 text-13',
       },
+      shape: {
+        default: 'rounded-6',
+        round: 'rounded-full',
+        circle: 'rounded-full aspect-square p-0',
+      },
+      block: {
+        true: 'w-full',
+        false: '',
+      },
     },
-    defaultVariants: { variant: 'ghost', size: 'md' },
+    defaultVariants: { variant: 'ghost', size: 'md', shape: 'default', block: false },
   },
 );
 
@@ -39,6 +54,8 @@ type ButtonVariantProps = VariantProps<typeof buttonVariants>;
 type Props = JSX.ButtonHTMLAttributes<HTMLButtonElement> &
   ButtonVariantProps & {
     busy?: boolean;
+    leadingIcon?: JSX.Element;
+    trailingIcon?: JSX.Element;
   };
 
 function resolveButtonVariant(variant: ButtonVariantProps['variant']) {
@@ -54,9 +71,10 @@ function resolveButtonSize(size: ButtonVariantProps['size']) {
 export function Button(props: Props) {
   const [local, variants, rest] = splitProps(
     props,
-    ['class', 'children', 'busy', 'disabled'],
-    ['variant', 'size'],
+    ['class', 'children', 'busy', 'disabled', 'leadingIcon', 'trailingIcon'],
+    ['variant', 'size', 'shape', 'block'],
   );
+  const shape = () => variants.shape ?? (local.leadingIcon && !local.children && !local.trailingIcon ? 'circle' : 'default');
   return (
     <button
       type={rest.type ?? 'button'}
@@ -64,6 +82,8 @@ export function Button(props: Props) {
         buttonVariants({
           variant: resolveButtonVariant(variants.variant),
           size: resolveButtonSize(variants.size),
+          shape: shape(),
+          block: variants.block ?? false,
         }),
         local.class,
       )}
@@ -76,7 +96,9 @@ export function Button(props: Props) {
         <Spinner class="size-12" decorative />
         <span class="sr-only">Processing</span>
       </Show>
+      <Show when={!local.busy && local.leadingIcon}>{local.leadingIcon}</Show>
       {local.children}
+      <Show when={!local.busy && local.trailingIcon}>{local.trailingIcon}</Show>
     </button>
   );
 }
@@ -132,9 +154,12 @@ const iconButtonVariants = cva(
 
 type IconButtonVariantProps = VariantProps<typeof iconButtonVariants>;
 
-function resolveIconButtonVariant(variant: IconButtonVariantProps['variant']) {
+function resolveIconButtonVariant(
+  variant: IconButtonVariantProps['variant'] | ButtonVariantProps['variant'] | 'stop' | undefined,
+) {
   if (variant === 'stop') return 'stop';
-  const resolved = resolveButtonVariant(variant);
+  if (variant === 'dashed' || variant === 'text' || variant === 'link') return 'ghost';
+  const resolved = resolveButtonVariant(variant as ButtonVariantProps['variant']);
   return resolved ?? 'ghost';
 }
 
@@ -148,7 +173,7 @@ function resolveIconButtonSize(size: ButtonVariantProps['size']): IconButtonVari
 /* 图标按钮：圆角矩形（禁止圆形），默认 ghost；label 即 a11y 名称。 */
 export function IconButton(
   props: Omit<Props, 'variant'> & {
-    variant?: IconButtonVariantProps['variant'];
+    variant?: IconButtonVariantProps['variant'] | 'dashed' | 'text' | 'link';
     label: string;
     title?: string;
     showTooltip?: boolean;
@@ -182,7 +207,7 @@ export function IconButton(
       data-icon-button=""
       class={cn(
         iconButtonVariants({
-          variant: resolveIconButtonVariant(local.variant),
+          variant: resolveIconButtonVariant(local.variant) as IconButtonVariantProps['variant'],
           size: resolveIconButtonSize(local.size),
         }),
         local.class,

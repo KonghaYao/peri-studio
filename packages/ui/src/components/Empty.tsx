@@ -1,10 +1,17 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
+import { Show, splitProps, type Component, type ComponentProps } from 'solid-js';
 import { cn } from '../lib/cn';
+import { EMPTY_PRESETS, type EmptyPresetName } from './empty-presets';
+
+type EmptyRootProps = ComponentProps<'div'> & {
+  preset?: EmptyPresetName;
+  image?: ComponentProps<'div'>['children'];
+};
 
 /** 空状态根容器：居中、虚线边框、token 间距。 */
-export const Empty: Component<ComponentProps<'div'>> = (props) => {
-  const [local, rest] = splitProps(props, ['class']);
+export const Empty: Component<EmptyRootProps> = (props) => {
+  const [local, rest] = splitProps(props, ['class', 'preset', 'image', 'children']);
+  const presetComponent = () => (local.preset ? EMPTY_PRESETS[local.preset] : undefined);
   return (
     <div
       data-slot="empty"
@@ -13,7 +20,20 @@ export const Empty: Component<ComponentProps<'div'>> = (props) => {
         local.class,
       )}
       {...rest}
-    />
+    >
+      <Show when={local.image}>
+        <EmptyMedia variant="default">{local.image}</EmptyMedia>
+      </Show>
+      <Show when={!local.image && local.preset}>
+        <EmptyMedia variant="default">
+          {(() => {
+            const Preset = presetComponent();
+            return Preset ? <Preset /> : null;
+          })()}
+        </EmptyMedia>
+      </Show>
+      {local.children}
+    </div>
   );
 };
 

@@ -1,5 +1,6 @@
 import { For, Show, createContext, createMemo, useContext, type JSX } from 'solid-js';
 import { cn } from '../lib/cn';
+import { Checkbox, CheckboxControl, CheckboxInput } from './Checkbox';
 import { fileTreeDropAccentClass, fileTreeDropTargetRowClass } from './resource/file-tree-layout';
 import { VSCodeFileIcon } from './VSCodeFileIcon';
 
@@ -44,6 +45,13 @@ export type FileTreeProps = {
     context: { depth: number; kind: 'file' | 'folder'; open?: boolean; index: number; setSize: number },
   ) => JSX.Element | undefined;
   renderFolderFooter?: (node: FileTreeNode, depth: number) => JSX.Element | undefined;
+  checkable?: boolean;
+  checkedPaths?: Set<string>;
+  onCheck?: (node: FileTreeNode, checked: boolean) => void;
+  showLine?: boolean;
+  directoryStyle?: boolean;
+  draggable?: boolean;
+  onLoadData?: (node: FileTreeNode) => Promise<void> | void;
 };
 
 const FileTreeContext = createContext<FileTreeProps>();
@@ -208,12 +216,22 @@ function FileTreeFolderRow(props: {
   onFolderDragLeave?: (path: string, event: DragEvent) => void;
   onFolderDrop?: (path: string, event: DragEvent) => void;
 }) {
+  const tree = useContext(FileTreeContext)!;
   const isDropTarget = () => props.dropTargetPath === props.node.path;
+  const checked = () => tree.checkedPaths?.has(props.node.path) ?? false;
+  const handleToggle = async () => {
+    if (!props.open && tree.onLoadData) {
+      await tree.onLoadData(props.node);
+    }
+    props.onToggle();
+  };
   return (
     <div
       class={cn(
         'group/tree-file relative flex h-(--tree-row-height) w-full items-center rounded-4 pr-5 text-11 pointer-coarse:h-44',
         isDropTarget() ? fileTreeDropTargetRowClass : '',
+        tree.showLine && 'border-l border-border-faint',
+        tree.directoryStyle && 'font-600',
         props.rowClassName,
       )}
       style={rowPadding(props.depth)}
@@ -241,7 +259,8 @@ function FileTreeFolderRow(props: {
           'file-tree-folder-btn flex h-(--tree-row-height) w-full min-w-0 items-center gap-4 rounded-4 border-0 bg-transparent pr-6 text-left text-11 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44',
           props.active || props.selected ? 'bg-selected' : '',
         )}
-        onClick={props.onToggle}
+        draggable={tree.draggable}
+        onClick={() => void handleToggle()}
         onFocus={() => props.onActivePathChange?.(props.node.path)}
         onContextMenu={props.onContextMenu}
         onDragOver={(event) => props.onFolderDragOver?.(props.node.path, event)}
@@ -249,6 +268,16 @@ function FileTreeFolderRow(props: {
         onDrop={(event) => props.onFolderDrop?.(props.node.path, event)}
         title={props.node.path}
       >
+        <Show when={tree.checkable}>
+          <Checkbox
+            checked={checked()}
+            onChange={(value) => tree.onCheck?.(props.node, value)}
+            class="shrink-0"
+          >
+            <CheckboxInput />
+            <CheckboxControl />
+          </Checkbox>
+        </Show>
         {props.renderFolderIcon
           ? props.renderFolderIcon(props.node, props.open)
           : <VSCodeFileIcon path={props.node.path} directory open={props.open} size={16} class="size-16" />}
@@ -281,11 +310,14 @@ function FileTreeFileRow(props: {
   ariaLabel?: string;
   treeitem: boolean;
 }) {
+  const tree = useContext(FileTreeContext)!;
+  const checked = () => tree.checkedPaths?.has(props.node.path) ?? false;
   return (
     <div
       class={cn(
         'group/tree-file flex h-(--tree-row-height) w-full items-center rounded-4 pr-5 text-11 pointer-coarse:h-44',
         props.selected || props.active ? 'bg-selected' : 'hover:bg-hover',
+        tree.showLine && 'border-l border-border-faint',
         props.rowClassName,
       )}
       style={rowPadding(props.depth)}
@@ -301,6 +333,7 @@ function FileTreeFileRow(props: {
         data-directory="false"
         tabIndex={props.treeitem && (props.active || props.defaultTabIndex) ? 0 : props.treeitem ? -1 : undefined}
         class="flex h-full min-w-0 flex-1 items-center gap-5 rounded-4 border-0 bg-transparent pl-6 text-left text-inherit focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2"
+        draggable={tree.draggable}
         onClick={() => props.onSelect?.(props.node)}
         onFocus={() => props.treeitem ? props.onActivePathChange?.(props.node.path) : undefined}
         onContextMenu={props.onContextMenu}
@@ -308,6 +341,16 @@ function FileTreeFileRow(props: {
         aria-label={props.ariaLabel}
         {...Object.fromEntries(Object.entries(props.dataAttrs ?? {}).filter(([, value]) => value !== undefined))}
       >
+        <Show when={tree.checkable}>
+          <Checkbox
+            checked={checked()}
+            onChange={(value) => tree.onCheck?.(props.node, value)}
+            class="shrink-0"
+          >
+            <CheckboxInput />
+            <CheckboxControl />
+          </Checkbox>
+        </Show>
         {props.renderFileIcon
           ? props.renderFileIcon(props.node)
           : <VSCodeFileIcon path={props.node.path} size={16} class="size-16" />}

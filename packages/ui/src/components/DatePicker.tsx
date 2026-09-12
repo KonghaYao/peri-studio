@@ -11,9 +11,9 @@ import {
   useContext,
 } from 'solid-js';
 import { cn } from '../lib/cn';
-import { formatDateLabel } from '../lib/calendar-date';
+import { formatByPicker, type DatePickerMode } from '../lib/date-picker-format';
 import { Button } from './Button';
-import { Calendar } from './Calendar';
+import { DatePickerPanel, type DatePickerPreset } from './date-picker-panel';
 import { Popover, PopoverContent, PopoverTrigger } from './Popover';
 
 type DatePickerContextValue = {
@@ -25,7 +25,10 @@ type DatePickerContextValue = {
   locale: Accessor<string | undefined>;
   disabled: Accessor<boolean>;
   defaultMonth: Accessor<Date | undefined>;
-  calendarDisabled: Accessor<ComponentProps<typeof Calendar>['disabled'] | undefined>;
+  calendarDisabled: Accessor<ComponentProps<typeof DatePickerPanel>['disabled'] | undefined>;
+  picker: Accessor<DatePickerMode>;
+  presets: Accessor<DatePickerPreset[] | undefined>;
+  showTime: Accessor<boolean>;
 };
 
 const DatePickerContext = createContext<DatePickerContextValue>();
@@ -49,7 +52,12 @@ type DatePickerProps = Omit<ComponentProps<'div'>, 'onChange'> & {
   locale?: string;
   disabled?: boolean;
   /** 透传给内嵌 Calendar 的 disabled 规则 */
-  calendarDisabled?: ComponentProps<typeof Calendar>['disabled'];
+  calendarDisabled?: ComponentProps<typeof DatePickerPanel>['disabled'];
+  /** Ant Design 别名 */
+  disabledDate?: ComponentProps<typeof DatePickerPanel>['disabled'];
+  picker?: DatePickerMode;
+  presets?: DatePickerPreset[];
+  showTime?: boolean;
   defaultMonth?: Date;
 };
 
@@ -68,6 +76,10 @@ export const DatePicker: Component<DatePickerProps> = (props) => {
     'locale',
     'disabled',
     'calendarDisabled',
+    'disabledDate',
+    'picker',
+    'presets',
+    'showTime',
     'defaultMonth',
   ]);
 
@@ -103,7 +115,10 @@ export const DatePicker: Component<DatePickerProps> = (props) => {
     locale,
     disabled,
     defaultMonth: () => local.defaultMonth,
-    calendarDisabled: () => local.calendarDisabled,
+    calendarDisabled: () => local.calendarDisabled ?? local.disabledDate,
+    picker: () => local.picker ?? 'date',
+    presets: () => local.presets,
+    showTime: () => local.showTime ?? false,
   };
 
   return (
@@ -130,7 +145,9 @@ export const DatePickerTrigger: Component<DatePickerTriggerProps> = (props) => {
   const context = useDatePickerContext('DatePickerTrigger');
   const selected = () => context.value();
   const label = () =>
-    selected() ? formatDateLabel(selected()!, context.locale()) : context.placeholder();
+    selected()
+      ? formatByPicker(selected()!, context.picker(), context.locale())
+      : context.placeholder();
 
   return (
     <PopoverTrigger
@@ -170,17 +187,88 @@ export const DatePickerContent: Component<DatePickerContentProps> = (props) => {
       class={cn('w-auto p-0', local.class)}
       {...rest}
     >
-      <Calendar
+      <DatePickerPanel
         value={context.value()}
         onValueChange={(date) => {
           context.setValue(date);
-          context.setOpen(false);
+          if (!context.showTime()) context.setOpen(false);
         }}
-        defaultMonth={context.defaultMonth() ?? context.value()}
+        picker={context.picker()}
         disabled={context.calendarDisabled()}
         locale={context.locale()}
-        class="border-0 shadow-none"
+        presets={context.presets()}
+        showTime={context.showTime()}
+        defaultMonth={context.defaultMonth()}
       />
     </PopoverContent>
   );
 };
+
+export type DateRangeValue = [Date | undefined, Date | undefined];
+
+export type DateRangePickerProps = Omit<ComponentProps<'div'>, 'onChange'> & {
+  value?: DateRangeValue;
+  defaultValue?: DateRangeValue;
+  onValueChange?: (value: DateRangeValue) => void;
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  placeholder?: [string, string];
+  locale?: string;
+  disabled?: boolean;
+  calendarDisabled?: ComponentProps<typeof DatePickerPanel>['disabled'];
+  defaultMonth?: Date;
+};
+
+/** 日期范围选择器：开始/结束两个 DatePicker 组合。 */
+export const DateRangePicker: Component<DateRangePickerProps> = (props) => {
+  const [local, rest] = splitProps(props, [
+    'class',
+    'value',
+    'defaultValue',
+    'onValueChange',
+    'placeholder',
+    'locale',
+    'disabled',
+    'calendarDisabled',
+    'defaultMonth',
+  ]);
+
+  const [internal, setInternal] = createSignal<DateRangeValue>(local.defaultValue ?? [undefined, undefined]);
+  const value = createMemo(() => local.value ?? internal());
+  const placeholders = () => local.placeholder ?? ['Start date', 'End date'];
+
+  const setPart = (index: 0 | 1, next: Date | undefined) => {
+    const current = [...value()] as DateRangeValue;
+    current[index] = next;
+    if (local.value === undefined) setInternal(current);
+    local.onValueChange?.(current);
+  };
+
+  return (
+    <div data-slot="date-range-picker" class={cn('inline-flex items-center gap-8', local.class)} {...rest}>
+      <DatePicker
+        value={value()[0]}
+        onValueChange={(next) => setPart(0, next)}
+        placeholder={placeholders()[0]}
+        locale={local.locale}
+        disabled={local.disabled}
+        calendarDisabled={local.calendarDisabled}
+        defaultMonth={local.defaultMonth ?? value()[0] ?? value()[1]}
+      />
+      <span class="text-content-muted" aria-hidden="true">→</span>
+      <DatePicker
+        value={value()[1]}
+        onValueChange={(next) => setPart(1, next)}
+        placeholder={placeholders()[1]}
+        locale={local.locale}
+        disabled={local.disabled}
+        calendarDisabled={local.calendarDisabled}
+        defaultMonth={local.defaultMonth ?? value()[1] ?? value()[0]}
+      />
+    </div>
+  );
+};
+
+type DatePickerCompound = typeof DatePicker & { RangePicker: typeof DateRangePicker };
+(DatePicker as DatePickerCompound).RangePicker = DateRangePicker;

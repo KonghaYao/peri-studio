@@ -1,5 +1,5 @@
 import type { Component, JSX, ValidComponent } from 'solid-js';
-import { splitProps } from 'solid-js';
+import { Show, splitProps } from 'solid-js';
 import * as PopoverPrimitive from '@kobalte/core/popover';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import { FloatingSurface } from './FloatingSurface';
@@ -9,8 +9,8 @@ import { floatingPositionedShellClass, surfacePopoverMotion } from '../lib/overl
 const Popover: Component<PopoverPrimitive.PopoverRootProps> = (props) => <PopoverPrimitive.Root gutter={4} {...props} />;
 const PopoverTrigger = PopoverPrimitive.Trigger;
 
-const PopoverContent = <T extends ValidComponent = 'div'>(props: PolymorphicProps<T, PopoverPrimitive.PopoverContentProps<T> & { class?: string; children?: JSX.Element }>) => {
-  const [local, others] = splitProps(props as PopoverPrimitive.PopoverContentProps & { class?: string; children?: JSX.Element }, ['class', 'children']);
+const PopoverContent = <T extends ValidComponent = 'div'>(props: PolymorphicProps<T, PopoverPrimitive.PopoverContentProps<T> & { class?: string; children?: JSX.Element; showArrow?: boolean }>) => {
+  const [local, others] = splitProps(props as PopoverPrimitive.PopoverContentProps & { class?: string; children?: JSX.Element; showArrow?: boolean }, ['class', 'children', 'showArrow']);
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Content class={floatingPositionedShellClass} {...others}>
@@ -23,6 +23,9 @@ const PopoverContent = <T extends ValidComponent = 'div'>(props: PolymorphicProp
         >
           {local.children}
         </FloatingSurface>
+        <Show when={local.showArrow ?? true}>
+          <PopoverPrimitive.Arrow class="fill-surface stroke-border-subtle" />
+        </Show>
       </PopoverPrimitive.Content>
     </PopoverPrimitive.Portal>
   );

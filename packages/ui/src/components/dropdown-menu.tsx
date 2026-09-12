@@ -55,15 +55,20 @@ const DropdownMenuContent = <T extends ValidComponent = "div">(
 type DropdownMenuItemProps<T extends ValidComponent = "div"> =
   DropdownMenuPrimitive.DropdownMenuItemProps<T> & {
     class?: string | undefined
+    variant?: 'default' | 'danger'
   }
 
 const DropdownMenuItem = <T extends ValidComponent = "div">(
   props: PolymorphicProps<T, DropdownMenuItemProps<T>>
 ) => {
-  const [, rest] = splitProps(props as DropdownMenuItemProps, ["class"])
+  const [local, rest] = splitProps(props as DropdownMenuItemProps, ["class", "variant"])
   return (
     <DropdownMenuPrimitive.Item
-      class={cn(menuItemClass, props.class)}
+      class={cn(
+        menuItemClass,
+        local.variant === 'danger' && 'text-danger-solid data-[highlighted]:bg-danger-subtle',
+        local.class,
+      )}
       {...rest}
     />
   )

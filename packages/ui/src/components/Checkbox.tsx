@@ -1,8 +1,8 @@
 import type { ValidComponent } from 'solid-js';
-import { splitProps } from 'solid-js';
+import { Show, splitProps } from 'solid-js';
 import * as CheckboxPrimitive from '@kobalte/core/checkbox';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
-import { Check } from 'lucide-solid';
+import { Check, Minus } from 'lucide-solid';
 import { cn } from '../lib/cn';
 
 export const Checkbox = CheckboxPrimitive.Root;
@@ -27,22 +27,32 @@ export function CheckboxLabel<T extends ValidComponent = 'label'>(props: Polymor
   );
 }
 
-type ControlProps<T extends ValidComponent = 'div'> = CheckboxPrimitive.CheckboxControlProps<T> & { class?: string };
+type ControlProps<T extends ValidComponent = 'div'> = CheckboxPrimitive.CheckboxControlProps<T> & {
+  class?: string;
+  indeterminate?: boolean;
+};
+
 export function CheckboxControl<T extends ValidComponent = 'div'>(props: PolymorphicProps<T, ControlProps<T>>) {
-  const [local, rest] = splitProps(props as ControlProps, ['class']);
+  const [local, rest] = splitProps(props as ControlProps, ['class', 'indeterminate']);
   return (
     <CheckboxPrimitive.Control
       class={cn(
         'grid size-16 flex-none place-items-center rounded-4 border border-border-strong bg-surface ui-control-transition',
         'hover:border-accent peer-focus-visible:shadow-accent-ring',
         'data-checked:border-accent data-checked:bg-accent data-checked:text-surface',
+        'data-[indeterminate]:border-accent data-[indeterminate]:bg-accent data-[indeterminate]:text-surface',
         'data-disabled:cursor-not-allowed data-disabled:border-border-subtle data-disabled:bg-surface-sunken data-disabled:hover:border-border-subtle',
         'data-disabled:data-checked:border-content-faint data-disabled:data-checked:bg-content-faint',
         local.class,
       )}
+      data-indeterminate={local.indeterminate ? '' : undefined}
       {...rest}
     >
-      <CheckboxPrimitive.Indicator><Check size={12} strokeWidth={3} /></CheckboxPrimitive.Indicator>
+      <CheckboxPrimitive.Indicator>
+        <Show when={local.indeterminate} fallback={<Check size={12} strokeWidth={3} />}>
+          <Minus size={12} strokeWidth={3} />
+        </Show>
+      </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Control>
   );
 }

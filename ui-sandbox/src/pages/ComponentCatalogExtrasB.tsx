@@ -22,6 +22,10 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
@@ -88,7 +92,21 @@ export function ComponentCatalogExtrasB(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'menus')}>
-      <CatalogDemo id="menus" title="Context menu · Hover card · Scroll area" description="右键菜单、悬停卡片与滚动容器。">
+      <CatalogDemo id="menus" title="Context menu · Dropdown · Hover card" description="右键菜单、Dropdown 触发/方位/danger、悬停卡片。">
+        <DropdownMenu placement="top-start">
+          <DropdownMenuTrigger as={Button} variant="default" size="sm">Top start</DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem>Edit</DropdownMenuItem>
+            <DropdownMenuItem variant="danger">Delete</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <DropdownMenu placement="bottom-end">
+          <DropdownMenuTrigger as={Button} variant="ghost" size="sm">Bottom end</DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem>Copy</DropdownMenuItem>
+            <DropdownMenuItem variant="danger">Remove</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <ContextMenu>
           <ContextMenuTrigger class="inline-flex rounded-md border border-border-subtle px-12 py-8 text-12 text-content-secondary">
             Right-click me

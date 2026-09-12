@@ -205,6 +205,10 @@
   animation: ui-skeleton-shimmer 1.6s var(--ease-standard) infinite;
 }
 
+.ui-skeleton-static::after {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ui-skeleton::after {
     animation: none;
