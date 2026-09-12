@@ -150,7 +150,7 @@ web/src/
 `web/src/styles.css`：
 
 1. `web/src/styles/base.css` — 全局 reset、a11y
-2. `@peri/ui/styles.css` — `tokens` → `theme` → `primitives` → **`extra.css`（T3 壳层主战场）**
+2. `@peri/ui/styles.css` — `tokens` → `theme` → `primitives` → **`extra.css`（T3 壳层）** → **`markdown-body.css`（设计稿 compact chat 排版）**
 3. `web/src/styles/primitives.css` — 空文件；业务层不再写自定义 CSS
 4. `web/src/styles/extra.css` — 空文件（`EXTRA_CSS_BASELINE` 门禁）
 

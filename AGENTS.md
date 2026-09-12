@@ -139,7 +139,7 @@ cd ui-sandbox && bun run typecheck
 
 ```
 web/base.css
-  → @peri/ui/styles.css（tokens → theme → primitives → extra）
+  → @peri/ui/styles.css（tokens → theme → primitives → extra → markdown-body）
   → web/primitives.css（空文件）
   → web/extra.css（空文件；有 baseline 门禁）
 ```

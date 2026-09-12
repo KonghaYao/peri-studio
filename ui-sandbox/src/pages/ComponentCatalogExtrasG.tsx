@@ -27,7 +27,6 @@ import {
   PlanTrigger,
   Questionnaire,
   QuestionnaireNavigation,
-  QuestionnaireProgress,
   QuestionnaireStep,
   ComposerQueue,
   ResourceCite,
@@ -47,6 +46,7 @@ import {
 } from '@peri/ui';
 import { DecisionSurfacesLayout } from '@/layers';
 import { createPulseStream, StreamingControls } from '@/lib/streaming-demo';
+import { QuestionnaireAskUserDemo } from '@/pages/demos/QuestionnaireAskUserDemo';
 import { QuestionnaireOptionRowDemo } from '@/pages/demos/QuestionnaireOptionRowDemo';
 import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
 
@@ -291,28 +291,12 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'questionnaire')}>
-      <CatalogDemo id="questionnaire" title="Questionnaire" description="多步问答流（shadcn 2026-08）。">
-        <Questionnaire class="max-w-md" onSubmit={() => undefined}>
-          <QuestionnaireProgress aria-label="Question progress" />
-          <QuestionnaireStep
-            id="direction"
-            title="What should the agent build next?"
-            required
-            choices={[
-              { value: 'timeline', label: 'Tool call timeline' },
-              { value: 'approval', label: 'Approval checkpoints' },
-            ]}
-          />
-          <QuestionnaireStep
-            id="detail"
-            title="How much detail?"
-            choices={[
-              { value: 'focused', label: 'Focused' },
-              { value: 'complete', label: 'Complete flow' },
-            ]}
-          />
-          <QuestionnaireNavigation />
-        </Questionnaire>
+      <CatalogDemo
+        id="questionnaire"
+        title="Questionnaire"
+        description="AskUserQuestion 多步问卷定稿；生产 QuestionQueue 须镜像此节视觉与页脚导航。"
+      >
+        <QuestionnaireAskUserDemo />
       </CatalogDemo>
       </Show>
     </>

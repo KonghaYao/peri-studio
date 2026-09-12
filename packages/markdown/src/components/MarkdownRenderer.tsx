@@ -90,7 +90,7 @@ export function MarkdownRenderer(props: MarkdownRendererProps) {
   });
 
   return (
-    <div class={`typeset typeset-chat min-w-0 text-13 text-content-primary ${props.class ?? ''}`} data-testid="markdown-body">
+    <div class={`markdown-body min-w-0 ${props.class ?? ''}`} data-testid="markdown-body">
       <For each={visibleBlocks()}>
         {(model, index) => <NodeOutlet node={model.node} context={context()} indexKey={`${index()}-${model.signature}`} />}
       </For>

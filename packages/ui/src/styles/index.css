@@ -1,6 +1,6 @@
 /* @peri/ui 设计系统样式入口：
    tokens.css → theme.css（Tailwind v4 theme + preflight）→
-   primitives.css → extra.css。
+   primitives.css → extra.css → markdown-body.css。
    应用级 reset（web/src/styles/base.css）由消费方自行组装。 */
 
 @import './tokens.css';
@@ -8,4 +8,4 @@
 @import './motion.css';
 @import './primitives.css';
 @import './extra.css';
-@import './typeset.css';
+@import './markdown-body.css';

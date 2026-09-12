@@ -146,7 +146,7 @@ describe('ConversationMessage', () => {
     const view = render(() => <ConversationMessage entry={entry({ status: 'streaming', text: '**partial' })} />);
     const message = screen.getByLabelText('Assistant message');
     expect(message).toHaveTextContent('partial');
-    expect(message.querySelector('[data-testid="markdown-body"]')).toBeInTheDocument();
+    expect(message.querySelector('.markdown-body')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Copy answer' })).not.toBeInTheDocument();
     expect(document.querySelector('[data-testid="message-loading"]')).toBeNull();
     view.unmount();

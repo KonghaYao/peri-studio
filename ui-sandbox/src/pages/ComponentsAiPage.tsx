@@ -11,6 +11,7 @@ const AI_SECTIONS = [
   'plan',
   'task',
   'decision',
+  'questionnaire',
   'confirmation',
   'queue',
   'snippet',

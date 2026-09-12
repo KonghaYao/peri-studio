@@ -205,7 +205,7 @@ V1 exports 固定为：
 | Palette、spacing、type、radius、shadow、breakpoint、Peri 产品视觉 token | `packages/ui/src/styles/tokens.css` |
 | Tailwind v4 token → utility 映射 | `packages/ui/src/styles/theme.css` |
 | `.ui-*`、T2 组件自有状态、T2 第三方注入 DOM（如 xterm 内部 DOM） | `packages/ui/src/styles/{primitives,extra}.css` |
-| `.markdown-body`、`.rewind-*`、`.composer-*`、`.sidebar-*`、`.mcp-*`、`.message-*`、`.topology-*`、workbench 布局 | `web/src/styles/{primitives,extra,project-sidebar}.css` |
+| `.rewind-*`、`.composer-*`、`.sidebar-*`、`.mcp-*`、`.message-*`、`.topology-*`、workbench 布局 | `web/src/styles/{primitives,extra,project-sidebar}.css` |
 | Catalog 导航、demo 容器、T3/T4 mock 布局 | `ui-sandbox/src/styles/*` |
 
 因此，当前 `packages/ui/src/styles/extra.css` 与 `primitives.css` 的应用选择器必须迁回 Web；不能因为 `web/src/styles.css` 已导入 package stylesheet 就把 Web CSS 整体复制进 package。
@@ -239,7 +239,7 @@ Sandbox：
 
 `packages/ui/tests/css-contracts.test.mjs` 是删除旧 T2 目录前的**阻塞交付物**，至少验证：
 
-1. package CSS 不出现应用域选择器。初始 denylist 至少覆盖：`markdown-body`、`rewind-`、`composer-`、`sidebar-`、`mcp-`、`message-`、`topology-`、`workbench-`、`resource-`、`git-graph-`；Terminal 仅允许 package 明确登记的 host/xterm 选择器。
+1. package CSS 不出现应用域选择器。初始 denylist 至少覆盖：`rewind-`、`composer-`、`sidebar-`、`mcp-`、`message-`、`topology-`、`workbench-`、`resource-`、`git-graph-`；`.markdown-body` 由 package `markdown-body.css`（设计稿 compact chat 排版）拥有；Terminal 仅允许 package 明确登记的 host/xterm 选择器。
 2. package CSS 不使用未声明 token。
 3. package T2 TSX 不使用任意 Tailwind bracket utility。
 4. `styles.css` 的导入顺序固定，`theme.css` 只有一个 Tailwind import 且含 package 自身的 `@source`。

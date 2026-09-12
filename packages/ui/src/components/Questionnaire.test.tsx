@@ -119,6 +119,38 @@ describe('Questionnaire', () => {
     });
   });
 
+  it('shows skip on required steps and advances without an answer', async () => {
+    const onSubmit = vi.fn();
+
+    render(() => (
+      <Questionnaire onSubmit={onSubmit}>
+        <QuestionnaireStep
+          id="scope"
+          title="What may change?"
+          required
+          choices={[{ value: 'component', label: 'Target component' }]}
+        />
+        <QuestionnaireStep
+          id="checks"
+          title="Which checks?"
+          required
+          choices={[{ value: 'tests', label: 'Tests' }]}
+        />
+        <QuestionnaireNavigation />
+      </Questionnaire>
+    ));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Skip' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Which checks?')).toBeInTheDocument();
+    });
+  });
+
   it('blocks next on required questions and allows previous navigation', async () => {
     render(() => (
       <Questionnaire>

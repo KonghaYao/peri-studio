@@ -7,7 +7,6 @@ const pkgRoot = join(import.meta.dirname, '..');
 const srcRoot = join(pkgRoot, 'src');
 
 const APP_SELECTOR_DENYLIST = [
-  'markdown-body',
   'rewind-',
   'composer-',
   'sidebar-',
@@ -41,7 +40,7 @@ const cssFiles = () => [
   'styles/motion.css',
   'styles/primitives.css',
   'styles/extra.css',
-  'styles/typeset.css',
+  'styles/markdown-body.css',
   'styles/utilities.css',
 ].map((file) => join(srcRoot, file));
 
@@ -86,24 +85,24 @@ const cssSelectors = (source) => {
 
 const read = (file) => readFileSync(file, 'utf8');
 
-test('package stylesheet entry order is tokens → theme → motion → primitives → extra → typeset', () => {
+test('package stylesheet entry order is tokens → theme → motion → primitives → extra → markdown-body', () => {
   const entry = read(join(srcRoot, 'styles', 'index.css'));
   assert.match(
     entry,
-    /@import '\.\/tokens\.css';\s*@import '\.\/theme\.css';\s*@import '\.\/motion\.css';\s*@import '\.\/primitives\.css';\s*@import '\.\/extra\.css';\s*@import '\.\/typeset\.css';/s,
+    /@import '\.\/tokens\.css';\s*@import '\.\/theme\.css';\s*@import '\.\/motion\.css';\s*@import '\.\/primitives\.css';\s*@import '\.\/extra\.css';\s*@import '\.\/markdown-body\.css';/s,
   );
 });
 
-test('typeset.css defines streaming-safe markdown typography', () => {
-  const typeset = read(join(srcRoot, 'styles', 'typeset.css')).replace(/\/\*[\s\S]*?\*\//g, '');
-  assert.match(typeset, /\.typeset\b/);
-  assert.match(typeset, /\.typeset-chat\b/);
-  assert.match(typeset, /\.typeset-scroll\b/);
-  assert.match(typeset, /\.not-typeset\b/);
-  assert.match(typeset, /container-type:\s*inline-size/);
-  assert.match(typeset, /\.typeset > \* \+ \*/);
-  assert.match(typeset, /\.typeset > \* \+ :where\(h1, h2, h3, h4\)/);
-  assert.doesNotMatch(typeset, /:last-child|:first-child/);
+test('markdown-body.css uses Peri compact chat typeset', () => {
+  const markdown = read(join(srcRoot, 'styles', 'markdown-body.css')).replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(markdown, /\.markdown-body\s*\{/);
+  assert.match(markdown, /font-size:\s*var\(--text-13\)/);
+  assert.match(markdown, /font-size:\s*var\(--text-18\)/);
+  assert.match(markdown, /\.markdown-body > \* \+ \*/);
+  assert.match(markdown, /\.markdown-body > \* \+ :where\(h1, h2, h3, h4\)/);
+  assert.doesNotMatch(markdown, /--ms-flow-paragraph-y:/);
+  assert.doesNotMatch(markdown, /:last-child|:first-child/);
+  assert.doesNotMatch(markdown, /\.typeset\b/);
 });
 
 test('theme.css is the only Tailwind import and sources package T2', () => {

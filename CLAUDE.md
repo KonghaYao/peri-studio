@@ -132,6 +132,7 @@ T3 不得 import `web/`、`store`、`features`、Yjs、protocol。T4 通过 `com
 | T2 · Theme | `packages/ui/src/styles/theme.css` | Tailwind v4 utility 与命名断点映射 |
 | Package Primitives | `packages/ui/src/styles/primitives.css` | 跨组件原子（如 `ui-scrollbar`） |
 | **Package Extra** | `packages/ui/src/styles/extra.css` | **T3 壳层与领域特例**（Composer/Transcript/Workbench…）；`ui-<domain>-*` 前缀 |
+| **Markdown 文档流** | `packages/ui/src/styles/markdown-body.css` | 设计稿 compact chat 排版；宿主 class `.markdown-body` |
 | Web Base | `web/src/styles/base.css` | 全局 reset、a11y、forced-colors |
 | Web Primitives | `web/src/styles/primitives.css` | 空文件；业务层不再写自定义 CSS |
 | Web Extra | `web/src/styles/extra.css` | 空文件；有行数/hash baseline |

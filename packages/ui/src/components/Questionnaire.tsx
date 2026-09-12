@@ -51,6 +51,7 @@ type NavigationLabels = {
   submitLabel?: string;
   submitDisabled?: boolean;
   submitBusy?: boolean;
+  skipDisabled?: boolean;
 };
 
 type QuestionnaireContextValue = {
@@ -191,6 +192,7 @@ export const Questionnaire: ParentComponent<QuestionnaireProps> = (props) => {
       && current.submitLabel === labels.submitLabel
       && current.submitDisabled === labels.submitDisabled
       && current.submitBusy === labels.submitBusy
+      && current.skipDisabled === labels.skipDisabled
         ? current
         : labels
     ));
@@ -256,7 +258,7 @@ export const Questionnaire: ParentComponent<QuestionnaireProps> = (props) => {
 
   const skipStep = () => {
     const step = currentStep();
-    if (!step || step.required) return;
+    if (!step) return;
     setAnswer(step.id, null);
     setError(undefined);
     if (isLastStep()) {
@@ -339,10 +341,6 @@ export const Questionnaire: ParentComponent<QuestionnaireProps> = (props) => {
 function QuestionnaireFooter() {
   const context = useQuestionnaireContext('QuestionnaireFooter');
   const labels = () => context.navigationLabels();
-  const canSkip = () => {
-    const step = context.currentStep();
-    return !!step && !step.required;
-  };
 
   return (
     <div class="flex w-full items-center gap-8">
@@ -356,10 +354,11 @@ function QuestionnaireFooter() {
         </button>
       </Show>
       <div class="ml-auto flex items-center gap-8">
-        <Show when={canSkip()}>
+        <Show when={context.currentStep()}>
           <button
             type="button"
-            class="inline-flex h-(--control-height-sm) items-center px-8 text-12 text-content-muted transition-colors duration-(--duration-fast) hover:text-content-primary"
+            class="inline-flex h-(--control-height-sm) items-center px-8 text-12 text-content-muted transition-colors duration-(--duration-fast) hover:text-content-primary disabled:cursor-not-allowed disabled:opacity-45"
+            disabled={labels().skipDisabled}
             onClick={() => context.skipStep()}
           >
             {labels().skipLabel ?? 'Skip'}
@@ -568,6 +567,7 @@ type QuestionnaireNavigationProps = {
   submitLabel?: string;
   submitDisabled?: boolean;
   submitBusy?: boolean;
+  skipDisabled?: boolean;
 };
 
 /** 注册问卷导航文案；按钮由 QuestionnaireFooter 渲染。 */
@@ -580,6 +580,7 @@ export const QuestionnaireNavigation: Component<QuestionnaireNavigationProps> = 
     'submitLabel',
     'submitDisabled',
     'submitBusy',
+    'skipDisabled',
   ]);
   const context = useQuestionnaireContext('QuestionnaireNavigation');
 
@@ -591,6 +592,7 @@ export const QuestionnaireNavigation: Component<QuestionnaireNavigationProps> = 
       submitLabel: local.submitLabel,
       submitDisabled: local.submitDisabled,
       submitBusy: local.submitBusy,
+      skipDisabled: local.skipDisabled,
     });
   });
   onCleanup(() => context.unregisterNavigation());

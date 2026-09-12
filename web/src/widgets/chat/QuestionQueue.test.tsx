@@ -7,7 +7,7 @@ import { QuestionQueue } from './QuestionQueue';
 const QUESTION: PendingQuestion = {
   questionId: 'q-1',
   status: 'pending',
-  description: 'Please provide the requested information',
+  description: null,
   expiresAt: null,
   questions: [
     {
@@ -51,8 +51,8 @@ describe('QuestionQueue', () => {
       />
     ));
 
-    expect(screen.getByText('Please provide the requested information')).toBeInTheDocument();
     expect(screen.getByText('下一步')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Skip' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('radio', { name: /继续 peri-studio 功能\/修复/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));

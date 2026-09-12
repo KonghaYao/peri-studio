@@ -9,7 +9,6 @@ import {
   InlineNotice,
   Questionnaire,
   QuestionnaireNavigation,
-  QuestionnaireProgress,
   QuestionnaireStep,
   type QuestionnaireAnswer,
 } from '@peri/ui';
@@ -121,7 +120,8 @@ function QuestionDialog(props: {
     if (locked() || submitting() || confirmed()) return;
     const payload = answersToPayload(record, props.question.questions);
     for (let index = 0; index < props.question.questions.length; index += 1) {
-      const item = props.question.questions[index];
+      const skipped = record[questionStepId(index)] === null;
+      if (skipped) continue;
       const value = payload[index];
       const empty = value === undefined
         || value === ''
@@ -156,11 +156,6 @@ function QuestionDialog(props: {
           class="mx-auto w-full max-w-(--container-search)"
           data-testid="question-queue-card"
           title="Questions"
-          leading={(
-            <Show when={props.question.description}>
-              <p class="mb-8 text-13 leading-snug text-content-primary">{props.question.description}</p>
-            </Show>
-          )}
           currentIndex={props.currentIndex}
           total={props.total}
           onPrevious={props.onPrevious}
@@ -181,7 +176,6 @@ function QuestionDialog(props: {
             </Show>
           )}
         >
-          <QuestionnaireProgress aria-label="Question progress" />
           <For each={props.question.questions}>
             {(item, index) => (
               <QuestionnaireStep
@@ -193,12 +187,13 @@ function QuestionDialog(props: {
                 choices={item.options.map((option) => ({
                   value: option.label,
                   label: option.label,
-                  description: option.description,
+                  description: option.description ?? undefined,
                 }))}
               />
             )}
           </For>
           <QuestionnaireNavigation
+            skipDisabled={locked()}
             submitDisabled={locked()}
             submitBusy={submitting()}
           />
