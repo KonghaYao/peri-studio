@@ -64,7 +64,11 @@ import {
   type AttachmentData,
   type ChatStatus,
 } from '@peri/ui';
+import { createPulseStream, createStreamingReveal, StreamingControls } from '@/lib/streaming-demo';
 import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
+
+const REASONING_SAMPLE =
+  'Checking architecture.md for session/load semantics and gap recovery rules…';
 
 const demoMessages = [
   { id: '1', role: 'user', text: 'Summarize the architecture doc.' },
@@ -78,7 +82,8 @@ const attachmentFiles: AttachmentData[] = [
 ];
 
 export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
-  const [streaming, setStreaming] = createSignal(true);
+  const reasoningReveal = createStreamingReveal(REASONING_SAMPLE);
+  const markerThinking = createPulseStream(2800);
   const [chatStatus, setChatStatus] = createSignal<ChatStatus>('ready');
 
   return (
@@ -98,10 +103,19 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
 
       <Show when={showCatalogSection(props.sections, 'marker')}>
       <CatalogDemo id="marker" title="Marker" description="会话内状态行、分隔线与 thinking 标记。">
-        <div class="flex flex-col gap-8">
+        <div class="flex flex-col gap-12">
+          <StreamingControls
+            playing={markerThinking.playing()}
+            complete={markerThinking.complete()}
+            onPlay={markerThinking.play}
+            onReset={markerThinking.reset}
+            playLabel="Play thinking"
+          />
           <Marker>
             <MarkerIcon><Spinner class="size-16" /></MarkerIcon>
-            <MarkerContent><span class="shimmer text-12">Thinking</span></MarkerContent>
+            <MarkerContent>
+              <span class={`text-12 ${markerThinking.active() ? 'shimmer' : 'text-content-muted'}`}>Thinking</span>
+            </MarkerContent>
           </Marker>
           <Marker variant="separator">Today</Marker>
           <Marker variant="border">
@@ -193,16 +207,17 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'reasoning')}>
-      <CatalogDemo id="reasoning" title="Reasoning" description="可折叠推理块，流式时自动展开。">
-        <Reasoning isStreaming={streaming()} defaultOpen>
+      <CatalogDemo id="reasoning" title="Reasoning" description="可折叠推理块；Play stream 触发 Thinking 扫光并逐字揭示。">
+        <StreamingControls
+          playing={reasoningReveal.playing()}
+          complete={reasoningReveal.complete()}
+          onPlay={reasoningReveal.play}
+          onReset={reasoningReveal.reset}
+        />
+        <Reasoning isStreaming={reasoningReveal.streaming()} defaultOpen>
           <ReasoningTrigger />
-          <ReasoningContent>
-            Checking architecture.md for session/load semantics and gap recovery rules…
-          </ReasoningContent>
+          <ReasoningContent>{reasoningReveal.text()}</ReasoningContent>
         </Reasoning>
-        <Button size="sm" variant="ghost" class="mt-8" onClick={() => setStreaming((v) => !v)}>
-          Toggle streaming
-        </Button>
       </CatalogDemo>
       </Show>
 

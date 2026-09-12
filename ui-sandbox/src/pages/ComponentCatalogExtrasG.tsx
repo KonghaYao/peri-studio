@@ -63,9 +63,12 @@ import {
   ToolActivityRow,
   TranscriptReasoning,
 } from '@peri/ui';
-import { Markdown } from '@/components/blocks';
 import { MARKDOWN_LAB_SAMPLE } from '@/fixtures/markdown-lab-sample';
+import { createPulseStream, createStreamingReveal, StreamingControls, StreamingMarkdownDemo } from '@/lib/streaming-demo';
 import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
+
+const REASONING_SAMPLE =
+  'First verify the metadata authority, then check the Registry read-only projection and session/load ordering.';
 
 const tableRows = [
   { id: 'p1', name: 'peri-studio', sessions: 12, status: 'active' },
@@ -89,6 +92,8 @@ function ChatFrame(props: { children: unknown }) {
 export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
   const [selectedOption, setSelectedOption] = createSignal('a');
   const [codeLanguage, setCodeLanguage] = createSignal<'typescript' | 'bash'>('typescript');
+  const reasoningReveal = createStreamingReveal(REASONING_SAMPLE);
+  const planStream = createPulseStream(3200);
 
   return (
     <>
@@ -169,8 +174,15 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
 
       <Show when={showCatalogSection(props.sections, 'plan')}>
       <CatalogDemo id="plan" title="Plan" description="决策面风格计划卡：shadow-decision + 流式标题。">
-        <div class="max-w-md">
-          <Plan defaultOpen isStreaming>
+        <div class="max-w-md flex flex-col gap-12">
+          <StreamingControls
+            playing={planStream.playing()}
+            complete={planStream.complete()}
+            onPlay={planStream.play}
+            onReset={planStream.reset}
+            playLabel="Play shimmer"
+          />
+          <Plan defaultOpen isStreaming={planStream.active()}>
             <PlanHeader>
               <div class="min-w-0 flex-1 space-y-4">
                 <PlanTitle>Implementation plan</PlanTitle>
@@ -223,11 +235,19 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'reasoning')}>
-      <CatalogDemo id="reasoning" title="Transcript reasoning" description="Transcript 内推理折叠块。">
+      <CatalogDemo id="reasoning" title="Transcript reasoning" description="Activity 轨道 + Thinking 骨架与逐字揭示。">
         <ChatFrame>
-          <TranscriptReasoning>
-            First verify the metadata authority, then check the Registry read-only projection and session/load ordering.
-          </TranscriptReasoning>
+          <div class="flex flex-col gap-12">
+            <StreamingControls
+              playing={reasoningReveal.playing()}
+              complete={reasoningReveal.complete()}
+              onPlay={reasoningReveal.play}
+              onReset={reasoningReveal.reset}
+            />
+            <TranscriptReasoning variant="activity" streaming={reasoningReveal.playing()}>
+              {reasoningReveal.text()}
+            </TranscriptReasoning>
+          </div>
         </ChatFrame>
       </CatalogDemo>
       </Show>
@@ -336,9 +356,9 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'markdown')}>
-      <CatalogDemo id="markdown" title="Markdown" description="与 Blocks 共用 Markdown 块：GFM、数学、Mermaid、代码块。">
+      <CatalogDemo id="markdown" title="Markdown" description="与 Blocks 共用 Markdown 块；Play stream 逐字揭示并触发 incomplete fence。">
         <ChatFrame>
-          <Markdown source={MARKDOWN_LAB_SAMPLE} />
+          <StreamingMarkdownDemo source={MARKDOWN_LAB_SAMPLE} />
         </ChatFrame>
       </CatalogDemo>
       </Show>
