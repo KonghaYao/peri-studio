@@ -1,10 +1,11 @@
-export type SandboxRoute = 'tokens' | 'components' | 'blocks' | 'layers';
+export type SandboxRoute = 'tokens' | 'components' | 'components2' | 'blocks' | 'layers';
 
-export const SANDBOX_ROUTES: SandboxRoute[] = ['tokens', 'components', 'blocks', 'layers'];
+export const SANDBOX_ROUTES: SandboxRoute[] = ['tokens', 'components', 'components2', 'blocks', 'layers'];
 
 export const ROUTE_META: Record<SandboxRoute, { tier: string; label: string }> = {
   tokens: { tier: 'T1', label: 'Tokens' },
   components: { tier: 'T2', label: 'Base UI' },
+  components2: { tier: 'T2', label: 'Base UI 2' },
   blocks: { tier: 'T3', label: 'Blocks' },
   layers: { tier: 'T4', label: 'Layers' },
 };
@@ -39,19 +40,46 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'dialog', label: 'Dialog & menu' },
         { id: 'inline-notice', label: 'InlineNotice' },
         { id: 'spinner', label: 'Spinner & empty' },
+      ],
+    },
+  ],
+  components2: [
+    {
+      title: 'Form & input',
+      items: [
         { id: 'switch', label: 'Switch & label' },
+        { id: 'input-group', label: 'Input group' },
+        { id: 'combobox', label: 'Combobox & command' },
+        { id: 'typography', label: 'Typography & select' },
+        { id: 'resizable', label: 'Resizable & OTP' },
+      ],
+    },
+    {
+      title: 'Surfaces',
+      items: [
         { id: 'progress', label: 'Progress & slider' },
         { id: 'card', label: 'Card & alert' },
         { id: 'accordion', label: 'Accordion & toggle' },
         { id: 'table', label: 'Table & overlay' },
+      ],
+    },
+    {
+      title: 'Navigation & menus',
+      items: [
         { id: 'breadcrumb', label: 'Breadcrumb & pagination' },
         { id: 'overlay', label: 'Alert dialog & sheet' },
         { id: 'menus', label: 'Context & hover' },
-        { id: 'input-group', label: 'Input group' },
-        { id: 'combobox', label: 'Combobox & command' },
         { id: 'menubar', label: 'Menubar & nav' },
-        { id: 'typography', label: 'Typography & select' },
-        { id: 'resizable', label: 'Resizable & OTP' },
+      ],
+    },
+    {
+      title: 'Round 2 · shadcn',
+      items: [
+        { id: 'calendar', label: 'Calendar' },
+        { id: 'date-picker', label: 'Date picker' },
+        { id: 'carousel', label: 'Carousel' },
+        { id: 'form', label: 'Form' },
+        { id: 'item', label: 'Item' },
       ],
     },
   ],

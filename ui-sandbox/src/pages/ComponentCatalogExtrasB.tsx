@@ -61,7 +61,7 @@ export function ComponentCatalogExtrasB() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink href="#/components">Components</BreadcrumbLink>
+              <BreadcrumbLink href="#/components2">Base UI 2</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>

@@ -1,5 +1,5 @@
 import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
-import { PAGE_CATALOG, parseSandboxHash, ROUTE_META, sandboxHref, scrollToSection, type SandboxRoute } from '@/catalog/page-sections';
+import { PAGE_CATALOG, parseSandboxHash, ROUTE_META, SANDBOX_ROUTES, sandboxHref, scrollToSection, type SandboxRoute } from '@/catalog/page-sections';
 import { cn } from '@/lib/catalog-ui';
 import { IconButton } from '@/lib/catalog-ui';
 import { List, X } from 'lucide-solid';
@@ -89,7 +89,7 @@ export function SandboxShell(props: { children: unknown }) {
           </IconButton>
         </div>
         <nav class="flex gap-4 overflow-x-auto border-t border-border-subtle px-12" aria-label="Tiers">
-          <For each={(['tokens', 'components', 'blocks', 'layers'] as SandboxRoute[])}>
+          <For each={SANDBOX_ROUTES}>
             {(id) => {
               const meta = ROUTE_META[id];
               const active = () => route() === id;

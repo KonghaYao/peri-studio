@@ -21,7 +21,8 @@ bun run dev   # http://127.0.0.1:5273/
 | Tier | 路由 | 目录 | 职责 |
 |------|------|------|------|
 | **T1 · Tokens** | `#/tokens` | `src/styles/tokens.css` | Palette → semantic → component 数值源 |
-| **T2 · Base UI** | `#/components` | `src/components/ui/` | 无业务语义原语（Button、Input、Dialog…） |
+| **T2 · Base UI** | `#/components` | `@peri/ui` | 核心原语（Button、Input、Dialog…） |
+| **T2 · Base UI 2** | `#/components2` | `@peri/ui` | 扩展原语与新一轮 shadcn 补齐组件 |
 | **T3 · Domain blocks** | `#/blocks` | `src/components/blocks/{chat,composer,chrome}/` | 单域块：Markdown、SlashMenu、ChatHeader… |
 | **T4 · Compositions** | `#/layers` | `src/layers/{shell,chat,composer,…}/` | 业务组合：侧栏、transcript、composer、决策面… |
 

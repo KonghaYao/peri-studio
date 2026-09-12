@@ -114,7 +114,7 @@ export function ComponentCatalogExtrasC() {
               <NavigationMenuContent aria-label="Product">
                 <ul class="grid gap-8 p-12">
                   <li>
-                    <NavigationMenuLink href="#/components" active>Components</NavigationMenuLink>
+                    <NavigationMenuLink href="#/components2" active>Base UI 2</NavigationMenuLink>
                   </li>
                   <li>
                     <NavigationMenuLink href="#/layers">Layers</NavigationMenuLink>
