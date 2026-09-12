@@ -29,6 +29,8 @@ export type FileTreeProps = {
   getFileDataAttrs?: (node: FileTreeNode) => Record<string, string | undefined>;
   fileAriaLabel?: (node: FileTreeNode) => string | undefined;
   folderLoadingPaths?: Set<string>;
+  /** Directory page 原地改 children 时传入，让已展开的 For 读取新数组而不换行身份。 */
+  nodesRevision?: string;
   fileTreeitem?: boolean;
   dropTargetPath?: string | null;
   onFolderDragOver?: (path: string, event: DragEvent) => void;
@@ -55,13 +57,18 @@ export function FileTree(props: FileTreeProps) {
 }
 
 function FileTreeList(props: { nodes: FileTreeNode[]; depth: number }) {
+  const tree = useContext(FileTreeContext)!;
+  const items = createMemo(() => {
+    tree.nodesRevision;
+    return props.nodes;
+  });
   return (
-    <For each={props.nodes}>
+    <For each={items()}>
       {(node, index) => (
         <FileTreeItem
           node={node}
           index={index()}
-          setSize={props.nodes.length}
+          setSize={items().length}
           depth={props.depth}
         />
       )}

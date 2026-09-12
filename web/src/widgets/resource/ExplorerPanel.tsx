@@ -56,8 +56,9 @@ type ExplorerPanelProps = {
   activePath?: string; onActivePathChange?: (path: string) => void;
   scrollTop?: number; onScrollTopChange?: (scrollTop: number) => void; onPreviewIntent?: (key: string) => void;
 };
-function entryToNode(entry: ResourceEntry, cache: Map<string, FileTreeNode>): FileTreeNode {
+function entryToNode(entry: ResourceEntry, cache: Map<string, FileTreeNode>, seen: Set<string>): FileTreeNode {
   const path = String(entry.path ?? '');
+  seen.add(path);
   const directory = entry.kind === 'directory';
   const cached = cache.get(path);
   const node: FileTreeNode = cached ?? {
@@ -71,7 +72,7 @@ function entryToNode(entry: ResourceEntry, cache: Map<string, FileTreeNode>): Fi
   node.meta = { revision: typeof entry.revision === 'string' ? entry.revision : '' };
   // 子节点跟已加载的 directory page，不跟展开态；展开只由 FileTree 的 Show 控制可见性。
   const page = directory ? resourceWorkspace().directories[path] : undefined;
-  node.children = page ? page.entries.map((child) => entryToNode(child, cache)) : undefined;
+  node.children = page ? page.entries.map((child) => entryToNode(child, cache, seen)) : undefined;
   cache.set(path, node);
   return node;
 }
@@ -147,14 +148,14 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
   const directoryRevision = createMemo(() => Object.entries(resourceWorkspace().directories)
     .map(([directory, page]) => `${directory}:${page.entries.map((entry) => String(entry.path ?? entry.id)).join('\0')}`)
     .join('\n'));
-  let previousDirectoryRevision = '';
   const nodes = createMemo(() => {
-    const revision = directoryRevision();
-    if (revision !== previousDirectoryRevision) {
-      nodeCache.clear();
-      previousDirectoryRevision = revision;
+    directoryRevision();
+    const seen = new Set<string>();
+    const roots = (resourceWorkspace().directories['']?.entries ?? []).map((entry) => entryToNode(entry, nodeCache, seen));
+    for (const path of nodeCache.keys()) {
+      if (!seen.has(path)) nodeCache.delete(path);
     }
-    return (resourceWorkspace().directories['']?.entries ?? []).map((entry) => entryToNode(entry, nodeCache));
+    return roots;
   });
   const loadingPaths = createMemo(() => folderLoadingPaths(expanded()));
   const visiblePaths = createMemo(() => {
@@ -454,7 +455,7 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
         });
       }}
       class={cn(
-        'ui-scrollbar min-h-0 flex-1 overflow-auto py-2',
+        'ui-file-tree-scroll ui-scrollbar min-h-0 flex-1 overflow-auto py-2',
         rootDropActive() ? 'explorer-upload-tree--drop-root' : '',
       )}
       role="tree"
@@ -464,7 +465,10 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
         if ((event.target as HTMLElement).closest('[role="treeitem"]')) return;
         openRootMenu(event);
       }}
-      onScroll={(event) => { if (acceptingScroll) props.onScrollTopChange?.(event.currentTarget.scrollTop); }}
+      onScroll={(event) => {
+        if (!acceptingScroll || !event.currentTarget.isConnected) return;
+        props.onScrollTopChange?.(event.currentTarget.scrollTop);
+      }}
       onDragEnter={(event) => {
         if (!dataTransferHasFiles(event.dataTransfer)) return;
         preventBrowserFileDrop(event);
@@ -503,6 +507,7 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
         </Show>
         <FileTree
           nodes={nodes()}
+          nodesRevision={directoryRevision()}
           expandedPaths={expanded()}
           onToggleFolder={toggleFolder}
           activePath={activePath()}

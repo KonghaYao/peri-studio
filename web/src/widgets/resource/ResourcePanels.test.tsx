@@ -243,6 +243,68 @@ describe('VS Code-style resource panels', () => {
     expect(screen.getByRole('treeitem', { name: /^lib$/i })).toHaveAttribute('aria-expanded', 'true');
   });
 
+  it('keeps sibling explorer rows mounted when a directory page arrives after expand', async () => {
+    installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
+    setResourceWorkspace({
+      projectId: 'project-1', repositories: [], loading: [], error: null,
+      directories: {
+        '': {
+          generation: 'g1',
+          entries: [
+            { id: 'src', name: 'src', path: 'src', kind: 'directory' },
+            { id: 'lib', name: 'lib', path: 'lib', kind: 'directory' },
+            { id: 'readme', name: 'README.md', path: 'README.md', kind: 'file' },
+          ],
+        },
+      },
+    });
+    render(() => <ExplorerPanel />);
+    const tree = screen.getByRole('tree', { name: 'Workspace files' });
+    const lib = screen.getByRole('treeitem', { name: /^lib$/i });
+    const readme = screen.getByRole('treeitem', { name: /README\.md/i });
+
+    await fireEvent.click(screen.getByRole('treeitem', { name: /^src$/i }));
+    expect(screen.getByText('Loading…')).toBeInTheDocument();
+
+    setResourceWorkspace((current) => ({
+      ...current,
+      directories: {
+        ...current.directories,
+        src: { generation: 'g2', entries: [{ id: 'main', name: 'main.ts', path: 'src/main.ts', kind: 'file', size: 24 }] },
+      },
+    }));
+
+    await waitFor(() => expect(screen.getByRole('treeitem', { name: /main\.ts/i })).toBeInTheDocument());
+    expect(screen.getByRole('tree', { name: 'Workspace files' })).toBe(tree);
+    expect(screen.getByRole('treeitem', { name: /^lib$/i })).toBe(lib);
+    expect(screen.getByRole('treeitem', { name: /README\.md/i })).toBe(readme);
+  });
+
+  it('does not remount the explorer scroll container when a workbench folder expands', async () => {
+    installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
+    setProjects([{ id: 'project-1', name: 'Peri', cwd: '/workspace/peri', instanceId: 'local', createdAt: null, updatedAt: null, archivedAt: null }]);
+    setProjectSessions([{ id: 'session-1', projectId: 'project-1', acpSessionId: 'acp-1', title: 'Work', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: null, archivedAt: null }]);
+    setSelectedSessionId('session-1');
+    setResourceWorkspace({
+      projectId: 'project-1', repositories: [], loading: [], error: null,
+      directories: {
+        '': {
+          generation: 'g1',
+          entries: [
+            { id: 'src', name: 'src', path: 'src', kind: 'directory' },
+            { id: 'lib', name: 'lib', path: 'lib', kind: 'directory' },
+          ],
+        },
+        src: { generation: 'g2', entries: [{ id: 'main', name: 'main.ts', path: 'src/main.ts', kind: 'file', size: 24 }] },
+      },
+    });
+    render(() => <ResourceWorkbench />);
+    const tree = screen.getByRole('tree', { name: 'Workspace files' });
+    await fireEvent.click(screen.getByRole('treeitem', { name: /^src$/i }));
+    expect(screen.getByRole('tree', { name: 'Workspace files' })).toBe(tree);
+    expect(screen.getByRole('treeitem', { name: /main\.ts/i })).toBeInTheDocument();
+  });
+
   it('navigates the Explorer as a single-tab-stop ARIA tree', async () => {
     installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
     setResourceWorkspace({

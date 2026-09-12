@@ -201,7 +201,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
       </IconButton>
     </>
   );
-  const panelBody = () => (
+  const PanelBody = () => (
     <Show when={view() !== 'terminal'}>
       <WorkbenchPanelChrome title={<strong>{panelTitle()}</strong>} actions={panelHeaderActions()}>
         <Show when={view() === 'mcp'}><McpPanelContent embedded /></Show>
@@ -252,7 +252,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
               class={panelSurfaceClass}
               widthProfile={panelWidthProfile()}
             >
-              {panelBody()}
+              <PanelBody />
             </ResourceFloatingPanel>
           </Show>
         }>
@@ -260,7 +260,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
             <Show when={terminalPanelVisible()}>
               <TerminalPanel onClosePanel={close} visible={true} />
             </Show>
-            <Show when={view() !== 'terminal'}>{panelBody()}</Show>
+            <Show when={view() !== 'terminal'}><PanelBody /></Show>
           </div>
         </Show>
       </Show>

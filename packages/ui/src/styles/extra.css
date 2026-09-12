@@ -33,6 +33,10 @@
   outline-offset: 2px;
 }
 
+.ui-file-tree-scroll {
+  overflow-anchor: none;
+}
+
 /* ── Navigation menu viewport（Kobalte 运行时 CSS 变量） ───────────────── */
 
 .ui-navigation-menu-viewport {

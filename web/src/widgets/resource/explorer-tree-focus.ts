@@ -45,7 +45,7 @@ export function createExplorerTreeFocus(options: ExplorerTreeFocusOptions) {
 
   const focus = (request: FocusRequest, target: HTMLElement | undefined) => {
     if (!target?.isConnected || request.token === restoredToken) return;
-    target.focus();
+    target.focus({ preventScroll: true });
     if (document.activeElement !== target) return;
     restoredToken = request.token;
     options.setActivePath(target.dataset.path ?? '');
