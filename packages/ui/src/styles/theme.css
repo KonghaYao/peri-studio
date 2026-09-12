@@ -17,6 +17,21 @@
  * break without inline mode.
  */
 @theme inline {
+  /* Tier 0 · Neutral scale（覆盖 Tailwind 默认 neutral，与 tokens.css 同源） */
+  --color-neutral-0: var(--palette-neutral-0);
+  --color-neutral-25: var(--palette-neutral-25);
+  --color-neutral-50: var(--palette-neutral-50);
+  --color-neutral-100: var(--palette-neutral-100);
+  --color-neutral-200: var(--palette-neutral-200);
+  --color-neutral-300: var(--palette-neutral-300);
+  --color-neutral-400: var(--palette-neutral-400);
+  --color-neutral-500: var(--palette-neutral-500);
+  --color-neutral-600: var(--palette-neutral-600);
+  --color-neutral-700: var(--palette-neutral-700);
+  --color-neutral-800: var(--palette-neutral-800);
+  --color-neutral-900: var(--palette-neutral-900);
+  --color-neutral-950: var(--palette-neutral-950);
+
   /* Tier 1 · Semantic surfaces */
   --color-surface-canvas: var(--surface-canvas);
   --color-surface-sunken: var(--surface-sunken);
@@ -42,8 +57,6 @@
   --color-interaction-hover: var(--interaction-hover);
   --color-sidebar-selected: var(--sidebar-selected-bg);
   --color-sidebar-row-hover: var(--sidebar-row-hover-bg);
-  --color-decision-action: var(--decision-action-solid);
-  --color-decision-action-hover: var(--decision-action-hover);
 
   /* Tier 1 · Feedback matrix */
   --color-success-solid: var(--feedback-success-solid);
@@ -52,6 +65,7 @@
   --color-warning-solid: var(--feedback-warning-solid);
   --color-warning-border: var(--feedback-warning-border);
   --color-danger-solid: var(--feedback-danger-solid);
+  --color-danger-strong: var(--feedback-danger-strong);
   --color-danger-border: var(--feedback-danger-border);
   --color-info-solid: var(--feedback-info-solid);
   --color-info-strong: var(--feedback-info-strong);
@@ -63,8 +77,6 @@
   --color-sidebar-bg: var(--sidebar-bg);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
-  --color-empty-mark-bg: var(--empty-mark-bg);
-  --color-empty-mark-fg: var(--empty-mark-fg);
   --color-scrim: var(--scrim);
 
   /* Borders */
@@ -89,7 +101,6 @@
   --color-text-muted: var(--text-muted);
   --color-text-faint: var(--text-faint);
   --color-link: var(--link);
-  --color-link-decoration: var(--link-decoration);
 
   /* Interaction and feedback */
   --color-accent: var(--accent);
@@ -110,9 +121,7 @@
 
   /* Elevation */
   --shadow-popover: var(--shadow-popover);
-  --shadow-float: var(--shadow-float);
   --shadow-composer-overlay: var(--shadow-composer-overlay);
-  --shadow-recovery: var(--shadow-recovery);
   --shadow-accent-ring: var(--shadow-accent-ring);
   --shadow-focus-danger: var(--shadow-focus-danger);
 
@@ -139,12 +148,9 @@
   --spacing-16: var(--space-16);
   --spacing-17: var(--space-17);
   --spacing-18: var(--space-18);
-  --spacing-19: var(--space-19);
   --spacing-20: var(--space-20);
-  --spacing-21: var(--space-21);
   --spacing-22: var(--space-22);
   --spacing-24: var(--space-24);
-  --spacing-25: var(--space-25);
   --spacing-26: var(--space-26);
   --spacing-28: var(--space-28);
   --spacing-30: var(--space-30);
@@ -156,7 +162,6 @@
   --spacing-40: var(--space-40);
   --spacing-42: var(--space-42);
   --spacing-44: var(--space-44);
-  --spacing-46: var(--space-46);
   --spacing-48: var(--space-48);
   --spacing-52: var(--space-52);
   --spacing-54: var(--space-54);
@@ -165,15 +170,11 @@
   --spacing-60: var(--space-60);
   --spacing-64: var(--space-64);
   --spacing-72: var(--space-72);
-  --spacing-88: var(--space-88);
   --spacing-82: var(--space-82);
-  --spacing-84: var(--space-84);
-  --spacing-90: var(--space-90);
   --spacing-100: var(--space-100);
   --spacing-180: var(--space-180);
   --spacing-210: var(--space-210);
   --spacing-240: var(--space-240);
-  --spacing-260: var(--space-260);
   --spacing-300: var(--space-300);
   --spacing-360: var(--space-360);
   --spacing-420: var(--space-420);
@@ -182,17 +183,14 @@
   /* Radius scale: exact pixel values from tokens. */
   --radius-2: var(--radius-2);
   --radius-4: var(--radius-4);
-  --radius-5: var(--radius-5);
   --radius-6: var(--radius-6);
   --radius-7: var(--radius-7);
   --radius-8: var(--radius-8);
   --radius-9: var(--radius-9);
   --radius-10: var(--radius-10);
-  --radius-11: var(--radius-11);
   --radius-12: var(--radius-12);
   --radius-14: var(--radius-14);
   --radius-16: var(--radius-16);
-  --radius-18: var(--radius-18);
   --radius-full: var(--radius-full);
 
   /* Sandbox radius aliases */
@@ -225,12 +223,8 @@
   --shadow-overlay: var(--shadow-overlay);
   --shadow-focus-ring: var(--shadow-focus-ring);
   --shadow-focus-danger: var(--shadow-focus-danger);
-  --shadow-focus-ring-input: var(--shadow-focus-ring-input);
-  --shadow-decision: var(--decision-shadow);
   --z-sticky: var(--z-sticky);
   --z-overlay: var(--z-overlay);
-  --z-modal: var(--z-modal);
-  --z-toast: var(--z-toast);
   --duration-fast: var(--duration-fast);
   --duration-base: var(--duration-base);
   --duration-overlay-in: var(--duration-overlay-in);
@@ -290,7 +284,6 @@
   --leading-115: var(--leading-115);
   --leading-12: var(--leading-12);
   --leading-125: var(--leading-125);
-  --leading-13: var(--leading-13);
   --leading-135: var(--leading-135);
   --leading-14: var(--leading-14);
   --leading-145: var(--leading-145);
@@ -299,26 +292,17 @@
   --leading-16: var(--leading-16);
   --leading-20: var(--leading-20);
   --leading-22: var(--leading-22);
-  --leading-24: var(--leading-24);
-  --leading-25: var(--leading-25);
 
   /* Font-weight scale (non-standard weights) */
   --font-weight-550: var(--font-weight-550);
-  --font-weight-610: var(--font-weight-610);
   --font-weight-650: var(--font-weight-650);
-  --font-weight-680: var(--font-weight-680);
-  --font-weight-750: var(--font-weight-750);
 
   /* Letter-spacing scale */
   --tracking-35: var(--tracking-35);
   --tracking-25: var(--tracking-25);
   --tracking-6: var(--tracking-6);
-  --tracking-7: var(--tracking-7);
   --tracking-8: var(--tracking-8);
   --tracking-dialog: var(--tracking-dialog);
-
-  /* Motion and z-index */
-  --z-12: var(--z-12);
 
   /* Grid templates */
   --grid-template-columns-shell: var(--grid-cols-shell);
@@ -329,21 +313,14 @@
   --grid-template-columns-settings-form: var(--grid-cols-settings-form);
   --grid-template-columns-split-auto: var(--grid-cols-split-auto);
   --grid-template-columns-detail-label: var(--grid-cols-detail-label);
-  --grid-template-columns-diff-line: var(--grid-cols-diff-line);
   --grid-template-columns-preview-line: var(--grid-cols-preview-line);
-  --grid-template-columns-editor-line: var(--grid-cols-editor-line);
   --grid-template-columns-code-line: var(--grid-cols-code-line);
   --grid-template-columns-tool-row: var(--grid-cols-tool-row);
   --grid-template-columns-slash-menu: var(--grid-cols-slash-menu);
-  --grid-template-columns-status-row: var(--grid-cols-status-row);
-  --grid-template-columns-status-activity: var(--grid-cols-status-activity);
   --grid-template-rows-fill: var(--grid-rows-fill);
-  --grid-template-rows-asset-tile: var(--grid-rows-asset-tile);
 
   /* Containers: max-w-/max-h-/w- utilities resolve to these */
-  --container-chat: var(--container-chat);
   --container-chat-content: var(--container-chat-content);
-  --container-chat-narrow: var(--container-chat-narrow);
   --container-composer-stack-max: var(--container-composer-stack-max);
   --container-composer-launch: var(--container-composer-launch);
   --container-auth-card: var(--container-auth-card);
@@ -356,8 +333,6 @@
   --container-slash: var(--container-slash);
   --container-slash-tight: var(--container-slash-tight);
   --container-slash-menu: var(--container-slash-menu);
-  --container-activity: var(--container-activity);
-  --container-placeholder: var(--container-placeholder);
   --container-placeholder-narrow: var(--container-placeholder-narrow);
   --container-token-usage: var(--container-token-usage);
   --container-popover: var(--container-popover);
@@ -373,16 +348,9 @@
   --container-menu-min: var(--container-menu-min);
   --container-model-menu: var(--container-model-menu);
   --container-rewind-compact: var(--container-rewind-compact);
-  --container-diff-min: var(--container-diff-min);
 
   /* Component geometry */
-  --width-workbench-panel-wide: var(--workbench-panel-width-wide);
   --max-width-chat-bubble: var(--chat-bubble-max);
-  --max-width-chat-reasoning: var(--chat-reasoning-max);
-  --max-width-chat-system: var(--chat-system-max);
-  --min-width-markdown-table: var(--markdown-table-min);
-  --spacing-sidebar-row-accessory-pr-session: var(--sidebar-row-accessory-pr-session);
-  --spacing-sidebar-row-accessory-pr-workspace: var(--sidebar-row-accessory-pr-workspace);
 }
 
 /* Named utilities that are shared across multiple JSX consumers. */
@@ -412,8 +380,8 @@
 @utility bg-sidebar-scroll-mist {
   background: linear-gradient(
     to top,
-    var(--surface-overlay) 0%,
-    color-mix(in srgb, var(--surface-overlay) 72%, transparent) 42%,
+    var(--sidebar-bg) 0%,
+    color-mix(in srgb, var(--sidebar-bg) 72%, transparent) 42%,
     transparent 100%
   );
 }
@@ -421,18 +389,18 @@
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    color-mix(in srgb, var(--surface-overlay) 35%, transparent) 38%,
-    var(--surface-overlay) 100%
+    color-mix(in srgb, var(--sidebar-bg) 35%, transparent) 38%,
+    var(--sidebar-bg) 100%
   );
 }
 @utility sidebar-mist-hint {
   color: var(--content-faint);
   opacity: 0.62;
   letter-spacing: 0.01em;
-  text-shadow: 0 0 12px color-mix(in srgb, var(--surface-overlay) 80%, transparent);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--sidebar-bg) 80%, transparent);
 }
 @utility row-accessory-fade-cover {
-  --sidebar-row-cover-bg: var(--surface);
+  --sidebar-row-cover-bg: var(--sidebar-bg);
   position: relative;
   background: var(--sidebar-row-cover-bg);
 
@@ -459,7 +427,7 @@
   }
 }
 @utility row-accessory-fade-meta {
-  --sidebar-row-cover-bg: var(--surface);
+  --sidebar-row-cover-bg: var(--sidebar-bg);
   position: relative;
   background: var(--sidebar-row-cover-bg);
 

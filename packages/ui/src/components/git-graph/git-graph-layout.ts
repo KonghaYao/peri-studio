@@ -1,6 +1,6 @@
 /** Git Graph 面板 table / row / cell 共享 Tailwind 类（T3 · mhutchie/vscode-git-graph 对齐）。 */
 
-export const gitGraphPanelClass = 'flex min-h-0 flex-col bg-surface-overlay';
+export const gitGraphPanelClass = 'flex min-h-0 flex-col bg-neutral-25';
 
 export const gitGraphControlsClass =
   'flex h-36 shrink-0 items-center gap-8 border-b border-border-subtle px-12';

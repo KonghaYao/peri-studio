@@ -183,7 +183,7 @@ export function ProjectSidebarLayout() {
   return (
     <>
       <ProjectSidebarShell
-        class="h-(--catalog-layer-sidebar-height) w-(--shell-sidebar-width) border border-border-faint bg-surface-overlay"
+        class="h-(--catalog-layer-sidebar-height) w-(--shell-sidebar-width) border border-border-faint bg-neutral-25"
         navbar={(
           <>
             <NavAction icon={<MessageSquarePlus size={16} strokeWidth={1.7} />} label="New session" />

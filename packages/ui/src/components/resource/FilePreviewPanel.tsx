@@ -30,7 +30,7 @@ export const FilePreviewPanel: Component<FilePreviewPanelProps> = (props) => {
   return (
     <div
       data-slot="file-preview-panel"
-      class={cn('flex h-full min-h-0 flex-col bg-surface-overlay', local.class)}
+      class={cn('flex h-full min-h-0 flex-col bg-neutral-25', local.class)}
       aria-label={`Preview: ${local.path}`}
     >
       <Show when={showHeader()}>
@@ -81,7 +81,7 @@ export const FilePreviewPanel: Component<FilePreviewPanelProps> = (props) => {
                     line.kind === 'plain' && 'text-content-primary',
                   )}
                 >
-                  <span class="select-none border-r border-border-subtle bg-surface-overlay px-8 text-right tabular-nums text-content-faint" aria-hidden="true">
+                  <span class="select-none border-r border-border-subtle bg-neutral-25 px-8 text-right tabular-nums text-content-faint" aria-hidden="true">
                     {local.mode === 'text' ? index() + 1 : ''}
                   </span>
                   <code class="tab-size-4 whitespace-pre px-10">{line.text || ' '}</code>

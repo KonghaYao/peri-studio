@@ -22,7 +22,7 @@ export function SidebarChrome(props: SidebarChromeProps) {
         role="navigation"
         aria-label="Projects and sessions"
         data-testid="project-sidebar"
-        class="project-sidebar relative h-full min-h-0 w-full flex-col border-r border-border-faint bg-surface-overlay text-content-primary"
+        class="project-sidebar relative h-full min-h-0 w-full flex-col border-r border-border-faint bg-neutral-25 text-content-primary"
       >
         <ProjectSidebarShell
           embedded

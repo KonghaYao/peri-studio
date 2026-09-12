@@ -28,6 +28,7 @@
 
   /* Neutral · 冷灰 */
   --palette-neutral-0: #ffffff;
+  /* Neutral 25：侧栏 / Workbench 壳层灰；Tailwind `bg-neutral-25`。 */
   --palette-neutral-25: #fafafa;
   --palette-neutral-50: #f5f5f5;
   --palette-neutral-100: #f0f0f0;
@@ -155,11 +156,8 @@
     0 9px 28px 8px rgb(0 0 0 / 5%);
   --shadow-focus-ring: 0 0 0 3px var(--accent-ring);
   --shadow-focus-danger: 0 0 0 3px color-mix(in srgb, var(--danger) 25%, transparent);
-  --shadow-focus-ring-input: 0 0 0 1px var(--surface), 0 0 0 3px var(--focus-ring);
   --z-sticky: 10;
   --z-overlay: 40;
-  --z-modal: 50;
-  --z-toast: 60;
 
   /* 动效 */
   --duration-fast: 120ms;
@@ -185,8 +183,6 @@
   --ease-panel-out: cubic-bezier(0.4, 0, 0.2, 1);
   --motion-slide-sm: var(--space-4);
   --motion-slide-md: var(--space-8);
-  --motion-modal-enter-offset: var(--space-8);
-  --motion-modal-exit-offset: var(--space-4);
   --motion-toast-enter-offset: var(--space-12);
   /* Kobalte Toast swipe 手势运行时写入；exit 偏移由 motion.css 按方向设置 */
   --kb-toast-swipe-move-x: 0px;
@@ -218,25 +214,15 @@
   /* Sidebar 侧栏 */
   --sidebar-width: var(--shell-sidebar-width);
   --sidebar-width-icon: var(--space-48);
-  --sidebar-row-height: var(--pattern-row-height);
-  --sidebar-row-height-touch: 52px;
-  --sidebar-selected-bg: var(--palette-neutral-25);
+  --sidebar-selected-bg: var(--palette-neutral-50);
   /* 侧栏行 hover 遮罩：不透明底色，避免半透明 interaction-hover 与文本重影 */
-  --sidebar-row-hover-bg: var(--palette-neutral-25);
+  --sidebar-row-hover-bg: var(--palette-neutral-50);
   --sidebar-row-accessory-fade-width: var(--space-24);
-  --sidebar-row-cover-bg: var(--surface);
-  --sidebar-row-accessory-pr-session: var(--space-72);
-  --sidebar-row-accessory-pr-workspace: var(--space-64);
+  --sidebar-row-cover-bg: var(--sidebar-bg);
 
   /* Chat 聊天 */
-  --chat-transcript-max: var(--container-chat);
   --chat-content-max: var(--container-chat-content);
-  --chat-column-gutter: var(--space-48);
-  --chat-column-gutter-desk: var(--space-40);
-  --chat-column-gutter-narrow: var(--space-24);
   --chat-markdown-rhythm: var(--markdown-rich-block-gap);
-  --chat-block-gap: var(--space-16);
-  --markdown-table-min: 420px;
   --chat-tool-activity-max: var(--tool-activity-max);
   --chat-bubble-max: 72%;
   --chat-reasoning-max: 680px;
@@ -245,18 +231,9 @@
   --chat-system-max: 70%;
 
   /* Resource 资源树 */
-  --resource-tree-row: var(--tree-row-height);
-  --resource-tree-indent: var(--tree-depth-chat);
-  --resource-asset-tile: var(--asset-tile-size);
-  --composer-asset-tile-size: 88px;
   --composer-attachment-radius: var(--radius-2xl);
-  --composer-upload-tile-width: var(--composer-asset-tile-size);
-  --composer-upload-tile-height: var(--composer-asset-tile-size);
-
-  /* Decision 决策面 */
-  --decision-shadow: none;
-  --decision-action-solid: var(--palette-warning-600);
-  --decision-action-hover: var(--palette-warning-700);
+  --composer-upload-tile-width: 88px;
+  --composer-upload-tile-height: 88px;
 
   /* Workbench 资源浮层 */
   --workbench-panel-width: 264px;
@@ -279,11 +256,9 @@
   --terminal-viewport-muted: var(--palette-neutral-500);
   --terminal-viewport-accent: var(--palette-accent-400);
 
-  /* 控件高度（28/36/44 + 触控 44；legacy compact/default 保留） */
+  /* 控件高度（28/36；legacy compact/default 保留） */
   --control-height-sm: 28px;
   --control-height-md: 36px;
-  --control-height-lg: 44px;
-  --control-height-touch: 44px;
 
   /* Git Graph（mhutchie/vscode-git-graph 色板） */
   --git-graph-color-0: #0085d9;
@@ -298,7 +273,7 @@
   --git-graph-color-9: #dc5b23;
   --git-graph-color-10: #6f24d6;
   --git-graph-color-11: #ff0000;
-  --git-graph-row-height: var(--resource-tree-row);
+  --git-graph-row-height: var(--tree-row-height);
   --git-graph-date-col-width: 48px;
   --git-graph-author-col-width: 72px;
   --git-graph-commit-col-width: 60px;
@@ -309,11 +284,9 @@
 
   /* Surfaces */
   --app-bg: var(--surface-canvas);
-  --sidebar-bg: var(--surface-canvas);
+  --sidebar-bg: var(--palette-neutral-25);
   --surface: var(--surface-canvas);
   --surface-muted: var(--surface-sunken);
-  --empty-mark-bg: var(--surface-muted);
-  --empty-mark-fg: var(--content-primary);
 
   /* Borders */
   --danger-border: var(--feedback-danger-border);
@@ -326,7 +299,6 @@
   --text-muted: var(--content-muted);
   --text-faint: var(--content-faint);
   --link: var(--content-link);
-  --link-decoration: color-mix(in srgb, var(--content-link) 28%, transparent);
 
   /* Interaction and feedback */
   --accent: var(--accent-solid);
@@ -347,9 +319,7 @@
 
   /* Elevation */
   --shadow-popover: var(--shadow-overlay);
-  --shadow-float: var(--shadow-raised);
   --shadow-composer-overlay: var(--shadow-raised);
-  --shadow-recovery: var(--shadow-raised);
   --shadow-accent-ring: var(--shadow-focus-ring);
 
   /* Kobalte Progress/Meter fill width (overridden at runtime on fill elements). */
@@ -376,12 +346,9 @@
   --space-16: 16px;
   --space-17: 17px;
   --space-18: 18px;
-  --space-19: 19px;
   --space-20: 20px;
-  --space-21: 21px;
   --space-22: 22px;
   --space-24: 24px;
-  --space-25: 25px;
   --space-26: 26px;
   --space-28: 28px;
   --space-30: 30px;
@@ -393,7 +360,6 @@
   --space-40: 40px;
   --space-42: 42px;
   --space-44: 44px;
-  --space-46: 46px;
   --space-48: 48px;
   --space-52: 52px;
   --space-54: 54px;
@@ -402,15 +368,11 @@
   --space-60: 60px;
   --space-64: 64px;
   --space-72: 72px;
-  --space-88: 88px;
   --space-82: 82px;
-  --space-84: 84px;
-  --space-90: 90px;
   --space-100: 100px;
   --space-180: 180px;
   --space-210: 210px;
   --space-240: 240px;
-  --space-260: 260px;
   --space-300: 300px;
   --space-360: 360px;
   --space-420: 420px;
@@ -420,17 +382,14 @@
      exact pixel value matching the legacy design values. */
   --radius-2: 2px;
   --radius-4: 4px;
-  --radius-5: 5px;
   --radius-6: 6px;
   --radius-7: 7px;
   --radius-8: 8px;
   --radius-9: 9px;
   --radius-10: 10px;
-  --radius-11: 11px;
   --radius-12: 12px;
   --radius-14: 14px;
   --radius-16: 16px;
-  --radius-18: 18px;
   --radius-full: 999px;
 
   /* 组件几何：设计示例和生产模块共用同一组语义尺寸，避免 fixture 漂移。 */
@@ -441,27 +400,22 @@
   --asset-tile-size: 68px;
   --status-panel-max-height: 132px;
   --composer-radius: var(--radius-xl);
-  --composer-pill-height: 44px;
-  --composer-pill-radius: calc(var(--composer-pill-height) / 2);
+  --composer-pill-radius: 22px;
   --composer-field-line-height: calc(var(--text-13) * var(--leading-145));
   --composer-expanded-field-max-height: calc(var(--composer-field-line-height) * 3);
   --composer-active-radius: 22px;
   --composer-drop-overlay-bg: var(--scrim);
-  --explorer-drop-accent-width: 3px;
   --upload-progress: 0%;
   --decision-radius: 14px;
   --permission-card-min-height: 96px;
   --model-badge-max: min(240px, 38vw);
   --container-model-menu: min(220px, calc(100vw - 2 * var(--space-16)));
   --runtime-label-max: 120px;
-  --tree-depth-chat: 43px;
   --tool-activity-max: 740px;
 
   /* Layout */
-  --composer-max: 760px;
   --composer-launch-max: 736px;
   --composer-safe-bottom: calc(var(--space-20) + env(safe-area-inset-bottom));
-  --chat-composer-fade-height: var(--space-56);
   --container-popover: min(288px, calc(100vw - 2 * var(--space-16)));
   --container-slash-menu: min(360px, calc(100vw - 2 * var(--space-16)));
   --container-dialog-default: min(400px, calc(100vw - 2 * var(--space-20)));
@@ -476,7 +430,6 @@
   --container-system-reminder-tall: min(420px, calc(100vh - 32px));
   --container-mcp-compact: calc(100vw - 2 * var(--space-12));
   --container-rewind-compact: min(92vw, 360px);
-  --container-diff-min: 720px;
 
   /* Typography */
   --font-sans:
@@ -512,7 +465,6 @@
   --leading-115: 1.15;
   --leading-12: 1.2;
   --leading-125: 1.25;
-  --leading-13: 1.3;
   --leading-135: 1.35;
   --leading-14: 1.4;
   --leading-145: 1.45;
@@ -521,26 +473,17 @@
   --leading-16: 1.6;
   --leading-20: 20px;
   --leading-22: 22px;
-  --leading-24: 24px;
-  --leading-25: 25px;
 
   /* Font-weight scale (non-standard weights used by the panel) */
   --font-weight-550: 550;
-  --font-weight-610: 610;
   --font-weight-650: 650;
-  --font-weight-680: 680;
-  --font-weight-750: 750;
 
   /* Letter-spacing scale (em). Negative values use -tracking-* utilities. */
   --tracking-25: 0.025em;
   --tracking-35: 0.035em;
   --tracking-6: 0.06em;
-  --tracking-7: 0.07em;
   --tracking-8: 0.08em;
   --tracking-dialog: -0.02em;
-
-  /* Motion and z-index */
-  --z-12: 12;
 
   /* ------------------------------------------------------------------
      CSS utilities · scroll-fade / shimmer（默认值；可在元素上覆盖）
@@ -583,21 +526,14 @@
   --grid-cols-settings-form: 150px 1fr;
   --grid-cols-split-auto: minmax(0, 1fr) auto;
   --grid-cols-detail-label: 88px minmax(0, 1fr);
-  --grid-cols-diff-line: 48px minmax(0, 1fr);
   --grid-cols-preview-line: 44px minmax(0, 1fr);
-  --grid-cols-editor-line: 54px minmax(0, 1fr);
   --grid-cols-code-line: auto 1fr;
   --grid-cols-tool-row: 22px minmax(0, 1fr) auto 22px;
   --grid-cols-slash-menu: 16px minmax(0, 88px) minmax(0, 1fr);
-  --grid-cols-status-row: 14px minmax(0, 1fr) auto;
-  --grid-cols-status-activity: 14px 54px minmax(0, 1fr) auto;
   --grid-rows-fill: minmax(0, 1fr);
-  --grid-rows-asset-tile: 1fr auto;
 
   /* Containers (bounded surfaces; used by max-w-/max-h-/w- utilities) */
-  --container-chat: 840px;
   --container-chat-content: 752px;
-  --container-chat-narrow: 720px;
   --container-composer-stack-max: 72dvh;
   --container-composer-launch: var(--composer-launch-max);
   --container-auth-card: min(440px, 100%);
@@ -605,8 +541,6 @@
   /* Markdown rhythm */
   --markdown-rich-block-gap: 16px;
   --container-drawer: min(88vw, 320px);
-  --container-rewind-compact: min(92vw, 360px);
-  --container-diff-min: 720px;
   --container-settings: min(560px, calc(100vw - 40px));
   --container-settings-tall: min(76dvh, 680px);
   --container-mcp: min(620px, calc(100vw - 40px));
@@ -614,7 +548,5 @@
   --container-search-results: min(440px, 60vh);
   --container-slash: min(330px, 42vh);
   --container-slash-tight: min(360px, 48vh);
-  --container-activity: min(820px, calc(100% - 32px));
-  --container-placeholder: clamp(260px, 52vh, 500px);
   --container-placeholder-narrow: clamp(240px, 48vh, 460px);
 }

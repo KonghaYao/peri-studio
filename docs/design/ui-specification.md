@@ -27,7 +27,7 @@ date: 2026-09-05
 
 1. **Calm & dense**：开发者工具密度；默认安静，活动态（streaming、权限、错误）才提高对比。
 2. **Server 事实优先**：UI 只渲染投影；不伪造历史、不从标题猜类型、未知协议值 fail closed（见 `architecture.md` §3.0）。
-3. **白画布 + 线框层次**：`--app-bg` / `--sidebar-bg` / `--surface` 均为白或近白；次级面用 `--surface-muted`，禁止用大面积色块区分区域。
+3. **白画布 + 壳层灰**：聊天画布 `--app-bg` / `--surface-canvas` 为白（`neutral-0`）；侧栏与 Workbench 壳层用 **Neutral 25**（`--palette-neutral-25` / `bg-neutral-25`，`#fafafa`）。`--surface-overlay` 保持白，避免气泡、按钮、菜单被连带改灰。次级凹槽 `--surface-sunken` 同源 Neutral 25。
 4. **语义色克制**：accent 仅用于主操作与正向强调；`success` / `warning` / `danger` 仅用于状态与告警，不装饰化。
 5. **英文 UI 文案**：按钮、标签、toast、空状态、错误信息一律英文；文档与代码注释用中文。
 6. **可访问性默认**：焦点环可见、触控目标 ≥ 44px（`pointer-coarse`）、`forced-colors` 安全边界、模态焦点陷阱由 Kobalte 基元保证。
@@ -67,10 +67,11 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 
 | 语义 | CSS 变量 | 典型 utility | 用途 |
 |------|-----------|--------------|------|
-| 画布 | `--app-bg` | `bg-app-bg` | 主内容区背景（`#ffffff`） |
-| 侧栏 | `--sidebar-bg` | `bg-sidebar-bg` | 与画布同级白，靠分隔线区分 |
-| 表面 | `--surface` | `bg-surface` | 卡片、输入框、弹层面 |
-| 次级表面 | `--surface-muted` | `bg-surface-muted` | 空状态标记、弱强调底 |
+| 画布 | `--app-bg` | `bg-app-bg` | 主内容区 / 聊天背景（`neutral-0` `#ffffff`） |
+| 壳层灰 | `--palette-neutral-25` | `bg-neutral-25` | 侧栏与 Workbench 轨/面板（`#fafafa`） |
+| 侧栏 | `--sidebar-bg` | `bg-sidebar-bg` | 别名 Neutral 25 |
+| 表面 | `--surface` / `--surface-overlay` | `bg-surface` / `bg-surface-overlay` | 卡片、输入框、弹层、气泡（白） |
+| 次级表面 | `--surface-sunken` / `--surface-muted` | `bg-surface-sunken` | 同源 Neutral 25 的凹槽 |
 | 主文字 | `--text-primary` | `text-text-primary` | 标题、正文 |
 | 次文字 | `--text-secondary` | `text-text-secondary` | 说明、元数据 |
 | 弱文字 | `--text-muted` | `text-text-muted` | 标签、时间戳 |
@@ -107,7 +108,7 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 
 字重：`font-500` 默认按钮；`font-semibold` 小节标题；避免 700+ 粗体墙。
 
-行高：正文 `leading-145` / `leading-15`；紧凑列表 `leading-13`。
+行高：正文 `leading-145` / `leading-15`；紧凑列表 `leading-compact`。
 
 ---
 
@@ -116,7 +117,7 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 - **间距**：仅使用 `--space-*` 映射的 Tailwind 数字 utility（`p-12`、`gap-8`…）；`css-contracts` 禁止未声明数字。
 - **控件高度**：`--control-height-default`（38px）、`compact`（32px）；T2 默认按钮 36px；触控加粗 `pointer-coarse:min-h-44`。
 - **圆角**：交互控件 `rounded-8`；Composer `rounded-(--composer-radius)`（18px）；Pill `rounded-full`。
-- **内容宽度**：聊天 `--container-chat`（960px）；Composer `--composer-max`（864px）；弹窗见 `--container-*` 系列。
+- **内容宽度**：聊天 `--container-chat-content` / `--chat-content-max`（752px）；Composer `--container-composer-launch` / `--composer-launch-max`（736px）；弹窗见 `--container-*` 系列。
 - **壳层网格**：`--grid-cols-shell`（280px 侧栏 + 1fr）；桌面收窄 `240px`。
 
 ---
@@ -128,9 +129,7 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 | Token | 用途 |
 |-------|------|
 | `--shadow-popover` | Dropdown、SlashMenuListbox、Popover |
-| `--shadow-float` | 轻悬浮卡片 |
 | `--shadow-composer-overlay` | Composer 上浮层 |
-| `--shadow-recovery` | 恢复/告警条 |
 | `--shadow-accent-ring` | 运行中 activity 光晕 |
 
 `z-index`：模态与 toast 由 Kobalte / 门户管理；业务勿随意叠 `z-50`。

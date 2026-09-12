@@ -6,7 +6,7 @@ export function GitDiffPanel(props: {
   class?: string;
 }) {
   return (
-    <div class={cn('flex min-h-0 flex-col bg-surface-overlay', props.class)}>
+    <div class={cn('flex min-h-0 flex-col bg-neutral-25', props.class)}>
       <div class="px-10 pt-10 pb-4">
         <p class="truncate text-12 text-content-muted">{props.path}</p>
       </div>

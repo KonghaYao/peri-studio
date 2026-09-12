@@ -126,7 +126,7 @@ export const composerAttachmentChipRemoveClass =
   'inline-flex cursor-pointer border-0 bg-transparent p-0 text-content-faint hover:text-content-secondary';
 
 export const composerAttachmentChipFailedClass =
-  'border-danger-border text-feedback-danger-strong';
+  'border-danger-border text-danger-strong';
 
 export const composerAttachmentChipBusyClass = 'text-content-secondary';
 

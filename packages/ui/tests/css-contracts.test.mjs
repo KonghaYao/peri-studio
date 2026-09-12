@@ -114,6 +114,7 @@ test('theme.css is the only Tailwind import and sources package T2', () => {
   assert.match(theme, /@source '\.\.\/components'/);
   assert.match(theme, /@source '\.\.\/lib'/);
   assert.match(theme, /@source '\.\.\/\.\.\/\.\.\/markdown\/src'/);
+  assert.match(theme, /--color-neutral-25: var\(--palette-neutral-25\)/);
   for (const file of cssFiles().filter((path) => !path.endsWith('theme.css'))) {
     assert.doesNotMatch(read(file), /@import\s+'tailwindcss'/);
   }
@@ -258,7 +259,8 @@ test('composer layout classes live in composer-layout.ts', () => {
   const workbenchLayout = read(join(srcRoot, 'components', 'workbench', 'workbench-layout.ts'));
   assert.match(workbenchLayout, /top-\(--workbench-panel-inset-block\)/);
   assert.match(workbenchLayout, /bottom-\(--workbench-panel-inset-bottom\)/);
-  assert.match(workbenchLayout, /shadow-raised/);
+  assert.match(workbenchLayout, /bg-neutral-25/);
+  assert.doesNotMatch(workbenchLayout, /bg-surface-overlay/);
   assert.doesNotMatch(extra, /\.ui-workbench-floating-panel\s*\{/);
   assert.match(extra, /\.ui-terminal-dock-viewport:focus-within/s);
   assert.match(extra, /\.ui-workbench-rail-button--active-left::before/s);

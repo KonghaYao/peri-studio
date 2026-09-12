@@ -2,7 +2,7 @@ import { cn } from '../../lib/cn';
 
 /** Workbench 外壳：竖轨 + 可选浮动面板槽。 */
 export const workbenchShellClass = cn(
-  'flex h-full min-h-0 border-l border-border-subtle bg-surface-overlay',
+  'flex h-full min-h-0 border-l border-border-subtle bg-neutral-25',
 );
 
 /** 桌面 rail-only 宽度（非 compact）。 */
@@ -19,7 +19,7 @@ export const workbenchShellCompactClass = cn(
 
 /** 竖轨容器。 */
 export const workbenchRailClass = cn(
-  'flex w-(--workbench-rail-width) shrink-0 flex-col items-center gap-4 bg-surface-overlay py-8',
+  'flex w-(--workbench-rail-width) shrink-0 flex-col items-center gap-4 bg-neutral-25 py-8',
 );
 
 /** 保留 extra.css ::before 激活指示条（left）。 */
@@ -47,10 +47,10 @@ export const workbenchPanelChromeActionsClass = 'flex shrink-0 items-center gap-
 export const workbenchPanelChromeBodyClass = 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden';
 
 /** Explorer / SCM / Graph 等内容区 surface。 */
-export const workbenchPanelSurfaceClass = 'flex min-h-0 min-w-0 flex-1 flex-col bg-surface-overlay';
+export const workbenchPanelSurfaceClass = 'flex min-h-0 min-w-0 flex-1 flex-col bg-neutral-25';
 
 export const workbenchFloatingPanelBaseClass = cn(
-  'absolute z-30 box-border overflow-hidden border border-border-subtle rounded-14 bg-surface-overlay shadow-raised',
+  'absolute z-30 box-border overflow-hidden border border-border-subtle rounded-14 bg-neutral-25 shadow-raised',
   'top-(--workbench-panel-inset-block) bottom-(--workbench-panel-inset-bottom)',
 );
 
@@ -60,12 +60,12 @@ export const workbenchFloatingPanelLeftClass = cn(workbenchFloatingPanelBaseClas
 
 /** Catalog / 内嵌演示面板固定宽度壳。 */
 export const workbenchEmbeddedPanelClass = cn(
-  'flex h-full w-(--workbench-panel-width) flex-col overflow-hidden bg-surface-overlay',
+  'flex h-full w-(--workbench-panel-width) flex-col overflow-hidden bg-neutral-25',
 );
 
 /** 固定 token 宽度的右侧浮动壳（Rewind 等不接入拖拽宽度的面板）。 */
 export const workbenchFixedPanelSurfaceClass = cn(
-  'inset-y-8 right-52 w-(--workbench-panel-width) overflow-hidden rounded-14 border border-border-subtle bg-surface-overlay shadow-overlay wide:w-(--workbench-panel-width-wide)',
+  'inset-y-8 right-52 w-(--workbench-panel-width) overflow-hidden rounded-14 border border-border-subtle bg-neutral-25 shadow-overlay wide:w-(--workbench-panel-width-wide)',
 );
 
 /** 拖拽调宽时挂到 document.body（保留 extra.css 全局 cursor）。 */

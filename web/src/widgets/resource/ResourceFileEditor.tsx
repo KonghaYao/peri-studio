@@ -41,7 +41,7 @@ export function ResourceFileEditor(props: ResourceFileEditorProps = {}) {
 
   return (
     <section
-      class="flex h-full min-h-0 flex-col bg-surface-overlay"
+      class="flex h-full min-h-0 flex-col bg-neutral-25"
       aria-label={accessibleTitle()}
       data-testid="resource-file-editor"
     >

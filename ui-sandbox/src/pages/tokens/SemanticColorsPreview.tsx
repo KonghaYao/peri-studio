@@ -58,7 +58,7 @@ export function SemanticColorsPreview() {
 
   return (
     <>
-      <SemanticGroup title="表面 · Surfaces" hint="页面底色、凹陷区与浮层卡片的层级关系。">
+      <SemanticGroup title="表面 · Surfaces" hint="聊天画布为白（neutral-0）；侧栏与 Workbench 壳层为 Neutral 25（#fafafa）。Overlay 卡片保持白，避免改 overlay 波及气泡和按钮。">
         <div class="token-preview-surface-scene">
           <div class="token-preview-surface-canvas">
             <div class="token-preview-surface-sunken">
@@ -71,7 +71,7 @@ export function SemanticColorsPreview() {
             </div>
           </div>
         </div>
-        <TokenFootnote names={['--surface-canvas', '--surface-sunken', '--surface-overlay']} />
+        <TokenFootnote names={['--surface-canvas', '--surface-sunken', '--surface-overlay', '--palette-neutral-25', 'bg-neutral-25']} />
       </SemanticGroup>
 
       <SemanticGroup title="文字 · Content" hint="信息层级由强到弱；链接单独使用 accent 色系。">

@@ -31,10 +31,10 @@ export function ResourceWorkbenchLayout() {
 
   return (
     <div
-      class="flex h-(--workbench-frame-height) w-full overflow-hidden rounded-lg border border-border-subtle bg-surface-canvas"
+      class="flex h-(--workbench-frame-height) w-full overflow-hidden rounded-lg border border-border-subtle bg-neutral-25"
       aria-label="Resource workbench"
     >
-      <section class="min-w-0 flex-1 overflow-hidden" aria-label="File preview">
+      <section class="min-w-0 flex-1 overflow-hidden bg-surface-canvas" aria-label="File preview">
         <WorkbenchPreviewLayout preview={preview()} />
       </section>
 

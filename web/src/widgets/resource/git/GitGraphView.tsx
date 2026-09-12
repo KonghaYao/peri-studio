@@ -59,7 +59,7 @@ export function GitGraphView(props: GitGraphViewProps = {}) {
   return (
     <div
       data-testid="git-graph-view"
-      class={`flex min-h-0 flex-col bg-surface-overlay ${props.embedded ? 'min-h-0 flex-1' : 'h-full w-full'}`}
+      class={`flex min-h-0 flex-col bg-neutral-25 ${props.embedded ? 'min-h-0 flex-1' : 'h-full w-full'}`}
       aria-label="Git Graph workspace"
     >
       <Show when={resourceWorkspace().error}>

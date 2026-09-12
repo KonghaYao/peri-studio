@@ -16,7 +16,7 @@ export function SourceControlLayout(props: {
 
   return (
     <aside
-      class="flex h-full w-full flex-col bg-surface-overlay"
+      class="flex h-full w-full flex-col bg-neutral-25"
       aria-label="Source Control"
     >
       <div class="min-h-0 flex-1 overflow-auto px-4 pt-4 pb-8">
