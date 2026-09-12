@@ -3,7 +3,7 @@ import { createContext, splitProps, useContext } from 'solid-js';
 import * as DialogPrimitive from '@kobalte/core/dialog';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import { cn } from '../lib/cn';
-import { IconButton } from './Button';
+import { Button, IconButton } from './Button';
 
 export type DrawerSwipeDirection = 'up' | 'down' | 'left' | 'right';
 
@@ -179,6 +179,57 @@ export function DrawerClose<T extends ValidComponent = 'button'>(props: Polymorp
       {...rest}
     >
       {local.children ?? '×'}
+    </DialogPrimitive.CloseButton>
+  );
+}
+
+type ActionProps<T extends ValidComponent = 'button'> = DialogPrimitive.DialogCloseButtonProps<T> & {
+  class?: string;
+  children?: JSX.Element;
+  variant?: 'primary' | 'danger';
+  size?: ComponentProps<typeof Button>['size'];
+  'aria-label'?: string;
+};
+
+/** 抽屉主操作：关闭抽屉并触发确认语义。 */
+export function DrawerAction<T extends ValidComponent = 'button'>(props: PolymorphicProps<T, ActionProps<T>>) {
+  const [local, rest] = splitProps(props as ActionProps, ['class', 'children', 'variant', 'size', 'aria-label']);
+  const label = local['aria-label'] ?? (typeof local.children === 'string' ? local.children : 'Confirm');
+  return (
+    <DialogPrimitive.CloseButton
+      as={Button}
+      variant={local.variant ?? 'primary'}
+      size={local.size ?? 'md'}
+      class={local.class}
+      aria-label={label}
+      {...rest}
+    >
+      {local.children}
+    </DialogPrimitive.CloseButton>
+  );
+}
+
+type CancelProps<T extends ValidComponent = 'button'> = DialogPrimitive.DialogCloseButtonProps<T> & {
+  class?: string;
+  children?: JSX.Element;
+  size?: ComponentProps<typeof Button>['size'];
+  'aria-label'?: string;
+};
+
+/** 抽屉取消：对齐 AlertDialogCancel 的 default 按钮样式。 */
+export function DrawerCancel<T extends ValidComponent = 'button'>(props: PolymorphicProps<T, CancelProps<T>>) {
+  const [local, rest] = splitProps(props as CancelProps, ['class', 'children', 'size', 'aria-label']);
+  const label = local['aria-label'] ?? (typeof local.children === 'string' ? local.children : 'Cancel');
+  return (
+    <DialogPrimitive.CloseButton
+      as={Button}
+      variant="default"
+      size={local.size ?? 'md'}
+      class={local.class}
+      aria-label={label}
+      {...rest}
+    >
+      {local.children ?? 'Cancel'}
     </DialogPrimitive.CloseButton>
   );
 }

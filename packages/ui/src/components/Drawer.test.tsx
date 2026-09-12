@@ -2,6 +2,8 @@ import { cleanup, render, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   Drawer,
+  DrawerAction,
+  DrawerCancel,
   DrawerClose,
   DrawerContent,
   DrawerDescription,
@@ -38,6 +40,25 @@ describe('Drawer', () => {
     expect(document.querySelector('[data-drawer-swipe-handle]')).toBeInTheDocument();
     expect(screen.getByText('Anyone with the link can view.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Close share drawer' })).toBeInTheDocument();
+  });
+
+  it('renders footer cancel and action with standard button variants', async () => {
+    render(() => (
+      <Drawer open>
+        <DrawerContent>
+          <DrawerTitle>Move to project</DrawerTitle>
+          <DrawerFooter>
+            <DrawerCancel>Cancel</DrawerCancel>
+            <DrawerAction>Confirm</DrawerAction>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    ));
+
+    const cancel = await waitFor(() => screen.getByRole('button', { name: 'Cancel' }));
+    const confirm = screen.getByRole('button', { name: 'Confirm' });
+    expect(cancel).toHaveClass('border-border-strong', 'bg-surface-overlay');
+    expect(confirm).toHaveClass('bg-accent-solid');
   });
 
   it('exposes trigger dialog semantics before opening', () => {

@@ -1,10 +1,12 @@
 import { FolderOpen } from 'lucide-solid';
-import { createSignal } from 'solid-js';
+import { createSignal, Show } from 'solid-js';
+import { showCatalogSection } from '@/catalog/catalog-section';
 import {
   Button,
   DirectionProvider,
   Drawer,
-  DrawerClose,
+  DrawerAction,
+  DrawerCancel,
   DrawerContent,
   DrawerDescription,
   DrawerFooter,
@@ -36,6 +38,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
+  SidebarRail,
   SidebarTrigger,
   Switch,
   SwitchControl,
@@ -63,11 +66,12 @@ function DirectionToggleDemo() {
   );
 }
 
-export function ComponentCatalogExtrasE() {
+export function ComponentCatalogExtrasE(props: { sections?: string[] }) {
   const [newsletter, setNewsletter] = createSignal(false);
 
   return (
     <>
+      <Show when={showCatalogSection(props.sections, 'field')}>
       <CatalogDemo id="field" title="Field" description="shadcn Field 组合：fieldset、分组、水平/垂直布局与校验。">
         <FieldSet class="max-w-md">
           <FieldLegend>Profile</FieldLegend>
@@ -94,7 +98,9 @@ export function ComponentCatalogExtrasE() {
           </FieldGroup>
         </FieldSet>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'empty')}>
       <CatalogDemo id="empty" title="Empty" description="Compound 空状态：媒体、标题、描述与操作区。">
         <Empty class="max-w-md">
           <EmptyHeader>
@@ -111,7 +117,9 @@ export function ComponentCatalogExtrasE() {
           </EmptyContent>
         </Empty>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'drawer')}>
       <CatalogDemo id="drawer" title="Drawer" description="自底部滑出的面板；移动端友好，支持 swipe handle。">
         <Drawer showSwipeHandle>
           <DrawerTrigger>
@@ -126,22 +134,23 @@ export function ComponentCatalogExtrasE() {
               Drawer content area — scrollable regions go here.
             </div>
             <DrawerFooter>
-              <Button variant="primary" size="sm">Confirm</Button>
-              <DrawerClose>
-                <Button variant="ghost" size="sm">Cancel</Button>
-              </DrawerClose>
+              <DrawerCancel size="sm">Cancel</DrawerCancel>
+              <DrawerAction size="sm">Confirm</DrawerAction>
             </DrawerFooter>
           </DrawerContent>
         </Drawer>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'sidebar')}>
       <CatalogDemo id="sidebar" title="Sidebar" description="应用壳侧栏：Provider、菜单、折叠与 Cmd/Ctrl+B。">
         <SidebarProvider defaultOpen>
           <div class="flex min-h-280 overflow-hidden rounded-8 border border-border-subtle">
-            <Sidebar collapsible="none" class="border-r border-border-faint">
+            <Sidebar collapsible="icon" class="border-r border-border-faint">
               <SidebarHeader class="border-b border-border-faint px-12 py-10">
                 <span class="text-12 font-semibold text-content-primary">Peri Studio</span>
               </SidebarHeader>
+              <SidebarRail />
               <SidebarContent>
                 <SidebarGroup>
                   <SidebarGroupLabel>Workspace</SidebarGroupLabel>
@@ -170,12 +179,15 @@ export function ComponentCatalogExtrasE() {
           </div>
         </SidebarProvider>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'direction')}>
       <CatalogDemo id="direction" title="Direction" description="RTL/LTR 方向 Provider，子树继承 dir 属性。">
         <DirectionProvider defaultDirection="ltr">
           <DirectionToggleDemo />
         </DirectionProvider>
       </CatalogDemo>
+      </Show>
     </>
   );
 }

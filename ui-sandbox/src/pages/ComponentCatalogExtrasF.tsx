@@ -1,4 +1,5 @@
-import { createSignal, For } from 'solid-js';
+import { createSignal, For, Show } from 'solid-js';
+import { showCatalogSection } from '@/catalog/catalog-section';
 import {
   Attachment,
   AttachmentInfo,
@@ -53,11 +54,12 @@ const attachmentFiles: AttachmentData[] = [
   { id: 'a2', name: 'diagram.png', size: 128_000, mediaType: 'image/png', progress: 62 },
 ];
 
-export function ComponentCatalogExtrasF() {
+export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
   const [streaming, setStreaming] = createSignal(true);
 
   return (
     <>
+      <Show when={showCatalogSection(props.sections, 'scroll-utils')}>
       <CatalogDemo id="scroll-utils" title="scroll-fade · shimmer" description="CSS utilities（见 packages/ui utilities.css）。">
         <DemoRow label="shimmer">
           <span class="shimmer text-13 font-medium text-content-secondary">Thinking…</span>
@@ -68,7 +70,9 @@ export function ComponentCatalogExtrasF() {
           </For>
         </div>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'marker')}>
       <CatalogDemo id="marker" title="Marker" description="会话内状态行、分隔线与 thinking 标记。">
         <div class="flex flex-col gap-8">
           <Marker>
@@ -81,7 +85,9 @@ export function ComponentCatalogExtrasF() {
           </Marker>
         </div>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'bubble')}>
       <CatalogDemo id="bubble" title="Bubble" description="消息气泡面：变体与对齐。">
         <div class="flex flex-col gap-12">
           <Bubble variant="primary" align="end">
@@ -92,7 +98,9 @@ export function ComponentCatalogExtrasF() {
           </Bubble>
         </div>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'message')}>
       <CatalogDemo id="message" title="Message" description="行布局：avatar + bubble。">
         <Message align="end">
           <MessageAvatar>
@@ -115,7 +123,9 @@ export function ComponentCatalogExtrasF() {
           </MessageContent>
         </Message>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'conversation')}>
       <CatalogDemo id="conversation" title="Conversation" description="MessageScroller 会话容器。">
         <div class="h-240 overflow-hidden rounded-8 border border-border-subtle">
           <Conversation autoScroll defaultScrollPosition="end" class="h-full">
@@ -138,7 +148,9 @@ export function ComponentCatalogExtrasF() {
           </Conversation>
         </div>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'reasoning')}>
       <CatalogDemo id="reasoning" title="Reasoning" description="可折叠推理块，流式时自动展开。">
         <Reasoning isStreaming={streaming()} defaultOpen>
           <ReasoningTrigger />
@@ -150,7 +162,9 @@ export function ComponentCatalogExtrasF() {
           Toggle streaming
         </Button>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'tool')}>
       <CatalogDemo id="tool" title="Tool" description="工具调用生命周期卡片。">
         <Tool state="output-available" defaultOpen>
           <ToolHeader title="Read" state="output-available" />
@@ -160,7 +174,9 @@ export function ComponentCatalogExtrasF() {
           </ToolContent>
         </Tool>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'chain-of-thought')}>
       <CatalogDemo id="chain-of-thought" title="Chain of thought" description="分步思考链。">
         <ChainOfThought defaultOpen>
           <ChainOfThoughtHeader>Research plan</ChainOfThoughtHeader>
@@ -171,7 +187,9 @@ export function ComponentCatalogExtrasF() {
           </ChainOfThoughtContent>
         </ChainOfThought>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'prompt-input')}>
       <CatalogDemo id="prompt-input" title="Prompt input" description="Composer 输入区。">
         <PromptInput class="max-w-md rounded-8 border border-border-subtle p-8" onSubmit={() => undefined}>
           <PromptInputTextarea aria-label="Message" placeholder="Message the agent…" />
@@ -181,7 +199,9 @@ export function ComponentCatalogExtrasF() {
           </PromptInputFooter>
         </PromptInput>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'attachments')}>
       <CatalogDemo id="attachments" title="Attachments" description="附件列表与上传进度。">
         <Attachments variant="list" class="max-w-md">
           <For each={attachmentFiles}>
@@ -195,6 +215,7 @@ export function ComponentCatalogExtrasF() {
           </For>
         </Attachments>
       </CatalogDemo>
+      </Show>
     </>
   );
 }

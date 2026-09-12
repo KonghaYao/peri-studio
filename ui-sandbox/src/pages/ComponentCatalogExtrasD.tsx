@@ -1,4 +1,5 @@
-import { createSignal, For } from 'solid-js';
+import { createSignal, For, Show } from 'solid-js';
+import { showCatalogSection } from '@/catalog/catalog-section';
 import {
   Avatar,
   AvatarFallback,
@@ -40,12 +41,13 @@ const carouselSlides = [
   { title: 'Kobalte', body: 'Accessible headless primitives for Solid.' },
 ];
 
-export function ComponentCatalogExtrasD() {
+export function ComponentCatalogExtrasD(props: { sections?: string[] }) {
   const [date, setDate] = createSignal<Date | undefined>(new Date(2026, 8, 12));
   const [picked, setPicked] = createSignal<Date | undefined>();
 
   return (
     <>
+      <Show when={showCatalogSection(props.sections, 'calendar')}>
       <CatalogDemo id="calendar" title="Calendar" description="月份网格与选中态；无外部日期库依赖。">
         <DemoRow label="Standalone">
           <div class="rounded-8 border border-border-subtle p-12">
@@ -53,7 +55,9 @@ export function ComponentCatalogExtrasD() {
           </div>
         </DemoRow>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'date-picker')}>
       <CatalogDemo id="date-picker" title="Date picker" description="Popover + Calendar 组合触发器。">
         <DemoRow label="Default">
           <DatePicker value={picked()} onValueChange={setPicked} placeholder="Select date">
@@ -62,7 +66,9 @@ export function ComponentCatalogExtrasD() {
           </DatePicker>
         </DemoRow>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'carousel')}>
       <CatalogDemo id="carousel" title="Carousel" description="Scroll-snap 轮播，支持键盘与 prev/next。">
         <div class="mx-auto w-full max-w-sm">
           <Carousel class="relative w-full">
@@ -87,7 +93,9 @@ export function ComponentCatalogExtrasD() {
           </Carousel>
         </div>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'form')}>
       <CatalogDemo id="form" title="Form" description="字段 id / aria 组合层，不绑定具体表单库。">
         <Form
           class="max-w-sm space-y-16"
@@ -115,7 +123,9 @@ export function ComponentCatalogExtrasD() {
           <Button type="submit" variant="primary">Save profile</Button>
         </Form>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'item')}>
       <CatalogDemo id="item" title="Item" description="列表行原语：媒体 + 标题/描述 + 操作。">
         <ItemGroup class="max-w-md rounded-8 border border-border-subtle">
           <Item>
@@ -150,6 +160,7 @@ export function ComponentCatalogExtrasD() {
           </Item>
         </ItemGroup>
       </CatalogDemo>
+      </Show>
     </>
   );
 }

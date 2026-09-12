@@ -1,4 +1,5 @@
-import { createSignal, For } from 'solid-js';
+import { createSignal, For, Show } from 'solid-js';
+import { showCatalogSection } from '@/catalog/catalog-section';
 import {
   Combobox,
   ComboboxControl,
@@ -45,13 +46,14 @@ const frameworks = [
   { value: 'vue', label: 'Vue' },
 ];
 
-export function ComponentCatalogExtrasC() {
+export function ComponentCatalogExtrasC(props: { sections?: string[] }) {
   const [framework, setFramework] = createSignal(frameworks[0]);
   const [model, setModel] = createSignal('nova');
   const [otp, setOtp] = createSignal('');
 
   return (
     <>
+      <Show when={showCatalogSection(props.sections, 'combobox')}>
       <CatalogDemo id="combobox" title="Combobox · Command" description="可搜索选择与命令面板。">
         <div class="max-w-sm">
           <Combobox
@@ -89,7 +91,9 @@ export function ComponentCatalogExtrasC() {
           </Command>
         </div>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'menubar')}>
       <CatalogDemo id="menubar" title="Menubar · Navigation menu" description="桌面应用菜单与顶部导航。">
         <Menubar>
           <MenubarMenu>
@@ -113,7 +117,7 @@ export function ComponentCatalogExtrasC() {
               <NavigationMenuTrigger>Product</NavigationMenuTrigger>
               <NavigationMenuContent aria-label="Product">
                 <li>
-                  <NavigationMenuLink href="#/components2" active>Base UI 2</NavigationMenuLink>
+                    <NavigationMenuLink href="#/components-overlays" active>Overlays</NavigationMenuLink>
                 </li>
                 <li>
                   <NavigationMenuLink href="#/layers">Layers</NavigationMenuLink>
@@ -131,7 +135,9 @@ export function ComponentCatalogExtrasC() {
           </NavigationMenuList>
         </NavigationMenu>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'typography')}>
       <CatalogDemo id="typography" title="Typography · Native select" description="排版原语与原生下拉。">
         <div class="flex max-w-lg flex-col gap-8">
           <H1>Design system catalog</H1>
@@ -147,7 +153,9 @@ export function ComponentCatalogExtrasC() {
           </NativeSelect>
         </div>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'resizable')}>
       <CatalogDemo id="resizable" title="Resizable · Input OTP" description="可拖拽分栏与一次性验证码输入。">
         <ResizablePanelGroup class="max-w-lg rounded-lg border border-border-subtle" style={{ height: '180px' }}>
           <ResizablePanel defaultSize={55} class="p-12 text-12 text-content-secondary">Explorer tree</ResizablePanel>
@@ -171,6 +179,7 @@ export function ComponentCatalogExtrasC() {
           <span class="text-12 text-content-muted">{otp() || '······'}</span>
         </DemoRow>
       </CatalogDemo>
+      </Show>
     </>
   );
 }

@@ -31,7 +31,7 @@ export const Conversation: Component<ConversationProps> = (props) => {
 
   return (
     <MessageScrollerProvider {...providerProps}>
-      <MessageScroller class={cn('flex-1', local.class)} {...rest}>
+      <MessageScroller role="log" class={cn('relative flex-1 overflow-y-hidden', local.class)} {...rest}>
         {local.children}
       </MessageScroller>
     </MessageScrollerProvider>
@@ -43,7 +43,7 @@ export const ConversationContent: Component<ComponentProps<'div'>> = (props) => 
   const [local, rest] = splitProps(props, ['class', 'children']);
   return (
     <MessageScrollerViewport>
-      <MessageScrollerContent class={local.class} {...rest}>
+      <MessageScrollerContent semanticLog={false} class={local.class} {...rest}>
         {local.children}
       </MessageScrollerContent>
     </MessageScrollerViewport>

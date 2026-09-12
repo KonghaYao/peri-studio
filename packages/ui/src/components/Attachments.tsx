@@ -1,4 +1,4 @@
-import { FileText, Image, Music2, Paperclip, Video, X } from 'lucide-solid';
+import { FileText, Globe, Image, Music2, Paperclip, Video, X } from 'lucide-solid';
 import {
   createContext,
   splitProps,
@@ -20,7 +20,7 @@ import {
 } from './Item';
 import { Progress, ProgressFill, ProgressTrack } from './Progress';
 
-export type AttachmentMediaCategory = 'image' | 'video' | 'audio' | 'document' | 'unknown';
+export type AttachmentMediaCategory = 'image' | 'video' | 'audio' | 'document' | 'source' | 'unknown';
 
 export type AttachmentVariant = 'grid' | 'inline' | 'list';
 
@@ -30,6 +30,8 @@ export type AttachmentData = {
   size?: number;
   mediaType?: string;
   url?: string;
+  /** AI Elements 对齐：来源文档附件。 */
+  kind?: 'file' | 'source';
   /** 0–100；未定义表示已完成或无进度。 */
   progress?: number;
 };
@@ -38,6 +40,7 @@ const mediaCategoryIcons = {
   audio: Music2,
   document: FileText,
   image: Image,
+  source: Globe,
   unknown: Paperclip,
   video: Video,
 } as const;
@@ -50,6 +53,7 @@ export function formatAttachmentSize(bytes?: number): string {
 }
 
 export function getMediaCategory(data: AttachmentData): AttachmentMediaCategory {
+  if (data.kind === 'source') return 'source';
   const mediaType = data.mediaType ?? '';
   if (mediaType.startsWith('image/')) return 'image';
   if (mediaType.startsWith('video/')) return 'video';
@@ -60,6 +64,7 @@ export function getMediaCategory(data: AttachmentData): AttachmentMediaCategory 
 
 export function getAttachmentLabel(data: AttachmentData): string {
   const category = getMediaCategory(data);
+  if (category === 'source') return data.name || 'Source';
   return data.name || (category === 'image' ? 'Image' : 'Attachment');
 }
 

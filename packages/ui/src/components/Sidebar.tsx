@@ -87,7 +87,7 @@ export const SidebarProvider: Component<SidebarProviderProps> = (props) => {
 
   const toggleSidebar = () => {
     if (isMobile()) {
-      setOpenMobile((current) => !current);
+      setOpenMobile(!openMobile());
       return;
     }
     setOpen(!open());

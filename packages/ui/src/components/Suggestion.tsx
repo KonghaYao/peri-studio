@@ -33,7 +33,7 @@ export const SuggestionItem: Component<SuggestionItemProps> = (props) => {
     <Button
       data-slot="suggestion-item"
       type="button"
-      variant={local.variant ?? 'default'}
+      variant={local.variant ?? 'secondary'}
       size={local.size ?? 'sm'}
       class={cn('shrink-0 rounded-full', local.class)}
       onClick={handleClick}

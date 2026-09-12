@@ -1,4 +1,5 @@
-import { createSignal, For } from 'solid-js';
+import { createSignal, For, Show } from 'solid-js';
+import { showCatalogSection } from '@/catalog/catalog-section';
 import {
   Accordion,
   AccordionContent,
@@ -56,7 +57,7 @@ import {
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic } from 'lucide-solid';
 import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
 
-export function ComponentCatalogExtras() {
+export function ComponentCatalogExtras(props: { sections?: string[] }) {
   const [switchOn, setSwitchOn] = createSignal(true);
   const [progress, setProgress] = createSignal(62);
   const [slider, setSlider] = createSignal([40]);
@@ -64,6 +65,7 @@ export function ComponentCatalogExtras() {
 
   return (
     <>
+      <Show when={showCatalogSection(props.sections, 'switch')}>
       <CatalogDemo id="switch" title="Switch · Label · Separator" description="表单辅助原语：开关、字段标签与内容分隔线。">
         <DemoRow label="Switch">
           <Switch checked={switchOn()} onChange={setSwitchOn} class="inline-flex items-center gap-8">
@@ -91,7 +93,9 @@ export function ComponentCatalogExtras() {
           <p class="text-12 text-content-secondary">Section two</p>
         </div>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'progress')}>
       <CatalogDemo id="progress" title="Progress · Slider · Kbd" description="进度反馈、连续调节与快捷键展示。">
         <div class="max-w-md">
           <Progress value={progress()} class="flex flex-col gap-6">
@@ -129,7 +133,9 @@ export function ComponentCatalogExtras() {
           <Kbd>P</Kbd>
         </DemoRow>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'card')}>
       <CatalogDemo id="card" title="Card · Avatar · Alert" description="内容容器、头像与块级提示。">
         <Card class="max-w-md">
           <CardHeader>
@@ -164,7 +170,9 @@ export function ComponentCatalogExtras() {
           </Alert>
         </div>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'accordion')}>
       <CatalogDemo id="accordion" title="Accordion · Collapsible · Toggle" description="可折叠内容与格式切换控件。">
         <Accordion collapsible class="max-w-md rounded-lg border border-border-subtle">
           <AccordionItem value="item-1">
@@ -200,7 +208,9 @@ export function ComponentCatalogExtras() {
           </Toggle>
         </DemoRow>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'table')}>
       <CatalogDemo id="table" title="Table · Popover · Toast" description="表格数据与浮层反馈。">
         <Table class="max-w-lg">
           <TableHeader>
@@ -243,6 +253,7 @@ export function ComponentCatalogExtras() {
           </Button>
         </div>
       </CatalogDemo>
+      </Show>
     </>
   );
 }

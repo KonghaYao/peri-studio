@@ -1,11 +1,34 @@
-export type SandboxRoute = 'tokens' | 'components' | 'components2' | 'blocks' | 'layers';
+export type SandboxRoute =
+  | 'tokens'
+  | 'components'
+  | 'components-forms'
+  | 'components-overlays'
+  | 'components-chat'
+  | 'components-ai'
+  | 'blocks'
+  | 'layers';
 
-export const SANDBOX_ROUTES: SandboxRoute[] = ['tokens', 'components', 'components2', 'blocks', 'layers'];
+/** @deprecated 旧路由 #/components2，解析时重定向到 components-forms */
+export const LEGACY_COMPONENTS2_ROUTE = 'components2';
+
+export const SANDBOX_ROUTES: SandboxRoute[] = [
+  'tokens',
+  'components',
+  'components-forms',
+  'components-overlays',
+  'components-chat',
+  'components-ai',
+  'blocks',
+  'layers',
+];
 
 export const ROUTE_META: Record<SandboxRoute, { tier: string; label: string }> = {
   tokens: { tier: 'T1', label: 'Tokens' },
-  components: { tier: 'T2', label: 'Base UI' },
-  components2: { tier: 'T2', label: 'Base UI 2' },
+  components: { tier: 'T2', label: 'Core' },
+  'components-forms': { tier: 'T2', label: 'Forms' },
+  'components-overlays': { tier: 'T2', label: 'Overlays' },
+  'components-chat': { tier: 'T2', label: 'Chat' },
+  'components-ai': { tier: 'T2', label: 'AI' },
   blocks: { tier: 'T3', label: 'Blocks' },
   layers: { tier: 'T4', label: 'Layers' },
 };
@@ -44,57 +67,45 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
       ],
     },
   ],
-  components2: [
+  'components-forms': [
     {
-      title: 'Form & input',
       items: [
         { id: 'switch', label: 'Switch & label' },
         { id: 'input-group', label: 'Input group' },
         { id: 'combobox', label: 'Combobox & command' },
         { id: 'typography', label: 'Typography & select' },
         { id: 'resizable', label: 'Resizable & OTP' },
+        { id: 'calendar', label: 'Calendar' },
+        { id: 'date-picker', label: 'Date picker' },
+        { id: 'form', label: 'Form' },
+        { id: 'field', label: 'Field' },
+        { id: 'data-table', label: 'Data table' },
+        { id: 'questionnaire', label: 'Questionnaire' },
       ],
     },
+  ],
+  'components-overlays': [
     {
-      title: 'Surfaces',
       items: [
         { id: 'progress', label: 'Progress & slider' },
         { id: 'card', label: 'Card & alert' },
         { id: 'accordion', label: 'Accordion & toggle' },
         { id: 'table', label: 'Table & overlay' },
-      ],
-    },
-    {
-      title: 'Navigation & menus',
-      items: [
         { id: 'breadcrumb', label: 'Breadcrumb & pagination' },
         { id: 'overlay', label: 'Alert dialog & sheet' },
         { id: 'menus', label: 'Context & hover' },
         { id: 'menubar', label: 'Menubar & nav' },
-      ],
-    },
-    {
-      title: 'Round 2 · shadcn',
-      items: [
-        { id: 'calendar', label: 'Calendar' },
-        { id: 'date-picker', label: 'Date picker' },
         { id: 'carousel', label: 'Carousel' },
-        { id: 'form', label: 'Form' },
         { id: 'item', label: 'Item' },
-      ],
-    },
-    {
-      title: 'Round 3 · shadcn',
-      items: [
-        { id: 'field', label: 'Field' },
         { id: 'empty', label: 'Empty' },
         { id: 'drawer', label: 'Drawer' },
         { id: 'sidebar', label: 'Sidebar' },
         { id: 'direction', label: 'Direction' },
       ],
     },
+  ],
+  'components-chat': [
     {
-      title: 'Round 4 · Chat / AI',
       items: [
         { id: 'scroll-utils', label: 'scroll-fade · shimmer' },
         { id: 'marker', label: 'Marker' },
@@ -108,8 +119,9 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'attachments', label: 'Attachments' },
       ],
     },
+  ],
+  'components-ai': [
     {
-      title: 'Round 5 · AI Elements',
       items: [
         { id: 'suggestion', label: 'Suggestion' },
         { id: 'sources', label: 'Sources' },
@@ -121,8 +133,6 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'code-block', label: 'Code block' },
         { id: 'snippet', label: 'Snippet' },
         { id: 'typeset', label: 'Typeset' },
-        { id: 'data-table', label: 'Data table' },
-        { id: 'questionnaire', label: 'Questionnaire' },
       ],
     },
   ],
@@ -203,14 +213,23 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
   ],
 };
 
+const LEGACY_ROUTE_REDIRECT: Record<string, SandboxRoute> = {
+  [LEGACY_COMPONENTS2_ROUTE]: 'components-forms',
+};
+
 export function isSandboxRoute(value: string): value is SandboxRoute {
   return SANDBOX_ROUTES.includes(value as SandboxRoute);
+}
+
+function resolveRoute(routePart: string): SandboxRoute {
+  if (isSandboxRoute(routePart)) return routePart;
+  return LEGACY_ROUTE_REDIRECT[routePart] ?? 'tokens';
 }
 
 export function parseSandboxHash(hash = window.location.hash): { route: SandboxRoute; section?: string } {
   const path = hash.replace(/^#\/?/, '').split('?')[0];
   const [routePart, section] = path.split('/').filter(Boolean);
-  const route: SandboxRoute = isSandboxRoute(routePart ?? '') ? (routePart as SandboxRoute) : 'tokens';
+  const route = resolveRoute(routePart ?? '');
   return { route, section: section || undefined };
 }
 

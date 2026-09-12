@@ -188,7 +188,7 @@ export const ReasoningTrigger: Component<ReasoningTriggerProps> = (props) => {
       {local.children ?? (
         <>
           <Brain size={14} strokeWidth={1.7} class="shrink-0" aria-hidden="true" />
-          <span class={cn(isStreaming() ? local.shimmerClass ?? 'ui-reasoning-shimmer' : undefined, 'min-w-0 flex-1')}>
+          <span class={cn(isStreaming() ? local.shimmerClass ?? 'shimmer' : undefined, 'min-w-0 flex-1')}>
             {message()}
           </span>
           <ChevronDown

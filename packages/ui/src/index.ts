@@ -242,7 +242,7 @@ export { Textarea } from './components/Textarea';
 export { Separator } from './components/Separator';
 export { Select, type SelectOption } from './components/Select';
 export { SelectField } from './components/SelectField';
-export { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger, type DrawerSwipeDirection } from './components/Drawer';
+export { Drawer, DrawerAction, DrawerCancel, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger, type DrawerSwipeDirection } from './components/Drawer';
 export {
   Sidebar,
   SidebarContent,

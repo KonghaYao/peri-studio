@@ -1,4 +1,5 @@
-import { createSignal } from 'solid-js';
+import { createSignal, Show } from 'solid-js';
+import { showCatalogSection } from '@/catalog/catalog-section';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,12 +48,13 @@ import {
 import { Search } from 'lucide-solid';
 import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
 
-export function ComponentCatalogExtrasB() {
+export function ComponentCatalogExtrasB(props: { sections?: string[] }) {
   const [alertOpen, setAlertOpen] = createSignal(false);
   const [sheetOpen, setSheetOpen] = createSignal(false);
 
   return (
     <>
+      <Show when={showCatalogSection(props.sections, 'breadcrumb')}>
       <CatalogDemo id="breadcrumb" title="Breadcrumb · Pagination · Aspect ratio" description="导航路径、分页与固定宽高比容器。">
         <Breadcrumb>
           <BreadcrumbList>
@@ -61,7 +63,7 @@ export function ComponentCatalogExtrasB() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink href="#/components2">Base UI 2</BreadcrumbLink>
+              <BreadcrumbLink href="#/components-forms">Forms</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
@@ -92,7 +94,9 @@ export function ComponentCatalogExtrasB() {
           <div class="grid h-full place-items-center text-12 text-content-muted">16:9 preview frame</div>
         </AspectRatio>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'overlay')}>
       <CatalogDemo id="overlay" title="Alert dialog · Sheet" description="破坏性确认与侧滑抽屉。">
         <DemoRow>
           <AlertDialog open={alertOpen()} onOpenChange={setAlertOpen}>
@@ -122,7 +126,9 @@ export function ComponentCatalogExtrasB() {
           </Sheet>
         </DemoRow>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'menus')}>
       <CatalogDemo id="menus" title="Context menu · Hover card · Scroll area" description="右键菜单、悬停卡片与滚动容器。">
         <ContextMenu>
           <ContextMenuTrigger class="inline-flex rounded-md border border-border-subtle px-12 py-8 text-12 text-content-secondary">
@@ -155,7 +161,9 @@ export function ComponentCatalogExtrasB() {
           </ScrollAreaViewport>
         </ScrollArea>
       </CatalogDemo>
+      </Show>
 
+      <Show when={showCatalogSection(props.sections, 'input-group')}>
       <CatalogDemo id="input-group" title="Input group" description="前缀/后缀 addon 与组内按钮。">
         <div class="max-w-md">
           <InputGroup>
@@ -176,6 +184,7 @@ export function ComponentCatalogExtrasB() {
           </InputGroup>
         </div>
       </CatalogDemo>
+      </Show>
     </>
   );
 }

@@ -110,17 +110,12 @@ export const DatePicker: Component<DatePickerProps> = (props) => {
     <DatePickerContext.Provider value={context}>
       <Popover open={open()} onOpenChange={setOpen}>
         <div data-slot="date-picker" class={cn('inline-flex', local.class)} {...rest}>
-          <Show
-            when={local.children}
-            fallback={
-              <>
-                <DatePickerTrigger />
-                <DatePickerContent />
-              </>
-            }
-          >
-            {local.children}
-          </Show>
+          {local.children ?? (
+            <>
+              <DatePickerTrigger />
+              <DatePickerContent />
+            </>
+          )}
         </div>
       </Popover>
     </DatePickerContext.Provider>

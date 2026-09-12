@@ -94,17 +94,30 @@ export const MessageScrollerViewport: Component<ComponentProps<'div'>> = (props)
   );
 };
 
+type MessageScrollerContentProps = ComponentProps<'div'> & {
+  /** 为 false 时不在内容层重复声明 log（由外层 Conversation 承担）。 */
+  semanticLog?: boolean;
+};
+
 /** 消息列表内容容器。 */
-export const MessageScrollerContent: Component<ComponentProps<'div'>> = (props) => {
-  const [local, rest] = splitProps(props, ['class', 'children', 'role', 'aria-relevant', 'aria-busy']);
+export const MessageScrollerContent: Component<MessageScrollerContentProps> = (props) => {
+  const [local, rest] = splitProps(props, [
+    'class',
+    'children',
+    'role',
+    'aria-relevant',
+    'aria-busy',
+    'semanticLog',
+  ]);
   const { registerContent } = useMessageScrollerContext('MessageScrollerContent');
+  const semanticLog = () => local.semanticLog ?? true;
 
   return (
     <div
       ref={registerContent}
       data-slot="message-scroller-content"
-      role={local.role ?? 'log'}
-      aria-relevant={local['aria-relevant'] ?? 'additions'}
+      role={local.role ?? (semanticLog() ? 'log' : undefined)}
+      aria-relevant={semanticLog() ? local['aria-relevant'] ?? 'additions' : local['aria-relevant']}
       aria-busy={local['aria-busy']}
       class={cn('flex h-max min-h-full flex-col gap-8', local.class)}
       {...rest}
