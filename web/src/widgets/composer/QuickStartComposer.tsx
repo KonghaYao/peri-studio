@@ -4,7 +4,6 @@ import {
   ComposerAttachmentButton,
   ComposerInputField,
   ComposerSendStopAction,
-  ComposerSurface,
   ComposerToolbarShell,
   InlineNotice,
 } from '@peri/ui';
@@ -58,9 +57,11 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
   };
 
   return <section data-testid="quick-start-docked" class="quick-start quick-start--docked w-full text-left" aria-label="Start new session">
-    <ComposerSurface
+    <div
       ref={quickStartSurfaceRef}
+      data-slot="composer-surface"
       data-testid="quick-start-surface"
+      class="composer-rect-surface"
       aria-busy={pendingIsInFlight() || undefined}
     >
       <ComposerUploadSurface
@@ -119,7 +120,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
           />
         )}
       />
-    </ComposerSurface>
+    </div>
     <Show when={pendingNeedsAttention() ? pending() : null}>{(submission) => <InlineNotice id={statusId} class="mt-8" tone={submission().phase === 'failed' ? 'danger' : 'warning'} role="alert" title={submission().phase === 'uncertain' ? 'Creation result not confirmed yet' : 'Failed to create session'}>
       <span>{submission().phase === 'uncertain' ? 'Re-confirming uses the original request and will not create a duplicate project session.' : 'The draft remains local until you choose to start again.'}</span>
       <Show when={submission().detail}><small class="min-w-0">{submission().detail}</small></Show>

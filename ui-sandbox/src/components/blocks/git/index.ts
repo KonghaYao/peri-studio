@@ -2,8 +2,11 @@ export {
   GitBranchBar,
   GitChangeActions,
   GitChangeGroup,
+  GitChangeRow,
   GitCommitBar,
+  GitDiffPanel,
   GitGraphRefBadge,
+  GitStatusBadge,
   VSCodeFileIcon as GitFileIcon,
   type GitChange,
   type GitChangeGroupId,
@@ -12,9 +15,6 @@ export {
   type GitGraphRefBadgeProps,
   type GitGraphRefTone,
 } from '@peri/ui';
-export { GitChangeRow } from './GitChangeRow';
 export { GitChangeTree } from './GitChangeTree';
-export { GitDiffPanel } from './GitDiffPanel';
 export { GitGraphPanel } from './GitGraphPanel';
-export { GitStatusBadge } from './GitStatusBadge';
 export type { GitGraphCommit } from './types';

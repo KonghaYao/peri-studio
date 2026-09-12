@@ -370,15 +370,26 @@ export { layoutGitGraph, GIT_GRAPH_COLORS, GIT_GRAPH_GRID, GIT_GRAPH_HEADER_HEIG
 export type { GitGraphLayout, GitGraphLayoutCommit, GitGraphNode, GitGraphPathSegment } from './lib/git-graph-engine';
 export { memoizeAsync } from './lib/memoize-async';
 export { ArchivedBrowserList, type ArchivedBrowserItem } from './components/ArchivedBrowserList';
+export { MarkdownBody, type MarkdownBodyProps } from './components/markdown/MarkdownBody';
+export { MarkdownCodeBlock } from './components/markdown/MarkdownCodeBlock';
+export { MarkdownCodeBlockView } from './components/markdown/MarkdownCodeBlockView';
 export { MarkdownTable } from './components/markdown/MarkdownTable';
+export { MathExpression } from './components/markdown/MathExpression';
+export { MermaidBlock } from './components/markdown/MermaidBlock';
+export { MermaidBlockView } from './components/markdown/MermaidBlockView';
 export { SafeImage, type SafeImageProps } from './components/markdown/SafeImage';
+export { ShikiHighlightedCodeBody } from './components/markdown/ShikiHighlightedCodeBody';
+export { highlightCode } from './components/markdown/highlight-code';
 export { safeRemoteImageSource } from './lib/markdown-safe';
 export { downloadText, safeFilename } from './lib/download';
 export { markdownCodeFilename, parseMarkdownPreChild, type MarkdownPreDetails } from './lib/parse-markdown-pre-child';
 export { UserBubble } from './components/UserBubble';
 export { GitChangeActions } from './components/git/GitChangeActions';
+export { GitChangeRow } from './components/git/GitChangeRow';
 export { GitChangeTree, type GitChangeTreeProps } from './components/git/GitChangeTree';
 export { GitChangeGroup } from './components/git/GitChangeGroup';
+export { GitDiffPanel } from './components/git/GitDiffPanel';
+export { GitStatusBadge } from './components/git/GitStatusBadge';
 export { GitBranchBar, type GitSyncAction } from './components/git/GitBranchBar';
 export { GitCommitBar, type GitCommitShortcut } from './components/git/GitCommitBar';
 export { GitGraphRefBadge, type GitGraphRefBadgeProps } from './components/git/GitGraphRefBadge';
@@ -399,11 +410,6 @@ export {
   ComposerDropOverlay,
   type ComposerDropOverlayProps,
 } from './components/composer/ComposerDropOverlay';
-export {
-  ComposerSurface,
-  composerSurfaceClass,
-  type ComposerSurfaceProps,
-} from './components/composer/ComposerSurface';
 export {
   ComposerShell,
   type ComposerShellFieldContext,
@@ -534,6 +540,30 @@ export {
   type FileTreeInlineNameEditorProps,
 } from './components/resource/FileTreeInlineNameEditor';
 export { ResourceSectionTitle } from './components/resource/ResourceSectionTitle';
+export { ExplorerSectionHeader } from './components/resource/ExplorerSectionHeader';
+export { ExplorerDeleteDialog } from './components/resource/ExplorerDeleteDialog';
+export { ExplorerMoveDialog } from './components/resource/ExplorerMoveDialog';
+export {
+  ExplorerMutationsTree,
+  ExplorerTreeBlankArea,
+  inlineCreateAtParent,
+  type InlineEditState,
+} from './components/resource/ExplorerMutationsTree';
+export {
+  addChildNode,
+  basename as explorerPathBasename,
+  cloneExplorerTree,
+  findExplorerNode,
+  folderChildCount,
+  joinPath as explorerJoinPath,
+  parentDirectoryPath,
+  removeNodeAtPath,
+  renameNodeAtPath,
+  resolveNewItemParent,
+  siblingBasenames,
+  validateExplorerBasename,
+  type BasenameValidation,
+} from './lib/explorer-tree-utils';
 export {
   TokenUsageMeter,
   tokenUsageLabel,

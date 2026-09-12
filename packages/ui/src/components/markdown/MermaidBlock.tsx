@@ -1,7 +1,10 @@
 import { createEffect, createSignal, createUniqueId, onCleanup, Show } from 'solid-js';
 import { findPrefixOffthread, getMermaid, toSafeMermaidSvgMarkup } from '@peri/markdown';
-import { CodeIcon, CopyButton, Dialog, DialogContent, DialogHeader, DialogTitle, DownloadIcon, ExpandIcon, IconButton, RefreshIcon } from '@peri/ui';
-import { downloadText } from '@peri/ui';
+import { downloadText } from '../../lib/download';
+import { IconButton } from '../Button';
+import { CopyButton } from '../CopyButton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../Dialog';
+import { CodeIcon, DownloadIcon, ExpandIcon, RefreshIcon } from '../Icon';
 
 function normalizeMermaidSource(value: string) {
   return value

@@ -4,7 +4,6 @@
   "workspaces": [
     "packages/*",
     "web",
-    "ui-sandbox",
-    "scripts"
+    "ui-sandbox"
   ]
 }

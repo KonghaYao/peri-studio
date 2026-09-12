@@ -7,32 +7,6 @@
   scroll-margin-top: var(--sandbox-scroll-anchor);
 }
 
-/* ── 推理折叠摘要 ─────────────────────────────────────────────────────── */
-
-.message-reasoning summary::-webkit-details-marker {
-  display: none;
-}
-
-/* ── 代码块 tab 宽度 ───────────────────────────────────────────────── */
-
-.code-tab-size {
-  tab-size: 4;
-}
-
-/* ── 屏幕阅读器专用（与 web extra 对齐） ───────────────────────────────── */
-
-.ui-sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 /* ── T1 Tokens 页视觉预览（纯展示 demo） ─────────────────────────────────── */
 
 .token-preview-spacing-bar {

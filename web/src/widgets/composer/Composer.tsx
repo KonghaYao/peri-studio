@@ -12,7 +12,6 @@ import {
   ComposerQueue,
   ComposerSendStopAction,
   ComposerSkillsButton,
-  ComposerSurface,
   ComposerToolbarShell,
   InlineNotice,
   SlashMenuListbox,
@@ -97,9 +96,11 @@ export function Composer(props: {
           shellClass="slash-menu absolute z-35 right-20 bottom-full left-20 mb-8 max-tight:right-10 max-tight:left-10"
         />
       </Show>
-      <ComposerSurface
+      <div
         ref={composerSurfaceRef}
+        data-slot="composer-surface"
         data-testid="composer-surface"
+        class="composer-rect-surface"
         aria-busy={state.submissionIsInFlight() || undefined}
         aria-disabled={state.inputDisabled()}
       >
@@ -285,7 +286,7 @@ export function Composer(props: {
             </>
           )}
         />
-      </ComposerSurface>
+      </div>
     </div>
   );
 }

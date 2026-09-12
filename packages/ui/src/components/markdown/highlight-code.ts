@@ -1,4 +1,4 @@
-import { memoizeAsync } from '@peri/ui';
+import { memoizeAsync } from '../../lib/memoize-async';
 import type { LanguageInput } from 'shiki/core';
 
 const LANGUAGE_ALIASES: Record<string, string> = {

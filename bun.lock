@@ -25,6 +25,7 @@
         "@iconify-icon/solid": "3.0.3",
         "@iconify-icons/vscode-icons": "2.0.2",
         "@kobalte/core": "^0.13.13",
+        "@peri/markdown": "workspace:*",
         "@xterm/addon-fit": "0.12.0-beta.301",
         "@xterm/addon-image": "0.10.0-beta.301",
         "@xterm/addon-web-links": "0.13.0-beta.301",
@@ -39,6 +40,9 @@
         "@testing-library/jest-dom": "^7.0.1",
         "@types/node": "^26.2.0",
         "jsdom": "^30.0.1",
+        "katex": "^0.18.4",
+        "mermaid": "^11.17.0",
+        "shiki": "^4.4.3",
         "solid-js": "^1",
         "typescript": "^7.0.2",
         "vite": "^8.2.1",
@@ -46,13 +50,10 @@
         "vitest": "^4.1.11",
       },
       "peerDependencies": {
+        "katex": ">=0.16",
+        "mermaid": ">=11",
+        "shiki": ">=4",
         "solid-js": "^1",
-      },
-    },
-    "scripts": {
-      "name": "peri-studio-scripts",
-      "dependencies": {
-        "yjs": "^13.6.32",
       },
     },
     "ui-sandbox": {
@@ -919,8 +920,6 @@
     "path-to-regexp": ["path-to-regexp@8.4.2", "", {}, "sha512-qRcuIdP69NPm4qbACK+aDogI5CBDMi1jKe0ry5rSQJz8JVLsC7jV8XpiJjGRLLol3N+R5ihGYcrPLTno6pAdBA=="],
 
     "pathe": ["pathe@2.0.3", "", {}, "sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w=="],
-
-    "peri-studio-scripts": ["peri-studio-scripts@workspace:scripts"],
 
     "peri-studio-ui-sandbox": ["peri-studio-ui-sandbox@workspace:ui-sandbox"],
 

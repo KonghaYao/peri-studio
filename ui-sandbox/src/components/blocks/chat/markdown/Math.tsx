@@ -1,1 +1,1 @@
-export { MathExpression } from '@peri/markdown';
+export { MathExpression } from '@peri/ui';

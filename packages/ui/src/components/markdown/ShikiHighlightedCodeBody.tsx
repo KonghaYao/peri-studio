@@ -1,5 +1,5 @@
 import { For, Show, type JSX } from 'solid-js';
-import { CodeBlockBody } from '@peri/ui';
+import { CodeBlockBody } from '../CodeBlock';
 
 type HighlightToken = { content: string; color?: string; fontStyle?: number };
 

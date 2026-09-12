@@ -47,10 +47,11 @@ const readWidgetTsx = (name) => {
 const readComposerBundle = () => {
   const dir = join(sourceRoot(), 'widgets', 'composer');
   const pkgComposer = join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'composer');
+  const webExtra = readFileSync(join(webRoot(), 'src', 'styles', 'extra.css'), 'utf8');
   return [
     ...['Composer.tsx', 'useComposerState.ts']
       .map((file) => readFileSync(join(dir, file), 'utf8')),
-    readFileSync(join(pkgComposer, 'ComposerSurface.tsx'), 'utf8'),
+    webExtra,
     readFileSync(join(pkgComposer, 'ComposerToolbarShell.tsx'), 'utf8'),
     readFileSync(join(pkgComposer, 'ComposerInputField.tsx'), 'utf8'),
     readFileSync(join(pkgComposer, 'ComposerToolbarControls.tsx'), 'utf8'),
@@ -175,8 +176,8 @@ test('fractional Tailwind spacing utilities resolve to an explicit product token
 });
 
 const EXTRA_CSS_BASELINE = {
-  lineCount: 96,
-  sha256: '13ccb0dd33f85976dc70d9b85da3a11be20a9338e78cc47f23448c9229398ba0',
+  lineCount: 111,
+  sha256: '23b66afd00b7e0a61974fe1e8295badd9a4a43cf493d0dbb32fc443087a42b57',
 };
 
 function lineCountLikeWc(content) {
@@ -449,7 +450,7 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
   assert.doesNotMatch(composerShell, /has-\[\.composer-input:focus-visible\]:shadow-/);
   assert.doesNotMatch(composerShell, /shadow-float/);
   assert.match(composerParts, /ui-composer-toolbar flex min-h-36 min-w-0 items-center/);
-  assert.match(composerParts, /rounded-\(--composer-radius\)/);
+  assert.match(composerParts, /var\(--composer-radius\)/);
   const composerControls = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'composer', 'ComposerToolbarControls.tsx'), 'utf8');
   const quickStartComposer = readFileSync(join(root, 'widgets', 'composer', 'QuickStartComposer.tsx'), 'utf8');
   assert.doesNotMatch(composerControls, /bg-accent-solid/);

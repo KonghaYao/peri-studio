@@ -1,37 +1,33 @@
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 import { Button, InlineNotice } from '@/lib/catalog-ui';
-import { ExplorerDeleteDialog } from './ExplorerDeleteDialog';
-import { ExplorerMoveDialog } from './ExplorerMoveDialog';
-import { ExplorerSectionHeader } from './ExplorerSectionHeader';
 import {
-  ExplorerMutationsTree,
-  ExplorerTreeBlankArea,
-  inlineCreateAtParent,
-  type InlineEditState,
-} from './ExplorerMutationsTree';
-import {
+  ExplorerDeleteDialog,
   ExplorerItemMenu,
+  ExplorerMoveDialog,
+  ExplorerMutationsTree,
+  ExplorerSectionHeader,
+  ExplorerTreeBlankArea,
   FileTreeInlineNameEditor,
-  type ExplorerMenuAction,
-  type FileTreeNode,
-} from '@peri/ui';
-import {
-  createExplorerMutationsDemoTree,
-  type ExplorerMutationsDemoMode,
-} from './explorer-mutations-demo-data';
-import {
   addChildNode,
   cloneExplorerTree,
+  explorerJoinPath as joinPath,
   findExplorerNode,
   folderChildCount,
-  joinPath,
+  inlineCreateAtParent,
   parentDirectoryPath,
   removeNodeAtPath,
   renameNodeAtPath,
   resolveNewItemParent,
   siblingBasenames,
   validateExplorerBasename,
-} from './explorer-mutations-tree-utils';
+  type ExplorerMenuAction,
+  type FileTreeNode,
+  type InlineEditState,
+} from '@peri/ui';
+import {
+  createExplorerMutationsDemoTree,
+  type ExplorerMutationsDemoMode,
+} from './explorer-mutations-demo-data';
 
 export function ExplorerMutationsPanel(props: {
   demoMode?: ExplorerMutationsDemoMode;

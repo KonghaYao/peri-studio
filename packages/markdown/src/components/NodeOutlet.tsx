@@ -4,7 +4,6 @@ import { getNodeList, getString, splitParagraphChildren, type RenderableNode } f
 import { getNodeCode, resolveCodeBlockMode } from '../lib/node-outlet-helpers';
 import { safeHref } from '../lib/safe';
 import type { MarkdownRenderContext } from './context';
-import { MathExpression } from './MathExpression';
 import { RenderChildren } from './RenderChildren';
 import { TableNode } from './TableNode';
 import { SafeImage } from './SafeImage';
@@ -202,8 +201,10 @@ function SwitchNode(props: {
     case 'label_open':
     case 'label_close':
       return null;
-    case 'math_inline':
-      return <MathExpression expression={getString((props.node as { content?: string }).content)} />;
+    case 'math_inline': {
+      const View = props.context.MathExpressionView;
+      return <View expression={getString((props.node as { content?: string }).content)} />;
+    }
     case 'math_block': {
       const loading = Boolean((props.node as { loading?: boolean }).loading) && !props.context.final;
       const expression = getString((props.node as { content?: string }).content);
@@ -214,7 +215,8 @@ function SwitchNode(props: {
           </div>
         );
       }
-      return <MathExpression expression={expression} block />;
+      const View = props.context.MathExpressionView;
+      return <View expression={expression} block />;
     }
     case 'html_block':
     case 'html_inline':
@@ -232,7 +234,10 @@ function SwitchNode(props: {
           </div>
         );
       }
-      if (mode === 'math') return <MathExpression expression={code.trim()} block />;
+      if (mode === 'math') {
+        const View = props.context.MathExpressionView;
+        return <View expression={code.trim()} block />;
+      }
       const View = props.context.CodeBlockView;
       return (
         <View

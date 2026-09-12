@@ -1,6 +1,7 @@
 import { createEffect, createMemo, For, type Accessor } from 'solid-js';
 import { MermaidBlock } from './MermaidBlock';
-import type { CodeBlockViewComponent, MermaidBlockViewComponent } from '../types';
+import type { CodeBlockViewComponent, MathExpressionViewComponent, MermaidBlockViewComponent } from '../types';
+import { MathExpression } from './MathExpression';
 import { useSmoothMarkdownStream } from '../hooks/useSmoothMarkdownStream';
 import { resolveParsedNodes, stabilizeNodes, type RenderableNode } from '../lib/node-helpers';
 import { preprocessMarkdownSource } from '../lib/preprocess';
@@ -19,6 +20,7 @@ export interface MarkdownRendererProps {
   class?: string;
   CodeBlockView: CodeBlockViewComponent;
   MermaidBlockView?: MermaidBlockViewComponent;
+  MathExpressionView?: MathExpressionViewComponent;
 }
 
 export function MarkdownRenderer(props: MarkdownRendererProps) {
@@ -66,6 +68,7 @@ export function MarkdownRenderer(props: MarkdownRendererProps) {
     isDark: props.isDark,
     CodeBlockView: props.CodeBlockView,
     MermaidBlockView: props.MermaidBlockView ?? MermaidBlock,
+    MathExpressionView: props.MathExpressionView ?? MathExpression,
   }));
 
   const blocks = createMemo(() => {

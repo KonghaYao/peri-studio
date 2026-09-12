@@ -18,3 +18,10 @@ export interface MermaidBlockViewProps {
 }
 
 export type MermaidBlockViewComponent = Component<MermaidBlockViewProps>;
+
+export interface MathExpressionViewProps {
+  expression: string;
+  block?: boolean;
+}
+
+export type MathExpressionViewComponent = Component<MathExpressionViewProps>;

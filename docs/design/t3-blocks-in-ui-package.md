@@ -107,9 +107,9 @@ T3 组件必须：
 | `statusAreaPanelClass` / `statusAreaRowClass` / `statusAreaTabTriggerClass` | 状态区样式 helper |
 | `DecisionQueueShell` | 权限 / 追问队列外框 |
 
-### 已移除 barrel 出口
+### Wave 3 已删除
 
-- `ComposerSurface`（v1 矩形壳）：源码保留供几何契约测试读取；**零消费者**，已从 barrel 移除；新代码使用 `ComposerShell`。
+- `ComposerSurface`（v1 矩形壳）：已从 `@peri/ui` 移除；生产矩形壳样式登记于 `web/src/styles/extra.css`（`.composer-rect-surface`）；新 T3 壳使用 `ComposerShell`。
 
 ## 生产 / Catalog 装配
 

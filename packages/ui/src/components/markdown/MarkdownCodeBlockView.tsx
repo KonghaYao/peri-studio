@@ -1,5 +1,7 @@
 import { createResource, Show } from 'solid-js';
 import type { CodeBlockViewProps } from '@peri/markdown';
+import { downloadText, safeFilename } from '../../lib/download';
+import { markdownCodeFilename } from '../../lib/parse-markdown-pre-child';
 import {
   CodeBlock,
   CodeBlockActions,
@@ -7,13 +9,11 @@ import {
   CodeBlockFilename,
   CodeBlockHeader,
   CodeBlockTitle,
-  DownloadIcon,
-  IconButton,
-  RefreshIcon,
-} from '@peri/ui';
-import { downloadText, markdownCodeFilename, safeFilename } from '@peri/ui';
-import { ShikiHighlightedCodeBody } from './ShikiHighlightedCodeBody';
+} from '../CodeBlock';
+import { IconButton } from '../Button';
+import { DownloadIcon, RefreshIcon } from '../Icon';
 import { highlightCode } from './highlight-code';
+import { ShikiHighlightedCodeBody } from './ShikiHighlightedCodeBody';
 
 export function MarkdownCodeBlockView(props: CodeBlockViewProps) {
   const locked = () => props.loading === true;
@@ -30,7 +30,7 @@ export function MarkdownCodeBlockView(props: CodeBlockViewProps) {
     filename: props.filename ?? '',
   });
   const lines = () => highlighted()?.result?.tokens
-    ?? props.code.split('\n').map((line) => [{ content: line }]);
+    ?? props.code.split('\n').map((line: string) => [{ content: line }]);
 
   return (
     <CodeBlock

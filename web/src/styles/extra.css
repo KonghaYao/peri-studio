@@ -85,6 +85,21 @@
 
 /* ── Composer wrap 变体（web 应用级，子选择器编排） ───────────────────── */
 
+.composer-rect-surface {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--composer-border);
+  border-radius: var(--composer-radius);
+  background: var(--surface-overlay);
+  padding: var(--space-10);
+}
+
+@media (max-width: 480px) {
+  .composer-rect-surface {
+    border-radius: var(--radius-16);
+  }
+}
+
 .composer-wrap--overlay [data-slot='composer-surface'] {
   box-shadow: var(--shadow-composer-overlay);
 }

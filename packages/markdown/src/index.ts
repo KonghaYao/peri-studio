@@ -9,7 +9,14 @@ export { enableMermaid, getMermaid, isMermaidEnabled } from './optional/mermaid'
 export { initMermaidWorker } from './lib/init-mermaid';
 export { findPrefixOffthread } from './workers/mermaidWorkerClient';
 export { useSmoothMarkdownStream } from './hooks/useSmoothMarkdownStream';
-export type { CodeBlockViewProps, CodeBlockViewComponent, MermaidBlockViewProps, MermaidBlockViewComponent } from './types';
+export type {
+  CodeBlockViewProps,
+  CodeBlockViewComponent,
+  MathExpressionViewProps,
+  MathExpressionViewComponent,
+  MermaidBlockViewProps,
+  MermaidBlockViewComponent,
+} from './types';
 export { createSmoothMarkdownStream } from 'markstream-core';
 export { getMarkdown, parseMarkdownToStructure, toSafeMermaidSvgMarkup } from 'stream-markdown-parser';
 export type { ParsedNode, ParseOptions } from 'stream-markdown-parser';

@@ -98,7 +98,7 @@ describe('Composer', () => {
     mountComposer();
 
     expect(screen.getByTestId('composer-surface')).toHaveAttribute('data-slot', 'composer-surface');
-    expect(screen.getByTestId('composer-surface')).toHaveClass('rounded-(--composer-radius)', 'bg-surface-overlay');
+    expect(screen.getByTestId('composer-surface')).toHaveClass('composer-rect-surface');
     expect(screen.getByTestId('composer-toolbar')).toHaveClass('ui-composer-toolbar');
     expect(screen.getByRole('textbox')).toHaveClass('ui-composer-input');
     expect(screen.getByTestId('composer-runtime')).toHaveTextContent('Nova 4.1');

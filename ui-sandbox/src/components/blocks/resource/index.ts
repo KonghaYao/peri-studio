@@ -16,8 +16,13 @@ export {
   type ExplorerMenuContext,
   type ExplorerMenuItem,
 } from '@peri/ui';
-export { ExplorerSectionHeader } from './ExplorerSectionHeader';
-export { ExplorerDeleteDialog } from './ExplorerDeleteDialog';
-export { ExplorerMoveDialog } from './ExplorerMoveDialog';
-export { ExplorerMutationsTree, ExplorerTreeBlankArea, type InlineEditState } from './ExplorerMutationsTree';
+export {
+  ExplorerSectionHeader,
+  ExplorerDeleteDialog,
+  ExplorerMoveDialog,
+  ExplorerMutationsTree,
+  ExplorerTreeBlankArea,
+  inlineCreateAtParent,
+  type InlineEditState,
+} from '@peri/ui';
 export { ExplorerMutationsPanel } from './ExplorerMutationsPanel';
