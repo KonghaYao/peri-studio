@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { layoutGitGraph } from './git/git-graph-engine';
+import { layoutGitGraph } from '@peri/ui';
 
 describe('git-graph-engine', () => {
   it('lays out a linear history with one node per commit', () => {

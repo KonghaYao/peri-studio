@@ -1,6 +1,6 @@
 import { createResource, Show } from 'solid-js';
 import { IconButton, RefreshIcon } from '@peri/ui';
-import { memoizeAsync } from './async-cache';
+import { memoizeAsync } from '@peri/ui';
 
 async function loadMath(expression: string, displayMode: boolean) {
   const [{ default: katex }] = await Promise.all([

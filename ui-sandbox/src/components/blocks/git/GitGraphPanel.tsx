@@ -15,7 +15,7 @@ import {
   GIT_GRAPH_ROW_HEIGHT,
   layoutGitGraph,
   type GitGraphLayoutCommit,
-} from './git-graph-engine';
+} from '@peri/ui';
 import { GitGraphRefBadge } from './GitGraphRefBadge';
 import type { GitGraphCommit } from './types';
 

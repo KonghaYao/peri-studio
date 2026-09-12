@@ -323,6 +323,18 @@ export {
 } from './lib/vscode-file-icons';
 export { ChatHeader, type ChatHeaderProps } from './components/ChatHeader';
 export { RowAccessorySlot, type RowAccessorySlotProps } from './components/RowAccessorySlot';
+export {
+  NavAction,
+  ProjectRowAccessory,
+  ProjectRowActionGroup,
+  SectionHeader,
+  SessionRowAccessory,
+  SidebarNavBar,
+  type SidebarChromeMenuItem,
+} from './components/SidebarChrome';
+export { layoutGitGraph, GIT_GRAPH_COLORS, GIT_GRAPH_GRID, GIT_GRAPH_HEADER_HEIGHT, GIT_GRAPH_ROW_HEIGHT, GitGraphStyle } from './lib/git-graph-engine';
+export type { GitGraphLayout, GitGraphLayoutCommit, GitGraphNode, GitGraphPathSegment } from './lib/git-graph-engine';
+export { memoizeAsync } from './lib/memoize-async';
 export { UserBubble } from './components/UserBubble';
 export { GitGraphRefBadge, type GitGraphRefBadgeProps } from './components/git/GitGraphRefBadge';
 export type { GitGraphRef, GitGraphRefTone } from './components/git/types';

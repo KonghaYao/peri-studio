@@ -10,7 +10,7 @@ import {
   IconButton,
   RefreshIcon,
 } from '@peri/ui';
-import { memoizeAsync } from './async-cache';
+import { memoizeAsync } from '@peri/ui';
 import { downloadText, safeFilename } from './download';
 import { MathExpression } from './Math';
 import { MermaidBlock } from './MermaidBlock';

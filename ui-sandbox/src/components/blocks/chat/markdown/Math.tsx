@@ -1,6 +1,6 @@
 import { createResource, Show } from 'solid-js';
 import { IconButton } from '@/lib/catalog-ui';
-import { memoizeAsync } from './async-cache';
+import { memoizeAsync } from '@peri/ui';
 import { RefreshCw } from 'lucide-solid';
 
 async function loadMath(expression: string, displayMode: boolean) {

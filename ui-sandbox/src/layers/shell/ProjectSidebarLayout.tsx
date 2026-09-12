@@ -1,5 +1,11 @@
 import { createSignal, For, Show } from 'solid-js';
-import { ArchivedBrowserList, ProjectRowAccessory, SessionRowAccessory } from '@/components/blocks/chrome';
+import {
+  ArchivedBrowserList,
+  NavAction,
+  ProjectRowAccessory,
+  SectionHeader,
+  SessionRowAccessory,
+} from '@/components/blocks/chrome';
 import { cn } from '@/lib/catalog-ui';
 import {
   Archive,
@@ -101,33 +107,6 @@ const MACHINES: MachineItem[] = [
     ],
   },
 ];
-
-function SectionHeader(props: { title: string; icon?: unknown; children?: unknown }) {
-  return (
-    <div class="flex items-center gap-4 px-10 pb-4 pt-12">
-      <span class="flex min-w-0 flex-1 items-center gap-6 text-12 text-content-muted">
-        <Show when={props.icon}>
-          <span class="grid size-16 shrink-0 place-items-center text-content-faint">{props.icon as never}</span>
-        </Show>
-        {props.title}
-      </span>
-      {props.children as never}
-    </div>
-  );
-}
-
-function NavAction(props: { icon: unknown; label: string; onClick?: () => void }) {
-  return (
-    <button
-      type="button"
-      class="flex w-full min-h-36 items-center gap-10 rounded-md px-10 text-left text-13 text-content-primary transition-colors duration-(--duration-fast) hover:bg-interaction-hover"
-      onClick={props.onClick}
-    >
-      <span class="grid size-16 shrink-0 place-items-center text-content-muted">{props.icon as never}</span>
-      {props.label}
-    </button>
-  );
-}
 
 function SessionRow(props: {
   session: SessionItem;

@@ -399,7 +399,7 @@ test('responsive behavior has compact, medium and wide layout contracts', () => 
 
 test('coarse pointers expose sidebar actions without hover and keep controls touch-sized', () => {
   const sessionRow = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'ProjectSessionRow.tsx'), 'utf8');
-  const sessionAccessory = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'sidebar-parts.tsx'), 'utf8');
+  const sessionAccessory = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'RowAccessorySlot.tsx'), 'utf8');
   const button = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Button.tsx'), 'utf8');
   const dialog = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Dialog.tsx'), 'utf8');
   assert.match(sessionAccessory, /group-hover\/workspace:opacity-100/);
@@ -556,7 +556,7 @@ test('domain status inference delegates visual rendering to the shared Badge', (
 });
 
 test('sidebar row accessories use static named group hover classes', () => {
-  const source = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'sidebar-parts.tsx'), 'utf8');
+  const source = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'RowAccessorySlot.tsx'), 'utf8');
   assert.match(source, /group-hover\/workspace:opacity-100/);
   assert.match(source, /group-hover\/row:opacity-100/);
   assert.match(readFileSync(join(import.meta.dirname, '..', 'src', 'styles', 'project-sidebar.css'), 'utf8'), /row-accessory-slot__actions/);
@@ -572,7 +572,7 @@ test('icon-only controls receive visible help from the shared Tooltip', () => {
   assert.doesNotMatch(button, /title=\{/);
   assert.match(tooltip, /@kobalte\/core\/tooltip/);
   assert.match(tooltip, /TooltipPrimitive\.Content/);
-  const sessionAccessory = readFileSync(join(import.meta.dirname, '..', 'src', 'widgets', 'sidebar', 'sidebar-parts.tsx'), 'utf8');
+  const sessionAccessory = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'SidebarChrome.tsx'), 'utf8');
   assert.match(sessionAccessory, /<DropdownMenuTrigger[\s\S]*?as=\{IconButton\}[\s\S]*?session-menu/);
   assert.match(sessionAccessory, /ButtonGroup[\s\S]*?buttonGroupItemClass/);
   const buttonGroup = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'ButtonGroup.tsx'), 'utf8');
