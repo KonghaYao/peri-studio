@@ -9,6 +9,7 @@ import {
   type JSX,
 } from 'solid-js';
 import { cn } from '../lib/cn';
+import { Shimmer } from './Shimmer';
 import { createControllableSignal } from '../lib/controllable-state';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './Card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './Collapsible';
@@ -95,7 +96,11 @@ export const PlanTitle: Component<PlanTitleProps> = (props) => {
 
   return (
     <CardTitle data-slot="plan-title" class={local.class} {...rest}>
-      <span class={cn(isStreaming() && 'shimmer')}>{local.children}</span>
+      {isStreaming() ? (
+        <Shimmer duration={1} spread={2}>{local.children}</Shimmer>
+      ) : (
+        local.children
+      )}
     </CardTitle>
   );
 };
@@ -114,7 +119,11 @@ export const PlanDescription: Component<PlanDescriptionProps> = (props) => {
       class={cn('text-balance', local.class)}
       {...rest}
     >
-      <span class={cn(isStreaming() && 'shimmer')}>{local.children}</span>
+      {isStreaming() ? (
+        <Shimmer duration={1} spread={2}>{local.children}</Shimmer>
+      ) : (
+        local.children
+      )}
     </CardDescription>
   );
 };

@@ -94,6 +94,44 @@
   display: none;
 }
 
+/* AI Elements 对齐：文本扫光（Shimmer 组件；非 skeleton / 非 .shimmer utility） */
+@keyframes ui-ai-shimmer {
+  from {
+    background-position: 100% center, 0 0;
+  }
+
+  to {
+    background-position: 0% center, 0 0;
+  }
+}
+
+.ui-ai-shimmer {
+  display: inline-block;
+  color: transparent;
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent calc(50% - var(--shimmer-spread-px, 40px)),
+      var(--surface-canvas) 50%,
+      transparent calc(50% + var(--shimmer-spread-px, 40px))
+    ),
+    linear-gradient(var(--content-muted), var(--content-muted));
+  background-size: 250% 100%, auto;
+  background-repeat: no-repeat;
+  background-clip: text;
+  -webkit-background-clip: text;
+  background-position: 100% center, 0 0;
+  animation: ui-ai-shimmer var(--shimmer-duration, 2s) linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-ai-shimmer {
+    animation: none;
+    color: var(--content-muted);
+    background-image: none;
+  }
+}
+
 .ui-chain-of-thought-step:last-child .ui-chain-of-thought-connector,
 .ui-plan-step:last-child .ui-plan-step-connector {
   display: none;

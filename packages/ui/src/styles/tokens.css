@@ -535,6 +535,7 @@
 
   --shimmer-duration: 2s;
   --shimmer-spread: calc(3ch + var(--space-40));
+  --shimmer-spread-px: 40px;
   --shimmer-angle: 20deg;
   --shimmer-color: unset;
   --shimmer-image: unset;

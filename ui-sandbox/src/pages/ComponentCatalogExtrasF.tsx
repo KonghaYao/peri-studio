@@ -55,6 +55,7 @@ import {
   Reasoning,
   ReasoningContent,
   ReasoningTrigger,
+  Shimmer,
   Spinner,
   Tool,
   ToolContent,
@@ -91,7 +92,7 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
       <Show when={showCatalogSection(props.sections, 'scroll-utils')}>
       <CatalogDemo id="scroll-utils" title="scroll-fade · shimmer" description="CSS utilities（见 packages/ui utilities.css）。">
         <DemoRow label="shimmer">
-          <span class="shimmer text-13 font-medium text-content-secondary">Thinking…</span>
+          <Shimmer duration={1} class="text-13 font-medium">Thinking…</Shimmer>
         </DemoRow>
         <div class="max-h-120 overflow-y-auto scroll-fade rounded-8 border border-border-subtle p-12">
           <For each={Array.from({ length: 12 }, (_, i) => `Line ${i + 1}: scroll-fade hints at more content above.`)}>
@@ -114,7 +115,11 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
           <Marker>
             <MarkerIcon><Spinner class="size-16" /></MarkerIcon>
             <MarkerContent>
-              <span class={`text-12 ${markerThinking.active() ? 'shimmer' : 'text-content-muted'}`}>Thinking</span>
+              {markerThinking.active() ? (
+                <Shimmer duration={1} class="text-12">Thinking</Shimmer>
+              ) : (
+                <span class="text-12 text-content-muted">Thinking</span>
+              )}
             </MarkerContent>
           </Marker>
           <Marker variant="separator">Today</Marker>

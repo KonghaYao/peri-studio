@@ -147,7 +147,7 @@ describe('Shimmer', () => {
 
     const shimmer = screen.getByText('Thinking...');
     expect(shimmer).toHaveAttribute('data-slot', 'shimmer');
-    expect(shimmer).toHaveClass('shimmer', 'custom-shimmer');
+    expect(shimmer).toHaveClass('ui-ai-shimmer', 'custom-shimmer');
     expect(shimmer).toHaveStyle({ '--shimmer-duration': '1s' });
   });
 });

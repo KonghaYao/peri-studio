@@ -147,7 +147,7 @@ export const Reasoning: Component<ReasoningRootProps> = (props) => {
     <ReasoningContext.Provider value={context}>
       <Collapsible
         data-slot="reasoning"
-        class={cn('mb-8 w-full max-w-full', local.class)}
+        class={cn('mb-16 w-full max-w-full', local.class)}
         open={isOpen()}
         onOpenChange={handleOpenChange}
         {...rest}
@@ -170,20 +170,20 @@ const defaultGetThinkingMessage = (
 ): JSX.Element => {
   if (streaming || duration === 0) {
     return (
-      <Shimmer duration={1} class={shimmerClass}>
+      <Shimmer as="span" duration={1} spread={2} class={shimmerClass}>
         Thinking...
       </Shimmer>
     );
   }
   if (duration === undefined) {
-    return <span>Thought for a few seconds</span>;
+    return <span class="text-content-muted">Thought for a few seconds</span>;
   }
-  return <span>{`Thought for ${duration} seconds`}</span>;
+  return <span class="text-content-muted">{`Thought for ${duration} seconds`}</span>;
 };
 
 export const ReasoningTrigger: Component<ReasoningTriggerProps> = (props) => {
   const [local, rest] = splitProps(props, ['class', 'children', 'shimmerClass', 'getThinkingMessage']);
-  const { isStreaming, duration } = useReasoning();
+  const { isStreaming, duration, isOpen } = useReasoning();
   const message = () =>
     (local.getThinkingMessage
       ?? ((streaming, value) => defaultGetThinkingMessage(streaming, value, local.shimmerClass)))(
@@ -195,19 +195,22 @@ export const ReasoningTrigger: Component<ReasoningTriggerProps> = (props) => {
     <CollapsibleTrigger
       data-slot="reasoning-trigger"
       class={cn(
-        'ui-reasoning-trigger flex w-full cursor-pointer items-center gap-8 border-0 bg-transparent py-4 text-left text-12 text-content-muted transition-colors duration-120 outline-none hover:text-content-secondary focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2',
+        'ui-reasoning-trigger flex w-full cursor-pointer items-center gap-8 border-0 bg-transparent py-4 text-left text-13 text-content-muted transition-colors duration-120 outline-none hover:text-content-primary focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2',
         local.class,
       )}
       {...rest}
     >
       {local.children ?? (
         <>
-          <Brain size={14} strokeWidth={1.7} class="shrink-0" aria-hidden="true" />
-          <span class="min-w-0 flex-1">{message()}</span>
+          <Brain size={16} strokeWidth={1.7} class="size-16 shrink-0" aria-hidden="true" />
+          <span class="min-w-0 flex-1 text-left">{message()}</span>
           <ChevronDown
-            size={14}
+            size={16}
             strokeWidth={1.7}
-            class="ui-reasoning-chevron shrink-0 text-content-muted"
+            class={cn(
+              'shrink-0 text-content-muted transition-transform duration-120',
+              isOpen() ? 'rotate-180' : 'rotate-0',
+            )}
             aria-hidden="true"
           />
         </>
@@ -222,13 +225,13 @@ export const ReasoningContent: Component<ComponentProps<typeof CollapsibleConten
     <CollapsibleContent
       data-slot="reasoning-content"
       class={cn(
-        'mt-16 overflow-hidden text-12 text-content-secondary',
+        'mt-16 overflow-hidden text-13 leading-normal text-content-muted',
         disclosureContentMotion,
         local.class,
       )}
       {...rest}
     >
-      <div class="pb-8 pt-4 whitespace-pre-wrap leading-normal">{local.children}</div>
+      <div class="whitespace-pre-wrap pb-8 pt-4">{local.children}</div>
     </CollapsibleContent>
   );
 };

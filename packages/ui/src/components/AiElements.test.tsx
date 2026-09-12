@@ -135,7 +135,7 @@ describe('Reasoning', () => {
       </Reasoning>
     ));
 
-    expect(screen.getByText('Thinking...')).toHaveClass('custom-shimmer');
+    expect(screen.getByText('Thinking...')).toHaveClass('ui-ai-shimmer', 'custom-shimmer');
   });
 });
 
@@ -417,8 +417,8 @@ describe('Plan', () => {
       </Plan>
     ));
 
-    expect(screen.getByText('Implementation plan')).toHaveClass('shimmer');
-    expect(screen.getByText('Updating UI package components')).toHaveClass('shimmer');
+    expect(screen.getByText('Implementation plan')).toHaveAttribute('data-slot', 'shimmer');
+    expect(screen.getByText('Updating UI package components')).toHaveAttribute('data-slot', 'shimmer');
     expect(screen.getByText('Scan repository')).toBeInTheDocument();
     expect(screen.getByText('Draft changes')).toBeInTheDocument();
 
