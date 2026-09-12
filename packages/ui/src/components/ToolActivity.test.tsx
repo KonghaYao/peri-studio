@@ -29,6 +29,27 @@ describe('ToolActivity', () => {
     expect(screen.getByText('ok')).toBeInTheDocument();
   });
 
+  it('uses a white icon tile when idle and selected background while running', () => {
+    const { unmount: unmountDone } = render(() => (
+      <ToolActivityGroup>
+        <ToolActivityRow title="Opened file" status="done" />
+      </ToolActivityGroup>
+    ));
+    const doneIcon = document.querySelector('[data-slot="tool-activity-row"] span[aria-hidden="true"]');
+    expect(doneIcon).toHaveClass('bg-surface');
+    expect(doneIcon).not.toHaveClass('bg-sidebar-selected');
+    unmountDone();
+
+    render(() => (
+      <ToolActivityGroup>
+        <ToolActivityRow title="Running $ bun run test" status="running" />
+      </ToolActivityGroup>
+    ));
+    const runningIcon = document.querySelector('[data-slot="tool-activity-row"] span[aria-hidden="true"]');
+    expect(runningIcon).toHaveClass('bg-sidebar-selected');
+    expect(runningIcon).not.toHaveClass('bg-surface');
+  });
+
   it('applies shimmer to the title while running', () => {
     render(() => (
       <ToolActivityGroup>
