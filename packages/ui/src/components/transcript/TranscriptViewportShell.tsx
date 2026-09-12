@@ -48,11 +48,12 @@ export const TranscriptViewportShell: Component<TranscriptViewportShellProps> = 
           class={cn(transcriptScrollClass, 'min-h-0 min-w-0 flex-1 overflow-x-hidden', local.viewportClass)}
         >
           {local.children}
-          <Show when={(local.footerSpacerHeight ?? 0) > 0}>
+          <Show when={local.footerSpacerHeight !== 0}>
             <div
               class={transcriptFooterSpacerClass}
+              data-testid="transcript-footer-spacer"
               aria-hidden="true"
-              style={{ height: `${local.footerSpacerHeight}px` }}
+              style={local.footerSpacerHeight ? { height: `${local.footerSpacerHeight}px` } : undefined}
             />
           </Show>
         </MessageScrollerViewport>

@@ -4,8 +4,8 @@
 // 泛化 thinking gap 用 Skeleton 扫光；工具行和决策面板已经承担可见状态。
 //
 // F4（ui.md §四.6 / §3.8）：滚动区为 flex-1 + min-h-0 独立滚动，内部为
-// 居中正文列（max-w 860px，pt-6 / pb-6，底部 156px 留白随 F7 Composer
-// 悬浮再调）；消息按 role/状态呈现八类视觉。消息模型、顺序、Yjs 读取、自动吸底算法与
+// 居中正文列（max-w 860px）；底部隔离空白由 TranscriptViewportShell 的 h-16 spacer
+// 承担，避免末条贴住 in-flow composer。消息按 role/状态呈现八类视觉。消息模型、顺序、Yjs 读取、自动吸底算法与
 // permission decision 值（allow/deny、按钮顺序）由 Composer 上方的决策槽位承载。
 
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';

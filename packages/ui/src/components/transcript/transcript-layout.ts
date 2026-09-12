@@ -12,5 +12,5 @@ export const transcriptHistoryBoundaryClass =
 /** Transcript 历史分界左右分隔线。 */
 export const transcriptHistoryBoundaryLineClass = 'h-px bg-divider';
 
-/** Transcript 底部占位（高度由 inline style 注入）。 */
-export const transcriptFooterSpacerClass = 'ui-transcript-footer-spacer';
+/** Transcript 底部隔离空白，避免末条消息贴住 composer。 */
+export const transcriptFooterSpacerClass = 'h-16 shrink-0';

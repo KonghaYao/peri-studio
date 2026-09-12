@@ -21,16 +21,17 @@ describe('TranscriptViewportShell', () => {
 
     expect(screen.getByRole('region', { name: 'Conversation messages' })).toHaveClass(transcriptScrollClass.split(' ')[0]);
     expect(screen.getByTestId('transcript-body')).toBeInTheDocument();
+    expect(screen.getByTestId('transcript-footer-spacer')).toHaveClass(transcriptFooterSpacerClass.split(' ')[0]);
   });
 
   it('renders optional footer spacer height', () => {
-    const { container } = render(() => (
+    render(() => (
       <TranscriptViewportShell aria-label="Conversation messages" footerSpacerHeight={156}>
         <div>Body</div>
       </TranscriptViewportShell>
     ));
 
-    const spacer = container.querySelector(`.${transcriptFooterSpacerClass}`);
+    const spacer = screen.getByTestId('transcript-footer-spacer');
     expect(spacer).toHaveAttribute('aria-hidden', 'true');
     expect(spacer).toHaveStyle({ height: '156px' });
   });
