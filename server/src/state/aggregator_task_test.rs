@@ -98,14 +98,9 @@ fn completed_updates_status_and_summary_without_reordering() {
             .apply(&mut pair, &ev("s1", 1, peri_started("bg-1", "A")))
             .applied
     );
-    assert!(
-        Aggregator
-            .apply(
-                &mut pair,
-                &ev("s1", 2, peri_completed("bg-1", true, "done"))
-            )
-            .applied
-    );
+    let mut completed = ev("s1", 2, peri_completed("bg-1", true, "done"));
+    completed.ts = "2026-08-07T00:00:05Z".to_string();
+    assert!(Aggregator.apply(&mut pair, &completed).applied);
     assert_eq!(task_status(&pair, "bg-1").as_deref(), Some("completed"));
     assert_eq!(task_order_len(&pair), 1);
     let txn = pair.session.transact();
@@ -113,6 +108,19 @@ fn completed_updates_status_and_summary_without_reordering() {
     let tasks = root.get(&txn, "tasks").unwrap().cast::<MapRef>().unwrap();
     let task = tasks.get(&txn, "bg-1").unwrap().cast::<MapRef>().unwrap();
     assert_eq!(task.get(&txn, "summary"), Some("done".into()));
+    assert_eq!(task.get(&txn, "title"), Some("A".into()));
+    assert_eq!(
+        task.get(&txn, "started_at")
+            .and_then(|v| v.cast::<String>().ok())
+            .as_deref(),
+        Some("2026-08-07T00:00:00Z")
+    );
+    assert_eq!(
+        task.get(&txn, "completed_at")
+            .and_then(|v| v.cast::<String>().ok())
+            .as_deref(),
+        Some("2026-08-07T00:00:05Z")
+    );
 }
 
 #[test]

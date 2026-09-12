@@ -126,6 +126,26 @@ describe('StatusArea', () => {
     expect(panel).not.toHaveTextContent('Legacy activity');
   });
 
+  it('still shows a running activity when leftover Session Doc tasks are already done', async () => {
+    render(() => <StatusArea
+      active
+      plan={[]}
+      activities={[
+        { id: 'subagent:live-1', kind: 'subagent', status: 'running', label: 'Live reviewer', isBackground: true, metrics: { tool_count: 2 }, attributes: {}, createdAt: null, updatedAt: null },
+      ]}
+      tasks={[
+        { taskId: 'old-1', kind: 'subagent', taskSubtype: 'agent', title: 'Finished reviewer', summary: null, status: 'completed', isBackground: true, startedAt: null, completedAt: null, updatedAt: null },
+      ]}
+      entries={[]}
+    />);
+
+    expect(screen.getByRole('tab', { name: /Async/ })).toBeInTheDocument();
+    const panel = screen.getByRole('tabpanel');
+    expect(panel).toHaveTextContent('Finished reviewer');
+    expect(panel).toHaveTextContent('Live reviewer');
+    expect(panel).toHaveTextContent('Running');
+  });
+
   it('shows the async tab with a running label when the turn is inactive but a task is still running', async () => {
     render(() => <StatusArea
       active={false}

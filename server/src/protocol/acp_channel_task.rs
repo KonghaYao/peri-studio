@@ -50,11 +50,10 @@ impl AcpChannel {
     pub(crate) fn parse_peri_agent_event(
         params: &Map<String, Value>,
     ) -> Result<EventBody, MapError> {
-        let event_json = params
-            .get("event_json")
-            .and_then(Value::as_str)
-            .ok_or(MapError::MissingField)?;
-        normalize_peri_agent_event_json(event_json)
+        // 现网优先 `event_json` 字符串；rollout 期间仍可能发 object，
+        // 或回退到同结构的 `event` 字段。
+        let parsed = peri_agent_event_dto(params)?;
+        normalize_peri_agent_event_value(&parsed)
     }
 
     pub(crate) fn parse_peri_unstable_event(
@@ -66,8 +65,25 @@ impl AcpChannel {
     }
 }
 
-fn normalize_peri_agent_event_json(event_json: &str) -> Result<EventBody, MapError> {
-    let parsed: Value = serde_json::from_str(event_json).map_err(|_| MapError::Unsupported)?;
+fn peri_agent_event_dto(params: &Map<String, Value>) -> Result<Value, MapError> {
+    if let Some(value) = params.get("event_json") {
+        return coerce_event_dto(value);
+    }
+    if let Some(value) = params.get("event") {
+        return coerce_event_dto(value);
+    }
+    Err(MapError::MissingField)
+}
+
+fn coerce_event_dto(value: &Value) -> Result<Value, MapError> {
+    match value {
+        Value::String(raw) => serde_json::from_str(raw).map_err(|_| MapError::Unsupported),
+        Value::Object(_) => Ok(value.clone()),
+        _ => Err(MapError::Unsupported),
+    }
+}
+
+fn normalize_peri_agent_event_value(parsed: &Value) -> Result<EventBody, MapError> {
     let record = parsed.as_object().ok_or(MapError::Unsupported)?;
     let event_type = record
         .get("type")

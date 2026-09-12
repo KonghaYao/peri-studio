@@ -805,6 +805,15 @@ DTO，Hub 再次校验 schema/kind/status/属性/指标，并仅在扩展被双�
 `agent.activities` 与 `agent.activity_order`。同一哈希 correlation 原位更新，
 无 correlation 的记录使用 `(epoch,seq)` 身份，Control Doc 只保留最近 64 条。
 
+Peri Task 视图（Session Doc `tasks` / `task_order`）消费 `peri/agent_event`
+（`subagent_started` / `subagent_stopped`）与 `peri/unstable_event`
+（`bg-task-*`）。Peri 按 initialize `_meta` 的 `peri.agentEvent` /
+`peri.unstableEvent` 决定是否发射这些通知；Hub **请求这两项以便收到 started**，
+但它们**不是** `agent.extensions` 协商面——入站只投影有界 title/summary/status，
+禁止把 raw `event_json` / 完整 result 写入 Yjs。Web Async 页优先展示 Task 视图；
+若 Task 已全部终态而 `peri.agentActivity` 仍有 in-flight 子 agent / 后台任务，
+必须并入显示，不得因为历史终态 Task 把正在运行的 activity 藏掉。
+
 `peri.prediction` 提供 Peri 的下一条输入建议。Hub 只接受白名单形状、清洗且不超过
 200 个 Unicode 字符的 `text`；结构化 actions 仅校验后丢弃，禁止进入文档或浏览器。
 最新建议写入 Control Doc `agent.input_prediction`，身份为 `(epoch,seq)`；空预测或

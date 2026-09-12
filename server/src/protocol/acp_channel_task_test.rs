@@ -116,6 +116,56 @@ fn normalize_session_update_carries_source_agent_id() {
 }
 
 #[test]
+fn normalize_peri_agent_event_accepts_object_event_json() {
+    let ch = AcpChannel::default();
+    let frame = json!({
+        "jsonrpc": "2.0",
+        "method": PERI_AGENT_EVENT_METHOD,
+        "params": {
+            "event_json": {
+                "type": "subagent_started",
+                "value": {
+                    "instance_id": "inst-obj",
+                    "agent_name": "Reviewer",
+                    "is_background": true
+                }
+            }
+        }
+    });
+    let out = ch.normalize("chat-1", 0, 1, "2026-08-07T00:00:00Z", &frame);
+    let NormalizeOutcome::Event(ev) = out else {
+        panic!("expected event");
+    };
+    assert!(matches!(
+        ev.body,
+        EventBody::PeriTaskStarted { task_id, .. } if task_id == "inst-obj"
+    ));
+}
+
+#[test]
+fn normalize_peri_agent_event_accepts_event_object_fallback() {
+    let ch = AcpChannel::default();
+    let frame = json!({
+        "jsonrpc": "2.0",
+        "method": PERI_AGENT_EVENT_METHOD,
+        "params": {
+            "event": {
+                "type": "subagent_started",
+                "value": { "instance_id": "inst-event", "agent_name": "Reviewer" }
+            }
+        }
+    });
+    let out = ch.normalize("chat-1", 0, 1, "2026-08-07T00:00:00Z", &frame);
+    let NormalizeOutcome::Event(ev) = out else {
+        panic!("expected event");
+    };
+    assert!(matches!(
+        ev.body,
+        EventBody::PeriTaskStarted { task_id, .. } if task_id == "inst-event"
+    ));
+}
+
+#[test]
 fn normalize_unstable_bg_task_started() {
     let ch = AcpChannel::default();
     let frame = json!({

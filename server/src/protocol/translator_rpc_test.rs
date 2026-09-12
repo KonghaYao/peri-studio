@@ -250,6 +250,14 @@ fn create_two_phase_rpcs() {
         init["params"]["clientCapabilities"]["_meta"]["peri.rewind"],
         json!(true)
     );
+    assert_eq!(
+        init["params"]["clientCapabilities"]["_meta"]["peri.agentEvent"],
+        json!(true)
+    );
+    assert_eq!(
+        init["params"]["clientCapabilities"]["_meta"]["peri.unstableEvent"],
+        json!(true)
+    );
     assert!(init["params"].get("cwd").is_none());
     assert_eq!(init["id"].as_str().unwrap(), init_id.as_str());
 

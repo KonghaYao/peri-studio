@@ -2,6 +2,7 @@ import { For, Show, createEffect, createMemo, createSignal } from 'solid-js';
 import type { AgentActivityInfo, AgentPlanEntryInfo, PeriTaskInfo } from '@/entities/chat/control-view';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { selectChatFileChanges } from '@/entities/chat/chat-file-changes';
+import { selectAsyncStatusItems } from '@/features/chat/async-status-items';
 import { mapPlanStepStatus } from '@/features/chat/plan-step-status';
 import { formatWorkspacePathLabel } from '@/features/chat/tool-file-link';
 import { Ban, Bot, Check, Circle, CircleAlert, GitBranch, Info, ListTodo, Pause, Workflow, X } from 'lucide-solid';
@@ -83,29 +84,7 @@ function asyncAutoExpandSignature(items: Array<{ id: string; status: string; lab
 export function StatusArea(props: StatusAreaProps) {
   const [activeTab, setActiveTab] = createSignal<StatusTab>('todo');
   const [panelExpanded, setPanelExpanded] = createSignal(true);
-  const asyncItems = createMemo(() => {
-    const tasks = props.tasks ?? [];
-    if (tasks.length > 0) {
-      return tasks.map((task) => ({
-        id: task.taskId,
-        kind: task.kind,
-        status: task.status,
-        label: task.title || task.summary || 'Background task',
-        badgeKind: task.kind === 'subagent' || task.taskSubtype === 'agent' ? 'agent' : 'workflow',
-        toolCount: null as number | null,
-      }));
-    }
-    return props.activities
-      .filter((activity) => ['subagent', 'background_task', 'workflow'].includes(activity.kind))
-      .map((activity) => ({
-        id: activity.id,
-        kind: activity.kind,
-        status: activity.status,
-        label: activity.label || 'Background task',
-        badgeKind: activity.kind === 'subagent' ? 'agent' : 'workflow',
-        toolCount: Number.isFinite(activity.metrics.tool_count) ? activity.metrics.tool_count : null,
-      }));
-  });
+  const asyncItems = createMemo(() => selectAsyncStatusItems(props.tasks ?? [], props.activities));
   const changes = createMemo(() => selectChatFileChanges(props.entries));
   const completedTodos = createMemo(() => props.plan.filter((entry) => entry.status === 'completed').length);
   const showAsyncTab = createMemo(() => {

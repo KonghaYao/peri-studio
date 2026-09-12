@@ -38,6 +38,10 @@ pub const PERI_OAUTH_EXTENSION: &str = "peri.oauth";
 pub const PERI_PLAN_ENTRY_ACTIVE_FORM_EXTENSION: &str = "peri.planEntryActiveForm";
 /// Peri's preview-bound, destructive session rewind surface.
 pub const PERI_REWIND_EXTENSION: &str = "peri.rewind";
+/// Gated `peri/agent_event` emission for Peri Task View（subagent 生命周期）。
+pub const PERI_AGENT_EVENT_EXTENSION: &str = "peri.agentEvent";
+/// Gated `peri/unstable_event` emission for Peri Task View（background task）。
+pub const PERI_UNSTABLE_EVENT_EXTENSION: &str = "peri.unstableEvent";
 
 /// Parse only extension capabilities that this Hub requested and implements.
 /// An initialize request is not proof of support; the agent response must echo
@@ -374,7 +378,12 @@ impl Translator {
                         (PERI_REPLAY_EXTENSION): true,
                         (PERI_OAUTH_EXTENSION): true,
                         (PERI_PLAN_ENTRY_ACTIVE_FORM_EXTENSION): true,
-                        (PERI_REWIND_EXTENSION): true
+                        (PERI_REWIND_EXTENSION): true,
+                        // Peri 按 client 声明决定是否发射 peri/agent_event 与
+                        // peri/unstable_event；不声明则 Task 视图永远收不到 started。
+                        // 入站仍只投影有界 Peri Task，不把 raw event_json 写入 Yjs。
+                        (PERI_AGENT_EVENT_EXTENSION): true,
+                        (PERI_UNSTABLE_EVENT_EXTENSION): true
                     }
                 }
             },

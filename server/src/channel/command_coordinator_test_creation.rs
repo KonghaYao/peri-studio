@@ -233,6 +233,14 @@ async fn create_session_new_forward_ack_loss_never_creates_a_second_thread() {
         initialize.frame["params"]["clientCapabilities"]["_meta"]["peri.replay"],
         true
     );
+    assert_eq!(
+        initialize.frame["params"]["clientCapabilities"]["_meta"]["peri.agentEvent"],
+        true
+    );
+    assert_eq!(
+        initialize.frame["params"]["clientCapabilities"]["_meta"]["peri.unstableEvent"],
+        true
+    );
     env.instance
         .on_ack(
             "local",
