@@ -78,8 +78,18 @@ export function SandboxShell(props: { children: unknown }) {
 
   createEffect(() => {
     const id = section();
-    if (id) scrollToSection(id);
+    route();
+    if (id) {
+      scrollToSection(id);
+      return;
+    }
+    requestAnimationFrame(() => {
+      const main = document.querySelector('.sandbox-main');
+      if (main instanceof HTMLElement) main.scrollTop = 0;
+    });
   });
+
+  const isCover = () => route() === 'home';
 
   const tabClass = (active: boolean) =>
     cn(
@@ -88,30 +98,34 @@ export function SandboxShell(props: { children: unknown }) {
     );
 
   return (
-    <div class="sandbox-app">
+    <div class="sandbox-app" classList={{ 'sandbox-app--cover': isCover() }}>
       <header class="sandbox-header">
         <div class="flex min-h-48 items-center gap-12 px-16">
-          <div class="min-w-0 flex-1">
+          <a class="sandbox-brand min-w-0 flex-1 no-underline" href="#/home" aria-label="Peri Studio home">
             <div class="text-14 font-semibold tracking-tight text-content-primary">Peri Studio</div>
             <div class="text-10 text-content-muted">UI Sandbox</div>
-          </div>
-          <IconButton
-            label="Open section menu"
-            class="sandbox-chapters-trigger shrink-0"
-            onClick={() => setDrawerOpen(true)}
-          >
-            <List size={18} />
-          </IconButton>
+          </a>
+          <Show when={!isCover()}>
+            <IconButton
+              label="Open section menu"
+              class="sandbox-chapters-trigger shrink-0"
+              onClick={() => setDrawerOpen(true)}
+            >
+              <List size={18} />
+            </IconButton>
+          </Show>
         </div>
-        <nav class="flex gap-4 overflow-x-auto border-t border-border-subtle px-12" aria-label="Tiers">
+        <nav class="flex flex-nowrap gap-4 overflow-x-auto border-t border-border-subtle px-12" aria-label="Tiers">
           <For each={SANDBOX_ROUTES}>
             {(id) => {
               const meta = ROUTE_META[id];
               const active = () => route() === id;
               return (
                 <a href={sandboxHref(id)} class={tabClass(active())} aria-current={active() ? 'page' : undefined}>
-                  <span class="text-10 text-content-faint">{meta.tier}</span>
-                  <span class="ml-4">{meta.label}</span>
+                  <Show when={meta.tier}>
+                    <span class="text-10 text-content-faint">{meta.tier}</span>
+                  </Show>
+                  <span class={meta.tier ? 'ml-4' : undefined}>{meta.label}</span>
                   <Show when={active()}>
                     <span class="absolute inset-x-8 bottom-0 h-2 rounded-full bg-accent-solid" aria-hidden="true" />
                   </Show>
@@ -123,14 +137,16 @@ export function SandboxShell(props: { children: unknown }) {
       </header>
 
       <div class="sandbox-frame">
-        <aside class="sandbox-chapters sandbox-chapters-desktop" aria-label="Section navigation">
-          <ChapterNav route={route()} activeSection={section()} />
-        </aside>
+        <Show when={!isCover()}>
+          <aside class="sandbox-chapters sandbox-chapters-desktop" aria-label="Section navigation">
+            <ChapterNav route={route()} activeSection={section()} />
+          </aside>
+        </Show>
 
         <main class="sandbox-main">{props.children as never}</main>
       </div>
 
-      <Show when={drawerOpen()}>
+      <Show when={drawerOpen() && !isCover()}>
         <div class="sandbox-drawer-root" role="presentation">
           <button
             type="button"

@@ -3,6 +3,11 @@
 :root {
   --sandbox-header-height: 88px;
   --sandbox-scroll-anchor: calc(var(--sandbox-header-height) + var(--space-16));
+  /* Catalog T4 layer 演示高度：紧凑展示，避免占用整页视口。 */
+  --catalog-layer-sidebar-height: 400px;
+  --catalog-layer-chat-height: 320px;
+  --catalog-layer-terminal-stage-height: 96px;
+  --workbench-frame-height: var(--catalog-layer-chat-height);
 }
 
 .sandbox-app {
@@ -44,6 +49,15 @@
 .sandbox-main {
   min-width: 0;
   overflow: auto;
+}
+
+.sandbox-brand {
+  display: block;
+  color: inherit;
+}
+
+.sandbox-app--cover .sandbox-frame {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .sandbox-chapters-trigger {

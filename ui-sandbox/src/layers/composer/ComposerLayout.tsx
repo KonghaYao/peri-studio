@@ -1,54 +1,28 @@
 import { createSignal } from 'solid-js';
-import { TokenUsageMeter, UploadAssetTile } from '@/components/blocks/composer';
-import { IconButton, Select, Textarea } from '@/lib/catalog-ui';
-import { Mic, Plus, Send, ShieldCheck } from 'lucide-solid';
-import {
-  composerAssetRowClass,
-  composerFieldClass,
-  composerSurfaceClass,
-  composerToolbarClass,
-} from './composer-demo-classes';
+import { COMPOSER_ACTIVE_ATTACHMENTS } from './composer-shell-data';
+import { ComposerShell } from './ComposerShell';
 
-/** Tier 4 · Composer 输入区组合。 */
+/** Tier 4 · Composer：单行紧凑 / 多行展开自动切换。 */
 export function ComposerLayout() {
-  const [model, setModel] = createSignal('nova');
+  const [draft, setDraft] = createSignal('');
+  const [attachments, setAttachments] = createSignal<typeof COMPOSER_ACTIVE_ATTACHMENTS>([]);
+
+  const toggleDemoAttachments = () => {
+    setAttachments((current) => (current.length > 0 ? [] : COMPOSER_ACTIVE_ATTACHMENTS));
+  };
 
   return (
-    <div class="chat-column">
-      <div data-testid="composer-surface" class={composerSurfaceClass}>
-        <div class={composerAssetRowClass}>
-          <UploadAssetTile name="layout.png" status="ready" onRemove={() => {}} />
-          <UploadAssetTile name="spec.md" status="ready" onRemove={() => {}} />
-        </div>
-        <Textarea
-          variant="bare"
-          autoResize
-          maxHeight={180}
-          rows={2}
-          placeholder="Message the agent"
-          aria-label="Message the agent"
-          class={composerFieldClass}
-        />
-        <div class={composerToolbarClass}>
-          <IconButton label="Add attachment" tooltip="Add attachment"><Plus size={16} /></IconButton>
-          <IconButton label="Approval mode" tooltip="Approval mode"><ShieldCheck size={16} /></IconButton>
-          <span class="flex-1" />
-          <Select
-            variant="plain"
-            aria-label="Model"
-            value={model()}
-            onChange={setModel}
-            options={[
-              { value: 'nova', label: 'Nova 4.1' },
-              { value: 'gpt', label: 'gpt-5.6' },
-              { value: 'claude', label: 'Claude Opus 4.6' },
-            ]}
-          />
-          <TokenUsageMeter input={12400} output={3180} cached={8200} />
-          <IconButton label="Voice input" tooltip="Voice input" disabled><Mic size={16} /></IconButton>
-          <IconButton label="Send" tooltip="Send" variant="primary"><Send size={16} /></IconButton>
-        </div>
-      </div>
+    <div class="chat-column flex flex-col gap-12">
+      <p class="text-12 text-content-muted">
+        Type a single line to stay compact; press Enter for a new line, add attachments, or wrap text to expand.
+      </p>
+      <ComposerShell
+        draft={draft()}
+        onDraftChange={setDraft}
+        attachments={attachments()}
+        attachmentLayout="chip"
+        onUploadRequest={toggleDemoAttachments}
+      />
     </div>
   );
 }

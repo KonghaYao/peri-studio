@@ -396,10 +396,6 @@ body.workbench-panel-resizing * {
   outline-offset: 2px;
 }
 
-.file-tree-folder-btn--drop-target {
-  box-shadow: inset var(--explorer-drop-accent-width) 0 0 0 var(--accent-solid);
-}
-
 /* ── 消息出站气泡（相邻块间距） ───────────────────────────────────────── */
 
 .message-outbox__surface > * + * {

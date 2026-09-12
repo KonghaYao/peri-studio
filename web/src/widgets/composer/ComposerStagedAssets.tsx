@@ -4,9 +4,9 @@ import { IconButton } from '@peri/ui';
 import { composerAssets, removeComposerAsset, type ComposerAssetKind } from '@/features/composer/composer-assets';
 
 function AssetIcon(props: { kind: ComposerAssetKind }) {
-  if (props.kind === 'image') return <ImageIcon size={21} strokeWidth={1.7} />;
-  if (props.kind === 'reference') return <Link2 size={21} strokeWidth={1.7} />;
-  return <FileText size={21} strokeWidth={1.7} />;
+  if (props.kind === 'image') return <ImageIcon size={24} strokeWidth={1.7} />;
+  if (props.kind === 'reference') return <Link2 size={24} strokeWidth={1.7} />;
+  return <FileText size={24} strokeWidth={1.7} />;
 }
 
 /** Composer 顶部 staged assets 横条（composerAssets 夹具）。 */
@@ -17,8 +17,12 @@ export function ComposerStagedAssets() {
         <For each={composerAssets()}>
           {(asset) => (
             <article
-              class="group relative grid shrink-0 grid-rows-asset-tile overflow-hidden rounded-md border border-border-subtle bg-surface-canvas p-1.5"
-              style={{ width: 'var(--asset-tile-size)', height: 'var(--asset-tile-size)' }}
+              class="group relative grid shrink-0 grid-rows-asset-tile overflow-hidden border border-border-subtle bg-surface-canvas p-1.5"
+              style={{
+                width: 'var(--composer-upload-tile-width)',
+                height: 'var(--composer-upload-tile-height)',
+                'border-radius': 'var(--composer-attachment-radius)',
+              }}
               title={asset.detail || asset.name}
             >
               <Show
@@ -40,7 +44,7 @@ export function ComposerStagedAssets() {
               >
                 <X size={11} strokeWidth={2} />
               </IconButton>
-              <strong class="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-9 font-medium text-content-secondary">
+              <strong class="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-10 font-medium text-content-secondary">
                 {asset.name}
               </strong>
             </article>

@@ -239,8 +239,10 @@
   --resource-tree-row: var(--tree-row-height);
   --resource-tree-indent: var(--tree-depth-chat);
   --resource-asset-tile: var(--asset-tile-size);
-  --composer-upload-tile-width: var(--asset-tile-size);
-  --composer-upload-tile-height: var(--asset-tile-size);
+  --composer-asset-tile-size: 88px;
+  --composer-attachment-radius: var(--radius-2xl);
+  --composer-upload-tile-width: var(--composer-asset-tile-size);
+  --composer-upload-tile-height: var(--composer-asset-tile-size);
 
   /* Decision 决策面 */
   --decision-shadow: none;
@@ -425,6 +427,7 @@
   --asset-tile-size: 68px;
   --status-panel-max-height: 132px;
   --composer-radius: var(--radius-xl);
+  --composer-active-radius: 22px;
   --composer-drop-overlay-bg: var(--scrim);
   --explorer-drop-accent-width: 3px;
   --upload-progress: 0%;
@@ -481,6 +484,9 @@
   --text-19: 20px;
   --text-24: 26px;
   --text-28: 30px;
+  /* Catalog cover / editorial display（sandbox 主页） */
+  --text-36: 40px;
+  --text-48: 56px;
 
   /* Line-height scale (unitless ratios) */
   --leading-115: 1.15;

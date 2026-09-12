@@ -14,9 +14,18 @@
 
 /* ── File tree（Explorer / SCM 共用） ─────────────────────────────────── */
 
-.file-tree-folder-btn--drop-target {
+.file-tree-row--drop-target {
   background: var(--interaction-hover);
-  box-shadow: inset var(--explorer-drop-accent-width) 0 0 0 var(--accent-solid);
+}
+
+.file-tree-drop-accent {
+  position: absolute;
+  top: 50%;
+  width: var(--explorer-drop-accent-width);
+  height: 16px;
+  border-radius: var(--radius-2);
+  background: var(--accent-solid);
+  transform: translateY(-50%);
 }
 
 /* ── Navigation menu viewport（Kobalte 运行时 CSS 变量） ───────────────── */
@@ -146,6 +155,30 @@
   border-radius: inherit;
 }
 
+.upload-asset-tile {
+  border-radius: var(--composer-attachment-radius);
+}
+
+.upload-asset-tile__preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.upload-asset-tile__preview-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    color-mix(in oklch, var(--surface-canvas) 92%, transparent) 0%,
+    color-mix(in oklch, var(--surface-canvas) 18%, transparent) 55%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
 .upload-asset-tile__ring {
   background: conic-gradient(
     var(--accent-solid) var(--upload-progress),
@@ -157,6 +190,101 @@
 
 .upload-asset-tile--failed .upload-asset-tile__error {
   word-break: break-word;
+}
+
+/* ── Composer queue（hover 显示灰底与操作按钮） ── */
+
+.ui-queue {
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--composer-active-radius);
+  background: var(--surface-canvas);
+}
+
+.ui-queue__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12);
+  border-bottom: 1px solid var(--border-faint);
+}
+
+.ui-queue__count {
+  font-size: var(--text-12);
+  font-weight: 500;
+  color: var(--content-secondary);
+  white-space: nowrap;
+}
+
+.ui-queue__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  min-height: var(--control-height-default);
+  padding: var(--space-8) var(--space-12);
+  background: transparent;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.ui-queue__item:hover,
+.ui-queue__item:focus-within {
+  background: var(--surface-muted);
+}
+
+.ui-queue__item-preview {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.ui-queue__item-icon {
+  flex-shrink: 0;
+  color: var(--content-muted);
+}
+
+.ui-queue__item-text {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-13);
+  line-height: var(--leading-normal);
+  color: var(--content-primary);
+}
+
+.ui-queue__item-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.ui-queue__item:hover .ui-queue__item-actions,
+.ui-queue__item:focus-within .ui-queue__item-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ui-queue__icon-action {
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+}
+
+@media (pointer: coarse) {
+  .ui-queue__item {
+    background: var(--surface-muted);
+  }
+
+  .ui-queue__item-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .token-usage-meter__fill {

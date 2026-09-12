@@ -165,6 +165,10 @@ function rowPadding(depth: number) {
   return { 'padding-left': `${7 + depth * 12}px` };
 }
 
+function dropAccentLeft(depth: number) {
+  return `${Math.max(4, 7 + depth * 12 - 3)}px`;
+}
+
 function FileTreeFolderRow(props: {
   node: FileTreeNode;
   depth: number;
@@ -189,7 +193,21 @@ function FileTreeFolderRow(props: {
 }) {
   const isDropTarget = () => props.dropTargetPath === props.node.path;
   return (
-    <div class={cn('group/tree-file flex h-(--tree-row-height) w-full items-center rounded-4 pr-5 text-11 pointer-coarse:h-44', props.rowClassName)}>
+    <div
+      class={cn(
+        'group/tree-file relative flex h-(--tree-row-height) w-full items-center rounded-4 pr-5 text-11 pointer-coarse:h-44',
+        isDropTarget() ? 'file-tree-row--drop-target' : '',
+        props.rowClassName,
+      )}
+      style={rowPadding(props.depth)}
+    >
+      <Show when={isDropTarget()}>
+        <span
+          class="file-tree-drop-accent pointer-events-none"
+          style={{ left: dropAccentLeft(props.depth) }}
+          aria-hidden="true"
+        />
+      </Show>
       <button
         type="button"
         ref={(element) => props.onMount?.(element)}
@@ -203,11 +221,9 @@ function FileTreeFolderRow(props: {
         data-drop-target-path={props.node.path}
         tabIndex={props.active || props.defaultTabIndex ? 0 : -1}
         class={cn(
-          'file-tree-folder-btn flex h-(--tree-row-height) w-full min-w-0 items-center gap-4 rounded-4 border-0 pr-6 text-left text-11 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44',
-          props.active || props.selected ? 'bg-selected' : 'bg-transparent',
-          isDropTarget() ? 'file-tree-folder-btn--drop-target bg-hover' : '',
+          'file-tree-folder-btn flex h-(--tree-row-height) w-full min-w-0 items-center gap-4 rounded-4 border-0 bg-transparent pr-6 text-left text-11 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44',
+          props.active || props.selected ? 'bg-selected' : '',
         )}
-        style={rowPadding(props.depth)}
         onClick={props.onToggle}
         onFocus={() => props.onActivePathChange?.(props.node.path)}
         onContextMenu={props.onContextMenu}

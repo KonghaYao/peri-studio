@@ -78,7 +78,7 @@ web/src/
 
 **工作流（强制）**
 
-1. 在 `packages/ui` 调整 T1/T2 契约与测试，在 `ui-sandbox` 新增/调整 demo（`#/components`、`#/blocks`、`#/layers`）。
+1. 在 `packages/ui` 调整 T1/T2 契约与测试，在 `ui-sandbox` 新增/调整 demo（`#/home` 封面、`#/components`、`#/blocks`、`#/layers`）。
 2. `cd packages/ui && bun run test`、`cd ui-sandbox && bun run typecheck` 通过。
 3. 将同等视觉契约镜像到 `web/`（类名、token、交互语义一致；**间距用生产像素刻度**，见下）。
 4. `cd web && bun run test` 全绿；涉及壳层/侧栏时补 widget 测或 `css-contracts`。

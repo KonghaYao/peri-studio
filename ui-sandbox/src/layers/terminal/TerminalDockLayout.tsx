@@ -36,7 +36,7 @@ export function TerminalDockLayout() {
         class="overflow-hidden rounded-lg border border-border-subtle bg-surface-muted"
         role="presentation"
       >
-        <div class="flex h-180 items-center justify-center border-b border-border-subtle bg-surface-canvas px-16 text-center text-12 text-content-faint">
+        <div class="flex h-(--catalog-layer-terminal-stage-height) items-center justify-center border-b border-border-subtle bg-surface-canvas px-16 text-center text-12 text-content-faint">
           Main panel · active project may differ from the terminal&apos;s bound project
         </div>
 

@@ -187,8 +187,8 @@ test('assets scenario stages visual references above the composer input', async 
   const assets = page.getByLabel('Staged assets');
   await expect(assets).toBeVisible();
   await expect(assets.locator('article')).toHaveCount(3);
-  await expect(assets.locator('article').first()).toHaveCSS('width', '68px');
-  await expect(assets.locator('article').first()).toHaveCSS('height', '68px');
+  await expect(assets.locator('article').first()).toHaveCSS('width', '88px');
+  await expect(assets.locator('article').first()).toHaveCSS('height', '88px');
   await expect(assets).toContainText('chat-layout-reference-final.png');
   await expect(assets).toContainText('status-area.md');
   await expect(assets.locator('img')).toHaveCount(1);

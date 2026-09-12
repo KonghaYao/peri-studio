@@ -1,0 +1,68 @@
+import { Spinner } from '@/lib/catalog-ui';
+import { AlertCircle, FileText, X } from 'lucide-solid';
+import { Show } from 'solid-js';
+import { cn } from '@/lib/catalog-ui';
+import type { ComposerAttachment } from './composer-shell-data';
+
+/** Composer 浮动附件 chip（ready / uploading / failed 等态）。 */
+export function ComposerAttachmentChip(props: ComposerAttachment) {
+  const busy = () =>
+    props.status === 'pending' || props.status === 'uploading' || props.status === 'committing';
+  const failed = () => props.status === 'failed';
+  const title = () => {
+    if (failed() && props.errorMessage) return `${props.name}: ${props.errorMessage}`;
+    if (props.status === 'uploading' && props.progress != null) {
+      return `${props.name} (${props.progress}%)`;
+    }
+    return props.name;
+  };
+
+  return (
+    <span
+      class={cn(
+        'composer-attachment-chip',
+        failed() && 'composer-attachment-chip--failed',
+        busy() && 'composer-attachment-chip--busy',
+      )}
+      title={title()}
+      role={failed() ? 'alert' : undefined}
+      aria-busy={busy() || undefined}
+    >
+      <Show
+        when={busy()}
+        fallback={
+          <Show
+            when={failed()}
+            fallback={<FileText size={12} strokeWidth={1.7} class="shrink-0 text-content-muted" aria-hidden="true" />}
+          >
+            <AlertCircle size={12} strokeWidth={1.7} class="shrink-0 text-danger-solid" aria-hidden="true" />
+          </Show>
+        }
+      >
+        <Spinner class="size-12 shrink-0" decorative />
+      </Show>
+      <Show
+        when={failed() && props.onRetry}
+        fallback={<span class="min-w-0 truncate">{props.name}</span>}
+      >
+        <button
+          type="button"
+          class="min-w-0 truncate border-0 bg-transparent p-0 text-left text-inherit underline"
+          onClick={props.onRetry}
+        >
+          {props.name}
+        </button>
+      </Show>
+      <Show when={props.status === 'ready' && props.onRemove}>
+        <button
+          type="button"
+          class="composer-attachment-chip__remove"
+          aria-label={`Remove ${props.name}`}
+          onClick={props.onRemove}
+        >
+          <X size={12} strokeWidth={1.7} />
+        </button>
+      </Show>
+    </span>
+  );
+}

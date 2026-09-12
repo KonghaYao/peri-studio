@@ -13,13 +13,15 @@ bun run dev   # http://127.0.0.1:5273/
 
 ## 导航
 
-- **顶栏**：T1 · T2 · Comp Tab 切换 tier
+- **封面**：空 hash 与 `#/home` 进入编辑风主页（无左侧章节栏）
+- **顶栏**：Home · T1 · T2 · Comp Tab 切换 tier；品牌名回封面
 - **左侧章节栏**：当前页内快速跳转（如 Markdown、User bubble…）
 - **小屏**：章节栏收进抽屉，点顶栏列表图标打开
 - **深链**：`#/components-markdown/markdown-render` 直达某章节
 
 | Tier | 路由 | 目录 | 职责 |
 |------|------|------|------|
+| **Cover · Home** | `#/home` | `src/pages/HomePage.tsx` | Catalog 封面：原则、Fields、索引 |
 | **T1 · Tokens** | `#/tokens` | `src/styles/tokens.css` | Palette → semantic → component 数值源 |
 | **T2 · Core** | `#/components` | `@peri/ui` | 核心原语（Button、Input、Dialog…） |
 | **T2 · Forms** | `#/components-forms` | `@peri/ui` | 表单、日期、Field、DataTable、Questionnaire |

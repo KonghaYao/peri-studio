@@ -1,6 +1,16 @@
 import { VSCodeFileIcon } from '@peri/ui';
-import { createSignal, onMount } from 'solid-js';
+import { createSignal, onMount, Show } from 'solid-js';
 import { cn } from '@/lib/catalog-ui';
+
+function rowPadding(depth: number) {
+  return { 'padding-left': `${7 + depth * 12}px` };
+}
+
+function errorInset(depth: number, kind: 'file' | 'folder') {
+  const leadingInset = kind === 'file' ? 6 : 0;
+  const gap = kind === 'folder' ? 4 : 5;
+  return `${7 + depth * 12 + leadingInset + 16 + gap}px`;
+}
 
 /** 行内新建 / 重命名编辑器（与 FileTree 行同高、同缩进、同图标）。 */
 export function FileTreeInlineNameEditor(props: {
@@ -27,8 +37,6 @@ export function FileTreeInlineNameEditor(props: {
     }
   });
 
-  const paddingLeft = () => `${7 + props.depth * 12}px`;
-
   const handleKeyDown = (ev: KeyboardEvent) => {
     if (ev.key === 'Enter') {
       ev.preventDefault();
@@ -40,13 +48,18 @@ export function FileTreeInlineNameEditor(props: {
   };
 
   return (
-    <div class="flex flex-col gap-4">
+    <div
+      class={cn(
+        'group/tree-file relative flex h-(--tree-row-height) w-full items-center rounded-4 bg-selected pr-5 text-11 pointer-coarse:h-44',
+        props.invalid && 'explorer-mutation-inline-row--invalid',
+      )}
+      style={rowPadding(props.depth)}
+    >
       <div
         class={cn(
-          'explorer-mutation-inline-row flex w-full items-center gap-5 rounded-4 pr-5',
-          props.invalid && 'explorer-mutation-inline-row--invalid',
+          'flex h-full min-w-0 flex-1 items-center rounded-4',
+          props.kind === 'folder' ? 'gap-4' : 'gap-5 pl-6',
         )}
-        style={{ 'min-height': 'var(--tree-row-height)', 'padding-left': paddingLeft() }}
       >
         <VSCodeFileIcon
           path={iconPath()}
@@ -59,11 +72,8 @@ export function FileTreeInlineNameEditor(props: {
             inputRef = el;
           }}
           class={cn(
-            'h-(--control-height-sm) min-w-0 flex-1 rounded-md border bg-surface-overlay px-8 text-11 text-content-primary outline-none transition-colors duration-(--duration-fast)',
-            'placeholder:text-content-faint',
-            props.invalid
-              ? 'border-danger-solid focus:border-danger-solid'
-              : 'border-border-strong hover:border-accent-border-hover focus:border-border-focus',
+            'file-tree-inline-name-input min-w-0 flex-1',
+            props.kind === 'folder' && 'font-600',
           )}
           value={value()}
           onInput={(e) => setValue(e.currentTarget.value)}
@@ -73,11 +83,15 @@ export function FileTreeInlineNameEditor(props: {
           aria-label={props.ariaLabel}
         />
       </div>
-      {props.invalid && props.errorMessage && (
-        <p class="pl-8 text-11 text-danger-solid" role="alert">
+      <Show when={props.invalid && props.errorMessage}>
+        <p
+          class="file-tree-inline-name-error"
+          role="alert"
+          style={{ 'padding-left': errorInset(props.depth, props.kind) }}
+        >
           {props.errorMessage}
         </p>
-      )}
+      </Show>
     </div>
   );
 }

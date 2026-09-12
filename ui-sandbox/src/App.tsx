@@ -1,5 +1,6 @@
 import { createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { parseSandboxHash, type SandboxRoute } from '@/catalog/page-sections';
+import { HomePage } from './pages/HomePage';
 import { TokensPage } from './pages/TokensPage';
 import { ComponentsPage } from './pages/ComponentsPage';
 import { ComponentsFormsPage } from './pages/ComponentsFormsPage';
@@ -16,6 +17,9 @@ export function App() {
   const [route, setRoute] = createSignal<SandboxRoute>(parseSandboxHash().route);
 
   onMount(() => {
+    if (!window.location.hash) {
+      history.replaceState(null, '', '#/home');
+    }
     const onHashChange = () => setRoute(parseSandboxHash().route);
     window.addEventListener('hashchange', onHashChange);
     onCleanup(() => window.removeEventListener('hashchange', onHashChange));
@@ -23,6 +27,7 @@ export function App() {
 
   return (
     <SandboxShell>
+      <Show when={route() === 'home'}><HomePage /></Show>
       <Show when={route() === 'tokens'}><TokensPage /></Show>
       <Show when={route() === 'components'}><ComponentsPage /></Show>
       <Show when={route() === 'components-forms'}><ComponentsFormsPage /></Show>

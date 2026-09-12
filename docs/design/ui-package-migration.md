@@ -101,7 +101,7 @@ packages/ui/                     # npm package: @peri/ui
 
 ui-sandbox/                     # 手写 Storybook-equivalent
   src/
-    pages/                       # Tokens / Components / Blocks / Layers demos
+    pages/                       # Home 封面 + Tokens / Components / Blocks / Layers demos
     components/blocks/          # T3 demo blocks，可用 mock
     layers/                     # T4 demo compositions，可用 mock
     shell/                      # catalog 导航壳

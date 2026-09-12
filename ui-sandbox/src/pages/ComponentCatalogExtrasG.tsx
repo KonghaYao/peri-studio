@@ -29,16 +29,7 @@ import {
   QuestionnaireNavigation,
   QuestionnaireProgress,
   QuestionnaireStep,
-  Queue,
-  QueueItem,
-  QueueItemContent,
-  QueueItemDescription,
-  QueueItemIndicator,
-  QueueList,
-  QueueSection,
-  QueueSectionContent,
-  QueueSectionLabel,
-  QueueSectionTrigger,
+  ComposerQueue,
   ResourceCite,
   Snippet,
   SnippetAddon,
@@ -243,34 +234,17 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'queue')}>
-      <CatalogDemo id="queue" title="Queue" description="分段待办队列；与 transcript 同宽。">
-        <div class="max-w-(--chat-tool-activity-max)">
-          <Queue>
-            <QueueSection defaultOpen>
-              <QueueSectionTrigger>
-                <QueueSectionLabel count={2} label="tasks" />
-              </QueueSectionTrigger>
-              <QueueSectionContent>
-                <QueueList>
-                  <QueueItem>
-                    <div class="flex items-start gap-8">
-                      <QueueItemIndicator completed />
-                      <QueueItemContent completed>Index repository</QueueItemContent>
-                    </div>
-                  </QueueItem>
-                  <QueueItem>
-                    <div class="flex min-w-0 items-start gap-8">
-                      <QueueItemIndicator />
-                      <div class="min-w-0 flex-1">
-                        <QueueItemContent>Generate summary</QueueItemContent>
-                        <QueueItemDescription>Uses latest chat transcript</QueueItemDescription>
-                      </div>
-                    </div>
-                  </QueueItem>
-                </QueueList>
-              </QueueSectionContent>
-            </QueueSection>
-          </Queue>
+      <CatalogDemo id="queue" title="Queue" description="Composer 待发消息队列；hover 显示灰底与操作按钮。">
+        <div class="max-w-(--composer-launch-max)">
+          <ComposerQueue
+            items={[
+              {
+                id: 'queued-1',
+                preview: 'inline 编辑不要有边框，高度和位置要对齐，减少布局抖动',
+                hasAttachment: true,
+              },
+            ]}
+          />
         </div>
       </CatalogDemo>
       </Show>

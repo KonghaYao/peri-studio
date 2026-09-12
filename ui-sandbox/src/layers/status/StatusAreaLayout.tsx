@@ -25,34 +25,14 @@ export function StatusAreaLayout() {
       class="max-w-md overflow-hidden border border-border-subtle bg-surface-overlay"
       style={{ 'border-radius': 'var(--decision-radius)' }}
     >
-      <header class="flex min-h-36 items-center gap-12 px-16 pt-14 pb-8">
-        <span class="text-12 font-medium text-content-secondary">Work status</span>
-        <div class="ml-auto flex min-w-0 items-center gap-2 text-content-muted">
-          <div class="flex min-w-0 items-center gap-2" role="tablist" aria-label="Work status">
-            <For each={DEMO_TABS}>{(tab) => (
-              <button
-                type="button"
-                role="tab"
-                aria-selected={statusTab() === tab.id}
-                class={cn(
-                  'inline-flex h-28 items-center gap-6 rounded-md border-0 px-8 text-12 transition-colors duration-(--duration-fast)',
-                  statusTab() === tab.id
-                    ? 'bg-accent-soft font-medium text-content-primary'
-                    : 'text-content-muted hover:bg-interaction-hover hover:text-content-primary',
-                )}
-                onClick={() => setStatusTab(tab.id)}
-              >
-                <tab.icon size={14} strokeWidth={1.8} aria-hidden="true" />
-                <span>{tab.label}</span>
-                <Badge tone="neutral" class="min-w-0 px-6">{tab.count}</Badge>
-              </button>
-            )}</For>
-          </div>
+      <header class="flex flex-col gap-8 px-16 pt-14 pb-8">
+        <div class="flex min-h-28 items-center gap-12">
+          <span class="text-12 font-medium text-content-secondary">Work status</span>
           <IconButton
             size="sm"
             label={expanded() ? 'Collapse status panel' : 'Expand status panel'}
             showTooltip={false}
-            class="border-0 bg-transparent text-content-muted hover:bg-transparent hover:text-content-primary"
+            class="ml-auto border-0 bg-transparent text-content-muted hover:bg-transparent hover:text-content-primary"
             aria-expanded={expanded()}
             onClick={() => setExpanded((value) => !value)}
           >
@@ -62,6 +42,26 @@ export function StatusAreaLayout() {
               class={cn('transition-transform duration-(--duration-fast)', !expanded() && 'rotate-180')}
             />
           </IconButton>
+        </div>
+        <div class="flex min-w-0 flex-wrap items-center gap-2 text-content-muted" role="tablist" aria-label="Work status">
+          <For each={DEMO_TABS}>{(tab) => (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={statusTab() === tab.id}
+              class={cn(
+                'inline-flex h-28 max-w-full items-center gap-6 rounded-md border-0 px-8 text-12 transition-colors duration-(--duration-fast)',
+                statusTab() === tab.id
+                  ? 'bg-accent-soft font-medium text-content-primary'
+                  : 'text-content-muted hover:bg-interaction-hover hover:text-content-primary',
+              )}
+              onClick={() => setStatusTab(tab.id)}
+            >
+              <tab.icon size={14} strokeWidth={1.8} aria-hidden="true" />
+              <span class="truncate">{tab.label}</span>
+              <span class="tabular-nums text-11 text-content-muted">{tab.count}</span>
+            </button>
+          )}</For>
         </div>
       </header>
       <Show when={expanded()}>

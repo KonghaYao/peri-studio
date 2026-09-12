@@ -1,19 +1,12 @@
-import { createSignal, For } from 'solid-js';
-import {
-  ComposerDropOverlay,
-  TokenUsageMeter,
-  UploadAssetTile,
-} from '@/components/blocks/composer';
+import { createSignal, For, Show } from 'solid-js';
 import { Button } from '@/lib/catalog-ui';
-import { IconButton, Select, Textarea } from '@/lib/catalog-ui';
-import { Mic, Plus, Send, ShieldCheck } from 'lucide-solid';
-import type { UploadAssetTileStatus } from '@/components/blocks/composer/upload-asset-tile-types';
+import { ComposerShell } from './ComposerShell';
+import type { ComposerAttachment } from './composer-shell-data';
 import {
-  composerAssetRowClass,
-  composerFieldClass,
-  composerSurfaceClass,
-  composerToolbarClass,
-} from './composer-demo-classes';
+  COMPOSER_UPLOAD_BATCH_DEMO,
+  COMPOSER_UPLOAD_DRAFT,
+  COMPOSER_UPLOAD_TILE_MATRIX,
+} from './composer-shell-data';
 
 type ComposerDemoMode = 'idle' | 'drop-active' | 'batch' | 'disabled' | 'keyboard-picked';
 
@@ -25,40 +18,33 @@ const MODE_OPTIONS: { value: ComposerDemoMode; label: string }[] = [
   { value: 'keyboard-picked', label: 'Keyboard pick' },
 ];
 
-const TILE_MATRIX: { status: UploadAssetTileStatus; name: string; progress?: number; errorMessage?: string }[] = [
-  { status: 'pending', name: 'notes.txt' },
-  { status: 'uploading', name: 'diagram.png', progress: 62 },
-  { status: 'committing', name: 'spec.md' },
-  { status: 'ready', name: 'layout.png' },
-  { status: 'failed', name: 'large.bin', errorMessage: 'File exceeds 8 MB limit.' },
-];
+const DROP_DESC_ID = 'composer-upload-drop-desc';
 
-const BATCH_DEMO = [
-  { status: 'ready' as const, name: 'api.ts', showSuccessBadge: true },
-  { status: 'uploading' as const, name: 'schema.json', progress: 38 },
-  {
-    status: 'failed' as const,
-    name: 'README.md',
-    errorMessage: 'A file already exists at this path.',
-  },
-];
+function attachmentsForMode(
+  mode: ComposerDemoMode,
+  onRetry: (name: string) => void,
+): ComposerAttachment[] | undefined {
+  if (mode === 'idle' || mode === 'drop-active' || mode === 'disabled') return undefined;
 
-function tileShowsSuccessBadge(tile: (typeof TILE_MATRIX)[number] | (typeof BATCH_DEMO)[number]) {
-  if ('showSuccessBadge' in tile) return Boolean(tile.showSuccessBadge);
-  return tile.status === 'ready';
+  const source = mode === 'batch' || mode === 'keyboard-picked'
+    ? COMPOSER_UPLOAD_BATCH_DEMO
+    : COMPOSER_UPLOAD_TILE_MATRIX;
+
+  return source.map((item) => ({
+    ...item,
+    onRetry: item.onRetry ? () => onRetry(item.name) : undefined,
+  }));
 }
 
-/** Tier 4 · Composer 拖拽/键盘上传视觉矩阵（WP-4）。 */
+/** Tier 4 · Composer 拖拽/键盘上传视觉矩阵（基于 ComposerShell）。 */
 export function ComposerUploadLayout() {
   const [mode, setMode] = createSignal<ComposerDemoMode>('batch');
-  const [model, setModel] = createSignal('nova');
-  const [draft, setDraft] = createSignal('Compare @src/api.ts with the uploaded copy.');
+  const [draft, setDraft] = createSignal(COMPOSER_UPLOAD_DRAFT);
   const [liveMessage, setLiveMessage] = createSignal('');
   let fileInputRef: HTMLInputElement | undefined;
 
-  const dropActive = () => mode() === 'drop-active';
   const disabled = () => mode() === 'disabled';
-  const dropDescId = 'composer-upload-drop-desc';
+  const dropActive = () => mode() === 'drop-active';
 
   const openFilePicker = () => {
     if (disabled()) return;
@@ -67,10 +53,14 @@ export function ComposerUploadLayout() {
 
   const onFilesPicked = (files: FileList | null) => {
     if (!files?.length) return;
-    const names = Array.from(files).map((f) => f.name).join(', ');
+    const names = Array.from(files).map((file) => file.name).join(', ');
     setLiveMessage(`Selected ${files.length} file(s) for upload: ${names}. Same flow as drag and drop.`);
     setMode('keyboard-picked');
   };
+
+  const attachments = () => attachmentsForMode(mode(), (name) => {
+    setLiveMessage(`Retrying upload for ${name}`);
+  });
 
   return (
     <div class="flex max-w-3xl flex-col gap-24">
@@ -89,116 +79,37 @@ export function ComposerUploadLayout() {
       </div>
 
       <div class="chat-column">
-        <div
-          data-testid="composer-surface"
-          class={composerSurfaceClass}
-          classList={{
-            'composer-surface--drop-target': dropActive(),
-            'opacity-60': disabled(),
+        <ComposerShell
+          draft={mode() === 'idle' ? '' : draft()}
+          onDraftChange={setDraft}
+          attachments={attachments()}
+          attachmentLayout="tile"
+          showQueue={mode() === 'batch'}
+          disabled={disabled()}
+          dropActive={dropActive()}
+          dropDescribedById={DROP_DESC_ID}
+          onUploadRequest={openFilePicker}
+          fileInputRef={(element) => {
+            fileInputRef = element;
           }}
-          aria-dropeffect={dropActive() ? 'copy' : undefined}
-          aria-busy={mode() === 'batch' ? 'true' : undefined}
-          aria-describedby={dropActive() ? dropDescId : undefined}
-        >
-          <ComposerDropOverlay active={dropActive()} describedById={dropDescId} />
-          <p class="ui-sr-only" id={dropDescId}>
-            Release to upload files to this project.
-          </p>
-
-          <div class={`${composerAssetRowClass} flex-wrap`}>
-            <For
-              each={
-                mode() === 'batch' || mode() === 'keyboard-picked'
-                  ? BATCH_DEMO
-                  : TILE_MATRIX
-              }
-            >
-              {(tile) => (
-                <UploadAssetTile
-                  name={tile.name}
-                  status={tile.status}
-                  progress={'progress' in tile ? tile.progress : undefined}
-                  errorMessage={'errorMessage' in tile ? tile.errorMessage : undefined}
-                  showSuccessBadge={tileShowsSuccessBadge(tile)}
-                  onRetry={
-                    tile.status === 'failed'
-                      ? () => setLiveMessage(`Retrying upload for ${tile.name}`)
-                      : undefined
-                  }
-                  onRemove={tile.status === 'ready' ? () => {} : undefined}
-                />
-              )}
-            </For>
-          </div>
-
-          <Textarea
-            variant="bare"
-            autoResize
-            maxHeight={180}
-            rows={2}
-            value={draft()}
-            onInput={(event) => setDraft(event.currentTarget.value)}
-            placeholder="Message the agent"
-            aria-label="Message the agent"
-            disabled={disabled()}
-            class={composerFieldClass}
-          />
-
-          <div class={composerToolbarClass}>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              class="ui-sr-only"
-              aria-hidden="true"
-              tabindex={-1}
-              disabled={disabled()}
-              onChange={(event) => onFilesPicked(event.currentTarget.files)}
-            />
-            <IconButton
-              label="Add attachment"
-              tooltip="Add attachment"
-              disabled={disabled()}
-              onClick={openFilePicker}
-            >
-              <Plus size={16} />
-            </IconButton>
-            <IconButton label="Approval mode" tooltip="Approval mode" disabled={disabled()}><ShieldCheck size={16} /></IconButton>
-            <span class="flex-1" />
-            <Select
-              variant="plain"
-              aria-label="Model"
-              value={model()}
-              onChange={setModel}
-              disabled={disabled()}
-              options={[
-                { value: 'nova', label: 'Nova 4.1' },
-                { value: 'gpt', label: 'gpt-5.6' },
-              ]}
-            />
-            <TokenUsageMeter input={12400} output={3180} cached={8200} />
-            <IconButton label="Voice input" tooltip="Voice input" disabled><Mic size={16} /></IconButton>
-            <IconButton
-              label="Send"
-              tooltip="Send"
-              variant="primary"
-              disabled={disabled()}
-            >
-              <Send size={16} />
-            </IconButton>
-          </div>
-        </div>
+          onFilesPicked={onFilesPicked}
+        />
+        <p class="ui-sr-only" id={DROP_DESC_ID}>
+          Release to upload files to this project.
+        </p>
       </div>
 
       <div aria-live="polite" class="min-h-20 text-11 text-content-secondary">
-        {liveMessage() || (mode() === 'keyboard-picked' ? 'Use Add attachment — focus stays in the message field after pick.' : '')}
+        {liveMessage() || (mode() === 'keyboard-picked'
+          ? 'Use Upload files in + menu — focus stays in the message field after pick.'
+          : '')}
       </div>
 
-      {disabled() && (
+      <Show when={disabled()}>
         <p role="alert" class="text-11 text-danger-strong">
-          Upload requires full access. Drop and Add attachment are disabled.
+          Upload requires full access. Drop and Upload files are disabled.
         </p>
-      )}
+      </Show>
     </div>
   );
 }

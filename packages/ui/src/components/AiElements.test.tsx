@@ -45,18 +45,6 @@ import {
   PlanTitle,
   PlanTrigger,
 } from './Plan';
-import {
-  Queue,
-  QueueItem,
-  QueueItemContent,
-  QueueItemDescription,
-  QueueItemIndicator,
-  QueueList,
-  QueueSection,
-  QueueSectionContent,
-  QueueSectionLabel,
-  QueueSectionTrigger,
-} from './Queue';
 import { Reasoning, ReasoningContent, ReasoningTrigger } from './Reasoning';
 import { Task, TaskContent, TaskItem, TaskItemFile, TaskTrigger } from './Task';
 import {
@@ -545,44 +533,3 @@ describe('Confirmation', () => {
   });
 });
 
-describe('Queue', () => {
-  it('renders pending and completed queue indicators with section list', () => {
-    render(() => (
-      <Queue>
-        <QueueSection defaultOpen>
-          <QueueSectionTrigger>
-            <QueueSectionLabel count={2} label="tasks" />
-          </QueueSectionTrigger>
-          <QueueSectionContent>
-            <QueueList>
-              <QueueItem>
-                <div class="flex items-start gap-8">
-                  <QueueItemIndicator />
-                  <QueueItemContent>Fetch weather</QueueItemContent>
-                </div>
-              </QueueItem>
-              <QueueItem>
-                <div class="flex items-start gap-8">
-                  <QueueItemIndicator completed />
-                  <div class="min-w-0 flex-1">
-                    <QueueItemContent completed>Read docs</QueueItemContent>
-                    <QueueItemDescription completed>Cached locally</QueueItemDescription>
-                  </div>
-                </div>
-              </QueueItem>
-            </QueueList>
-          </QueueSectionContent>
-        </QueueSection>
-      </Queue>
-    ));
-
-    const indicators = document.querySelectorAll('[data-slot="queue-item-indicator"]');
-    expect(indicators).toHaveLength(2);
-    expect(indicators[0]).toHaveAttribute('data-completed', 'false');
-    expect(indicators[1]).toHaveAttribute('data-completed', 'true');
-    expect(screen.getByText('2 tasks')).toBeInTheDocument();
-    expect(screen.getByText('Fetch weather')).toBeInTheDocument();
-    expect(screen.getByText('Read docs')).toBeInTheDocument();
-    expect(screen.getByText('Cached locally')).toBeInTheDocument();
-  });
-});

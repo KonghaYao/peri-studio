@@ -1,4 +1,5 @@
 export type SandboxRoute =
+  | 'home'
   | 'tokens'
   | 'components'
   | 'components-forms'
@@ -29,6 +30,7 @@ export const LEGACY_CHAT_ROUTE = 'components-chat';
 export const LEGACY_RESOURCE_ROUTE = 'components-resource';
 
 export const SANDBOX_ROUTES: SandboxRoute[] = [
+  'home',
   'tokens',
   'components',
   'components-forms',
@@ -42,6 +44,7 @@ export const SANDBOX_ROUTES: SandboxRoute[] = [
 ];
 
 export const ROUTE_META: Record<SandboxRoute, { tier: string; label: string }> = {
+  home: { tier: '', label: 'Home' },
   tokens: { tier: 'T1', label: 'Tokens' },
   components: { tier: 'T2', label: 'Core' },
   'components-forms': { tier: 'T2', label: 'Forms' },
@@ -66,6 +69,17 @@ export type CatalogItem = {
 export type CatalogGroup = { title?: string; items: CatalogItem[] };
 
 export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
+  home: [
+    {
+      title: 'Cover',
+      items: [
+        { id: 'hero', label: 'Signal' },
+        { id: 'manifesto', label: 'System' },
+        { id: 'atlas', label: 'Fields' },
+        { id: 'index', label: 'Index' },
+      ],
+    },
+  ],
   tokens: [
     {
       title: 'Palette & semantics',
@@ -370,6 +384,7 @@ export function isSandboxRoute(value: string): value is SandboxRoute {
 
 function resolveRoute(routePart: string): SandboxRoute {
   if (isSandboxRoute(routePart)) return routePart;
+  if (!routePart) return 'home';
   return LEGACY_ROUTE_REDIRECT[routePart] ?? 'tokens';
 }
 

@@ -199,26 +199,6 @@ export {
   type PromptInputMessage,
   type PromptInputSubmitData,
 } from './components/PromptInput';
-export {
-  Queue,
-  QueueItem,
-  QueueItemAction,
-  QueueItemActions,
-  QueueItemAttachment,
-  QueueItemContent,
-  QueueItemDescription,
-  QueueItemFile,
-  QueueItemImage,
-  QueueItemIndicator,
-  QueueList,
-  QueueSection,
-  QueueSectionContent,
-  QueueSectionLabel,
-  QueueSectionTrigger,
-  type QueueMessage,
-  type QueueMessagePart,
-  type QueueTodo,
-} from './components/Queue';
 export { Progress, ProgressFill, ProgressLabel, ProgressTrack, ProgressValueLabel } from './components/Progress';
 export { Slider, SliderFill, SliderLabel, SliderThumb, SliderTrack } from './components/Slider';
 export { Calendar, CalendarCell, CalendarDay, CalendarGrid, CalendarHeader, CalendarNav } from './components/Calendar';
@@ -356,6 +336,8 @@ export {
   ComposerDropOverlay,
   type ComposerDropOverlayProps,
 } from './components/composer/ComposerDropOverlay';
+export { ComposerQueue, type ComposerQueueProps } from './components/composer/ComposerQueue';
+export type { ComposerQueueItem } from './components/composer/composer-queue-types';
 export { UploadAssetTile } from './components/composer/UploadAssetTile';
 export type { UploadAssetTileProps, UploadAssetTileStatus } from './components/composer/upload-asset-tile-types';
 export {
