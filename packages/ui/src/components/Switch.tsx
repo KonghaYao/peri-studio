@@ -23,7 +23,8 @@ export function SwitchControl<T extends ValidComponent = 'div'>(props: Polymorph
         'inline-flex h-16 w-28 flex-none items-center rounded-full border border-border-strong bg-surface px-2 ui-control-transition',
         'hover:border-accent peer-focus-visible:shadow-accent-ring',
         'data-checked:border-accent data-checked:bg-accent',
-        'peer-disabled:cursor-not-allowed peer-disabled:opacity-50',
+        'data-disabled:cursor-not-allowed data-disabled:border-border-strong data-disabled:bg-surface-sunken',
+        'data-disabled:data-checked:border-content-faint data-disabled:data-checked:bg-content-faint',
         local.class,
       )}
       {...rest}
@@ -39,6 +40,7 @@ export function SwitchThumb<T extends ValidComponent = 'div'>(props: Polymorphic
       class={cn(
         'block size-12 rounded-full bg-surface ui-control-transition',
         'data-checked:translate-x-12',
+        'data-disabled:bg-border-strong data-disabled:data-checked:bg-surface',
         local.class,
       )}
       {...rest}

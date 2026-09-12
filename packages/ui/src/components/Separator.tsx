@@ -11,7 +11,8 @@ export function Separator<T extends ValidComponent = 'hr'>(props: PolymorphicPro
   return (
     <SeparatorPrimitive.Root
       class={cn(
-        'shrink-0 bg-border-subtle',
+        // Preflight styles <hr> with border-top: 1px solid currentColor — reset before bg fill.
+        'shrink-0 border-0 bg-divider',
         'data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full',
         'data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px',
         local.class,

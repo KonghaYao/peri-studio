@@ -11,7 +11,7 @@ export function ProgressTrack<T extends ValidComponent = 'div'>(props: Polymorph
   const [local, rest] = splitProps(props as TrackProps, ['class']);
   return (
     <ProgressPrimitive.Track
-      class={cn('relative h-8 w-full overflow-hidden rounded-full bg-border-subtle', local.class)}
+      class={cn('relative h-8 w-full overflow-hidden rounded-full bg-surface-sunken', local.class)}
       {...rest}
     />
   );
@@ -22,7 +22,10 @@ export function ProgressFill<T extends ValidComponent = 'div'>(props: Polymorphi
   const [local, rest] = splitProps(props as FillProps, ['class']);
   return (
     <ProgressPrimitive.Fill
-      class={cn('ui-progress-fill h-full bg-accent-solid ui-control-transition', local.class)}
+      class={cn(
+        'ui-progress-fill h-full rounded-l-full bg-accent-solid ui-control-transition',
+        local.class,
+      )}
       {...rest}
     />
   );

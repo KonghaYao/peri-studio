@@ -67,6 +67,7 @@
 /* Kobalte Progress.Fill exposes --kb-progress-fill-width (percentage width). */
 .ui-progress-fill {
   width: var(--kb-progress-fill-width);
+  transition: width var(--duration-fast) var(--ease-standard);
 }
 
 /* shadcn 式扫光占位：斜向高光扫过 muted 底。 */

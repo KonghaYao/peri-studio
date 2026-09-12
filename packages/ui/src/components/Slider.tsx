@@ -12,7 +12,11 @@ export function SliderTrack<T extends ValidComponent = 'div'>(props: Polymorphic
   const [local, rest] = splitProps(props as TrackProps, ['class']);
   return (
     <SliderPrimitive.Track
-      class={cn('relative h-8 w-full grow overflow-hidden rounded-full bg-border-subtle', local.class)}
+      class={cn(
+        // Leave vertical room for the thumb; do not clip it with overflow-hidden.
+        'relative my-4 h-8 w-full grow rounded-full bg-surface-sunken',
+        local.class,
+      )}
       {...rest}
     />
   );
@@ -23,7 +27,7 @@ export function SliderFill<T extends ValidComponent = 'div'>(props: PolymorphicP
   const [local, rest] = splitProps(props as FillProps, ['class']);
   return (
     <SliderPrimitive.Fill
-      class={cn('absolute h-full bg-accent-solid', local.class)}
+      class={cn('absolute h-full rounded-l-full bg-accent-solid', local.class)}
       {...rest}
     />
   );
@@ -40,6 +44,8 @@ export function SliderThumb<T extends ValidComponent = 'span'>(props: Polymorphi
     const percent = context.state.getValuePercent(values[0]) * 100;
     return {
       ...base,
+      top: '50%',
+      // Kobalte emits `calc(25%)`, which is invalid CSS — use a plain percentage instead.
       [context.startEdge()]: `${percent}%`,
     };
   });
@@ -47,7 +53,7 @@ export function SliderThumb<T extends ValidComponent = 'span'>(props: Polymorphi
     <SliderPrimitive.Thumb
       style={style()}
       class={cn(
-        'block size-16 rounded-full border border-border-strong bg-surface shadow-raised ui-control-transition',
+        'top-1/2 z-10 -mt-8 block size-16 rounded-full border-2 border-accent-solid bg-surface shadow-raised ui-control-transition',
         'focus-visible:shadow-accent-ring focus-visible:outline-none',
         'disabled:pointer-events-none disabled:opacity-45',
         'pointer-coarse:min-h-44 pointer-coarse:min-w-44',

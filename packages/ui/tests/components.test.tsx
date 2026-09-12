@@ -1234,14 +1234,16 @@ describe('Switch', () => {
     render(() => (
       <Switch disabled checked={false} onChange={onChange}>
         <SwitchInput />
-        <SwitchControl>
-          <SwitchThumb />
+        <SwitchControl data-testid="switch-control">
+          <SwitchThumb data-testid="switch-thumb" />
         </SwitchControl>
         <SwitchLabel>Notify</SwitchLabel>
       </Switch>
     ));
     fireEvent.click(screen.getByRole('switch', { name: 'Notify' }));
     expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByTestId('switch-control')).toHaveClass('data-disabled:bg-surface-sunken');
+    expect(screen.getByTestId('switch-thumb')).toHaveClass('data-disabled:bg-border-strong');
   });
 });
 
@@ -1260,7 +1262,9 @@ describe('Label', () => {
 describe('Separator', () => {
   it('renders with role separator', () => {
     render(() => <Separator data-testid="sep" />);
-    expect(screen.getByRole('separator')).toBeInTheDocument();
+    const separator = screen.getByRole('separator');
+    expect(separator).toBeInTheDocument();
+    expect(separator).toHaveClass('border-0', 'bg-divider');
   });
 });
 
@@ -1286,8 +1290,8 @@ describe('Progress', () => {
     expect(bar).toHaveAttribute('aria-valuemin', '0');
     expect(bar).toHaveAttribute('aria-valuemax', '100');
     expect(bar).toHaveAttribute('aria-valuenow', '40');
-    expect(screen.getByTestId('track')).toHaveClass('h-8', 'rounded-full', 'bg-border-subtle');
-    expect(screen.getByTestId('fill')).toHaveClass('ui-progress-fill', 'bg-accent-solid');
+    expect(screen.getByTestId('track')).toHaveClass('h-8', 'rounded-full', 'bg-surface-sunken');
+    expect(screen.getByTestId('fill')).toHaveClass('ui-progress-fill', 'rounded-l-full', 'bg-accent-solid');
     expect(screen.getByTestId('value-label')).toHaveTextContent('40%');
   });
 });
@@ -1311,8 +1315,12 @@ describe('Slider', () => {
     expect(thumb.className).toContain('focus-visible:shadow-accent-ring');
     expect(thumb.className).toContain('pointer-coarse:min-h-44');
     expect(screen.getByTestId('track').className).toContain('h-8');
-    expect(screen.getByTestId('track').className).toContain('bg-border-subtle');
+    expect(screen.getByTestId('track').className).not.toContain('overflow-hidden');
+    expect(screen.getByTestId('track').className).toContain('bg-surface-sunken');
+    expect(screen.getByTestId('fill').className).toContain('rounded-l-full');
     expect(screen.getByTestId('fill').className).toContain('bg-accent-solid');
+    expect(thumb.className).toContain('top-1/2');
+    expect(thumb.className).toContain('border-accent-solid');
     fireEvent.keyDown(thumb, { key: 'ArrowRight' });
     expect(onChange).toHaveBeenCalledWith([26]);
   });
