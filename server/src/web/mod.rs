@@ -46,7 +46,9 @@ pub(crate) use http::serve;
 #[cfg(test)]
 pub(crate) use http::serve_http;
 pub(crate) use http::serve_http_with_resources;
-pub(crate) use parse::{cookie_value, header_end, is_ws_upgrade, valid_ws_host, valid_ws_origin};
+pub(crate) use parse::{
+    cookie_value, header_end, is_ws_upgrade, request_line_path, valid_ws_host, valid_ws_origin,
+};
 #[cfg(test)]
 pub(crate) use parse::{is_json_content_type, request_path, valid_loopback_host};
 #[cfg(test)]

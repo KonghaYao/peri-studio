@@ -39,6 +39,8 @@ describe('AuthGate rendering', () => {
     expect(status).toHaveAttribute('aria-live', 'polite');
     expect(status).toHaveTextContent('Checking sign-in state');
     expect(status.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
+    // 检查中仍展示表单：fetch 挂起时用户必须能手动输入 token，不能被 Checking 挡住。
+    expect(screen.getByLabelText('Access token')).toBeInTheDocument();
   });
 
   it('shows the authoritative server token path and generation command', async () => {
@@ -53,7 +55,7 @@ describe('AuthGate rendering', () => {
     })));
 
     render(() => <AuthGate><div>authenticated workspace</div></AuthGate>);
-    await screen.findByLabelText('Access token');
+    await waitFor(() => expect(screen.queryByText('Checking sign-in state')).not.toBeInTheDocument());
     fireEvent.click(screen.getByText('Where is my token?'));
 
     expect(screen.getByText('/custom/peri studio/tokens.toml')).toBeInTheDocument();
@@ -105,11 +107,10 @@ describe('AuthGate rendering', () => {
 
     render(() => <AuthGate><div>authenticated workspace</div></AuthGate>);
 
-    expect(await screen.findByLabelText('Access token')).toBeInTheDocument();
+    await waitFor(() => expect(localStorage.getItem('peri_studio_token')).toBeNull());
+    expect(screen.getByLabelText('Access token')).toBeInTheDocument();
     expect(screen.queryByText('authenticated workspace')).not.toBeInTheDocument();
     expect(transport.connectWithCookie).not.toHaveBeenCalled();
-    // 401 = 令牌确实无效，记住的 token 一并清除。
-    expect(localStorage.getItem('peri_studio_token')).toBeNull();
   });
 
   it('replays the remembered token after websocket invalidation instead of clearing it', async () => {

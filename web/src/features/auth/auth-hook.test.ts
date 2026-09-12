@@ -15,6 +15,7 @@ function makeAuth(deps: Partial<AuthControllerDeps> = {}) {
 vi.mock('@/features/connection/connection', () => ({ connectWithCookie: transport.connectWithCookie }));
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   localStorage.clear();
   transport.resetAuthenticatedSession.mockReset();
@@ -42,10 +43,10 @@ describe('createAuthController', () => {
     await auth.init();
 
     expect(auth.state()).toBe('signed-in');
-    expect(fetch).toHaveBeenNthCalledWith(2, '/api/auth/session/bootstrap', {
+    expect(fetch).toHaveBeenNthCalledWith(2, '/api/auth/session/bootstrap', expect.objectContaining({
       method: 'POST',
       credentials: 'same-origin',
-    });
+    }));
     expect(localStorage.getItem('peri_studio_token')).toBeNull();
     expect(transport.connectWithCookie).toHaveBeenCalledOnce();
   });
@@ -66,10 +67,10 @@ describe('createAuthController', () => {
     expect(auth.state()).toBe('signed-in');
     expect(localStorage.getItem('peri_studio_token')).toBeNull();
     expect(fetch).toHaveBeenCalledTimes(2);
-    expect(fetch).toHaveBeenLastCalledWith('/api/auth/session/bootstrap', {
+    expect(fetch).toHaveBeenLastCalledWith('/api/auth/session/bootstrap', expect.objectContaining({
       method: 'POST',
       credentials: 'same-origin',
-    });
+    }));
   });
 
   it('treats an unavailable bootstrap as the normal explicit-login fallback', async () => {
@@ -98,6 +99,22 @@ describe('createAuthController', () => {
 
     expect(auth.state()).toBe('signed-out');
     expect(fetch).toHaveBeenCalledOnce();
+  });
+
+  it('leaves checking when a status request hangs past the client timeout', async () => {
+    vi.useFakeTimers();
+    const fetch = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => new Promise((_, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+    }));
+    vi.stubGlobal('fetch', fetch);
+    const auth = makeAuth();
+
+    const pending = auth.init();
+    await vi.advanceTimersByTimeAsync(8_000);
+    await pending;
+
+    expect(auth.state()).toBe('signed-out');
+    expect(auth.problem()).toMatchObject({ kind: 'network', retryable: true });
   });
 
   it('fails closed when a successful response carries an unknown role', async () => {

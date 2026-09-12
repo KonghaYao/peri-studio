@@ -47,6 +47,8 @@ export const useAuthActions = (): AuthActions | undefined => useContext(AuthActi
  * 应整体下线并迁移旧值。
  */
 const TOKEN_KEY = 'peri_studio_token';
+/** 与 server HTTP 读超时对齐并留余量；超时后必须离开 checking，否则登录表单被挡住。 */
+const AUTH_FETCH_TIMEOUT_MS = 8_000;
 
 function rememberToken(value: string) {
   try {
@@ -72,6 +74,16 @@ function forgetToken() {
   }
 }
 
+async function fetchAuth(input: string, init: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), AUTH_FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export function createAuthController(deps: AuthControllerDeps) {
   const [state, setState] = createSignal<AuthState>('checking');
   const [token, setToken] = createSignal('');
@@ -79,6 +91,22 @@ export function createAuthController(deps: AuthControllerDeps) {
   const [submitting, setSubmitting] = createSignal(false);
   const [setup, setSetup] = createSignal<AuthSetup | null>(null);
   let requestEpoch = 0;
+
+  function resetRuntime(options?: { preserveLocalDrafts?: boolean }): void {
+    try {
+      deps.resetSession(options);
+    } catch {
+      // 身份复位失败不得把 UI 钉死在 checking。
+    }
+  }
+
+  function connectTransport(): void {
+    try {
+      connectWithCookie();
+    } catch {
+      // Cookie 会话已成立；传输错误交给连接态 UI，不能把已登录回滚成检查中。
+    }
+  }
 
   async function authPayload(res: Response): Promise<{ payload: unknown; setup: AuthSetup | null }> {
     try {
@@ -93,31 +121,31 @@ export function createAuthController(deps: AuthControllerDeps) {
     const epoch = ++requestEpoch;
     setProblem(null);
     try {
-      const res = await fetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store' });
+      const res = await fetchAuth('/api/auth/session', { credentials: 'same-origin', cache: 'no-store' });
       if (epoch !== requestEpoch) return;
       const parsed = await authPayload(res);
       if (epoch !== requestEpoch) return;
       if (parsed.setup) setSetup(parsed.setup);
       if (!res.ok) {
-        deps.resetSession();
+        resetRuntime();
         setProblem(authFeedback(res.status, 'status'));
         return setState('signed-out');
       }
       const principal = parsePrincipal(parsed.payload);
       if (!principal) {
-        deps.resetSession();
+        resetRuntime();
         setProblem({ kind: 'server', message: 'The server returned an unrecognized access role; access to the app is blocked.', retryable: true });
         return setState('signed-out');
       }
-      deps.resetSession({ preserveLocalDrafts: true });
+      resetRuntime({ preserveLocalDrafts: true });
       installPrincipalRole(principal.role, principal.principalId);
       deps.onPrincipalInstalled?.(principal.principalId);
       clearAuthInvalidation();
       setState('signed-in');
-      connectWithCookie();
+      connectTransport();
     } catch {
       if (epoch === requestEpoch) {
-        deps.resetSession();
+        resetRuntime();
         setProblem(authFeedback(0, 'status'));
         setState('signed-out');
       }
@@ -129,7 +157,7 @@ export function createAuthController(deps: AuthControllerDeps) {
     setSubmitting(true);
     setProblem(null);
     try {
-      const res = await fetch('/api/auth/session', {
+      const res = await fetchAuth('/api/auth/session', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'content-type': 'application/json' },
@@ -140,7 +168,7 @@ export function createAuthController(deps: AuthControllerDeps) {
       if (epoch !== requestEpoch) return;
       if (parsed.setup) setSetup(parsed.setup);
       if (!res.ok) {
-        deps.resetSession();
+        resetRuntime();
         // 401 = 令牌被撤销/无效，记住的 token 不值得保留；其他错误码
         // （网络/5xx）不清除，下次打开仍可重放。
         if (res.status === 401) forgetToken();
@@ -149,22 +177,22 @@ export function createAuthController(deps: AuthControllerDeps) {
       }
       const principal = parsePrincipal(parsed.payload);
       if (!principal) {
-        deps.resetSession();
+        resetRuntime();
         setProblem({ kind: 'server', message: 'The server returned an unrecognized access role; sign-in is blocked.', retryable: true });
         setState('signed-out');
         return;
       }
       rememberToken(raw);
-      deps.resetSession({ preserveLocalDrafts: true });
+      resetRuntime({ preserveLocalDrafts: true });
       installPrincipalRole(principal.role, principal.principalId);
       deps.onPrincipalInstalled?.(principal.principalId);
       clearAuthInvalidation();
       setToken('');
       setState('signed-in');
-      connectWithCookie();
+      connectTransport();
     } catch {
       if (epoch === requestEpoch) {
-        deps.resetSession();
+        resetRuntime();
         setProblem(authFeedback(0, 'login'));
         setState('signed-out');
       }
@@ -177,7 +205,7 @@ export function createAuthController(deps: AuthControllerDeps) {
     const epoch = ++requestEpoch;
     setProblem(null);
     try {
-      const res = await fetch('/api/auth/session/bootstrap', {
+      const res = await fetchAuth('/api/auth/session/bootstrap', {
         method: 'POST',
         credentials: 'same-origin',
       });
@@ -186,7 +214,7 @@ export function createAuthController(deps: AuthControllerDeps) {
       if (epoch !== requestEpoch) return;
       if (parsed.setup) setSetup(parsed.setup);
       if (!res.ok) {
-        deps.resetSession();
+        resetRuntime();
         // 409 表示该一次性窗口不存在或已被消费，是已初始化实例的正常状态；
         // 静默退回显式登录，避免把正常 fallback 呈现为错误。
         setProblem(res.status === 409 ? null : authFeedback(res.status, 'login'));
@@ -194,19 +222,19 @@ export function createAuthController(deps: AuthControllerDeps) {
       }
       const principal = parsePrincipal(parsed.payload);
       if (!principal) {
-        deps.resetSession();
+        resetRuntime();
         setProblem({ kind: 'server', message: 'The server returned an unrecognized access role; sign-in is blocked.', retryable: true });
         return setState('signed-out');
       }
-      deps.resetSession({ preserveLocalDrafts: true });
+      resetRuntime({ preserveLocalDrafts: true });
       installPrincipalRole(principal.role, principal.principalId);
       deps.onPrincipalInstalled?.(principal.principalId);
       clearAuthInvalidation();
       setState('signed-in');
-      connectWithCookie();
+      connectTransport();
     } catch {
       if (epoch === requestEpoch) {
-        deps.resetSession();
+        resetRuntime();
         setProblem(authFeedback(0, 'login'));
         setState('signed-out');
       }
@@ -232,7 +260,7 @@ export function createAuthController(deps: AuthControllerDeps) {
   /** ws 4502 / 管理员撤销等 invalidation 事件的恢复逻辑。 */
   function handleInvalidation(event: { reason: string }) {
     requestEpoch += 1;
-    deps.resetSession();
+    resetRuntime();
     setSubmitting(false);
     // 不盲目清除记住的 token：4502 只是当前 cookie 失效（server 重启、
     // 会话 TTL），localStorage 里的 full token 通常仍然有效。先自动重放；
@@ -250,7 +278,7 @@ export function createAuthController(deps: AuthControllerDeps) {
   async function logout() {
     requestEpoch += 1;
     forgetToken();
-    deps.resetSession();
+    resetRuntime();
     clearAuthInvalidation();
     installPrincipalRole(null);
     setState('signed-out');

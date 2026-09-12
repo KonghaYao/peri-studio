@@ -4,16 +4,26 @@
 //! 校验/Cookie 提取——全部无 I/O，供 [`super::http`] 的 `serve_http` 与
 //! 测试直接断言。
 
+/// 解析请求行 path（去 query），不限制方法。头部未齐或首行非法 → None。
+pub(crate) fn request_line_path(head: &[u8]) -> Option<&str> {
+    let text = std::str::from_utf8(head).ok()?;
+    let line = text.split('\r').next()?;
+    let mut parts = line.split(' ');
+    let _method = parts.next()?;
+    let target = parts.next()?;
+    Some(target.split('?').next().unwrap_or(target))
+}
+
 /// 解析头部首行请求行，返回路径（去 query）；非 GET / 格式非法 → None。
 #[cfg(test)]
 pub(crate) fn request_path(head: &str) -> Option<&str> {
+    let path = request_line_path(head.as_bytes())?;
     let mut parts = head.split_whitespace();
     let method = parts.next()?;
-    let target = parts.next()?;
     if method != "GET" {
         return None;
     }
-    Some(target.split('?').next().unwrap_or(target))
+    Some(path)
 }
 
 /// 定位头部结束符 `\r\n\r\n` 的起始下标；头部未完整 → None。
@@ -123,4 +133,26 @@ pub(crate) fn cookie_value(header: &str, name: &str) -> Option<String> {
         .filter_map(|p| p.trim().split_once('='))
         .find(|(k, _)| *k == name)
         .map(|(_, v)| v.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{request_line_path, request_path};
+
+    #[test]
+    fn request_line_path_reads_auth_and_health_targets() {
+        assert_eq!(
+            request_line_path(b"GET /api/auth/session HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n"),
+            Some("/api/auth/session")
+        );
+        assert_eq!(
+            request_line_path(b"POST /api/auth/session/bootstrap HTTP/1.1\r\n\r\n"),
+            Some("/api/auth/session/bootstrap")
+        );
+        assert_eq!(
+            request_line_path(b"GET /api/health?ready=1 HTTP/1.1\r\n\r\n"),
+            Some("/api/health")
+        );
+        assert_eq!(request_path("POST /api/health HTTP/1.1"), None);
+    }
 }

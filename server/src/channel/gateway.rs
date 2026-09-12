@@ -152,6 +152,27 @@ impl Gateway {
         )
     }
 
+    /// `/api/health` 才查询 Registry 机器摘要；登录与静态资源只用廉价 global status。
+    async fn http_health_snapshot(&self, peeked: &[u8]) -> crate::web::HealthSnapshot {
+        let machines = if crate::web::request_line_path(peeked) == Some("/api/health") {
+            self.registry
+                .list_health_machines()
+                .await
+                .unwrap_or_default()
+                .into_iter()
+                .map(|m| crate::web::HealthMachineSummary {
+                    instance_id: m.instance_id,
+                    display_name: m.display_name,
+                    phase: m.phase,
+                    kind: m.kind,
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+        crate::web::HealthSnapshot::from_runtime(self.registry.global_status(), machines)
+    }
+
     /// accept 循环（hub 装配调用）。
     pub async fn run(&self, listener: TcpListener) -> Result<(), GatewayError> {
         loop {
@@ -188,17 +209,19 @@ impl Gateway {
         //    首段：定位 `\r\n\r\n` 后查 `upgrade: websocket`；头部碎片未齐时
         //    短等补齐（HEAD_PROBE_TIMEOUT），避免把碎片到达的 ws 握手误判。
         let mut peeked = [0u8; 4096];
-        let mut head_len;
+        let mut head_len = 0;
         let head_end = {
             let deadline = tokio::time::Instant::now() + HEAD_PROBE_TIMEOUT;
             loop {
-                head_len = match stream.peek(&mut peeked).await {
-                    Ok(n) => n,
-                    Err(e) => {
+                head_len = match tokio::time::timeout_at(deadline, stream.peek(&mut peeked)).await {
+                    Ok(Ok(n)) => n,
+                    Ok(Err(e)) => {
                         debug!(peer = %peer, error = ?e, "peek failed");
                         drop(stream);
                         return;
                     }
+                    // 预连接/慢首包不得让 peek 永久阻塞后续 HTTP（含登录态检查）。
+                    Err(_) => break None,
                 };
                 match crate::web::header_end(&peeked[..head_len]) {
                     Some(end) => break Some(end),
@@ -219,21 +242,9 @@ impl Gateway {
         };
         if !is_ws {
             // HTTP 分支：不进配额/注册表（§8.6 只面向 ws 连接）。
-            let machines: Vec<crate::web::HealthMachineSummary> = self
-                .registry
-                .list_health_machines()
-                .await
-                .unwrap_or_default()
-                .into_iter()
-                .map(|m| crate::web::HealthMachineSummary {
-                    instance_id: m.instance_id,
-                    display_name: m.display_name,
-                    phase: m.phase,
-                    kind: m.kind,
-                })
-                .collect();
-            let health =
-                crate::web::HealthSnapshot::from_runtime(self.registry.global_status(), machines);
+            // 机器摘要只给 /api/health 用；登录/静态资源不得排队等 Registry actor，
+            // 否则页面已渲染后 GET /api/auth/session 会一直停在 checking。
+            let health = self.http_health_snapshot(&peeked[..head_len]).await;
             if let Err(e) = crate::web::serve_http_with_resources(
                 stream,
                 peer,

@@ -88,7 +88,7 @@ test('authenticated-session cleanup is a complete identity boundary, not reconne
   // P0-2：resetAuthenticatedSession 经 deps 注入（lib 不反向依赖 store），
   // 契约断言跟随注入后的调用形式。
   assert.doesNotMatch(hook, /from '\.\.\/store'/);
-  assert.match(hook, /const principal = parsePrincipal\(parsed\.payload\);[\s\S]*?deps\.resetSession\(\{ preserveLocalDrafts: true \}\);\s*installPrincipalRole\(principal\.role, principal\.principalId\)/);
-  assert.match(hook, /function handleInvalidation\(event: \{ reason: string \}\)[\s\S]*?deps\.resetSession\(\);[\s\S]*?setState\('signed-out'\)/);
+  assert.match(hook, /const principal = parsePrincipal\(parsed\.payload\);[\s\S]*?resetRuntime\(\{ preserveLocalDrafts: true \}\);\s*installPrincipalRole\(principal\.role, principal\.principalId\)/);
+  assert.match(hook, /function handleInvalidation\(event: \{ reason: string \}\)[\s\S]*?resetRuntime\(\);[\s\S]*?setState\('signed-out'\)/);
   assert.match(hook, /createEffect\(\(\) => \{[\s\S]*?const event = authInvalidation\(\);[\s\S]*?handleInvalidation\(event\)/);
 });
