@@ -446,6 +446,7 @@
   /* Layout */
   --composer-max: 760px;
   --composer-launch-max: 736px;
+  --composer-slash-width: 100%;
   --composer-safe-bottom: calc(var(--space-20) + env(safe-area-inset-bottom));
   --container-popover: min(288px, calc(100vw - 2 * var(--space-16)));
   --container-dialog-default: min(400px, calc(100vw - 2 * var(--space-20)));

@@ -200,7 +200,7 @@ Widget **可以**读 `store`；**不得**直发 WebSocket 帧。复杂逻辑下�
 | 桌面 · 右 | `ResourceFloatingPanel`（`anchor=right`） | Explorer、Source Control、Git Graph；`widthProfile` 为 `workspace` 或 `graph` |
 | 桌面 · 左 | `ResourceFloatingPanel`（`anchor=left`，`widthProfile=preview`） | 只读文件预览；可与右侧文件树同时显示 |
 | 桌面 · 主区 | `conversation-pane` | 默认 `ChatView`；**Git diff** 预览占满主区并暂挂右侧资源 view |
-| 移动 | Dialog / 主区全屏 | 资源 drawer；文件预览仍在主区 |
+| 移动 | Dialog + 左浮动预览 | 资源 drawer；文件预览与桌面一致为 `ResourceFloatingPanel`（`leftOffset` 仅边距） |
 
 宽度默认值、sessionStorage 键与 `leftOffset`（侧栏宽 + 边距）见 `widgets/resource/resource-panel-layout.ts`。
 

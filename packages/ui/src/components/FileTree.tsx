@@ -1,4 +1,4 @@
-import { For, Show, type JSX } from 'solid-js';
+import { For, Show, createContext, createMemo, useContext, type JSX } from 'solid-js';
 import { cn } from '../lib/cn';
 import { VSCodeFileIcon } from './VSCodeFileIcon';
 
@@ -43,121 +43,130 @@ export type FileTreeProps = {
   renderFolderFooter?: (node: FileTreeNode, depth: number) => JSX.Element | undefined;
 };
 
+const FileTreeContext = createContext<FileTreeProps>();
+
 /** Explorer / SCM 共用文件树：目录仅展示文件夹图标，无 chevron。 */
 export function FileTree(props: FileTreeProps) {
-  const depth = () => props.depth ?? 0;
+  return (
+    <FileTreeContext.Provider value={props}>
+      <FileTreeList nodes={props.nodes} depth={props.depth ?? 0} />
+    </FileTreeContext.Provider>
+  );
+}
 
+function FileTreeList(props: { nodes: FileTreeNode[]; depth: number }) {
   return (
     <For each={props.nodes}>
-      {(node, index) => {
-        const rowContext = {
-          depth: depth(),
-          index: index(),
-          setSize: props.nodes.length,
-        };
-        const replacement = () => props.renderNodeRow?.(node, node.kind === 'folder'
-          ? { ...rowContext, kind: 'folder', open: props.expandedPaths.has(node.path) }
-          : { ...rowContext, kind: 'file' });
+      {(node, index) => (
+        <FileTreeItem
+          node={node}
+          index={index()}
+          setSize={props.nodes.length}
+          depth={props.depth}
+        />
+      )}
+    </For>
+  );
+}
 
-        return (
+/**
+ * 每行独立组件 + 按路径 memo 展开/选中态。
+ * For 回调不得读取 expandedPaths，否则换 Set 会重建整棵已展开子树。
+ * `{replacement() ?? <Row />}` 同样会在表达式重跑时新建行，须用 Show fallback 保住默认行。
+ */
+function FileTreeItem(props: {
+  node: FileTreeNode;
+  index: number;
+  setSize: number;
+  depth: number;
+}) {
+  const tree = useContext(FileTreeContext)!;
+  const isFolder = () => props.node.kind === 'folder';
+  const open = createMemo(() => isFolder() && tree.expandedPaths.has(props.node.path));
+  const selected = createMemo(() => tree.selectedPath === props.node.path);
+  const active = createMemo(() => tree.activePath === props.node.path);
+  const defaultTabIndex = createMemo(() => !tree.activePath && props.depth === 0 && props.index === 0);
+  const loading = createMemo(() => tree.folderLoadingPaths?.has(props.node.path) ?? false);
+  const customRow = () => tree.renderNodeRow?.(props.node, isFolder()
+    ? { depth: props.depth, index: props.index, setSize: props.setSize, kind: 'folder', open: open() }
+    : { depth: props.depth, index: props.index, setSize: props.setSize, kind: 'file' });
+
+  return (
+    <>
+      <Show
+        when={customRow()}
+        fallback={(
           <Show
-            when={node.kind === 'folder'}
-            fallback={replacement() ?? (
+            when={isFolder()}
+            fallback={(
               <FileTreeFileRow
-                node={node}
-                depth={rowContext.depth}
-                index={rowContext.index}
-                setSize={rowContext.setSize}
-                selected={props.selectedPath === node.path}
-                active={props.activePath === node.path}
-                defaultTabIndex={!props.activePath && rowContext.depth === 0 && rowContext.index === 0}
-                label={props.getNodeLabel?.(node) ?? node.name}
-                rowClassName={props.getNodeClassName?.(node)}
-                onSelect={props.onSelect}
-                onActivePathChange={props.onActivePathChange}
-                renderFileIcon={props.renderFileIcon}
-                trailing={props.renderFileTrailing?.(node)}
-                onContextMenu={(event) => props.onNodeContextMenu?.(node, event)}
-                onMount={(element) => props.onNodeMount?.(node, element)}
-                dataAttrs={props.getFileDataAttrs?.(node)}
-                ariaLabel={props.fileAriaLabel?.(node)}
-                treeitem={props.fileTreeitem !== false}
+                node={props.node}
+                depth={props.depth}
+                index={props.index}
+                setSize={props.setSize}
+                selected={selected()}
+                active={active()}
+                defaultTabIndex={defaultTabIndex()}
+                label={tree.getNodeLabel?.(props.node) ?? props.node.name}
+                rowClassName={tree.getNodeClassName?.(props.node)}
+                onSelect={tree.onSelect}
+                onActivePathChange={tree.onActivePathChange}
+                renderFileIcon={tree.renderFileIcon}
+                trailing={tree.renderFileTrailing?.(props.node)}
+                onContextMenu={(event) => tree.onNodeContextMenu?.(props.node, event)}
+                onMount={(element) => tree.onNodeMount?.(props.node, element)}
+                dataAttrs={tree.getFileDataAttrs?.(props.node)}
+                ariaLabel={tree.fileAriaLabel?.(props.node)}
+                treeitem={tree.fileTreeitem !== false}
               />
             )}
           >
-            {replacement() ?? (
-              <FileTreeFolderRow
-                node={node}
-                depth={rowContext.depth}
-                index={rowContext.index}
-                setSize={rowContext.setSize}
-                open={props.expandedPaths.has(node.path)}
-                selected={props.selectedPath === node.path}
-                active={props.activePath === node.path}
-                defaultTabIndex={!props.activePath && rowContext.depth === 0 && rowContext.index === 0}
-                label={props.getNodeLabel?.(node) ?? node.name}
-                rowClassName={props.getNodeClassName?.(node)}
-                onToggle={() => props.onToggleFolder(node.path)}
-                onActivePathChange={props.onActivePathChange}
-                renderFolderIcon={props.renderFolderIcon}
-                trailing={props.renderFolderTrailing?.(node)}
-                onContextMenu={(event) => props.onNodeContextMenu?.(node, event)}
-                onMount={(element) => props.onNodeMount?.(node, element)}
-                dropTargetPath={props.dropTargetPath}
-                onFolderDragOver={props.onFolderDragOver}
-                onFolderDragLeave={props.onFolderDragLeave}
-                onFolderDrop={props.onFolderDrop}
-              />
-            )}
-            <Show when={props.expandedPaths.has(node.path)}>
-              <div role="group">
-                <Show
-                  when={!props.folderLoadingPaths?.has(node.path)}
-                  fallback={(
-                    <div
-                      class="flex h-(--tree-row-height) items-center text-11 text-text-muted pointer-coarse:h-44"
-                      style={{ 'padding-left': `${32 + depth() * 12}px` }}
-                    >
-                      Loading…
-                    </div>
-                  )}
-                >
-                  <FileTree
-                    nodes={node.children ?? []}
-                    depth={depth() + 1}
-                    expandedPaths={props.expandedPaths}
-                    onToggleFolder={props.onToggleFolder}
-                    selectedPath={props.selectedPath}
-                    activePath={props.activePath}
-                    onSelect={props.onSelect}
-                    onActivePathChange={props.onActivePathChange}
-                    renderFileIcon={props.renderFileIcon}
-                    renderFolderIcon={props.renderFolderIcon}
-                    renderFileTrailing={props.renderFileTrailing}
-                    renderFolderTrailing={props.renderFolderTrailing}
-                    onNodeContextMenu={props.onNodeContextMenu}
-                    onNodeMount={props.onNodeMount}
-                    getFileDataAttrs={props.getFileDataAttrs}
-                    fileAriaLabel={props.fileAriaLabel}
-                    getNodeLabel={props.getNodeLabel}
-                    getNodeClassName={props.getNodeClassName}
-                    renderNodeRow={props.renderNodeRow}
-                    renderFolderFooter={props.renderFolderFooter}
-                    folderLoadingPaths={props.folderLoadingPaths}
-                    fileTreeitem={props.fileTreeitem}
-                    dropTargetPath={props.dropTargetPath}
-                    onFolderDragOver={props.onFolderDragOver}
-                    onFolderDragLeave={props.onFolderDragLeave}
-                    onFolderDrop={props.onFolderDrop}
-                  />
-                </Show>
-                {props.renderFolderFooter?.(node, depth())}
-              </div>
-            </Show>
+            <FileTreeFolderRow
+              node={props.node}
+              depth={props.depth}
+              index={props.index}
+              setSize={props.setSize}
+              open={open()}
+              selected={selected()}
+              active={active()}
+              defaultTabIndex={defaultTabIndex()}
+              label={tree.getNodeLabel?.(props.node) ?? props.node.name}
+              rowClassName={tree.getNodeClassName?.(props.node)}
+              onToggle={() => tree.onToggleFolder(props.node.path)}
+              onActivePathChange={tree.onActivePathChange}
+              renderFolderIcon={tree.renderFolderIcon}
+              trailing={tree.renderFolderTrailing?.(props.node)}
+              onContextMenu={(event) => tree.onNodeContextMenu?.(props.node, event)}
+              onMount={(element) => tree.onNodeMount?.(props.node, element)}
+              dropTargetPath={tree.dropTargetPath}
+              onFolderDragOver={tree.onFolderDragOver}
+              onFolderDragLeave={tree.onFolderDragLeave}
+              onFolderDrop={tree.onFolderDrop}
+            />
           </Show>
-        );
-      }}
-    </For>
+        )}
+      >
+        {(row) => row()}
+      </Show>
+      <Show when={isFolder() && open()}>
+        <div role="group">
+          <Show
+            when={!loading()}
+            fallback={(
+              <div
+                class="flex h-(--tree-row-height) items-center text-11 text-text-muted pointer-coarse:h-44"
+                style={{ 'padding-left': `${32 + props.depth * 12}px` }}
+              >
+                Loading…
+              </div>
+            )}
+          >
+            <FileTreeList nodes={props.node.children ?? []} depth={props.depth + 1} />
+          </Show>
+          {tree.renderFolderFooter?.(props.node, props.depth)}
+        </div>
+      </Show>
+    </>
   );
 }
 

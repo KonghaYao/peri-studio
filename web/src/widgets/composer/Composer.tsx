@@ -149,7 +149,7 @@ export function Composer(props: {
           onActiveIndex={state.slash.onMenuActiveIndex}
           onSelect={(item) => state.slash.selectCommand(item.name)}
           onKeyDown={(event) => state.slash.handleKeyDown(event)}
-          shellClass="slash-menu absolute z-35 right-20 bottom-full left-20 mb-8 max-tight:right-10 max-tight:left-10"
+          shellClass="slash-menu ui-composer-slash-overlay"
         />
       </Show>
       <ComposerShell

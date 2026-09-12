@@ -56,7 +56,7 @@ type ExplorerPanelProps = {
   activePath?: string; onActivePathChange?: (path: string) => void;
   scrollTop?: number; onScrollTopChange?: (scrollTop: number) => void; onPreviewIntent?: (key: string) => void;
 };
-function entryToNode(entry: ResourceEntry, expanded: Set<string>, cache: Map<string, FileTreeNode>): FileTreeNode {
+function entryToNode(entry: ResourceEntry, cache: Map<string, FileTreeNode>): FileTreeNode {
   const path = String(entry.path ?? '');
   const directory = entry.kind === 'directory';
   const cached = cache.get(path);
@@ -69,9 +69,9 @@ function entryToNode(entry: ResourceEntry, expanded: Set<string>, cache: Map<str
   node.name = String(entry.name ?? path);
   node.kind = directory ? 'folder' : 'file';
   node.meta = { revision: typeof entry.revision === 'string' ? entry.revision : '' };
-  node.children = directory && expanded.has(path)
-    ? (resourceWorkspace().directories[path]?.entries ?? []).map((child) => entryToNode(child, expanded, cache))
-    : undefined;
+  // 子节点跟已加载的 directory page，不跟展开态；展开只由 FileTree 的 Show 控制可见性。
+  const page = directory ? resourceWorkspace().directories[path] : undefined;
+  node.children = page ? page.entries.map((child) => entryToNode(child, cache)) : undefined;
   cache.set(path, node);
   return node;
 }
@@ -154,8 +154,9 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
       nodeCache.clear();
       previousDirectoryRevision = revision;
     }
-    return (resourceWorkspace().directories['']?.entries ?? []).map((entry) => entryToNode(entry, expanded(), nodeCache));
+    return (resourceWorkspace().directories['']?.entries ?? []).map((entry) => entryToNode(entry, nodeCache));
   });
+  const loadingPaths = createMemo(() => folderLoadingPaths(expanded()));
   const visiblePaths = createMemo(() => {
     const paths: string[] = [];
     const visit = (items: FileTreeNode[]) => {
@@ -537,7 +538,7 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
             openNodeMenu(node, event);
           }}
           onNodeMount={handleNodeMount}
-          folderLoadingPaths={folderLoadingPaths(expanded())}
+          folderLoadingPaths={loadingPaths()}
           onSelect={(node) => {
             props.onPreviewIntent?.(`file:${node.path}`);
             openFilePreview(node.path);

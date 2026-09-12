@@ -14,8 +14,9 @@ describe('VS Code-style file editor', () => {
     });
 
     render(() => <ResourceFileEditor />);
-    expect(screen.getByRole('region', { name: 'File preview: src/main.ts' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'File preview: src/main.ts' })).toBeInTheDocument();
+    const previewRegion = screen.getByRole('region', { name: 'File preview: src/main.ts' });
+    expect(previewRegion).toBeInTheDocument();
+    expect(previewRegion.querySelector('[data-resource-preview-focus]')).toHaveAttribute('aria-label', 'File preview: src/main.ts');
     expect(screen.getByText('Read-only')).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Contents of src/main.ts' })).toBeInTheDocument();
     expect(screen.getByText('const answer = 42;')).toBeInTheDocument();

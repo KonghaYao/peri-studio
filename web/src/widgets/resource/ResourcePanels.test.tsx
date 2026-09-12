@@ -211,6 +211,38 @@ describe('VS Code-style resource panels', () => {
     vi.useRealTimers();
   });
 
+  it('keeps existing explorer rows mounted when another folder expands', async () => {
+    installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
+    setResourceWorkspace({
+      projectId: 'project-1', repositories: [], loading: [], error: null,
+      directories: {
+        '': {
+          generation: 'g1',
+          entries: [
+            { id: 'src', name: 'src', path: 'src', kind: 'directory' },
+            { id: 'lib', name: 'lib', path: 'lib', kind: 'directory' },
+            { id: 'readme', name: 'README.md', path: 'README.md', kind: 'file' },
+          ],
+        },
+        src: { generation: 'g2', entries: [{ id: 'main', name: 'main.ts', path: 'src/main.ts', kind: 'file', size: 24 }] },
+        lib: { generation: 'g3', entries: [{ id: 'util', name: 'util.ts', path: 'lib/util.ts', kind: 'file', size: 12 }] },
+      },
+    });
+    render(() => <ExplorerPanel />);
+    await fireEvent.click(screen.getByRole('treeitem', { name: /^src$/i }));
+    const src = screen.getByRole('treeitem', { name: /^src$/i });
+    const readme = screen.getByRole('treeitem', { name: /README\.md/i });
+    const main = screen.getByRole('treeitem', { name: /main\.ts/i });
+
+    await fireEvent.click(screen.getByRole('treeitem', { name: /^lib$/i }));
+
+    expect(screen.getByRole('treeitem', { name: /^src$/i })).toBe(src);
+    expect(screen.getByRole('treeitem', { name: /README\.md/i })).toBe(readme);
+    expect(screen.getByRole('treeitem', { name: /main\.ts/i })).toBe(main);
+    expect(screen.getByRole('treeitem', { name: /util\.ts/i })).toBeInTheDocument();
+    expect(screen.getByRole('treeitem', { name: /^lib$/i })).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('navigates the Explorer as a single-tab-stop ARIA tree', async () => {
     installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
     setResourceWorkspace({

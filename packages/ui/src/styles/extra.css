@@ -203,6 +203,8 @@
   flex-direction: column;
   min-height: 0;
   max-height: 72dvh;
+  /* slash 浮层绝对定位在 composer 上方；hidden/clip 会连 overflow-y 一起变成可裁切。 */
+  overflow: visible;
   padding-top: var(--space-28);
   background: linear-gradient(
     0deg,
@@ -515,7 +517,9 @@
 
 .ui-composer-editor {
   display: grid;
+  flex: 1 1 auto;
   min-width: 0;
+  width: 100%;
 }
 
 .ui-composer-editor__hint,
@@ -527,8 +531,9 @@
 .ui-composer-editor__hint {
   pointer-events: none;
   overflow: hidden;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
 }
 
 .ui-composer-editor__hint--prediction {
@@ -556,22 +561,26 @@
 /* ── Composer shell（T3 · 双形态胶囊） ─────────────────────────────────── */
 
 .ui-composer-shell {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-10);
   width: 100%;
-  max-width: var(--composer-launch-max);
+  min-width: 0;
 }
 
 .ui-composer-surface-v2 {
   position: relative;
-  overflow: hidden;
+  /* 浮层（+ slash / 模型菜单）必须画出 surface；圆角裁切只留给内部附件与输入。 */
+  overflow: visible;
   border: 1px solid var(--border-subtle);
   background: var(--surface-canvas);
   box-shadow: none;
 }
 
 .ui-composer-surface-v2--compact {
+  display: flex;
+  align-items: center;
   min-height: var(--composer-pill-height);
   border-radius: var(--composer-pill-radius);
   padding: 0 var(--space-8);
@@ -595,6 +604,7 @@
 }
 
 .ui-composer-surface-v2--compact .ui-composer-surface-v2__body {
+  flex: 1 1 auto;
   height: var(--composer-pill-height);
 }
 
@@ -725,8 +735,19 @@
   padding: 0 var(--space-4);
 }
 
+.ui-composer-slash-overlay {
+  position: absolute;
+  z-index: var(--z-overlay);
+  inset-inline: 0;
+  bottom: 100%;
+  margin-bottom: var(--space-8);
+}
+
 .ui-composer-slash-popover {
-  width: min(var(--container-popover), 100vw);
+  box-sizing: border-box;
+  width: var(--composer-slash-width, 100%);
+  max-width: none;
+  min-width: 0;
   overflow: hidden;
   border-radius: var(--radius-lg);
 }

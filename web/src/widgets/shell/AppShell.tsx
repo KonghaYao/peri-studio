@@ -209,26 +209,19 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
       </Show>
       <main ref={main} data-testid="conversation-pane" class="conversation-pane flex min-w-0 min-h-0 flex-col overflow-hidden">
         <div class="min-h-0 flex-1">
-          <Show
-            when={mobile() && resourceFilePreview()}
-            fallback={
-              <Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenResources={openResources} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
-                <ResourceDiffEditor onClose={() => closePreview('diff')} />
-              </Show>
-            }
-          >
-            <ResourceFileEditor onClose={() => closePreview('file')} />
+          <Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenResources={openResources} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
+            <ResourceDiffEditor onClose={() => closePreview('diff')} />
           </Show>
         </div>
       </main>
-      <Show when={!mobile() && resourceFilePreview()}>
+      <Show when={resourceFilePreview()}>
         <ResourceFloatingPanel
           anchor="left"
-          leftOffset={workbenchFilePreviewLeftOffset(sidebarColumnWidth())}
+          leftOffset={workbenchFilePreviewLeftOffset(mobile() ? 0 : sidebarColumnWidth())}
           widthProfile="preview"
           data-testid="resource-file-preview-panel"
         >
-          <ResourceFileEditor floating onClose={() => closePreview('file')} />
+          <ResourceFileEditor onClose={() => closePreview('file')} />
         </ResourceFloatingPanel>
       </Show>
       <ResourceWorkbench
