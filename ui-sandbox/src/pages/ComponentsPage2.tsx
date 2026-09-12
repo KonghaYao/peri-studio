@@ -1,6 +1,7 @@
 import { ComponentCatalogExtras } from '@/pages/ComponentCatalogExtras';
 import { ComponentCatalogExtrasB } from '@/pages/ComponentCatalogExtrasB';
 import { ComponentCatalogExtrasC } from '@/pages/ComponentCatalogExtrasC';
+import { ComponentCatalogExtrasD } from '@/pages/ComponentCatalogExtrasD';
 import { TierHeader } from '@/pages/shared/DemoSection';
 
 /** T2 · Base UI 扩展页：第二批及后续 shadcn 对齐组件的展示矩阵。 */
@@ -15,6 +16,7 @@ export function ComponentsPage2() {
       <ComponentCatalogExtras />
       <ComponentCatalogExtrasB />
       <ComponentCatalogExtrasC />
+      <ComponentCatalogExtrasD />
     </div>
   );
 }

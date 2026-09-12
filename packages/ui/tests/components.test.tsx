@@ -43,6 +43,7 @@ import { Kbd } from '../src/components/Kbd';
 import { Progress, ProgressFill, ProgressLabel, ProgressTrack, ProgressValueLabel } from '../src/components/Progress';
 import { Slider, SliderFill, SliderThumb, SliderTrack } from '../src/components/Slider';
 import { TextField } from '../src/components/Field';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '../src/components/Form';
 import { NativeSelect, NativeSelectOption } from '../src/components/NativeSelect';
 import {
   Blockquote,
@@ -69,6 +70,16 @@ import { EmptyState } from '../src/components/EmptyState';
 import { Alert, AlertDescription, AlertTitle } from '../src/components/Alert';
 import { Avatar, AvatarFallback, AvatarImage } from '../src/components/Avatar';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../src/components/Card';
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemSeparator,
+  ItemTitle,
+} from '../src/components/Item';
 import { InlineNotice } from '../src/components/InlineNotice';
 import { LoadingState } from '../src/components/LoadingState';
 import { Skeleton } from '../src/components/Skeleton';
@@ -137,7 +148,7 @@ describe('Breadcrumb', () => {
         </BreadcrumbList>
       </Breadcrumb>
     ));
-    expect(screen.getByTestId('ellipsis')).toHaveClass('size-24');
+    expect(screen.getByTestId('ellipsis')).toHaveClass('size-28');
     expect(screen.getByText('More')).toHaveClass('sr-only');
   });
 });
@@ -178,7 +189,7 @@ describe('Pagination', () => {
         </PaginationContent>
       </Pagination>
     ));
-    expect(screen.getByTestId('ellipsis')).toHaveClass('size-32');
+    expect(screen.getByTestId('ellipsis')).toHaveClass('size-36');
     expect(screen.getByText('More pages')).toHaveClass('sr-only');
   });
 });
@@ -350,7 +361,7 @@ describe('Listbox', () => {
         )}
       />
     ));
-    expect(screen.getByTestId('listbox-item')).toHaveClass('min-h-32', 'rounded-md', 'text-content-primary');
+    expect(screen.getByTestId('listbox-item')).toHaveClass('min-h-36', 'rounded-md', 'text-content-primary');
     unmount();
     render(() => (
       <Listbox
@@ -413,8 +424,8 @@ describe('Button', () => {
 
   it('uses rounded rectangular geometry for icon-only actions', () => {
     render(() => <><IconButton label="Default action">×</IconButton><IconButton label="Compact action" size="compact">×</IconButton></>);
-    expect(screen.getByRole('button', { name: 'Default action' })).toHaveClass('size-32', 'rounded-6');
-    expect(screen.getByRole('button', { name: 'Compact action' })).toHaveClass('size-24', 'rounded-6');
+    expect(screen.getByRole('button', { name: 'Default action' })).toHaveClass('size-36', 'rounded-6');
+    expect(screen.getByRole('button', { name: 'Compact action' })).toHaveClass('size-28', 'rounded-6');
     expect(screen.getByRole('button', { name: 'Default action' })).not.toHaveClass('rounded-full');
   });
 
@@ -541,6 +552,76 @@ describe('InputGroup', () => {
     const group = screen.getByTestId('group');
     expect(screen.getByRole('textbox', { name: 'Token' })).toBeDisabled();
     expect(group).toHaveClass('has-[:disabled]:opacity-45', 'has-[:disabled]:cursor-not-allowed');
+  });
+});
+
+describe('Form', () => {
+  it('wires label, description, control id and aria-describedby', () => {
+    render(() => (
+      <Form>
+        <FormField name="email">
+          <FormItem>
+            <FormLabel>Email</FormLabel>
+            <FormControl>
+              <input type="email" />
+            </FormControl>
+            <FormDescription>Use your work address.</FormDescription>
+          </FormItem>
+        </FormField>
+      </Form>
+    ));
+    const input = screen.getByRole('textbox', { name: 'Email' });
+    const description = screen.getByText('Use your work address.');
+    expect(input).toHaveAttribute('id', description.id.replace('-description', ''));
+    expect(input).toHaveAccessibleDescription('Use your work address.');
+    expect(input).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('shows field errors with danger styling and invalid semantics', () => {
+    render(() => (
+      <Form errors={{ session: 'Name is required' }}>
+        <FormField name="session">
+          <FormItem>
+            <FormLabel>Session name</FormLabel>
+            <FormControl>
+              <input type="text" />
+            </FormControl>
+            <FormDescription>Shown in the sidebar.</FormDescription>
+            <FormMessage />
+          </FormItem>
+        </FormField>
+      </Form>
+    ));
+    const input = screen.getByRole('textbox', { name: 'Session name' });
+    const description = screen.getByText('Shown in the sidebar.');
+    const message = screen.getByText('Name is required');
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input).toHaveAttribute('aria-describedby', `${description.id} ${message.id}`);
+    expect(input).toHaveAccessibleDescription('Shown in the sidebar. Name is required');
+    expect(message).toHaveClass('text-danger');
+  });
+
+  it('supports FormField render props and explicit error override', () => {
+    render(() => (
+      <Form errors={{ token: 'Form-level error' }}>
+        <FormField name="token" error="Explicit error">
+          {(field) => (
+            <FormItem>
+              <FormLabel>Token</FormLabel>
+              <FormControl>
+                <input type="text" data-invalid={field.invalid ? 'true' : 'false'} />
+              </FormControl>
+              <FormMessage>{field.error}</FormMessage>
+            </FormItem>
+          )}
+        </FormField>
+      </Form>
+    ));
+    const input = screen.getByRole('textbox', { name: 'Token' });
+    expect(input).toHaveAttribute('data-invalid', 'true');
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Explicit error')).toBeInTheDocument();
+    expect(screen.queryByText('Form-level error')).not.toBeInTheDocument();
   });
 });
 
@@ -705,6 +786,52 @@ describe('Popover', () => {
   });
 });
 
+describe('Item', () => {
+  it('composes media, content, actions and separators in a group', () => {
+    render(() => (
+      <ItemGroup data-testid="item-group">
+        <Item data-testid="item">
+          <ItemMedia data-testid="item-media">
+            <span aria-hidden="true">◎</span>
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>Dashboard</ItemTitle>
+            <ItemDescription>Overview of your account and activity.</ItemDescription>
+          </ItemContent>
+          <ItemActions>
+            <Button size="sm" variant="secondary">Open</Button>
+          </ItemActions>
+        </Item>
+        <ItemSeparator data-testid="item-separator" />
+        <Item>
+          <ItemContent>
+            <ItemTitle>Settings</ItemTitle>
+          </ItemContent>
+        </Item>
+      </ItemGroup>
+    ));
+
+    expect(screen.getByTestId('item-group')).toHaveClass('flex', 'flex-col');
+    expect(screen.getByTestId('item')).toHaveClass(
+      'flex',
+      'gap-12',
+      'rounded-8',
+      'px-12',
+      'py-10',
+      'hover:bg-interaction-hover',
+    );
+    expect(screen.getByTestId('item-media')).toHaveClass('shrink-0');
+    expect(screen.getByText('Dashboard')).toHaveClass('text-13', 'font-medium', 'text-content-primary');
+    expect(screen.getByText('Overview of your account and activity.')).toHaveClass(
+      'text-12',
+      'text-content-secondary',
+    );
+    expect(screen.getByRole('button', { name: 'Open' }).parentElement).toHaveClass('ml-auto', 'shrink-0');
+    expect(screen.getByTestId('item-separator')).toHaveAttribute('data-orientation', 'horizontal');
+    expect(screen.getByTestId('item-separator')).toHaveClass('bg-divider');
+  });
+});
+
 describe('Card', () => {
   it('composes header, content and footer without leaking component props', () => {
     render(() => (
@@ -761,7 +888,7 @@ describe('Avatar', () => {
         <AvatarFallback aria-label="Guest">G</AvatarFallback>
       </Avatar>
     ));
-    expect(screen.getByTestId('avatar')).toHaveClass('size-32', 'rounded-full', 'bg-surface-muted');
+    expect(screen.getByTestId('avatar')).toHaveClass('size-36', 'rounded-full', 'bg-surface-muted');
     expect(screen.getByLabelText('Guest')).toHaveTextContent('G');
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
@@ -856,11 +983,11 @@ describe('Menubar', () => {
       </Menubar>
     ));
     const bar = screen.getByRole('menubar');
-    expect(bar).toHaveClass('flex', 'h-32', 'rounded-md', 'border-border-subtle', 'bg-surface');
+    expect(bar).toHaveClass('flex', 'h-36', 'rounded-md', 'border-border-subtle', 'bg-surface');
     const fileTrigger = screen.getByRole('menuitem', { name: 'File' });
     expect(fileTrigger).toHaveClass('text-13', 'font-medium');
     const item = await screen.findByRole('menuitem', { name: 'New tab' });
-    expect(item).toHaveClass('min-h-32', 'rounded-6', 'text-13');
+    expect(item).toHaveClass('min-h-36', 'rounded-6', 'text-13');
     expect(document.body.contains(item)).toBe(true);
   });
 });
@@ -893,7 +1020,7 @@ describe('NavigationMenu', () => {
     const nav = screen.getByRole('navigation');
     expect(nav.querySelector('ul')).toHaveClass('group/navigation-menu', 'list-none', 'items-center');
     const trigger = screen.getByRole('menuitem', { name: /Product/ });
-    expect(trigger).toHaveClass('h-32', 'rounded-md', 'font-medium');
+    expect(trigger).toHaveClass('h-36', 'rounded-md', 'font-medium');
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
     const link = await screen.findByRole('link', { name: 'Docs' });
     expect(link).toHaveAttribute('data-active', 'true');
@@ -914,7 +1041,7 @@ describe('ContextMenu', () => {
     ));
     fireEvent.contextMenu(screen.getByTestId('trigger'));
     const item = await screen.findByRole('menuitem', { name: 'Rename' });
-    expect(item).toHaveClass('min-h-32', 'rounded-6', 'text-13');
+    expect(item).toHaveClass('min-h-36', 'rounded-6', 'text-13');
     expect(document.body.contains(item)).toBe(true);
   });
 });
@@ -1495,7 +1622,7 @@ describe('InputOTP', () => {
       </InputOTP>
     ));
     const slot0 = screen.getByTestId('slot-0');
-    expect(slot0.className).toContain('h-32');
+    expect(slot0.className).toContain('h-36');
     expect(slot0.className).toContain('rounded-6');
     expect(slot0.className).toContain('border-border-strong');
     expect(screen.getByTestId('separator')).toHaveTextContent('-');
@@ -1614,7 +1741,7 @@ describe('Combobox', () => {
 
     const content = await screen.findByTestId('content');
     expect(content).toHaveClass('rounded-8', 'border-border-subtle', 'bg-surface', 'shadow-popover');
-    expect(screen.getByRole('option', { name: 'SolidJS' })).toHaveClass('min-h-32', 'rounded-6');
+    expect(screen.getByRole('option', { name: 'SolidJS' })).toHaveClass('min-h-36', 'rounded-6');
   });
 });
 
@@ -1675,7 +1802,7 @@ describe('NativeSelect', () => {
       </NativeSelect>
     ));
     const select = screen.getByRole('combobox', { name: 'Project' });
-    expect(select).toHaveClass('h-32', 'rounded-6', 'border-border-strong', 'appearance-none', 'pr-32');
+    expect(select).toHaveClass('h-36', 'rounded-6', 'border-border-strong', 'appearance-none', 'pr-32');
     expect(select).not.toHaveAttribute('invalid');
     expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
   });

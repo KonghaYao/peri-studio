@@ -14,19 +14,24 @@ export { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 export { Avatar, AvatarFallback, AvatarImage } from './components/Avatar';
 export { Badge, type BadgeTone } from './components/Badge';
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './components/Card';
+export { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, useCarousel, type CarouselApi } from './components/Carousel';
 export { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from './components/Checkbox';
 export { Combobox, ComboboxControl, ComboboxContent, ComboboxInput, ComboboxItem } from './components/Combobox';
 export { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator, CommandShortcut } from './components/Command';
 export { Kbd } from './components/Kbd';
 export { Progress, ProgressFill, ProgressLabel, ProgressTrack, ProgressValueLabel } from './components/Progress';
 export { Slider, SliderFill, SliderLabel, SliderThumb, SliderTrack } from './components/Slider';
+export { Calendar, CalendarCell, CalendarDay, CalendarGrid, CalendarHeader, CalendarNav } from './components/Calendar';
+export { DatePicker, DatePickerContent, DatePickerTrigger } from './components/DatePicker';
 export { CopyButton } from './components/CopyButton';
 export { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogPortal, DialogTitle, DialogTrigger } from './components/Dialog';
 export { EmptyState } from './components/EmptyState';
 export { InlineNotice, type InlineNoticeTone } from './components/InlineNotice';
+export { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemSeparator, ItemTitle } from './components/Item';
 export { Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel } from './components/Listbox';
 export { LoadingState } from './components/LoadingState';
 export { Input, TextField } from './components/Field';
+export { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage, useFormField, type FormFieldRenderProps } from './components/Form';
 export { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from './components/InputOTP';
 export {
   Blockquote,
