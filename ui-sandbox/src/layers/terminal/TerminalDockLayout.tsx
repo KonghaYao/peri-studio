@@ -27,7 +27,7 @@ export function TerminalDockLayout() {
   return (
     <div class="flex flex-col">
       {/* 演示上下文：说明 project 绑定策略（非生产壳层） */}
-      <p class="mb-3 text-12 text-content-muted">
+      <p class="mb-12 text-12 text-content-muted">
         Mock workspace. Terminals stay bound to{' '}
         <span class="font-medium text-content-secondary">{MOCK_PROJECT}</span> even when the active project changes.
       </p>
@@ -36,7 +36,7 @@ export function TerminalDockLayout() {
         class="overflow-hidden rounded-lg border border-border-subtle bg-surface-muted"
         role="presentation"
       >
-        <div class="flex h-40 items-center justify-center border-b border-border-subtle bg-surface-canvas px-4 text-center text-12 text-content-faint">
+        <div class="flex h-180 items-center justify-center border-b border-border-subtle bg-surface-canvas px-16 text-center text-12 text-content-faint">
           Main panel · active project may differ from the terminal&apos;s bound project
         </div>
 
@@ -44,7 +44,7 @@ export function TerminalDockLayout() {
           aria-label="Terminal dock"
           class="border-t border-terminal-dock-border bg-terminal-dock-surface"
         >
-          <header class="flex h-32 min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap border-b border-border-subtle px-2">
+          <header class="flex h-32 min-w-0 items-center gap-8 overflow-hidden whitespace-nowrap border-b border-border-subtle px-8">
             <IconButton
               label={expanded() ? 'Collapse terminal viewport' : 'Expand terminal viewport'}
               size="sm"
@@ -60,7 +60,7 @@ export function TerminalDockLayout() {
 
           <Show when={expanded()}>
             <div
-              class="h-(--terminal-viewport-height) overflow-auto bg-terminal-viewport-bg px-3 py-2 font-mono text-12 leading-relaxed"
+              class="h-(--terminal-viewport-height) overflow-auto bg-terminal-viewport-bg px-12 py-8 font-mono text-12 leading-relaxed"
               role="log"
               aria-live="off"
             >
@@ -70,7 +70,7 @@ export function TerminalDockLayout() {
                   <Show
                     when={lifecycle() === 'exited'}
                     fallback={
-                      <div class="space-y-2">
+                      <div class="space-y-8">
                         <p class="text-terminal-viewport-fg">
                           <span class="text-terminal-viewport-muted">$</span> bun run typecheck
                         </p>
@@ -87,7 +87,7 @@ export function TerminalDockLayout() {
                       <span class="text-terminal-viewport-accent">{MOCK_CWD}</span>
                       <span class="text-terminal-viewport-muted"> $ exit</span>
                     </p>
-                    <p class="mt-2 text-terminal-viewport-muted">Session ended · PTY remains listed while collapsed.</p>
+                    <p class="mt-8 text-terminal-viewport-muted">Session ended · PTY remains listed while collapsed.</p>
                   </Show>
                 }
               >
@@ -98,23 +98,23 @@ export function TerminalDockLayout() {
                   <span> $</span>
                   <span class="text-terminal-viewport-fg"> bun run typecheck</span>
                 </p>
-                <p class="mt-1 text-terminal-viewport-fg">$ tsc -p ui-sandbox</p>
+                <p class="mt-4 text-terminal-viewport-fg">$ tsc -p ui-sandbox</p>
                 <p class="text-terminal-viewport-muted">Done in 1.2s</p>
-                <p class="mt-2 text-terminal-viewport-muted">
+                <p class="mt-8 text-terminal-viewport-muted">
                   <span class="text-terminal-viewport-fg">minho@studio</span>
                   <span>:</span>
                   <span class="text-terminal-viewport-accent">{MOCK_CWD}</span>
                   <span> $</span>
-                  <span class="inline-block w-2 animate-pulse bg-terminal-viewport-fg" aria-hidden="true" />
+                  <span class="inline-block w-8 animate-pulse bg-terminal-viewport-fg" aria-hidden="true" />
                 </p>
               </Show>
             </div>
           </Show>
 
-          <footer class="flex h-32 min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap border-t border-border-subtle px-2 text-11 text-content-muted">
+          <footer class="flex h-32 min-w-0 items-center gap-8 overflow-hidden whitespace-nowrap border-t border-border-subtle px-8 text-11 text-content-muted">
             <Status tone={meta().tone} label={meta().statusLabel} live={meta().live} class="shrink-0" />
             <span
-              class="inline-flex min-w-0 items-center gap-1 overflow-hidden"
+              class="inline-flex min-w-0 items-center gap-4 overflow-hidden"
               title="Terminal is fixed to the project where it was created"
             >
               <FolderRoot size={12} class="shrink-0" aria-hidden="true" />
@@ -126,7 +126,7 @@ export function TerminalDockLayout() {
       </div>
 
       {/* 演示控件：切换生命周期展示，非 Dock 生产 UI */}
-      <div class="mt-3 flex flex-wrap items-center gap-2">
+      <div class="mt-12 flex flex-wrap items-center gap-8">
         <span class="text-11 text-content-faint">Presentation:</span>
         {(['running', 'exited', 'error'] as const).map((state) => (
           <Button

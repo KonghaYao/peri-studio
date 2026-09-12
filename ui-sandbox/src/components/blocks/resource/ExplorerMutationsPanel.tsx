@@ -115,7 +115,7 @@ export function ExplorerMutationsPanel(props: {
       return (
         <InlineNotice tone="warning" title="Version conflict">
           Version conflict. Refresh and try again.
-          <div class="mt-2">
+          <div class="mt-8">
             <Button size="sm" variant="default" onClick={() => setConflictNotice(false)}>
               Refresh
             </Button>
@@ -362,7 +362,7 @@ export function ExplorerMutationsPanel(props: {
           tabindex={-1}
           aria-label="Explorer files"
           aria-disabled={mutationsDisabled()}
-          class="px-1 pb-2 outline-none focus-visible:shadow-(--shadow-focus-ring)"
+          class="px-4 pb-8 outline-none focus-visible:shadow-(--shadow-focus-ring)"
           onKeyDown={onTreeKeyDown}
         >
           <ExplorerMutationsTree

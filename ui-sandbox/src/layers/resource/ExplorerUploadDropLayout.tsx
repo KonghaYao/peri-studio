@@ -37,7 +37,7 @@ function ExplorerDropTreeNode(props: {
     return (
       <div
         role="treeitem"
-        class="flex w-full items-center gap-1.5 rounded-md pr-2 hover:bg-interaction-hover"
+        class="flex w-full items-center gap-6 rounded-md pr-8 hover:bg-interaction-hover"
         style={{ 'min-height': 'var(--resource-tree-row)', 'padding-left': paddingLeft() }}
       >
         <File size={14} class="shrink-0 text-content-muted" />
@@ -57,7 +57,7 @@ function ExplorerDropTreeNode(props: {
         aria-expanded
         data-drop-target-path={node.path}
         class={cn(
-          'explorer-upload-treeitem flex w-full items-center gap-1.5 rounded-md border-0 bg-transparent pr-2 text-left text-content-primary',
+          'explorer-upload-treeitem flex w-full items-center gap-6 rounded-md border-0 bg-transparent pr-8 text-left text-content-primary',
           isTarget() ? 'explorer-upload-treeitem--drop-target bg-interaction-hover' : 'hover:bg-interaction-hover',
         )}
         style={{ 'min-height': 'var(--resource-tree-row)', 'padding-left': paddingLeft() }}
@@ -94,8 +94,8 @@ export function ExplorerUploadDropLayout() {
   };
 
   return (
-    <div class="flex max-w-sm flex-col gap-4">
-      <div class="flex flex-wrap gap-2">
+    <div class="flex max-w-sm flex-col gap-16">
+      <div class="flex flex-wrap gap-8">
         <Button size="sm" variant={target() === 'none' ? 'primary' : 'default'} onClick={() => applyTarget('none')}>
           No target
         </Button>
@@ -129,7 +129,7 @@ export function ExplorerUploadDropLayout() {
         role="tree"
         aria-label="Workspace files"
         class={cn(
-          'explorer-upload-tree rounded-md px-1 py-2 text-12',
+          'explorer-upload-tree rounded-md px-4 py-8 text-12',
           target() === 'root' && 'explorer-upload-tree--drop-root',
         )}
       >
@@ -138,12 +138,12 @@ export function ExplorerUploadDropLayout() {
         </For>
 
         <Show when={target() === 'root'}>
-          <p role="status" class="mt-2 px-1 text-11 text-accent-solid">
+          <p role="status" class="mt-8 px-4 text-11 text-accent-solid">
             Upload to workspace root
           </p>
         </Show>
         <Show when={target() === 'folder'}>
-          <p role="status" class="mt-2 px-1 text-11 text-accent-solid">
+          <p role="status" class="mt-8 px-4 text-11 text-accent-solid">
             Upload to web
           </p>
         </Show>
@@ -155,7 +155,7 @@ export function ExplorerUploadDropLayout() {
         </p>
       </Show>
 
-      <p aria-live="polite" class="min-h-5 text-11 text-content-muted">
+      <p aria-live="polite" class="min-h-20 text-11 text-content-muted">
         {liveTarget()}
       </p>
 

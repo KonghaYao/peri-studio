@@ -45,9 +45,9 @@ export function DecisionCard(props: {
       class="overflow-hidden bg-surface-overlay shadow-decision"
       style={{ 'border-radius': 'var(--decision-radius)' }}
     >
-      <header class="flex min-h-9 items-center gap-3 px-4 pt-3.5 pb-2">
+      <header class="flex min-h-36 items-center gap-12 px-16 pt-14 pb-8">
         <span class="text-12 font-medium text-content-secondary">{props.title}</span>
-        <span class="ml-auto flex items-center gap-0.5 text-content-muted">
+        <span class="ml-auto flex items-center gap-2 text-content-muted">
           <Show when={showPager()}>
             <IconButton
               size="sm"
@@ -58,7 +58,7 @@ export function DecisionCard(props: {
             >
               <ChevronLeft size={14} strokeWidth={1.8} />
             </IconButton>
-            <span class="min-w-12 text-center text-10 tabular-nums text-content-muted">
+            <span class="min-w-48 text-center text-10 tabular-nums text-content-muted">
               {props.currentIndex! + 1} of {props.total}
             </span>
             <IconButton
@@ -88,12 +88,12 @@ export function DecisionCard(props: {
       </header>
 
       <Show when={expanded()}>
-        <div class="px-4 pb-2">
+        <div class="px-16 pb-8">
           <p class="text-13 font-semibold leading-snug text-content-primary">{props.prompt}</p>
           <Show when={props.detail}>
-            <p class="mt-1 text-11 leading-snug text-content-muted">{props.detail}</p>
+            <p class="mt-4 text-11 leading-snug text-content-muted">{props.detail}</p>
           </Show>
-          <div class="mt-3 flex flex-col gap-0.5">
+          <div class="mt-12 flex flex-col gap-2">
             <For each={props.options}>
               {(option) => {
                 const selected = () => props.selectedId === option.id;
@@ -102,7 +102,7 @@ export function DecisionCard(props: {
                     type="button"
                     onClick={() => props.onSelect(option.id)}
                     class={cn(
-                      'flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left transition-colors duration-(--duration-fast)',
+                      'flex w-full items-center gap-12 rounded-md px-8 py-6 text-left transition-colors duration-(--duration-fast)',
                       selected()
                         ? 'bg-accent-soft'
                         : 'hover:bg-interaction-hover',
@@ -110,7 +110,7 @@ export function DecisionCard(props: {
                   >
                     <span
                       class={cn(
-                        'inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-10 font-semibold',
+                        'inline-flex size-20 shrink-0 items-center justify-center rounded-sm text-10 font-semibold',
                         selected()
                           ? 'bg-accent-solid text-content-on-accent'
                           : 'bg-surface-sunken text-content-muted',
@@ -132,12 +132,12 @@ export function DecisionCard(props: {
           </div>
         </div>
 
-        <footer class="flex items-center justify-end gap-2 px-4 pb-3.5 pt-1">
+        <footer class="flex items-center justify-end gap-8 px-16 pb-14 pt-4">
           {props.footer ?? (
             <>
               <button
                 type="button"
-                class="inline-flex h-(--control-height-sm) items-center px-2 text-12 text-content-muted transition-colors duration-(--duration-fast) hover:text-content-primary"
+                class="inline-flex h-(--control-height-sm) items-center px-8 text-12 text-content-muted transition-colors duration-(--duration-fast) hover:text-content-primary"
                 onClick={props.onSkip}
               >
                 {props.skipLabel ?? 'Skip'}
@@ -145,7 +145,7 @@ export function DecisionCard(props: {
               <Button
                 size="sm"
                 variant="primary"
-                class="rounded-full border-0 px-3.5 focus-visible:shadow-(--shadow-focus-ring)"
+                class="rounded-full border-0 px-14 focus-visible:shadow-(--shadow-focus-ring)"
                 disabled={props.primaryDisabled}
                 onClick={props.onPrimary}
               >

@@ -104,10 +104,10 @@ const MACHINES: MachineItem[] = [
 
 function SectionHeader(props: { title: string; icon?: unknown; children?: unknown }) {
   return (
-    <div class="flex items-center gap-1 px-2.5 pb-1 pt-3">
-      <span class="flex min-w-0 flex-1 items-center gap-1.5 text-12 text-content-muted">
+    <div class="flex items-center gap-4 px-10 pb-4 pt-12">
+      <span class="flex min-w-0 flex-1 items-center gap-6 text-12 text-content-muted">
         <Show when={props.icon}>
-          <span class="grid size-4 shrink-0 place-items-center text-content-faint">{props.icon as never}</span>
+          <span class="grid size-16 shrink-0 place-items-center text-content-faint">{props.icon as never}</span>
         </Show>
         {props.title}
       </span>
@@ -120,10 +120,10 @@ function NavAction(props: { icon: unknown; label: string; onClick?: () => void }
   return (
     <button
       type="button"
-      class="flex w-full min-h-9 items-center gap-2.5 rounded-md px-2.5 text-left text-13 text-content-primary transition-colors duration-(--duration-fast) hover:bg-interaction-hover"
+      class="flex w-full min-h-36 items-center gap-10 rounded-md px-10 text-left text-13 text-content-primary transition-colors duration-(--duration-fast) hover:bg-interaction-hover"
       onClick={props.onClick}
     >
-      <span class="grid size-4 shrink-0 place-items-center text-content-muted">{props.icon as never}</span>
+      <span class="grid size-16 shrink-0 place-items-center text-content-muted">{props.icon as never}</span>
       {props.label}
     </button>
   );
@@ -148,7 +148,7 @@ function SessionRow(props: {
     >
       <button
         type="button"
-        class="flex min-h-8 w-full min-w-0 items-center rounded-md pl-2.5 pr-16 text-left"
+        class="flex min-h-32 w-full min-w-0 items-center rounded-md pl-10 pr-64 text-left"
         onClick={props.onClick}
       >
         <span class="session-copy min-w-0 flex-1 truncate text-13 text-content-primary">{props.session.title}</span>
@@ -199,17 +199,17 @@ export function ProjectSidebarLayout() {
       class="flex h-(--container-settings-tall) w-(--shell-sidebar-width) flex-col border border-border-faint bg-surface-overlay"
       aria-label="Projects and sessions"
     >
-      <div class="shrink-0 px-1.5 pt-2 pb-1">
+      <div class="shrink-0 px-6 pt-8 pb-4">
         <NavAction icon={<MessageSquarePlus size={16} strokeWidth={1.7} />} label="New session" />
         <NavAction icon={<Search size={16} strokeWidth={1.7} />} label="Search" />
         <NavAction icon={<Workflow size={16} strokeWidth={1.7} />} label="Automations" />
         <NavAction icon={<LayoutGrid size={16} strokeWidth={1.7} />} label="Customize" />
       </div>
 
-      <div class="sidebar-scroll-shell px-1.5">
-        <div class="sidebar-scroll min-h-0 h-full overflow-auto pb-2">
+      <div class="sidebar-scroll-shell px-6">
+        <div class="sidebar-scroll min-h-0 h-full overflow-auto pb-8">
         <SectionHeader title="Pinned" icon={<Pin size={14} strokeWidth={1.7} />} />
-        <div class="flex flex-col gap-0.5 pb-1">
+        <div class="flex flex-col gap-2 pb-4">
           <For each={PINNED}>
             {(item) => (
               <SessionRow
@@ -222,21 +222,21 @@ export function ProjectSidebarLayout() {
         </div>
 
         <SectionHeader title="Workspaces">
-          <IconButton size="sm" showTooltip={false} label="Filter workspaces" class="size-7 shrink-0 text-content-muted">
+          <IconButton size="sm" showTooltip={false} label="Filter workspaces" class="size-28 shrink-0 text-content-muted">
             <ListFilter size={15} strokeWidth={1.7} />
           </IconButton>
-          <IconButton size="sm" showTooltip={false} label="New workspace" class="size-7 shrink-0 text-content-muted">
+          <IconButton size="sm" showTooltip={false} label="New workspace" class="size-28 shrink-0 text-content-muted">
             <Folder size={15} strokeWidth={1.7} />
           </IconButton>
         </SectionHeader>
 
         <For each={MACHINES}>
           {(machine) => (
-            <section class="pb-1">
-              <div class="group/instance relative flex min-h-7 items-center gap-2 px-2.5 text-11 text-content-muted">
+            <section class="pb-4">
+              <div class="group/instance relative flex min-h-28 items-center gap-8 px-10 text-11 text-content-muted">
                 <span class="min-w-0 flex-1 truncate">{machine.name}</span>
                 <Show when={!machine.online}>
-                  <span class="flex shrink-0 items-center gap-1 text-danger-solid">
+                  <span class="flex shrink-0 items-center gap-4 text-danger-solid">
                     <CloudOff size={13} strokeWidth={1.8} aria-hidden="true" />
                     <span>Offline</span>
                   </span>
@@ -245,7 +245,7 @@ export function ProjectSidebarLayout() {
                   size="sm"
                   showTooltip={false}
                   label="New project"
-                  class="pointer-events-none absolute right-1 top-1/2 size-6 -translate-y-1/2 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:pointer-events-auto group-hover/instance:opacity-100"
+                  class="pointer-events-none absolute right-4 top-1/2 size-24 -translate-y-1/2 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:pointer-events-auto group-hover/instance:opacity-100"
                 >
                   <Plus size={15} strokeWidth={1.7} />
                 </IconButton>
@@ -260,19 +260,19 @@ export function ProjectSidebarLayout() {
                       <div class="group/workspace relative min-w-0 rounded-md hover:bg-interaction-hover focus-within:bg-interaction-hover">
                         <button
                           type="button"
-                          class="flex w-full min-w-0 items-start gap-2 pl-2.5 pr-14 py-1 text-left"
+                          class="flex w-full min-w-0 items-start gap-8 pl-10 pr-56 py-4 text-left"
                           aria-expanded={open()}
                           onClick={() => toggleWorkspace(workspace.id)}
                         >
-                          <span class="mt-0.5 shrink-0 text-content-muted">
+                          <span class="mt-2 shrink-0 text-content-muted">
                             <Show when={open()} fallback={<Folder size={15} strokeWidth={1.7} />}>
                               <FolderOpen size={15} strokeWidth={1.7} />
                             </Show>
                           </span>
-                          <span class="min-w-0 flex-1 py-0.5">
+                          <span class="min-w-0 flex-1 py-2">
                             <span class="min-w-0 flex-1 truncate text-13 text-content-primary">{workspace.name}</span>
                             <Show when={workspace.hint && !open()}>
-                              <span class="mt-0.5 block truncate text-11 sidebar-mist-hint">{workspace.hint}</span>
+                              <span class="mt-2 block truncate text-11 sidebar-mist-hint">{workspace.hint}</span>
                             </Show>
                           </span>
                         </button>
@@ -289,11 +289,11 @@ export function ProjectSidebarLayout() {
                       </div>
 
                       <Show when={open()}>
-                        <div class="flex flex-col gap-0.5 pb-1">
+                        <div class="flex flex-col gap-2 pb-4">
                           <Show
                             when={hasSessions()}
                             fallback={
-                              <div class="px-2.5 py-1 pl-9 text-11 sidebar-mist-hint">{workspace.hint ?? 'No sessions yet'}</div>
+                              <div class="px-10 py-4 pl-36 text-11 sidebar-mist-hint">{workspace.hint ?? 'No sessions yet'}</div>
                             }
                           >
                             <For each={workspace.sessions}>
@@ -329,7 +329,7 @@ export function ProjectSidebarLayout() {
         title={archivedBrowserWorkspace() ? `${archivedBrowserWorkspace()} · Archived` : 'Archived'}
         width="min(520px, calc(100vw - 56px))"
       >
-        <div class="grid gap-3.5">
+        <div class="grid gap-14">
           <Input
             aria-label="Search archived sessions"
             value={archivedQuery()}
@@ -344,8 +344,8 @@ export function ProjectSidebarLayout() {
       </Dialog>
 
       <div class="sidebar-mist-divider" aria-hidden="true" />
-      <div class="flex h-12 shrink-0 items-center gap-2 px-2.5">
-        <span class="grid size-7 shrink-0 place-items-center rounded-full bg-surface-muted text-11 font-medium text-content-secondary">C</span>
+      <div class="flex h-48 shrink-0 items-center gap-8 px-10">
+        <span class="grid size-28 shrink-0 place-items-center rounded-full bg-surface-muted text-11 font-medium text-content-secondary">C</span>
         <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Christopher13</span>
         <IconButton size="sm" showTooltip={false} label="Settings" class="shrink-0 text-content-muted">
           <Settings size={16} strokeWidth={1.7} />

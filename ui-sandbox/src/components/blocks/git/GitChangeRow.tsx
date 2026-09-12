@@ -40,20 +40,20 @@ export function GitChangeRow(props: {
     <button
       type="button"
       class={cn(
-        'group/row flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left transition-colors duration-(--duration-fast)',
+        'group/row flex w-full min-w-0 items-center gap-8 rounded-md px-8 py-4 text-left transition-colors duration-(--duration-fast)',
         props.selected ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
       )}
       style={{ 'min-height': folder() ? '40px' : '32px' }}
       onClick={() => props.onOpen?.()}
     >
-      <GitFileIcon path={props.change.path} class="mt-0.5 self-start" />
-      <span class="min-w-0 flex-1 py-0.5">
+      <GitFileIcon path={props.change.path} class="mt-2 self-start" />
+      <span class="min-w-0 flex-1 py-2">
         <span class="block truncate text-13 leading-tight text-content-primary">{basename(props.change.path)}</span>
         <Show when={folder()}>
-          <span class="mt-0.5 block truncate text-10 leading-tight text-content-muted">{folder()}</span>
+          <span class="mt-2 block truncate text-10 leading-tight text-content-muted">{folder()}</span>
         </Show>
       </span>
-      <span class="relative flex h-6 w-10 shrink-0 items-center justify-end self-center">
+      <span class="relative flex h-24 w-40 shrink-0 items-center justify-end self-center">
         <span
           class={cn(
             'font-mono text-11 tabular-nums transition-opacity duration-(--duration-fast)',
@@ -67,7 +67,7 @@ export function GitChangeRow(props: {
         <IconButton
           size="sm"
           label={`${stageLabel()} ${props.change.path}`}
-          class="absolute right-0 size-6 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm pointer-events-none transition-opacity duration-(--duration-fast) group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
+          class="absolute right-0 size-24 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm pointer-events-none transition-opacity duration-(--duration-fast) group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
           onClick={(event) => event.stopPropagation()}
         >
           {staged() ? <Minus size={13} strokeWidth={1.8} /> : <Plus size={13} strokeWidth={1.8} />}
@@ -77,7 +77,7 @@ export function GitChangeRow(props: {
             size="sm"
             label={`Discard ${props.change.path}`}
             class={cn(
-              'absolute right-6 size-6 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm pointer-events-none transition-opacity duration-(--duration-fast)',
+              'absolute right-24 size-24 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm pointer-events-none transition-opacity duration-(--duration-fast)',
               'hover:text-danger-solid group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100',
             )}
             onClick={(event) => event.stopPropagation()}

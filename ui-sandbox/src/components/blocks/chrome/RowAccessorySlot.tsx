@@ -17,8 +17,8 @@ export function RowAccessorySlot(props: RowAccessorySlotProps) {
   return (
     <div
       class={cn(
-        'row-accessory-slot pointer-events-none absolute top-1/2 z-40 -translate-y-1/2',
-        rowGroup ? 'right-1 h-6 min-w-72' : 'right-1 h-6 min-w-12',
+        'row-accessory-slot pointer-events-none absolute top-1/2 z-40 h-24 -translate-y-1/2',
+        rowGroup ? 'right-4 min-w-72' : 'right-4 min-w-48',
         props.class,
       )}
     >

@@ -2,6 +2,12 @@ import { createSignal } from 'solid-js';
 import { TokenUsageMeter, UploadAssetTile } from '@/components/blocks/composer';
 import { IconButton, Select, Textarea } from '@/lib/catalog-ui';
 import { Mic, Plus, Send, ShieldCheck } from 'lucide-solid';
+import {
+  composerAssetRowClass,
+  composerFieldClass,
+  composerSurfaceClass,
+  composerToolbarClass,
+} from './composer-demo-classes';
 
 /** Tier 4 · Composer 输入区组合。 */
 export function ComposerLayout() {
@@ -9,22 +15,27 @@ export function ComposerLayout() {
 
   return (
     <div class="chat-column">
-      <div
-        data-testid="composer-surface"
-        class="composer-surface border border-composer-border bg-surface-overlay p-2.5"
-        style={{ 'border-radius': 'var(--composer-radius)' }}
-      >
-        <div class="mb-1 flex gap-2">
+      <div data-testid="composer-surface" class={composerSurfaceClass}>
+        <div class={composerAssetRowClass}>
           <UploadAssetTile name="layout.png" status="ready" onRemove={() => {}} />
           <UploadAssetTile name="spec.md" status="ready" onRemove={() => {}} />
         </div>
-        <Textarea rows={2} placeholder="Message the agent" class="border-0 bg-transparent px-1 shadow-none hover:border-transparent focus:border-transparent focus:shadow-none" />
-        <div class="flex items-center gap-1">
+        <Textarea
+          variant="bare"
+          autoResize
+          maxHeight={180}
+          rows={2}
+          placeholder="Message the agent"
+          aria-label="Message the agent"
+          class={composerFieldClass}
+        />
+        <div class={composerToolbarClass}>
           <IconButton label="Add attachment" tooltip="Add attachment"><Plus size={16} /></IconButton>
           <IconButton label="Approval mode" tooltip="Approval mode"><ShieldCheck size={16} /></IconButton>
           <span class="flex-1" />
           <Select
             variant="plain"
+            aria-label="Model"
             value={model()}
             onChange={setModel}
             options={[

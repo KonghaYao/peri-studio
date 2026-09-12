@@ -56,6 +56,19 @@
     box-shadow var(--duration-fast) var(--ease-standard);
 }
 
+.ui-accordion-chevron {
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.ui-accordion-trigger[data-expanded] .ui-accordion-chevron {
+  transform: rotate(180deg);
+}
+
+/* Kobalte Progress.Fill exposes --kb-progress-fill-width (percentage width). */
+.ui-progress-fill {
+  width: var(--kb-progress-fill-width);
+}
+
 /* shadcn 式扫光占位：斜向高光扫过 muted 底。 */
 @keyframes ui-skeleton-shimmer {
   100% {

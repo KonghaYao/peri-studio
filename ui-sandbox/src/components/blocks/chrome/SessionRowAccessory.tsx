@@ -20,15 +20,15 @@ export function SessionRowAccessory(props: {
       group="row"
       actionsVisible={props.actionsVisible}
       meta={(
-        <span class="flex items-center gap-1.5 tabular-nums text-11 text-content-muted">
+        <span class="flex items-center gap-6 tabular-nums text-11 text-content-muted">
           <Show when={props.live}>
-            <span class="relative flex size-1.5" aria-hidden="true">
+            <span class="relative flex size-6" aria-hidden="true">
               <span class="absolute inline-flex size-full animate-ping rounded-full bg-success-solid opacity-30" />
-              <span class="relative inline-flex size-1.5 rounded-full bg-success-solid" />
+              <span class="relative inline-flex size-6 rounded-full bg-success-solid" />
             </span>
           </Show>
           <Show when={props.unread}>
-            <span class="size-1.5 rounded-full bg-accent-solid" aria-label="Unread" />
+            <span class="size-6 rounded-full bg-accent-solid" aria-label="Unread" />
           </Show>
           <span>{props.time}</span>
         </span>

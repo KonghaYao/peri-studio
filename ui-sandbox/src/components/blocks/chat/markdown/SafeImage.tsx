@@ -17,7 +17,7 @@ export function SafeImage(props: JSX.ImgHTMLAttributes<HTMLImageElement> & { req
         <Show
           when={allowed()}
           fallback={
-            <span class="my-4 flex min-h-18 items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface-overlay px-3.5 py-3">
+            <span class="my-16 flex min-h-72 items-center justify-between gap-12 rounded-lg border border-border-subtle bg-surface-overlay px-14 py-12">
               <span class="min-w-0">
                 <span class="block font-medium text-content-primary">{alt()}</span>
                 <span class="block truncate text-12 text-content-muted">Remote image · {hostname()}</span>
@@ -33,7 +33,7 @@ export function SafeImage(props: JSX.ImgHTMLAttributes<HTMLImageElement> & { req
             loading="lazy"
             decoding="async"
             referrerpolicy="no-referrer"
-            class="my-4 max-h-80 w-full rounded-lg border border-border-subtle bg-surface-overlay object-contain"
+            class="my-16 max-h-320 w-full rounded-lg border border-border-subtle bg-surface-overlay object-contain"
           />
         </Show>
       )}

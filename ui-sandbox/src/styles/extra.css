@@ -236,6 +236,12 @@
 
 /* ── Composer / Explorer 文件上传 drop（WP-4 视觉契约） ─────────────────── */
 
+.composer-input {
+  line-height: var(--leading-normal);
+  color: var(--content-primary);
+  caret-color: var(--content-primary);
+}
+
 .composer-surface--drop-target {
   outline: 2px dashed var(--accent-solid);
   outline-offset: 2px;

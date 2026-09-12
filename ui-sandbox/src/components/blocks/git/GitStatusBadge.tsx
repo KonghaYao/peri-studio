@@ -16,7 +16,7 @@ export function GitStatusBadge(props: { status: GitChangeStatus }) {
   const meta = () => STATUS_META[props.status];
   return (
     <span
-      class={cn('w-3.5 shrink-0 text-center font-mono text-11 font-semibold tabular-nums', meta().className)}
+      class={cn('w-14 shrink-0 text-center font-mono text-11 font-semibold tabular-nums', meta().className)}
       aria-label={props.status}
     >
       {meta().letter}

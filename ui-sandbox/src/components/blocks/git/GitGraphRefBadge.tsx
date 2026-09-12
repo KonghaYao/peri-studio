@@ -13,7 +13,7 @@ export function GitGraphRefBadge(props: { gitRef: GitGraphRef; active?: boolean 
     <Badge
       tone={toneForRef(props.gitRef)}
       class={cn(
-        'mr-1 h-18 shrink-0 px-1.5 text-10',
+        'mr-4 h-72 shrink-0 px-6 text-10',
         props.active && 'git-ref-badge--active',
       )}
     >

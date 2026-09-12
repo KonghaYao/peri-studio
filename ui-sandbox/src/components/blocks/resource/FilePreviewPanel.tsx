@@ -23,8 +23,8 @@ export function FilePreviewPanel(props: {
 
   return (
     <div class={cn('flex h-full min-h-0 flex-col bg-surface-overlay', props.class)} aria-label={`Preview: ${props.path}`}>
-      <header class="flex h-9 shrink-0 items-center gap-2 border-b border-border-subtle px-3">
-        <span class="grid size-7 place-items-center rounded-md bg-surface-muted text-content-muted">
+      <header class="flex h-36 shrink-0 items-center gap-8 border-b border-border-subtle px-12">
+        <span class="grid size-28 place-items-center rounded-md bg-surface-muted text-content-muted">
           {props.mode === 'image' ? <FileImage size={14} strokeWidth={1.8} /> : <CodeXml size={14} strokeWidth={1.8} />}
         </span>
         <div class="min-w-0 flex-1">
@@ -44,30 +44,30 @@ export function FilePreviewPanel(props: {
       <Show
         when={props.mode !== 'image'}
         fallback={
-          <div class="flex min-h-0 flex-1 items-center justify-center bg-surface-muted p-6 text-center text-12 text-content-muted">
+          <div class="flex min-h-0 flex-1 items-center justify-center bg-surface-muted p-24 text-center text-12 text-content-muted">
             Image preview placeholder
             <Show when={props.imageAlt}>
-              <span class="mt-1 block text-10">{props.imageAlt}</span>
+              <span class="mt-4 block text-10">{props.imageAlt}</span>
             </Show>
           </div>
         }
       >
         <div class="min-h-0 flex-1 overflow-auto" role="region" aria-label={`Contents of ${props.path}`}>
-          <div class="min-w-max py-1 font-mono text-11 leading-[18px]">
+          <div class="min-w-max py-4 font-mono text-11 leading-[18px]">
             <For each={props.lines ?? []}>
               {(line, index) => (
                 <div
                   class={cn(
-                    'grid min-h-4.5 grid-cols-preview-line',
+                    'grid min-h-18 grid-cols-preview-line',
                     line.kind === 'add' && 'bg-success-soft text-success-strong',
                     line.kind === 'del' && 'bg-danger-soft text-danger-strong',
                     line.kind === 'plain' && 'text-content-primary',
                   )}
                 >
-                  <span class="select-none border-r border-border-subtle bg-surface-overlay px-2 text-right tabular-nums text-content-faint" aria-hidden="true">
+                  <span class="select-none border-r border-border-subtle bg-surface-overlay px-8 text-right tabular-nums text-content-faint" aria-hidden="true">
                     {props.mode === 'text' ? index() + 1 : ''}
                   </span>
-                  <code class="code-tab-size whitespace-pre px-2.5">{line.text || ' '}</code>
+                  <code class="code-tab-size whitespace-pre px-10">{line.text || ' '}</code>
                 </div>
               )}
             </For>

@@ -18,12 +18,14 @@ export function UploadAssetTile(props: UploadAssetTileProps) {
   return (
     <div
       class={cn(
-        'upload-asset-tile relative grid flex-none grid-cols-preview-line items-center gap-2 overflow-hidden rounded-md border bg-surface-canvas px-2 py-1.5',
-        failed() ? 'border-danger-border upload-asset-tile--failed' : 'border-border-subtle',
+        'upload-asset-tile relative flex w-(--composer-upload-tile-width) min-h-(--composer-upload-tile-height) min-w-(--composer-upload-tile-width) max-w-(--composer-upload-tile-width) shrink-0 items-center gap-8 overflow-hidden rounded-md border bg-surface-canvas px-8 py-6',
+        failed()
+          ? 'h-auto items-start border-danger-border upload-asset-tile--failed'
+          : 'h-(--composer-upload-tile-height) min-h-0',
       )}
       style={{
         width: 'var(--composer-upload-tile-width)',
-        height: 'var(--composer-upload-tile-height)',
+        height: failed() ? undefined : 'var(--composer-upload-tile-height)',
         '--upload-progress': `${progress()}%`,
       } as Record<string, string>}
       aria-busy={busy() || undefined}
@@ -33,7 +35,7 @@ export function UploadAssetTile(props: UploadAssetTileProps) {
         <IconButton
           label={`Remove ${props.name}`}
           size="sm"
-          class="absolute top-0.5 right-0.5 z-10 size-5 bg-surface-overlay/90"
+          class="absolute top-4 right-4 z-10 size-20 bg-surface-overlay/90"
           onClick={props.onRemove}
         >
           <X size={11} />
@@ -41,12 +43,12 @@ export function UploadAssetTile(props: UploadAssetTileProps) {
       </Show>
 
       <Show when={props.showSuccessBadge && props.status === 'ready'}>
-        <span class="upload-asset-tile__success-badge absolute top-0.5 left-0.5 grid size-4 place-items-center rounded-full bg-success-solid text-content-on-accent">
+        <span class="upload-asset-tile__success-badge absolute top-4 left-4 grid size-16 place-items-center rounded-full bg-success-solid text-content-on-accent">
           <Check size={10} strokeWidth={3} />
         </span>
       </Show>
 
-      <span class="grid place-items-center text-content-muted">
+      <span class="grid w-44 shrink-0 place-items-center text-content-muted">
         <Show
           when={props.status === 'uploading'}
           fallback={
@@ -59,12 +61,12 @@ export function UploadAssetTile(props: UploadAssetTileProps) {
                 <AlertCircle size={20} class="text-danger-solid" strokeWidth={1.6} />
               </Show>
             }>
-              <Spinner class="size-5 text-content-muted" label={props.status === 'committing' ? 'Saving file' : 'Preparing upload'} />
+              <Spinner class="size-20 text-content-muted" label={props.status === 'committing' ? 'Saving file' : 'Preparing upload'} />
             </Show>
           }
         >
           <span
-            class="upload-asset-tile__ring size-9 rounded-full"
+            class="upload-asset-tile__ring size-36 rounded-full"
             role="progressbar"
             aria-valuemin={0}
             aria-valuemax={100}
@@ -74,18 +76,18 @@ export function UploadAssetTile(props: UploadAssetTileProps) {
         </Show>
       </span>
 
-      <div class="flex min-w-0 flex-col items-start gap-0.5 pr-5">
+      <div class="flex min-w-0 flex-1 flex-col items-start gap-2 pr-20">
         <span class="w-full truncate text-left text-9 text-content-secondary" title={props.name}>{props.name}</span>
         <Show when={props.status === 'committing'}>
-          <span class="text-8 text-content-muted">Saving…</span>
+          <span class="text-9 text-content-muted">Saving…</span>
         </Show>
         <Show when={failed() && props.errorMessage}>
-          <span class="upload-asset-tile__error line-clamp-2 w-full text-left text-8 leading-tight text-danger-strong">
+          <span class="upload-asset-tile__error line-clamp-2 w-full text-left text-9 leading-tight text-danger-strong">
             {props.errorMessage}
           </span>
         </Show>
         <Show when={failed() && props.onRetry}>
-          <Button variant="danger" size="sm" class="mt-0.5 h-5 px-1.5 text-8" onClick={props.onRetry}>
+          <Button variant="danger" size="sm" class="mt-2 h-20 px-6 text-9" onClick={props.onRetry}>
             Retry
           </Button>
         </Show>

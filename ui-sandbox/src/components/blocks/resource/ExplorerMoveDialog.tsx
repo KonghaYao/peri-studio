@@ -42,7 +42,7 @@ export function ExplorerMoveDialog(props: {
         </>
       }
     >
-      <div class="flex flex-col gap-2">
+      <div class="flex flex-col gap-8">
         <label class="text-12 font-medium text-content-primary" for="explorer-move-destination">
           Destination path
         </label>

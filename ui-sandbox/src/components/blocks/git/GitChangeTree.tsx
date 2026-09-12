@@ -23,7 +23,7 @@ function trailingForChange(change: GitChange, groupId: GitChangeGroupId) {
   const tail = STATUS_TAIL[change.status];
 
   return (
-    <span class="relative flex h-6 w-10 items-center justify-end">
+    <span class="relative flex h-24 w-40 items-center justify-end">
       <span
         class={cn(
           'font-mono text-10 tabular-nums transition-opacity duration-(--duration-fast)',
@@ -37,7 +37,7 @@ function trailingForChange(change: GitChange, groupId: GitChangeGroupId) {
       <IconButton
         size="sm"
         label={`${stageLabel} ${change.path}`}
-        class="absolute right-0 size-6 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm pointer-events-none transition-opacity duration-(--duration-fast) group-hover/tree-file:pointer-events-auto group-hover/tree-file:opacity-100 group-focus-within/tree-file:pointer-events-auto group-focus-within/tree-file:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
+        class="absolute right-0 size-24 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm pointer-events-none transition-opacity duration-(--duration-fast) group-hover/tree-file:pointer-events-auto group-hover/tree-file:opacity-100 group-focus-within/tree-file:pointer-events-auto group-focus-within/tree-file:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
         onClick={(event) => event.stopPropagation()}
       >
         {staged ? <Minus size={13} strokeWidth={1.8} /> : <Plus size={13} strokeWidth={1.8} />}
@@ -47,7 +47,7 @@ function trailingForChange(change: GitChange, groupId: GitChangeGroupId) {
           size="sm"
           label={`Discard ${change.path}`}
           class={cn(
-            'absolute right-6 size-6 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm pointer-events-none transition-opacity duration-(--duration-fast)',
+            'absolute right-24 size-24 border-0 bg-surface-overlay/90 text-content-muted opacity-0 shadow-sm pointer-events-none transition-opacity duration-(--duration-fast)',
             'hover:text-danger-solid group-hover/tree-file:pointer-events-auto group-hover/tree-file:opacity-100 group-focus-within/tree-file:pointer-events-auto group-focus-within/tree-file:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100',
           )}
           onClick={(event) => event.stopPropagation()}
@@ -73,7 +73,7 @@ export function GitChangeTree(props: {
   })));
 
   return (
-    <div role="group" class="px-1">
+    <div role="group" class="px-4">
       <FileTree
         nodes={nodes()}
         expandedPaths={expanded()}

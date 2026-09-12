@@ -8,6 +8,12 @@ import { Button } from '@/lib/catalog-ui';
 import { IconButton, Select, Textarea } from '@/lib/catalog-ui';
 import { Mic, Plus, Send, ShieldCheck } from 'lucide-solid';
 import type { UploadAssetTileStatus } from '@/components/blocks/composer/upload-asset-tile-types';
+import {
+  composerAssetRowClass,
+  composerFieldClass,
+  composerSurfaceClass,
+  composerToolbarClass,
+} from './composer-demo-classes';
 
 type ComposerDemoMode = 'idle' | 'drop-active' | 'batch' | 'disabled' | 'keyboard-picked';
 
@@ -67,8 +73,8 @@ export function ComposerUploadLayout() {
   };
 
   return (
-    <div class="flex max-w-3xl flex-col gap-6">
-      <div class="flex flex-wrap gap-2">
+    <div class="flex max-w-3xl flex-col gap-24">
+      <div class="flex flex-wrap gap-8">
         <For each={MODE_OPTIONS}>
           {(option) => (
             <Button
@@ -85,12 +91,11 @@ export function ComposerUploadLayout() {
       <div class="chat-column">
         <div
           data-testid="composer-surface"
-          class="composer-surface relative border border-composer-border bg-surface-overlay p-2.5"
+          class={composerSurfaceClass}
           classList={{
             'composer-surface--drop-target': dropActive(),
             'opacity-60': disabled(),
           }}
-          style={{ 'border-radius': 'var(--composer-radius)' }}
           aria-dropeffect={dropActive() ? 'copy' : undefined}
           aria-busy={mode() === 'batch' ? 'true' : undefined}
           aria-describedby={dropActive() ? dropDescId : undefined}
@@ -100,7 +105,7 @@ export function ComposerUploadLayout() {
             Release to upload files to this project.
           </p>
 
-          <div class="mb-1 flex flex-wrap gap-2">
+          <div class={`${composerAssetRowClass} flex-wrap`}>
             <For
               each={
                 mode() === 'batch' || mode() === 'keyboard-picked'
@@ -127,15 +132,19 @@ export function ComposerUploadLayout() {
           </div>
 
           <Textarea
+            variant="bare"
+            autoResize
+            maxHeight={180}
             rows={2}
             value={draft()}
             onInput={(event) => setDraft(event.currentTarget.value)}
             placeholder="Message the agent"
+            aria-label="Message the agent"
             disabled={disabled()}
-            class="border-0 bg-transparent px-1 shadow-none hover:border-transparent focus:border-transparent focus:shadow-none"
+            class={composerFieldClass}
           />
 
-          <div class="flex items-center gap-1">
+          <div class={composerToolbarClass}>
             <input
               ref={fileInputRef}
               type="file"
@@ -158,6 +167,7 @@ export function ComposerUploadLayout() {
             <span class="flex-1" />
             <Select
               variant="plain"
+              aria-label="Model"
               value={model()}
               onChange={setModel}
               disabled={disabled()}
@@ -180,7 +190,7 @@ export function ComposerUploadLayout() {
         </div>
       </div>
 
-      <div aria-live="polite" class="min-h-5 text-11 text-content-secondary">
+      <div aria-live="polite" class="min-h-20 text-11 text-content-secondary">
         {liveMessage() || (mode() === 'keyboard-picked' ? 'Use Add attachment — focus stays in the message field after pick.' : '')}
       </div>
 

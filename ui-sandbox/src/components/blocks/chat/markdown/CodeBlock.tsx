@@ -37,24 +37,24 @@ export function CodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { streamin
 
   if (details().language === 'math' && locked()) {
     return (
-      <div class="my-4 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-incomplete="true">
-        <pre class="m-0 overflow-auto bg-surface-sunken px-3 py-2.5 font-mono text-12"><code>{details().text}</code></pre>
+      <div class="my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-incomplete="true">
+        <pre class="m-0 overflow-auto bg-surface-sunken px-12 py-10 font-mono text-12"><code>{details().text}</code></pre>
       </div>
     );
   }
   if (details().language === 'math') return <MathExpression expression={details().text.trim()} block />;
   if (details().language === 'mermaid') {
     return (
-      <div class="my-4 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-incomplete={props.incomplete ? 'true' : undefined}>
+      <div class="my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-incomplete={props.incomplete ? 'true' : undefined}>
         <MermaidBlock code={details().text} incomplete={locked()} />
       </div>
     );
   }
 
   return (
-    <div class="my-4 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-incomplete={props.incomplete ? 'true' : undefined}>
-      <div class="flex min-h-8 items-center gap-2 border-b border-border-subtle px-2 py-1">
-        <span class="mr-auto flex min-w-0 items-center gap-2 text-12 text-content-secondary">
+    <div class="my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-incomplete={props.incomplete ? 'true' : undefined}>
+      <div class="flex min-h-32 items-center gap-8 border-b border-border-subtle px-8 py-4">
+        <span class="mr-auto flex min-w-0 items-center gap-8 text-12 text-content-secondary">
           <strong class="font-medium">{label()}</strong>
           <Show when={details().filename}><span class="truncate text-content-muted">{details().filename}</span></Show>
         </span>
@@ -68,13 +68,13 @@ export function CodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { streamin
           <Download size={13} />
         </IconButton>
       </div>
-      <pre class="m-0 max-h-80 overflow-auto bg-surface-sunken py-3 font-mono text-12 leading-relaxed text-content-primary">
+      <pre class="m-0 max-h-320 overflow-auto bg-surface-sunken py-12 font-mono text-12 leading-relaxed text-content-primary">
         <code class="block min-w-max bg-transparent p-0">
           <For each={lines()}>
             {(line, index) => (
-              <span class="grid min-h-4.5 grid-cols-code-line px-3.5">
+              <span class="grid min-h-18 grid-cols-code-line px-14">
                 <Show when={details().lineNumbers}>
-                  <span class="mr-3.5 min-w-5 select-none text-right text-content-faint" aria-hidden="true">{details().startLine + index()}</span>
+                  <span class="mr-14 min-w-20 select-none text-right text-content-faint" aria-hidden="true">{details().startLine + index()}</span>
                 </Show>
                 <span class="whitespace-pre">{line}{index() < lines().length - 1 ? '\n' : ''}</span>
               </span>

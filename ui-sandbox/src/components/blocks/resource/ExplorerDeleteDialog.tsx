@@ -51,7 +51,7 @@ export function ExplorerDeleteDialog(props: {
       }
     >
       <Show when={props.busy}>
-        <p class="mb-2 text-12 text-content-muted" role="status">
+        <p class="mb-8 text-12 text-content-muted" role="status">
           Deleting…
         </p>
       </Show>

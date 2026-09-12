@@ -21,6 +21,8 @@ const textareaControlClasses = (invalid?: boolean, autoResize?: boolean, classNa
   className,
 );
 
+const textareaBareClasses = 'block w-full resize-none bg-transparent font-inherit outline-none';
+
 /** Controlled textarea with the same finite auto-growth contract as Composer. */
 export function Textarea(props: Props) {
   const [local, textarea] = splitProps(props, ['autoResize', 'maxHeight', 'label', 'hint', 'error', 'variant', 'class', 'id', 'aria-describedby', 'ref']);
@@ -29,6 +31,7 @@ export function Textarea(props: Props) {
   const hintId = () => local.hint ? `${id()}-hint` : undefined;
   const errorId = () => local.error ? `${id()}-error` : undefined;
   const describedBy = () => [local['aria-describedby'], hintId(), errorId()].filter(Boolean).join(' ') || undefined;
+  const variant = () => local.variant ?? 'field';
   const shouldAutoResize = () => local.autoResize ?? local.variant === 'field';
   let element: HTMLTextAreaElement | undefined;
   const resize = () => {
@@ -55,9 +58,9 @@ export function Textarea(props: Props) {
       }}
       class={cn(
         'ui-textarea',
-        local.variant === 'field'
-          ? textareaControlClasses(!!local.error, shouldAutoResize(), local.class)
-          : 'font-inherit',
+        variant() === 'bare'
+          ? textareaBareClasses
+          : textareaControlClasses(!!local.error, shouldAutoResize(), local.class),
         local.class,
       )}
     />

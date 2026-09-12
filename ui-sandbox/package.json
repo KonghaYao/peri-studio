@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "license": "Apache-2.0",
   "type": "module",
-  "description": "Peri Studio 设计稿沙箱：新 design tokens 体系与 AntD 方向组件的独立演练场",
+  "description": "Peri Studio 设计稿沙箱：design tokens 与 Base UI 组件的独立演练场",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5273",
     "build": "vite build",

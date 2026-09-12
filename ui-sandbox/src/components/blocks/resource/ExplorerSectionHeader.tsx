@@ -20,8 +20,8 @@ export function ExplorerSectionHeader(props: {
   const titleAttr = () => (disabled() ? props.disabledReason : undefined);
 
   return (
-    <div class={cn('flex flex-col gap-2', props.class)}>
-      <div class="flex h-8 items-center gap-1 px-2">
+    <div class={cn('flex flex-col gap-8', props.class)}>
+      <div class="flex h-32 items-center gap-4 px-8">
         <span class="min-w-0 flex-1 truncate text-11 font-semibold uppercase tracking-wide text-content-muted">
           {props.title ?? 'Files'}
         </span>
@@ -30,7 +30,7 @@ export function ExplorerSectionHeader(props: {
             {props.pendingLabel}
           </span>
         </Show>
-        <div class="flex shrink-0 items-center gap-0.5">
+        <div class="flex shrink-0 items-center gap-2">
           <IconButton
             size="sm"
             label="New File"

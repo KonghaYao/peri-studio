@@ -38,10 +38,10 @@ export function FileTreeInlineNameEditor(props: {
   };
 
   return (
-    <div class="flex flex-col gap-1">
+    <div class="flex flex-col gap-4">
       <div
         class={cn(
-          'explorer-mutation-inline-row flex w-full items-center gap-1.5 rounded-md pr-2',
+          'explorer-mutation-inline-row flex w-full items-center gap-6 rounded-md pr-8',
           props.invalid && 'explorer-mutation-inline-row--invalid',
         )}
         style={{ 'min-height': 'var(--resource-tree-row)', 'padding-left': paddingLeft() }}
@@ -54,7 +54,7 @@ export function FileTreeInlineNameEditor(props: {
             inputRef = el;
           }}
           class={cn(
-            'h-(--control-height-sm) min-w-0 flex-1 rounded-md border bg-surface-overlay px-2 text-12 text-content-primary outline-none transition-colors duration-(--duration-fast)',
+            'h-(--control-height-sm) min-w-0 flex-1 rounded-md border bg-surface-overlay px-8 text-12 text-content-primary outline-none transition-colors duration-(--duration-fast)',
             'placeholder:text-content-faint',
             props.invalid
               ? 'border-danger-solid focus:border-danger-solid'
@@ -69,7 +69,7 @@ export function FileTreeInlineNameEditor(props: {
         />
       </div>
       {props.invalid && props.errorMessage && (
-        <p class="pl-2 text-11 text-danger-solid" role="alert">
+        <p class="pl-8 text-11 text-danger-solid" role="alert">
           {props.errorMessage}
         </p>
       )}

@@ -1,6 +1,6 @@
 # Peri Studio UI Sandbox
 
-设计稿沙箱：四级组件体系 + Ant Design 方向 tokens。与 `web/` 生产构建完全隔离。
+设计稿沙箱：四级组件体系与设计 tokens。与 `web/` 生产构建完全隔离。
 
 ```bash
 cd ui-sandbox
@@ -29,7 +29,7 @@ bun run dev   # http://127.0.0.1:5273/
 
 ## 设计定稿（2026-08-30）
 
-- Accent：B4 湛蓝 `#2563eb`
+- Accent：湛蓝 `#2563eb`
 - 选中态：浅灰底 `bg-sidebar-selected`，不用主色边框
 - Badge：中性灰字 + 状态点
 - 控件高：24 / 32 / 40

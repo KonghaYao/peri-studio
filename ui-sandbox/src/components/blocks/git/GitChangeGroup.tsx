@@ -7,8 +7,8 @@ export function GitChangeGroup(props: {
   children: JSX.Element;
 }) {
   return (
-    <section class="pb-0.5">
-      <div class="flex items-center gap-1 px-2.5 pb-1 pt-3">
+    <section class="pb-2">
+      <div class="flex items-center gap-4 px-10 pb-4 pt-12">
         <span class="min-w-0 flex-1 text-12 text-content-muted">{props.label}</span>
         <span class="tabular-nums text-11 text-content-muted">{props.count}</span>
       </div>

@@ -20,7 +20,7 @@ export function SourceControlLayout(props: {
       class="flex h-full w-full flex-col bg-surface-overlay"
       aria-label="Source Control"
     >
-      <div class={cn('min-h-0 flex-1 overflow-auto pb-2', props.embedded ? 'px-1 pt-1' : 'px-1.5 pt-2')}>
+      <div class={cn('min-h-0 flex-1 overflow-auto pb-8', props.embedded ? 'px-4 pt-4' : 'px-6 pt-8')}>
         <GitBranchBar
           repoName={DEMO_REPO.name}
           branch={DEMO_REPO.branch}

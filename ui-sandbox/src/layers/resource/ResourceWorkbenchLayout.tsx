@@ -22,13 +22,13 @@ function RailButton(props: {
       label={props.label}
       onClick={props.onClick}
       class={cn(
-        'relative w-full min-h-9 rounded-md border-0 bg-transparent text-content-muted',
-        props.active && 'bg-sidebar-selected text-content-primary before:absolute before:top-1.5 before:bottom-1.5 before:-right-0.75 before:w-0.5 before:rounded-full before:bg-accent-solid',
+        'relative w-full min-h-36 rounded-md border-0 bg-transparent text-content-muted',
+        props.active && 'bg-sidebar-selected text-content-primary before:absolute before:top-6 before:bottom-6 before:-right-3 before:w-2 before:rounded-full before:bg-accent-solid',
       )}
     >
       {props.children as never}
       <Show when={(props.badge ?? 0) > 0}>
-        <span class="absolute right-0.5 bottom-0.5 min-w-3.5 rounded-full bg-accent-solid px-1 text-center text-9 leading-none text-content-on-accent">
+        <span class="absolute right-2 bottom-2 min-w-14 rounded-full bg-accent-solid px-4 text-center text-9 leading-none text-content-on-accent">
           {props.badge! > 99 ? '99+' : props.badge}
         </span>
       </Show>
@@ -62,7 +62,7 @@ export function ResourceWorkbenchLayout() {
         <div
           class="flex h-full w-(--workbench-panel-width) flex-col overflow-hidden bg-surface-overlay"
         >
-          <header class="flex h-8 shrink-0 items-center gap-1 border-b border-border-subtle px-2.5">
+          <header class="flex h-32 shrink-0 items-center gap-4 border-b border-border-subtle px-10">
             <span class="min-w-0 flex-1 truncate text-10 font-semibold tracking-wide uppercase text-content-muted">
               {panelTitle(view())}
             </span>
@@ -83,7 +83,7 @@ export function ResourceWorkbenchLayout() {
           </div>
         </div>
         <nav
-          class="flex w-(--workbench-rail-width) shrink-0 flex-col items-center gap-1 border-l border-border-subtle py-2"
+          class="flex w-(--workbench-rail-width) shrink-0 flex-col items-center gap-4 border-l border-border-subtle py-8"
           aria-label="Resource views"
         >
           <RailButton label="Explorer" active={view() === 'explorer'} onClick={() => setView('explorer')}>

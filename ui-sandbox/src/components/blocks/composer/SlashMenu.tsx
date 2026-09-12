@@ -29,7 +29,7 @@ export function SlashMenu(props: {
 
   return (
     <div class="overflow-hidden rounded-xl border border-border-subtle bg-surface-overlay shadow-overlay">
-      <ul class="max-h-60 overflow-auto py-1.5" role="listbox" aria-label="Slash commands">
+      <ul class="max-h-240 overflow-auto py-6" role="listbox" aria-label="Slash commands">
         <For each={props.items}>
           {(item, index) => (
             <li class="list-none">
@@ -37,12 +37,12 @@ export function SlashMenu(props: {
                 role="option"
                 aria-selected={index() === active()}
                 class={cn(
-                  'mx-1.5 cursor-pointer rounded-lg px-2.5 py-1.5 transition-colors duration-(--duration-fast)',
+                  'mx-6 cursor-pointer rounded-lg px-10 py-6 transition-colors duration-(--duration-fast)',
                   index() === active() ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
                 )}
               >
-                <div class="flex min-w-0 items-center gap-2.5">
-                  <span class="grid size-4 shrink-0 place-items-center">
+                <div class="flex min-w-0 items-center gap-10">
+                  <span class="grid size-16 shrink-0 place-items-center">
                     <SlashIcon variant={item.variant} accent={item.accent} />
                   </span>
                   <p class="min-w-0 truncate text-13 leading-snug">
@@ -54,7 +54,7 @@ export function SlashMenu(props: {
                 </div>
               </div>
               <Show when={item.dividerAfter}>
-                <div class="mx-3 my-1 border-t border-border-subtle" role="presentation" />
+                <div class="mx-12 my-4 border-t border-border-subtle" role="presentation" />
               </Show>
             </li>
           )}

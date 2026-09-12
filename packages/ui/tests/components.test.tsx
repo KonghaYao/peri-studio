@@ -1,7 +1,11 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { createSignal } from 'solid-js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../src/components/Accordion';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../src/components/Collapsible';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '../src/components/Table';
+import { Toggle } from '../src/components/Toggle';
+import { ToggleGroup, ToggleGroupItem } from '../src/components/ToggleGroup';
 import { Button, IconButton } from '../src/components/Button';
 import { ButtonGroup } from '../src/components/ButtonGroup';
 import { Select } from '../src/components/Select';
@@ -11,6 +15,12 @@ import { Badge } from '../src/components/Badge';
 import { CopyButton } from '../src/components/CopyButton';
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '../src/components/Dialog';
 import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from '../src/components/Checkbox';
+import { Label } from '../src/components/Label';
+import { Separator } from '../src/components/Separator';
+import { Switch, SwitchControl, SwitchInput, SwitchLabel, SwitchThumb } from '../src/components/Switch';
+import { Kbd } from '../src/components/Kbd';
+import { Progress, ProgressFill, ProgressLabel, ProgressTrack, ProgressValueLabel } from '../src/components/Progress';
+import { Slider, SliderFill, SliderThumb, SliderTrack } from '../src/components/Slider';
 import { TextField } from '../src/components/Field';
 import { Listbox, ListboxItem } from '../src/components/Listbox';
 import { Popover, PopoverContent, PopoverTrigger } from '../src/components/Popover';
@@ -21,6 +31,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../src/components/Tabs
 import { Textarea } from '../src/components/Textarea';
 import { SelectField } from '../src/components/SelectField';
 import { EmptyState } from '../src/components/EmptyState';
+import { Alert, AlertDescription, AlertTitle } from '../src/components/Alert';
+import { Avatar, AvatarFallback, AvatarImage } from '../src/components/Avatar';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../src/components/Card';
 import { InlineNotice } from '../src/components/InlineNotice';
 import { LoadingState } from '../src/components/LoadingState';
 import { Skeleton } from '../src/components/Skeleton';
@@ -29,6 +42,116 @@ import { dismissToast, showToast, Toaster } from '../src/components/Toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../src/components/Tooltip';
 
 afterEach(() => cleanup());
+
+describe('Accordion', () => {
+  it('keeps controlled expansion and trigger semantics', () => {
+    const onChange = vi.fn();
+    render(() => (
+      <Accordion value={[]} onChange={onChange} collapsible>
+        <AccordionItem value="details">
+          <AccordionTrigger>Session details</AccordionTrigger>
+          <AccordionContent>Expanded copy</AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    ));
+    const trigger = screen.getByRole('button', { name: 'Session details' });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveClass('border-border-subtle', 'justify-between');
+    expect(screen.queryByText('Expanded copy')).not.toBeInTheDocument();
+    fireEvent.click(trigger);
+    expect(onChange).toHaveBeenCalledWith(['details']);
+  });
+
+  it('supports multiple expansion mode', () => {
+    const onChange = vi.fn();
+    render(() => (
+      <Accordion multiple value={['one']} onChange={onChange}>
+        <AccordionItem value="one">
+          <AccordionTrigger>One</AccordionTrigger>
+          <AccordionContent>Panel one</AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="two">
+          <AccordionTrigger>Two</AccordionTrigger>
+          <AccordionContent>Panel two</AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    ));
+    fireEvent.click(screen.getByRole('button', { name: 'Two' }));
+    expect(onChange).toHaveBeenCalledWith(['one', 'two']);
+  });
+});
+
+describe('Toggle', () => {
+  it('reports pressed changes and keeps variant props off the DOM', () => {
+    const onChange = vi.fn();
+    render(() => (
+      <Toggle variant="outline" pressed={false} onChange={onChange} aria-label="Bold">
+        B
+      </Toggle>
+    ));
+    const button = screen.getByRole('button', { name: 'Bold' });
+    expect(button).toHaveClass('border-border-strong');
+    expect(button).not.toHaveAttribute('variant');
+    fireEvent.click(button);
+    expect(onChange).toHaveBeenCalledWith(true);
+  });
+});
+
+describe('ToggleGroup', () => {
+  it('supports single and multiple selection', () => {
+    const single = vi.fn();
+    const { unmount } = render(() => (
+      <ToggleGroup value="left" onChange={single}>
+        <ToggleGroupItem value="left" aria-label="Align left">
+          L
+        </ToggleGroupItem>
+        <ToggleGroupItem value="center" aria-label="Align center">
+          C
+        </ToggleGroupItem>
+      </ToggleGroup>
+    ));
+    fireEvent.click(screen.getByRole('button', { name: 'Align center' }));
+    expect(single).toHaveBeenCalledWith('center');
+    unmount();
+
+    const multiple = vi.fn();
+    render(() => (
+      <ToggleGroup multiple value={['bold']} onChange={multiple}>
+        <ToggleGroupItem value="bold" aria-label="Bold">
+          B
+        </ToggleGroupItem>
+        <ToggleGroupItem value="italic" aria-label="Italic">
+          I
+        </ToggleGroupItem>
+      </ToggleGroup>
+    ));
+    fireEvent.click(screen.getByRole('button', { name: 'Italic' }));
+    expect(multiple).toHaveBeenCalledWith(['bold', 'italic']);
+  });
+});
+
+describe('Table', () => {
+  it('renders semantic table parts with markdown-like styling', () => {
+    render(() => (
+      <Table>
+        <TableCaption>Models</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell>Fast</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    ));
+    expect(screen.getByRole('table')).toHaveClass('text-12', 'border-collapse');
+    expect(screen.getByRole('columnheader', { name: 'Name' })).toHaveClass('font-semibold', 'bg-surface-muted');
+    expect(screen.getByRole('cell', { name: 'Fast' })).toHaveClass('border-border-subtle');
+  });
+});
 
 describe('Collapsible', () => {
   it('keeps controlled disclosure state and the trigger relationship intact', () => {
@@ -284,6 +407,19 @@ describe('Textarea', () => {
     expect(textarea).toHaveAttribute('aria-invalid', 'true');
     expect(textarea).not.toHaveAttribute('variant');
   });
+
+  it('uses field chrome by default and keeps the bare variant borderless', () => {
+    const { unmount } = render(() => <Textarea aria-label="Default field" />);
+    const field = screen.getByRole('textbox', { name: 'Default field' });
+    expect(field).toHaveClass('w-full', 'rounded-6', 'text-13');
+    expect(field).not.toHaveClass('resize-none');
+    unmount();
+
+    render(() => <Textarea variant="bare" aria-label="Bare field" />);
+    const bare = screen.getByRole('textbox', { name: 'Bare field' });
+    expect(bare).toHaveClass('w-full', 'resize-none');
+    expect(bare).not.toHaveClass('rounded-6');
+  });
 });
 
 describe('Kobalte selection primitives', () => {
@@ -359,6 +495,94 @@ describe('Popover', () => {
   it('keeps its portal-mounted dialog surface accessible', async () => {
     render(() => <Popover open><PopoverTrigger>Details</PopoverTrigger><PopoverContent aria-label="Details">Popover details</PopoverContent></Popover>);
     expect(await screen.findByRole('dialog', { name: 'Details' })).toHaveTextContent('Popover details');
+  });
+});
+
+describe('Card', () => {
+  it('composes header, content and footer without leaking component props', () => {
+    render(() => (
+      <Card data-testid="card">
+        <CardHeader>
+          <CardTitle>Workspace</CardTitle>
+          <CardDescription>Local development</CardDescription>
+        </CardHeader>
+        <CardContent>Body copy</CardContent>
+        <CardFooter>
+          <Button>Continue</Button>
+        </CardFooter>
+      </Card>
+    ));
+    const card = screen.getByTestId('card');
+    expect(card).toHaveClass('rounded-8', 'border-border-subtle', 'bg-surface', 'shadow-none');
+    expect(screen.getByText('Workspace')).toHaveClass('text-14', 'font-semibold');
+    expect(screen.getByText('Local development')).toHaveClass('text-12', 'text-content-muted');
+    expect(screen.getByText('Body copy')).toHaveClass('px-16', 'py-12');
+    expect(screen.getByRole('button', { name: 'Continue' }).parentElement).toHaveClass('px-16', 'py-12');
+    expect(card).not.toHaveAttribute('variant');
+  });
+});
+
+describe('Avatar', () => {
+  it('shows fallback initials until an image loads', () => {
+    render(() => (
+      <Avatar data-testid="avatar">
+        <AvatarImage src="/avatar.png" alt="Peri" />
+        <AvatarFallback>PS</AvatarFallback>
+      </Avatar>
+    ));
+    expect(screen.getByText('PS')).toBeInTheDocument();
+    const image = screen.getByRole('img', { hidden: true });
+    fireEvent.load(image);
+    expect(screen.queryByText('PS')).not.toBeInTheDocument();
+  });
+
+  it('keeps fallback visible when the image fails to load', () => {
+    render(() => (
+      <Avatar>
+        <AvatarImage src="/missing.png" alt="Missing" />
+        <AvatarFallback>?</AvatarFallback>
+      </Avatar>
+    ));
+    const image = screen.getByRole('img', { hidden: true });
+    fireEvent.error(image);
+    expect(screen.getByText('?')).toBeInTheDocument();
+  });
+
+  it('renders fallback-only avatars without an image source', () => {
+    render(() => (
+      <Avatar data-testid="avatar">
+        <AvatarFallback aria-label="Guest">G</AvatarFallback>
+      </Avatar>
+    ));
+    expect(screen.getByTestId('avatar')).toHaveClass('size-32', 'rounded-full', 'bg-surface-muted');
+    expect(screen.getByLabelText('Guest')).toHaveTextContent('G');
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+});
+
+describe('Alert', () => {
+  it('uses softer feedback surfaces and keeps destructive semantics', () => {
+    const { unmount } = render(() => (
+      <Alert data-testid="alert">
+        <AlertTitle>Heads up</AlertTitle>
+        <AlertDescription>Review the pending changes.</AlertDescription>
+      </Alert>
+    ));
+    const alert = screen.getByTestId('alert');
+    expect(alert).toHaveClass('bg-info-soft', 'border-info-border');
+    expect(alert).not.toHaveAttribute('role');
+    expect(alert).not.toHaveAttribute('variant');
+    unmount();
+
+    render(() => (
+      <Alert variant="destructive">
+        <AlertTitle>Delete failed</AlertTitle>
+        <AlertDescription>The server rejected the request.</AlertDescription>
+      </Alert>
+    ));
+    const destructive = screen.getByRole('alert');
+    expect(destructive).toHaveClass('bg-danger-soft', 'border-danger-border');
+    expect(destructive).toHaveTextContent('Delete failed');
   });
 });
 
@@ -686,9 +910,122 @@ describe('Checkbox disabled', () => {
   });
 });
 
+describe('Switch', () => {
+  it('toggles on click and respects disabled', () => {
+    function Harness() {
+      const [checked, setChecked] = createSignal(false);
+      return (
+        <Switch checked={checked()} onChange={setChecked}>
+          <SwitchInput />
+          <SwitchControl>
+            <SwitchThumb />
+          </SwitchControl>
+          <SwitchLabel>Airplane mode</SwitchLabel>
+        </Switch>
+      );
+    }
+    render(() => <Harness />);
+    const control = screen.getByRole('switch', { name: 'Airplane mode' });
+    expect(control).not.toBeChecked();
+    fireEvent.click(control);
+    expect(control).toBeChecked();
+  });
+
+  it('blocks interaction when disabled', () => {
+    const onChange = vi.fn();
+    render(() => (
+      <Switch disabled checked={false} onChange={onChange}>
+        <SwitchInput />
+        <SwitchControl>
+          <SwitchThumb />
+        </SwitchControl>
+        <SwitchLabel>Notify</SwitchLabel>
+      </Switch>
+    ));
+    fireEvent.click(screen.getByRole('switch', { name: 'Notify' }));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('Label', () => {
+  it('associates with control via for/id', () => {
+    render(() => (
+      <>
+        <Label for="email">Email</Label>
+        <input id="email" type="text" />
+      </>
+    ));
+    expect(screen.getByLabelText('Email')).toBeInTheDocument();
+  });
+});
+
+describe('Separator', () => {
+  it('renders with role separator', () => {
+    render(() => <Separator data-testid="sep" />);
+    expect(screen.getByRole('separator')).toBeInTheDocument();
+  });
+});
+
 describe('IconButton stop variant', () => {
   it('uses stop styling for streaming cancel actions', () => {
     render(() => <IconButton label="Stop" variant="stop">■</IconButton>);
     expect(screen.getByRole('button', { name: 'Stop' })).toHaveClass('bg-btn-primary');
+  });
+});
+
+describe('Progress', () => {
+  it('exposes progressbar semantics and styled track/fill for 0-100 values', () => {
+    render(() => (
+      <Progress value={40} data-testid="progress">
+        <ProgressLabel>Upload</ProgressLabel>
+        <ProgressValueLabel data-testid="value-label" />
+        <ProgressTrack data-testid="track">
+          <ProgressFill data-testid="fill" />
+        </ProgressTrack>
+      </Progress>
+    ));
+    const bar = screen.getByRole('progressbar');
+    expect(bar).toHaveAttribute('aria-valuemin', '0');
+    expect(bar).toHaveAttribute('aria-valuemax', '100');
+    expect(bar).toHaveAttribute('aria-valuenow', '40');
+    expect(screen.getByTestId('track')).toHaveClass('h-8', 'rounded-full', 'bg-border-subtle');
+    expect(screen.getByTestId('fill')).toHaveClass('ui-progress-fill', 'bg-accent-solid');
+    expect(screen.getByTestId('value-label')).toHaveTextContent('40%');
+  });
+});
+
+describe('Slider', () => {
+  it('supports controlled values, track styling, and keyboard changes', () => {
+    const onChange = vi.fn();
+    render(() => (
+      <Slider value={[25]} onChange={onChange} aria-label="Volume">
+        <SliderTrack data-testid="track">
+          <SliderFill data-testid="fill" />
+          <SliderThumb aria-label="Volume" data-testid="thumb" />
+        </SliderTrack>
+      </Slider>
+    ));
+    const thumb = screen.getByTestId('thumb');
+    expect(thumb).toHaveAttribute('role', 'slider');
+    expect(thumb).toHaveAttribute('aria-valuemin', '0');
+    expect(thumb).toHaveAttribute('aria-valuemax', '100');
+    expect(thumb).toHaveAttribute('aria-valuenow', '25');
+    expect(thumb.className).toContain('focus-visible:shadow-accent-ring');
+    expect(thumb.className).toContain('pointer-coarse:min-h-44');
+    expect(screen.getByTestId('track').className).toContain('h-8');
+    expect(screen.getByTestId('track').className).toContain('bg-border-subtle');
+    expect(screen.getByTestId('fill').className).toContain('bg-accent-solid');
+    fireEvent.keyDown(thumb, { key: 'ArrowRight' });
+    expect(onChange).toHaveBeenCalledWith([26]);
+  });
+});
+
+describe('Kbd', () => {
+  it('renders keyboard key styling without leaking component props', () => {
+    render(() => <Kbd data-testid="kbd">⌘K</Kbd>);
+    const kbd = screen.getByTestId('kbd');
+    expect(kbd.tagName).toBe('KBD');
+    expect(kbd).toHaveClass('rounded-4', 'border-border-subtle', 'bg-surface-muted', 'px-6', 'py-2', 'font-mono', 'text-10', 'text-content-secondary');
+    expect(kbd).toHaveTextContent('⌘K');
   });
 });

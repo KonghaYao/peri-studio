@@ -77,7 +77,7 @@ function FileTreeFolderRow(props: {
       role="treeitem"
       aria-expanded={props.open}
       aria-level={props.depth + 1}
-      class="flex w-full items-center gap-1.5 rounded-md border-0 bg-transparent pr-2 text-left text-12 text-content-primary hover:bg-interaction-hover"
+      class="flex w-full items-center gap-6 rounded-md border-0 bg-transparent pr-8 text-left text-12 text-content-primary hover:bg-interaction-hover"
       style={{
         'min-height': 'var(--resource-tree-row)',
         'padding-left': `calc(6px + ${props.depth} * 12px)`,
@@ -105,7 +105,7 @@ function FileTreeFileRow(props: {
       role="treeitem"
       aria-level={props.depth + 1}
       class={cn(
-        'group/tree-file flex w-full items-center gap-1 rounded-md pr-2',
+        'group/tree-file flex w-full items-center gap-4 rounded-md pr-8',
         props.selected ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
       )}
       style={{
@@ -115,7 +115,7 @@ function FileTreeFileRow(props: {
     >
       <button
         type="button"
-        class="flex min-w-0 flex-1 items-center gap-1.5 border-0 bg-transparent py-0 text-left"
+        class="flex min-w-0 flex-1 items-center gap-6 border-0 bg-transparent py-0 text-left"
         onClick={() => props.onSelect?.(props.node)}
       >
         {props.renderFileIcon

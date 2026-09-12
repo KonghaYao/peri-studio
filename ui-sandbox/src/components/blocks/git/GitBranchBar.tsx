@@ -12,7 +12,7 @@ function SyncAction(props: {
       type="button"
       disabled={props.disabled}
       class={cn(
-        'flex min-h-8 flex-1 items-center justify-center rounded-md text-11 text-content-muted transition-colors duration-(--duration-fast)',
+        'flex min-h-32 flex-1 items-center justify-center rounded-md text-11 text-content-muted transition-colors duration-(--duration-fast)',
         'hover:bg-interaction-hover hover:text-content-primary',
         'disabled:cursor-not-allowed disabled:opacity-45',
       )}
@@ -38,21 +38,21 @@ export function GitBranchBar(props: {
   const disabled = () => props.readOnly || props.busy || !props.hasUpstream;
 
   return (
-    <div class="px-1.5 pb-1 pt-1">
+    <div class="px-6 pb-4 pt-4">
       <div
-        class="flex min-h-8 items-center gap-2 rounded-md px-2.5"
+        class="flex min-h-32 items-center gap-8 rounded-md px-10"
         title={props.root}
       >
         <GitBranch size={15} strokeWidth={1.7} class="shrink-0 text-content-muted" aria-hidden="true" />
         <span class="min-w-0 flex-1 truncate text-13 text-content-primary">{props.repoName}</span>
-        <span class="max-w-24 truncate font-mono text-11 text-content-muted">{props.branch}</span>
+        <span class="max-w-96 truncate font-mono text-11 text-content-muted">{props.branch}</span>
       </div>
       <Show when={syncMeta()}>
-        <p class="px-2.5 pb-0.5 text-11 text-content-muted">
+        <p class="px-10 pb-2 text-11 text-content-muted">
           ↑ {props.ahead ?? 0} · ↓ {props.behind ?? 0}
         </p>
       </Show>
-      <div class="mt-0.5 flex items-center gap-0.5 px-1.5">
+      <div class="mt-2 flex items-center gap-2 px-6">
         <SyncAction label="Pull" disabled={disabled()} />
         <SyncAction label="Sync" disabled={disabled()} />
         <SyncAction label="Push" disabled={disabled()} />

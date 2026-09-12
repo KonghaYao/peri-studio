@@ -151,7 +151,7 @@ function ExplorerFolderRow(props: {
           data-path={props.node.path}
           tabindex={props.selected ? 0 : -1}
           class={cn(
-            'group/tree-row flex w-full items-center gap-0.5 rounded-md pr-1',
+            'group/tree-row flex w-full items-center gap-2 rounded-md pr-4',
             props.selected ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
             props.mutationsDisabled && 'opacity-60',
           )}
@@ -164,7 +164,7 @@ function ExplorerFolderRow(props: {
         >
           <button
             type="button"
-            class="flex min-w-0 flex-1 items-center gap-1.5 border-0 bg-transparent py-0 text-left"
+            class="flex min-w-0 flex-1 items-center gap-6 border-0 bg-transparent py-0 text-left"
             onClick={() => {
               props.onSelect();
               props.onToggle();
@@ -224,7 +224,7 @@ function ExplorerFileRow(props: {
           data-path={props.node.path}
           tabindex={props.selected ? 0 : -1}
           class={cn(
-            'group/tree-row flex w-full items-center gap-0.5 rounded-md pr-1',
+            'group/tree-row flex w-full items-center gap-2 rounded-md pr-4',
             props.selected ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
             props.mutationsDisabled && 'opacity-60',
           )}
@@ -237,7 +237,7 @@ function ExplorerFileRow(props: {
         >
           <button
             type="button"
-            class="flex min-w-0 flex-1 items-center gap-1.5 border-0 bg-transparent py-0 text-left text-12 text-content-primary"
+            class="flex min-w-0 flex-1 items-center gap-6 border-0 bg-transparent py-0 text-left text-12 text-content-primary"
             onClick={props.onSelect}
           >
             <File size={14} class="shrink-0 text-content-muted" />
@@ -268,7 +268,7 @@ function ExplorerFileRow(props: {
 export function ExplorerTreeBlankArea(props: { children: JSX.Element; onContextMenu: (ev: MouseEvent) => void }) {
   return (
     <div
-      class="min-h-16 flex-1"
+      class="min-h-64 flex-1"
       onContextMenu={(ev) => {
         ev.preventDefault();
         props.onContextMenu(ev);

@@ -21,7 +21,7 @@ function InlineCode(props: JSX.HTMLAttributes<HTMLElement> & { resolveMath: (tok
   return expression()
     ? <MathExpression expression={expression()!} />
     : (
-      <code {...rest} class={`rounded-sm border border-border-subtle bg-surface-muted px-1 py-0.5 text-11p5 text-content-primary ${local.class || ''}`}>
+      <code {...rest} class={`rounded-sm border border-border-subtle bg-surface-muted px-4 py-2 text-11p5 text-content-primary ${local.class || ''}`}>
         {local.children}
       </code>
     );

@@ -14,7 +14,7 @@
      Tier 0 · Primitives：色调色板。组件禁止使用，只被语义层引用。
      ------------------------------------------------------------------ */
 
-  /* Accent · B4 湛蓝（白字 5.2:1 过 AA） */
+  /* Accent · 湛蓝（白字 5.2:1 过 AA） */
   --palette-accent-50: #eff6ff;
   --palette-accent-100: #dbeafe;
   --palette-accent-200: #bfdbfe;
@@ -26,7 +26,7 @@
   --palette-accent-800: #1e40af;
   --palette-accent-900: #1e3a8a;
 
-  /* Neutral · AntD 冷灰 */
+  /* Neutral · 冷灰 */
   --palette-neutral-0: #ffffff;
   --palette-neutral-25: #fafafa;
   --palette-neutral-50: #f5f5f5;
@@ -41,7 +41,7 @@
   --palette-neutral-900: #1f1f1f;
   --palette-neutral-950: #141414;
 
-  /* Success · AntD 绿 */
+  /* Success · 绿 */
   --palette-success-50: #f6ffed;
   --palette-success-100: #d9f7be;
   --palette-success-200: #b7eb8f;
@@ -49,7 +49,7 @@
   --palette-success-600: #389e0d;
   --palette-success-700: #237804;
 
-  /* Warning · AntD 琥珀 */
+  /* Warning · 琥珀 */
   --palette-warning-50: #fffbe6;
   --palette-warning-100: #fff1b8;
   --palette-warning-200: #ffe58f;
@@ -57,7 +57,7 @@
   --palette-warning-600: #d48806;
   --palette-warning-700: #ad6800;
 
-  /* Danger · AntD 红 */
+  /* Danger · 红 */
   --palette-danger-50: #fff2f0;
   --palette-danger-100: #ffccc7;
   --palette-danger-200: #ffa39e;
@@ -219,7 +219,7 @@
   --terminal-viewport-muted: var(--palette-neutral-500);
   --terminal-viewport-accent: var(--palette-accent-400);
 
-  /* 控件高度（AntD 24/32/40 + 触控 44；legacy compact/default 保留） */
+  /* 控件高度（24/32/40 + 触控 44；legacy compact/default 保留） */
   --control-height-sm: 24px;
   --control-height-md: 32px;
   --control-height-lg: 40px;
@@ -288,6 +288,9 @@
   --shadow-composer-overlay: var(--shadow-raised);
   --shadow-recovery: var(--shadow-raised);
   --shadow-accent-ring: var(--shadow-focus-ring);
+
+  /* Kobalte Progress/Meter fill width (overridden at runtime on fill elements). */
+  --kb-progress-fill-width: 0%;
 
   /* Spacing scale. Feature and primitive styles consume these for every
      padding/gap/margin value; each step is an exact pixel value, so the

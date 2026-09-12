@@ -98,11 +98,11 @@ export function TokenUsageMeter(props: {
       </KPopover.Trigger>
       <KPopover.Portal>
         <KPopover.Content
-          class="z-(--z-overlay) w-(--container-token-usage) rounded-md border border-border-subtle bg-surface-overlay p-2.5 shadow-overlay outline-none"
+          class="z-(--z-overlay) w-(--container-token-usage) rounded-md border border-border-subtle bg-surface-overlay p-10 shadow-overlay outline-none"
           onPointerEnter={() => setHovering(true)}
           onPointerLeave={() => setHovering(false)}
         >
-          <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center justify-between gap-8">
             <p class="text-10 font-medium tracking-caps uppercase text-content-faint">Context usage</p>
             <span
               class={cn(
@@ -115,14 +115,14 @@ export function TokenUsageMeter(props: {
               {STATE_LABEL[state()]}
             </span>
           </div>
-          <div class="mt-2 flex items-baseline justify-between gap-2 text-12">
+          <div class="mt-8 flex items-baseline justify-between gap-8 text-12">
             <span class="text-content-muted">Used</span>
             <span class="font-mono tabular-nums text-content-primary">
               {formatCount(used())}
               <span class="text-content-faint"> / {formatCount(limit())}</span>
             </span>
           </div>
-          <div class="mt-1 h-1 overflow-hidden rounded-full bg-border-subtle">
+          <div class="mt-4 h-4 overflow-hidden rounded-full bg-border-subtle">
             <div
               class={cn(
                 'token-usage-meter__fill h-full rounded-full',
@@ -133,13 +133,13 @@ export function TokenUsageMeter(props: {
               style={{ width: `${Math.round(ratio() * 100)}%` }}
             />
           </div>
-          <p class="mt-1 text-10 text-content-faint">{formatCount(remaining())} remaining</p>
-          <dl class="mt-3 flex flex-col gap-1.5 border-t border-border-subtle pt-2">
+          <p class="mt-4 text-10 text-content-faint">{formatCount(remaining())} remaining</p>
+          <dl class="mt-12 flex flex-col gap-6 border-t border-border-subtle pt-8">
             <p class="text-10 text-content-faint">Latest request</p>
             <For each={SEGMENTS}>
               {(segment) => (
-                <div class="flex items-center gap-2 text-12">
-                  <span class={cn('size-2 shrink-0 rounded-full', segment.tone)} aria-hidden="true" />
+                <div class="flex items-center gap-8 text-12">
+                  <span class={cn('size-8 shrink-0 rounded-full', segment.tone)} aria-hidden="true" />
                   <dt class="flex-1 text-content-muted">{segment.label}</dt>
                   <dd class="font-mono text-11 tabular-nums text-content-primary">
                     {formatCount(values()[segment.key])}

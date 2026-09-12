@@ -78,13 +78,13 @@ export function BlocksPage() {
 
       <DomainSection title="Chat · 聊天内容" description="Transcript 内的消息、Markdown、工具活动与资源引用。">
         <DemoSection id="markdown" title="Markdown" description="GFM + KaTeX 数学 + Mermaid 图；表格 hover 浮现复制 / 下载。">
-          <div class="max-w-(--chat-content-max) rounded-lg border border-border-subtle bg-surface-overlay px-4 py-4">
+          <div class="max-w-(--chat-content-max) rounded-lg border border-border-subtle bg-surface-overlay px-16 py-16">
             <Markdown source={MARKDOWN_SAMPLE} />
           </div>
         </DemoSection>
 
         <DemoSection id="user-bubble" title="UserBubble · Reasoning" description="用户气泡与 Thinking 折叠块。">
-          <div class="flex max-w-(--chat-content-max) flex-col gap-4">
+          <div class="flex max-w-(--chat-content-max) flex-col gap-16">
             <UserBubble>Check the session recovery path so a restart never treats an old runtime as still alive.</UserBubble>
             <Reasoning>First verify the metadata authority, then check the Registry read-only projection and session/load ordering.</Reasoning>
           </div>
@@ -125,7 +125,7 @@ export function BlocksPage() {
         </DemoSection>
 
         <DemoSection id="token-usage" title="TokenUsageMeter" description="红绿灯圆环：绿（默认）/ 琥珀 / 红；浮层显示 used/limit 与分段。">
-          <div class="flex max-w-(--composer-launch-max) flex-wrap items-center gap-4 rounded-lg border border-composer-border bg-surface-overlay px-2.5 py-2" style={{ 'border-radius': 'var(--composer-radius)' }}>
+          <div class="flex max-w-(--composer-launch-max) flex-wrap items-center gap-16 rounded-lg border border-composer-border bg-surface-overlay px-10 py-8" style={{ 'border-radius': 'var(--composer-radius)' }}>
             <span class="text-12 text-content-muted">Green</span>
             <TokenUsageMeter input={12400} output={3180} cached={8200} limit={200000} />
             <span class="text-12 text-content-muted">Amber (~75%)</span>
@@ -144,15 +144,15 @@ export function BlocksPage() {
         </DemoSection>
 
         <DemoSection id="session-row-accessory" title="SessionRowAccessory" description="浮动槽位：默认时间戳，hover 切换为 Pin / Archive / More 按钮组。">
-          <div class="max-w-sm rounded-lg border border-border-subtle bg-surface-overlay p-2">
-            <div class="group/row relative min-h-8 rounded-md hover:bg-interaction-hover">
-              <div class="flex min-h-8 items-center px-2.5">
+          <div class="max-w-sm rounded-lg border border-border-subtle bg-surface-overlay p-8">
+            <div class="group/row relative min-h-32 rounded-md hover:bg-interaction-hover">
+              <div class="flex min-h-32 items-center px-10">
                 <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Refactor ACP session recovery</span>
               </div>
               <SessionRowAccessory time="18m" pinned actionsVisible />
             </div>
-            <div class="group/row relative mt-1 min-h-8 rounded-md bg-sidebar-selected">
-              <div class="flex min-h-8 items-center px-2.5">
+            <div class="group/row relative mt-4 min-h-32 rounded-md bg-sidebar-selected">
+              <div class="flex min-h-32 items-center px-10">
                 <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Design workspace state</span>
               </div>
               <SessionRowAccessory time="2m" live />
@@ -161,9 +161,9 @@ export function BlocksPage() {
         </DemoSection>
 
         <DemoSection id="project-row-accessory" title="ProjectRowAccessory" description="项目行：默认会话计数，hover 切换为 More / New session 按钮组。">
-          <div class="max-w-sm rounded-lg border border-border-subtle bg-surface-overlay p-2">
-            <div class="group/workspace relative min-h-8 rounded-md hover:bg-interaction-hover">
-              <div class="flex min-h-8 items-center gap-2 px-2.5">
+          <div class="max-w-sm rounded-lg border border-border-subtle bg-surface-overlay p-8">
+            <div class="group/workspace relative min-h-32 rounded-md hover:bg-interaction-hover">
+              <div class="flex min-h-32 items-center gap-8 px-10">
                 <Folder size={15} strokeWidth={1.7} class="shrink-0 text-content-muted" />
                 <span class="min-w-0 flex-1 truncate text-13 text-content-primary">peri-studio</span>
               </div>
@@ -196,7 +196,7 @@ export function BlocksPage() {
 
       <DomainSection title="Git · 版本控制" description="Source Control 与 Git Graph 原子块。">
         <DemoSection id="git-change-row" title="GitChangeTree" description="目录树折叠；文件 icon；hover 浮现 stage / discard。">
-          <div class="max-w-sm rounded-lg border border-border-subtle bg-surface-overlay py-1">
+          <div class="max-w-sm rounded-lg border border-border-subtle bg-surface-overlay py-4">
             <GitChangeGroup label="Changes" count={2}>
               <GitChangeTree
                 groupId="working_tree"
@@ -210,7 +210,7 @@ export function BlocksPage() {
         </DemoSection>
 
         <DemoSection id="git-commit-bar" title="GitCommitBar" description="Commit message + Pull / Sync / Push。">
-          <div class="max-w-sm rounded-lg border border-border-subtle bg-surface-overlay p-2">
+          <div class="max-w-sm rounded-lg border border-border-subtle bg-surface-overlay p-8">
             <GitBranchBar repoName="peri-studio" branch="main" ahead={2} behind={0} hasUpstream />
             <GitCommitBar stagedCount={1} />
           </div>
@@ -257,7 +257,7 @@ export function BlocksPage() {
 
         <DemoSection id="git-diff-panel" title="GitDiffPanel" description="选中变更路径 + unified diff 预览块。">
           <div class="max-w-md rounded-lg border border-border-subtle">
-            <GitDiffPanel path="web/src/widgets/resource/SourceControlPanel.tsx" class="min-h-48" />
+            <GitDiffPanel path="web/src/widgets/resource/SourceControlPanel.tsx" class="min-h-210" />
           </div>
         </DemoSection>
       </DomainSection>

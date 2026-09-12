@@ -30,8 +30,8 @@ export function ResourcePanelLayout() {
   const [selected, setSelected] = createSignal('src/web/Composer.tsx');
 
   return (
-    <div class="grid max-w-3xl grid-cols-1 gap-4 min-diff-min:grid-cols-2">
-      <div class="rounded-lg border border-border-subtle bg-surface-canvas p-2 text-12" role="tree" aria-label="Explorer">
+    <div class="grid max-w-3xl grid-cols-1 gap-16 min-diff-min:grid-cols-2">
+      <div class="rounded-lg border border-border-subtle bg-surface-canvas p-8 text-12" role="tree" aria-label="Explorer">
         <FileTree
           nodes={EXPLORER_DEMO}
           expandedPaths={expanded()}
@@ -48,12 +48,12 @@ export function ResourcePanelLayout() {
           renderFileIcon={(node) => <GitFileIcon path={node.path} />}
         />
       </div>
-      <div class="rounded-lg border border-border-subtle p-3">
-        <div class="mb-2 flex items-center gap-2 text-12 font-medium text-content-primary"><CodeXml size={14} class="text-content-muted" />diff preview</div>
+      <div class="rounded-lg border border-border-subtle p-12">
+        <div class="mb-8 flex items-center gap-8 text-12 font-medium text-content-primary"><CodeXml size={14} class="text-content-muted" />diff preview</div>
         <div class="overflow-hidden rounded-md border border-border-subtle font-mono text-11 leading-relaxed">
-          <div class="bg-success-soft px-2.5 text-success-strong">+ export function installAppBridge() {'{'}</div>
-          <div class="bg-danger-soft px-2.5 text-danger-strong">- export function installBridge() {'{'}</div>
-          <div class="px-2.5 text-content-muted">&nbsp;&nbsp;const channel = createChannel();</div>
+          <div class="bg-success-soft px-10 text-success-strong">+ export function installAppBridge() {'{'}</div>
+          <div class="bg-danger-soft px-10 text-danger-strong">- export function installBridge() {'{'}</div>
+          <div class="px-10 text-content-muted">&nbsp;&nbsp;const channel = createChannel();</div>
         </div>
       </div>
     </div>

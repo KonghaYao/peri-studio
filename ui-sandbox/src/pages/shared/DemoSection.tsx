@@ -1,3 +1,25 @@
+import type { JSX } from 'solid-js';
+
+/** T2 Components 页单组件 demo 区块。 */
+export function CatalogDemo(props: { id: string; title: string; description?: string; children: unknown }) {
+  return (
+    <section id={props.id} class="demo-scroll-anchor border-b border-border-subtle px-16 py-28 middle:px-32">
+      <h2 class="text-15 font-semibold text-content-primary">{props.title}</h2>
+      {props.description && <p class="mt-4 max-w-2xl text-12 leading-normal text-content-muted">{props.description}</p>}
+      <div class="mt-16 flex flex-col gap-16">{props.children as never}</div>
+    </section>
+  );
+}
+
+export function DemoRow(props: { label?: string; children: JSX.Element }) {
+  return (
+    <div>
+      {props.label && <div class="mb-6 text-10 font-medium tracking-caps uppercase text-content-faint">{props.label}</div>}
+      <div class="flex flex-wrap items-center gap-12">{props.children}</div>
+    </div>
+  );
+}
+
 /** 沙箱各 tier 页面共用的 demo 区块壳。 */
 export function DemoSection(props: { id: string; title: string; description?: string; children: unknown }) {
   return (

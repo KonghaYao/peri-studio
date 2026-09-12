@@ -40,7 +40,7 @@ export function MathExpression(props: { expression: string; block?: boolean }) {
   );
   const className = () =>
     props.block
-      ? 'md-math md-math--block my-4 overflow-x-auto py-2 text-center'
+      ? 'md-math md-math--block my-16 overflow-x-auto py-8 text-center'
       : 'md-math md-math--inline';
 
   return (
@@ -49,7 +49,7 @@ export function MathExpression(props: { expression: string; block?: boolean }) {
         {(value) => <span innerHTML={value()} />}
       </Show>
       <Show when={result()?.error}>
-        <IconButton size="sm" class="ml-1" onClick={() => refetch()} label="Retry math rendering">
+        <IconButton size="sm" class="ml-4" onClick={() => refetch()} label="Retry math rendering">
           <RefreshCw size={13} />
         </IconButton>
       </Show>

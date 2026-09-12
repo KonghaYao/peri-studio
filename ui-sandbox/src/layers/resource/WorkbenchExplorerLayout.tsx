@@ -31,7 +31,7 @@ export function WorkbenchExplorerLayout(props: {
   const [expanded, setExpanded] = createSignal(new Set(['src', 'src/web']));
 
   return (
-    <div class="px-1 py-2 text-12" role="tree" aria-label="Explorer">
+    <div class="px-4 py-8 text-12" role="tree" aria-label="Explorer">
       <FileTree
         nodes={WORKBENCH_EXPLORER_DEMO}
         expandedPaths={expanded()}

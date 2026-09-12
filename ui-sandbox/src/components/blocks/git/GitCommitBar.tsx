@@ -16,7 +16,7 @@ export function GitCommitBar(props: {
     && message().trim().length > 0;
 
   return (
-    <div class="px-2.5 pb-2">
+    <div class="px-10 pb-8">
       <textarea
         aria-label="Commit message"
         placeholder="Commit message"
@@ -25,7 +25,7 @@ export function GitCommitBar(props: {
         disabled={props.readOnly || props.busy}
         onInput={(event) => setMessage(event.currentTarget.value)}
         class={cn(
-          'box-border w-full min-h-9 resize-none rounded-md border-0 bg-surface-sunken px-2.5 py-2',
+          'box-border w-full min-h-36 resize-none rounded-md border-0 bg-surface-sunken px-10 py-8',
           'text-12 leading-snug text-content-primary outline-none placeholder:text-content-faint',
           'focus-visible:shadow-(--shadow-focus-ring)',
           'disabled:cursor-not-allowed disabled:opacity-45',
@@ -34,7 +34,7 @@ export function GitCommitBar(props: {
       <Button
         variant="primary"
         size="sm"
-        class="mt-1.5 w-full"
+        class="mt-6 w-full"
         busy={props.busy}
         disabled={!canCommit()}
       >

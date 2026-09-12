@@ -6,10 +6,10 @@ import { TierHeader } from '@/pages/shared/DemoSection';
 
 function Section(props: { id: string; title: string; description?: string; children: unknown }) {
   return (
-    <section id={props.id} class="demo-scroll-anchor border-b border-border-subtle px-4 py-7 diff-min:px-8">
+    <section id={props.id} class="demo-scroll-anchor border-b border-border-subtle px-16 py-28 diff-min:px-32">
       <h2 class="text-15 font-semibold text-content-primary">{props.title}</h2>
-      {props.description && <p class="mt-1 mb-5 text-12 text-content-muted">{props.description}</p>}
-      <div class="mt-4">{props.children as never}</div>
+      {props.description && <p class="mt-4 mb-20 text-12 text-content-muted">{props.description}</p>}
+      <div class="mt-16">{props.children as never}</div>
     </section>
   );
 }
@@ -18,16 +18,16 @@ function SwatchChip(props: { entry: TokenEntry; note?: string; anchor?: boolean 
   const step = () => props.entry.name.split('-').pop() ?? '';
   const resolved = () => resolveToken(props.entry.name, 'color');
   return (
-    <div class="w-20">
+    <div class="w-82">
       <div
-        class="h-11 rounded-md border"
+        class="h-44 rounded-md border"
         classList={{
           'border-accent-solid ring-1 ring-accent-solid': !!props.anchor,
           'border-black/8': !props.anchor,
         }}
         style={{ background: `var(${props.entry.name})` }}
       />
-      <div class="mt-1.5 text-11 font-medium" classList={{ 'text-accent-solid': !!props.anchor, 'text-content-primary': !props.anchor }}>{step()}</div>
+      <div class="mt-6 text-11 font-medium" classList={{ 'text-accent-solid': !!props.anchor, 'text-content-primary': !props.anchor }}>{step()}</div>
       <div class="truncate font-mono text-9 leading-normal text-content-muted" title={resolved()}>{props.entry.value.startsWith('#') ? props.entry.value : resolved()}</div>
       {/* 固定高度的 note 行：有无注释都保持 chips 等高 */}
       <div class="truncate text-9 leading-normal text-content-faint">{props.note ?? '\u00A0'}</div>
@@ -46,12 +46,12 @@ const ANCHOR_STEPS: Record<string, string> = {
 function PaletteGroup(props: { family: string; label: string; entries: TokenEntry[] }) {
   const steps = createMemo(() => groupTokens(props.entries, `--palette-${props.family}-`));
   return (
-    <div class="mb-5">
-      <div class="mb-2 flex items-baseline gap-2">
+    <div class="mb-20">
+      <div class="mb-8 flex items-baseline gap-8">
         <span class="text-12 font-semibold text-content-primary">{props.label}</span>
         <code class="text-10 text-content-faint">--palette-{props.family}-*</code>
       </div>
-      <div class="flex flex-wrap gap-2">
+      <div class="flex flex-wrap gap-8">
         <For each={steps()}>
           {(entry) => {
             const anchor = () => ANCHOR_STEPS[`${props.family}-${entry.name.split('-').pop()}`];
@@ -67,21 +67,21 @@ function SemanticTable(props: { entries: TokenEntry[]; prefix: string; label: st
   const rows = createMemo(() => groupTokens(props.entries, props.prefix));
   return (
     <Show when={rows().length > 0}>
-      <div class="mb-6">
-        <div class="mb-2 text-12 font-semibold text-content-secondary">{props.label}</div>
+      <div class="mb-24">
+        <div class="mb-8 text-12 font-semibold text-content-secondary">{props.label}</div>
         <div class="overflow-hidden rounded-lg border border-border-subtle">
           <For each={rows()}>
             {(entry, index) => (
               <div
-                class="grid grid-cols-1 items-center gap-1 px-3 py-2 text-12 compact:grid-cols-token-row compact:gap-3"
+                class="grid grid-cols-1 items-center gap-4 px-12 py-8 text-12 compact:grid-cols-token-row compact:gap-12"
                 classList={{ 'border-t border-border-subtle': index() > 0 }}
               >
                 <code class="truncate text-11 text-content-primary">{entry.name}</code>
-                <span class="flex items-center gap-2 text-content-secondary">
-                  <span class="size-4 flex-none rounded-sm border border-black/10" style={{ background: `var(${entry.name})` }} />
+                <span class="flex items-center gap-8 text-content-secondary">
+                  <span class="size-16 flex-none rounded-sm border border-black/10" style={{ background: `var(${entry.name})` }} />
                   <span class="truncate font-mono text-10 text-content-muted" title={resolveToken(entry.name)}>{entry.value}</span>
                 </span>
-                <span class="truncate font-mono text-10 text-content-faint max-compact:pl-6">{resolveToken(entry.name)}</span>
+                <span class="truncate font-mono text-10 text-content-faint max-compact:pl-24">{resolveToken(entry.name)}</span>
               </div>
             )}
           </For>
@@ -94,7 +94,11 @@ function SemanticTable(props: { entries: TokenEntry[]; prefix: string; label: st
 export function TokensPage() {
   const entries = createMemo(() => readDesignTokens());
 
-  const spacingSteps = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 10, 11, 12, 14, 16, 18, 20, 24];
+  const spacingSteps = createMemo(() =>
+    groupTokens(entries(), '--space-')
+      .filter((entry) => /^--space-\d+$/.test(entry.name))
+      .sort((left, right) => Number(left.name.replace('--space-', '')) - Number(right.name.replace('--space-', ''))),
+  );
   const radii = createMemo(() => groupTokens(entries(), '--radius-').filter((entry) => !['control', 'card', 'pill'].some((alias) => entry.name.endsWith(alias))));
   const textSizes = createMemo(() => groupTokens(entries(), '--text-').filter((entry) => /-\d+$/.test(entry.name)));
   const textAliases = createMemo(() => entries().filter((entry) => /^--text-(caption|body|title|display)$/.test(entry.name)));
@@ -121,9 +125,9 @@ export function TokensPage() {
       />
 
       <Section id="palette" title="Tier 0 · Color palettes" description="原始色板。组件禁止直接引用；只被语义层引用。accent 命名与色相解耦。">
-        <PaletteGroup family="accent" label="Accent · B4 湛蓝" entries={entries()} />
-        <PaletteGroup family="neutral" label="Neutral · AntD 冷灰" entries={entries()} />
-        <PaletteGroup family="success" label="Success · AntD 绿" entries={entries()} />
+        <PaletteGroup family="accent" label="Accent · 湛蓝" entries={entries()} />
+        <PaletteGroup family="neutral" label="Neutral · 冷灰" entries={entries()} />
+        <PaletteGroup family="success" label="Success · 绿" entries={entries()} />
         <PaletteGroup family="warning" label="Warning · 琥珀" entries={entries()} />
         <PaletteGroup family="danger" label="Danger · 红" entries={entries()} />
       </Section>
@@ -138,25 +142,25 @@ export function TokensPage() {
         <SemanticTable entries={entries()} prefix="--feedback-" label="反馈色矩阵（solid / strong / soft / border）" />
       </Section>
 
-      <Section id="spacing" title="Spacing · Tailwind ×4" description="--spacing: 4px 原生语义：utility 数字 ×4 = px（p-2 = 8px）。允许档位由契约锁定：0 / px / 0.5–16（0.5 步进）/ 18 / 20 / 24。">
-        <div class="flex flex-col gap-1.5">
-          <For each={spacingSteps}>
-            {(step) => (
-              <div class="flex items-center gap-3">
-                <code class="w-16 flex-none text-right text-10 text-content-muted">{step} = {step * 4}px</code>
-                <div class="h-3 rounded-xs bg-accent-solid/80" style={{ width: `calc(var(--spacing) * ${step})` }} />
+      <Section id="spacing" title="Spacing · pixel scale" description="Tailwind spacing utility 数字即像素（p-8 = 8px、gap-16 = 16px）。档位来自 tokens.css 的 --space-*，由 theme.css 映射为 p-* / gap-* / m-* 等。">
+        <div class="flex flex-col gap-6">
+          <For each={spacingSteps()}>
+            {(entry) => (
+              <div class="flex items-center gap-12">
+                <code class="w-64 flex-none text-right text-10 text-content-muted">{entry.name} = {entry.value}</code>
+                <div class="h-12 rounded-xs bg-accent-solid/80" style={{ width: `var(${entry.name})` }} />
               </div>
             )}
           </For>
         </div>
       </Section>
 
-      <Section id="radius" title="Radius" description="AntD 几何：control = 6、card = 8。语义别名 --radius-control / --radius-card / --radius-pill。">
-        <div class="flex flex-wrap items-end gap-4">
+      <Section id="radius" title="Radius" description="控件圆角：control = 6px、card = 8px。语义别名 --radius-control / --radius-card / --radius-pill。">
+        <div class="flex flex-wrap items-end gap-16">
           <For each={radii()}>
             {(entry) => (
-              <div class="flex flex-col items-center gap-1.5">
-                <div class="size-12 border-2 border-accent-solid bg-accent-soft" style={{ 'border-radius': `var(${entry.name})` }} />
+              <div class="flex flex-col items-center gap-6">
+                <div class="size-48 border-2 border-accent-solid bg-accent-soft" style={{ 'border-radius': `var(${entry.name})` }} />
                 <code class="text-9 text-content-muted">{entry.name.replace('--radius-', '')}</code>
                 <span class="text-9 text-content-faint">{entry.value}</span>
               </div>
@@ -166,18 +170,18 @@ export function TokensPage() {
       </Section>
 
       <Section id="typography" title="Typography" description="开发工具密度（正文 12/13）；字重只用 400/500/600/700 标准档；行高统一无单位比例。">
-        <div class="mb-6 overflow-hidden rounded-lg border border-border-subtle">
+        <div class="mb-24 overflow-hidden rounded-lg border border-border-subtle">
           <For each={textSizes()}>
             {(entry, index) => (
-              <div class="flex items-baseline gap-4 px-3 py-2" classList={{ 'border-t border-border-subtle': index() > 0 }}>
-                <code class="w-16 flex-none text-10 text-content-muted">{entry.name}</code>
+              <div class="flex items-baseline gap-16 px-12 py-8" classList={{ 'border-t border-border-subtle': index() > 0 }}>
+                <code class="w-64 flex-none text-10 text-content-muted">{entry.name}</code>
                 <span class="text-content-primary" style={{ 'font-size': `var(${entry.name})` }}>The quick brown fox</span>
                 <span class="ml-auto text-10 text-content-faint">{entry.value}</span>
               </div>
             )}
           </For>
         </div>
-        <div class="mb-6 flex flex-wrap items-baseline gap-6">
+        <div class="mb-24 flex flex-wrap items-baseline gap-24">
           <For each={textAliases()}>
             {(entry) => (
               <div>
@@ -187,19 +191,19 @@ export function TokensPage() {
             )}
           </For>
         </div>
-        <div class="flex flex-wrap gap-8">
+        <div class="flex flex-wrap gap-32">
           <div>
-            <div class="mb-1 text-11 font-semibold text-content-secondary">Weight</div>
+            <div class="mb-4 text-11 font-semibold text-content-secondary">Weight</div>
             <For each={[400, 500, 600, 700]}>
               {(weight) => <div class="text-14 text-content-primary" style={{ 'font-weight': weight }}>{weight} — Interface text</div>}
             </For>
           </div>
           <div>
-            <div class="mb-1 text-11 font-semibold text-content-secondary">Leading</div>
+            <div class="mb-4 text-11 font-semibold text-content-secondary">Leading</div>
             <For each={leadings()}>
               {(entry) => (
                 <div class="text-12 text-content-primary">
-                  <code class="mr-2 text-10 text-content-muted">{entry.name.replace('--leading-', '')}</code>{entry.value}
+                  <code class="mr-8 text-10 text-content-muted">{entry.name.replace('--leading-', '')}</code>{entry.value}
                 </div>
               )}
             </For>
@@ -208,18 +212,18 @@ export function TokensPage() {
       </Section>
 
       <Section id="elevation" title="Elevation & motion" description="能不用阴影就不用；浮层离开画布时才使用 overlay 阴影。">
-        <div class="flex flex-wrap gap-4">
+        <div class="flex flex-wrap gap-16">
           <For each={shadows()}>
             {(entry) => (
-              <div class="flex w-44 flex-col gap-2">
-                <div class="grid h-16 place-items-center rounded-lg border border-border-subtle bg-surface-overlay text-11 text-content-muted" style={{ 'box-shadow': `var(${entry.name})` }}>
+              <div class="flex w-180 flex-col gap-8">
+                <div class="grid h-64 place-items-center rounded-lg border border-border-subtle bg-surface-overlay text-11 text-content-muted" style={{ 'box-shadow': `var(${entry.name})` }}>
                   {entry.name.replace('--shadow-', '')}
                 </div>
               </div>
             )}
           </For>
         </div>
-        <div class="mt-4 flex flex-wrap gap-6 text-12 text-content-secondary">
+        <div class="mt-16 flex flex-wrap gap-24 text-12 text-content-secondary">
           <span>duration <code class="text-11">--duration-fast 120ms · --duration-base 160ms</code></span>
           <span>z-index <code class="text-11">sticky 10 · overlay 40 · modal 50 · toast 60</code></span>
         </div>
@@ -231,12 +235,12 @@ export function TokensPage() {
             const rows = createMemo(() => groupTokens(entries(), domain.prefix));
             return (
               <Show when={rows().length > 0}>
-                <div class="mb-5">
-                  <div class="mb-2 text-12 font-semibold text-content-secondary">{domain.label}</div>
+                <div class="mb-20">
+                  <div class="mb-8 text-12 font-semibold text-content-secondary">{domain.label}</div>
                   <div class="overflow-hidden rounded-lg border border-border-subtle">
                     <For each={rows()}>
                       {(entry, index) => (
-                        <div class="grid grid-cols-1 items-center gap-0.5 px-3 py-1.5 compact:grid-cols-token-alias compact:gap-3" classList={{ 'border-t border-border-subtle': index() > 0 }}>
+                        <div class="grid grid-cols-1 items-center gap-2 px-12 py-6 compact:grid-cols-token-alias compact:gap-12" classList={{ 'border-t border-border-subtle': index() > 0 }}>
                           <code class="truncate text-11 text-content-primary">{entry.name}</code>
                           <span class="truncate font-mono text-10 text-content-muted">{entry.value}</span>
                         </div>
