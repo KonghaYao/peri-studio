@@ -63,6 +63,8 @@ import {
   ToolActivityRow,
   TranscriptReasoning,
 } from '@peri/ui';
+import { Markdown } from '@/components/blocks';
+import { MARKDOWN_LAB_SAMPLE } from '@/fixtures/markdown-lab-sample';
 import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
 
 const tableRows = [
@@ -231,7 +233,7 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'confirmation')}>
-      <CatalogDemo id="confirmation" title="Confirmation" description="敏感操作审批；展示 blocks DecisionCard 视觉。">
+      <CatalogDemo id="confirmation" title="Confirmation" description="敏感操作审批 DecisionCard。">
         <div class="max-w-md">
           <DecisionCard
             title="Permissions"
@@ -285,7 +287,7 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'code-block')}>
-      <CatalogDemo id="code-block" title="Code block" description="Markdown 代码块视觉（blocks CodeBlock 对齐）。">
+      <CatalogDemo id="code-block" title="Code block" description="Markdown 代码块视觉。">
         <ChatFrame>
           <CodeBlock
             code={codeSamples[codeLanguage()]}
@@ -333,17 +335,10 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </CatalogDemo>
       </Show>
 
-      <Show when={showCatalogSection(props.sections, 'typeset')}>
-      <CatalogDemo id="typeset" title="Typeset" description="流式 Markdown 排版（typeset.css）。">
+      <Show when={showCatalogSection(props.sections, 'markdown')}>
+      <CatalogDemo id="markdown" title="Markdown" description="与 Blocks 共用 Markdown 块：GFM、数学、Mermaid、代码块。">
         <ChatFrame>
-          <div class="typeset typeset-chat text-13">
-            <h3>Streaming markdown</h3>
-            <p>Lists and <code>inline code</code> scale from the container.</p>
-            <ul>
-              <li>Anchor turns on new messages</li>
-              <li>Preserve scroll on prepend</li>
-            </ul>
-          </div>
+          <Markdown source={MARKDOWN_LAB_SAMPLE} />
         </ChatFrame>
       </CatalogDemo>
       </Show>

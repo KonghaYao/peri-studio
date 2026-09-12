@@ -15,8 +15,78 @@
 /* ── Navigation menu viewport（Kobalte 运行时 CSS 变量） ───────────────── */
 
 .ui-navigation-menu-viewport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: var(--kb-navigation-menu-viewport-height);
   width: var(--kb-navigation-menu-viewport-width);
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform-origin: var(--kb-menu-content-transform-origin);
+  transition:
+    width var(--duration-surface-in) var(--ease-surface-in),
+    height var(--duration-surface-in) var(--ease-surface-in),
+    opacity var(--duration-surface-in) var(--ease-surface-in);
+}
+
+.ui-navigation-menu-viewport[data-expanded] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ui-navigation-menu-content[data-motion='from-start'] {
+  animation: ui-nav-content-from-start var(--duration-surface-in) var(--ease-surface-in) both;
+}
+
+.ui-navigation-menu-content[data-motion='from-end'] {
+  animation: ui-nav-content-from-end var(--duration-surface-in) var(--ease-surface-in) both;
+}
+
+.ui-navigation-menu-content[data-motion='to-start'] {
+  animation: ui-nav-content-to-start var(--duration-surface-out) var(--ease-surface-out) both;
+}
+
+.ui-navigation-menu-content[data-motion='to-end'] {
+  animation: ui-nav-content-to-end var(--duration-surface-out) var(--ease-surface-out) both;
+}
+
+@keyframes ui-nav-content-from-start {
+  from {
+    opacity: 0;
+    transform: translate3d(calc(var(--motion-slide-md) * -1), 0, 0);
+  }
+}
+
+@keyframes ui-nav-content-from-end {
+  from {
+    opacity: 0;
+    transform: translate3d(var(--motion-slide-md), 0, 0);
+  }
+}
+
+@keyframes ui-nav-content-to-start {
+  to {
+    opacity: 0;
+    transform: translate3d(calc(var(--motion-slide-md) * -1), 0, 0);
+  }
+}
+
+@keyframes ui-nav-content-to-end {
+  to {
+    opacity: 0;
+    transform: translate3d(var(--motion-slide-md), 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-navigation-menu-viewport {
+    transition: none;
+  }
+
+  .ui-navigation-menu-content[data-motion] {
+    animation: none !important;
+  }
 }
 
 /* ── 文本截断（WebKit 栈，Tailwind 无等价 token） ─────────────────────── */

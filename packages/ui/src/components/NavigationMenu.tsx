@@ -94,10 +94,12 @@ const NavigationMenuContent = <T extends ValidComponent = "ul">(
 ) => {
   const [, rest] = splitProps(props as NavigationMenuContentProps, ["class"])
   return (
-    <NavigationMenuPrimitive.Content
-      class={cn(navigationMenuContentClass, props.class)}
-      {...rest}
-    />
+    <NavigationMenuPrimitive.Portal>
+      <NavigationMenuPrimitive.Content
+        class={cn(navigationMenuContentClass, props.class)}
+        {...rest}
+      />
+    </NavigationMenuPrimitive.Portal>
   )
 }
 

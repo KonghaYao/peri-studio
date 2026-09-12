@@ -46,13 +46,13 @@ export const navigationMenuClass =
 export const navigationMenuListClass =
   "group flex flex-1 list-none items-center justify-center gap-4"
 
-/** Navigation menu 下拉面板内容区（挂载在 Viewport 内，勿 Portal）。 */
+/** Navigation menu 下拉面板内容区（经 Portal 挂载到 Viewport 内）。 */
 export const navigationMenuContentClass =
-  "absolute top-0 left-0 w-max min-w-full p-4 outline-none"
+  "ui-navigation-menu-content absolute top-0 left-0 m-0 box-border w-max min-w-full list-none p-4 outline-none pointer-events-none data-[expanded]:pointer-events-auto"
 
 /** Navigation menu 视口容器（尺寸由 Kobalte CSS 变量驱动，见 extra.css）。 */
 export const navigationMenuViewportClass =
-  `ui-navigation-menu-viewport relative mt-6 w-full overflow-hidden rounded-8 border border-border-subtle bg-surface text-text-primary shadow-popover outline-none ${menuSurfaceMotion}`
+  "ui-navigation-menu-viewport relative mt-6 overflow-hidden rounded-8 border border-border-subtle bg-surface text-text-primary shadow-popover outline-none"
 
 /** Navigation menu 内链卡片。 */
 export const navigationMenuLinkClass =

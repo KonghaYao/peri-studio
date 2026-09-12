@@ -1175,7 +1175,10 @@ describe('NavigationMenu', () => {
     const link = await screen.findByRole('link', { name: 'Docs' });
     expect(link).toHaveAttribute('data-active', 'true');
     expect(link).toHaveClass('rounded-6', 'text-13', 'hover:bg-hover');
-    expect(document.body.contains(link)).toBe(true);
+    const viewport = nav.querySelector('.ui-navigation-menu-viewport');
+    expect(viewport).toBeTruthy();
+    expect(viewport?.contains(link)).toBe(true);
+    expect(trigger.parentElement?.contains(link)).toBe(false);
   });
 });
 

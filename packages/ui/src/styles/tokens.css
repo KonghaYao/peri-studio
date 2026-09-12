@@ -255,6 +255,7 @@
   /* Kobalte NavigationMenu viewport（运行时由组件写入，此处为 CSS 契约回退） */
   --kb-navigation-menu-viewport-height: auto;
   --kb-navigation-menu-viewport-width: auto;
+  --kb-menu-content-transform-origin: center;
 
   /* Terminal 底栏 Dock（折叠仅隐藏 viewport；与 sandbox Tier 4 对齐） */
   --terminal-dock-surface: var(--palette-neutral-0);
