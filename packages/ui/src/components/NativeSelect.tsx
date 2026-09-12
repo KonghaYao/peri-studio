@@ -3,7 +3,7 @@ import { splitProps, type JSX } from 'solid-js';
 import { cn } from '../lib/cn';
 
 const nativeSelectControlClasses = (invalid?: boolean, className?: string) => cn(
-  'box-border h-32 w-full appearance-none rounded-6 border bg-surface px-12 pr-32 text-13 text-text-primary outline-none ui-control-transition',
+  'box-border h-36 w-full appearance-none rounded-6 border bg-surface px-12 pr-32 text-13 text-text-primary outline-none ui-control-transition',
   invalid
     ? 'border-danger focus:border-danger'
     : 'border-border-strong hover:border-accent-border-hover focus:border-focus-ring',

@@ -44,7 +44,7 @@ export function TerminalDockLayout() {
           aria-label="Terminal dock"
           class="border-t border-terminal-dock-border bg-terminal-dock-surface"
         >
-          <header class="flex h-32 min-w-0 items-center gap-8 overflow-hidden whitespace-nowrap border-b border-border-subtle px-8">
+          <header class="flex h-36 min-w-0 items-center gap-8 overflow-hidden whitespace-nowrap border-b border-border-subtle px-8">
             <IconButton
               label={expanded() ? 'Collapse terminal viewport' : 'Expand terminal viewport'}
               size="sm"
@@ -111,7 +111,7 @@ export function TerminalDockLayout() {
             </div>
           </Show>
 
-          <footer class="flex h-32 min-w-0 items-center gap-8 overflow-hidden whitespace-nowrap border-t border-border-subtle px-8 text-11 text-content-muted">
+          <footer class="flex h-36 min-w-0 items-center gap-8 overflow-hidden whitespace-nowrap border-t border-border-subtle px-8 text-11 text-content-muted">
             <Status tone={meta().tone} label={meta().statusLabel} live={meta().live} class="shrink-0" />
             <span
               class="inline-flex min-w-0 items-center gap-4 overflow-hidden"

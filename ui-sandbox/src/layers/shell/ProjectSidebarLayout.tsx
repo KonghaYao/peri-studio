@@ -142,13 +142,13 @@ function SessionRow(props: {
         props.selected ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
       )}
       style={{
-        'min-height': '32px',
+        'min-height': '36px',
         'padding-left': props.indent ? `calc(10px + ${props.indent}px)` : undefined,
       }}
     >
       <button
         type="button"
-        class="flex min-h-32 w-full min-w-0 items-center rounded-md pl-10 pr-64 text-left"
+        class="flex min-h-36 w-full min-w-0 items-center rounded-md pl-10 pr-64 text-left"
         onClick={props.onClick}
       >
         <span class="session-copy min-w-0 flex-1 truncate text-13 text-content-primary">{props.session.title}</span>
@@ -245,7 +245,7 @@ export function ProjectSidebarLayout() {
                   size="sm"
                   showTooltip={false}
                   label="New project"
-                  class="pointer-events-none absolute right-4 top-1/2 size-24 -translate-y-1/2 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:pointer-events-auto group-hover/instance:opacity-100"
+                  class="pointer-events-none absolute right-4 top-1/2 size-28 -translate-y-1/2 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:pointer-events-auto group-hover/instance:opacity-100"
                 >
                   <Plus size={15} strokeWidth={1.7} />
                 </IconButton>

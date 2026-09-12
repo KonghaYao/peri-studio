@@ -151,7 +151,7 @@ export function TerminalPanel(props: { onClosePanel?: () => void; visible?: bool
 
   return (
     <section aria-label="Terminal" class="flex min-h-0 min-w-0 flex-1 basis-0 flex-col bg-terminal-dock-surface">
-      <header class="flex h-32 min-w-0 shrink-0 items-center gap-6 overflow-hidden whitespace-nowrap border-b border-border-subtle px-8">
+      <header class="flex h-36 min-w-0 shrink-0 items-center gap-6 overflow-hidden whitespace-nowrap border-b border-border-subtle px-8">
         <SquareTerminal size={14} class="shrink-0 text-text-muted" aria-hidden="true" />
         <span class="truncate text-12 font-medium text-text-primary">Terminal</span>
         <span class="flex-1" />
@@ -207,7 +207,7 @@ export function TerminalPanel(props: { onClosePanel?: () => void; visible?: bool
         />
       </div>
 
-      <footer class="flex h-32 min-w-0 shrink-0 items-center gap-8 overflow-hidden whitespace-nowrap border-t border-border-subtle px-8 text-11 text-text-muted">
+      <footer class="flex h-36 min-w-0 shrink-0 items-center gap-8 overflow-hidden whitespace-nowrap border-t border-border-subtle px-8 text-11 text-text-muted">
         <Status tone={statusMeta().tone} live={statusMeta().live} class="shrink-0">{statusMeta().label}</Status>
         <Show when={boundProject()}>
           {(project) => (

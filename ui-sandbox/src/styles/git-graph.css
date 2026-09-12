@@ -50,17 +50,17 @@
 }
 
 .git-graph-table {
-  font-size: 13px;
+  font-size: var(--text-13);
   width: 100%;
 }
 
 .git-graph-th {
   box-sizing: border-box;
-  height: 31px;
+  height: 36px;
   padding: 6px 12px;
-  line-height: 18px;
+  line-height: 20px;
   text-align: left;
-  font-size: 13px;
+  font-size: var(--text-13);
   font-weight: 500;
   color: var(--content-muted);
   border-bottom: 1px solid rgba(128, 128, 128, 0.5);
@@ -75,7 +75,7 @@
   padding: 0 12px;
   line-height: var(--git-graph-row-height);
   vertical-align: middle;
-  font-size: 13px;
+  font-size: var(--text-13);
   overflow: hidden;
 }
 
@@ -100,7 +100,7 @@
 .git-graph-commit-col {
   width: 80px;
   max-width: 80px;
-  font-size: 13px;
+  font-size: var(--text-13);
 }
 
 .git-graph-row {

@@ -16,7 +16,7 @@ const listboxItemRecipes = cva(listboxItemBase, {
       plain:
         'w-full min-h-54 rounded-10 border border-transparent bg-transparent px-10 py-9 text-left text-text-primary hover:bg-hover data-[selected]:border-border-strong',
       search:
-        'flex w-full min-h-32 items-center justify-between gap-10 rounded-md border-0 bg-transparent px-10 py-6 text-left text-content-primary hover:bg-interaction-hover focus-visible:bg-interaction-hover data-[disabled]:cursor-not-allowed data-[disabled]:opacity-52 pointer-coarse:min-h-44',
+        'flex w-full min-h-36 items-center justify-between gap-10 rounded-md border-0 bg-transparent px-10 py-6 text-left text-content-primary hover:bg-interaction-hover focus-visible:bg-interaction-hover data-[disabled]:cursor-not-allowed data-[disabled]:opacity-52 pointer-coarse:min-h-44',
       menu:
         'mx-6 rounded-lg border-0 bg-transparent px-10 py-6 text-left text-content-primary transition-colors duration-120 data-[selected]:bg-sidebar-selected data-[highlighted]:bg-sidebar-selected pointer-coarse:min-h-44',
     },

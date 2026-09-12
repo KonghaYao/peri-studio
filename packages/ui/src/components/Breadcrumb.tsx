@@ -92,7 +92,7 @@ export const BreadcrumbEllipsis: Component<ComponentProps<'span'>> = (props) => 
       role="presentation"
       aria-hidden="true"
       data-slot="breadcrumb-ellipsis"
-      class={cn('flex size-24 items-center justify-center', local.class)}
+      class={cn('flex size-28 items-center justify-center', local.class)}
       {...rest}
     >
       <MoreHorizontal size={16} strokeWidth={1.7} class="text-content-muted" aria-hidden="true" />

@@ -7,7 +7,7 @@ import type { ComposerState } from './useComposerState';
 function composerFieldClasses(centered: boolean) {
   return cn(
     'composer-editor__field block w-full resize-none overflow-y-auto border-0 bg-transparent px-1 py-8 outline-0',
-    centered ? 'min-h-72 max-h-180 text-14 leading-22' : 'min-h-32 max-h-180 text-13 leading-normal',
+    centered ? 'min-h-72 max-h-180 text-14 leading-22' : 'min-h-36 max-h-180 text-13 leading-normal',
   );
 }
 

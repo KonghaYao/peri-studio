@@ -18,7 +18,7 @@ import {
 
 /** Navigation menu 触发器样式（shadcn parity，可复用于链接态顶栏项）。 */
 export const navigationMenuTriggerStyle = cva(
-  "group inline-flex h-32 w-max items-center justify-center rounded-md border-0 bg-surface px-16 py-8 text-13 font-medium text-text-primary transition-colors outline-none hover:bg-hover hover:text-text-primary focus-visible:bg-hover focus-visible:text-text-primary focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-45 data-[state=open]:bg-hover data-[state=open]:text-text-primary"
+  "group inline-flex h-36 w-max items-center justify-center rounded-md border-0 bg-surface px-16 py-8 text-13 font-medium text-text-primary transition-colors outline-none hover:bg-hover hover:text-text-primary focus-visible:bg-hover focus-visible:text-text-primary focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-45 data-[state=open]:bg-hover data-[state=open]:text-text-primary"
 )
 
 type NavigationMenuProps<T extends ValidComponent = "ul"> =

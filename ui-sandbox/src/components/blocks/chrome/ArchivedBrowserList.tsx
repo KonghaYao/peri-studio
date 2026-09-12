@@ -26,7 +26,7 @@ export function ArchivedBrowserList(props: {
     >
       <For each={props.items}>
         {(item) => (
-          <li class="archived-browser-row flex min-h-32 items-center gap-8 rounded-md px-10 py-6 hover:bg-interaction-hover">
+          <li class="archived-browser-row flex min-h-36 items-center gap-8 rounded-md px-10 py-6 hover:bg-interaction-hover">
             <span class="grid min-w-0 flex-1 gap-2">
               <strong class="overflow-hidden text-ellipsis whitespace-nowrap text-13 font-normal text-content-primary">
                 {item.title}
@@ -38,7 +38,7 @@ export function ArchivedBrowserList(props: {
             <Button
               variant="ghost"
               size="sm"
-              class="h-24! shrink-0 px-8! text-11!"
+              class="h-28! shrink-0 px-8! text-11!"
               busy={props.restoringId === item.id}
               disabled={props.readOnly || !!props.restoringId}
               onClick={() => props.onRestore?.(item.id)}

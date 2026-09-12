@@ -3,7 +3,7 @@
 .visual-fixture-stage .app-shell { height:calc(100dvh - 42px); }
 
 .visual-fixture-rail { position:fixed; z-index:40; inset:0 0 auto 0; display:flex; min-width:0; height:42px; align-items:center; gap:10px; padding:0 14px; border-bottom:1px solid var(--border-subtle); background:var(--surface); color:var(--text-secondary); font-size:11px; }
-.visual-fixture-rail>strong { color:var(--text-primary); font-size:13px; }
+.visual-fixture-rail>strong { color:var(--text-primary); font-size:var(--text-13); }
 .visual-fixture-rail>span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .visual-fixture-rail nav { display:none; min-width:0; flex:1; gap:3px; overflow:auto; }
 .visual-fixture-rail a { flex:none; border-radius:7px; padding:5px 8px; color:var(--text-secondary); text-decoration:none; }

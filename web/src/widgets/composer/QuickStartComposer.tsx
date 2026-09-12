@@ -9,7 +9,7 @@ import { Plus, SendHorizontal } from 'lucide-solid';
 import { ComposerUploadSurface, openComposerUploadFilePicker } from './ComposerUploadSurface';
 
 const sendActionClass =
-  'composer-action flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 max-narrow:w-48 max-narrow:min-h-44';
+  'composer-action flex w-36 min-h-36 shrink-0 items-center justify-center rounded-8 max-narrow:w-48 max-narrow:min-h-44';
 
 export function QuickStartComposer(props: { projects: Array<{ id: string; name: string }>; initialProjectId?: string }) {
   const [draft, setDraft] = createSignal('');

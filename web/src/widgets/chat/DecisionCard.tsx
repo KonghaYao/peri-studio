@@ -162,7 +162,7 @@ export function DecisionCard(props: {
             <>
               <button
                 type="button"
-                class="inline-flex h-24 items-center px-8 text-12 text-content-muted transition-colors duration-(--duration-fast) hover:text-content-primary disabled:cursor-not-allowed disabled:opacity-45"
+                class="inline-flex h-28 items-center px-8 text-12 text-content-muted transition-colors duration-(--duration-fast) hover:text-content-primary disabled:cursor-not-allowed disabled:opacity-45"
                 disabled={props.skipDisabled}
                 onClick={props.onSkip}
               >

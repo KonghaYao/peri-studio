@@ -26,7 +26,7 @@ export function ComboboxControl<Option, T extends ValidComponent = 'div'>(
   return (
     <KCombobox.Control
       class={cn(
-        'flex h-32 w-full items-center gap-8 rounded-6 border border-border-strong bg-surface px-12 text-13 text-text-primary ui-control-transition',
+        'flex h-36 w-full items-center gap-8 rounded-6 border border-border-strong bg-surface px-12 text-13 text-text-primary ui-control-transition',
         'focus-within:border-focus-ring focus-within:shadow-accent-ring',
         'has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-45',
         local.class,
@@ -97,7 +97,7 @@ export function ComboboxItem<T extends ValidComponent = 'div'>(
   return (
     <KCombobox.Item
       class={cn(
-        'flex min-h-32 cursor-pointer items-center rounded-6 px-12 py-8 text-left text-13 text-content-primary outline-none',
+        'flex min-h-36 cursor-pointer items-center rounded-6 px-12 py-8 text-left text-13 text-content-primary outline-none',
         'data-[highlighted]:bg-interaction-hover data-[selected]:font-medium',
         'data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-45',
         local.class,

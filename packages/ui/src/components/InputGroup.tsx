@@ -10,7 +10,7 @@ export const InputGroup: Component<ComponentProps<'div'>> = (props) => {
     <div
       data-slot="input-group"
       class={cn(
-        'group/input-group flex h-32 w-full items-center overflow-hidden rounded-6 border border-border-strong bg-surface ui-control-transition',
+        'group/input-group flex h-36 w-full items-center overflow-hidden rounded-6 border border-border-strong bg-surface ui-control-transition',
         'focus-within:border-focus-ring has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-45',
         local.class,
       )}

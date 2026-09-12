@@ -95,12 +95,12 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 - **Sans**：`--font-sans`（系统栈，含 PingFang / 微软雅黑）
 - **Mono**：`--font-mono`（代码块、路径、ID）
 
-常用字号（`--text-*` → `text-12` 等 utility）：
+常用字号（`--text-*` → `text-12` 等 utility）。档位名保持历史 class，现行渲染比后缀大 1px，使正文 `text-13` / `--text-body` 为 14px。
 
 | Token | 用途 |
 |-------|------|
 | `9`–`11` | 状态点旁标签、Badge、紧凑元数据 |
-| `12`–`13` | 默认 UI 正文、列表行、表单 |
+| `12`–`13` | 默认 UI 正文、列表行、表单（`text-13` 渲染 14px） |
 | `14`–`15` | 小节标题、强调正文 |
 | `16`+ | 页面级标题（少用） |
 
@@ -113,7 +113,7 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 ## 6. 间距、圆角与布局
 
 - **间距**：仅使用 `--space-*` 映射的 Tailwind 数字 utility（`p-12`、`gap-8`…）；`css-contracts` 禁止未声明数字。
-- **控件高度**：`--control-height-default`（34px）、`compact`（28px）；触控加粗 `pointer-coarse:min-h-44`。
+- **控件高度**：`--control-height-default`（38px）、`compact`（32px）；T2 默认按钮 36px；触控加粗 `pointer-coarse:min-h-44`。
 - **圆角**：交互控件 `rounded-8`；Composer `rounded-(--composer-radius)`（18px）；Pill `rounded-full`。
 - **内容宽度**：聊天 `--container-chat`（960px）；Composer `--composer-max`（864px）；弹窗见 `--container-*` 系列。
 - **壳层网格**：`--grid-cols-shell`（280px 侧栏 + 1fr）；桌面收窄 `240px`。

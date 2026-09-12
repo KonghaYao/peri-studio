@@ -13,7 +13,7 @@ type Props = JSX.TextareaHTMLAttributes<HTMLTextAreaElement> & {
 const textareaControlClasses = (invalid?: boolean, autoResize?: boolean, className?: string) => cn(
   'box-border w-full rounded-6 border bg-surface px-12 py-8 text-13 leading-normal text-text-primary outline-none ui-control-transition',
   'placeholder:text-text-faint',
-  autoResize ? 'min-h-32 resize-none' : 'min-h-32 resize-y',
+  autoResize ? 'min-h-36 resize-none' : 'min-h-36 resize-y',
   invalid
     ? 'border-danger focus:border-danger'
     : 'border-border-strong hover:border-accent-border-hover focus:border-focus-ring',

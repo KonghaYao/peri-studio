@@ -34,7 +34,7 @@ export const Avatar: Component<ComponentProps<'span'>> = (props) => {
       <span
         data-slot="avatar"
         class={cn(
-          'relative flex size-32 shrink-0 overflow-hidden rounded-full bg-surface-muted',
+          'relative flex size-36 shrink-0 overflow-hidden rounded-full bg-surface-muted',
           local.class,
         )}
         {...rest}

@@ -585,8 +585,8 @@ test('icon-only actions use one rounded rectangular geometry and never circular 
   const sourceRoot = join(import.meta.dirname, '..', 'src');
   const button = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Button.tsx'), 'utf8');
   assert.match(button, /rounded-6/);
-  assert.match(button, /sm: 'size-24'/);
-  assert.match(button, /md: 'size-32'/);
+  assert.match(button, /sm: 'size-28'/);
+  assert.match(button, /md: 'size-36'/);
   assert.doesNotMatch(button, /rounded-full/);
   for (const file of allFiles(sourceRoot).filter((path) => path.endsWith('.tsx'))) {
     const source = readFileSync(file, 'utf8');

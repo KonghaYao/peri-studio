@@ -5,7 +5,7 @@ import { Spinner } from './Spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip';
 
 /* primary 实底白字（hover 浅档）；default 白底灰边，
-   hover 时边框与文字同时染主色；danger 红字红边。尺寸对齐 sandbox T2（24/32/40）。 */
+   hover 时边框与文字同时染主色；danger 红字红边。尺寸对齐 sandbox T2（28/36/44）。 */
 const buttonVariants = cva(
   'inline-flex cursor-pointer items-center justify-center gap-6 whitespace-nowrap rounded-6 font-medium transition-colors outline-none duration-120 focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45 pointer-coarse:min-h-44',
   {
@@ -23,11 +23,11 @@ const buttonVariants = cva(
           'border border-danger-border bg-surface text-danger hover:border-danger hover:text-danger active:border-danger',
       },
       size: {
-        sm: 'h-24 px-10 text-12',
-        md: 'h-32 px-16 text-13',
-        lg: 'h-40 px-20 text-14',
-        compact: 'h-24 px-10 text-12',
-        default: 'h-32 px-16 text-13',
+        sm: 'h-28 px-10 text-12',
+        md: 'h-36 px-16 text-13',
+        lg: 'h-44 px-20 text-14',
+        compact: 'h-28 px-10 text-12',
+        default: 'h-36 px-16 text-13',
       },
     },
     defaultVariants: { variant: 'ghost', size: 'md' },
@@ -98,9 +98,9 @@ const iconButtonVariants = cva(
           'border-0 bg-btn-primary text-surface hover:bg-btn-primary-hover disabled:bg-border-subtle disabled:text-text-faint',
       },
       size: {
-        sm: 'size-24',
-        md: 'size-32',
-        lg: 'size-40',
+        sm: 'size-28',
+        md: 'size-36',
+        lg: 'size-44',
       },
     },
     defaultVariants: { variant: 'ghost', size: 'md' },

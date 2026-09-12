@@ -60,7 +60,7 @@ export function MermaidBlock(props: { code: string; incomplete?: boolean }) {
 
   return (
     <div class="md-mermaid" data-incomplete={props.incomplete ? 'true' : undefined}>
-      <div class="flex min-h-32 items-center gap-4 border-b border-border-subtle px-8 py-4">
+      <div class="flex min-h-36 items-center gap-4 border-b border-border-subtle px-8 py-4">
         <span class="mr-auto text-12 font-medium text-content-secondary">Mermaid</span>
         <Show when={busy()}><span class="text-11 text-content-muted">Rendering…</span></Show>
         <Show when={!props.incomplete}>

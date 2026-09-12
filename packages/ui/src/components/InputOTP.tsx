@@ -32,7 +32,7 @@ function useInputOTPContext(component: string) {
 }
 
 const slotInputClasses = (active: boolean, disabled: boolean) => cn(
-  'box-border h-32 w-32 rounded-6 border bg-surface text-center text-13 text-text-primary outline-none ui-control-transition',
+  'box-border h-36 w-36 rounded-6 border bg-surface text-center text-13 text-text-primary outline-none ui-control-transition',
   'placeholder:text-text-faint',
   disabled
     ? 'cursor-not-allowed border-border-strong bg-surface-muted text-text-muted'

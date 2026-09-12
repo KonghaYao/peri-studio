@@ -53,7 +53,7 @@ export function CodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { streamin
 
   return (
     <div class="my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-incomplete={props.incomplete ? 'true' : undefined}>
-      <div class="flex min-h-32 items-center gap-8 border-b border-border-subtle px-8 py-4">
+      <div class="flex min-h-36 items-center gap-8 border-b border-border-subtle px-8 py-4">
         <span class="mr-auto flex min-w-0 items-center gap-8 text-12 text-content-secondary">
           <strong class="font-medium">{label()}</strong>
           <Show when={details().filename}><span class="truncate text-content-muted">{details().filename}</span></Show>

@@ -12,7 +12,7 @@ function SyncAction(props: {
       type="button"
       disabled={props.disabled}
       class={cn(
-        'flex min-h-32 flex-1 items-center justify-center rounded-md text-11 text-content-muted transition-colors duration-(--duration-fast)',
+        'flex min-h-36 flex-1 items-center justify-center rounded-md text-11 text-content-muted transition-colors duration-(--duration-fast)',
         'hover:bg-interaction-hover hover:text-content-primary',
         'disabled:cursor-not-allowed disabled:opacity-45',
       )}
@@ -40,7 +40,7 @@ export function GitBranchBar(props: {
   return (
     <div class="px-6 pb-4 pt-4">
       <div
-        class="flex min-h-32 items-center gap-8 rounded-md px-10"
+        class="flex min-h-36 items-center gap-8 rounded-md px-10"
         title={props.root}
       >
         <GitBranch size={15} strokeWidth={1.7} class="shrink-0 text-content-muted" aria-hidden="true" />

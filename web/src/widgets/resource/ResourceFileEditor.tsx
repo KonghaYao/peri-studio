@@ -58,7 +58,7 @@ export function ResourceFileEditor(props: ResourceFileEditorProps = {}) {
       </header>
     </Show>
     <Show when={!floating()}>
-    <div data-testid="resource-editor-toolbar" class="resource-editor-toolbar flex h-34 shrink-0 items-center gap-8 border-b border-divider px-12 text-11 pointer-coarse:h-44">
+    <div data-testid="resource-editor-toolbar" class="resource-editor-toolbar flex h-38 shrink-0 items-center gap-8 border-b border-divider px-12 text-11 pointer-coarse:h-44">
       <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-text-primary" title={preview()?.path}>{preview()?.path}</span>
       <span class="ml-auto shrink-0 text-text-muted">Read-only</span>
       <Show when={preview()?.url}>

@@ -15,9 +15,9 @@ const paginationLinkVariants = cva(
           'border border-border-strong bg-surface-overlay text-content-primary hover:border-accent-solid hover:text-accent-solid active:border-accent-active active:text-accent-active',
       },
       size: {
-        sm: 'h-24 min-w-24 px-8 text-12',
-        md: 'h-32 min-w-32 px-10 text-13',
-        icon: 'size-32',
+        sm: 'h-28 min-w-28 px-8 text-12',
+        md: 'h-36 min-w-36 px-10 text-13',
+        icon: 'size-36',
       },
     },
     defaultVariants: { variant: 'ghost', size: 'icon' },
@@ -131,7 +131,7 @@ export const PaginationEllipsis: Component<ComponentProps<'span'>> = (props) => 
     <span
       aria-hidden="true"
       data-slot="pagination-ellipsis"
-      class={cn('flex size-32 items-center justify-center', local.class)}
+      class={cn('flex size-36 items-center justify-center', local.class)}
       {...rest}
     >
       <MoreHorizontal size={16} strokeWidth={1.7} class="text-content-muted" aria-hidden="true" />

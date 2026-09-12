@@ -169,7 +169,7 @@ export function TokensPage() {
         </div>
       </Section>
 
-      <Section id="typography" title="Typography" description="开发工具密度（正文 12/13）；字重只用 400/500/600/700 标准档；行高统一无单位比例。">
+      <Section id="typography" title="Typography" description="正文 14px（`--text-body` / `text-13`）；字重只用 400/500/600/700 标准档；行高统一无单位比例。">
         <div class="mb-24 overflow-hidden rounded-lg border border-border-subtle">
           <For each={textSizes()}>
             {(entry, index) => (

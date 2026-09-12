@@ -40,7 +40,7 @@ export function ResourceDiffEditor(props: ResourceDiffEditorProps = {}) {
         <IconButton label="Close diff" size="compact" onClick={close} class="border-0 bg-transparent text-text-muted"><CloseIcon /></IconButton>
       </div>
     </header>
-    <div data-testid="resource-editor-toolbar" class="resource-editor-toolbar flex h-34 shrink-0 items-center gap-8 border-b border-divider px-12 text-11">
+    <div data-testid="resource-editor-toolbar" class="resource-editor-toolbar flex h-38 shrink-0 items-center gap-8 border-b border-divider px-12 text-11">
       <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-text-primary" title={preview()?.path}>{preview()?.path}</span>
       <Show when={preview()?.originalPath}><span class="text-text-secondary">← {preview()?.originalPath}</span></Show>
       <span class="ml-auto shrink-0 text-text-muted">{comparison()}</span>

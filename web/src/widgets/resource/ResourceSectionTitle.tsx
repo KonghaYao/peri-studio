@@ -9,7 +9,7 @@ export function ResourceSectionTitle(props: { children: JSX.Element; compact?: b
         'resource-section-title flex items-center border-b pointer-coarse:h-44',
         props.compact
           ? 'h-28 border-divider px-8 text-10 font-650 uppercase tracking-6 text-text-secondary'
-          : 'h-32 border-border-subtle px-10 text-10 font-semibold uppercase tracking-wide text-content-muted',
+          : 'h-36 border-border-subtle px-10 text-10 font-semibold uppercase tracking-wide text-content-muted',
       )}
     >
       {props.children}

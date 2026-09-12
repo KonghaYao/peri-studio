@@ -89,7 +89,7 @@ export function RemoteDirectoryDialog(props: {
                     <li>
                       <button
                         type="button"
-                        class="flex w-full min-h-32 items-center gap-8 px-10 py-6 text-left hover:bg-interaction-hover"
+                        class="flex w-full min-h-36 items-center gap-8 px-10 py-6 text-left hover:bg-interaction-hover"
                         onClick={() => ensureBrowser().openDirectory(entry.relativePath)}
                       >
                         <Folder size={15} strokeWidth={1.7} class="shrink-0 text-content-muted" />

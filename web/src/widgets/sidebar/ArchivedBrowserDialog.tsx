@@ -82,7 +82,7 @@ export function ArchivedBrowserDialog(props: {
             <ul class="archived-browser-list ui-scrollbar m-0 grid max-h-(--container-search-results) list-none gap-1 overflow-auto p-0" aria-label="Archived items">
               <For each={results()}>
                 {(entry) => (
-                  <li class="archived-browser-row flex min-h-32 items-center gap-8 rounded-md px-10 py-6 hover:bg-interaction-hover pointer-coarse:min-h-44">
+                  <li class="archived-browser-row flex min-h-36 items-center gap-8 rounded-md px-10 py-6 hover:bg-interaction-hover pointer-coarse:min-h-44">
                     <span class="grid min-w-0 flex-1 gap-1">
                       <strong class="overflow-hidden text-ellipsis whitespace-nowrap text-13 font-normal text-content-primary">
                         {titleFor(entry)}
@@ -94,7 +94,7 @@ export function ArchivedBrowserDialog(props: {
                     <Button
                       variant="ghost"
                       size="sm"
-                      class="h-24! shrink-0 px-8! text-11! pointer-coarse:min-h-44!"
+                      class="h-28! shrink-0 px-8! text-11! pointer-coarse:min-h-44!"
                       busy={entry.kind === 'project'
                         ? props.restoringProjectId === entry.project.id
                         : props.restoringSessionId === entry.session.id}

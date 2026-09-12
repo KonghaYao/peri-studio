@@ -113,7 +113,7 @@ export function GitGraphPanel(props: { commits: GitGraphCommit[] }) {
 
   return (
     <div class="git-graph-panel flex h-full min-h-0 flex-col bg-surface-overlay" aria-label="Git Graph">
-      <div class="git-graph-controls flex h-32 shrink-0 items-center border-b border-[rgba(128,128,128,0.5)] px-10">
+      <div class="git-graph-controls flex h-36 shrink-0 items-center border-b border-[rgba(128,128,128,0.5)] px-10">
         <span class="text-13 text-content-primary">Git Graph</span>
         <div class="ml-auto flex items-center">
           <IconButton size="sm" label="Find" class="git-graph-control-btn">

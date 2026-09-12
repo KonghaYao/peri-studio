@@ -16,9 +16,9 @@ export const toggleVariants = cva(
           'border border-border-strong bg-surface-overlay text-content-primary hover:border-accent-solid hover:text-accent-solid data-pressed:border-accent-solid data-pressed:bg-accent-subtle data-pressed:text-accent-solid',
       },
       size: {
-        default: 'h-32 px-16 text-13',
-        sm: 'h-24 px-10 text-12',
-        lg: 'h-40 px-20 text-14',
+        default: 'h-36 px-16 text-13',
+        sm: 'h-28 px-10 text-12',
+        lg: 'h-44 px-20 text-14',
       },
     },
     defaultVariants: { variant: 'default', size: 'default' },

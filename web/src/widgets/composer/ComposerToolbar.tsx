@@ -10,10 +10,10 @@ function AttachmentIcon() {
 }
 
 const sendActionClass =
-  'composer-action flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 max-narrow:w-48 max-narrow:min-h-44';
+  'composer-action flex w-36 min-h-36 shrink-0 items-center justify-center rounded-8 max-narrow:w-48 max-narrow:min-h-44';
 
 const stopActionClass =
-  'composer-action composer-action--stop flex w-36 min-h-32 shrink-0 items-center justify-center rounded-8 max-narrow:w-48 max-narrow:min-h-44';
+  'composer-action composer-action--stop flex w-36 min-h-36 shrink-0 items-center justify-center rounded-8 max-narrow:w-48 max-narrow:min-h-44';
 
 export function ComposerToolbar(props: {
   state: ComposerState;

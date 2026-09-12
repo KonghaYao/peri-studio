@@ -112,7 +112,7 @@ test('markdown keeps a readable vertical rhythm across rich blocks', async ({ pa
     };
   });
   expect(rhythm).toEqual({
-    paragraph: ['18.85px', '3px'],
+    paragraph: ['20.3px', '3px'],
     heading: ['0px', '10px'],
     list: '14px',
     quote: '14px',

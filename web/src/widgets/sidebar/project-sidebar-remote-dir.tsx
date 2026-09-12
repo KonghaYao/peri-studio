@@ -26,7 +26,7 @@ export function ProjectSidebarRemoteDir(props: { model: ProjectSidebarModel }) {
             <label class="text-12 font-semibold text-text-secondary" for="project-computer">Computer</label>
             <select
               id="project-computer"
-              class="box-border h-34 rounded-9 border border-border-strong bg-surface px-11 text-text-primary outline-none focus:border-focus-ring"
+              class="box-border h-38 rounded-9 border border-border-strong bg-surface px-11 text-text-primary outline-none focus:border-focus-ring"
               value={model.projectInstanceId()}
               onChange={(e) => model.setProjectInstanceId(e.currentTarget.value)}
               disabled={model.projectCreateSubmitting()}
@@ -43,7 +43,7 @@ export function ProjectSidebarRemoteDir(props: { model: ProjectSidebarModel }) {
             <div class="flex items-center gap-6">
               <input
                 id="project-directory"
-                class="box-border h-34 min-w-0 flex-1 rounded-9 border border-border-strong bg-surface px-11 text-text-primary outline-none focus:border-focus-ring focus-visible:outline-0"
+                class="box-border h-38 min-w-0 flex-1 rounded-9 border border-border-strong bg-surface px-11 text-text-primary outline-none focus:border-focus-ring focus-visible:outline-0"
                 value={model.cwd()}
                 onInput={(e) => { model.setCwd(e.currentTarget.value); model.setPickDirectoryError(null); }}
                 placeholder="/absolute/path"

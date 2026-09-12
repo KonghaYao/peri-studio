@@ -145,14 +145,14 @@ export function BlocksPage() {
 
         <DemoSection id="session-row-accessory" title="SessionRowAccessory" description="浮动槽位：默认时间戳，hover 切换为 Pin / Archive / More 按钮组。">
           <div class="max-w-sm rounded-lg border border-border-subtle bg-surface-overlay p-8">
-            <div class="group/row relative min-h-32 rounded-md hover:bg-interaction-hover">
-              <div class="flex min-h-32 items-center px-10">
+            <div class="group/row relative min-h-36 rounded-md hover:bg-interaction-hover">
+              <div class="flex min-h-36 items-center px-10">
                 <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Refactor ACP session recovery</span>
               </div>
               <SessionRowAccessory time="18m" pinned actionsVisible />
             </div>
-            <div class="group/row relative mt-4 min-h-32 rounded-md bg-sidebar-selected">
-              <div class="flex min-h-32 items-center px-10">
+            <div class="group/row relative mt-4 min-h-36 rounded-md bg-sidebar-selected">
+              <div class="flex min-h-36 items-center px-10">
                 <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Design workspace state</span>
               </div>
               <SessionRowAccessory time="2m" live />
@@ -162,8 +162,8 @@ export function BlocksPage() {
 
         <DemoSection id="project-row-accessory" title="ProjectRowAccessory" description="项目行：默认会话计数，hover 切换为 More / New session 按钮组。">
           <div class="max-w-sm rounded-lg border border-border-subtle bg-surface-overlay p-8">
-            <div class="group/workspace relative min-h-32 rounded-md hover:bg-interaction-hover">
-              <div class="flex min-h-32 items-center gap-8 px-10">
+            <div class="group/workspace relative min-h-36 rounded-md hover:bg-interaction-hover">
+              <div class="flex min-h-36 items-center gap-8 px-10">
                 <Folder size={15} strokeWidth={1.7} class="shrink-0 text-content-muted" />
                 <span class="min-w-0 flex-1 truncate text-13 text-content-primary">peri-studio</span>
               </div>

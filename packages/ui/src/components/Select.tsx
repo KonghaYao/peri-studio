@@ -55,7 +55,7 @@ export function Select(props: {
         <KSelect.Item
           item={itemProps.item}
           class={cn(
-            'grid min-h-32 cursor-pointer grid-cols-split-auto items-start gap-x-14 gap-y-2 rounded-6 px-12 py-8 text-left text-13 text-content-primary outline-none',
+            'grid min-h-36 cursor-pointer grid-cols-split-auto items-start gap-x-14 gap-y-2 rounded-6 px-12 py-8 text-left text-13 text-content-primary outline-none',
             'data-[highlighted]:bg-interaction-hover data-[selected]:font-medium',
           )}
         >
@@ -80,9 +80,9 @@ export function Select(props: {
           'inline-flex max-w-full min-w-0 cursor-pointer items-center outline-none transition-colors duration-(--duration-fast)',
           'disabled:cursor-not-allowed disabled:opacity-45',
           plain()
-            ? 'h-28 gap-2 border-0 bg-transparent px-4 text-12 text-content-secondary hover:text-content-primary focus-visible:text-content-primary'
+            ? 'h-32 gap-2 border-0 bg-transparent px-4 text-12 text-content-secondary hover:text-content-primary focus-visible:text-content-primary'
             : cn(
-                'h-32 w-full justify-between gap-8 rounded-6 border border-border-strong bg-surface px-12 text-13 text-text-primary',
+                'h-36 w-full justify-between gap-8 rounded-6 border border-border-strong bg-surface px-12 text-13 text-text-primary',
                 'hover:border-accent-border-hover focus:border-focus-ring focus:shadow-accent-ring',
                 'data-[placeholder-shown]:text-text-faint',
               ),

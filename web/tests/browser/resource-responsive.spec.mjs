@@ -277,7 +277,7 @@ test('resource density tokens resolve to their authored desktop heights', async 
   await page.goto('/visual-fixture.html?scenario=resources&resource=scm', { waitUntil: 'networkidle' });
   await injectFixtureDiff(page);
   await expect(page.getByTestId('resource-editor-tab')).toHaveCSS('height', '35px');
-  await expect(page.getByTestId('resource-editor-toolbar')).toHaveCSS('height', '34px');
+  await expect(page.getByTestId('resource-editor-toolbar')).toHaveCSS('height', '38px');
   await page.getByRole('button', { name: 'Close diff' }).click();
   await expect(page.getByTestId('resource-group-title').first()).toHaveCSS('height', '24px');
   await expect(page.locator('[class*="group/tree-file"]').first()).toHaveCSS('height', '24px');

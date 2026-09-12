@@ -9,7 +9,7 @@ test('conversation copy keeps compact authored line heights', async ({ page }) =
     composerLineHeight: getComputedStyle(document.querySelector('[data-testid="composer-input"]')).lineHeight,
     assistantHeight: document.querySelector('[data-testid="conversation-message"].conversation-message--assistant')?.getBoundingClientRect().height ?? 0,
   }));
-  expect(geometry).toMatchObject({ lineHeight: '18.85px', composerLineHeight: '18.85px' });
+  expect(geometry).toMatchObject({ lineHeight: '20.3px', composerLineHeight: '20.3px' });
   expect(geometry.height).toBeLessThan(100);
   expect(geometry.assistantHeight).toBeLessThan(800);
 });
@@ -27,10 +27,10 @@ test('intervention actions stay compact in narrow layouts', async ({ page }) => 
   await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
   const optionHeights = await measureOptions();
   expect(optionHeights.length).toBeGreaterThanOrEqual(2);
-  expect(Math.max(...optionHeights)).toBeLessThanOrEqual(36);
+  expect(Math.max(...optionHeights)).toBeLessThanOrEqual(40);
   const desktopPrimary = await measurePrimary();
   expect(desktopPrimary.width).toBeLessThan(120);
-  expect(desktopPrimary.height).toBeLessThanOrEqual(32);
+  expect(desktopPrimary.height).toBeLessThanOrEqual(36);
   await expect(page.getByTestId('elicitation-card')).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   const mobilePrimary = await measurePrimary();
@@ -54,7 +54,7 @@ test('conversation typography and permission surfaces stay dense and neutral', a
       text: document.body.innerText,
     };
   });
-  expect(facts).toMatchObject({ body: '13px', message: ['13px', '18.85px'], button: '13px' });
+  expect(facts).toMatchObject({ body: '14px', message: ['14px', '20.3px'], button: '14px' });
   expect(facts.permission).not.toBe('rgba(0, 0, 0, 0)');
   for (const copy of ['Locks immediately once selected', 'Waiting for your permission', 'Hub observed', 'shows only redacted run summaries']) {
     expect(facts.text).not.toContain(copy);

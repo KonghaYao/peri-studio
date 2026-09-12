@@ -45,7 +45,7 @@ function HistoryBoundary(props: { kind: VisibleHistoryBoundary }) {
 
 function ChatLoading() {
   return <div data-testid="chat-loading">
-    <div class="chat-loading message-loading mb-12 flex min-h-32 flex-col justify-center gap-8" data-testid="message-loading" aria-hidden="true">
+    <div class="chat-loading message-loading mb-12 flex min-h-36 flex-col justify-center gap-8" data-testid="message-loading" aria-hidden="true">
       <Skeleton class="h-12 w-180" />
       <Skeleton class="h-12 w-240" />
       <Skeleton class="h-12 w-180" />

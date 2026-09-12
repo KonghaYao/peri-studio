@@ -43,7 +43,7 @@ export function SidebarNavBar(props: { children: JSX.Element; more: JSX.Element;
           size="sm"
           showTooltip={false}
           label={props.moreLabel ?? 'More'}
-          class="sidebar-nav-more mt-1 size-32 shrink-0 text-content-muted"
+          class="sidebar-nav-more mt-1 size-36 shrink-0 text-content-muted"
         >
           <MoreHorizontal size={16} strokeWidth={1.7} />
         </DropdownMenuTrigger>
@@ -70,7 +70,7 @@ export function RowAccessorySlot(props: RowAccessorySlotProps) {
   return (
     <div
       class={cn(
-        'row-accessory-slot pointer-events-none absolute top-1/2 z-40 h-24 -translate-y-1/2',
+        'row-accessory-slot pointer-events-none absolute top-1/2 z-40 h-28 -translate-y-1/2',
         rowGroup ? 'right-4 min-w-72' : 'right-4 min-w-48',
         props.class,
       )}

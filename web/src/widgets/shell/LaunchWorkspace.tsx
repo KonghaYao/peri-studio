@@ -33,7 +33,7 @@ export function LaunchWorkspace(props: LaunchWorkspaceProps) {
               projects={activeProjects().map(({ id, name }) => ({ id, name }))}
               initialProjectId={activeProjects().length === 1 ? activeProjects()[0].id : undefined}
             />
-            <div class="mt-4 flex min-h-32 flex-wrap items-center justify-center gap-8">
+            <div class="mt-4 flex min-h-36 flex-wrap items-center justify-center gap-8">
               <Show when={activeProjects().length === 1}>
                 <Button size="compact" variant="ghost" busy={creatingSessionProjectId() === activeProjects()[0].id} disabled={readOnly() || !!creatingSessionProjectId()} onClick={() => createProjectSession(activeProjects()[0].id)}>Start empty session</Button>
                 <Button size="compact" variant="ghost" disabled={readOnly() || !props.onImport} onClick={() => props.onImport?.(activeProjects()[0].id)}>Import session</Button>

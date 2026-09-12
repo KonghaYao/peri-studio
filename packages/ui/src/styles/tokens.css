@@ -223,10 +223,10 @@
   --terminal-viewport-muted: var(--palette-neutral-500);
   --terminal-viewport-accent: var(--palette-accent-400);
 
-  /* 控件高度（24/32/40 + 触控 44；legacy compact/default 保留） */
-  --control-height-sm: 24px;
-  --control-height-md: 32px;
-  --control-height-lg: 40px;
+  /* 控件高度（28/36/44 + 触控 44；legacy compact/default 保留） */
+  --control-height-sm: 28px;
+  --control-height-md: 36px;
+  --control-height-lg: 44px;
   --control-height-touch: 44px;
 
   /* Git Graph（mhutchie/vscode-git-graph 色板） */
@@ -375,10 +375,10 @@
   --radius-full: 999px;
 
   /* 组件几何：设计示例和生产模块共用同一组语义尺寸，避免 fixture 漂移。 */
-  --control-height-compact: 28px;
-  --control-height-default: 34px;
-  --pattern-row-height: 28px;
-  --tree-row-height: 24px;
+  --control-height-compact: 32px;
+  --control-height-default: 38px;
+  --pattern-row-height: 32px;
+  --tree-row-height: 28px;
   --asset-tile-size: 68px;
   --status-panel-max-height: 132px;
   --composer-radius: var(--radius-xl);
@@ -419,24 +419,24 @@
     'SFMono-Regular', 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono',
     monospace;
 
-  /* Font-size scale. Every step is an exact pixel value used by the panel;
-     Tailwind text-* utilities resolve to these. */
-  --text-9: 9px;
-  --text-10: 10px;
-  --text-10p5: 10.5px;
-  --text-11: 11px;
-  --text-11p5: 11.5px;
-  --text-12: 12px;
-  --text-12p5: 12.5px;
-  --text-13: 13px;
-  --text-14: 14px;
-  --text-15: 15px;
-  --text-16: 16px;
-  --text-17: 17px;
-  --text-18: 18px;
-  --text-19: 19px;
-  --text-24: 24px;
-  --text-28: 28px;
+  /* Font-size scale. Utility names stay historical (text-13 = body);
+     rendered size is +1px vs the suffix so body/UI copy lands on 14px. */
+  --text-9: 10px;
+  --text-10: 11px;
+  --text-10p5: 11.5px;
+  --text-11: 12px;
+  --text-11p5: 12.5px;
+  --text-12: 13px;
+  --text-12p5: 13.5px;
+  --text-13: 14px;
+  --text-14: 15px;
+  --text-15: 16px;
+  --text-16: 17px;
+  --text-17: 18px;
+  --text-18: 19px;
+  --text-19: 20px;
+  --text-24: 26px;
+  --text-28: 30px;
 
   /* Line-height scale (unitless ratios) */
   --leading-115: 1.15;

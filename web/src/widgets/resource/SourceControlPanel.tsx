@@ -73,7 +73,7 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
   };
 
   return <><section class="border-b border-border-subtle pb-6">
-    <div class="flex h-32 items-center gap-6 px-8 text-12 font-medium text-content-primary" title={props.repo.root}>
+    <div class="flex h-36 items-center gap-6 px-8 text-12 font-medium text-content-primary" title={props.repo.root}>
       <GitBranch size={14} strokeWidth={1.8} /><span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{props.repo.name}</span>
       <span class="max-w-100 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-10 font-normal text-content-muted">{branch()}</span>
     </div>

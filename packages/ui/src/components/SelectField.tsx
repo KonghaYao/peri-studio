@@ -2,7 +2,7 @@ import { createUniqueId, Show, splitProps, type JSX } from 'solid-js';
 import { cn } from '../lib/cn';
 
 const selectControlClasses = (invalid?: boolean, className?: string) => cn(
-  'box-border h-32 w-full appearance-auto rounded-6 border bg-surface px-12 text-13 text-text-primary outline-none ui-control-transition',
+  'box-border h-36 w-full appearance-auto rounded-6 border bg-surface px-12 text-13 text-text-primary outline-none ui-control-transition',
   invalid
     ? 'border-danger focus:border-danger focus:shadow-(--shadow-focus-danger)'
     : 'border-border-strong hover:border-accent-border-hover focus:border-focus-ring focus:shadow-accent-ring',

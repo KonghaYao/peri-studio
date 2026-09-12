@@ -83,7 +83,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
               <IconButton
                 size="sm"
                 showTooltip={false}
-                class="new-project-button instance-create-action pointer-events-none absolute right-4 top-1/2 size-24 -translate-y-1/2 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:pointer-events-auto group-hover/instance:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 pointer-coarse:size-32 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100"
+                class="new-project-button instance-create-action pointer-events-none absolute right-4 top-1/2 size-28 -translate-y-1/2 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:pointer-events-auto group-hover/instance:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 pointer-coarse:size-36 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100"
                 label="New project"
                 disabled={readOnly()}
                 onClick={() => model.openCreateProject(instanceId)}

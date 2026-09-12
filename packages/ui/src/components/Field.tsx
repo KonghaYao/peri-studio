@@ -2,7 +2,7 @@ import { createUniqueId, Show, splitProps, type JSX } from 'solid-js';
 import { cn } from '../lib/cn';
 
 const fieldControlClasses = (invalid?: boolean, className?: string) => cn(
-  'box-border h-32 w-full rounded-6 border bg-surface px-12 text-13 text-text-primary outline-none ui-control-transition',
+  'box-border h-36 w-full rounded-6 border bg-surface px-12 text-13 text-text-primary outline-none ui-control-transition',
   'placeholder:text-text-faint',
   invalid
     ? 'border-danger focus:border-danger'

@@ -95,7 +95,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
       data-session-id={props.session.id}
       data-testid="session-row"
       class={cn(
-        'session-row group/row relative flex min-h-32 min-w-0 items-center rounded-md transition-colors duration-(--duration-fast)',
+        'session-row group/row relative flex min-h-36 min-w-0 items-center rounded-md transition-colors duration-(--duration-fast)',
         props.selected ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
       )}
       style={{
@@ -104,7 +104,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     >
       <button
         type="button"
-        class="session-row-main flex min-h-32 w-full min-w-0 items-center rounded-md pl-10 pr-(--sidebar-row-accessory-pr-session) text-left pointer-coarse:min-h-44"
+        class="session-row-main flex min-h-36 w-full min-w-0 items-center rounded-md pl-10 pr-(--sidebar-row-accessory-pr-session) text-left pointer-coarse:min-h-44"
         aria-current={props.selected ? 'page' : undefined}
         aria-label={displayTitle()}
         onClick={open}

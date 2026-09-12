@@ -119,7 +119,7 @@ export function CodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { streamin
   if (details().language === 'mermaid') return <div class="md-code-block my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-testid="md-code-block" data-incomplete={props.incomplete ? 'true' : undefined}><MermaidBlock code={details().text} incomplete={locked()} /></div>;
 
   return <div class="md-code-block my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-testid="md-code-block" data-highlighted={highlighted()?.result ? 'true' : 'false'} data-incomplete={props.incomplete ? 'true' : undefined}>
-    <div class="md-code-toolbar flex min-h-32 items-center gap-8 border-b border-border-subtle px-8 py-4">
+    <div class="md-code-toolbar flex min-h-36 items-center gap-8 border-b border-border-subtle px-8 py-4">
       <span class="mr-auto flex min-w-0 items-center gap-8 text-12 text-content-secondary"><strong class="font-medium">{label()}</strong><Show when={details().filename}><span class="truncate text-content-muted">{details().filename}</span></Show></span>
       <Show when={highlighted()?.error}><IconButton size="compact" onClick={() => refetch()} label="Retry syntax highlighting"><RefreshIcon /></IconButton></Show>
       <CopyButton text={details().text} label="Copy code" size="compact" disabled={locked()} />

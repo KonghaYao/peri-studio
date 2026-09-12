@@ -62,7 +62,7 @@ export function ResourceWorkbenchLayout() {
         <div
           class="flex h-full w-(--workbench-panel-width) flex-col overflow-hidden bg-surface-overlay"
         >
-          <header class="flex h-32 shrink-0 items-center gap-4 border-b border-border-subtle px-10">
+          <header class="flex h-36 shrink-0 items-center gap-4 border-b border-border-subtle px-10">
             <span class="min-w-0 flex-1 truncate text-10 font-semibold tracking-wide uppercase text-content-muted">
               {panelTitle(view())}
             </span>
