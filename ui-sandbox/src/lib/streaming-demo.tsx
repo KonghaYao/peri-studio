@@ -2,13 +2,21 @@ import { createSignal, onCleanup, Show, type Accessor, type Component } from 'so
 import { Button } from '@peri/ui';
 import { Markdown } from '@/components/blocks';
 
+export type StreamSpeed = 'normal' | 'fast';
+
 export type StreamingReveal = {
   text: Accessor<string>;
   streaming: Accessor<boolean>;
   playing: Accessor<boolean>;
   complete: Accessor<boolean>;
-  play: () => void;
+  play: (speed?: StreamSpeed) => void;
   reset: () => void;
+};
+
+const STREAM_SPEED_PRESETS: Record<StreamSpeed, { chunkSize: number; intervalMs: number }> = {
+  normal: { chunkSize: 4, intervalMs: 28 },
+  // ~3× normal：仍明显快于 Stream，但留足时间观察流式解析与 Mermaid 前缀渲染。
+  fast: { chunkSize: 10, intervalMs: 18 },
 };
 
 /** 逐字揭示文本，供 Markdown / Thinking 流式 demo 复用。 */
@@ -17,8 +25,8 @@ export function createStreamingReveal(
   options?: { chunkSize?: number; intervalMs?: number },
 ): StreamingReveal {
   const getSource = () => (typeof source === 'function' ? source() : source);
-  const chunkSize = options?.chunkSize ?? 4;
-  const intervalMs = options?.intervalMs ?? 28;
+  const defaultChunkSize = options?.chunkSize ?? STREAM_SPEED_PRESETS.normal.chunkSize;
+  const defaultIntervalMs = options?.intervalMs ?? STREAM_SPEED_PRESETS.normal.intervalMs;
 
   // 默认展示完整内容；Play 从空串重新逐字揭示，Reset 恢复完整静态视图。
   const [text, setText] = createSignal(getSource());
@@ -41,9 +49,13 @@ export function createStreamingReveal(
     setStreamCycleDone(false);
   };
 
-  const play = () => {
+  const play = (speed: StreamSpeed = 'normal') => {
     const full = getSource();
     if (!full) return;
+
+    const preset = STREAM_SPEED_PRESETS[speed];
+    const chunkSize = speed === 'normal' ? defaultChunkSize : preset.chunkSize;
+    const intervalMs = speed === 'normal' ? defaultIntervalMs : preset.intervalMs;
 
     stopTimer();
     setText('');
@@ -117,8 +129,10 @@ type StreamingControlsProps = {
   playing: boolean;
   complete: boolean;
   onPlay: () => void;
+  onPlayFast?: () => void;
   onReset: () => void;
   playLabel?: string;
+  fastPlayLabel?: string;
 };
 
 export const StreamingControls: Component<StreamingControlsProps> = (props) => (
@@ -126,6 +140,11 @@ export const StreamingControls: Component<StreamingControlsProps> = (props) => (
     <Button size="sm" variant="secondary" disabled={props.playing} onClick={props.onPlay}>
       {props.playLabel ?? 'Play stream'}
     </Button>
+    <Show when={props.onPlayFast}>
+      <Button size="sm" variant="secondary" disabled={props.playing} onClick={props.onPlayFast}>
+        {props.fastPlayLabel ?? 'Fast stream'}
+      </Button>
+    </Show>
     <Button size="sm" variant="ghost" onClick={props.onReset}>Reset</Button>
     <Show when={props.playing}>
       <span class="text-12 text-content-muted">Streaming…</span>

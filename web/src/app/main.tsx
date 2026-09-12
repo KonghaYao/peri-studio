@@ -2,6 +2,8 @@
 
 import { render } from 'solid-js/web';
 import '../styles.css';
+import { setupMarkdownRuntime } from '@/lib/markdown-setup';
 import { PanelPage } from '@/pages/panel';
 
+setupMarkdownRuntime();
 render(() => <PanelPage />, document.getElementById('app')!);

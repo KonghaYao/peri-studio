@@ -164,6 +164,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
     {
       items: [
         { id: 'markdown-render', label: 'Render' },
+        { id: 'markdown-mermaid', label: 'Mermaid' },
         { id: 'code-block-default', label: 'CodeBlock · Default' },
         { id: 'code-block-composable', label: 'CodeBlock · Composable header' },
         { id: 'code-block-line-numbers', label: 'CodeBlock · Line numbers' },

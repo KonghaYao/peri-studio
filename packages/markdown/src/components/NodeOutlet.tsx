@@ -1,9 +1,8 @@
 import { For, Show } from 'solid-js';
 import { parseCodeFenceInfo } from '../lib/fence-meta';
-import { getNodeList, getString, splitParagraphChildren } from '../lib/node-helpers';
+import { getNodeList, getString, splitParagraphChildren, type RenderableNode } from '../lib/node-helpers';
 import { getNodeCode, resolveCodeBlockMode } from '../lib/node-outlet-helpers';
 import { safeHref } from '../lib/safe';
-import type { RenderableNode } from '../lib/node-helpers';
 import type { MarkdownRenderContext } from './context';
 import { MathExpression } from './MathExpression';
 import { RenderChildren } from './RenderChildren';
@@ -24,6 +23,16 @@ function SafeLink(props: { href?: string; title?: string | null; children?: unkn
       )}
     </Show>
   );
+}
+
+function listItemHasCheckbox(item: RenderableNode) {
+  const walk = (nodes: RenderableNode[]): boolean =>
+    nodes.some((node) => {
+      const nodeType = String(node.type || '');
+      if (nodeType === 'checkbox' || nodeType === 'checkbox_input') return true;
+      return walk(getNodeList((node as { children?: RenderableNode[] }).children));
+    });
+  return walk(getNodeList((item as { children?: RenderableNode[] }).children));
 }
 
 function InlineCode(props: { code: string }) {
@@ -97,6 +106,7 @@ function SwitchNode(props: {
       const ordered = Boolean((props.node as { ordered?: boolean }).ordered);
       const start = Number((props.node as { start?: number }).start);
       const items = () => getNodeList((props.node as { items?: RenderableNode[] }).items);
+      const taskList = () => !ordered && items().some((item) => listItemHasCheckbox(item));
       return ordered
         ? (
           <ol start={Number.isFinite(start) ? start : undefined} class="my-12 list-decimal pl-24">
@@ -104,7 +114,7 @@ function SwitchNode(props: {
           </ol>
         )
         : (
-          <ul class="my-12 list-disc pl-24">
+          <ul class={taskList() ? 'markdown-task-list my-12' : 'my-12 list-disc pl-24'}>
             <For each={items()}>{(item) => <NodeOutlet node={item} context={props.context} indexKey={`${props.indexKey}-item`} />}</For>
           </ul>
         );
@@ -145,16 +155,53 @@ function SwitchNode(props: {
       return <del><RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} /></del>;
     case 'highlight':
       return <mark><RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} /></mark>;
+    case 'insert':
+      return <ins><RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} /></ins>;
+    case 'subscript':
+      return <sub><RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} /></sub>;
+    case 'superscript':
+      return <sup><RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} /></sup>;
+    case 'emoji':
+      return <span>{getString((props.node as { emoji?: string }).emoji ?? (props.node as { content?: string }).content)}</span>;
+    case 'admonition': {
+      const kind = getString((props.node as { kind?: string }).kind || (props.node as { type?: string }).type || 'note');
+      return (
+        <aside class={`my-16 rounded-lg border border-border-subtle bg-surface-overlay px-14 py-12 admonition admonition-${kind}`}>
+          <RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} />
+        </aside>
+      );
+    }
+    case 'definition_list':
+      return (
+        <dl class="my-12">
+          <For each={getNodeList((props.node as { items?: RenderableNode[] }).items)}>
+            {(item) => (
+              <>
+                <dt class="font-medium text-content-primary">
+                  <RenderChildren nodes={getNodeList((item as { term?: RenderableNode[] }).term)} context={props.context} prefix={`${props.indexKey}-term`} />
+                </dt>
+                <dd class="mb-8 text-content-secondary">
+                  <RenderChildren nodes={getNodeList((item as { definition?: RenderableNode[] }).definition)} context={props.context} prefix={`${props.indexKey}-def`} />
+                </dd>
+              </>
+            )}
+          </For>
+        </dl>
+      );
     case 'checkbox':
     case 'checkbox_input':
       return (
         <input
           type="checkbox"
+          class="markdown-task-checkbox"
           disabled
           checked={Boolean((props.node as { checked?: boolean }).checked)}
           aria-label={(props.node as { label?: string }).label ?? 'Task item'}
         />
       );
+    case 'label_open':
+    case 'label_close':
+      return null;
     case 'math_inline':
       return <MathExpression expression={getString((props.node as { content?: string }).content)} />;
     case 'math_block': {
@@ -181,7 +228,7 @@ function SwitchNode(props: {
         const View = props.context.MermaidBlockView;
         return (
           <div class="md-code-block my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-testid="md-code-block" data-incomplete={loading ? 'true' : undefined}>
-            <View code={code} loading={loading} />
+            <View code={code} loading={loading} isDark={props.context.isDark} />
           </div>
         );
       }

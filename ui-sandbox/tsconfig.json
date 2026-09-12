@@ -13,7 +13,9 @@
     "useDefineForClassFields": true,
     "types": ["vite/client"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@peri/markdown": ["../packages/markdown/src/index.ts"],
+      "@peri/markdown/*": ["../packages/markdown/src/*"]
     }
   },
   "include": ["src"]

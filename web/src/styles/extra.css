@@ -81,13 +81,30 @@
   margin-block: var(--space-4) 0;
 }
 
+.markdown-body ul.markdown-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.markdown-body ul.markdown-task-list > li {
+  list-style: none;
+  margin-block: var(--space-6);
+}
+
+.markdown-body ul.markdown-task-list p {
+  display: inline;
+  margin: 0;
+}
+
 .markdown-body li:has(> input[type='checkbox']) {
   list-style: none;
   padding-left: 0;
 }
 
-.markdown-body input[type='checkbox'] {
+.markdown-body input[type='checkbox'],
+.markdown-body .markdown-task-checkbox {
   margin-right: var(--space-8);
+  vertical-align: middle;
   accent-color: var(--accent-solid);
 }
 

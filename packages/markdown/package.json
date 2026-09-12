@@ -6,7 +6,8 @@
   "type": "module",
   "description": "Peri Studio streaming Markdown renderer (stream-markdown-parser + Solid)",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./worker": "./src/workers/mermaidParser.worker.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

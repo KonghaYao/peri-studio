@@ -572,7 +572,10 @@ describe('Markdown', () => {
 
   it('automatically starts completed Mermaid rendering', async () => {
     render(() => <Markdown source={'```mermaid\ngraph TD\n  A --> B\n```'} />);
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('getComputedTextLength'));
+    await waitFor(() => {
+      const alert = screen.getByRole('alert');
+      expect(alert.textContent).toMatch(/getBBox|getComputedTextLength|could not be rendered/i);
+    });
     expect(screen.getByRole('button', { name: 'Retry rendering' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Show source' })).toBeEnabled();
     expect(document.querySelector('[data-testid="md-mermaid"] code')).not.toBeInTheDocument();

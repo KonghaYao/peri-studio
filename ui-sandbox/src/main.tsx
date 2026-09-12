@@ -8,8 +8,10 @@ import './styles/project-sidebar.css';
 import { App } from './App';
 import { bootstrapTokenOverrides } from '@/lib/token-editor';
 import { bootstrapPaletteScales } from '@/lib/palette-scale';
+import { setupMarkdownRuntime } from '@/lib/markdown-setup';
 
 bootstrapPaletteScales();
 bootstrapTokenOverrides();
+setupMarkdownRuntime();
 
 render(() => <App />, document.getElementById('root')!);

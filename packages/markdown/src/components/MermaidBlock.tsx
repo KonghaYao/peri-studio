@@ -9,7 +9,7 @@ function normalizeMermaidSource(value: string) {
     .replace(/:::subgraphNode$/gm, '::subgraphNode');
 }
 
-export function MermaidBlock(props: { code: string; loading?: boolean }) {
+export function MermaidBlock(props: { code: string; loading?: boolean; isDark?: boolean }) {
   const id = `peri-mermaid-${createUniqueId().replace(/[^a-z0-9_-]/gi, '')}`;
   const [svg, setSvg] = createSignal('');
   const [error, setError] = createSignal('');
@@ -41,7 +41,8 @@ export function MermaidBlock(props: { code: string; loading?: boolean }) {
     try {
       let renderSource = code;
       if (incomplete()) {
-        const prefix = await findPrefixOffthread(code, 'light').catch(() => null);
+        const theme = props.isDark ? 'dark' : 'light';
+        const prefix = await findPrefixOffthread(code, theme).catch(() => null);
         if (prefix) renderSource = prefix;
       }
 

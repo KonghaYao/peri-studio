@@ -1,27 +1,16 @@
-import { createEffect, createSignal, createUniqueId, Show } from 'solid-js';
+import { createEffect, createSignal, createUniqueId, onCleanup, Show } from 'solid-js';
+import { findPrefixOffthread, getMermaid, toSafeMermaidSvgMarkup } from '@peri/markdown';
 import { Code2, Download, Expand, RefreshCw } from 'lucide-solid';
 import { CopyButton, Dialog, IconButton } from '@/lib/catalog-ui';
 import { downloadText } from './download';
 
-function sanitizeSvg(source: string) {
-  const documentNode = new DOMParser().parseFromString(source, 'image/svg+xml');
-  documentNode.querySelectorAll('script, foreignObject, iframe, object, embed, image').forEach((node) => node.remove());
-  documentNode.querySelectorAll('style').forEach((node) => {
-    if (/@import|url\(\s*['"]?(?:https?:|data:|javascript:)/i.test(node.textContent || '')) node.remove();
-  });
-  documentNode.querySelectorAll('*').forEach((node) => {
-    for (const attribute of Array.from(node.attributes)) {
-      const name = attribute.name.toLowerCase();
-      const value = attribute.value.trim().toLowerCase();
-      const externalReference = (name === 'href' || name === 'xlink:href' || name === 'src') && !value.startsWith('#');
-      const externalStyle = name === 'style' && /url\(\s*['"]?(?!#)/i.test(value);
-      if (name.startsWith('on') || externalReference || externalStyle) node.removeAttribute(attribute.name);
-    }
-  });
-  return new XMLSerializer().serializeToString(documentNode.documentElement);
+function normalizeMermaidSource(value: string) {
+  return value
+    .replace(/\]::([^:])/g, ']:::$1')
+    .replace(/:::subgraphNode$/gm, '::subgraphNode');
 }
 
-export function MermaidBlock(props: { code: string; incomplete?: boolean }) {
+export function MermaidBlock(props: { code: string; incomplete?: boolean; isDark?: boolean }) {
   const id = `peri-mermaid-${createUniqueId().replace(/[^a-z0-9_-]/gi, '')}`;
   const [svg, setSvg] = createSignal('');
   const [error, setError] = createSignal('');
@@ -29,33 +18,56 @@ export function MermaidBlock(props: { code: string; incomplete?: boolean }) {
   const [expanded, setExpanded] = createSignal(false);
   const [sourceVisible, setSourceVisible] = createSignal(false);
   let renderVersion = 0;
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
   const showSource = () => !!props.incomplete || sourceVisible();
+  const theme = () => (props.isDark ? 'dark' : 'light');
 
-  const renderDiagram = async (code = props.code) => {
+  const scheduleRender = (delay = 0) => {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => void renderDiagram(), delay);
+  };
+
+  const renderDiagram = async () => {
+    const code = normalizeMermaidSource(props.code);
+    if (!code.trim()) {
+      setSvg('');
+      setError('');
+      return;
+    }
+
     const version = ++renderVersion;
     setBusy(true);
     setError('');
+
     try {
-      const { default: mermaid } = await import('mermaid');
-      mermaid.initialize({
-        startOnLoad: false,
-        securityLevel: 'strict',
-        theme: 'neutral',
-        htmlLabels: false,
-        suppressErrorRendering: true,
-      });
-      const result = await mermaid.render(id, code);
-      if (version === renderVersion) setSvg(sanitizeSvg(result.svg));
+      let renderSource = code;
+      if (props.incomplete) {
+        const prefix = await findPrefixOffthread(code, theme()).catch(() => null);
+        if (prefix) renderSource = prefix;
+      }
+
+      const mermaid = await getMermaid();
+      if (!mermaid) throw new Error('Mermaid is not available');
+      const result = await mermaid.render(id, renderSource);
+      const rawSvg = typeof result === 'string' ? result : result.svg ?? '';
+      const safeSvg = toSafeMermaidSvgMarkup(rawSvg) || '';
+      if (version === renderVersion) setSvg(safeSvg);
     } catch (reason) {
-      if (version === renderVersion) setError(reason instanceof Error ? reason.message : 'Diagram could not be rendered');
+      if (version === renderVersion && !props.incomplete) {
+        setError(reason instanceof Error ? reason.message : 'Diagram could not be rendered');
+      }
     } finally {
       if (version === renderVersion) setBusy(false);
     }
   };
 
   createEffect(() => {
-    const code = props.code;
-    if (!props.incomplete && code.trim()) void renderDiagram(code);
+    props.code;
+    scheduleRender(props.incomplete ? 300 : 0);
+  });
+
+  onCleanup(() => {
+    if (debounceTimer) clearTimeout(debounceTimer);
   });
 
   return (
@@ -91,14 +103,12 @@ export function MermaidBlock(props: { code: string; incomplete?: boolean }) {
       </Show>
       <Show when={!showSource() && svg()}>
         {(value) => (
-          <>
-            <div class="md-mermaid__result bg-surface-overlay p-16">
-              <div class="md-mermaid__canvas overflow-auto" innerHTML={value()} />
-            </div>
-            <Dialog open={expanded()} onOpenChange={setExpanded} title="Diagram" width="var(--container-mermaid)">
-              <div class="md-mermaid__canvas md-mermaid__canvas--dialog max-h-(--container-mermaid-body) overflow-auto" innerHTML={value()} />
+          <div class="md-mermaid__result bg-surface-overlay p-16">
+            <div class="md-mermaid__canvas overflow-auto" innerHTML={value()} />
+            <Dialog open={expanded()} onOpenChange={setExpanded}>
+              <div class="md-mermaid__canvas md-mermaid__canvas--dialog max-h-480 overflow-auto border-t border-border-subtle bg-surface-overlay p-20" innerHTML={value()} />
             </Dialog>
-          </>
+          </div>
         )}
       </Show>
     </div>

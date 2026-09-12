@@ -7,6 +7,7 @@
       "@/widgets/*": ["./src/widgets/*"],
       "@/pages/*": ["./src/pages/*"],
       "@/store": ["./src/store/index.ts"],
+      "@/lib/*": ["./src/lib/*"],
       "@/app/*": ["./src/app/*"]
     },
     "target": "ES2022",

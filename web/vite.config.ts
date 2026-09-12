@@ -11,17 +11,39 @@ const srcDir = resolve(rootDir, 'src');
 
 export default defineConfig({
   resolve: {
-    alias: {
-      '@/shared': resolve(srcDir, 'shared'),
-      '@/entities': resolve(srcDir, 'entities'),
-      '@/features': resolve(srcDir, 'features'),
-      '@/widgets': resolve(srcDir, 'widgets'),
-      '@/pages': resolve(srcDir, 'pages'),
-      '@/store': resolve(srcDir, 'store/index.ts'),
-      '@/app': resolve(srcDir, 'app'),
-    },
+    alias: [
+      {
+        find: /^@peri\/markdown\/worker$/,
+        replacement: resolve(
+          rootDir,
+          '../packages/markdown/src/workers/mermaidParser.worker.ts',
+        ),
+      },
+      { find: /^@peri\/markdown$/, replacement: resolve(rootDir, '../packages/markdown/src') },
+      {
+        find: /^@peri\/ui\/styles\.css$/,
+        replacement: resolve(rootDir, '../packages/ui/src/styles/index.css'),
+      },
+      { find: /^@peri\/ui$/, replacement: resolve(rootDir, '../packages/ui/src') },
+      { find: '@/shared', replacement: resolve(srcDir, 'shared') },
+      { find: '@/entities', replacement: resolve(srcDir, 'entities') },
+      { find: '@/features', replacement: resolve(srcDir, 'features') },
+      { find: '@/widgets', replacement: resolve(srcDir, 'widgets') },
+      { find: '@/pages', replacement: resolve(srcDir, 'pages') },
+      { find: '@/store', replacement: resolve(srcDir, 'store/index.ts') },
+      { find: '@/lib', replacement: resolve(srcDir, 'lib') },
+      { find: '@/app', replacement: resolve(srcDir, 'app') },
+    ],
+  },
+  optimizeDeps: {
+    include: ['stream-markdown-parser', 'markstream-core'],
   },
   plugins: [solid(), tailwindcss()],
+  server: {
+    fs: {
+      allow: [resolve(rootDir, '..')],
+    },
+  },
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}'],

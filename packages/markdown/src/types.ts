@@ -14,6 +14,7 @@ export type CodeBlockViewComponent = Component<CodeBlockViewProps>;
 export interface MermaidBlockViewProps {
   code: string;
   loading?: boolean;
+  isDark?: boolean;
 }
 
 export type MermaidBlockViewComponent = Component<MermaidBlockViewProps>;
