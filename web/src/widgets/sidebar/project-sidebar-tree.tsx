@@ -15,10 +15,11 @@ import {
   cn,
   sidebarMistHintClass,
 } from '@peri/ui';
-import { CloudOff, Folder, FolderOpen, ListFilter, Pin } from 'lucide-solid';
+import { CloudOff, Folder, FolderOpen, ListFilter } from 'lucide-solid';
 import { createProjectSession, creatingSessionProjectId, discoveringSessionsProjectId, isProjectCatalogBootstrapPending, projectSessions, readOnly } from '@/store';
 import { ProjectRowAccessory, ProjectRowActionGroup, SectionHeader } from '@peri/ui';
 import { ArchiveIcon, ImportIcon, MoreIcon, PlusIcon, RenameIcon } from './project-sidebar-icons';
+import { ProjectSidebarPinned } from './project-sidebar-pinned';
 import { ProjectSidebarRow } from './project-sidebar-row';
 import type { ProjectSidebarModel } from './project-sidebar-model';
 
@@ -34,25 +35,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
       when={model.registryHydrated()}
         fallback={<LoadingState label="Loading projects" class="px-2.5 py-2 text-left!" />}
     >
-      <Show when={model.pinnedSessions().length > 0}>
-        <SectionHeader title="Pinned" icon={<Pin size={14} strokeWidth={1.7} />} />
-        <div class="flex flex-col gap-2 pb-1">
-          <For each={model.pinnedSessions().map((session) => session.id)}>
-            {(sessionId) => {
-              const session = () => model.pinnedSessions().find((item) => item.id === sessionId)!;
-              return (
-                <ProjectSidebarRow
-                  model={model}
-                  session={session()}
-                  projectId={session().projectId}
-                  options={{ pinned: true }}
-                  onNavigate={props.onNavigate}
-                />
-              );
-            }}
-          </For>
-        </div>
-      </Show>
+      <ProjectSidebarPinned model={model} onNavigate={props.onNavigate} />
 
       <SectionHeader title="Workspaces">
         <IconButton size="sm" showTooltip={false} label="Filter workspaces" class="size-28 shrink-0 text-content-muted" onClick={() => model.setSearchOpen(true)}>

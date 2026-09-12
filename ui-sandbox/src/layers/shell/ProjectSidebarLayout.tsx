@@ -200,6 +200,7 @@ export function ProjectSidebarLayout() {
                 {(item) => (
                   <SessionRow
                     session={{ ...item, pinned: true }}
+                    indent={16}
                     selected={selectedId() === item.id}
                     onClick={() => setSelectedId(item.id)}
                   />
