@@ -8,7 +8,7 @@ export function ComponentsChatPage() {
       <TierHeader
         tier="Tier 2 · Chat"
         title="Chat primitives"
-        description="MessageScroller、Message 分支与 Marker；气泡 / Markdown / 工具活动 / Composer 见 #/blocks、#/components-ai 与 #/layers。"
+        description="MessageScroller 与 Message 分支；气泡 / Markdown / 工具活动 / Composer 见 #/blocks、#/components-ai 与 #/layers。"
       />
       <ComponentCatalogExtrasF />
     </div>

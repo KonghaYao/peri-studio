@@ -135,6 +135,7 @@ describe('ToolActivityRow', () => {
     const { unmount } = render(() => <ToolCallCard toolCall={{ ...base, status: 'running', completedAt: null }} />);
     const active = summary().closest('.tool-call-row-compact')!;
     expect(active).toHaveClass('is-running', 'bg-sidebar-selected');
+    expect(document.querySelector('.tool-call-row-title.ui-ai-shimmer')).toBeTruthy();
     unmount();
 
     render(() => <ToolCallCard toolCall={base} />);

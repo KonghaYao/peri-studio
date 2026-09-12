@@ -8,9 +8,6 @@ import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-  Marker,
-  MarkerContent,
-  MarkerIcon,
   Message,
   MessageAction,
   MessageActions,
@@ -24,7 +21,6 @@ import {
   MessageContent,
   MessageScrollerItem,
   MessageToolbar,
-  Spinner,
 } from '@peri/ui';
 import { CatalogDemo } from '@/pages/shared/DemoSection';
 
@@ -87,21 +83,6 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
             </MessageBranch>
           </MessageContent>
         </Message>
-      </CatalogDemo>
-      </Show>
-
-      <Show when={showCatalogSection(props.sections, 'marker')}>
-      <CatalogDemo id="marker" title="Marker" description="会话内状态行与分隔线。">
-        <div class="flex flex-col gap-12">
-          <Marker>
-            <MarkerIcon><Spinner class="size-16" /></MarkerIcon>
-            <MarkerContent><span class="text-12 text-content-muted">Thinking</span></MarkerContent>
-          </Marker>
-          <Marker variant="separator">Today</Marker>
-          <Marker variant="border">
-            <MarkerContent>Switched to branch <strong>main</strong></MarkerContent>
-          </Marker>
-        </div>
       </CatalogDemo>
       </Show>
     </>

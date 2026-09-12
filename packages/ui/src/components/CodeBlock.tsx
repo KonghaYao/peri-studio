@@ -312,6 +312,8 @@ type CodeBlockRootProps = ComponentProps<'div'> & {
   language?: string;
   showLineNumbers?: boolean;
   startLine?: number;
+  /** 为 false 时仅渲染 children，不自动追加默认 CodeBlockContent（供语法高亮等自定义 body）。 */
+  includeDefaultBody?: boolean;
 };
 
 /** 代码块根：提供 code 上下文；可组合 header/actions 或走默认布局。 */
@@ -322,6 +324,7 @@ export const CodeBlock: Component<CodeBlockRootProps> = (props) => {
     'language',
     'showLineNumbers',
     'startLine',
+    'includeDefaultBody',
     'children',
   ]);
   const language = () => local.language ?? 'text';
@@ -352,10 +355,12 @@ export const CodeBlock: Component<CodeBlockRootProps> = (props) => {
           }
         >
           {local.children}
-          <CodeBlockContent
-            showLineNumbers={local.showLineNumbers}
-            startLine={local.startLine}
-          />
+          <Show when={local.includeDefaultBody !== false}>
+            <CodeBlockContent
+              showLineNumbers={local.showLineNumbers}
+              startLine={local.startLine}
+            />
+          </Show>
         </Show>
       </CodeBlockContainer>
     </CodeBlockContext.Provider>

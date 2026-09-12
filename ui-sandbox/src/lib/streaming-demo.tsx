@@ -73,7 +73,7 @@ export function createStreamingReveal(
   return { text, streaming, playing, complete, play, reset };
 }
 
-/** 固定时长脉冲（Marker / Plan shimmer 等无文本流式场景）。 */
+/** 固定时长脉冲（Plan shimmer 等无文本流式场景）。 */
 export function createPulseStream(durationMs = 2800) {
   const [active, setActive] = createSignal(false);
   const [finished, setFinished] = createSignal(false);

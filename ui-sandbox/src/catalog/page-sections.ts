@@ -5,6 +5,7 @@ export type SandboxRoute =
   | 'components-overlays'
   | 'components-chat'
   | 'components-ai'
+  | 'components-code'
   | 'blocks'
   | 'layers';
 
@@ -18,6 +19,7 @@ export const SANDBOX_ROUTES: SandboxRoute[] = [
   'components-overlays',
   'components-chat',
   'components-ai',
+  'components-code',
   'blocks',
   'layers',
 ];
@@ -29,6 +31,7 @@ export const ROUTE_META: Record<SandboxRoute, { tier: string; label: string }> =
   'components-overlays': { tier: 'T2', label: 'Overlays' },
   'components-chat': { tier: 'T2', label: 'Chat' },
   'components-ai': { tier: 'T2', label: 'AI' },
+  'components-code': { tier: 'T2', label: 'Code' },
   blocks: { tier: 'T3', label: 'Blocks' },
   layers: { tier: 'T4', label: 'Layers' },
 };
@@ -116,7 +119,6 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
       items: [
         { id: 'conversation', label: 'Conversation' },
         { id: 'message', label: 'Message branches' },
-        { id: 'marker', label: 'Marker' },
       ],
     },
   ],
@@ -130,9 +132,18 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'task', label: 'Tool activity' },
         { id: 'confirmation', label: 'Decision card' },
         { id: 'queue', label: 'Queue' },
-        { id: 'code-block', label: 'Code block' },
         { id: 'snippet', label: 'Snippet' },
         { id: 'markdown', label: 'Markdown' },
+      ],
+    },
+  ],
+  'components-code': [
+    {
+      items: [
+        { id: 'code-block-default', label: 'Default' },
+        { id: 'code-block-composable', label: 'Composable header' },
+        { id: 'code-block-highlight', label: 'Syntax highlighting' },
+        { id: 'code-block-line-numbers', label: 'Line numbers' },
       ],
     },
   ],

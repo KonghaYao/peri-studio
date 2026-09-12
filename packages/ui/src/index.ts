@@ -104,14 +104,6 @@ export {
   type BubbleVariant,
 } from './components/Bubble';
 export {
-  Marker,
-  MarkerContent,
-  MarkerIcon,
-  MarkerSeparator,
-  markerVariants,
-  type MarkerVariant,
-} from './components/Marker';
-export {
   Message,
   MessageAction,
   MessageActions,

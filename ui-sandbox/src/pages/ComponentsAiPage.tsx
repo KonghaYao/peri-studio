@@ -19,7 +19,6 @@ export function ComponentsAiPage() {
           'task',
           'confirmation',
           'queue',
-          'code-block',
           'snippet',
           'markdown',
         ]}

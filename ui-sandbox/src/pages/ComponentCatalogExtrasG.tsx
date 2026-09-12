@@ -2,13 +2,6 @@ import { createSignal, Show } from 'solid-js';
 import { FileText, FolderSearch, Terminal } from 'lucide-solid';
 import { showCatalogSection } from '@/catalog/catalog-section';
 import {
-  CodeBlock,
-  CodeBlockActions,
-  CodeBlockCopyButton,
-  CodeBlockFilename,
-  CodeBlockHeader,
-  CodeBlockLanguageSelector,
-  CodeBlockTitle,
   DataTable,
   DecisionCard,
   InlineCitation,
@@ -72,11 +65,6 @@ const tableRows = [
   { id: 'p3', name: 'ui-sandbox', sessions: 8, status: 'active' },
 ];
 
-const codeSamples = {
-  typescript: 'const ready = await status("--ready");',
-  bash: 'bun run test',
-};
-
 function ChatFrame(props: { children: unknown }) {
   return (
     <div class="chat-column max-w-(--chat-content-max) rounded-lg border border-border-subtle bg-surface-overlay px-16 py-16">
@@ -87,7 +75,6 @@ function ChatFrame(props: { children: unknown }) {
 
 export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
   const [selectedOption, setSelectedOption] = createSignal('a');
-  const [codeLanguage, setCodeLanguage] = createSignal<'typescript' | 'bash'>('typescript');
   const planStream = createPulseStream(3200);
 
   return (
@@ -280,38 +267,6 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
             </QueueSection>
           </Queue>
         </div>
-      </CatalogDemo>
-      </Show>
-
-      <Show when={showCatalogSection(props.sections, 'code-block')}>
-      <CatalogDemo id="code-block" title="Code block" description="Markdown 代码块视觉。">
-        <ChatFrame>
-          <CodeBlock
-            code={codeSamples[codeLanguage()]}
-            language={codeLanguage()}
-            showLineNumbers
-            startLine={7}
-          >
-            <CodeBlockHeader>
-              <CodeBlockTitle>
-                <strong class="font-medium">{codeLanguage() === 'typescript' ? 'TypeScript' : 'Bash'}</strong>
-                <CodeBlockFilename>recovery.{codeLanguage() === 'typescript' ? 'ts' : 'sh'}</CodeBlockFilename>
-              </CodeBlockTitle>
-              <CodeBlockActions>
-                <CodeBlockLanguageSelector
-                  aria-label="Language"
-                  value={codeLanguage()}
-                  onChange={(value) => setCodeLanguage(value as 'typescript' | 'bash')}
-                  options={[
-                    { value: 'typescript', label: 'TypeScript' },
-                    { value: 'bash', label: 'Bash' },
-                  ]}
-                />
-                <CodeBlockCopyButton />
-              </CodeBlockActions>
-            </CodeBlockHeader>
-          </CodeBlock>
-        </ChatFrame>
       </CatalogDemo>
       </Show>
 

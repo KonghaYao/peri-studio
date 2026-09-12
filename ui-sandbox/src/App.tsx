@@ -6,6 +6,7 @@ import { ComponentsFormsPage } from './pages/ComponentsFormsPage';
 import { ComponentsOverlaysPage } from './pages/ComponentsOverlaysPage';
 import { ComponentsChatPage } from './pages/ComponentsChatPage';
 import { ComponentsAiPage } from './pages/ComponentsAiPage';
+import { ComponentsCodePage } from './pages/ComponentsCodePage';
 import { BlocksPage } from './pages/BlocksPage';
 import { LayersPage } from './pages/LayersPage';
 import { SandboxShell } from './shell/SandboxShell';
@@ -27,6 +28,7 @@ export function App() {
       <Show when={route() === 'components-overlays'}><ComponentsOverlaysPage /></Show>
       <Show when={route() === 'components-chat'}><ComponentsChatPage /></Show>
       <Show when={route() === 'components-ai'}><ComponentsAiPage /></Show>
+      <Show when={route() === 'components-code'}><ComponentsCodePage /></Show>
       <Show when={route() === 'blocks'}><BlocksPage /></Show>
       <Show when={route() === 'layers'}><LayersPage /></Show>
     </SandboxShell>

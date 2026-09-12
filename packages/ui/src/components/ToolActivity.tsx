@@ -13,6 +13,7 @@ import { Dynamic } from 'solid-js/web';
 import { cn } from '../lib/cn';
 import { CopyButton } from './CopyButton';
 import { IconButton } from './Button';
+import { Shimmer } from './Shimmer';
 
 export type ToolCallStatus = 'queued' | 'running' | 'done' | 'failed' | 'approval';
 
@@ -102,9 +103,18 @@ export const ToolActivityRow: Component<ToolActivityRowProps> = (props) => {
         </span>
 
         <span class="flex min-w-0 items-baseline gap-8 overflow-hidden">
-          <span class="min-w-0 truncate text-12 font-normal text-content-muted" title={props.title}>
-            {props.title}
-          </span>
+          <Show
+            when={isRunning()}
+            fallback={(
+              <span class="min-w-0 truncate text-12 font-normal text-content-muted" title={props.title}>
+                {props.title}
+              </span>
+            )}
+          >
+            <Shimmer as="span" duration={1.2} spread={2} class="min-w-0 max-w-full truncate text-12 font-normal">
+              {props.title}
+            </Shimmer>
+          </Show>
           <Show when={props.subtitle}>
             <span class="min-w-0 truncate text-11 text-content-faint">{props.subtitle}</span>
           </Show>

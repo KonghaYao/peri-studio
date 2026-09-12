@@ -28,4 +28,15 @@ describe('ToolActivity', () => {
     expect(screen.getByText('path.ts')).toBeInTheDocument();
     expect(screen.getByText('ok')).toBeInTheDocument();
   });
+
+  it('applies shimmer to the title while running', () => {
+    render(() => (
+      <ToolActivityGroup>
+        <ToolActivityRow title="Running $ bun run test" status="running" />
+      </ToolActivityGroup>
+    ));
+
+    const shimmer = screen.getByText('Running $ bun run test');
+    expect(shimmer).toHaveClass('ui-ai-shimmer');
+  });
 });

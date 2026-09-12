@@ -31,8 +31,7 @@ import {
   type ToolNarration,
 } from '@/features/chat/tool-narration';
 import { openWorkspaceFromTool } from '@/store';
-import { CopyButton } from '@peri/ui';
-import { cn } from '@peri/ui';
+import { CopyButton, Shimmer, cn } from '@peri/ui';
 
 export type ToolCallStatus = 'queued' | 'running' | 'done' | 'failed' | 'approval' | 'neutral';
 
@@ -232,6 +231,14 @@ export function ToolActivityRow(props: {
 
   const activity = () => props.variant === 'activity';
   const isRunning = () => props.status === 'running';
+
+  const titleLabel = () => props.narration.title;
+
+  const runningTitle = (className: string) => (
+    <Shimmer as="span" duration={1.2} spread={2} class={className}>
+      {titleLabel()}
+    </Shimmer>
+  );
   const isError = () => props.status === 'failed';
   const isCanceled = () => props.status === 'neutral' && props.statusLabel === 'Cancelled';
   const filePreview = () => props.narration.filePreview;
@@ -268,9 +275,16 @@ export function ToolActivityRow(props: {
               <Show
                 when={filePreview()}
                 fallback={(
-                  <span class="tool-call-row-title min-w-0 truncate text-12 font-normal text-content-muted" title={props.narration.title}>
-                    {props.narration.title}
-                  </span>
+                  <Show
+                    when={isRunning()}
+                    fallback={(
+                      <span class="tool-call-row-title min-w-0 truncate text-12 font-normal text-content-muted" title={props.narration.title}>
+                        {props.narration.title}
+                      </span>
+                    )}
+                  >
+                    {runningTitle('tool-call-row-title min-w-0 max-w-full truncate text-12 font-normal')}
+                  </Show>
                 )}
               >
                 {(preview) => (
