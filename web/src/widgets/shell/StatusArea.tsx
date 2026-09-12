@@ -7,6 +7,8 @@ import { formatWorkspacePathLabel } from '@/features/chat/tool-file-link';
 import { Ban, Bot, Check, ChevronDown, Circle, CircleAlert, GitBranch, Info, ListTodo, Pause, Workflow, X } from 'lucide-solid';
 import {
   Badge,
+  Card,
+  CardHeader,
   IconButton,
   PlanStep,
   Tabs,
@@ -161,15 +163,12 @@ export function StatusArea(props: StatusAreaProps) {
 
   return <Show when={tabs().length > 0}>
     <section data-testid="status-area" class="status-area chat-column mb-8" aria-label="Status area">
-      <div
-        class="overflow-hidden border border-border-subtle bg-surface-overlay"
-        style={{ 'border-radius': 'var(--decision-radius)' }}
-      >
+      <Card class="overflow-hidden rounded-14 border-border-subtle bg-surface-overlay shadow-none">
         <Tabs
           value={visibleTab() ?? ''}
           onChange={(value) => setActiveTab(value as StatusTab)}
         >
-          <header class="flex flex-col gap-8 px-16 pt-14 pb-8">
+          <CardHeader class="gap-8 px-16 pt-14 pb-8">
             <div class="flex min-h-28 items-center gap-12">
               <span class="text-12 font-medium text-content-secondary">Work status</span>
               <IconButton
@@ -201,7 +200,7 @@ export function StatusArea(props: StatusAreaProps) {
                 </TabsTrigger>
               )}</For>
             </TabsList>
-          </header>
+          </CardHeader>
           <Show when={panelExpanded()}>
             <TabsContent
               value="todo"
@@ -274,7 +273,7 @@ export function StatusArea(props: StatusAreaProps) {
             </TabsContent>
           </Show>
         </Tabs>
-      </div>
+      </Card>
     </section>
   </Show>;
 }

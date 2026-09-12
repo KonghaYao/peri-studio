@@ -13,7 +13,14 @@ import { chatEntries, chatAgentLoading, chatHead, elicitations, permissions, ret
 import { nextFollowState } from '@/features/message/message-follow';
 import { messageTime } from '@/shared/lib/message-time';
 import type { ChatEntry } from '@/entities/chat/chat-view';
-import { Button, LoadingState, Skeleton } from '@peri/ui';
+import {
+  Button,
+  LoadingState,
+  MessageScroller,
+  MessageScrollerProvider,
+  MessageScrollerViewport,
+  Skeleton,
+} from '@peri/ui';
 import { activityBoundaryAt, activityContinuationAt, isTurnTerminalNoticeOwner } from '@/features/chat/chat-render-blocks';
 import { ConversationMessage } from './ConversationMessage';
 import { PlanSystemEntryRow } from './PlanSystemEntryRow';
@@ -84,6 +91,11 @@ function TranscriptRow(props: {
 }
 
 // ── 消息滚动区 ──────────────────────────────────────────────────────────
+//
+// 仅复用 @peri/ui MessageScroller 外框与 Viewport（scroll-fade、ui-scrollbar）。
+// Provider 关闭 autoScroll：吸底 / hasNewContent / 40px 阈值与 TranscriptWindow
+// 虚拟化锚定仍由本组件与 nextFollowState 承担；未采用 MessageScrollerItem /
+// MessageScrollerContent（与 spacer 窗口化及 outbox 尾部布局不兼容）。
 
 export function MessageList(props: { footerHeight?: number }) {
   const [stick, setStick] = createSignal(true);
@@ -331,15 +343,17 @@ export function MessageList(props: { footerHeight?: number }) {
   };
 
   return (
-    <div class="message-list-shell relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
-    <section aria-label="Conversation messages"
+    <MessageScrollerProvider autoScroll={false}>
+    <MessageScroller class="message-list-shell min-h-0 min-w-0 flex-1">
+    <MessageScrollerViewport
       ref={areaRef}
+      aria-label="Conversation messages"
       onScroll={(e) => {
         const el = e.currentTarget;
         setStick(el.scrollHeight - el.scrollTop - el.clientHeight < 40);
         updateViewport(el.scrollTop);
       }}
-      class="ui-scrollbar message-list-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto [overflow-anchor:none] [overscroll-behavior:contain]"
+      class="message-list-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden [overflow-anchor:none] contain-none"
       data-testid="message-list-scroll"
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
@@ -382,8 +396,9 @@ export function MessageList(props: { footerHeight?: number }) {
           <MessageOutbox submission={submission()} onRetry={retryMessageSubmission} onEdit={() => dismissFailedMessageDelivery(submission().commandId)} acknowledgeDisabled={!canAcknowledgeUnknownMessageDelivery(submission().commandId)} onAcknowledge={() => acknowledgeUnknownMessageDelivery(submission().commandId)} />
         }</Show>
       </div>
-    </section>
+    </MessageScrollerViewport>
     <Show when={(!stick() || hasNewContent()) && permissions().length === 0 && visibleElicitations(elicitations()).length === 0}><Button type="button" size="compact" class="jump-latest absolute bottom-12 z-12 left-1/2 -translate-x-1/2 min-h-36 px-13 border border-border-subtle rounded-full bg-surface-translucent text-text-secondary shadow-popover cursor-pointer text-12 backdrop-blur-sm hover:text-text-primary pointer-coarse:min-h-44 pointer-coarse:px-16" onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button></Show>
-    </div>
+    </MessageScroller>
+    </MessageScrollerProvider>
   );
 }

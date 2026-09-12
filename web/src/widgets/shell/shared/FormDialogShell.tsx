@@ -2,7 +2,7 @@
 // Dialog 外层（open/dismissible/onOpenChange）仍由调用方管理。
 
 import { Show, type JSX } from 'solid-js';
-import { DialogTitle } from '@peri/ui';
+import { DialogDescription, DialogHeader, DialogTitle, FieldGroup } from '@peri/ui';
 
 export interface FormDialogShellProps {
   /** 弹窗标题（DialogTitle / h2）。 */
@@ -15,12 +15,16 @@ export interface FormDialogShellProps {
 export function FormDialogShell(props: FormDialogShellProps) {
   return (
     <div class="p-20">
-      <DialogTitle class="m-0 text-19 tracking-(--tracking-dialog)">{props.title}</DialogTitle>
-      <Show when={props.description}>
-        <p class="mt-9 mb-0 text-13 leading-155 text-text-secondary">{props.description}</p>
-      </Show>
+      <DialogHeader class="flex-col items-start gap-9 border-0 px-0 py-0">
+        <DialogTitle class="m-0 text-19 tracking-(--tracking-dialog)">{props.title}</DialogTitle>
+        <Show when={props.description}>
+          <DialogDescription class="m-0 text-13 leading-155 text-text-secondary">
+            {props.description}
+          </DialogDescription>
+        </Show>
+      </DialogHeader>
       <Show when={props.children}>
-        <div class="mt-16">{props.children}</div>
+        <FieldGroup class="mt-16 gap-12">{props.children}</FieldGroup>
       </Show>
     </div>
   );

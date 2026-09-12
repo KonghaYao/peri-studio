@@ -1,5 +1,5 @@
 import { splitProps, type JSX } from 'solid-js';
-import { cn } from '@peri/ui';
+import { cn, EmptyDescription, EmptyTitle } from '@peri/ui';
 
 /** 空会话主标题（输入框上方）。 */
 export const CHAT_EMPTY_TITLE = 'What do you want to build?';
@@ -22,19 +22,21 @@ export function ChatEmptyWorkspace(props: Props) {
     >
       <div class="flex w-full max-w-(--composer-launch-max) flex-1 flex-col items-center justify-center">
         {local.title && (
-          <h2
+          <EmptyTitle
+            role="heading"
+            aria-level={2}
             data-testid="chat-empty-title"
             class="chat-empty-title m-0 mb-16 w-full text-center text-24 font-semibold leading-tight tracking-tight text-text-primary max-narrow:mb-12 max-narrow:text-20"
           >
             {local.title}
-          </h2>
+          </EmptyTitle>
         )}
         <div class="flex w-full flex-col items-center gap-12">
           {local.children}
           {local.hint && (
-            <p class="chat-empty-hint m-0 max-w-full rounded-full border border-border-subtle bg-surface-muted px-12 py-6 text-center text-11 leading-normal text-text-muted">
+            <EmptyDescription class="chat-empty-hint m-0 max-w-full rounded-full border border-border-subtle bg-surface-muted px-12 py-6 text-center text-11 leading-normal text-text-muted">
               {local.hint}
-            </p>
+            </EmptyDescription>
           )}
         </div>
       </div>

@@ -55,6 +55,22 @@ export {
 } from './components/Confirmation';
 export { DecisionCard, type DecisionCardProps, type DecisionOption } from './components/DecisionCard';
 export { QuestionnaireFrame, type QuestionnaireFrameProps, type QuestionnaireOption } from './components/QuestionnaireFrame';
+export {
+  QuestionnaireCheckboxOption,
+  QuestionnaireOptionKey,
+  QuestionnaireOptionText,
+  QuestionnaireRadioOption,
+  questionnaireOptionCheckboxControlClass,
+  questionnaireOptionKeyLabel,
+  questionnaireOptionLabelClass,
+  questionnaireOptionListClass,
+  questionnaireOptionRadioControlClass,
+  questionnaireOptionRowClass,
+  type QuestionnaireCheckboxOptionProps,
+  type QuestionnaireOptionKeyProps,
+  type QuestionnaireOptionTextProps,
+  type QuestionnaireRadioOptionProps,
+} from './components/QuestionnaireOptionRow';
 export { Reasoning, ReasoningContent, ReasoningTrigger, useReasoning } from './components/Reasoning';
 export {
   InlineCitation,

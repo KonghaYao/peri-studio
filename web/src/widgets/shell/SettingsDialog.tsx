@@ -4,7 +4,19 @@
 // “System”语义，避免把诊断信息伪装成 Settings。
 
 import { createSignal, For, Show } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogTitle, Tabs, TabsContent, TabsList, TabsTrigger } from '@peri/ui';
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  FieldGroup,
+  FieldSet,
+  FieldTitle,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@peri/ui';
 import { useAuthActions } from '@/features/auth/auth-hook';
 import { principalId } from '@/features/auth/auth-state';
 import { connState } from '@/features/connection/connection';
@@ -36,14 +48,16 @@ export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
             </div>
           </TabsContent>
           <TabsContent value="about">
-            <dl class="settings-form-meta grid grid-cols-settings-form gap-x-12 gap-y-9 mt-16 p-15 border border-divider rounded-12 bg-surface-muted">
-              <dt>WebSocket connection</dt>
-              <dd>{connState().text}</dd>
-              <dt>Server health</dt>
-              <dd>{serverStatusLabel(globalStatus())}</dd>
-              <dt>Registry schema version</dt>
-              <dd>{String(schemaVersion() ?? '—')}</dd>
-            </dl>
+            <FieldSet class="mt-16 rounded-12 border border-divider bg-surface-muted p-15">
+              <FieldGroup class="grid grid-cols-settings-form gap-x-12 gap-y-9">
+                <FieldTitle class="text-12 font-normal text-text-muted">WebSocket connection</FieldTitle>
+                <span class="text-13 text-text-primary">{connState().text}</span>
+                <FieldTitle class="text-12 font-normal text-text-muted">Server health</FieldTitle>
+                <span class="text-13 text-text-primary">{serverStatusLabel(globalStatus())}</span>
+                <FieldTitle class="text-12 font-normal text-text-muted">Registry schema version</FieldTitle>
+                <span class="text-13 text-text-primary">{String(schemaVersion() ?? '—')}</span>
+              </FieldGroup>
+            </FieldSet>
             <div class="mt-14 min-h-0">
               <TopologyView />
             </div>

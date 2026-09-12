@@ -78,7 +78,7 @@ describe('McpAppFrame', () => {
     seedLiveApp();
     render(() => <McpAppFrame toolCallId="tool-1" />);
     fireEvent.click(screen.getByRole('button', { name: 'Open fullscreen' }));
-    fireEvent.keyDown(window, { key: 'Escape' });
+    fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: 'MCP App' })).not.toBeInTheDocument();
     expect(bindMcpAppHost).toHaveBeenCalledTimes(1);
   });

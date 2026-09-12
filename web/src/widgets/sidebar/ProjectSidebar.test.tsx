@@ -249,7 +249,7 @@ describe('ProjectSidebar registry hydration', () => {
   it('uses token-based accessory padding on session and workspace rows', () => {
     render(() => <ProjectSidebar />);
 
-    expect(document.querySelector('.session-row-main')).toHaveClass('pr-(--sidebar-row-accessory-pr-session)');
+    expect(sessionButton()).toHaveClass('pr-(--sidebar-row-accessory-pr-session)');
     expect(screen.getByRole('button', { name: 'Perihelion' })).toHaveClass('pr-(--sidebar-row-accessory-pr-workspace)');
   });
 

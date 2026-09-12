@@ -12,12 +12,26 @@ import { messageTime } from '@/shared/lib/message-time';
 import { cn } from '@peri/ui';
 import { splitSystemReminders } from '@/shared/lib/system-reminder';
 import { chatCatalog, selectedCid } from '@/store';
-import { CopyButton, IconButton, InlineNotice, Popover, PopoverContent, PopoverTrigger, Reasoning, ReasoningContent, ReasoningTrigger, ToolActivityGroup } from '@peri/ui';
+import {
+  Bubble,
+  BubbleContent,
+  CopyButton,
+  IconButton,
+  InlineNotice,
+  MessageActions,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+  ResourceCite,
+  ToolActivityGroup,
+  UserBubble,
+} from '@peri/ui';
 import { MessageSquareQuote, MoreHorizontal } from 'lucide-solid';
 import { Markdown } from './Markdown';
 import { ToolCallActivity } from './ToolCallActivity';
-import { UserBubble } from '@peri/ui';
-import { ResourceCite } from '@peri/ui';
 import { McpAppFrame } from './McpAppFrame';
 import { isPrimaryLiveMcpApp, maybeOpenCompletedMcpTool } from '@/features/mcp/mcp-apps';
 import { requestComposerQuote } from '@/features/composer/composer-quote';
@@ -100,18 +114,20 @@ function MessageBlock(props: {
         projectCwd={props.projectCwd}
       /></Show>
     }>{
-      <div class="conversation-message__text text-13 leading-normal text-content-primary" data-testid="conversation-message-text">
-        <Show when={props.role() === 'assistant'} fallback={<For each={splitSystemReminders((props.block() as Extract<ChatBlock, { kind: 'text' }>).text)}>{(segment) =>
-          <Show when={segment.kind === 'text'}>
-            <span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{segment.text}</span>
+      <Bubble variant="ghost" align="start" class="conversation-message__text w-full" data-testid="conversation-message-text">
+        <BubbleContent>
+          <Show when={props.role() === 'assistant'} fallback={<For each={splitSystemReminders((props.block() as Extract<ChatBlock, { kind: 'text' }>).text)}>{(segment) =>
+            <Show when={segment.kind === 'text'}>
+              <span class="message-plain-text whitespace-pre-wrap wrap-anywhere">{segment.text}</span>
+            </Show>
+          }</For>}>
+            <Markdown
+              source={() => (props.block() as Extract<ChatBlock, { kind: 'text' }>).text}
+              streaming={props.streaming()}
+            />
           </Show>
-        }</For>}>
-          <Markdown
-            source={() => (props.block() as Extract<ChatBlock, { kind: 'text' }>).text}
-            streaming={props.streaming()}
-          />
-        </Show>
-      </div>
+        </BubbleContent>
+      </Bubble>
     }</Show>
   }>{(() => {
     const reasoning = () => (props.block() as Extract<ChatBlock, { kind: 'reasoning' }>).reasoning;
@@ -386,7 +402,7 @@ export function ConversationMessage(props: {
           <Show when={visibleEntryError()}>{(error) => <InlineNotice tone="danger" role="alert" aria-label="Message error"><code class="whitespace-pre-wrap wrap-anywhere font-mono text-12 leading-normal">{error().code || 'UNKNOWN'}{error().message ? `: ${error().message}` : ''}</code></InlineNotice>}</Show>
           <Show when={role() === 'assistant' && entry().text && !streaming()}><>
             <IconButton label="Message actions" size="sm" variant="ghost" class="conversation-message__actions-trigger absolute top-0 right-0 z-10 hidden border-0 bg-surface-overlay text-content-muted shadow-subtle pointer-coarse:inline-flex" aria-expanded={actionsOpen()} aria-controls={actionsId()} onClick={() => setActionsOpen((open) => !open)}><MoreHorizontal size={17} strokeWidth={1.7} /></IconButton>
-            <div id={actionsId()} class={`conversation-message__actions absolute top-full left-0 z-20 flex min-h-28 items-center gap-8 rounded-lg border border-border-subtle bg-surface-overlay px-8 py-4 text-content-muted shadow-overlay transition-opacity duration-150 ${actionsOpen() ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`} data-testid="conversation-message-actions"><CopyButton text={copyText()} label="Copy answer" class="border-0 bg-transparent text-content-muted hover:bg-interaction-hover pointer-coarse:min-h-44" /><IconButton label="Quote answer" size="sm" variant="ghost" class="border-0 bg-transparent text-content-muted hover:bg-interaction-hover pointer-coarse:min-h-44 pointer-coarse:min-w-44" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-4 text-11 font-medium text-content-muted">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-content-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></div>
+            <MessageActions id={actionsId()} class={`conversation-message__actions absolute top-full left-0 z-20 min-h-28 gap-8 rounded-lg border border-border-subtle bg-surface-overlay px-8 py-4 text-content-muted shadow-overlay transition-opacity duration-150 ${actionsOpen() ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`} data-testid="conversation-message-actions"><CopyButton text={copyText()} label="Copy answer" class="border-0 bg-transparent text-content-muted hover:bg-interaction-hover pointer-coarse:min-h-44" /><IconButton label="Quote answer" size="sm" variant="ghost" class="border-0 bg-transparent text-content-muted hover:bg-interaction-hover pointer-coarse:min-h-44 pointer-coarse:min-w-44" onClick={() => addQuote(copyText())}><QuoteIcon /></IconButton><span class="ml-4 text-11 font-medium text-content-muted">Peri</span><Show when={timestamp()}>{(time) => <time class="text-11 text-content-faint" dateTime={entry().createdAt} title={time().exact}>{time().label}</time>}</Show></MessageActions>
           </></Show>
         </div>
       }>

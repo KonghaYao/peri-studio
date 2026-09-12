@@ -3,7 +3,15 @@ import type { PendingElicitation } from '@/entities/chat/control-view';
 import { createIdentitySelection } from '@/features/message/identity-selection';
 import type { ElicitationDeliveryState } from '@/features/message/elicitation-delivery';
 import type { ElicitationAnswer } from '@/shared/protocol/client';
-import { Button, Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel, IconButton, RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel, Textarea } from '@peri/ui';
+import {
+  Button,
+  IconButton,
+  QuestionnaireCheckboxOption,
+  QuestionnaireRadioOption,
+  questionnaireOptionListClass,
+  RadioGroup,
+  Textarea,
+} from '@peri/ui';
 import { Clock3, LockKeyhole, X } from 'lucide-solid';
 import { QuestionnaireFrame } from '@peri/ui';
 
@@ -150,27 +158,38 @@ function AskUserQuestionDialog(props: {
                   <Textarea variant="bare" class="mt-7 min-h-58! w-full resize-y rounded-10 border border-divider bg-surface-muted px-10 py-8 text-12 leading-18 text-text-primary outline-none focus-visible:border-border-strong focus-visible:outline-none" rows={2} maxlength={4096} aria-label={field().title} required={field().required} disabled={locked()} value={typeof answers()[fieldId] === 'string' ? answers()[fieldId] as string : ''} onInput={(event) => update(fieldId, event.currentTarget.value)} />
                 </Show>
                 <Show when={field().kind === 'single_select'}>
-                  <RadioGroup aria-label={field().title} value={typeof answers()[fieldId] === 'string' ? answers()[fieldId] as string : ''} required={field().required} disabled={locked()} onChange={(value) => update(fieldId, value)} class="elicitation-options grid gap-2 mt-12">
+                  <RadioGroup aria-label={field().title} value={typeof answers()[fieldId] === 'string' ? answers()[fieldId] as string : ''} required={field().required} disabled={locked()} onChange={(value) => update(fieldId, value)} class={questionnaireOptionListClass('mt-12')}>
                     <For each={field().options.map((option) => option.value)}>{(optionValue, index) => {
                       const option = () => field().options.find((candidate) => candidate.value === optionValue)!;
-                      return <RadioGroupItem value={optionValue} class="elicitation-option group flex min-h-36 items-center gap-12 rounded-md px-8 py-6 border-0 bg-transparent cursor-pointer hover:bg-interaction-hover data-[checked]:bg-accent-soft pointer-coarse:min-h-44">
-                      <RadioGroupItemInput />
-                      <RadioGroupItemLabel class="flex min-w-0 flex-1 items-center gap-12 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-20 shrink-0 items-center justify-center rounded-sm bg-surface-sunken text-content-muted text-10 font-semibold group-data-[checked]:bg-accent-solid group-data-[checked]:text-content-on-accent">{String.fromCharCode(65 + index())}</span><span class="flex min-w-0 flex-col"><strong class="text-12 leading-snug font-medium text-content-primary">{option().label}</strong><Show when={option().description}><small class="overflow-hidden text-ellipsis whitespace-nowrap text-10 text-content-muted">{option().description}</small></Show></span></RadioGroupItemLabel>
-                      <RadioGroupItemControl class="ui-radio-control size-16!" />
-                    </RadioGroupItem>;
+                      return (
+                        <QuestionnaireRadioOption
+                          value={optionValue}
+                          index={index()}
+                          label={option().label}
+                          description={option().description}
+                        />
+                      );
                     }}</For>
                   </RadioGroup>
                 </Show>
                 <Show when={field().kind === 'multi_select'}>
-                  <div class="elicitation-options grid gap-2 mt-12">
+                  <div class={questionnaireOptionListClass('mt-12')}>
                     <For each={field().options.map((option) => option.value)}>{(optionValue, index) => {
                       const option = () => field().options.find((candidate) => candidate.value === optionValue)!;
                       const selected = () => Array.isArray(answers()[fieldId]) ? answers()[fieldId] as string[] : [];
-                      return <Checkbox checked={selected().includes(optionValue)} disabled={locked()} onChange={(checked) => update(fieldId, checked ? [...selected(), optionValue] : selected().filter((value) => value !== optionValue))} class="elicitation-option group flex min-h-36 items-center gap-12 rounded-md px-8 py-6 border-0 bg-transparent cursor-pointer hover:bg-interaction-hover data-[checked]:bg-accent-soft pointer-coarse:min-h-44">
-                        <CheckboxInput />
-                        <CheckboxLabel class="flex min-w-0 flex-1 items-center gap-12 cursor-pointer"><span aria-hidden="true" class="elicitation-option__key inline-flex size-20 shrink-0 items-center justify-center rounded-sm bg-surface-sunken text-content-muted text-10 font-semibold group-data-[checked]:bg-accent-solid group-data-[checked]:text-content-on-accent">{String.fromCharCode(65 + index())}</span><span class="flex min-w-0 flex-col"><strong class="text-12 leading-snug font-medium text-content-primary">{option().label}</strong><Show when={option().description}><small class="overflow-hidden text-ellipsis whitespace-nowrap text-10 text-content-muted">{option().description}</small></Show></span></CheckboxLabel>
-                        <CheckboxControl class="ui-checkbox-control size-16!" />
-                      </Checkbox>;
+                      return (
+                        <QuestionnaireCheckboxOption
+                          checked={selected().includes(optionValue)}
+                          disabled={locked()}
+                          index={index()}
+                          label={option().label}
+                          description={option().description}
+                          onChange={(checked) => update(
+                            fieldId,
+                            checked ? [...selected(), optionValue] : selected().filter((value) => value !== optionValue),
+                          )}
+                        />
+                      );
                     }}</For>
                   </div>
                 </Show>

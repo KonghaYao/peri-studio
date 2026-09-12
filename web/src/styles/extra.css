@@ -108,29 +108,10 @@ body.workbench-panel-resizing * {
   max-width: 100%;
 }
 
-/* ── 设置关于页元数据表 ───────────────────────────────────────────────── */
-
-.settings-form-meta dt {
-  font-size: var(--text-12);
-  color: var(--text-muted);
-}
-
-.settings-form-meta dd {
-  margin: 0;
-  font-size: var(--text-13);
-  color: var(--text-primary);
-}
-
 /* ── Quick start 状态条 ───────────────────────────────────────────────── */
 
 .quick-start__state small {
   min-width: 0;
-}
-
-/* ── 代码块 tab 宽度 ─────────────────────────────────────────────────── */
-
-.code-tab-size {
-  tab-size: 4;
 }
 
 /* ── Workspace file upload (Explorer) ───────────────────────────────────── */

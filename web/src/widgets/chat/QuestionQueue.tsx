@@ -5,15 +5,10 @@ import type { QuestionDeliveryState } from '@/features/message/question-delivery
 import type { QuestionAnswerPayload } from '@/shared/protocol/client';
 import {
   Button,
-  Checkbox,
-  CheckboxControl,
-  CheckboxInput,
-  CheckboxLabel,
+  QuestionnaireCheckboxOption,
+  QuestionnaireRadioOption,
+  questionnaireOptionListClass,
   RadioGroup,
-  RadioGroupItem,
-  RadioGroupItemControl,
-  RadioGroupItemInput,
-  RadioGroupItemLabel,
 } from '@peri/ui';
 import { Clock3, LockKeyhole } from 'lucide-solid';
 import { QuestionnaireFrame } from '@peri/ui';
@@ -170,29 +165,27 @@ function QuestionDialog(props: {
                     <legend class="mb-6 text-12 font-650 text-text-primary">{item.header || item.question}</legend>
                     <p class="mb-8 text-11 text-text-secondary">{item.question}</p>
                     <Show when={item.multiSelect} fallback={
-                      <RadioGroup value={selectedSingle()} onChange={(value) => setSingle(idx, value)} class="grid gap-6">
-                        <For each={item.options}>{(option) => (
-                          <RadioGroupItem value={option.label} class="rounded-8 border border-border-subtle px-10 py-8">
-                            <RadioGroupItemInput />
-                            <RadioGroupItemControl />
-                            <RadioGroupItemLabel class="text-12">{option.label}</RadioGroupItemLabel>
-                            <Show when={option.description}><span class="text-11 text-text-muted">{option.description}</span></Show>
-                          </RadioGroupItem>
+                      <RadioGroup value={selectedSingle()} onChange={(value) => setSingle(idx, value)} class={questionnaireOptionListClass()}>
+                        <For each={item.options}>{(option, optionIndex) => (
+                          <QuestionnaireRadioOption
+                            value={option.label}
+                            index={optionIndex()}
+                            label={option.label}
+                            description={option.description}
+                          />
                         )}</For>
                       </RadioGroup>
                     }>
-                      <div class="grid gap-6">
-                        <For each={item.options}>{(option) => (
-                          <Checkbox
+                      <div class={questionnaireOptionListClass()}>
+                        <For each={item.options}>{(option, optionIndex) => (
+                          <QuestionnaireCheckboxOption
                             checked={selectedMulti().includes(option.label)}
+                            disabled={locked()}
+                            index={optionIndex()}
+                            label={option.label}
+                            description={option.description}
                             onChange={() => toggleMulti(idx, option.label)}
-                            class="rounded-8 border border-border-subtle px-10 py-8"
-                          >
-                            <CheckboxInput />
-                            <CheckboxControl />
-                            <CheckboxLabel class="text-12">{option.label}</CheckboxLabel>
-                            <Show when={option.description}><span class="text-11 text-text-muted">{option.description}</span></Show>
-                          </Checkbox>
+                          />
                         )}</For>
                       </div>
                     </Show>

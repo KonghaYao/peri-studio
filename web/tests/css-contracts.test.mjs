@@ -174,8 +174,8 @@ test('fractional Tailwind spacing utilities resolve to an explicit product token
 });
 
 const EXTRA_CSS_BASELINE = {
-  lineCount: 147,
-  sha256: '2ccd832945fb95ee3d4c7dc67ed13da38498f8e7ce40a0846982adf9f523dd88',
+  lineCount: 128,
+  sha256: '2e4675cb9f7679ce0e204d57d15166b6e8b27913d8cadf3bfb8123fd83026d6f',
 };
 
 function lineCountLikeWc(content) {
