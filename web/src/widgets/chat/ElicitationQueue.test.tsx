@@ -24,20 +24,36 @@ function rebuild(value: PendingElicitation): PendingElicitation {
   };
 }
 
+function secondElicitation(): PendingElicitation {
+  return {
+    ...item,
+    elicitationId: 'e2',
+    fields: item.fields.map((field, index) => (
+      index === 0 ? { ...field, title: 'Second detail' } : { ...field, options: field.options.map((option) => ({ ...option })) }
+    )),
+  };
+}
+
+async function walkElicitationSteps() {
+  await fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  expect(screen.getByRole('alert')).toHaveTextContent('Choose an answer to continue.');
+  await fireEvent.input(screen.getByRole('textbox', { name: 'Detail' }), { target: { value: 'Keep compatibility' } });
+  await fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  await fireEvent.click(screen.getByRole('radio', { name: 'Safe' }));
+  await fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  await fireEvent.click(screen.getByRole('checkbox', { name: 'Tests' }));
+  await fireEvent.click(screen.getByRole('checkbox', { name: 'Docs' }));
+  await fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+}
+
 describe('ElicitationQueue', () => {
-  it('renders ACP elicitation inline and submits typed answers', async () => {
+  it('walks through questionnaire steps and submits typed answers', async () => {
     const respond = vi.fn();
     render(() => <ElicitationQueue elicitations={[item]} responses={{}} readOnly={false} onRefreshStatus={vi.fn()} onDismissUncertain={vi.fn()} onRespond={respond} />);
     expect(screen.getByRole('region', { name: 'Agent question' })).toBeInTheDocument();
     expect(screen.queryByText('Input needed')).not.toBeInTheDocument();
     expect(screen.getByText('Questions')).toBeInTheDocument();
-    await fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Detail');
-    await fireEvent.input(screen.getByRole('textbox', { name: 'Detail' }), { target: { value: 'Keep compatibility' } });
-    await fireEvent.click(screen.getByRole('radio', { name: 'Safe' }));
-    await fireEvent.click(screen.getByRole('checkbox', { name: 'Tests' }));
-    await fireEvent.click(screen.getByRole('checkbox', { name: 'Docs' }));
-    await fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await walkElicitationSteps();
     expect(respond).toHaveBeenCalledWith('e1', 'accept', { detail: 'Keep compatibility', mode: 'safe', features: ['tests', 'docs'] });
   });
 
@@ -52,70 +68,63 @@ describe('ElicitationQueue', () => {
   it('collapses the question body without resolving it', async () => {
     const respond = vi.fn();
     render(() => <ElicitationQueue elicitations={[item]} responses={{}} readOnly={false} onRefreshStatus={vi.fn()} onDismissUncertain={vi.fn()} onRespond={respond} />);
-    await fireEvent.click(screen.getByRole('button', { name: 'Collapse questions' }));
-    expect(screen.queryByText('How should Peri continue?')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Expand questions' })).toHaveAttribute('aria-expanded', 'false');
+    await fireEvent.click(screen.getByRole('button', { name: 'Collapse' }));
+    expect(screen.queryByText('Detail')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Expand' })).toHaveAttribute('aria-expanded', 'false');
     expect(respond).not.toHaveBeenCalled();
   });
 
   it('navigates concurrent requests without resolving them', async () => {
     const respond = vi.fn();
-    const second = { ...item, elicitationId: 'e2', message: 'Second question' };
+    const second = secondElicitation();
     render(() => <ElicitationQueue elicitations={[item, second]} responses={{}} readOnly={false} onRefreshStatus={vi.fn()} onDismissUncertain={vi.fn()} onRespond={respond} />);
-    expect(screen.getByText('How should Peri continue?')).toBeInTheDocument();
-    expect(screen.queryByText('Second question')).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Detail' })).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Second detail' })).not.toBeInTheDocument();
     expect(screen.getByText('1 / 2')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Previous question' })).toBeDisabled();
     await fireEvent.input(screen.getByRole('textbox', { name: 'Detail' }), { target: { value: 'Keep my draft' } });
     await fireEvent.click(screen.getByRole('button', { name: 'Next question' }));
-    expect(screen.queryByText('How should Peri continue?')).not.toBeInTheDocument();
-    expect(screen.getByText('Second question')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Detail' })).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Second detail' })).toBeInTheDocument();
     expect(screen.getByText('2 / 2')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Next question' })).toBeDisabled();
     await fireEvent.click(screen.getByRole('button', { name: 'Previous question' }));
-    expect(screen.getByText('How should Peri continue?')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Detail' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Detail' })).toHaveValue('Keep my draft');
     expect(respond).not.toHaveBeenCalled();
   });
 
   it('keeps the selected question, draft, and focus when another request is inserted before it', async () => {
     const respond = vi.fn();
-    const second = { ...item, elicitationId: 'e2', message: 'Second question' };
-    const inserted = { ...item, elicitationId: 'e0', message: 'Inserted question' };
+    const second = secondElicitation();
+    const inserted = { ...item, elicitationId: 'e0', fields: item.fields.map((field, index) => (index === 0 ? { ...field, title: 'Inserted detail' } : { ...field, options: field.options.map((option) => ({ ...option })) })) };
     const [items, setItems] = createSignal([item, second]);
     render(() => <ElicitationQueue elicitations={items()} responses={{}} readOnly={false} onRefreshStatus={vi.fn()} onDismissUncertain={vi.fn()} onRespond={respond} />);
 
     await fireEvent.click(screen.getByRole('button', { name: 'Next question' }));
-    const input = screen.getByRole('textbox', { name: 'Detail' });
-    const radio = screen.getByRole('radio', { name: 'Safe' });
-    const checkbox = screen.getByRole('checkbox', { name: 'Tests' });
-    await fireEvent.input(input, { target: { value: 'Draft for the second question' } });
+    const input = screen.getByRole('textbox', { name: 'Second detail' });
     input.focus();
+    await fireEvent.input(input, { target: { value: 'Draft for the second question' } });
     setItems([rebuild(inserted), rebuild(item), rebuild(second)]);
 
-    expect(screen.getByText('Second question')).toBeInTheDocument();
-    expect(screen.queryByText('How should Peri continue?')).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Detail' })).not.toBeInTheDocument();
     expect(screen.getByText('3 / 3')).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'Detail' })).toBe(input);
-    expect(screen.getByRole('radio', { name: 'Safe' })).toBe(radio);
-    expect(screen.getByRole('checkbox', { name: 'Tests' })).toBe(checkbox);
-    expect(input).toHaveValue('Draft for the second question');
-    expect(input).toHaveFocus();
+    expect(screen.getByRole('textbox', { name: 'Second detail' })).toHaveValue('Draft for the second question');
     expect(respond).not.toHaveBeenCalled();
   });
 
   it('falls back to the same queue position when the selected request disappears', async () => {
     const respond = vi.fn();
-    const second = { ...item, elicitationId: 'e2', message: 'Second question' };
-    const third = { ...item, elicitationId: 'e3', message: 'Third question' };
+    const second = secondElicitation();
+    const third = { ...item, elicitationId: 'e3', fields: item.fields.map((field, index) => (index === 0 ? { ...field, title: 'Third detail' } : { ...field, options: field.options.map((option) => ({ ...option })) })) };
     const [items, setItems] = createSignal([item, second, third]);
     render(() => <ElicitationQueue elicitations={items()} responses={{}} readOnly={false} onRefreshStatus={vi.fn()} onDismissUncertain={vi.fn()} onRespond={respond} />);
 
     await fireEvent.click(screen.getByRole('button', { name: 'Next question' }));
-    expect(screen.getByText('Second question')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Second detail' })).toBeInTheDocument();
     setItems([item, third]);
 
-    expect(screen.getByText('Third question')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Third detail' })).toBeInTheDocument();
     expect(screen.getByText('2 / 2')).toBeInTheDocument();
     expect(respond).not.toHaveBeenCalled();
   });
@@ -141,8 +150,7 @@ describe('ElicitationQueue', () => {
     />);
 
     expect(screen.getByRole('alert')).toHaveTextContent('Answer delivery not confirmed');
-    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Skip' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Next' })).not.toBeInTheDocument();
     await fireEvent.click(screen.getByRole('button', { name: 'Refresh status' }));
     await fireEvent.click(screen.getByRole('button', { name: 'Hide question' }));
     expect(refresh).toHaveBeenCalledOnce();

@@ -52,6 +52,8 @@ type NavigationLabels = {
   submitDisabled?: boolean;
   submitBusy?: boolean;
   skipDisabled?: boolean;
+  /** 提供时覆盖默认 skipStep（如整题 decline）。 */
+  onSkip?: () => void;
 };
 
 type QuestionnaireContextValue = {
@@ -193,6 +195,7 @@ export const Questionnaire: ParentComponent<QuestionnaireProps> = (props) => {
       && current.submitDisabled === labels.submitDisabled
       && current.submitBusy === labels.submitBusy
       && current.skipDisabled === labels.skipDisabled
+      && current.onSkip === labels.onSkip
         ? current
         : labels
     ));
@@ -359,7 +362,7 @@ function QuestionnaireFooter() {
             type="button"
             class="inline-flex h-(--control-height-sm) items-center px-8 text-12 text-content-muted transition-colors duration-(--duration-fast) hover:text-content-primary disabled:cursor-not-allowed disabled:opacity-45"
             disabled={labels().skipDisabled}
-            onClick={() => context.skipStep()}
+            onClick={() => (labels().onSkip ? labels().onSkip!() : context.skipStep())}
           >
             {labels().skipLabel ?? 'Skip'}
           </button>
@@ -568,6 +571,7 @@ type QuestionnaireNavigationProps = {
   submitDisabled?: boolean;
   submitBusy?: boolean;
   skipDisabled?: boolean;
+  onSkip?: () => void;
 };
 
 /** 注册问卷导航文案；按钮由 QuestionnaireFooter 渲染。 */
@@ -581,6 +585,7 @@ export const QuestionnaireNavigation: Component<QuestionnaireNavigationProps> = 
     'submitDisabled',
     'submitBusy',
     'skipDisabled',
+    'onSkip',
   ]);
   const context = useQuestionnaireContext('QuestionnaireNavigation');
 
@@ -593,6 +598,7 @@ export const QuestionnaireNavigation: Component<QuestionnaireNavigationProps> = 
       submitDisabled: local.submitDisabled,
       submitBusy: local.submitBusy,
       skipDisabled: local.skipDisabled,
+      onSkip: local.onSkip,
     });
   });
   onCleanup(() => context.unregisterNavigation());

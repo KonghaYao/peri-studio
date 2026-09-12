@@ -65,7 +65,8 @@ date: 2026-08-30
 
 ### P2-D · Decision + Status
 - **AskUserQuestion 多步问卷**：定稿见 ui-sandbox `#/components-ai` → **AskUserQuestion**（`Questionnaire` + `QuestionnaireStep` + 页脚 Previous/Skip/Next·Submit；无顶部 description、无进度条）；生产 `web/src/widgets/chat/QuestionQueue.tsx` 镜像
-- Permissions / Elicitation 单卡：`QuestionnaireFrame`（`@peri/ui`；生产 `ElicitationQueue` / `PermissionRequestCard`）、Status area
+- **Elicitation / interactive_question** 共用 `AskUserQuestionnaireShell`（`web/src/widgets/chat/AskUserQuestionnaire.tsx`）；`ElicitationQueue` Skip → decline
+- Permissions 单卡：`QuestionnaireFrame`（`PermissionRequestCard`）、Status area
 
 ## P3 验收清单
 

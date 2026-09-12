@@ -119,6 +119,30 @@ describe('Questionnaire', () => {
     });
   });
 
+  it('calls onSkip instead of advancing when navigation supplies a handler', async () => {
+    const onSkip = vi.fn();
+
+    render(() => (
+      <Questionnaire>
+        <QuestionnaireStep
+          id="scope"
+          title="What may change?"
+          required
+          choices={[{ value: 'component', label: 'Target component' }]}
+        />
+        <QuestionnaireNavigation onSkip={onSkip} />
+      </Questionnaire>
+    ));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Skip' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
+    expect(onSkip).toHaveBeenCalledOnce();
+    expect(screen.getByText('What may change?')).toBeInTheDocument();
+  });
+
   it('shows skip on required steps and advances without an answer', async () => {
     const onSubmit = vi.fn();
 

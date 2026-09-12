@@ -1,20 +1,13 @@
-import { For, Show, createSignal, createUniqueId } from 'solid-js';
-import type { PendingElicitation } from '@/entities/chat/control-view';
+import { Show, createEffect, createSignal } from 'solid-js';
+import type { ElicitationField, PendingElicitation } from '@/entities/chat/control-view';
 import { createIdentitySelection } from '@/features/message/identity-selection';
 import type { ElicitationDeliveryState } from '@/features/message/elicitation-delivery';
 import type { ElicitationAnswer } from '@/shared/protocol/client';
+import type { QuestionnaireAnswer } from '@peri/ui';
 import {
-  Button,
-  DecisionQueueShell,
-  InlineNotice,
-  QuestionnaireCheckboxOption,
-  QuestionnaireRadioOption,
-  questionnaireOptionListClass,
-  RadioGroup,
-  Textarea,
-} from '@peri/ui';
-import { Clock3, LockKeyhole } from 'lucide-solid';
-import { QuestionnaireFrame } from '@peri/ui';
+  AskUserQuestionnaireShell,
+  type AskUserQuestionnaireStep,
+} from './AskUserQuestionnaire';
 
 interface Props {
   elicitations: PendingElicitation[];
@@ -29,13 +22,51 @@ interface Props {
   ) => void;
 }
 
-/** ACP elicitation/create 共用单个问题面板，通过页眉导航避免并发请求竞争焦点。 */
+function fieldToStep(field: ElicitationField): AskUserQuestionnaireStep {
+  const choices = field.kind === 'text'
+    ? undefined
+    : field.options.map((option) => ({
+      value: option.value,
+      label: option.label,
+      description: option.description ?? undefined,
+    }));
+
+  return {
+    id: field.id,
+    title: field.title,
+    description: field.description ?? undefined,
+    required: field.required,
+    multiple: field.kind === 'multi_select',
+    allowText: field.kind === 'text',
+    textLabel: field.title,
+    choices,
+  };
+}
+
+function elicitationToSteps(elicitation: PendingElicitation): AskUserQuestionnaireStep[] {
+  return elicitation.fields.map(fieldToStep);
+}
+
+function recordToElicitationAnswers(
+  record: Record<string, QuestionnaireAnswer>,
+  fields: ElicitationField[],
+): Record<string, ElicitationAnswer> {
+  const answers: Record<string, ElicitationAnswer> = {};
+  for (const field of fields) {
+    const value = record[field.id];
+    if (value === null || value === undefined) continue;
+    answers[field.id] = value;
+  }
+  return answers;
+}
+
+/** ACP elicitation/create；与 interactive_question 共用多步 Questionnaire 壳。 */
 export function ElicitationQueue(props: Props) {
   const [drafts, setDrafts] = createSignal<Record<string, Record<string, ElicitationAnswer>>>({});
   const selection = createIdentitySelection(() => props.elicitations, (item) => item.elicitationId);
   return <Show when={selection.current()?.elicitationId} keyed>{(elicitationId) => {
     const item = () => selection.current()!;
-    return <AskUserQuestionDialog
+    return <ElicitationDialog
       elicitation={item()}
       delivery={props.responses[elicitationId]}
       readOnly={props.readOnly}
@@ -48,11 +79,11 @@ export function ElicitationQueue(props: Props) {
       onRefreshStatus={props.onRefreshStatus}
       onDismissUncertain={() => props.onDismissUncertain(elicitationId)}
       onRespond={props.onRespond}
-    />
+    />;
   }}</Show>;
 }
 
-function AskUserQuestionDialog(props: {
+function ElicitationDialog(props: {
   elicitation: PendingElicitation;
   delivery?: ElicitationDeliveryState;
   readOnly: boolean;
@@ -66,144 +97,51 @@ function AskUserQuestionDialog(props: {
   onDismissUncertain: () => void;
   onRespond: Props['onRespond'];
 }) {
-  const [answers, setAnswers] = createSignal<Record<string, ElicitationAnswer>>(props.initialAnswers);
-  const [validation, setValidation] = createSignal('');
-  const [expanded, setExpanded] = createSignal(true);
-  const bodyId = `elicitation-body-${createUniqueId()}`;
+  const steps = () => elicitationToSteps(props.elicitation);
+  const [answers, setAnswers] = createSignal<Record<string, QuestionnaireAnswer>>(props.initialAnswers);
+
   const submitting = () => props.delivery?.phase === 'pending';
   const confirmed = () => props.delivery?.phase === 'confirmed';
   const uncertain = () => props.delivery?.phase === 'failed'
     || props.delivery?.phase === 'uncertain'
     || props.delivery?.phase === 'delivery_unknown';
-  const locked = () => !!props.delivery || props.elicitation.status === 'responding' || props.readOnly;
-  const update = (id: string, value: ElicitationAnswer) => {
-    setAnswers((current) => {
-      const next = { ...current, [id]: value };
-      props.onDraft(next);
-      return next;
-    });
-    setValidation('');
-  };
-  const submit = (event: SubmitEvent) => {
-    event.preventDefault();
-    for (const field of props.elicitation.fields) {
-      const answer = answers()[field.id];
-      const empty = answer === undefined || answer === '' || Array.isArray(answer) && answer.length === 0;
-      if (field.required && empty) {
-        setValidation(`Please answer "${field.title}" first`);
-        return;
-      }
-    }
-    props.onRespond(props.elicitation.elicitationId, 'accept', answers());
+  const locked = () => (props.delivery?.phase === 'pending' || props.delivery?.phase === 'confirmed')
+    || props.elicitation.status === 'responding'
+    || props.readOnly;
+
+  createEffect(() => {
+    setAnswers(props.initialAnswers);
+  });
+
+  const syncAnswers = (next: Record<string, QuestionnaireAnswer>) => {
+    setAnswers(next);
+    props.onDraft(recordToElicitationAnswers(next, props.elicitation.fields));
   };
 
-  return <DecisionQueueShell
-    class="ui-chat-column pb-10"
-    aria-label="Agent question"
-  >
-    <form
-      class="scroll-mt-12"
-      data-elicitation-id={props.elicitation.elicitationId}
-      noValidate
-      onSubmit={submit}
-    >
-      <QuestionnaireFrame
-        class="mx-auto w-full max-w-(--container-search)"
-        data-testid="elicitation-card"
-        title="Questions"
-        prompt={props.elicitation.message}
-        currentIndex={props.currentIndex}
-        total={props.total}
-        onPrevious={props.onPrevious}
-        onNext={props.onNext}
-        pagerPreviousLabel="Previous question"
-        pagerNextLabel="Next question"
-        collapseExpandedLabel="Collapse questions"
-        collapseCollapsedLabel="Expand questions"
-        expanded={expanded()}
-        onExpandedChange={setExpanded}
-        skipLabel="Skip"
-        onSkip={() => props.onRespond(props.elicitation.elicitationId, 'decline')}
-        primaryLabel="Next"
-        primaryType="submit"
-        primaryDisabled={locked()}
-        primaryBusy={submitting()}
-        skipDisabled={locked()}
-        aria-busy={submitting() ? 'true' : undefined}
-      >
-        <div id={bodyId} class="ui-scrollbar mt-6 max-h-300 overflow-y-auto max-narrow:px-0">
-          <div class="grid">
-            <For each={props.elicitation.fields.map((field) => field.id)}>{(fieldId) => {
-              const field = () => props.elicitation.fields.find((candidate) => candidate.id === fieldId)!;
-              return (
-              <fieldset class="min-w-0 m-0 py-10 border-0 border-t border-divider first:border-t-0 first:pt-0 last:pb-0">
-                <legend class="p-0 text-text-secondary text-11 font-600">{field().title}{field().required ? <span class="text-text-muted" aria-label="Required"> *</span> : null}</legend>
-                <Show when={field().description}><p class="mt-3 mb-7 text-text-muted text-11 leading-15">{field().description}</p></Show>
-                <Show when={field().kind === 'text'}>
-                  <Textarea variant="bare" class="mt-7 min-h-58! w-full resize-y rounded-10 border border-divider bg-surface-muted px-10 py-8 text-12 leading-18 text-text-primary outline-none focus-visible:border-border-strong focus-visible:outline-none" rows={2} maxlength={4096} aria-label={field().title} required={field().required} disabled={locked()} value={typeof answers()[fieldId] === 'string' ? answers()[fieldId] as string : ''} onInput={(event) => update(fieldId, event.currentTarget.value)} />
-                </Show>
-                <Show when={field().kind === 'single_select'}>
-                  <RadioGroup aria-label={field().title} value={typeof answers()[fieldId] === 'string' ? answers()[fieldId] as string : ''} required={field().required} disabled={locked()} onChange={(value) => update(fieldId, value)} class={questionnaireOptionListClass('mt-12')}>
-                    <For each={field().options.map((option) => option.value)}>{(optionValue, index) => {
-                      const option = () => field().options.find((candidate) => candidate.value === optionValue)!;
-                      return (
-                        <QuestionnaireRadioOption
-                          value={optionValue}
-                          index={index()}
-                          label={option().label}
-                          description={option().description}
-                        />
-                      );
-                    }}</For>
-                  </RadioGroup>
-                </Show>
-                <Show when={field().kind === 'multi_select'}>
-                  <div class={questionnaireOptionListClass('mt-12')}>
-                    <For each={field().options.map((option) => option.value)}>{(optionValue, index) => {
-                      const option = () => field().options.find((candidate) => candidate.value === optionValue)!;
-                      const selected = () => Array.isArray(answers()[fieldId]) ? answers()[fieldId] as string[] : [];
-                      return (
-                        <QuestionnaireCheckboxOption
-                          checked={selected().includes(optionValue)}
-                          disabled={locked()}
-                          index={index()}
-                          label={option().label}
-                          description={option().description}
-                          onChange={(checked) => update(
-                            fieldId,
-                            checked ? [...selected(), optionValue] : selected().filter((value) => value !== optionValue),
-                          )}
-                        />
-                      );
-                    }}</For>
-                  </div>
-                </Show>
-              </fieldset>
-              );
-            }}</For>
-          </div>
-          <Show when={validation()}>
-            <InlineNotice class="mt-9" tone="danger" role="alert">{validation()}</InlineNotice>
-          </Show>
-          <Show when={submitting()}><span class="mt-8 inline-grid size-22 place-items-center rounded-full border border-border-subtle text-text-muted" role="status" title="Submitting answer"><Clock3 size={12} strokeWidth={1.8} aria-hidden="true" /><span class="sr-only">Submitting answer</span></span></Show>
-          <Show when={confirmed()}><span class="mt-8 inline-grid size-22 place-items-center rounded-full border border-border-subtle text-success" role="status" title="Answer received"><Clock3 size={12} strokeWidth={1.8} aria-hidden="true" /><span class="sr-only">Answer received. Waiting for server status.</span></span></Show>
-          <Show when={uncertain()}>
-            <InlineNotice
-              class="mt-10"
-              tone="warning"
-              role="alert"
-              title={props.delivery?.phase === 'failed' ? 'Answer was not accepted' : 'Answer delivery not confirmed'}
-            >
-              <p class="my-4">Refresh the server status, or hide this question locally. The original answer cannot be sent again.</p>
-              <div class="flex flex-wrap gap-5 pt-3">
-                <Button type="button" size="compact" variant="primary" class="pointer-coarse:min-h-44!" onClick={props.onRefreshStatus}>Refresh status</Button>
-                <Button type="button" size="compact" variant="secondary" class="pointer-coarse:min-h-44!" onClick={props.onDismissUncertain}>Hide question</Button>
-              </div>
-            </InlineNotice>
-          </Show>
-          <Show when={props.readOnly}><span class="mt-8 inline-grid size-22 place-items-center rounded-full border border-border-subtle text-text-muted" role="status" title="Read only"><LockKeyhole size={12} strokeWidth={1.8} aria-hidden="true" /><span class="sr-only">Read only</span></span></Show>
-        </div>
-      </QuestionnaireFrame>
-    </form>
-  </DecisionQueueShell>;
+  return (
+    <AskUserQuestionnaireShell
+      shellAriaLabel="Agent question"
+      testId="elicitation-card"
+      steps={steps()}
+      answers={answers()}
+      onAnswersChange={syncAnswers}
+      onSubmit={(record) => props.onRespond(
+        props.elicitation.elicitationId,
+        'accept',
+        recordToElicitationAnswers(record, props.elicitation.fields),
+      )}
+      onSkip={() => props.onRespond(props.elicitation.elicitationId, 'decline')}
+      queueIndex={props.currentIndex}
+      queueTotal={props.total}
+      onQueuePrevious={props.onPrevious}
+      onQueueNext={props.onNext}
+      locked={locked()}
+      submitting={submitting()}
+      confirmed={confirmed()}
+      uncertain={uncertain()}
+      uncertainTitle={props.delivery?.phase === 'failed' ? 'Answer was not accepted' : 'Answer delivery not confirmed'}
+      onRefreshStatus={props.onRefreshStatus}
+      onDismissUncertain={props.onDismissUncertain}
+    />
+  );
 }
