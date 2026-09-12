@@ -40,16 +40,17 @@ describe('Questionnaire', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('progressbar', { name: 'Progress' })).toBeInTheDocument();
+      expect(screen.getByText('What should we build?')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Tool call timeline' }));
+    fireEvent.click(screen.getByRole('radio', { name: /Tool call timeline/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
 
     await waitFor(() => {
       expect(screen.getByText('How much detail?')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Complete flow' }));
+    fireEvent.click(screen.getByRole('radio', { name: /Complete flow/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
 
     expect(onSubmit).toHaveBeenCalledWith({
@@ -93,8 +94,8 @@ describe('Questionnaire', () => {
       expect(screen.getByText('Which sources?')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Repository' }));
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Docs' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Repository/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Docs/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
 
     await waitFor(() => {
@@ -143,7 +144,7 @@ describe('Questionnaire', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Choose an answer to continue.');
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Target component' }));
+    fireEvent.click(screen.getByRole('radio', { name: /Target component/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
 
     await waitFor(() => {

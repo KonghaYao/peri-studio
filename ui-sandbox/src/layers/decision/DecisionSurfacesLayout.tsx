@@ -1,5 +1,5 @@
 import { createSignal } from 'solid-js';
-import { DecisionCard } from '@peri/ui';
+import { QuestionnaireFrame } from '@peri/ui';
 
 const QUESTION_OPTIONS = [
   { id: 'a', key: 'A', label: '允许直接归档（侧栏隐藏，runtime 可继续在后台）' },
@@ -14,7 +14,7 @@ const PERMISSION_OPTIONS = [
   { id: 'deny', key: 'C', label: 'Deny' },
 ];
 
-/** Tier 4 · 决策面：Questions + Permissions 共用卡片变体。 */
+/** Tier 4 · 决策面：Questions + Permissions 共用 Questionnaire 卡壳。 */
 export function DecisionSurfacesLayout() {
   const [questionId, setQuestionId] = createSignal('a');
   const [permissionId, setPermissionId] = createSignal('once');
@@ -23,7 +23,7 @@ export function DecisionSurfacesLayout() {
 
   return (
     <div class="grid max-w-3xl grid-cols-1 gap-16 diff-min:grid-cols-2">
-      <DecisionCard
+      <QuestionnaireFrame
         title="Questions"
         prompt="归档 session 时，如果该 session 仍有正在运行的 chat，应如何处理？"
         options={QUESTION_OPTIONS}
@@ -35,7 +35,7 @@ export function DecisionSurfacesLayout() {
         onNext={() => setQuestionIndex((value) => Math.min(6, value + 1))}
       />
 
-      <DecisionCard
+      <QuestionnaireFrame
         title="Permissions"
         prompt="Modify workspace file"
         detail="Command: git status (+1 argument) · Working directory: /workspace/peri-studio"

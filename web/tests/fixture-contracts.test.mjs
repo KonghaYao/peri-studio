@@ -67,7 +67,10 @@ test('component geometry tokens are declared once and consumed by production wid
   const questions = read('widgets', 'chat', 'ElicitationQueue.tsx');
   const permissions = read('widgets', 'chat', 'PermissionQueue.tsx');
   const permissionCard = read('widgets', 'chat', 'PermissionRequestCard.tsx');
-  const decisionCard = read('widgets', 'chat', 'DecisionCard.tsx');
+  const decisionCard = readFileSync(
+    join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'QuestionnaireFrame.tsx'),
+    'utf8',
+  );
   const explorer = read('widgets', 'resource', 'ExplorerPanel.tsx');
   const sourceControl = read('widgets', 'resource', 'SourceControlPanel.tsx');
   const button = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Button.tsx'), 'utf8');

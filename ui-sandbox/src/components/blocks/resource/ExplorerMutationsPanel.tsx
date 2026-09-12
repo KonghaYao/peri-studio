@@ -389,6 +389,7 @@ export function ExplorerMutationsPanel(props: {
               <FileTreeInlineNameEditor
                 depth={0}
                 kind={createState().kind}
+                path=""
                 mode="create"
                 placeholder={createState().kind === 'file' ? 'New file name' : 'New folder name'}
                 invalid={Boolean(inlineError())}

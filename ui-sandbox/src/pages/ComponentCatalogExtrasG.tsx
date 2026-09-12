@@ -3,7 +3,6 @@ import { FileText, FolderSearch, Terminal } from 'lucide-solid';
 import { showCatalogSection } from '@/catalog/catalog-section';
 import {
   DataTable,
-  DecisionCard,
   InlineCitation,
   InlineCitationCard,
   InlineCitationCardBody,
@@ -74,7 +73,6 @@ function ChatFrame(props: { children: unknown }) {
 }
 
 export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
-  const [selectedOption, setSelectedOption] = createSignal('a');
   const planStream = createPulseStream(3200);
 
   return (
@@ -155,7 +153,7 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'plan')}>
-      <CatalogDemo id="plan" title="Plan" description="决策面风格计划卡：shadow-decision + 流式标题。">
+      <CatalogDemo id="plan" title="Plan" description="决策面风格计划卡：线框边框 + 流式标题。">
         <div class="max-w-md flex flex-col gap-12">
           <StreamingControls
             playing={planStream.playing()}
@@ -223,23 +221,24 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'confirmation')}>
-      <CatalogDemo id="confirmation" title="Confirmation" description="敏感操作审批 DecisionCard。">
-        <div class="max-w-md">
-          <DecisionCard
-            title="Permissions"
-            prompt={'Allow deleting session "debug-42"?'}
-            detail="This removes the project session entry and hides it from the sidebar."
-            options={[
-              { id: 'a', key: 'A', label: 'Approve delete' },
-              { id: 'b', key: 'B', label: 'Deny and keep session' },
+      <CatalogDemo id="confirmation" title="Confirmation" description="敏感操作审批（Questionnaire 单步）。">
+        <Questionnaire
+          class="max-w-md"
+          title="Permissions"
+          onSubmit={() => undefined}
+        >
+          <QuestionnaireStep
+            id="confirm"
+            title={'Allow deleting session "debug-42"?'}
+            description="This removes the project session entry and hides it from the sidebar."
+            required
+            choices={[
+              { value: 'approve', label: 'Approve delete' },
+              { value: 'deny', label: 'Deny and keep session' },
             ]}
-            selectedId={selectedOption()}
-            onSelect={setSelectedOption}
-            primaryLabel="Approve"
-            onPrimary={() => undefined}
-            onSkip={() => undefined}
           />
-        </div>
+          <QuestionnaireNavigation submitLabel="Approve" />
+        </Questionnaire>
       </CatalogDemo>
       </Show>
 

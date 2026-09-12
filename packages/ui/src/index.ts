@@ -53,7 +53,8 @@ export {
   ConfirmationTitle,
   type ConfirmationApproval,
 } from './components/Confirmation';
-export { DecisionCard, type DecisionOption } from './components/DecisionCard';
+export { DecisionCard, type DecisionCardProps, type DecisionOption } from './components/DecisionCard';
+export { QuestionnaireFrame, type QuestionnaireFrameProps, type QuestionnaireOption } from './components/QuestionnaireFrame';
 export { Reasoning, ReasoningContent, ReasoningTrigger, useReasoning } from './components/Reasoning';
 export {
   InlineCitation,

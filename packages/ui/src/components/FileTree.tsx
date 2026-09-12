@@ -34,6 +34,13 @@ export type FileTreeProps = {
   onFolderDragOver?: (path: string, event: DragEvent) => void;
   onFolderDragLeave?: (path: string, event: DragEvent) => void;
   onFolderDrop?: (path: string, event: DragEvent) => void;
+  getNodeLabel?: (node: FileTreeNode) => string;
+  getNodeClassName?: (node: FileTreeNode) => string | undefined;
+  renderNodeRow?: (
+    node: FileTreeNode,
+    context: { depth: number; kind: 'file' | 'folder'; open?: boolean; index: number; setSize: number },
+  ) => JSX.Element | undefined;
+  renderFolderFooter?: (node: FileTreeNode, depth: number) => JSX.Element | undefined;
 };
 
 /** Explorer / SCM 共用文件树：目录仅展示文件夹图标，无 chevron。 */
@@ -42,91 +49,114 @@ export function FileTree(props: FileTreeProps) {
 
   return (
     <For each={props.nodes}>
-      {(node, index) => (
-        <Show
-          when={node.kind === 'folder'}
-          fallback={(
-            <FileTreeFileRow
-              node={node}
-              depth={depth()}
-              index={index()}
-              setSize={props.nodes.length}
-              selected={props.selectedPath === node.path}
-              active={props.activePath === node.path}
-              defaultTabIndex={!props.activePath && depth() === 0 && index() === 0}
-              onSelect={props.onSelect}
-              onActivePathChange={props.onActivePathChange}
-              renderFileIcon={props.renderFileIcon}
-              trailing={props.renderFileTrailing?.(node)}
-              onContextMenu={(event) => props.onNodeContextMenu?.(node, event)}
-              onMount={(element) => props.onNodeMount?.(node, element)}
-              dataAttrs={props.getFileDataAttrs?.(node)}
-              ariaLabel={props.fileAriaLabel?.(node)}
-              treeitem={props.fileTreeitem !== false}
-            />
-          )}
-        >
-          <FileTreeFolderRow
-            node={node}
-            depth={depth()}
-            index={index()}
-            setSize={props.nodes.length}
-            open={props.expandedPaths.has(node.path)}
-            active={props.activePath === node.path}
-            defaultTabIndex={!props.activePath && depth() === 0 && index() === 0}
-            onToggle={() => props.onToggleFolder(node.path)}
-            onActivePathChange={props.onActivePathChange}
-            renderFolderIcon={props.renderFolderIcon}
-            trailing={props.renderFolderTrailing?.(node)}
-            onContextMenu={(event) => props.onNodeContextMenu?.(node, event)}
-            onMount={(element) => props.onNodeMount?.(node, element)}
-            dropTargetPath={props.dropTargetPath}
-            onFolderDragOver={props.onFolderDragOver}
-            onFolderDragLeave={props.onFolderDragLeave}
-            onFolderDrop={props.onFolderDrop}
-          />
-          <Show when={props.expandedPaths.has(node.path)}>
-            <div role="group">
-              <Show
-                when={!props.folderLoadingPaths?.has(node.path)}
-                fallback={(
-                  <div
-                    class="flex h-(--tree-row-height) items-center text-11 text-text-muted pointer-coarse:h-44"
-                    style={{ 'padding-left': `${32 + depth() * 12}px` }}
-                  >
-                    Loading…
-                  </div>
-                )}
-              >
-                <FileTree
-                  nodes={node.children ?? []}
-                  depth={depth() + 1}
-                  expandedPaths={props.expandedPaths}
-                  onToggleFolder={props.onToggleFolder}
-                  selectedPath={props.selectedPath}
-                  activePath={props.activePath}
-                  onSelect={props.onSelect}
-                  onActivePathChange={props.onActivePathChange}
-                  renderFileIcon={props.renderFileIcon}
-                  renderFolderIcon={props.renderFolderIcon}
-                  renderFileTrailing={props.renderFileTrailing}
-                  renderFolderTrailing={props.renderFolderTrailing}
-                  onNodeContextMenu={props.onNodeContextMenu}
-                  onNodeMount={props.onNodeMount}
-                  getFileDataAttrs={props.getFileDataAttrs}
-                  fileAriaLabel={props.fileAriaLabel}
-                  folderLoadingPaths={props.folderLoadingPaths}
-                  fileTreeitem={props.fileTreeitem}
-                  dropTargetPath={props.dropTargetPath}
-                  onFolderDragOver={props.onFolderDragOver}
-                  onFolderDragLeave={props.onFolderDragLeave}
-                  onFolderDrop={props.onFolderDrop}
-                />
-              </Show>
-            </div>
+      {(node, index) => {
+        const rowContext = {
+          depth: depth(),
+          index: index(),
+          setSize: props.nodes.length,
+        };
+        const replacement = () => props.renderNodeRow?.(node, node.kind === 'folder'
+          ? { ...rowContext, kind: 'folder', open: props.expandedPaths.has(node.path) }
+          : { ...rowContext, kind: 'file' });
+
+        return (
+          <Show
+            when={node.kind === 'folder'}
+            fallback={replacement() ?? (
+              <FileTreeFileRow
+                node={node}
+                depth={rowContext.depth}
+                index={rowContext.index}
+                setSize={rowContext.setSize}
+                selected={props.selectedPath === node.path}
+                active={props.activePath === node.path}
+                defaultTabIndex={!props.activePath && rowContext.depth === 0 && rowContext.index === 0}
+                label={props.getNodeLabel?.(node) ?? node.name}
+                rowClassName={props.getNodeClassName?.(node)}
+                onSelect={props.onSelect}
+                onActivePathChange={props.onActivePathChange}
+                renderFileIcon={props.renderFileIcon}
+                trailing={props.renderFileTrailing?.(node)}
+                onContextMenu={(event) => props.onNodeContextMenu?.(node, event)}
+                onMount={(element) => props.onNodeMount?.(node, element)}
+                dataAttrs={props.getFileDataAttrs?.(node)}
+                ariaLabel={props.fileAriaLabel?.(node)}
+                treeitem={props.fileTreeitem !== false}
+              />
+            )}
+          >
+            {replacement() ?? (
+              <FileTreeFolderRow
+                node={node}
+                depth={rowContext.depth}
+                index={rowContext.index}
+                setSize={rowContext.setSize}
+                open={props.expandedPaths.has(node.path)}
+                selected={props.selectedPath === node.path}
+                active={props.activePath === node.path}
+                defaultTabIndex={!props.activePath && rowContext.depth === 0 && rowContext.index === 0}
+                label={props.getNodeLabel?.(node) ?? node.name}
+                rowClassName={props.getNodeClassName?.(node)}
+                onToggle={() => props.onToggleFolder(node.path)}
+                onActivePathChange={props.onActivePathChange}
+                renderFolderIcon={props.renderFolderIcon}
+                trailing={props.renderFolderTrailing?.(node)}
+                onContextMenu={(event) => props.onNodeContextMenu?.(node, event)}
+                onMount={(element) => props.onNodeMount?.(node, element)}
+                dropTargetPath={props.dropTargetPath}
+                onFolderDragOver={props.onFolderDragOver}
+                onFolderDragLeave={props.onFolderDragLeave}
+                onFolderDrop={props.onFolderDrop}
+              />
+            )}
+            <Show when={props.expandedPaths.has(node.path)}>
+              <div role="group">
+                <Show
+                  when={!props.folderLoadingPaths?.has(node.path)}
+                  fallback={(
+                    <div
+                      class="flex h-(--tree-row-height) items-center text-11 text-text-muted pointer-coarse:h-44"
+                      style={{ 'padding-left': `${32 + depth() * 12}px` }}
+                    >
+                      Loading…
+                    </div>
+                  )}
+                >
+                  <FileTree
+                    nodes={node.children ?? []}
+                    depth={depth() + 1}
+                    expandedPaths={props.expandedPaths}
+                    onToggleFolder={props.onToggleFolder}
+                    selectedPath={props.selectedPath}
+                    activePath={props.activePath}
+                    onSelect={props.onSelect}
+                    onActivePathChange={props.onActivePathChange}
+                    renderFileIcon={props.renderFileIcon}
+                    renderFolderIcon={props.renderFolderIcon}
+                    renderFileTrailing={props.renderFileTrailing}
+                    renderFolderTrailing={props.renderFolderTrailing}
+                    onNodeContextMenu={props.onNodeContextMenu}
+                    onNodeMount={props.onNodeMount}
+                    getFileDataAttrs={props.getFileDataAttrs}
+                    fileAriaLabel={props.fileAriaLabel}
+                    getNodeLabel={props.getNodeLabel}
+                    getNodeClassName={props.getNodeClassName}
+                    renderNodeRow={props.renderNodeRow}
+                    renderFolderFooter={props.renderFolderFooter}
+                    folderLoadingPaths={props.folderLoadingPaths}
+                    fileTreeitem={props.fileTreeitem}
+                    dropTargetPath={props.dropTargetPath}
+                    onFolderDragOver={props.onFolderDragOver}
+                    onFolderDragLeave={props.onFolderDragLeave}
+                    onFolderDrop={props.onFolderDrop}
+                  />
+                </Show>
+                {props.renderFolderFooter?.(node, depth())}
+              </div>
+            </Show>
           </Show>
-        </Show>
-      )}
+        );
+      }}
     </For>
   );
 }
@@ -141,8 +171,11 @@ function FileTreeFolderRow(props: {
   index: number;
   setSize: number;
   open: boolean;
+  selected: boolean;
   active: boolean;
   defaultTabIndex: boolean;
+  label: string;
+  rowClassName?: string;
   onToggle: () => void;
   onActivePathChange?: (path: string) => void;
   renderFolderIcon?: (node: FileTreeNode, open: boolean) => JSX.Element;
@@ -156,7 +189,7 @@ function FileTreeFolderRow(props: {
 }) {
   const isDropTarget = () => props.dropTargetPath === props.node.path;
   return (
-    <div class="group/tree-file flex h-(--tree-row-height) w-full items-center rounded-4 pr-5 text-11 pointer-coarse:h-44">
+    <div class={cn('group/tree-file flex h-(--tree-row-height) w-full items-center rounded-4 pr-5 text-11 pointer-coarse:h-44', props.rowClassName)}>
       <button
         type="button"
         ref={(element) => props.onMount?.(element)}
@@ -171,7 +204,7 @@ function FileTreeFolderRow(props: {
         tabIndex={props.active || props.defaultTabIndex ? 0 : -1}
         class={cn(
           'file-tree-folder-btn flex h-(--tree-row-height) w-full min-w-0 items-center gap-4 rounded-4 border-0 pr-6 text-left text-11 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44',
-          props.active ? 'bg-selected' : 'bg-transparent',
+          props.active || props.selected ? 'bg-selected' : 'bg-transparent',
           isDropTarget() ? 'file-tree-folder-btn--drop-target bg-hover' : '',
         )}
         style={rowPadding(props.depth)}
@@ -186,7 +219,7 @@ function FileTreeFolderRow(props: {
         {props.renderFolderIcon
           ? props.renderFolderIcon(props.node, props.open)
           : <VSCodeFileIcon path={props.node.path} directory open={props.open} size={16} class="size-16" />}
-        <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-600">{props.node.name}</span>
+        <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-600">{props.label}</span>
       </button>
       <Show when={props.trailing}>
         <div class="shrink-0">{props.trailing}</div>
@@ -203,6 +236,8 @@ function FileTreeFileRow(props: {
   selected?: boolean;
   active: boolean;
   defaultTabIndex: boolean;
+  label: string;
+  rowClassName?: string;
   onSelect?: (node: FileTreeNode) => void;
   onActivePathChange?: (path: string) => void;
   renderFileIcon?: (node: FileTreeNode) => JSX.Element;
@@ -218,6 +253,7 @@ function FileTreeFileRow(props: {
       class={cn(
         'group/tree-file flex h-(--tree-row-height) w-full items-center rounded-4 pr-5 text-11 pointer-coarse:h-44',
         props.selected || props.active ? 'bg-selected' : 'hover:bg-hover',
+        props.rowClassName,
       )}
       style={rowPadding(props.depth)}
     >
@@ -242,7 +278,7 @@ function FileTreeFileRow(props: {
         {props.renderFileIcon
           ? props.renderFileIcon(props.node)
           : <VSCodeFileIcon path={props.node.path} size={16} class="size-16" />}
-        <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{props.node.name}</span>
+        <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{props.label}</span>
       </button>
       <Show when={props.trailing}>
         <div class="shrink-0">{props.trailing}</div>

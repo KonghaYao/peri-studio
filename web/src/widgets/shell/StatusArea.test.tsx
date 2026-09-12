@@ -76,7 +76,7 @@ describe('StatusArea', () => {
 
     const rows = screen.getByRole('tabpanel').querySelectorAll('li');
     expect(rows).toHaveLength(2);
-    expect(rows[0]).toHaveClass('min-h-24');
+    expect(rows[0]).toHaveClass('min-h-36');
     expect(rows[0]).toHaveTextContent('Done');
     expect(rows[1]).toHaveTextContent('Queued');
   });

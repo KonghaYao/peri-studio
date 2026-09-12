@@ -28,7 +28,7 @@ export function SlashMenu(props: {
   const active = () => props.activeIndex ?? 0;
 
   return (
-    <div class="overflow-hidden rounded-xl border border-border-subtle bg-surface-overlay shadow-overlay">
+    <div class="overflow-hidden rounded-xl border border-border-subtle bg-surface-overlay">
       <ul class="max-h-240 overflow-auto py-6" role="listbox" aria-label="Slash commands">
         <For each={props.items}>
           {(item, index) => (

@@ -12,13 +12,13 @@ import {
   type JSX,
   type ParentComponent,
 } from 'solid-js';
+import { CornerDownLeft } from 'lucide-solid';
 import { createControllableSignal } from '../lib/controllable-state';
 import { cn } from '../lib/cn';
 import { Button } from './Button';
-import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from './Checkbox';
 import { Progress, ProgressFill, ProgressTrack } from './Progress';
-import { RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel } from './RadioGroup';
 import { Textarea } from './Textarea';
+import { QuestionnaireFrame } from './QuestionnaireFrame';
 
 export type QuestionnaireChoice = {
   value: string;
@@ -42,6 +42,13 @@ export type QuestionnaireStepConfig = {
 
 type RegisteredStep = QuestionnaireStepConfig & { order: number };
 
+type NavigationLabels = {
+  previousLabel?: string;
+  nextLabel?: string;
+  skipLabel?: string;
+  submitLabel?: string;
+};
+
 type QuestionnaireContextValue = {
   steps: Accessor<RegisteredStep[]>;
   currentIndex: Accessor<number>;
@@ -52,6 +59,9 @@ type QuestionnaireContextValue = {
   getAnswer: (stepId: string) => QuestionnaireAnswer;
   registerStep: (config: QuestionnaireStepConfig) => void;
   unregisterStep: (stepId: string) => void;
+  registerNavigation: (labels: NavigationLabels) => void;
+  unregisterNavigation: () => void;
+  navigationLabels: Accessor<NavigationLabels>;
   goPrevious: () => void;
   goNext: () => void;
   skipStep: () => void;
@@ -89,7 +99,12 @@ function validateStep(step: RegisteredStep, answer: QuestionnaireAnswer) {
   return undefined;
 }
 
+function choiceKey(index: number) {
+  return String.fromCharCode(65 + index);
+}
+
 type QuestionnaireProps = {
+  title?: string;
   step?: number;
   defaultStep?: number;
   onStepChange?: (step: number) => void;
@@ -97,13 +112,17 @@ type QuestionnaireProps = {
   defaultAnswers?: Record<string, QuestionnaireAnswer>;
   onAnswersChange?: (answers: Record<string, QuestionnaireAnswer>) => void;
   onSubmit?: (answers: Record<string, QuestionnaireAnswer>) => void;
+  headerActions?: JSX.Element;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
   class?: string;
   children?: JSX.Element;
 };
 
-/** 多步问卷根容器：管理步骤、答案、校验与导航，不依赖外部表单库。 */
+/** 多步问卷：决策面卡壳 + 分页与选项键位样式。 */
 export const Questionnaire: ParentComponent<QuestionnaireProps> = (props) => {
   const [local, rest] = splitProps(props, [
+    'title',
     'step',
     'defaultStep',
     'onStepChange',
@@ -111,6 +130,9 @@ export const Questionnaire: ParentComponent<QuestionnaireProps> = (props) => {
     'defaultAnswers',
     'onAnswersChange',
     'onSubmit',
+    'headerActions',
+    'expanded',
+    'onExpandedChange',
     'class',
     'children',
   ]);
@@ -118,6 +140,7 @@ export const Questionnaire: ParentComponent<QuestionnaireProps> = (props) => {
   const registry = new Map<string, RegisteredStep>();
   const [steps, setSteps] = createSignal<RegisteredStep[]>([]);
   let nextOrder = 0;
+  const [navigationLabels, setNavigationLabels] = createSignal<NavigationLabels>({});
 
   const syncSteps = () => {
     setSteps(
@@ -134,6 +157,14 @@ export const Questionnaire: ParentComponent<QuestionnaireProps> = (props) => {
   const unregisterStep = (stepId: string) => {
     registry.delete(stepId);
     syncSteps();
+  };
+
+  const registerNavigation = (labels: NavigationLabels) => {
+    setNavigationLabels(labels);
+  };
+
+  const unregisterNavigation = () => {
+    setNavigationLabels({});
   };
 
   const [currentIndex, setCurrentIndex] = createControllableSignal<number>({
@@ -224,6 +255,9 @@ export const Questionnaire: ParentComponent<QuestionnaireProps> = (props) => {
     getAnswer,
     registerStep,
     unregisterStep,
+    registerNavigation,
+    unregisterNavigation,
+    navigationLabels,
     goPrevious,
     goNext,
     skipStep,
@@ -234,22 +268,130 @@ export const Questionnaire: ParentComponent<QuestionnaireProps> = (props) => {
     progressValue,
   };
 
+  const stepIndicator = () => {
+    const total = steps().length;
+    if (total <= 1) return local.headerActions;
+    return (
+      <>
+        {local.headerActions}
+        <span class="text-10 tabular-nums text-content-muted" aria-hidden="true">
+          {currentIndex() + 1} / {total}
+        </span>
+      </>
+    );
+  };
+
   return (
     <QuestionnaireContext.Provider value={context}>
-      <div
+      <QuestionnaireFrame
         data-slot="questionnaire"
-        class={cn('flex flex-col gap-16', local.class)}
+        class={cn('flex flex-col', local.class)}
+        title={local.title ?? 'Questions'}
+        prompt={currentStep()?.title ?? ''}
+        detail={currentStep()?.description}
+        headerActions={stepIndicator()}
+        expanded={local.expanded}
+        onExpandedChange={local.onExpandedChange}
+        footer={<QuestionnaireFooter />}
         {...rest}
       >
         {local.children}
-      </div>
+      </QuestionnaireFrame>
     </QuestionnaireContext.Provider>
   );
 };
 
+/** 问卷页脚：上一步 / 跳过 / 下一步·提交（不走页眉 pager，避免与队列导航混淆）。 */
+function QuestionnaireFooter() {
+  const context = useQuestionnaireContext('QuestionnaireFooter');
+  const labels = () => context.navigationLabels();
+  const canSkip = () => {
+    const step = context.currentStep();
+    return !!step && !step.required;
+  };
+
+  return (
+    <div class="flex w-full items-center gap-8">
+      <Show when={context.canGoPrevious()}>
+        <button
+          type="button"
+          class="inline-flex h-(--control-height-sm) items-center px-8 text-12 text-content-muted transition-colors duration-(--duration-fast) hover:text-content-primary"
+          onClick={() => context.goPrevious()}
+        >
+          {labels().previousLabel ?? 'Previous'}
+        </button>
+      </Show>
+      <div class="ml-auto flex items-center gap-8">
+        <Show when={canSkip()}>
+          <button
+            type="button"
+            class="inline-flex h-(--control-height-sm) items-center px-8 text-12 text-content-muted transition-colors duration-(--duration-fast) hover:text-content-primary"
+            onClick={() => context.skipStep()}
+          >
+            {labels().skipLabel ?? 'Skip'}
+          </button>
+        </Show>
+        <Button
+          type="button"
+          size="sm"
+          variant="primary"
+          class="rounded-full border-0 px-14 focus-visible:shadow-(--shadow-focus-ring)"
+          onClick={() => (context.isLastStep() ? context.submit() : context.goNext())}
+        >
+          {context.isLastStep() ? (labels().submitLabel ?? 'Submit') : (labels().nextLabel ?? 'Next')}
+          <CornerDownLeft size={14} strokeWidth={2} class="opacity-90" aria-hidden="true" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 type QuestionnaireStepProps = QuestionnaireStepConfig & {
   class?: string;
 };
+
+function DecisionChoiceButton(props: {
+  keyLabel: string;
+  label: string;
+  description?: string;
+  selected: boolean;
+  multiple?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role={props.multiple ? 'checkbox' : 'radio'}
+      aria-checked={props.selected}
+      disabled={props.disabled}
+      onClick={props.onClick}
+      class={cn(
+        'flex w-full items-center gap-12 rounded-md px-8 py-6 text-left transition-colors duration-(--duration-fast)',
+        props.selected ? 'bg-accent-soft' : 'hover:bg-interaction-hover',
+        props.disabled && 'cursor-not-allowed opacity-45',
+      )}
+    >
+      <span
+        class={cn(
+          'inline-flex size-20 shrink-0 items-center justify-center rounded-sm text-10 font-semibold',
+          props.selected
+            ? 'bg-accent-solid text-content-on-accent'
+            : 'bg-surface-sunken text-content-muted',
+        )}
+        aria-hidden="true"
+      >
+        {props.keyLabel}
+      </span>
+      <span class="min-w-0 flex-1">
+        <span class="block truncate text-12 text-content-primary">{props.label}</span>
+        <Show when={props.description}>
+          <span class="block truncate text-10 text-content-muted">{props.description}</span>
+        </Show>
+      </span>
+    </button>
+  );
+}
 
 /** 单个问卷步骤：注册到 Questionnaire 后仅在激活时渲染。 */
 export const QuestionnaireStep: Component<QuestionnaireStepProps> = (props) => {
@@ -286,75 +428,53 @@ export const QuestionnaireStep: Component<QuestionnaireStepProps> = (props) => {
   const hasChoices = () => choices().length > 0;
   const showText = () => local.allowText || !hasChoices();
 
-  const toggleMultiple = (value: string, checked: boolean) => {
+  const toggleMultiple = (value: string) => {
     const current = Array.isArray(answer()) ? [...answer() as string[]] : [];
-    const next = checked
-      ? [...current, value]
-      : current.filter((item) => item !== value);
+    const next = current.includes(value)
+      ? current.filter((item) => item !== value)
+      : [...current, value];
     context.setAnswer(local.id, next);
   };
 
   return (
     <Show when={active()}>
-      <fieldset
+      <div
         data-slot="questionnaire-step"
         data-step-id={local.id}
-        class={cn('m-0 flex min-w-0 flex-col gap-12 border-0 p-0', local.class)}
+        class={cn('mt-12 flex min-w-0 flex-col gap-8', local.class)}
         aria-invalid={context.error() ? 'true' : undefined}
         {...rest}
       >
-        <legend class="text-16 font-semibold text-content-primary">{local.title}</legend>
-        <Show when={local.description}>
-          <p class="m-0 text-13 text-content-muted">{local.description}</p>
-        </Show>
-
         <Show when={hasChoices() && !local.multiple}>
-          <RadioGroup
-            value={typeof answer() === 'string' ? answer() as string : ''}
-            onChange={(value) => context.setAnswer(local.id, value)}
-            class="flex flex-col gap-8"
-          >
+          <div class="flex flex-col gap-2" role="radiogroup">
             <For each={choices()}>
-              {(choice) => (
-                <RadioGroupItem value={choice.value} class="flex items-start gap-8">
-                  <RadioGroupItemInput />
-                  <RadioGroupItemControl />
-                  <div class="flex min-w-0 flex-col gap-2">
-                    <RadioGroupItemLabel class="text-13 font-medium text-content-primary">
-                      {choice.label}
-                    </RadioGroupItemLabel>
-                    <Show when={choice.description}>
-                      <span class="text-12 text-content-muted">{choice.description}</span>
-                    </Show>
-                  </div>
-                </RadioGroupItem>
+              {(choice, index) => (
+                <DecisionChoiceButton
+                  keyLabel={choiceKey(index())}
+                  label={choice.label}
+                  description={choice.description}
+                  selected={answer() === choice.value}
+                  onClick={() => context.setAnswer(local.id, choice.value)}
+                />
               )}
             </For>
-          </RadioGroup>
+          </div>
         </Show>
 
         <Show when={hasChoices() && local.multiple}>
-          <div class="flex flex-col gap-8">
+          <div class="flex flex-col gap-2">
             <For each={choices()}>
-              {(choice) => {
-                const checked = () => Array.isArray(answer()) && (answer() as string[]).includes(choice.value);
+              {(choice, index) => {
+                const selected = () => Array.isArray(answer()) && (answer() as string[]).includes(choice.value);
                 return (
-                  <Checkbox
-                    checked={checked()}
-                    onChange={(value) => toggleMultiple(choice.value, value)}
-                    class="flex items-start gap-8"
-                  >
-                    <CheckboxInput />
-                    <CheckboxControl />
-                    <div class="flex min-w-0 flex-col gap-2">
-                      <CheckboxLabel class="text-13 font-medium text-content-primary">
-                        {choice.label}
-                      </CheckboxLabel>
-                      <Show when={choice.description}>
-                        <span class="text-12 text-content-muted">{choice.description}</span>
-                      </Show>
-                    </div>
-                  </Checkbox>
+                  <DecisionChoiceButton
+                    keyLabel={choiceKey(index())}
+                    label={choice.label}
+                    description={choice.description}
+                    selected={selected()}
+                    multiple
+                    onClick={() => toggleMultiple(choice.value)}
+                  />
                 );
               }}
             </For>
@@ -374,29 +494,31 @@ export const QuestionnaireStep: Component<QuestionnaireStepProps> = (props) => {
         <Show when={context.error()}>
           <p role="alert" class="m-0 text-13 text-danger">{context.error()}</p>
         </Show>
-      </fieldset>
+      </div>
     </Show>
   );
 };
 
-/** 问卷进度条。 */
+/** 问卷进度条（多步时显示在步骤内容上方）。 */
 export const QuestionnaireProgress: Component<{ class?: string; 'aria-label'?: string }> = (props) => {
   const [local, rest] = splitProps(props, ['class', 'aria-label']);
   const context = useQuestionnaireContext('QuestionnaireProgress');
   const label = () => local['aria-label'] ?? 'Questionnaire progress';
 
   return (
-    <Progress
-      value={context.progressValue()}
-      aria-label={label()}
-      data-slot="questionnaire-progress"
-      class={cn('w-full', local.class)}
-      {...rest}
-    >
-      <ProgressTrack>
-        <ProgressFill />
-      </ProgressTrack>
-    </Progress>
+    <Show when={context.steps().length > 1}>
+      <Progress
+        value={context.progressValue()}
+        aria-label={label()}
+        data-slot="questionnaire-progress"
+        class={cn('mt-12 w-full', local.class)}
+        {...rest}
+      >
+        <ProgressTrack>
+          <ProgressFill />
+        </ProgressTrack>
+      </Progress>
+    </Show>
   );
 };
 
@@ -408,56 +530,18 @@ type QuestionnaireNavigationProps = {
   submitLabel?: string;
 };
 
-/** 问卷导航：上一步、下一步、跳过与提交。 */
+/** 注册问卷导航文案；按钮由 QuestionnaireFooter 渲染。 */
 export const QuestionnaireNavigation: Component<QuestionnaireNavigationProps> = (props) => {
-  const [local, rest] = splitProps(props, [
-    'class',
-    'previousLabel',
-    'nextLabel',
-    'skipLabel',
-    'submitLabel',
-  ]);
+  const [local] = splitProps(props, ['class', 'previousLabel', 'nextLabel', 'skipLabel', 'submitLabel']);
   const context = useQuestionnaireContext('QuestionnaireNavigation');
-  const canSkip = () => {
-    const step = context.currentStep();
-    return !!step && !step.required;
-  };
 
-  return (
-    <div
-      data-slot="questionnaire-navigation"
-      class={cn('flex flex-wrap items-center gap-8', local.class)}
-      {...rest}
-    >
-      <Button
-        type="button"
-        variant="ghost"
-        disabled={!context.canGoPrevious()}
-        onClick={() => context.goPrevious()}
-      >
-        {local.previousLabel ?? 'Previous'}
-      </Button>
+  context.registerNavigation({
+    previousLabel: local.previousLabel,
+    nextLabel: local.nextLabel,
+    skipLabel: local.skipLabel,
+    submitLabel: local.submitLabel,
+  });
+  onCleanup(() => context.unregisterNavigation());
 
-      <div class="ml-auto flex flex-wrap items-center gap-8">
-        <Show when={canSkip()}>
-          <Button type="button" variant="ghost" onClick={() => context.skipStep()}>
-            {local.skipLabel ?? 'Skip'}
-          </Button>
-        </Show>
-
-        <Show
-          when={context.isLastStep()}
-          fallback={
-            <Button type="button" variant="primary" onClick={() => context.goNext()}>
-              {local.nextLabel ?? 'Next'}
-            </Button>
-          }
-        >
-          <Button type="button" variant="primary" onClick={() => context.submit()}>
-            {local.submitLabel ?? 'Submit'}
-          </Button>
-        </Show>
-      </div>
-    </div>
-  );
+  return null;
 };

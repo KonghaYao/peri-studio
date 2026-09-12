@@ -61,7 +61,7 @@ export const Plan: Component<PlanRootProps> = (props) => {
         <Card
           data-slot="plan"
           class={cn(
-            'mb-8 w-full overflow-hidden rounded-12 border border-border-subtle bg-surface-overlay shadow-decision',
+            'mb-8 w-full overflow-hidden rounded-12 border border-border-subtle bg-surface-overlay',
             local.class,
           )}
           {...rest}

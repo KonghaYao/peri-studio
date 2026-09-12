@@ -28,7 +28,7 @@ export function PlanSystemEntryRow(props: { entry: ChatEntry }) {
   return (
     <Show when={isPlanSystemChatEntry(props.entry) && entries().length > 0}>
       <article
-        class="plan-system-entry mx-auto mb-8 w-full max-w-(--chat-content-max) overflow-hidden rounded-12 border border-border-subtle bg-surface-overlay shadow-decision"
+        class="plan-system-entry mx-auto mb-8 w-full max-w-(--chat-content-max) overflow-hidden rounded-12 border border-border-subtle bg-surface-overlay"
         data-testid="plan-system-entry"
         aria-label="Agent plan"
       >

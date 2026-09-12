@@ -243,7 +243,7 @@
   --composer-upload-tile-height: var(--asset-tile-size);
 
   /* Decision 决策面 */
-  --decision-shadow: var(--shadow-raised);
+  --decision-shadow: none;
   --decision-action-solid: var(--palette-warning-600);
   --decision-action-hover: var(--palette-warning-700);
 

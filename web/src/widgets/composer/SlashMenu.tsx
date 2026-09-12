@@ -40,7 +40,7 @@ export function SlashMenu(props: Props) {
   });
 
   return (
-    <div data-testid="slash-menu" class="slash-menu absolute z-35 right-20 bottom-full left-20 mb-8 overflow-hidden rounded-xl border border-border-subtle bg-surface-overlay shadow-overlay max-tight:right-10 max-tight:left-10">
+    <div data-testid="slash-menu" class="slash-menu absolute z-35 right-20 bottom-full left-20 mb-8 overflow-hidden rounded-xl border border-border-subtle bg-surface-overlay max-tight:right-10 max-tight:left-10">
       <Listbox
         id={props.id}
         aria-label="Available commands and skills"
