@@ -329,6 +329,7 @@
   --grid-template-columns-editor-line: var(--grid-cols-editor-line);
   --grid-template-columns-code-line: var(--grid-cols-code-line);
   --grid-template-columns-tool-row: var(--grid-cols-tool-row);
+  --grid-template-columns-slash-menu: var(--grid-cols-slash-menu);
   --grid-template-columns-status-row: var(--grid-cols-status-row);
   --grid-template-columns-status-activity: var(--grid-cols-status-activity);
   --grid-template-rows-fill: var(--grid-rows-fill);

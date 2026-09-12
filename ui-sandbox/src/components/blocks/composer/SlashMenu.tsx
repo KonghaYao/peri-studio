@@ -20,7 +20,7 @@ function SlashIcon(props: { variant?: SlashMenuItem['variant']; accent?: boolean
   return <Box size={15} strokeWidth={1.7} class="text-content-muted" />;
 }
 
-/** Composer slash 面板：图标 + 命令名 + 同行说明；分组分隔线。 */
+/** Composer slash 面板：图标 + 命令名（省略）+ 左对齐说明列；分组分隔线。 */
 export function SlashMenu(props: {
   items: SlashMenuItem[];
   activeIndex?: number;
@@ -41,16 +41,22 @@ export function SlashMenu(props: {
                   index() === active() ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
                 )}
               >
-                <div class="flex min-w-0 items-center gap-10">
+                <div class="grid min-w-0 grid-cols-slash-menu items-center gap-x-10">
                   <span class="grid size-16 shrink-0 place-items-center">
                     <SlashIcon variant={item.variant} accent={item.accent} />
                   </span>
-                  <p class="min-w-0 truncate text-13 leading-snug">
-                    <span class={cn('font-medium', item.accent ? 'text-warning-strong' : 'text-content-primary')}>
-                      {item.name}
-                    </span>
-                    <span class="text-content-muted"> {item.description}</span>
-                  </p>
+                  <span
+                    class={cn(
+                      'min-w-0 truncate text-13 font-medium leading-snug',
+                      item.accent ? 'text-warning-strong' : 'text-content-primary',
+                    )}
+                    title={item.name}
+                  >
+                    {item.name}
+                  </span>
+                  <span class="min-w-0 truncate text-13 leading-snug text-content-muted" title={item.description}>
+                    {item.description}
+                  </span>
                 </div>
               </div>
               <Show when={item.dividerAfter}>

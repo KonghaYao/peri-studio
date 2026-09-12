@@ -61,14 +61,10 @@ import {
   SuggestionItem,
   ToolActivityGroup,
   ToolActivityRow,
-  TranscriptReasoning,
 } from '@peri/ui';
 import { MARKDOWN_LAB_SAMPLE } from '@/fixtures/markdown-lab-sample';
-import { createPulseStream, createStreamingReveal, StreamingControls, StreamingMarkdownDemo } from '@/lib/streaming-demo';
+import { createPulseStream, StreamingControls, StreamingMarkdownDemo } from '@/lib/streaming-demo';
 import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
-
-const REASONING_SAMPLE =
-  'First verify the metadata authority, then check the Registry read-only projection and session/load ordering.';
 
 const tableRows = [
   { id: 'p1', name: 'peri-studio', sessions: 12, status: 'active' },
@@ -92,7 +88,6 @@ function ChatFrame(props: { children: unknown }) {
 export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
   const [selectedOption, setSelectedOption] = createSignal('a');
   const [codeLanguage, setCodeLanguage] = createSignal<'typescript' | 'bash'>('typescript');
-  const reasoningReveal = createStreamingReveal(REASONING_SAMPLE);
   const planStream = createPulseStream(3200);
 
   return (
@@ -230,24 +225,6 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
               duration="1.8s"
             />
           </ToolActivityGroup>
-        </ChatFrame>
-      </CatalogDemo>
-      </Show>
-
-      <Show when={showCatalogSection(props.sections, 'reasoning')}>
-      <CatalogDemo id="reasoning" title="Transcript reasoning" description="Activity 轨道 + Thinking 骨架与逐字揭示。">
-        <ChatFrame>
-          <div class="flex flex-col gap-12">
-            <StreamingControls
-              playing={reasoningReveal.playing()}
-              complete={reasoningReveal.complete()}
-              onPlay={reasoningReveal.play}
-              onReset={reasoningReveal.reset}
-            />
-            <TranscriptReasoning variant="activity" streaming={reasoningReveal.playing()}>
-              {reasoningReveal.text()}
-            </TranscriptReasoning>
-          </div>
         </ChatFrame>
       </CatalogDemo>
       </Show>

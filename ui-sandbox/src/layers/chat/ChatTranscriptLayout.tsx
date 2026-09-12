@@ -1,6 +1,6 @@
 import { UserBubble } from '@/components/blocks';
 import { FilePen, Search, Terminal } from 'lucide-solid';
-import { ToolActivityGroup, ToolActivityRow, TranscriptReasoning } from '@peri/ui';
+import { ToolActivityGroup, ToolActivityRow } from '@peri/ui';
 
 /** Tier 4 · Chat transcript 组合：assistant 文流 + 工具活动组。 */
 export function ChatTranscriptLayout() {
@@ -15,10 +15,6 @@ export function ChatTranscriptLayout() {
       <div class="my-1 mb-4">
         <ToolActivityGroup>
           <ToolActivityRow icon={Search} title={'Searched "runtime binding"'} subtitle="in server/src · 3 matches" input="server/src" output="3 matches" status="done" duration="84ms" />
-          <TranscriptReasoning variant="activity">
-            I found the browser boundary and will update only the affected adapter.
-          </TranscriptReasoning>
-          <TranscriptReasoning variant="activity" streaming>{' '}</TranscriptReasoning>
           <ToolActivityRow icon={FilePen} title="Edited store.ts" subtitle="1 change" input="web/src/panel/store.ts" status="done" duration="42ms" />
           <ToolActivityRow icon={Terminal} title="Running $ bun run test" input="bun run test" status="running" />
         </ToolActivityGroup>

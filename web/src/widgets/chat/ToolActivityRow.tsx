@@ -251,7 +251,7 @@ export function ToolActivityRow(props: {
           data-testid="tool-activity-row-summary"
         >
           <span
-            class="tool-call-row-icon relative z-1 grid size-22 shrink-0 place-items-center text-content-muted"
+            class="tool-call-row-icon relative z-1 grid size-22 shrink-0 place-items-center rounded-md bg-surface-muted text-content-muted"
             data-tool-kind={props.narration.kind}
             aria-hidden="true"
           >

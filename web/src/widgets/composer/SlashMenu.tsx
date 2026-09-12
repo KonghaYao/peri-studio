@@ -28,7 +28,7 @@ function kindDividerAfter(item: AgentCommandInfo, next?: AgentCommandInfo) {
   return false;
 }
 
-/** Composer slash 面板：图标 + 命令名 + 同行说明；分组分隔线。 */
+/** Composer slash 面板：图标 + 命令名（省略）+ 左对齐说明列；分组分隔线。 */
 export function SlashMenu(props: Props) {
   const activeName = () => props.items[props.activeIndex]?.name;
 
@@ -77,18 +77,24 @@ export function SlashMenu(props: Props) {
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => props.onSelect(command)}
             >
-              <div class="flex min-w-0 items-center gap-10">
+              <div class="grid min-w-0 grid-cols-slash-menu items-center gap-x-10">
                 <span class="grid size-16 shrink-0 place-items-center">
                   <SlashIcon kind={command.kind} />
                 </span>
-                <p class="min-w-0 truncate text-13 leading-snug">
-                  <span class={cn('font-medium', command.kind === 'skill' ? 'text-warning-strong' : 'text-content-primary')}>
-                    /{command.name}
+                <span
+                  class={cn(
+                    'min-w-0 truncate text-13 font-medium leading-snug',
+                    command.kind === 'skill' ? 'text-warning-strong' : 'text-content-primary',
+                  )}
+                  title={`/${command.name}`}
+                >
+                  /{command.name}
+                </span>
+                <Show when={command.description}>
+                  <span class="min-w-0 truncate text-13 leading-snug text-content-muted" title={command.description}>
+                    {command.description}
                   </span>
-                  <Show when={command.description}>
-                    <span class="text-content-muted"> {command.description}</span>
-                  </Show>
-                </p>
+                </Show>
               </div>
             </ListboxItem>
             <Show when={kindDividerAfter(command, next())}>

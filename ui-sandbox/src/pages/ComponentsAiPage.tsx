@@ -17,7 +17,6 @@ export function ComponentsAiPage() {
           'citation',
           'plan',
           'task',
-          'reasoning',
           'confirmation',
           'queue',
           'code-block',

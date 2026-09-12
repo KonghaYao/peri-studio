@@ -95,7 +95,7 @@ export const ToolActivityRow: Component<ToolActivityRowProps> = (props) => {
         )}
       >
         <span
-          class="relative z-1 grid size-22 shrink-0 place-items-center text-content-muted"
+          class="relative z-1 grid size-22 shrink-0 place-items-center rounded-md bg-surface-muted text-content-muted"
           aria-hidden="true"
         >
           <Dynamic component={props.icon ?? Wrench} size={15} strokeWidth={1.8} />

@@ -55,7 +55,6 @@ export {
 } from './components/Confirmation';
 export { DecisionCard, type DecisionOption } from './components/DecisionCard';
 export { Reasoning, ReasoningContent, ReasoningTrigger, useReasoning } from './components/Reasoning';
-export { TranscriptReasoning } from './components/TranscriptReasoning';
 export {
   InlineCitation,
   InlineCitationCard,

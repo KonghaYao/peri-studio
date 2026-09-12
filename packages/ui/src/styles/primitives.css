@@ -90,10 +90,6 @@
   transform: rotate(-90deg);
 }
 
-.ui-transcript-reasoning summary::-webkit-details-marker {
-  display: none;
-}
-
 /* AI Elements 对齐：文本扫光（Shimmer 组件；非 skeleton / 非 .shimmer utility） */
 @keyframes ui-ai-shimmer {
   from {

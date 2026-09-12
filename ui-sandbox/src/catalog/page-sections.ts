@@ -114,16 +114,9 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
   'components-chat': [
     {
       items: [
-        { id: 'scroll-utils', label: 'scroll-fade · shimmer' },
-        { id: 'marker', label: 'Marker' },
-        { id: 'bubble', label: 'Bubble' },
-        { id: 'message', label: 'Message' },
         { id: 'conversation', label: 'Conversation' },
-        { id: 'reasoning', label: 'Reasoning' },
-        { id: 'tool', label: 'Tool' },
-        { id: 'chain-of-thought', label: 'Chain of thought' },
-        { id: 'prompt-input', label: 'Prompt input' },
-        { id: 'attachments', label: 'Attachments' },
+        { id: 'message', label: 'Message branches' },
+        { id: 'marker', label: 'Marker' },
       ],
     },
   ],
@@ -135,7 +128,6 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'citation', label: 'Inline citation' },
         { id: 'plan', label: 'Plan' },
         { id: 'task', label: 'Tool activity' },
-        { id: 'reasoning', label: 'Transcript reasoning' },
         { id: 'confirmation', label: 'Decision card' },
         { id: 'queue', label: 'Queue' },
         { id: 'code-block', label: 'Code block' },
@@ -145,13 +137,6 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
     },
   ],
   blocks: [
-    {
-      title: 'Chat',
-      items: [
-        { id: 'markdown', label: 'Markdown' },
-        { id: 'reasoning', label: 'Reasoning' },
-      ],
-    },
     {
       title: 'Composer',
       items: [

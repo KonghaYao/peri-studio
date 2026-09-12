@@ -561,6 +561,7 @@
   --grid-cols-editor-line: 54px minmax(0, 1fr);
   --grid-cols-code-line: auto 1fr;
   --grid-cols-tool-row: 22px minmax(0, 1fr) auto 22px;
+  --grid-cols-slash-menu: 16px minmax(0, 88px) minmax(0, 1fr);
   --grid-cols-status-row: 14px minmax(0, 1fr) auto;
   --grid-cols-status-activity: 14px 54px minmax(0, 1fr) auto;
   --grid-rows-fill: minmax(0, 1fr);

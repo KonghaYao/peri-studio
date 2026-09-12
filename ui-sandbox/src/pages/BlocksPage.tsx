@@ -12,35 +12,7 @@ import {
   TokenUsageMeter,
 } from '@/components/blocks';
 import { Folder } from 'lucide-solid';
-import { MARKDOWN_LAB_SAMPLE } from '@/fixtures/markdown-lab-sample';
-import {
-  createStreamingReveal,
-  StreamingControls,
-  StreamingMarkdownDemo,
-} from '@/lib/streaming-demo';
 import { DemoSection, DomainSection, TierHeader } from '@/pages/shared/DemoSection';
-import { TranscriptReasoning } from '@peri/ui';
-
-const REASONING_SAMPLE =
-  'First verify the metadata authority, then check the Registry read-only projection and session/load ordering.';
-
-function StreamingReasoningBlock() {
-  const reveal = createStreamingReveal(REASONING_SAMPLE);
-
-  return (
-    <div class="flex flex-col gap-12">
-      <StreamingControls
-        playing={reveal.playing()}
-        complete={reveal.complete()}
-        onPlay={reveal.play}
-        onReset={reveal.reset}
-      />
-      <TranscriptReasoning variant="activity" streaming={reveal.playing()}>
-        {reveal.text()}
-      </TranscriptReasoning>
-    </div>
-  );
-}
 
 export function BlocksPage() {
   return (
@@ -48,22 +20,8 @@ export function BlocksPage() {
       <TierHeader
         tier="Tier 3 · Domain blocks"
         title="Domain blocks"
-        description="单域可复用块：只表达一个业务语义，由 Tier 2 基础组件拼装。按 chat / composer / chrome 分域。"
+        description="单域可复用块：只表达一个业务语义，由 Tier 2 基础组件拼装。按 composer / chrome / git 分域；Markdown 见 #/components-ai。"
       />
-
-      <DomainSection title="Chat · 聊天内容" description="Transcript 内的消息与 Markdown（工具活动 / 引用卡见 T2 · AI）。">
-        <DemoSection id="markdown" title="Markdown" description="GFM + KaTeX 数学 + Mermaid 图；表格 hover 浮现复制 / 下载。">
-          <div class="max-w-(--chat-content-max) rounded-lg border border-border-subtle bg-surface-overlay px-16 py-16">
-            <StreamingMarkdownDemo source={MARKDOWN_LAB_SAMPLE} />
-          </div>
-        </DemoSection>
-
-        <DemoSection id="reasoning" title="Reasoning" description="Thinking 折叠块与流式揭示。">
-          <div class="flex max-w-(--chat-content-max) flex-col gap-16">
-            <StreamingReasoningBlock />
-          </div>
-        </DemoSection>
-      </DomainSection>
 
       <DomainSection title="Composer · 输入域" description="Composer 内嵌块：slash 补全与 token 用量。">
         <DemoSection id="slash-menu" title="SlashMenu" description="Cursor 式单行：图标 + 命令名 + 说明；分组分隔线。">

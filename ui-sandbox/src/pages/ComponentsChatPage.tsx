@@ -1,14 +1,14 @@
 import { ComponentCatalogExtrasF } from '@/pages/ComponentCatalogExtrasF';
 import { TierHeader } from '@/pages/shared/DemoSection';
 
-/** T2 · shadcn 聊天原语：MessageScroller、Bubble、Tool、Composer 等。 */
+/** T2 · 会话滚动原语；Transcript / Composer 见 Blocks / AI / Layers。 */
 export function ComponentsChatPage() {
   return (
     <div class="mx-auto max-w-4xl">
       <TierHeader
         tier="Tier 2 · Chat"
         title="Chat primitives"
-        description="shadcn 2026-06 聊天组件与 Peri 流式会话 UI 原语。"
+        description="MessageScroller、Message 分支与 Marker；气泡 / Markdown / 工具活动 / Composer 见 #/blocks、#/components-ai 与 #/layers。"
       />
       <ComponentCatalogExtrasF />
     </div>
