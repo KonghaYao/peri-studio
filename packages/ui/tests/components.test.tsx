@@ -43,6 +43,19 @@ import { Kbd } from '../src/components/Kbd';
 import { Progress, ProgressFill, ProgressLabel, ProgressTrack, ProgressValueLabel } from '../src/components/Progress';
 import { Slider, SliderFill, SliderThumb, SliderTrack } from '../src/components/Slider';
 import { TextField } from '../src/components/Field';
+import { NativeSelect, NativeSelectOption } from '../src/components/NativeSelect';
+import {
+  Blockquote,
+  H1,
+  InlineCode,
+  Lead,
+  List,
+  Muted,
+  P,
+  Small,
+  TypographyH2,
+  TypographyLarge,
+} from '../src/components/Typography';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput, InputGroupText } from '../src/components/InputGroup';
 import { Listbox, ListboxItem } from '../src/components/Listbox';
 import { Popover, PopoverContent, PopoverTrigger } from '../src/components/Popover';
@@ -63,8 +76,30 @@ import { Spinner } from '../src/components/Spinner';
 import { dismissToast, showToast, Toaster } from '../src/components/Toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../src/components/Tooltip';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '../src/components/context-menu';
+import { Menubar, MenubarContent, MenubarItem, MenubarMenu, MenubarTrigger } from '../src/components/Menubar';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from '../src/components/NavigationMenu';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '../src/components/HoverCard';
 import { ScrollArea, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport } from '../src/components/ScrollArea';
+import { Combobox, ComboboxControl, ComboboxContent, ComboboxInput, ComboboxItem } from '../src/components/Combobox';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+  CommandShortcut,
+} from '../src/components/Command';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../src/components/Resizable';
+import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from '../src/components/InputOTP';
 
 afterEach(() => cleanup());
 
@@ -802,6 +837,71 @@ describe('DropdownMenuItem', () => {
   });
 });
 
+describe('Menubar', () => {
+  it('renders horizontal bar with File/Edit triggers and menu semantics', async () => {
+    render(() => (
+      <Menubar>
+        <MenubarMenu value="file" open>
+          <MenubarTrigger>File</MenubarTrigger>
+          <MenubarContent aria-label="File menu">
+            <MenubarItem>New tab</MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+        <MenubarMenu value="edit">
+          <MenubarTrigger>Edit</MenubarTrigger>
+          <MenubarContent aria-label="Edit menu">
+            <MenubarItem>Undo</MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+      </Menubar>
+    ));
+    const bar = screen.getByRole('menubar');
+    expect(bar).toHaveClass('flex', 'h-32', 'rounded-md', 'border-border-subtle', 'bg-surface');
+    const fileTrigger = screen.getByRole('menuitem', { name: 'File' });
+    expect(fileTrigger).toHaveClass('text-13', 'font-medium');
+    const item = await screen.findByRole('menuitem', { name: 'New tab' });
+    expect(item).toHaveClass('min-h-32', 'rounded-6', 'text-13');
+    expect(document.body.contains(item)).toBe(true);
+  });
+});
+
+describe('NavigationMenu', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('renders top nav triggers and link panel content', async () => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    });
+    render(() => (
+      <NavigationMenu autoFocusMenu>
+        <NavigationMenuList>
+          <NavigationMenuItem value="product" open>
+            <NavigationMenuTrigger>Product</NavigationMenuTrigger>
+            <NavigationMenuContent aria-label="Product">
+              <li>
+                <NavigationMenuLink href="/docs" active>Docs</NavigationMenuLink>
+              </li>
+            </NavigationMenuContent>
+          </NavigationMenuItem>
+        </NavigationMenuList>
+      </NavigationMenu>
+    ));
+    const nav = screen.getByRole('navigation');
+    expect(nav.querySelector('ul')).toHaveClass('group/navigation-menu', 'list-none', 'items-center');
+    const trigger = screen.getByRole('menuitem', { name: /Product/ });
+    expect(trigger).toHaveClass('h-32', 'rounded-md', 'font-medium');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const link = await screen.findByRole('link', { name: 'Docs' });
+    expect(link).toHaveAttribute('data-active', 'true');
+    expect(link).toHaveClass('rounded-6', 'text-13', 'hover:bg-hover');
+    expect(document.body.contains(link)).toBe(true);
+  });
+});
+
 describe('ContextMenu', () => {
   it('opens on contextmenu and uses shared menu item styling', async () => {
     render(() => (
@@ -1333,5 +1433,263 @@ describe('Kbd', () => {
     expect(kbd.tagName).toBe('KBD');
     expect(kbd).toHaveClass('rounded-4', 'border-border-subtle', 'bg-surface-muted', 'px-6', 'py-2', 'font-mono', 'text-10', 'text-content-secondary');
     expect(kbd).toHaveTextContent('⌘K');
+  });
+});
+
+describe('Resizable', () => {
+  it('renders horizontal panel group with styled handle separator', () => {
+    render(() => (
+      <ResizablePanelGroup data-testid="group" style={{ width: '400px', height: '200px' }}>
+        <ResizablePanel defaultSize={50} data-testid="left">Left</ResizablePanel>
+        <ResizableHandle data-testid="handle" />
+        <ResizablePanel defaultSize={50} data-testid="right">Right</ResizablePanel>
+      </ResizablePanelGroup>
+    ));
+    expect(screen.getByTestId('group')).toHaveAttribute('data-direction', 'horizontal');
+    expect(screen.getByTestId('group')).toHaveClass('flex', 'flex-row');
+    const handle = screen.getByTestId('handle');
+    expect(handle).toHaveAttribute('role', 'separator');
+    expect(handle).toHaveClass('w-4', 'cursor-col-resize', 'bg-border-subtle', 'hover:bg-accent-soft');
+    expect(screen.getByTestId('left')).toHaveAttribute('data-panel-index', '0');
+    expect(screen.getByTestId('right')).toHaveAttribute('data-panel-index', '1');
+  });
+
+  it('resizes adjacent panels on pointer drag', async () => {
+    render(() => (
+      <ResizablePanelGroup data-testid="group" style={{ width: '400px', height: '200px' }}>
+        <ResizablePanel defaultSize={50} minSize={20} data-testid="left">Left</ResizablePanel>
+        <ResizableHandle data-testid="handle" />
+        <ResizablePanel defaultSize={50} minSize={20} data-testid="right">Right</ResizablePanel>
+      </ResizablePanelGroup>
+    ));
+    const group = screen.getByTestId('group');
+    Object.defineProperty(group, 'offsetWidth', { configurable: true, value: 400 });
+    await waitFor(() => {
+      expect(screen.getByTestId('left').style.flex).toContain('50');
+    });
+    const handle = screen.getByTestId('handle');
+    fireEvent.pointerDown(handle, { clientX: 200, pointerId: 1 });
+    fireEvent.pointerMove(window, { clientX: 240, pointerId: 1 });
+    fireEvent.pointerUp(window, { pointerId: 1 });
+    await waitFor(() => {
+      expect(screen.getByTestId('left').style.flex).toContain('60');
+      expect(screen.getByTestId('right').style.flex).toContain('40');
+    });
+  });
+});
+
+describe('InputOTP', () => {
+  it('renders slots with input styling and advances focus on type', async () => {
+    const onChange = vi.fn();
+    render(() => (
+      <InputOTP maxLength={4} onChange={onChange}>
+        <InputOTPGroup>
+          <InputOTPSlot index={0} data-testid="slot-0" />
+          <InputOTPSlot index={1} data-testid="slot-1" />
+        </InputOTPGroup>
+        <InputOTPSeparator data-testid="separator" />
+        <InputOTPGroup>
+          <InputOTPSlot index={2} data-testid="slot-2" />
+          <InputOTPSlot index={3} data-testid="slot-3" />
+        </InputOTPGroup>
+      </InputOTP>
+    ));
+    const slot0 = screen.getByTestId('slot-0');
+    expect(slot0.className).toContain('h-32');
+    expect(slot0.className).toContain('rounded-6');
+    expect(slot0.className).toContain('border-border-strong');
+    expect(screen.getByTestId('separator')).toHaveTextContent('-');
+    fireEvent.input(slot0, { target: { value: '1' } });
+    expect(onChange).toHaveBeenCalledWith('1');
+    await waitFor(() => {
+      expect(screen.getByTestId('slot-1')).toHaveFocus();
+    });
+  });
+
+  it('supports paste and backspace navigation', () => {
+    const onChange = vi.fn();
+    render(() => (
+      <InputOTP maxLength={4} onChange={onChange}>
+        <InputOTPGroup>
+          <InputOTPSlot index={0} data-testid="slot-0" />
+          <InputOTPSlot index={1} data-testid="slot-1" />
+          <InputOTPSlot index={2} data-testid="slot-2" />
+          <InputOTPSlot index={3} data-testid="slot-3" />
+        </InputOTPGroup>
+      </InputOTP>
+    ));
+    fireEvent.paste(screen.getByTestId('slot-0'), {
+      clipboardData: { getData: () => '1234' },
+    });
+    expect(onChange).toHaveBeenCalledWith('1234');
+    fireEvent.keyDown(screen.getByTestId('slot-3'), { key: 'Backspace' });
+    expect(onChange).toHaveBeenLastCalledWith('123');
+  });
+});
+
+describe('Typography', () => {
+  it('renders heading and body primitives with token typography', () => {
+    render(() => (
+      <>
+        <H1 data-testid="h1">Title</H1>
+        <TypographyH2 data-testid="h2">Section</TypographyH2>
+        <P data-testid="p">Body</P>
+        <Lead data-testid="lead">Intro</Lead>
+        <TypographyLarge data-testid="large">Emphasis</TypographyLarge>
+        <Small data-testid="small">Fine print</Small>
+        <Muted data-testid="muted">Secondary</Muted>
+        <Blockquote data-testid="quote">Quoted</Blockquote>
+        <InlineCode data-testid="code">npm</InlineCode>
+        <List data-testid="list">
+          <li>One</li>
+        </List>
+      </>
+    ));
+    expect(screen.getByTestId('h1')).toHaveClass('text-28', 'font-bold', 'text-content-primary');
+    expect(screen.getByTestId('h2')).toHaveClass('text-24', 'border-border-subtle', 'text-content-primary');
+    expect(screen.getByTestId('p')).toHaveClass('text-13', 'leading-20', 'text-content-primary');
+    expect(screen.getByTestId('lead')).toHaveClass('text-16', 'text-content-muted');
+    expect(screen.getByTestId('large')).toHaveClass('text-14', 'font-semibold');
+    expect(screen.getByTestId('small')).toHaveClass('text-12', 'font-medium');
+    expect(screen.getByTestId('muted')).toHaveClass('text-12', 'text-content-muted');
+    expect(screen.getByTestId('quote')).toHaveClass('border-l-2', 'italic', 'text-content-secondary');
+    expect(screen.getByTestId('code')).toHaveClass('font-mono', 'bg-surface-muted', 'text-12');
+    expect(screen.getByTestId('list')).toHaveClass('list-disc', 'text-13', 'text-content-primary');
+  });
+});
+
+describe('Combobox', () => {
+  const frameworks = [
+    { value: 'solid', label: 'SolidJS' },
+    { value: 'react', label: 'React' },
+    { value: 'vue', label: 'Vue' },
+  ];
+
+  it('renders a styled control and selects a filtered option', async () => {
+    const onChange = vi.fn();
+    render(() => (
+      <Combobox
+        options={frameworks}
+        optionValue="value"
+        optionTextValue="label"
+        placeholder="Pick a framework"
+        onChange={onChange}
+        itemComponent={(itemProps) => (
+          <ComboboxItem item={itemProps.item}>{itemProps.item.rawValue.label}</ComboboxItem>
+        )}
+      >
+        <ComboboxControl data-testid="control">
+          <ComboboxInput aria-label="Framework" />
+        </ComboboxControl>
+        <ComboboxContent aria-label="Framework options" />
+      </Combobox>
+    ));
+
+    const control = screen.getByTestId('control');
+    expect(control).toHaveClass('rounded-6', 'border-border-strong', 'focus-within:border-focus-ring');
+
+    const input = screen.getByRole('combobox', { name: 'Framework' });
+    fireEvent.input(input, { target: { value: 'Re' } });
+    fireEvent.click(await screen.findByRole('option', { name: 'React' }));
+    expect(onChange).toHaveBeenCalledWith(frameworks[1]);
+  });
+
+  it('exposes popover list styling aligned with Select', async () => {
+    render(() => (
+      <Combobox
+        open
+        options={frameworks}
+        optionValue="value"
+        optionTextValue="label"
+        itemComponent={(itemProps) => (
+          <ComboboxItem item={itemProps.item}>{itemProps.item.rawValue.label}</ComboboxItem>
+        )}
+      >
+        <ComboboxControl>
+          <ComboboxInput aria-label="Framework" />
+        </ComboboxControl>
+        <ComboboxContent aria-label="Framework options" data-testid="content" />
+      </Combobox>
+    ));
+
+    const content = await screen.findByTestId('content');
+    expect(content).toHaveClass('rounded-8', 'border-border-subtle', 'bg-surface', 'shadow-popover');
+    expect(screen.getByRole('option', { name: 'SolidJS' })).toHaveClass('min-h-32', 'rounded-6');
+  });
+});
+
+describe('Command', () => {
+  it('filters items and fires onSelect from the listbox surface', async () => {
+    const onSelect = vi.fn();
+    render(() => (
+      <Command data-testid="command">
+        <CommandInput placeholder="Search commands" aria-label="Search commands" />
+        <CommandList>
+          <CommandEmpty>No matches.</CommandEmpty>
+          <CommandGroup heading="Sessions">
+            <CommandItem value="new-session">New session</CommandItem>
+            <CommandItem value="search" keywords="find" onSelect={onSelect}>Search sessions</CommandItem>
+          </CommandGroup>
+        </CommandList>
+      </Command>
+    ));
+
+    expect(screen.getByTestId('command')).toHaveClass('rounded-lg', 'border-border-subtle', 'shadow-popover');
+    expect(screen.getByRole('searchbox', { name: 'Search commands' }).parentElement).toHaveClass('border-b', 'border-border-subtle');
+
+    fireEvent.input(screen.getByRole('searchbox', { name: 'Search commands' }), { target: { value: 'find' } });
+    await waitFor(() => expect(screen.queryByRole('option', { name: 'New session' })).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole('option', { name: 'Search sessions' }));
+    expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the empty state and renders shortcut plus separator affordances', () => {
+    render(() => (
+      <Command>
+        <CommandInput aria-label="Search" />
+        <CommandList>
+          <CommandEmpty>Nothing here.</CommandEmpty>
+          <CommandGroup heading="Actions">
+            <CommandItem value="noop">No-op</CommandItem>
+          </CommandGroup>
+        </CommandList>
+        <CommandSeparator data-testid="separator" />
+        <div>
+          <CommandShortcut data-testid="shortcut">⌘K</CommandShortcut>
+        </div>
+      </Command>
+    ));
+
+    fireEvent.input(screen.getByRole('searchbox', { name: 'Search' }), { target: { value: 'missing' } });
+    expect(screen.getByText('Nothing here.')).toHaveClass('text-text-muted');
+    expect(screen.getByTestId('separator')).toHaveClass('-mx-4', 'my-4');
+    expect(screen.getByTestId('shortcut')).toHaveClass('ml-auto', 'text-text-muted');
+  });
+});
+
+describe('NativeSelect', () => {
+  it('matches Input field chrome and shows a chevron indicator', () => {
+    const { container } = render(() => (
+      <NativeSelect aria-label="Project">
+        <NativeSelectOption value="one">One</NativeSelectOption>
+      </NativeSelect>
+    ));
+    const select = screen.getByRole('combobox', { name: 'Project' });
+    expect(select).toHaveClass('h-32', 'rounded-6', 'border-border-strong', 'appearance-none', 'pr-32');
+    expect(select).not.toHaveAttribute('invalid');
+    expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('reflects invalid and disabled state without leaking component props', () => {
+    render(() => (
+      <NativeSelect aria-label="Mode" invalid disabled>
+        <option value="safe">Safe</option>
+      </NativeSelect>
+    ));
+    const select = screen.getByRole('combobox', { name: 'Mode' });
+    expect(select).toHaveAttribute('aria-invalid', 'true');
+    expect(select).toHaveClass('border-danger');
+    expect(select).toBeDisabled();
+    expect(select).not.toHaveAttribute('invalid');
   });
 });

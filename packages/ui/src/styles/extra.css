@@ -11,6 +11,13 @@
  * 禁止：新颜色/间距/字号字面量——一律引用 tokens.css 的 var(--*)。
  * JSX 默认只用 Tailwind；新增例外须加语义 class 并在此登记实现。 */
 
+/* ── Navigation menu viewport（Kobalte 运行时 CSS 变量） ───────────────── */
+
+.ui-navigation-menu-viewport {
+  height: var(--kb-navigation-menu-viewport-height);
+  width: var(--kb-navigation-menu-viewport-width);
+}
+
 /* ── 文本截断（WebKit 栈，Tailwind 无等价 token） ─────────────────────── */
 
 .ui-line-clamp-2 {

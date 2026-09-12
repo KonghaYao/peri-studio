@@ -27,3 +27,35 @@ export const menuRadioItemClass =
   "relative flex min-h-32 cursor-default select-none items-center rounded-6 py-8 pl-32 pr-12 text-13 text-text-primary outline-none transition-colors data-[highlighted]:bg-hover focus-visible:bg-hover data-[disabled]:pointer-events-none data-[disabled]:opacity-45"
 
 export const menuItemIndicatorClass = "absolute left-12 flex size-14 items-center justify-center"
+
+/** 水平 menubar 容器：桌面应用式顶栏菜单。 */
+export const menubarClass =
+  "flex h-32 items-center gap-4 rounded-md border border-border-subtle bg-surface p-4 shadow-popover"
+
+/** Menubar 触发器：File / Edit / View 等顶栏项。 */
+export const menubarTriggerClass =
+  "flex cursor-pointer select-none items-center rounded-6 border-0 bg-transparent px-8 py-4 text-13 font-medium text-text-primary outline-none transition-colors data-[highlighted]:bg-hover data-[state=open]:bg-hover focus-visible:bg-hover focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2 data-[disabled]:pointer-events-none data-[disabled]:opacity-45"
+
+/** Navigation menu 根容器。 */
+export const navigationMenuClass =
+  "group/navigation-menu relative flex max-w-max flex-1 items-center justify-center"
+
+/** Navigation menu 列表行内布局（由 Kobalte Root ul 承载）。 */
+export const navigationMenuListClass =
+  "group flex flex-1 list-none items-center justify-center gap-4"
+
+/** Navigation menu 下拉面板内容区。 */
+export const navigationMenuContentClass =
+  "top-0 left-0 w-full p-8 outline-none md:absolute md:w-auto"
+
+/** Navigation menu 视口容器（尺寸由 Kobalte CSS 变量驱动，见 extra.css）。 */
+export const navigationMenuViewportClass =
+  "ui-navigation-menu-viewport relative mt-6 w-full overflow-hidden rounded-8 border border-border-subtle bg-surface text-text-primary shadow-popover outline-none animate-content-hide data-[expanded]:animate-content-show"
+
+/** Navigation menu 内链卡片。 */
+export const navigationMenuLinkClass =
+  "flex flex-col gap-4 rounded-6 p-8 text-13 transition-colors outline-none hover:bg-hover hover:text-text-primary focus-visible:bg-hover focus-visible:text-text-primary focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2 data-[active=true]:bg-hover data-[active=true]:text-text-primary"
+
+/** Navigation menu 展开指示箭头容器。 */
+export const navigationMenuIndicatorClass =
+  "top-full z-1 flex h-6 items-end justify-center overflow-hidden data-[closed]:opacity-0 data-[expanded]:opacity-100 transition-opacity"

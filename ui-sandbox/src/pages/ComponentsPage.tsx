@@ -22,6 +22,7 @@ import {
 } from '@/lib/catalog-ui';
 import { ComponentCatalogExtras } from '@/pages/ComponentCatalogExtras';
 import { ComponentCatalogExtrasB } from '@/pages/ComponentCatalogExtrasB';
+import { ComponentCatalogExtrasC } from '@/pages/ComponentCatalogExtrasC';
 import { CatalogDemo, DemoRow, TierHeader } from '@/pages/shared/DemoSection';
 import { Bell, Archive, Inbox, Mic, MoreHorizontal, Pencil, Pin, Plus, Search, Send, Settings, Trash2 } from 'lucide-solid';
 
@@ -216,6 +217,7 @@ export function ComponentsPage() {
 
       <ComponentCatalogExtras />
       <ComponentCatalogExtrasB />
+      <ComponentCatalogExtrasC />
     </div>
   );
 }
