@@ -33,19 +33,43 @@ impl PromptDelivery {
         rpc_id: &str,
         response: &mut oneshot::Receiver<serde_json::Value>,
     ) -> PromptDeliveryOutcome {
+        let turn_id_text = turn_id.to_string();
+        let mut active_turn_changes = self
+            .chats
+            .subscribe_active_turn_changes(&request.chat_id, &turn_id_text)
+            .await;
         let rpc_result = loop {
-            match tokio::time::timeout(self.inactivity_timeout, &mut *response).await {
-                Ok(Ok(response)) => break Some(response),
-                Ok(Err(_)) => break None,
-                Err(_) => {
-                    if self.chats.active_turn(&request.chat_id).await != Some(turn_id.to_string()) {
-                        break None;
+            if self.chats.active_turn(&request.chat_id).await.as_deref()
+                != Some(turn_id_text.as_str())
+            {
+                break None;
+            }
+            tokio::select! {
+                response = tokio::time::timeout(self.inactivity_timeout, &mut *response) => {
+                    match response {
+                        Ok(Ok(response)) => break Some(response),
+                        Ok(Err(_)) => break None,
+                        Err(_) => {
+                            if self.chats.active_turn(&request.chat_id).await.as_deref()
+                                != Some(turn_id_text.as_str())
+                            {
+                                break None;
+                            }
+                            if self
+                                .chats
+                                .active_turn_idle(&request.chat_id)
+                                .await
+                                .is_none_or(|idle| idle > self.inactivity_timeout)
+                            {
+                                break None;
+                            }
+                        }
                     }
-                    if self
-                        .chats
-                        .active_turn_idle(&request.chat_id)
-                        .await
-                        .is_none_or(|idle| idle > self.inactivity_timeout)
+                }
+                changed = active_turn_changes.changed() => {
+                    if changed.is_err()
+                        || self.chats.active_turn(&request.chat_id).await.as_deref()
+                            != Some(turn_id_text.as_str())
                     {
                         break None;
                     }

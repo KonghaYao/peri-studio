@@ -1,8 +1,8 @@
 //! CommandCoordinator 的队列面提交（review #3 结构拆分）：submit 双入口之
 //! 二——「gate 锁内去重 → try_reserve → outbox.insert → mark_accepted →
 //! 入队执行器」同临界区（§7.4 规则 6，**核心纪律，不得拆锁**）；含
-//! per-chat 执行器（lazy spawn 串行消费）与入队（含 closed-tx 一次重试，
-//! review #20）。
+//! per-chat 有界执行器（lazy spawn；普通 FIFO，active prompt 期间优先消费
+//! cancel）与入队 closed-tx 一次重试（review #20）。
 
 use std::sync::Arc;
 
@@ -343,7 +343,7 @@ impl CommandCoordinator {
             })
     }
 
-    /// 入队到 per-chat 执行器（lazy spawn，§7.4 规则 1 串行）。
+    /// 入队到 per-chat 执行器（lazy spawn，§7.4 规则 1 有界 FIFO）。
     async fn enqueue(&self, chat_id: String, cmd: ExecCmd) -> bool {
         if self.try_enqueue(&chat_id, cmd.clone()).await {
             return true;
@@ -381,19 +381,79 @@ impl CommandCoordinator {
         tx.send(cmd).await.is_ok()
     }
 
-    /// 执行器循环（每 chat 串行消费，§7.4 规则 1）。
+    /// 执行器循环：普通命令按 chat FIFO；prompt 已登记 active turn 后，等待
+    /// L3 期间继续读取同一有界队列，只执行 cancel，其余命令保持原顺序延后。
     async fn executor_loop(&self, chat_id: String, mut rx: mpsc::Receiver<ExecCmd>) {
-        while let Some(cmd) = rx.recv().await {
+        let mut deferred = std::collections::VecDeque::new();
+        loop {
+            let cmd = match deferred.pop_front() {
+                Some(cmd) => cmd,
+                None => match rx.recv().await {
+                    Some(cmd) => cmd,
+                    None => break,
+                },
+            };
             let started = std::time::Instant::now();
-            self.exec_command(&chat_id, &cmd).await;
-            // 命令消费完成：释放 try_reserve 名额（§7.4 reserve/release 配对）。
-            self.inner.doc.release_reserve(&cmd.chat_id).await;
-            tracing::debug!(
-                chat_id,
-                command_id = extract_command_id(&cmd.action).unwrap_or_default(),
-                elapsed_ms = started.elapsed().as_millis() as u64,
-                "command executed"
-            );
+            if matches!(cmd.action, ActionEnvelope::Prompt { .. }) {
+                let (active_tx, mut active_rx) = tokio::sync::oneshot::channel();
+                let prompt =
+                    self.run_prompt_delivery_with_active_signal(&chat_id, &cmd, Some(active_tx));
+                tokio::pin!(prompt);
+
+                let active = tokio::select! {
+                    _ = &mut prompt => None,
+                    result = &mut active_rx => Some(result.is_ok()),
+                };
+                match active {
+                    None => {}
+                    Some(true) => {
+                        if let Some(prompt_turn) =
+                            self.inner.prompt_delivery.active_turn(&chat_id).await
+                        {
+                            loop {
+                                tokio::select! {
+                                    _ = &mut prompt => break,
+                                    next = rx.recv() => match next {
+                                        Some(cancel) if matches!(cancel.action, ActionEnvelope::Cancel { .. }) => {
+                                            if self.inner.prompt_delivery.active_turn(&chat_id).await.as_deref()
+                                                != Some(prompt_turn.as_str())
+                                            {
+                                                deferred.push_back(cancel);
+                                                (&mut prompt).await;
+                                                break;
+                                            }
+                                            let cancel_started = std::time::Instant::now();
+                                            self.exec_cancel(&chat_id, &cancel).await;
+                                            self.finish_execution(&chat_id, &cancel, cancel_started).await;
+                                            if self.inner.prompt_delivery.active_turn(&chat_id).await.as_deref()
+                                                != Some(prompt_turn.as_str())
+                                            {
+                                                (&mut prompt).await;
+                                                break;
+                                            }
+                                        }
+                                        Some(other) => deferred.push_back(other),
+                                        None => {
+                                            (&mut prompt).await;
+                                            break;
+                                        }
+                                    },
+                                }
+                            }
+                        } else {
+                            prompt.await;
+                        }
+                    }
+                    Some(false) => {
+                        // Prompt 在 active-turn 注册前失败时 sender 随 request 被
+                        // 丢弃；等待 lifecycle 完成后再释放 reserve。
+                        prompt.await;
+                    }
+                }
+            } else {
+                self.exec_command(&chat_id, &cmd).await;
+            }
+            self.finish_execution(&chat_id, &cmd, started).await;
         }
         // 通道关闭：清理表项（防御；正常关闭路径由 hub 统一清理）。
         let mut executors = self.inner.executors.write().await;
@@ -402,6 +462,16 @@ impl CommandCoordinator {
                 executors.remove(&chat_id);
             }
         }
+    }
+
+    async fn finish_execution(&self, chat_id: &str, cmd: &ExecCmd, started: std::time::Instant) {
+        self.inner.doc.release_reserve(&cmd.chat_id).await;
+        tracing::debug!(
+            chat_id,
+            command_id = extract_command_id(&cmd.action).unwrap_or_default(),
+            elapsed_ms = started.elapsed().as_millis() as u64,
+            "command executed"
+        );
     }
 }
 

@@ -7,6 +7,7 @@
 //! unknown（§7.4 取消语义）。公共 helper bound_session/setup_active_turn 见
 //! command_coordinator_test_util（经父模块 re-export，经 `use super::*` 可见）。
 use super::*;
+
 /// cancel（notification：无 id 帧，发送成功即 L3 等价确认）→ 注入 Cancelled
 /// 终态 + 活动 turn 表项清理（§7.2；表项滞留会阻塞后续 load）。
 #[tokio::test]

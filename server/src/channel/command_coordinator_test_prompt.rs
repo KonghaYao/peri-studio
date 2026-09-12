@@ -4,7 +4,7 @@
 //!
 //! 职责边界：本模块覆盖 prompt 投递的持久化证据缺失 fail-closed（§7.2）、
 //! 持久化失败终态化广播、首条投递种子 catalog 标题、in-flight 重放观察者、
-//! 内存未知判定防挂起、队列满 RATE_LIMITED 与串行执行顺序。公共 helper
+//! 内存未知判定防挂起、队列满 RATE_LIMITED 与普通命令 FIFO 顺序。公共 helper
 //! bound_session/prompt_action/broadcast_active_turn_status 见
 //! command_coordinator_test_util（经父模块 re-export，经 `use super::*` 可见）。
 use super::*;
@@ -29,6 +29,7 @@ async fn prompt_delivery_missing_store_fails_closed() {
                 message: "must not vanish".into(),
                 effort: None,
             },
+            active_signal: None,
         })
         .await;
 
@@ -265,11 +266,89 @@ async fn queue_full_rate_limited() {
 }
 
 #[tokio::test]
+async fn active_prompt_deferred_commands_still_count_against_queue_cap() {
+    let mut env = env().await;
+    bound_session(&env, S2, "acp-deferred-cap").await;
+    let (active_tx, _active_rx) = mpsc::channel(16);
+    let active_command_id = uuid::Uuid::new_v4().to_string();
+    assert!(matches!(
+        env.coordinator
+            .submit(
+                &ctx("active-prompt-cap"),
+                prompt_action(&active_command_id, S2),
+                active_tx,
+            )
+            .await,
+        SubmitAck::Accepted { .. }
+    ));
+    let forward = match env.instance_rx.recv().await.unwrap() {
+        OutboundMsg::Frame(Frame::InstanceForward(forward)) => forward,
+        other => panic!("expected prompt forward, got {other:?}"),
+    };
+    env.instance
+        .on_ack(
+            "local",
+            &forward.command_id,
+            InstanceAck::Forward(InstanceForwardAck {
+                command_id: forward.command_id.clone(),
+                chat_id: forward.chat_id,
+                ok: true,
+                error: None,
+            }),
+        )
+        .await;
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while env.chats.active_turn(S2).await.is_none() {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .expect("prompt registered an active turn");
+
+    let chats = env.chats.clone();
+    let keep_active = tokio::spawn(async move {
+        loop {
+            chats.touch_active_turn(S2).await;
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    });
+    let (queued_tx, _queued_rx) = mpsc::channel(128);
+    // active prompt 占一个 reserve；其余 63 条虽被调度器移入 deferred，仍保留
+    // 原 reserve，因此不能借内部暂存绕过每 chat 64 条上限。
+    for _ in 0..63 {
+        let command_id = uuid::Uuid::new_v4().to_string();
+        let result = env
+            .coordinator
+            .submit(
+                &ctx("deferred-prompt-cap"),
+                prompt_action(&command_id, S2),
+                queued_tx.clone(),
+            )
+            .await;
+        assert!(matches!(result, SubmitAck::Accepted { .. }), "{result:?}");
+    }
+    let overflow_id = uuid::Uuid::new_v4().to_string();
+    let overflow = env
+        .coordinator
+        .submit(
+            &ctx("deferred-prompt-overflow"),
+            prompt_action(&overflow_id, S2),
+            queued_tx,
+        )
+        .await;
+    keep_active.abort();
+    assert!(matches!(
+        overflow,
+        SubmitAck::Failed(ref error) if error.code == ErrorCode::RateLimited
+    ));
+}
+
+#[tokio::test]
 async fn serial_execution_order() {
     let mut env = env().await;
     bound_session(&env, S3, "acp-3").await;
     let (tx, _rx) = mpsc::channel(16);
-    // 串行提交 6 条 prompt（< 64 规避 F4 in_flight 缺口）。
+    // 连续提交 6 条 prompt（< 64 规避 F4 in_flight 缺口）。
     let mut cids = Vec::new();
     for _ in 0..6 {
         let cid = uuid::Uuid::new_v4().to_string();
@@ -280,7 +359,7 @@ async fn serial_execution_order() {
             .await;
         assert!(matches!(r, SubmitAck::Accepted { .. }));
     }
-    // instance 侧收到的 forward 顺序 = 提交顺序（§7.4 规则 1 串行）。
+    // instance 侧收到的 forward 顺序 = 提交顺序（§7.4 规则 1 普通命令 FIFO）。
     // 每条 forward 帧回 ack（L1+L2 确认）否则 forward_rpc 阻塞 200ms 超时。
     let mut seen = Vec::new();
     for _ in 0..6 {
@@ -309,6 +388,6 @@ async fn serial_execution_order() {
     sorted.sort();
     assert_eq!(
         seen, sorted,
-        "rpc ids should be monotonic (serial execution)"
+        "rpc ids should be monotonic (ordinary command FIFO)"
     );
 }

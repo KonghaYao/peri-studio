@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 
 use chrono::{DateTime, Utc};
 use peri_studio_proto::schema::SessionConfigOptionProjection;
-use tokio::sync::{Mutex, OwnedMutexGuard, RwLock};
+use tokio::sync::{watch, Mutex, OwnedMutexGuard, RwLock};
 use tracing::{debug, info, warn};
 
 use peri_studio_proto::schema::ChatSummary;
@@ -119,6 +119,8 @@ struct ActiveTurnEntry {
     turn_id: String,
     /// 最近一次该 chat 事件投递时刻（单调时钟；relay touch 更新）。
     last_activity: Instant,
+    /// 删除活动条目时唤醒 prompt delivery，避免控制面终态仍等待 inactivity timeout。
+    change_tx: watch::Sender<()>,
 }
 
 /// chat 注册表（§7.3 状态机 + binding + pending_close + 对账）。

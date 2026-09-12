@@ -344,6 +344,48 @@ async fn active_turn_tracking() {
     assert_eq!(reg.active_turn("s1").await, None);
 }
 
+#[tokio::test]
+async fn active_turn_change_subscription_tracks_exact_turn() {
+    let (reg, _doc) = test_registry().await;
+    let reg = ChatRegistry::new(reg);
+    reg.set_active_turn("s1", "t1").await;
+    let mut changes = reg.subscribe_active_turn_changes("s1", "t1").await;
+
+    reg.set_active_turn("s1", "t2").await;
+    assert!(
+        tokio::time::timeout(Duration::from_millis(50), changes.changed())
+            .await
+            .expect("replacing the subscribed turn must wake waiters")
+            .is_err(),
+        "the replaced turn sender must close"
+    );
+    assert_eq!(reg.active_turn("s1").await.as_deref(), Some("t2"));
+
+    let mut stale = reg.subscribe_active_turn_changes("s1", "t1").await;
+    assert!(
+        tokio::time::timeout(Duration::from_millis(50), stale.changed())
+            .await
+            .expect("an already inactive exact turn must not miss its wakeup")
+            .is_err()
+    );
+}
+
+#[tokio::test]
+async fn active_turn_subscription_after_clear_is_already_closed() {
+    let (reg, _doc) = test_registry().await;
+    let reg = ChatRegistry::new(reg);
+    reg.set_active_turn("s1", "t1").await;
+    reg.clear_active_turn("s1").await;
+
+    let mut changes = reg.subscribe_active_turn_changes("s1", "t1").await;
+    assert!(
+        tokio::time::timeout(Duration::from_millis(50), changes.changed())
+            .await
+            .expect("subscribing after clear must not wait for another timeout")
+            .is_err()
+    );
+}
+
 /// #3 增量窗口计时（issue #3）：touch_active_turn 续命 / active_turn_idle
 /// 空闲时长语义；无登记表项 → None（调用方按「无活动窗口」处理）。
 #[tokio::test]

@@ -1,5 +1,5 @@
 //! 通道层（Feature F5）：gateway（ws 生命周期）、chat-channel（客户端连接
-//! 归一化）、command-coordinator（串行队列 + commandId 去重持久化）、
+//! 归一化）、command-coordinator（有界队列 + commandId 去重持久化）、
 //! relay-event-handler（instance 入站消费与断链清理）、broadcaster（fan-out +
 //! 背压）、connection-registry（配额）（架构 §12 目录结构）。
 //!

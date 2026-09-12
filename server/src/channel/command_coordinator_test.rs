@@ -407,6 +407,10 @@ mod command_coordinator_test_prompt_l3;
 mod command_coordinator_test_cancel;
 
 #[cfg(test)]
+#[path = "command_coordinator_test_cancel_preempt.rs"]
+mod command_coordinator_test_cancel_preempt;
+
+#[cfg(test)]
 #[path = "command_coordinator_test_prompt_timeout.rs"]
 mod command_coordinator_test_prompt_timeout;
 

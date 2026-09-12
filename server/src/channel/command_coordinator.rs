@@ -1,5 +1,6 @@
-//! CommandCoordinator：每 chat 串行命令队列 + commandId 去重 + 两阶段 Ack
-//! （架构 §4.3/§4.4/§7.4）。
+//! CommandCoordinator：每 chat 有界命令队列 + commandId 去重 + 两阶段 Ack
+//! （架构 §4.3/§4.4/§7.4）。普通命令按 chat 串行；`chat/cancel` 可在
+//! active prompt 等待 L3 期间由同一调度器优先执行。
 //!
 //! **核心纪律**（§7.4 规则 6 + §4.4）：commandId 去重检查、入队上限检查与
 //! `in_flight` 标记必须在**同一临界区**完成（Rust 无 JS 单线程原子性）——
@@ -124,7 +125,7 @@ pub(super) struct CoordInner {
     /// Legacy workspace wire compatibility over the project authority.
     pub(super) workspace_compatibility: WorkspaceCompatibility,
     pub(super) queue_cap: usize,
-    /// 每 chat 执行器（串行消费；lazy spawn）。
+    /// 每 chat 有界执行器；普通命令 FIFO，active prompt 期间优先消费 cancel。
     pub(super) executors: RwLock<HashMap<String, mpsc::Sender<ExecCmd>>>,
     /// Existing-runtime load/new owns its shared per-chat lease and replay order.
     pub(super) session_operations: SessionRuntimeOperations,

@@ -875,7 +875,7 @@ Composer 草稿为 `/name `，不得自动发送、不得增加 ACP prompt 私�
 
 超时沿用 spawn 10s、initialize 10s、binding 30s，但超时不是“确定失败”的同义词。spawn/kill writer Ack 丢失表示 runtime 是否存在未知；`session/new` forward/L3、binding、agent projection 或 terminal ledger 在 ACP 可能已创建 durable session 后失败，均返回非 retryable `DELIVERY_UNKNOWN`。kill 成功只能证明子进程已清理，不能撤销 ACP durable session。重启后内存 outbox 为空（§8.4.1），create 不自动恢复、不重发；不得暴露无 executor 的 InProgress，也不得自动复活旧进程。
 
-`PromptDelivery` 是 `chat/prompt` 的唯一 lifecycle owner。Coordinator 只完成通用 command gate、内存 outbox 接纳和 per-chat 串行调度；existing-command replay 与 terminal observer/wire publication 统一委托 `CommandOutcomeBroker`。模块内部按 `pending user entry → intent durable → dispatch barrier → instance writer Ack → dispatched → L3 inactivity window → turn/entry projection → projection committed → completed` 推进。dispatch barrier 之后的 transport、L3 或跨存储失败一律收敛为不可重试的 `DELIVERY_UNKNOWN`；即使 terminal append 本身失败，也必须把相同裁决返回 Broker，使进程内 terminal fallback 接管，禁止 accepted observer 永久悬挂。canonical payload fingerprint 由中立的 command identity helper 同时供 submit gate、Broker 与 lifecycle 使用，不能存在第二套序列化或 prompt phase script。
+`PromptDelivery` 是 `chat/prompt` 的唯一 lifecycle owner。Coordinator 只完成通用 command gate、内存 outbox 接纳和 per-chat 有界调度（普通命令 FIFO；active prompt 等待 L3 时可优先消费 cancel，§7.4）；existing-command replay 与 terminal observer/wire publication 统一委托 `CommandOutcomeBroker`。模块内部按 `pending user entry → intent durable → dispatch barrier → instance writer Ack → dispatched → L3 inactivity window → turn/entry projection → projection committed → completed` 推进。dispatch barrier 之后的 transport、L3 或跨存储失败一律收敛为不可重试的 `DELIVERY_UNKNOWN`；即使 terminal append 本身失败，也必须把相同裁决返回 Broker，使进程内 terminal fallback 接管，禁止 accepted observer 永久悬挂。canonical payload fingerprint 由中立的 command identity helper 同时供 submit gate、Broker 与 lifecycle 使用，不能存在第二套序列化或 prompt phase script。
 
 `failed_not_delivered` 是跨 Chat Doc 与 Session Doc 的一个原子业务事实，而不只是消息徽标：v2 user entry 必须记录明确未投递，同时仅将 `turn_id` 完全相同且仍非终态的 active turn 置为 `failed`，不得伪造 assistant entry，也不得终止更新的 turn。运行期 `DocManager` 和 Gateway ready 前的 `StoreSink` 修复共用这一精确身份规则；任一文档已写、另一文档缺失时，重放必须幂等补齐另一半。`delivery_unknown` 不具备明确未投递证据，因此绝不能借此终结 Session active turn。
 
@@ -1277,7 +1277,7 @@ peri-studio/
 │   │                     #   permission（CAS）、session-list（轮询全量同步）、elicitation、
 │   │                     #   registry/registry-write（Registry 投影）、view-store（内部实现细节，仅隔离聚合器，§5.6）
 │   ├── src/channel/      # gateway（ws 生命周期，client/instance 双 loop）、chat-channel（action 归一化）、
-│   │                     #   command-coordinator*（串行队列+commandId 去重，内存 outbox §4.4）、
+│   │                     #   command-coordinator*（有界队列+commandId 去重，内存 outbox §4.4；active prompt 可优先 cancel，§7.4）、
 │   │                     #   prompt-delivery*（prompt 跨 outbox/Yjs/ACP 的唯一 lifecycle owner）、
 │   │                     #   command-outcome-broker*（重放/恢复身份校验/observer 临界区，§3.0）、
 │   │                     #   runtime-creation*（create 全局队列/索引、准备回滚、kill 证明与 no-redelivery 裁决）、
@@ -1414,7 +1414,7 @@ peri-studio/
 | `state/permission.ts`（权限 CAS） | `server/src/state/permission` | 同构 |
 | `state/session-list.ts`（10s 轮询全量同步） | `server/src/state/session-list` | **差异**：投影目标是 agent 磁盘历史（§5.2 裁决），与 chat「实例级对话列表」语义不同；活跃 chat 列表由 Registry 单写 |
 | `channel/gateway.ts`（ws 生命周期/快照时序/keep_alive） | `server/src/channel/gateway` | 同构；补 `ready`/`pong`/`ysync.subscribe` 帧 |
-| `channel/command-coordinator.ts`（串行队列+commandId 去重） | `server/src/channel/command-coordinator` | 同构；**去重记录在内存 command outbox**（chat 为进程内 Map；peri-studio 同为内存态、重启即空，命令不重发，§4.4）【顾问：P0-1】 |
+| `channel/command-coordinator.ts`（串行队列+commandId 去重） | `server/src/channel/command-coordinator` | 同构 admission/FIFO 与内存 outbox 去重（chat 为进程内 Map；peri-studio 同为内存态、重启即空，命令不重发，§4.4）【顾问：P0-1】；**差异**：active prompt 等待 L3 时可优先消费 `chat/cancel`（§7.4） |
 | `channel/relay-event-handler.ts`（入站消费+断链清理） | `server/src/channel/relay-event-handler` | 入站源从 relay 变为 instance ws；断链语义差异见 §8.2 |
 | `channel/broadcaster.ts`（fan-out+64KB 背压） | `server/src/channel/broadcaster` | 同构 |
 | `channel/connection-registry.ts`（配额） | `server/src/channel/connection-registry` | 同构 |

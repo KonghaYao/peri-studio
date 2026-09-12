@@ -17,7 +17,7 @@ use std::time::Duration;
 use chrono::Utc;
 use peri_studio_proto::ack::ErrorCode;
 use peri_studio_proto::action::{ActionEnvelope, PromptChatPayload};
-use tokio::sync::RwLock;
+use tokio::sync::{oneshot, RwLock};
 use tracing::warn;
 use uuid::Uuid;
 
@@ -59,6 +59,9 @@ pub(super) struct PromptDeliveryRequest {
     pub command_id_text: String,
     pub chat_id: String,
     pub payload: PromptChatPayload,
+    /// Prompt 完成 dispatch 并登记 active turn 后通知执行器；此前 queued
+    /// cancel 不得抢占。
+    pub active_signal: Option<oneshot::Sender<()>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -88,7 +91,11 @@ impl PromptDelivery {
         }
     }
 
-    pub async fn execute(&self, request: PromptDeliveryRequest) -> PromptDeliveryOutcome {
+    pub(super) async fn active_turn(&self, chat_id: &str) -> Option<String> {
+        self.chats.active_turn(chat_id).await
+    }
+
+    pub async fn execute(&self, mut request: PromptDeliveryRequest) -> PromptDeliveryOutcome {
         // A config mutation holds this gate through its Agent response and
         // projection. Conversely, once a prompt registers its active turn,
         // config validation observes that fact and rejects before dispatch.
@@ -364,6 +371,9 @@ impl PromptDelivery {
         self.chats
             .set_active_turn(&request.chat_id, &turn_id.to_string())
             .await;
+        if let Some(active_signal) = request.active_signal.take() {
+            let _ = active_signal.send(());
+        }
         drop(runtime_guard);
         if let Some(projects) = self.projects.read().await.clone() {
             if let Err(error) = projects

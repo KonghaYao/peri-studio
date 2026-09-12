@@ -1,4 +1,6 @@
-//! 活动 turn 登记/续命/查询（§7.1 断链清理输入 + #3 增量窗口计时）：`set_active_turn` / `touch_active_turn` / `active_turn_idle` / `clear_active_turn` / `active_turn`。
+//! 活动 turn 登记/续命/查询（§7.1 断链清理输入 + #3 增量窗口计时）：
+//! `set_active_turn` / `touch_active_turn` / `active_turn_idle` /
+//! `subscribe_active_turn_changes` / `clear_active_turn` / `active_turn`。
 //!
 //! 本文件是 [`ChatRegistry`](super::ChatRegistry) 的实现段（结构拆分，行为
 //! 语义不变）。
@@ -9,11 +11,13 @@ impl ChatRegistry {
     /// 活动 turn 登记（coordinator prompt 执行登记；§7.1 断链清理输入）。
     /// last_activity 初始化为登记时刻（#3 增量窗口起点）。
     pub async fn set_active_turn(&self, chat_id: &str, turn_id: &str) {
+        let (change_tx, _) = watch::channel(());
         self.inner.active_turns.write().await.insert(
             chat_id.to_string(),
             ActiveTurnEntry {
                 turn_id: turn_id.to_string(),
                 last_activity: Instant::now(),
+                change_tx,
             },
         );
     }
@@ -36,6 +40,23 @@ impl ChatRegistry {
             .await
             .get(chat_id)
             .map(|e| e.last_activity.elapsed())
+    }
+
+    /// 订阅指定 active turn 的移除或替换通知。若该 turn 已不活跃则返回已关闭
+    /// receiver；通知只用于唤醒，调用方收到后仍须重新读取 `active_turn`。
+    pub async fn subscribe_active_turn_changes(
+        &self,
+        chat_id: &str,
+        turn_id: &str,
+    ) -> watch::Receiver<()> {
+        self.inner
+            .active_turns
+            .read()
+            .await
+            .get(chat_id)
+            .filter(|entry| entry.turn_id == turn_id)
+            .map(|entry| entry.change_tx.subscribe())
+            .unwrap_or_else(|| watch::channel(()).1)
     }
 
     /// 活动 turn 清除（turn 终态 / chat 关闭 / 断链清理后）。

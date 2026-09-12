@@ -1,12 +1,14 @@
 //! CommandCoordinator 的队列面执行族（review #3 结构拆分）：per-chat 执行器
-//! 消费的命令分发 `exec_command` 与各交互型命令执行——prompt（run_prompt_
-//! delivery）、cancel、close、resolve、respond-elicitation。全部经 per-chat
-//! 队列串行执行，终态统一走 `terminal_io`（outcome_broker 发布）。
+//! 消费 prompt（run_prompt_delivery）、cancel、close、resolve、respond-elicitation。
+//! active prompt 等待 L3 时，执行器可优先消费同一队列中的 cancel；终态统一走
+//! `terminal_io`（outcome_broker 发布）。
 //!
 //! 本文件是 [`CommandCoordinator`] 的实现段（结构拆分，行为语义不变）；
 //! `exec_command` 由 `queued_submission::executor_loop` 调用。
 
 use uuid::Uuid;
+
+use tokio::sync::oneshot;
 
 use peri_studio_proto::ack::{AckStatus, ActionAck, ErrorCode};
 use peri_studio_proto::action::ActionEnvelope;
@@ -32,7 +34,9 @@ impl CommandCoordinator {
     pub(super) async fn exec_command(&self, chat_id: &str, cmd: &ExecCmd) {
         match &cmd.action {
             ActionEnvelope::Prompt { .. } => self.run_prompt_delivery(chat_id, cmd).await,
-            ActionEnvelope::Cancel { .. } => self.exec_cancel(chat_id, cmd).await,
+            ActionEnvelope::Cancel { .. } => {
+                self.exec_cancel(chat_id, cmd).await;
+            }
             // ConfigSet 在 submit 直通面由 session_configuration.set 处理
             // （review #9），队列内永无 ConfigSet——此处不设分支，落入
             // 下方防御臂（不可达，注释见下）。
@@ -62,6 +66,16 @@ impl CommandCoordinator {
 
     /// Execute one prompt through the dedicated durable delivery module.
     pub(super) async fn run_prompt_delivery(&self, chat_id: &str, cmd: &ExecCmd) {
+        self.run_prompt_delivery_with_active_signal(chat_id, cmd, None)
+            .await;
+    }
+
+    pub(super) async fn run_prompt_delivery_with_active_signal(
+        &self,
+        chat_id: &str,
+        cmd: &ExecCmd,
+        active_signal: Option<oneshot::Sender<()>>,
+    ) {
         self.inner.mcp_apps_control.tear_down_chat(chat_id).await;
         let command_id_text = extract_command_id(&cmd.action).unwrap_or_default();
         let command_id = match Uuid::parse_str(&command_id_text) {
@@ -85,6 +99,7 @@ impl CommandCoordinator {
                 command_id_text: command_id_text.clone(),
                 chat_id: chat_id.to_string(),
                 payload,
+                active_signal,
             })
             .await
         {
