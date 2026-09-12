@@ -336,8 +336,16 @@ export { layoutGitGraph, GIT_GRAPH_COLORS, GIT_GRAPH_GRID, GIT_GRAPH_HEADER_HEIG
 export type { GitGraphLayout, GitGraphLayoutCommit, GitGraphNode, GitGraphPathSegment } from './lib/git-graph-engine';
 export { memoizeAsync } from './lib/memoize-async';
 export { UserBubble } from './components/UserBubble';
+export { GitChangeActions } from './components/git/GitChangeActions';
+export { GitChangeGroup } from './components/git/GitChangeGroup';
 export { GitGraphRefBadge, type GitGraphRefBadgeProps } from './components/git/GitGraphRefBadge';
-export type { GitGraphRef, GitGraphRefTone } from './components/git/types';
+export type {
+  GitChange,
+  GitChangeGroupId,
+  GitChangeStatus,
+  GitGraphRef,
+  GitGraphRefTone,
+} from './components/git/types';
 export {
   ComposerDropOverlay,
   type ComposerDropOverlayProps,
