@@ -335,6 +335,10 @@ export {
 export { layoutGitGraph, GIT_GRAPH_COLORS, GIT_GRAPH_GRID, GIT_GRAPH_HEADER_HEIGHT, GIT_GRAPH_ROW_HEIGHT, GitGraphStyle } from './lib/git-graph-engine';
 export type { GitGraphLayout, GitGraphLayoutCommit, GitGraphNode, GitGraphPathSegment } from './lib/git-graph-engine';
 export { memoizeAsync } from './lib/memoize-async';
+export { ArchivedBrowserList, type ArchivedBrowserItem } from './components/ArchivedBrowserList';
+export { MarkdownTable } from './components/markdown/MarkdownTable';
+export { SafeImage, type SafeImageProps } from './components/markdown/SafeImage';
+export { safeRemoteImageSource } from './lib/markdown-safe';
 export { downloadText, safeFilename } from './lib/download';
 export { markdownCodeFilename, parseMarkdownPreChild, type MarkdownPreDetails } from './lib/parse-markdown-pre-child';
 export { UserBubble } from './components/UserBubble';

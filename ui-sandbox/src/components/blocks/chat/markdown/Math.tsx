@@ -1,7 +1,6 @@
 import { createResource, Show } from 'solid-js';
-import { IconButton } from '@/lib/catalog-ui';
+import { IconButton, RefreshIcon } from '@peri/ui';
 import { memoizeAsync } from '@peri/ui';
-import { RefreshCw } from 'lucide-solid';
 
 async function loadMath(expression: string, displayMode: boolean) {
   const [{ default: katex }] = await Promise.all([
@@ -20,10 +19,7 @@ async function loadMath(expression: string, displayMode: boolean) {
   };
 }
 
-const loadMathCached = memoizeAsync(
-  (expression: string, displayMode: boolean) => `${displayMode ? 'block' : 'inline'}\u0000${expression}`,
-  loadMath,
-);
+const loadMathCached = memoizeAsync((expression: string, displayMode: boolean) => `${displayMode ? 'block' : 'inline'}\u0000${expression}`, loadMath);
 
 async function typeset(expression: string, displayMode: boolean) {
   try {
@@ -34,25 +30,12 @@ async function typeset(expression: string, displayMode: boolean) {
 }
 
 export function MathExpression(props: { expression: string; block?: boolean }) {
-  const [result, { refetch }] = createResource(
-    () => [props.expression, props.block === true] as const,
-    ([expression, block]) => typeset(expression, block),
-  );
-  const className = () =>
-    props.block
-      ? 'md-math md-math--block my-16 overflow-x-auto py-8 text-center'
-      : 'md-math md-math--inline';
-
-  return (
-    <span class={className()} aria-label={props.expression}>
-      <Show when={result()?.html} fallback={<code class="md-math__source font-mono text-12">{props.expression}</code>}>
-        {(value) => <span innerHTML={value()} />}
-      </Show>
-      <Show when={result()?.error}>
-        <IconButton size="sm" class="ml-4" onClick={() => refetch()} label="Retry math rendering">
-          <RefreshCw size={13} />
-        </IconButton>
-      </Show>
-    </span>
-  );
+  const [result, { refetch }] = createResource(() => [props.expression, props.block === true] as const, ([expression, block]) => typeset(expression, block));
+  const className = () => `md-math ${props.block ? 'md-math--block my-(--markdown-rich-block-gap) overflow-x-auto py-6 text-center' : 'md-math--inline'}`;
+  return <span class={className()} data-testid={props.block ? 'md-math-block' : 'md-math-inline'} aria-label={props.expression}>
+    <Show when={result()?.html} fallback={<code class="md-math__source">{props.expression}</code>}>
+      {(value) => <span innerHTML={value()} />}
+    </Show>
+    <Show when={result()?.error}><IconButton size="compact" class="ml-6" onClick={() => refetch()} label="Retry math rendering"><RefreshIcon /></IconButton></Show>
+  </span>;
 }
