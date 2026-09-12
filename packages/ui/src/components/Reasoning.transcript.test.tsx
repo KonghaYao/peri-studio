@@ -40,6 +40,10 @@ describe('Reasoning transcript appearance', () => {
     const details = screen.getByText('Reasoning').closest('details')!;
     const body = screen.getByText('Check imports first.');
     expect(screen.getByText('Reasoning')).toHaveClass('tool-call-row-title', 'text-12', 'text-content-muted');
+    const chevron = details.querySelector('.ui-message-reasoning__chevron');
+    expect(chevron).toHaveAttribute('width', '13');
+    expect(chevron).not.toHaveClass('size-22');
+    expect(chevron?.parentElement).toHaveClass('size-22', 'chat-tool-call-row-expand');
     expect(details).toHaveClass('tool-activity-row--activity');
     expect(details).not.toHaveAttribute('open');
     expect(body).not.toBeVisible();

@@ -291,12 +291,15 @@ export const ReasoningTrigger: Component<ReasoningTriggerProps> = (props) => {
               </span>
               <span class="tool-call-row-end flex shrink-0 items-center justify-self-end gap-12" />
               <Show when={hasText()}>
-                <ChevronRight
-                  size={13}
-                  strokeWidth={1.8}
-                  class="ui-message-reasoning__chevron size-22 shrink-0 text-content-faint transition-transform duration-(--duration-fast)"
+                <span
+                  class="chat-tool-call-row-expand grid size-22 shrink-0 place-items-center text-content-faint"
                   aria-hidden="true"
-                />
+                >
+                  <ChevronRight
+                    size={13}
+                    class="ui-message-reasoning__chevron transition-transform duration-(--duration-fast)"
+                  />
+                </span>
               </Show>
             </div>
           </div>

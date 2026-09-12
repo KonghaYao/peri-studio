@@ -11,7 +11,7 @@ describe('BackToTop', () => {
     const button = screen.getByRole('button', { name: 'Back to latest' });
     expect(button).toHaveClass('rounded-full', 'text-content-secondary');
     expect(button.closest('[data-slot="back-to-top"]')).toHaveAttribute('data-direction', 'end');
-    expect(button.closest('[data-slot="back-to-top"]')).toHaveClass('absolute', 'bottom-full');
+    expect(button.closest('[data-slot="back-to-top"]')).toHaveClass('absolute', 'bottom-full', 'mb-12');
   });
 
   it('uses custom label and start direction', () => {

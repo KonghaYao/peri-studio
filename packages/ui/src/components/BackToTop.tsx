@@ -17,7 +17,7 @@ export const chatFloatingAnchorClass =
   'relative z-2 shrink-0';
 
 const shellClass =
-  'ui-chat-column pointer-events-none absolute inset-x-0 bottom-full z-10 mb-4 flex justify-center transition-[opacity,transform,visibility] duration-base ease-standard data-[visible=false]:invisible data-[visible=false]:translate-y-4 data-[visible=false]:opacity-0 data-[visible=true]:visible data-[visible=true]:translate-y-0 data-[visible=true]:opacity-100';
+  'ui-chat-column pointer-events-none absolute inset-x-0 bottom-full z-10 mb-12 flex justify-center transition-[opacity,transform,visibility] duration-base ease-standard data-[visible=false]:invisible data-[visible=false]:translate-y-4 data-[visible=false]:opacity-0 data-[visible=true]:visible data-[visible=true]:translate-y-0 data-[visible=true]:opacity-100';
 
 const buttonClass =
   'inline-flex h-28 cursor-pointer items-center justify-center gap-6 rounded-full border border-border-strong bg-surface-overlay px-12 text-12 font-medium leading-snug whitespace-nowrap text-content-secondary shadow-overlay outline-none pointer-events-auto hover:border-border-strong hover:bg-surface-overlay hover:text-content-secondary focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2';
