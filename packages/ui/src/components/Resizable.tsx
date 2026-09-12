@@ -213,15 +213,23 @@ export const ResizableHandle: Component<ResizableHandleProps> = (props) => {
       tabIndex={local.disabled ? -1 : 0}
       data-disabled={local.disabled ? '' : undefined}
       class={cn(
-        'shrink-0 touch-none select-none bg-border-subtle ui-control-transition',
-        isVertical()
-          ? 'h-4 w-full cursor-row-resize hover:bg-accent-soft'
-          : 'w-4 cursor-col-resize hover:bg-accent-soft',
+        'group relative shrink-0 touch-none select-none',
+        isVertical() ? 'h-12 w-full cursor-row-resize' : 'w-12 cursor-col-resize',
         local.disabled && 'pointer-events-none opacity-45',
         local.class,
       )}
       onPointerDown={onPointerDown}
       {...rest}
-    />
+    >
+      <span
+        aria-hidden="true"
+        class={cn(
+          'pointer-events-none absolute bg-border-subtle ui-control-transition group-hover:bg-sidebar-resize-handle-hover group-focus-visible:bg-sidebar-resize-handle-hover',
+          isVertical()
+            ? 'inset-x-0 top-1/2 h-px w-full -translate-y-1/2'
+            : 'inset-y-0 left-1/2 w-px -translate-x-1/2',
+        )}
+      />
+    </div>
   );
 };

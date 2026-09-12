@@ -1773,7 +1773,8 @@ describe('Resizable', () => {
     expect(screen.getByTestId('group')).toHaveClass('flex', 'flex-row');
     const handle = screen.getByTestId('handle');
     expect(handle).toHaveAttribute('role', 'separator');
-    expect(handle).toHaveClass('w-4', 'cursor-col-resize', 'bg-border-subtle', 'hover:bg-accent-soft');
+    expect(handle).toHaveClass('w-12', 'cursor-col-resize', 'group');
+    expect(handle.querySelector('[aria-hidden="true"]')).toHaveClass('w-px', 'bg-border-subtle');
     expect(screen.getByTestId('left')).toHaveAttribute('data-panel-index', '0');
     expect(screen.getByTestId('right')).toHaveAttribute('data-panel-index', '1');
   });

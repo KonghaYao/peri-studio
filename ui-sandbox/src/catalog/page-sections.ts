@@ -10,8 +10,6 @@ export type SandboxRoute =
   | 'components-explorer'
   | 'components-git';
 
-export type NavClusterId = 'foundation' | 'components' | 'compositions';
-
 /** @deprecated 旧路由 #/components2，解析时重定向到 components-forms */
 export const LEGACY_COMPONENTS2_ROUTE = 'components2';
 
@@ -43,51 +41,18 @@ export const SANDBOX_ROUTES: SandboxRoute[] = [
   'components-git',
 ];
 
-export const ROUTE_META: Record<SandboxRoute, { tier: string; label: string; description: string }> = {
-  tokens: { tier: 'T1', label: 'Tokens', description: '颜色、间距、排版与组件 token' },
-  components: { tier: 'T2', label: 'Core', description: '按钮、输入、反馈等基础原语' },
-  'components-forms': { tier: 'T2', label: 'Forms', description: '表单、选择与数据表' },
-  'components-overlays': { tier: 'T2', label: 'Overlays', description: '浮层、导航与布局容器' },
-  'components-ai': { tier: 'T2', label: 'AI', description: '会话原语与 AI Elements' },
-  'components-markdown': { tier: 'T2', label: 'Markdown', description: '富文本与代码块' },
-  'components-shell': { tier: 'T4', label: 'Shell', description: '侧栏、状态区、会话壳层' },
-  'components-composer': { tier: 'T4', label: 'Composer', description: '输入区与 slash 命令' },
-  'components-explorer': { tier: 'T4', label: 'Explorer', description: '文件树与 workbench' },
-  'components-git': { tier: 'T4', label: 'Git', description: 'SCM 与 Git graph' },
+export const ROUTE_META: Record<SandboxRoute, { tier: string; label: string }> = {
+  tokens: { tier: 'T1', label: 'Tokens' },
+  components: { tier: 'T2', label: 'Core' },
+  'components-forms': { tier: 'T2', label: 'Forms' },
+  'components-overlays': { tier: 'T2', label: 'Overlays' },
+  'components-ai': { tier: 'T2', label: 'AI' },
+  'components-markdown': { tier: 'T2', label: 'Markdown' },
+  'components-shell': { tier: 'Comp', label: 'Shell' },
+  'components-composer': { tier: 'Comp', label: 'Composer' },
+  'components-explorer': { tier: 'Comp', label: 'Explorer' },
+  'components-git': { tier: 'Comp', label: 'Git' },
 };
-
-export type NavCluster = {
-  id: NavClusterId;
-  label: string;
-  tier: string;
-  description: string;
-  routes: SandboxRoute[];
-};
-
-/** 顶栏三级信息架构：Foundation → Components → Compositions。 */
-export const NAV_CLUSTERS: NavCluster[] = [
-  {
-    id: 'foundation',
-    label: 'Foundation',
-    tier: 'T1',
-    description: '设计 token 与语义刻度',
-    routes: ['tokens'],
-  },
-  {
-    id: 'components',
-    label: 'Components',
-    tier: 'T2',
-    description: '@peri/ui 无业务语义原语',
-    routes: ['components', 'components-forms', 'components-overlays', 'components-ai', 'components-markdown'],
-  },
-  {
-    id: 'compositions',
-    label: 'Compositions',
-    tier: 'T3–T4',
-    description: '产品壳层与场景组合',
-    routes: ['components-shell', 'components-composer', 'components-explorer', 'components-git'],
-  },
-];
 
 export type CatalogItemStatus = 'not-implemented';
 
@@ -183,32 +148,42 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
   ],
   'components-overlays': [
     {
-      title: 'Progress & surfaces',
+      title: 'Surfaces',
       items: [
-        { id: 'progress', label: 'Progress & slider' },
         { id: 'card', label: 'Card & alert' },
         { id: 'accordion', label: 'Accordion & toggle' },
-        { id: 'table', label: 'Table & overlay' },
+        { id: 'empty', label: 'Empty' },
+        { id: 'item', label: 'Item' },
+      ],
+    },
+    {
+      title: 'Feedback & data',
+      items: [
+        { id: 'progress', label: 'Progress & slider' },
+        { id: 'table', label: 'Table & popover' },
+      ],
+    },
+    {
+      title: 'Overlays',
+      items: [
+        { id: 'overlay', label: 'Alert dialog & sheet' },
+        { id: 'drawer', label: 'Drawer' },
+        { id: 'menus', label: 'Context & hover' },
       ],
     },
     {
       title: 'Navigation',
       items: [
         { id: 'breadcrumb', label: 'Breadcrumb & pagination' },
-        { id: 'overlay', label: 'Alert dialog & sheet' },
-        { id: 'menus', label: 'Context & hover' },
         { id: 'menubar', label: 'Menubar & nav' },
         { id: 'carousel', label: 'Carousel' },
       ],
     },
     {
-      title: 'Layout utilities',
+      title: 'Utilities',
       items: [
-        { id: 'item', label: 'Item' },
-        { id: 'empty', label: 'Empty' },
-        { id: 'drawer', label: 'Drawer' },
-        { id: 'sidebar', label: 'Sidebar', status: 'not-implemented' },
         { id: 'direction', label: 'Direction' },
+        { id: 'sidebar', label: 'Sidebar', status: 'not-implemented' },
       ],
     },
   ],
@@ -329,10 +304,6 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
   ],
 };
 
-const ROUTE_CLUSTER = Object.fromEntries(
-  NAV_CLUSTERS.flatMap((cluster) => cluster.routes.map((route) => [route, cluster.id])),
-) as Record<SandboxRoute, NavClusterId>;
-
 const LEGACY_ROUTE_REDIRECT: Record<string, SandboxRoute> = {
   [LEGACY_COMPONENTS2_ROUTE]: 'components-forms',
   [LEGACY_CODE_ROUTE]: 'components-markdown',
@@ -358,6 +329,15 @@ const LEGACY_BLOCKS_SECTION_ROUTES: Record<string, SandboxRoute> = {
   'git-diff-panel': 'components-git',
 };
 
+/** 原 #/components-ai 下已迁入 Shell 的章节。 */
+const LEGACY_AI_SHELL_SECTIONS = new Set([
+  'chat-header',
+  'chat-shell',
+  'chat-transcript',
+  'session-row-accessory',
+  'project-row-accessory',
+]);
+
 const LEGACY_LAYER_SECTION_ROUTES: Record<string, SandboxRoute> = {
   'project-sidebar': 'components-shell',
   'session-row-accessory': 'components-shell',
@@ -379,14 +359,6 @@ const LEGACY_LAYER_SECTION_ROUTES: Record<string, SandboxRoute> = {
   'source-control': 'components-git',
   'git-graph': 'components-git',
 };
-
-export function clusterForRoute(route: SandboxRoute): NavClusterId {
-  return ROUTE_CLUSTER[route];
-}
-
-export function defaultRouteForCluster(clusterId: NavClusterId): SandboxRoute {
-  return NAV_CLUSTERS.find((cluster) => cluster.id === clusterId)?.routes[0] ?? 'tokens';
-}
 
 export function isSandboxRoute(value: string): value is SandboxRoute {
   return SANDBOX_ROUTES.includes(value as SandboxRoute);
@@ -412,6 +384,10 @@ export function parseSandboxHash(hash = window.location.hash): { route: SandboxR
   }
 
   const route = resolveRoute(routePart ?? '');
+  if (section && route === 'components-ai' && LEGACY_AI_SHELL_SECTIONS.has(section)) {
+    return { route: 'components-shell', section };
+  }
+
   let normalizedSection = section;
   if (section && route === 'components-markdown') {
     normalizedSection = LEGACY_MARKDOWN_SECTION_IDS[section] ?? section;

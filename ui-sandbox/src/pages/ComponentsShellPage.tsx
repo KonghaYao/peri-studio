@@ -18,9 +18,9 @@ export function ComponentsShellPage() {
   return (
     <div class="mx-auto max-w-4xl">
       <TierHeader
-        tier="Compositions · Shell"
+        tier="Comp · Shell"
         title="Shell"
-        description="侧栏、会话壳层、状态区与终端 dock；Chat 原语见 #/components-ai。"
+        description="侧栏、会话 chrome、状态区与终端 dock。"
       />
       <ComponentCatalogExtrasShell sections={[...SHELL_SECTIONS]} />
       <ComponentCatalogExtrasF sections={[...SHELL_SECTIONS]} />

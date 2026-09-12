@@ -54,48 +54,6 @@ export function ComponentCatalogExtrasB(props: { sections?: string[] }) {
 
   return (
     <>
-      <Show when={showCatalogSection(props.sections, 'breadcrumb')}>
-      <CatalogDemo id="breadcrumb" title="Breadcrumb · Pagination · Aspect ratio" description="导航路径、分页与固定宽高比容器。">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="#/components-shell">Shell</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink href="#/components-forms">Forms</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Navigation</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious href="#" />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#" isActive>1</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#">2</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#">3</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext href="#" />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-        <AspectRatio ratio={16 / 9} class="max-w-md overflow-hidden rounded-lg border border-border-subtle bg-surface-muted">
-          <div class="grid h-full place-items-center text-12 text-content-muted">16:9 preview frame</div>
-        </AspectRatio>
-      </CatalogDemo>
-      </Show>
-
       <Show when={showCatalogSection(props.sections, 'overlay')}>
       <CatalogDemo id="overlay" title="Alert dialog · Sheet" description="破坏性确认与侧滑抽屉。">
         <DemoRow>
@@ -160,6 +118,48 @@ export function ComponentCatalogExtrasB(props: { sections?: string[] }) {
             </p>
           </ScrollAreaViewport>
         </ScrollArea>
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'breadcrumb')}>
+      <CatalogDemo id="breadcrumb" title="Breadcrumb · Pagination · Aspect ratio" description="导航路径、分页与固定宽高比容器。">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="#/components-shell">Shell</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="#/components-forms">Forms</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Navigation</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious href="#" />
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationLink href="#" isActive>1</PaginationLink>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationLink href="#">2</PaginationLink>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationLink href="#">3</PaginationLink>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationNext href="#" />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+        <AspectRatio ratio={16 / 9} class="max-w-md overflow-hidden rounded-lg border border-border-subtle bg-surface-muted">
+          <div class="grid h-full place-items-center text-12 text-content-muted">16:9 preview frame</div>
+        </AspectRatio>
       </CatalogDemo>
       </Show>
 

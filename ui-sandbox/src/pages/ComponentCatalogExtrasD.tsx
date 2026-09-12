@@ -68,6 +68,43 @@ export function ComponentCatalogExtrasD(props: { sections?: string[] }) {
       </CatalogDemo>
       </Show>
 
+      <Show when={showCatalogSection(props.sections, 'item')}>
+      <CatalogDemo id="item" title="Item" description="列表行原语：媒体 + 标题/描述 + 操作。">
+        <ItemGroup class="max-w-md rounded-8 border border-border-subtle">
+          <Item>
+            <ItemMedia>
+              <Avatar class="size-32">
+                <AvatarImage src="" alt="" />
+                <AvatarFallback>PS</AvatarFallback>
+              </Avatar>
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle>Peri Studio</ItemTitle>
+              <ItemDescription>ACP agent workbench</ItemDescription>
+            </ItemContent>
+            <ItemActions>
+              <Button size="sm" variant="ghost">Open</Button>
+            </ItemActions>
+          </Item>
+          <ItemSeparator />
+          <Item>
+            <ItemMedia>
+              <Avatar class="size-32">
+                <AvatarFallback>UI</AvatarFallback>
+              </Avatar>
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle>@peri/ui</ItemTitle>
+              <ItemDescription>Design system package</ItemDescription>
+            </ItemContent>
+            <ItemActions>
+              <Button size="sm" variant="ghost">Docs</Button>
+            </ItemActions>
+          </Item>
+        </ItemGroup>
+      </CatalogDemo>
+      </Show>
+
       <Show when={showCatalogSection(props.sections, 'carousel')}>
       <CatalogDemo id="carousel" title="Carousel" description="Scroll-snap 轮播，支持键盘与 prev/next。">
         <div class="mx-auto w-full max-w-sm">
@@ -122,43 +159,6 @@ export function ComponentCatalogExtrasD(props: { sections?: string[] }) {
           </FormField>
           <Button type="submit" variant="primary">Save profile</Button>
         </Form>
-      </CatalogDemo>
-      </Show>
-
-      <Show when={showCatalogSection(props.sections, 'item')}>
-      <CatalogDemo id="item" title="Item" description="列表行原语：媒体 + 标题/描述 + 操作。">
-        <ItemGroup class="max-w-md rounded-8 border border-border-subtle">
-          <Item>
-            <ItemMedia>
-              <Avatar class="size-32">
-                <AvatarImage src="" alt="" />
-                <AvatarFallback>PS</AvatarFallback>
-              </Avatar>
-            </ItemMedia>
-            <ItemContent>
-              <ItemTitle>Peri Studio</ItemTitle>
-              <ItemDescription>ACP agent workbench</ItemDescription>
-            </ItemContent>
-            <ItemActions>
-              <Button size="sm" variant="ghost">Open</Button>
-            </ItemActions>
-          </Item>
-          <ItemSeparator />
-          <Item>
-            <ItemMedia>
-              <Avatar class="size-32">
-                <AvatarFallback>UI</AvatarFallback>
-              </Avatar>
-            </ItemMedia>
-            <ItemContent>
-              <ItemTitle>@peri/ui</ItemTitle>
-              <ItemDescription>Design system package</ItemDescription>
-            </ItemContent>
-            <ItemActions>
-              <Button size="sm" variant="ghost">Docs</Button>
-            </ItemActions>
-          </Item>
-        </ItemGroup>
       </CatalogDemo>
       </Show>
     </>

@@ -12,13 +12,18 @@ export function ComponentsOverlaysPage() {
       <TierHeader
         tier="Tier 2 · Overlays"
         title="Surfaces & navigation"
-        description="内容容器、对话框/抽屉、菜单导航与轮播。"
+        description="内容容器、浮层、菜单导航与布局原语。"
       />
-      <ComponentCatalogExtras sections={['progress', 'card', 'accordion', 'table']} />
-      <ComponentCatalogExtrasB sections={['breadcrumb', 'overlay', 'menus']} />
+      <ComponentCatalogExtras sections={['card', 'accordion']} />
+      <ComponentCatalogExtrasE sections={['empty']} />
+      <ComponentCatalogExtrasD sections={['item']} />
+      <ComponentCatalogExtras sections={['progress', 'table']} />
+      <ComponentCatalogExtrasB sections={['overlay', 'menus']} />
+      <ComponentCatalogExtrasE sections={['drawer']} />
+      <ComponentCatalogExtrasB sections={['breadcrumb']} />
       <ComponentCatalogExtrasC sections={['menubar']} />
-      <ComponentCatalogExtrasD sections={['carousel', 'item']} />
-      <ComponentCatalogExtrasE sections={['empty', 'drawer', 'direction']} />
+      <ComponentCatalogExtrasD sections={['carousel']} />
+      <ComponentCatalogExtrasE sections={['direction']} />
       <CatalogNotImplemented
         id="sidebar"
         title="Sidebar"

@@ -95,46 +95,6 @@ export function ComponentCatalogExtras(props: { sections?: string[] }) {
       </CatalogDemo>
       </Show>
 
-      <Show when={showCatalogSection(props.sections, 'progress')}>
-      <CatalogDemo id="progress" title="Progress · Slider · Kbd" description="进度反馈、连续调节与快捷键展示。">
-        <div class="max-w-md">
-          <Progress value={progress()} class="flex flex-col gap-6">
-            <div class="flex items-center justify-between gap-8">
-              <ProgressLabel class="text-12 text-content-secondary">Context usage</ProgressLabel>
-              <ProgressValueLabel class="text-12 text-content-muted" />
-            </div>
-            <ProgressTrack>
-              <ProgressFill />
-            </ProgressTrack>
-          </Progress>
-          <div class="mt-8 flex gap-8">
-            <Button size="sm" variant="default" onClick={() => setProgress((value) => Math.max(0, value - 10))}>-10</Button>
-            <Button size="sm" variant="default" onClick={() => setProgress((value) => Math.min(100, value + 10))}>+10</Button>
-          </div>
-        </div>
-        <div class="max-w-md">
-          <Slider value={slider()} onChange={setSlider} minValue={0} maxValue={100} step={1} class="flex flex-col gap-8">
-            <div class="flex items-center justify-between text-12 text-content-secondary">
-              <span>Token budget</span>
-              <span class="text-content-muted">{slider()[0]}%</span>
-            </div>
-            <SliderTrack>
-              <SliderFill />
-              <SliderThumb />
-            </SliderTrack>
-          </Slider>
-        </div>
-        <DemoRow label="Kbd">
-          <span class="text-12 text-content-secondary">
-            <Kbd>⌘</Kbd> + <Kbd>K</Kbd> to open command palette
-          </span>
-          <Kbd>Ctrl</Kbd>
-          <Kbd>Shift</Kbd>
-          <Kbd>P</Kbd>
-        </DemoRow>
-      </CatalogDemo>
-      </Show>
-
       <Show when={showCatalogSection(props.sections, 'card')}>
       <CatalogDemo id="card" title="Card · Avatar · Alert" description="内容容器、头像与块级提示。">
         <Card class="max-w-md">
@@ -206,6 +166,46 @@ export function ComponentCatalogExtras(props: { sections?: string[] }) {
           <Toggle aria-label="Italic" variant="outline" size="sm" pressed>
             <Italic size={14} />
           </Toggle>
+        </DemoRow>
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'progress')}>
+      <CatalogDemo id="progress" title="Progress · Slider · Kbd" description="进度反馈、连续调节与快捷键展示。">
+        <div class="max-w-md">
+          <Progress value={progress()} class="flex flex-col gap-6">
+            <div class="flex items-center justify-between gap-8">
+              <ProgressLabel class="text-12 text-content-secondary">Context usage</ProgressLabel>
+              <ProgressValueLabel class="text-12 text-content-muted" />
+            </div>
+            <ProgressTrack>
+              <ProgressFill />
+            </ProgressTrack>
+          </Progress>
+          <div class="mt-8 flex gap-8">
+            <Button size="sm" variant="default" onClick={() => setProgress((value) => Math.max(0, value - 10))}>-10</Button>
+            <Button size="sm" variant="default" onClick={() => setProgress((value) => Math.min(100, value + 10))}>+10</Button>
+          </div>
+        </div>
+        <div class="max-w-md">
+          <Slider value={slider()} onChange={setSlider} minValue={0} maxValue={100} step={1} class="flex flex-col gap-8">
+            <div class="flex items-center justify-between text-12 text-content-secondary">
+              <span>Token budget</span>
+              <span class="text-content-muted">{slider()[0]}%</span>
+            </div>
+            <SliderTrack>
+              <SliderFill />
+              <SliderThumb />
+            </SliderTrack>
+          </Slider>
+        </div>
+        <DemoRow label="Kbd">
+          <span class="text-12 text-content-secondary">
+            <Kbd>⌘</Kbd> + <Kbd>K</Kbd> to open command palette
+          </span>
+          <Kbd>Ctrl</Kbd>
+          <Kbd>Shift</Kbd>
+          <Kbd>P</Kbd>
         </DemoRow>
       </CatalogDemo>
       </Show>
