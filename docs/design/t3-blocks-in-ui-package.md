@@ -127,6 +127,15 @@ T3 组件必须：
 
 Sandbox `components/blocks/*`：T3 条 **barrel 重导出** `@peri/ui`；layers 保留 mock 数据与 T4 演示组合。
 
+## Markdown 与语法高亮
+
+| 能力 | 归属 | 说明 |
+|------|------|------|
+| **代码语法高亮** | `@peri/ui` | `@tanstack/highlight`（`lib/code-highlight.ts` + `HighlightedCodeBody`）；主题 `github-light`，运行时注入 `.code-block-highlight pre` 作用域 |
+| **Markdown 解析 / 流式 AST** | `@peri/markdown` | `stream-markdown-parser`（markstream-vue 生态）；`MarkdownBody` / `MarkdownCodeBlockView` 在 package 内装配 |
+
+`@peri/ui` 不直接依赖 Shiki；`@peri/markdown` 的 parser 层亦不承担 fence 着色（由 `CodeBlockView` 注入）。
+
 ## 仍留 Catalog / T4（未下沉）
 
 以下 **有意** 留在 `ui-sandbox` 或 `web/widgets`，不进入 package：

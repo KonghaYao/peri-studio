@@ -17,11 +17,11 @@
   "peerDependencies": {
     "katex": ">=0.16",
     "mermaid": ">=11",
-    "shiki": ">=4",
     "solid-js": "^1"
   },
   "dependencies": {
     "@peri/markdown": "workspace:*",
+    "@tanstack/highlight": "^0.1.0",
     "@iconify-icon/solid": "3.0.3",
     "@iconify-icons/vscode-icons": "2.0.2",
     "@kobalte/core": "^0.13.13",
@@ -37,7 +37,6 @@
   "devDependencies": {
     "katex": "^0.18.4",
     "mermaid": "^11.17.0",
-    "shiki": "^4.4.3",
     "@solidjs/testing-library": "^0.8.10",
     "@testing-library/jest-dom": "^7.0.1",
     "@types/node": "^26.2.0",

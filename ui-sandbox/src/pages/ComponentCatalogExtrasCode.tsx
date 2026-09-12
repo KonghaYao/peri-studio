@@ -84,9 +84,9 @@ export function ComponentCatalogExtrasCode(props: { sections?: string[] }) {
       <Show when={showCatalogSection(props.sections, 'code-block-line-numbers')}>
       <CatalogDemo id="code-block-line-numbers" title="Line numbers">
         <CodeBlock
-          code={`fn main() {\n    println!("Peri Studio");\n}\n`}
-          language="rust"
-          filename="src/main.rs"
+          code={`export function greet(name: string) {\n  return \`Hello, \${name}!\`;\n}\n`}
+          language="typescript"
+          filename="src/greet.ts"
           showLineNumbers
           startLine={14}
         />

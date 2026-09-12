@@ -105,7 +105,7 @@ export function GitGraphView(props: GitGraphViewProps = {}) {
 
       <Show when={activeGraphRepoId()} fallback={<div class="p-16 text-12 text-content-muted">No Git repositories in this workspace.</div>}>
         {(repoId) => (
-          <>
+          <div class="flex min-h-0 min-w-0 flex-1 flex-col">
             <GitGraphPanel
               nested={props.embedded ?? true}
               commits={graphCommits()}
@@ -125,7 +125,7 @@ export function GitGraphView(props: GitGraphViewProps = {}) {
                 </Button>
               </div>
             </Show>
-          </>
+          </div>
         )}
       </Show>
     </div>

@@ -378,8 +378,15 @@ export { MathExpression } from './components/markdown/MathExpression';
 export { MermaidBlock } from './components/markdown/MermaidBlock';
 export { MermaidBlockView } from './components/markdown/MermaidBlockView';
 export { SafeImage, type SafeImageProps } from './components/markdown/SafeImage';
-export { ShikiHighlightedCodeBody } from './components/markdown/ShikiHighlightedCodeBody';
-export { highlightCode } from './components/markdown/highlight-code';
+export { HighlightedCodeBody } from './components/HighlightedCodeBody';
+export {
+  codeHighlighter,
+  ensureHighlightTheme,
+  hasSyntaxHighlighting,
+  highlightCode,
+  normalizeLanguage,
+  tokensByLine,
+} from './lib/code-highlight';
 export { safeRemoteImageSource } from './lib/markdown-safe';
 export { downloadText, safeFilename } from './lib/download';
 export { markdownCodeFilename, parseMarkdownPreChild, type MarkdownPreDetails } from './lib/parse-markdown-pre-child';

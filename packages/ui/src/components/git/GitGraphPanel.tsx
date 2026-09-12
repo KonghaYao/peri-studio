@@ -155,7 +155,13 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
   };
 
   return (
-    <div class="ui-git-graph-panel flex h-full min-h-0 flex-col bg-surface-overlay" aria-label="Git Graph">
+    <div
+      class={cn(
+        'ui-git-graph-panel flex min-h-0 flex-col bg-surface-overlay',
+        props.nested ? 'min-w-0 flex-1' : 'h-full',
+      )}
+      aria-label="Git Graph"
+    >
       <Show when={!props.nested}>
         <div class="ui-git-graph-controls flex h-36 shrink-0 items-center gap-8 border-b border-border-subtle px-12">
           <span class="min-w-0 flex-1 text-11 font-semibold tracking-wide uppercase text-content-muted">Git Graph</span>

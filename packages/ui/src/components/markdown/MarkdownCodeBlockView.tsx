@@ -1,27 +1,27 @@
-import { createResource, Show } from 'solid-js';
+import { createMemo, Show } from 'solid-js';
 import type { CodeBlockViewProps } from '@peri/markdown';
 import { downloadText, safeFilename } from '../../lib/download';
+import { hasSyntaxHighlighting } from '../../lib/code-highlight';
 import { markdownCodeFilename } from '../../lib/parse-markdown-pre-child';
 import {
   CodeBlock,
   CodeBlockActions,
+  CodeBlockBody,
   CodeBlockCopyButton,
   CodeBlockFilename,
   CodeBlockHeader,
   CodeBlockTitle,
 } from '../CodeBlock';
 import { IconButton } from '../Button';
-import { DownloadIcon, RefreshIcon } from '../Icon';
-import { highlightCode } from './highlight-code';
-import { ShikiHighlightedCodeBody } from './ShikiHighlightedCodeBody';
+import { DownloadIcon } from '../Icon';
+import { HighlightedCodeBody } from '../HighlightedCodeBody';
 
 export function MarkdownCodeBlockView(props: CodeBlockViewProps) {
   const locked = () => props.loading === true;
   const canHighlight = () => !locked();
-  const [highlighted, { refetch }] = createResource(
-    () => (canHighlight() ? [props.code, props.language] as const : null),
-    ([code, language]) => highlightCode(code, language),
-  );
+  const isHighlighted = createMemo(() => (
+    canHighlight() && hasSyntaxHighlighting(props.code, props.language)
+  ));
   const filename = () => props.filename || markdownCodeFilename({
     text: props.code,
     language: props.language,
@@ -29,8 +29,6 @@ export function MarkdownCodeBlockView(props: CodeBlockViewProps) {
     lineNumbers: props.lineNumbers ?? true,
     filename: props.filename ?? '',
   });
-  const lines = () => highlighted()?.result?.tokens
-    ?? props.code.split('\n').map((line: string) => [{ content: line }]);
 
   return (
     <CodeBlock
@@ -42,7 +40,7 @@ export function MarkdownCodeBlockView(props: CodeBlockViewProps) {
       startLine={props.startLine ?? 1}
       includeDefaultBody={false}
       data-testid="md-code-block"
-      data-highlighted={highlighted()?.result ? 'true' : 'false'}
+      data-highlighted={isHighlighted() ? 'true' : 'false'}
       data-incomplete={props.loading ? 'true' : undefined}
     >
       <CodeBlockHeader>
@@ -50,11 +48,6 @@ export function MarkdownCodeBlockView(props: CodeBlockViewProps) {
           <CodeBlockFilename path={filename()} />
         </CodeBlockTitle>
         <CodeBlockActions>
-          <Show when={highlighted()?.error}>
-            <IconButton size="compact" onClick={() => refetch()} label="Retry syntax highlighting">
-              <RefreshIcon />
-            </IconButton>
-          </Show>
           <CodeBlockCopyButton disabled={locked()} />
           <IconButton
             size="compact"
@@ -66,11 +59,24 @@ export function MarkdownCodeBlockView(props: CodeBlockViewProps) {
           </IconButton>
         </CodeBlockActions>
       </CodeBlockHeader>
-      <ShikiHighlightedCodeBody
-        lines={lines}
-        showLineNumbers={props.lineNumbers ?? true}
-        startLine={props.startLine ?? 1}
-      />
+      <Show
+        when={canHighlight()}
+        fallback={
+          <div class="relative overflow-auto">
+            <CodeBlockBody
+              showLineNumbers={props.lineNumbers ?? true}
+              startLine={props.startLine ?? 1}
+              class="max-h-520"
+            />
+          </div>
+        }
+      >
+        <HighlightedCodeBody
+          language={props.language}
+          showLineNumbers={props.lineNumbers ?? true}
+          startLine={props.startLine ?? 1}
+        />
+      </Show>
     </CodeBlock>
   );
 }

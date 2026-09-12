@@ -471,7 +471,7 @@ describe('Markdown', () => {
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     expect(screen.getByRole('button', { name: 'Copy code' })).toBeInTheDocument();
-    expect(screen.getByText('const x = 1;')).toBeInTheDocument();
+    expect(document.querySelector('[data-testid="md-code-block"]')).toHaveTextContent('const x = 1;');
   });
 
   it('renders GFM tables, tasks, strikethrough and footnotes with table controls', () => {
@@ -549,7 +549,7 @@ describe('Markdown', () => {
     expect(screen.getByRole('button', { name: 'Copy code' })).toBeEnabled();
   });
 
-  it('highlights languages from the complete Shiki registry', async () => {
+  it('highlights supported TanStack Highlight languages', async () => {
     render(() => <Markdown source={'```dockerfile\nFROM node:22\n```'} />);
     await waitFor(() => expect(document.querySelector('[data-testid="md-code-block"]')).toHaveAttribute('data-highlighted', 'true'));
   });

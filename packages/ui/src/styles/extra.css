@@ -1064,9 +1064,11 @@
 }
 
 .ui-workbench-shell--compact {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
+  height: auto;
 }
 
 .ui-workbench-rail {
@@ -1152,9 +1154,11 @@
 }
 
 .ui-workbench-panel-chrome__body {
+  display: flex;
   min-height: 0;
   min-width: 0;
   flex: 1;
+  flex-direction: column;
   overflow: hidden;
 }
 

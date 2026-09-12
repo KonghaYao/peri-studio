@@ -13,8 +13,8 @@ import {
   CodeBlockLanguageSelectorItem,
   CodeBlockTitle,
   useCodeBlock,
+  HighlightedCodeBody,
 } from '@peri/ui';
-import { HighlightedCodeBody } from '@/components/code/HighlightedCodeBody';
 
 export {
   CodeBlockActions,
