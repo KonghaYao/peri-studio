@@ -106,8 +106,9 @@ describe('ComposerUploadSurface', () => {
       width: 'var(--composer-upload-tile-width)',
       height: 'var(--composer-upload-tile-height)',
     });
-    expect(tile).toHaveClass('grid-cols-preview-line');
-    expect(screen.getByTitle('notes.txt')).toHaveClass('truncate', 'text-left');
+    expect(tile).toHaveClass('size-(--composer-upload-tile-width)', 'shrink-0');
+    expect(tile).toHaveAttribute('title', 'notes.txt');
+    expect(screen.getByText('notes.txt')).toHaveClass('truncate', 'text-center');
 
     setBatch((current) => current ? { ...current, items: [...current.items] } : null);
     await Promise.resolve();

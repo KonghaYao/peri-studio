@@ -197,8 +197,8 @@
   --resource-tree-row: var(--tree-row-height);
   --resource-tree-indent: var(--tree-depth-chat);
   --resource-asset-tile: var(--asset-tile-size);
-  --composer-upload-tile-width: 184px;
-  --composer-upload-tile-height: 60px;
+  --composer-upload-tile-width: var(--asset-tile-size);
+  --composer-upload-tile-height: var(--asset-tile-size);
 
   /* Decision 决策面 */
   --decision-shadow: var(--shadow-raised);
