@@ -68,7 +68,7 @@ export function TokenUsageMeter(props: {
   });
 
   return (
-    <KPopover open={open()} onOpenChange={(next) => { if (!next) setPinned(false); }}>
+    <KPopover open={open()} onOpenChange={(next: boolean) => { if (!next) setPinned(false); }}>
       <KPopover.Trigger
         as="button"
         type="button"
