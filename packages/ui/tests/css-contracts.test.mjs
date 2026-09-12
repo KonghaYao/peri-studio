@@ -97,8 +97,9 @@ test('markdown-body.css uses Peri compact chat typeset', () => {
   const markdown = read(join(srcRoot, 'styles', 'markdown-body.css')).replace(/\/\*[\s\S]*?\*\//g, '');
   assert.match(markdown, /\.markdown-body\s*\{/);
   assert.match(markdown, /\.markdown-body\s*\{[^}]*font-size:\s*var\(--text-14\)/s);
+  assert.match(markdown, /\.markdown-body\s*\{[^}]*display:\s*flex/s);
+  assert.match(markdown, /gap:\s*var\(--chat-markdown-rhythm\)/);
   assert.match(markdown, /font-size:\s*var\(--text-18\)/);
-  assert.match(markdown, /\.markdown-body > \* \+ \*/);
   assert.match(markdown, /\.markdown-body > \* \+ :where\(h1, h2, h3, h4\)/);
   assert.doesNotMatch(markdown, /@layer\s+/);
   assert.doesNotMatch(markdown, /--ms-flow-paragraph-y:/);

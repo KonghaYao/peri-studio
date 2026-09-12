@@ -85,9 +85,11 @@ test('markdown keeps a readable vertical rhythm across rich blocks', async ({ pa
   const rhythm = await page.evaluate(() => {
     const style = (selector) => getComputedStyle(document.querySelector(selector));
     return {
-      paragraph: [style('[data-testid="markdown-body"] p').lineHeight, style('[data-testid="markdown-body"] p').marginBottom],
+      display: style('[data-testid="markdown-body"]').display,
+      gap: style('[data-testid="markdown-body"]').rowGap,
+      paragraph: [style('[data-testid="markdown-body"] p').marginTop, style('[data-testid="markdown-body"] p').marginBottom],
       heading: [style('[data-testid="markdown-body"] h1').marginTop, style('[data-testid="markdown-body"] h1').marginBottom],
-      list: style('[data-testid="markdown-body"] ul').marginBottom,
+      list: [style('[data-testid="markdown-body"] ul').marginTop, style('[data-testid="markdown-body"] ul').marginBottom],
       quote: style('[data-testid="markdown-body"] blockquote').marginBlock,
       table: style('[data-testid="markdown-body"] [data-testid="md-table"]').marginBlock,
       code: style('[data-testid="markdown-body"] [data-testid="md-code-block"]').marginBlock,
@@ -96,14 +98,16 @@ test('markdown keeps a readable vertical rhythm across rich blocks', async ({ pa
     };
   });
   expect(rhythm).toEqual({
-    paragraph: ['20.3px', '3px'],
-    heading: ['0px', '10px'],
-    list: '14px',
-    quote: '14px',
-    table: '16px',
-    code: '16px',
-    math: '16px',
-    imageConsent: '16px',
+    display: 'flex',
+    gap: '16px',
+    paragraph: ['0px', '0px'],
+    heading: ['0px', '0px'],
+    list: ['0px', '0px'],
+    quote: '0px',
+    table: '0px',
+    code: '0px',
+    math: '0px',
+    imageConsent: '0px',
   });
 });
 

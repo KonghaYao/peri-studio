@@ -16,20 +16,19 @@
 
 .markdown-body > * {
   min-width: 0;
+}
+
+.markdown-body :where(p, h1, h2, h3, h4, h5, h6, ul, ol, li, blockquote, pre, table, hr, dl, dt, dd) {
   margin-block: 0;
 }
 
-/* 段前再加一档，总间距 24px；标题后保持 gap 8px（用负边距吃掉多余的 8）。 */
+/* 段前再加一档，总间距 24px；标题后保持 8px（负边距吃掉 gap 多出的 8）。 */
 .markdown-body > * + :where(h1, h2, h3, h4) {
   padding-block-start: var(--space-8);
 }
 
 .markdown-body > :where(h1, h2, h3, h4, h5, h6) + * {
   margin-block-start: calc(var(--space-8) - var(--chat-markdown-rhythm));
-}
-
-.markdown-body :where(p, h1, h2, h3, h4, h5, h6, ul, ol, li, blockquote, pre, table, hr, dl, dt, dd) {
-  margin-block: 0;
 }
 
 .markdown-body :where(h1) {
@@ -84,10 +83,6 @@
 
 .markdown-body :where(li > ul, li > ol) {
   margin-block-start: var(--space-4);
-}
-
-.markdown-body :where(li > p) {
-  margin: 0;
 }
 
 .markdown-body :where(li:has(> input[type='checkbox'])) {
