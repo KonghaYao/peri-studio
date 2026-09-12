@@ -221,13 +221,21 @@
   --sidebar-row-height: var(--pattern-row-height);
   --sidebar-row-height-touch: 52px;
   --sidebar-selected-bg: var(--palette-neutral-25);
-  --sidebar-row-accessory-pr-session: var(--space-88);
+  /* 侧栏行 hover 遮罩：不透明底色，避免半透明 interaction-hover 与文本重影 */
+  --sidebar-row-hover-bg: var(--palette-neutral-25);
+  --sidebar-row-accessory-pr-session: var(--space-72);
   --sidebar-row-accessory-pr-workspace: var(--space-64);
 
   /* Chat 聊天 */
   --chat-transcript-max: var(--container-chat);
   --chat-content-max: var(--container-chat-content);
+  --chat-column-gutter: var(--space-24);
+  --chat-column-gutter-desk: var(--space-20);
+  --chat-column-gutter-narrow: var(--space-12);
   --chat-markdown-rhythm: var(--markdown-rich-block-gap);
+  --chat-markdown-heading-gap: var(--space-24);
+  --chat-turn-gap: var(--space-20);
+  --chat-block-gap: var(--space-16);
   --markdown-table-min: 420px;
   --chat-tool-activity-max: var(--tool-activity-max);
   --chat-bubble-max: 72%;
@@ -288,6 +296,9 @@
   --git-graph-color-10: #6f24d6;
   --git-graph-color-11: #ff0000;
   --git-graph-row-height: var(--resource-tree-row);
+  --git-graph-date-col-width: 48px;
+  --git-graph-author-col-width: 72px;
+  --git-graph-commit-col-width: 60px;
 
   /* ------------------------------------------------------------------
      Legacy production tokens（widget 消费；别名指向 Tier 1，与 sandbox 对齐）
@@ -438,7 +449,7 @@
   --decision-radius: 14px;
   --permission-card-min-height: 96px;
   --model-badge-max: min(240px, 38vw);
-  --container-model-menu: min(320px, calc(100vw - 2 * var(--space-16)));
+  --container-model-menu: min(220px, calc(100vw - 2 * var(--space-16)));
   --runtime-label-max: 120px;
   --tree-depth-chat: 43px;
   --tool-activity-max: 740px;
@@ -446,9 +457,9 @@
   /* Layout */
   --composer-max: 760px;
   --composer-launch-max: 736px;
-  --composer-slash-width: 100%;
   --composer-safe-bottom: calc(var(--space-20) + env(safe-area-inset-bottom));
   --container-popover: min(288px, calc(100vw - 2 * var(--space-16)));
+  --container-slash-menu: min(360px, calc(100vw - 2 * var(--space-16)));
   --container-dialog-default: min(400px, calc(100vw - 2 * var(--space-20)));
   --container-dialog-tall: calc(100dvh - 2 * var(--space-20));
   --container-toast: min(360px, calc(100vw - 2 * var(--space-16)));

@@ -19,7 +19,7 @@ export function MarkdownTable(props: JSX.HTMLAttributes<HTMLTableElement>) {
   let table!: HTMLTableElement;
   const copyText = () => (table ? tableText(table, '\t') : '');
   return (
-    <div class="md-table group/md-table relative my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-testid="md-table">
+    <div class="md-table group/md-table relative overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-testid="md-table">
       <div
         class="absolute top-6 right-6 z-10 flex gap-2 rounded-md border border-border-subtle bg-surface-overlay/95 p-2 opacity-0 shadow-raised transition-opacity duration-(--duration-fast) group-hover/md-table:opacity-100 group-focus-within/md-table:opacity-100"
         role="toolbar"

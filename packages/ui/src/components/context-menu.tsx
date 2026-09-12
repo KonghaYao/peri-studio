@@ -5,18 +5,20 @@ import * as ContextMenuPrimitive from "@kobalte/core/context-menu"
 import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 
 import { cn } from "../lib/cn"
+import { FloatingSurface } from "./FloatingSurface"
 import {
   menuCheckboxItemClass,
-  menuContentClass,
   menuGroupLabelClass,
   menuItemClass,
   menuItemIndicatorClass,
   menuLabelClass,
+  menuPositionedShellClass,
   menuRadioItemClass,
   menuSeparatorClass,
   menuShortcutClass,
   menuSubContentClass,
   menuSubTriggerClass,
+  menuSurfaceClass,
 } from "./menu-styles"
 
 const ContextMenuTrigger = ContextMenuPrimitive.Trigger
@@ -31,18 +33,20 @@ const ContextMenu: Component<ContextMenuPrimitive.ContextMenuRootProps> = (props
 type ContextMenuContentProps<T extends ValidComponent = "div"> =
   ContextMenuPrimitive.ContextMenuContentProps<T> & {
     class?: string | undefined
+    children?: JSX.Element
   }
 
 const ContextMenuContent = <T extends ValidComponent = "div">(
   props: PolymorphicProps<T, ContextMenuContentProps<T>>
 ) => {
-  const [, rest] = splitProps(props as ContextMenuContentProps, ["class"])
+  const [local, rest] = splitProps(props as ContextMenuContentProps, ["class", "children"])
   return (
     <ContextMenuPrimitive.Portal>
-      <ContextMenuPrimitive.Content
-        class={cn(menuContentClass, props.class)}
-        {...rest}
-      />
+      <ContextMenuPrimitive.Content class={menuPositionedShellClass} {...rest}>
+        <FloatingSurface class={cn(menuSurfaceClass, local.class)}>
+          {local.children}
+        </FloatingSurface>
+      </ContextMenuPrimitive.Content>
     </ContextMenuPrimitive.Portal>
   )
 }
@@ -131,17 +135,19 @@ const ContextMenuSubTrigger = <T extends ValidComponent = "div">(
 type ContextMenuSubContentProps<T extends ValidComponent = "div"> =
   ContextMenuPrimitive.ContextMenuSubContentProps<T> & {
     class?: string | undefined
+    children?: JSX.Element
   }
 
 const ContextMenuSubContent = <T extends ValidComponent = "div">(
   props: PolymorphicProps<T, ContextMenuSubContentProps<T>>
 ) => {
-  const [, rest] = splitProps(props as ContextMenuSubContentProps, ["class"])
+  const [local, rest] = splitProps(props as ContextMenuSubContentProps, ["class", "children"])
   return (
-    <ContextMenuPrimitive.SubContent
-      class={cn(menuSubContentClass, props.class)}
-      {...rest}
-    />
+    <ContextMenuPrimitive.SubContent class={menuPositionedShellClass} {...rest}>
+      <FloatingSurface class={cn(menuSubContentClass, local.class)}>
+        {local.children}
+      </FloatingSurface>
+    </ContextMenuPrimitive.SubContent>
   )
 }
 

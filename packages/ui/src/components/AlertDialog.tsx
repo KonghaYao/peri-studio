@@ -32,14 +32,18 @@ export function AlertDialogContent<T extends ValidComponent = 'div'>(props: Poly
     <AlertDialogPrimitive.Portal>
       <AlertDialogOverlay class={local.overlayClass} />
       <AlertDialogPrimitive.Content
-        class={cn(
-          'fixed top-1/2 left-1/2 z-61 grid w-(--container-dialog-default) max-h-(--container-dialog-tall) -translate-x-1/2 -translate-y-1/2 gap-16 overflow-auto rounded-8 border border-border-subtle bg-surface px-20 py-20 text-text-primary shadow-popover outline-none',
-          modalDialogMotion,
-          local.class,
-        )}
+        class="fixed top-1/2 left-1/2 z-61 -translate-x-1/2 -translate-y-1/2 outline-none"
         {...rest}
       >
-        {local.children}
+        <div
+          class={cn(
+            'grid w-(--container-dialog-default) max-h-(--container-dialog-tall) gap-16 overflow-auto rounded-8 border border-border-subtle bg-surface px-20 py-20 text-text-primary shadow-popover outline-none',
+            modalDialogMotion,
+            local.class,
+          )}
+        >
+          {local.children}
+        </div>
       </AlertDialogPrimitive.Content>
     </AlertDialogPrimitive.Portal>
   );

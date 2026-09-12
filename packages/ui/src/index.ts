@@ -326,6 +326,10 @@ export {
 } from './lib/vscode-file-icons';
 export { ChatHeader, type ChatHeaderProps } from './components/ChatHeader';
 export {
+  ChatActivityChain,
+  type ChatActivityChainProps,
+} from './components/chat/ChatActivityChain';
+export {
   ChatWorkspaceShell,
   type ChatWorkspaceShellProps,
 } from './components/chat/ChatWorkspaceShell';

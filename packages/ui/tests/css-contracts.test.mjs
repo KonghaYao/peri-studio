@@ -102,6 +102,8 @@ test('typeset.css defines streaming-safe markdown typography', () => {
   assert.match(typeset, /\.not-typeset\b/);
   assert.match(typeset, /container-type:\s*inline-size/);
   assert.match(typeset, /\.typeset > \* \+ \*/);
+  assert.match(typeset, /\.typeset > \* \+ :where\(h1, h2, h3, h4\)/);
+  assert.match(typeset, /--chat-markdown-heading-gap/);
   assert.doesNotMatch(typeset, /:last-child|:first-child/);
 });
 
@@ -188,6 +190,29 @@ test('duplicate component tests and consumer T2 copies are gone', () => {
 test('extra.css imports scroll-fade and shimmer utilities', () => {
   const extra = read(join(srcRoot, 'styles', 'extra.css'));
   assert.match(extra, /@import '\.\/utilities\.css';/);
+});
+
+test('composer surface keeps slash overlays unclipped and menu-sized', () => {
+  const extra = read(join(srcRoot, 'styles', 'extra.css'));
+  assert.match(extra, /\.ui-composer-surface-v2\s*\{[^}]*overflow:\s*visible/s);
+  assert.match(extra, /\.ui-composer-slash-overlay\s*\{[^}]*width:\s*var\(--container-slash-menu\)/s);
+  assert.match(extra, /\.ui-composer-slash-popover\s*\{[^}]*width:\s*var\(--container-slash-menu\)/s);
+  assert.doesNotMatch(extra, /\.ui-composer-slash-overlay\s*\{[^}]*inset-inline:\s*0/s);
+  assert.match(extra, /\.ui-composer-surface-v2__field-slot\s*\{[^}]*flex:\s*1 1 auto/s);
+  assert.match(extra, /\.ui-composer-surface-v2__trailing\s*\{/s);
+  assert.doesNotMatch(extra, /\.ui-composer-editor\s*\{[^}]*width:\s*100%;[^}]*flex:/s);
+  assert.match(extra, /\.ui-chat-workspace__bottom-stack\s*\{[^}]*overflow:\s*visible/s);
+  assert.match(extra, /\.ui-chat-column\s*\{[^}]*padding-inline:\s*var\(--chat-column-gutter\)/s);
+  assert.match(extra, /\.ui-composer-shell\s*\{[^}]*margin-inline:\s*auto/s);
+  assert.match(extra, /\.ui-transcript-row \+ \.ui-transcript-row\s*\{[^}]*margin-block-start:\s*var\(--chat-turn-gap\)/s);
+  assert.match(extra, /\.ui-transcript-content\s*\{[^}]*padding-block:\s*var\(--space-32\)/s);
+  assert.match(extra, /\.ui-chat-activity-chain\s*\{[^}]*gap:\s*var\(--chat-block-gap\)/s);
+  assert.match(extra, /\.ui-chat-activity-rail\s*\{/s);
+  assert.match(extra, /\.ui-jump-latest\s*\{/s);
+  assert.match(extra, /\.ui-transcript-thinking-gap\s*\{/s);
+  assert.match(extra, /\.ui-composer-plus-btn\s*\{[^}]*background:\s*transparent/s);
+  assert.match(extra, /\.ui-composer-editor__hint[^{]*\{[^}]*color:\s*var\(--content-muted\)/s);
+  assert.match(extra, /\.ui-composer-surface-v2__field::placeholder[^{]*\{[^}]*color:\s*var\(--content-muted\)/s);
 });
 
 test('extra.css does not keep legacy ui-* alias selectors', () => {

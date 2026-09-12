@@ -1,25 +1,29 @@
-import type { Component, ValidComponent } from 'solid-js';
+import type { Component, JSX, ValidComponent } from 'solid-js';
 import { splitProps } from 'solid-js';
 import * as PopoverPrimitive from '@kobalte/core/popover';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
+import { FloatingSurface } from './FloatingSurface';
 import { cn } from '../lib/cn';
-import { surfacePopoverMotion } from '../lib/overlay-motion';
+import { floatingPositionedShellClass, surfacePopoverMotion } from '../lib/overlay-motion';
 
 const Popover: Component<PopoverPrimitive.PopoverRootProps> = (props) => <PopoverPrimitive.Root gutter={4} {...props} />;
 const PopoverTrigger = PopoverPrimitive.Trigger;
 
-const PopoverContent = <T extends ValidComponent = 'div'>(props: PolymorphicProps<T, PopoverPrimitive.PopoverContentProps<T> & { class?: string }>) => {
-  const [local, others] = splitProps(props as PopoverPrimitive.PopoverContentProps & { class?: string }, ['class']);
+const PopoverContent = <T extends ValidComponent = 'div'>(props: PolymorphicProps<T, PopoverPrimitive.PopoverContentProps<T> & { class?: string; children?: JSX.Element }>) => {
+  const [local, others] = splitProps(props as PopoverPrimitive.PopoverContentProps & { class?: string; children?: JSX.Element }, ['class', 'children']);
   return (
     <PopoverPrimitive.Portal>
-      <PopoverPrimitive.Content
-        class={cn(
-          'absolute z-50 box-border w-(--container-popover) min-w-(--container-menu-min) origin-[var(--kb-popover-content-transform-origin)] rounded-8 border border-border-subtle bg-surface px-16 py-12 text-13 leading-normal text-text-primary shadow-popover outline-none focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2',
-          surfacePopoverMotion,
-          local.class,
-        )}
-        {...others}
-      />
+      <PopoverPrimitive.Content class={floatingPositionedShellClass} {...others}>
+        <FloatingSurface
+          class={cn(
+            'box-border w-(--container-popover) min-w-(--container-menu-min) origin-[var(--kb-popover-content-transform-origin)] rounded-8 border border-border-subtle bg-surface px-16 py-12 text-13 leading-normal text-text-primary shadow-popover outline-none focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2',
+            surfacePopoverMotion,
+            local.class,
+          )}
+        >
+          {local.children}
+        </FloatingSurface>
+      </PopoverPrimitive.Content>
     </PopoverPrimitive.Portal>
   );
 };

@@ -194,7 +194,7 @@ export const Reasoning: Component<ReasoningRootProps> = (props) => {
                 {local.children}
               </details>
             )}>
-              <TranscriptThinkingGap data-testid="thinking-gap" class="py-4 pl-32" />
+              <TranscriptThinkingGap data-testid="thinking-gap" />
             </Show>
           </Show>
         )}

@@ -63,7 +63,7 @@ export const SlashMenuOptionContent: Component<SlashMenuOptionContentProps> = (p
   const displayName = () => `${prefix()}${props.item.name}`;
 
   return (
-    <div class="grid min-w-0 grid-cols-slash-menu items-center gap-x-10">
+    <div class="grid w-full min-w-0 grid-cols-slash-menu items-center gap-x-10">
       <span class="grid size-16 shrink-0 place-items-center">
         <SlashIcon item={props.item} />
       </span>

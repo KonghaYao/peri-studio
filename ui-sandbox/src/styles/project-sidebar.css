@@ -9,6 +9,7 @@
 .project-sidebar .group\/row:hover .row-accessory-slot__meta,
 .project-sidebar .group\/row:focus-within .row-accessory-slot__meta {
   opacity: 0;
+  visibility: hidden;
 }
 
 .project-sidebar .group\/workspace:hover .row-accessory-slot__actions,
@@ -16,6 +17,7 @@
 .project-sidebar .group\/row:hover .row-accessory-slot__actions,
 .project-sidebar .group\/row:focus-within .row-accessory-slot__actions {
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
 }
 

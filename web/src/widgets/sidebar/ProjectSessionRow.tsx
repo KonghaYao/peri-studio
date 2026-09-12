@@ -6,10 +6,10 @@ import {
   PopoverTrigger,
   TextField,
   Button,
-  SidebarMenuButton,
+  cn,
 } from '@peri/ui';
 import { Pencil } from 'lucide-solid';
-import { formatCompactRelativeTime, sessionDisplayTitle } from '@/features/session/recovery-state';
+import { sessionDisplayTitle } from '@/features/session/recovery-state';
 import { runConfirmedMutation } from '@/features/session/form-mutation';
 import { SessionRowAccessory } from '@peri/ui';
 
@@ -58,7 +58,6 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
   );
   const renameValid = () => !!draft().trim();
   const loading = () => props.state.tone === 'busy';
-  const relativeTime = () => formatCompactRelativeTime(props.session.lastOpenedAt || props.session.updatedAt);
 
   createEffect(() => {
     if (props.renameOpen) setDraft(props.session.title);
@@ -93,23 +92,36 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     <div
       data-session-id={props.session.id}
       data-testid="session-row"
-      class="session-row group/row relative flex min-h-36 min-w-0 items-center rounded-md"
+      data-selected={props.selected ? 'true' : undefined}
+      class={cn(
+        'session-row group/row relative flex min-h-36 min-w-0 items-center rounded-md',
+        props.selected
+          ? 'bg-sidebar-selected'
+          : 'hover:bg-interaction-hover focus-within:bg-interaction-hover',
+      )}
       style={{
         'padding-left': props.indent ? `calc(10px + ${props.indent}px)` : undefined,
       }}
     >
-      <SidebarMenuButton
-        isActive={props.selected}
-        class="min-h-36 w-full min-w-0 rounded-md p-0 pl-10 pr-(--sidebar-row-accessory-pr-session) pointer-coarse:min-h-44"
+      <button
+        type="button"
+        data-sidebar="menu-button"
+        data-active={props.selected ? 'true' : undefined}
+        class={cn(
+          'flex min-h-36 w-full min-w-0 flex-1 items-center overflow-hidden rounded-md bg-transparent pl-10 pr-0 text-left outline-none',
+          'focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2',
+          'disabled:pointer-events-none disabled:opacity-45',
+          props.selected && 'font-medium',
+          'pointer-coarse:min-h-44',
+        )}
         aria-current={props.selected ? 'page' : undefined}
         aria-label={displayTitle()}
         onClick={open}
         disabled={(props.readOnly && !props.session.activeChatId) || props.session.lifecycle !== 'ready' || props.navigationBusy}
       >
-        <span data-testid="session-copy" class="session-copy min-w-0 flex-1 truncate text-13 text-content-primary">{displayTitle()}</span>
-      </SidebarMenuButton>
+        <span data-testid="session-copy" class="session-copy block min-w-0 w-full truncate text-13 text-content-primary">{displayTitle()}</span>
+      </button>
       <SessionRowAccessory
-        time={relativeTime()}
         live={loading()}
         liveLabel={props.state.detail || props.state.label}
         pinned={props.pinned}

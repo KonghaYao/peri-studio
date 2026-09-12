@@ -89,7 +89,8 @@ describe('ProjectSessionRow', () => {
 
   it('uses the shared popover surface for a controlled rename form', () => {
     render(() => <ProjectSessionRow {...props({ renameOpen: true })} />);
-    expect(screen.getByRole('dialog', { name: 'Rename Architecture refactor' })).toHaveClass('ui-popover');
+    const renameDialog = screen.getByRole('dialog', { name: 'Rename Architecture refactor' });
+    expect(renameDialog.firstElementChild).toHaveClass('ui-popover');
     expect(screen.getByTestId('rename-popover')).toBeInTheDocument();
   });
 

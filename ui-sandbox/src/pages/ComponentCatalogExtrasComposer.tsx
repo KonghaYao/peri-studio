@@ -21,7 +21,7 @@ export function ComponentCatalogExtrasComposer(props: { sections?: string[] }) {
 
       <Show when={showCatalogSection(props.sections, 'slash-menu')}>
       <CatalogDemo id="slash-menu" title="Slash menu">
-        <div class="max-w-md">
+        <div class="w-(--container-slash-menu) max-w-full">
           <SlashMenu
             activeIndex={4}
             items={[

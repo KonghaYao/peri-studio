@@ -5,18 +5,20 @@ import * as DropdownMenuPrimitive from "@kobalte/core/dropdown-menu"
 import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 
 import { cn } from '../lib/cn';
+import { FloatingSurface } from './FloatingSurface';
 import {
   menuCheckboxItemClass,
-  menuContentClass,
   menuGroupLabelClass,
   menuItemClass,
   menuItemIndicatorClass,
   menuLabelClass,
+  menuPositionedShellClass,
   menuRadioItemClass,
   menuSeparatorClass,
   menuShortcutClass,
   menuSubContentClass,
   menuSubTriggerClass,
+  menuSurfaceClass,
 } from './menu-styles';
 
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
@@ -32,18 +34,20 @@ const DropdownMenu: Component<DropdownMenuPrimitive.DropdownMenuRootProps> = (pr
 type DropdownMenuContentProps<T extends ValidComponent = "div"> =
   DropdownMenuPrimitive.DropdownMenuContentProps<T> & {
     class?: string | undefined
+    children?: JSX.Element
   }
 
 const DropdownMenuContent = <T extends ValidComponent = "div">(
   props: PolymorphicProps<T, DropdownMenuContentProps<T>>
 ) => {
-  const [, rest] = splitProps(props as DropdownMenuContentProps, ["class"])
+  const [local, rest] = splitProps(props as DropdownMenuContentProps, ["class", "children"])
   return (
     <DropdownMenuPrimitive.Portal>
-      <DropdownMenuPrimitive.Content
-        class={cn(menuContentClass, props.class)}
-        {...rest}
-      />
+      <DropdownMenuPrimitive.Content class={menuPositionedShellClass} {...rest}>
+        <FloatingSurface class={cn(menuSurfaceClass, local.class)}>
+          {local.children}
+        </FloatingSurface>
+      </DropdownMenuPrimitive.Content>
     </DropdownMenuPrimitive.Portal>
   )
 }
@@ -132,17 +136,19 @@ const DropdownMenuSubTrigger = <T extends ValidComponent = "div">(
 type DropdownMenuSubContentProps<T extends ValidComponent = "div"> =
   DropdownMenuPrimitive.DropdownMenuSubContentProps<T> & {
     class?: string | undefined
+    children?: JSX.Element
   }
 
 const DropdownMenuSubContent = <T extends ValidComponent = "div">(
   props: PolymorphicProps<T, DropdownMenuSubContentProps<T>>
 ) => {
-  const [, rest] = splitProps(props as DropdownMenuSubContentProps, ["class"])
+  const [local, rest] = splitProps(props as DropdownMenuSubContentProps, ["class", "children"])
   return (
-    <DropdownMenuPrimitive.SubContent
-      class={cn(menuSubContentClass, props.class)}
-      {...rest}
-    />
+    <DropdownMenuPrimitive.SubContent class={menuPositionedShellClass} {...rest}>
+      <FloatingSurface class={cn(menuSubContentClass, local.class)}>
+        {local.children}
+      </FloatingSurface>
+    </DropdownMenuPrimitive.SubContent>
   )
 }
 

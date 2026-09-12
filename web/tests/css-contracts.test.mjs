@@ -255,8 +255,9 @@ test('Kobalte dialog composes an independently layered portal overlay and conten
     /<DialogOverlay class=\{local\.overlayClass\} \/>\s*<DialogPrimitive\.Content/s,
   );
   assert.match(dialog, /DialogPrimitive\.Overlay[\s\S]*?data-dialog-overlay[\s\S]*?class=\{cn\('fixed inset-0 z-60 bg-scrim'/);
-  assert.match(dialog, /DialogPrimitive\.Content\s+class=\{cn\(\s*local\.size === 'resource-compact'/);
-  assert.match(dialog, /fixed top-1\/2 left-1\/2 z-61 w-\(--container-dialog-default\)/);
+  assert.match(dialog, /const isSheet = \(\) => local\.size === 'resource-compact'/);
+  assert.match(dialog, /fixed top-1\/2 left-1\/2 z-61 -translate-x-1\/2 -translate-y-1\/2 outline-none/);
+  assert.match(dialog, /'w-\(--container-dialog-default\) max-h-\(--container-dialog-tall\)/);
   assert.match(dialog, /onEscapeKeyDown=\{preventWhenLocked\}/);
   assert.match(dialog, /onPointerDownOutside=\{preventWhenLocked\}/);
 });
@@ -454,6 +455,8 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
   assert.doesNotMatch(composerShell, /shadow-float/);
   assert.match(composerParts, /ui-composer-surface-v2/);
   assert.match(composerParts, /var\(--composer-pill-radius\)/);
+  assert.match(composerShell, /ui-composer-slash-overlay/);
+  assert.doesNotMatch(composerShell, /slash-menu absolute z-35 right-20 bottom-full left-20/);
   const composerControls = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'composer', 'ComposerToolbarControls.tsx'), 'utf8');
   const quickStartComposer = readFileSync(join(root, 'widgets', 'composer', 'QuickStartComposer.tsx'), 'utf8');
   assert.doesNotMatch(composerControls, /bg-accent-solid/);

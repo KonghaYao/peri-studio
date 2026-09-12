@@ -78,15 +78,16 @@ export function ComposerShell(props: {
       )}
       compactTrailing={(
         <>
-          <Select
-            variant="plain"
-            aria-label="Model"
-            value={model()}
-            onChange={setModel}
-            options={COMPOSER_MODEL_OPTIONS}
-            disabled={props.disabled}
-            class="ui-composer-model-select max-w-40"
-          />
+          <div class="ui-composer-model-select">
+            <Select
+              variant="plain"
+              aria-label="Model"
+              value={model()}
+              onChange={setModel}
+              options={COMPOSER_MODEL_OPTIONS}
+              disabled={props.disabled}
+            />
+          </div>
           <ComposerSendStopAction
             mode={props.streaming ? 'stop' : 'send'}
             label={props.streaming ? 'Stop' : 'Send'}

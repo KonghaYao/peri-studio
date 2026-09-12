@@ -10,7 +10,8 @@ import {
 } from '@kobalte/core/combobox';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import { cn } from '../lib/cn';
-import { menuSurfaceMotion } from '../lib/overlay-motion';
+import { FloatingSurface } from './FloatingSurface';
+import { floatingPositionedShellClass, menuSurfaceMotion } from '../lib/overlay-motion';
 
 /**
  * Kobalte Combobox 根：选项与 itemComponent 在 Root 上声明。
@@ -87,17 +88,18 @@ export function ComboboxContent<T extends ValidComponent = 'div'>(props: Content
   ]);
   return (
     <KCombobox.Portal>
-      <KCombobox.Content
-        class={cn(
-          'z-(--z-overlay) overflow-hidden rounded-8 border border-border-subtle bg-surface p-4 text-13 text-text-primary shadow-popover outline-none',
-          'origin-[var(--kb-combobox-content-transform-origin)]',
-          menuSurfaceMotion,
-          'min-w-(--container-menu-min)',
-          local.class,
-        )}
-        {...rest}
-      >
-        {local.children ?? <KCombobox.Listbox class="max-h-(--container-search-results) overflow-y-auto outline-none" />}
+      <KCombobox.Content class={floatingPositionedShellClass} {...rest}>
+        <FloatingSurface
+          class={cn(
+            'z-(--z-overlay) overflow-hidden rounded-8 border border-border-subtle bg-surface p-4 text-13 text-text-primary shadow-popover outline-none',
+            'origin-[var(--kb-combobox-content-transform-origin)]',
+            menuSurfaceMotion,
+            'min-w-(--container-menu-min)',
+            local.class,
+          )}
+        >
+          {(local.children as JSX.Element | undefined) ?? <KCombobox.Listbox class="max-h-(--container-search-results) overflow-y-auto outline-none" />}
+        </FloatingSurface>
       </KCombobox.Content>
     </KCombobox.Portal>
   );

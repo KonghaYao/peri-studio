@@ -47,7 +47,7 @@ export function SessionModelMenu(props: {
           onOpenChange={props.onOpenChange}
           data-testid="composer-runtime"
           aria-label="Choose model"
-          listClass="w-(--container-model-menu)"
+          listClass="w-max min-w-0 max-w-(--container-model-menu)"
           options={model().options.map((choice) => ({
             value: choice.value,
             label: choice.name,

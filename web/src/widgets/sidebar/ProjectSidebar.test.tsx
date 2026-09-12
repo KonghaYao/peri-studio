@@ -249,11 +249,12 @@ describe('ProjectSidebar registry hydration', () => {
     expect(screen.getByRole('button', { name: 'New workspace' })).toBeInTheDocument();
   });
 
-  it('uses token-based accessory padding on session and workspace rows', () => {
+  it('keeps session and workspace copy full width with floating row accessories', () => {
     render(() => <ProjectSidebar />);
 
-    expect(sessionButton()).toHaveClass('pr-(--sidebar-row-accessory-pr-session)');
-    expect(screen.getByRole('button', { name: 'Perihelion' })).toHaveClass('pr-(--sidebar-row-accessory-pr-workspace)');
+    expect(sessionButton()).not.toHaveClass('pr-(--sidebar-row-accessory-pr-session)');
+    expect(screen.getByRole('button', { name: 'Perihelion' })).not.toHaveClass('pr-(--sidebar-row-accessory-pr-workspace)');
+    expect(screen.getByTestId('session-row').querySelector('.row-accessory-slot')).toBeInTheDocument();
   });
 
   it('keeps sidebar controls free of tooltip wrappers and native title hints', () => {

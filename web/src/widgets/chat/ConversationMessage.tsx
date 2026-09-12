@@ -12,6 +12,7 @@ import { messageTime } from '@/shared/lib/message-time';
 import {
   Bubble,
   BubbleContent,
+  ChatActivityChain,
   CopyButton,
   IconButton,
   InlineNotice,
@@ -28,7 +29,6 @@ import {
   ResourceCite,
   ToolActivityGroup,
   UserBubble,
-  cn,
 } from '@peri/ui';
 import { MessageSquareQuote } from 'lucide-solid';
 import { splitSystemReminders } from '@/shared/lib/system-reminder';
@@ -387,20 +387,14 @@ export function ConversationMessage(props: {
                   }</For>
                 }
               >
-                <div class="chat-activity-chain relative isolate my-1 mb-4 grid w-full min-w-0 gap-2" data-testid="chat-activity-chain">
-                  <span
-                    class={cn(
-                      'absolute left-(--chat-activity-rail-left) z-0 w-px bg-border-strong',
-                      continuesBefore() ? '-top-10' : 'top-0',
-                      continuesAfter() ? '-bottom-16' : 'bottom-0',
-                    )}
-                    data-testid="chat-activity-rail"
-                    aria-hidden="true"
-                  />
+                <ChatActivityChain
+                  continuesBefore={continuesBefore()}
+                  continuesAfter={continuesAfter()}
+                >
                   <For each={rowGroup().unitIds}>{(unitIdItem) =>
                     <AssistantLayoutUnitView unitId={() => readForItem(unitIdItem)} {...unitViewProps} />
                   }</For>
-                </div>
+                </ChatActivityChain>
               </Show>
             );
           }}</For>

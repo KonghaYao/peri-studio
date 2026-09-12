@@ -226,9 +226,9 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
             <colgroup>
               <col style={{ width: `${graphColWidth()}px` }} />
               <col />
-              <col style={{ width: '124px' }} />
-              <col style={{ width: '124px' }} />
-              <col style={{ width: '80px' }} />
+              <col style={{ width: 'var(--git-graph-date-col-width)' }} />
+              <col style={{ width: 'var(--git-graph-author-col-width)' }} />
+              <col style={{ width: 'var(--git-graph-commit-col-width)' }} />
             </colgroup>
             <thead>
               <tr>

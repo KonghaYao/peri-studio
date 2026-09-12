@@ -23,7 +23,7 @@ export function MarkdownCodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { 
 
   if (details().language === 'math' && locked()) {
     return (
-      <div class="my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-incomplete="true">
+      <div class="overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-incomplete="true">
         <pre class="m-0 overflow-auto bg-surface-sunken px-12 py-10 font-mono text-12"><code>{details().text}</code></pre>
       </div>
     );
@@ -31,7 +31,7 @@ export function MarkdownCodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { 
   if (details().language === 'math') return <MathExpression expression={details().text.trim()} block />;
   if (details().language === 'mermaid') {
     return (
-      <div class="my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-incomplete={props.incomplete ? 'true' : undefined}>
+      <div class="overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-incomplete={props.incomplete ? 'true' : undefined}>
         <MermaidBlock code={details().text} incomplete={locked()} />
       </div>
     );

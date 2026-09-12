@@ -13,7 +13,7 @@ export const TranscriptThinkingGap: Component<TranscriptThinkingGapProps> = (pro
   return (
     <div
       class={cn(
-        'thinking-gap relative z-1 flex max-w-(--chat-reasoning-max) flex-col gap-8',
+        'ui-transcript-thinking-gap thinking-gap',
         local.class,
       )}
       data-testid={props['data-testid'] ?? 'message-loading'}

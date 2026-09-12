@@ -9,6 +9,7 @@ export type MarkdownPreDetails = {
 };
 
 const EXTENSIONS: Record<string, string> = {
+  bash: 'sh',
   javascript: 'js',
   js: 'js',
   markdown: 'md',

@@ -71,7 +71,7 @@ export function MermaidBlock(props: { code: string; loading?: boolean; isDark?: 
   });
 
   return (
-    <div class="md-mermaid my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-incomplete={incomplete() ? 'true' : undefined}>
+    <div class="md-mermaid overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-incomplete={incomplete() ? 'true' : undefined}>
       <div class="flex min-h-36 items-center gap-4 border-b border-border-subtle px-8 py-4">
         <span class="mr-auto text-12 font-medium text-content-secondary">Mermaid</span>
         <Show when={busy()}><span class="text-11 text-content-muted">Rendering…</span></Show>

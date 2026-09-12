@@ -33,7 +33,6 @@ const ARCHIVED_DEMO = [
 type SessionItem = {
   id: string;
   title: string;
-  time: string;
   live?: boolean;
   unread?: boolean;
   pinned?: boolean;
@@ -56,15 +55,14 @@ type MachineItem = {
 type PinnedItem = {
   id: string;
   title: string;
-  time: string;
   live?: boolean;
   unread?: boolean;
 };
 
 const PINNED: PinnedItem[] = [
-  { id: 'pin-1', title: 'Design draft style and token board', time: '1m', live: true },
-  { id: 'pin-2', title: 'System capacity and session recovery', time: '5m', unread: true },
-  { id: 'pin-3', title: 'Composer layout polish', time: '1h' },
+  { id: 'pin-1', title: 'Design draft style and token board', live: true },
+  { id: 'pin-2', title: 'System capacity and session recovery', unread: true },
+  { id: 'pin-3', title: 'Composer layout polish' },
 ];
 
 const MACHINES: MachineItem[] = [
@@ -79,18 +77,18 @@ const MACHINES: MachineItem[] = [
         id: 'peri',
         name: 'peri-studio',
         sessions: [
-          { id: 's1', title: 'Design workspace state', time: '2m', live: true },
-          { id: 's2', title: 'Fix session restore', time: '18m' },
-          { id: 's3', title: 'Release preparation', time: '1h' },
+          { id: 's1', title: 'Design workspace state', live: true },
+          { id: 's2', title: 'Fix session restore' },
+          { id: 's3', title: 'Release preparation' },
         ],
       },
       {
         id: 'remote',
         name: 'remote',
         sessions: [
-          { id: 's4', title: 'online-supadev', time: '20h' },
-          { id: 's5', title: 'Cellp database migration', time: '22h' },
-          { id: 's6', title: 'online-canvas', time: '1d' },
+          { id: 's4', title: 'online-supadev' },
+          { id: 's5', title: 'Cellp database migration' },
+          { id: 's6', title: 'online-canvas' },
         ],
       },
     ],
@@ -103,7 +101,7 @@ const MACHINES: MachineItem[] = [
       {
         id: 'artifacts',
         name: 'build-artifacts',
-        sessions: [{ id: 's7', title: 'Nightly bundle audit', time: '3d' }],
+        sessions: [{ id: 's7', title: 'Nightly bundle audit' }],
       },
     ],
   },
@@ -119,8 +117,9 @@ function SessionRow(props: {
     <div
       class={cn(
         'group/row relative min-w-0 rounded-md transition-colors duration-(--duration-fast)',
-        props.selected ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
+        props.selected ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover focus-within:bg-interaction-hover',
       )}
+      data-selected={props.selected ? 'true' : undefined}
       style={{
         'min-height': '36px',
         'padding-left': props.indent ? `calc(10px + ${props.indent}px)` : undefined,
@@ -128,13 +127,12 @@ function SessionRow(props: {
     >
       <button
         type="button"
-        class="flex min-h-36 w-full min-w-0 items-center rounded-md pl-10 pr-64 text-left"
+        class="flex min-h-36 w-full min-w-0 items-center overflow-hidden rounded-md pl-10 pr-0 text-left"
         onClick={props.onClick}
       >
-        <span class="session-copy min-w-0 flex-1 truncate text-13 text-content-primary">{props.session.title}</span>
+        <span class="session-copy block min-w-0 w-full truncate text-13 text-content-primary">{props.session.title}</span>
       </button>
       <SessionRowAccessory
-        time={props.session.time}
         live={props.session.live}
         unread={props.session.unread}
         pinned={props.session.pinned}

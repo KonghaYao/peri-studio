@@ -115,17 +115,17 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
       <Show when={showCatalogSection(props.sections, 'session-row-accessory')}>
       <CatalogDemo id="session-row-accessory" title="Session row accessory">
         <div class="max-w-sm rounded-lg border border-border-subtle bg-surface-overlay p-8">
-          <div class="group/row relative min-h-36 rounded-md hover:bg-interaction-hover">
+          <div class="group/row relative min-h-36 rounded-md hover:bg-interaction-hover focus-within:bg-interaction-hover">
             <div class="flex min-h-36 items-center px-10">
               <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Refactor ACP session recovery</span>
             </div>
-            <SessionRowAccessory time="18m" pinned actionsVisible />
+            <SessionRowAccessory pinned actionsVisible />
           </div>
-          <div class="group/row relative mt-4 min-h-36 rounded-md bg-sidebar-selected">
+          <div class="group/row relative mt-4 min-h-36 rounded-md bg-sidebar-selected" data-selected="true">
             <div class="flex min-h-36 items-center px-10">
               <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Design workspace state</span>
             </div>
-            <SessionRowAccessory time="2m" live />
+            <SessionRowAccessory live />
           </div>
         </div>
       </CatalogDemo>

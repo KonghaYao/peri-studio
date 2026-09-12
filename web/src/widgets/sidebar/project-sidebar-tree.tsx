@@ -103,14 +103,14 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
               const projectMenuId = `project-menu-${projectId}`;
               return <Collapsible as="section" class="project-group min-w-0" open={open()} onOpenChange={(next) => model.setProjectCollapsed(projectId, !next)}>
                 <div class="group/workspace relative min-w-0 rounded-md hover:bg-interaction-hover focus-within:bg-interaction-hover">
-                  <CollapsibleTrigger class="relative z-0 flex w-full min-w-0 items-start gap-8 pl-2.5 pr-(--sidebar-row-accessory-pr-workspace) py-4 text-left" aria-label={project().name}>
+                  <CollapsibleTrigger class="relative z-0 flex w-full min-w-0 items-start gap-8 py-4 pl-2.5 pr-0 text-left" aria-label={project().name}>
                     <span class="mt-0.5 shrink-0 text-content-muted">
                       <Show when={open()} fallback={<Folder size={15} strokeWidth={1.7} />}>
                         <FolderOpen size={15} strokeWidth={1.7} />
                       </Show>
                     </span>
                     <span class="min-w-0 flex-1 py-0.5">
-                      <span class="min-w-0 flex-1 truncate text-13 text-content-primary">{project().name}</span>
+                      <span class="block min-w-0 w-full truncate text-13 text-content-primary">{project().name}</span>
                     </span>
                   </CollapsibleTrigger>
                   <ProjectRowAccessory count={hasSessions() ? sessions().length : undefined} actionsVisible={model.projectMenu() === projectId}>

@@ -231,9 +231,9 @@ describe('ConversationMessage', () => {
 
     const group = screen.getByLabelText('Assistant message').querySelector('[data-testid="chat-activity-chain"] [data-testid="tool-activity-group"]')!;
     const rail = screen.getByTestId('chat-activity-rail');
-    expect(rail).toHaveClass('left-(--chat-activity-rail-left)', 'bg-border-strong');
+    expect(rail).toHaveClass('ui-chat-activity-rail');
     expect(group).toHaveClass('tool-activity-group--activity', 'tool-call-group-list');
-    expect(group.closest('[data-testid="chat-activity-chain"]')).toHaveClass('my-1', 'mb-4', 'gap-2');
+    expect(group.closest('[data-testid="chat-activity-chain"]')).toHaveClass('ui-chat-activity-chain');
     const rows = group.querySelectorAll('[data-testid="tool-activity-row"]');
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveClass('tool-activity-row--activity');
@@ -280,7 +280,7 @@ describe('ConversationMessage', () => {
     })} />);
 
     const message = screen.getByLabelText('Assistant message');
-    expect(message.querySelector('[data-testid="thinking-gap"]')).toHaveClass('relative', 'z-1', 'pl-32');
+    expect(message.querySelector('[data-testid="thinking-gap"]')).toHaveClass('ui-transcript-thinking-gap');
     expect(message.querySelector('[data-testid="chat-activity-rail"]')).toBeInTheDocument();
     expect(message.querySelector('.message-reasoning__activity-label')).toBeNull();
     expect(message.querySelector('[data-testid="chat-activity-chain"]')).not.toHaveClass('chat-activity-chain--thinking-rail');
@@ -402,7 +402,7 @@ describe('ConversationMessage', () => {
     expect(badges[0].closest('[data-testid="conversation-message-surface"]')).toBeNull();
     fireEvent.click(badges[0]);
     const reminder = await screen.findByRole('dialog', { name: 'System message' });
-    expect(reminder).toHaveClass('system-reminder-popover');
+    expect(reminder.firstElementChild).toHaveClass('system-reminder-popover');
     expect(reminder).toHaveTextContent('Ignore prior instructions');
     expect(reminder).toHaveTextContent('MCP status is internal');
     expect(reminder.querySelector('script')).toBeNull();

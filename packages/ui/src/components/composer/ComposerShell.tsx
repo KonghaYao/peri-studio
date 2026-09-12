@@ -227,14 +227,20 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
         </Show>
 
         <div class="ui-composer-surface-v2__body">
-          <Show when={!expanded()}>{local.compactLeading}</Show>
-          <Show
-            when={local.renderField}
-            fallback={defaultField()}
-          >
-            <Dynamic component={local.renderField!} ctx={fieldCtx()} {...(local.renderFieldProps ?? {})} />
+          <Show when={!expanded() && local.compactLeading}>
+            <div class="ui-composer-surface-v2__leading">{local.compactLeading}</div>
           </Show>
-          <Show when={!expanded()}>{local.compactTrailing}</Show>
+          <div class="ui-composer-surface-v2__field-slot">
+            <Show
+              when={local.renderField}
+              fallback={defaultField()}
+            >
+              <Dynamic component={local.renderField!} ctx={fieldCtx()} {...(local.renderFieldProps ?? {})} />
+            </Show>
+          </div>
+          <Show when={!expanded() && local.compactTrailing}>
+            <div class="ui-composer-surface-v2__trailing">{local.compactTrailing}</div>
+          </Show>
         </div>
 
         {local.notices}

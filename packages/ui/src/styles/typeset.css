@@ -18,7 +18,7 @@
   }
 
   .typeset-chat {
-    line-height: var(--leading-compact);
+    line-height: var(--leading-normal);
   }
 
   .typeset > * + * {
@@ -63,6 +63,15 @@
     font-size: var(--text-13);
     font-weight: 600;
     line-height: var(--leading-compact);
+  }
+
+  /* 必须写在 h* { margin-block: 0 } 之后：段前松、段后紧，避免标题贴上一段。 */
+  .typeset > * + :where(h1, h2, h3, h4) {
+    margin-block-start: var(--chat-markdown-heading-gap);
+  }
+
+  .typeset > :where(h1, h2, h3, h4, h5, h6) + * {
+    margin-block-start: var(--space-8);
   }
 
   .typeset :where(h6) {

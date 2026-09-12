@@ -105,9 +105,8 @@ export function SidebarNavBar(props: {
   );
 }
 
-/** Session 行右侧：时间戳 + Pin / Archive / More 浮动按钮组。 */
+/** Session 行右侧：live/unread 指示 + Pin / Archive / More 浮动按钮组。 */
 export function SessionRowAccessory(props: {
-  time: string;
   live?: boolean;
   liveLabel?: string;
   unread?: boolean;
@@ -179,7 +178,7 @@ export function SessionRowAccessory(props: {
       group="row"
       actionsVisible={actionsVisible()}
       meta={(
-        <span class="flex items-center gap-6 tabular-nums text-11 text-content-muted">
+        <span class="ui-row-accessory-meta flex items-center gap-6 bg-surface pl-8 tabular-nums text-11 text-content-muted">
           <Show when={props.live}>
             <span
               data-testid="session-loading-wave"
@@ -202,11 +201,10 @@ export function SessionRowAccessory(props: {
           <Show when={props.unread}>
             <span class="size-6 rounded-full bg-accent-solid" aria-label="Unread" />
           </Show>
-          <span>{props.time}</span>
         </span>
       )}
       actions={(
-        <ButtonGroup aria-label="Session actions">
+        <ButtonGroup aria-label="Session actions" class="h-full">
           <IconButton
             size="sm"
             showTooltip={false}
@@ -298,7 +296,7 @@ export function ProjectRowAccessory(props: {
       actionsVisible={props.actionsVisible}
       meta={(
         <Show when={(props.count ?? 0) > 0}>
-          <span class="tabular-nums text-11 text-content-muted" aria-hidden="true">{props.count}</span>
+          <span class="ui-row-accessory-meta bg-surface pl-8 tabular-nums text-11 text-content-muted" aria-hidden="true">{props.count}</span>
         </Show>
       )}
       actions={props.children ?? builtInActions()}
@@ -308,7 +306,7 @@ export function ProjectRowAccessory(props: {
 
 export function ProjectRowActionGroup(props: { 'aria-label'?: string; children: JSX.Element }) {
   return (
-    <ButtonGroup aria-label={props['aria-label'] ?? 'Project actions'}>
+    <ButtonGroup aria-label={props['aria-label'] ?? 'Project actions'} class="h-full">
       {props.children}
     </ButtonGroup>
   );

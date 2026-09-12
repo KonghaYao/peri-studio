@@ -38,11 +38,11 @@ export function HighlightedCodeBody(props: HighlightedCodeBodyProps) {
         <For each={lines()}>
           {(line, index) => (
             <span
-              class={`md-code-line grid min-h-18 px-14 ${props.showLineNumbers ? 'grid-cols-code-line' : 'grid-cols-1'}`}
+              class={`md-code-line grid min-h-18 gap-8 ${props.showLineNumbers ? 'grid-cols-code-line' : 'grid-cols-1'}`}
             >
               <Show when={props.showLineNumbers}>
                 <span
-                  class="md-code-line__number mr-14 min-w-20 select-none text-right text-content-faint"
+                  class="md-code-line__number select-none text-right tabular-nums text-content-faint"
                   data-testid="md-code-line-number"
                   aria-hidden="true"
                 >

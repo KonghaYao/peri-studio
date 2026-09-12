@@ -299,12 +299,12 @@ export function MessageList(props: { footerHeight?: number }) {
         updateViewport(el.scrollTop);
       }}
       trailing={<Show when={(!stick() || hasNewContent()) && permissions().length === 0 && visibleElicitations(elicitations()).length === 0}>
-        <Button type="button" size="compact" class="jump-latest absolute bottom-12 z-12 left-1/2 -translate-x-1/2 min-h-36 px-13 border border-border-subtle rounded-full bg-surface-translucent text-text-secondary shadow-popover cursor-pointer text-12 backdrop-blur-sm hover:text-text-primary pointer-coarse:min-h-44 pointer-coarse:px-16" onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button>
+        <Button type="button" size="compact" class="ui-jump-latest" onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button>
       </Show>}
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
       <div class="sr-only" role="status" aria-label="Agent activity" aria-live="polite" aria-atomic="true">{agentActivityAnnouncement()}</div>
-      <div class="message-list-content ui-chat-column pt-32 pb-32" data-testid="message-list-content">
+      <div class="ui-transcript-content ui-chat-column" data-testid="message-list-content">
         <div ref={prefixRef} data-testid="transcript-prefix">
           <Show when={!runtimeDocsHydrated()}>
             <LoadingState label="Loading session" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />
@@ -335,8 +335,8 @@ export function MessageList(props: { footerHeight?: number }) {
           <div data-testid="transcript-spacer" data-transcript-spacer="after" aria-hidden="true" style={{ height: `${visibleTranscript().afterHeight}px` }} />
         </div>
         <Show when={showChatLoading()}>
-          <div data-testid="chat-loading">
-            <TranscriptThinkingGap class="mb-12 min-h-36 justify-center py-0 pl-32" />
+          <div class="ui-transcript-thinking-slot" data-testid="chat-loading">
+            <TranscriptThinkingGap />
           </div>
         </Show>
         <For each={acknowledgedForChat()}>{(submission) =>

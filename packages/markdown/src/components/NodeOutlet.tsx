@@ -49,7 +49,7 @@ function ParagraphNode(props: { node: RenderableNode; context: MarkdownRenderCon
       {(part, index) => (
         part.kind === 'inline'
           ? (
-            <p class="mb-12 last:mb-0">
+            <p>
               <RenderChildren nodes={part.nodes} context={props.context} prefix={`${props.indexKey}-${index()}`} />
             </p>
           )
@@ -87,17 +87,16 @@ function SwitchNode(props: {
       const children = (
         <RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} />
       );
-      const className = 'mb-12 font-semibold text-content-primary';
-      if (level === 1) return <h1 class={className}>{children}</h1>;
-      if (level === 2) return <h2 class={className}>{children}</h2>;
-      if (level === 3) return <h3 class={className}>{children}</h3>;
-      if (level === 4) return <h4 class={className}>{children}</h4>;
-      if (level === 5) return <h5 class={className}>{children}</h5>;
-      return <h6 class={className}>{children}</h6>;
+      if (level === 1) return <h1>{children}</h1>;
+      if (level === 2) return <h2>{children}</h2>;
+      if (level === 3) return <h3>{children}</h3>;
+      if (level === 4) return <h4>{children}</h4>;
+      if (level === 5) return <h5>{children}</h5>;
+      return <h6>{children}</h6>;
     }
     case 'blockquote':
       return (
-        <blockquote class="my-12 border-l-4 border-border-subtle pl-12 text-content-secondary">
+        <blockquote>
           <RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} />
         </blockquote>
       );
@@ -108,26 +107,26 @@ function SwitchNode(props: {
       const taskList = () => !ordered && items().some((item) => listItemHasCheckbox(item));
       return ordered
         ? (
-          <ol start={Number.isFinite(start) ? start : undefined} class="my-12 list-decimal pl-24">
+          <ol start={Number.isFinite(start) ? start : undefined}>
             <For each={items()}>{(item) => <NodeOutlet node={item} context={props.context} indexKey={`${props.indexKey}-item`} />}</For>
           </ol>
         )
         : (
-          <ul class={taskList() ? 'markdown-task-list my-12' : 'my-12 list-disc pl-24'}>
+          <ul class={taskList() ? 'markdown-task-list' : undefined}>
             <For each={items()}>{(item) => <NodeOutlet node={item} context={props.context} indexKey={`${props.indexKey}-item`} />}</For>
           </ul>
         );
     }
     case 'list_item':
       return (
-        <li class="mb-4">
+        <li>
           <RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} />
         </li>
       );
     case 'table':
       return <TableNode node={props.node} context={props.context} />;
     case 'thematic_break':
-      return <hr class="my-16 border-border-subtle" />;
+      return <hr />;
     case 'hardbreak':
       return <br />;
     case 'inline_code':
@@ -165,14 +164,14 @@ function SwitchNode(props: {
     case 'admonition': {
       const kind = getString((props.node as { kind?: string }).kind || (props.node as { type?: string }).type || 'note');
       return (
-        <aside class={`my-16 rounded-lg border border-border-subtle bg-surface-overlay px-14 py-12 admonition admonition-${kind}`}>
+        <aside class={`rounded-lg border border-border-subtle bg-surface-overlay px-14 py-12 admonition admonition-${kind}`}>
           <RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} />
         </aside>
       );
     }
     case 'definition_list':
       return (
-        <dl class="my-12">
+        <dl>
           <For each={getNodeList((props.node as { items?: RenderableNode[] }).items)}>
             {(item) => (
               <>
@@ -210,7 +209,7 @@ function SwitchNode(props: {
       const expression = getString((props.node as { content?: string }).content);
       if (loading) {
         return (
-          <div class="md-code-block my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-testid="md-code-block" data-incomplete="true">
+          <div class="md-code-block overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-testid="md-code-block" data-incomplete="true">
             <pre class="m-0 overflow-auto bg-surface-sunken px-12 py-10 font-mono text-12"><code>{expression}</code></pre>
           </div>
         );
@@ -229,7 +228,7 @@ function SwitchNode(props: {
       if (mode === 'mermaid') {
         const View = props.context.MermaidBlockView;
         return (
-          <div class="md-code-block my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-testid="md-code-block" data-incomplete={loading ? 'true' : undefined}>
+          <div class="md-code-block overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-testid="md-code-block" data-incomplete={loading ? 'true' : undefined}>
             <View code={code} loading={loading} isDark={props.context.isDark} />
           </div>
         );
@@ -260,13 +259,13 @@ function SwitchNode(props: {
       );
     case 'footnote':
       return (
-        <footer class="mt-16 border-t border-border-subtle pt-12 text-12 text-content-secondary">
+        <footer>
           <RenderChildren nodes={getNodeList((props.node as { children?: RenderableNode[] }).children)} context={props.context} prefix={props.indexKey} />
         </footer>
       );
     case 'footnote_anchor':
       return <span id={getString((props.node as { id?: string }).id)} />;
     default:
-      return <pre class="my-12 overflow-auto rounded-lg bg-surface-sunken p-12 text-11">{getString((props.node as { raw?: string }).raw)}</pre>;
+      return <pre>{getString((props.node as { raw?: string }).raw)}</pre>;
   }
 }

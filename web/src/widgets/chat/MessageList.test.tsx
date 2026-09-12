@@ -169,7 +169,7 @@ describe('MessageList footer resize', () => {
     setChatEntries([message('assistant-1', 'live', null)]);
     const { container } = render(() => <MessageList footerHeight={160} />);
 
-    expect(container.querySelector('[data-testid="message-list-content"]')).toHaveClass('ui-chat-column', 'pb-32');
+    expect(container.querySelector('[data-testid="message-list-content"]')).toHaveClass('ui-chat-column', 'ui-transcript-content');
     expect(screen.getByRole('region', { name: 'Conversation messages' })).toHaveClass('ui-transcript-scroll');
   });
 

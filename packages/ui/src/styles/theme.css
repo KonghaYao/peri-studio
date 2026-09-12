@@ -40,6 +40,7 @@
   --color-selection-bg: var(--selection-bg);
   --color-interaction-hover: var(--interaction-hover);
   --color-sidebar-selected: var(--sidebar-selected-bg);
+  --color-sidebar-row-hover: var(--sidebar-row-hover-bg);
   --color-decision-action: var(--decision-action-solid);
   --color-decision-action-hover: var(--decision-action-hover);
 
@@ -351,6 +352,7 @@
   --container-search-results: var(--container-search-results);
   --container-slash: var(--container-slash);
   --container-slash-tight: var(--container-slash-tight);
+  --container-slash-menu: var(--container-slash-menu);
   --container-activity: var(--container-activity);
   --container-placeholder: var(--container-placeholder);
   --container-placeholder-narrow: var(--container-placeholder-narrow);

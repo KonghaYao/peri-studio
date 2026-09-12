@@ -61,30 +61,40 @@ type ContentProps<T extends ValidComponent = 'div'> = DialogPrimitive.DialogCont
 export function DialogContent<T extends ValidComponent = 'div'>(props: PolymorphicProps<T, ContentProps<T>>) {
   const [local, rest] = splitProps(props as ContentProps, ['class', 'children', 'dismissible', 'overlayClass', 'size']);
   const preventWhenLocked = (event: Event) => { if (local.dismissible === false) event.preventDefault(); };
+  const isSheet = () => local.size === 'resource-compact';
   return <DialogPortal>
     <DialogOverlay class={local.overlayClass} />
     <DialogPrimitive.Content
       class={cn(
-        local.size === 'resource-compact'
+        isSheet()
           ? cn(
               'fixed top-0 right-0 bottom-0 left-auto z-61 flex h-auto max-h-none w-(--container-rewind-compact) translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border border-border-subtle border-y-0 border-r-0 bg-surface text-text-primary shadow-popover outline-none p-0',
               'ui-panel-sheet-motion slide-in-from-right motion-reduce:animate-none',
             )
-          : cn(
-              'fixed top-1/2 left-1/2 z-61 w-(--container-dialog-default) max-h-(--container-dialog-tall) -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-8 border border-border-subtle bg-surface text-text-primary shadow-popover outline-none',
-              modalDialogMotion,
-              {
-                'w-(--container-search)': local.size === 'search',
-                'w-(--container-settings) max-h-(--container-settings-tall)': local.size === 'settings',
-                'w-(--container-mcp) max-h-(--container-settings-tall)': local.size === 'mcp',
-              },
-            ),
-        local.class,
+          : 'fixed top-1/2 left-1/2 z-61 -translate-x-1/2 -translate-y-1/2 outline-none',
+        !isSheet() && local.class,
       )}
       onEscapeKeyDown={preventWhenLocked}
       onPointerDownOutside={preventWhenLocked}
       {...rest}
-    >{local.children}</DialogPrimitive.Content>
+    >
+      {isSheet() ? local.children : (
+        <div
+          class={cn(
+            'w-(--container-dialog-default) max-h-(--container-dialog-tall) overflow-auto rounded-8 border border-border-subtle bg-surface text-text-primary shadow-popover outline-none',
+            modalDialogMotion,
+            {
+              'w-(--container-search)': local.size === 'search',
+              'w-(--container-settings) max-h-(--container-settings-tall)': local.size === 'settings',
+              'w-(--container-mcp) max-h-(--container-settings-tall)': local.size === 'mcp',
+            },
+            local.class,
+          )}
+        >
+          {local.children}
+        </div>
+      )}
+    </DialogPrimitive.Content>
   </DialogPortal>;
 }
 

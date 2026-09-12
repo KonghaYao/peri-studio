@@ -267,7 +267,7 @@ export const CodeBlockBody: Component<CodeBlockBodyProps> = (props) => {
     <pre
       data-slot="code-block-body"
       class={cn(
-        'm-0 max-h-320 overflow-auto bg-surface-sunken py-12 font-mono text-12 leading-relaxed text-content-primary',
+        'm-0 max-h-320 overflow-auto bg-surface-sunken px-12 py-12 font-mono text-12 leading-relaxed text-content-primary',
         local.class,
       )}
       {...rest}
@@ -280,13 +280,13 @@ export const CodeBlockBody: Component<CodeBlockBodyProps> = (props) => {
               {(line, index) => (
                 <span
                   class={cn(
-                    'grid min-h-18 px-14',
+                    'grid min-h-18 gap-8',
                     local.showLineNumbers ? 'grid-cols-code-line' : 'grid-cols-1',
                   )}
                 >
                   <Show when={local.showLineNumbers}>
                     <span
-                      class="mr-14 min-w-20 select-none text-right text-content-faint"
+                      class="select-none text-right tabular-nums text-content-faint"
                       aria-hidden="true"
                     >
                       {startLine() + index()}

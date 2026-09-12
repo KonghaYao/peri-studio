@@ -135,28 +135,26 @@
 @keyframes ui-modal-in {
   from {
     opacity: 0;
-    transform: translate(-50%, calc(-50% + var(--motion-modal-enter-offset))) scale(0.96);
+    transform: scale(0.96);
   }
 }
 
 @keyframes ui-modal-out {
   to {
     opacity: 0;
-    transform: translate(-50%, calc(-50% + var(--motion-modal-exit-offset))) scale(0.98);
+    transform: scale(0.98);
   }
 }
 
 @keyframes ui-content-show {
   from {
     opacity: 0;
-    transform: scale(0.96);
   }
 }
 
 @keyframes ui-content-hide {
   to {
     opacity: 0;
-    transform: scale(0.96);
   }
 }
 
@@ -177,32 +175,39 @@
   --ui-exit-opacity: 0;
 }
 
-.ui-modal-dialog-motion[data-expanded] {
+.ui-modal-dialog-motion[data-expanded],
+[data-expanded] > .ui-modal-dialog-motion {
   animation: ui-modal-in var(--duration-overlay-in) var(--ease-overlay-in) both;
 }
 
-.ui-modal-dialog-motion[data-closed] {
+.ui-modal-dialog-motion[data-closed],
+[data-closed] > .ui-modal-dialog-motion {
   animation: ui-modal-out var(--duration-overlay-out) var(--ease-overlay-out) both;
 }
 
-.ui-surface-popover-motion[data-expanded] {
+.ui-surface-popover-motion[data-expanded],
+[data-expanded] > .ui-surface-popover-motion {
   animation: ui-enter var(--duration-surface-in) var(--ease-surface-in) both;
+  animation-delay: 1ms;
   --ui-enter-opacity: 0;
-  --ui-enter-scale: 0.95;
 }
 
-.ui-surface-popover-motion[data-closed] {
+.ui-surface-popover-motion[data-closed],
+[data-closed] > .ui-surface-popover-motion {
   animation: ui-exit var(--duration-surface-out) var(--ease-surface-out) both;
   --ui-exit-opacity: 0;
-  --ui-exit-scale: 0.95;
 }
 
-.ui-menu-surface-motion[data-expanded] {
+.ui-menu-surface-motion[data-expanded],
+[data-expanded] > .ui-menu-surface-motion {
   animation: ui-content-show var(--duration-surface-in) var(--ease-surface-in) both;
+  animation-delay: 1ms;
 }
 
 .ui-menu-surface-motion[data-closed],
-.ui-menu-surface-motion:not([data-expanded]) {
+.ui-menu-surface-motion:not([data-expanded]),
+[data-closed] > .ui-menu-surface-motion,
+[data-expanded='false'] > .ui-menu-surface-motion {
   animation: ui-content-hide var(--duration-surface-out) var(--ease-surface-out) both;
 }
 
@@ -341,11 +346,18 @@
   .ui-overlay-scrim-motion[data-closed],
   .ui-modal-dialog-motion[data-expanded],
   .ui-modal-dialog-motion[data-closed],
+  [data-expanded] > .ui-modal-dialog-motion,
+  [data-closed] > .ui-modal-dialog-motion,
   .ui-surface-popover-motion[data-expanded],
   .ui-surface-popover-motion[data-closed],
+  [data-expanded] > .ui-surface-popover-motion,
+  [data-closed] > .ui-surface-popover-motion,
   .ui-menu-surface-motion[data-expanded],
   .ui-menu-surface-motion[data-closed],
   .ui-menu-surface-motion:not([data-expanded]),
+  [data-expanded] > .ui-menu-surface-motion,
+  [data-closed] > .ui-menu-surface-motion,
+  [data-expanded='false'] > .ui-menu-surface-motion,
   .ui-panel-sheet-motion[data-expanded],
   .ui-panel-sheet-motion[data-closed],
   .ui-tooltip-motion[data-expanded],

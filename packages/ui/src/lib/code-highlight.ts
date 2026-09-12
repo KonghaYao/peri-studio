@@ -21,7 +21,7 @@ import { toml } from '@tanstack/highlight/languages/toml';
 import { ts } from '@tanstack/highlight/languages/ts';
 import { tsx } from '@tanstack/highlight/languages/tsx';
 import { yaml } from '@tanstack/highlight/languages/yaml';
-import { createThemeCss } from '@tanstack/highlight/theme';
+import { createThemeCss, themeTokenClasses } from '@tanstack/highlight/theme';
 import { githubLightTheme } from '@tanstack/highlight/themes/github-light';
 
 const LANGUAGE_ALIASES: Record<string, string> = {
@@ -88,16 +88,23 @@ export const codeHighlighter = createHighlighter({
 
 let themeInjected = false;
 
+const HIGHLIGHT_SCOPE = '.code-block-highlight';
+
 /** 注入 TanStack Highlight 主题（github-light，作用域在 .code-block-highlight）。 */
 export function ensureHighlightTheme() {
   if (themeInjected || typeof document === 'undefined') return;
   themeInjected = true;
   const style = document.createElement('style');
   style.setAttribute('data-peri-highlight-theme', '');
-  style.textContent = createThemeCss({
+  const themeVars = createThemeCss({
     light: githubLightTheme,
-    codeBlockSelector: '.code-block-highlight pre',
+    lightSelector: HIGHLIGHT_SCOPE,
+    includeBaseStyles: false,
   });
+  const tokenRules = themeTokenClasses
+    .map((token) => `${HIGHLIGHT_SCOPE} .th-${token} { color: var(--th-${token}); }`)
+    .join('\n');
+  style.textContent = `${themeVars}\n${tokenRules}`;
   document.head.append(style);
 }
 

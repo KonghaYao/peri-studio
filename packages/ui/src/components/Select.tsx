@@ -2,7 +2,8 @@ import { Select as KSelect } from '@kobalte/core/select';
 import { Check, ChevronDown } from 'lucide-solid';
 import { Show, splitProps } from 'solid-js';
 import { cn } from '../lib/cn';
-import { menuSurfaceMotion } from '../lib/overlay-motion';
+import { FloatingSurface } from './FloatingSurface';
+import { floatingPositionedShellClass, menuSurfaceMotion } from '../lib/overlay-motion';
 
 export interface SelectOption {
   value: string;
@@ -100,15 +101,19 @@ export function Select(props: {
         </KSelect.Icon>
       </KSelect.Trigger>
       <KSelect.Portal>
-        <KSelect.Content
-          class={cn(
-            'z-(--z-overlay) overflow-hidden rounded-8 border border-border-subtle bg-surface p-4 shadow-popover outline-none',
-            'origin-[var(--kb-select-content-transform-origin)]',
-            menuSurfaceMotion,
-            local.listClass ?? 'min-w-(--container-menu-min)',
-          )}
-        >
-          <KSelect.Listbox class="outline-none" />
+        <KSelect.Content class={floatingPositionedShellClass}>
+          <FloatingSurface
+            class={cn(
+              'z-(--z-overlay) overflow-hidden rounded-8 border border-border-subtle bg-surface p-4 shadow-popover outline-none',
+              'origin-[var(--kb-select-content-transform-origin)]',
+              menuSurfaceMotion,
+              local.listClass ?? (plain()
+                ? 'w-max min-w-0 max-w-(--container-model-menu)'
+                : 'min-w-(--container-menu-min)'),
+            )}
+          >
+            <KSelect.Listbox class="outline-none" />
+          </FloatingSurface>
         </KSelect.Content>
       </KSelect.Portal>
     </KSelect>

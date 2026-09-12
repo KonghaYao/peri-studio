@@ -336,6 +336,7 @@ describe('Composer', () => {
     const input = screen.getByRole('textbox');
     fireEvent.input(input, { target: { value: '/' } });
     expect(screen.getByRole('listbox', { name: 'Available commands and skills' })).toBeInTheDocument();
+    expect(screen.getByTestId('slash-menu')).toHaveClass('ui-composer-slash-overlay');
     fireEvent.click(screen.getByRole('option', { name: /auto-issue-fixer.*Fix an issue/ }));
     await waitFor(() => expect(input).toHaveValue('/auto-issue-fixer '));
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();

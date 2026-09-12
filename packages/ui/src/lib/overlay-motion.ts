@@ -1,5 +1,8 @@
 const motionSafe = 'motion-reduce:animate-none';
 
+/** Kobalte popper 定位层：仅承载 dismissable/pointer 逻辑，不叠加 transform 动画。 */
+export const floatingPositionedShellClass = 'z-50 outline-none';
+
 /** 遮罩层：淡入淡出。 */
 export const overlayScrimMotion = `ui-overlay-scrim-motion ${motionSafe}`;
 

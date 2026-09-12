@@ -72,7 +72,7 @@ export const ComposerInputField: Component<ComposerInputFieldProps> = (props) =>
         variant="bare"
         data-testid="composer-input"
         class={cn(
-          'ui-composer-input ui-scrollbar relative z-1 placeholder:text-content-muted disabled:bg-transparent disabled:text-content-secondary focus-visible:outline-0',
+          'ui-composer-input ui-scrollbar relative z-1 min-w-0 placeholder:text-content-muted disabled:bg-transparent disabled:text-content-secondary focus-visible:outline-0',
           resolvedFieldClass(),
           local.class,
         )}

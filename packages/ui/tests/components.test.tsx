@@ -1962,7 +1962,8 @@ describe('Combobox', () => {
     ));
 
     const content = await screen.findByTestId('content');
-    expect(content).toHaveClass('rounded-8', 'border-border-subtle', 'bg-surface', 'shadow-popover');
+    const surface = content.firstElementChild as HTMLElement;
+    expect(surface).toHaveClass('rounded-8', 'border-border-subtle', 'bg-surface', 'shadow-popover');
     expect(screen.getByRole('option', { name: 'SolidJS' })).toHaveClass('min-h-36', 'rounded-6');
   });
 });

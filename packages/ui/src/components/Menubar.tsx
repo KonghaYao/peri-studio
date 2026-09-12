@@ -4,19 +4,21 @@ import { splitProps } from "solid-js"
 import * as MenubarPrimitive from "@kobalte/core/menubar"
 import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 
+import { FloatingSurface } from "./FloatingSurface"
 import { cn } from "../lib/cn"
 import {
   menubarClass,
   menubarTriggerClass,
   menuCheckboxItemClass,
-  menuContentClass,
   menuItemClass,
   menuItemIndicatorClass,
+  menuPositionedShellClass,
   menuRadioItemClass,
   menuSeparatorClass,
   menuShortcutClass,
   menuSubContentClass,
   menuSubTriggerClass,
+  menuSurfaceClass,
 } from "./menu-styles"
 
 const MenubarMenu = MenubarPrimitive.Menu
@@ -61,6 +63,7 @@ const MenubarTrigger = <T extends ValidComponent = "button">(
 type MenubarContentProps<T extends ValidComponent = "div"> =
   MenubarPrimitive.MenubarContentProps<T> & {
     class?: string | undefined
+    children?: JSX.Element
     align?: "start" | "center" | "end"
     alignOffset?: number
     sideOffset?: number
@@ -71,6 +74,7 @@ const MenubarContent = <T extends ValidComponent = "div">(
 ) => {
   const [local, rest] = splitProps(props as MenubarContentProps, [
     "class",
+    "children",
     "align",
     "alignOffset",
     "sideOffset",
@@ -81,9 +85,13 @@ const MenubarContent = <T extends ValidComponent = "div">(
         align={local.align ?? "start"}
         alignOffset={local.alignOffset ?? -4}
         sideOffset={local.sideOffset ?? 8}
-        class={cn(menuContentClass, local.class)}
+        class={menuPositionedShellClass}
         {...rest}
-      />
+      >
+        <FloatingSurface class={cn(menuSurfaceClass, local.class)}>
+          {local.children}
+        </FloatingSurface>
+      </MenubarPrimitive.Content>
     </MenubarPrimitive.Portal>
   )
 }
@@ -162,17 +170,19 @@ const MenubarSubTrigger = <T extends ValidComponent = "div">(
 type MenubarSubContentProps<T extends ValidComponent = "div"> =
   MenubarPrimitive.MenubarSubContentProps<T> & {
     class?: string | undefined
+    children?: JSX.Element
   }
 
 const MenubarSubContent = <T extends ValidComponent = "div">(
   props: PolymorphicProps<T, MenubarSubContentProps<T>>
 ) => {
-  const [, rest] = splitProps(props as MenubarSubContentProps, ["class"])
+  const [local, rest] = splitProps(props as MenubarSubContentProps, ["class", "children"])
   return (
-    <MenubarPrimitive.SubContent
-      class={cn(menuSubContentClass, props.class)}
-      {...rest}
-    />
+    <MenubarPrimitive.SubContent class={menuPositionedShellClass} {...rest}>
+      <FloatingSurface class={cn(menuSubContentClass, local.class)}>
+        {local.children}
+      </FloatingSurface>
+    </MenubarPrimitive.SubContent>
   )
 }
 
