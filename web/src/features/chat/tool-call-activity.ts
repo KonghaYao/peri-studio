@@ -13,7 +13,6 @@ import {
   Wrench,
   type LucideIcon,
 } from 'lucide-solid';
-import { createMemo, createSignal, type Accessor } from 'solid-js';
 import type { ToolCallInfo, ToolCallKind } from '@/entities/chat/chat-view';
 import {
   formatElapsedBadge,
@@ -21,13 +20,7 @@ import {
   type ToolCardKind,
   type ToolNarration,
 } from '@/features/chat/tool-narration';
-import { openWorkspaceFromTool } from '@/store';
-import {
-  ToolActivityGroup as UiToolActivityGroup,
-  ToolActivityRow,
-  type ToolActivityEvidence,
-  type ToolCallStatus,
-} from '@peri/ui';
+import type { ToolActivityEvidence, ToolActivityRowProps, ToolCallStatus } from '@peri/ui';
 
 export type { ToolCallStatus };
 
@@ -191,8 +184,9 @@ function mapNarrationToRowProps(
     evidence: ToolActivityEvidence[];
     evidenceLoaded: boolean;
     onOpenEvidence: () => void;
+    onOpenWorkspacePath?: (path: string) => void;
   },
-) {
+): ToolActivityRowProps {
   const preview = narration.filePreview;
   return {
     icon: TOOL_ICONS[narration.kind],
@@ -210,7 +204,7 @@ function mapNarrationToRowProps(
       pathLabel: preview.pathLabel,
       path: preview.path,
       onOpen: () => {
-        if (preview.path) openWorkspaceFromTool(preview.path);
+        if (preview.path) options.onOpenWorkspacePath?.(preview.path);
       },
     } : undefined,
     evidence: options.evidence,
@@ -219,69 +213,59 @@ function mapNarrationToRowProps(
   };
 }
 
-type ToolCallSource = ToolCallInfo | Accessor<ToolCallInfo>;
-
-/** 将 Hub 投影的 tool call 映射为 @peri/ui ToolActivityRow。 */
-export function ToolCallCard(props: {
-  toolCall: ToolCallSource;
+export type ToolCallActivityOptions = {
   variant?: 'default' | 'activity';
   projectCwd?: string | null;
-}) {
-  const [evidenceLoaded, setEvidenceLoaded] = createSignal(false);
-  const tool = () => typeof props.toolCall === 'function' ? props.toolCall() : props.toolCall;
-  const state = createMemo(() => STATUS[(tool().status || '').toLowerCase()] || { label: tool().status || 'Unknown status', tone: 'neutral' as ToolCallStatus });
-  const durationMs = createMemo(() => observedDurationMs(tool().startedAt, tool().completedAt));
-  const durationBadge = createMemo(() => {
-    const ms = durationMs();
-    if (ms === null) return null;
-    if (!['done', 'failed'].includes(state().tone)) return null;
-    return formatElapsedBadge(ms);
+  evidenceLoaded: boolean;
+  onOpenEvidence: () => void;
+  onOpenWorkspacePath?: (path: string) => void;
+};
+
+/** 将 Hub 投影的 tool call 映射为 @peri/ui ToolActivityRow props。 */
+export function buildToolCallRowProps(
+  tool: ToolCallInfo,
+  options: ToolCallActivityOptions,
+): ToolActivityRowProps {
+  const state = STATUS[(tool.status || '').toLowerCase()] || { label: tool.status || 'Unknown status', tone: 'neutral' as ToolCallStatus };
+  const durationMs = observedDurationMs(tool.startedAt, tool.completedAt);
+  const durationBadge = durationMs !== null && ['done', 'failed'].includes(state.tone)
+    ? formatElapsedBadge(durationMs)
+    : null;
+  const errorText = [tool.publicError?.code, tool.publicError?.message].filter(Boolean).join(': ');
+  const tone = state.tone;
+  const narration = narrateToolCall(tool, {
+    tone,
+    statusLabel: state.label,
+    running: tone === 'running',
+    terminal: ['done', 'failed', 'neutral'].includes(tone),
+    projectCwd: options.projectCwd,
   });
-  const errorText = createMemo(() => [tool().publicError?.code, tool().publicError?.message].filter(Boolean).join(': '));
-  const tone = () => state().tone;
-  const narration = createMemo(() => narrateToolCall(tool(), {
-    tone: tone(),
-    statusLabel: state().label,
-    running: tone() === 'running',
-    terminal: ['done', 'failed', 'neutral'].includes(tone()),
-    projectCwd: props.projectCwd,
-  }));
-  const evidenceMeta = createMemo(() => toolEvidence(tool().kind, tool().arguments, tool().result));
-  const showEmptyOutput = () => tool().resultOmitted === false
-    && (tool().result === undefined || tool().result === null)
-    && !errorText()
-    && !['running', 'queued', 'approval'].includes(tone());
-  const showLegacyOutput = () => tool().resultOmitted === null
-    && (tool().result === undefined || tool().result === null)
-    && !errorText()
-    && !['running', 'queued', 'approval'].includes(tone());
-  const evidence = createMemo(() => buildEvidence({
-    tool: tool(),
-    evidence: evidenceMeta(),
-    errorText: errorText(),
-    showEmptyOutput: showEmptyOutput(),
-    showLegacyOutput: showLegacyOutput(),
-  }));
+  const evidenceMeta = toolEvidence(tool.kind, tool.arguments, tool.result);
+  const showEmptyOutput = tool.resultOmitted === false
+    && (tool.result === undefined || tool.result === null)
+    && !errorText
+    && !['running', 'queued', 'approval'].includes(tone);
+  const showLegacyOutput = tool.resultOmitted === null
+    && (tool.result === undefined || tool.result === null)
+    && !errorText
+    && !['running', 'queued', 'approval'].includes(tone);
+  const evidence = buildEvidence({
+    tool,
+    evidence: evidenceMeta,
+    errorText,
+    showEmptyOutput,
+    showLegacyOutput,
+  });
 
-  const rowProps = createMemo(() => mapNarrationToRowProps(narration(), {
-    status: tone(),
-    statusLabel: state().label,
-    durationBadge: durationBadge(),
-    toolCallId: tool().toolCallId || undefined,
-    variant: props.variant,
-    evidence: evidence(),
-    evidenceLoaded: evidenceLoaded(),
-    onOpenEvidence: () => setEvidenceLoaded(true),
-  }));
-
-  return <ToolActivityRow {...rowProps()} />;
-}
-
-/** 聊天 transcript 活动组；activity 变体由父级 chat-activity-chain 提供轨道。 */
-export function ToolActivityGroup(props: { children: unknown; variant?: 'default' | 'activity' }) {
-  return (
-    <UiToolActivityGroup variant={props.variant} showRail={props.variant !== 'activity'}>
-      {props.children as never}
-    </UiToolActivityGroup>
-  );
+  return mapNarrationToRowProps(narration, {
+    status: tone,
+    statusLabel: state.label,
+    durationBadge,
+    toolCallId: tool.toolCallId || undefined,
+    variant: options.variant,
+    evidence,
+    evidenceLoaded: options.evidenceLoaded,
+    onOpenEvidence: options.onOpenEvidence,
+    onOpenWorkspacePath: options.onOpenWorkspacePath,
+  });
 }

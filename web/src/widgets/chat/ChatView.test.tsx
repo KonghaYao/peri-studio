@@ -27,13 +27,17 @@ const state = vi.hoisted(() => ({
   runtimeDocsHydrated: vi.fn(() => true),
   selectedCid: vi.fn(() => null),
   selectedSessionId: vi.fn(() => 'session-1' as string | null),
+  projectSessions: vi.fn(() => []),
   turnActive: vi.fn(() => false),
 }));
 
 vi.mock('@/store', () => state);
 vi.mock('@/features/auth/auth-state', () => ({ readOnly: state.readOnly }));
 vi.mock('@/widgets/shell/StatusArea', () => ({ StatusArea: () => <section aria-label="Status area" /> }));
-vi.mock('./ChatHeader', () => ({ ChatHeader: () => null }));
+vi.mock('@peri/ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@peri/ui')>();
+  return { ...actual, ChatHeader: () => null };
+});
 vi.mock('@/widgets/composer/Composer', () => ({ Composer: () => null }));
 vi.mock('@/widgets/shell/ConnectionProblem', () => ({ ConnectionProblem: () => null }));
 vi.mock('./ElicitationQueue', () => ({ ElicitationQueue: () => <section aria-label="Agent question" /> }));

@@ -58,9 +58,9 @@ test('component geometry tokens are declared once and consumed by production wid
   const composer = [
     read('widgets', 'composer', 'Composer.tsx'),
     read('widgets', 'composer', 'ComposerStagedAssets.tsx'),
-    read('widgets', 'composer', 'ComposerToolbar.tsx'),
+    readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'composer', 'ComposerToolbarControls.tsx'), 'utf8'),
   ].join('\n');
-  const tool = read('widgets', 'chat', 'ToolCallCard.tsx');
+  const tool = read('widgets', 'chat', 'ToolCallActivity.tsx');
   const toolActivity = readFileSync(
     join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'ToolActivity.tsx'),
     'utf8',

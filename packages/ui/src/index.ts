@@ -90,6 +90,7 @@ export {
   ToolActivityRow,
   type ToolActivityEvidence,
   type ToolActivityFilePreview,
+  type ToolActivityRowProps,
   type ToolCallStatus,
 } from './components/ToolActivity';
 export { Button, IconButton } from './components/Button';
@@ -377,6 +378,14 @@ export {
   type SlashMenuProps,
   type SlashMenuShellProps,
 } from './components/composer/SlashMenu';
+export { SlashMenuListbox, type SlashMenuListboxProps } from './components/composer/SlashMenuListbox';
+export {
+  ComposerAttachmentButton,
+  ComposerPredictionButton,
+  ComposerSendStopAction,
+  ComposerSkillsButton,
+  type ComposerSendStopActionProps,
+} from './components/composer/ComposerToolbarControls';
 export { UploadAssetTile } from './components/composer/UploadAssetTile';
 export type { UploadAssetTileProps, UploadAssetTileStatus } from './components/composer/upload-asset-tile-types';
 export {

@@ -108,7 +108,7 @@ function OmittedEvidence(props: { label: string; sizeLabel?: string | null; noun
   );
 }
 
-type ToolActivityRowProps = {
+export type ToolActivityRowProps = {
   icon?: LucideIcon;
   toolKind?: string;
   title: string;

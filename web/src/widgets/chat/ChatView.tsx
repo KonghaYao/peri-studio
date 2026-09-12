@@ -9,12 +9,13 @@
 // onOpenStatus 是纯 UI seam（ui.md §四.5，不涉及协议），透传给 ChatHeader
 // 供中窄屏打开左右 drawer。
 
-import { ChatHeader } from './ChatHeader';
+import { ChatHeader as ChatHeaderBase } from '@peri/ui';
+import { resolveChatHeaderTitle } from '@/features/chat/chat-header-title';
 import { Composer } from '@/widgets/composer/Composer';
 import { MessageList } from './MessageList';
 import { ChatEmptyWorkspace, CHAT_EMPTY_TITLE } from './ChatEmptyWorkspace';
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
-import { chatCatalog, chatEntries, chatAgentLoading, chatHead, elicitationResponses, elicitations, permissions, questionResponses, questions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, respondQuestion, restoringSessionId, retryPersistentAction, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '@/store';
+import { chatCatalog, chatEntries, chatAgentLoading, chatHead, elicitationResponses, elicitations, permissions, projectSessions, questionResponses, questions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, respondQuestion, restoringSessionId, retryPersistentAction, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '@/store';
 import { readOnly } from '@/features/auth/auth-state';
 import { InlineNotice, LoadingState } from '@peri/ui';
 import { selectAgentPublicErrorNotice } from '@/features/chat/agent-public-error-notice';
@@ -53,6 +54,11 @@ export function ChatView(props: ChatViewProps) {
   const hasPendingElicitation = () => visibleElicitations(elicitations()).length > 0;
   const hasPendingQuestion = () => visibleQuestions(questions()).length > 0;
   const projectCwd = createMemo(() => chatCatalog().find((chat) => chat.id === selectedCid())?.cwd ?? null);
+  const headerTitle = createMemo(() => resolveChatHeaderTitle({
+    sessions: projectSessions(),
+    selectedSessionId: selectedSessionId(),
+    chatHead: chatHead(),
+  }));
   const conversationEmpty = createMemo(() => isConversationEmpty({
     runtimeDocsHydrated: runtimeDocsHydrated(),
     entryCount: chatEntries().length,
@@ -93,8 +99,14 @@ export function ChatView(props: ChatViewProps) {
   onCleanup(() => composerObserver?.disconnect());
   return (
     <section class={`chat-view relative flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden bg-app-bg ${selectedSessionId() ? '' : 'chat-view--launch'}`} data-testid="chat-view">
-      <ChatHeader
+      <ChatHeaderBase
+        title={headerTitle()}
         launch={!selectedSessionId()}
+        class={`chat-header ${!selectedSessionId() ? 'chat-header--launch' : ''}`}
+        titleClass="chat-title"
+        navButtonClass="mobile-nav-button hidden"
+        showMobileNav
+        showMobileResources
         onOpenNavigation={props.onOpenNavigation}
         onOpenResources={props.onOpenResources}
       />

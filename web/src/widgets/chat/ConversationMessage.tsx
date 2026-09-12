@@ -12,10 +12,10 @@ import { messageTime } from '@/shared/lib/message-time';
 import { cn } from '@peri/ui';
 import { splitSystemReminders } from '@/shared/lib/system-reminder';
 import { chatCatalog, selectedCid } from '@/store';
-import { CopyButton, IconButton, InlineNotice, Popover, PopoverContent, PopoverTrigger, Reasoning, ReasoningContent, ReasoningTrigger } from '@peri/ui';
+import { CopyButton, IconButton, InlineNotice, Popover, PopoverContent, PopoverTrigger, Reasoning, ReasoningContent, ReasoningTrigger, ToolActivityGroup } from '@peri/ui';
 import { MessageSquareQuote, MoreHorizontal } from 'lucide-solid';
 import { Markdown } from './Markdown';
-import { ToolCallCard, ToolActivityGroup } from './ToolCallCard';
+import { ToolCallActivity } from './ToolCallActivity';
 import { UserBubble } from '@peri/ui';
 import { ResourceCite } from '@peri/ui';
 import { McpAppFrame } from './McpAppFrame';
@@ -44,7 +44,7 @@ function McpToolBlock(props: {
   const toolCallId = () => props.toolCall().toolCallId || '';
   return (
     <Show when={!props.duplicate}>
-      <Show when={isPrimaryLiveMcpApp(toolCallId(), props.siblingTools())} fallback={<ToolCallCard toolCall={props.toolCall} variant={props.variant} projectCwd={props.projectCwd()} />}>
+      <Show when={isPrimaryLiveMcpApp(toolCallId(), props.siblingTools())} fallback={<ToolCallActivity toolCall={props.toolCall} variant={props.variant} projectCwd={props.projectCwd()} />}>
         <McpAppFrame toolCallId={toolCallId()} />
       </Show>
     </Show>
@@ -206,7 +206,7 @@ function AssistantLayoutUnitView(props: {
         </div>
       )}
     >
-      <ToolActivityGroup variant="activity">
+      <ToolActivityGroup variant="activity" showRail={false}>
         <For each={(unit() as Extract<AssistantLayoutUnit, { kind: 'tool_group' }>).blockIds}>{(toolBlockIdItem) => {
           const toolId = () => readForItem(toolBlockIdItem);
           const toolBlock = () => props.blocksById().get(toolId())! as Extract<ChatBlock, { kind: 'tool_call' }>;

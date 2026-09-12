@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { describe, expect, it, vi } from 'vitest';
-import { observedDuration, ToolCallCard } from './ToolCallCard';
+import { observedDuration } from '@/features/chat/tool-call-activity';
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
 import { openWorkspaceFromTool } from '@/store';
+import { ToolCallActivity } from './ToolCallActivity';
 
 vi.mock('@/store', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/store')>();
@@ -24,15 +25,15 @@ function expandControl() {
   return document.querySelector('[data-testid="tool-activity-row-expand"]') as HTMLButtonElement;
 }
 
-describe('ToolCallCard', () => {
+describe('ToolCallActivity', () => {
   it('uses a bordered card in default variant and a compact row in activity variant', () => {
-    const { unmount } = render(() => <ToolCallCard toolCall={base} />);
+    const { unmount } = render(() => <ToolCallActivity toolCall={base} />);
     const defaultRow = document.querySelector('[data-testid="tool-activity-row"]')!;
     expect(defaultRow).toHaveClass('border', 'rounded-lg');
     expect(defaultRow.querySelector('.tool-activity-row__card')).toBeNull();
     unmount();
 
-    render(() => <ToolCallCard toolCall={base} variant="activity" />);
+    render(() => <ToolCallActivity toolCall={base} variant="activity" />);
     const activityRow = document.querySelector('[data-testid="tool-activity-row"]')!;
     expect(activityRow).toHaveClass('tool-activity-row--activity');
     expect(activityRow).not.toHaveClass('border');
@@ -41,7 +42,7 @@ describe('ToolCallCard', () => {
   });
 
   it('renders the Fenix-style tool icon selected by semantic tool kind', () => {
-    render(() => <ToolCallCard toolCall={{ ...base, name: 'Grep', kind: 'other', arguments: { pattern: 'ToolCall', path: 'web/src' } }} />);
+    render(() => <ToolCallActivity toolCall={{ ...base, name: 'Grep', kind: 'other', arguments: { pattern: 'ToolCall', path: 'web/src' } }} />);
     const icon = document.querySelector('[data-tool-kind="grep"]');
     expect(icon).toBeInTheDocument();
     expect(icon?.querySelector('.lucide-search')).toBeInTheDocument();
@@ -50,7 +51,7 @@ describe('ToolCallCard', () => {
   });
 
   it('shows structured execution facts and honest observed duration', () => {
-    render(() => <ToolCallCard toolCall={base} />);
+    render(() => <ToolCallActivity toolCall={base} />);
     expect(screen.getByText(/Ran \$ pwd/)).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Done' })).toBeInTheDocument();
     expect(screen.queryByText('Done')).not.toBeInTheDocument();
@@ -65,7 +66,7 @@ describe('ToolCallCard', () => {
   });
 
   it('keeps public errors compact until requested and never renders payload markup as HTML', () => {
-    render(() => <ToolCallCard toolCall={{ ...base, status: 'error', result: null, publicError: { code: 'DENIED', message: '<img src=x onerror=alert(1)>' } }} />);
+    render(() => <ToolCallActivity toolCall={{ ...base, status: 'error', result: null, publicError: { code: 'DENIED', message: '<img src=x onerror=alert(1)>' } }} />);
     expect(screen.getByRole('img', { name: 'Failed' })).toBeInTheDocument();
     expect(screen.queryByText('Failed')).not.toBeInTheDocument();
     expect(screen.getByText(/DENIED:/)).toBeInTheDocument();
@@ -84,33 +85,33 @@ describe('ToolCallCard', () => {
   });
 
   it('distinguishes an explicitly omitted result from an empty result', () => {
-    const { unmount } = render(() => <ToolCallCard toolCall={{ ...base, result: null, resultOmitted: true, resultBytes: 8192 }} />);
+    const { unmount } = render(() => <ToolCallActivity toolCall={{ ...base, result: null, resultOmitted: true, resultBytes: 8192 }} />);
     fireEvent.click(expandControl());
     expect(screen.getByText('Output not loaded')).toBeInTheDocument();
     expect(screen.getByText(/of about 8.0 KB/)).toBeInTheDocument();
     expect(screen.queryByText('The tool returned no displayable output.')).not.toBeInTheDocument();
     unmount();
-    render(() => <ToolCallCard toolCall={{ ...base, result: null, resultOmitted: false, resultBytes: null }} />);
+    render(() => <ToolCallActivity toolCall={{ ...base, result: null, resultOmitted: false, resultBytes: null }} />);
     fireEvent.click(expandControl());
     expect(screen.getByText('The tool returned no displayable output.')).toBeInTheDocument();
   });
 
   it('shows a public error and omission provenance independently', () => {
-    render(() => <ToolCallCard toolCall={{ ...base, status: 'error', result: null, resultOmitted: true, resultBytes: 5000, publicError: { code: 'TOO_LARGE', message: 'safe failure' } }} />);
+    render(() => <ToolCallActivity toolCall={{ ...base, status: 'error', result: null, resultOmitted: true, resultBytes: 5000, publicError: { code: 'TOO_LARGE', message: 'safe failure' } }} />);
     fireEvent.click(expandControl());
     expect(screen.getAllByText(/TOO_LARGE: safe failure/).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Output not loaded')).toBeInTheDocument();
   });
 
   it('does not interpret missing legacy provenance as an explicit empty result', () => {
-    render(() => <ToolCallCard toolCall={{ ...base, result: null, resultOmitted: null, resultBytes: null }} />);
+    render(() => <ToolCallActivity toolCall={{ ...base, result: null, resultOmitted: null, resultBytes: null }} />);
     fireEvent.click(expandControl());
     expect(screen.getByText(/legacy projection did not record/)).toBeInTheDocument();
     expect(screen.queryByText('The tool returned no displayable output.')).not.toBeInTheDocument();
   });
 
   it('renders the server-authoritative permission wait without claiming an empty result', () => {
-    render(() => <ToolCallCard toolCall={{ ...base, status: 'awaitingPermission', result: null, resultOmitted: false, completedAt: null }} />);
+    render(() => <ToolCallActivity toolCall={{ ...base, status: 'awaitingPermission', result: null, resultOmitted: false, completedAt: null }} />);
     expect(screen.getByRole('img', { name: 'Approval' })).toBeInTheDocument();
     expect(screen.queryByText('Approval')).not.toBeInTheDocument();
     expect(screen.queryByText('The tool returned no displayable output.')).not.toBeInTheDocument();
@@ -124,7 +125,7 @@ describe('ToolCallCard', () => {
     ];
 
     for (const [index, item] of cases.entries()) {
-      const { unmount } = render(() => <ToolCallCard toolCall={{ ...base, status: item.status, completedAt: index === 2 ? base.completedAt : null }} />);
+      const { unmount } = render(() => <ToolCallActivity toolCall={{ ...base, status: item.status, completedAt: index === 2 ? base.completedAt : null }} />);
       expect(screen.getByRole('img', { name: item.label })).toBeInTheDocument();
       expect(screen.queryByText(item.label)).not.toBeInTheDocument();
       unmount();
@@ -132,32 +133,32 @@ describe('ToolCallCard', () => {
   });
 
   it('uses the production token geometry and highlights only active work', () => {
-    const { unmount } = render(() => <ToolCallCard toolCall={{ ...base, status: 'running', completedAt: null }} />);
+    const { unmount } = render(() => <ToolCallActivity toolCall={{ ...base, status: 'running', completedAt: null }} />);
     const active = summary().closest('.tool-call-row-compact')!;
     expect(active).toHaveClass('is-running', 'bg-sidebar-selected');
     expect(document.querySelector('.tool-call-row-title.ui-ai-shimmer')).toBeTruthy();
     unmount();
 
-    render(() => <ToolCallCard toolCall={base} />);
+    render(() => <ToolCallActivity toolCall={base} />);
     expect(summary().closest('.tool-call-row-compact')).not.toHaveClass('is-running');
   });
 
   it('narrates shell commands in the Fenix-style title row', () => {
-    render(() => <ToolCallCard toolCall={{ ...base, name: 'Bash', arguments: { command: 'pwd && git status' } }} />);
+    render(() => <ToolCallActivity toolCall={{ ...base, name: 'Bash', arguments: { command: 'pwd && git status' } }} />);
     const row = document.querySelector('[data-testid="tool-activity-row-summary"]')!;
     expect(row).toHaveTextContent('Ran $ pwd && git status');
     expect(screen.getByRole('img', { name: 'Done' })).toBeInTheDocument();
   });
 
   it('keeps long narrations truncatable without displacing status', () => {
-    render(() => <ToolCallCard toolCall={{ ...base, name: 'An unexpectedly long namespaced tool implementation', arguments: { command: 'pwd' } }} />);
+    render(() => <ToolCallActivity toolCall={{ ...base, name: 'An unexpectedly long namespaced tool implementation', arguments: { command: 'pwd' } }} />);
     const row = document.querySelector('.tool-call-row-title')!;
     expect(row).toHaveClass('tool-call-row-title');
     expect(screen.getByRole('img', { name: 'Done' })).toBeInTheDocument();
   });
 
   it('shows a cwd-relative label but opens the original absolute file path', () => {
-    render(() => <ToolCallCard projectCwd="/workspace/project" toolCall={{
+    render(() => <ToolCallActivity projectCwd="/workspace/project" toolCall={{
       ...base,
       name: 'Read',
       kind: 'read',
@@ -169,7 +170,7 @@ describe('ToolCallCard', () => {
   });
 
   it('prefers the Read file path over pagination arguments in the compact row', () => {
-    render(() => <ToolCallCard toolCall={{
+    render(() => <ToolCallActivity toolCall={{
       ...base,
       name: 'Read',
       kind: 'read',
@@ -181,7 +182,7 @@ describe('ToolCallCard', () => {
   });
 
   it('presents shell command and output as tool-specific evidence', () => {
-    render(() => <ToolCallCard toolCall={{
+    render(() => <ToolCallActivity toolCall={{
       ...base,
       name: 'Bash',
       kind: 'execute',
@@ -200,7 +201,7 @@ describe('ToolCallCard', () => {
   });
 
   it('uses only the authoritative kind and keeps unknown tools generic', () => {
-    render(() => <ToolCallCard toolCall={{
+    render(() => <ToolCallActivity toolCall={{
       ...base,
       name: 'Open browser',
       kind: 'other',
@@ -216,7 +217,7 @@ describe('ToolCallCard', () => {
   });
 
   it('preserves Read pagination evidence instead of showing only the path', () => {
-    render(() => <ToolCallCard toolCall={{
+    render(() => <ToolCallActivity toolCall={{
       ...base,
       name: 'Read',
       kind: 'read',
@@ -230,7 +231,7 @@ describe('ToolCallCard', () => {
   });
 
   it('distinguishes omitted input and renders projected ACP content and locations on demand', () => {
-    render(() => <ToolCallCard toolCall={{
+    render(() => <ToolCallActivity toolCall={{
       ...base,
       name: 'MCP tool',
       kind: 'other',

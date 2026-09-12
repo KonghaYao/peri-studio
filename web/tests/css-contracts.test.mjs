@@ -48,10 +48,11 @@ const readComposerBundle = () => {
   const dir = join(sourceRoot(), 'widgets', 'composer');
   const pkgComposer = join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'composer');
   return [
-    ...['Composer.tsx', 'ComposerEditor.tsx', 'ComposerToolbar.tsx', 'useComposerState.ts']
+    ...['Composer.tsx', 'useComposerState.ts']
       .map((file) => readFileSync(join(dir, file), 'utf8')),
     readFileSync(join(pkgComposer, 'ComposerToolbarShell.tsx'), 'utf8'),
     readFileSync(join(pkgComposer, 'ComposerInputField.tsx'), 'utf8'),
+    readFileSync(join(pkgComposer, 'ComposerToolbarControls.tsx'), 'utf8'),
   ].join('\n');
 };
 const allFiles = (directory) => readdirSync(directory, { withFileTypes: true }).flatMap((item) => {
@@ -268,12 +269,11 @@ test('dialog size belongs to DialogContent rather than an overflowing child', ()
 
 test('Composer and quick start expose one labeled textarea and keyboard submit guidance', () => {
   const root = join(import.meta.dirname, '..', 'src', 'widgets', 'composer');
-  const composerEditor = readFileSync(join(root, 'ComposerEditor.tsx'), 'utf8');
   const composerShell = readFileSync(join(root, 'Composer.tsx'), 'utf8');
   const quickStart = readFileSync(join(root, 'QuickStartComposer.tsx'), 'utf8');
-  assert.match(composerEditor, /<ComposerInputField[\s\S]*?aria-label="Message the agent"/);
-  assert.match(composerEditor, /aria-autocomplete="list"/);
-  assert.match(composerEditor, /if \(e\.key === 'Enter' && !e\.shiftKey\) \{\s*e\.preventDefault\(\);\s*s\(\)\.submit\(\);/);
+  assert.match(composerShell, /<ComposerInputField[\s\S]*?aria-label="Message the agent"/);
+  assert.match(composerShell, /aria-autocomplete="list"/);
+  assert.match(composerShell, /if \(e\.key === 'Enter' && !e\.shiftKey\) \{\s*e\.preventDefault\(\);\s*state\.submit\(\);/);
   assert.match(quickStart, /<Textarea[\s\S]*?aria-label="First message"/);
   assert.match(quickStart, /variant="bare"/);
   assert.match(quickStart, /if \(event\.key === 'Enter' && !event\.shiftKey\) \{ event\.preventDefault\(\); submit\(\); \}/);
@@ -315,7 +315,7 @@ test('MessageList delegates entry semantics through stable entry-id slots to one
   assert.match(list, /<Show when=\{chatEntries\(\)\[globalIndex\(\)\]\}>\{\(entry\) =>/);
   assert.match(list, /<ConversationMessage\s+entry=\{entry\}\s+activityBoundary=\{\(\) => activityBoundaryAt\(chatEntries\(\), globalIndex\(\)\)\}\s+activityContinuation=\{\(\) => activityContinuationAt\(chatEntries\(\), globalIndex\(\)\)\}\s+terminalNoticeOwner=\{\(\) => isTurnTerminalNoticeOwner\(chatEntries\(\), globalIndex\(\)\)\}\s+\/>/);
   assert.match(list, /<PlanSystemEntryRow entry=\{entry\(\)\} \/>/);
-  assert.doesNotMatch(list, /function MessageBubble|<Markdown|<ToolCallCard/);
+  assert.doesNotMatch(list, /function MessageBubble|<Markdown|<ToolCallActivity/);
   assert.match(message, /conversation-message--\$\{role\(\)\}/);
   assert.match(message, /role="alert" aria-label="Message error"/);
 });
@@ -362,7 +362,7 @@ test('large semantic status surfaces stay white', () => {
     join(source, 'widgets', 'chat', 'PermissionQueue.tsx'),
     join(source, 'widgets', 'chat', 'PermissionRequestCard.tsx'),
     join(source, 'widgets', 'chat', 'RewindDialog.tsx'),
-    join(source, 'widgets', 'chat', 'ToolCallCard.tsx'),
+    join(source, 'widgets', 'chat', 'ToolCallActivity.tsx'),
     join(source, 'widgets', 'shell', 'shared', 'ConfirmDialog.tsx'),
   ];
   for (const file of files) {
@@ -443,10 +443,10 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
   assert.doesNotMatch(composerShell, /shadow-float/);
   assert.match(composerParts, /ui-composer-toolbar flex min-h-36 min-w-0 items-center/);
   assert.match(composerShell, /rounded-\(--composer-radius\)/);
-  const composerToolbar = readFileSync(join(root, 'widgets', 'composer', 'ComposerToolbar.tsx'), 'utf8');
+  const composerControls = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'composer', 'ComposerToolbarControls.tsx'), 'utf8');
   const quickStartComposer = readFileSync(join(root, 'widgets', 'composer', 'QuickStartComposer.tsx'), 'utf8');
-  assert.doesNotMatch(composerToolbar, /bg-accent-solid/);
-  assert.match(composerToolbar, /variant="primary"/);
+  assert.doesNotMatch(composerControls, /bg-accent-solid/);
+  assert.match(composerControls, /'primary'/);
   assert.doesNotMatch(quickStartComposer, /bg-accent-solid/);
   assert.doesNotMatch(quickStartComposer, /Approval mode/);
   assert.match(quickStartComposer, /variant="primary"/);
@@ -547,9 +547,9 @@ test('primitive visuals remain in the UI package', () => {
 
 test('domain status inference delegates visual rendering to the shared Badge', () => {
   const root = join(import.meta.dirname, '..', 'src');
-  const adapter = readFileSync(join(root, 'widgets', 'shell', 'Badge.tsx'), 'utf8');
+  const adapter = readFileSync(join(root, 'features', 'shell', 'runtime-status-badge.ts'), 'utf8');
   const primitive = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Badge.tsx'), 'utf8');
-  assert.match(adapter, /Badge as UiBadge/);
+  assert.match(adapter, /BadgeTone/);
   assert.doesNotMatch(adapter, /bg-\[|text-\[/);
   assert.match(primitive, /export type BadgeTone/);
   assert.match(primitive, /'ok'/);
