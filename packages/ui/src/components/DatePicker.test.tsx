@@ -37,6 +37,27 @@ describe('DatePicker', () => {
     expect(onValueChange.mock.calls[0][0].getDate()).toBe(15);
   });
 
+  it('keeps the calendar open after clicking the trigger', async () => {
+    const onOpenChange = vi.fn();
+    render(() => (
+      <DatePicker
+        defaultMonth={september2024}
+        placeholder="Select date"
+        onOpenChange={onOpenChange}
+      >
+        <DatePickerTrigger data-testid="trigger" />
+        <DatePickerContent aria-label="Choose date" />
+      </DatePicker>
+    ));
+
+    fireEvent.click(screen.getByTestId('trigger'));
+    expect(onOpenChange.mock.calls).toEqual([[true]]);
+
+    const dialog = await screen.findByRole('dialog', { name: 'Choose date' });
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveAttribute('data-expanded');
+  });
+
   it('shows formatted label for controlled value', () => {
     function Harness() {
       const [value] = createSignal(new Date(2024, 8, 5));

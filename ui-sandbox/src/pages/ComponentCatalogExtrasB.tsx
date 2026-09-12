@@ -136,9 +136,9 @@ export function ComponentCatalogExtrasB() {
         </ContextMenu>
         <HoverCard>
           <HoverCardTrigger as={Button} variant="ghost" size="sm">Hover for details</HoverCardTrigger>
-          <HoverCardContent class="w-64">
+          <HoverCardContent>
             <p class="text-13 font-medium text-content-primary">Instance heartbeat</p>
-            <p class="mt-4 text-12 text-content-secondary">Last seen 12s ago on the local connect role.</p>
+            <p class="mt-8 text-12 leading-normal text-content-secondary">Last seen 12s ago on the local connect role.</p>
           </HoverCardContent>
         </HoverCard>
         <ScrollArea class="h-120 max-w-sm rounded-lg border border-border-subtle">

@@ -112,24 +112,20 @@ export function ComponentCatalogExtrasC() {
             <NavigationMenuItem value="product">
               <NavigationMenuTrigger>Product</NavigationMenuTrigger>
               <NavigationMenuContent aria-label="Product">
-                <ul class="grid gap-8 p-12">
-                  <li>
-                    <NavigationMenuLink href="#/components2" active>Base UI 2</NavigationMenuLink>
-                  </li>
-                  <li>
-                    <NavigationMenuLink href="#/layers">Layers</NavigationMenuLink>
-                  </li>
-                </ul>
+                <li>
+                  <NavigationMenuLink href="#/components2" active>Base UI 2</NavigationMenuLink>
+                </li>
+                <li>
+                  <NavigationMenuLink href="#/layers">Layers</NavigationMenuLink>
+                </li>
               </NavigationMenuContent>
             </NavigationMenuItem>
             <NavigationMenuItem value="docs">
               <NavigationMenuTrigger>Docs</NavigationMenuTrigger>
               <NavigationMenuContent aria-label="Docs">
-                <ul class="grid gap-8 p-12">
-                  <li>
-                    <NavigationMenuLink href="#/tokens">Tokens</NavigationMenuLink>
-                  </li>
-                </ul>
+                <li>
+                  <NavigationMenuLink href="#/tokens">Tokens</NavigationMenuLink>
+                </li>
               </NavigationMenuContent>
             </NavigationMenuItem>
           </NavigationMenuList>

@@ -92,7 +92,7 @@ export function Dialog(props: {
     <DialogRoot open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent style={props.width ? { width: props.width, 'max-width': props.width } : undefined}>
         <DialogHeader>
-          <DialogTitle class="text-14 font-semibold text-content-primary">{props.title}</DialogTitle>
+          <DialogTitle>{props.title}</DialogTitle>
           <DialogClose />
         </DialogHeader>
         <div class="px-20 py-16 text-13 leading-normal text-content-secondary">{props.children}</div>
@@ -159,7 +159,7 @@ export function Checkbox(props: {
 }) {
   return (
     <CheckboxRoot
-      class="inline-flex cursor-pointer items-center gap-8 disabled:cursor-not-allowed disabled:opacity-45"
+      class="inline-flex cursor-pointer items-center gap-8 data-disabled:cursor-not-allowed"
       checked={props.checked}
       onChange={props.onChange}
       disabled={props.disabled}
@@ -167,7 +167,7 @@ export function Checkbox(props: {
       <CheckboxInput />
       <CheckboxControl />
       <Show when={props.label}>
-        <CheckboxLabel class="text-13 text-content-primary">{props.label}</CheckboxLabel>
+        <CheckboxLabel>{props.label}</CheckboxLabel>
       </Show>
     </CheckboxRoot>
   );

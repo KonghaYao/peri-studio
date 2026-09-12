@@ -227,9 +227,9 @@ export function ComponentCatalogExtras() {
         </Table>
         <Popover>
           <PopoverTrigger as={Button} variant="default" size="sm">Open popover</PopoverTrigger>
-          <PopoverContent class="w-64">
+          <PopoverContent>
             <p class="text-13 font-medium text-content-primary">Resource rail</p>
-            <p class="mt-4 text-12 text-content-secondary">Explorer, source control, and graph share one floating panel.</p>
+            <p class="mt-8 text-12 leading-normal text-content-secondary">Explorer, source control, and graph share one floating panel.</p>
           </PopoverContent>
         </Popover>
         <div>

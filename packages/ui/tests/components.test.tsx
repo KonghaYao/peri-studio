@@ -1391,6 +1391,40 @@ describe('Dialog', () => {
 });
 
 describe('Popover', () => {
+  it('opens when trigger is clicked in controlled mode', async () => {
+    function Harness() {
+      const [open, setOpen] = createSignal(false);
+      return (
+        <Popover open={open()} onOpenChange={setOpen}>
+          <PopoverTrigger>Open</PopoverTrigger>
+          <PopoverContent aria-label="Test popover">Popover body</PopoverContent>
+        </Popover>
+      );
+    }
+
+    render(() => <Harness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+    expect(await screen.findByRole('dialog', { name: 'Test popover' })).toHaveTextContent('Popover body');
+  });
+
+  it('opens when trigger uses Button polymorphism inside a wrapper', async () => {
+    function Harness() {
+      const [open, setOpen] = createSignal(false);
+      return (
+        <Popover open={open()} onOpenChange={setOpen}>
+          <div class="inline-flex">
+            <PopoverTrigger as={Button} variant="default">Select date</PopoverTrigger>
+            <PopoverContent aria-label="Choose date">Calendar</PopoverContent>
+          </div>
+        </Popover>
+      );
+    }
+
+    render(() => <Harness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Select date' }));
+    expect(await screen.findByRole('dialog', { name: 'Choose date' })).toHaveTextContent('Calendar');
+  });
+
   it('closes on Escape', async () => {
     function Harness() {
       const [open, setOpen] = createSignal(true);
