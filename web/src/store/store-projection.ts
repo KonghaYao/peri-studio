@@ -7,7 +7,7 @@ import { renderControl, type ControlView } from '@/entities/chat/control-view';
 import type { ChatInfo, InstanceInfo, MachineInfo, ProjectInfo, ProjectSessionInfo, SessionSummaryInfo } from '@/entities/registry/registry-view';
 import { RegistryProjection } from '@/entities/registry/registry-projection';
 import { unimportedSessions } from '@/features/session/session-import';
-import { isTerminal } from '@/features/runtime/action-state';
+import { isTerminal, isTurnActive } from '@/features/runtime/action-state';
 import { retainLiveRuntimeHints } from '@/features/session/recovery-state';
 import { reconcileMessageProjection } from '@/features/message/message-delivery';
 import { reconcileRuntimeControl } from '@/features/runtime/runtime-control';
@@ -33,6 +33,7 @@ interface ProjectionSignals {
   setGlobalStatus: Setter<string>;
   setSchemaVersion: Setter<unknown>;
   setChatStatusSignal: Setter<Record<string, string>>;
+  setChatTurnActiveSignal: Setter<Record<string, boolean>>;
   setRuntimeDocsState: Setter<RuntimeDocsState>;
 }
 
@@ -67,6 +68,17 @@ export function installStoreProjection(
         if (isTerminal(chat.status || undefined)) reconcileRuntimeControl(chat.id, true, true);
       });
       signals.setChatStatusSignal(statusMap);
+      signals.setChatTurnActiveSignal((previous) => {
+        let changed = false;
+        const next = { ...previous };
+        registry.chats.forEach((chat) => {
+          if (isTerminal(chat.status || undefined) && next[chat.id]) {
+            next[chat.id] = false;
+            changed = true;
+          }
+        });
+        return changed ? next : previous;
+      });
       signals.setInstances(registry.instances);
       signals.setChatCatalog(registry.chats);
       signals.setGlobalStatus(registry.globalStatus);
@@ -101,6 +113,10 @@ export function installStoreProjection(
       const control = renderControl(store.docFor(docId));
       onRuntimeProgress(cid);
       signals.setChatHead(control);
+      signals.setChatTurnActiveSignal((previous) => {
+        const active = isTurnActive(control.activeTurn);
+        return previous[cid] === active ? previous : { ...previous, [cid]: active };
+      });
       signals.setPermissions(control.pendingPermissions);
       const elicitations = control.pendingElicitations ?? [];
       signals.setElicitations(elicitations);

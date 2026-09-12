@@ -29,6 +29,8 @@ test('runtime status distinguishes durable session state from process state', ()
   assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: false, hasPendingPermission: false, turnActive: false }).label, 'Idle');
   assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: true, chatStatus: 'active', hasPendingPermission: false, turnActive: false }).tone, 'ready');
   assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: true, isSelected: false, chatStatus: null, hasPendingPermission: false, turnActive: false }).label, 'Running');
+  assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: true, isSelected: false, chatStatus: 'crashed', hasPendingPermission: false, turnActive: false }).tone, 'danger');
+  assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: true, isSelected: false, chatStatus: 'active', hasPendingPermission: false, turnActive: true }).label, 'Working');
   assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: true, isHydrated: false, chatStatus: 'active', hasPendingPermission: false, turnActive: false }).label, 'Loading');
   assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: true, chatStatus: 'active', hasPendingPermission: true, turnActive: true }).label, 'Approval');
   assert.equal(runtimeState({ hasSession: true, isOpening: false, hasRuntime: true, chatStatus: 'crashed', hasPendingPermission: false, turnActive: false }).tone, 'danger');

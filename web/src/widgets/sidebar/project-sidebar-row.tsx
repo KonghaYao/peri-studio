@@ -1,6 +1,7 @@
 import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
 import {
   chatStatusSignal,
+  chatTurnActiveSignal,
   createProjectSession,
   creatingSessionProjectId,
   navigateProjectSession,
@@ -9,7 +10,6 @@ import {
   readOnly,
   renameProjectSession,
   runtimeDocsHydrated,
-  selectedCid,
   selectedSessionId,
   turnActive,
 } from '@/store';
@@ -30,16 +30,17 @@ export function ProjectSidebarRow(props: ProjectSidebarRowProps) {
   const sessionId = props.session.id;
   const menuKey = `${props.options?.pinned ? 'pinned' : 'workspace'}:${sessionId}`;
   const selected = () => selectedSessionId() === sessionId;
+  const chatId = () => props.session.activeChatId;
   const state = () => runtimeState({
     hasSession: true,
     lifecycle: props.session.lifecycle,
     isOpening: openingSessionId() === sessionId,
-    hasRuntime: !!props.session.activeChatId,
+    hasRuntime: !!chatId(),
     isSelected: selected(),
     isHydrated: selected() ? runtimeDocsHydrated() : undefined,
-    chatStatus: selected() ? chatStatusSignal()[selectedCid() ?? ''] : null,
+    chatStatus: chatId() ? chatStatusSignal()[chatId()!] ?? null : null,
     hasPendingPermission: selected() && permissions().some((permission) => permission.status === 'pending'),
-    turnActive: selected() && turnActive(),
+    turnActive: !!chatId() && (chatTurnActiveSignal()[chatId()!] === true || (selected() && turnActive())),
   });
 
   return (

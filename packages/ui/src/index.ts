@@ -392,6 +392,7 @@ export {
   SessionLiveIndicator,
   SessionRowAccessory,
   SidebarNavBar,
+  type SessionLiveIndicatorTone,
   type SidebarChromeMenuItem,
 } from './components/SidebarChrome';
 export {

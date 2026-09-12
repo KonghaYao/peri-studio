@@ -227,6 +227,7 @@ export function createProjectSidebarModel(intent: () => ProjectSidebarIntent | n
       () => setSessionLifecycleBusy(sessionId),
       () => setSessionLifecycleBusy(null),
       (committed, failed) => archiveProjectSession(sessionId, committed, failed),
+      () => {},
     );
   };
 
@@ -264,6 +265,7 @@ export function createProjectSidebarModel(intent: () => ProjectSidebarIntent | n
     submitProject,
     browseProjectDirectory,
     handleNewSession,
+    requestArchiveSession,
     isSessionPinned,
     toggleSessionPin,
     machineOnline,

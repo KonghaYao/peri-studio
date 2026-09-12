@@ -105,6 +105,8 @@ export const [runtimeDocsState, setRuntimeDocsState] = createSignal<RuntimeDocsS
 export const runtimeDocsHydrated = () => runtimeDocsState().chat && runtimeDocsState().control;
 /** 各 chat 的运行时状态（终态判定；selectChat 需要当前 status）。 */
 export const [chatStatusSignal, setChatStatusSignal] = createSignal<Record<string, string>>({});
+/** 各 chat 最近一次已知的活动 turn；侧栏未选中行仍可显示该会话自己的忙碌灯。 */
+export const [chatTurnActiveSignal, setChatTurnActiveSignal] = createSignal<Record<string, boolean>>({});
 const toastStore = new ToastStore();
 export const toasts = toastStore.records;
 export const [persistentErrors, setPersistentErrors] = createSignal<PersistentError[]>([]);
@@ -319,6 +321,7 @@ installStoreProjection(
     setGlobalStatus,
     setSchemaVersion,
     setChatStatusSignal,
+    setChatTurnActiveSignal,
     setRuntimeDocsState,
   },
   reconcileSessionNavigation,
@@ -377,6 +380,7 @@ export const resetAuthenticatedSession = createResetAuthenticatedSession({
   setQuestions,
   setRuntimeDocsState,
   setChatStatusSignal,
+  setChatTurnActiveSignal,
   setProjects,
   setMachines,
   setProjectSessions,

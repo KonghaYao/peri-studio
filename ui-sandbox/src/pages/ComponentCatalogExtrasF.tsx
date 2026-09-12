@@ -122,8 +122,11 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
             <SessionRowAccessory pinned actionsVisible />
           </div>
           <div class="group/row relative mt-4 min-h-36 rounded-md bg-sidebar-selected" data-selected="true">
-            <div class="flex min-h-36 items-center gap-6 px-10">
-              <SessionLiveIndicator label="Agent is working" />
+            <SessionLiveIndicator
+              label="Agent is working"
+              class="pointer-events-none absolute top-1/2 left-8 -translate-y-1/2"
+            />
+            <div class="flex min-h-36 items-center px-10">
               <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Design workspace state</span>
             </div>
             <SessionRowAccessory />

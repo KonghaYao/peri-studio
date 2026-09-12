@@ -38,16 +38,14 @@ export function runtimeState(input: RuntimeStateInput): RuntimeStateView {
   if (input.isOpening || ['activating', 'pending'].includes(input.lifecycle || '')) return { label: 'Opening', tone: 'busy', detail: 'Restoring ACP session' };
   if (!input.hasRuntime) return { label: 'Idle', tone: 'idle', detail: 'Not started · session saved' };
 
-  // A Registry runtime hint says that an ACP process exists; it does not mean
-  // this browser has selected and hydrated that conversation. Keep the
-  // sidebar honest instead of advertising “可输入” on multiple rows at once.
-  if (input.isSelected === false) return { label: 'Running', tone: 'ready', detail: 'Running · click to switch' };
-
   const chatStatus = String(input.chatStatus || '').toLowerCase();
   if (TERMINAL_STATES[chatStatus]) return TERMINAL_STATES[chatStatus];
   if (input.hasPendingPermission) return { label: 'Approval', tone: 'attention', detail: 'Awaiting your permission' };
   if (input.isHydrated === false) return { label: 'Loading', tone: 'busy', detail: 'Loading session' };
   if (input.turnActive) return { label: 'Working', tone: 'busy', detail: 'Agent is working' };
+  // Live runtime on an unselected row: process exists, but this browser has
+  // not hydrated it. Do not advertise “Ready” (can type) on every live row.
+  if (input.isSelected === false) return { label: 'Running', tone: 'ready', detail: 'Running · click to switch' };
   return { label: 'Ready', tone: 'ready', detail: 'Ready · session saved' };
 }
 

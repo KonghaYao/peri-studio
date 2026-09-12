@@ -9,6 +9,7 @@ import {
   cn,
   SessionLiveIndicator,
   SessionRowAccessory,
+  type SessionLiveIndicatorTone,
 } from '@peri/ui';
 import { Pencil } from 'lucide-solid';
 import { sessionDisplayTitle } from '@/features/session/recovery-state';
@@ -58,7 +59,10 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     props.session.id,
   );
   const renameValid = () => !!draft().trim();
-  const loading = () => props.state.tone === 'busy';
+  const lampTone = (): SessionLiveIndicatorTone | null => {
+    const tone = props.state.tone;
+    return tone === 'busy' || tone === 'attention' || tone === 'danger' ? tone : null;
+  };
 
   createEffect(() => {
     if (props.renameOpen) setDraft(props.session.title);
@@ -104,13 +108,22 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
         'padding-left': props.indent ? `calc(5px + ${props.indent}px)` : undefined,
       }}
     >
+      <Show when={lampTone()}>
+        {(tone) => (
+          <SessionLiveIndicator
+            tone={tone()}
+            label={props.state.detail || props.state.label}
+            class="pointer-events-none absolute top-1/2 left-8 -translate-y-1/2"
+          />
+        )}
+      </Show>
       <div class="relative flex w-full min-w-0 items-center">
         <button
           type="button"
           data-sidebar="menu-button"
           data-active={props.selected ? 'true' : undefined}
           class={cn(
-            'flex w-full min-w-0 items-center gap-6 overflow-hidden rounded-md bg-transparent py-4 pl-5 pr-0 text-left outline-none pointer-coarse:py-6',
+            'flex w-full min-w-0 items-center overflow-hidden rounded-md bg-transparent py-4 pl-5 pr-0 text-left outline-none pointer-coarse:py-6',
             'focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2',
             'disabled:pointer-events-none disabled:opacity-45',
             props.selected && 'font-medium',
@@ -120,9 +133,6 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
           onClick={open}
           disabled={(props.readOnly && !props.session.activeChatId) || props.session.lifecycle !== 'ready' || props.navigationBusy}
         >
-          <Show when={loading()}>
-            <SessionLiveIndicator label={props.state.detail || props.state.label} />
-          </Show>
           <span data-testid="session-copy" class="block min-w-0 w-full truncate text-13 leading-20 text-content-primary">{displayTitle()}</span>
         </button>
         <SessionRowAccessory

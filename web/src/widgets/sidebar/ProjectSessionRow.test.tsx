@@ -42,28 +42,46 @@ describe('ProjectSessionRow', () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => cleanup());
 
-  it('shows only a breathing loading signal and keeps the session title icon-free', () => {
+  it('shows only a breathing loading signal overlayed in the title gutter', () => {
     render(() => <ProjectSessionRow {...props({ state: { label: 'Agent is working', tone: 'busy' } })} />);
 
     const loading = screen.getByTestId('session-loading-wave');
     const copy = screen.getByTestId('session-copy');
     expect(loading).toHaveAttribute('aria-label', 'Agent is working');
+    expect(loading).toHaveAttribute('data-tone', 'busy');
+    expect(loading).toHaveClass('absolute', 'left-8', '-translate-y-1/2');
     expect(loading.querySelector('[data-testid="session-loading-wave-halo"]')).toHaveClass('animate-ping', 'motion-reduce:animate-none');
     expect(screen.getByTestId('session-loading-wave-core')).toHaveClass('bg-success-solid');
-    expect(screen.getByRole('button', { name: /^Architecture refactor/ })).toContainElement(loading);
+    expect(screen.getByTestId('session-row')).toContainElement(loading);
+    expect(screen.getByRole('button', { name: /^Architecture refactor/ })).not.toContainElement(loading);
     expect(loading.compareDocumentPosition(copy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(copy.querySelector(':scope > svg')).toBeNull();
     expect(screen.getByTestId('session-menu')).toBeInTheDocument();
     expect(screen.getByText('Architecture refactor')).toHaveClass('text-13', 'text-content-primary');
   });
 
-  it('does not render loading wave for idle, ready, warning, or failed sessions', () => {
+  it('does not render a status lamp for idle or ready sessions', () => {
     const { unmount } = render(() => <ProjectSessionRow {...props({ state: { label: 'Ready', tone: 'ready' } })} />);
     expect(screen.queryByTestId('session-loading-wave')).not.toBeInTheDocument();
     unmount();
 
-    render(() => <ProjectSessionRow {...props({ state: { label: 'Failed', tone: 'danger' } })} />);
+    render(() => <ProjectSessionRow {...props({ state: { label: 'Idle', tone: 'idle' } })} />);
     expect(screen.queryByTestId('session-loading-wave')).not.toBeInTheDocument();
+  });
+
+  it('renders a static danger lamp and a pulsing attention lamp', () => {
+    const { unmount } = render(() => <ProjectSessionRow {...props({ state: { label: 'Crashed', tone: 'danger', detail: 'Run exited abnormally · session kept' } })} />);
+    const danger = screen.getByTestId('session-loading-wave');
+    expect(danger).toHaveAttribute('data-tone', 'danger');
+    expect(danger).toHaveClass('absolute', 'left-8');
+    expect(screen.getByTestId('session-loading-wave-core')).toHaveClass('bg-danger-solid');
+    expect(screen.queryByTestId('session-loading-wave-halo')).not.toBeInTheDocument();
+    unmount();
+
+    render(() => <ProjectSessionRow {...props({ state: { label: 'Approval', tone: 'attention', detail: 'Awaiting your permission' } })} />);
+    expect(screen.getByTestId('session-loading-wave')).toHaveAttribute('data-tone', 'attention');
+    expect(screen.getByTestId('session-loading-wave-core')).toHaveClass('bg-warning-solid');
+    expect(screen.getByTestId('session-loading-wave-halo')).toHaveClass('animate-ping');
   });
 
   it('delegates server-authoritative opening without navigating early', () => {

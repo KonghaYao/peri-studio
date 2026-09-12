@@ -38,6 +38,7 @@ export type SessionResetDeps = {
   setQuestions: Setter<NonNullable<ControlView['pendingQuestions']>>;
   setRuntimeDocsState: Setter<RuntimeDocsState>;
   setChatStatusSignal: Setter<Record<string, string>>;
+  setChatTurnActiveSignal: Setter<Record<string, boolean>>;
   setProjects: Setter<ProjectInfo[]>;
   setMachines: Setter<MachineInfo[]>;
   setProjectSessions: Setter<ProjectSessionInfo[]>;
@@ -71,6 +72,7 @@ export const AUTHENTICATED_SESSION_RESET_STEPS = [
   'resetQuestionResponses()',
   'setRuntimeDocsState',
   'setChatStatusSignal({})',
+  'setChatTurnActiveSignal({})',
   'setProjects([])',
   'setMachines([])',
   'setProjectSessions([])',
@@ -114,6 +116,7 @@ export function createResetAuthenticatedSession(deps: SessionResetDeps) {
     resetQuestionResponses();
     deps.setRuntimeDocsState({ chat: false, control: false });
     deps.setChatStatusSignal({});
+    deps.setChatTurnActiveSignal({});
     deps.setProjects([]);
     deps.setMachines([]);
     deps.setProjectSessions([]);

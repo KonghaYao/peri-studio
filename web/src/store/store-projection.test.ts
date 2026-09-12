@@ -9,7 +9,7 @@ function signals() {
     setElicitations: vi.fn(), setQuestions: vi.fn(), setProjects: vi.fn(), setMachines: vi.fn(),
     setRegistryHydrated: vi.fn(), setProjectSessions: vi.fn(), setImportableSessions: vi.fn(),
     setInstances: vi.fn(), setChatCatalog: vi.fn(), setGlobalStatus: vi.fn(),
-    setSchemaVersion: vi.fn(), setChatStatusSignal: vi.fn(), setRuntimeDocsState: vi.fn(),
+    setSchemaVersion: vi.fn(), setChatStatusSignal: vi.fn(), setChatTurnActiveSignal: vi.fn(), setRuntimeDocsState: vi.fn(),
   };
 }
 
@@ -88,5 +88,26 @@ describe('store projection progress seam', () => {
 
     expect(projected.setProjects.mock.calls[1]?.[0]).toBe(initialProjects);
     expect(projected.setProjectSessions.mock.calls[1]?.[0]).toBe(initialSessions);
+  });
+
+  it('remembers selected-control turn activity so unselected sidebar rows can keep their own lamp', () => {
+    const store = new DocStore();
+    const projected = signals();
+    let activity: Record<string, boolean> = {};
+    projected.setChatTurnActiveSignal.mockImplementation((update: unknown) => {
+      activity = typeof update === 'function' ? (update as (value: Record<string, boolean>) => Record<string, boolean>)(activity) : update as Record<string, boolean>;
+    });
+    installStoreProjection(store, () => 'chat-1', projected, vi.fn(), vi.fn(), vi.fn());
+    const root = store.docFor('session:chat-1').getMap<unknown>('root');
+    const session = new Y.Map<unknown>();
+    session.set('active_turn_id', 'turn-1');
+    session.set('active_turn_status', 'running');
+    root.set('session', session);
+    store.onUpdate?.('session:chat-1');
+    expect(activity).toEqual({ 'chat-1': true });
+
+    session.set('active_turn_status', 'completed');
+    store.onUpdate?.('session:chat-1');
+    expect(activity).toEqual({ 'chat-1': false });
   });
 });

@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@solidjs/testing-library';
+import { fireEvent, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const store = vi.hoisted(() => ({
@@ -66,6 +66,7 @@ const store = vi.hoisted(() => ({
   restoreProjectSession: vi.fn(),
   selectedCid: vi.fn(() => null as string | null),
   selectedSessionId: vi.fn(() => null as string | null),
+  chatTurnActiveSignal: vi.fn(() => ({}) as Record<string, boolean>),
   turnActive: vi.fn(() => false),
 }));
 
@@ -317,7 +318,7 @@ describe('ProjectSidebar registry hydration', () => {
     expect(navigate).toHaveBeenCalledOnce();
   });
 
-  it('keeps an unselected live runtime switchable without adding a persistent status dot', () => {
+  it('keeps an unselected idle live runtime switchable without a status lamp', () => {
     store.projectSessions.mockReturnValue([{
       id: 'acp-12345678',
       projectId: 'p1',
@@ -333,6 +334,47 @@ describe('ProjectSidebar registry hydration', () => {
 
     expect(screen.queryByTestId('session-loading-wave')).not.toBeInTheDocument();
     expect(screen.queryByText(/Ready/)).not.toBeInTheDocument();
+  });
+
+  it('keeps an unselected working runtime visible as that session’s own status lamp', () => {
+    store.projectSessions.mockReturnValue([{
+      id: 'acp-12345678',
+      projectId: 'p1',
+      title: 'Architecture refactor',
+      lifecycle: 'ready',
+      updatedAt: '2026-08-13T10:00:00Z',
+      lastOpenedAt: null,
+      activeChatId: 'chat-live',
+      archivedAt: null,
+    }]);
+    store.selectedSessionId.mockReturnValue('other-session');
+    store.chatTurnActiveSignal.mockReturnValue({ 'chat-live': true });
+
+    render(() => <ProjectSidebar />);
+
+    const lamp = screen.getByTestId('session-loading-wave');
+    expect(lamp).toHaveAttribute('aria-label', 'Agent is working');
+    expect(lamp).toHaveAttribute('data-tone', 'busy');
+    expect(lamp).toHaveClass('absolute', 'left-8');
+  });
+
+  it('shows a danger lamp on an unselected crashed runtime', () => {
+    store.projectSessions.mockReturnValue([{
+      id: 'acp-12345678',
+      projectId: 'p1',
+      title: 'Architecture refactor',
+      lifecycle: 'ready',
+      updatedAt: '2026-08-13T10:00:00Z',
+      lastOpenedAt: null,
+      activeChatId: 'chat-live',
+      archivedAt: null,
+    }]);
+    store.chatStatusSignal.mockReturnValue({ 'chat-live': 'crashed' });
+
+    render(() => <ProjectSidebar />);
+
+    expect(screen.getByTestId('session-loading-wave')).toHaveAttribute('data-tone', 'danger');
+    expect(screen.getByTestId('session-loading-wave-core')).toHaveClass('bg-danger-solid');
   });
 
   it('archives a session in one click without a confirm dialog', () => {

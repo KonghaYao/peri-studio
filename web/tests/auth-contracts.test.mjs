@@ -69,7 +69,7 @@ test('authenticated-session cleanup is a complete identity boundary, not reconne
   for (const statement of [
     'installPrincipalRole(null)', 'setSelectedCid',
     'setSelectedSessionId', 'setChatEntries', 'setChatHead', 'setPermissions',
-    'setRuntimeDocsState', 'setChatStatusSignal', 'setProjects', 'setProjectSessions',
+    'setRuntimeDocsState', 'setChatStatusSignal', 'setChatTurnActiveSignal', 'setProjects', 'setProjectSessions',
     'setImportableSessions', 'resetMessageDelivery', 'sessionActivation.reset',
     'resetRuntimeControls', 'setPersistentErrors', 'commands.reset',
     'resetPermissionDecisions', 'resetConnectionState()', 'docStore.clear', 'toastStore.clear',

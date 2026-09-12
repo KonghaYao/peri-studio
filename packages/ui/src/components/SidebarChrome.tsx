@@ -106,23 +106,43 @@ export function SidebarNavBar(props: {
   );
 }
 
-/** 会话忙碌指示：标题左侧呼吸点，不放在右侧 accessory，避免与 Pin/Archive 抢位。 */
-export function SessionLiveIndicator(props: { label?: string }) {
+export type SessionLiveIndicatorTone = 'busy' | 'attention' | 'danger';
+
+const LIVE_INDICATOR_CORE: Record<SessionLiveIndicatorTone, string> = {
+  busy: 'bg-success-solid',
+  attention: 'bg-warning-solid',
+  danger: 'bg-danger-solid',
+};
+
+/** 会话状态灯：6px 圆点。T4 以绝对定位叠在标题左槽，不得进入文档流。 */
+export function SessionLiveIndicator(props: {
+  label?: string;
+  tone?: SessionLiveIndicatorTone;
+  class?: string;
+}) {
+  const tone = () => props.tone ?? 'busy';
+  const core = () => LIVE_INDICATOR_CORE[tone()];
   return (
     <span
       data-testid="session-loading-wave"
-      class="session-loading-wave relative flex size-6 shrink-0"
+      data-tone={tone()}
+      class={cn('session-loading-wave relative flex size-6 shrink-0', props.class)}
       role="status"
       aria-label={props.label}
     >
-      <span
-        data-testid="session-loading-wave-halo"
-        class="session-loading-wave__halo absolute inline-flex size-full animate-ping rounded-full bg-success-solid opacity-30 motion-reduce:animate-none"
-        aria-hidden="true"
-      />
+      <Show when={tone() !== 'danger'}>
+        <span
+          data-testid="session-loading-wave-halo"
+          class={cn(
+            'session-loading-wave__halo absolute inline-flex size-full animate-ping rounded-full opacity-30 motion-reduce:animate-none',
+            core(),
+          )}
+          aria-hidden="true"
+        />
+      </Show>
       <span
         data-testid="session-loading-wave-core"
-        class="session-loading-wave__core relative inline-flex size-6 rounded-full bg-success-solid"
+        class={cn('session-loading-wave__core relative inline-flex size-6 rounded-full', core())}
         aria-hidden="true"
       />
     </span>

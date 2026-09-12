@@ -6,6 +6,7 @@ import {
   chatEntries,
   chatHead,
   chatStatusSignal,
+  chatTurnActiveSignal,
   resetAuthenticatedSession,
   creatingSessionProjectId,
   discoveringSessionsProjectId,
@@ -22,6 +23,7 @@ import {
   setChatEntries,
   setChatHead,
   setChatStatusSignal,
+  setChatTurnActiveSignal,
   setCreatingSessionProjectId,
   setDiscoveringSessionsProjectId,
   setImportableSessions,
@@ -57,6 +59,7 @@ describe('authenticated UI session reset', () => {
     setPermissions([{ permissionId: 'private-permission' } as never]);
     setRuntimeDocsState({ chat: true, control: true });
     setChatStatusSignal({ 'private-chat': 'running' });
+    setChatTurnActiveSignal({ 'private-chat': true });
     setProjects([{ id: 'private-project' } as never]);
     setProjectSessions([{ id: 'private-session' } as never]);
     setImportableSessions([{ sessionId: 'private-acp-session' } as never]);
@@ -82,6 +85,7 @@ describe('authenticated UI session reset', () => {
     expect(permissions()).toEqual([]);
     expect(runtimeDocsState()).toEqual({ chat: false, control: false });
     expect(chatStatusSignal()).toEqual({});
+    expect(chatTurnActiveSignal()).toEqual({});
     expect(projects()).toEqual([]);
     expect(projectSessions()).toEqual([]);
     expect(importableSessions()).toEqual([]);
