@@ -391,23 +391,6 @@ body.workbench-panel-resizing * {
   outline-offset: 2px;
 }
 
-.composer-drop-overlay {
-  background: var(--composer-drop-overlay-bg);
-  border-radius: inherit;
-}
-
-.upload-asset-tile__ring {
-  background: conic-gradient(
-    var(--accent-solid) var(--upload-progress),
-    var(--border-subtle) 0
-  );
-  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
-}
-
-.upload-asset-tile--failed .upload-asset-tile__error {
-  word-break: break-word;
-}
-
 .explorer-upload-tree--drop-root {
   outline: 2px dashed var(--accent-border-hover);
   outline-offset: 2px;
@@ -421,21 +404,6 @@ body.workbench-panel-resizing * {
 
 .message-outbox__surface > * + * {
   margin-top: var(--space-8);
-}
-
-/* ── Token 用量条宽度动画 ─────────────────────────────────────────────── */
-
-.token-usage-meter__fill {
-  transition: width var(--duration-fast) var(--ease-standard);
-}
-
-/* Token 圆环：conic + mask 无法用 Tailwind utility 表达（尺寸用 token）。 */
-.token-usage-meter__ring {
-  width: var(--space-14);
-  height: var(--space-14);
-  border-radius: 999px;
-  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
 }
 
 /* ── 拓扑子节点连线 ───────────────────────────────────────────────────── */

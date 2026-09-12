@@ -139,3 +139,35 @@
   right: calc(var(--sidebar-width) * -1);
 }
 
+/* ── Composer upload / token usage（无法用 Tailwind 表达的 conic + mask） ── */
+
+.ui-upload-drop-overlay {
+  background: var(--composer-drop-overlay-bg);
+  border-radius: inherit;
+}
+
+.upload-asset-tile__ring {
+  background: conic-gradient(
+    var(--accent-solid) var(--upload-progress),
+    var(--border-subtle) 0
+  );
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
+}
+
+.upload-asset-tile--failed .upload-asset-tile__error {
+  word-break: break-word;
+}
+
+.token-usage-meter__fill {
+  transition: width var(--duration-fast) var(--ease-standard);
+}
+
+.token-usage-meter__ring {
+  width: var(--space-14);
+  height: var(--space-14);
+  border-radius: 999px;
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
+}
+

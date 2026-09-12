@@ -321,6 +321,19 @@ export {
   type VSCodeFileIconKind,
   type VSCodeFolderIconKind,
 } from './lib/vscode-file-icons';
+export { UserBubble } from './components/UserBubble';
+export {
+  ComposerDropOverlay,
+  type ComposerDropOverlayProps,
+} from './components/composer/ComposerDropOverlay';
+export { UploadAssetTile } from './components/composer/UploadAssetTile';
+export type { UploadAssetTileProps, UploadAssetTileStatus } from './components/composer/upload-asset-tile-types';
+export {
+  TokenUsageMeter,
+  tokenUsageLabel,
+  type TokenUsageMeterProps,
+  type TokenUsageSnapshot,
+} from './components/composer/TokenUsageMeter';
 export { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow } from './components/Table';
 export {
   DataTable,
