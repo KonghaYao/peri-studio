@@ -33,9 +33,6 @@ pub(super) fn apply_projection_patch(
     if tc.public_error.is_none() {
         tc.public_error = patch.public_error.clone();
     }
-    if tc.started_at.is_none() {
-        tc.started_at = patch.created_at.clone();
-    }
     if tc.completed_at.is_none() && tool_terminal(tc.status) {
         tc.completed_at = patch.completed_at.clone();
     }

@@ -74,6 +74,27 @@ pub(crate) fn advance_tool_status(
     incoming
 }
 
+/// 非终态工具活动（pending 开始 / running 执行 / 缺省 patch）把 turn
+/// 从 accepting 推进到 running，避免 Queued 卡到终态才出现。
+pub(crate) fn promote_accepting_turn_for_tool(
+    txn: &mut TransactionCtx<'_>,
+    root: &yrs::MapRef,
+    replay_active: bool,
+    status: Option<ToolCallStatus>,
+) {
+    if replay_active
+        || !matches!(
+            status,
+            None | Some(ToolCallStatus::Pending) | Some(ToolCallStatus::Running)
+        )
+    {
+        return;
+    }
+    if chat_writer::set_active_turn_status_if(txn, root, "accepting", "running") {
+        chat_writer::bump_projection_version(txn, root);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // control 侧写入辅助
 // ---------------------------------------------------------------------------

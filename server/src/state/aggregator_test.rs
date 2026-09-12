@@ -30,6 +30,8 @@ mod stream;
 mod task;
 #[path = "aggregator_tool_test.rs"]
 mod tool;
+#[path = "aggregator_tool_lifecycle_test.rs"]
+mod tool_lifecycle;
 #[path = "aggregator_tool_patch_test.rs"]
 mod tool_patch;
 #[path = "aggregator_test_util.rs"]

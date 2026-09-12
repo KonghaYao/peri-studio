@@ -12,7 +12,7 @@
 use yrs::{Map, Transact, WriteTxn};
 
 use peri_studio_proto::action::PermissionDecision;
-use peri_studio_proto::schema::{ActiveTurnProjection, ToolCallStatus, TurnStatus};
+use peri_studio_proto::schema::{ActiveTurnProjection, TurnStatus};
 
 use crate::state::chat_writer;
 use crate::state::doc_pair::DocPair;
@@ -28,8 +28,8 @@ use super::aggregator_write_catalog::{
     write_agent_activity, write_agent_plan, write_capabilities, write_chat_info, AgentActivityWrite,
 };
 use super::aggregator_write_helpers::{
-    write_agent_config, write_agent_status, write_agent_usage, write_input_prediction,
-    write_permission_request, AgentUsageWrite,
+    promote_accepting_turn_for_tool, write_agent_config, write_agent_status, write_agent_usage,
+    write_input_prediction, write_permission_request, AgentUsageWrite,
 };
 use super::aggregator_write_question::write_question_requested;
 
@@ -437,43 +437,23 @@ impl Aggregator {
                         }
                     }
                     EventBody::ToolCallStarted { status, .. } => {
-                        if !replay_active
-                            && *status == ToolCallStatus::Running
-                            && chat_writer::set_active_turn_status_if(
-                                &mut txn,
-                                &root,
-                                "accepting",
-                                "running",
-                            )
-                        {
-                            chat_writer::bump_projection_version(&mut txn, &root);
-                        }
+                        promote_accepting_turn_for_tool(
+                            &mut txn,
+                            &root,
+                            replay_active,
+                            Some(*status),
+                        );
                     }
                     EventBody::ToolCallUpdated { status, .. } => {
-                        if !replay_active
-                            && *status == Some(ToolCallStatus::Running)
-                            && chat_writer::set_active_turn_status_if(
-                                &mut txn,
-                                &root,
-                                "accepting",
-                                "running",
-                            )
-                        {
-                            chat_writer::bump_projection_version(&mut txn, &root);
-                        }
+                        promote_accepting_turn_for_tool(&mut txn, &root, replay_active, *status);
                     }
                     EventBody::ToolCallPatched { patch, .. } => {
-                        if !replay_active
-                            && patch.status == Some(ToolCallStatus::Running)
-                            && chat_writer::set_active_turn_status_if(
-                                &mut txn,
-                                &root,
-                                "accepting",
-                                "running",
-                            )
-                        {
-                            chat_writer::bump_projection_version(&mut txn, &root);
-                        }
+                        promote_accepting_turn_for_tool(
+                            &mut txn,
+                            &root,
+                            replay_active,
+                            patch.status,
+                        );
                     }
                     EventBody::ToolCallCompleted { .. }
                     | EventBody::PermissionResolved { .. }

@@ -739,7 +739,7 @@ struct RegistryDocRoot {
 | `user_message_chunk` / 服务端单写注册 | `user_message` |
 | `prompt_complete` / `agent_message_complete` | `turn_completed` |
 | `session_error` | `turn_failed` |
-| `tool_call` / `tool_call_update`（按 status 细分） | `tool_call_started` / `tool_call_updated` / `tool_call_completed`；pending/in_progress 映射为权威非终态 |
+| `tool_call` / `tool_call_update` | `tool_call_patched`（按 `toolCallId` upsert）。v1 `tool_call` 缺 `status` 默认 `pending`；`tool_call_update` 缺省表示不变。`pending`/`in_progress` 为权威非终态并立即写入 Chat Doc；不把中间态攒到终态再投影。首个终态冻结，晚到帧只补证据 |
 | `permission_request` / `permission_response` | `permission_requested` / `permission_resolved` |
 | `session_update` / `available_commands_update` | `session_updated` |
 | `session_list` 响应 | `session_list`（agent 磁盘历史，全量同步投影） |

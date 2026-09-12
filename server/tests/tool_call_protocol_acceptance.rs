@@ -127,6 +127,31 @@ fn terminal_aliases_and_failed_stderr_keep_authoritative_state() {
 }
 
 #[test]
+fn official_tool_call_omitted_status_defaults_to_pending() {
+    let start = patch(json!({
+        "sessionUpdate": "tool_call",
+        "toolCallId": "create-default",
+        "title": "Read",
+        "kind": "read",
+        "rawInput": { "file_path": "README.md" }
+    }));
+    assert_eq!(start.status, Some(ToolCallStatus::Pending));
+    assert!(start.created_at.is_some());
+    assert!(start.completed_at.is_none());
+
+    let update = patch(json!({
+        "sessionUpdate": "tool_call_update",
+        "toolCallId": "create-default",
+        "rawInput": { "file_path": "README.md" }
+    }));
+    assert_eq!(
+        update.status, None,
+        "tool_call_update omitted status means unchanged, not a new pending"
+    );
+    assert!(update.created_at.is_none());
+}
+
+#[test]
 fn oversized_arguments_are_explicitly_omitted_instead_of_silently_empty() {
     let patch = patch(json!({
         "sessionUpdate": "tool_call",

@@ -187,6 +187,23 @@ fn running_tool_start_advances_accepting_turn_without_content_delta() {
 }
 
 #[test]
+fn pending_tool_start_advances_accepting_turn_without_content_delta() {
+    let mut p = pair();
+    let mut agg = Aggregator;
+    seed_user_msg(&mut p, "t1", "t1:user", "a");
+    let started = EventBody::ToolCallStarted {
+        turn_id: "t1".into(),
+        tool_call_id: "tc-pending".into(),
+        name: "shell".into(),
+        status: ToolCallStatus::Pending,
+        arguments: None,
+        created_at: "2026-08-07T00:00:00Z".into(),
+    };
+    assert!(agg.apply(&mut p, &ev("s1", 2, started)).applied);
+    assert_eq!(active_turn_status(&p), Some(TurnStatus::Running));
+}
+
+#[test]
 fn replay_starting_with_tool_call_synthesizes_turn_and_reachable_block() {
     let mut p = pair();
     p.stream.replay_active = true;

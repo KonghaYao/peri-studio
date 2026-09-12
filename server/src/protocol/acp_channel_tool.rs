@@ -72,7 +72,12 @@ impl AcpChannel {
     ) -> Result<EventBody, MapError> {
         let tool_call_id = validated_tool_call_id(update)?;
         let status_text = string_field(update, "status", "status");
-        let status = status_text.as_deref().map(tool_status);
+        // ACP v1：`tool_call` 缺 status 时 Client 默认 pending（与 raw 映射、
+        // 规范「defaults to pending」一致）。`tool_call_update` 缺省表示不变。
+        let status = status_text
+            .as_deref()
+            .map(tool_status)
+            .or((update_kind == "tool_call").then_some(ToolCallStatus::Pending));
         let terminal = status.is_some_and(is_terminal);
         let failed = matches!(status, Some(ToolCallStatus::Error));
         let name =

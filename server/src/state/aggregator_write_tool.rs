@@ -288,6 +288,11 @@ impl Aggregator {
                     }
                 }
                 apply_projection_patch(&mut tc, patch, was_terminal);
+                // 回放通知时间不是原执行开始时间；直播首帧（含 update-first）
+                // 用 patch.created_at 或事件观测时间记下 start，供 Queued/Running 展示。
+                if tc.started_at.is_none() && !context.replay_active {
+                    tc.started_at = patch.created_at.clone().or_else(|| Some(ev.ts.clone()));
+                }
                 chat_writer::upsert_tool_call(txn, root, &tc);
                 if context.pre_read.is_none() {
                     write_new_tool_block(txn, root, turn_id, entry_id, tool_call_id, ev, context);

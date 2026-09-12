@@ -178,6 +178,13 @@ fn map_tool_call_started() {
                         value: json!({"cmd": "ls"})
                     }
                 );
+                assert_eq!(
+                    patch.status,
+                    Some(ToolCallStatus::Pending),
+                    "raw tool_call omitted status defaults to pending"
+                );
+                assert!(patch.created_at.is_some());
+                assert!(patch.completed_at.is_none());
             }
             _ => panic!("expected tool call started"),
         },
