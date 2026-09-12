@@ -1,5 +1,3 @@
-@import './project-sidebar.css';
-
 /* App / widget layout primitives (not in @peri/ui). */
 
 /* 助手操作以浮层呈现；精确指针使用 hover / focus，粗指针由显式触发器控制。 */

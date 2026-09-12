@@ -115,7 +115,6 @@ web/src/
     base.css                    # Web reset
     primitives.css             # Web / widget 原子与布局
     extra.css                  # Web 语义选择器例外
-    project-sidebar.css        # Web 业务样式
   styles.css                   # 导入 reset、@peri/ui、Web 样式
 ```
 

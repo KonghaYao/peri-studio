@@ -53,11 +53,11 @@ describe('AppShell desktop sidebar', () => {
     expect(handle).toHaveAttribute('aria-valuenow', '266');
 
     fireEvent.pointerDown(grip, { button: 0 });
-    expect(document.body).toHaveClass('sidebar-resizing');
+    expect(handle).toHaveClass('sidebar-resize-handle--dragging');
     fireEvent.pointerMove(window, { clientX: 600 });
     expect(handle).toHaveAttribute('aria-valuenow', '480');
     fireEvent.pointerUp(window);
-    expect(document.body).not.toHaveClass('sidebar-resizing');
+    expect(handle).not.toHaveClass('sidebar-resize-handle--dragging');
     expect(shell().style.gridTemplateColumns).toBe('480px minmax(0, 1fr) auto');
   });
 

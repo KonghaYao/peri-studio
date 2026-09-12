@@ -484,7 +484,7 @@ test('reusable design tokens have one UI-library source', () => {
   // Tailwind utilities layer 生成的原子化边框宽度。
   assert.match(styles, /^@import '\.\/styles\/base\.css';\n@import '@peri\/ui\/styles\.css';\n@import '\.\/styles\/primitives\.css';/);
   assert.doesNotMatch(styles, /@import '\.\/styles\/tokens\.css'/);
-  assert.match(primitives, /^@import '\.\/project-sidebar\.css';/);
+  assert.doesNotMatch(primitives, /project-sidebar\.css/);
   assert.doesNotMatch(styles, /:root\s*\{/);
   assert.match(tokens, /:root\s*\{/);
   assert.match(tokens, /--composer-border:/);
@@ -583,7 +583,7 @@ test('sidebar row accessories use static named group hover classes', () => {
   const source = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'RowAccessorySlot.tsx'), 'utf8');
   assert.match(source, /group-hover\/workspace:opacity-100/);
   assert.match(source, /group-hover\/row:opacity-100/);
-  assert.match(readFileSync(join(import.meta.dirname, '..', 'src', 'styles', 'project-sidebar.css'), 'utf8'), /row-accessory-slot__actions/);
+  assert.match(source, /row-accessory-slot__actions/);
 });
 
 test('icon-only controls receive visible help from the shared Tooltip', () => {

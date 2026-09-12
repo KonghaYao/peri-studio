@@ -49,14 +49,12 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
     window.removeEventListener('pointermove', resizeSidebar);
     window.removeEventListener('pointerup', stopSidebarResize);
     window.removeEventListener('pointercancel', stopSidebarResize);
-    document.body.classList.remove('sidebar-resizing');
     setSidebarResizing(false);
   };
   const resizeSidebar = (event: PointerEvent) => setClampedSidebarWidth(event.clientX);
   const startSidebarResize = (event: PointerEvent) => {
     if (event.button !== 0) return;
     event.preventDefault();
-    document.body.classList.add('sidebar-resizing');
     setSidebarResizing(true);
     window.addEventListener('pointermove', resizeSidebar);
     window.addEventListener('pointerup', stopSidebarResize);
