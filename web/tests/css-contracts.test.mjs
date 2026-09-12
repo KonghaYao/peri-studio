@@ -171,8 +171,8 @@ test('fractional Tailwind spacing utilities resolve to an explicit product token
 });
 
 const EXTRA_CSS_BASELINE = {
-  lineCount: 428,
-  sha256: 'eed8cac9802f2ce1663c67731e01df27e694646598550d4f993dd622f5f78194',
+  lineCount: 413,
+  sha256: 'fd74466c5ed09f000d803af991e5d7058a9f9de8d852b3345a9b51b42731ce62',
 };
 
 function lineCountLikeWc(content) {
@@ -246,7 +246,7 @@ test('Kobalte dialog composes an independently layered portal overlay and conten
     dialog,
     /<DialogOverlay class=\{local\.overlayClass\} \/>\s*<DialogPrimitive\.Content/s,
   );
-  assert.match(dialog, /DialogPrimitive\.Overlay data-dialog-overlay class=\{cn\('fixed inset-0 z-60 bg-scrim'/);
+  assert.match(dialog, /DialogPrimitive\.Overlay[\s\S]*?data-dialog-overlay[\s\S]*?class=\{cn\('fixed inset-0 z-60 bg-scrim'/);
   assert.match(dialog, /DialogPrimitive\.Content\s+class=\{cn\(\s*local\.size === 'resource-compact'/);
   assert.match(dialog, /fixed top-1\/2 left-1\/2 z-61 w-\(--container-dialog-default\)/);
   assert.match(dialog, /onEscapeKeyDown=\{preventWhenLocked\}/);

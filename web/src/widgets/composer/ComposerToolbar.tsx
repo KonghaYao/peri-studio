@@ -42,7 +42,7 @@ export function ComposerToolbar(props: {
           <Button
             size="compact"
             variant="secondary"
-            class="composer-prediction-action inline-flex min-h-30 items-center justify-center px-9 border-border-subtle bg-surface-muted text-text-secondary text-11 pointer-coarse:min-h-44 max-narrow:min-h-44"
+            class="composer-prediction-action inline-flex min-h-(--control-height-compact) items-center justify-center px-9 border-border-subtle bg-surface-muted text-text-secondary text-11 pointer-coarse:min-h-44 max-narrow:min-h-44"
             onClick={s().prediction.accept}
             aria-label="Use suggestion"
             title="Use suggestion (Tab)"
