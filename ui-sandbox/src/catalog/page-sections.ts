@@ -142,7 +142,6 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
       items: [
         { id: 'code-block-default', label: 'Default' },
         { id: 'code-block-composable', label: 'Composable header' },
-        { id: 'code-block-highlight', label: 'Syntax highlighting' },
         { id: 'code-block-line-numbers', label: 'Line numbers' },
       ],
     },

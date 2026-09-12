@@ -310,6 +310,14 @@ export { Spinner } from './components/Spinner';
 export { Switch, SwitchControl, SwitchInput, SwitchLabel, SwitchThumb } from './components/Switch';
 export { Status, type StatusTone } from './components/Status';
 export { Terminal, type TerminalProps, type TerminalViewport as TerminalViewportExport } from './components/Terminal';
+export { VSCodeFileIcon, type VSCodeFileIconProps } from './components/VSCodeFileIcon';
+export {
+  filePathBasename,
+  vscodeFileIconKind,
+  vscodeFolderIconKind,
+  type VSCodeFileIconKind,
+  type VSCodeFolderIconKind,
+} from './lib/vscode-file-icons';
 export { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow } from './components/Table';
 export {
   DataTable,

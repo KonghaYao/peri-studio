@@ -50,12 +50,14 @@ export function DemoSection(props: { id: string; title: string; description?: st
   );
 }
 
-export function TierHeader(props: { tier: string; title: string; description: string }) {
+export function TierHeader(props: { tier: string; title: string; description?: string }) {
   return (
     <header class="border-b border-border-subtle px-16 pt-24 pb-24 middle:px-32 middle:pt-32">
       <p class="text-10 font-medium tracking-caps uppercase text-content-faint">{props.tier}</p>
       <h1 class="mt-4 text-24 font-semibold tracking-tight text-content-primary">{props.title}</h1>
-      <p class="mt-8 max-w-xl text-13 leading-normal text-content-secondary">{props.description}</p>
+      {props.description && (
+        <p class="mt-8 max-w-xl text-13 leading-normal text-content-secondary">{props.description}</p>
+      )}
     </header>
   );
 }

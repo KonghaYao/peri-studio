@@ -18,6 +18,8 @@
     "solid-js": "^1"
   },
   "dependencies": {
+    "@iconify-icon/solid": "3.0.3",
+    "@iconify-icons/vscode-icons": "2.0.2",
     "@kobalte/core": "^0.13.13",
     "@xterm/addon-fit": "0.12.0-beta.301",
     "@xterm/addon-image": "0.10.0-beta.301",

@@ -1,64 +1,69 @@
-import type { LanguageInput, TokensResult } from 'shiki/core';
+import {
+  createHighlighter,
+  type HighlightToken,
+  type HighlightTokenResult,
+} from '@tanstack/highlight/core';
+import { python } from '@tanstack/highlight/languages/python';
+import { shell } from '@tanstack/highlight/languages/shell';
+import { ts } from '@tanstack/highlight/languages/ts';
+import { createThemeCss } from '@tanstack/highlight/theme';
+import { githubLightTheme } from '@tanstack/highlight/themes/github-light';
 
 const LANGUAGE_ALIASES: Record<string, string> = {
-  bash: 'bash',
-  js: 'javascript',
-  javascript: 'javascript',
-  json: 'json',
+  bash: 'shell',
+  js: 'js',
+  javascript: 'js',
   py: 'python',
   python: 'python',
-  rs: 'rust',
-  rust: 'rust',
-  sh: 'shellscript',
-  shell: 'shellscript',
-  ts: 'typescript',
-  tsx: 'tsx',
-  typescript: 'typescript',
-  yaml: 'yaml',
-  yml: 'yaml',
-  zsh: 'zsh',
+  sh: 'shell',
+  shell: 'shell',
+  ts: 'ts',
+  typescript: 'ts',
+  zsh: 'shell',
 };
 
-type LanguageModule = { default: LanguageInput[] };
+export const codeHighlighter = createHighlighter({
+  languages: [shell, ts, python],
+});
 
-const LANGUAGE_LOADERS: Record<string, () => Promise<LanguageModule>> = {
-  bash: () => import('shiki/dist/langs/bash.mjs'),
-  javascript: () => import('shiki/dist/langs/javascript.mjs'),
-  json: () => import('shiki/dist/langs/json.mjs'),
-  python: () => import('shiki/dist/langs/python.mjs'),
-  rust: () => import('shiki/dist/langs/rust.mjs'),
-  shellscript: () => import('shiki/dist/langs/shellscript.mjs'),
-  typescript: () => import('shiki/dist/langs/typescript.mjs'),
-  tsx: () => import('shiki/dist/langs/tsx.mjs'),
-  yaml: () => import('shiki/dist/langs/yaml.mjs'),
-};
+let themeInjected = false;
 
-const highlighter = Promise.all([
-  import('shiki/core'),
-  import('shiki/engine/javascript'),
-  import('shiki/dist/themes/github-light-default.mjs'),
-]).then(([{ createHighlighterCore }, { createJavaScriptRegexEngine }, theme]) =>
-  createHighlighterCore({
-    themes: [theme.default],
-    langs: [],
-    engine: createJavaScriptRegexEngine(),
-  }),
-);
-
-export function normalizeLanguage(language: string) {
-  return LANGUAGE_ALIASES[language] || language;
+/** 注入 TanStack Highlight 主题（github-light，作用域在 .code-block-highlight）。 */
+export function ensureHighlightTheme() {
+  if (themeInjected) return;
+  themeInjected = true;
+  const style = document.createElement('style');
+  style.setAttribute('data-peri-highlight-theme', '');
+  style.textContent = createThemeCss({
+    light: githubLightTheme,
+    codeBlockSelector: '.code-block-highlight pre',
+  });
+  document.head.append(style);
 }
 
-export async function highlightCode(code: string, language: string): Promise<TokensResult | null> {
-  const normalized = normalizeLanguage(language);
-  const load = LANGUAGE_LOADERS[normalized];
-  if (!load) return null;
+export function normalizeLanguage(language: string) {
+  const alias = LANGUAGE_ALIASES[language.toLowerCase()];
+  return codeHighlighter.normalizeLanguage(alias ?? language);
+}
 
-  const instance = await highlighter;
-  if (!instance.getLoadedLanguages().includes(normalized)) {
-    const module = await load();
-    await instance.loadLanguage(...module.default);
+export function highlightCode(code: string, language: string): HighlightTokenResult {
+  return codeHighlighter.tokenize(code, { lang: normalizeLanguage(language) });
+}
+
+export function tokensByLine(tokens: ReadonlyArray<HighlightToken>): HighlightToken[][] {
+  const lines: HighlightToken[][] = [[]];
+
+  for (const token of tokens) {
+    const segments = token.value.split('\n');
+    for (let index = 0; index < segments.length; index++) {
+      if (index > 0) lines.push([]);
+      const segment = segments[index];
+      if (segment.length === 0) continue;
+      lines[lines.length - 1].push(
+        token.className ? { className: token.className, value: segment } : { value: segment },
+      );
+    }
   }
 
-  return instance.codeToTokens(code, { lang: normalized, theme: 'github-light-default' });
+  return lines.length > 0 ? lines : [[]];
 }

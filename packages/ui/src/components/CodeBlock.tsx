@@ -9,8 +9,10 @@ import {
   type ComponentProps,
 } from 'solid-js';
 import { cn } from '../lib/cn';
+import { filePathBasename } from '../lib/vscode-file-icons';
 import { CopyButton } from './CopyButton';
 import { Select, type SelectOption } from './Select';
+import { VSCodeFileIcon } from './VSCodeFileIcon';
 
 interface CodeBlockContextValue {
   code: () => string;
@@ -110,20 +112,37 @@ export const CodeBlockTitle: Component<ComponentProps<'div'>> = (props) => {
   return (
     <div
       data-slot="code-block-title"
-      class={cn('flex min-w-0 items-center gap-8', local.class)}
+      class={cn('mr-auto flex min-w-0 flex-1 items-center gap-8', local.class)}
       {...rest}
     />
   );
 };
 
-export const CodeBlockFilename: Component<ComponentProps<'span'>> = (props) => {
-  const [local, rest] = splitProps(props, ['class']);
+type CodeBlockFilenameProps = ComponentProps<'span'> & {
+  /** 文件路径：渲染 VS Code 风格图标；未传 children 时用 basename 作标签。 */
+  path?: string;
+};
+
+export const CodeBlockFilename: Component<CodeBlockFilenameProps> = (props) => {
+  const [local, rest] = splitProps(props, ['class', 'path', 'children']);
+  const label = () => {
+    if (local.children != null && local.children !== false && local.children !== true) {
+      return local.children;
+    }
+    return local.path ? filePathBasename(local.path) : null;
+  };
+
   return (
     <span
       data-slot="code-block-filename"
-      class={cn('font-mono text-12 text-content-secondary', local.class)}
+      class={cn('flex min-w-0 items-center gap-6 font-mono text-12 text-content-secondary', local.class)}
       {...rest}
-    />
+    >
+      <Show when={local.path}>
+        <VSCodeFileIcon path={local.path!} size={14} class="size-14" />
+      </Show>
+      <span class="truncate">{label()}</span>
+    </span>
   );
 };
 
@@ -310,6 +329,8 @@ export const CodeBlockContent: Component<CodeBlockContentProps> = (props) => (
 type CodeBlockRootProps = ComponentProps<'div'> & {
   code: string;
   language?: string;
+  /** 默认 header 文件名；有值时显示 VSCodeFileIcon + basename。 */
+  filename?: string;
   showLineNumbers?: boolean;
   startLine?: number;
   /** 为 false 时仅渲染 children，不自动追加默认 CodeBlockContent（供语法高亮等自定义 body）。 */
@@ -322,6 +343,7 @@ export const CodeBlock: Component<CodeBlockRootProps> = (props) => {
     'class',
     'code',
     'language',
+    'filename',
     'showLineNumbers',
     'startLine',
     'includeDefaultBody',
@@ -341,7 +363,12 @@ export const CodeBlock: Component<CodeBlockRootProps> = (props) => {
             <>
               <CodeBlockHeader>
                 <CodeBlockTitle>
-                  <CodeBlockFilename>{formatLanguage(language())}</CodeBlockFilename>
+                  <Show
+                    when={local.filename}
+                    fallback={<CodeBlockFilename>{formatLanguage(language())}</CodeBlockFilename>}
+                  >
+                    <CodeBlockFilename path={local.filename} />
+                  </Show>
                 </CodeBlockTitle>
                 <CodeBlockActions>
                   <CodeBlockCopyButton />

@@ -25,10 +25,11 @@ describe('CodeBlock', () => {
     });
 
     render(() => (
-      <CodeBlock code={'const answer = 42;\n'} language="typescript" />
+      <CodeBlock code={'const answer = 42;\n'} language="typescript" filename="src/answer.ts" />
     ));
 
-    expect(screen.getByText('TypeScript')).toBeInTheDocument();
+    expect(screen.getByText('answer.ts')).toBeInTheDocument();
+    expect(document.querySelector('[data-file-icon="typescript"]')).toBeInTheDocument();
     expect(document.querySelector('[data-slot="code-block-body"]')).toHaveTextContent(
       'const answer = 42;',
     );
@@ -44,7 +45,7 @@ describe('CodeBlock', () => {
       <CodeBlock code={'line one\nline two'} language={language()} showLineNumbers startLine={10}>
         <CodeBlockHeader>
           <CodeBlockTitle>
-            <CodeBlockFilename>example.rs</CodeBlockFilename>
+            <CodeBlockFilename path="src/example.rs" />
           </CodeBlockTitle>
           <CodeBlockActions>
             <CodeBlockLanguageSelector
@@ -63,6 +64,7 @@ describe('CodeBlock', () => {
     ));
 
     expect(screen.getByText('example.rs')).toBeInTheDocument();
+    expect(document.querySelector('[data-file-icon="rust"]')).toBeInTheDocument();
     expect(screen.getByText('10')).toBeInTheDocument();
     expect(screen.getByText('11')).toBeInTheDocument();
     expect(screen.getByText('line two')).toBeInTheDocument();
