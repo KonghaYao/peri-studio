@@ -16,7 +16,7 @@ export const MessageArticleShell: Component<MessageArticleShellProps> = (props) 
       class={cn(
         'conversation-message',
         `conversation-message--${local.from}`,
-        'group/message relative mb-0 flex min-w-0 flex-col gap-12',
+        'group/message relative mb-8 flex min-w-0 flex-col gap-8',
         local.from === 'user' ? 'items-end' : local.from === 'system' ? 'items-center' : undefined,
         local.class,
       )}

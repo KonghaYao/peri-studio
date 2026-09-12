@@ -24,7 +24,7 @@ export function MessageOutbox(props: {
 
   return <article
     data-testid="message-outbox"
-    class="ui-transcript-outbox min-w-0"
+    class="min-w-0"
     aria-label={props.acknowledged ? 'Your unresolved message' : 'Your pending-confirmation message'}
     role={props.acknowledged ? 'group' : actionable() ? 'alert' : 'status'}
     aria-busy={inFlight() ? 'true' : undefined}

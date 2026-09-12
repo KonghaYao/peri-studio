@@ -103,45 +103,47 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
         'padding-left': props.indent ? `calc(10px + ${props.indent}px)` : undefined,
       }}
     >
-      <button
-        type="button"
-        data-sidebar="menu-button"
-        data-active={props.selected ? 'true' : undefined}
-        class={cn(
-          'flex min-h-36 w-full min-w-0 flex-1 items-center overflow-hidden rounded-md bg-transparent pl-10 pr-0 text-left outline-none',
-          'focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2',
-          'disabled:pointer-events-none disabled:opacity-45',
-          props.selected && 'font-medium',
-          'pointer-coarse:min-h-44',
-        )}
-        aria-current={props.selected ? 'page' : undefined}
-        aria-label={displayTitle()}
-        onClick={open}
-        disabled={(props.readOnly && !props.session.activeChatId) || props.session.lifecycle !== 'ready' || props.navigationBusy}
-      >
-        <span data-testid="session-copy" class="session-copy block min-w-0 w-full truncate text-13 text-content-primary">{displayTitle()}</span>
-      </button>
-      <SessionRowAccessory
-        live={loading()}
-        liveLabel={props.state.detail || props.state.label}
-        pinned={props.pinned}
-        readOnly={props.readOnly}
-        menuOpen={props.menuOpen}
-        onMenuOpenChange={props.onMenuOpenChange}
-        onTogglePin={props.onTogglePin}
-        onArchive={() => props.onArchiveRequest(props.session.id)}
-        menuId={`${renameId()}-menu`}
-        menuLabel={`Session actions: ${displayTitle()}`}
-        menuItems={[{
-          id: 'rename',
-          label: 'Rename session',
-          icon: <RenameIcon />,
-          disabled: props.readOnly || submitting(),
-        }]}
-        onMenuSelect={(id) => {
-          if (id === 'rename') props.onRenameOpenChange(true);
-        }}
-      />
+      <div class="relative flex min-h-36 w-full min-w-0 items-center pointer-coarse:min-h-44">
+        <button
+          type="button"
+          data-sidebar="menu-button"
+          data-active={props.selected ? 'true' : undefined}
+          class={cn(
+            'flex min-h-36 w-full min-w-0 items-center overflow-hidden rounded-md bg-transparent pl-10 pr-0 text-left outline-none',
+            'focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2',
+            'disabled:pointer-events-none disabled:opacity-45',
+            props.selected && 'font-medium',
+            'pointer-coarse:min-h-44',
+          )}
+          aria-current={props.selected ? 'page' : undefined}
+          aria-label={displayTitle()}
+          onClick={open}
+          disabled={(props.readOnly && !props.session.activeChatId) || props.session.lifecycle !== 'ready' || props.navigationBusy}
+        >
+          <span data-testid="session-copy" class="session-copy block min-w-0 w-full truncate text-13 leading-20 text-content-primary">{displayTitle()}</span>
+        </button>
+        <SessionRowAccessory
+          live={loading()}
+          liveLabel={props.state.detail || props.state.label}
+          pinned={props.pinned}
+          readOnly={props.readOnly}
+          menuOpen={props.menuOpen}
+          onMenuOpenChange={props.onMenuOpenChange}
+          onTogglePin={props.onTogglePin}
+          onArchive={() => props.onArchiveRequest(props.session.id)}
+          menuId={`${renameId()}-menu`}
+          menuLabel={`Session actions: ${displayTitle()}`}
+          menuItems={[{
+            id: 'rename',
+            label: 'Rename session',
+            icon: <RenameIcon />,
+            disabled: props.readOnly || submitting(),
+          }]}
+          onMenuSelect={(id) => {
+            if (id === 'rename') props.onRenameOpenChange(true);
+          }}
+        />
+      </div>
       <Popover open={props.renameOpen} onOpenChange={(open) => props.onRenameOpenChange(open)} placement="bottom-end">
         <PopoverTrigger as="span" class="sr-only" aria-label={`Rename ${displayTitle()}`} />
         <PopoverContent

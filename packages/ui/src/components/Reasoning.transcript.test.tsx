@@ -13,7 +13,7 @@ describe('Reasoning transcript appearance', () => {
       </Reasoning>
     ));
 
-    expect(screen.getByTestId('thinking-gap')).toHaveClass('ui-transcript-thinking-gap');
+    expect(screen.getByTestId('thinking-gap')).toHaveClass('thinking-gap', 'relative', 'z-1');
     expect(screen.queryByTestId('message-reasoning')).toBeNull();
   });
 

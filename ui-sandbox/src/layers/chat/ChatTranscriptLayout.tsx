@@ -1,5 +1,4 @@
 import {
-  ChatActivityChain,
   HistoryBoundary,
   ToolActivityGroup,
   ToolActivityRow,
@@ -13,7 +12,7 @@ export function ChatTranscriptLayout() {
   const noopMeasure = () => {};
 
   return (
-    <div class="flex w-full flex-col" role="list" aria-label="Conversation transcript">
+    <div class="flex w-full flex-col gap-16" role="list" aria-label="Conversation transcript">
       <TranscriptRowShell id="catalog-user-1" position={1} size={4} onMeasure={noopMeasure}>
         <UserBubble>
           Check the build entry first, then constrain the fix to the browser adapter.
@@ -26,13 +25,11 @@ export function ChatTranscriptLayout() {
         </div>
       </TranscriptRowShell>
       <TranscriptRowShell id="catalog-tools-1" position={3} size={4} onMeasure={noopMeasure}>
-        <ChatActivityChain>
-          <ToolActivityGroup>
-            <ToolActivityRow icon={Search} title={'Searched "runtime binding"'} subtitle="in server/src · 3 matches" input="server/src" output="3 matches" status="done" duration="84ms" />
-            <ToolActivityRow icon={FilePen} title="Edited store.ts" subtitle="1 change" input="web/src/panel/store.ts" status="done" duration="42ms" />
-            <ToolActivityRow icon={Terminal} title="Running $ bun run test" input="bun run test" status="running" />
-          </ToolActivityGroup>
-        </ChatActivityChain>
+        <ToolActivityGroup>
+          <ToolActivityRow icon={Search} title={'Searched "runtime binding"'} subtitle="in server/src · 3 matches" input="server/src" output="3 matches" status="done" duration="84ms" />
+          <ToolActivityRow icon={FilePen} title="Edited store.ts" subtitle="1 change" input="web/src/panel/store.ts" status="done" duration="42ms" />
+          <ToolActivityRow icon={Terminal} title="Running $ bun run test" input="bun run test" status="running" />
+        </ToolActivityGroup>
       </TranscriptRowShell>
       <HistoryBoundary kind="live_runtime" />
       <TranscriptRowShell id="catalog-assistant-2" position={4} size={4} onMeasure={noopMeasure}>

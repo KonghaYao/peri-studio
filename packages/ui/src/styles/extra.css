@@ -200,8 +200,10 @@
   }
 }
 
-/* 贴底 composer 区：渐隐遮罩，避免消息与输入框硬切。 */
+/* 贴底 composer 区：::before 向上渐隐，避免 transcript 与输入区硬切。 */
 .ui-chat-workspace__bottom-stack {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex: 0 1 auto;
   flex-direction: column;
@@ -209,17 +211,30 @@
   max-height: 72dvh;
   /* slash 浮层绝对定位在 composer 上方；hidden/clip 会连 overflow-y 一起变成可裁切。 */
   overflow: visible;
-  padding-top: var(--space-28);
+  padding-top: var(--space-12);
+  background: var(--app-bg);
+}
+
+.ui-chat-workspace__bottom-stack::before {
+  position: absolute;
+  top: calc(-1 * var(--chat-composer-fade-height));
+  right: 0;
+  left: 0;
+  z-index: 0;
+  height: var(--chat-composer-fade-height);
   background: linear-gradient(
-    0deg,
-    var(--app-bg) 0%,
-    color-mix(in srgb, var(--app-bg) 94%, transparent) 72%,
-    transparent 100%
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--app-bg) 58%, transparent) 58%,
+    var(--app-bg) 100%
   );
   pointer-events: none;
+  content: '';
 }
 
 .ui-chat-workspace__bottom-stack > * {
+  position: relative;
+  z-index: 1;
   pointer-events: auto;
 }
 
@@ -277,7 +292,11 @@
 }
 
 /* 侧栏行 accessory：左侧渐变过渡到文本，右侧实色托底按钮 */
-.ui-row-accessory-cover,
+.ui-row-accessory-cover {
+  --sidebar-row-cover-bg: var(--surface);
+  background: var(--sidebar-row-cover-bg);
+}
+
 .ui-row-accessory-meta {
   position: relative;
   --sidebar-row-cover-bg: var(--surface);
@@ -340,89 +359,6 @@
 
 .ui-transcript-row {
   display: flow-root;
-}
-
-.ui-transcript-row + .ui-transcript-row {
-  margin-block-start: var(--chat-turn-gap);
-}
-
-.ui-transcript-content {
-  padding-block: var(--space-32);
-}
-
-.ui-transcript-content > .ui-transcript-thinking-slot,
-.ui-transcript-content > .ui-transcript-outbox {
-  margin-block-start: var(--chat-turn-gap);
-}
-
-.ui-transcript-thinking-gap {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  max-width: var(--chat-reasoning-max);
-  min-height: var(--space-36);
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--space-8);
-  padding-block: 0;
-  padding-inline-start: var(--space-32);
-}
-
-.ui-jump-latest {
-  position: absolute;
-  bottom: var(--space-12);
-  left: 50%;
-  z-index: var(--z-12);
-  min-height: var(--control-height-md);
-  padding-inline: var(--space-13);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-full);
-  background: var(--surface-overlay);
-  color: var(--text-secondary);
-  box-shadow: var(--shadow-popover);
-  font-size: var(--text-12);
-  transform: translateX(-50%);
-  cursor: pointer;
-}
-
-.ui-jump-latest:hover {
-  color: var(--text-primary);
-}
-
-@media (pointer: coarse) {
-  .ui-jump-latest {
-    min-height: var(--control-height-touch);
-    padding-inline: var(--space-16);
-  }
-}
-
-/* 正文 / 工具组 / 推理 同一列：用块级间距，不用 2px 挤成一团。 */
-.ui-chat-activity-chain {
-  position: relative;
-  isolation: isolate;
-  display: grid;
-  width: 100%;
-  min-width: 0;
-  gap: var(--chat-block-gap);
-  margin-block: 0;
-}
-
-.ui-chat-activity-rail {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: var(--chat-activity-rail-left);
-  z-index: 0;
-  width: 1px;
-  background: var(--border-strong);
-}
-
-.ui-chat-activity-rail[data-continue-before='true'] {
-  top: calc(var(--space-10) * -1);
-}
-
-.ui-chat-activity-rail[data-continue-after='true'] {
-  bottom: calc(var(--space-16) * -1);
 }
 
 /* ── Mermaid 注入 SVG ────────────────────────────────────────────────── */

@@ -14,7 +14,7 @@ export const MessageSurfaceShell: Component<MessageSurfaceShellProps> = (props) 
     <div
       data-testid="conversation-message-surface"
       class={cn(
-        'conversation-message__surface flex max-w-(--chat-content-max) min-w-0 flex-col gap-16',
+        'conversation-message__surface flex max-w-(--chat-content-max) min-w-0 flex-col gap-8',
         local.from === 'system'
           ? 'max-w-(--chat-system-max) rounded-full bg-surface-muted px-12 py-4 text-12 text-content-secondary'
           : 'w-full',

@@ -299,12 +299,12 @@ export function MessageList(props: { footerHeight?: number }) {
         updateViewport(el.scrollTop);
       }}
       trailing={<Show when={(!stick() || hasNewContent()) && permissions().length === 0 && visibleElicitations(elicitations()).length === 0}>
-        <Button type="button" size="compact" class="ui-jump-latest" onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button>
+        <Button type="button" size="compact" onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button>
       </Show>}
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
       <div class="sr-only" role="status" aria-label="Agent activity" aria-live="polite" aria-atomic="true">{agentActivityAnnouncement()}</div>
-      <div class="ui-transcript-content ui-chat-column" data-testid="message-list-content">
+      <div class="ui-chat-column" data-testid="message-list-content">
         <div ref={prefixRef} data-testid="transcript-prefix">
           <Show when={!runtimeDocsHydrated()}>
             <LoadingState label="Loading session" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />
@@ -335,7 +335,7 @@ export function MessageList(props: { footerHeight?: number }) {
           <div data-testid="transcript-spacer" data-transcript-spacer="after" aria-hidden="true" style={{ height: `${visibleTranscript().afterHeight}px` }} />
         </div>
         <Show when={showChatLoading()}>
-          <div class="ui-transcript-thinking-slot" data-testid="chat-loading">
+          <div data-testid="chat-loading">
             <TranscriptThinkingGap />
           </div>
         </Show>

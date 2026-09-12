@@ -235,9 +235,6 @@
   --chat-column-gutter-desk: var(--space-20);
   --chat-column-gutter-narrow: var(--space-12);
   --chat-markdown-rhythm: var(--markdown-rich-block-gap);
-  --chat-markdown-heading-gap: var(--space-24);
-  --chat-turn-gap: var(--space-20);
-  --chat-block-gap: var(--space-16);
   --markdown-table-min: 420px;
   --chat-tool-activity-max: var(--tool-activity-max);
   --chat-bubble-max: 72%;
@@ -460,6 +457,7 @@
   --composer-max: 760px;
   --composer-launch-max: 736px;
   --composer-safe-bottom: calc(var(--space-20) + env(safe-area-inset-bottom));
+  --chat-composer-fade-height: var(--space-56);
   --container-popover: min(288px, calc(100vw - 2 * var(--space-16)));
   --container-slash-menu: min(360px, calc(100vw - 2 * var(--space-16)));
   --container-dialog-default: min(400px, calc(100vw - 2 * var(--space-20)));

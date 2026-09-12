@@ -345,7 +345,7 @@ export const ToolActivityGroup: Component<ToolActivityGroupProps> = (props) => {
       class={cn(
         'tool-activity-group',
         activity()
-          ? 'tool-activity-group--activity tool-call-group-list grid w-full max-w-(--chat-tool-activity-max) min-w-0 gap-4'
+          ? 'tool-activity-group--activity tool-call-group-list grid w-full max-w-(--chat-tool-activity-max) min-w-0 gap-px'
           : 'flex max-w-(--chat-tool-activity-max) min-w-0 flex-col gap-8 rounded-lg border border-border-subtle bg-surface-overlay p-8',
         showRail() && 'relative isolate',
         local.class,

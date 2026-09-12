@@ -230,10 +230,8 @@ describe('ConversationMessage', () => {
     })} />);
 
     const group = screen.getByLabelText('Assistant message').querySelector('[data-testid="chat-activity-chain"] [data-testid="tool-activity-group"]')!;
-    const rail = screen.getByTestId('chat-activity-rail');
-    expect(rail).toHaveClass('ui-chat-activity-rail');
     expect(group).toHaveClass('tool-activity-group--activity', 'tool-call-group-list');
-    expect(group.closest('[data-testid="chat-activity-chain"]')).toHaveClass('ui-chat-activity-chain');
+    expect(group.closest('[data-testid="chat-activity-chain"]')).toBeTruthy();
     const rows = group.querySelectorAll('[data-testid="tool-activity-row"]');
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveClass('tool-activity-row--activity');
@@ -280,10 +278,8 @@ describe('ConversationMessage', () => {
     })} />);
 
     const message = screen.getByLabelText('Assistant message');
-    expect(message.querySelector('[data-testid="thinking-gap"]')).toHaveClass('ui-transcript-thinking-gap');
-    expect(message.querySelector('[data-testid="chat-activity-rail"]')).toBeInTheDocument();
+    expect(message.querySelector('[data-testid="thinking-gap"]')).toHaveClass('thinking-gap', 'relative', 'z-1');
     expect(message.querySelector('.message-reasoning__activity-label')).toBeNull();
-    expect(message.querySelector('[data-testid="chat-activity-chain"]')).not.toHaveClass('chat-activity-chain--thinking-rail');
   });
 
   it('hides completed empty thinking placeholders in the activity chain', () => {
@@ -297,7 +293,6 @@ describe('ConversationMessage', () => {
     })} />);
 
     expect(screen.queryByTestId('message-reasoning')).toBeNull();
-    expect(screen.getByTestId('chat-activity-rail')).toBeInTheDocument();
     expect(screen.getByTestId('tool-activity-row')).toBeInTheDocument();
   });
 
@@ -319,7 +314,6 @@ describe('ConversationMessage', () => {
     expect(details).not.toHaveAttribute('open');
     expect(body).not.toBeVisible();
     expect(body.closest('.tool-activity-row__body')).toHaveClass('relative', 'z-1', 'pl-16', 'font-normal');
-    expect(screen.getByTestId('chat-activity-rail')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Reasoning'));
     expect(details).toHaveAttribute('open');

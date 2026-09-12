@@ -125,18 +125,20 @@ function SessionRow(props: {
         'padding-left': props.indent ? `calc(10px + ${props.indent}px)` : undefined,
       }}
     >
-      <button
-        type="button"
-        class="flex min-h-36 w-full min-w-0 items-center overflow-hidden rounded-md pl-10 pr-0 text-left"
-        onClick={props.onClick}
-      >
-        <span class="session-copy block min-w-0 w-full truncate text-13 text-content-primary">{props.session.title}</span>
-      </button>
-      <SessionRowAccessory
-        live={props.session.live}
-        unread={props.session.unread}
-        pinned={props.session.pinned}
-      />
+      <div class="relative flex min-h-36 w-full min-w-0 items-center">
+        <button
+          type="button"
+          class="flex min-h-36 w-full min-w-0 items-center overflow-hidden rounded-md pl-10 pr-0 text-left"
+          onClick={props.onClick}
+        >
+          <span class="session-copy block min-w-0 w-full truncate text-13 leading-20 text-content-primary">{props.session.title}</span>
+        </button>
+        <SessionRowAccessory
+          live={props.session.live}
+          unread={props.session.unread}
+          pinned={props.session.pinned}
+        />
+      </div>
     </div>
   );
 }

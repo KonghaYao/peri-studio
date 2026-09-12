@@ -169,7 +169,7 @@ describe('MessageList footer resize', () => {
     setChatEntries([message('assistant-1', 'live', null)]);
     const { container } = render(() => <MessageList footerHeight={160} />);
 
-    expect(container.querySelector('[data-testid="message-list-content"]')).toHaveClass('ui-chat-column', 'ui-transcript-content');
+    expect(container.querySelector('[data-testid="message-list-content"]')).toHaveClass('ui-chat-column');
     expect(screen.getByRole('region', { name: 'Conversation messages' })).toHaveClass('ui-transcript-scroll');
   });
 
@@ -248,10 +248,7 @@ describe('MessageList entry updates', () => {
     expect(details).not.toHaveAttribute('open');
     expect(reasoning).not.toBeVisible();
     expect(reasoning).toHaveClass('pl-16');
-    const rails = screen.getAllByTestId('chat-activity-rail');
-    expect(rails).toHaveLength(2);
-    expect(rails[0]).toHaveClass('-bottom-16');
-    expect(rails[1]).toHaveClass('-top-10');
+    expect(screen.getAllByTestId('chat-activity-chain')).toHaveLength(2);
   });
 
   it('shows one terminal error surface for assistant segments from the same turn', () => {
