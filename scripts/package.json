@@ -1,7 +1,0 @@
-{
-  "name": "peri-studio-scripts",
-  "private": true,
-  "dependencies": {
-    "yjs": "^13.6.32"
-  }
-}

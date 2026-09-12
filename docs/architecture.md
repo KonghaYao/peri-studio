@@ -1301,7 +1301,7 @@ peri-studio/
 │                         #   transport（重连循环）/ hub（daemon 主循环）/ auth / router / global；tests/child_test.rs
 ├── web/                   # SolidJS SPA（§10.2）：app / pages / widgets / features / entities / shared / store；
 │                         #   panel/ 遗留 shim + 待迁 lib；vitest + tests/*.test.mjs + Playwright；见 AGENTS.md
-├── scripts/               # dev-contract-test / verify-create-chain / verify-load / package-release / verify-release（+ e2e-flow/ws-verify JS 验证脚本）
+├── scripts/               # install.sh / package-release-binary / verify-release-binary / verify-unified-runtime
 ├── dev.sh                 # 一键开发：构建 Web → 启动 peri-studio local → 就绪校验
 └── docs/                  # architecture.md（本文）/ terminology.md（唯一权威术语表）/ topology.md /
                           #   adr/（架构裁决）/ audit-2026-08.md / design/（prompt-recovery-provenance.md 等）
@@ -1323,7 +1323,7 @@ peri-studio/
 
 | 里程碑 | 范围 | 验收 | 状态【v2.6】 |
 |--------|------|------|------|
-| **M1 本机闭环** | server + instance 同机 + 视图客户端 + 三 Doc + token（含双向认证）+ 断线韧性 + **部署包** | P1–P9 全绿；客户端崩溃重启不影响 agent；双面板 attach 一致；**kill -9 server / kill -9 instance daemon 演练**【审查：运维 P1-1】；**§4.8 测试向量 1–12 全绿**【顾问2】 | **已实现**（视图层为 Web 面板而非 TUI；`dev.sh` 本机闭环 + `scripts/` 验证链可用） |
+| **M1 本机闭环** | server + instance 同机 + 视图客户端 + 三 Doc + token（含双向认证）+ 断线韧性 + **部署包** | P1–P9 全绿；客户端崩溃重启不影响 agent；双面板 attach 一致；**kill -9 server / kill -9 instance daemon 演练**【审查：运维 P1-1】；**§4.8 测试向量 1–12 全绿**【顾问2】 | **已实现**（视图层为 Web 面板而非 TUI；`dev.sh` 本机闭环 + `bun run test` / `cargo test` 门禁） |
 | **M2 局域网** | instance 部署到第二台机器、心跳/离线/重连、实例列表 UI、显式调度、**可观测性指标落地** | 断网 → turn interrupted 呈现 → 重连缓冲补推校准 → chat 恢复可用；gap 计数可见 | 部分（心跳/离线/重连/缓冲补推已实现；跨机部署契约见 [ssh-machine-mount.md](design/ssh-machine-mount.md)，server/app 管道部分落地；`status --json` 已暴露 machines 摘要；指标聚合未落地） |
 | **M3 多端** | 多端视图一致（原规划 Web 只读面板） | 多面板视图一致 | **已实现并超出**：Web 面板为可写客户端；`events/subscribe`/awareness 仍为保留帧面 |
 | **M4 公网** | wss、token 管理/轮换 UI、限流 | 公网远程连接安全基线 | 未开始（当前仅支持 loopback 单机部署，远程部署为后置里程碑） |
@@ -1332,8 +1332,8 @@ peri-studio/
 
 ### 13.1 部署包（M1 验收项）【审查：运维 P1-1 + P2-6】
 
-【v2.7】`deploy/` 模板与本地产物链（`scripts/package-release.sh` /
-`verify-release.sh`）均以唯一 `peri-studio` 可执行文件为准。
+【v2.7】`deploy/` 模板与本地产物链（`scripts/package-release-binary.sh` /
+`verify-release-binary.sh`）均以唯一 `peri-studio` 可执行文件为准。
 
 - 交互式本地启动使用 `peri-studio` / `peri-studio local`。`deploy/` 的后台模板
   使用**两个 OS service，同一可执行文件**：一个执行 `serve`，一个执行

@@ -89,7 +89,7 @@ flowchart TB
 | `instance/` | instance 角色库 | 运行时模块 | outbound 连 server、收 spawn/kill 指令、管理 ACP 进程树（进程组信号）、透明转发 + 断线缓冲 + 补推、心跳 | ws outbound `/instance`；stdio 对接 ACP 进程 |
 | `web/` | Web 面板 | 前端源码（Vite + SolidJS + TS，Bun 构建） | 面板 UI；构建产物 `dist/` 内嵌进 `peri-studio`，只消费 server 事实 | 仅经 server 角色暴露 |
 | `deploy/` | 部署模板 | systemd unit / launchd plist / logrotate 配置 | 同一可执行文件以两个 service 分别托管 `serve` 与 `connect`，保持故障隔离 | 面向运维，不内嵌 token |
-| `scripts/` | 验证脚本 | shell + .mjs（bun） | 契约测试、e2e 流、release 验证、ws 验证客户端 | 开发期使用，无运行时依赖 |
+| `scripts/` | 发布与本机运行时脚本 | shell | `install.sh`、单一二进制打包/校验、`local` 角色崩溃恢复探针 | 发布链与可选本机验证，无运行时依赖 |
 | `docs/` | 文档 | `architecture.md`（权威）、`terminology.md`、`topology.md`、`adr/`、`design/` | 架构契约、术语、决策与设计记录 | 面向人 |
 | 根文件 | 装配与门禁 | `dev.sh`、`Cargo.toml`（workspace）、`README.md`、`SECURITY.md`、`deny.toml`、`ui.md`（历史基线） | 开发启动编排、依赖门禁、安全边界声明 | 面向人/CI |
 
@@ -372,7 +372,7 @@ flowchart LR
     WEB2["web/<br/>bun run build → dist/"]
     APP2["app + server + instance<br/>peri-studio 内嵌 dist（编译期）"]
     DEP["deploy/<br/>launchd/systemd/logrotate"]
-    SCR["scripts/<br/>契约/e2e/verify 验证"]
+    SCR["scripts/<br/>install / 发布打包 / 本机 runtime 探针"]
     DOC["docs/<br/>architecture.md 权威 · terminology · ADR"]
 
     DEV --> WEB2
@@ -383,9 +383,9 @@ flowchart LR
     DOC -. 契约 .-> APP2
 ```
 
-- `dev.sh`：构建 Web 产物 → `cargo run -p peri-studio` 启动 local 模式 → 等 listener 与本地 instance 认证完成 → 前台滚动日志。
+- `dev.sh`：构建 Web 产物 → `cargo build -p peri-studio --no-default-features` 后启动 `peri-studio local` → 等 listener 与本地 instance 认证完成 → 前台滚动日志。
 - `deploy/`：systemd / launchd 各以两个 service 执行同一 `peri-studio` 的 `serve` 与 `connect`，保留失败隔离；默认 loopback 边界、不内嵌 token（`deploy/README.md`）。
-- `scripts/`：`dev-contract-test.sh`（协议契约测试）、`e2e-flow.mjs`、`verify-create-chain.sh`、`verify-load.mjs`、`verify-release.sh`、`ws-verify*.mjs`（ws 闭环验证）。
+- `scripts/`：`install.sh`、`package-release-binary.sh` / `verify-release-binary.sh`（GitHub Release 单一二进制产物链）、`verify-unified-runtime.sh`（可选本机 `local` 崩溃恢复探针）。协议/产品闭环由 `cargo test` 与 `bun run test` 覆盖，不再保留独立 JS e2e 脚本。
 - `docs/`：`architecture.md` 为权威架构契约；`terminology.md` 为唯一权威术语表；`adr/` 保留难以逆转的架构裁决；`design/` 保留专项设计记录。
 - `ui.md` 是重构前历史基线，非当前实现说明（`README.md` 明确声明）。
 

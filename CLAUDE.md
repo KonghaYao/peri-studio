@@ -29,7 +29,7 @@ Peri Studio 是 ACP agent 的持久 Web 工作台（仓库名 peri-studio，产�
 - `packages/ui/`：私有 buildless workspace package `@peri/ui`，统一拥有 T1 token、Tailwind theme、T2 Base UI 与 `cn`
 - `ui-sandbox/`：手写 UI Catalog（Tokens / Components / Blocks / Layers），消费 `@peri/ui`；与 `web/` 构建隔离，**新 UI 须先在此定稿**再镜像生产（见 `docs/design/ui-package-migration.md`）
 - `docs/`：`architecture.md`（权威架构基准，v2.14 与实现对齐）、`terminology.md`（唯一权威术语表）、`topology.md`、`adr/`、`design/`（设计决策与验证证据）
-- `scripts/`：契约测试与端到端验证脚本（含 release 打包）
+- `scripts/`：发布安装器、单一二进制打包/校验，以及可选的本机 `local` 运行时探针
 - `dev.sh`：一键启动 server + instance 并校验就绪
 - `dev-sandbox.sh`：仅启动 ui-sandbox Vite（`http://127.0.0.1:5273/`）
 
