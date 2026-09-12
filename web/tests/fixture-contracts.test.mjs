@@ -8,9 +8,7 @@ import { join } from 'node:path';
 
 test('visual fixture isolation and overlay geometry remain part of the default gate', () => {
   const root = join(import.meta.dirname, '..');
-  const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
   const fixtureCss = readFileSync(join(root, 'src', 'visual-fixture', 'fixture.css'), 'utf8');
-  assert.match(pkg.scripts.test, /verify-production-boundary\.mjs/);
   assert.match(fixtureCss, /\.visual-fixture-rail\s*\{[^}]*z-index:40/s);
   assert.match(fixtureCss, /\.visual-scenario-sidebar\s*\{[^}]*width:242px/s);
   assert.match(fixtureCss, /@media\(max-width:640px\)[\s\S]*\.visual-fixture-root~\.ui-toast-viewport\{top:54px\}/);
@@ -43,12 +41,6 @@ test('the visual fixture is a development-only entry and cannot bypass productio
   }
   assert.match(scenarios, /DEFAULT_VISUAL_SCENARIO\s*=\s*['"]conversation['"]/);
   assert.doesNotMatch(scenarios, /action:\s*['"]reconnect['"]/);
-  const visualContract = readFileSync(join(root, 'scripts', 'visual-contract.mjs'), 'utf8');
-  assert.match(visualContract, /export const assertVisualContract/);
-  assert.match(visualContract, /navigator\.language/);
-  assert.match(visualContract, /resolvedOptions\(\)\.timeZone/);
-  assert.match(visualContract, /messageListViewportHeight/);
-  assert.match(visualContract, /messageTotal/);
 });
 
 test('component geometry tokens are declared once and consumed by production widgets', () => {

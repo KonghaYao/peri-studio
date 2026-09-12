@@ -21,7 +21,7 @@ Web 前端维护两套互补的测试轨道，职责不同、互不替代：
 | --- | --- | --- | --- |
 | 契约门（快速） | `tests/*.test.mjs` | node:test（`node --test`） | 纯 Node 断言，无 DOM、无浏览器。守护状态机/纯函数契约、CSS 结构/token/媒体查询契约、visual fixture 隔离契约。CI 快速门，毫秒级完成 |
 | 单元测试 | `src/**/*.test.ts(x)` | vitest（jsdom） | 组件渲染、store/模块行为的单元级验证，与产物代码同目录 |
-| 浏览器契约 | `tests/browser/*.spec.mjs` | Playwright | 真实浏览器中验证 visual fixture 的交互与几何（含 locale/timezone 证据），需要浏览器环境 |
+| 浏览器契约 | `tests/browser/*.spec.mjs` | Playwright | 真实浏览器中验证 visual fixture 的交互与几何，需要浏览器环境 |
 
 `tests/` 契约门按主题拆分为多个文件，每个文件独立可跑：
 
@@ -34,7 +34,7 @@ Web 前端维护两套互补的测试轨道，职责不同、互不替代：
 ## 验证命令
 
 ```bash
-bun run test        # 完整 CI 门：tsc --noEmit + node --test tests/*.test.mjs + vitest run + 生产边界验证
+bun run test        # 完整 CI 门：tsc --noEmit + node --test tests/*.test.mjs + vitest run
 bun run test:browser # Playwright 浏览器契约（自动拉起 visual dev server，需先 bun install 的浏览器）
 ```
 

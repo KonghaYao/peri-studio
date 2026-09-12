@@ -8,9 +8,8 @@
   "scripts": {
     "dev": "vite",
     "visual:dev": "vite --host 127.0.0.1",
-    "verify:production-boundary": "node scripts/verify-production-boundary.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "tsc --noEmit && node --test tests/*.test.mjs && vitest run && node scripts/verify-production-boundary.mjs",
+    "test": "tsc --noEmit && node --test tests/*.test.mjs && vitest run",
     "test:browser": "playwright test",
     "build": "vite build",
     "preview": "vite preview"

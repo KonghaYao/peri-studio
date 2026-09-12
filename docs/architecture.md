@@ -1307,7 +1307,7 @@ peri-studio/
                           #   adr/（架构裁决）/ audit-2026-08.md / design/（prompt-recovery-provenance.md 等）
 ```
 
-测试沿用仓库规范：单元测试 `*_test.rs` 同目录、集成测试 `tests/`；proto 契约测试 `proto/tests/contract.rs`；Web 侧 `bun run test`（typecheck + node --test + vitest + 生产边界校验）与 `bun run test:browser`（Playwright）。
+测试沿用仓库规范：单元测试 `*_test.rs` 同目录、集成测试 `tests/`；proto 契约测试 `proto/tests/contract.rs`；Web 侧 `bun run test`（typecheck + node --test + vitest）与 `bun run test:browser`（Playwright）。
 
 **测试前提**【审查：开发 P2】：
 

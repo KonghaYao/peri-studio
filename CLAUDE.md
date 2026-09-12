@@ -54,7 +54,7 @@ Agent 可以阅读或修改脚本，以及运行不启动 server/instance 的静
 ./dev-sandbox.sh
 
 # Web（Bun）
-cd web && bun run test        # typecheck + node --test + vitest + 生产边界校验
+cd web && bun run test        # typecheck + node --test + vitest
 bun run test:browser          # Playwright 浏览器契约
 bun run build                 # 生成 web/dist（cargo 构建前必须先执行）
 

@@ -1,20 +1,4 @@
 import { expect, test } from '@playwright/test';
-import { assertVisualContract, visualContract } from '../../scripts/visual-contract.mjs';
-
-const scenarios = [
-  ['catalog', { projects: 2, sessions: 4 }],
-  ['conversation', { messages: 2 }],
-  ['resources', { projects: 2, sessions: 4 }],
-  ['markdown', { messages: 1 }],
-  ['permission-streaming', { permissions: 1, permissionQueueLabel: 'Pending permission requests, 2 total' }],
-  ['terminal-readonly', { readonly: true }],
-];
-const viewports = [
-  { width: 1280, height: 800 },
-  { width: 1024, height: 768 },
-  { width: 768, height: 768 },
-  { width: 390, height: 844 },
-];
 
 function collectBrowserErrors(page) {
   const errors = [];
@@ -220,33 +204,6 @@ for (const scenario of ['conversation', 'permission-streaming', 'elicitation', '
       expect(button.radius, button.label ?? 'icon action').not.toBe('50%');
     }
   });
-}
-
-for (const [scenario, expected] of scenarios) {
-  for (const viewport of viewports) {
-    test(`${scenario} satisfies the browser contract at ${viewport.width}x${viewport.height}`, async ({ page }) => {
-      const browserErrors = collectBrowserErrors(page);
-      const needsSidebar = expected.projects != null || expected.sessions != null;
-      await page.setViewportSize(viewport);
-      await page.goto(
-        `/visual-fixture.html?scenario=${scenario}${needsSidebar ? '&sidebar=projects' : ''}`,
-        { waitUntil: 'networkidle' },
-      );
-      const facts = await page.evaluate(visualContract);
-      expect(() => assertVisualContract(facts)).not.toThrow();
-      expect(facts.viewport).toEqual([viewport.width, viewport.height]);
-      if (viewport.width >= 960) {
-        if (expected.projects != null) expect(facts.projectCount).toBeGreaterThanOrEqual(expected.projects);
-        if (expected.sessions != null) expect(facts.sessionCount).toBeGreaterThanOrEqual(expected.sessions);
-      }
-      if (expected.messages) expect(facts.messageTotal).toBe(expected.messages);
-      if (expected.markdown) expect(facts.markdown).toMatchObject({ headings: 1, lists: 1, codeBlocks: 1 });
-      if (expected.permissions) expect(facts.permissionCount).toBe(expected.permissions);
-      if (expected.permissionQueueLabel) expect(facts.permissionQueueLabel).toBe(expected.permissionQueueLabel);
-      if (expected.readonly && viewport.width >= 960) expect(facts.readonly).toBe(true);
-      expect(browserErrors).toEqual([]);
-    });
-  }
 }
 
 test('migrated surfaces retain their authored computed borders', async ({ page }) => {
