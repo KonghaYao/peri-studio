@@ -21,7 +21,7 @@ bun run dev   # http://127.0.0.1:5273/
 
 | Tier | 路由 | 目录 | 职责 |
 |------|------|------|------|
-| **Cover · Home** | `#/home` | `src/pages/HomePage.tsx` | 设计站封面：风格立场、问题与四层方案 |
+| **Cover · Home** | `#/home` | `src/pages/HomePage.tsx` | 设计站封面：标本图与同一栏标题 / 说明 |
 | **T1 · Tokens** | `#/tokens` | `src/styles/tokens.css` | Palette → semantic → component 数值源 |
 | **T2 · Core** | `#/components` | `@peri/ui` | 核心原语（Button、Input、Dialog…） |
 | **T2 · Forms** | `#/components-forms` | `@peri/ui` | 表单、日期、Field、DataTable、Questionnaire |

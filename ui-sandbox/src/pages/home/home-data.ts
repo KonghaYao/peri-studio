@@ -30,34 +30,34 @@ function homeAsset(file: string): string {
 
 export const HOME_FIGURES: Record<HomeFigureId, HomeFigure> = {
   hero: {
-    src: homeAsset('apple-hero.jpg'),
+    src: homeAsset('lux-hero.jpg'),
     width: 1280,
     height: 720,
-    alt: 'A single sheet of optical glass on white, one edge anodized azure',
+    alt: 'Macro of a sapphire crystal disc, bevel and azure rim catching light',
   },
   stance: {
-    src: homeAsset('apple-stance.jpg'),
+    src: homeAsset('lux-stance.jpg'),
     width: 1152,
     height: 864,
-    alt: 'Two parallel sheets of optical glass, light passing through like a lens',
+    alt: 'Optical glass leaning on brushed aluminum, azure edge at the seam',
   },
   problem: {
-    src: homeAsset('apple-problem.jpg'),
+    src: homeAsset('lux-problem.jpg'),
     width: 1280,
     height: 720,
-    alt: 'Four white plates, one shifted a few millimeters off-register',
+    alt: 'Thin aluminum slats in register, one rotated off the grid',
   },
   philosophy: {
-    src: homeAsset('apple-philosophy.jpg'),
+    src: homeAsset('lux-philosophy.jpg'),
     width: 1152,
     height: 864,
-    alt: 'Stacked white material planes with a single azure point',
+    alt: 'CNC-brushed aluminum with a flush azure inlay in a hairline channel',
   },
   solution: {
-    src: homeAsset('apple-solution.jpg'),
+    src: homeAsset('lux-solution.jpg'),
     width: 1280,
     height: 720,
-    alt: 'Four frosted-glass layers in a precise exploded stack',
+    alt: 'Four stacked optical glass elements with hairline air gaps',
   },
 };
 

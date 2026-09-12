@@ -1,0 +1,286 @@
+/* Catalog 封面：一张标本图 + 落在画面留白里的标题 + 同一栏说明。 */
+
+.sandbox-home {
+  --home-rise: 0.92s;
+  --home-zoom: 1.4s;
+  --home-inset: var(--space-16);
+  --home-frame: calc(100dvh - var(--sandbox-header-height));
+  --home-plate: calc(var(--home-frame) - var(--space-180));
+  background: var(--surface-canvas);
+  color: var(--content-primary);
+}
+
+.sandbox-home__kicker {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-10);
+  font-weight: 500;
+  letter-spacing: var(--tracking-caps);
+  color: var(--content-faint);
+}
+
+.sandbox-home__display {
+  margin: var(--space-8) 0 0;
+  font-size: var(--text-28);
+  font-weight: 600;
+  line-height: var(--leading-115);
+  letter-spacing: var(--tracking-dialog);
+}
+
+.sandbox-home__lede {
+  margin: var(--space-12) 0 0;
+  font-size: var(--text-15);
+  line-height: var(--leading-145);
+}
+
+.sandbox-home__body {
+  margin: 0;
+  font-size: var(--text-14);
+  line-height: var(--leading-155);
+  color: var(--content-secondary);
+}
+
+.sandbox-home__pair {
+  display: grid;
+  grid-template-columns: minmax(0, max-content);
+  justify-content: center;
+  width: 100%;
+  padding: var(--space-32) var(--space-16) var(--space-48);
+}
+
+.sandbox-home__pair--open {
+  padding-top: var(--space-16);
+}
+
+.sandbox-home__shot {
+  position: relative;
+  max-width: 100%;
+  container-type: inline-size;
+}
+
+.sandbox-home__photo {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: var(--home-plate);
+  object-fit: contain;
+  transform: scale(1.04);
+  transform-origin: center;
+  transition: transform var(--home-zoom) var(--ease-panel-in);
+}
+
+.sandbox-home__pair.is-in .sandbox-home__photo {
+  transform: none;
+}
+
+.sandbox-home__rubric {
+  max-width: min(36cqi, var(--container-auth-card));
+}
+
+.sandbox-home__pair--end .sandbox-home__rubric,
+.sandbox-home__pair--start .sandbox-home__rubric {
+  position: absolute;
+  bottom: var(--space-20);
+}
+
+.sandbox-home__pair--end .sandbox-home__rubric {
+  right: var(--home-inset);
+}
+
+.sandbox-home__pair--start .sandbox-home__rubric {
+  left: var(--home-inset);
+}
+
+.sandbox-home__pair--stack .sandbox-home__rubric {
+  max-width: none;
+  padding: 0 var(--home-inset) var(--space-16);
+}
+
+.sandbox-home__legend {
+  padding: var(--space-20) var(--home-inset) 0;
+}
+
+.sandbox-home__pair--end .sandbox-home__legend {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.sandbox-home__pair--end .sandbox-home__legend > * {
+  max-width: min(36%, var(--container-auth-card));
+}
+
+.sandbox-home__pair--start .sandbox-home__legend > * {
+  max-width: min(48%, var(--container-search));
+}
+
+.sandbox-home__pair--stack .sandbox-home__legend > * {
+  max-width: none;
+}
+
+.sandbox-home__numeral {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-10);
+  letter-spacing: var(--tracking-caps);
+  color: var(--content-faint);
+}
+
+.sandbox-home__triad {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-24);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sandbox-home__triad-title {
+  margin: var(--space-8) 0 0;
+  font-size: var(--text-16);
+  font-weight: 600;
+  letter-spacing: var(--tracking-dialog);
+}
+
+.sandbox-home__triad-body {
+  margin: var(--space-8) 0 0;
+  font-size: var(--text-13);
+  line-height: var(--leading-15);
+  color: var(--content-secondary);
+}
+
+.sandbox-home__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-16) var(--space-24);
+  margin-top: var(--space-16);
+}
+
+.sandbox-home__cta {
+  font-size: var(--text-15);
+  font-weight: 500;
+  color: var(--accent-solid);
+  text-decoration: none;
+}
+
+.sandbox-home__cta:hover {
+  color: var(--accent-hover);
+}
+
+.sandbox-home__words {
+  padding: var(--space-48) var(--space-16) var(--space-64);
+}
+
+.sandbox-home__words-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12) var(--space-28);
+  margin: var(--space-28) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sandbox-home__word {
+  font-size: var(--text-24);
+  font-weight: 600;
+  letter-spacing: var(--tracking-dialog);
+  color: inherit;
+  text-decoration: none;
+}
+
+.sandbox-home__word:hover {
+  color: var(--accent-solid);
+}
+
+.sandbox-home__word-tier {
+  margin-left: var(--space-8);
+  font-family: var(--font-mono);
+  font-size: var(--text-10);
+  font-weight: 500;
+  letter-spacing: var(--tracking-caps);
+  color: var(--content-faint);
+  vertical-align: super;
+}
+
+[data-home-reveal] {
+  opacity: 0;
+  transform: translateY(var(--space-16));
+  transition:
+    opacity var(--home-rise) var(--ease-panel-in),
+    transform var(--home-rise) var(--ease-panel-in);
+}
+
+[data-home-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 759px) {
+  .sandbox-home__pair--end .sandbox-home__rubric,
+  .sandbox-home__pair--start .sandbox-home__rubric {
+    position: static;
+    max-width: none;
+    padding: var(--space-16) var(--home-inset) 0;
+  }
+
+  .sandbox-home__pair--end .sandbox-home__legend,
+  .sandbox-home__pair--start .sandbox-home__legend,
+  .sandbox-home__pair--end .sandbox-home__legend > *,
+  .sandbox-home__pair--start .sandbox-home__legend > * {
+    align-items: stretch;
+    max-width: none;
+  }
+}
+
+@media (min-width: 760px) {
+  .sandbox-home {
+    --home-inset: var(--space-32);
+  }
+
+  .sandbox-home__display {
+    font-size: var(--text-36);
+  }
+
+  .sandbox-home__pair {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .sandbox-home__triad {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-28);
+  }
+
+  .sandbox-home__words {
+    padding-left: var(--space-40);
+    padding-right: var(--space-40);
+  }
+}
+
+@media (min-width: 960px) {
+  .sandbox-home {
+    --home-inset: var(--space-48);
+  }
+
+  .sandbox-home__display {
+    font-size: var(--text-48);
+  }
+
+  .sandbox-home__word {
+    font-size: var(--text-28);
+  }
+
+  .sandbox-home__words {
+    padding: var(--space-64) var(--space-56);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sandbox-home__photo,
+  [data-home-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
