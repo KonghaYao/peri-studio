@@ -243,7 +243,9 @@ web/src/
 | entity 单测 | `entities/**/*.test.ts` | vitest |
 | widget 单测 | `widgets/**/*.test.tsx` | vitest jsdom |
 | 协议契约 | `web/tests/*.test.mjs` | node --test |
-| 浏览器契约 | `web/tests/browser/*` | playwright |
+| 浏览器契约 | `web/tests/browser/*` | playwright：真实布局、焦点/inert、虚拟化、Mermaid/KaTeX；不含 token 像素快照或 widget 已覆盖的交互 |
+
+Playwright 入口是 `visual-fixture.html`。共享 helper 在 `web/tests/browser/helpers.mjs`。
 
 ## 10. 与现有文档关系
 

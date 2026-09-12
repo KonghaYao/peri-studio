@@ -14,7 +14,7 @@ bun run visual:dev
 `long-conversation`、`markdown`、`tools`、`permission-streaming`、
 `elicitation`、`subtasks`、`resources`、`assets`、`terminal-readonly` 和
 `catalog`。未知值回退到基础对话。增加 `sidebar=projects` 可以临时显示真实项目侧栏，
-供项目导航契约验收使用。
+供项目导航契约验收使用。Playwright 浏览器契约（`web/tests/browser/`）消费同一入口：只覆盖真实布局、焦点、虚拟化与 Mermaid/KaTeX，不锁 token 像素。
 
 ## 安全边界
 

@@ -178,7 +178,7 @@ web/base.css
 | feature / entity | `features/**/*.test.ts`, `entities/**/*.test.ts` | `cd web && bun run test` |
 | widget | `widgets/**/*.test.tsx` | vitest jsdom |
 | 协议 / 状态契约 | `web/tests/*.test.mjs` | node --test |
-| 浏览器契约 | `web/tests/browser/*` | `bun run test:browser` |
+| 浏览器契约 | `web/tests/browser/*` | `bun run test:browser`（真实布局 / 焦点 / 虚拟化 / Mermaid；非像素快照） |
 | sandbox 类型检查 | `ui-sandbox/` | `cd ui-sandbox && bun run typecheck` |
 
 ### 本地启动权限

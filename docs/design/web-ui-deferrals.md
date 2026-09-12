@@ -33,7 +33,7 @@ date: 2026-09-12
 **仍保留**：
 
 - `bun run test`：`tsc --noEmit` + `node --test tests/*.test.mjs`（含 `css-contracts.test.mjs`）+ `vitest run`
-- `bun run test:browser`：Playwright 交互与几何契约（`tests/browser/*`）
+- `bun run test:browser`：Playwright 浏览器契约（真实布局、焦点、虚拟化、Mermaid；不含 token 像素快照）
 - 发布前仍须 `bun run build`（Rust `build.rs` 内嵌 `web/dist`）
 
 **理由**：二次 build 与 dev/prod 模块图漂移的对抗价值已由分层门禁、css-contracts 与 CI 独立 `build` 步骤覆盖；视口矩阵与 Playwright 交互契约重复且维护成本高。
