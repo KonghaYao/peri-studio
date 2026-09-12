@@ -89,6 +89,8 @@ function toolFamily(kind: ToolCallKind | null | undefined): 'shell' | 'read' | '
   return 'generic';
 }
 
+const FILE_PATH_ARGUMENT_KEYS = new Set(['file_path', 'filePath', 'path']);
+
 function toolEvidence(kind: ToolCallKind | null | undefined, input: unknown, output: unknown) {
   const family = toolFamily(kind);
   if (family === 'shell') return { inputLabel: 'Command', input, outputLabel: 'Output', output };
@@ -97,62 +99,84 @@ function toolEvidence(kind: ToolCallKind | null | undefined, input: unknown, out
   return { inputLabel: 'Input', input, outputLabel: 'Output', output };
 }
 
+function argumentKeys(value: unknown): string[] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+  return Object.keys(value as Record<string, unknown>);
+}
+
+/** 标题已是可点文件时，不再把 file_path 再展开成一份 JSON。 */
+function shouldShowArguments(tool: ToolCallInfo, hasFilePreview: boolean): boolean {
+  if (tool.arguments === undefined || tool.arguments === null) return false;
+  if (!hasFilePreview) return true;
+  return argumentKeys(tool.arguments).some((key) => !FILE_PATH_ARGUMENT_KEYS.has(key));
+}
+
+function pushOmitted(
+  items: ToolActivityEvidence[],
+  label: string,
+  size: number | null,
+  noun: string,
+) {
+  items.push({
+    kind: 'omitted',
+    label,
+    sizeLabel: readableBytes(size),
+    noun,
+  });
+}
+
+function pushBodyOmissions(
+  items: ToolActivityEvidence[],
+  tool: ToolCallInfo,
+  hideWorkspaceFileOmission: boolean,
+) {
+  if (hideWorkspaceFileOmission) return;
+  const resultMissing = Boolean(tool.resultOmitted) && (tool.result === undefined || tool.result === null);
+  const contentMissing = Boolean(tool.contentOmitted) && (tool.content === undefined || tool.content === null);
+  if (resultMissing && contentMissing) {
+    const bytes = Math.max(tool.resultBytes ?? 0, tool.contentBytes ?? 0);
+    pushOmitted(items, 'Output not loaded', bytes > 0 ? bytes : null, 'result');
+    return;
+  }
+  if (tool.resultOmitted) {
+    pushOmitted(items, 'Output not loaded', tool.resultBytes ?? null, 'result');
+  }
+  if (tool.contentOmitted) {
+    pushOmitted(items, 'Tool content not loaded', tool.contentBytes ?? null, 'tool content');
+  }
+}
+
 function buildEvidence(props: {
   tool: ToolCallInfo;
   evidence: ReturnType<typeof toolEvidence>;
   errorText: string;
   showEmptyOutput: boolean;
   showLegacyOutput: boolean;
+  hasFilePreview: boolean;
 }): ToolActivityEvidence[] {
   const items: ToolActivityEvidence[] = [];
   const { tool, evidence, errorText } = props;
 
-  if (tool.arguments !== undefined && tool.arguments !== null) {
+  if (shouldShowArguments(tool, props.hasFilePreview)) {
     items.push({ kind: 'value', label: evidence.inputLabel, value: readableToolValue(tool.arguments) });
   }
   if (tool.argumentsOmitted) {
-    items.push({
-      kind: 'omitted',
-      label: 'Input not loaded',
-      sizeLabel: readableBytes(tool.argumentsBytes ?? null),
-      noun: 'input',
-    });
+    pushOmitted(items, 'Input not loaded', tool.argumentsBytes ?? null, 'input');
   }
 
   if (tool.result !== undefined && tool.result !== null) {
     items.push({ kind: 'value', label: evidence.outputLabel, value: readableToolValue(tool.result) });
   }
-  if (tool.resultOmitted) {
-    items.push({
-      kind: 'omitted',
-      label: 'Output not loaded',
-      sizeLabel: readableBytes(tool.resultBytes ?? null),
-      noun: 'result',
-    });
-  }
-
   if (tool.content !== undefined && tool.content !== null) {
     items.push({ kind: 'value', label: 'Tool content', value: readableToolValue(tool.content) });
   }
-  if (tool.contentOmitted) {
-    items.push({
-      kind: 'omitted',
-      label: 'Tool content not loaded',
-      sizeLabel: readableBytes(tool.contentBytes ?? null),
-      noun: 'tool content',
-    });
-  }
+  pushBodyOmissions(items, tool, props.hasFilePreview);
 
   if (tool.locations !== undefined && tool.locations !== null) {
     items.push({ kind: 'value', label: 'Locations', value: readableToolValue(tool.locations) });
   }
-  if (tool.locationsOmitted) {
-    items.push({
-      kind: 'omitted',
-      label: 'Locations not loaded',
-      sizeLabel: readableBytes(tool.locationsBytes ?? null),
-      noun: 'location evidence',
-    });
+  if (tool.locationsOmitted && !props.hasFilePreview) {
+    pushOmitted(items, 'Locations not loaded', tool.locationsBytes ?? null, 'location evidence');
   }
 
   if (errorText) {
@@ -241,13 +265,16 @@ export function buildToolCallRowProps(
     projectCwd: options.projectCwd,
   });
   const evidenceMeta = toolEvidence(tool.kind, tool.arguments, tool.result);
+  const filePreview = Boolean(narration.filePreview);
   const showEmptyOutput = tool.resultOmitted === false
     && (tool.result === undefined || tool.result === null)
     && !errorText
+    && !filePreview
     && !['running', 'queued', 'approval'].includes(tone);
   const showLegacyOutput = tool.resultOmitted === null
     && (tool.result === undefined || tool.result === null)
     && !errorText
+    && !filePreview
     && !['running', 'queued', 'approval'].includes(tone);
   const evidence = buildEvidence({
     tool,
@@ -255,6 +282,7 @@ export function buildToolCallRowProps(
     errorText,
     showEmptyOutput,
     showLegacyOutput,
+    hasFilePreview: filePreview,
   });
 
   return mapNarrationToRowProps(narration, {

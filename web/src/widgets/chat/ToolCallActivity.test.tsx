@@ -157,6 +157,43 @@ describe('ToolCallActivity', () => {
     expect(screen.getByRole('img', { name: 'Done' })).toBeInTheDocument();
   });
 
+  it('does not scare a Read file open with duplicate projection-limit banners', () => {
+    render(() => <ToolCallActivity toolCall={{
+      ...base,
+      name: 'Read',
+      kind: 'read',
+      arguments: { file_path: 'web/src/widgets/sidebar/project-sidebar-archive.tsx' },
+      result: null,
+      resultOmitted: true,
+      resultBytes: 5_100,
+      content: null,
+      contentOmitted: true,
+      contentBytes: 5_200,
+    }} />);
+
+    expect(screen.getByTestId('tool-activity-file-link')).toHaveTextContent('project-sidebar-archive.tsx');
+    expect(document.querySelector('[data-testid="tool-activity-row-expand"]')).toBeNull();
+    expect(screen.queryByText('Output not loaded')).not.toBeInTheDocument();
+    expect(screen.queryByText('Tool content not loaded')).not.toBeInTheDocument();
+  });
+
+  it('collapses omitted result and content into one notice for tools without a file link', () => {
+    render(() => <ToolCallActivity toolCall={{
+      ...base,
+      result: null,
+      resultOmitted: true,
+      resultBytes: 5_100,
+      content: null,
+      contentOmitted: true,
+      contentBytes: 5_200,
+    }} />);
+
+    fireEvent.click(expandControl());
+    expect(screen.getByText('Output not loaded')).toBeInTheDocument();
+    expect(screen.queryByText('Tool content not loaded')).not.toBeInTheDocument();
+    expect(screen.getByText(/of about 5.1 KB/)).toBeInTheDocument();
+  });
+
   it('shows a cwd-relative label but opens the original absolute file path', () => {
     render(() => <ToolCallActivity projectCwd="/workspace/project" toolCall={{
       ...base,
