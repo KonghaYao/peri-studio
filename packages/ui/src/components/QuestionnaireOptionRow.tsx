@@ -19,14 +19,14 @@ export function questionnaireOptionListClass(className?: string): string {
 
 export function questionnaireOptionRowClass(className?: string): string {
   return cn(
-    'group flex min-h-36 items-center gap-12 rounded-md border-0 bg-transparent px-8 py-6 cursor-pointer',
+    'group flex min-h-36 items-center gap-8 rounded-md border-0 bg-transparent px-6 py-6 cursor-pointer',
     'hover:bg-interaction-hover data-[checked]:bg-accent-soft pointer-coarse:min-h-44',
     className,
   );
 }
 
 export function questionnaireOptionLabelClass(className?: string): string {
-  return cn('flex min-w-0 flex-1 items-center gap-12 cursor-pointer', className);
+  return cn('flex min-w-0 flex-1 items-center gap-8 cursor-pointer', className);
 }
 
 export function questionnaireOptionRadioControlClass(className?: string): string {

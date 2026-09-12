@@ -1374,13 +1374,15 @@
 .ui-workbench-floating-panel {
   position: absolute;
   z-index: 30;
-  top: var(--space-8);
-  bottom: var(--space-8);
+  top: var(--workbench-panel-inset-block);
+  bottom: var(--workbench-panel-inset-block);
+  box-sizing: border-box;
   overflow: hidden;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-14);
   background: var(--surface-overlay);
   box-shadow: var(--shadow-overlay);
+  padding-bottom: var(--workbench-panel-content-inset-bottom);
 }
 
 .ui-workbench-floating-panel--right {

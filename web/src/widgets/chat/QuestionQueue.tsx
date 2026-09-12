@@ -1,5 +1,5 @@
-import { For, Show, createSignal, createUniqueId } from 'solid-js';
-import type { PendingQuestion } from '@/entities/chat/control-view';
+import { For, Show, createEffect, createSignal } from 'solid-js';
+import type { PendingQuestion, PendingQuestionItem } from '@/entities/chat/control-view';
 import { createIdentitySelection } from '@/features/message/identity-selection';
 import type { QuestionDeliveryState } from '@/features/message/question-delivery';
 import type { QuestionAnswerPayload } from '@/shared/protocol/client';
@@ -7,13 +7,13 @@ import {
   Button,
   DecisionQueueShell,
   InlineNotice,
-  QuestionnaireCheckboxOption,
-  QuestionnaireRadioOption,
-  questionnaireOptionListClass,
-  RadioGroup,
+  Questionnaire,
+  QuestionnaireNavigation,
+  QuestionnaireProgress,
+  QuestionnaireStep,
+  type QuestionnaireAnswer,
 } from '@peri/ui';
 import { Clock3, LockKeyhole } from 'lucide-solid';
-import { QuestionnaireFrame } from '@peri/ui';
 
 interface Props {
   questions: PendingQuestion[];
@@ -22,6 +22,41 @@ interface Props {
   onRefreshStatus: () => void;
   onDismissUncertain: (questionId: string) => void;
   onRespond: (questionId: string, answers: QuestionAnswerPayload[]) => void;
+}
+
+function questionStepId(index: number) {
+  return `question-${index}`;
+}
+
+function draftToAnswers(
+  draft: QuestionAnswerPayload[],
+  questions: PendingQuestionItem[],
+): Record<string, QuestionnaireAnswer> {
+  const record: Record<string, QuestionnaireAnswer> = {};
+  questions.forEach((_, index) => {
+    const value = draft[index];
+    if (value !== undefined) record[questionStepId(index)] = value;
+  });
+  return record;
+}
+
+function answersToPayload(
+  answers: Record<string, QuestionnaireAnswer>,
+  questions: PendingQuestionItem[],
+): QuestionAnswerPayload[] {
+  return questions.map((_, index) => {
+    const value = answers[questionStepId(index)];
+    if (value === null || value === undefined) return '';
+    return value;
+  });
+}
+
+function stepTitle(item: PendingQuestionItem) {
+  return item.header || item.question;
+}
+
+function stepDescription(item: PendingQuestionItem) {
+  return item.header ? item.question : undefined;
 }
 
 /** AskUserQuestion 队列；与 ACP elicitation 独立挂载。 */
@@ -61,146 +96,114 @@ function QuestionDialog(props: {
   onDismissUncertain: () => void;
   onRespond: Props['onRespond'];
 }) {
-  const [answers, setAnswers] = createSignal<QuestionAnswerPayload[]>(props.initialAnswers);
-  const [validation, setValidation] = createSignal('');
-  const bodyId = `question-body-${createUniqueId()}`;
+  const [answers, setAnswers] = createSignal(
+    draftToAnswers(props.initialAnswers, props.question.questions),
+  );
   const submitting = () => props.delivery?.phase === 'pending';
   const confirmed = () => props.delivery?.phase === 'confirmed';
   const uncertain = () => props.delivery?.phase === 'failed'
     || props.delivery?.phase === 'uncertain'
     || props.delivery?.phase === 'delivery_unknown';
-  const locked = () => !!props.delivery || props.question.status === 'responding' || props.readOnly;
+  const locked = () => (props.delivery?.phase === 'pending' || props.delivery?.phase === 'confirmed')
+    || props.question.status === 'responding'
+    || props.readOnly;
 
-  const syncAnswers = (next: QuestionAnswerPayload[]) => {
+  createEffect(() => {
+    setAnswers(draftToAnswers(props.initialAnswers, props.question.questions));
+  });
+
+  const syncAnswers = (next: Record<string, QuestionnaireAnswer>) => {
     setAnswers(next);
-    props.onDraft(next);
-    setValidation('');
+    props.onDraft(answersToPayload(next, props.question.questions));
   };
 
-  const answerAt = (index: number): QuestionAnswerPayload | undefined => answers()[index];
-
-  const setSingle = (index: number, label: string) => {
-    const next = [...answers()];
-    while (next.length <= index) next.push('');
-    next[index] = label;
-    syncAnswers(next);
-  };
-
-  const toggleMulti = (index: number, label: string) => {
-    const next = [...answers()];
-    while (next.length <= index) next.push([]);
-    const current = next[index];
-    const selected = Array.isArray(current) ? [...current] : [];
-    const pos = selected.indexOf(label);
-    if (pos >= 0) selected.splice(pos, 1);
-    else selected.push(label);
-    next[index] = selected;
-    syncAnswers(next);
-  };
-
-  const submit = (event: SubmitEvent) => {
-    event.preventDefault();
-    const payload: QuestionAnswerPayload[] = [];
+  const submitAnswers = (record: Record<string, QuestionnaireAnswer>) => {
+    if (locked() || submitting() || confirmed()) return;
+    const payload = answersToPayload(record, props.question.questions);
     for (let index = 0; index < props.question.questions.length; index += 1) {
       const item = props.question.questions[index];
-      const value = answerAt(index);
+      const value = payload[index];
       const empty = value === undefined
         || value === ''
         || (Array.isArray(value) && value.length === 0);
-      if (empty) {
-        setValidation(`Please answer "${item.header || item.question}" first`);
-        return;
-      }
-      payload.push(value);
+      if (empty) return;
     }
     props.onRespond(props.question.questionId, payload);
   };
 
   return (
     <DecisionQueueShell class="ui-chat-column pb-10" aria-label="Pending questions">
-      <form class="scroll-mt-12" onSubmit={submit}>
-        <QuestionnaireFrame
+      <Show when={confirmed()}>
+        <p class="my-4 text-12 text-text-secondary">Answers sent. Peri will continue when the server confirms.</p>
+      </Show>
+      <Show when={uncertain()}>
+        <InlineNotice class="my-4" tone="warning" role="alert" title="Answer delivery not confirmed">
+          <p class="my-4">Refresh the server status, or hide this question locally. The original answer cannot be sent again.</p>
+          <div class="flex flex-wrap gap-8">
+            <Button type="button" size="compact" variant="secondary" onClick={props.onRefreshStatus}>Refresh status</Button>
+            <Button type="button" size="compact" variant="secondary" class="pointer-coarse:min-h-44!" onClick={props.onDismissUncertain}>Hide question</Button>
+          </div>
+        </InlineNotice>
+      </Show>
+      <Show when={!confirmed() && !uncertain()}>
+        <Show when={locked()}>
+          <p class="mb-8 inline-flex items-center gap-6 text-11 text-text-muted">
+            <LockKeyhole size={12} aria-hidden="true" />
+            Waiting for server confirmation
+          </p>
+        </Show>
+        <Questionnaire
+          class="mx-auto w-full max-w-(--container-search)"
           data-testid="question-queue-card"
           title="Questions"
-          prompt={props.question.description || 'Peri needs your input to continue.'}
-          promptId={bodyId}
+          leading={(
+            <Show when={props.question.description}>
+              <p class="mb-8 text-13 leading-snug text-content-primary">{props.question.description}</p>
+            </Show>
+          )}
           currentIndex={props.currentIndex}
           total={props.total}
           onPrevious={props.onPrevious}
           onNext={props.onNext}
           pagerPreviousLabel="Previous question"
           pagerNextLabel="Next question"
-          primaryLabel="Submit answers"
-          primaryType="submit"
-          primaryDisabled={locked() || submitting() || confirmed()}
-          primaryBusy={submitting()}
-          aria-busy={submitting()}
-          headerActions={<Show when={props.question.expiresAt}><span class="inline-flex items-center gap-4 text-10 text-text-muted"><Clock3 size={12} aria-hidden="true" />Expires soon</span></Show>}
-        >
-          <Show when={confirmed()}>
-            <p class="my-4 text-12 text-text-secondary">Answers sent. Peri will continue when the server confirms.</p>
-          </Show>
-          <Show when={uncertain()}>
-            <InlineNotice class="my-4" tone="warning" role="alert" title="Answer delivery not confirmed">
-              <p class="my-4">Refresh the server status, or hide this question locally. The original answer cannot be sent again.</p>
-              <div class="flex flex-wrap gap-8">
-                <Button type="button" size="compact" variant="secondary" onClick={props.onRefreshStatus}>Refresh status</Button>
-                <Button type="button" size="compact" variant="secondary" class="pointer-coarse:min-h-44!" onClick={props.onDismissUncertain}>Hide question</Button>
-              </div>
-            </InlineNotice>
-          </Show>
-          <Show when={!confirmed() && !uncertain()}>
-            <Show when={validation()}>
-              <InlineNotice class="my-4" tone="danger" role="alert">{validation()}</InlineNotice>
+          pagerShowNext={false}
+          answers={answers()}
+          onAnswersChange={syncAnswers}
+          onSubmit={submitAnswers}
+          aria-busy={submitting() ? 'true' : undefined}
+          headerActions={(
+            <Show when={props.question.expiresAt}>
+              <span class="inline-flex items-center gap-4 text-10 text-text-muted">
+                <Clock3 size={12} aria-hidden="true" />
+                Expires soon
+              </span>
             </Show>
-            <Show when={locked()}><p class="mb-8 inline-flex items-center gap-6 text-11 text-text-muted"><LockKeyhole size={12} aria-hidden="true" />Waiting for server confirmation</p></Show>
-            <div id={bodyId} class="grid gap-12">
-              <For each={props.question.questions}>{(item, index) => {
-                const idx = index();
-                const selectedSingle = () => {
-                  const value = answerAt(idx);
-                  return typeof value === 'string' ? value : '';
-                };
-                const selectedMulti = () => {
-                  const value = answerAt(idx);
-                  return Array.isArray(value) ? value : [];
-                };
-                return (
-                  <fieldset class="m-0 min-w-0 border-0 p-0" disabled={locked()}>
-                    <legend class="mb-6 text-12 font-650 text-text-primary">{item.header || item.question}</legend>
-                    <p class="mb-8 text-11 text-text-secondary">{item.question}</p>
-                    <Show when={item.multiSelect} fallback={
-                      <RadioGroup value={selectedSingle()} onChange={(value) => setSingle(idx, value)} class={questionnaireOptionListClass()}>
-                        <For each={item.options}>{(option, optionIndex) => (
-                          <QuestionnaireRadioOption
-                            value={option.label}
-                            index={optionIndex()}
-                            label={option.label}
-                            description={option.description}
-                          />
-                        )}</For>
-                      </RadioGroup>
-                    }>
-                      <div class={questionnaireOptionListClass()}>
-                        <For each={item.options}>{(option, optionIndex) => (
-                          <QuestionnaireCheckboxOption
-                            checked={selectedMulti().includes(option.label)}
-                            disabled={locked()}
-                            index={optionIndex()}
-                            label={option.label}
-                            description={option.description}
-                            onChange={() => toggleMulti(idx, option.label)}
-                          />
-                        )}</For>
-                      </div>
-                    </Show>
-                  </fieldset>
-                );
-              }}</For>
-            </div>
-          </Show>
-        </QuestionnaireFrame>
-      </form>
+          )}
+        >
+          <QuestionnaireProgress aria-label="Question progress" />
+          <For each={props.question.questions}>
+            {(item, index) => (
+              <QuestionnaireStep
+                id={questionStepId(index())}
+                title={stepTitle(item)}
+                description={stepDescription(item)}
+                required
+                multiple={item.multiSelect}
+                choices={item.options.map((option) => ({
+                  value: option.label,
+                  label: option.label,
+                  description: option.description,
+                }))}
+              />
+            )}
+          </For>
+          <QuestionnaireNavigation
+            submitDisabled={locked()}
+            submitBusy={submitting()}
+          />
+        </Questionnaire>
+      </Show>
     </DecisionQueueShell>
   );
 }

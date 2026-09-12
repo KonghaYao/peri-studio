@@ -42,6 +42,8 @@ export type QuestionnaireFrameProps = {
   primaryBusy?: boolean;
   footer?: JSX.Element;
   headerActions?: JSX.Element;
+  /** 置于 prompt 之前（如 AskUserQuestion 总说明）。 */
+  leading?: JSX.Element;
   children?: JSX.Element;
   'aria-label'?: string;
   'aria-describedby'?: string;
@@ -72,7 +74,7 @@ export const QuestionnaireFrame: Component<QuestionnaireFrameProps> = (props) =>
       aria-describedby={props['aria-describedby']}
       aria-busy={props['aria-busy']}
     >
-      <header class="flex min-h-36 items-center gap-12 px-16 pt-14 pb-8">
+      <header class="flex min-h-36 items-center gap-8 px-12 pt-12 pb-6">
         <span class="text-12 font-medium text-content-secondary">{props.title}</span>
         <span class="ml-auto flex items-center gap-2 text-content-muted">
           {props.headerActions}
@@ -118,7 +120,8 @@ export const QuestionnaireFrame: Component<QuestionnaireFrameProps> = (props) =>
       </header>
 
       <Show when={expanded()}>
-        <div class="px-16 pb-8">
+        <div class="px-12 pb-6">
+          {props.leading}
           <p id={props.promptId} class="text-13 font-semibold leading-snug text-content-primary">{props.prompt}</p>
           <Show when={props.detail}>
             <p class="mt-4 text-11 leading-snug text-content-muted">{props.detail}</p>
@@ -135,7 +138,7 @@ export const QuestionnaireFrame: Component<QuestionnaireFrameProps> = (props) =>
                       disabled={option.disabled}
                       onClick={() => props.onSelect?.(option.id)}
                       class={cn(
-                        'flex w-full items-center gap-12 rounded-md px-8 py-6 text-left transition-colors duration-(--duration-fast)',
+                        'flex w-full items-center gap-8 rounded-md px-6 py-6 text-left transition-colors duration-(--duration-fast)',
                         selected() ? 'bg-accent-soft' : 'hover:bg-interaction-hover',
                         option.disabled && 'cursor-not-allowed opacity-45',
                       )}
@@ -165,7 +168,7 @@ export const QuestionnaireFrame: Component<QuestionnaireFrameProps> = (props) =>
           </Show>
         </div>
 
-        <footer class="flex items-center gap-8 px-16 pb-14 pt-4">
+        <footer class="flex items-center gap-8 px-12 pb-12 pt-2">
           {props.footer ?? (
             <div class="ml-auto flex items-center gap-8">
               <Show when={props.onSkip}>

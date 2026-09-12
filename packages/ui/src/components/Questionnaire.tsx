@@ -117,6 +117,8 @@ type QuestionnaireProps = {
   onAnswersChange?: (answers: Record<string, QuestionnaireAnswer>) => void;
   onSubmit?: (answers: Record<string, QuestionnaireAnswer>) => void;
   headerActions?: JSX.Element;
+  /** 置于步骤标题之前（如 AskUserQuestion 总说明）。 */
+  leading?: JSX.Element;
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
   class?: string;
@@ -152,6 +154,7 @@ export const Questionnaire: ParentComponent<QuestionnaireProps> = (props) => {
     'onAnswersChange',
     'onSubmit',
     'headerActions',
+    'leading',
     'expanded',
     'onExpandedChange',
     'class',
@@ -317,6 +320,7 @@ export const Questionnaire: ParentComponent<QuestionnaireProps> = (props) => {
         data-slot="questionnaire"
         class={cn('flex flex-col', local.class)}
         title={local.title ?? 'Questions'}
+        leading={local.leading}
         prompt={currentStep()?.title ?? ''}
         detail={currentStep()?.description}
         headerActions={stepIndicator()}
@@ -399,7 +403,7 @@ function DecisionChoiceButton(props: {
       disabled={props.disabled}
       onClick={props.onClick}
       class={cn(
-        'flex w-full items-center gap-12 rounded-md px-8 py-6 text-left transition-colors duration-(--duration-fast)',
+        'flex w-full items-center gap-8 rounded-md px-6 py-6 text-left transition-colors duration-(--duration-fast)',
         props.selected ? 'bg-accent-soft' : 'hover:bg-interaction-hover',
         props.disabled && 'cursor-not-allowed opacity-45',
       )}

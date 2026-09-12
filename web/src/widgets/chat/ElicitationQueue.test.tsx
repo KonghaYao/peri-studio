@@ -41,14 +41,12 @@ describe('ElicitationQueue', () => {
     expect(respond).toHaveBeenCalledWith('e1', 'accept', { detail: 'Keep compatibility', mode: 'safe', features: ['tests', 'docs'] });
   });
 
-  it('maps skip and close to distinct ACP actions', async () => {
+  it('maps skip to decline', async () => {
     const respond = vi.fn();
-    const view = render(() => <ElicitationQueue elicitations={[item]} responses={{}} readOnly={false} onRefreshStatus={vi.fn()} onDismissUncertain={vi.fn()} onRespond={respond} />);
+    render(() => <ElicitationQueue elicitations={[item]} responses={{}} readOnly={false} onRefreshStatus={vi.fn()} onDismissUncertain={vi.fn()} onRespond={respond} />);
     await fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
-    expect(respond).toHaveBeenLastCalledWith('e1', 'decline');
-    await fireEvent.click(screen.getByRole('button', { name: 'Cancel question' }));
-    expect(respond).toHaveBeenLastCalledWith('e1', 'cancel');
-    view.unmount();
+    expect(respond).toHaveBeenCalledWith('e1', 'decline');
+    expect(screen.queryByRole('button', { name: 'Cancel question' })).not.toBeInTheDocument();
   });
 
   it('collapses the question body without resolving it', async () => {
@@ -127,7 +125,6 @@ describe('ElicitationQueue', () => {
     render(() => <ElicitationQueue elicitations={[item]} responses={{ e1: { commandId: 'command-1', phase: 'pending', dismissed: false } }} readOnly={false} onRefreshStatus={vi.fn()} onDismissUncertain={vi.fn()} onRespond={respond} />);
     expect(screen.getByRole('button', { name: /Next/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Skip' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Cancel question' })).toBeDisabled();
   });
 
   it('offers status refresh and local hide without allowing an unknown answer to replay', async () => {
@@ -146,7 +143,6 @@ describe('ElicitationQueue', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Answer delivery not confirmed');
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Skip' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Cancel question' })).toBeDisabled();
     await fireEvent.click(screen.getByRole('button', { name: 'Refresh status' }));
     await fireEvent.click(screen.getByRole('button', { name: 'Hide question' }));
     expect(refresh).toHaveBeenCalledOnce();

@@ -6,7 +6,6 @@ import type { ElicitationAnswer } from '@/shared/protocol/client';
 import {
   Button,
   DecisionQueueShell,
-  IconButton,
   InlineNotice,
   QuestionnaireCheckboxOption,
   QuestionnaireRadioOption,
@@ -14,7 +13,7 @@ import {
   RadioGroup,
   Textarea,
 } from '@peri/ui';
-import { Clock3, LockKeyhole, X } from 'lucide-solid';
+import { Clock3, LockKeyhole } from 'lucide-solid';
 import { QuestionnaireFrame } from '@peri/ui';
 
 interface Props {
@@ -85,9 +84,6 @@ function AskUserQuestionDialog(props: {
     });
     setValidation('');
   };
-  const cancel = () => {
-    if (!locked()) props.onRespond(props.elicitation.elicitationId, 'cancel');
-  };
   const submit = (event: SubmitEvent) => {
     event.preventDefault();
     for (const field of props.elicitation.fields) {
@@ -112,6 +108,7 @@ function AskUserQuestionDialog(props: {
       onSubmit={submit}
     >
       <QuestionnaireFrame
+        class="mx-auto w-full max-w-(--container-search)"
         data-testid="elicitation-card"
         title="Questions"
         prompt={props.elicitation.message}
@@ -133,19 +130,6 @@ function AskUserQuestionDialog(props: {
         primaryBusy={submitting()}
         skipDisabled={locked()}
         aria-busy={submitting() ? 'true' : undefined}
-        headerActions={(
-          <IconButton
-            type="button"
-            label="Cancel question"
-            variant="ghost"
-            size="compact"
-            disabled={locked()}
-            onClick={cancel}
-            class="border-0 bg-transparent text-text-muted hover:text-danger"
-          >
-            <X size={13} strokeWidth={1.8} />
-          </IconButton>
-        )}
       >
         <div id={bodyId} class="ui-scrollbar mt-6 max-h-300 overflow-y-auto max-narrow:px-0">
           <div class="grid">
