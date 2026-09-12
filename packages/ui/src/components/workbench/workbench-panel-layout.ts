@@ -24,7 +24,7 @@ export const WORKBENCH_PANEL_TERMINAL_MAX_WIDTH = 720;
 
 export const WORKBENCH_PANEL_KEYBOARD_STEP = 24;
 
-/** 浮动面板与侧栏 / 视口边缘的水平间距（与 `inset-y-8` 一致）。 */
+/** 浮动面板与侧栏的水平间距（竖直 inset 见 `--workbench-panel-inset-block` / `--workbench-panel-inset-bottom`）。 */
 export const WORKBENCH_PANEL_EDGE_INSET = 8;
 
 export function workbenchFilePreviewLeftOffset(sidebarWidth: number) {

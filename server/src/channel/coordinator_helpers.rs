@@ -177,3 +177,60 @@ pub(super) fn extract_chat_id(action: &ActionEnvelope) -> Option<String> {
 pub(super) fn chat_uuid(chat_id: &str) -> Option<uuid::Uuid> {
     uuid::Uuid::parse_str(chat_id).ok()
 }
+
+/// active prompt 等待 L3 期间须立即执行的交互控制（与 cancel 同级抢占）。
+///
+/// AskUserQuestion / elicitation / permission 的应答是 agent 当前 turn 的
+/// 阻塞依赖；若排在 prompt 之后会造成「前端已提交、server 永不 ack」的死锁。
+pub(super) fn preempts_active_prompt_delivery(action: &ActionEnvelope) -> bool {
+    matches!(
+        action,
+        ActionEnvelope::RespondQuestion { .. }
+        | ActionEnvelope::RespondElicitation { .. }
+        | ActionEnvelope::ResolvePermission { .. }
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use peri_studio_proto::action::{
+        CancelChatPayload, ElicitationResponseAction, PermissionDecision,
+        RespondElicitationPayload, RespondQuestionPayload, ResolvePermissionPayload,
+    };
+
+    #[test]
+    fn preempts_active_prompt_delivery_for_interactive_controls_only() {
+        let chat_id = "00000000-0000-0000-0000-000000000001".to_string();
+        assert!(preempts_active_prompt_delivery(&ActionEnvelope::RespondQuestion {
+            command_id: "c1".into(),
+            payload: RespondQuestionPayload {
+                chat_id: chat_id.clone(),
+                question_id: "q1".into(),
+                answers: vec![],
+            },
+        }));
+        assert!(preempts_active_prompt_delivery(&ActionEnvelope::RespondElicitation {
+            command_id: "c2".into(),
+            payload: RespondElicitationPayload {
+                chat_id: chat_id.clone(),
+                elicitation_id: "e1".into(),
+                action: ElicitationResponseAction::Accept,
+                answers: Default::default(),
+            },
+        }));
+        assert!(preempts_active_prompt_delivery(&ActionEnvelope::ResolvePermission {
+            command_id: "c3".into(),
+            payload: ResolvePermissionPayload {
+                chat_id: chat_id.clone(),
+                permission_id: "p1".into(),
+                decision: PermissionDecision::Allow,
+                option_id: None,
+            },
+        }));
+        assert!(!preempts_active_prompt_delivery(&ActionEnvelope::Cancel {
+            command_id: "c4".into(),
+            payload: CancelChatPayload { chat_id },
+        }));
+    }
+}

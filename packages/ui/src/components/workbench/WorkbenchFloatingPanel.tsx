@@ -135,7 +135,7 @@ export const WorkbenchFloatingPanel: Component<WorkbenchFloatingPanelProps> = (p
       data-testid={rest['data-testid']}
       data-width-profile={profile()}
       data-panel-anchor={anchor()}
-      class={cn(shellClass(), 'flex h-full min-h-0 min-w-0 flex-col', local.class)}
+      class={cn(shellClass(), 'flex min-h-0 min-w-0 flex-col', local.class)}
       style={panelStyle()}
     >
       <div

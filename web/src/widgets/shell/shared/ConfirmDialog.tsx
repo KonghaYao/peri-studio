@@ -57,6 +57,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
           <AlertDialogCancel disabled={props.cancelDisabled} onClick={props.onCancel}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             variant="danger"
+            closeOnClick={false}
             disabled={props.confirmDisabled}
             busy={props.confirmBusy}
             onClick={props.onConfirm}

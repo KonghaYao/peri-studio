@@ -93,4 +93,22 @@ describe('ConfirmDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Archive project' }));
     expect(onConfirm).toHaveBeenCalledOnce();
   });
+
+  it('leaves a controlled confirm dialog mounted after Archive so the parent can wait for commit', async () => {
+    const onConfirm = vi.fn();
+    render(() => <ConfirmDialog
+      open
+      title="Archive “session”?"
+      description="The session will be hidden from the current project list."
+      confirmLabel="Archive session"
+      onCancel={vi.fn()}
+      onConfirm={onConfirm}
+    />);
+
+    await waitFor(() => expect(screen.getByRole('alertdialog')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Archive session' }));
+    expect(onConfirm).toHaveBeenCalledOnce();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(document.querySelector('[data-alert-dialog-overlay]')).toBeInTheDocument();
+  });
 });

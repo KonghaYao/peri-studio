@@ -54,12 +54,27 @@ export function visibleQuestions(items: readonly PendingQuestion[]): PendingQues
   return items.filter((item) => !current[item.questionId]?.dismissed);
 }
 
+function isTerminalQuestionDelivery(phase: QuestionDeliveryPhase): boolean {
+  return phase === 'confirmed' || phase === 'failed' || phase === 'uncertain' || phase === 'delivery_unknown';
+}
+
 export function retainProjectedQuestions(items: readonly PendingQuestion[]): void {
   const visibleIds = new Set(items.map((item) => item.questionId));
   setResponses((current) => {
-    const next = Object.fromEntries(
-      Object.entries(current).filter(([questionId]) => visibleIds.has(questionId)),
-    );
+    const next: Record<string, QuestionDeliveryState> = {};
+    for (const [questionId, state] of Object.entries(current)) {
+      if (visibleIds.has(questionId)) {
+        next[questionId] = state;
+        continue;
+      }
+      if (state.phase === 'pending') {
+        // Server resolved/expired the question off projection; release the spinner.
+        continue;
+      }
+      if (!state.dismissed && isTerminalQuestionDelivery(state.phase)) {
+        next[questionId] = state;
+      }
+    }
     for (const item of items) {
       if (item.status === 'responding' && !next[item.questionId]) {
         next[item.questionId] = { commandId: null, phase: 'delivery_unknown', dismissed: false };

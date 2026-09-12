@@ -20,7 +20,8 @@ use crate::channel::command_coordinator::{CommandCoordinator, ExecCmd, SubmitAck
 use crate::channel::command_identity::prompt_payload_fingerprint;
 use crate::channel::command_outcome_broker::{ExistingCommandDisposition, ExistingCommandRequest};
 use crate::channel::coordinator_helpers::{
-    action_error, command_type_of, extract_chat_id, extract_command_id, submit_ack_from_existing,
+    action_error, command_type_of, extract_chat_id, extract_command_id,
+    preempts_active_prompt_delivery, submit_ack_from_existing,
 };
 use crate::persist::outbox::{CommandType, LastError, NewOutboxRecord};
 use crate::state::doc_manager::DocManager;
@@ -382,7 +383,8 @@ impl CommandCoordinator {
     }
 
     /// 执行器循环：普通命令按 chat FIFO；prompt 已登记 active turn 后，等待
-    /// L3 期间继续读取同一有界队列，只执行 cancel，其余命令保持原顺序延后。
+    /// L3 期间继续读取同一有界队列，优先执行 cancel 与交互控制应答
+    ///（question/elicitation/permission），其余命令保持原顺序延后。
     async fn executor_loop(&self, chat_id: String, mut rx: mpsc::Receiver<ExecCmd>) {
         let mut deferred = std::collections::VecDeque::new();
         loop {
@@ -431,6 +433,11 @@ impl CommandCoordinator {
                                                 (&mut prompt).await;
                                                 break;
                                             }
+                                        }
+                                        Some(control) if preempts_active_prompt_delivery(&control.action) => {
+                                            let control_started = std::time::Instant::now();
+                                            self.exec_command(&chat_id, &control).await;
+                                            self.finish_execution(&chat_id, &control, control_started).await;
                                         }
                                         Some(other) => deferred.push_back(other),
                                         None => {

@@ -1279,6 +1279,25 @@ describe('AlertDialog', () => {
     expect(document.querySelector('[data-alert-dialog-overlay]')).toBeInTheDocument();
   });
 
+  it('keeps a controlled dialog open when the action opts out of auto dismiss', async () => {
+    const onAction = vi.fn();
+    render(() => (
+      <AlertDialog open>
+        <AlertDialogContent>
+          <AlertDialogTitle>Archive session?</AlertDialogTitle>
+          <AlertDialogFooter>
+            <AlertDialogAction closeOnClick={false} variant="danger" onClick={onAction}>Archive</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    ));
+    await waitFor(() => expect(screen.getByRole('alertdialog')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Archive' }));
+    expect(onAction).toHaveBeenCalledOnce();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(document.querySelector('[data-alert-dialog-overlay]')).toBeInTheDocument();
+  });
+
   it('exposes trigger dialog semantics before opening', () => {
     render(() => (
       <AlertDialog>

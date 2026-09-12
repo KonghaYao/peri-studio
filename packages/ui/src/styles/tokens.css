@@ -263,7 +263,7 @@
   --workbench-panel-width-wide: 310px;
   --workbench-rail-width: 44px;
   --workbench-panel-inset-block: var(--space-12);
-  --workbench-panel-content-inset-bottom: var(--space-16);
+  --workbench-panel-inset-bottom: var(--space-16);
 
   /* Kobalte NavigationMenu viewport（运行时由组件写入，此处为 CSS 契约回退） */
   --kb-navigation-menu-viewport-height: auto;

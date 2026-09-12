@@ -89,11 +89,27 @@ type ActionProps<T extends ValidComponent = 'button'> = AlertDialogPrimitive.Ale
   children?: JSX.Element;
   variant?: 'primary' | 'danger';
   busy?: boolean;
+  /** 受控异步确认应关掉自动 dismiss，否则 CloseButton 会和 `open` 抢状态，遮罩留在页面上。 */
+  closeOnClick?: boolean;
   'aria-label'?: string;
 };
 export function AlertDialogAction<T extends ValidComponent = 'button'>(props: PolymorphicProps<T, ActionProps<T>>) {
-  const [local, rest] = splitProps(props as ActionProps, ['class', 'children', 'variant', 'busy', 'aria-label']);
+  const [local, rest] = splitProps(props as ActionProps, ['class', 'children', 'variant', 'busy', 'closeOnClick', 'aria-label', 'onClick', 'disabled']);
   const label = local['aria-label'] ?? (typeof local.children === 'string' ? local.children : 'Confirm');
+  if (local.closeOnClick === false) {
+    return (
+      <Button
+        variant={local.variant ?? 'primary'}
+        busy={local.busy}
+        class={local.class}
+        aria-label={label}
+        disabled={local.disabled}
+        onClick={local.onClick}
+      >
+        {local.children}
+      </Button>
+    );
+  }
   return (
     <AlertDialogPrimitive.CloseButton
       as={Button}
@@ -101,6 +117,8 @@ export function AlertDialogAction<T extends ValidComponent = 'button'>(props: Po
       busy={local.busy}
       class={local.class}
       aria-label={label}
+      disabled={local.disabled}
+      onClick={local.onClick}
       {...rest}
     >
       {local.children}

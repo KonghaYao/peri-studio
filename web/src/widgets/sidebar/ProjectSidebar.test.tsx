@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@solidjs/testing-library';
+import { fireEvent, screen, waitFor, within } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const store = vi.hoisted(() => ({
@@ -137,6 +137,8 @@ describe('ProjectSidebar registry hydration', () => {
     store.registryHydrated.mockReturnValue(true);
     store.projects.mockReturnValue([{ id: 'p1', name: 'Perihelion', cwd: '/repo', instanceId: 'local', createdAt: '2026-08-13T10:00:00Z', updatedAt: '2026-08-13T10:00:00Z', archivedAt: null }]);
     store.navigateProjectSession.mockReset();
+    store.archiveProjectSession.mockReset();
+    store.archiveProject.mockReset();
     store.openingSessionId.mockReturnValue(null);
     store.instances.mockReturnValue([{ id: 'local', hostname: 'Local instance', status: 'online' }]);
     store.readOnly.mockReturnValue(false);
@@ -331,6 +333,29 @@ describe('ProjectSidebar registry hydration', () => {
 
     expect(screen.queryByTestId('session-loading-wave')).not.toBeInTheDocument();
     expect(screen.queryByText(/Ready/)).not.toBeInTheDocument();
+  });
+
+  it('dismisses the archive confirm dialog only after the server commits', async () => {
+    let committed: (() => void) | undefined;
+    store.archiveProjectSession.mockImplementation((_id: string, onCommitted?: () => void) => {
+      committed = onCommitted;
+      return true;
+    });
+
+    render(() => <ProjectSidebar />);
+    fireEvent.click(screen.getByRole('button', { name: 'Archive session' }));
+
+    const dialog = await waitFor(() => screen.getByRole('alertdialog'));
+    expect(dialog).toHaveTextContent('Archive “Architecture refactor”?');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Archive session' }));
+
+    expect(store.archiveProjectSession).toHaveBeenCalledWith('acp-12345678', expect.any(Function), expect.any(Function));
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(document.querySelector('[data-alert-dialog-overlay]')).toBeInTheDocument();
+
+    committed?.();
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(document.querySelector('[data-alert-dialog-overlay]')).not.toBeInTheDocument());
   });
 
   it('keeps archived sessions out of the workspace session list', () => {

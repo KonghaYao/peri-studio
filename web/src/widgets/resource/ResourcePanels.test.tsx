@@ -139,6 +139,7 @@ describe('VS Code-style resource panels', () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Git Graph' }));
     expect(screen.getByRole('button', { name: 'Git Graph' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('resource-workbench-panel')).toHaveAttribute('data-resource-floating-panel');
+    expect(screen.getByTestId('resource-workbench-panel').className).not.toMatch(/(?:^|\s)h-full(?:\s|$)/);
     expect(screen.getByTestId('resource-workbench-panel')).toHaveAttribute('data-width-profile', 'graph');
     expect(screen.getByTestId('resource-workbench-panel')).toHaveStyle({ width: '480px' });
     expect(screen.getByTestId('git-graph-view')).toBeInTheDocument();
