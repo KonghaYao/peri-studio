@@ -2,7 +2,7 @@ import { createEffect, createSignal, createUniqueId, onCleanup, Show } from 'sol
 import { findPrefixOffthread, getMermaid, toSafeMermaidSvgMarkup } from '@peri/markdown';
 import { Code2, Download, Expand, RefreshCw } from 'lucide-solid';
 import { CopyButton, Dialog, IconButton } from '@/lib/catalog-ui';
-import { downloadText } from './download';
+import { downloadText } from '@peri/ui';
 
 function normalizeMermaidSource(value: string) {
   return value

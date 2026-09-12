@@ -1,6 +1,6 @@
 import type { JSX } from 'solid-js';
 import { CopyButton, DownloadIcon, IconButton } from '@peri/ui';
-import { downloadText } from './download';
+import { downloadText } from '@peri/ui';
 
 function tableText(table: HTMLTableElement, separator: string) {
   return Array.from(table.rows).map((row) => Array.from(row.cells).map((cell) => cell.textContent?.trim() || '').join(separator)).join('\n');

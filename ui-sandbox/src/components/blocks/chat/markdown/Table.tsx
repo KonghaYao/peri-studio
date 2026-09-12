@@ -1,7 +1,7 @@
 import type { JSX } from 'solid-js';
 import { Download } from 'lucide-solid';
 import { CopyButton, IconButton } from '@/lib/catalog-ui';
-import { downloadText } from './download';
+import { downloadText } from '@peri/ui';
 
 function tableText(table: HTMLTableElement, separator: string) {
   return Array.from(table.rows).map((row) => Array.from(row.cells).map((cell) => cell.textContent?.trim() || '').join(separator)).join('\n');

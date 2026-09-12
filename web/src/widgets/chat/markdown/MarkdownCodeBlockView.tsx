@@ -11,8 +11,7 @@ import {
   IconButton,
   RefreshIcon,
 } from '@peri/ui';
-import { downloadText, safeFilename } from './download';
-import { markdownCodeFilename } from './parse-pre-child';
+import { downloadText, markdownCodeFilename, safeFilename } from '@peri/ui';
 import { ShikiHighlightedCodeBody } from './ShikiHighlightedCodeBody';
 import { highlightCode } from './highlight-code';
 

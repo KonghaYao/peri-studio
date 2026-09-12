@@ -9,10 +9,9 @@ import {
   CodeBlockTitle,
 } from '@/components/code/CodeBlock';
 import { IconButton } from '@/lib/catalog-ui';
-import { downloadText, safeFilename } from './download';
+import { downloadText, markdownCodeFilename, parseMarkdownPreChild, safeFilename } from '@peri/ui';
 import { MathExpression } from './Math';
 import { MermaidBlock } from './MermaidBlock';
-import { markdownCodeFilename, parseMarkdownPreChild } from './parse-pre-child';
 
 export function MarkdownCodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { streaming?: boolean; incomplete?: boolean }) {
   const details = createMemo(() => parseMarkdownPreChild(props.children));

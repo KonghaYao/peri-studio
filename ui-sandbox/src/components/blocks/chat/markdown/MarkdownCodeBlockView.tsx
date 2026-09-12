@@ -9,8 +9,7 @@ import {
   CodeBlockTitle,
 } from '@/components/code/CodeBlock';
 import { IconButton } from '@/lib/catalog-ui';
-import { downloadText, safeFilename } from './download';
-import { markdownCodeFilename } from './parse-pre-child';
+import { downloadText, markdownCodeFilename, safeFilename } from '@peri/ui';
 
 export function MarkdownCodeBlockView(props: CodeBlockViewProps) {
   const locked = () => props.loading === true;

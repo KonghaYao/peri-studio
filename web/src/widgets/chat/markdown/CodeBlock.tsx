@@ -11,10 +11,9 @@ import {
   RefreshIcon,
 } from '@peri/ui';
 import { memoizeAsync } from '@peri/ui';
-import { downloadText, safeFilename } from './download';
+import { downloadText, markdownCodeFilename, parseMarkdownPreChild, safeFilename } from '@peri/ui';
 import { MathExpression } from './Math';
 import { MermaidBlock } from './MermaidBlock';
-import { markdownCodeFilename, parseMarkdownPreChild } from './parse-pre-child';
 import { ShikiHighlightedCodeBody } from './ShikiHighlightedCodeBody';
 import type { LanguageInput } from 'shiki/core';
 
