@@ -11,7 +11,7 @@ review_gate: passed
 >
 > **当前状态**：设计门已通过并完成技术迁移；`@peri/ui` 已成为 T1/T2 单一事实源。尚需用户本地运行 `./dev-sandbox.sh` 完成人工视觉审阅。
 >
-> **相关规范**：视觉与交互以 [`ui-specification.md`](ui-specification.md) 为准；Web 分层以 [`frontend-architecture.md`](frontend-architecture.md) 为准。
+> **相关规范**：视觉与交互以 [`ui-specification.md`](ui-specification.md) 为准；Web 分层与 CSS 以 [`frontend-architecture.md`](frontend-architecture.md) 为准；T3 清单以 [`t3-blocks-in-ui-package.md`](t3-blocks-in-ui-package.md) 为准；Agent 速查见根目录 `CLAUDE.md` / `AGENTS.md`。
 
 ---
 

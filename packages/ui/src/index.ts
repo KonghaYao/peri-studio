@@ -228,6 +228,7 @@ export { DatePicker, DatePickerContent, DatePickerTrigger } from './components/D
 export { DirectionProvider, useDirection, type Direction, type UseDirectionResult } from './components/Direction';
 export { CopyButton } from './components/CopyButton';
 export { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogPortal, DialogTitle, DialogTrigger } from './components/Dialog';
+export { FormDialogShell, type FormDialogShellProps } from './components/FormDialogShell';
 export { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from './components/Empty';
 export { EmptyState } from './components/EmptyState';
 export {
@@ -350,6 +351,10 @@ export {
   TranscriptViewportShell,
   type TranscriptViewportShellProps,
 } from './components/transcript/TranscriptViewportShell';
+export {
+  TranscriptThinkingGap,
+  type TranscriptThinkingGapProps,
+} from './components/transcript/TranscriptThinkingGap';
 export {
   MessageArticleShell,
   type MessageArticleShellProps,

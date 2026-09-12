@@ -1,6 +1,6 @@
 import { createEffect, createMemo, createSignal, Show, untrack } from 'solid-js';
 import type { ProjectInfo, SessionSummaryInfo } from '@/entities/registry/registry-view';
-import { Button, Dialog, DialogContent, DialogTitle, EmptyState, InlineNotice, Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel, LoadingState, TextField } from '@peri/ui';
+import { Button, Dialog, DialogContent, DialogTitle, EmptyState, FormDialogShell, InlineNotice, Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel, LoadingState, TextField } from '@peri/ui';
 import { MessageSquare } from 'lucide-solid';
 import { importCandidates } from '@/features/session/session-import';
 import { cleanSessionTitle, formatRelativeTime, shortSessionId } from '@/features/session/recovery-state';
@@ -85,13 +85,12 @@ export function SessionImportDialog(props: SessionImportDialogProps) {
   };
 
   return <Dialog open={props.open} onOpenChange={(open) => { if (!open && !submitting()) close(); }}><DialogContent dismissible={!submitting()}><DialogTitle class="sr-only">Import ACP session</DialogTitle>
-    <div class="p-20">
-      <div>
-        <span class="block mb-5 text-text-muted text-10 font-bold tracking-8 uppercase">{props.project?.name}</span>
-        <h2 class="m-0 text-18 tracking-(--tracking-dialog)">Import session</h2>
-        <p class="mt-6 mb-16 text-13 leading-145 text-text-secondary">Shows only ACP sessions in this project directory that are not yet in the sidebar. Importing does not copy or move the original session.</p>
-      </div>
-      <TextField class="mb-12" label="Search sessions" value={query()} disabled={submitting() || props.discovering} onInput={(event) => setQuery(event.currentTarget.value)} placeholder="Search by title or session ID" />
+    <FormDialogShell
+      eyebrow={props.project?.name}
+      title="Import session"
+      description="Shows only ACP sessions in this project directory that are not yet in the sidebar. Importing does not copy or move the original session."
+    >
+      <TextField label="Search sessions" value={query()} disabled={submitting() || props.discovering} onInput={(event) => setQuery(event.currentTarget.value)} placeholder="Search by title or session ID" />
       <Show when={props.discovering} fallback={<Show when={candidates().length} fallback={<EmptyState variant="inline" class="import-empty px-12 py-28" title="No sessions to import" description="No matching ACP sessions are available for this project directory." />}>
         <Listbox
           class="ui-listbox import-session-list flex max-h-300 flex-col gap-4 overflow-auto"
@@ -128,6 +127,6 @@ export function SessionImportDialog(props: SessionImportDialogProps) {
         <Button disabled={submitting()} onClick={close}>Cancel</Button>
         <Button variant="primary" busy={submitting()} disabled={!selected() || props.discovering} onClick={submit}>Import selected session</Button>
       </div>
-    </div>
+    </FormDialogShell>
   </DialogContent></Dialog>;
 }

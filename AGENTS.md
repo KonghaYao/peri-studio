@@ -16,6 +16,7 @@
 | **设计稿 → 生产落地计划与映射表** | **`docs/design/ui-implementation-plan.md`** |
 | **Git Graph 数据面（machine → server → web）** | **`docs/design/git-graph-protocol.md`（权威）** |
 | **`@peri/ui` 设计系统包、移除 `shared/ui`（一步到位）** | **`docs/design/ui-package-migration.md`（权威）** |
+| **T3 复合块清单、T4 装配、Markdown/高亮归属** | **`docs/design/t3-blocks-in-ui-package.md`（权威）** |
 | Web 分层 ADR | `docs/adr/0004-web-frontend-layered-architecture.md` |
 | MCP Apps 宿主 | `docs/design/mcp-apps-host.md` |
 
@@ -28,8 +29,8 @@
 ### 目录与职责
 
 ```
-packages/ui/     @peri/ui：T1 样式 + T2 组件 + cn（Barrel 唯一出口）
-ui-sandbox/      Storybook 式 demos；消费 @peri/ui，不复制 T2 源码
+packages/ui/     @peri/ui：T1 样式 + T2 组件 + T3 复合块 + cn（Barrel 唯一出口）
+ui-sandbox/      Storybook 式 demos；消费 @peri/ui，不复制 T2/T3 源码
 
 web/src/
   app/           bootstrap、全局样式入口（main.tsx）
@@ -55,12 +56,13 @@ web/src/
 
 ### 新代码放置（决策树）
 
-1. **无业务语义的 Button / Dialog / cn** → `packages/ui`，仅从 `@peri/ui` barrel 导出
-2. **Yjs Doc → 只读视图类型 / render\*** → `entities/<domain>/`
-3. **用户可描述的用例逻辑（可单测、无 JSX）** → `features/<name>/`
-4. **多块 UI 组合（侧栏、Chat、Composer）** → `widgets/<area>/`
-5. **整页布局** → `pages/<route>/`
-6. **全局信号装配、对外 action 导出** → `store/index.ts`（业务逻辑仍下沉 feature）
+1. **无业务语义的 Button / Dialog / cn（T2）** → `packages/ui`，仅从 `@peri/ui` barrel 导出
+2. **无 store/协议的可复用复合块（T3）** → `packages/ui`（`ComposerShell`、`ChatWorkspaceShell`…）；T4 只 slot 接线
+3. **Yjs Doc → 只读视图类型 / render\*** → `entities/<domain>/`
+4. **用户可描述的用例逻辑（可单测、无 JSX）** → `features/<name>/`
+5. **store + features 装配的多块 UI（T4）** → `widgets/<area>/`
+6. **整页布局** → `pages/<route>/`
+7. **全局信号装配、对外 action 导出** → `store/index.ts`（业务逻辑仍下沉 feature）
 
 **禁止**：在 `panel/lib` 或 `panel/components` 新增实现；仅允许保留 deprecated shim。新 import 使用 `@/shared`、`@/entities`、`@/features`、`@/widgets`、`@/pages`、`@/store`。
 
@@ -72,7 +74,7 @@ web/src/
 |--------------|------|----------|
 | **T1 · Tokens** | `packages/ui/src/styles/tokens.css` | `@peri/ui/styles.css`（Web 与 Sandbox 共用） |
 | **T2 · Base UI** | `packages/ui/src/components/` | Web 与 Sandbox 均从 `@peri/ui` barrel 消费 |
-| **T3 · Blocks** | `ui-sandbox/src/components/blocks/` | `web/src/widgets/*` 或 `packages/ui`（确属无业务语义时） |
+| **T3 · Blocks** | `ui-sandbox/src/components/blocks/`（重导出 `@peri/ui`） | `packages/ui` + `web/widgets` T4 装配 |
 | **T4 · Layers** | `ui-sandbox/src/layers/` | `widgets` 组合参考（不直接 import） |
 | **Extra** | `ui-sandbox/src/styles/extra.css` | `web/src/styles/extra.css`（Tailwind 无法表达的例外） |
 
@@ -120,26 +122,54 @@ cd ui-sandbox && bun run typecheck
 
 **IconButton**：侧栏已有可见文案/菜单语义时用 `showTooltip={false}`，避免重复 tooltip（`css-contracts` 约束）。
 
-### CSS 规范（全 Tailwind + extra.css 例外）
+### 组件与 CSS 规范（权威摘要）
 
-生产 Web 样式四级级联（入口 `web/src/styles.css`）：
+完整 T3 清单与装配表见 [`t3-blocks-in-ui-package.md`](docs/design/t3-blocks-in-ui-package.md)。
+
+#### 组件分级
+
+| 层级 | 路径 | 规则 |
+|------|------|------|
+| T1 | `packages/ui/src/styles/tokens.css` | 唯一数值源；禁止 web/sandbox 另起间距/颜色 |
+| T2 | `packages/ui/src/components/` | 无业务语义；barrel 唯一出口 |
+| T3 | `packages/ui/src/components/` | 无 store/协议；`ui-<domain>-*` 类名；slot 供 T4 |
+| T4 | `web/src/widgets/` | 只装配，不复制 T3 布局/CSS |
+
+#### 样式级联（生产 `web/src/styles.css`）
 
 ```
-@peri/ui tokens/theme/primitives/extra → web/src/styles/primitives.css → web/src/styles/extra.css
+web/base.css
+  → @peri/ui/styles.css（tokens → theme → primitives → extra）
+  → web/primitives.css（应用级 hover 编排，极少）
+  → web/extra.css（应用级例外，~50 行；有 baseline 门禁）
 ```
 
-`packages/ui/src/styles/tokens.css` 是设计值唯一来源，`theme.css` 负责 Tailwind v4 utility 与命名断点；Web 只保留应用级 primitives/extra。
+- **T3 壳层 CSS** 一律在 `packages/ui/src/styles/extra.css`（Composer、Transcript、Workbench、Rewind…）。
+- **web/extra.css** 只放无法下沉的例外（侧栏拖拽光标、terminal park、composer overlay shadow 等）；改内容须更新 `EXTRA_CSS_BASELINE`。
+- **禁止**在 widget JSX 使用无 CSS 定义的 BEM hook；测试用 `data-testid`，布局用 Tailwind。
 
-**JSX 写法**
+#### JSX 写法（`widgets` / `pages` / `features` / `app`）
 
-- 优先 Tailwind token utility：`gap-8`、`w-(--container-dialog-default)`、`grid-cols-split-auto`、`max-compact:px-8`
-- 禁止任意 bracket：`w-[360px]`、`grid-cols-[minmax(0,1fr)_auto]`、`max-[640px]:`、`[&_p]:mb-3`
-- 重复布局：在 `tokens.css` 加 `--grid-cols-*` → `theme.css` 映射 → JSX 用 `grid-cols-*`
-- 例外：语义 class + `extra.css`（如 `.markdown-body`、`.rewind-panel__actions`、`.ui-line-clamp-2`）
+- 优先 Tailwind token utility：`gap-8`、`w-(--container-dialog-default)`、`ui-chat-column`、`grid-cols-split-auto`
+- 禁止任意 bracket：`w-[360px]`、`max-[640px]:`、`[&_p]:mb-3`
+- 重复布局：`tokens.css` → `theme.css` → `grid-cols-*`
+- 自定义 CSS 准入：子选择器编排、私有属性、跨子树响应式、第三方注入 DOM；颜色/间距必须 `var(--*)`
 
-**契约**：`web/tests/css-contracts.test.mjs`（widgets 无 bracket utility、spacing 数字须在 theme 声明、extra.css 被入口 import）。
+#### Markdown 与语法高亮
 
-**Sandbox 对齐**：`ui-sandbox` 与 `web` 共用 `@peri/ui/styles.css` 的 T1/T2 级联；各自 `extra.css` 只登记应用或 catalog 例外。演示页禁止 bracket utility，新 token 先改 `packages/ui/src/styles/tokens.css` 与 `theme.css`，两个 consumer 同时验证。
+| 能力 | 包 | 说明 |
+|------|-----|------|
+| 解析 / 流式 AST | `@peri/markdown` | `stream-markdown-parser`（markstream 生态） |
+| Fence 着色 | `@peri/ui` | `@tanstack/highlight` + `HighlightedCodeBody` |
+
+#### 契约测试
+
+| 门禁 | 路径 |
+|------|------|
+| Web CSS / 消费边界 | `web/tests/css-contracts.test.mjs` |
+| Package T3 类名前缀 | `packages/ui/tests/css-contracts.test.mjs` |
+
+**Sandbox 对齐**：共用 `@peri/ui/styles.css`；`ui-sandbox/extra.css` 不复制 package 规则。间距以 `tokens.css` 像素为准（web `gap-8`=8px，sandbox 部分区域 Tailwind×4，勿原样抄写）。
 
 ### 测试落点
 
@@ -163,8 +193,10 @@ cd ui-sandbox && bun run typecheck
 - [ ] 视觉变更是否已在 `ui-sandbox` 定稿并 typecheck 通过
 - [ ] 新文件落在正确层，未违反依赖表
 - [ ] `features` 未 import `store`；`packages/ui` 未 import Web 业务模块
+- [ ] T3 壳层在 `@peri/ui`；T4 widget 仅 slot 装配，无重复 CSS/布局
 - [ ] 颜色/间距来自 `tokens.css` utility，符合 `ui-specification.md`；sandbox→web 间距已按生产刻度换算
-- [ ] JSX 无任意 Tailwind bracket（`w-[…]`、`[&_…]`）；例外已登记 `web/src/styles/extra.css`
+- [ ] JSX 无任意 Tailwind bracket（`w-[…]`、`[&_…]`）；T3 例外在 `packages/ui/extra.css`，web 例外在 `web/extra.css` 并更新 baseline
+- [ ] 无孤儿 BEM class（有 class 必有 CSS，或改用 `data-testid`/Tailwind）
 - [ ] 单文件 < 500 行；UI 文案英文，注释中文，**log 英文**
 - [ ] `cd web && bun run test` 全绿
 - [ ] 若改变目录、token 或视觉契约，同步 `frontend-architecture.md` / `ui-specification.md` / `ui-implementation-plan.md` 与 `architecture.md` §10.2

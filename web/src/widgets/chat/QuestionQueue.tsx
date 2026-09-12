@@ -6,6 +6,7 @@ import type { QuestionAnswerPayload } from '@/shared/protocol/client';
 import {
   Button,
   DecisionQueueShell,
+  InlineNotice,
   QuestionnaireCheckboxOption,
   QuestionnaireRadioOption,
   questionnaireOptionListClass,
@@ -140,14 +141,18 @@ function QuestionDialog(props: {
             <p class="my-4 text-12 text-text-secondary">Answers sent. Peri will continue when the server confirms.</p>
           </Show>
           <Show when={uncertain()}>
-            <p class="my-4">Refresh the server status, or hide this question locally. The original answer cannot be sent again.</p>
-            <div class="flex flex-wrap gap-8">
-              <Button type="button" size="compact" variant="secondary" onClick={props.onRefreshStatus}>Refresh status</Button>
-              <Button type="button" size="compact" variant="secondary" class="pointer-coarse:min-h-44!" onClick={props.onDismissUncertain}>Hide question</Button>
-            </div>
+            <InlineNotice class="my-4" tone="warning" role="alert" title="Answer delivery not confirmed">
+              <p class="my-4">Refresh the server status, or hide this question locally. The original answer cannot be sent again.</p>
+              <div class="flex flex-wrap gap-8">
+                <Button type="button" size="compact" variant="secondary" onClick={props.onRefreshStatus}>Refresh status</Button>
+                <Button type="button" size="compact" variant="secondary" class="pointer-coarse:min-h-44!" onClick={props.onDismissUncertain}>Hide question</Button>
+              </div>
+            </InlineNotice>
           </Show>
           <Show when={!confirmed() && !uncertain()}>
-            <Show when={validation()}><p role="alert" class="my-4 text-12 text-danger-solid">{validation()}</p></Show>
+            <Show when={validation()}>
+              <InlineNotice class="my-4" tone="danger" role="alert">{validation()}</InlineNotice>
+            </Show>
             <Show when={locked()}><p class="mb-8 inline-flex items-center gap-6 text-11 text-text-muted"><LockKeyhole size={12} aria-hidden="true" />Waiting for server confirmation</p></Show>
             <div id={bodyId} class="grid gap-12">
               <For each={props.question.questions}>{(item, index) => {

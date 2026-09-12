@@ -1,4 +1,4 @@
-import { Button } from '@peri/ui';
+import { Button, GitGraphPanel, InlineNotice } from '@peri/ui';
 import { Show, createEffect, createMemo, createSignal, untrack } from 'solid-js';
 import {
   canLoadMoreGitLog,
@@ -11,7 +11,6 @@ import {
   refreshGitLog,
   resourceWorkspace,
 } from '@/store';
-import { GitGraphPanel } from './GitGraphPanel';
 import { mapGitLogToGraphCommits } from '@/features/resource/map-git-log';
 import type { GitGraphActionKind, GitGraphActionParams } from '@/features/resource/git-graph-mutations';
 
@@ -65,20 +64,22 @@ export function GitGraphView(props: GitGraphViewProps = {}) {
     >
       <Show when={resourceWorkspace().error}>
         {(message) => (
-          <div role="alert" class="m-8 flex items-start gap-6 rounded-6 border border-danger-border bg-danger-soft p-9 text-11 leading-16 text-danger">
-            <span class="min-w-0 flex-1">{message()}</span>
-            <Button
-              size="compact"
-              variant="ghost"
-              class="shrink-0 border-0! bg-transparent! px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8"
-              onClick={() => {
-                const repoId = activeGraphRepoId();
-                if (repoId) refreshGitLog(repoId);
-              }}
-            >
-              Retry
-            </Button>
-          </div>
+          <InlineNotice tone="danger" class="m-8 items-center gap-6 py-9 text-11 leading-16" role="alert">
+            <div class="flex min-w-0 flex-1 items-center gap-6">
+              <span class="min-w-0 flex-1">{message()}</span>
+              <Button
+                size="compact"
+                variant="ghost"
+                class="shrink-0 border-0! bg-transparent! px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8"
+                onClick={() => {
+                  const repoId = activeGraphRepoId();
+                  if (repoId) refreshGitLog(repoId);
+                }}
+              >
+                Retry
+              </Button>
+            </div>
+          </InlineNotice>
         )}
       </Show>
 

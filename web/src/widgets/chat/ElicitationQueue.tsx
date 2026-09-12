@@ -7,6 +7,7 @@ import {
   Button,
   DecisionQueueShell,
   IconButton,
+  InlineNotice,
   QuestionnaireCheckboxOption,
   QuestionnaireRadioOption,
   questionnaireOptionListClass,
@@ -197,17 +198,25 @@ function AskUserQuestionDialog(props: {
               );
             }}</For>
           </div>
-          <Show when={validation()}><p class="mt-9 text-11 leading-15 text-danger" role="alert">{validation()}</p></Show>
+          <Show when={validation()}>
+            <InlineNotice class="mt-9" tone="danger" role="alert">{validation()}</InlineNotice>
+          </Show>
           <Show when={submitting()}><span class="mt-8 inline-grid size-22 place-items-center rounded-full border border-border-subtle text-text-muted" role="status" title="Submitting answer"><Clock3 size={12} strokeWidth={1.8} aria-hidden="true" /><span class="sr-only">Submitting answer</span></span></Show>
           <Show when={confirmed()}><span class="mt-8 inline-grid size-22 place-items-center rounded-full border border-border-subtle text-success" role="status" title="Answer received"><Clock3 size={12} strokeWidth={1.8} aria-hidden="true" /><span class="sr-only">Answer received. Waiting for server status.</span></span></Show>
-          <Show when={uncertain()}><div class="mt-10 rounded-10 border border-warning-border bg-surface-muted p-10 text-11 leading-15 text-text-secondary" role="alert">
-            <strong class="block text-warning">{props.delivery?.phase === 'failed' ? 'Answer was not accepted' : 'Answer delivery not confirmed'}</strong>
-            <p class="my-4">Refresh the server status, or hide this question locally. The original answer cannot be sent again.</p>
-            <div class="flex flex-wrap gap-5 pt-3">
-              <Button type="button" size="compact" variant="primary" class="pointer-coarse:min-h-44!" onClick={props.onRefreshStatus}>Refresh status</Button>
-              <Button type="button" size="compact" variant="secondary" class="pointer-coarse:min-h-44!" onClick={props.onDismissUncertain}>Hide question</Button>
-            </div>
-          </div></Show>
+          <Show when={uncertain()}>
+            <InlineNotice
+              class="mt-10"
+              tone="warning"
+              role="alert"
+              title={props.delivery?.phase === 'failed' ? 'Answer was not accepted' : 'Answer delivery not confirmed'}
+            >
+              <p class="my-4">Refresh the server status, or hide this question locally. The original answer cannot be sent again.</p>
+              <div class="flex flex-wrap gap-5 pt-3">
+                <Button type="button" size="compact" variant="primary" class="pointer-coarse:min-h-44!" onClick={props.onRefreshStatus}>Refresh status</Button>
+                <Button type="button" size="compact" variant="secondary" class="pointer-coarse:min-h-44!" onClick={props.onDismissUncertain}>Hide question</Button>
+              </div>
+            </InlineNotice>
+          </Show>
           <Show when={props.readOnly}><span class="mt-8 inline-grid size-22 place-items-center rounded-full border border-border-subtle text-text-muted" role="status" title="Read only"><LockKeyhole size={12} strokeWidth={1.8} aria-hidden="true" /><span class="sr-only">Read only</span></span></Show>
         </div>
       </QuestionnaireFrame>

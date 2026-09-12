@@ -16,7 +16,7 @@ import { disclosureContentMotion } from '../lib/overlay-motion';
 import { createControllableSignal } from '../lib/controllable-state';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './Collapsible';
 import { Shimmer } from './Shimmer';
-import { Skeleton } from './Skeleton';
+import { TranscriptThinkingGap } from './transcript/TranscriptThinkingGap';
 
 type ReasoningAppearance = 'panel' | 'transcript';
 type ReasoningVariant = 'default' | 'activity';
@@ -42,20 +42,6 @@ export function useReasoning() {
 }
 
 const AUTO_CLOSE_DELAY_MS = 1000;
-
-function ThinkingGap() {
-  return (
-    <div
-      class="thinking-gap relative z-1 flex max-w-(--chat-reasoning-max) flex-col gap-8 py-4 pl-32"
-      data-testid="thinking-gap"
-      aria-hidden="true"
-    >
-      <Skeleton class="h-12 w-180 max-w-full" />
-      <Skeleton class="h-12 w-240 max-w-full" />
-      <Skeleton class="h-12 w-100 max-w-full" />
-    </div>
-  );
-}
 
 type ReasoningRootProps = ComponentProps<typeof Collapsible> & {
   isStreaming?: boolean;
@@ -208,7 +194,7 @@ export const Reasoning: Component<ReasoningRootProps> = (props) => {
                 {local.children}
               </details>
             )}>
-              <ThinkingGap />
+              <TranscriptThinkingGap data-testid="thinking-gap" class="py-4 pl-32" />
             </Show>
           </Show>
         )}

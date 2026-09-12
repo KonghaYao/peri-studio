@@ -1,5 +1,5 @@
 import { For, Show, createSignal } from 'solid-js';
-import { Button, GitBranchBar, GitChangeGroup, GitCommitBar, LoadingState } from '@peri/ui';
+import { Button, GitBranchBar, GitChangeGroup, GitCommitBar, InlineNotice, LoadingState } from '@peri/ui';
 import { mutateGitResource, openGitDiffPreview, openMoreGitChanges, resourceWorkspace, retryGitRepositoryMutation, retryGitResourceMutation } from '@/store';
 import type { RepositoryState } from '@/features/resource/resource-store';
 import { readOnly } from '@/features/auth/auth-state';
@@ -106,10 +106,12 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
       commitBusy={repoMutation()?.action === 'commit' && repoMutation()?.pending}
       commitDisabled={!props.repo.generation}
     />
-    <Show when={repoMutation()?.error}>{(error) => <div role="alert" class="mx-8 mb-7 flex min-h-28 items-center gap-6 border border-danger-border bg-danger-soft px-8 py-5 text-10 leading-14 text-danger-solid">
-      <span class="min-w-0 flex-1">{error()}</span>
-      <Show when={repoMutation()?.retryable}><Button size="compact" variant="ghost" class="shrink-0 border-0! bg-transparent! px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={retryRepoMutation}>Retry</Button></Show>
-    </div>}</Show>
+    <Show when={repoMutation()?.error}>{(error) => <InlineNotice tone="danger" class="mx-8 mb-7 min-h-28 items-center gap-6 px-8 py-5 text-10 leading-14" role="alert">
+      <div class="flex min-w-0 flex-1 items-center gap-6">
+        <span class="min-w-0 flex-1">{error()}</span>
+        <Show when={repoMutation()?.retryable}><Button size="compact" variant="ghost" class="shrink-0 border-0! bg-transparent! px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={retryRepoMutation}>Retry</Button></Show>
+      </div>
+    </InlineNotice>}</Show>
     <For each={GROUPS}>{(group) => {
       const state = () => props.repo.groups[group.id];
       return <Show when={state()?.count}>
@@ -129,10 +131,12 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
         <For each={state().changes}>{(change) => {
           const mutation = () => resourceWorkspace().mutations?.[change.id];
           const action = () => group.id === 'index' ? 'unstage' : 'stage';
-          return <Show when={mutation()?.error}>{(message) => <div role="alert" class="flex min-h-28 items-center gap-6 border-y border-danger-border bg-danger-soft px-12 py-4 text-10 leading-14 text-danger">
-            <span class="min-w-0 flex-1">{message()}</span>
-            <Show when={mutation()?.retryable}><Button size="compact" variant="ghost" class="shrink-0 border-0! bg-transparent! px-4 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" aria-label={`Retry ${action()} ${String(change.path ?? '')}`} onClick={() => retryGitResourceMutation(change.id)}>Retry</Button></Show>
-          </div>}</Show>;
+          return <Show when={mutation()?.error}>{(message) => <InlineNotice tone="danger" class="min-h-28 items-center gap-6 rounded-none border-x-0 px-12 py-4 text-10 leading-14" role="alert">
+            <div class="flex min-w-0 flex-1 items-center gap-6">
+              <span class="min-w-0 flex-1">{message()}</span>
+              <Show when={mutation()?.retryable}><Button size="compact" variant="ghost" class="shrink-0 border-0! bg-transparent! px-4 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" aria-label={`Retry ${action()} ${String(change.path ?? '')}`} onClick={() => retryGitResourceMutation(change.id)}>Retry</Button></Show>
+            </div>
+          </InlineNotice>}</Show>;
         }}</For>
       </Show>;
     }}</For>

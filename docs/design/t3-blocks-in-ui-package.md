@@ -5,6 +5,8 @@ date: 2026-09-12
 
 # T3 Blocks 下沉 `@peri/ui` 与 T4 业务装配
 
+> **协作入口**：组件分级与 CSS 硬约束亦写入根目录 `CLAUDE.md`、`AGENTS.md` 与 [`frontend-architecture.md`](frontend-architecture.md) §5.7。
+
 ## 决策
 
 | 层级 | 归属 | 职责 |

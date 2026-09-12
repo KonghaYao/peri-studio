@@ -26,7 +26,7 @@ Peri Studio 是 ACP agent 的持久 Web 工作台（仓库名 peri-studio，产�
 - `server/`（peri-studio-server library）：中心控制面运行时，模块按职责拆分：`auth`（token/审计）、`channel`（命令协调、runtime 生命周期、catalog 同步）、`control`（registry、心跳）、`persist`（SQLite、outbox）、`protocol`（ACP 通道）、`state`、`web`；`build.rs` 编译期内嵌 `web/dist` 产物
 - `instance/`（peri-instance library）：运行 ACP 子进程的宿主运行时；仅测试辅助二进制 `test-child` 独立存在
 - `web/`：SolidJS 单页 SPA（**五层目录**：`app` / `pages` / `widgets` / `features` / `entities` / `shared` + `store`；权威规范见 `docs/design/frontend-architecture.md` 与根目录 `AGENTS.md`）。`panel/` 已删除，禁止恢复兼容 shim
-- `packages/ui/`：私有 buildless workspace package `@peri/ui`，统一拥有 T1 token、Tailwind theme、T2 Base UI 与 `cn`
+- `packages/ui/`：私有 buildless workspace package `@peri/ui`，统一拥有 T1 token、Tailwind theme、T2 Base UI、T3 复合块与 `cn`（详见 `docs/design/t3-blocks-in-ui-package.md`）
 - `ui-sandbox/`：手写 UI Catalog（Tokens / Components / Blocks / Layers），消费 `@peri/ui`；与 `web/` 构建隔离，**新 UI 须先在此定稿**再镜像生产（见 `docs/design/ui-package-migration.md`）
 - `docs/`：`architecture.md`（权威架构基准，v2.14 与实现对齐）、`terminology.md`（唯一权威术语表）、`topology.md`、`adr/`、`design/`（设计决策与验证证据）
 - `scripts/`：发布安装器、单一二进制打包/校验，以及可选的本机 `local` 运行时探针
@@ -90,7 +90,7 @@ cargo run -q -p peri-studio -- status --json | --ready
 
 ## Web 前端分层规范（必读）
 
-**权威文档**：`docs/design/frontend-architecture.md`（目录、依赖、迁移）；`docs/design/frontend-rewrite-program.md`（**Phase 6+：拆 `panel/`、只 Tailwind、社区无头、业务逻辑只迁不改**）；`docs/design/ui-specification.md`（**视觉、token、组件、微文案**）；`docs/design/ui-package-migration.md`（**`@peri/ui` 包边界与 Catalog 工作流**）；`docs/design/ui-implementation-plan.md`（历史 sandbox → web 落地证据）；`AGENTS.md`（Agent 检查清单与工作流）。ADR：`docs/adr/0004-web-frontend-layered-architecture.md`。
+**权威文档**：`docs/design/frontend-architecture.md`（目录、依赖、组件/CSS 规范）；`docs/design/t3-blocks-in-ui-package.md`（**T3 复合块清单与 T4 装配**）；`docs/design/frontend-rewrite-program.md`（**Phase 6+：拆 `panel/`、只 Tailwind、社区无头、业务逻辑只迁不改**）；`docs/design/ui-specification.md`（**视觉、token、组件、微文案**）；`docs/design/ui-package-migration.md`（**`@peri/ui` 包边界与 Catalog 工作流**）；`docs/design/ui-implementation-plan.md`（历史 sandbox → web 落地证据）；`AGENTS.md`（Agent 检查清单与工作流）。ADR：`docs/adr/0004-web-frontend-layered-architecture.md`。
 
 | 层 | 路径 | 职责 |
 |----|------|------|
@@ -100,33 +100,70 @@ cargo run -q -p peri-studio -- status --json | --ready
 | 特性 | `web/src/features/` | 纯 TS 领域用例；**禁止 import store**（依赖注入） |
 | 实体 | `web/src/entities/` | Yjs 只读投影（chat / registry / resource / topology） |
 | 共享 | `web/src/shared/` | `lib`、`protocol`、`yjs`；不含 UI |
-| 设计系统 | `packages/ui/` | `@peri/ui`：T1/T2、无业务语义组件与 `cn` |
+| 设计系统 | `packages/ui/` | `@peri/ui`：T1/T2/T3 与 `cn`（无 store / 协议） |
 | 组合根 | `web/src/store/index.ts` | 全局信号与 `install*` 装配；业务逻辑委托 features |
+
+### 组件分级（T1–T4）
+
+| 层级 | 归属 | 职责 | 示例 |
+|------|------|------|------|
+| **T1** | `packages/ui/src/styles/tokens.css` | 颜色/间距/半径/容器唯一数值源 | `--space-8`、`--container-chat-content-max` |
+| **T2** | `packages/ui/src/components/` | 无业务语义原子/分子（Button、Dialog、Textarea） | `Button`、`Listbox` |
+| **T3** | `packages/ui/src/components/` | 无 store/协议复合块；**slot / render prop** 供 T4 注入 | `ComposerShell`、`ChatWorkspaceShell`、`GitChangeTree` |
+| **T4** | `web/src/widgets/` | store + features 装配；**禁止复制 T3 布局/CSS** | `Composer.tsx`、`ChatView.tsx` |
+
+T3 不得 import `web/`、`store`、`features`、Yjs、protocol。T4 通过 `compactLeading`、`renderField`、`metaRow` 等抓手接线，不在 widget 内重写壳层样式。完整清单见 `docs/design/t3-blocks-in-ui-package.md`。
 
 **UI Sandbox 与生产对齐**（细节见 `AGENTS.md` §UI Sandbox）：
 
-- T1/T2 唯一事实源：`packages/ui/src/styles` 与 `packages/ui/src/components`；Web 和 Catalog 只从 `@peri/ui` 公共入口消费。
-- Catalog：`ui-sandbox/` 保存 Components demo、T3 `components/blocks` 与 T4 `layers`，不复制 T2 实现。
+- T1/T2/T3 唯一事实源：`packages/ui/src/styles` 与 `packages/ui/src/components`；Web 和 Catalog 只从 `@peri/ui` 公共入口消费。
+- Catalog：`ui-sandbox/` 保存 Components demo、T3 blocks（重导出 `@peri/ui`）与 T4 `layers`；**不复制** T2/T3 实现。
 - 流程：先改 `@peri/ui` 契约与测试 → sandbox 定稿 → `bun run typecheck && bun run build` → 镜像 `web` → `cd web && bun run test && bun run build`。
 - **间距**：两个 consumer 都使用 package 的 `--space-N` 像素 utility；禁止重新引入独立 Tailwind 数值源。
 - 缺后端：sandbox/widget 用 mock；生产用 `features` + 测试，不在浏览器伪造 server 事实。
 
 **硬规则**：依赖只能自上而下（`shared` → `entities` → `features` → `widgets` → `pages` → `app`）；`widgets` 不得直发协议帧；新代码用 `@/` 路径别名，勿在 `panel/` 下新增实现。UI 颜色/间距/组件须符合 `ui-specification.md`；改 Web 结构须同步 `architecture.md` §10.2。
 
-**CSS 样式级联**（全 Tailwind 优先，`web/tests/css-contracts.test.mjs` 门禁）：
+**CSS 样式级联**（全 Tailwind 优先；门禁：`web/tests/css-contracts.test.mjs`、`packages/ui/tests/css-contracts.test.mjs`）：
 
 | 层级 | 文件 | 职责 |
 |------|------|------|
 | T1 · Token | `packages/ui/src/styles/tokens.css` | 颜色/间距/半径/容器/栅格模板的唯一数值源 |
-| T2 · Theme / Base UI | `packages/ui/src/styles/theme.css`、`packages/ui/src/components/` | Tailwind v4 utility 映射与无业务语义组件 |
-| Web Primitives | `web/src/styles/primitives.css` | 应用级跨组件原子与布局；T2 原子属于 package |
-| Web Extra | `web/src/styles/extra.css` | **无法纳入 Tailwind 的应用例外**：子选择器、第三方注入 DOM、复合响应式组合 |
-| 入口 | `web/src/styles.css` | `base → @peri/ui → web primitives → web extra` 级联顺序 |
+| T2 · Theme | `packages/ui/src/styles/theme.css` | Tailwind v4 utility 与命名断点映射 |
+| Package Primitives | `packages/ui/src/styles/primitives.css` | 跨组件原子（如 `ui-scrollbar`） |
+| **Package Extra** | `packages/ui/src/styles/extra.css` | **T3 壳层与领域特例**（Composer/Transcript/Workbench…）；`ui-<domain>-*` 前缀 |
+| Web Base | `web/src/styles/base.css` | 全局 reset、a11y、forced-colors |
+| Web Primitives | `web/src/styles/primitives.css` | **仅**应用级 hover 编排（如 message actions、composer-wrap safe-bottom） |
+| Web Extra | `web/src/styles/extra.css` | **仅**无法下沉的 web 例外（侧栏拖拽、terminal park、composer overlay shadow）；保持精简，有行数/hash baseline |
+| 入口 | `web/src/styles.css` | `base → @peri/ui/styles.css → web primitives → web extra` |
 
-- **JSX 默认只用 Tailwind token utility**（`w-(--container-*)`、`gap-8`、`max-desk:`）；禁止 `w-[…]`、`max-[640px]:` 等任意 bracket 写法（`css-contracts` 对 `widgets/` 扫描）。
-- **重复栅格**优先在 `tokens.css` 声明 `--grid-cols-*` 并在 `theme.css` 映射为 `grid-cols-*` utility，而非 bracket。
-- **实在无法表达时**：在 JSX 加语义 class（BEM 或 `feature__element`），实现登记在 `extra.css`；禁止新增颜色/间距字面量，须 `var(--*)`。
-- **禁止**在 `widgets/` 用 `[&_…]` 子选择器 variant 堆砌；Markdown 富文本等统一用 `.markdown-body`（见 `extra.css`）。
+**JSX 写法（widgets / pages / features / app）**
+
+- 默认 **只用 Tailwind token utility**：`gap-8`、`w-(--container-*)`、`max-desk:`、`grid-cols-split-auto`。
+- **禁止**任意 bracket：`w-[360px]`、`max-[640px]:`、`[&_p]:mb-3`（`css-contracts` 扫描）。
+- 重复布局：在 `tokens.css` 加 `--grid-cols-*` → `theme.css` 映射 → JSX 用 `grid-cols-*`。
+
+**何时写自定义 CSS（extra.css）**
+
+须在文件头准入条件内，且满足 **其一**：子选择器编排、浏览器私有属性（`-webkit-line-clamp`）、跨子树响应式组合、第三方注入 DOM（Mermaid SVG、xterm）。**禁止**字面量颜色/间距，一律 `var(--*)`。
+
+| 样式归属 | 放哪 | 类名约定 |
+|----------|------|----------|
+| T3 壳层（Composer、Transcript、Workbench…） | `packages/ui/.../extra.css` | `ui-<domain>-*`（如 `ui-composer-surface-v2`、`ui-chat-column`） |
+| 应用级仅剩例外 | `web/src/styles/extra.css` | 尽量少；改 baseline 须同步 `css-contracts` |
+| Catalog 演示例外 | `ui-sandbox/src/styles/extra.css` | 不复制 package 已有规则 |
+
+**反模式（禁止）**
+
+- 在 `web/widgets` 发明 **无 CSS 定义的 BEM class**（测试用 `data-testid`，布局用 Tailwind）。
+- 在 web 复制 T3 壳层 CSS（如自写 composer 矩形壳）；应消费 `ComposerShell` 等 T3 组件。
+- 保留 **无消费者** 的 legacy alias（如 `.chat-column` 与 `.ui-chat-column` 双写）；统一 `ui-*`。
+- 在 `widgets/` 用 `[&_…]` 子选择器堆砌 variant。
+
+**Markdown 与语法高亮**
+
+- 解析/流式 AST：`@peri/markdown`（`stream-markdown-parser` / markstream 生态）。
+- Fence 着色：`@peri/ui` + `@tanstack/highlight`（`HighlightedCodeBody`）；**不用 Shiki**。
 
 ## 代码与测试约定
 

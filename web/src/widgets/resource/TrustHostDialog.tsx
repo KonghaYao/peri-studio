@@ -1,7 +1,6 @@
 import { Show } from 'solid-js';
-import { Button, CopyButton, Dialog, DialogContent } from '@peri/ui';
+import { Button, CopyButton, Dialog, DialogContent, FormDialogShell } from '@peri/ui';
 import { readOnly } from '@/features/auth/auth-state';
-import { FormDialogShell } from '@/widgets/shell/shared/FormDialogShell';
 
 interface TrustHostDialogProps {
   open: boolean;

@@ -9,6 +9,7 @@ date: 2026-08-30
 > 关联 ADR：[0004-web-frontend-layered-architecture](../adr/0004-web-frontend-layered-architecture.md)
 > **Agent 入口**：根目录 [`AGENTS.md`](../../AGENTS.md)（检查清单）；[`CLAUDE.md`](../../CLAUDE.md) §Web 前端分层规范。
 > **UI 规范**：[`ui-specification.md`](ui-specification.md)（色彩、组件、微文案）。
+> **T3 复合块与 T4 装配**：[`t3-blocks-in-ui-package.md`](t3-blocks-in-ui-package.md)。
 > **Phase 6+ 执行（拆 `panel/lib`、CSS/无头约束、业务等价）**：[`frontend-rewrite-program.md`](frontend-rewrite-program.md)。
 > **有意延后项（MessageScroller 外壳、Sidebar 折叠 vs resize、测试边界）**：[`web-ui-deferrals.md`](web-ui-deferrals.md)。
 
@@ -82,7 +83,7 @@ web/src/
   test/                     # vitest setup
 ```
 
-`packages/ui/` 位于 Web 分层之外，是私有 buildless workspace package：拥有 T1 token、Tailwind theme、T2 Base UI 与 `cn`，Web 与 `ui-sandbox` 均只从 `@peri/ui` barrel 消费。
+`packages/ui/` 位于 Web 分层之外，是私有 buildless workspace package：拥有 T1 token、Tailwind theme、T2 Base UI、T3 复合块与 `cn`，Web 与 `ui-sandbox` 均只从 `@peri/ui` barrel 消费。
 
 ## 4. 依赖规则（强制）
 
@@ -102,11 +103,18 @@ web/src/
 
 ## 5. 组件分级定义
 
-### 5.1 `@peri/ui`（基础组件）
+### 5.1 `@peri/ui`（T1 / T2 / T3）
 
-- 源码位于仓库顶层 `packages/ui`，无 server 语义、无 session/project/chat 概念。
-- Props 为通用 UI 契约（`Button`, `Listbox`, `Dialog`）。
-- 唯一公共代码入口：`@peri/ui`；禁止组件 deep import。
+| 子层 | 路径 | 职责 |
+|------|------|------|
+| **T1** | `packages/ui/src/styles/tokens.css` | 设计 token 唯一数值源 |
+| **T2** | `packages/ui/src/components/` | 无业务语义原子/分子（`Button`、`Dialog`…） |
+| **T3** | `packages/ui/src/components/` | 无 store/协议复合块（`ComposerShell`、`ChatWorkspaceShell`…） |
+
+- 无 server 语义：T2/T3 不得持有 session/project/chat 业务状态。
+- T3 通过 **slot / render prop**（`renderField`、`compactLeading`、`metaRow`…）暴露 T4 抓手；不得 import `web/`、`store`、`features`。
+- 唯一公共入口：`@peri/ui`；禁止组件 deep import。
+- T3 清单、Markdown/高亮归属见 [`t3-blocks-in-ui-package.md`](t3-blocks-in-ui-package.md)。
 
 ### 5.2 `entities`（实体投影）
 
@@ -119,10 +127,11 @@ web/src/
 - 文件 < 500 行；接近上限则拆子模块。
 - 测试：`features/<name>/*.test.ts` 与实现同目录。
 
-### 5.4 `widgets`（业务组件）
+### 5.4 `widgets`（T4 业务组件）
 
-- 把 features + entities + store 信号装配为一块 UI。
+- 把 features + entities + store 信号装配为一块 UI；**消费 T3 壳层，不复制其 CSS/布局**。
 - 允许 `*.test.tsx`（jsdom）；复杂逻辑仍下沉到 features。
+- JSX 默认 Tailwind utility；禁止无 CSS 定义的 BEM hook（测试用 `data-testid`）。
 
 **资源工作台**（`widgets/resource`）：`AppShell` + `ResourceWorkbench` 装配导航；`ResourceFloatingPanel` / `resource-panel-layout.ts` 负责右轨（Explorer·SCM·Graph）与左轨（文件预览）浮窗。壳层与侧栏分工见 [`ui-specification.md`](ui-specification.md) §10.1–§10.2。
 
@@ -133,6 +142,40 @@ web/src/
 ### 5.6 `app`（外壳）
 
 - `main.tsx`、`index.html` 引用的样式与 Provider 树。
+
+## 5.7 样式与 CSS 规范
+
+### 级联顺序（生产）
+
+`web/src/styles.css`：
+
+1. `web/src/styles/base.css` — 全局 reset、a11y
+2. `@peri/ui/styles.css` — `tokens` → `theme` → `primitives` → **`extra.css`（T3 壳层主战场）**
+3. `web/src/styles/primitives.css` — 极少应用级编排（message hover、composer safe-bottom）
+4. `web/src/styles/extra.css` — **仅**无法下沉的 web 例外（~50 行；`EXTRA_CSS_BASELINE` 门禁）
+
+### 类名约定
+
+| 范围 | 约定 | 示例 |
+|------|------|------|
+| T3 package | `ui-<domain>-*` | `ui-composer-surface-v2`、`ui-chat-column`、`ui-rewind-panel__state` |
+| Web 应用例外 | 尽量少；有 CSS 才加 class | `composer-wrap--overlay`、`sidebar-resize-handle--dragging` |
+| Widget JSX | Tailwind + T3 导出类 | `ui-chat-column gap-8`；**禁止** `foo__bar` 无规则占位 |
+
+### 何时写 `extra.css`
+
+满足 **其一**方可登记：子选择器编排、浏览器私有属性、跨子树响应式组合、第三方注入 DOM。禁止字面量颜色/间距，须 `var(--*)`。
+
+### JSX 硬约束
+
+- 禁止任意 Tailwind bracket（`w-[…]`、`max-[640px]:`、`[&_…]`）— `web/tests/css-contracts.test.mjs`
+- 重复栅格：`tokens.css` 声明 `--grid-cols-*` → `theme.css` 映射
+- T3 类名前缀 — `packages/ui/tests/css-contracts.test.mjs`
+
+### Markdown 与语法高亮
+
+- **解析**：`@peri/markdown`（`stream-markdown-parser` / markstream 生态）
+- **Fence 着色**：`@peri/ui` + `@tanstack/highlight`（不用 Shiki）
 
 ## 6. Store 瘦身方向
 

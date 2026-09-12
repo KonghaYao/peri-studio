@@ -17,8 +17,8 @@ import {
   Button,
   HistoryBoundary,
   LoadingState,
-  Skeleton,
   TranscriptRowShell,
+  TranscriptThinkingGap,
   TranscriptViewportShell,
   type TranscriptHistoryBoundaryKind,
 } from '@peri/ui';
@@ -35,16 +35,6 @@ import { visibleElicitations } from '@/features/message/elicitation-delivery';
 
 function visibleHistoryBoundary(kind: ReplayBoundary): TranscriptHistoryBoundaryKind | null {
   return kind === 'verified_history' || kind === 'live_runtime' ? kind : null;
-}
-
-function ChatLoading() {
-  return <div data-testid="chat-loading">
-    <div class="mb-12 flex min-h-36 flex-col justify-center gap-8" data-testid="message-loading" aria-hidden="true">
-      <Skeleton class="h-12 w-180" />
-      <Skeleton class="h-12 w-240" />
-      <Skeleton class="h-12 w-180" />
-    </div>
-  </div>;
 }
 
 // ── 消息滚动区 ──────────────────────────────────────────────────────────
@@ -344,7 +334,11 @@ export function MessageList(props: { footerHeight?: number }) {
           </For>
           <div data-testid="transcript-spacer" data-transcript-spacer="after" aria-hidden="true" style={{ height: `${visibleTranscript().afterHeight}px` }} />
         </div>
-        <Show when={showChatLoading()}><ChatLoading /></Show>
+        <Show when={showChatLoading()}>
+          <div data-testid="chat-loading">
+            <TranscriptThinkingGap class="mb-12 min-h-36 justify-center py-0 pl-32" />
+          </div>
+        </Show>
         <For each={acknowledgedForChat()}>{(submission) =>
           <MessageOutbox submission={submission} acknowledged onRetry={() => {}} onEdit={() => {}} />
         }</For>

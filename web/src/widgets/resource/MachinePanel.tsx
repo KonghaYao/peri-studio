@@ -25,8 +25,7 @@ import {
 } from '@/entities/machine/machine-view';
 import type { MachineInfo } from '@/entities/registry/registry-view';
 import { ResourceSectionTitle } from '@peri/ui';
-import { Button, Dialog, DialogContent, TextField } from '@peri/ui';
-import { FormDialogShell } from '@/widgets/shell/shared/FormDialogShell';
+import { Button, Dialog, DialogContent, FormDialogShell, TextField } from '@peri/ui';
 import { AddComputerDialog } from '@/widgets/resource/AddComputerDialog';
 import { MachineRow } from '@/widgets/resource/MachineRow';
 import {

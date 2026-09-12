@@ -162,8 +162,8 @@ describe('Explorer upload interactions', () => {
     const renamedFile = screen.getByRole('treeitem', { name: /note\.txt/i });
     renamedFile.focus();
     await fireEvent.keyDown(renamedFile, { key: 'Delete' });
-    expect(screen.getByRole('dialog')).toHaveTextContent('Delete permanently?');
-    await fireEvent.click(screen.getByRole('button', { name: 'Delete Permanently' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('Delete "note.txt"?');
+    await fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(mocks.deletePath).toHaveBeenCalledWith('project-1', 'src/note.txt', 'rev-file', false);
   });
 
@@ -246,8 +246,8 @@ describe('Explorer upload interactions', () => {
     const directory = screen.getByRole('treeitem', { name: /empty/i });
     directory.focus();
     await fireEvent.keyDown(directory, { key: 'Delete' });
-    expect(screen.getByRole('dialog')).toHaveTextContent('Delete permanently?');
-    await fireEvent.click(screen.getByRole('button', { name: 'Delete Permanently' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('Delete "empty" and all contents?');
+    await fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
 
     expect(mocks.deletePath).toHaveBeenCalledWith('project-1', 'empty', 'rev-empty', true);
   });

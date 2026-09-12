@@ -1,13 +1,17 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, type JSX } from 'solid-js';
 import {
   Button,
+  ExplorerDeleteDialog,
   ExplorerItemMenu,
+  ExplorerMoveDialog,
   FileTree,
   FileTreeInlineNameEditor,
   IconButton,
   InlineNotice,
   LoadingState,
   cn,
+  parentDirectoryPath,
+  ResourceSectionTitle,
   type ExplorerMenuAction,
   type FileTreeNode,
 } from '@peri/ui';
@@ -21,11 +25,20 @@ import {
 import type { ResourceEntry } from '@/entities/resource/resource-view';
 import { validateMutationName } from '@/features/resource/fs-mutation-controller';
 import { FilePlus, FolderPlus, MoreHorizontal, RefreshCw } from 'lucide-solid';
-import { ExplorerDeleteDialog, ExplorerMoveDialog, type ExplorerEdit } from './ExplorerMutationDialogs';
-import { ResourceSectionTitle } from '@peri/ui';
 import { createExplorerTreeFocus } from './explorer-tree-focus';
 import { dataTransferHasFiles, parseFileDropTransfer, preventBrowserFileDrop } from '../composer/composer-upload-drop';
 function RefreshIcon() { return <RefreshCw size={14} strokeWidth={1.8} />; }
+
+type ExplorerEdit =
+  | { mode: 'new-file' | 'new-folder'; parentPath: string }
+  | { mode: 'rename'; node: FileTreeNode };
+
+function validateMoveDestination(dest: string): string | null {
+  if (!dest || dest.startsWith('/') || dest.includes('\\') || dest.split('/').some((part) => !part || part === '.' || part === '..')) {
+    return 'Enter a workspace-relative destination.';
+  }
+  return null;
+}
 
 function inlineCreateKind(edit: ExplorerEdit | null, parentPath: string): 'file' | 'folder' | undefined {
   if (!edit || edit.mode === 'rename' || edit.parentPath !== parentPath) return undefined;
@@ -78,6 +91,7 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
   const [edit, setEdit] = createSignal<ExplorerEdit | null>(null);
   const [inlineError, setInlineError] = createSignal<string | undefined>();
   const [moveNode, setMoveNode] = createSignal<FileTreeNode | null>(null);
+  const [moveConflict, setMoveConflict] = createSignal<string | undefined>();
   const [deleteNode, setDeleteNode] = createSignal<FileTreeNode | null>(null);
   const [menuTarget, setMenuTarget] = createSignal<ExplorerMenuTarget | null>(null);
   let menuAnchor: HTMLSpanElement | undefined;
@@ -574,22 +588,43 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
       }}
     />
     <ExplorerMoveDialog
-      node={moveNode()}
-      onClose={() => setMoveNode(null)}
-      onMove={(target) => {
+      open={moveNode() !== null}
+      onOpenChange={(open) => {
+        if (!open) {
+          setMoveNode(null);
+          setMoveConflict(undefined);
+        }
+      }}
+      sourceName={moveNode()?.name ?? ''}
+      initialDestination={moveNode() ? parentDirectoryPath(moveNode()!.path) : ''}
+      conflictMessage={moveConflict()}
+      onConfirm={(target) => {
         const node = moveNode();
+        const issue = validateMoveDestination(target);
+        if (issue) {
+          setMoveConflict(issue);
+          return;
+        }
+        if (node && target === node.path) {
+          setMoveConflict('Destination must differ from the source path.');
+          return;
+        }
         const currentProject = projectId();
         if (node && currentProject) moveResourcePath(currentProject, node.path, target, String(node.meta?.revision ?? ''));
         setMoveNode(null);
+        setMoveConflict(undefined);
       }}
     />
     <ExplorerDeleteDialog
-      node={deleteNode()}
-      onClose={() => setDeleteNode(null)}
-      onDelete={(recursive) => {
+      open={deleteNode() !== null}
+      onOpenChange={(open) => { if (!open) setDeleteNode(null); }}
+      name={deleteNode()?.name ?? ''}
+      kind={deleteNode()?.kind === 'folder' ? 'folder' : 'file'}
+      recursive={deleteNode()?.kind === 'folder'}
+      onConfirm={() => {
         const node = deleteNode();
         const currentProject = projectId();
-        if (node && currentProject) deleteResourcePath(currentProject, node.path, String(node.meta?.revision ?? ''), recursive);
+        if (node && currentProject) deleteResourcePath(currentProject, node.path, String(node.meta?.revision ?? ''), node.kind === 'folder');
         setDeleteNode(null);
       }}
     />

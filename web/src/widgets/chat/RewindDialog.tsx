@@ -6,6 +6,7 @@ import {
   DialogTitle,
   EmptyState,
   IconButton,
+  InlineNotice,
   Listbox,
   ListboxItem,
   LoadingState,
@@ -71,7 +72,9 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
                 <ul class="grid gap-5 m-0 p-0 list-none"><For each={current.fileChanges}>{(change) => <li class="flex min-w-0 items-center justify-between gap-12 rounded-9 bg-surface-muted px-10 py-8"><code class="overflow-hidden text-ellipsis whitespace-nowrap text-11 text-text-primary">{change.path}</code><span class="shrink-0 text-11 text-text-muted">{change.kind === 'write' ? 'Restore write' : 'Restore edit'}</span></li>}</For></ul>
               </Show>
             </section>
-            <p class="mt-18 mb-0 rounded-10 border border-danger-border bg-surface px-12 py-10 text-12 leading-15 !text-danger">This is a destructive action. Do not repeat it after confirming; if the result is unknown, reopen the session to check.</p>
+            <InlineNotice class="mt-18" tone="danger" role="alert" title="Destructive action">
+              This is a destructive action. Do not repeat it after confirming; if the result is unknown, reopen the session to check.
+            </InlineNotice>
             <RewindPanelActions><Button onClick={close}>Cancel</Button><Button variant="danger" onClick={executeRewind}>Rewind session and files</Button></RewindPanelActions>
           </>;
         }}</Match>
@@ -83,11 +86,35 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
         </Match>
         <Match when={state().kind === 'delivery_unknown' && state()} keyed>{(current) => {
           if (current.kind !== 'delivery_unknown') return null;
-          return <RewindPanelState class="justify-items-start rounded-12 border border-warning-border bg-surface text-left" role="alert"><strong class="text-15 text-text-primary">Rewind result not confirmed</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">{current.detail}</p><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">To avoid duplicate changes, re-execution is not offered. Close this window and reopen the session to check the history and files.</p><Button class="mt-18" onClick={close}>Got it</Button></RewindPanelState>;
+          return (
+            <RewindPanelState class="justify-items-start text-left">
+              <InlineNotice tone="warning" role="alert" title="Rewind result not confirmed">
+                <p class="mt-5 mb-0">{current.detail}</p>
+                <p class="mt-5 mb-0">To avoid duplicate changes, re-execution is not offered. Close this window and reopen the session to check the history and files.</p>
+                <Button class="mt-18" onClick={close}>Got it</Button>
+              </InlineNotice>
+            </RewindPanelState>
+          );
         }}</Match>
         <Match when={state().kind === 'error' && state()} keyed>{(current) => {
           if (current.kind !== 'error') return null;
-          return <RewindPanelState role="alert"><strong class="text-15 text-text-primary">{current.stage === 'execute' ? 'Rewind incomplete' : 'Could not generate rewind preview'}</strong><p class="mt-5 mb-0 text-13 leading-155 text-text-secondary">{current.detail}</p><RewindPanelActions><Button onClick={close}>Close</Button><Show when={current.stage !== 'execute'}><Button variant="primary" onClick={restart}>Query again</Button></Show></RewindPanelActions></RewindPanelState>;
+          return (
+            <RewindPanelState>
+              <InlineNotice
+                tone="danger"
+                role="alert"
+                title={current.stage === 'execute' ? 'Rewind incomplete' : 'Could not generate rewind preview'}
+              >
+                <p class="mt-5 mb-0">{current.detail}</p>
+                <RewindPanelActions>
+                  <Button onClick={close}>Close</Button>
+                  <Show when={current.stage !== 'execute'}>
+                    <Button variant="primary" onClick={restart}>Query again</Button>
+                  </Show>
+                </RewindPanelActions>
+              </InlineNotice>
+            </RewindPanelState>
+          );
         }}</Match>
       </Switch>
     </section>
