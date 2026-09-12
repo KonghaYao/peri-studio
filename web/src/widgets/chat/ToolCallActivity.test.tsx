@@ -194,14 +194,14 @@ describe('ToolCallActivity', () => {
     expect(screen.getByText(/of about 5.1 KB/)).toBeInTheDocument();
   });
 
-  it('shows a cwd-relative label but opens the original absolute file path', () => {
+  it('shows a basename file link but opens the original absolute file path', () => {
     render(() => <ToolCallActivity projectCwd="/workspace/project" toolCall={{
       ...base,
       name: 'Read',
       kind: 'read',
       arguments: { file_path: '/workspace/project/web/src/main.ts' },
     }} />);
-    expect(screen.getByTestId('tool-activity-file-link')).toHaveTextContent('web/src/main.ts');
+    expect(screen.getByTestId('tool-activity-file-link')).toHaveTextContent('main.ts');
     fireEvent.click(screen.getByTestId('tool-activity-file-link'));
     expect(openWorkspaceFromTool).toHaveBeenCalledWith('/workspace/project/web/src/main.ts');
   });

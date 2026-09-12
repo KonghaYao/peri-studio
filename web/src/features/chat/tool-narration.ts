@@ -1,5 +1,5 @@
 import type { ToolCallInfo, ToolCallKind } from '@/entities/chat/chat-view';
-import { formatWorkspacePathLabel, formatToolDisplayName } from '@/features/chat/tool-file-link';
+import { formatToolDisplayName } from '@/features/chat/tool-file-link';
 
 export type ToolCardKind =
   | 'read-file'
@@ -286,7 +286,7 @@ export function narrateToolCall(
     const verbDone = kind === 'write' ? 'Wrote' : kind === 'edit' ? 'Edited' : 'Opened';
     filePreview = {
       prefix: running ? `${verbRunning} ` : `${verbDone} `,
-      pathLabel: formatWorkspacePathLabel(pathFromArgs, options.projectCwd),
+      pathLabel: extractFileName({ file_path: pathFromArgs }),
       path: pathFromArgs,
     };
     const range = extractLineRange(tool.arguments);

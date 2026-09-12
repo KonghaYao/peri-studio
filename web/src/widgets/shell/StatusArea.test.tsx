@@ -45,7 +45,7 @@ describe('StatusArea', () => {
     expect(screen.getByRole('tabpanel')).toHaveTextContent('Agent');
     expect(screen.getByRole('tabpanel')).toHaveTextContent('Workflow');
     await fireEvent.click(screen.getByRole('tab', { name: /Changes/ }));
-    expect(screen.getByRole('tabpanel')).toHaveTextContent('src/app.ts');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('app.ts');
     expect(screen.getByRole('tabpanel').querySelector('[data-file-icon="typescript"]')).toBeInTheDocument();
   });
 
@@ -60,7 +60,7 @@ describe('StatusArea', () => {
     expect(screen.queryByRole('tab', { name: /Todo/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /Async/ })).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Changes/ })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tabpanel')).toHaveTextContent('src/app.ts');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('app.ts');
   });
 
   it('keeps each todo state scannable without enlarging its row', () => {
@@ -246,7 +246,7 @@ describe('StatusArea', () => {
     expect(screen.queryByRole('tab', { name: /Async/ })).not.toBeInTheDocument();
   });
 
-  it('shows absolute changed paths under the project cwd as full relative paths', () => {
+  it('shows changed files as icon plus basename while keeping the full path on hover', () => {
     const path = '/workspace/project/web/src/widgets/shell/StatusArea.tsx';
     const entries = [{
       ...changedEntries[0],
@@ -259,12 +259,12 @@ describe('StatusArea', () => {
 
     render(() => <StatusArea active plan={[]} activities={[]} entries={entries} projectCwd="/workspace/project" />);
 
-    expect(screen.getByRole('tabpanel')).toHaveTextContent('web/src/widgets/shell/StatusArea.tsx');
-    expect(screen.getByRole('tabpanel')).not.toHaveTextContent('/workspace/project');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('StatusArea.tsx');
+    expect(screen.getByRole('tabpanel')).not.toHaveTextContent('web/src/widgets/shell');
     expect(screen.getByTitle(path)).toBeInTheDocument();
   });
 
-  it('keeps absolute changed paths outside the project cwd unchanged', () => {
+  it('shows basename for changed paths outside the project cwd', () => {
     const path = '/workspace/other/src/main.ts';
     const entries = [{
       ...changedEntries[0],
@@ -277,7 +277,8 @@ describe('StatusArea', () => {
 
     render(() => <StatusArea active plan={[]} activities={[]} entries={entries} projectCwd="/workspace/project" />);
 
-    expect(screen.getByRole('tabpanel')).toHaveTextContent(path);
-    expect(screen.getByTitle(path)).toHaveTextContent(path);
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('main.ts');
+    expect(screen.getByRole('tabpanel')).not.toHaveTextContent('/workspace/other');
+    expect(screen.getByTitle(path)).toBeInTheDocument();
   });
 });

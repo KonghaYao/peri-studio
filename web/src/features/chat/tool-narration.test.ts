@@ -37,20 +37,20 @@ describe('tool-narration', () => {
     expect(narrateToolCall({ ...base, name: 'Read', kind: 'read', arguments: { file_path: '/workspace/src/main.ts', offset: 10, limit: 5 } }, { tone: 'done', statusLabel: 'Done', running: false, terminal: true, projectCwd: '/workspace' })).toMatchObject({
       kind: 'read-file',
       subtitle: 'Lines 10-14',
-      filePreview: { prefix: 'Opened ', pathLabel: 'src/main.ts', path: '/workspace/src/main.ts' },
+      filePreview: { prefix: 'Opened ', pathLabel: 'main.ts', path: '/workspace/src/main.ts' },
     });
     expect(narrateToolCall({ ...base, name: 'WebSearch', kind: 'other', arguments: { query: 'SolidJS signals' } }, { tone: 'running', statusLabel: 'Running', running: true, terminal: false }).title).toBe('Searching SolidJS signals');
     expect(narrateToolCall({ ...base, name: 'AskUserQuestion', kind: 'other', arguments: { questions: [] } }, { tone: 'done', statusLabel: 'Done', running: false, terminal: true }).title).toBe('Asked question');
   });
 
-  it('keeps cwd-external absolute and existing relative preview paths unchanged', () => {
+  it('uses basename for file preview labels while keeping the original path', () => {
     const options = { tone: 'done', statusLabel: 'Done', running: false, terminal: true, projectCwd: '/workspace/project' };
     expect(narrateToolCall({ ...base, name: 'Read', kind: 'read', arguments: { file_path: '/workspace/other/main.ts' } }, options).filePreview).toMatchObject({
-      pathLabel: '/workspace/other/main.ts',
+      pathLabel: 'main.ts',
       path: '/workspace/other/main.ts',
     });
     expect(narrateToolCall({ ...base, name: 'Read', kind: 'read', arguments: { file_path: 'src/main.ts' } }, options).filePreview).toMatchObject({
-      pathLabel: 'src/main.ts',
+      pathLabel: 'main.ts',
       path: 'src/main.ts',
     });
   });

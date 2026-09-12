@@ -24,6 +24,7 @@ import { cn } from '../lib/cn';
 import { CopyButton } from './CopyButton';
 import { IconButton } from './Button';
 import { Shimmer } from './Shimmer';
+import { VSCodeFileIcon } from './VSCodeFileIcon';
 
 export type ToolCallStatus = 'queued' | 'running' | 'done' | 'failed' | 'approval' | 'neutral';
 
@@ -228,15 +229,17 @@ export const ToolActivityRow: Component<ToolActivityRowProps> = (props) => {
                 )}
               >
                 {(preview) => (
-                  <span class="tool-call-row-title inline-flex min-w-0 items-baseline gap-5 overflow-hidden text-12 font-normal text-content-muted" title={preview().path}>
-                    <span class="shrink-0">{preview().prefix}</span>
+                  <span class="tool-call-row-title inline-flex min-w-0 items-center overflow-hidden text-12 font-normal text-content-muted" title={preview().path}>
                     <button
                       type="button"
                       data-testid="tool-activity-file-link"
-                      class="tool-call-row-file-link inline-block min-w-0 max-w-full truncate align-bottom text-link hover:underline hover:underline-offset-2"
+                      class="tool-call-row-file-link inline-flex min-w-0 max-w-full items-center gap-4 text-link hover:underline hover:underline-offset-2"
+                      aria-label={`${preview().prefix}${preview().pathLabel}`}
+                      title={preview().path}
                       onClick={openPath}
                     >
-                      {preview().pathLabel}
+                      <VSCodeFileIcon path={preview().path} size={14} />
+                      <span class="min-w-0 truncate">{preview().pathLabel}</span>
                     </button>
                   </span>
                 )}

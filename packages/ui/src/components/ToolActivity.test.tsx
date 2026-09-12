@@ -50,6 +50,32 @@ describe('ToolActivity', () => {
     expect(runningIcon).not.toHaveClass('bg-surface');
   });
 
+  it('renders a file preview as icon plus basename without the directory', () => {
+    let opened = 0;
+    render(() => (
+      <ToolActivityGroup>
+        <ToolActivityRow
+          title=""
+          status="done"
+          filePreview={{
+            prefix: 'Edited ',
+            pathLabel: 'project-sidebar-model.ts',
+            path: 'web/src/widgets/sidebar/project-sidebar-model.ts',
+            onOpen: () => { opened += 1; },
+          }}
+        />
+      </ToolActivityGroup>
+    ));
+
+    const link = screen.getByTestId('tool-activity-file-link');
+    expect(link).toHaveTextContent('project-sidebar-model.ts');
+    expect(link).not.toHaveTextContent('web/src/widgets/sidebar');
+    expect(link).toHaveAccessibleName('Edited project-sidebar-model.ts');
+    expect(link.querySelector('[data-file-icon]')).toBeTruthy();
+    link.click();
+    expect(opened).toBe(1);
+  });
+
   it('applies shimmer to the title while running', () => {
     render(() => (
       <ToolActivityGroup>

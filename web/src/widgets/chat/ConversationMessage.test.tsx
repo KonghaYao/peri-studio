@@ -228,7 +228,7 @@ describe('ConversationMessage', () => {
       blocks: [{ kind: 'tool_call', id: 'tool-1', toolCall: tool }],
     })} />);
 
-    expect(screen.getByTestId('tool-activity-file-link')).toHaveTextContent('web/src/main.ts');
+    expect(screen.getByTestId('tool-activity-file-link')).toHaveTextContent('main.ts');
   });
 
   it('shows skeleton thinking gap only while the turn is still streaming', () => {

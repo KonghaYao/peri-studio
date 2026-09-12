@@ -4,7 +4,6 @@ import type { ChatEntry } from '@/entities/chat/chat-view';
 import { selectChatFileChanges } from '@/entities/chat/chat-file-changes';
 import { selectAsyncStatusItems } from '@/features/chat/async-status-items';
 import { mapPlanStepStatus } from '@/features/chat/plan-step-status';
-import { formatWorkspacePathLabel } from '@/features/chat/tool-file-link';
 import { Ban, Bot, Check, Circle, CircleAlert, GitBranch, Info, ListTodo, Pause, Workflow, X } from 'lucide-solid';
 import {
   Badge,
@@ -16,6 +15,7 @@ import {
   TaskItemFile,
   VSCodeFileIcon,
   cn,
+  filePathBasename,
   statusAreaPanelClass,
   statusAreaRowClass,
   statusAreaTabTriggerClass,
@@ -217,7 +217,7 @@ export function StatusArea(props: StatusAreaProps) {
                     <TaskItem class={cn(statusAreaRowClass, 'font-mono text-12 text-content-primary')}>
                       <VSCodeFileIcon path={change.path} size={16} class="size-16 shrink-0" />
                       <TaskItemFile class="min-w-0 flex-1 truncate border-0 bg-transparent px-0 py-0" title={change.path}>
-                        {formatWorkspacePathLabel(change.path, props.projectCwd)}
+                        {filePathBasename(change.path)}
                       </TaskItemFile>
                       <span class="shrink-0 text-10 uppercase tracking-wide text-content-muted">{change.operation}</span>
                     </TaskItem>
