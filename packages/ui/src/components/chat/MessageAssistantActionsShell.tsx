@@ -34,7 +34,9 @@ export const MessageAssistantActionsShell: Component<MessageAssistantActionsShel
         data-testid="conversation-message-actions"
         class={cn(
           'conversation-message__actions absolute top-full left-0 z-20 min-h-28 gap-8 rounded-lg border border-border-subtle bg-surface-overlay px-8 py-4 text-content-muted shadow-overlay transition-opacity duration-150',
-          local.open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0',
+          local.open
+            ? 'pointer-events-auto opacity-100'
+            : 'pointer-events-none opacity-0 group-hover/message:pointer-events-auto group-hover/message:opacity-100 group-focus-within/message:pointer-events-auto group-focus-within/message:opacity-100',
           local.class,
         )}
         {...rest}

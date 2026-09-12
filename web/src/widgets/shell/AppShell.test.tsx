@@ -40,7 +40,7 @@ describe('AppShell desktop sidebar', () => {
     for (const utility of sizingUtilities) {
       expect(source.includes(utility)).toBe(false);
     }
-    expect(source).toMatch(/sidebar-resize-handle--dragging/);
+    expect(source).toMatch(/cursor-col-resize/);
   });
 
   it('resizes within accessible keyboard and pointer limits', () => {
@@ -53,11 +53,11 @@ describe('AppShell desktop sidebar', () => {
     expect(handle).toHaveAttribute('aria-valuenow', '266');
 
     fireEvent.pointerDown(grip, { button: 0 });
-    expect(handle).toHaveClass('sidebar-resize-handle--dragging');
+    expect(handle).toHaveClass('cursor-col-resize');
     fireEvent.pointerMove(window, { clientX: 600 });
     expect(handle).toHaveAttribute('aria-valuenow', '480');
     fireEvent.pointerUp(window);
-    expect(handle).not.toHaveClass('sidebar-resize-handle--dragging');
+    expect(handle).not.toHaveClass('cursor-col-resize');
     expect(shell().style.gridTemplateColumns).toBe('480px minmax(0, 1fr) auto');
   });
 

@@ -176,6 +176,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   const terminalSurfaceParked = () => holdTerminalSurface() && !terminalPanelVisible();
   const showPanel = () => !!view();
   const panelSurfaceClass = 'ui-workbench-panel-surface';
+  const terminalParkedClass = 'fixed z-0 top-0 left-0 w-0 h-0 min-h-0 overflow-hidden opacity-0 pointer-events-none border-0 p-0 shadow-none';
   const panelHeaderActions = () => (
     <>
       <Show when={view() === 'explorer' || view() === 'scm'}>
@@ -238,7 +239,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
       <Show when={!props.compact && holdTerminalSurface()}>
         <ResourceFloatingPanel
           data-testid="terminal-floating-panel"
-          class={cn(panelSurfaceClass, terminalSurfaceParked() && 'terminal-workbench-park')}
+          class={cn(panelSurfaceClass, terminalSurfaceParked() && terminalParkedClass)}
           widthProfile="terminal"
         >
           <TerminalPanel onClosePanel={close} visible={terminalPanelVisible()} />
@@ -280,7 +281,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
       </Dialog>
     </Show>
     <Show when={props.compact && terminalSurfaceParked()}>
-      <div data-testid="terminal-parked-panel" class={cn(panelSurfaceClass, 'terminal-workbench-park')}>
+      <div data-testid="terminal-parked-panel" class={cn(panelSurfaceClass, terminalParkedClass)}>
         <TerminalPanel onClosePanel={close} visible={false} />
       </div>
     </Show>

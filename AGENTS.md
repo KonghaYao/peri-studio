@@ -140,12 +140,12 @@ cd ui-sandbox && bun run typecheck
 ```
 web/base.css
   → @peri/ui/styles.css（tokens → theme → primitives → extra）
-  → web/primitives.css（应用级 hover 编排，极少）
-  → web/extra.css（应用级例外，~50 行；有 baseline 门禁）
+  → web/primitives.css（空文件）
+  → web/extra.css（空文件；有 baseline 门禁）
 ```
 
 - **T3 壳层 CSS** 一律在 `packages/ui/src/styles/extra.css`（Composer、Transcript、Workbench、Rewind…）。
-- **web/extra.css** 只放无法下沉的例外（侧栏拖拽光标、terminal park 等）；改内容须更新 `EXTRA_CSS_BASELINE`。
+- **web/extra.css** 与 **web/primitives.css** 不持有业务自定义规则；改 extra.css 须更新 `EXTRA_CSS_BASELINE`。
 - **禁止**在 widget JSX 使用无 CSS 定义的 BEM hook；测试用 `data-testid`，布局用 Tailwind。
 
 #### JSX 写法（`widgets` / `pages` / `features` / `app`）

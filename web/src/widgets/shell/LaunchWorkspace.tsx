@@ -24,7 +24,7 @@ export function LaunchWorkspace(props: LaunchWorkspaceProps) {
       : 'Create a project first; Peri Studio saves and restores ACP sessions within it.';
 
   return (
-    <ChatEmptyWorkspace class="launch-workspace" title={activeProjects().length > 0 ? CHAT_EMPTY_TITLE : undefined} hint={activeProjects().length > 0 ? EMPTY_HINT : undefined}>
+    <ChatEmptyWorkspace title={activeProjects().length > 0 ? CHAT_EMPTY_TITLE : undefined} hint={activeProjects().length > 0 ? EMPTY_HINT : undefined}>
       <Show
         when={activeProjects().length === 0}
         fallback={(

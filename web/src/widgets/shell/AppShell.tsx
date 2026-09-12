@@ -188,7 +188,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
       </ProjectDrawer>
       <Show when={!mobile() && sidebarOpen()}>
         <div
-          class={`sidebar-resize-handle group pointer-events-none absolute z-35 top-0 bottom-0 w-12 -translate-x-1/2 touch-none ${sidebarResizing() ? 'sidebar-resize-handle--dragging' : ''}`}
+          class={`group pointer-events-none absolute z-35 top-0 bottom-0 w-12 -translate-x-1/2 touch-none${sidebarResizing() ? ' cursor-col-resize select-none' : ''}`}
           style={{ left: `${sidebarColumnWidth()}px` }}
           role="separator"
           aria-label="Resize sidebar"
@@ -201,7 +201,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
           onKeyDown={resizeSidebarWithKeyboard}
         ><span
           aria-hidden="true"
-          class="absolute top-0 bottom-0 left-5 w-2 cursor-col-resize rounded-full bg-transparent transition-colors pointer-events-auto group-hover:bg-sidebar-resize-handle-hover group-focus-visible:bg-sidebar-resize-handle-hover"
+          class={`absolute top-0 bottom-0 left-5 w-2 cursor-col-resize rounded-full bg-transparent transition-colors pointer-events-auto group-hover:bg-sidebar-resize-handle-hover group-focus-visible:bg-sidebar-resize-handle-hover${sidebarResizing() ? ' bg-sidebar-resize-handle-hover' : ''}`}
           onPointerDown={startSidebarResize}
         /></div>
       </Show>

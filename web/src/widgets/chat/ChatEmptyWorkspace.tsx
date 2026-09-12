@@ -18,7 +18,7 @@ export function ChatEmptyWorkspace(props: Props) {
     <div
       {...div}
       data-testid="chat-empty-workspace"
-      class={cn('chat-empty-workspace flex min-h-0 flex-1 flex-col items-center overflow-x-hidden overflow-y-auto px-24 pb-20 max-narrow:px-10 max-narrow:pb-10', local.class)}
+      class={cn('flex min-h-0 flex-1 flex-col items-center overflow-x-hidden overflow-y-auto px-24 pb-20 max-narrow:px-10 max-narrow:pb-10', local.class)}
     >
       <div class="flex w-full max-w-(--composer-launch-max) flex-1 flex-col items-center justify-center">
         {local.title && (

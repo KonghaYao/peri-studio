@@ -151,15 +151,15 @@ web/src/
 
 1. `web/src/styles/base.css` — 全局 reset、a11y
 2. `@peri/ui/styles.css` — `tokens` → `theme` → `primitives` → **`extra.css`（T3 壳层主战场）**
-3. `web/src/styles/primitives.css` — 极少应用级编排（message hover、composer safe-bottom）
-4. `web/src/styles/extra.css` — **仅**无法下沉的 web 例外（~50 行；`EXTRA_CSS_BASELINE` 门禁）
+3. `web/src/styles/primitives.css` — 空文件；业务层不再写自定义 CSS
+4. `web/src/styles/extra.css` — 空文件（`EXTRA_CSS_BASELINE` 门禁）
 
 ### 类名约定
 
 | 范围 | 约定 | 示例 |
 |------|------|------|
 | T3 package | `ui-<domain>-*` | `ui-composer-surface-v2`、`ui-chat-column`、`ui-rewind-panel__state` |
-| Web 应用例外 | 尽量少；有 CSS 才加 class | `sidebar-resize-handle--dragging`、`terminal-workbench-park` |
+| Web 应用例外 | 尽量少；有 CSS 才加 class | 业务层 extra/primitives 保持空文件 |
 | Widget JSX | Tailwind + T3 导出类 | `ui-chat-column gap-8`；**禁止** `foo__bar` 无规则占位 |
 
 ### 何时写 `extra.css`

@@ -63,10 +63,10 @@ export function useComposerSlash(options: ComposerSlashOptions) {
     setCaret(element.selectionStart ?? element.value.length);
   }
 
-  /** 失焦：焦点离开 composer-wrap 才收起菜单。 */
+  /** 失焦：焦点离开 Composer 容器才收起菜单。 */
   function onBlur() {
     queueMicrotask(() => {
-      if (!document.activeElement?.closest('.composer-wrap')) {
+      if (!document.activeElement?.closest('[data-testid="composer-wrap"]')) {
         setBrowseSkills(false);
         setMenuDismissed(true);
       }

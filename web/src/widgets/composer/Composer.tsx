@@ -159,7 +159,7 @@ export function Composer(props: {
     <div
       data-testid="composer-wrap"
       class={cn(
-        'composer-wrap relative w-full',
+        'relative w-full pb-(--composer-safe-bottom)',
         !centered() && 'ui-chat-column',
       )}
     >

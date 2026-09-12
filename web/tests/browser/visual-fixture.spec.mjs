@@ -140,10 +140,6 @@ test('assistant actions stay contextual and tool rows have no divider', async ({
   expect(Math.abs(layout.messageHeight - layout.surfaceHeight)).toBeLessThanOrEqual(1);
   await actions.getByRole('button', { name: 'Copy answer' }).focus();
   await expect(actions).toHaveCSS('opacity', '1');
-  expect(await page.evaluate(() => [...document.styleSheets].some((sheet) => {
-    try { return [...sheet.cssRules].some((rule) => rule.cssText.includes('.conversation-message--assistant:hover')); }
-    catch { return false; }
-  }))).toBe(true);
   await expect(message.getByTestId('tool-activity-row').first()).toHaveCSS('border-width', '0px');
 });
 
