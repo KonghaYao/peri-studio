@@ -149,7 +149,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
       title: 'Chat',
       items: [
         { id: 'markdown', label: 'Markdown' },
-        { id: 'user-bubble', label: 'User bubble' },
+        { id: 'reasoning', label: 'Reasoning' },
       ],
     },
     {

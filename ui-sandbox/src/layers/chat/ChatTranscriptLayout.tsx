@@ -1,3 +1,4 @@
+import { UserBubble } from '@/components/blocks';
 import { FilePen, Search, Terminal } from 'lucide-solid';
 import { ToolActivityGroup, ToolActivityRow, TranscriptReasoning } from '@peri/ui';
 
@@ -5,11 +6,9 @@ import { ToolActivityGroup, ToolActivityRow, TranscriptReasoning } from '@peri/u
 export function ChatTranscriptLayout() {
   return (
     <div class="flex w-full flex-col gap-16">
-      <div class="flex justify-end">
-        <div class="max-w-(--chat-bubble-max) rounded-xl border-x border-b border-border-subtle bg-surface-overlay px-12 py-8 text-13 leading-normal text-content-primary">
-          Check the build entry first, then constrain the fix to the browser adapter.
-        </div>
-      </div>
+      <UserBubble>
+        Check the build entry first, then constrain the fix to the browser adapter.
+      </UserBubble>
       <div class="text-13 leading-normal text-content-primary">
         The failure comes from a browser-only import crossing the build boundary. I isolated the import and verified the production bundle.
       </div>

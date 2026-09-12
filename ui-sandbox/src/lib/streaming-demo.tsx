@@ -20,8 +20,10 @@ export function createStreamingReveal(
   const chunkSize = options?.chunkSize ?? 4;
   const intervalMs = options?.intervalMs ?? 28;
 
-  const [text, setText] = createSignal('');
+  // 默认展示完整内容；Play 从空串重新逐字揭示，Reset 恢复完整静态视图。
+  const [text, setText] = createSignal(getSource());
   const [playing, setPlaying] = createSignal(false);
+  const [streamCycleDone, setStreamCycleDone] = createSignal(false);
 
   let timer: ReturnType<typeof setInterval> | undefined;
 
@@ -34,34 +36,39 @@ export function createStreamingReveal(
 
   const reset = () => {
     stopTimer();
-    setText('');
+    setText(getSource());
     setPlaying(false);
+    setStreamCycleDone(false);
   };
 
   const play = () => {
     const full = getSource();
-    reset();
     if (!full) return;
 
+    stopTimer();
+    setText('');
     setPlaying(true);
+    setStreamCycleDone(false);
+
     let index = 0;
-    timer = setInterval(() => {
+    const tick = () => {
       index = Math.min(full.length, index + chunkSize);
       setText(full.slice(0, index));
       if (index >= full.length) {
         stopTimer();
         setPlaying(false);
+        setStreamCycleDone(true);
       }
-    }, intervalMs);
+    };
+
+    tick();
+    timer = setInterval(tick, intervalMs);
   };
 
   onCleanup(stopTimer);
 
-  const streaming = () => playing() || (text().length > 0 && text().length < getSource().length);
-  const complete = () => {
-    const full = getSource();
-    return full.length > 0 && text().length >= full.length;
-  };
+  const streaming = () => playing();
+  const complete = () => streamCycleDone() && !playing();
 
   return { text, streaming, playing, complete, play, reset };
 }
@@ -145,7 +152,7 @@ export const StreamingMarkdownDemo: Component<StreamingMarkdownDemoProps> = (pro
         onPlay={reveal.play}
         onReset={reveal.reset}
       />
-      <Markdown source={reveal.text()} streaming={reveal.streaming()} class={props.class} />
+      <Markdown source={reveal.text} streaming={reveal.streaming()} class={props.class} />
     </>
   );
 };

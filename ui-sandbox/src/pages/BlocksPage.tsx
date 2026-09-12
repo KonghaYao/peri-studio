@@ -10,7 +10,6 @@ import {
   GitGraphPanel,
   SlashMenu,
   TokenUsageMeter,
-  UserBubble,
 } from '@/components/blocks';
 import { Folder } from 'lucide-solid';
 import { MARKDOWN_LAB_SAMPLE } from '@/fixtures/markdown-lab-sample';
@@ -59,9 +58,8 @@ export function BlocksPage() {
           </div>
         </DemoSection>
 
-        <DemoSection id="user-bubble" title="UserBubble · Reasoning" description="用户气泡与 Thinking 折叠块。">
+        <DemoSection id="reasoning" title="Reasoning" description="Thinking 折叠块与流式揭示。">
           <div class="flex max-w-(--chat-content-max) flex-col gap-16">
-            <UserBubble>Check the session recovery path so a restart never treats an old runtime as still alive.</UserBubble>
             <StreamingReasoningBlock />
           </div>
         </DemoSection>

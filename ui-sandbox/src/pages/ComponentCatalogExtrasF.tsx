@@ -1,5 +1,6 @@
 import { createSignal, For, Show } from 'solid-js';
 import { showCatalogSection } from '@/catalog/catalog-section';
+import { UserBubble } from '@/components/blocks';
 import {
   Attachment,
   AttachmentEmpty,
@@ -12,8 +13,6 @@ import {
   Attachments,
   Avatar,
   AvatarFallback,
-  Bubble,
-  BubbleContent,
   Button,
   ChainOfThought,
   ChainOfThoughtContent,
@@ -131,14 +130,10 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'bubble')}>
-      <CatalogDemo id="bubble" title="Bubble" description="消息气泡面：变体与对齐。">
+      <CatalogDemo id="bubble" title="Bubble" description="用户消息气泡（blocks UserBubble）；助手正文为无气泡文流。">
         <div class="flex flex-col gap-12">
-          <Bubble variant="primary" align="end">
-            <BubbleContent>User message on the end side.</BubbleContent>
-          </Bubble>
-          <Bubble variant="muted" align="start">
-            <BubbleContent>Assistant reply on the start side.</BubbleContent>
-          </Bubble>
+          <UserBubble>User message on the end side.</UserBubble>
+          <p class="m-0 text-13 leading-normal text-content-primary">Assistant reply stays plain text in the transcript.</p>
         </div>
       </CatalogDemo>
       </Show>
@@ -150,9 +145,7 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
             <Avatar class="size-32"><AvatarFallback>U</AvatarFallback></Avatar>
           </MessageAvatar>
           <MessageContent>
-            <Bubble variant="primary" align="end">
-              <BubbleContent>How does session recovery work?</BubbleContent>
-            </Bubble>
+            <UserBubble>How does session recovery work?</UserBubble>
           </MessageContent>
         </Message>
         <Message from="assistant" class="mt-12">
@@ -162,12 +155,8 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
           <MessageContent>
             <MessageBranch defaultBranch={0}>
               <MessageBranchContent>
-                <Bubble variant="muted" align="start">
-                  <BubbleContent>Server restarts clear runtime; chat/load rebuilds from ACP.</BubbleContent>
-                </Bubble>
-                <Bubble variant="muted" align="start">
-                  <BubbleContent>Alternate answer: use session/load with exact ACP session id.</BubbleContent>
-                </Bubble>
+                <p class="m-0 text-13 leading-normal text-content-primary">Server restarts clear runtime; chat/load rebuilds from ACP.</p>
+                <p class="m-0 text-13 leading-normal text-content-primary">Alternate answer: use session/load with exact ACP session id.</p>
               </MessageBranchContent>
               <MessageToolbar>
                 <MessageBranchSelector>
@@ -196,9 +185,12 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
                   <MessageScrollerItem messageId={m.id} scrollAnchor={m.role === 'user'}>
                     <Message align={m.role === 'user' ? 'end' : 'start'}>
                       <MessageContent>
-                        <Bubble variant={m.role === 'user' ? 'primary' : 'muted'} align={m.role === 'user' ? 'end' : 'start'}>
-                          <BubbleContent>{m.text}</BubbleContent>
-                        </Bubble>
+                        <Show
+                          when={m.role === 'user'}
+                          fallback={<p class="m-0 text-13 leading-normal text-content-primary">{m.text}</p>}
+                        >
+                          <UserBubble>{m.text}</UserBubble>
+                        </Show>
                       </MessageContent>
                     </Message>
                   </MessageScrollerItem>
