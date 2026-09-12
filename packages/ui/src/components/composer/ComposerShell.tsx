@@ -1,4 +1,4 @@
-import { children, createEffect, createSignal, For, Show, splitProps, type Component, type JSX } from 'solid-js';
+import { children, createEffect, createSignal, For, onCleanup, Show, splitProps, type Component, type JSX } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 import { cn } from '../../lib/cn';
 import { ComposerAttachmentChip } from './ComposerAttachmentChip';
@@ -22,6 +22,7 @@ import {
   COMPOSER_EXPANDED_FIELD_MAX_HEIGHT_PX,
   COMPOSER_FIELD_LINE_HEIGHT_PX,
   composerShellExpanded,
+  composerSoftWrapsAtWidth,
 } from './composer-shell-utils';
 import { Textarea } from '../Textarea';
 
@@ -114,6 +115,9 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
   const [wrapped, setWrapped] = createSignal(false);
   const [internalDraft, setInternalDraft] = createSignal(local.draft ?? '');
   let fieldRef: HTMLTextAreaElement | undefined;
+  let compactFieldWidth = 0;
+  let widthProbe: HTMLSpanElement | undefined;
+  let layoutScheduled = false;
 
   const attachments = () => local.attachments ?? [];
   const attachmentLayout = () => local.attachmentLayout ?? 'chip';
@@ -130,21 +134,55 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
   const setDraftValue = (value: string) => {
     if (local.draft === undefined) setInternalDraft(value);
     local.onDraftChange?.(value);
-    queueMicrotask(measureField);
+    scheduleFieldLayout();
+  };
+
+  const measureNowrapWidth = (element: HTMLTextAreaElement, value: string) => {
+    if (typeof document === 'undefined' || !value) return 0;
+    const style = getComputedStyle(element);
+    if (!widthProbe) {
+      widthProbe = document.createElement('span');
+      widthProbe.setAttribute('aria-hidden', 'true');
+    }
+    widthProbe.style.cssText = [
+      'position:absolute',
+      'left:-99999px',
+      'top:0',
+      'visibility:hidden',
+      'pointer-events:none',
+      'white-space:pre',
+      `font:${style.font || `${style.fontWeight} ${style.fontSize} / ${style.lineHeight} ${style.fontFamily}`}`,
+      `letter-spacing:${style.letterSpacing}`,
+      `text-transform:${style.textTransform}`,
+      'padding:0',
+      'border:0',
+      'margin:0',
+    ].join(';');
+    widthProbe.textContent = value;
+    if (!widthProbe.isConnected) document.body.appendChild(widthProbe);
+    return widthProbe.getBoundingClientRect().width;
   };
 
   const measureField = () => {
     const element = fieldRef;
-    const value = draftValue();
-    if (!element || !value.trim()) {
+    if (!element) return;
+    const value = element.value || draftValue();
+    if (!value.trim()) {
       setWrapped(false);
       return;
     }
-    if (value.includes('\n')) {
-      setWrapped(false);
-      return;
+    if (value.includes('\n')) return;
+    if (!expanded()) {
+      const width = element.clientWidth;
+      if (width > 0) compactFieldWidth = width;
     }
-    setWrapped(element.scrollHeight > element.clientHeight + 1);
+    const compactWidth = compactFieldWidth || element.clientWidth;
+    setWrapped(composerSoftWrapsAtWidth({
+      draft: value,
+      nowrapWidth: measureNowrapWidth(element, value),
+      compactWidth,
+      currentlyWrapped: wrapped(),
+    }));
   };
 
   const resizeField = () => {
@@ -155,23 +193,37 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
       ? COMPOSER_EXPANDED_FIELD_MAX_HEIGHT_PX
       : COMPOSER_FIELD_LINE_HEIGHT_PX;
     element.style.height = `${Math.min(element.scrollHeight, maxHeight)}px`;
+  };
+
+  const syncFieldLayout = () => {
     measureField();
+    resizeField();
+  };
+
+  const scheduleFieldLayout = () => {
+    if (layoutScheduled) return;
+    layoutScheduled = true;
+    queueMicrotask(() => {
+      layoutScheduled = false;
+      syncFieldLayout();
+    });
   };
 
   createEffect(() => {
     if (local.draft !== undefined) setInternalDraft(local.draft);
-    queueMicrotask(measureField);
+    draftValue();
+    attachments().length;
+    scheduleFieldLayout();
   });
 
-  createEffect(() => {
-    expanded();
-    draftValue();
-    queueMicrotask(resizeField);
+  onCleanup(() => {
+    widthProbe?.remove();
+    widthProbe = undefined;
   });
 
   const bindFieldRef = (element: HTMLTextAreaElement | undefined) => {
     fieldRef = element;
-    queueMicrotask(measureField);
+    scheduleFieldLayout();
   };
 
   const fieldCtx = (): ComposerShellFieldContext => ({

@@ -1,4 +1,18 @@
 import { cn } from '../../lib/cn';
+import { workbenchFixedPanelSurfaceClass } from '../workbench/workbench-layout';
+
+/** Rewind Dialog 浮层遮罩：桌面透明，窄屏与常规 Dialog 一致。 */
+export const rewindDialogOverlayClass = 'bg-transparent max-desk:bg-scrim';
+
+/** Rewind Dialog 贴右浮动壳（桌面 workbench 宽度，窄屏全高紧凑宽）。 */
+export const rewindDialogPanelClass = cn(
+  'fixed left-auto z-61 flex h-auto max-h-none translate-x-0 translate-y-0 flex-col p-0',
+  workbenchFixedPanelSurfaceClass,
+  'max-desk:inset-y-0 max-desk:right-0 max-desk:h-auto max-desk:w-(--container-rewind-compact) max-desk:rounded-none max-desk:border-y-0 max-desk:border-r-0',
+);
+
+/** Rewind 面板可滚动正文区。 */
+export const rewindPanelBodyClass = 'box-border min-h-0 flex-1 overflow-auto px-10 py-10';
 
 /** Rewind 面板居中状态区（loading / empty / success / error）。 */
 export const rewindPanelStateClass = cn(

@@ -1,5 +1,14 @@
 import { Match, Show, Switch, createMemo, onCleanup, onMount } from 'solid-js';
-import { Button, DownloadIcon, FilePreviewPanel, IconButton, InlineNotice, LoadingState } from '@peri/ui';
+import {
+  Button,
+  DownloadIcon,
+  FilePreviewPanel,
+  IconButton,
+  InlineNotice,
+  LoadingState,
+  workbenchPanelChromeHeaderClass,
+  workbenchPanelChromeTitleClass,
+} from '@peri/ui';
 import { X } from 'lucide-solid';
 import {
   closeResourceFilePreview,
@@ -7,8 +16,6 @@ import {
   resourceFilePreview,
   retryResourceFilePreview,
 } from '@/store';
-import { RESOURCE_PANEL_HEADER_CLASS, RESOURCE_PANEL_TITLE_CLASS } from './resource-panel-layout';
-
 function CloseIcon() {
   return <X size={15} strokeWidth={1.7} />;
 }
@@ -38,12 +45,12 @@ export function ResourceFileEditor(props: ResourceFileEditorProps = {}) {
       aria-label={accessibleTitle()}
       data-testid="resource-file-editor"
     >
-      <header class={RESOURCE_PANEL_HEADER_CLASS}>
+      <header class={workbenchPanelChromeHeaderClass}>
         <strong
           data-resource-preview-focus
           tabIndex={-1}
           aria-label={accessibleTitle()}
-          class={RESOURCE_PANEL_TITLE_CLASS}
+          class={workbenchPanelChromeTitleClass}
           title={preview()?.path}
         >
           {basename(preview()?.path ?? '')}

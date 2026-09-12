@@ -29,3 +29,8 @@ export const terminalDockFooterClass = cn(
 );
 
 export const terminalDockStatusClass = 'shrink-0';
+
+/** 终端面板在 workbench 内保持挂载但不可见（避免销毁 PTY 会话）。 */
+export const terminalDockParkedSurfaceClass = cn(
+  'fixed z-0 top-0 left-0 size-0 min-h-0 overflow-hidden opacity-0 pointer-events-none border-0 p-0 shadow-none',
+);

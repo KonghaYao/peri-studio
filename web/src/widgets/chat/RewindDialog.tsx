@@ -13,14 +13,16 @@ import {
   RewindPanelActions,
   RewindPanelState,
   WorkbenchPanelChrome,
+  rewindDialogOverlayClass,
+  rewindDialogPanelClass,
   rewindPanelActionButtonClass,
+  rewindPanelBodyClass,
   rewindPanelLoadingSpinnerClass,
   rewindPanelLoadingStateClass,
   rewindPanelStateClass,
 } from '@peri/ui';
 import { closeRewindFlow, executeRewind, openRewindFlow, previewRewind, rewindFlow } from '@/features/runtime/rewind-assembly';
 import { X } from 'lucide-solid';
-import { RESOURCE_PANEL_SURFACE_CLASS } from '@/widgets/resource/resource-panel-layout';
 
 export function RewindDialog(props: { open: boolean; onClose: () => void }) {
   const state = rewindFlow;
@@ -38,10 +40,10 @@ export function RewindDialog(props: { open: boolean; onClose: () => void }) {
   return <Dialog open={props.open} onOpenChange={(open) => { if (!open && !executing()) close(); }}><DialogContent
     data-resource-panel="rewind"
     dismissible={!executing()}
-    overlayClass="bg-transparent max-desk:bg-scrim"
-    class={`fixed left-auto z-61 flex h-auto max-h-none translate-x-0 translate-y-0 flex-col p-0 ${RESOURCE_PANEL_SURFACE_CLASS} max-desk:inset-y-0 max-desk:right-0 max-desk:h-auto max-desk:w-(--container-rewind-compact) max-desk:rounded-none max-desk:border-y-0 max-desk:border-r-0`}
+    overlayClass={rewindDialogOverlayClass}
+    class={rewindDialogPanelClass}
   ><DialogTitle class="sr-only">Rewind session</DialogTitle><WorkbenchPanelChrome title="Rewind session" actions={<IconButton label="Close rewind panel" size="compact" disabled={executing()} onClick={close} class="border-0 bg-transparent text-text-muted"><X size={14} strokeWidth={1.7} /></IconButton>} />
-    <section class="box-border min-h-0 flex-1 overflow-auto px-10 py-10">
+    <section class={rewindPanelBodyClass}>
       <Switch>
         <Match when={state().kind === 'loading_candidates'}>
           <LoadingState class={rewindPanelLoadingStateClass} spinnerClass={rewindPanelLoadingSpinnerClass} label="Reading rewindable messages" description="Reading user messages from the Peri session history." />

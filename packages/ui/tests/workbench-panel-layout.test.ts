@@ -1,6 +1,7 @@
-import { describe, expect, it, afterEach } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   WORKBENCH_PANEL_DEFAULT_WIDTH,
+  WORKBENCH_PANEL_EDGE_INSET,
   WORKBENCH_PANEL_GRAPH_DEFAULT_WIDTH,
   WORKBENCH_PANEL_GRAPH_MAX_WIDTH,
   WORKBENCH_PANEL_GRAPH_MIN_WIDTH,
@@ -14,10 +15,9 @@ import {
   persistWorkbenchPanelWidth,
   readStoredWorkbenchPanelWidth,
   workbenchFilePreviewLeftOffset,
-  WORKBENCH_PANEL_EDGE_INSET,
-} from './resource-panel-layout';
+} from '../src/components/workbench/workbench-panel-layout';
 
-describe('resource-panel-layout', () => {
+describe('workbench-panel-layout', () => {
   afterEach(() => {
     sessionStorage.clear();
   });

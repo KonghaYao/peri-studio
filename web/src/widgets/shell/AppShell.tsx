@@ -11,7 +11,7 @@ import { ResourceDiffEditor } from '@/widgets/resource/ResourceDiffEditor';
 import { ResourceFileEditor } from '@/widgets/resource/ResourceFileEditor';
 import { ResourceFloatingPanel } from '@/widgets/resource/ResourceFloatingPanel';
 
-import { workbenchFilePreviewLeftOffset } from '@/widgets/resource/resource-panel-layout';
+import { workbenchFilePreviewLeftOffset } from '@peri/ui';
 import { SettingsDialog } from './SettingsDialog';
 import {
   SHELL_SIDEBAR_DEFAULT_WIDTH,

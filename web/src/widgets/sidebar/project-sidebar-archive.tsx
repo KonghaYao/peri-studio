@@ -6,14 +6,15 @@ import type { ProjectSidebarModel } from './project-sidebar-model';
 
 export function ProjectSidebarArchive(props: { model: ProjectSidebarModel }) {
   const { model } = props;
+  const closeArchivedBrowser = () => {
+    model.setArchivedBrowserGlobalOpen(false);
+    model.setArchivedBrowserProjectId(null);
+  };
   return (
     <>
       <ArchivedBrowserDialog
         open={model.archivedBrowserGlobalOpen() || model.archivedBrowserProjectId() !== null}
-        onClose={() => {
-          model.setArchivedBrowserGlobalOpen(false);
-          model.setArchivedBrowserProjectId(null);
-        }}
+        onClose={closeArchivedBrowser}
         projectId={model.archivedBrowserProjectId()}
         projectName={model.archivedBrowserProject()?.name ?? null}
         readOnly={model.readOnly()}
@@ -23,13 +24,13 @@ export function ProjectSidebarArchive(props: { model: ProjectSidebarModel }) {
           () => model.setRestoringProject(projectId),
           () => model.setRestoringProject(null),
           (committed, failed) => model.restoreProject(projectId, committed, failed),
-          () => {},
+          closeArchivedBrowser,
         )}
         onRestoreSession={(sessionId) => runConfirmedMutation(
           () => model.setSessionLifecycleBusy(sessionId),
           () => model.setSessionLifecycleBusy(null),
           (committed, failed) => model.restoreProjectSession(sessionId, committed, failed),
-          () => {},
+          closeArchivedBrowser,
         )}
       />
       {(() => {

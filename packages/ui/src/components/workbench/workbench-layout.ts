@@ -63,6 +63,11 @@ export const workbenchEmbeddedPanelClass = cn(
   'flex h-full w-(--workbench-panel-width) flex-col overflow-hidden bg-surface-overlay',
 );
 
+/** 固定 token 宽度的右侧浮动壳（Rewind 等不接入拖拽宽度的面板）。 */
+export const workbenchFixedPanelSurfaceClass = cn(
+  'inset-y-8 right-52 w-(--workbench-panel-width) overflow-hidden rounded-14 border border-border-subtle bg-surface-overlay shadow-overlay wide:w-(--workbench-panel-width-wide)',
+);
+
 /** 拖拽调宽时挂到 document.body（保留 extra.css 全局 cursor）。 */
 export const WORKBENCH_PANEL_RESIZING_BODY_CLASS = 'ui-workbench-panel-resizing';
 

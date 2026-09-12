@@ -34,6 +34,7 @@ export function Textarea(props: Props) {
   const variant = () => local.variant ?? 'field';
   const shouldAutoResize = () => local.autoResize ?? local.variant === 'field';
   let element: HTMLTextAreaElement | undefined;
+  let composing = false;
   const resize = () => {
     if (!shouldAutoResize() || !element) return;
     element.style.height = 'auto';
@@ -41,8 +42,9 @@ export function Textarea(props: Props) {
   };
   createEffect(() => {
     const next = `${textarea.value ?? ''}`;
-    if (element && element.value !== next) element.value = next;
-    queueMicrotask(resize);
+    // IME 合成中不得回写受控 value，否则会重置合成并与布局测量互相触发。
+    if (element && element.value !== next && !composing) element.value = next;
+    if (!composing) queueMicrotask(resize);
   });
   const control = (
     <textarea
@@ -63,8 +65,14 @@ export function Textarea(props: Props) {
       onKeyDown={(event) => {
         if (typeof textarea.onKeyDown === 'function') textarea.onKeyDown(event);
       }}
+      onCompositionStart={(event) => {
+        composing = true;
+        if (typeof textarea.onCompositionStart === 'function') textarea.onCompositionStart(event);
+      }}
       onCompositionEnd={(event) => {
+        composing = false;
         if (typeof textarea.onCompositionEnd === 'function') textarea.onCompositionEnd(event);
+        queueMicrotask(resize);
       }}
       onSelect={(event) => {
         if (typeof textarea.onSelect === 'function') textarea.onSelect(event);

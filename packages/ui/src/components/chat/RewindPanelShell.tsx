@@ -6,8 +6,11 @@ import {
 } from './rewind-panel-layout';
 
 export {
+  rewindDialogOverlayClass,
+  rewindDialogPanelClass,
   rewindPanelActionButtonClass,
   rewindPanelActionsClass,
+  rewindPanelBodyClass,
   rewindPanelLoadingSpinnerClass,
   rewindPanelLoadingStateClass,
   rewindPanelStateClass,
