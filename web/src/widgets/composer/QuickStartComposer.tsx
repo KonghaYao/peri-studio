@@ -1,8 +1,8 @@
 import { createEffect, createSignal, createUniqueId, Show, type Component } from 'solid-js';
 import {
   Button,
-  ComposerAttachmentButton,
   ComposerInputField,
+  ComposerPlusMenu,
   ComposerSendStopAction,
   ComposerShell,
   type ComposerShellFieldContext,
@@ -56,6 +56,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
   const budgetId = `quick-start-budget-${createUniqueId()}`;
   const uploadDropDescId = `quick-start-upload-drop-${createUniqueId()}`;
   const [projectId, setProjectId] = createSignal(props.initialProjectId || props.projects[0]?.id || '');
+  const [plusOpen, setPlusOpen] = createSignal(false);
   let quickStartSurfaceRef: HTMLDivElement | undefined;
   let uploadFileInputRef: HTMLInputElement | undefined;
   let textareaRef: HTMLTextAreaElement | undefined;
@@ -130,12 +131,17 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
         onSubmit: submit,
       }}
       compactLeading={(
-        <ComposerAttachmentButton
+        <ComposerPlusMenu
+          open={plusOpen()}
+          onOpenChange={setPlusOpen}
           disabled={inputDisabled() || !projectId()}
-          onClick={() => {
-            openComposerUploadFilePicker(uploadFileInputRef);
-            queueMicrotask(() => textareaRef?.focus());
+          upload={{
+            onClick: () => {
+              openComposerUploadFilePicker(uploadFileInputRef);
+              queueMicrotask(() => textareaRef?.focus());
+            },
           }}
+          slashMenu={<></>}
         />
       )}
       compactTrailing={(

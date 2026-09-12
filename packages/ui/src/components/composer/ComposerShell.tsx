@@ -1,4 +1,4 @@
-import { createEffect, createSignal, For, Show, splitProps, type Component, type JSX } from 'solid-js';
+import { children, createEffect, createSignal, For, Show, splitProps, type Component, type JSX } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 import { cn } from '../../lib/cn';
 import { ComposerAttachmentChip } from './ComposerAttachmentChip';
@@ -53,6 +53,15 @@ export type ComposerShellProps = {
   'aria-disabled'?: boolean;
   'data-testid'?: string;
 };
+
+function CompactSlot(props: { class: string; children?: JSX.Element }) {
+  const slot = children(() => props.children);
+  return (
+    <Show when={slot()}>
+      <div class={props.class}>{slot()}</div>
+    </Show>
+  );
+}
 
 function fieldClass(expanded: boolean) {
   return cn(
@@ -227,8 +236,8 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
         </Show>
 
         <div class="ui-composer-surface-v2__body">
-          <Show when={!expanded() && local.compactLeading}>
-            <div class="ui-composer-surface-v2__leading">{local.compactLeading}</div>
+          <Show when={!expanded()}>
+            <CompactSlot class="ui-composer-surface-v2__leading">{local.compactLeading}</CompactSlot>
           </Show>
           <div class="ui-composer-surface-v2__field-slot">
             <Show
@@ -238,8 +247,8 @@ export const ComposerShell: Component<ComposerShellProps> = (props) => {
               <Dynamic component={local.renderField!} ctx={fieldCtx()} {...(local.renderFieldProps ?? {})} />
             </Show>
           </div>
-          <Show when={!expanded() && local.compactTrailing}>
-            <div class="ui-composer-surface-v2__trailing">{local.compactTrailing}</div>
+          <Show when={!expanded()}>
+            <CompactSlot class="ui-composer-surface-v2__trailing">{local.compactTrailing}</CompactSlot>
           </Show>
         </div>
 

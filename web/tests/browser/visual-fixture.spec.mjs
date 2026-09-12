@@ -260,27 +260,12 @@ test('recovery labels disclose trust without header status chrome', async ({ pag
   expect(visibleText).not.toContain('Local server connected');
 });
 
-test('token usage is a quiet graphic and scrollbars share one global style', async ({ page }) => {
+test('production composer stays a wireframe pill and scrollbars share one global style', async ({ page }) => {
   await page.setViewportSize({ width: 631, height: 800 });
   await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
 
-  const usage = page.getByTestId('composer-usage');
-  await expect(usage).toHaveAttribute('aria-label', /Context usage.*Input 12,400.*Output 860.*Cached 9,800/);
-  await expect(usage).toHaveText('');
-  await usage.hover();
-  await expect(page.getByText('Latest request')).toBeVisible();
-  await expect(page.getByText('Input', { exact: true })).toBeVisible();
-  await expect(page.getByText('Output', { exact: true })).toBeVisible();
-  await expect(page.getByText('Cached', { exact: true })).toBeVisible();
-
-  const geometry = await usage.evaluate((element) => ({
-    width: element.getBoundingClientRect().width,
-    height: element.getBoundingClientRect().height,
-    opacity: getComputedStyle(element).opacity,
-  }));
-  expect(geometry.width).toBeLessThanOrEqual(28);
-  expect(geometry.height).toBeLessThanOrEqual(28);
-  expect(Number(geometry.opacity)).toBeLessThanOrEqual(1);
+  await expect(page.getByTestId('composer-usage')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Use suggestion/ })).toHaveCount(0);
 
   const scrollbar = await page.getByTestId('message-list-scroll').evaluate((element) => ({
     color: getComputedStyle(element).scrollbarColor,
@@ -295,7 +280,7 @@ test('sidebar chrome and composer match the compact input shell', async ({ page 
   await page.goto('/visual-fixture.html?scenario=permission-streaming', { waitUntil: 'networkidle' });
 
   // Legacy window toolbar traffic lights removed from sidebar chrome.
-  await expect(page.getByRole('button', { name: 'Add attachment' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Slash commands' })).toBeEnabled();
   await expect(page.getByTestId('composer-runtime')).toBeVisible();
   await expect(page.getByRole('button', { name: /Browse skills/ })).toHaveCount(0);
   await expect(page.getByTestId('composer-action')).toBeVisible();

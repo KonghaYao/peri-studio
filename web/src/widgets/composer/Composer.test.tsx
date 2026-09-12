@@ -100,6 +100,7 @@ describe('Composer', () => {
     expect(screen.getByTestId('composer-surface')).toHaveAttribute('data-slot', 'composer-surface');
     expect(screen.getByTestId('composer-surface')).toHaveClass('ui-composer-surface-v2');
     expect(screen.getByRole('textbox')).toHaveClass('ui-composer-input');
+    expect(screen.getByRole('button', { name: 'Slash commands' })).toHaveClass('ui-composer-plus-btn');
     expect(screen.getByTestId('composer-runtime')).toHaveTextContent('Nova 4.1');
     expect(screen.getByTestId('composer-runtime')).toHaveClass('text-content-secondary');
     expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('ui-composer-send-btn');
@@ -209,24 +210,15 @@ describe('Composer', () => {
     expect(messageSubmission()).toBeNull();
   });
 
-  it('lets pointer users accept a prediction without submitting it', () => {
-    selectReadyChat();
-    installPrediction();
-    mountComposer();
-    fireEvent.click(screen.getByRole('button', { name: /Use suggestion/ }));
-    expect(screen.getByRole('textbox')).toHaveValue('check failure test');
-    expect(messageSubmission()).toBeNull();
-  });
-
   it('hides the ghost while typing and restores it when the draft is cleared', () => {
     selectReadyChat();
     installPrediction();
     mountComposer();
     const input = screen.getByRole('textbox');
     fireEvent.input(input, { target: { value: 'my own input' } });
-    expect(screen.queryByRole('button', { name: /Use suggestion/ })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('composer-prediction')).not.toBeInTheDocument();
     fireEvent.input(input, { target: { value: '' } });
-    expect(screen.getByRole('button', { name: /Use suggestion/ })).toBeInTheDocument();
+    expect(screen.getByTestId('composer-prediction')).toHaveTextContent('check failure test');
   });
 
   it('Escape dismisses only the exact session prediction', async () => {
@@ -236,14 +228,14 @@ describe('Composer', () => {
     const input = screen.getByRole('textbox');
     fireEvent.keyDown(input, { key: 'Escape' });
     expect(input).toHaveValue('');
-    expect(screen.queryByRole('button', { name: /Use suggestion/ })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('composer-prediction')).not.toBeInTheDocument();
 
     setSelectedSessionId('session-2');
     setSelectedCid('chat-2');
     setChatStatusSignal({ 'chat-2': 'active' });
     setProjectSessions([{ id: 'session-2', projectId: 'project-1', acpSessionId: 'acp-2', title: 'Session B', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: 'chat-2' }]);
     installPrediction('prediction:1:7', 'check failure test');
-    await waitFor(() => expect(screen.getByRole('button', { name: /Use suggestion/ })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('composer-prediction')).toHaveTextContent('check failure test'));
   });
 
   it('hides predictions without exact negotiation or while input is disabled', () => {
@@ -254,16 +246,16 @@ describe('Composer', () => {
       agent: current.agent ? { ...current.agent, extensions: [] } : null,
     } : null);
     const { unmount } = mountComposer();
-    expect(screen.queryByRole('button', { name: /Use suggestion/ })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('composer-prediction')).not.toBeInTheDocument();
     unmount();
 
     installPrediction();
     setRuntimeDocsState({ chat: true, control: false });
     mountComposer();
-    expect(screen.queryByRole('button', { name: /Use suggestion/ })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('composer-prediction')).not.toBeInTheDocument();
   });
 
-  it('shows precise Peri usage only when token stats were negotiated', () => {
+  it('does not mount a token meter in the production composer', () => {
     selectReadyChat();
     setChatHead({
       chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
@@ -276,19 +268,9 @@ describe('Composer', () => {
       activeTurn: null, pendingPermissions: [],
     });
     mountComposer();
-    const usage = screen.getByRole('button', { name: /Context usage.*Input 1,200 · Output 345 · Cached 900/ });
-    expect(usage).toHaveAttribute('data-testid', 'composer-usage');
-    expect(screen.queryByRole('button', { name: /Context usage/ })).toBeInTheDocument();
-    setChatHead({
-      chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
-      agent: {
-        instanceId: 'local', sessionId: 'acp-1', status: 'ready', lastActivityAt: null,
-        availableCommands: [], commandCatalog: [], extensions: [], activities: [], inputPrediction: null, latestUsage: null,
-        model: 'model', effort: 'high', contextWindow: 200_000, contextUsed: 42_000,
-      },
-      activeTurn: null, pendingPermissions: [],
-    });
+    expect(screen.queryByTestId('composer-usage')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Context usage/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Use suggestion/ })).not.toBeInTheDocument();
   });
 
   it('navigates skills with arrow keys from the composer input', async () => {
@@ -340,6 +322,30 @@ describe('Composer', () => {
     fireEvent.click(screen.getByRole('option', { name: /auto-issue-fixer.*Fix an issue/ }));
     await waitFor(() => expect(input).toHaveValue('/auto-issue-fixer '));
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled();
+  });
+
+  it('opens the plus menu catalog without requiring a typed slash', async () => {
+    selectReadyChat();
+    setChatHead({
+      chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
+      agent: {
+        instanceId: 'local', sessionId: 'acp-1', status: 'ready', lastActivityAt: null,
+        availableCommands: ['compact', 'auto-issue-fixer'],
+        commandCatalog: [
+          { name: 'compact', description: 'Compress context', kind: 'command' },
+          { name: 'auto-issue-fixer', description: 'Fix an issue', kind: 'skill' },
+        ],
+        extensions: [], activities: [], inputPrediction: null, latestUsage: null,
+        model: 'model', effort: 'high', contextWindow: 200_000, contextUsed: 42_000,
+      },
+      activeTurn: null, pendingPermissions: [],
+    });
+    mountComposer();
+    fireEvent.click(screen.getByRole('button', { name: 'Slash commands' }));
+    expect(screen.getByRole('button', { name: /Upload files/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('option', { name: /auto-issue-fixer/ }));
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('/auto-issue-fixer '));
     expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled();
   });
 
@@ -536,7 +542,7 @@ describe('Composer', () => {
     selectReadyChat();
     mountComposer();
 
-    expect(screen.getByRole('button', { name: 'Add attachment' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Slash commands' })).toBeEnabled();
     expect(screen.getByTestId('composer-upload-file-input')).toBeInTheDocument();
 
     const surface = screen.getByTestId('composer-surface');

@@ -159,7 +159,7 @@ web/src/
 | 范围 | 约定 | 示例 |
 |------|------|------|
 | T3 package | `ui-<domain>-*` | `ui-composer-surface-v2`、`ui-chat-column`、`ui-rewind-panel__state` |
-| Web 应用例外 | 尽量少；有 CSS 才加 class | `composer-wrap--overlay`、`sidebar-resize-handle--dragging` |
+| Web 应用例外 | 尽量少；有 CSS 才加 class | `sidebar-resize-handle--dragging`、`terminal-workbench-park` |
 | Widget JSX | Tailwind + T3 导出类 | `ui-chat-column gap-8`；**禁止** `foo__bar` 无规则占位 |
 
 ### 何时写 `extra.css`

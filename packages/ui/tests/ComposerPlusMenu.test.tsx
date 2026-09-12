@@ -36,7 +36,7 @@ describe('ComposerPlusMenu', () => {
     expect(popover).toBeInTheDocument();
     expect(popover).toHaveClass('ui-composer-slash-popover');
     expect(popover).toHaveClass('w-(--container-slash-menu)');
-    expect(document.querySelectorAll('.ui-composer-slash-upload').length).toBeGreaterThan(0);
+    expect(document.querySelectorAll('.ui-composer-slash-upload')).toHaveLength(1);
     expect(screen.getAllByRole('listbox', { name: 'Slash commands' }).length).toBeGreaterThan(0);
   });
 

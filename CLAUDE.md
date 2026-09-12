@@ -134,7 +134,7 @@ T3 不得 import `web/`、`store`、`features`、Yjs、protocol。T4 通过 `com
 | **Package Extra** | `packages/ui/src/styles/extra.css` | **T3 壳层与领域特例**（Composer/Transcript/Workbench…）；`ui-<domain>-*` 前缀 |
 | Web Base | `web/src/styles/base.css` | 全局 reset、a11y、forced-colors |
 | Web Primitives | `web/src/styles/primitives.css` | **仅**应用级 hover 编排（如 message actions、composer-wrap safe-bottom） |
-| Web Extra | `web/src/styles/extra.css` | **仅**无法下沉的 web 例外（侧栏拖拽、terminal park、composer overlay shadow）；保持精简，有行数/hash baseline |
+| Web Extra | `web/src/styles/extra.css` | **仅**无法下沉的 web 例外（侧栏拖拽、terminal park）；保持精简，有行数/hash baseline |
 | 入口 | `web/src/styles.css` | `base → @peri/ui/styles.css → web primitives → web extra` |
 
 **JSX 写法（widgets / pages / features / app）**

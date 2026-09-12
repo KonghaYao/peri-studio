@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('upload entry prevents browser navigation and exposes keyboard equivalence', async ({ page }) => {
   await page.goto('/visual-fixture.html?scenario=resources', { waitUntil: 'networkidle' });
 
-  await expect(page.getByRole('button', { name: 'Add attachment' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Slash commands' })).toBeVisible();
   await expect(page.locator('[data-testid="composer-upload-file-input"]')).toHaveAttribute('type', 'file');
   await expect(page.locator('[data-testid="composer-upload-file-input"]')).toHaveAttribute('multiple', '');
 

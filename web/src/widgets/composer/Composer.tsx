@@ -1,25 +1,23 @@
 // 发送窗口（Composer）：输入区 + 底部工具行（ui.md §3.8 / §四.7）。
 // 编排与 store 接线留在此；视觉组件来自 @peri/ui，业务映射在 features。
 
-import { Show, type Component, type JSX } from 'solid-js';
+import { createSignal, Show, type Component, type JSX } from 'solid-js';
 import {
   Button,
-  ComposerAttachmentButton,
   type ComposerAttachmentItem,
   ComposerInputField,
-  ComposerPredictionButton,
+  ComposerPlusMenu,
   ComposerQueue,
   ComposerSendStopAction,
   ComposerShell,
   type ComposerShellFieldContext,
   InlineNotice,
   SlashMenuListbox,
-  TokenUsageMeter,
   cn,
 } from '@peri/ui';
 import { composerAssets, removeComposerAsset } from '@/features/composer/composer-assets';
 import { agentCommandToSlashMenuItem } from '@/features/composer/slash-menu-catalog';
-import { slashMenuOptionId } from '@/features/composer/slash-menu';
+import { filterCommandCatalog, slashMenuOptionId } from '@/features/composer/slash-menu';
 import { ComposerUploadSurface, openComposerUploadFilePicker } from './ComposerUploadSurface';
 import { useComposerState, type ComposerState } from './useComposerState';
 
@@ -29,6 +27,33 @@ type ComposerMessageFieldProps = {
   state: ComposerState;
   onBindTaRef: (element: HTMLTextAreaElement | undefined) => void;
 };
+
+function ComposerSlashCatalog(props: {
+  id: string;
+  items: ReturnType<ComposerState['slash']['slashItems']>;
+  activeIndex: number;
+  onActiveIndex: (index: number) => void;
+  onSelect: (name: string) => void;
+  onKeyDown?: (event: KeyboardEvent) => void;
+  shellClass?: string;
+}) {
+  return (
+    <SlashMenuListbox
+      id={props.id}
+      items={props.items}
+      activeIndex={props.activeIndex}
+      toMenuItem={agentCommandToSlashMenuItem}
+      optionValue={(item) => item.name}
+      optionTextValue={(item) => `${item.name} ${item.description}`}
+      getOptionId={(menuId, item) => slashMenuOptionId(menuId, item.name)}
+      namePrefix="/"
+      onActiveIndex={props.onActiveIndex}
+      onSelect={(item) => props.onSelect(item.name)}
+      onKeyDown={props.onKeyDown}
+      shellClass={props.shellClass}
+    />
+  );
+}
 
 const ComposerMessageField: Component<ComposerMessageFieldProps> = (props) => {
   const draftText = () => props.state.composerDraft(props.state.draftOwner());
@@ -103,9 +128,11 @@ export function Composer(props: {
   renderRuntimeMenu?: (ctx: { id: string; disabled: boolean }) => JSX.Element;
 }) {
   const centered = () => props.layout === 'centered';
+  const [plusOpen, setPlusOpen] = createSignal(false);
   let taRef: HTMLTextAreaElement | undefined;
   let composerSurfaceRef: HTMLDivElement | undefined;
   const state = useComposerState(() => taRef);
+  const plusCatalogItems = () => filterCommandCatalog(state.commandCatalog(), '', 'all');
 
   const focusInput = () => {
     taRef?.focus();
@@ -133,21 +160,16 @@ export function Composer(props: {
       data-testid="composer-wrap"
       class={cn(
         'composer-wrap relative w-full',
-        !centered() && 'composer-wrap--overlay ui-chat-column',
+        !centered() && 'ui-chat-column',
       )}
     >
       <Show when={state.slash.slashMenuOpen()}>
-        <SlashMenuListbox
+        <ComposerSlashCatalog
           id={state.slashMenuId}
           items={state.slash.slashItems()}
           activeIndex={state.slash.boundedActiveIndex()}
-          toMenuItem={agentCommandToSlashMenuItem}
-          optionValue={(item) => item.name}
-          optionTextValue={(item) => `${item.name} ${item.description}`}
-          getOptionId={(menuId, item) => slashMenuOptionId(menuId, item.name)}
-          namePrefix="/"
           onActiveIndex={state.slash.onMenuActiveIndex}
-          onSelect={(item) => state.slash.selectCommand(item.name)}
+          onSelect={(name) => state.slash.selectCommand(name)}
           onKeyDown={(event) => state.slash.handleKeyDown(event)}
           shellClass="slash-menu ui-composer-slash-overlay"
         />
@@ -200,25 +222,35 @@ export function Composer(props: {
           },
         }}
         compactLeading={(
-          <>
-            <ComposerAttachmentButton
-              disabled={state.inputDisabled()}
-              onClick={() => {
+          <ComposerPlusMenu
+            open={plusOpen()}
+            onOpenChange={setPlusOpen}
+            disabled={state.inputDisabled()}
+            upload={{
+              onClick: () => {
                 openComposerUploadFilePicker(state.uploadFileInputRef);
                 queueMicrotask(() => focusInput());
-              }}
-            />
-            <Show when={state.prediction.activePrediction()}>
-              <ComposerPredictionButton onClick={state.prediction.accept} />
-            </Show>
-          </>
+              },
+            }}
+            slashMenu={(
+              <Show when={plusCatalogItems().length > 0}>
+                <ComposerSlashCatalog
+                  id={`${state.slashMenuId}-plus`}
+                  items={plusCatalogItems()}
+                  activeIndex={0}
+                  onActiveIndex={() => {}}
+                  onSelect={(name) => {
+                    setPlusOpen(false);
+                    state.slash.selectCommand(name);
+                  }}
+                />
+              </Show>
+            )}
+          />
         )}
         compactTrailing={(
           <>
-            <Show when={state.latestUsage()}>{(usage) =>
-              <TokenUsageMeter usage={usage()} contextWindow={state.chatHead()?.agent?.contextWindow ?? null} />
-            }</Show>
-            <div class="ui-composer-runtime-slot" title={state.runtimeSummary()}>
+            <div class="ui-composer-model-select" title={state.runtimeSummary()}>
               {runtimeMenu()}
             </div>
             <Show

@@ -37,10 +37,3 @@
   box-shadow: none;
   padding: 0;
 }
-
-/* ── Composer wrap 变体（web 应用级，子选择器编排） ───────────────────── */
-
-.composer-wrap--overlay [data-slot='composer-surface'],
-.composer-wrap--overlay .ui-composer-surface-v2 {
-  box-shadow: var(--shadow-composer-overlay);
-}

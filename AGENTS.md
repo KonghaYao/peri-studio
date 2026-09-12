@@ -145,7 +145,7 @@ web/base.css
 ```
 
 - **T3 壳层 CSS** 一律在 `packages/ui/src/styles/extra.css`（Composer、Transcript、Workbench、Rewind…）。
-- **web/extra.css** 只放无法下沉的例外（侧栏拖拽光标、terminal park、composer overlay shadow 等）；改内容须更新 `EXTRA_CSS_BASELINE`。
+- **web/extra.css** 只放无法下沉的例外（侧栏拖拽光标、terminal park 等）；改内容须更新 `EXTRA_CSS_BASELINE`。
 - **禁止**在 widget JSX 使用无 CSS 定义的 BEM hook；测试用 `data-testid`，布局用 Tailwind。
 
 #### JSX 写法（`widgets` / `pages` / `features` / `app`）
