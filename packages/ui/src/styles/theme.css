@@ -343,6 +343,7 @@
   --container-chat: var(--container-chat);
   --container-chat-content: var(--container-chat-content);
   --container-chat-narrow: var(--container-chat-narrow);
+  --container-composer-stack-max: var(--container-composer-stack-max);
   --container-composer-launch: var(--container-composer-launch);
   --container-auth-card: var(--container-auth-card);
   --container-drawer: var(--container-drawer);
@@ -398,4 +399,12 @@
 }
 @utility outline-offset-neg-2 {
   outline-offset: -2px;
+}
+@utility bg-composer-fade {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--app-bg) 58%, transparent) 58%,
+    var(--app-bg) 100%
+  );
 }

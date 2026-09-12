@@ -14,9 +14,9 @@ describe('ChatActivityChain', () => {
 
     const chain = screen.getByTestId('chat-activity-chain');
     const rail = screen.getByTestId('chat-activity-rail');
-    expect(chain).toHaveClass('ui-chat-activity-chain');
+    expect(chain).toHaveClass('gap-16', 'grid');
     expect(chain).not.toHaveClass('gap-2', 'my-1', 'mb-4');
-    expect(rail).toHaveClass('ui-chat-activity-rail');
+    expect(rail).toHaveClass('left-(--chat-activity-rail-left)', 'w-px', 'bg-border-strong');
     expect(rail).toHaveAttribute('data-continue-before', 'true');
     expect(rail).toHaveAttribute('data-continue-after', 'true');
   });

@@ -1,4 +1,4 @@
-import { ChatHeader, ChatWorkspaceShell, TranscriptViewportShell } from '@peri/ui';
+import { ChatHeader, ChatWorkspaceShell, TranscriptViewportShell, chatColumnClass } from '@peri/ui';
 import { ChatTranscriptLayout } from './ChatTranscriptLayout';
 
 /** Tier 4 · Chat 工作区：消费 @peri/ui ChatWorkspaceShell（T3），mock 标题与消息流。 */
@@ -11,7 +11,7 @@ export function ChatShellLayout() {
       )}
       transcript={(
         <TranscriptViewportShell aria-label="Conversation messages" class="min-h-0 flex-1">
-          <div class="ui-chat-column py-16">
+          <div class={`${chatColumnClass} py-16`}>
             <ChatTranscriptLayout />
           </div>
         </TranscriptViewportShell>

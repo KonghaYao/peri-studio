@@ -331,6 +331,13 @@ export {
   type ChatActivityChainProps,
 } from './components/chat/ChatActivityChain';
 export {
+  chatColumnClass,
+  chatComposerFadeClass,
+  chatComposerStackChildClass,
+  chatComposerStackClass,
+  chatDecisionPanelClass,
+} from './components/chat/chat-layout';
+export {
   ChatWorkspaceShell,
   type ChatWorkspaceShellProps,
 } from './components/chat/ChatWorkspaceShell';

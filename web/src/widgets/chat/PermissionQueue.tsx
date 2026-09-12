@@ -1,4 +1,4 @@
-import { DecisionQueueShell } from '@peri/ui';
+import { DecisionQueueShell, chatColumnClass } from '@peri/ui';
 import { Show } from 'solid-js';
 import type { PendingPermission } from '@/entities/chat/control-view';
 import { createIdentitySelection } from '@/features/message/identity-selection';
@@ -24,7 +24,7 @@ export function PermissionQueue(props: PermissionQueueProps) {
         return (
           <DecisionQueueShell
             element="aside"
-            class="ui-chat-column pb-10"
+            class={`${chatColumnClass} pb-10`}
             data-testid="permission-queue"
             surfaceTestId="permission-queue-surface"
             aria-label={`Pending permission requests, ${props.permissions.length} total`}

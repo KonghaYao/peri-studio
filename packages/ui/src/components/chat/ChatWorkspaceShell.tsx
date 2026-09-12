@@ -1,5 +1,6 @@
 import { Show, splitProps, type Component, type JSX } from 'solid-js';
 import { cn } from '../../lib/cn';
+import { chatComposerFadeClass, chatComposerStackClass } from './chat-layout';
 
 export type ChatWorkspaceShellProps = {
   class?: string;
@@ -34,9 +35,9 @@ export const ChatWorkspaceShell: Component<ChatWorkspaceShellProps> = (props) =>
   return (
     <section
       {...rest}
+      data-launch={local.launch ? 'true' : undefined}
       class={cn(
-        'ui-chat-workspace relative flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden bg-app-bg',
-        local.launch && 'ui-chat-workspace--launch',
+        'relative flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden bg-app-bg',
         local.class,
       )}
     >
@@ -46,14 +47,15 @@ export const ChatWorkspaceShell: Component<ChatWorkspaceShellProps> = (props) =>
         when={!local.launch}
         fallback={local.launchBody}
       >
-        <div class="ui-chat-workspace__session relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
+        <div class="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
           {local.transcript}
           <Show when={local.composerStack}>
             <div
               ref={local.composerStackRef}
-              class="ui-chat-workspace__bottom-stack relative z-20 flex min-h-0 min-w-0 shrink flex-col overflow-visible bg-app-bg"
+              class={chatComposerStackClass}
               data-testid="composer-stack"
             >
+              <div aria-hidden="true" class={chatComposerFadeClass} />
               {local.composerStack}
             </div>
           </Show>

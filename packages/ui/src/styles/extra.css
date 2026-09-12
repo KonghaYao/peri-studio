@@ -177,76 +177,6 @@
   right: calc(var(--sidebar-width) * -1);
 }
 
-/* ── Chat workspace（T3 · 正文与 Composer 共享水平轨道） ───────────────── */
-
-.ui-chat-column {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: var(--chat-content-max);
-  min-width: 0;
-  margin-inline: auto;
-  padding-inline: var(--chat-column-gutter);
-}
-
-@media (min-width: 960px) and (max-width: 1199px) {
-  .ui-chat-column {
-    padding-inline: var(--chat-column-gutter-desk);
-  }
-}
-
-@media (max-width: 479px) {
-  .ui-chat-column {
-    padding-inline: var(--chat-column-gutter-narrow);
-  }
-}
-
-/* 贴底 composer 区：::before 向上渐隐，避免 transcript 与输入区硬切。 */
-.ui-chat-workspace__bottom-stack {
-  position: relative;
-  isolation: isolate;
-  display: flex;
-  flex: 0 1 auto;
-  flex-direction: column;
-  min-height: 0;
-  max-height: 72dvh;
-  /* slash 浮层绝对定位在 composer 上方；hidden/clip 会连 overflow-y 一起变成可裁切。 */
-  overflow: visible;
-  padding-top: var(--space-4);
-  background: var(--app-bg);
-}
-
-.ui-chat-workspace__bottom-stack::before {
-  position: absolute;
-  top: calc(-1 * var(--chat-composer-fade-height));
-  right: 0;
-  left: 0;
-  z-index: 0;
-  height: var(--chat-composer-fade-height);
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    color-mix(in srgb, var(--app-bg) 58%, transparent) 58%,
-    var(--app-bg) 100%
-  );
-  pointer-events: none;
-  content: '';
-}
-
-.ui-chat-workspace__bottom-stack > * {
-  position: relative;
-  z-index: 1;
-  pointer-events: auto;
-}
-
-.ui-chat-workspace__decision-panel {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-}
-
 /* ── Project sidebar shell（T3 · ProjectSidebarShell） ─────────────────── */
 
 .ui-sidebar-scroll-shell {
@@ -326,36 +256,6 @@
 .group\/row[data-selected='true'] .ui-row-accessory-meta,
 .group\/workspace[data-selected='true'] .ui-row-accessory-meta {
   --sidebar-row-cover-bg: var(--sidebar-selected-bg);
-}
-
-/* ── Chat activity chain（T3 · 推理 + 工具共用轨） ─────────────────────── */
-
-.ui-chat-activity-chain {
-  position: relative;
-  isolation: isolate;
-  display: grid;
-  width: 100%;
-  min-width: 0;
-  gap: var(--chat-block-gap);
-  margin-block: 0;
-}
-
-.ui-chat-activity-rail {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: var(--chat-activity-rail-left);
-  z-index: 0;
-  width: 1px;
-  background: var(--border-strong);
-}
-
-.ui-chat-activity-rail[data-continue-before='true'] {
-  top: calc(var(--space-10) * -1);
-}
-
-.ui-chat-activity-rail[data-continue-after='true'] {
-  bottom: calc(var(--space-16) * -1);
 }
 
 /* ── Transcript（T3 · MessageList 虚拟化滚动壳） ───────────────────────── */

@@ -15,7 +15,7 @@ describe('ChatWorkspaceShell', () => {
       />
     ));
 
-    expect(screen.getByTestId('chat-view')).toHaveClass('ui-chat-workspace--launch');
+    expect(screen.getByTestId('chat-view')).toHaveAttribute('data-launch', 'true');
     expect(screen.getByTestId('launch')).toBeInTheDocument();
     expect(screen.queryByTestId('composer-stack')).not.toBeInTheDocument();
   });
@@ -29,10 +29,10 @@ describe('ChatWorkspaceShell', () => {
       />
     ));
 
-    expect(screen.getByTestId('chat-view')).not.toHaveClass('ui-chat-workspace--launch');
+    expect(screen.getByTestId('chat-view')).not.toHaveAttribute('data-launch');
     expect(screen.getByTestId('transcript')).toBeInTheDocument();
     expect(screen.getByTestId('composer-stack')).toBeInTheDocument();
-    expect(screen.getByTestId('composer-stack')).toHaveClass('overflow-visible');
+    expect(screen.getByTestId('composer-stack')).toHaveClass('overflow-visible', 'max-h-(--container-composer-stack-max)');
     expect(screen.getByTestId('composer-stack')).not.toHaveClass('overflow-x-hidden');
     expect(screen.getByTestId('composer-inner')).toBeInTheDocument();
   });

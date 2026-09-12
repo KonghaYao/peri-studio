@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import { showCatalogSection } from '@/catalog/catalog-section';
-import { ProjectRowAccessory, SessionRowAccessory, UserBubble } from '@peri/ui';
+import { ProjectRowAccessory, SessionRowAccessory, UserBubble, chatColumnClass } from '@peri/ui';
 import { ChatHeader } from '@/components/blocks/chrome';
 import { Folder } from 'lucide-solid';
 import { ChatShellLayout, ChatTranscriptLayout } from '@/layers';
@@ -97,7 +97,7 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
       <Show when={showCatalogSection(props.sections, 'chat-transcript')}>
       <CatalogDemo id="chat-transcript" title="Chat transcript">
         <div class="max-h-(--catalog-layer-chat-height) overflow-auto rounded-lg border border-border-subtle bg-surface-canvas px-16 py-16">
-          <div class="ui-chat-column">
+          <div class={chatColumnClass}>
             <ChatTranscriptLayout />
           </div>
         </div>

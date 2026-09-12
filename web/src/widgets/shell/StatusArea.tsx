@@ -19,6 +19,7 @@ import {
   statusAreaPanelClass,
   statusAreaRowClass,
   statusAreaTabTriggerClass,
+  chatColumnClass,
 } from '@peri/ui';
 
 type StatusTab = 'todo' | 'async' | 'changes';
@@ -133,7 +134,7 @@ export function StatusArea(props: StatusAreaProps) {
 
   return <Show when={tabs().length > 0}>
     <StatusAreaShell
-      class="ui-chat-column mb-8"
+      class={`${chatColumnClass} mb-8`}
       data-testid="status-area"
       aria-label="Status area"
       tabsValue={visibleTab() ?? ''}

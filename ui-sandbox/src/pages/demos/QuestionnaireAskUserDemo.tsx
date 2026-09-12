@@ -5,6 +5,7 @@ import {
   QuestionnaireNavigation,
   QuestionnaireStep,
   type QuestionnaireAnswer,
+  chatColumnClass,
 } from '@peri/ui';
 
 type AskUserStepFixture = {
@@ -79,7 +80,7 @@ export function QuestionnaireAskUserDemo() {
 
   return (
     <div class="flex flex-col gap-12">
-      <DecisionQueueShell class="ui-chat-column pb-10" aria-label="AskUserQuestion demo">
+      <DecisionQueueShell class={`${chatColumnClass} pb-10`} aria-label="AskUserQuestion demo">
         <Questionnaire
           class="mx-auto w-full max-w-(--container-search)"
           data-testid="questionnaire-ask-user-demo"

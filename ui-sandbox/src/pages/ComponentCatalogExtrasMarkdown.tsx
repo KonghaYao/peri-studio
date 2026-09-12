@@ -4,12 +4,13 @@ import { Markdown } from '@/components/blocks';
 import { MARKDOWN_LAB_SAMPLE } from '@/fixtures/markdown-lab-sample';
 import { MERMAID_LAB_MARKDOWN } from '@/fixtures/mermaid-lab-sample';
 import { createStreamingReveal, StreamingControls } from '@/lib/streaming-demo';
+import { chatColumnClass } from '@peri/ui';
 import { ComponentCatalogExtrasCode } from '@/pages/ComponentCatalogExtrasCode';
 import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
 
 function MarkdownFrame(props: { children: unknown }) {
   return (
-    <div class="ui-chat-column max-w-(--chat-content-max) rounded-lg border border-border-subtle bg-surface-overlay px-16 py-16">
+    <div class={`${chatColumnClass} rounded-lg border border-border-subtle bg-surface-overlay px-16 py-16`}>
       {props.children as never}
     </div>
   );

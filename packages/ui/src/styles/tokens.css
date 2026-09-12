@@ -231,9 +231,9 @@
   /* Chat 聊天 */
   --chat-transcript-max: var(--container-chat);
   --chat-content-max: var(--container-chat-content);
-  --chat-column-gutter: var(--space-24);
-  --chat-column-gutter-desk: var(--space-20);
-  --chat-column-gutter-narrow: var(--space-12);
+  --chat-column-gutter: var(--space-48);
+  --chat-column-gutter-desk: var(--space-40);
+  --chat-column-gutter-narrow: var(--space-24);
   --chat-markdown-rhythm: var(--markdown-rich-block-gap);
   --chat-block-gap: var(--space-16);
   --markdown-table-min: 420px;
@@ -598,6 +598,7 @@
   --container-chat: 840px;
   --container-chat-content: 752px;
   --container-chat-narrow: 720px;
+  --container-composer-stack-max: 72dvh;
   --container-composer-launch: var(--composer-launch-max);
   --container-auth-card: min(440px, 100%);
 

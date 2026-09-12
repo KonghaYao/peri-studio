@@ -3,11 +3,15 @@
 
 import {
   BackToTop,
+  chatColumnClass,
+  chatComposerStackChildClass,
+  chatDecisionPanelClass,
   chatFloatingAnchorClass,
   ChatHeader as ChatHeaderBase,
   ChatWorkspaceShell,
   InlineNotice,
   LoadingState,
+  cn,
 } from '@peri/ui';
 import { resolveChatHeaderTitle } from '@/features/chat/chat-header-title';
 import { Composer } from '@/widgets/composer/Composer';
@@ -88,7 +92,7 @@ export function ChatView(props: ChatViewProps) {
         tone="danger"
         role="alert"
         aria-label="Agent error"
-        class="ui-chat-column mx-auto mb-8 w-full max-w-(--chat-content-max)"
+        class={cn(chatColumnClass, 'mb-8')}
         data-testid="agent-public-error-notice"
       >
         <code class="whitespace-pre-wrap wrap-anywhere font-mono text-12 leading-normal">
@@ -195,10 +199,10 @@ export function ChatView(props: ChatViewProps) {
       ) : undefined}
       composerStack={selectedSessionId() && !conversationEmpty() ? (
         <>
-          <div class="ui-chat-workspace__decision-panel" data-testid="decision-panel">
+          <div class={chatDecisionPanelClass} data-testid="decision-panel">
             {queueAndStatus()}
           </div>
-          <div class={chatFloatingAnchorClass}>
+          <div class={cn(chatFloatingAnchorClass, chatComposerStackChildClass)}>
             <BackToTop
               visible={showBackToTop()}
               label={followState().hasNewContent ? 'New content' : 'Back to latest'}

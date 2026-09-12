@@ -14,6 +14,7 @@ import {
   InlineNotice,
   SlashMenuListbox,
   cn,
+  chatColumnClass,
 } from '@peri/ui';
 import { composerAssets, removeComposerAsset } from '@/features/composer/composer-assets';
 import { agentCommandToSlashMenuItem } from '@/features/composer/slash-menu-catalog';
@@ -160,7 +161,7 @@ export function Composer(props: {
       data-testid="composer-wrap"
       class={cn(
         'relative w-full pb-(--composer-safe-bottom)',
-        !centered() && 'ui-chat-column',
+        !centered() && chatColumnClass,
       )}
     >
       <Show when={state.slash.slashMenuOpen()}>

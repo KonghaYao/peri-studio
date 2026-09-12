@@ -202,26 +202,28 @@ test('composer surface keeps slash overlays unclipped and menu-sized', () => {
   assert.match(extra, /\.ui-composer-surface-v2__field-slot\s*\{[^}]*flex:\s*1 1 auto/s);
   assert.match(extra, /\.ui-composer-surface-v2__trailing\s*\{/s);
   assert.doesNotMatch(extra, /\.ui-composer-editor\s*\{[^}]*width:\s*100%;[^}]*flex:/s);
-  assert.match(extra, /\.ui-chat-workspace__bottom-stack\s*\{[^}]*overflow:\s*visible/s);
-  assert.match(extra, /\.ui-chat-workspace__bottom-stack::before\s*\{[^}]*var\(--chat-composer-fade-height\)/s);
-  assert.match(extra, /\.ui-chat-workspace__bottom-stack\s*\{[^}]*padding-top:\s*var\(--space-4\)/s);
+  const chatLayout = read(join(srcRoot, 'components', 'chat', 'chat-layout.ts'));
+  assert.match(chatLayout, /overflow-visible/);
+  assert.match(chatLayout, /bg-composer-fade/);
+  assert.match(chatLayout, /max-h-\(--container-composer-stack-max\)/);
   assert.match(extra, /\.ui-workbench-floating-panel\s*\{[^}]*top:\s*var\(--workbench-panel-inset-block\)/s);
   assert.match(extra, /\.ui-workbench-floating-panel\s*\{[^}]*bottom:\s*var\(--workbench-panel-inset-bottom\)/s);
   assert.match(extra, /\.ui-workbench-floating-panel\s*\{[^}]*box-shadow:\s*var\(--shadow-raised\)/s);
   assert.doesNotMatch(extra, /\.ui-workbench-floating-panel\s*\{[^}]*padding-bottom:/s);
   assert.doesNotMatch(extra, /\.ui-workbench-floating-panel\s*\{[^}]*box-shadow:\s*var\(--shadow-overlay\)/s);
-  assert.match(extra, /\.ui-chat-column\s*\{[^}]*padding-inline:\s*var\(--chat-column-gutter\)/s);
+  assert.match(chatLayout, /px-48 desk:max-wide:px-40 max-narrow:px-24/);
   assert.match(extra, /\.ui-composer-shell\s*\{[^}]*margin-inline:\s*auto/s);
   assert.match(extra, /\.ui-composer-plus-btn\s*\{[^}]*background:\s*transparent/s);
   assert.match(extra, /\.ui-composer-editor__hint[^{]*\{[^}]*color:\s*var\(--content-muted\)/s);
   assert.match(extra, /\.ui-composer-surface-v2__field::placeholder[^{]*\{[^}]*color:\s*var\(--content-muted\)/s);
-  assert.match(extra, /\.ui-chat-activity-chain\s*\{[^}]*gap:\s*var\(--chat-block-gap\)/s);
-  assert.match(extra, /\.ui-chat-activity-rail\s*\{/s);
+  const chatActivityChain = read(join(srcRoot, 'components', 'chat', 'ChatActivityChain.tsx'));
+  assert.match(chatActivityChain, /gap-16/);
+  assert.match(chatActivityChain, /left-\(--chat-activity-rail-left\)/);
 });
 
 test('extra.css does not keep legacy ui-* alias selectors', () => {
   const extra = read(join(srcRoot, 'styles', 'extra.css'));
-  assert.match(extra, /\.ui-chat-column\s*\{/);
+  assert.doesNotMatch(extra, /\.ui-chat-/);
   assert.doesNotMatch(extra, /\.chat-column\s*\{/);
   assert.doesNotMatch(extra, /\.history-boundary\s*\{/);
   assert.doesNotMatch(extra, /\.transcript-row\s*\{/);

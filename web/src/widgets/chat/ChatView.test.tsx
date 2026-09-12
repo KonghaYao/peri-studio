@@ -94,7 +94,7 @@ describe('ChatView project directory hydration', () => {
     expect(screen.getByTestId('chat-empty-workspace')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'What do you want to build?' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Start new session' })).toHaveAttribute('data-testid', 'quick-start-docked');
-    expect(screen.getByTestId('chat-view')).toHaveClass('ui-chat-workspace--launch');
+    expect(screen.getByTestId('chat-view')).toHaveAttribute('data-launch', 'true');
   });
 
   it('keeps an archived-only registry distinct from an empty directory', () => {

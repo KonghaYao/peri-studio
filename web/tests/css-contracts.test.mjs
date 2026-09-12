@@ -400,9 +400,9 @@ test('responsive behavior has compact, medium and wide layout contracts', () => 
   assert.match(drawer, /<aside[^>]*class=\{drawerPanelClass\}/);
   assert.match(drawer, /<Dialog open=\{props\.open\}/);
   assert.match(drawer, /max-desk:fixed[^']*max-desk:w-\(--container-drawer\)/);
-  // 正文与 Composer 共享 ui-chat-column 水平轨道。
-  assert.match(messageList, /ui-chat-column/);
-  assert.match(composer, /ui-chat-column/);
+  // 正文与 Composer 共享 chatColumnClass 水平轨道。
+  assert.match(messageList, /chatColumnClass/);
+  assert.match(composer, /chatColumnClass/);
   assert.doesNotMatch(composer, /max-w-\(--container-chat\)/);
   assert.doesNotMatch(drawer, /project-drawer\s*\{[^}]*position\s*:\s*fixed/);
 });
@@ -552,7 +552,9 @@ test('primitive visuals remain in the UI package', () => {
   const button = readFileSync(join(packageRoot, 'components', 'Button.tsx'), 'utf8');
   const dialog = readFileSync(join(packageRoot, 'components', 'Dialog.tsx'), 'utf8');
   const drawer = readFileSync(join(root, 'widgets', 'shell', 'shared', 'ProjectDrawer.tsx'), 'utf8');
-  assert.match(packageExtra, /\.ui-chat-column\s*\{/);
+  const chatLayout = readFileSync(join(packageRoot, 'components', 'chat', 'chat-layout.ts'), 'utf8');
+  assert.match(chatLayout, /export const chatColumnClass/);
+  assert.doesNotMatch(packageExtra, /\.ui-chat-/);
   assert.doesNotMatch(packageExtra, /\.chat-column\s*\{/);
   assert.doesNotMatch(packageExtra, /\.history-boundary\s*\{/);
   assert.doesNotMatch(packageExtra, /\.transcript-row\s*\{/);

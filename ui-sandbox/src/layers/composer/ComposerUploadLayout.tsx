@@ -1,4 +1,5 @@
 import { createSignal, For, Show } from 'solid-js';
+import { chatColumnClass } from '@peri/ui';
 import { Button } from '@/lib/catalog-ui';
 import { ComposerShell } from './ComposerShell';
 import type { ComposerAttachment } from './composer-shell-data';
@@ -78,7 +79,7 @@ export function ComposerUploadLayout() {
         </For>
       </div>
 
-      <div class="ui-chat-column">
+      <div class={chatColumnClass}>
         <ComposerShell
           draft={mode() === 'idle' ? '' : draft()}
           onDraftChange={setDraft}

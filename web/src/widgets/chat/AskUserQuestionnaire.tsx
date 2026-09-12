@@ -7,6 +7,7 @@ import {
   QuestionnaireNavigation,
   QuestionnaireStep,
   type QuestionnaireAnswer,
+  chatColumnClass,
 } from '@peri/ui';
 import { LockKeyhole } from 'lucide-solid';
 
@@ -74,7 +75,7 @@ export function AskUserQuestionnaireShell(props: AskUserQuestionnaireShellProps)
   };
 
   return (
-    <DecisionQueueShell class="ui-chat-column pb-10" aria-label={props.shellAriaLabel}>
+    <DecisionQueueShell class={`${chatColumnClass} pb-10`} aria-label={props.shellAriaLabel}>
       <Show when={props.confirmed}>
         <p class="my-4 text-12 text-text-secondary">Answers sent. Peri will continue when the server confirms.</p>
       </Show>

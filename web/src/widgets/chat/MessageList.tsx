@@ -20,6 +20,7 @@ import {
   TranscriptThinkingGap,
   TranscriptViewportShell,
   type TranscriptHistoryBoundaryKind,
+  chatColumnClass,
 } from '@peri/ui';
 import { activityBoundaryAt, activityContinuationAt, isTurnTerminalNoticeOwner } from '@/features/chat/chat-render-blocks';
 import { ConversationMessage } from './ConversationMessage';
@@ -320,7 +321,7 @@ export function MessageList(props: {
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
       <div class="sr-only" role="status" aria-label="Agent activity" aria-live="polite" aria-atomic="true">{agentActivityAnnouncement()}</div>
-      <div class="ui-chat-column" data-testid="message-list-content">
+      <div class={chatColumnClass} data-testid="message-list-content">
         <div ref={prefixRef} data-testid="transcript-prefix">
           <Show when={!runtimeDocsHydrated()}>
             <LoadingState label="Loading session" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />
