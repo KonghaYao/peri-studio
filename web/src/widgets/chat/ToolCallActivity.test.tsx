@@ -37,7 +37,7 @@ describe('ToolCallActivity', () => {
     const activityRow = document.querySelector('[data-testid="tool-activity-row"]')!;
     expect(activityRow).toHaveClass('tool-activity-row--activity');
     expect(activityRow).not.toHaveClass('border');
-    expect(activityRow.querySelector('.tool-call-row-icon')).toHaveClass('relative', 'z-1', 'bg-transparent');
+    expect(activityRow.querySelector('.tool-call-row-icon')).toHaveClass('relative', 'z-1', 'bg-surface');
     expect(activityRow.querySelector('.tool-call-row-compact')).not.toHaveClass('-ml-32');
   });
 

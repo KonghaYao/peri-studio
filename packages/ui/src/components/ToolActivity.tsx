@@ -197,7 +197,7 @@ export const ToolActivityRow: Component<ToolActivityRowProps> = (props) => {
           <span
             class={cn(
               'tool-call-row-icon relative z-1 grid size-22 shrink-0 place-items-center rounded-md text-content-muted',
-              isRunning() ? 'bg-sidebar-selected' : 'bg-transparent',
+              isRunning() ? 'bg-sidebar-selected' : 'bg-surface',
             )}
             data-tool-kind={props.toolKind}
             aria-hidden="true"

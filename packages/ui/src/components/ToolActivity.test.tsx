@@ -36,7 +36,7 @@ describe('ToolActivity', () => {
       </ToolActivityGroup>
     ));
     const doneIcon = document.querySelector('[data-slot="tool-activity-row"] span[aria-hidden="true"]');
-    expect(doneIcon).toHaveClass('bg-transparent');
+    expect(doneIcon).toHaveClass('bg-surface');
     expect(doneIcon).not.toHaveClass('bg-sidebar-selected');
     unmountDone();
 
