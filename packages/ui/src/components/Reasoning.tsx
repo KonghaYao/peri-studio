@@ -3,6 +3,7 @@ import {
   createContext,
   createEffect,
   onCleanup,
+  Show,
   splitProps,
   useContext,
   type Accessor,
@@ -15,12 +16,19 @@ import { disclosureContentMotion } from '../lib/overlay-motion';
 import { createControllableSignal } from '../lib/controllable-state';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './Collapsible';
 import { Shimmer } from './Shimmer';
+import { Skeleton } from './Skeleton';
+
+type ReasoningAppearance = 'panel' | 'transcript';
+type ReasoningVariant = 'default' | 'activity';
 
 interface ReasoningContextValue {
+  appearance: Accessor<ReasoningAppearance>;
+  variant: Accessor<ReasoningVariant>;
   isStreaming: Accessor<boolean>;
   isOpen: Accessor<boolean>;
   setIsOpen: (open: boolean) => void;
   duration: Accessor<number | undefined>;
+  transcriptText: () => string;
 }
 
 const ReasoningContext = createContext<ReasoningContextValue>();
@@ -35,6 +43,20 @@ export function useReasoning() {
 
 const AUTO_CLOSE_DELAY_MS = 1000;
 
+function ThinkingGap() {
+  return (
+    <div
+      class="thinking-gap relative z-1 flex max-w-(--chat-reasoning-max) flex-col gap-8 py-4 pl-32"
+      data-testid="thinking-gap"
+      aria-hidden="true"
+    >
+      <Skeleton class="h-12 w-180 max-w-full" />
+      <Skeleton class="h-12 w-240 max-w-full" />
+      <Skeleton class="h-12 w-100 max-w-full" />
+    </div>
+  );
+}
+
 type ReasoningRootProps = ComponentProps<typeof Collapsible> & {
   isStreaming?: boolean;
   duration?: number;
@@ -42,6 +64,12 @@ type ReasoningRootProps = ComponentProps<typeof Collapsible> & {
   autoClose?: boolean;
   /** 自动折叠延迟（毫秒）；默认 1000。 */
   autoCloseDelay?: number;
+  /** panel = Brain + Collapsible；transcript = chat details 折叠。 */
+  appearance?: ReasoningAppearance;
+  /** transcript 模式下的活动轨对齐变体。 */
+  variant?: ReasoningVariant;
+  /** transcript 模式正文；用于 thinking gap / empty track 判定。 */
+  text?: string;
 };
 
 export const Reasoning: Component<ReasoningRootProps> = (props) => {
@@ -55,8 +83,13 @@ export const Reasoning: Component<ReasoningRootProps> = (props) => {
     'onOpenChange',
     'autoClose',
     'autoCloseDelay',
+    'appearance',
+    'variant',
+    'text',
   ]);
-
+  const appearance = () => local.appearance ?? 'panel';
+  const variant = () => local.variant ?? 'default';
+  const transcriptText = () => local.text ?? '';
   const isStreaming = () => local.isStreaming ?? false;
   const autoCloseEnabled = () => local.autoClose ?? true;
   const autoCloseDelay = () => local.autoCloseDelay ?? AUTO_CLOSE_DELAY_MS;
@@ -137,23 +170,57 @@ export const Reasoning: Component<ReasoningRootProps> = (props) => {
   });
 
   const context: ReasoningContextValue = {
+    appearance,
+    variant,
     isStreaming,
     isOpen,
     setIsOpen,
     duration,
+    transcriptText,
   };
+
+  const activity = () => variant() === 'activity';
+  const hasText = () => transcriptText().trim().length > 0;
+  const showThinkingGap = () => appearance() === 'transcript' && activity() && !hasText() && isStreaming();
+  const showEmptyTrack = () => appearance() === 'transcript' && activity() && !hasText() && !isStreaming();
 
   return (
     <ReasoningContext.Provider value={context}>
-      <Collapsible
-        data-slot="reasoning"
-        class={cn('mb-16 w-full max-w-full', local.class)}
-        open={isOpen()}
-        onOpenChange={handleOpenChange}
-        {...rest}
+      <Show
+        when={appearance() === 'panel'}
+        fallback={(
+          <Show
+            when={!showEmptyTrack()}
+            fallback={<div class="reasoning-empty-track min-h-8" data-testid="reasoning-empty-track" aria-hidden="true" />}
+          >
+            <Show when={showThinkingGap()} fallback={(
+              <details
+                class={cn(
+                  'message-reasoning max-w-(--chat-reasoning-max) font-normal text-content-secondary',
+                  activity() && 'message-reasoning--activity',
+                  local.class,
+                )}
+                data-testid="message-reasoning"
+                data-slot="reasoning"
+              >
+                {local.children}
+              </details>
+            )}>
+              <ThinkingGap />
+            </Show>
+          </Show>
+        )}
       >
-        {local.children}
-      </Collapsible>
+        <Collapsible
+          data-slot="reasoning"
+          class={cn('mb-16 w-full max-w-full', local.class)}
+          open={isOpen()}
+          onOpenChange={handleOpenChange}
+          {...rest}
+        >
+          {local.children}
+        </Collapsible>
+      </Show>
     </ReasoningContext.Provider>
   );
 };
@@ -183,13 +250,36 @@ const defaultGetThinkingMessage = (
 
 export const ReasoningTrigger: Component<ReasoningTriggerProps> = (props) => {
   const [local, rest] = splitProps(props, ['class', 'children', 'shimmerClass', 'getThinkingMessage']);
-  const { isStreaming, duration, isOpen } = useReasoning();
+  const { appearance, variant, isStreaming, duration, isOpen, transcriptText } = useReasoning();
   const message = () =>
     (local.getThinkingMessage
       ?? ((streaming, value) => defaultGetThinkingMessage(streaming, value, local.shimmerClass)))(
       isStreaming(),
       duration(),
     );
+  const activity = () => variant() === 'activity';
+  const hasText = () => transcriptText().trim().length > 0;
+
+  if (appearance() === 'transcript') {
+    return (
+      <summary
+        data-slot="reasoning-trigger"
+        class={cn(
+          'relative z-1 inline-flex min-h-24 cursor-pointer list-none items-center text-11 font-normal tracking-wide text-content-muted hover:text-content-secondary',
+          activity() && 'min-h-16 pl-32',
+          !hasText() && !isStreaming() && 'cursor-default hover:text-content-muted',
+          local.class,
+        )}
+        {...rest}
+      >
+        {local.children ?? (
+          <Show when={isStreaming() && !hasText()} fallback="Reasoning">
+            Reasoning…
+          </Show>
+        )}
+      </summary>
+    );
+  }
 
   return (
     <CollapsibleTrigger
@@ -221,6 +311,28 @@ export const ReasoningTrigger: Component<ReasoningTriggerProps> = (props) => {
 
 export const ReasoningContent: Component<ComponentProps<typeof CollapsibleContent>> = (props) => {
   const [local, rest] = splitProps(props, ['class', 'children']);
+  const { appearance, variant, transcriptText } = useReasoning();
+  const activity = () => variant() === 'activity';
+  const hasText = () => transcriptText().trim().length > 0;
+
+  if (appearance() === 'transcript') {
+    return (
+      <Show when={hasText()}>
+        <p
+          data-slot="reasoning-content"
+          class={cn(
+            'message-reasoning__body m-0 mt-4 whitespace-pre-wrap text-12 font-normal leading-normal text-content-secondary',
+            activity() && 'message-reasoning__body--activity-rail relative z-1 pl-32',
+            local.class,
+          )}
+          {...rest}
+        >
+          {local.children}
+        </p>
+      </Show>
+    );
+  }
+
   return (
     <CollapsibleContent
       data-slot="reasoning-content"

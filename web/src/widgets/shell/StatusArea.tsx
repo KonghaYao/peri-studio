@@ -4,8 +4,20 @@ import type { ChatEntry } from '@/entities/chat/chat-view';
 import { selectChatFileChanges } from '@/entities/chat/chat-file-changes';
 import { formatWorkspacePathLabel } from '@/features/chat/tool-file-link';
 import { Ban, Bot, Check, ChevronDown, Circle, CircleAlert, GitBranch, Info, ListTodo, Pause, Workflow, X } from 'lucide-solid';
-import { Badge, IconButton, cn } from '@peri/ui';
-import { VSCodeFileIcon } from '@/widgets/resource/VSCodeFileIcon';
+import {
+  Badge,
+  IconButton,
+  PlanStep,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  TaskItem,
+  TaskItemFile,
+  VSCodeFileIcon,
+  cn,
+  type PlanStepStatus,
+} from '@peri/ui';
 
 type StatusTab = 'todo' | 'async' | 'changes';
 
@@ -53,6 +65,16 @@ function stateLabel(status: string) {
   return 'Queued';
 }
 
+function planStepStatus(status: string): PlanStepStatus {
+  if (status === 'completed') return 'complete';
+  if (status === 'in_progress' || status === 'running') return 'active';
+  return 'pending';
+}
+
+function planEntryLabel(entry: AgentPlanEntryInfo) {
+  return entry.status === 'in_progress' && entry.activeForm ? entry.activeForm : entry.content;
+}
+
 function planAutoExpandSignature(plan: AgentPlanEntryInfo[]) {
   return plan.map((entry) =>
     `${entry.id}:${entry.status}:${entry.content}:${entry.activeForm ?? ''}`,
@@ -62,6 +84,14 @@ function planAutoExpandSignature(plan: AgentPlanEntryInfo[]) {
 function asyncAutoExpandSignature(items: Array<{ id: string; status: string; label: string }>) {
   return items.map((item) => `${item.id}:${item.status}:${item.label}`).join('\0');
 }
+
+const tabTriggerClass = cn(
+  'inline-flex h-28 max-w-full items-center gap-6 rounded-md border-0 border-b-0 px-8 py-0 text-12 transition-colors duration-(--duration-fast)',
+  'text-content-muted hover:bg-interaction-hover hover:text-content-primary',
+  'data-selected:bg-accent-soft data-selected:font-medium data-selected:text-content-primary',
+);
+
+const statusRowClass = 'flex min-h-36 w-full items-center gap-12 rounded-md px-8 py-6 text-left transition-colors duration-(--duration-fast) hover:bg-interaction-hover';
 
 export function StatusArea(props: StatusAreaProps) {
   const [activeTab, setActiveTab] = createSignal<StatusTab>('todo');
@@ -132,7 +162,8 @@ export function StatusArea(props: StatusAreaProps) {
     lastAsyncSig = asyncSig;
   });
 
-  const statusRowClass = 'flex min-h-36 w-full items-center gap-12 rounded-md px-8 py-6 text-left transition-colors duration-(--duration-fast) hover:bg-interaction-hover';
+  const tabCountLabel = (tab: { id: StatusTab; count: number }) =>
+    tab.id === 'todo' && tab.count ? `${completedTodos()}/${tab.count}` : String(tab.count);
 
   return <Show when={tabs().length > 0}>
     <section data-testid="status-area" class="status-area chat-column mb-8" aria-label="Status area">
@@ -140,104 +171,115 @@ export function StatusArea(props: StatusAreaProps) {
         class="overflow-hidden border border-border-subtle bg-surface-overlay"
         style={{ 'border-radius': 'var(--decision-radius)' }}
       >
-        <header class="flex flex-col gap-8 px-16 pt-14 pb-8">
-          <div class="flex min-h-28 items-center gap-12">
-            <span class="text-12 font-medium text-content-secondary">Work status</span>
-            <IconButton
-              size="sm"
-              label={panelExpanded() ? 'Collapse status panel' : 'Expand status panel'}
-              showTooltip={false}
-              class="ml-auto border-0 bg-transparent text-content-muted hover:bg-transparent hover:text-content-primary"
-              aria-expanded={panelExpanded()}
-              onClick={() => setPanelExpanded((current) => !current)}
-            >
-              <ChevronDown
-                size={14}
-                strokeWidth={1.8}
-                class={cn('transition-transform duration-(--duration-fast)', !panelExpanded() && 'rotate-180')}
-              />
-            </IconButton>
-          </div>
-          <div class="flex min-w-0 flex-wrap items-center gap-2 text-content-muted" role="tablist" aria-label="Work status">
-            <For each={tabs()}>{(tab) => (
-              <button
-                type="button"
-                role="tab"
-                aria-selected={visibleTab() === tab.id}
-                aria-controls={`status-panel-${tab.id}`}
-                class={cn(
-                  'inline-flex h-28 max-w-full items-center gap-6 rounded-md border-0 px-8 text-12 transition-colors duration-(--duration-fast)',
-                  visibleTab() === tab.id
-                    ? 'bg-accent-soft font-medium text-content-primary'
-                    : 'text-content-muted hover:bg-interaction-hover hover:text-content-primary',
-                )}
-                onClick={() => setActiveTab(tab.id)}
+        <Tabs
+          value={visibleTab() ?? ''}
+          onChange={(value) => setActiveTab(value as StatusTab)}
+        >
+          <header class="flex flex-col gap-8 px-16 pt-14 pb-8">
+            <div class="flex min-h-28 items-center gap-12">
+              <span class="text-12 font-medium text-content-secondary">Work status</span>
+              <IconButton
+                size="sm"
+                label={panelExpanded() ? 'Collapse status panel' : 'Expand status panel'}
+                showTooltip={false}
+                class="ml-auto border-0 bg-transparent text-content-muted hover:bg-transparent hover:text-content-primary"
+                aria-expanded={panelExpanded()}
+                onClick={() => setPanelExpanded((current) => !current)}
               >
-                <tab.icon size={14} strokeWidth={1.8} aria-hidden="true" />
-                <span class="truncate">{tab.label}</span>
-                <span class="tabular-nums text-11 text-content-muted">
-                  {tab.id === 'todo' && tab.count ? `${completedTodos()}/${tab.count}` : tab.count}
-                </span>
-              </button>
-            )}</For>
-          </div>
-        </header>
-        <Show when={panelExpanded()}>
-          <div
-            class="ui-scrollbar max-h-(--status-panel-max-height) overflow-auto px-16 pb-14 pt-4"
-            role="tabpanel"
-            id={`status-panel-${visibleTab()}`}
-          >
-            <Show when={visibleTab() === 'todo'}>
-              <ol class="m-0 flex list-none flex-col gap-2 p-0">
+                <ChevronDown
+                  size={14}
+                  strokeWidth={1.8}
+                  class={cn('transition-transform duration-(--duration-fast)', !panelExpanded() && 'rotate-180')}
+                />
+              </IconButton>
+            </div>
+            <TabsList class="flex min-w-0 flex-wrap items-center gap-2 border-0" aria-label="Work status">
+              <For each={tabs()}>{(tab) => (
+                <TabsTrigger
+                  value={tab.id}
+                  id={`status-tab-${tab.id}`}
+                  aria-controls={`status-panel-${tab.id}`}
+                  class={tabTriggerClass}
+                >
+                  <tab.icon size={14} strokeWidth={1.8} aria-hidden="true" />
+                  <span class="truncate">{tab.label}</span>
+                  <span class="tabular-nums text-11 text-content-muted">{tabCountLabel(tab)}</span>
+                </TabsTrigger>
+              )}</For>
+            </TabsList>
+          </header>
+          <Show when={panelExpanded()}>
+            <TabsContent
+              value="todo"
+              id="status-panel-todo"
+              aria-labelledby="status-tab-todo"
+              class="ui-scrollbar max-h-(--status-panel-max-height) overflow-auto px-16 pb-14 pt-4 outline-none"
+            >
+              <div class="flex flex-col gap-2">
                 <For each={props.plan}>{(entry) => (
-                  <li class={statusRowClass}>
-                    <span class="grid size-20 shrink-0 place-items-center"><StateIcon status={entry.status} /></span>
-                    <span class="min-w-0 flex-1 truncate text-12 text-content-primary">
-                      {entry.status === 'in_progress' && entry.activeForm ? entry.activeForm : entry.content}
-                    </span>
-                    <Badge tone={stateTone(entry.status)}>{stateLabel(entry.status)}</Badge>
-                  </li>
+                  <PlanStep
+                    status={planStepStatus(entry.status)}
+                    label={planEntryLabel(entry)}
+                    class="min-h-36 rounded-md px-8 py-6 transition-colors duration-(--duration-fast) hover:bg-interaction-hover"
+                  >
+                    <div class="flex items-center justify-end">
+                      <Badge tone={stateTone(entry.status)}>{stateLabel(entry.status)}</Badge>
+                    </div>
+                  </PlanStep>
                 )}</For>
-              </ol>
-            </Show>
-            <Show when={visibleTab() === 'async'}>
-              <ol class="m-0 flex list-none flex-col gap-2 p-0">
+              </div>
+            </TabsContent>
+            <TabsContent
+              value="async"
+              id="status-panel-async"
+              aria-labelledby="status-tab-async"
+              class="ui-scrollbar max-h-(--status-panel-max-height) overflow-auto px-16 pb-14 pt-4 outline-none"
+            >
+              <ul class="m-0 flex list-none flex-col gap-2 p-0">
                 <For each={asyncItems()}>{(item) => (
-                  <li class={statusRowClass}>
-                    <span class="grid size-20 shrink-0 place-items-center"><StateIcon status={item.status} /></span>
-                    <span class="inline-flex w-54 shrink-0 items-center gap-4 text-10 font-semibold uppercase tracking-wide text-content-muted">
-                      <Show when={item.badgeKind === 'agent'} fallback={<Workflow size={12} strokeWidth={1.8} aria-hidden="true" />}>
-                        <Bot size={12} strokeWidth={1.8} aria-hidden="true" />
-                      </Show>
-                      {item.badgeKind === 'agent' ? 'Agent' : 'Workflow'}
-                    </span>
-                    <span class="min-w-0 flex-1 truncate text-12 text-content-primary">{item.label}</span>
-                    <span class="inline-flex shrink-0 items-center gap-6 whitespace-nowrap">
-                      <Badge tone={stateTone(item.status)}>{stateLabel(item.status)}</Badge>
-                      <Show when={item.toolCount}>
-                        <span class="text-10 tabular-nums text-content-muted">{item.toolCount} tools</span>
-                      </Show>
-                    </span>
+                  <li>
+                    <TaskItem class={cn(statusRowClass, 'text-12 text-content-primary')}>
+                      <span class="grid size-20 shrink-0 place-items-center"><StateIcon status={item.status} /></span>
+                      <span class="inline-flex w-54 shrink-0 items-center gap-4 text-10 font-semibold uppercase tracking-wide text-content-muted">
+                        <Show when={item.badgeKind === 'agent'} fallback={<Workflow size={12} strokeWidth={1.8} aria-hidden="true" />}>
+                          <Bot size={12} strokeWidth={1.8} aria-hidden="true" />
+                        </Show>
+                        {item.badgeKind === 'agent' ? 'Agent' : 'Workflow'}
+                      </span>
+                      <span class="min-w-0 flex-1 truncate">{item.label}</span>
+                      <span class="inline-flex shrink-0 items-center gap-6 whitespace-nowrap">
+                        <Badge tone={stateTone(item.status)}>{stateLabel(item.status)}</Badge>
+                        <Show when={item.toolCount}>
+                          <span class="text-10 tabular-nums text-content-muted">{item.toolCount} tools</span>
+                        </Show>
+                      </span>
+                    </TaskItem>
                   </li>
                 )}</For>
-              </ol>
-            </Show>
-            <Show when={visibleTab() === 'changes'}>
-              <ol class="m-0 flex list-none flex-col gap-2 p-0">
+              </ul>
+            </TabsContent>
+            <TabsContent
+              value="changes"
+              id="status-panel-changes"
+              aria-labelledby="status-tab-changes"
+              class="ui-scrollbar max-h-(--status-panel-max-height) overflow-auto px-16 pb-14 pt-4 outline-none"
+            >
+              <ul class="m-0 flex list-none flex-col gap-2 p-0">
                 <For each={changes()}>{(change) => (
-                  <li class={cn(statusRowClass, 'font-mono')}>
-                    <VSCodeFileIcon path={change.path} size={16} class="size-16 shrink-0" />
-                    <span title={change.path} class="min-w-0 flex-1 truncate text-12 text-content-primary">
-                      {formatWorkspacePathLabel(change.path, props.projectCwd)}
-                    </span>
-                    <span class="shrink-0 text-10 uppercase tracking-wide text-content-muted">{change.operation}</span>
+                  <li>
+                    <TaskItem class={cn(statusRowClass, 'font-mono text-12 text-content-primary')}>
+                      <VSCodeFileIcon path={change.path} size={16} class="size-16 shrink-0" />
+                      <TaskItemFile class="min-w-0 flex-1 truncate border-0 bg-transparent px-0 py-0" title={change.path}>
+                        {formatWorkspacePathLabel(change.path, props.projectCwd)}
+                      </TaskItemFile>
+                      <span class="shrink-0 text-10 uppercase tracking-wide text-content-muted">{change.operation}</span>
+                    </TaskItem>
                   </li>
                 )}</For>
-              </ol>
-            </Show>
-          </div>
-        </Show>
+              </ul>
+            </TabsContent>
+          </Show>
+        </Tabs>
       </div>
     </section>
   </Show>;

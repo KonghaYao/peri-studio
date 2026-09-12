@@ -13,7 +13,7 @@ import {
   startMcpOAuth,
 } from '@/features/mcp/mcp';
 import { RefreshCw } from 'lucide-solid';
-import { ResourceSectionTitle } from '@/widgets/resource/ResourceSectionTitle';
+import { ResourceSectionTitle } from '@peri/ui';
 
 export function McpPanelContent(props: { embedded?: boolean } = {}) {
   createEffect(() => {

@@ -9,7 +9,7 @@ import {
   layoutGitGraph,
   type GitGraphLayoutCommit,
 } from '@peri/ui';
-import { GitGraphRefBadge } from './GitGraphRefBadge';
+import { GitGraphRefBadge } from '@peri/ui';
 import type { GitGraphCommit, GitGraphRef } from './types';
 import { gitLogHasIncompleteDag } from '@/features/resource/map-git-log';
 import type { GitGraphActionKind, GitGraphActionParams } from '@/features/resource/git-graph-mutations';
@@ -205,14 +205,14 @@ export function GitGraphPanel(props: {
   });
 
   return (
-    <div class="git-graph-panel flex h-full min-h-0 flex-col bg-surface-overlay" aria-label="Git Graph">
+    <div class="ui-git-graph-panel flex h-full min-h-0 flex-col bg-surface-overlay" aria-label="Git Graph">
       <Show when={!props.nested}>
-        <div class="git-graph-controls flex h-36 shrink-0 items-center gap-8 border-b border-border-subtle px-12">
+        <div class="ui-git-graph-controls flex h-36 shrink-0 items-center gap-8 border-b border-border-subtle px-12">
           <span class="min-w-0 flex-1 text-11 font-semibold tracking-wide uppercase text-content-muted">Git Graph</span>
           <IconButton
             size="compact"
             label="Refresh graph"
-            class="git-graph-control-btn"
+            class="ui-git-graph-control-btn"
             onClick={() => props.onRefresh?.()}
           >
             <RefreshCw size={14} strokeWidth={1.7} />
@@ -226,11 +226,11 @@ export function GitGraphPanel(props: {
         </div>
       </Show>
 
-      <div class="git-graph-content ui-scrollbar min-h-0 flex-1 overflow-auto">
-        <div class="git-graph-scroll relative" style={{ height: `${svgHeight()}px` }}>
+      <div class="ui-git-graph-content ui-scrollbar min-h-0 flex-1 overflow-auto">
+        <div class="ui-git-graph-scroll relative" style={{ height: `${svgHeight()}px` }}>
           <svg
             data-testid="git-graph-svg"
-            class="git-graph-svg pointer-events-none absolute top-0 left-0 z-2"
+            class="ui-git-graph-svg pointer-events-none absolute top-0 left-0 z-2"
             width={graphColWidth()}
             height={svgHeight()}
             aria-hidden="true"
@@ -238,15 +238,15 @@ export function GitGraphPanel(props: {
             <For each={layout().paths}>
               {(segment) => (
                 <>
-                  <path class="git-graph-path-shadow" d={segment.d} stroke={segment.shadowColor} />
-                  <path class="git-graph-path-line" d={segment.d} stroke={segment.color} />
+                  <path class="ui-git-graph-path-shadow" d={segment.d} stroke={segment.shadowColor} />
+                  <path class="ui-git-graph-path-line" d={segment.d} stroke={segment.color} />
                 </>
               )}
             </For>
             <For each={layout().nodes}>
               {(node) => (
                 <circle
-                  class={cn('pointer-events-auto', node.isCurrent && 'git-graph-node-current')}
+                  class={cn('pointer-events-auto', node.isCurrent && 'ui-git-graph-node-current')}
                   cx={node.cx}
                   cy={nodeCy(node.index)}
                   r={node.isStash ? 4.5 : 4}
@@ -264,7 +264,7 @@ export function GitGraphPanel(props: {
           <table
             ref={tableRef}
             data-testid="git-graph-table"
-            class="git-graph-table w-full border-collapse"
+            class="ui-git-graph-table w-full border-collapse"
             style={{ 'table-layout': 'fixed' }}
           >
             <colgroup>
@@ -276,11 +276,11 @@ export function GitGraphPanel(props: {
             </colgroup>
             <thead>
               <tr>
-                <th class="git-graph-th git-graph-graph-col">Graph</th>
-                <th class="git-graph-th">Description</th>
-                <th class="git-graph-th git-graph-date-col">Date</th>
-                <th class="git-graph-th git-graph-author-col">Author</th>
-                <th class="git-graph-th git-graph-commit-col">Commit</th>
+                <th class="ui-git-graph-th ui-git-graph-graph-col">Graph</th>
+                <th class="ui-git-graph-th">Description</th>
+                <th class="ui-git-graph-th ui-git-graph-date-col">Date</th>
+                <th class="ui-git-graph-th ui-git-graph-author-col">Author</th>
+                <th class="ui-git-graph-th ui-git-graph-commit-col">Commit</th>
               </tr>
             </thead>
             <tbody>
@@ -297,7 +297,7 @@ export function GitGraphPanel(props: {
                   return (
                     <tr
                       class={cn(
-                        'git-graph-row',
+                        'ui-git-graph-row',
                         rowState(),
                         isCurrent() && 'current',
                       )}
@@ -307,12 +307,12 @@ export function GitGraphPanel(props: {
                       onClick={() => setSelected(index())}
                       onContextMenu={(event) => openCommitMenu(event, commit)}
                     >
-                      <td class="git-graph-td git-graph-graph-col" />
-                      <td class="git-graph-td git-graph-desc-col">
-                        <span class="git-graph-description">
+                      <td class="ui-git-graph-td ui-git-graph-graph-col" />
+                      <td class="ui-git-graph-td ui-git-graph-desc-col">
+                        <span class="ui-git-graph-description">
                           <Show when={isCurrent()}>
                             <span
-                              class="git-graph-head-dot"
+                              class="ui-git-graph-head-dot"
                               style={{ 'border-color': `var(--git-graph-color-${colorIndex() % 12})` }}
                               aria-hidden="true"
                             />
@@ -329,12 +329,12 @@ export function GitGraphPanel(props: {
                               )}
                             </For>
                           </Show>
-                          <span class="git-graph-message">{displayMessage(commit)}</span>
+                          <span class="ui-git-graph-message">{displayMessage(commit)}</span>
                         </span>
                       </td>
-                      <td class="git-graph-td git-graph-date-col text-content-muted">{commit.time || commit.date}</td>
-                      <td class="git-graph-td git-graph-author-col text-content-muted">{commit.author}</td>
-                      <td class="git-graph-td git-graph-commit-col font-mono text-content-muted">
+                      <td class="ui-git-graph-td ui-git-graph-date-col text-content-muted">{commit.time || commit.date}</td>
+                      <td class="ui-git-graph-td ui-git-graph-author-col text-content-muted">{commit.author}</td>
+                      <td class="ui-git-graph-td ui-git-graph-commit-col font-mono text-content-muted">
                         {commit.shortHash ?? commit.hash?.slice(0, 8) ?? commit.id.slice(0, 8)}
                       </td>
                     </tr>

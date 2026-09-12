@@ -1,7 +1,6 @@
 import { createEffect, createSignal, Show } from 'solid-js';
 import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
 import {
-  DropdownMenuItem,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -12,7 +11,7 @@ import { Pencil } from 'lucide-solid';
 import { formatCompactRelativeTime, sessionDisplayTitle } from '@/features/session/recovery-state';
 import { runConfirmedMutation } from '@/features/session/form-mutation';
 import { cn } from '@peri/ui';
-import { SessionRowAccessory } from './sidebar-parts';
+import { SessionRowAccessory } from '@peri/ui';
 
 export interface SessionRowState {
   label: string;
@@ -124,11 +123,15 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
         onArchive={() => props.onArchiveRequest(props.session.id)}
         menuId={`${renameId()}-menu`}
         menuLabel={`Session actions: ${displayTitle()}`}
-        menuContent={
-          <DropdownMenuItem disabled={props.readOnly || submitting()} onSelect={() => props.onRenameOpenChange(true)}>
-            <RenameIcon />Rename session
-          </DropdownMenuItem>
-        }
+        menuItems={[{
+          id: 'rename',
+          label: 'Rename session',
+          icon: <RenameIcon />,
+          disabled: props.readOnly || submitting(),
+        }]}
+        onMenuSelect={(id) => {
+          if (id === 'rename') props.onRenameOpenChange(true);
+        }}
       />
       <Popover open={props.renameOpen} onOpenChange={(open) => props.onRenameOpenChange(open)} placement="bottom-end">
         <PopoverTrigger as="span" class="sr-only" aria-label={`Rename ${displayTitle()}`} />

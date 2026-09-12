@@ -1,5 +1,16 @@
-import { For, Show, createEffect, createMemo, createSignal, onCleanup } from 'solid-js';
-import { Button, IconButton, InlineNotice, LoadingState } from '@peri/ui';
+import { For, Show, createEffect, createMemo, createSignal, onCleanup, type JSX } from 'solid-js';
+import {
+  Button,
+  ExplorerItemMenu,
+  FileTree,
+  FileTreeInlineNameEditor,
+  IconButton,
+  InlineNotice,
+  LoadingState,
+  cn,
+  type ExplorerMenuAction,
+  type FileTreeNode,
+} from '@peri/ui';
 import {
   createEmptyExplorerFile, createResourceDirectory, deleteResourcePath, enqueueExplorerUpload,
   fsMutationAvailability, fsMutationState, moveResourcePath, openFilePreview,
@@ -8,15 +19,20 @@ import {
   workspaceUploadProgressPercent,
 } from '@/store';
 import type { ResourceEntry } from '@/entities/resource/resource-view';
+import { validateMutationName } from '@/features/resource/fs-mutation-controller';
 import { FilePlus, FolderPlus, MoreHorizontal, RefreshCw } from 'lucide-solid';
-import { FileTree, type FileTreeNode } from './FileTree';
-import { ExplorerDeleteDialog, ExplorerInlineEditor, ExplorerMoveDialog, type ExplorerEdit } from './ExplorerMutationDialogs';
-import { ExplorerItemMenu, type ExplorerMenuAction } from './ExplorerItemMenu';
-import { ResourceSectionTitle } from './ResourceSectionTitle';
+import { ExplorerDeleteDialog, ExplorerMoveDialog, type ExplorerEdit } from './ExplorerMutationDialogs';
+import { ResourceSectionTitle } from '@peri/ui';
 import { createExplorerTreeFocus } from './explorer-tree-focus';
 import { dataTransferHasFiles, parseFileDropTransfer, preventBrowserFileDrop } from '../composer/composer-upload-drop';
-import { cn } from '@peri/ui';
 function RefreshIcon() { return <RefreshCw size={14} strokeWidth={1.8} />; }
+
+function inlineCreateKind(edit: ExplorerEdit | null, parentPath: string): 'file' | 'folder' | undefined {
+  if (!edit || edit.mode === 'rename' || edit.parentPath !== parentPath) return undefined;
+  return edit.mode === 'new-file' ? 'file' : 'folder';
+}
+
+const basename = (path: string) => path.split('/').at(-1) || path;
 
 type ExplorerMenuTarget =
   | { scope: 'root'; node: null; x: number; y: number }
@@ -60,6 +76,7 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
   };
   const [localActivePath, setLocalActivePath] = createSignal('');
   const [edit, setEdit] = createSignal<ExplorerEdit | null>(null);
+  const [inlineError, setInlineError] = createSignal<string | undefined>();
   const [moveNode, setMoveNode] = createSignal<FileTreeNode | null>(null);
   const [deleteNode, setDeleteNode] = createSignal<FileTreeNode | null>(null);
   const [menuTarget, setMenuTarget] = createSignal<ExplorerMenuTarget | null>(null);
@@ -183,7 +200,7 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
   const navigateTree = (event: KeyboardEvent) => {
     if (event.key === 'F2' && selectedNode()) {
       event.preventDefault();
-      setEdit({ mode: 'rename', node: selectedNode()! });
+      startEdit({ mode: 'rename', node: selectedNode()! });
       return;
     }
     if ((event.key === 'Delete' || event.key === 'Backspace') && selectedNode()) {
@@ -248,10 +265,58 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
   const editParent = (node: FileTreeNode | null) => node?.kind === 'folder'
     ? node.path
     : node?.path.includes('/') ? node.path.slice(0, node.path.lastIndexOf('/')) : '';
+  const startEdit = (next: ExplorerEdit) => {
+    setInlineError(undefined);
+    setEdit(next);
+    if (next.mode !== 'rename' && next.parentPath) expandFolder(next.parentPath);
+  };
+  createEffect(() => {
+    const current = edit();
+    if (!current || current.mode === 'rename' || !current.parentPath) return;
+    if (!expanded().has(current.parentPath)) expandFolder(current.parentPath);
+  });
+  const cancelInline = () => {
+    setEdit(null);
+    setInlineError(undefined);
+  };
+  const handleInlineCommit = (value: string) => {
+    const current = edit();
+    if (!current) return;
+    const issue = validateMutationName(value);
+    if (issue) {
+      setInlineError(issue);
+      return;
+    }
+    commitEdit(current, value);
+    setInlineError(undefined);
+  };
+  const renderInlineNameEditor = (editor: {
+    depth: number;
+    kind: 'file' | 'folder';
+    path?: string;
+    mode: 'create' | 'rename';
+    initialValue?: string;
+    placeholder?: string;
+    ariaLabel: string;
+  }): JSX.Element => (
+    <FileTreeInlineNameEditor
+      depth={editor.depth}
+      kind={editor.kind}
+      path={editor.path}
+      mode={editor.mode}
+      initialValue={editor.initialValue}
+      placeholder={editor.placeholder}
+      invalid={Boolean(inlineError())}
+      errorMessage={inlineError()}
+      ariaLabel={editor.ariaLabel}
+      onCommit={handleInlineCommit}
+      onCancel={cancelInline}
+    />
+  );
   const handleMenuAction = async (action: ExplorerMenuAction, node: FileTreeNode | null) => {
     if (action === 'copy-path' && node) { await navigator.clipboard.writeText(node.path); return; }
-    if (action === 'new-file' || action === 'new-folder') setEdit({ mode: action, parentPath: editParent(node) });
-    else if (action === 'rename' && node) setEdit({ mode: 'rename', node });
+    if (action === 'new-file' || action === 'new-folder') startEdit({ mode: action, parentPath: editParent(node) });
+    else if (action === 'rename' && node) startEdit({ mode: 'rename', node });
     else if (action === 'move' && node) setMoveNode(node);
     else if (node) setDeleteNode(node);
   };
@@ -311,12 +376,11 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
     <ResourceSectionTitle>
       <span>Files</span>
       <span class="ml-auto flex items-center gap-2">
-        <IconButton label="New File" showTooltip={false} size="compact" disabled={!newFileAvailable()} title={newFileAvailable() ? undefined : newFileBlockedMessage()} onClick={() => setEdit({ mode: 'new-file', parentPath: editParent(selectedNode()) })} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><FilePlus size={14} /></IconButton>
-        <IconButton label="New Folder" showTooltip={false} size="compact" disabled={!mutationAvailability().available} title={mutationAvailability().reason} onClick={() => setEdit({ mode: 'new-folder', parentPath: editParent(selectedNode()) })} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><FolderPlus size={14} /></IconButton>
+        <IconButton label="New File" showTooltip={false} size="compact" disabled={!newFileAvailable()} title={newFileAvailable() ? undefined : newFileBlockedMessage()} onClick={() => startEdit({ mode: 'new-file', parentPath: editParent(selectedNode()) })} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><FilePlus size={14} /></IconButton>
+        <IconButton label="New Folder" showTooltip={false} size="compact" disabled={!mutationAvailability().available} title={mutationAvailability().reason} onClick={() => startEdit({ mode: 'new-folder', parentPath: editParent(selectedNode()) })} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><FolderPlus size={14} /></IconButton>
         <IconButton label="Refresh Explorer" showTooltip={false} size="compact" onClick={refreshResourceProject} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><RefreshIcon /></IconButton>
       </span>
     </ResourceSectionTitle>
-    <Show when={edit()}>{(current) => <ExplorerInlineEditor edit={current()} onCommit={commitEdit} onCancel={() => setEdit(null)} />}</Show>
     <Show when={fsMutationState().projectId === projectId() && fsMutationState().message}>
       <InlineNotice class="mx-8 mb-8" tone={fsMutationState().phase === 'conflict' || fsMutationState().phase === 'error' ? 'warning' : 'info'} role="status" title="File change">
         <span>{fsMutationState().message}</span>
@@ -412,6 +476,16 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
       onDrop={(event) => handleDrop('', event)}
     >
       <Show when={resourceWorkspace().directories['']} fallback={<LoadingState label="Loading files" class="m-8 p-8! text-left!" />}>
+        <Show when={inlineCreateKind(edit(), '')}>
+          {(kind) => renderInlineNameEditor({
+            depth: 0,
+            kind: kind(),
+            path: '',
+            mode: 'create',
+            placeholder: kind() === 'file' ? 'New file name' : 'New folder name',
+            ariaLabel: kind() === 'file' ? 'New file name' : 'New folder name',
+          })}
+        </Show>
         <FileTree
           nodes={nodes()}
           expandedPaths={expanded()}
@@ -420,6 +494,30 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
           onActivePathChange={setActivePath}
           renderFileTrailing={renderRowActions}
           renderFolderTrailing={renderRowActions}
+          renderNodeRow={(node, context) => {
+            const current = edit();
+            if (!current || current.mode !== 'rename' || current.node.path !== node.path) return undefined;
+            return renderInlineNameEditor({
+              depth: context.depth,
+              kind: context.kind,
+              path: node.path,
+              mode: 'rename',
+              initialValue: context.kind === 'file' ? basename(node.path) : node.name,
+              ariaLabel: 'Rename item',
+            });
+          }}
+          renderFolderFooter={(node, depth) => {
+            const kind = inlineCreateKind(edit(), node.path);
+            if (!kind) return undefined;
+            return renderInlineNameEditor({
+              depth: depth + 1,
+              kind,
+              path: node.path,
+              mode: 'create',
+              placeholder: kind === 'file' ? 'New file name' : 'New folder name',
+              ariaLabel: kind === 'file' ? 'New file name' : 'New folder name',
+            });
+          }}
           onNodeContextMenu={(node, event) => {
             setActivePath(node.path);
             openNodeMenu(node, event);

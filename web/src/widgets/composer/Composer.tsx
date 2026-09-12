@@ -2,7 +2,7 @@
 // 编排留在本 shell；工具行 / 附件条 / 编辑器拆至同目录子组件。
 
 import { Show, type JSX } from 'solid-js';
-import { cn } from '@peri/ui';
+import { cn, ComposerQueue } from '@peri/ui';
 import { SlashMenu } from './SlashMenu';
 import { ComposerUploadSurface } from './ComposerUploadSurface';
 import { ComposerStagedAssets } from './ComposerStagedAssets';
@@ -37,6 +37,16 @@ export function Composer(props: {
         centered() ? 'composer-wrap--centered' : 'composer-wrap--overlay chat-column',
       )}
     >
+      <Show when={state.queueItems().length > 0}>
+        <ComposerQueue
+          class="mb-8"
+          items={state.queueItems()}
+          onSendNow={state.sendQueueItemNow}
+          onEdit={state.editQueueItem}
+          onRemove={state.removeQueueItem}
+          onMore={state.moreQueueItem}
+        />
+      </Show>
       <Show when={state.slash.slashMenuOpen()}>
         <SlashMenu
           id={state.slashMenuId}

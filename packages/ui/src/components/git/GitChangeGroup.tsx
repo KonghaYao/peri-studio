@@ -10,7 +10,7 @@ export function GitChangeGroup(props: {
   return (
     <section class="pb-2">
       <div
-        data-testid={props.titleTestId}
+        data-testid={props.titleTestId ?? 'resource-group-title'}
         class="flex items-center gap-4 px-10 pb-4 pt-12"
       >
         <span class="min-w-0 flex-1 text-12 text-content-muted">{props.label}</span>

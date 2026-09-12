@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { endsInsideFence, prepareMarkdownSource, safeRemoteImageSource } from './source';
+import { safeRemoteImageSource } from '@peri/ui';
+import { endsInsideFence, prepareMarkdownSource } from './source';
 
 describe('Markdown source preparation', () => {
   it('normalizes math and code metadata without rewriting fenced content', () => {

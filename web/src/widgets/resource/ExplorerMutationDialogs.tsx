@@ -1,42 +1,10 @@
 import { createEffect, createSignal, Show } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, TextField } from '@peri/ui';
-import { joinPath, parentPath, validateMutationName } from '@/features/resource/fs-mutation-controller';
-import type { FileTreeNode } from './FileTree';
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, TextField, type FileTreeNode } from '@peri/ui';
+import { joinPath, parentPath } from '@/features/resource/fs-mutation-controller';
 
 export type ExplorerEdit =
   | { mode: 'new-file' | 'new-folder'; parentPath: string }
   | { mode: 'rename'; node: FileTreeNode };
-
-export function ExplorerInlineEditor(props: {
-  edit: ExplorerEdit;
-  onCommit: (edit: ExplorerEdit, value: string) => void;
-  onCancel: () => void;
-}) {
-  const [value, setValue] = createSignal(props.edit.mode === 'rename' ? props.edit.node.name : '');
-  const [error, setError] = createSignal<string | null>(null);
-  let input: HTMLInputElement | undefined;
-  createEffect(() => queueMicrotask(() => { input?.focus(); input?.select(); }));
-  const commit = () => {
-    const issue = validateMutationName(value());
-    if (issue) { setError(issue); return; }
-    props.onCommit(props.edit, value());
-  };
-  return <div class="mx-8 mb-6 flex flex-col gap-4" role="group" aria-label="Name editor">
-    <TextField
-      ref={input}
-      value={value()}
-      aria-label={props.edit.mode === 'rename' ? 'Rename item' : props.edit.mode === 'new-file' ? 'New file name' : 'New folder name'}
-      aria-invalid={!!error()}
-      onInput={(event) => { setValue(event.currentTarget.value); setError(null); }}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter') { event.preventDefault(); commit(); }
-        else if (event.key === 'Escape') { event.preventDefault(); props.onCancel(); }
-        event.stopPropagation();
-      }}
-    />
-    <Show when={error()}><span class="text-11 text-danger" role="alert">{error()}</span></Show>
-  </div>;
-}
 
 export function ExplorerMoveDialog(props: {
   node: FileTreeNode | null;

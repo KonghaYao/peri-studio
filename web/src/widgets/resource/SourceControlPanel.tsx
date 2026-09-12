@@ -1,13 +1,12 @@
-import { For, Show, createMemo, createSignal } from 'solid-js';
-import { Button, Dialog, DialogContent, DialogTitle, LoadingState, Textarea } from '@peri/ui';
+import { For, Show, createSignal } from 'solid-js';
+import { Dialog, DialogContent, DialogTitle, GitBranchBar, GitChangeGroup, GitCommitBar, LoadingState } from '@peri/ui';
 import { mutateGitResource, openGitDiffPreview, openMoreGitChanges, resourceWorkspace, retryGitRepositoryMutation, retryGitResourceMutation } from '@/store';
 import type { RepositoryState } from '@/features/resource/resource-store';
 import { readOnly } from '@/features/auth/auth-state';
 import { ConfirmDialog } from '@/widgets/shell/shared/ConfirmDialog';
 import { MAX_COMMIT_MESSAGE_BYTES } from '@/features/resource/resource-mutations';
-import { GitBranch } from 'lucide-solid';
-import { GitChangeGroup, GitChangeTree } from './git';
-import { ResourceSectionTitle } from './ResourceSectionTitle';
+import { GitChangeTree } from './git';
+import { ResourceSectionTitle } from '@peri/ui';
 import type { GitChange, GitChangeGroupId } from './git/types';
 
 const GROUPS: Array<{ id: GitChangeGroupId; label: string }> = [
@@ -49,7 +48,10 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
   const repoMutation = () => resourceWorkspace().repoMutations?.[props.repo.id];
   const repoBusy = () => !!repoMutation()?.pending || Object.values(resourceWorkspace().mutations ?? {}).some((mutation) => mutation.repoId === props.repo.id && mutation.pending);
   const staged = () => props.repo.groups.index?.count ?? 0;
-  const messageTooLarge = createMemo(() => new TextEncoder().encode(message().trim()).byteLength > MAX_COMMIT_MESSAGE_BYTES);
+  const syncBusyAction = () => {
+    const action = repoMutation()?.action;
+    return action === 'pull' || action === 'push' || action === 'sync' ? action : undefined;
+  };
   const commit = () => {
     const submitted = message().trim();
     if (!mutateGitResource(props.repo.id, 'commit', [], submitted)) return;
@@ -73,37 +75,41 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
   };
 
   return <><section class="border-b border-border-subtle pb-6">
-    <div class="flex h-36 items-center gap-6 px-8 text-12 font-medium text-content-primary" title={props.repo.root}>
-      <GitBranch size={14} strokeWidth={1.8} /><span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{props.repo.name}</span>
-      <span class="max-w-100 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-10 font-normal text-content-muted">{branch()}</span>
-    </div>
-    <Show when={(props.repo.ahead ?? 0) + (props.repo.behind ?? 0) > 0}>
-      <div class="px-28 pb-4 text-10 text-content-muted">↑ {props.repo.ahead ?? 0} ↓ {props.repo.behind ?? 0}</div>
-    </Show>
-    <div class="px-8 pb-7">
-      <Textarea
-        aria-label="Commit message"
-        placeholder="Message (Ctrl+Enter to commit)"
-        maxlength={4096}
-        rows={2}
-        value={message()}
-        disabled={readOnly() || repoBusy()}
-        onInput={(event) => setMessage(event.currentTarget.value)}
-        onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && staged() > 0 && message().trim() && !messageTooLarge()) { event.preventDefault(); commit(); } }}
-        class="box-border min-h-52 w-full resize-y rounded-md border border-border-subtle bg-surface-sunken px-8 py-6 text-11 leading-16 text-content-primary outline-none focus-visible:border-focus-ring"
-      />
-      <Show when={messageTooLarge()}><div role="alert" class="mt-4 text-10 leading-14 text-danger-solid">Commit message must be at most {MAX_COMMIT_MESSAGE_BYTES.toLocaleString()} UTF-8 bytes.</div></Show>
-      <Button size="compact" variant="primary" class="mt-8 w-full min-h-28! text-11! pointer-coarse:min-h-44!" aria-label="Commit staged changes" busy={repoMutation()?.action === 'commit' && repoMutation()?.pending} disabled={readOnly() || repoBusy() || !props.repo.generation || staged() === 0 || !message().trim() || messageTooLarge()} onClick={commit}>Commit</Button>
-      <div class="mt-8 grid grid-cols-3 gap-4">
-        <Button size="compact" class="min-h-28! px-4! text-10! pointer-coarse:min-h-44!" aria-label="Pull from upstream" busy={repoMutation()?.action === 'pull' && repoMutation()?.pending} disabled={readOnly() || repoBusy() || !props.repo.generation || !props.repo.upstream} title={props.repo.upstream ? `Pull ${props.repo.upstream}` : 'Configure an upstream branch first'} onClick={() => runRepoAction('pull')}>Pull</Button>
-        <Button size="compact" class="min-h-28! px-4! text-10! pointer-coarse:min-h-44!" aria-label="Synchronize changes" busy={repoMutation()?.action === 'sync' && repoMutation()?.pending} disabled={readOnly() || repoBusy() || !props.repo.generation || !props.repo.upstream} title={props.repo.upstream ? `Pull then push ${props.repo.upstream}` : 'Configure an upstream branch first'} onClick={() => runRepoAction('sync')}>Sync</Button>
-        <Button size="compact" class="min-h-28! px-4! text-10! pointer-coarse:min-h-44!" aria-label="Push to upstream" busy={repoMutation()?.action === 'push' && repoMutation()?.pending} disabled={readOnly() || repoBusy() || !props.repo.generation || !props.repo.upstream} title={props.repo.upstream ? `Push ${props.repo.upstream}` : 'Configure an upstream branch first'} onClick={() => runRepoAction('push')}>Push</Button>
-      </div>
-      <Show when={repoMutation()?.error}>{(error) => <div role="alert" class="mt-8 flex min-h-28 items-center gap-6 border border-danger-border bg-danger-soft px-8 py-5 text-10 leading-14 text-danger-solid">
-        <span class="min-w-0 flex-1">{error()}</span>
-        <Show when={repoMutation()?.retryable}><button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={retryRepoMutation}>Retry</button></Show>
-      </div>}</Show>
-    </div>
+    <GitBranchBar
+      repoName={props.repo.name}
+      branch={branch()}
+      root={props.repo.root}
+      ahead={props.repo.ahead}
+      behind={props.repo.behind}
+      hasUpstream={!!props.repo.upstream}
+      readOnly={readOnly() || !props.repo.generation}
+      busy={repoBusy()}
+      busyAction={repoMutation()?.pending ? syncBusyAction() : undefined}
+      onPull={() => runRepoAction('pull')}
+      onSync={() => runRepoAction('sync')}
+      onPush={() => runRepoAction('push')}
+      pullTitle={props.repo.upstream ? `Pull ${props.repo.upstream}` : 'Configure an upstream branch first'}
+      syncTitle={props.repo.upstream ? `Pull then push ${props.repo.upstream}` : 'Configure an upstream branch first'}
+      pushTitle={props.repo.upstream ? `Push ${props.repo.upstream}` : 'Configure an upstream branch first'}
+    />
+    <GitCommitBar
+      class="px-8 pb-7"
+      value={message()}
+      onValueChange={setMessage}
+      onCommit={commit}
+      stagedCount={staged()}
+      rows={2}
+      maxBytes={MAX_COMMIT_MESSAGE_BYTES}
+      commitShortcut="mod+enter"
+      readOnly={readOnly()}
+      busy={repoBusy()}
+      commitBusy={repoMutation()?.action === 'commit' && repoMutation()?.pending}
+      commitDisabled={!props.repo.generation}
+    />
+    <Show when={repoMutation()?.error}>{(error) => <div role="alert" class="mx-8 mb-7 flex min-h-28 items-center gap-6 border border-danger-border bg-danger-soft px-8 py-5 text-10 leading-14 text-danger-solid">
+      <span class="min-w-0 flex-1">{error()}</span>
+      <Show when={repoMutation()?.retryable}><button type="button" class="shrink-0 border-0 bg-transparent px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={retryRepoMutation}>Retry</button></Show>
+    </div>}</Show>
     <For each={GROUPS}>{(group) => {
       const state = () => props.repo.groups[group.id];
       return <Show when={state()?.count}>

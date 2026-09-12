@@ -1,5 +1,5 @@
-import { For, Match, Show, Switch, createMemo, onCleanup, onMount } from 'solid-js';
-import { Button, DownloadIcon, IconButton, LoadingState } from '@peri/ui';
+import { Match, Show, Switch, createMemo, onCleanup, onMount } from 'solid-js';
+import { Button, DownloadIcon, FilePreviewPanel, IconButton, LoadingState } from '@peri/ui';
 import { X } from 'lucide-solid';
 import {
   closeResourceFilePreview,
@@ -22,6 +22,7 @@ export function ResourceFileEditor(props: ResourceFileEditorProps = {}) {
   const close = () => props.onClose ? props.onClose() : closeResourceFilePreview();
   const allLines = createMemo(() => (preview()?.text ?? '').replaceAll('\r\n', '\n').split('\n'));
   const lines = createMemo(() => allLines().slice(0, MAX_RENDERED_FILE_LINES));
+  const previewLines = createMemo(() => lines().map((text) => ({ kind: 'plain' as const, text })));
 
   onMount(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -80,14 +81,13 @@ export function ResourceFileEditor(props: ResourceFileEditorProps = {}) {
         <Switch>
           <Match when={preview()?.mode === 'text'}>
             <Show when={allLines().length > MAX_RENDERED_FILE_LINES}><div role="status" class="shrink-0 border-b border-warning-border bg-warning-soft px-12 py-6 text-11 text-warning-strong">Preview limited to the first {MAX_RENDERED_FILE_LINES.toLocaleString()} lines. Download the file to inspect all {allLines().length.toLocaleString()} lines.</div></Show>
-            <div class="ui-scrollbar min-h-0 flex-1 overflow-auto" role="region" aria-label={`Contents of ${preview()?.path ?? 'file'}`}>
-              <div class="min-w-max py-4 font-mono text-11 leading-18">
-                <For each={lines()}>{(line, index) => <div class="grid min-h-18 grid-cols-editor-line">
-                  <span class="sticky left-0 select-none border-r border-divider bg-surface px-9 text-right tabular-nums text-text-faint" aria-hidden="true">{index() + 1}</span>
-                  <code class="code-tab-size whitespace-pre rounded-none bg-transparent px-10 py-0 text-text-primary">{line || ' '}</code>
-                </div>}</For>
-              </div>
-            </div>
+            <FilePreviewPanel
+              path={preview()?.path ?? ''}
+              mode="text"
+              lines={previewLines()}
+              showHeader={false}
+              class="min-h-0 flex-1"
+            />
           </Match>
           <Match when={preview()?.mode === 'image'}>
             <div class="ui-scrollbar grid min-h-0 flex-1 place-items-center overflow-auto bg-surface-muted p-24">

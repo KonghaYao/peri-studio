@@ -16,7 +16,7 @@ import {
   RadioGroupItemLabel,
 } from '@peri/ui';
 import { Clock3, LockKeyhole } from 'lucide-solid';
-import { DecisionCard } from './DecisionCard';
+import { DecisionCard } from '@peri/ui';
 
 interface Props {
   questions: PendingQuestion[];

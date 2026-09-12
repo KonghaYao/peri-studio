@@ -14,7 +14,7 @@ import {
 } from '@peri/ui';
 import { CloudOff, Folder, FolderOpen, ListFilter, Pin } from 'lucide-solid';
 import { createProjectSession, creatingSessionProjectId, discoveringSessionsProjectId, isProjectCatalogBootstrapPending, projectSessions, readOnly } from '@/store';
-import { ProjectRowAccessory, ProjectRowActionGroup, SectionHeader } from './sidebar-parts';
+import { ProjectRowAccessory, ProjectRowActionGroup, SectionHeader } from '@peri/ui';
 import { ArchiveIcon, ImportIcon, MoreIcon, PlusIcon, RenameIcon } from './project-sidebar-icons';
 import { ProjectSidebarRow } from './project-sidebar-row';
 import type { ProjectSidebarModel } from './project-sidebar-model';

@@ -3,7 +3,7 @@ import { parsePermissionExpiration, type PendingPermission } from '@/entities/ch
 import type { PermissionDecisionState } from '@/features/message/permission-delivery';
 import { Button } from '@peri/ui';
 import { CircleAlert, Clock3, RefreshCw } from 'lucide-solid';
-import { DecisionCard, type DecisionOption } from './DecisionCard';
+import { DecisionCard, type DecisionOption } from '@peri/ui';
 
 function shortId(id: string | null | undefined, length = 8): string {
   if (!id) return '';

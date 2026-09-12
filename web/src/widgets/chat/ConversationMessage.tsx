@@ -12,12 +12,11 @@ import { messageTime } from '@/shared/lib/message-time';
 import { cn } from '@peri/ui';
 import { splitSystemReminders } from '@/shared/lib/system-reminder';
 import { chatCatalog, selectedCid } from '@/store';
-import { CopyButton, IconButton, InlineNotice, Popover, PopoverContent, PopoverTrigger } from '@peri/ui';
+import { CopyButton, IconButton, InlineNotice, Popover, PopoverContent, PopoverTrigger, Reasoning, ReasoningContent, ReasoningTrigger } from '@peri/ui';
 import { MessageSquareQuote, MoreHorizontal } from 'lucide-solid';
 import { Markdown } from './Markdown';
 import { ToolCallCard, ToolActivityGroup } from './ToolCallCard';
-import { UserBubble } from './UserBubble';
-import { Reasoning } from './Reasoning';
+import { UserBubble } from '@peri/ui';
 import { ResourceCite } from '@peri/ui';
 import { McpAppFrame } from './McpAppFrame';
 import { isPrimaryLiveMcpApp, maybeOpenCompletedMcpTool } from '@/features/mcp/mcp-apps';
@@ -131,7 +130,15 @@ function MessageBlock(props: {
     );
     return (
       <Show when={showReasoning()}>
-        <Reasoning variant={props.reasoningVariant} streaming={reasoningStreaming()}>{reasoning().text}</Reasoning>
+        <Reasoning
+          appearance="transcript"
+          variant={props.reasoningVariant}
+          isStreaming={reasoningStreaming()}
+          text={reasoning().text}
+        >
+          <ReasoningTrigger />
+          <ReasoningContent>{reasoning().text}</ReasoningContent>
+        </Reasoning>
       </Show>
     );
   })()}</Show>;

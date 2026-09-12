@@ -85,7 +85,13 @@ export {
   type ToolState,
   type ToolType,
 } from './components/Tool';
-export { ToolActivityGroup, ToolActivityRow, type ToolCallStatus } from './components/ToolActivity';
+export {
+  ToolActivityGroup,
+  ToolActivityRow,
+  type ToolActivityEvidence,
+  type ToolActivityFilePreview,
+  type ToolCallStatus,
+} from './components/ToolActivity';
 export { Button, IconButton } from './components/Button';
 export { ButtonGroup, buttonGroupItemClass } from './components/ButtonGroup';
 export { CheckIcon, CodeIcon, CopyIcon, DownloadIcon, ErrorIcon, ExpandIcon, Icon, RefreshIcon } from './components/Icon';
@@ -324,6 +330,8 @@ export { markdownCodeFilename, parseMarkdownPreChild, type MarkdownPreDetails } 
 export { UserBubble } from './components/UserBubble';
 export { GitChangeActions } from './components/git/GitChangeActions';
 export { GitChangeGroup } from './components/git/GitChangeGroup';
+export { GitBranchBar, type GitSyncAction } from './components/git/GitBranchBar';
+export { GitCommitBar, type GitCommitShortcut } from './components/git/GitCommitBar';
 export { GitGraphRefBadge, type GitGraphRefBadgeProps } from './components/git/GitGraphRefBadge';
 export type {
   GitChange,
@@ -337,6 +345,15 @@ export {
   type ComposerDropOverlayProps,
 } from './components/composer/ComposerDropOverlay';
 export {
+  ComposerInputField,
+  type ComposerInputFieldProps,
+  type ComposerInputHint,
+} from './components/composer/ComposerInputField';
+export {
+  ComposerToolbarShell,
+  type ComposerToolbarShellProps,
+} from './components/composer/ComposerToolbarShell';
+export {
   ComposerAttachmentList,
   type ComposerAttachmentListProps,
 } from './components/composer/ComposerAttachmentList';
@@ -347,7 +364,19 @@ export {
 } from './components/composer/composer-attachment-types';
 export { ComposerQueue, type ComposerQueueProps } from './components/composer/ComposerQueue';
 export type { ComposerQueueItem } from './components/composer/composer-queue-types';
-export { SlashMenu, type SlashMenuItem, type SlashMenuProps, type SlashKind } from './components/composer/SlashMenu';
+export {
+  SlashMenu,
+  SlashMenuDivider,
+  SlashMenuOption,
+  SlashMenuOptionContent,
+  SlashMenuShell,
+  type SlashKind,
+  type SlashMenuItem,
+  type SlashMenuOptionContentProps,
+  type SlashMenuOptionProps,
+  type SlashMenuProps,
+  type SlashMenuShellProps,
+} from './components/composer/SlashMenu';
 export { UploadAssetTile } from './components/composer/UploadAssetTile';
 export type { UploadAssetTileProps, UploadAssetTileStatus } from './components/composer/upload-asset-tile-types';
 export {
@@ -363,6 +392,7 @@ export {
   FileTreeInlineNameEditor,
   type FileTreeInlineNameEditorProps,
 } from './components/resource/FileTreeInlineNameEditor';
+export { ResourceSectionTitle } from './components/resource/ResourceSectionTitle';
 export {
   TokenUsageMeter,
   tokenUsageLabel,

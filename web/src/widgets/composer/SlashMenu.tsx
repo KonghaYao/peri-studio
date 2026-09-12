@@ -1,6 +1,5 @@
 import { createEffect, Show } from 'solid-js';
-import { Box, SlidersHorizontal } from 'lucide-solid';
-import { Listbox, ListboxItem } from '@peri/ui';
+import { Listbox, ListboxItem, SlashMenuDivider, SlashMenuOptionContent, SlashMenuShell, type SlashMenuItem } from '@peri/ui';
 import { cn } from '@peri/ui';
 import type { AgentCommandInfo } from '@/entities/chat/control-view';
 import { slashMenuOptionId } from '@/features/composer/slash-menu';
@@ -14,13 +13,6 @@ interface Props {
   onKeyDown?: (event: KeyboardEvent) => void;
 }
 
-function SlashIcon(props: { kind: AgentCommandInfo['kind'] }) {
-  if (props.kind === 'skill') {
-    return <SlidersHorizontal size={15} strokeWidth={1.7} class="text-warning-solid" />;
-  }
-  return <Box size={15} strokeWidth={1.7} class="text-content-muted" />;
-}
-
 function kindDividerAfter(item: AgentCommandInfo, next?: AgentCommandInfo) {
   if (!next) return false;
   if (item.kind === 'command' && next.kind !== 'command') return true;
@@ -28,7 +20,17 @@ function kindDividerAfter(item: AgentCommandInfo, next?: AgentCommandInfo) {
   return false;
 }
 
-/** Composer slash 面板：图标 + 命令名（省略）+ 左对齐说明列；分组分隔线。 */
+function toSlashMenuItem(item: AgentCommandInfo, next?: AgentCommandInfo): SlashMenuItem {
+  return {
+    name: item.name,
+    description: item.description,
+    kind: item.kind,
+    accent: item.kind === 'skill',
+    dividerAfter: kindDividerAfter(item, next),
+  };
+}
+
+/** Composer slash 面板：Listbox 键盘/a11y + @peri/ui 行视觉。 */
 export function SlashMenu(props: Props) {
   const activeName = () => props.items[props.activeIndex]?.name;
 
@@ -40,7 +42,10 @@ export function SlashMenu(props: Props) {
   });
 
   return (
-    <div data-testid="slash-menu" class="slash-menu absolute z-35 right-20 bottom-full left-20 mb-8 overflow-hidden rounded-xl border border-border-subtle bg-surface-overlay max-tight:right-10 max-tight:left-10">
+    <SlashMenuShell
+      data-testid="slash-menu"
+      class="slash-menu absolute z-35 right-20 bottom-full left-20 mb-8 max-tight:right-10 max-tight:left-10"
+    >
       <Listbox
         id={props.id}
         aria-label="Available commands and skills"
@@ -63,6 +68,7 @@ export function SlashMenu(props: Props) {
           const index = () => props.items.findIndex((candidate) => candidate.name === command.name);
           const active = () => index() === props.activeIndex;
           const next = () => props.items[index() + 1];
+          const menuItem = () => toSlashMenuItem(command, next());
           return <>
             <ListboxItem
               id={slashMenuOptionId(props.id, command.name)}
@@ -77,32 +83,14 @@ export function SlashMenu(props: Props) {
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => props.onSelect(command)}
             >
-              <div class="grid min-w-0 grid-cols-slash-menu items-center gap-x-10">
-                <span class="grid size-16 shrink-0 place-items-center">
-                  <SlashIcon kind={command.kind} />
-                </span>
-                <span
-                  class={cn(
-                    'min-w-0 truncate text-13 font-medium leading-snug',
-                    command.kind === 'skill' ? 'text-warning-strong' : 'text-content-primary',
-                  )}
-                  title={`/${command.name}`}
-                >
-                  /{command.name}
-                </span>
-                <Show when={command.description}>
-                  <span class="min-w-0 truncate text-13 leading-snug text-content-muted" title={command.description}>
-                    {command.description}
-                  </span>
-                </Show>
-              </div>
+              <SlashMenuOptionContent item={menuItem()} namePrefix="/" />
             </ListboxItem>
-            <Show when={kindDividerAfter(command, next())}>
-              <div class="mx-12 my-4 border-t border-border-subtle" role="presentation" />
+            <Show when={menuItem().dividerAfter}>
+              <SlashMenuDivider />
             </Show>
           </>;
         }}
       />
-    </div>
+    </SlashMenuShell>
   );
 }

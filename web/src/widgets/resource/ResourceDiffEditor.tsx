@@ -1,8 +1,8 @@
-import { For, Show, createMemo, onCleanup, onMount } from 'solid-js';
-import { Button, IconButton, LoadingState } from '@peri/ui';
+import { Show, createMemo, onCleanup, onMount } from 'solid-js';
+import { Button, FilePreviewPanel, IconButton, LoadingState, type PreviewLine } from '@peri/ui';
 import { X } from 'lucide-solid';
 import { closeResourceDiffPreview, refreshResourceProject, resourceDiffPreview, retryGitDiffPreview } from '@/store';
-import { MAX_RENDERED_DIFF_ROWS, parseUnifiedDiff, type DiffRow } from '@/features/resource/resource-diff';
+import { MAX_RENDERED_DIFF_ROWS, parseUnifiedDiff, type ParsedDiff } from '@/features/resource/resource-diff';
 
 function CloseIcon() {
   return <X size={15} strokeWidth={1.7} />;
@@ -14,6 +14,7 @@ export function ResourceDiffEditor(props: ResourceDiffEditorProps = {}) {
   const preview = resourceDiffPreview;
   const close = () => props.onClose ? props.onClose() : closeResourceDiffPreview();
   const parsed = createMemo(() => parseUnifiedDiff(preview()?.text ?? ''));
+  const previewLines = createMemo(() => parsedDiffToPreviewLines(parsed()));
   const comparison = createMemo(() => ({
     conflicts: 'Merge changes',
     index: 'HEAD ↔ Index',
@@ -63,17 +64,13 @@ export function ResourceDiffEditor(props: ResourceDiffEditorProps = {}) {
         <Show when={!parsed().binary} fallback={<EmptyDiff title="Binary file" detail="Binary files cannot be compared in the text diff viewer." />}>
           <Show when={parsed().hunks.length > 0} fallback={<EmptyDiff title="No textual changes" detail="The file has no line changes to display." />}>
             <Show when={parsed().truncated}><div role="status" class="shrink-0 border-b border-warning-border bg-warning-soft px-12 py-6 text-11 text-warning-strong">Preview limited to the first {MAX_RENDERED_DIFF_ROWS.toLocaleString()} rows to keep the editor responsive.</div></Show>
-            <div class="ui-scrollbar min-h-0 flex-1 overflow-auto" role="table" aria-label={`Changes in ${preview()?.path ?? 'file'}`}>
-              <div class="min-w-(--container-diff-min) font-mono text-11 leading-18">
-                <For each={parsed().hunks}>{(hunk) => <section role="rowgroup">
-                  <div role="row" class="grid grid-cols-2 border-b border-divider bg-selected text-accent">
-                    <div role="cell" class="px-10 py-3">{hunk.header}</div>
-                    <div role="cell" class="border-l border-divider px-10 py-3">{hunk.header}</div>
-                  </div>
-                  <For each={hunk.rows}>{(row) => <DiffLine row={row} />}</For>
-                </section>}</For>
-              </div>
-            </div>
+            <FilePreviewPanel
+              path={preview()?.path ?? ''}
+              mode="diff"
+              lines={previewLines()}
+              showHeader={false}
+              class="min-h-0 flex-1"
+            />
           </Show>
         </Show>
       </Show>
@@ -81,23 +78,27 @@ export function ResourceDiffEditor(props: ResourceDiffEditorProps = {}) {
   </section>;
 }
 
-function DiffLine(props: { row: DiffRow }) {
-  const leftChanged = () => props.row.kind === 'change' && props.row.leftText !== undefined;
-  const rightChanged = () => props.row.kind === 'change' && props.row.rightText !== undefined;
-  return <div role="row" class="grid min-h-18 grid-cols-2 border-b border-divider/50">
-    <DiffCell number={props.row.leftNumber} text={props.row.leftText} changed={leftChanged()} side="left" />
-    <DiffCell number={props.row.rightNumber} text={props.row.rightText} changed={rightChanged()} side="right" />
-  </div>;
-}
-
-function DiffCell(props: { number?: number; text?: string; changed: boolean; side: 'left' | 'right' }) {
-  const tone = () => props.changed
-    ? props.side === 'left' ? 'border-l-2 border-danger bg-danger-soft' : 'border-l-2 border-success bg-success-soft'
-    : props.text === undefined ? 'bg-surface-muted' : 'border-l-2 border-transparent';
-  return <div role="cell" class={`grid min-w-0 grid-cols-diff-line ${props.side === 'right' ? 'border-l border-divider' : ''} ${tone()}`}>
-    <span class="select-none border-r border-divider px-7 text-right tabular-nums text-text-faint" aria-hidden="true">{props.number ?? ''}</span>
-    <code class="code-tab-size overflow-visible whitespace-pre rounded-none bg-transparent px-8 py-0 text-text-primary">{props.text ?? ''}</code>
-  </div>;
+function parsedDiffToPreviewLines(parsed: ParsedDiff): PreviewLine[] {
+  const lines: PreviewLine[] = [];
+  for (const hunk of parsed.hunks) {
+    lines.push({ kind: 'plain', text: hunk.header });
+    for (const row of hunk.rows) {
+      if (row.kind === 'context') {
+        lines.push({ kind: 'plain', text: row.leftText ?? row.rightText ?? '' });
+        continue;
+      }
+      if (row.leftText !== undefined && (row.rightText === undefined || row.leftText !== row.rightText)) {
+        lines.push({ kind: 'del', text: row.leftText });
+      }
+      if (row.rightText !== undefined && (row.leftText === undefined || row.leftText !== row.rightText)) {
+        lines.push({ kind: 'add', text: row.rightText });
+      }
+      if (row.leftText !== undefined && row.rightText !== undefined && row.leftText === row.rightText) {
+        lines.push({ kind: 'plain', text: row.leftText });
+      }
+    }
+  }
+  return lines;
 }
 
 function EmptyDiff(props: { title: string; detail: string }) {

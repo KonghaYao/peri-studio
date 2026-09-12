@@ -138,94 +138,13 @@ body.workbench-panel-resizing * {
   min-width: 0;
 }
 
-/* ── 推理折叠摘要（隐藏 WebKit marker） ───────────────────────────────── */
-
-.message-reasoning summary::-webkit-details-marker {
-  display: none;
-}
-
 /* ── 代码块 tab 宽度 ─────────────────────────────────────────────────── */
 
 .code-tab-size {
   tab-size: 4;
 }
 
-/* ── Composer：与正文 text-13 行高对齐（textarea 默认 leading 会偏大） ── */
-
-.composer-editor {
-  display: grid;
-  min-width: 0;
-}
-
-.composer-editor__hint,
-.composer-input {
-  grid-area: 1 / 1;
-  min-width: 0;
-}
-
-.composer-editor__hint {
-  pointer-events: none;
-  overflow: hidden;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.composer-editor__hint--prediction {
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.composer-input {
-  line-height: var(--leading-normal);
-  color: var(--content-primary);
-  caret-color: var(--content-primary);
-}
-
-/* ── Composer skills 窄屏降级为「/」 ─────────────────────────────────── */
-
-/* ── Composer 工具栏：窄屏为模型徽章让出整行 ─────────────────────────────── */
-
-.composer-runtime-slot {
-  max-width: var(--model-badge-max);
-}
-
-@media (max-width: 640px) {
-  .composer-toolbar {
-    flex-wrap: wrap;
-    row-gap: var(--space-6);
-  }
-
-  .composer-toolbar__right {
-    flex: 1 1 100%;
-    max-width: 100%;
-  }
-
-  .composer-runtime-slot {
-    flex: 1 1 auto;
-    max-width: none;
-  }
-}
-
-@media (max-width: 520px) {
-  .composer-skills::before {
-    content: '/';
-    font-family: var(--font-mono);
-    font-size: var(--text-15);
-    line-height: 1;
-    font-weight: 700;
-  }
-
-  .composer-skills__icon {
-    display: none;
-  }
-}
-
-/* ── Workspace file upload (Composer / Explorer) ─────────────────────────── */
-
-.composer-surface--drop-target {
-  outline: 2px dashed var(--accent-solid);
-  outline-offset: 2px;
-}
+/* ── Workspace file upload (Explorer) ───────────────────────────────────── */
 
 .explorer-upload-tree--drop-root {
   outline: 2px dashed var(--accent-border-hover);

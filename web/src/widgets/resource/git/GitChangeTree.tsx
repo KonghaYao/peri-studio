@@ -1,9 +1,7 @@
 import { createSignal } from 'solid-js';
 import { GitChangeActions } from '@peri/ui';
 import { resourceWorkspace } from '@/store';
-import { buildPathTree, folderPathsFromItems } from '../build-path-tree';
-import { FileTree } from '../FileTree';
-import { VSCodeFileIcon } from '../VSCodeFileIcon';
+import { buildPathTree, FileTree, folderPathsFromItems, VSCodeFileIcon } from '@peri/ui';
 import type { GitChange, GitChangeGroupId } from './types';
 
 /** SCM 变更树：按目录折叠，复用 FileTree。 */

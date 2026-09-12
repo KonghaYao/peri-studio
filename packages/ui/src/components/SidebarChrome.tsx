@@ -45,8 +45,45 @@ export function NavAction(props: {
   );
 }
 
+export type SidebarChromeMenuItem = {
+  id: string;
+  label: string;
+  icon?: JSX.Element;
+  disabled?: boolean;
+  danger?: boolean;
+  suffix?: string;
+};
+
+function SidebarChromeMenuItems(props: {
+  items: SidebarChromeMenuItem[];
+  onSelect?: (id: string) => void;
+}) {
+  return (
+    <For each={props.items}>
+      {(item) => (
+        <DropdownMenuItem
+          disabled={item.disabled}
+          class={item.danger ? 'text-danger' : undefined}
+          onSelect={() => props.onSelect?.(item.id)}
+        >
+          {item.icon}
+          {item.label}
+          <Show when={item.suffix}>
+            <span class="ml-auto text-11 text-content-muted">{item.suffix}</span>
+          </Show>
+        </DropdownMenuItem>
+      )}
+    </For>
+  );
+}
+
 /** 侧栏顶部导航：左侧主操作 + 右侧更多菜单。 */
-export function SidebarNavBar(props: { children: JSX.Element; more: JSX.Element; moreLabel?: string }) {
+export function SidebarNavBar(props: {
+  children: JSX.Element;
+  menuItems: SidebarChromeMenuItem[];
+  onMenuSelect?: (id: string) => void;
+  moreLabel?: string;
+}) {
   return (
     <div class="sidebar-nav flex items-start gap-4">
       <div class="flex min-w-0 flex-1 flex-col">{props.children}</div>
@@ -61,7 +98,7 @@ export function SidebarNavBar(props: { children: JSX.Element; more: JSX.Element;
           <MoreHorizontal size={16} strokeWidth={1.7} />
         </DropdownMenuTrigger>
         <DropdownMenuContent class="ui-menu min-w-180" aria-label={props.moreLabel ?? 'More'}>
-          {props.more}
+          <SidebarChromeMenuItems items={props.menuItems} onSelect={props.onMenuSelect} />
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -85,13 +122,14 @@ export function SessionRowAccessory(props: {
   onMore?: () => void;
   menuId?: string;
   menuLabel?: string;
-  menuContent?: JSX.Element;
+  menuItems?: SidebarChromeMenuItem[];
+  onMenuSelect?: (id: string) => void;
 }) {
   const actionsVisible = () => props.menuOpen ?? props.actionsVisible;
   const togglePin = () => props.onTogglePin?.() ?? props.onPin?.();
 
   const moreControl = () => {
-    if (props.menuContent) {
+    if (props.menuItems) {
       return (
         <DropdownMenu
           open={props.menuOpen}
@@ -114,7 +152,7 @@ export function SessionRowAccessory(props: {
             aria-label={props.menuLabel}
             class="ui-menu"
           >
-            {props.menuContent}
+            <SidebarChromeMenuItems items={props.menuItems} onSelect={props.onMenuSelect} />
           </DropdownMenuContent>
         </DropdownMenu>
       );
@@ -201,14 +239,6 @@ export function SessionRowAccessory(props: {
   );
 }
 
-export type SidebarChromeMenuItem = {
-  id: string;
-  label: string;
-  icon?: JSX.Element;
-  disabled?: boolean;
-  danger?: boolean;
-};
-
 /** 项目行右侧：会话计数 + More / New session 浮动按钮组。 */
 export function ProjectRowAccessory(props: {
   count?: number;
@@ -242,18 +272,7 @@ export function ProjectRowAccessory(props: {
           <DropdownMenu placement="bottom-end">
             <DropdownMenuTrigger as="span" class="inline-flex">{moreButton}</DropdownMenuTrigger>
             <DropdownMenuContent aria-label="Project actions">
-              <For each={props.menuItems}>
-                {(item) => (
-                  <DropdownMenuItem
-                    disabled={item.disabled}
-                    class={item.danger ? 'text-danger' : undefined}
-                    onSelect={() => props.onMenuSelect?.(item.id)}
-                  >
-                    {item.icon}
-                    {item.label}
-                  </DropdownMenuItem>
-                )}
-              </For>
+              <SidebarChromeMenuItems items={props.menuItems} onSelect={props.onMenuSelect} />
             </DropdownMenuContent>
           </DropdownMenu>
         ) : moreButton}

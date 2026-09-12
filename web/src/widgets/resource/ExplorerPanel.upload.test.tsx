@@ -159,8 +159,9 @@ describe('Explorer upload interactions', () => {
     await fireEvent.keyDown(rename, { key: 'Enter' });
     expect(mocks.movePath).toHaveBeenCalledWith('project-1', 'src/note.txt', 'src/renamed.txt', 'rev-file');
 
-    file.focus();
-    await fireEvent.keyDown(file, { key: 'Delete' });
+    const renamedFile = screen.getByRole('treeitem', { name: /note\.txt/i });
+    renamedFile.focus();
+    await fireEvent.keyDown(renamedFile, { key: 'Delete' });
     expect(screen.getByRole('dialog')).toHaveTextContent('Delete permanently?');
     await fireEvent.click(screen.getByRole('button', { name: 'Delete Permanently' }));
     expect(mocks.deletePath).toHaveBeenCalledWith('project-1', 'src/note.txt', 'rev-file', false);

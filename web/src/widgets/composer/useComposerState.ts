@@ -35,13 +35,20 @@ import { composerInputState } from '@/features/composer/composer-placeholder';
 import { useComposerPrediction } from '@/features/composer/composer-prediction';
 import { useComposerSlash } from '@/features/composer/composer-slash';
 import { clearSubmittedWorkspaceUploads } from '@/store';
-import { tokenUsageLabel } from '@/widgets/chat/TokenUsageMeter';
+import { tokenUsageLabel } from '@peri/ui';
 import { promptByteLength, promptFitsBudget } from '@/shared/lib/prompt-budget';
 import {
   composerQuoteRequest,
   consumeComposerQuoteRequest,
   formatComposerQuote,
 } from '@/features/composer/composer-quote';
+import {
+  composerQueueItems,
+  editComposerQueueItem,
+  moreComposerQueueAction,
+  removeComposerQueueItem,
+  sendComposerQueueItemNow,
+} from '@/features/composer/composer-queue';
 
 /** tokens 数值 → "12k"/"200k" 缩写（>=1000 取 k；非法值 → null）。 */
 function fmtTokens(n: number | null): string | null {
@@ -260,6 +267,11 @@ export function useComposerState(taRef: () => HTMLTextAreaElement | undefined) {
   }
 
   const runtimeMenuDisabled = () => !selectedCid() || !runtimeDocsHydrated();
+  const queueItems = () => composerQueueItems(selectedSessionId());
+  const sendQueueItemNow = (itemId: string) => sendComposerQueueItemNow(selectedSessionId(), itemId);
+  const editQueueItem = (itemId: string) => editComposerQueueItem(selectedSessionId(), itemId);
+  const removeQueueItem = (itemId: string) => removeComposerQueueItem(selectedSessionId(), itemId);
+  const moreQueueItem = (itemId: string) => moreComposerQueueAction(selectedSessionId(), itemId);
 
   return {
     slashMenuId,
@@ -310,6 +322,11 @@ export function useComposerState(taRef: () => HTMLTextAreaElement | undefined) {
     composerDraft,
     setComposerDraft,
     runtimeMenuDisabled,
+    queueItems,
+    sendQueueItemNow,
+    editQueueItem,
+    removeQueueItem,
+    moreQueueItem,
   };
 }
 

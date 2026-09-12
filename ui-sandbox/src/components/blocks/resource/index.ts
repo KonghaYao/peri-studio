@@ -1,6 +1,7 @@
 export { FileTree, buildPathTree, folderPathsFromItems, type FileTreeNode, type FileTreeProps } from '@peri/ui';
 export { FilePreviewPanel, type PreviewLine } from './FilePreviewPanel';
 export { ExplorerSectionHeader } from './ExplorerSectionHeader';
+export { ResourceSectionTitle } from '@peri/ui';
 export { FileTreeInlineNameEditor } from './FileTreeInlineNameEditor';
 export { ExplorerItemMenu, buildExplorerContextMenuItems, type ExplorerMenuAction } from './ExplorerItemMenu';
 export { ExplorerDeleteDialog } from './ExplorerDeleteDialog';

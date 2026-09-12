@@ -347,3 +347,234 @@
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
 }
 
+/* ── Composer 输入与工具栏（与正文 text-13 行高对齐） ───────────────────── */
+
+.ui-composer-editor {
+  display: grid;
+  min-width: 0;
+}
+
+.ui-composer-editor__hint,
+.ui-composer-input {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.ui-composer-editor__hint {
+  pointer-events: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ui-composer-editor__hint--prediction {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-composer-input {
+  line-height: var(--leading-normal);
+  color: var(--content-primary);
+  caret-color: var(--content-primary);
+}
+
+.ui-composer-runtime-slot {
+  max-width: var(--model-badge-max);
+}
+
+.ui-composer-surface--drop-target {
+  outline: 2px dashed var(--accent-solid);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .ui-composer-toolbar {
+    flex-wrap: wrap;
+    row-gap: var(--space-6);
+  }
+
+  .ui-composer-toolbar__right {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  .ui-composer-runtime-slot {
+    flex: 1 1 auto;
+    max-width: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .ui-composer-skills::before {
+    content: '/';
+    font-family: var(--font-mono);
+    font-size: var(--text-15);
+    line-height: 1;
+    font-weight: 700;
+  }
+
+  .ui-composer-skills__icon {
+    display: none;
+  }
+}
+/* ── Git Graph panel（mhutchie/vscode-git-graph 对齐） ─────────────────── */
+
+.ui-git-graph-control-btn {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  width: 28px;
+  min-height: 28px;
+}
+
+.ui-git-graph-control-btn:hover {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+.ui-git-graph-scroll {
+  position: relative;
+  min-width: 100%;
+}
+
+.ui-git-graph-svg {
+  display: block;
+}
+
+.ui-git-graph-path-shadow {
+  fill: none;
+  stroke-opacity: 0.75;
+  stroke-width: 4;
+}
+
+.ui-git-graph-path-line {
+  fill: none;
+  stroke-width: 2;
+}
+
+.ui-git-graph-table {
+  font-size: var(--text-13);
+  width: 100%;
+}
+
+.ui-git-graph-th {
+  box-sizing: border-box;
+  height: 36px;
+  padding: 6px 12px;
+  line-height: 20px;
+  text-align: left;
+  font-size: var(--text-13);
+  font-weight: 500;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--divider);
+  background: var(--surface);
+  vertical-align: middle;
+}
+
+.ui-git-graph-td {
+  box-sizing: border-box;
+  height: var(--git-graph-row-height);
+  max-height: var(--git-graph-row-height);
+  padding: 0 12px;
+  line-height: var(--git-graph-row-height);
+  vertical-align: middle;
+  font-size: var(--text-13);
+  overflow: hidden;
+}
+
+.ui-git-graph-graph-col {
+  padding: 0;
+}
+
+.ui-git-graph-desc-col {
+  overflow: hidden;
+}
+
+.ui-git-graph-date-col {
+  width: 124px;
+  max-width: 124px;
+}
+
+.ui-git-graph-author-col {
+  width: 124px;
+  max-width: 124px;
+}
+
+.ui-git-graph-commit-col {
+  width: 80px;
+  max-width: 80px;
+  font-size: var(--text-13);
+}
+
+.ui-git-graph-row {
+  height: var(--git-graph-row-height);
+  cursor: default;
+}
+
+.ui-git-graph-row.hover,
+.ui-git-graph-row:hover {
+  background: var(--hover);
+}
+
+.ui-git-graph-row.selected {
+  background: var(--selected);
+}
+
+.ui-git-graph-row.current .ui-git-graph-message {
+  font-weight: 600;
+}
+
+.ui-git-graph-description {
+  display: flex;
+  align-items: center;
+  height: var(--git-graph-row-height);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ui-git-graph-message {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.ui-git-graph-head-dot {
+  display: inline-block;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 50%;
+}
+
+.ui-git-graph-date-col,
+.ui-git-graph-author-col,
+.ui-git-graph-commit-col {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 窄面板优先保留 Graph + Description + Commit */
+@media (max-width: 900px) {
+  .ui-git-graph-panel .ui-git-graph-author-col {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .ui-git-graph-panel .ui-git-graph-date-col {
+    display: none;
+  }
+}
+
+/* ── 推理折叠摘要（隐藏 WebKit marker） ───────────────────────────────── */
+
+[data-testid='message-reasoning'] summary::-webkit-details-marker {
+  display: none;
+}
+
+

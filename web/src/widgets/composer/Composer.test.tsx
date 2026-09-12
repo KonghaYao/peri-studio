@@ -98,7 +98,7 @@ describe('Composer', () => {
     mountComposer();
 
     expect(screen.getByTestId('composer-surface')).toHaveClass('rounded-(--composer-radius)', 'p-2.5');
-    expect(screen.getByRole('textbox')).toHaveClass('composer-input', 'min-h-36', 'leading-normal');
+    expect(screen.getByRole('textbox')).toHaveClass('ui-composer-input', 'min-h-36', 'leading-normal');
     expect(screen.getByTestId('composer-runtime')).toHaveTextContent('Nova 4.1');
     expect(screen.getByTestId('composer-runtime')).toHaveClass('text-content-secondary');
     expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('w-36', 'min-h-36', 'rounded-8');

@@ -46,9 +46,13 @@ const readWidgetTsx = (name) => {
 };
 const readComposerBundle = () => {
   const dir = join(sourceRoot(), 'widgets', 'composer');
-  return ['Composer.tsx', 'ComposerEditor.tsx', 'ComposerToolbar.tsx', 'useComposerState.ts']
-    .map((file) => readFileSync(join(dir, file), 'utf8'))
-    .join('\n');
+  const pkgComposer = join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'composer');
+  return [
+    ...['Composer.tsx', 'ComposerEditor.tsx', 'ComposerToolbar.tsx', 'useComposerState.ts']
+      .map((file) => readFileSync(join(dir, file), 'utf8')),
+    readFileSync(join(pkgComposer, 'ComposerToolbarShell.tsx'), 'utf8'),
+    readFileSync(join(pkgComposer, 'ComposerInputField.tsx'), 'utf8'),
+  ].join('\n');
 };
 const allFiles = (directory) => readdirSync(directory, { withFileTypes: true }).flatMap((item) => {
   const path = join(directory, item.name);
@@ -73,9 +77,7 @@ const findArbitraryBracketViolations = (source) => {
   return [...violations];
 };
 const ARBITRARY_SELECTOR_BRACKET = /\[&[^\]]+\]/g;
-const WIDGET_ARBITRARY_SELECTOR_ALLOWLIST = new Set([
-  'widgets/resource/git/GitGraphRefBadge.tsx',
-]);
+const WIDGET_ARBITRARY_SELECTOR_ALLOWLIST = new Set();
 const listLayerSourceFiles = (layerDirs) => layerDirs.flatMap((segment) => {
   const layerRoot = join(sourceRoot(), segment);
   if (!existsSync(layerRoot)) return [];
@@ -171,8 +173,8 @@ test('fractional Tailwind spacing utilities resolve to an explicit product token
 });
 
 const EXTRA_CSS_BASELINE = {
-  lineCount: 245,
-  sha256: '1db0764ad98a3a58ff6f85c6b9a9710136433bd66be11b64fb6653f141cd62a8',
+  lineCount: 164,
+  sha256: '1cae442e8e87c8b64d9fcf30cde68c8874577b0b5fa81f7787875f5c65306989',
 };
 
 function lineCountLikeWc(content) {
@@ -269,7 +271,7 @@ test('Composer and quick start expose one labeled textarea and keyboard submit g
   const composerEditor = readFileSync(join(root, 'ComposerEditor.tsx'), 'utf8');
   const composerShell = readFileSync(join(root, 'Composer.tsx'), 'utf8');
   const quickStart = readFileSync(join(root, 'QuickStartComposer.tsx'), 'utf8');
-  assert.match(composerEditor, /<Textarea[\s\S]*?aria-label="Message the agent"/);
+  assert.match(composerEditor, /<ComposerInputField[\s\S]*?aria-label="Message the agent"/);
   assert.match(composerEditor, /aria-autocomplete="list"/);
   assert.match(composerEditor, /if \(e\.key === 'Enter' && !e\.shiftKey\) \{\s*e\.preventDefault\(\);\s*s\(\)\.submit\(\);/);
   assert.match(quickStart, /<Textarea[\s\S]*?aria-label="First message"/);
@@ -439,7 +441,7 @@ test('composer keeps the writing surface quiet and keyboard behavior discoverabl
   assert.doesNotMatch(composerShell, /focus-within:border-focus-ring/);
   assert.doesNotMatch(composerShell, /has-\[\.composer-input:focus-visible\]:shadow-/);
   assert.doesNotMatch(composerShell, /shadow-float/);
-  assert.match(composerParts, /composer-toolbar flex min-h-36 min-w-0 items-center/);
+  assert.match(composerParts, /ui-composer-toolbar flex min-h-36 min-w-0 items-center/);
   assert.match(composerShell, /rounded-\(--composer-radius\)/);
   const composerToolbar = readFileSync(join(root, 'widgets', 'composer', 'ComposerToolbar.tsx'), 'utf8');
   const quickStartComposer = readFileSync(join(root, 'widgets', 'composer', 'QuickStartComposer.tsx'), 'utf8');

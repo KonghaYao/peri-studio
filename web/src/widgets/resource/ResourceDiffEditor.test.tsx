@@ -18,11 +18,11 @@ describe('VS Code-style Git diff editor', () => {
     expect(screen.getByRole('region', { name: 'Git diff: src/main.ts, Index ↔ Working Tree' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Git diff: src/main.ts, Index ↔ Working Tree' })).toBeInTheDocument();
     expect(screen.getByText('Index ↔ Working Tree')).toBeInTheDocument();
-    expect(screen.getByRole('table', { name: 'Changes in src/main.ts' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Contents of src/main.ts' })).toBeInTheDocument();
     expect(screen.getByText('before')).toBeInTheDocument();
     expect(screen.getByText('after')).toBeInTheDocument();
-    expect(screen.getByText('before').parentElement).toHaveClass('bg-danger-soft');
-    expect(screen.getByText('after').parentElement).toHaveClass('bg-success-soft');
+    expect(screen.getByText('before').closest('[class*="bg-danger-soft"]')).toBeTruthy();
+    expect(screen.getByText('after').closest('[class*="bg-success-soft"]')).toBeTruthy();
   });
 
   it('explains binary changes and closes with Escape', () => {

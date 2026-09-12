@@ -5,7 +5,7 @@ import type { ElicitationDeliveryState } from '@/features/message/elicitation-de
 import type { ElicitationAnswer } from '@/shared/protocol/client';
 import { Button, Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel, IconButton, RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput, RadioGroupItemLabel, Textarea } from '@peri/ui';
 import { Clock3, LockKeyhole, X } from 'lucide-solid';
-import { DecisionCard } from './DecisionCard';
+import { DecisionCard } from '@peri/ui';
 
 interface Props {
   elicitations: PendingElicitation[];

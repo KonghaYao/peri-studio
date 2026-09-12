@@ -18,7 +18,7 @@ export const ComposerDropOverlay: Component<ComposerDropOverlayProps> = (props) 
           'ui-upload-drop-overlay pointer-events-none absolute inset-0 z-10 grid place-items-center',
           local.class,
         )}
-        data-testid={local['data-testid']}
+        data-testid={local['data-testid'] ?? 'composer-drop-overlay'}
         {...rest}
       >
         <p

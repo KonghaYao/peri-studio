@@ -92,7 +92,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
             : 'Secure message delivery is not enabled on the server. Refresh or upgrade the server before starting a session.'}</span>
         </InlineNotice>
       </Show>
-      <div class="quick-start__footer composer-toolbar flex min-h-36 min-w-0 items-center gap-4">
+      <div class="quick-start__footer ui-composer-toolbar flex min-h-36 min-w-0 items-center gap-4">
         <IconButton
           label="Add attachment"
           title="Upload files to this project"

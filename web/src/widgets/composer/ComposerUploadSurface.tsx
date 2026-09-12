@@ -15,8 +15,7 @@ import {
   workspaceUploadTileStatus,
   type WorkspaceUploadOrigin,
 } from '@/store';
-import { ComposerDropOverlay } from './ComposerDropOverlay';
-import { UploadAssetTile } from './UploadAssetTile';
+import { ComposerDropOverlay, UploadAssetTile } from '@peri/ui';
 import { dataTransferHasFiles, parseFileDropTransfer, preventBrowserFileDrop } from './composer-upload-drop';
 
 type ComposerUploadSurfaceProps = {
@@ -131,7 +130,7 @@ export function ComposerUploadSurface(props: ComposerUploadSurfaceProps) {
   });
 
   createEffect(() => {
-    props.surfaceRef?.classList.toggle('composer-surface--drop-target', dropActive());
+    props.surfaceRef?.classList.toggle('ui-composer-surface--drop-target', dropActive());
   });
 
   createEffect(() => {

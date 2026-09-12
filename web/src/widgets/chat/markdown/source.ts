@@ -193,5 +193,3 @@ export function endsInsideFence(source: string) {
   for (const line of source.replace(/\r\n?/g, '\n').split('\n')) fence = nextFenceState(line, fence).state;
   return !!fence;
 }
-
-export { safeRemoteImageSource } from '@peri/ui';

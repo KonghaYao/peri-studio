@@ -5,7 +5,7 @@ import {
   openResourceDirectory,
   resourceWorkspace,
 } from '@/store';
-import type { FileTreeNode } from './FileTree';
+import type { FileTreeNode } from '@peri/ui';
 
 type ExplorerTreeFocusOptions = {
   tree: () => HTMLDivElement | undefined;

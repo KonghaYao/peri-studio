@@ -1,7 +1,6 @@
 import { render, screen } from '@solidjs/testing-library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { FileTree } from './FileTree';
-import { buildPathTree } from './build-path-tree';
+import { buildPathTree, FileTree } from '@peri/ui';
 import { GitGraphPanel } from './git/GitGraphPanel';
 import type { GitGraphCommit } from './git/types';
 

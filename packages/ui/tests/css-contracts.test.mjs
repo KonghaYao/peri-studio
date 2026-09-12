@@ -121,10 +121,25 @@ test('Terminal package owns the xterm base stylesheet', () => {
   assert.equal([...extra.matchAll(/@import\s+['"]@xterm\/xterm\/css\/xterm\.css['"]/g)].length, 1);
 });
 
+const selectorUsesAppPrefix = (selector, needle) => {
+  // Package-owned ui-<app>-* selectors are allowed (e.g. ui-git-graph-, ui-composer-).
+  if (selector.includes(`ui-${needle}`)) {
+    return false;
+  }
+  if (needle === 'message-') {
+    return /\.message-/.test(selector);
+  }
+  return selector.includes(needle);
+};
+
 test('package CSS does not own application selectors', () => {
   const selectors = cssFiles().flatMap((file) => cssSelectors(read(file)));
   for (const needle of APP_SELECTOR_DENYLIST) {
-    assert.equal(selectors.some((selector) => selector.includes(needle)), false, `package CSS still contains ${needle} selector`);
+    assert.equal(
+      selectors.some((selector) => selectorUsesAppPrefix(selector, needle)),
+      false,
+      `package CSS still contains ${needle} selector`,
+    );
   }
   const css = cssFiles().map(read).join('\n');
   for (const selector of TERMINAL_ALLOWLIST) {

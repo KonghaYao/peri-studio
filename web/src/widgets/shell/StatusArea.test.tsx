@@ -74,7 +74,7 @@ describe('StatusArea', () => {
       entries={[]}
     />);
 
-    const rows = screen.getByRole('tabpanel').querySelectorAll('li');
+    const rows = screen.getByRole('tabpanel').querySelectorAll('[data-slot="plan-step"]');
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveClass('min-h-36');
     expect(rows[0]).toHaveTextContent('Done');
@@ -241,7 +241,7 @@ describe('StatusArea', () => {
 
     expect(screen.getByRole('tabpanel')).toHaveTextContent('web/src/widgets/shell/StatusArea.tsx');
     expect(screen.getByRole('tabpanel')).not.toHaveTextContent('/workspace/project');
-    expect(screen.getByTitle(path)).toHaveTextContent('web/src/widgets/shell/StatusArea.tsx');
+    expect(screen.getByTitle(path)).toBeInTheDocument();
   });
 
   it('keeps absolute changed paths outside the project cwd unchanged', () => {
