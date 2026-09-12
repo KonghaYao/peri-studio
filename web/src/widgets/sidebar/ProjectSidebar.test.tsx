@@ -258,7 +258,8 @@ describe('ProjectSidebar registry hydration', () => {
     expect(screen.queryByRole('button', { name: 'Notifications' })).not.toBeInTheDocument();
     expect(screen.queryByText('Projects')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'New project' })).toHaveLength(1);
-    expect(screen.getByRole('button', { name: 'New workspace' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'New workspace' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Workspaces')).not.toBeInTheDocument();
   });
 
   it('keeps session and workspace copy full width with floating row accessories', () => {

@@ -16,7 +16,6 @@ import {
   Folder,
   FolderOpen,
   LayoutGrid,
-  ListFilter,
   MessageSquarePlus,
   Pin,
   Plus,
@@ -207,15 +206,6 @@ export function ProjectSidebarLayout() {
                 )}
               </For>
             </div>
-
-            <SectionHeader title="Workspaces">
-              <IconButton size="sm" showTooltip={false} label="Filter workspaces" class="size-28 shrink-0 text-content-muted">
-                <ListFilter size={15} strokeWidth={1.7} />
-              </IconButton>
-              <IconButton size="sm" showTooltip={false} label="New workspace" class="size-28 shrink-0 text-content-muted">
-                <Folder size={15} strokeWidth={1.7} />
-              </IconButton>
-            </SectionHeader>
 
             <For each={MACHINES}>
               {(machine) => (

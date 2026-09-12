@@ -9,7 +9,7 @@ export interface ProjectSidebarPinnedProps {
   onNavigate?: () => void;
 }
 
-/** Pinned 是跨项目的扁平列表；左缩进与 Workspaces 会话行对齐。 */
+/** Pinned 是跨项目的扁平列表；左缩进与项目下会话行对齐。 */
 export function ProjectSidebarPinned(props: ProjectSidebarPinnedProps) {
   const { model } = props;
   return (

@@ -15,9 +15,9 @@ import {
   cn,
   sidebarMistHintClass,
 } from '@peri/ui';
-import { CloudOff, Folder, FolderOpen, ListFilter } from 'lucide-solid';
+import { CloudOff, Folder, FolderOpen } from 'lucide-solid';
 import { createProjectSession, creatingSessionProjectId, discoveringSessionsProjectId, isProjectCatalogBootstrapPending, projectSessions, readOnly } from '@/store';
-import { ProjectRowAccessory, ProjectRowActionGroup, SectionHeader } from '@peri/ui';
+import { ProjectRowAccessory, ProjectRowActionGroup } from '@peri/ui';
 import { ArchiveIcon, ImportIcon, MoreIcon, PlusIcon, RenameIcon } from './project-sidebar-icons';
 import { ProjectSidebarPinned } from './project-sidebar-pinned';
 import { ProjectSidebarRow } from './project-sidebar-row';
@@ -36,15 +36,6 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
         fallback={<LoadingState label="Loading projects" class="px-2.5 py-2 text-left!" />}
     >
       <ProjectSidebarPinned model={model} onNavigate={props.onNavigate} />
-
-      <SectionHeader title="Workspaces">
-        <IconButton size="sm" showTooltip={false} label="Filter workspaces" class="size-28 shrink-0 text-content-muted" onClick={() => model.setSearchOpen(true)}>
-          <ListFilter size={15} strokeWidth={1.7} />
-        </IconButton>
-        <IconButton size="sm" showTooltip={false} label="New workspace" class="size-28 shrink-0 text-content-muted" disabled={readOnly()} onClick={() => model.openCreateProject()}>
-          <Folder size={15} strokeWidth={1.7} />
-        </IconButton>
-      </SectionHeader>
 
       <Show
         when={model.instanceGroups().length > 0}
