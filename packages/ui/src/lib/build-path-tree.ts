@@ -1,4 +1,4 @@
-import type { FileTreeNode } from './FileTree';
+import type { FileTreeNode } from '../components/FileTree';
 
 /** 将扁平文件路径列表构建为 Explorer / SCM 共用的树节点。 */
 export function buildPathTree(

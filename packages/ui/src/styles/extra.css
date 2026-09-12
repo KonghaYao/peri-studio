@@ -12,6 +12,13 @@
  * 禁止：新颜色/间距/字号字面量——一律引用 tokens.css 的 var(--*)。
  * JSX 默认只用 Tailwind；新增例外须加语义 class 并在此登记实现。 */
 
+/* ── File tree（Explorer / SCM 共用） ─────────────────────────────────── */
+
+.file-tree-folder-btn--drop-target {
+  background: var(--interaction-hover);
+  box-shadow: inset var(--explorer-drop-accent-width) 0 0 0 var(--accent-solid);
+}
+
 /* ── Navigation menu viewport（Kobalte 运行时 CSS 变量） ───────────────── */
 
 .ui-navigation-menu-viewport {

@@ -413,7 +413,7 @@ body.workbench-panel-resizing * {
   outline-offset: 2px;
 }
 
-.explorer-upload-treeitem--drop-target {
+.file-tree-folder-btn--drop-target {
   box-shadow: inset var(--explorer-drop-accent-width) 0 0 0 var(--accent-solid);
 }
 

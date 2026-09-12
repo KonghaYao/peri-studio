@@ -1,80 +1,35 @@
-import { createSignal, For, Show } from 'solid-js';
-import { File, FolderOpen } from 'lucide-solid';
+import { createSignal, Show } from 'solid-js';
+import { FileTree, type FileTreeNode } from '@/components/blocks/resource';
 import { Button } from '@/lib/catalog-ui';
 import { ButtonGroup } from '@/lib/catalog-ui';
 import { cn } from '@/lib/catalog-ui';
 
 type DropTargetKind = 'none' | 'root' | 'folder';
 
-type TreeNode =
-  | { kind: 'folder'; path: string; name: string; children: TreeNode[] }
-  | { kind: 'file'; path: string; name: string };
-
-const DEMO_TREE: TreeNode[] = [
+const DEMO_TREE: FileTreeNode[] = [
   {
+    id: 'src',
     kind: 'folder',
     path: 'src',
     name: 'src',
     children: [
       {
+        id: 'src/web',
         kind: 'folder',
         path: 'src/web',
         name: 'web',
-        children: [{ kind: 'file', path: 'src/web/Composer.tsx', name: 'Composer.tsx' }],
+        children: [
+          {
+            id: 'src/web/Composer.tsx',
+            kind: 'file',
+            path: 'src/web/Composer.tsx',
+            name: 'Composer.tsx',
+          },
+        ],
       },
     ],
   },
 ];
-
-function ExplorerDropTreeNode(props: {
-  node: TreeNode;
-  depth: number;
-  dropTargetPath: string | null;
-}) {
-  const paddingLeft = () => `calc(6px + ${props.depth} * 12px)`;
-
-  if (props.node.kind === 'file') {
-    return (
-      <div
-        role="treeitem"
-        class="flex w-full items-center gap-6 rounded-md pr-8 hover:bg-interaction-hover"
-        style={{ 'min-height': 'var(--resource-tree-row)', 'padding-left': paddingLeft() }}
-      >
-        <File size={14} class="shrink-0 text-content-muted" />
-        <span class="truncate text-12 text-content-primary">{props.node.name}</span>
-      </div>
-    );
-  }
-
-  const node = props.node;
-  const isTarget = () => props.dropTargetPath === node.path;
-
-  return (
-    <>
-      <button
-        type="button"
-        role="treeitem"
-        aria-expanded
-        data-drop-target-path={node.path}
-        class={cn(
-          'explorer-upload-treeitem flex w-full items-center gap-6 rounded-md border-0 bg-transparent pr-8 text-left text-content-primary',
-          isTarget() ? 'explorer-upload-treeitem--drop-target bg-interaction-hover' : 'hover:bg-interaction-hover',
-        )}
-        style={{ 'min-height': 'var(--resource-tree-row)', 'padding-left': paddingLeft() }}
-      >
-        <FolderOpen size={14} class="shrink-0 text-content-muted" />
-        <span class="min-w-0 flex-1 truncate font-medium">{node.name}</span>
-      </button>
-      <div role="group">
-        <For each={node.children}>
-          {(child) => (
-            <ExplorerDropTreeNode node={child} depth={props.depth + 1} dropTargetPath={props.dropTargetPath} />
-          )}
-        </For>
-      </div>
-    </>
-  );
-}
 
 /** Tier 4 · Explorer 文件夹/root drop target 与批次进度 demo。 */
 export function ExplorerUploadDropLayout() {
@@ -82,6 +37,7 @@ export function ExplorerUploadDropLayout() {
   const [showDirectoryAlert, setShowDirectoryAlert] = createSignal(false);
   const [batchProgress, setBatchProgress] = createSignal<{ done: number; total: number } | null>({ done: 2, total: 5 });
   const [liveTarget, setLiveTarget] = createSignal('Upload target: folder web');
+  const [expandedPaths, setExpandedPaths] = createSignal(new Set(['src', 'src/web']));
 
   const dropTargetPath = () => (target() === 'folder' ? 'src/web' : null);
 
@@ -91,6 +47,15 @@ export function ExplorerUploadDropLayout() {
     if (next === 'root') setLiveTarget('Upload target: workspace root');
     else if (next === 'folder') setLiveTarget('Upload target: folder web');
     else setLiveTarget('');
+  };
+
+  const toggleFolder = (path: string) => {
+    setExpandedPaths((current) => {
+      const next = new Set(current);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
   };
 
   return (
@@ -133,9 +98,12 @@ export function ExplorerUploadDropLayout() {
           target() === 'root' && 'explorer-upload-tree--drop-root',
         )}
       >
-        <For each={DEMO_TREE}>
-          {(node) => <ExplorerDropTreeNode node={node} depth={0} dropTargetPath={dropTargetPath()} />}
-        </For>
+        <FileTree
+          nodes={DEMO_TREE}
+          expandedPaths={expandedPaths()}
+          onToggleFolder={toggleFolder}
+          dropTargetPath={dropTargetPath()}
+        />
 
         <Show when={target() === 'root'}>
           <p role="status" class="mt-8 px-4 text-11 text-accent-solid">

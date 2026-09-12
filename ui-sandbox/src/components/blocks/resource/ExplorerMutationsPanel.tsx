@@ -10,7 +10,7 @@ import {
   type InlineEditState,
 } from './ExplorerMutationsTree';
 import { ExplorerItemMenu, type ExplorerMenuAction } from './ExplorerItemMenu';
-import type { FileTreeNode } from './FileTree';
+import type { FileTreeNode } from '@peri/ui';
 import {
   createExplorerMutationsDemoTree,
   type ExplorerMutationsDemoMode,

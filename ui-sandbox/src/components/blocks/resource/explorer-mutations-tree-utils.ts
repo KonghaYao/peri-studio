@@ -1,4 +1,4 @@
-import type { FileTreeNode } from './FileTree';
+import type { FileTreeNode } from '@peri/ui';
 
 export function cloneExplorerTree(nodes: FileTreeNode[]): FileTreeNode[] {
   return nodes.map((n) => ({

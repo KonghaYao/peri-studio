@@ -1,4 +1,4 @@
-import type { FileTreeNode } from './FileTree';
+import type { FileTreeNode } from '@peri/ui';
 
 /** Mock workspace tree for Explorer mutations demos (wire not connected). */
 export function createExplorerMutationsDemoTree(): FileTreeNode[] {

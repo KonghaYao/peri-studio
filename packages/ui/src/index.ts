@@ -310,6 +310,8 @@ export { Spinner } from './components/Spinner';
 export { Switch, SwitchControl, SwitchInput, SwitchLabel, SwitchThumb } from './components/Switch';
 export { Status, type StatusTone } from './components/Status';
 export { Terminal, type TerminalProps, type TerminalViewport as TerminalViewportExport } from './components/Terminal';
+export { FileTree, type FileTreeNode, type FileTreeProps } from './components/FileTree';
+export { buildPathTree, folderPathsFromItems } from './lib/build-path-tree';
 export { VSCodeFileIcon, type VSCodeFileIconProps } from './components/VSCodeFileIcon';
 export {
   filePathBasename,
