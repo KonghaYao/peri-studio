@@ -60,7 +60,7 @@ export function TableNode(props: { node: RenderableNode; context: MarkdownRender
         </button>
       </div>
       <div class="overflow-x-auto">
-        <table ref={table} class="w-full border-collapse text-left text-13">
+        <table ref={table} class="w-full border-collapse text-left">
           <thead>
             <tr>
               <For each={header()}>{(cell) => renderCell(cell, 'th')}</For>

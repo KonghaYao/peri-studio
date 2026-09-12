@@ -1,224 +1,217 @@
 /* Peri 设计稿 Markdown：compact chat 字阶与节奏（tokens.css）。
-   宿主 class `.markdown-body`。流式安全：只用兄弟间距，不用 :first-child / :last-child。 */
+   宿主 class `.markdown-body`。不进 @layer，避免被 text-* utility 压过。
+   块间距用 flex gap（流式追加时不依赖 :first-child / :last-child）。 */
 
-@layer components {
-  .markdown-body {
-    container-type: inline-size;
-    min-width: 0;
-    overflow-wrap: break-word;
-    font-family: var(--font-sans);
-    font-size: var(--text-13);
-    line-height: var(--leading-normal);
-    color: var(--content-primary);
-  }
+.markdown-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--chat-markdown-rhythm);
+  min-width: 0;
+  overflow-wrap: break-word;
+  font-family: var(--font-sans);
+  font-size: var(--text-14);
+  line-height: var(--leading-normal);
+  color: var(--content-primary);
+}
 
-  @container (max-width: 30rem) {
-    .markdown-body {
-      font-size: var(--text-14);
-    }
-  }
+.markdown-body > * {
+  min-width: 0;
+  margin-block: 0;
+}
 
-  .markdown-body > * + * {
-    margin-block-start: var(--chat-markdown-rhythm);
-  }
+/* 段前再加一档，总间距 24px；标题后保持 gap 8px（用负边距吃掉多余的 8）。 */
+.markdown-body > * + :where(h1, h2, h3, h4) {
+  padding-block-start: var(--space-8);
+}
 
-  .markdown-body :where(p) {
-    margin-block: 0;
-  }
+.markdown-body > :where(h1, h2, h3, h4, h5, h6) + * {
+  margin-block-start: calc(var(--space-8) - var(--chat-markdown-rhythm));
+}
 
-  .markdown-body :where(h1) {
-    margin-block: 0;
-    font-size: var(--text-18);
-    font-weight: 600;
-    letter-spacing: var(--tracking-dialog);
-    line-height: var(--leading-snug);
-  }
+.markdown-body :where(p, h1, h2, h3, h4, h5, h6, ul, ol, li, blockquote, pre, table, hr, dl, dt, dd) {
+  margin-block: 0;
+}
 
-  .markdown-body :where(h2) {
-    margin-block: 0;
-    font-size: var(--text-16);
-    font-weight: 600;
-    line-height: var(--leading-snug);
-  }
+.markdown-body :where(h1) {
+  font-size: var(--text-18);
+  font-weight: 600;
+  letter-spacing: var(--tracking-dialog);
+  line-height: var(--leading-snug);
+}
 
-  .markdown-body :where(h3) {
-    margin-block: 0;
-    font-size: var(--text-15);
-    font-weight: 600;
-    line-height: var(--leading-snug);
-  }
+.markdown-body :where(h2) {
+  font-size: var(--text-16);
+  font-weight: 600;
+  line-height: var(--leading-snug);
+}
 
-  .markdown-body :where(h4) {
-    margin-block: 0;
-    font-size: var(--text-14);
-    font-weight: 600;
-    line-height: var(--leading-compact);
-  }
+.markdown-body :where(h3) {
+  font-size: var(--text-15);
+  font-weight: 600;
+  line-height: var(--leading-snug);
+}
 
-  .markdown-body :where(h5, h6) {
-    margin-block: 0;
-    font-size: var(--text-13);
-    font-weight: 600;
-    line-height: var(--leading-compact);
-  }
+.markdown-body :where(h4, h5, h6) {
+  font-size: var(--text-14);
+  font-weight: 600;
+  line-height: var(--leading-compact);
+}
 
-  /* 必须写在 h* { margin-block: 0 } 之后：段前松、段后紧，避免标题贴上一段。 */
-  .markdown-body > * + :where(h1, h2, h3, h4) {
-    margin-block-start: var(--space-24);
-  }
+.markdown-body :where(h6) {
+  color: var(--content-secondary);
+}
 
-  .markdown-body > :where(h1, h2, h3, h4, h5, h6) + * {
-    margin-block-start: var(--space-8);
-  }
+.markdown-body :where(ul, ol) {
+  padding-left: 1.5em;
+  list-style-position: outside;
+}
 
-  .markdown-body :where(h6) {
-    color: var(--content-secondary);
-  }
+.markdown-body :where(ul) {
+  list-style-type: disc;
+}
 
-  .markdown-body :where(ul, ol) {
-    margin-block: 0;
-    padding-left: var(--space-22);
-  }
+.markdown-body :where(ol) {
+  list-style-type: decimal;
+}
 
-  .markdown-body :where(ul) {
-    list-style: disc;
-  }
+.markdown-body :where(li + li) {
+  margin-block-start: var(--space-4);
+}
 
-  .markdown-body :where(ol) {
-    list-style: decimal;
-  }
+.markdown-body :where(li > * + *) {
+  margin-block-start: var(--space-8);
+}
 
-  .markdown-body :where(li) {
-    margin-block: 0;
-  }
+.markdown-body :where(li > ul, li > ol) {
+  margin-block-start: var(--space-4);
+}
 
-  .markdown-body :where(li + li) {
-    margin-block-start: var(--space-4);
-  }
+.markdown-body :where(li > p) {
+  margin: 0;
+}
 
-  .markdown-body :where(li > ul, li > ol) {
-    margin-block-start: var(--space-4);
-  }
+.markdown-body :where(li:has(> input[type='checkbox'])) {
+  list-style: none;
+  padding-left: 0;
+}
 
-  .markdown-body :where(li:has(> input[type='checkbox'])) {
-    list-style: none;
-    padding-left: 0;
-  }
+.markdown-body :where(input[type='checkbox'], .markdown-task-checkbox) {
+  margin-right: var(--space-8);
+  vertical-align: middle;
+  accent-color: var(--accent-solid);
+}
 
-  .markdown-body :where(input[type='checkbox'], .markdown-task-checkbox) {
-    margin-right: var(--space-8);
-    vertical-align: middle;
-    accent-color: var(--accent-solid);
-  }
+.markdown-body :where(ul.markdown-task-list) {
+  list-style: none;
+  padding-left: 0;
+}
 
-  .markdown-body :where(ul.markdown-task-list) {
-    list-style: none;
-    padding-left: 0;
-  }
+.markdown-body :where(ul.markdown-task-list > li) {
+  list-style: none;
+}
 
-  .markdown-body :where(ul.markdown-task-list > li) {
-    list-style: none;
-  }
+.markdown-body :where(ul.markdown-task-list p) {
+  display: inline;
+  margin: 0;
+}
 
-  .markdown-body :where(ul.markdown-task-list p) {
-    display: inline;
-    margin: 0;
-  }
+.markdown-body :where(blockquote) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-2) 0 var(--space-2) var(--space-14);
+  border-left: 2px solid var(--border-strong);
+  color: var(--content-secondary);
+}
 
-  .markdown-body :where(blockquote) {
-    margin-block: 0;
-    padding: var(--space-2) 0 var(--space-2) var(--space-14);
-    border-left: 2px solid var(--border-strong);
-    color: var(--content-secondary);
-  }
+.markdown-body :where(hr) {
+  align-self: stretch;
+  height: 1px;
+  border: 0;
+  background: var(--border-faint);
+}
 
-  .markdown-body :where(hr) {
-    margin-block: 0;
-    height: 1px;
-    border: 0;
-    background: var(--border-subtle);
-  }
+.markdown-body :where(a) {
+  color: var(--content-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 
-  .markdown-body :where(a) {
-    color: var(--content-link);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
+.markdown-body :where(.md-inline-code, :not(pre) > code) {
+  border-radius: var(--radius-4);
+  background: var(--surface-muted);
+  padding: 0.12em 0.35em;
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  font-weight: 500;
+  color: inherit;
+  white-space: break-spaces;
+  overflow-wrap: anywhere;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
 
-  .markdown-body :where(:not(pre) > code) {
-    border-radius: var(--radius-4);
-    background: var(--surface-muted);
-    padding: var(--space-2) var(--space-6);
-    font-family: var(--font-mono);
-    font-size: var(--text-12);
-    font-weight: 600;
-    color: var(--content-primary);
-  }
+.markdown-body :where(pre) {
+  overflow: auto;
+  border-radius: var(--radius-8);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-sunken);
+  padding: var(--space-12);
+  font-family: var(--font-mono);
+  font-size: var(--text-12);
+  line-height: var(--leading-relaxed);
+  color: var(--content-primary);
+}
 
-  .markdown-body :where(pre) {
-    margin-block: 0;
-    overflow: auto;
-    border-radius: var(--radius-8);
-    border: 1px solid var(--border-subtle);
-    background: var(--surface-sunken);
-    padding: var(--space-12);
-    font-family: var(--font-mono);
-    font-size: var(--text-12);
-    line-height: var(--leading-relaxed);
-    color: var(--content-primary);
-  }
+.markdown-body :where(pre code) {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
 
-  .markdown-body :where(pre code) {
-    background: transparent;
-    padding: 0;
-    font-size: inherit;
-    font-weight: inherit;
-    color: inherit;
-  }
+.markdown-body :where(table) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: inherit;
+}
 
-  .markdown-body :where(table) {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: var(--text-13);
-  }
+.markdown-body :where(th) {
+  padding: var(--space-8) var(--space-12);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-muted);
+  font-weight: 600;
+  text-align: left;
+}
 
-  .markdown-body :where(th) {
-    padding: var(--space-8) var(--space-12);
-    border-bottom: 1px solid var(--border-subtle);
-    background: var(--surface-muted);
-    font-weight: 600;
-    text-align: left;
-  }
+.markdown-body :where(td) {
+  padding: var(--space-8) var(--space-12);
+}
 
-  .markdown-body :where(td) {
-    padding: var(--space-8) var(--space-12);
-  }
+.markdown-body :where(tr + tr td) {
+  border-top: 1px solid var(--border-subtle);
+}
 
-  .markdown-body :where(tr + tr td) {
-    border-top: 1px solid var(--border-subtle);
-  }
+.markdown-body :where(.md-math--block) {
+  text-align: center;
+}
 
-  .markdown-body :where(.md-math--block) {
-    text-align: center;
-  }
+.markdown-body :where(del) {
+  color: var(--content-muted);
+}
 
-  .markdown-body :where(del) {
-    color: var(--content-muted);
-  }
+.markdown-body :where(footer) {
+  padding-top: var(--space-12);
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--text-12);
+  color: var(--content-secondary);
+}
 
-  .markdown-body :where(footer) {
-    margin-block-start: var(--space-20);
-    padding-top: var(--space-12);
-    border-top: 1px solid var(--border-subtle);
-    font-size: var(--text-12);
-    color: var(--content-secondary);
-  }
+.markdown-body :where(sup) {
+  font-size: var(--text-10);
+}
 
-  .markdown-body :where(sup) {
-    font-size: var(--text-10);
-  }
-
-  .markdown-body :where(sup a) {
-    text-decoration: none;
-  }
+.markdown-body :where(sup a) {
+  text-decoration: none;
 }

@@ -3,4 +3,4 @@
 @import './styles/primitives.css';
 @import './styles/extra.css';
 
-/* 应用 reset → @peri/ui（tokens/theme/primitives/extra）→ web 业务 primitives/extra。 */
+/* 应用 reset → @peri/ui（tokens/theme/primitives/extra/markdown-body）→ web primitives/extra。 */

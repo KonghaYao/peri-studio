@@ -2065,11 +2065,11 @@ describe('NativeSelect', () => {
 });
 
 describe('StatusAreaShell', () => {
-  it('renders collapsible work status chrome with tab panels', async () => {
+  it('renders collapsible status chrome with tab panels', async () => {
     render(() => (
       <StatusAreaShell
         data-testid="status-shell"
-        aria-label="Work status"
+        aria-label="Status area"
         tabsValue="todo"
         onTabsChange={() => {}}
         tabBar={<TabsTrigger value="todo" class={statusAreaTabTriggerClass}>Todo</TabsTrigger>}
@@ -2080,7 +2080,8 @@ describe('StatusAreaShell', () => {
 
     const shell = screen.getByTestId('status-shell');
     expect(shell).toHaveClass('ui-status-area-shell');
-    expect(shell).toHaveAttribute('aria-label', 'Work status');
+    expect(shell).toHaveAttribute('aria-label', 'Status area');
+    expect(screen.queryByText('Work status')).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Todo' })).toBeInTheDocument();
     expect(screen.getByRole('tabpanel')).toHaveTextContent('Plan step');
 

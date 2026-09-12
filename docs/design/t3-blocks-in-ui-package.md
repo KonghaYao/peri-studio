@@ -138,7 +138,7 @@ Sandbox `components/blocks/*`：T3 条 **barrel 重导出** `@peri/ui`；layers 
 |------|------|------|
 | **代码语法高亮** | `@peri/ui` | `@tanstack/highlight`（`lib/code-highlight.ts` + `HighlightedCodeBody`）；主题 `github-light`，运行时注入 `.code-block-highlight pre` 作用域 |
 | **Markdown 解析 / 流式 AST** | `@peri/markdown` | `stream-markdown-parser`（markstream-vue 生态）；`MarkdownBody` / `MarkdownCodeBlockView` 在 package 内装配 |
-| **Markdown 文档流 CSS** | `@peri/ui` `markdown-body.css` | 设计稿 compact chat 字阶（`--text-13` 正文）；宿主 `.markdown-body` |
+| **Markdown 文档流 CSS** | `@peri/ui` `markdown-body.css` | 设计稿 compact chat 字阶（`--text-14` 正文 / 15px）；宿主 `.markdown-body` |
 
 `@peri/ui` 不直接依赖 Shiki；`@peri/markdown` 的 parser 层亦不承担 fence 着色（由 `CodeBlockView` 注入）。
 

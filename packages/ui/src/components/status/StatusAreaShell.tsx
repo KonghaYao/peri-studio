@@ -7,7 +7,6 @@ import { Tabs, TabsList } from '../Tabs';
 
 export type StatusAreaShellProps = {
   class?: string;
-  title?: string;
   tabsValue: string;
   onTabsChange: (value: string) => void;
   expanded?: boolean;
@@ -20,11 +19,10 @@ export type StatusAreaShellProps = {
   'aria-label'?: string;
 };
 
-/** T3 · Work status 壳：可折叠标题 + tab 条 + 面板 slot；T4 注入 plan/async/changes 内容。 */
+/** T3 · 状态区壳：顶栏 tab + 折叠 + 面板 slot；T4 注入 plan/async/changes 内容。 */
 export const StatusAreaShell: Component<StatusAreaShellProps> = (props) => {
   const [local, rest] = splitProps(props, [
     'class',
-    'title',
     'tabsValue',
     'onTabsChange',
     'expanded',
@@ -40,7 +38,7 @@ export const StatusAreaShell: Component<StatusAreaShellProps> = (props) => {
     if (local.onExpandedChange) local.onExpandedChange(value);
     else setInternalExpanded(value);
   };
-  const title = () => local.title ?? 'Work status';
+  const tabsAriaLabel = () => rest['aria-label'] ?? 'Status area';
 
   return (
     <section
@@ -51,32 +49,29 @@ export const StatusAreaShell: Component<StatusAreaShellProps> = (props) => {
     >
       <Card class="ui-status-area-shell__card overflow-hidden rounded-14 border-border-subtle bg-surface-overlay shadow-none">
         <Tabs value={local.tabsValue} onChange={local.onTabsChange}>
-          <CardHeader class="ui-status-area-shell__header gap-8 px-16 pt-14 pb-8">
-            <div class="flex min-h-28 items-center gap-12">
-              <span class="ui-status-area-shell__title text-12 font-medium text-content-secondary">{title()}</span>
-              <IconButton
-                size="sm"
-                label={expanded()
-                  ? (local.collapseExpandedLabel ?? 'Collapse status panel')
-                  : (local.collapseCollapsedLabel ?? 'Expand status panel')}
-                showTooltip={false}
-                class="ml-auto border-0 bg-transparent text-content-muted hover:bg-transparent hover:text-content-primary"
-                aria-expanded={expanded()}
-                onClick={() => setExpanded(!expanded())}
-              >
-                <ChevronDown
-                  size={14}
-                  strokeWidth={1.8}
-                  class={cn('transition-transform duration-(--duration-fast)', !expanded() && 'rotate-180')}
-                />
-              </IconButton>
-            </div>
+          <CardHeader class="ui-status-area-shell__header flex-row items-center gap-8 p-8">
             <TabsList
-              class="ui-status-area-shell__tabs flex min-w-0 flex-wrap items-center gap-2 border-0"
-              aria-label={title()}
+              class="ui-status-area-shell__tabs flex min-w-0 flex-1 flex-wrap items-center gap-2 border-0"
+              aria-label={tabsAriaLabel()}
             >
               {local.tabBar}
             </TabsList>
+            <IconButton
+              size="sm"
+              label={expanded()
+                ? (local.collapseExpandedLabel ?? 'Collapse status panel')
+                : (local.collapseCollapsedLabel ?? 'Expand status panel')}
+              showTooltip={false}
+              class="shrink-0 border-0 bg-transparent text-content-muted hover:bg-transparent hover:text-content-primary"
+              aria-expanded={expanded()}
+              onClick={() => setExpanded(!expanded())}
+            >
+              <ChevronDown
+                size={14}
+                strokeWidth={1.8}
+                class={cn('transition-transform duration-(--duration-fast)', !expanded() && 'rotate-180')}
+              />
+            </IconButton>
           </CardHeader>
           <Show when={expanded()}>
             <div class="ui-status-area-shell__body">

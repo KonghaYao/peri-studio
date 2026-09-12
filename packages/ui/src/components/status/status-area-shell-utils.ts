@@ -14,5 +14,5 @@ export const statusAreaRowClass = cn(
 
 /** 可滚动 tab 面板内边距与最大高度。 */
 export const statusAreaPanelClass = cn(
-  'ui-scrollbar max-h-(--status-panel-max-height) overflow-auto px-16 pb-14 pt-4 outline-none',
+  'ui-scrollbar max-h-(--status-panel-max-height) overflow-auto px-8 pb-8 pt-0 outline-none',
 );

@@ -416,7 +416,7 @@ test('coarse pointers expose sidebar actions without hover and keep controls tou
   assert.match(sessionAccessory, /group-hover\/row/);
   assert.match(sessionAccessory, /group-focus-within\/row/);
   assert.match(sessionAccessory, /pointer-coarse:opacity-100 pointer-coarse:pointer-events-auto/);
-  assert.match(sessionRow, /pointer-coarse:min-h-44/);
+  assert.match(sessionRow, /pointer-coarse:py-6/);
   assert.match(button, /pointer-coarse:min-h-44/);
   assert.match(button, /pointer-coarse:min-w-44/);
   assert.match(dialog, /as=\{IconButton\}/);

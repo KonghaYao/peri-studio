@@ -96,10 +96,11 @@ test('package stylesheet entry order is tokens → theme → motion → primitiv
 test('markdown-body.css uses Peri compact chat typeset', () => {
   const markdown = read(join(srcRoot, 'styles', 'markdown-body.css')).replace(/\/\*[\s\S]*?\*\//g, '');
   assert.match(markdown, /\.markdown-body\s*\{/);
-  assert.match(markdown, /font-size:\s*var\(--text-13\)/);
+  assert.match(markdown, /\.markdown-body\s*\{[^}]*font-size:\s*var\(--text-14\)/s);
   assert.match(markdown, /font-size:\s*var\(--text-18\)/);
   assert.match(markdown, /\.markdown-body > \* \+ \*/);
   assert.match(markdown, /\.markdown-body > \* \+ :where\(h1, h2, h3, h4\)/);
+  assert.doesNotMatch(markdown, /@layer\s+/);
   assert.doesNotMatch(markdown, /--ms-flow-paragraph-y:/);
   assert.doesNotMatch(markdown, /:last-child|:first-child/);
   assert.doesNotMatch(markdown, /\.typeset\b/);
@@ -111,6 +112,7 @@ test('theme.css is the only Tailwind import and sources package T2', () => {
   assert.equal(tailwindImports.length, 1);
   assert.match(theme, /@source '\.\.\/components'/);
   assert.match(theme, /@source '\.\.\/lib'/);
+  assert.match(theme, /@source '\.\.\/\.\.\/\.\.\/markdown\/src'/);
   for (const file of cssFiles().filter((path) => !path.endsWith('theme.css'))) {
     assert.doesNotMatch(read(file), /@import\s+'tailwindcss'/);
   }

@@ -35,7 +35,7 @@ export function MarkdownBody(props: MarkdownBodyProps) {
       smoothStreaming={props.smoothStreaming}
       maxLiveNodes={props.maxLiveNodes}
       isDark={props.isDark}
-      class={props.class}
+      class={['markdown-body', props.class].filter(Boolean).join(' ')}
       CodeBlockView={props.CodeBlockView ?? MarkdownCodeBlockView}
       MermaidBlockView={props.MermaidBlockView ?? MermaidBlockView}
       MathExpressionView={props.MathExpressionView ?? MathExpression}

@@ -33,15 +33,15 @@ export const bubbleVariants = cva('relative flex min-w-0 flex-col', {
   },
 });
 
-const bubbleContentVariants = cva('min-w-0 wrap-anywhere text-13 leading-normal', {
+const bubbleContentVariants = cva('min-w-0 wrap-anywhere leading-normal', {
   variants: {
     variant: {
       default:
-        'rounded-8 border border-border-subtle bg-surface px-12 py-8 text-content-primary',
-      primary: 'rounded-8 bg-accent-solid px-12 py-8 text-content-on-accent',
-      muted: 'rounded-8 bg-surface-muted px-12 py-8 text-content-secondary',
+        'rounded-8 border border-border-subtle bg-surface px-12 py-8 text-13 text-content-primary',
+      primary: 'rounded-8 bg-accent-solid px-12 py-8 text-13 text-content-on-accent',
+      muted: 'rounded-8 bg-surface-muted px-12 py-8 text-13 text-content-secondary',
       outline:
-        'rounded-8 border border-border-strong bg-transparent px-12 py-8 text-content-primary',
+        'rounded-8 border border-border-strong bg-transparent px-12 py-8 text-13 text-content-primary',
       ghost: 'bg-transparent px-0 py-0 text-content-primary',
     },
   },

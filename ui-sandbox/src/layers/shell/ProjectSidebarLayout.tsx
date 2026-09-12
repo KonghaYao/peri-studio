@@ -121,14 +121,13 @@ function SessionRow(props: {
       )}
       data-selected={props.selected ? 'true' : undefined}
       style={{
-        'min-height': '36px',
-        'padding-left': props.indent ? `calc(10px + ${props.indent}px)` : undefined,
+        'padding-left': props.indent ? `calc(5px + ${props.indent}px)` : undefined,
       }}
     >
-      <div class="relative flex min-h-36 w-full min-w-0 items-center">
+      <div class="relative flex w-full min-w-0 items-center">
         <button
           type="button"
-          class="flex min-h-36 w-full min-w-0 items-center overflow-hidden rounded-md pl-10 pr-0 text-left"
+          class="flex w-full min-w-0 items-center overflow-hidden rounded-md py-4 pl-5 pr-0 text-left pointer-coarse:py-6"
           onClick={props.onClick}
         >
           <span class="block min-w-0 w-full truncate text-13 leading-20 text-content-primary">{props.session.title}</span>

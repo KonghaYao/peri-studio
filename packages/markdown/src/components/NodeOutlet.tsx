@@ -36,7 +36,7 @@ function listItemHasCheckbox(item: RenderableNode) {
 
 function InlineCode(props: { code: string }) {
   return (
-    <code data-testid="md-inline-code" class="md-inline-code rounded-sm border border-border-subtle bg-surface-muted px-4 py-2 text-11p5 text-content-primary">
+    <code data-testid="md-inline-code" class="md-inline-code">
       {props.code}
     </code>
   );

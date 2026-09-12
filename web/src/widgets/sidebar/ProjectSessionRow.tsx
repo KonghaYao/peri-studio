@@ -94,26 +94,25 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
       data-testid="session-row"
       data-selected={props.selected ? 'true' : undefined}
       class={cn(
-        'group/row relative flex min-h-36 min-w-0 items-center rounded-md',
+        'group/row relative flex min-w-0 items-center rounded-md',
         props.selected
           ? 'bg-sidebar-selected'
           : 'hover:bg-interaction-hover focus-within:bg-interaction-hover',
       )}
       style={{
-        'padding-left': props.indent ? `calc(10px + ${props.indent}px)` : undefined,
+        'padding-left': props.indent ? `calc(5px + ${props.indent}px)` : undefined,
       }}
     >
-      <div class="relative flex min-h-36 w-full min-w-0 items-center pointer-coarse:min-h-44">
+      <div class="relative flex w-full min-w-0 items-center">
         <button
           type="button"
           data-sidebar="menu-button"
           data-active={props.selected ? 'true' : undefined}
           class={cn(
-            'flex min-h-36 w-full min-w-0 items-center overflow-hidden rounded-md bg-transparent pl-10 pr-0 text-left outline-none',
+            'flex w-full min-w-0 items-center overflow-hidden rounded-md bg-transparent py-4 pl-5 pr-0 text-left outline-none pointer-coarse:py-6',
             'focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2',
             'disabled:pointer-events-none disabled:opacity-45',
             props.selected && 'font-medium',
-            'pointer-coarse:min-h-44',
           )}
           aria-current={props.selected ? 'page' : undefined}
           aria-label={displayTitle()}

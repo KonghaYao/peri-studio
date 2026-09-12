@@ -6,6 +6,7 @@
 @import 'tailwindcss';
 @source '../components';
 @source '../lib';
+@source '../../../markdown/src';
 
 /*
  * `inline` mode: utilities resolve directly to the tokens' var() references
