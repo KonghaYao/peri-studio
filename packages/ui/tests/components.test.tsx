@@ -66,7 +66,28 @@ import { RadioGroup, RadioGroupItem, RadioGroupItemControl, RadioGroupItemInput,
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../src/components/Tabs';
 import { Textarea } from '../src/components/Textarea';
 import { SelectField } from '../src/components/SelectField';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '../src/components/Empty';
 import { EmptyState } from '../src/components/EmptyState';
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSeparator,
+  FieldSet,
+  FieldTitle,
+} from '../src/components/field-primitive';
+import { Input } from '../src/components/Field';
 import { Alert, AlertDescription, AlertTitle } from '../src/components/Alert';
 import { Avatar, AvatarFallback, AvatarImage } from '../src/components/Avatar';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../src/components/Card';
@@ -930,6 +951,125 @@ describe('InlineNotice', () => {
 
     render(() => <InlineNotice live tone="warning">Waiting for confirmation</InlineNotice>);
     expect(screen.getByRole('status')).toHaveAttribute('aria-live', 'polite');
+  });
+});
+
+describe('Field primitives', () => {
+  it('renders semantic fieldset/legend and vertical field layout', () => {
+    render(() => (
+      <FieldSet data-testid="fieldset">
+        <FieldLegend>Profile</FieldLegend>
+        <FieldDescription>Shown on invoices.</FieldDescription>
+        <FieldGroup data-testid="field-group">
+          <Field data-testid="field">
+            <FieldLabel for="name">Full name</FieldLabel>
+            <Input id="name" />
+            <FieldDescription>Legal name only.</FieldDescription>
+          </Field>
+        </FieldGroup>
+      </FieldSet>
+    ));
+
+    expect(screen.getByTestId('fieldset').tagName).toBe('FIELDSET');
+    expect(screen.getByText('Profile').tagName).toBe('LEGEND');
+    expect(screen.getByTestId('field-group')).toHaveClass('@container/field-group', 'gap-20');
+    const field = screen.getByTestId('field');
+    expect(field).toHaveAttribute('role', 'group');
+    expect(field).toHaveAttribute('data-orientation', 'vertical');
+    expect(field).toHaveClass('flex-col', 'gap-8');
+    expect(screen.getByLabelText('Full name')).toHaveAttribute('id', 'name');
+    expect(screen.getByText('Legal name only.')).toHaveClass('text-content-muted');
+  });
+
+  it('supports horizontal orientation and invalid styling without leaking props', () => {
+    render(() => (
+      <Field orientation="horizontal" data-invalid data-testid="field">
+        <input id="newsletter" type="checkbox" role="switch" aria-label="Newsletter" />
+        <FieldContent>
+          <FieldTitle>Newsletter</FieldTitle>
+          <FieldDescription>Weekly updates.</FieldDescription>
+        </FieldContent>
+      </Field>
+    ));
+
+    const field = screen.getByTestId('field');
+    expect(field).toHaveAttribute('data-orientation', 'horizontal');
+    expect(field).toHaveClass('flex-row', 'items-center', 'data-[invalid=true]:text-danger');
+    expect(field).toHaveAttribute('data-invalid');
+    expect(field).not.toHaveAttribute('orientation');
+    expect(screen.getByTestId('field').querySelector('[data-slot=field-content]')).toHaveClass(
+      'flex-1',
+      'flex-col',
+    );
+  });
+
+  it('renders FieldError from children or deduplicated errors array', () => {
+    const { unmount } = render(() => (
+      <FieldError data-testid="error">Choose another username.</FieldError>
+    ));
+    const error = screen.getByRole('alert');
+    expect(error).toHaveTextContent('Choose another username.');
+    expect(error).toHaveClass('text-danger');
+    unmount();
+
+    render(() => (
+      <FieldError
+        errors={[
+          { message: 'Too short' },
+          { message: 'Too short' },
+          { message: 'Already taken' },
+        ]}
+      />
+    ));
+    const list = screen.getByRole('alert').querySelector('ul');
+    expect(list).toHaveClass('list-disc');
+    expect(list?.querySelectorAll('li')).toHaveLength(2);
+  });
+
+  it('renders FieldSeparator with optional centered content', () => {
+    render(() => <FieldSeparator data-testid="separator">Or continue with</FieldSeparator>);
+    const separator = screen.getByTestId('separator');
+    expect(separator).toHaveAttribute('data-content', 'true');
+    expect(separator.querySelector('[data-slot=field-separator-content]')).toHaveTextContent(
+      'Or continue with',
+    );
+    expect(separator.querySelector('.bg-divider')).toBeInTheDocument();
+  });
+});
+
+describe('Empty compound', () => {
+  it('composes centered empty state parts without leaking variant props', () => {
+    render(() => (
+      <Empty data-testid="empty">
+        <EmptyHeader data-testid="header">
+          <EmptyMedia variant="icon" data-testid="media" aria-hidden="true">
+            <span>◎</span>
+          </EmptyMedia>
+          <EmptyTitle>No sessions yet</EmptyTitle>
+          <EmptyDescription>Create a session to get started.</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent data-testid="content">
+          <Button>New session</Button>
+        </EmptyContent>
+      </Empty>
+    ));
+
+    expect(screen.getByTestId('empty')).toHaveClass(
+      'items-center',
+      'justify-center',
+      'border-dashed',
+      'text-center',
+    );
+    expect(screen.getByTestId('header')).toHaveClass('items-center', 'gap-8');
+    const media = screen.getByTestId('media');
+    expect(media).toHaveAttribute('data-variant', 'icon');
+    expect(media).toHaveClass('size-40', 'rounded-8', 'bg-surface-muted');
+    expect(media).not.toHaveAttribute('variant');
+    expect(screen.getByText('No sessions yet')).toHaveClass('text-14', 'font-medium');
+    expect(screen.getByText('Create a session to get started.')).toHaveClass('text-content-muted');
+    expect(screen.getByRole('button', { name: 'New session' }).parentElement).toHaveClass(
+      'items-center',
+    );
   });
 });
 

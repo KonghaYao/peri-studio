@@ -82,6 +82,16 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'item', label: 'Item' },
       ],
     },
+    {
+      title: 'Round 3 · shadcn',
+      items: [
+        { id: 'field', label: 'Field' },
+        { id: 'empty', label: 'Empty' },
+        { id: 'drawer', label: 'Drawer' },
+        { id: 'sidebar', label: 'Sidebar' },
+        { id: 'direction', label: 'Direction' },
+      ],
+    },
   ],
   blocks: [
     {

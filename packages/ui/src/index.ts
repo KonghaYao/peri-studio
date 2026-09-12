@@ -23,9 +23,23 @@ export { Progress, ProgressFill, ProgressLabel, ProgressTrack, ProgressValueLabe
 export { Slider, SliderFill, SliderLabel, SliderThumb, SliderTrack } from './components/Slider';
 export { Calendar, CalendarCell, CalendarDay, CalendarGrid, CalendarHeader, CalendarNav } from './components/Calendar';
 export { DatePicker, DatePickerContent, DatePickerTrigger } from './components/DatePicker';
+export { DirectionProvider, useDirection, type Direction, type UseDirectionResult } from './components/Direction';
 export { CopyButton } from './components/CopyButton';
 export { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogPortal, DialogTitle, DialogTrigger } from './components/Dialog';
+export { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from './components/Empty';
 export { EmptyState } from './components/EmptyState';
+export {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSeparator,
+  FieldSet,
+  FieldTitle,
+} from './components/field-primitive';
 export { InlineNotice, type InlineNoticeTone } from './components/InlineNotice';
 export { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemSeparator, ItemTitle } from './components/Item';
 export { Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel } from './components/Listbox';
@@ -84,6 +98,34 @@ export { Textarea } from './components/Textarea';
 export { Separator } from './components/Separator';
 export { Select, type SelectOption } from './components/Select';
 export { SelectField } from './components/SelectField';
+export { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger, type DrawerSwipeDirection } from './components/Drawer';
+export {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarTrigger,
+  useSidebar,
+  type SidebarCollapsible,
+  type SidebarSide,
+  type SidebarState,
+  type SidebarVariant,
+} from './components/Sidebar';
 export { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from './components/Sheet';
 export { dismissToast, showToast, Toast, ToastClose, ToastDescription, Toaster, ToastTitle } from './components/Toast';
 export { Tooltip, TooltipContent, TooltipTrigger } from './components/Tooltip';

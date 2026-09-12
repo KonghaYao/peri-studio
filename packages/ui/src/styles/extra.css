@@ -51,3 +51,13 @@
   cursor: pointer;
 }
 
+/* ── Shell aside offcanvas collapse（负偏移无法用 token width utility 表达） ── */
+
+[data-shell-aside][data-side='left'][data-collapsible='offcanvas'][data-state='collapsed'] .ui-aside-container {
+  left: calc(var(--sidebar-width) * -1);
+}
+
+[data-shell-aside][data-side='right'][data-collapsible='offcanvas'][data-state='collapsed'] .ui-aside-container {
+  right: calc(var(--sidebar-width) * -1);
+}
+

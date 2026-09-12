@@ -176,6 +176,8 @@
   --shell-sidebar-width-desk: 240px;
 
   /* Sidebar 侧栏 */
+  --sidebar-width: var(--shell-sidebar-width);
+  --sidebar-width-icon: var(--space-48);
   --sidebar-row-height: var(--pattern-row-height);
   --sidebar-row-height-touch: 52px;
   --sidebar-selected-bg: var(--palette-neutral-25);
