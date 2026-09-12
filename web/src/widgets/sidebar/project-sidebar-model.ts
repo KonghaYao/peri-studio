@@ -56,7 +56,6 @@ export function createProjectSidebarModel(intent: () => ProjectSidebarIntent | n
   const [cwd, setCwd] = createSignal('');
   const [editing, setEditing] = createSignal<string | null>(null);
   const [sessionMenu, setSessionMenu] = createSignal<string | null>(null);
-  const [archiveSessionCandidate, setArchiveSessionCandidate] = createSignal<string | null>(null);
   const [sessionLifecycleBusy, setSessionLifecycleBusy] = createSignal<string | null>(null);
   const [importingProject, setImportingProject] = createSignal<string | null>(null);
   const [collapsedProjects, setCollapsedProjects] = createSignal(new Set<string>());
@@ -222,6 +221,15 @@ export function createProjectSidebarModel(intent: () => ProjectSidebarIntent | n
     else openCreateProject();
   };
 
+  const requestArchiveSession = (sessionId: string) => {
+    if (sessionLifecycleBusy()) return;
+    runConfirmedMutation(
+      () => setSessionLifecycleBusy(sessionId),
+      () => setSessionLifecycleBusy(null),
+      (committed, failed) => archiveProjectSession(sessionId, committed, failed),
+    );
+  };
+
   return {
     creating, setCreating,
     projectInstanceId, setProjectInstanceId,
@@ -231,7 +239,6 @@ export function createProjectSidebarModel(intent: () => ProjectSidebarIntent | n
     cwd, setCwd,
     editing, setEditing,
     sessionMenu, setSessionMenu,
-    archiveSessionCandidate, setArchiveSessionCandidate,
     sessionLifecycleBusy, setSessionLifecycleBusy,
     importingProject, setImportingProject,
     collapsedProjects,

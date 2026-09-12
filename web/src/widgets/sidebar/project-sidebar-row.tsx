@@ -61,7 +61,7 @@ export function ProjectSidebarRow(props: ProjectSidebarRowProps) {
       onMenuOpenChange={(open) => model.setSessionMenu(open ? menuKey : null)}
       onRename={renameProjectSession}
       onCreateReplacement={(title) => { createProjectSession(props.projectId, title); }}
-      onArchiveRequest={model.setArchiveSessionCandidate}
+      onArchiveRequest={model.requestArchiveSession}
       onTogglePin={() => model.toggleSessionPin(sessionId)}
     />
   );

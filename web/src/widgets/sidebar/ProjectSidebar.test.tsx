@@ -335,27 +335,14 @@ describe('ProjectSidebar registry hydration', () => {
     expect(screen.queryByText(/Ready/)).not.toBeInTheDocument();
   });
 
-  it('dismisses the archive confirm dialog only after the server commits', async () => {
-    let committed: (() => void) | undefined;
-    store.archiveProjectSession.mockImplementation((_id: string, onCommitted?: () => void) => {
-      committed = onCommitted;
-      return true;
-    });
+  it('archives a session in one click without a confirm dialog', () => {
+    store.archiveProjectSession.mockReturnValue(true);
 
     render(() => <ProjectSidebar />);
     fireEvent.click(screen.getByRole('button', { name: 'Archive session' }));
 
-    const dialog = await waitFor(() => screen.getByRole('alertdialog'));
-    expect(dialog).toHaveTextContent('Archive “Architecture refactor”?');
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Archive session' }));
-
     expect(store.archiveProjectSession).toHaveBeenCalledWith('acp-12345678', expect.any(Function), expect.any(Function));
-    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
-    expect(document.querySelector('[data-alert-dialog-overlay]')).toBeInTheDocument();
-
-    committed?.();
-    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
-    await waitFor(() => expect(document.querySelector('[data-alert-dialog-overlay]')).not.toBeInTheDocument());
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('keeps archived sessions out of the workspace session list', () => {
