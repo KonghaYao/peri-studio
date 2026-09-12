@@ -203,9 +203,6 @@ test('composer surface keeps slash overlays unclipped and menu-sized', () => {
   assert.match(extra, /\.ui-chat-workspace__bottom-stack\s*\{[^}]*overflow:\s*visible/s);
   assert.match(extra, /\.ui-chat-workspace__bottom-stack::before\s*\{[^}]*var\(--chat-composer-fade-height\)/s);
   assert.match(extra, /\.ui-chat-workspace__bottom-stack\s*\{[^}]*padding-top:\s*var\(--space-4\)/s);
-  assert.match(extra, /\.ui-back-to-top__button\s*\{[^}]*border-radius:\s*calc\(var\(--space-28\) \/ 2\)/s);
-  assert.match(extra, /\.ui-back-to-top__button\s*\{[^}]*color:\s*var\(--content-secondary\)/s);
-  assert.match(extra, /\.ui-back-to-top__button:hover,\s*\n\s*\.ui-back-to-top__button:active/s);
   assert.match(extra, /\.ui-chat-column\s*\{[^}]*padding-inline:\s*var\(--chat-column-gutter\)/s);
   assert.match(extra, /\.ui-composer-shell\s*\{[^}]*margin-inline:\s*auto/s);
   assert.match(extra, /\.ui-composer-plus-btn\s*\{[^}]*background:\s*transparent/s);

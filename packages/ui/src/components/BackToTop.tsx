@@ -12,6 +12,16 @@ export type BackToTopProps = ComponentProps<'div'> & {
   direction?: 'start' | 'end';
 };
 
+/** T4 装配：Composer 悬浮锚点容器（BackToTop 绝对定位参照）。 */
+export const chatFloatingAnchorClass =
+  'relative z-2 shrink-0';
+
+const shellClass =
+  'ui-chat-column pointer-events-none absolute inset-x-0 bottom-full z-10 mb-4 flex justify-center transition-[opacity,transform,visibility] duration-base ease-standard data-[visible=false]:invisible data-[visible=false]:translate-y-4 data-[visible=false]:opacity-0 data-[visible=true]:visible data-[visible=true]:translate-y-0 data-[visible=true]:opacity-100';
+
+const buttonClass =
+  'inline-flex h-28 cursor-pointer items-center justify-center gap-6 rounded-full border border-border-strong bg-surface-overlay px-12 text-12 font-medium leading-snug whitespace-nowrap text-content-secondary shadow-overlay outline-none pointer-events-auto hover:border-border-strong hover:bg-surface-overlay hover:text-content-secondary focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring focus-visible:outline-offset-2';
+
 /** T2 · 滚动回锚点：贴于 composer 等贴底区正上方，由 T4 注入 visible 与 onClick。 */
 export const BackToTop: Component<BackToTopProps> = (props) => {
   const [local, rest] = splitProps(props, [
@@ -32,12 +42,12 @@ export const BackToTop: Component<BackToTopProps> = (props) => {
       data-slot="back-to-top"
       data-visible={visible() ? 'true' : 'false'}
       data-direction={direction()}
-      class={cn('ui-back-to-top ui-chat-column mx-auto w-full max-w-(--chat-content-max)', local.class)}
+      class={cn(shellClass, 'mx-auto w-full max-w-(--chat-content-max)', local.class)}
       {...rest}
     >
       <button
         type="button"
-        class="ui-back-to-top__button"
+        class={buttonClass}
         aria-hidden={visible() ? undefined : true}
         inert={visible() ? undefined : true}
         tabIndex={visible() ? 0 : -1}
@@ -48,10 +58,10 @@ export const BackToTop: Component<BackToTopProps> = (props) => {
             <ArrowDown
               size={14}
               strokeWidth={1.7}
-              class={cn('ui-back-to-top__icon shrink-0', direction() === 'start' && 'rotate-180')}
+              class={cn('shrink-0 text-content-muted', direction() === 'start' && 'rotate-180')}
               aria-hidden="true"
             />
-            <span class="ui-back-to-top__label">{label()}</span>
+            <span>{label()}</span>
           </>
         )}
       </button>

@@ -9,8 +9,9 @@ describe('BackToTop', () => {
     render(() => <BackToTop visible onClick={() => undefined} />);
 
     const button = screen.getByRole('button', { name: 'Back to latest' });
-    expect(button).toHaveClass('ui-back-to-top__button');
+    expect(button).toHaveClass('rounded-full', 'text-content-secondary');
     expect(button.closest('[data-slot="back-to-top"]')).toHaveAttribute('data-direction', 'end');
+    expect(button.closest('[data-slot="back-to-top"]')).toHaveClass('absolute', 'bottom-full');
   });
 
   it('uses custom label and start direction', () => {

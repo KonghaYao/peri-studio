@@ -1,7 +1,14 @@
 // 右区组装层：@peri/ui ChatWorkspaceShell + ChatHeader、MessageList、Composer。
 // T4 保留 store/features 逻辑；布局 chrome 下沉 T3 ChatWorkspaceShell。
 
-import { BackToTop, ChatHeader as ChatHeaderBase, ChatWorkspaceShell, InlineNotice, LoadingState } from '@peri/ui';
+import {
+  BackToTop,
+  chatFloatingAnchorClass,
+  ChatHeader as ChatHeaderBase,
+  ChatWorkspaceShell,
+  InlineNotice,
+  LoadingState,
+} from '@peri/ui';
 import { resolveChatHeaderTitle } from '@/features/chat/chat-header-title';
 import { Composer } from '@/widgets/composer/Composer';
 import { MessageList, type MessageListFollowState } from './MessageList';
@@ -191,13 +198,15 @@ export function ChatView(props: ChatViewProps) {
           <div class="ui-chat-workspace__decision-panel" data-testid="decision-panel">
             {queueAndStatus()}
           </div>
-          <BackToTop
-            visible={showBackToTop()}
-            label={followState().hasNewContent ? 'New content' : 'Back to latest'}
-            onClick={() => jumpToLatest?.()}
-            data-testid="back-to-latest"
-          />
-          <Composer renderRuntimeMenu={composerRuntimeMenu} />
+          <div class={chatFloatingAnchorClass}>
+            <BackToTop
+              visible={showBackToTop()}
+              label={followState().hasNewContent ? 'New content' : 'Back to latest'}
+              onClick={() => jumpToLatest?.()}
+              data-testid="back-to-latest"
+            />
+            <Composer renderRuntimeMenu={composerRuntimeMenu} />
+          </div>
         </>
       ) : undefined}
       composerStackRef={(element) => {

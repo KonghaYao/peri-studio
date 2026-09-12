@@ -109,7 +109,7 @@ export {
   type ToolCallStatus,
 } from './components/ToolActivity';
 export { Button, IconButton, LinkButton } from './components/Button';
-export { BackToTop, type BackToTopProps } from './components/BackToTop';
+export { BackToTop, chatFloatingAnchorClass, type BackToTopProps } from './components/BackToTop';
 export { ButtonGroup, buttonGroupItemClass } from './components/ButtonGroup';
 export { CheckIcon, CodeIcon, CopyIcon, DownloadIcon, ErrorIcon, ExpandIcon, Icon, RefreshIcon } from './components/Icon';
 export { Alert, AlertDescription, AlertTitle, type AlertVariant } from './components/Alert';
