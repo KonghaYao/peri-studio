@@ -5,11 +5,6 @@ import { TierHeader } from '@/pages/shared/DemoSection';
 const AI_SECTIONS = [
   'conversation',
   'message',
-  'chat-shell',
-  'chat-transcript',
-  'chat-header',
-  'session-row-accessory',
-  'project-row-accessory',
   'suggestion',
   'sources',
   'citation',
@@ -28,7 +23,7 @@ export function ComponentsAiPage() {
       <TierHeader
         tier="Tier 2 · AI"
         title="Chat & AI"
-        description="会话滚动、壳层块与 AI Elements；Markdown 见 #/components-markdown，Composer 见 #/components-composer。"
+        description="会话滚动原语与 AI Elements；壳层组合见 #/components-shell，Markdown 见 #/components-markdown。"
       />
       <ComponentCatalogExtrasF sections={[...AI_SECTIONS]} />
       <ComponentCatalogExtrasG sections={[...AI_SECTIONS]} />

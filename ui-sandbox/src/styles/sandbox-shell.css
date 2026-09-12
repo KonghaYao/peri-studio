@@ -1,7 +1,7 @@
-/* 沙箱壳层：顶栏四级 Tab + 左侧章节导航；小屏章节导航为抽屉。 */
+/* 沙箱壳层：顶栏三级集群 + 左侧层级导航；小屏为抽屉。 */
 
 :root {
-  --sandbox-header-height: 88px;
+  --sandbox-header-height: 96px;
   --sandbox-scroll-anchor: calc(var(--sandbox-header-height) + var(--space-16));
 }
 
@@ -25,7 +25,7 @@
 .sandbox-frame {
   display: grid;
   flex: 1;
-  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-columns: 248px minmax(0, 1fr);
   min-height: 0;
 }
 
