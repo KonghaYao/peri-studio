@@ -26,11 +26,16 @@ function ChapterNav(props: { route: SandboxRoute; activeSection?: string; onNavi
                         'block rounded-md px-8 py-6 text-12 no-underline transition-colors duration-(--duration-fast)',
                         props.activeSection === item.id
                           ? 'bg-sidebar-selected font-medium text-content-primary'
-                          : 'text-content-secondary hover:bg-interaction-hover hover:text-content-primary',
+                          : item.status === 'not-implemented'
+                            ? 'text-content-faint hover:bg-interaction-hover hover:text-content-muted'
+                            : 'text-content-secondary hover:bg-interaction-hover hover:text-content-primary',
                       )}
                       onClick={() => props.onNavigate?.()}
                     >
-                      {item.label}
+                      <span>{item.label}</span>
+                      <Show when={item.status === 'not-implemented'}>
+                        <span class="ml-6 text-10 text-content-faint">不实现</span>
+                      </Show>
                     </a>
                   </li>
                 )}

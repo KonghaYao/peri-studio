@@ -33,7 +33,14 @@ export const ROUTE_META: Record<SandboxRoute, { tier: string; label: string }> =
   layers: { tier: 'T4', label: 'Layers' },
 };
 
-export type CatalogItem = { id: string; label: string };
+export type CatalogItemStatus = 'not-implemented';
+
+export type CatalogItem = {
+  id: string;
+  label: string;
+  /** Catalog 占位：无 T2 demo，仅保留导航与说明。 */
+  status?: CatalogItemStatus;
+};
 export type CatalogGroup = { title?: string; items: CatalogItem[] };
 
 export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
@@ -99,7 +106,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'item', label: 'Item' },
         { id: 'empty', label: 'Empty' },
         { id: 'drawer', label: 'Drawer' },
-        { id: 'sidebar', label: 'Sidebar' },
+        { id: 'sidebar', label: 'Sidebar', status: 'not-implemented' },
         { id: 'direction', label: 'Direction' },
       ],
     },

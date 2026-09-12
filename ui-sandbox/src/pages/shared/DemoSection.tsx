@@ -1,6 +1,25 @@
 import type { JSX } from 'solid-js';
 
 /** T2 Components 页单组件 demo 区块。 */
+/** Catalog 占位：组件刻意不实现，仅说明原因与替代落点。 */
+export function CatalogNotImplemented(props: {
+  id: string;
+  title: string;
+  description?: string;
+  reason: string;
+}) {
+  return (
+    <section id={props.id} class="demo-scroll-anchor border-b border-border-subtle px-16 py-28 middle:px-32">
+      <h2 class="text-15 font-semibold text-content-primary">{props.title}</h2>
+      {props.description && <p class="mt-4 max-w-2xl text-12 leading-normal text-content-muted">{props.description}</p>}
+      <div class="mt-16 max-w-2xl rounded-8 border border-dashed border-border-subtle bg-surface-muted px-16 py-20">
+        <p class="text-10 font-medium tracking-caps uppercase text-content-faint">不实现</p>
+        <p class="mt-8 text-13 leading-normal text-content-secondary">{props.reason}</p>
+      </div>
+    </section>
+  );
+}
+
 export function CatalogDemo(props: { id: string; title: string; description?: string; children: unknown }) {
   return (
     <section id={props.id} class="demo-scroll-anchor border-b border-border-subtle px-16 py-28 middle:px-32">

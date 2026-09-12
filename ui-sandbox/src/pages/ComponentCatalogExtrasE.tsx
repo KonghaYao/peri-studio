@@ -27,19 +27,6 @@ import {
   FieldLegend,
   FieldSet,
   Input,
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarRail,
-  SidebarTrigger,
   Switch,
   SwitchControl,
   SwitchInput,
@@ -139,45 +126,6 @@ export function ComponentCatalogExtrasE(props: { sections?: string[] }) {
             </DrawerFooter>
           </DrawerContent>
         </Drawer>
-      </CatalogDemo>
-      </Show>
-
-      <Show when={showCatalogSection(props.sections, 'sidebar')}>
-      <CatalogDemo id="sidebar" title="Sidebar" description="应用壳侧栏：Provider、菜单、折叠与 Cmd/Ctrl+B。">
-        <SidebarProvider defaultOpen>
-          <div class="flex min-h-280 overflow-hidden rounded-8 border border-border-subtle">
-            <Sidebar collapsible="icon" class="border-r border-border-faint">
-              <SidebarHeader class="border-b border-border-faint px-12 py-10">
-                <span class="text-12 font-semibold text-content-primary">Peri Studio</span>
-              </SidebarHeader>
-              <SidebarRail />
-              <SidebarContent>
-                <SidebarGroup>
-                  <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton isActive>Projects</SidebarMenuButton>
-                      </SidebarMenuItem>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton>Sessions</SidebarMenuButton>
-                      </SidebarMenuItem>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton>Settings</SidebarMenuButton>
-                      </SidebarMenuItem>
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </SidebarGroup>
-              </SidebarContent>
-            </Sidebar>
-            <SidebarInset class="p-12">
-              <div class="flex items-center gap-8">
-                <SidebarTrigger />
-                <span class="text-13 text-content-secondary">Main content · Cmd/Ctrl+B toggles</span>
-              </div>
-            </SidebarInset>
-          </div>
-        </SidebarProvider>
       </CatalogDemo>
       </Show>
 
