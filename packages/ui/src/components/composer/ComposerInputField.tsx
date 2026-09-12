@@ -1,4 +1,4 @@
-import { Show, splitProps, type Component, type JSX } from 'solid-js';
+import { Show, createEffect, createSignal, splitProps, type Component, type JSX } from 'solid-js';
 import { cn } from '../../lib/cn';
 import { Textarea } from '../Textarea';
 import {
@@ -40,14 +40,42 @@ function fieldClasses(centered: boolean, shell: boolean, fieldClass?: string) {
 
 /** Composer 输入区视觉壳：placeholder / prediction 叠层 + bare Textarea。 */
 export const ComposerInputField: Component<ComposerInputFieldProps> = (props) => {
-  const [local, textarea] = splitProps(props, ['centered', 'shell', 'hint', 'fieldClass', 'maxHeight', 'class', 'ref']);
+  const [local, textarea] = splitProps(props, [
+    'centered',
+    'shell',
+    'hint',
+    'fieldClass',
+    'maxHeight',
+    'class',
+    'ref',
+    'onInput',
+    'onCompositionStart',
+    'onCompositionEnd',
+  ]);
   const centered = () => local.centered ?? false;
   const shell = () => local.shell ?? false;
   const resolvedFieldClass = () => fieldClasses(centered(), shell(), local.fieldClass);
+  const [composing, setComposing] = createSignal(false);
+  const [occupied, setOccupied] = createSignal(false);
+
+  createEffect(() => {
+    const controlled = `${textarea.value ?? ''}`;
+    if (controlled.length > 0) setOccupied(true);
+    else if (!composing()) setOccupied(false);
+  });
+
+  const overlayHint = () => {
+    if (composing() || occupied()) return null;
+    return local.hint ?? null;
+  };
+
+  const markOccupied = (element: HTMLTextAreaElement) => {
+    setOccupied(element.value.length > 0);
+  };
 
   return (
     <div class={composerEditorClass}>
-      <Show when={local.hint}>
+      <Show when={overlayHint()}>
         {(hint) => (
           <>
             <div
@@ -77,6 +105,22 @@ export const ComposerInputField: Component<ComposerInputFieldProps> = (props) =>
         maxHeight={local.maxHeight ?? 180}
         variant="bare"
         data-testid="composer-input"
+        onInput={(event) => {
+          markOccupied(event.currentTarget);
+          const handler = local.onInput;
+          if (typeof handler === 'function') handler(event);
+        }}
+        onCompositionStart={(event) => {
+          setComposing(true);
+          const handler = local.onCompositionStart;
+          if (typeof handler === 'function') handler(event);
+        }}
+        onCompositionEnd={(event) => {
+          setComposing(false);
+          markOccupied(event.currentTarget);
+          const handler = local.onCompositionEnd;
+          if (typeof handler === 'function') handler(event);
+        }}
         class={cn(
           composerEditorLayerClass,
           composerInputClass,

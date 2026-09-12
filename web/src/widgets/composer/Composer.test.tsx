@@ -172,6 +172,10 @@ describe('Composer', () => {
     mountComposer();
     const input = screen.getByRole('textbox') as HTMLTextAreaElement;
 
+    expect(screen.getByTestId('composer-placeholder-hint')).toBeInTheDocument();
+    input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+    expect(screen.queryByTestId('composer-placeholder-hint')).not.toBeInTheDocument();
+
     input.value = '你的 pwd 在哪里';
     input.dispatchEvent(new InputEvent('input', {
       bubbles: true,
@@ -181,6 +185,7 @@ describe('Composer', () => {
     }));
 
     expect(composerDraft(draftOwner())).toBe('');
+    expect(screen.queryByTestId('composer-placeholder-hint')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
 
     input.dispatchEvent(new InputEvent('input', {
