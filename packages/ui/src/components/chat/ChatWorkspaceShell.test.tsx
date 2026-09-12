@@ -15,7 +15,7 @@ describe('ChatWorkspaceShell', () => {
       />
     ));
 
-    expect(screen.getByTestId('chat-view')).toHaveClass('chat-view--launch', 'ui-chat-workspace--launch');
+    expect(screen.getByTestId('chat-view')).toHaveClass('ui-chat-workspace--launch');
     expect(screen.getByTestId('launch')).toBeInTheDocument();
     expect(screen.queryByTestId('composer-stack')).not.toBeInTheDocument();
   });
@@ -29,7 +29,7 @@ describe('ChatWorkspaceShell', () => {
       />
     ));
 
-    expect(screen.getByTestId('chat-view')).not.toHaveClass('chat-view--launch');
+    expect(screen.getByTestId('chat-view')).not.toHaveClass('ui-chat-workspace--launch');
     expect(screen.getByTestId('transcript')).toBeInTheDocument();
     expect(screen.getByTestId('composer-stack')).toBeInTheDocument();
     expect(screen.getByTestId('composer-stack')).toHaveClass('overflow-visible');

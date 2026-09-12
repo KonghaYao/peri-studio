@@ -1,6 +1,6 @@
 .visual-fixture-root { height:100%; }
 .visual-fixture-stage { height:100%; padding-top:42px; }
-.visual-fixture-stage .app-shell { height:calc(100dvh - 42px); }
+.visual-fixture-stage [data-testid="app-shell"] { height:calc(100dvh - 42px); }
 
 .visual-fixture-rail { position:fixed; z-index:40; inset:0 0 auto 0; display:flex; min-width:0; height:42px; align-items:center; gap:10px; padding:0 14px; border-bottom:1px solid var(--border-subtle); background:var(--surface); color:var(--text-secondary); font-size:11px; }
 .visual-fixture-rail>strong { color:var(--text-primary); font-size:var(--text-13); }

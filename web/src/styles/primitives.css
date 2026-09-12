@@ -22,8 +22,3 @@
     overflow-y: auto;
   }
 }
-
-.message-list-scroll {
-  overflow-anchor: none;
-  contain: none;
-}

@@ -94,7 +94,7 @@ describe('ChatView project directory hydration', () => {
     expect(screen.getByTestId('chat-empty-workspace')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'What do you want to build?' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Start new session' })).toHaveAttribute('data-testid', 'quick-start-docked');
-    expect(screen.getByTestId('chat-view')).toHaveClass('chat-view--launch');
+    expect(screen.getByTestId('chat-view')).toHaveClass('ui-chat-workspace--launch');
   });
 
   it('keeps an archived-only registry distinct from an empty directory', () => {
@@ -117,7 +117,6 @@ describe('ChatView feedback', () => {
     render(() => <ChatView />);
 
     const status = screen.getByTestId('restore-banner');
-    expect(status).toHaveClass('restore-banner');
     expect(status).toHaveAttribute('aria-live', 'polite');
     expect(status).toHaveTextContent('Restoring last session and ACP context…');
     expect(status.querySelector('[aria-hidden="true"]')).toBeInTheDocument();

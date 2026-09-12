@@ -30,7 +30,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
   return (
     <Show
       when={model.registryHydrated()}
-      fallback={<LoadingState label="Loading projects" class="sidebar-loading px-2.5 py-2 text-left!" />}
+        fallback={<LoadingState label="Loading projects" class="px-2.5 py-2 text-left!" />}
     >
       <Show when={model.pinnedSessions().length > 0}>
         <SectionHeader title="Pinned" icon={<Pin size={14} strokeWidth={1.7} />} />
@@ -56,7 +56,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
         <IconButton size="sm" showTooltip={false} label="Filter workspaces" class="size-28 shrink-0 text-content-muted" onClick={() => model.setSearchOpen(true)}>
           <ListFilter size={15} strokeWidth={1.7} />
         </IconButton>
-        <IconButton size="sm" showTooltip={false} label="New workspace" class="new-project-button size-28 shrink-0 text-content-muted" disabled={readOnly()} onClick={() => model.openCreateProject()}>
+        <IconButton size="sm" showTooltip={false} label="New workspace" class="size-28 shrink-0 text-content-muted" disabled={readOnly()} onClick={() => model.openCreateProject()}>
           <Folder size={15} strokeWidth={1.7} />
         </IconButton>
       </SectionHeader>
@@ -65,18 +65,18 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
         when={model.instanceGroups().length > 0}
         fallback={<EmptyState
           variant="inline"
-          class="sidebar-empty px-2.5 py-2 text-left!"
+          class="px-2.5 py-2 text-left!"
           title={model.projects().length ? 'No active projects' : 'No projects yet'}
           description={model.projects().length ? 'Restore an archived project to continue.' : 'No connected instances or projects are available.'}
         />}
       >
         <For each={model.instanceIds()}>{(instanceId) => {
           const instance = () => model.instanceGroups().find((item) => item.id === instanceId)!;
-          return <section class="instance-group group/instance pb-1">
-            <div class="instance-row group/instance relative flex min-h-28 items-center gap-8 pl-2.5 pr-4 text-11 text-content-muted">
-              <span class="instance-name min-w-0 flex-1 truncate">{instance().name}</span>
+          return <section class="group/instance pb-1">
+            <div class="group/instance relative flex min-h-28 items-center gap-8 pl-2.5 pr-4 text-11 text-content-muted">
+              <span class="min-w-0 flex-1 truncate">{instance().name}</span>
               <Show when={instance().offline}>
-                <span class="instance-offline flex shrink-0 items-center gap-4 text-danger-solid" role="img" aria-label="Instance offline">
+                <span class="flex shrink-0 items-center gap-4 text-danger-solid" role="img" aria-label="Instance offline">
                   <CloudOff size={13} strokeWidth={1.8} aria-hidden="true" />
                   <span>Offline</span>
                 </span>
@@ -84,7 +84,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
               <IconButton
                 size="sm"
                 showTooltip={false}
-                class="new-project-button instance-create-action pointer-events-none absolute right-4 top-1/2 size-28 -translate-y-1/2 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:pointer-events-auto group-hover/instance:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 pointer-coarse:size-36 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100"
+                class="pointer-events-none absolute right-4 top-1/2 size-28 -translate-y-1/2 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:pointer-events-auto group-hover/instance:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 pointer-coarse:size-36 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100"
                 label="New project"
                 disabled={readOnly()}
                 onClick={() => model.openCreateProject(instanceId)}
@@ -101,7 +101,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
               const open = () => !collapsed();
               const hasSessions = () => sessions().length > 0;
               const projectMenuId = `project-menu-${projectId}`;
-              return <Collapsible as="section" class="project-group min-w-0" open={open()} onOpenChange={(next) => model.setProjectCollapsed(projectId, !next)}>
+              return <Collapsible as="section" class="min-w-0" open={open()} onOpenChange={(next) => model.setProjectCollapsed(projectId, !next)}>
                 <div class="group/workspace relative min-w-0 rounded-md hover:bg-interaction-hover focus-within:bg-interaction-hover">
                   <CollapsibleTrigger class="relative z-0 flex w-full min-w-0 items-start gap-8 py-4 pl-2.5 pr-0 text-left" aria-label={project().name}>
                     <span class="mt-0.5 shrink-0 text-content-muted">
@@ -120,7 +120,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                           as={IconButton}
                           size="sm"
                           showTooltip={false}
-                          class={`${buttonGroupItemClass} project-menu-trigger`}
+                          class={buttonGroupItemClass}
                           label={`${project().name} actions`}
                           disabled={readOnly()}
                           onClick={(event) => event.stopPropagation()}
@@ -143,7 +143,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                       <IconButton
                         size="sm"
                         showTooltip={false}
-                        class={`${buttonGroupItemClass} row-create-action`}
+                        class={buttonGroupItemClass}
                         label={`New session in ${project().name}`}
                         busy={creatingSessionProjectId() === projectId}
                         disabled={readOnly() || !!creatingSessionProjectId()}
@@ -157,7 +157,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                     </ProjectRowActionGroup>
                   </ProjectRowAccessory>
                 </div>
-                <CollapsibleContent id={`project-sessions-${projectId}`} data-testid="session-list" class="session-list flex flex-col gap-2 pb-1">
+                <CollapsibleContent id={`project-sessions-${projectId}`} data-testid="session-list" class="flex flex-col gap-2 pb-1">
                   <Show
                     when={hasSessions()}
                     fallback={<Show
@@ -165,14 +165,14 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                       fallback={<Button
                         variant="ghost"
                         size="compact"
-                        class="session-empty ui-sidebar-mist-hint h-auto justify-start px-2.5 py-4 pl-36 text-left text-11 font-normal hover:bg-transparent hover:text-content-muted"
+                        class="ui-sidebar-mist-hint h-auto justify-start px-2.5 py-4 pl-36 text-left text-11 font-normal hover:bg-transparent hover:text-content-muted"
                         disabled={readOnly() || !!creatingSessionProjectId()}
                         onClick={() => createProjectSession(projectId)}
                       >
                         Start your first conversation
                       </Button>}
                     >
-                      <LoadingState label="Loading sessions" class="session-empty px-2.5 py-4 pl-36 text-left!" />
+                      <LoadingState label="Loading sessions" class="px-2.5 py-4 pl-36 text-left!" />
                     </Show>}
                   >
                     <For each={sessions().map((item) => item.id)}>

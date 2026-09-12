@@ -90,7 +90,7 @@ export function RemoteDirectoryDialog(props: {
               fallback={<EmptyState variant="inline" class="rounded-9 border border-border-faint px-10 py-16" title="No folders here" description="Pick the current path or go up one level." />}
             >
               <Listbox
-                class="ui-listbox remote-directory-list grid max-h-72 gap-1 overflow-y-auto rounded-9 border border-border-faint m-0 p-0 list-none"
+                class="ui-listbox grid max-h-72 gap-1 overflow-y-auto rounded-9 border border-border-faint m-0 p-0 list-none"
                 aria-label="Remote folders"
                 options={snapshot()?.entries ?? []}
                 optionValue="relativePath"

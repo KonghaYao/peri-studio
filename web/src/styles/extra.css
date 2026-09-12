@@ -44,9 +44,3 @@
 .composer-wrap--overlay .ui-composer-surface-v2 {
   box-shadow: var(--shadow-composer-overlay);
 }
-
-/* ── 拓扑子节点连线 ───────────────────────────────────────────────────── */
-
-.topology-instance-children {
-  border-top-style: dashed;
-}

@@ -168,10 +168,10 @@ function QuoteIcon() {
 
 function SystemReminderBadge(props: { reminders: string[] }) {
   return <Popover placement="bottom-start">
-    <PopoverTrigger type="button" class="system-reminder-badge self-start inline-flex h-20 cursor-pointer items-center rounded-6 border-0 bg-surface-sunken px-8 text-11 font-medium text-content-secondary hover:bg-interaction-hover pointer-coarse:min-h-44" aria-label="System message">
+    <PopoverTrigger type="button" class="self-start inline-flex h-20 cursor-pointer items-center rounded-6 border-0 bg-surface-sunken px-8 text-11 font-medium text-content-secondary hover:bg-interaction-hover pointer-coarse:min-h-44" aria-label="System message">
       System
     </PopoverTrigger>
-    <PopoverContent class="system-reminder-popover max-h-(--container-system-reminder-tall) w-(--container-system-reminder) overflow-auto" aria-label="System message">
+    <PopoverContent class="max-h-(--container-system-reminder-tall) w-(--container-system-reminder) overflow-auto" aria-label="System message" data-testid="system-reminder-popover">
       <For each={props.reminders}>{(reminder, index) =>
         <p class={`${index() === 0 ? 'm-0' : 'm-0 mt-10'} whitespace-pre-wrap wrap-anywhere text-12 leading-19 text-content-secondary`}>{reminder}</p>
       }</For>

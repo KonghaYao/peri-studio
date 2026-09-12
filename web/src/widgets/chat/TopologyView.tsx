@@ -80,7 +80,7 @@ export function TopologyView() {
                   <span>Last heartbeat {heartbeat()?.label ?? '—'}</span>
                 </div>
                 <Show when={node.chats.length > 0}>
-                  <ItemGroup class="topology-instance-children grid gap-2 mx-0 mb-11 pt-7 pl-13 border-t border-dashed border-l-2 border-solid-l border-divider">
+                  <ItemGroup class="grid gap-2 mx-0 mb-11 pt-7 pl-13 border-t border-dashed border-l-2 border-solid-l border-divider">
                     <For each={node.chats}>{(chat) => (
                       <Item class="gap-8 px-6 py-4 hover:bg-hover">
                         <ItemContent class="min-w-0 flex-row items-center gap-8">

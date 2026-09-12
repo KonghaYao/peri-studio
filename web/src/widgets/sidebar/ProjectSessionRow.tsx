@@ -94,7 +94,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
       data-testid="session-row"
       data-selected={props.selected ? 'true' : undefined}
       class={cn(
-        'session-row group/row relative flex min-h-36 min-w-0 items-center rounded-md',
+        'group/row relative flex min-h-36 min-w-0 items-center rounded-md',
         props.selected
           ? 'bg-sidebar-selected'
           : 'hover:bg-interaction-hover focus-within:bg-interaction-hover',
@@ -120,7 +120,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
           onClick={open}
           disabled={(props.readOnly && !props.session.activeChatId) || props.session.lifecycle !== 'ready' || props.navigationBusy}
         >
-          <span data-testid="session-copy" class="session-copy block min-w-0 w-full truncate text-13 leading-20 text-content-primary">{displayTitle()}</span>
+          <span data-testid="session-copy" class="block min-w-0 w-full truncate text-13 leading-20 text-content-primary">{displayTitle()}</span>
         </button>
         <SessionRowAccessory
           live={loading()}
@@ -153,9 +153,9 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
           onEscapeKeyDown={(event) => submitting() && event.preventDefault()}
           onPointerDownOutside={(event) => submitting() && event.preventDefault()}
         >
-          <form data-testid="rename-popover" class="rename-popover w-240 p-10" onSubmit={submitRename}>
+          <form data-testid="rename-popover" class="w-240 p-10" onSubmit={submitRename}>
             <TextField aria-label="Session name" value={draft()} error={!renameValid() ? 'Name cannot be empty' : undefined} onInput={(event) => setDraft(event.currentTarget.value)} autofocus />
-            <div class="form-actions">
+            <div class="mt-10 flex justify-end gap-8">
               <Button disabled={submitting()} onClick={() => props.onRenameOpenChange(false)}>Cancel</Button>
               <Button variant="primary" type="submit" busy={submitting()} disabled={!renameValid()}>Save</Button>
             </div>

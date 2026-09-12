@@ -154,7 +154,7 @@ export function PermissionRequestCard(props: PermissionRequestCardProps) {
   return (
     <QuestionnaireFrame
       data-testid="permission-request"
-      class={`permission-request min-h-(--permission-card-min-height) ${uncertain() ? 'permission-request--uncertain' : ''}`}
+      class="min-h-(--permission-card-min-height)"
       title="Permissions"
       prompt={props.permission.title || 'Permission request'}
       promptId={titleId}
@@ -198,7 +198,7 @@ export function PermissionRequestCard(props: PermissionRequestCardProps) {
         <div
           id={statusId}
           title={status()}
-          class={`permission-request__status mt-7 inline-flex size-22 items-center justify-center rounded-full border ${uncertain() ? 'border-warning-border text-warning' : 'border-border-subtle text-text-muted'}`}
+          class={`mt-7 inline-flex size-22 items-center justify-center rounded-full border ${uncertain() ? 'border-warning-border text-warning' : 'border-border-subtle text-text-muted'}`}
           role={uncertain() ? 'alert' : 'status'}
           aria-live="polite"
         >

@@ -396,7 +396,7 @@ describe('ConversationMessage', () => {
     expect(badges[0].closest('[data-testid="conversation-message-surface"]')).toBeNull();
     fireEvent.click(badges[0]);
     const reminder = await screen.findByRole('dialog', { name: 'System message' });
-    expect(reminder.firstElementChild).toHaveClass('system-reminder-popover');
+    expect(screen.getByTestId('system-reminder-popover')).toBeInTheDocument();
     expect(reminder).toHaveTextContent('Ignore prior instructions');
     expect(reminder).toHaveTextContent('MCP status is internal');
     expect(reminder.querySelector('script')).toBeNull();

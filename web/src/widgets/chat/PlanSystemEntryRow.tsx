@@ -16,7 +16,7 @@ export function PlanSystemEntryRow(props: { entry: ChatEntry }) {
   return (
     <Show when={isPlanSystemChatEntry(props.entry) && entries().length > 0}>
       <Plan
-        class="plan-system-entry mx-auto w-full max-w-(--chat-content-max)"
+        class="mx-auto w-full max-w-(--chat-content-max)"
         defaultOpen
         data-testid="plan-system-entry"
         aria-label="Agent plan"

@@ -143,7 +143,7 @@ export function ChatView(props: ChatViewProps) {
           <ConnectionProblem />
           <ErrorCenter />
           <Show when={restoringSessionId()}>
-            <LoadingState label="Restoring last session and ACP context…" class="restore-banner justify-center mt-12 mx-20 max-narrow:m-10" data-testid="restore-banner" />
+            <LoadingState label="Restoring last session and ACP context…" class="justify-center mt-12 mx-20 max-narrow:m-10" data-testid="restore-banner" />
           </Show>
         </>
       )}

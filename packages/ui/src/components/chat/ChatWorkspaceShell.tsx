@@ -3,7 +3,7 @@ import { cn } from '../../lib/cn';
 
 export type ChatWorkspaceShellProps = {
   class?: string;
-  /** 无选中 session 的启动态（对应生产 `chat-view--launch`）。 */
+  /** 无选中 session 的启动态。 */
   launch?: boolean;
   header?: JSX.Element;
   /** 连接/错误/恢复等顶栏下方横幅区。 */
@@ -35,8 +35,8 @@ export const ChatWorkspaceShell: Component<ChatWorkspaceShellProps> = (props) =>
     <section
       {...rest}
       class={cn(
-        'ui-chat-workspace chat-view relative flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden bg-app-bg',
-        local.launch && 'ui-chat-workspace--launch chat-view--launch',
+        'ui-chat-workspace relative flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden bg-app-bg',
+        local.launch && 'ui-chat-workspace--launch',
         local.class,
       )}
     >
@@ -46,12 +46,12 @@ export const ChatWorkspaceShell: Component<ChatWorkspaceShellProps> = (props) =>
         when={!local.launch}
         fallback={local.launchBody}
       >
-        <div class="ui-chat-workspace__session chat-workspace relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
+        <div class="ui-chat-workspace__session relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
           {local.transcript}
           <Show when={local.composerStack}>
             <div
               ref={local.composerStackRef}
-              class="ui-chat-workspace__bottom-stack composer-stack relative z-20 flex min-h-0 min-w-0 shrink flex-col overflow-visible bg-app-bg"
+              class="ui-chat-workspace__bottom-stack relative z-20 flex min-h-0 min-w-0 shrink flex-col overflow-visible bg-app-bg"
               data-testid="composer-stack"
             >
               {local.composerStack}

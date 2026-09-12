@@ -92,7 +92,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
     }
   };
 
-  return <section data-testid="quick-start-docked" class="quick-start quick-start--docked w-full text-left" aria-label="Start new session">
+  return <section data-testid="quick-start-docked" class="w-full text-left" aria-label="Start new session">
     <ComposerShell
       data-testid="quick-start-surface"
       aria-busy={pendingIsInFlight() || undefined}

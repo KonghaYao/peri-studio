@@ -175,7 +175,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
       data-testid="app-shell"
       open={sidebarOpen()}
       onOpenChange={setSidebarOpen}
-      class="app-shell group/sidebar-wrapper relative grid h-dvh grid-rows-fill overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide"
+      class="group/sidebar-wrapper relative grid h-dvh grid-rows-fill overflow-hidden bg-app-bg grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide"
       style={{
         '--sidebar-width': `${sidebarWidth()}px`,
         'grid-template-columns': sidebarGridTemplate(),
@@ -207,7 +207,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
           onPointerDown={startSidebarResize}
         /></div>
       </Show>
-      <main ref={main} data-testid="conversation-pane" class="conversation-pane flex min-w-0 min-h-0 flex-col overflow-hidden">
+      <main ref={main} data-testid="conversation-pane" class="flex min-w-0 min-h-0 flex-col overflow-hidden">
         <div class="min-h-0 flex-1">
           <Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenResources={openResources} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
             <ResourceDiffEditor onClose={() => closePreview('diff')} />

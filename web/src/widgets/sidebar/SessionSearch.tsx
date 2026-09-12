@@ -35,13 +35,13 @@ export function SessionSearch(props: { open: boolean; onClose: () => void; onSel
   const focusResults = () => { if (results().length) resultList?.focus(); };
 
   return <Dialog open={props.open} onOpenChange={(open) => { if (!open && !openingSessionId()) props.onClose(); }}><DialogContent size="search" dismissible={!openingSessionId()}><DialogHeader><DialogTitle>Search sessions</DialogTitle></DialogHeader>
-    <div class="session-search-dialog grid gap-10 px-16 pb-16">
+    <div class="grid gap-10 px-16 pb-16">
       <TextField aria-label="Search sessions" value={query()} onInput={(event) => setQuery(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === 'ArrowDown') { event.preventDefault(); focusResults(); } }} placeholder="Search title, project, directory or session ID" autofocus />
-      <Show when={query().trim()} fallback={<InlineNotice class="session-search-hint px-10 py-20 text-center text-12 text-text-muted"><kbd>{primaryShortcut('K')}</kbd> opens search anytime. Start typing a project name or session title.</InlineNotice>}>
-        <Show when={results().length} fallback={<EmptyState variant="inline" class="session-search-hint px-10 py-20" title="No matching saved sessions" description="Try another title, project, directory, or session ID." />}>
+      <Show when={query().trim()} fallback={<InlineNotice class="px-10 py-20 text-center text-12 text-text-muted"><kbd>{primaryShortcut('K')}</kbd> opens search anytime. Start typing a project name or session title.</InlineNotice>}>
+        <Show when={results().length} fallback={<EmptyState variant="inline" class="px-10 py-20" title="No matching saved sessions" description="Try another title, project, directory, or session ID." />}>
           <Listbox
             ref={resultList}
-            class="ui-listbox session-search-results grid max-h-(--container-search-results) gap-1 overflow-auto"
+            class="ui-listbox grid max-h-(--container-search-results) gap-1 overflow-auto"
             aria-label="Search results"
             options={results()}
             optionValue="id"
@@ -57,7 +57,7 @@ export function SessionSearch(props: { open: boolean; onClose: () => void; onSel
           />
         </Show>
       </Show>
-      <Show when={problem()}>{(message) => <InlineNotice class="session-search-problem m-0" tone="warning" role="alert">{message()}</InlineNotice>}</Show>
+      <Show when={problem()}>{(message) => <InlineNotice class="m-0" tone="warning" role="alert">{message()}</InlineNotice>}</Show>
     </div>
   </DialogContent></Dialog>;
 }

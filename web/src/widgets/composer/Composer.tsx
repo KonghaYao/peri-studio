@@ -133,7 +133,7 @@ export function Composer(props: {
       data-testid="composer-wrap"
       class={cn(
         'composer-wrap relative w-full',
-        centered() ? 'composer-wrap--centered' : 'composer-wrap--overlay ui-chat-column',
+        !centered() && 'composer-wrap--overlay ui-chat-column',
       )}
     >
       <Show when={state.slash.slashMenuOpen()}>
@@ -268,13 +268,13 @@ export function Composer(props: {
               {(submission) => (
                 <InlineNotice
                   id={state.submissionStatusId}
-                  class={`composer-submission composer-submission--${submission().phase} mt-2 mb-8 border-dashed`}
+                  class="mt-2 mb-8 border-dashed"
                   title={state.submissionTitle()}
                   tone={state.submissionTone()}
                   role="note"
                 >
                   <p>{state.submissionDetail()}</p>
-                  <div class="composer-submission__actions flex flex-wrap gap-6 mt-8">
+                  <div class="flex flex-wrap gap-6 mt-8">
                     <Show when={submission().phase === 'uncertain' && submission().retryable}>
                       <Button size="compact" variant="secondary" class="pointer-coarse:min-h-44" onClick={state.retryMessageSubmission}>
                         Confirm with the same request

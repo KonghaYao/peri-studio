@@ -169,7 +169,6 @@ code {
   }
 
   .conversation-message__surface,
-  .permission-request,
   .ui-workbench-shell {
     border-color: CanvasText;
   }

@@ -131,7 +131,7 @@ function SessionRow(props: {
           class="flex min-h-36 w-full min-w-0 items-center overflow-hidden rounded-md pl-10 pr-0 text-left"
           onClick={props.onClick}
         >
-          <span class="session-copy block min-w-0 w-full truncate text-13 leading-20 text-content-primary">{props.session.title}</span>
+          <span class="block min-w-0 w-full truncate text-13 leading-20 text-content-primary">{props.session.title}</span>
         </button>
         <SessionRowAccessory
           live={props.session.live}

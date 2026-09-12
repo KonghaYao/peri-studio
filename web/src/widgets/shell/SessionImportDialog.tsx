@@ -91,9 +91,9 @@ export function SessionImportDialog(props: SessionImportDialogProps) {
       description="Shows only ACP sessions in this project directory that are not yet in the sidebar. Importing does not copy or move the original session."
     >
       <TextField label="Search sessions" value={query()} disabled={submitting() || props.discovering} onInput={(event) => setQuery(event.currentTarget.value)} placeholder="Search by title or session ID" />
-      <Show when={props.discovering} fallback={<Show when={candidates().length} fallback={<EmptyState variant="inline" class="import-empty px-12 py-28" title="No sessions to import" description="No matching ACP sessions are available for this project directory." />}>
+      <Show when={props.discovering} fallback={<Show when={candidates().length} fallback={<EmptyState variant="inline" class="px-12 py-28" title="No sessions to import" description="No matching ACP sessions are available for this project directory." />}>
         <Listbox
-          class="ui-listbox import-session-list flex max-h-300 flex-col gap-4 overflow-auto"
+          class="ui-listbox flex max-h-300 flex-col gap-4 overflow-auto"
           aria-label="Importable ACP sessions"
           options={candidates()}
           optionValue="sessionId"
@@ -109,7 +109,7 @@ export function SessionImportDialog(props: SessionImportDialogProps) {
           </ListboxItem>}
         />
       </Show>}>
-        <LoadingState class="import-empty px-12 py-28" label="Reading ACP sessions" />
+        <LoadingState class="px-12 py-28" label="Reading ACP sessions" />
       </Show>
       <Show when={selected()}>{(candidate) => <section id="import-session-review" class="mt-12 rounded-12 border border-border-subtle bg-surface-muted p-12" role="region" aria-label="Pending import details">
         <header class="flex flex-col gap-2"><span class="text-10 font-bold tracking-6 uppercase text-text-secondary">Review before import</span><strong class="text-14">{cleanSessionTitle(candidate().title)}</strong></header>
@@ -120,8 +120,8 @@ export function SessionImportDialog(props: SessionImportDialogProps) {
         </dl>
         <p class="mt-9 mb-0 border-t border-divider pt-9 text-11 leading-15 text-text-secondary">ACP does not provide a message preview. Confirm via the project directory, title, time and full ID; importing only adds this session to the sidebar, without copying or moving content.</p>
       </section>}</Show>
-      <Show when={submitting()}><LoadingState class="import-session-status mt-10 px-10 py-9" label="Confirming the import result with the server" /></Show>
-      <Show when={problem()}>{(message) => <InlineNotice class="import-session-problem mt-10" tone="danger">{message()}</InlineNotice>}</Show>
+      <Show when={submitting()}><LoadingState class="mt-10 px-10 py-9" label="Confirming the import result with the server" /></Show>
+      <Show when={problem()}>{(message) => <InlineNotice class="mt-10" tone="danger">{message()}</InlineNotice>}</Show>
       <Show when={!props.discovering && problem()}><Button size="compact" onClick={() => { const id = props.project?.id; if (id) props.onDiscover(id, () => setProblem(null), setProblem); }}>Refresh ACP sessions</Button></Show>
       <div class="mt-10 flex justify-end gap-6">
         <Button disabled={submitting()} onClick={close}>Cancel</Button>

@@ -179,8 +179,8 @@ test('fractional Tailwind spacing utilities resolve to an explicit product token
 });
 
 const EXTRA_CSS_BASELINE = {
-  lineCount: 52,
-  sha256: 'ee96573d70e892844b20d3c6efe570943c6f472c98bdaf64b7e77bb4a49ea964',
+  lineCount: 46,
+  sha256: '8c2f8bc0d378308e606d31fb2ba1a53b7fdafeb56c24ddb6709b4198a5812ce0',
 };
 
 function lineCountLikeWc(content) {
@@ -415,7 +415,7 @@ test('coarse pointers expose sidebar actions without hover and keep controls tou
   assert.match(sessionAccessory, /group-hover\/workspace:opacity-100/);
   assert.match(sessionAccessory, /group-hover\/row/);
   assert.match(sessionAccessory, /group-focus-within\/row/);
-  assert.match(sessionAccessory, /pointer-coarse:pointer-events-auto pointer-coarse:opacity-100/);
+  assert.match(sessionAccessory, /pointer-coarse:opacity-100 pointer-coarse:pointer-events-auto/);
   assert.match(sessionRow, /pointer-coarse:min-h-44/);
   assert.match(button, /pointer-coarse:min-h-44/);
   assert.match(button, /pointer-coarse:min-w-44/);

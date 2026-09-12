@@ -26,7 +26,7 @@ export function ChatEmptyWorkspace(props: Props) {
             role="heading"
             aria-level={2}
             data-testid="chat-empty-title"
-            class="chat-empty-title m-0 mb-16 w-full text-center text-24 font-semibold leading-tight tracking-tight text-text-primary max-narrow:mb-12 max-narrow:text-20"
+            class="m-0 mb-16 w-full text-center text-24 font-semibold leading-tight tracking-tight text-text-primary max-narrow:mb-12 max-narrow:text-20"
           >
             {local.title}
           </EmptyTitle>
@@ -34,7 +34,7 @@ export function ChatEmptyWorkspace(props: Props) {
         <div class="flex w-full flex-col items-center gap-12">
           {local.children}
           {local.hint && (
-            <EmptyDescription class="chat-empty-hint m-0 max-w-full rounded-full border border-border-subtle bg-surface-muted px-12 py-6 text-center text-11 leading-normal text-text-muted">
+            <EmptyDescription class="m-0 max-w-full rounded-full border border-border-subtle bg-surface-muted px-12 py-6 text-center text-11 leading-normal text-text-muted">
               {local.hint}
             </EmptyDescription>
           )}

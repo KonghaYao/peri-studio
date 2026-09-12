@@ -60,7 +60,7 @@ export function ArchivedBrowserDialog(props: {
         <DialogHeader>
           <DialogTitle>{dialogTitle()}</DialogTitle>
         </DialogHeader>
-        <div class="archived-browser-dialog grid gap-10 px-16 pb-16">
+        <div class="grid gap-10 px-16 pb-16">
           <TextField
             aria-label={props.projectId
               ? 'Search archived sessions'

@@ -186,7 +186,7 @@ export function ComposerUploadSurface(props: ComposerUploadSurfaceProps) {
         {workspaceUploadLiveMessage() || 'Release to upload files to this project.'}
       </p>
       <Show when={batchItems().length > 0}>
-        <div class="composer-assets ui-scrollbar flex gap-7 overflow-x-auto pb-7" aria-label="Uploads">
+        <div class="ui-scrollbar flex gap-7 overflow-x-auto pb-7" aria-label="Uploads">
           <For each={batchItems()}>{(item) => (
             <UploadAssetTile
               name={item.displayName}

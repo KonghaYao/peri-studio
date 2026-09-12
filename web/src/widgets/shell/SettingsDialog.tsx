@@ -64,7 +64,7 @@ export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
             <p class="mt-13 text-text-muted text-12 leading-15">Instance and conversation metadata comes from the hub:registry projection; the topology panel does not issue extra requests to the server.</p>
             <Show when={principalId() && auth?.logout}>
               <div class="mt-16 flex justify-end border-t border-divider pt-16">
-                <Button variant="secondary" size="compact" class="account-logout" onClick={() => auth?.logout()}>
+                <Button variant="secondary" size="compact" onClick={() => auth?.logout()}>
                   Log out
                 </Button>
               </div>
