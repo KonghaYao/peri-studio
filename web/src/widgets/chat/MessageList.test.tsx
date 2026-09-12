@@ -2,7 +2,8 @@ import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createSignal } from 'solid-js';
 import { setChatEntries, setChatHead, setElicitations, setPermissions, setRuntimeDocsState, setSelectedCid } from '@/store';
-import { MessageList } from './MessageList';
+import { BackToTop } from '@peri/ui';
+import { MessageList, type MessageListFollowState } from './MessageList';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { blockUnknownMessageDelivery, messageSubmission, resetMessageDelivery, startMessageDelivery } from '@/features/message/message-delivery';
 
@@ -35,6 +36,32 @@ beforeEach(() => {
 
 afterEach(resetStore);
 
+function MessageListWithBackToTop(props: { footerHeight?: number } = {}) {
+  const [followState, setFollowState] = createSignal<MessageListFollowState>({
+    awayFromLatest: false,
+    hasNewContent: false,
+  });
+  let jumpToLatest: (() => void) | undefined;
+  const showBackToTop = () => followState().awayFromLatest || followState().hasNewContent;
+
+  return (
+    <>
+      <MessageList
+        footerHeight={props.footerHeight}
+        onFollowStateChange={setFollowState}
+        onRegisterJumpToLatest={(jump) => {
+          jumpToLatest = jump;
+        }}
+      />
+      <BackToTop
+        visible={showBackToTop()}
+        label={followState().hasNewContent ? 'New content' : 'Back to latest'}
+        onClick={() => jumpToLatest?.()}
+      />
+    </>
+  );
+}
+
 describe('MessageList timeline follow', () => {
   function configureScrollArea(area: HTMLElement) {
     Object.defineProperties(area, {
@@ -47,7 +74,7 @@ describe('MessageList timeline follow', () => {
   it('preserves an up-scrolled reader position and offers an explicit new-content action', () => {
     setRuntimeDocsState({ chat: true, control: true });
     setChatEntries([message('assistant-1', 'live', null)]);
-    render(() => <MessageList />);
+    render(() => <MessageListWithBackToTop />);
     const area = screen.getByRole('region', { name: 'Conversation messages' });
     configureScrollArea(area);
     const scrollTo = vi.mocked(area.scrollTo);
@@ -57,7 +84,7 @@ describe('MessageList timeline follow', () => {
     setChatEntries([message('assistant-1', 'live', null), message('assistant-2', 'live', null)]);
 
     expect(scrollTo).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: '↓ New content' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'New content' })).toBeInTheDocument();
   });
 
   it('returns to the latest message when the user sends, even after scrolling up', async () => {
@@ -82,7 +109,7 @@ describe('MessageList timeline follow', () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
     setRuntimeDocsState({ chat: true, control: true });
     setChatEntries([message('assistant-1', 'live', null)]);
-    render(() => <MessageList />);
+    render(() => <MessageListWithBackToTop />);
     const area = screen.getByRole('region', { name: 'Conversation messages' });
     configureScrollArea(area);
     const scrollTo = vi.mocked(area.scrollTo);
@@ -90,7 +117,7 @@ describe('MessageList timeline follow', () => {
 
     fireEvent.scroll(area);
     setChatEntries([message('assistant-1', 'live', null), message('assistant-2', 'live', null)]);
-    fireEvent.click(screen.getByRole('button', { name: '↓ New content' }));
+    fireEvent.click(screen.getByRole('button', { name: 'New content' }));
 
     expect(scrollTo).toHaveBeenLastCalledWith({ top: 500, behavior: 'auto' });
     expect(screen.queryByRole('button', { name: /latest/i })).not.toBeInTheDocument();

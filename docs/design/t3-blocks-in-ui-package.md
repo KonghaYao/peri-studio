@@ -45,6 +45,7 @@ T3 组件必须：
 | 组件 | 说明 |
 |------|------|
 | `ChatWorkspaceShell` | Chat 列布局壳（header + transcript + composer 槽） |
+| `ChatActivityChain` | 助手 activity 列（推理 + 工具共用左侧轨与块间距） |
 | `TranscriptViewportShell` / `TranscriptRowShell` | 消息列表滚动视口 + 虚拟化行壳 |
 | `HistoryBoundary` | Verified / Current 历史分隔 |
 | `MessageArticleShell` / `MessageMetaHeader` / `MessageSurfaceShell` / `MessageAssistantActionsShell` | 单条消息布局壳（T4 仍拥有 block 语义） |

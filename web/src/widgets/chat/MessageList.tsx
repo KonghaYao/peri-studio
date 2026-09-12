@@ -14,7 +14,6 @@ import { nextFollowState } from '@/features/message/message-follow';
 import { messageTime } from '@/shared/lib/message-time';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import {
-  Button,
   HistoryBoundary,
   LoadingState,
   TranscriptRowShell,
@@ -44,7 +43,16 @@ function visibleHistoryBoundary(kind: ReplayBoundary): TranscriptHistoryBoundary
 // 虚拟化锚定仍由本组件与 nextFollowState 承担；未采用 MessageScrollerItem /
 // MessageScrollerContent（与 spacer 窗口化及 outbox 尾部布局不兼容）。
 
-export function MessageList(props: { footerHeight?: number }) {
+export type MessageListFollowState = {
+  awayFromLatest: boolean;
+  hasNewContent: boolean;
+};
+
+export function MessageList(props: {
+  footerHeight?: number;
+  onFollowStateChange?: (state: MessageListFollowState) => void;
+  onRegisterJumpToLatest?: (jump: () => void) => void;
+}) {
   const [stick, setStick] = createSignal(true);
   const [hasNewContent, setHasNewContent] = createSignal(false);
   const [completionAnnouncement, setCompletionAnnouncement] = createSignal('');
@@ -289,6 +297,17 @@ export function MessageList(props: { footerHeight?: number }) {
     setHasNewContent(false);
   };
 
+  onMount(() => {
+    props.onRegisterJumpToLatest?.(jumpToLatest);
+  });
+
+  createEffect(() => {
+    props.onFollowStateChange?.({
+      awayFromLatest: !stick(),
+      hasNewContent: hasNewContent(),
+    });
+  });
+
   return (
     <TranscriptViewportShell
       aria-label="Conversation messages"
@@ -298,9 +317,6 @@ export function MessageList(props: { footerHeight?: number }) {
         setStick(el.scrollHeight - el.scrollTop - el.clientHeight < 40);
         updateViewport(el.scrollTop);
       }}
-      trailing={<Show when={(!stick() || hasNewContent()) && permissions().length === 0 && visibleElicitations(elicitations()).length === 0}>
-        <Button type="button" size="compact" onClick={jumpToLatest}>{hasNewContent() ? '↓ New content' : '↓ Back to latest'}</Button>
-      </Show>}
     >
       <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">{completionAnnouncement()}</div>
       <div class="sr-only" role="status" aria-label="Agent activity" aria-live="polite" aria-atomic="true">{agentActivityAnnouncement()}</div>

@@ -109,6 +109,7 @@ export {
   type ToolCallStatus,
 } from './components/ToolActivity';
 export { Button, IconButton, LinkButton } from './components/Button';
+export { BackToTop, type BackToTopProps } from './components/BackToTop';
 export { ButtonGroup, buttonGroupItemClass } from './components/ButtonGroup';
 export { CheckIcon, CodeIcon, CopyIcon, DownloadIcon, ErrorIcon, ExpandIcon, Icon, RefreshIcon } from './components/Icon';
 export { Alert, AlertDescription, AlertTitle, type AlertVariant } from './components/Alert';
@@ -325,6 +326,10 @@ export {
   type VSCodeFolderIconKind,
 } from './lib/vscode-file-icons';
 export { ChatHeader, type ChatHeaderProps } from './components/ChatHeader';
+export {
+  ChatActivityChain,
+  type ChatActivityChainProps,
+} from './components/chat/ChatActivityChain';
 export {
   ChatWorkspaceShell,
   type ChatWorkspaceShellProps,

@@ -197,7 +197,7 @@ export const ToolActivityRow: Component<ToolActivityRowProps> = (props) => {
           <span
             class={cn(
               'tool-call-row-icon relative z-1 grid size-22 shrink-0 place-items-center rounded-md text-content-muted',
-              isRunning() ? 'bg-sidebar-selected' : 'bg-surface',
+              isRunning() ? 'bg-sidebar-selected' : 'bg-transparent',
             )}
             data-tool-kind={props.toolKind}
             aria-hidden="true"
@@ -316,9 +316,7 @@ export const ToolActivityRow: Component<ToolActivityRowProps> = (props) => {
     <div
       data-slot="tool-activity-row"
       class={cn(
-        'tool-activity-row min-w-0',
-        activity() && 'tool-activity-row--activity',
-        !activity() && 'overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay p-6',
+        'tool-activity-row tool-activity-row--activity min-w-0',
         props.class,
       )}
       data-testid="tool-activity-row"
@@ -329,25 +327,21 @@ export const ToolActivityRow: Component<ToolActivityRowProps> = (props) => {
 };
 
 type ToolActivityGroupProps = ComponentProps<'div'> & {
+  /** @deprecated 保留兼容；组样式已统一为紧凑 activity 列表。 */
   variant?: 'default' | 'activity';
   showRail?: boolean;
 };
 
-/** 工具活动组：可选左侧轨道 + 多行活动。 */
+/** 工具活动组：紧凑无框列表；独立使用时默认带左侧轨，chat chain 内请关 showRail。 */
 export const ToolActivityGroup: Component<ToolActivityGroupProps> = (props) => {
   const [local, rest] = splitProps(props, ['class', 'children', 'variant', 'showRail']);
-  const activity = () => local.variant === 'activity';
-  const showRail = () => local.showRail ?? !activity();
+  const showRail = () => local.showRail ?? true;
 
   return (
     <div
       data-slot="tool-activity-group"
       class={cn(
-        'tool-activity-group',
-        activity()
-          ? 'tool-activity-group--activity tool-call-group-list grid w-full max-w-(--chat-tool-activity-max) min-w-0 gap-px'
-          : 'flex max-w-(--chat-tool-activity-max) min-w-0 flex-col gap-8 rounded-lg border border-border-subtle bg-surface-overlay p-8',
-        showRail() && 'relative isolate',
+        'tool-activity-group tool-activity-group--activity tool-call-group-list relative isolate grid w-full max-w-(--chat-tool-activity-max) min-w-0 gap-px',
         local.class,
       )}
       data-testid="tool-activity-group"

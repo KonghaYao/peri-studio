@@ -268,7 +268,7 @@ export const ReasoningTrigger: Component<ReasoningTriggerProps> = (props) => {
           <div class="tool-call-row-compact min-h-(--pattern-row-height) rounded-6 p-2">
             <div class="chat-tool-call-row grid w-full min-w-0 grid-cols-tool-row items-center gap-9 text-left text-inherit">
               <span
-                class="tool-call-row-icon relative z-1 grid size-22 shrink-0 place-items-center rounded-md bg-surface text-content-muted"
+                class="tool-call-row-icon relative z-1 grid size-22 shrink-0 place-items-center rounded-md bg-transparent text-content-muted"
                 aria-hidden="true"
               >
                 <Brain size={15} strokeWidth={1.8} />

@@ -235,11 +235,13 @@
   --chat-column-gutter-desk: var(--space-20);
   --chat-column-gutter-narrow: var(--space-12);
   --chat-markdown-rhythm: var(--markdown-rich-block-gap);
+  --chat-block-gap: var(--space-16);
   --markdown-table-min: 420px;
   --chat-tool-activity-max: var(--tool-activity-max);
   --chat-bubble-max: 72%;
   --chat-reasoning-max: 680px;
-  --chat-activity-rail-left: 12.5px;
+  /* tool-call-row-compact p-2（space-2）+ size-22 icon 中心 */
+  --chat-activity-rail-left: calc(var(--space-2) + var(--space-22) / 2);
   --chat-system-max: 70%;
 
   /* Resource 资源树 */

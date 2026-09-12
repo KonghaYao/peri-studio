@@ -26,18 +26,18 @@ function expandControl() {
 }
 
 describe('ToolCallActivity', () => {
-  it('uses a bordered card in default variant and a compact row in activity variant', () => {
+  it('uses compact rows without card borders in every variant', () => {
     const { unmount } = render(() => <ToolCallActivity toolCall={base} />);
     const defaultRow = document.querySelector('[data-testid="tool-activity-row"]')!;
-    expect(defaultRow).toHaveClass('border', 'rounded-lg');
-    expect(defaultRow.querySelector('.tool-activity-row__card')).toBeNull();
+    expect(defaultRow).toHaveClass('tool-activity-row--activity');
+    expect(defaultRow).not.toHaveClass('border', 'rounded-lg');
     unmount();
 
     render(() => <ToolCallActivity toolCall={base} variant="activity" />);
     const activityRow = document.querySelector('[data-testid="tool-activity-row"]')!;
     expect(activityRow).toHaveClass('tool-activity-row--activity');
     expect(activityRow).not.toHaveClass('border');
-    expect(activityRow.querySelector('.tool-call-row-icon')).toHaveClass('relative', 'z-1', 'bg-surface');
+    expect(activityRow.querySelector('.tool-call-row-icon')).toHaveClass('relative', 'z-1', 'bg-transparent');
     expect(activityRow.querySelector('.tool-call-row-compact')).not.toHaveClass('-ml-32');
   });
 

@@ -1,10 +1,10 @@
 // 右区组装层：@peri/ui ChatWorkspaceShell + ChatHeader、MessageList、Composer。
 // T4 保留 store/features 逻辑；布局 chrome 下沉 T3 ChatWorkspaceShell。
 
-import { ChatHeader as ChatHeaderBase, ChatWorkspaceShell, InlineNotice, LoadingState } from '@peri/ui';
+import { BackToTop, ChatHeader as ChatHeaderBase, ChatWorkspaceShell, InlineNotice, LoadingState } from '@peri/ui';
 import { resolveChatHeaderTitle } from '@/features/chat/chat-header-title';
 import { Composer } from '@/widgets/composer/Composer';
-import { MessageList } from './MessageList';
+import { MessageList, type MessageListFollowState } from './MessageList';
 import { ChatEmptyWorkspace, CHAT_EMPTY_TITLE } from './ChatEmptyWorkspace';
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { chatCatalog, chatEntries, chatAgentLoading, chatHead, elicitationResponses, elicitations, permissions, projectSessions, questionResponses, questions, refreshCurrentControlProjection, registryHydrated, resolvePermission, respondElicitation, respondQuestion, restoringSessionId, retryPersistentAction, runtimeDocsHydrated, selectedCid, selectedSessionId, turnActive } from '@/store';
@@ -39,11 +39,21 @@ type ChatViewProps = {
 
 export function ChatView(props: ChatViewProps) {
   const [composerHeight, setComposerHeight] = createSignal(0);
+  const [followState, setFollowState] = createSignal<MessageListFollowState>({
+    awayFromLatest: false,
+    hasNewContent: false,
+  });
   let composerStack: HTMLDivElement | undefined;
   let composerObserver: ResizeObserver | undefined;
+  let jumpToLatest: (() => void) | undefined;
   const hasPendingPermission = () => permissions().some((permission) => permission.status === 'pending');
   const hasPendingElicitation = () => visibleElicitations(elicitations()).length > 0;
   const hasPendingQuestion = () => visibleQuestions(questions()).length > 0;
+  const showBackToTop = createMemo(() => {
+    const state = followState();
+    const blocked = hasPendingPermission() || hasPendingElicitation() || hasPendingQuestion();
+    return (state.awayFromLatest || state.hasNewContent) && !blocked;
+  });
   const projectCwd = createMemo(() => chatCatalog().find((chat) => chat.id === selectedCid())?.cwd ?? null);
   const headerTitle = createMemo(() => resolveChatHeaderTitle({
     sessions: projectSessions(),
@@ -158,7 +168,15 @@ export function ChatView(props: ChatViewProps) {
       transcript={selectedSessionId() ? (
         <Show
           when={conversationEmpty()}
-          fallback={<MessageList footerHeight={composerHeight()} />}
+          fallback={(
+            <MessageList
+              footerHeight={composerHeight()}
+              onFollowStateChange={setFollowState}
+              onRegisterJumpToLatest={(jump) => {
+                jumpToLatest = jump;
+              }}
+            />
+          )}
         >
           <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
             {queueAndStatus()}
@@ -173,6 +191,12 @@ export function ChatView(props: ChatViewProps) {
           <div class="ui-chat-workspace__decision-panel" data-testid="decision-panel">
             {queueAndStatus()}
           </div>
+          <BackToTop
+            visible={showBackToTop()}
+            label={followState().hasNewContent ? 'New content' : 'Back to latest'}
+            onClick={() => jumpToLatest?.()}
+            data-testid="back-to-latest"
+          />
           <Composer renderRuntimeMenu={composerRuntimeMenu} />
         </>
       ) : undefined}

@@ -12,6 +12,7 @@ import { messageTime } from '@/shared/lib/message-time';
 import {
   Bubble,
   BubbleContent,
+  ChatActivityChain,
   CopyButton,
   IconButton,
   InlineNotice,
@@ -284,6 +285,7 @@ export function ConversationMessage(props: {
   const blockIds = createMemo(() => blocks().map((block) => block.id));
   const blocksById = createMemo(() => new Map(blocks().map((block) => [block.id, block])));
   const activityBoundary = () => props.activityBoundary?.() ?? { previousTool: false, nextTool: false };
+  const activityContinuation = () => props.activityContinuation?.() ?? { before: false, after: false };
   const terminalNoticeOwner = () => props.terminalNoticeOwner?.() ?? true;
   const layoutUnits = createMemo(() => buildAssistantLayoutUnits(blocks(), activityBoundary()));
   const layoutUnitsById = createMemo(() => new Map(layoutUnits().map((unit) => [unit.id, unit])));
@@ -359,9 +361,11 @@ export function ConversationMessage(props: {
     <Show when={userHasVisibleSurface()}>
       <Show when={role() === 'user'} fallback={
         <MessageSurfaceShell from={role() === 'system' ? 'system' : 'assistant'}>
-          <For each={rowGroupIds()}>{(groupIdItem) => {
+          <For each={rowGroupIds()}>{(groupIdItem, groupIndex) => {
             const rowGroupId = () => readForItem(groupIdItem);
             const rowGroup = () => rowGroupsById().get(rowGroupId())!;
+            const continuesBefore = () => groupIndex() === 0 && activityContinuation().before;
+            const continuesAfter = () => groupIndex() === rowGroupIds().length - 1 && activityContinuation().after;
             const unitViewProps = {
               unitsById: layoutUnitsById,
               blocks,
@@ -383,11 +387,14 @@ export function ConversationMessage(props: {
                   }</For>
                 }
               >
-                <div data-testid="chat-activity-chain">
+                <ChatActivityChain
+                  continuesBefore={continuesBefore()}
+                  continuesAfter={continuesAfter()}
+                >
                   <For each={rowGroup().unitIds}>{(unitIdItem) =>
                     <AssistantLayoutUnitView unitId={() => readForItem(unitIdItem)} {...unitViewProps} />
                   }</For>
-                </div>
+                </ChatActivityChain>
               </Show>
             );
           }}</For>
