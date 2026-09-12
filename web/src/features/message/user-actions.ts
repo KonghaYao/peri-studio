@@ -221,35 +221,72 @@ export function retrySessionConfigMutation(): boolean {
   return sent;
 }
 
-export function closeChat(onFinished?: () => void): boolean {
+export interface CloseRuntimeOptions {
+  onCommitted?: () => void;
+  onFailed?: () => void;
+  onUncertain?: () => void;
+  /** 归档编排：不单独 toast 关闭成功，避免连发两条提示。 */
+  quiet?: boolean;
+}
+
+/** 关闭任意 chat 的运行实例；已终态视为成功，便于归档前收敛 live runtime。 */
+export function closeRuntimeInstance(chatId: string, options: CloseRuntimeOptions = {}): boolean {
   if (!connectionReady() || readOnly()) {
     deps!.toast('Connection not ready, try again later');
+    options.onFailed?.();
     return false;
   }
-  const chatId = deps!.currentCid();
-  if (!chatId || runtimeControlBusy(chatId)) return false;
-  if (isTerminal(deps!.chatStatusSignal()[chatId])) {
-    deps!.toast('Conversation ended, nothing to close');
+  if (!chatId || runtimeControlBusy(chatId)) {
+    options.onFailed?.();
     return false;
+  }
+  if (isTerminal(deps!.chatStatusSignal()[chatId])) {
+    options.onCommitted?.();
+    return true;
   }
   const frame = H.close(chatId);
-  if (!startRuntimeControl(frame.commandId, chatId, 'close')) return false;
-  return deps!.sendAction(frame, 'Close runtime instance', {
+  if (!startRuntimeControl(frame.commandId, chatId, 'close')) {
+    options.onFailed?.();
+    return false;
+  }
+  const sent = deps!.sendAction(frame, 'Close runtime instance', {
     retryOnUncertain: true,
     onAccepted: () => acceptRuntimeControl(frame.commandId),
     cb: (ack) => {
       if (!confirmRuntimeControl(frame.commandId, ack.status)) return;
       deps!.reconcileCurrentRuntimeControl();
-      onFinished?.();
-      deps!.toast('Runtime instance closed; session is still saved in the project');
+      if (!options.quiet) deps!.toast('Runtime instance closed; session is still saved in the project');
+      options.onCommitted?.();
     },
-    onError: (error) => failRuntimeControl(frame.commandId, error.message || 'Failed to close runtime instance.'),
+    onError: (error) => {
+      failRuntimeControl(frame.commandId, error.message || 'Failed to close runtime instance.');
+      options.onFailed?.();
+    },
     onTimeout: () => {
       markRuntimeControlUncertain(frame.commandId);
-      onFinished?.();
       persistActionProblem('Close result not yet confirmed', 'The runtime may already be closed. Persistent sessions on the left are not deleted; re-confirm with the original request.', frame.commandId);
+      options.onUncertain?.();
     },
   });
+  if (!sent) {
+    failRuntimeControl(frame.commandId, 'Connection not ready');
+    options.onFailed?.();
+  }
+  return sent;
+}
+
+export function closeChat(onFinished?: () => void): boolean {
+  const chatId = deps!.currentCid();
+  if (!chatId) return false;
+  if (isTerminal(deps!.chatStatusSignal()[chatId])) {
+    if (!connectionReady() || readOnly()) {
+      deps!.toast('Connection not ready, try again later');
+      return false;
+    }
+    deps!.toast('Conversation ended, nothing to close');
+    return false;
+  }
+  return closeRuntimeInstance(chatId, { onCommitted: onFinished, onUncertain: onFinished });
 }
 
 export function resolvePermission(permissionId: string, decision: PermissionDecision, optionId?: string): void {

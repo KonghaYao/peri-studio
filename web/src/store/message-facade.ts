@@ -14,6 +14,7 @@ export {
   setSessionConfig,
   retrySessionConfigMutation,
   closeChat,
+  closeRuntimeInstance,
   resolvePermission,
   respondElicitation,
   respondQuestion,
