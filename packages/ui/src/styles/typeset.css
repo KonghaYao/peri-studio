@@ -99,9 +99,24 @@
     padding-left: 0;
   }
 
-  .typeset :where(input[type='checkbox']) {
+  .typeset :where(input[type='checkbox'], .markdown-task-checkbox) {
     margin-right: var(--space-8);
+    vertical-align: middle;
     accent-color: var(--accent-solid);
+  }
+
+  .typeset :where(ul.markdown-task-list) {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .typeset :where(ul.markdown-task-list > li) {
+    list-style: none;
+  }
+
+  .typeset :where(ul.markdown-task-list p) {
+    display: inline;
+    margin: 0;
   }
 
   .typeset :where(blockquote) {
@@ -171,7 +186,14 @@
 
   .typeset :where(td) {
     padding: var(--space-8) var(--space-12);
-    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .typeset :where(tr + tr td) {
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .typeset :where(.md-math--block) {
+    text-align: center;
   }
 
   .typeset :where(del) {

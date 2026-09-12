@@ -336,10 +336,33 @@ export {
   ComposerDropOverlay,
   type ComposerDropOverlayProps,
 } from './components/composer/ComposerDropOverlay';
+export {
+  ComposerAttachmentList,
+  type ComposerAttachmentListProps,
+} from './components/composer/ComposerAttachmentList';
+export {
+  composerAttachmentKind,
+  type ComposerAttachmentItem,
+  type ComposerAttachmentKind,
+} from './components/composer/composer-attachment-types';
 export { ComposerQueue, type ComposerQueueProps } from './components/composer/ComposerQueue';
 export type { ComposerQueueItem } from './components/composer/composer-queue-types';
+export { SlashMenu, type SlashMenuItem, type SlashMenuProps, type SlashKind } from './components/composer/SlashMenu';
 export { UploadAssetTile } from './components/composer/UploadAssetTile';
 export type { UploadAssetTileProps, UploadAssetTileStatus } from './components/composer/upload-asset-tile-types';
+export {
+  ExplorerItemMenu,
+  buildExplorerContextMenuItems,
+  type ExplorerItemMenuProps,
+  type ExplorerMenuAction,
+  type ExplorerMenuContext,
+  type ExplorerMenuItem,
+} from './components/resource/ExplorerItemMenu';
+export { FilePreviewPanel, type FilePreviewPanelProps, type PreviewLine } from './components/resource/FilePreviewPanel';
+export {
+  FileTreeInlineNameEditor,
+  type FileTreeInlineNameEditorProps,
+} from './components/resource/FileTreeInlineNameEditor';
 export {
   TokenUsageMeter,
   tokenUsageLabel,

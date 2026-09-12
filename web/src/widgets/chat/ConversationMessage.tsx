@@ -18,7 +18,7 @@ import { Markdown } from './Markdown';
 import { ToolCallCard, ToolActivityGroup } from './ToolCallCard';
 import { UserBubble } from './UserBubble';
 import { Reasoning } from './Reasoning';
-import { ResourceCite } from './ResourceCite';
+import { ResourceCite } from '@peri/ui';
 import { McpAppFrame } from './McpAppFrame';
 import { isPrimaryLiveMcpApp, maybeOpenCompletedMcpTool } from '@/features/mcp/mcp-apps';
 import { requestComposerQuote } from '@/features/composer/composer-quote';

@@ -25,8 +25,8 @@ export const visualContract = () => {
     elicitationCount: document.querySelectorAll('.elicitation-card').length,
     permissionQueueLabel: document.querySelector('.permission-queue')?.getAttribute('aria-label') || null,
     markdown: {
-      headings: document.querySelectorAll('.markdown-body h2,.markdown-body h3').length,
-      lists: document.querySelectorAll('.markdown-body ul,.markdown-body ol').length,
+      headings: document.querySelectorAll('[data-testid="markdown-body"] h2,[data-testid="markdown-body"] h3').length,
+      lists: document.querySelectorAll('[data-testid="markdown-body"] ul,[data-testid="markdown-body"] ol').length,
       codeBlocks: document.querySelectorAll('.md-code-block').length,
     },
     uncertainOutbox: document.querySelectorAll('.message-outbox--uncertain').length,

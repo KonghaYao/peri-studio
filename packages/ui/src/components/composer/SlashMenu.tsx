@@ -1,0 +1,78 @@
+import { Box, SlidersHorizontal } from 'lucide-solid';
+import { For, Show, splitProps, type Component } from 'solid-js';
+import { cn } from '../../lib/cn';
+
+export type SlashKind = 'command' | 'skill' | 'mcp_skill';
+
+export type SlashMenuItem = {
+  name: string;
+  description: string;
+  kind?: SlashKind;
+  accent?: boolean;
+  variant?: 'default' | 'plan' | 'plugin';
+  dividerAfter?: boolean;
+};
+
+export type SlashMenuProps = {
+  items: SlashMenuItem[];
+  activeIndex?: number;
+  class?: string;
+};
+
+function SlashIcon(props: { variant?: SlashMenuItem['variant']; accent?: boolean }) {
+  if (props.variant === 'plan') {
+    return <SlidersHorizontal size={15} strokeWidth={1.7} class={cn(props.accent ? 'text-warning-solid' : 'text-content-muted')} />;
+  }
+  return <Box size={15} strokeWidth={1.7} class="text-content-muted" />;
+}
+
+/** Composer slash 面板：图标 + 命令名（省略）+ 左对齐说明列；分组分隔线。 */
+export const SlashMenu: Component<SlashMenuProps> = (props) => {
+  const [local] = splitProps(props, ['items', 'activeIndex', 'class']);
+  const active = () => local.activeIndex ?? 0;
+
+  return (
+    <div
+      data-slot="slash-menu"
+      class={cn('overflow-hidden rounded-xl border border-border-subtle bg-surface-overlay', local.class)}
+    >
+      <ul class="max-h-240 overflow-auto py-6" role="listbox" aria-label="Slash commands">
+        <For each={local.items}>
+          {(item, index) => (
+            <li class="list-none">
+              <div
+                role="option"
+                aria-selected={index() === active()}
+                class={cn(
+                  'mx-6 cursor-pointer rounded-lg px-10 py-6 transition-colors duration-(--duration-fast)',
+                  index() === active() ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover',
+                )}
+              >
+                <div class="grid min-w-0 grid-cols-slash-menu items-center gap-x-10">
+                  <span class="grid size-16 shrink-0 place-items-center">
+                    <SlashIcon variant={item.variant} accent={item.accent} />
+                  </span>
+                  <span
+                    class={cn(
+                      'min-w-0 truncate text-13 font-medium leading-snug',
+                      item.accent ? 'text-warning-strong' : 'text-content-primary',
+                    )}
+                    title={item.name}
+                  >
+                    {item.name}
+                  </span>
+                  <span class="min-w-0 truncate text-13 leading-snug text-content-muted" title={item.description}>
+                    {item.description}
+                  </span>
+                </div>
+              </div>
+              <Show when={item.dividerAfter}>
+                <div class="mx-12 my-4 border-t border-border-subtle" role="presentation" />
+              </Show>
+            </li>
+          )}
+        </For>
+      </ul>
+    </div>
+  );
+};

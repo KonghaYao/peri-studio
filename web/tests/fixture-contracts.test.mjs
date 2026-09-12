@@ -75,14 +75,17 @@ test('component geometry tokens are declared once and consumed by production wid
   const sourceControl = read('widgets', 'resource', 'SourceControlPanel.tsx');
   const button = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Button.tsx'), 'utf8');
 
+  const webUi = `${composer}\n${tool}\n${toolActivity}\n${mcpApp}\n${status}\n${questions}\n${permissions}\n${permissionCard}\n${decisionCard}\n${explorer}\n${sourceControl}\n${button}`;
   for (const token of [
     'control-height-compact', 'pattern-row-height', 'tree-row-height',
-    'asset-tile-size', 'status-panel-max-height', 'composer-radius',
+    'status-panel-max-height', 'composer-radius',
     'decision-radius', 'permission-card-min-height', 'tool-activity-max',
   ]) {
     assert.match(tokens, new RegExp(`--${token}:`));
-    assert.match(`${composer}\n${tool}\n${toolActivity}\n${mcpApp}\n${status}\n${questions}\n${permissions}\n${permissionCard}\n${decisionCard}\n${explorer}\n${sourceControl}\n${button}`, new RegExp(`--${token}`));
+    assert.match(webUi, new RegExp(`--${token}`));
   }
+  assert.match(tokens, /--asset-tile-size:/);
+  assert.match(tokens, /--composer-upload-tile-width:/);
   assert.doesNotMatch(composer, /token-composer|design-token/);
   assert.doesNotMatch(tool, /token-tool|design-token/);
 });
