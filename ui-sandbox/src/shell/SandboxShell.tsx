@@ -3,6 +3,7 @@ import { PAGE_CATALOG, parseSandboxHash, ROUTE_META, SANDBOX_ROUTES, sandboxHref
 import { cn } from '@/lib/catalog-ui';
 import { IconButton } from '@/lib/catalog-ui';
 import { List, X } from 'lucide-solid';
+import { TokenControlPanel } from '@/shell/TokenControlPanel';
 
 function ChapterNav(props: { route: SandboxRoute; activeSection?: string; onNavigate?: () => void }) {
   const groups = () => PAGE_CATALOG[props.route];
@@ -134,6 +135,8 @@ export function SandboxShell(props: { children: unknown }) {
           </aside>
         </div>
       </Show>
+
+      <TokenControlPanel />
     </div>
   );
 }
