@@ -103,7 +103,7 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'sources')}>
-      <CatalogDemo id="sources" title="Sources" description="折叠来源列表 + 资源引用卡（blocks ResourceCite）。">
+      <CatalogDemo id="sources" title="Sources" description="折叠来源列表 + ResourceCite 引用卡。">
         <ChatFrame>
           <div class="flex flex-col gap-16">
             <Sources defaultOpen>
@@ -189,7 +189,7 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'task')}>
-      <CatalogDemo id="task" title="Task / Tool activity" description="Fenix 风格工具活动行（blocks ToolActivityRow）。">
+      <CatalogDemo id="task" title="Task / Tool activity" description="Fenix 风格工具活动行。">
         <ChatFrame>
           <ToolActivityGroup>
             <ToolActivityRow
@@ -221,7 +221,7 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'reasoning')}>
-      <CatalogDemo id="reasoning" title="Transcript reasoning" description="Transcript 内推理折叠块（blocks Reasoning）。">
+      <CatalogDemo id="reasoning" title="Transcript reasoning" description="Transcript 内推理折叠块。">
         <ChatFrame>
           <TranscriptReasoning>
             First verify the metadata authority, then check the Registry read-only projection and session/load ordering.

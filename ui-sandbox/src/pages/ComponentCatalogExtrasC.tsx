@@ -95,45 +95,47 @@ export function ComponentCatalogExtrasC(props: { sections?: string[] }) {
 
       <Show when={showCatalogSection(props.sections, 'menubar')}>
       <CatalogDemo id="menubar" title="Menubar · Navigation menu" description="桌面应用菜单与顶部导航。">
-        <Menubar>
-          <MenubarMenu>
-            <MenubarTrigger>File</MenubarTrigger>
-            <MenubarContent aria-label="File">
-              <MenubarItem>New session</MenubarItem>
-              <MenubarItem>Import transcript</MenubarItem>
-            </MenubarContent>
-          </MenubarMenu>
-          <MenubarMenu>
-            <MenubarTrigger>Edit</MenubarTrigger>
-            <MenubarContent aria-label="Edit">
-              <MenubarItem>Undo</MenubarItem>
-              <MenubarItem>Find</MenubarItem>
-            </MenubarContent>
-          </MenubarMenu>
-        </Menubar>
-        <NavigationMenu>
-          <NavigationMenuList>
-            <NavigationMenuItem value="product">
-              <NavigationMenuTrigger>Product</NavigationMenuTrigger>
-              <NavigationMenuContent aria-label="Product">
-                <li>
+        <div class="flex flex-col items-start gap-12">
+          <Menubar>
+            <MenubarMenu>
+              <MenubarTrigger>File</MenubarTrigger>
+              <MenubarContent aria-label="File">
+                <MenubarItem>New session</MenubarItem>
+                <MenubarItem>Import transcript</MenubarItem>
+              </MenubarContent>
+            </MenubarMenu>
+            <MenubarMenu>
+              <MenubarTrigger>Edit</MenubarTrigger>
+              <MenubarContent aria-label="Edit">
+                <MenubarItem>Undo</MenubarItem>
+                <MenubarItem>Find</MenubarItem>
+              </MenubarContent>
+            </MenubarMenu>
+          </Menubar>
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem value="product">
+                <NavigationMenuTrigger>Product</NavigationMenuTrigger>
+                <NavigationMenuContent aria-label="Product">
+                  <li>
                     <NavigationMenuLink href="#/components-overlays" active>Overlays</NavigationMenuLink>
-                </li>
-                <li>
-                  <NavigationMenuLink href="#/layers">Layers</NavigationMenuLink>
-                </li>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-            <NavigationMenuItem value="docs">
-              <NavigationMenuTrigger>Docs</NavigationMenuTrigger>
-              <NavigationMenuContent aria-label="Docs">
-                <li>
-                  <NavigationMenuLink href="#/tokens">Tokens</NavigationMenuLink>
-                </li>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-          </NavigationMenuList>
-        </NavigationMenu>
+                  </li>
+                  <li>
+                    <NavigationMenuLink href="#/layers">Layers</NavigationMenuLink>
+                  </li>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+              <NavigationMenuItem value="docs">
+                <NavigationMenuTrigger>Docs</NavigationMenuTrigger>
+                <NavigationMenuContent aria-label="Docs">
+                  <li>
+                    <NavigationMenuLink href="#/tokens">Tokens</NavigationMenuLink>
+                  </li>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+        </div>
       </CatalogDemo>
       </Show>
 

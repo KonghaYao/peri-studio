@@ -8,17 +8,13 @@ import {
   GitCommitBar,
   GitDiffPanel,
   GitGraphPanel,
-  DecisionCard,
   Markdown,
-  Reasoning,
-  ResourceCite,
   SlashMenu,
   TokenUsageMeter,
-  ToolActivityGroup,
-  ToolActivityRow,
   UserBubble,
 } from '@/components/blocks';
-import { FileText, Folder, FolderSearch, Terminal } from 'lucide-solid';
+import { TranscriptReasoning } from '@peri/ui';
+import { Folder } from 'lucide-solid';
 import { DemoSection, DomainSection, TierHeader } from '@/pages/shared/DemoSection';
 
 const MARKDOWN_SAMPLE = `# Markdown rendering lab
@@ -76,7 +72,7 @@ export function BlocksPage() {
         description="单域可复用块：只表达一个业务语义，由 Tier 2 基础组件拼装。按 chat / composer / chrome 分域。"
       />
 
-      <DomainSection title="Chat · 聊天内容" description="Transcript 内的消息、Markdown、工具活动与资源引用。">
+      <DomainSection title="Chat · 聊天内容" description="Transcript 内的消息与 Markdown（工具活动 / 引用卡见 T2 · AI）。">
         <DemoSection id="markdown" title="Markdown" description="GFM + KaTeX 数学 + Mermaid 图；表格 hover 浮现复制 / 下载。">
           <div class="max-w-(--chat-content-max) rounded-lg border border-border-subtle bg-surface-overlay px-16 py-16">
             <Markdown source={MARKDOWN_SAMPLE} />
@@ -86,21 +82,9 @@ export function BlocksPage() {
         <DemoSection id="user-bubble" title="UserBubble · Reasoning" description="用户气泡与 Thinking 折叠块。">
           <div class="flex max-w-(--chat-content-max) flex-col gap-16">
             <UserBubble>Check the session recovery path so a restart never treats an old runtime as still alive.</UserBubble>
-            <Reasoning>First verify the metadata authority, then check the Registry read-only projection and session/load ordering.</Reasoning>
-          </div>
-        </DemoSection>
-
-        <DemoSection id="tool-activity" title="ToolActivityRow" description="Fenix 风格工具 icon + 动作说明；running 浅灰底，可展开证据。">
-          <ToolActivityGroup>
-            <ToolActivityRow icon={FileText} title="Opened vite.config.ts" subtitle="Lines 1–84" input="vite.config.ts" output={'{\n  "lines": 84\n}'} status="done" duration="120ms" />
-            <ToolActivityRow icon={Terminal} title="Running $ bun run build:web" input="bun run build:web" status="running" />
-            <ToolActivityRow icon={FolderSearch} title={'Matched "src/**/*.tsx"'} error="BUILD_IMPORT_ERROR: Browser bundle imported a Node-only module" input="src/**/*.tsx" status="failed" duration="1.8s" />
-          </ToolActivityGroup>
-        </DemoSection>
-
-        <DemoSection id="resource-cite" title="ResourceCite" description="消息流内的资源引用卡。">
-          <div class="max-w-md">
-            <ResourceCite name="Composer component specification" mediaType="text/markdown" resourceId="resource://component-spec" />
+            <TranscriptReasoning>
+              First verify the metadata authority, then check the Registry read-only projection and session/load ordering.
+            </TranscriptReasoning>
           </div>
         </DemoSection>
       </DomainSection>
@@ -169,27 +153,6 @@ export function BlocksPage() {
               </div>
               <ProjectRowAccessory count={3} />
             </div>
-          </div>
-        </DemoSection>
-      </DomainSection>
-
-      <DomainSection title="Decision · 决策面" description="Questions / Permissions 共用 DecisionCard。">
-        <DemoSection id="decision-card" title="DecisionCard" description="hover 灰底；选中蓝底行 + 蓝字键；轻阴影、大圆角、无 border。">
-          <div class="max-w-md">
-            <DecisionCard
-              title="Questions"
-              prompt="归档 session 时，如果该 session 仍有正在运行的 chat，应如何处理？"
-              options={[
-                { id: 'a', key: 'A', label: '允许直接归档（侧栏隐藏，runtime 可继续在后台）' },
-                { id: 'b', key: 'B', label: '必须先关闭 runtime，才能归档' },
-                { id: 'c', key: 'C', label: '归档时自动关闭 runtime，再隐藏' },
-                { id: 'd', key: 'D', label: 'Other…' },
-              ]}
-              selectedId="a"
-              onSelect={() => {}}
-              currentIndex={0}
-              total={7}
-            />
           </div>
         </DemoSection>
       </DomainSection>

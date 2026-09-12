@@ -1,5 +1,5 @@
 import { createSignal } from 'solid-js';
-import { DecisionCard } from '@/components/blocks/decision';
+import { DecisionCard } from '@peri/ui';
 
 const QUESTION_OPTIONS = [
   { id: 'a', key: 'A', label: '允许直接归档（侧栏隐藏，runtime 可继续在后台）' },
