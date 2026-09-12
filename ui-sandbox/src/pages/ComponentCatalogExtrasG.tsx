@@ -1,4 +1,5 @@
 import { createSignal, Show } from 'solid-js';
+import { FileText, FolderSearch, Terminal } from 'lucide-solid';
 import { showCatalogSection } from '@/catalog/catalog-section';
 import {
   CodeBlock,
@@ -8,14 +9,8 @@ import {
   CodeBlockHeader,
   CodeBlockLanguageSelector,
   CodeBlockTitle,
-  Confirmation,
-  ConfirmationAccepted,
-  ConfirmationAction,
-  ConfirmationActions,
-  ConfirmationRejected,
-  ConfirmationRequest,
-  ConfirmationTitle,
   DataTable,
+  DecisionCard,
   InlineCitation,
   InlineCitationCard,
   InlineCitationCardBody,
@@ -46,13 +41,13 @@ import {
   QueueItem,
   QueueItemContent,
   QueueItemDescription,
-  QueueItemFile,
   QueueItemIndicator,
   QueueList,
   QueueSection,
   QueueSectionContent,
   QueueSectionLabel,
   QueueSectionTrigger,
+  ResourceCite,
   Snippet,
   SnippetAddon,
   SnippetCopyButton,
@@ -64,11 +59,9 @@ import {
   SourcesTrigger,
   Suggestion,
   SuggestionItem,
-  Task,
-  TaskContent,
-  TaskItem,
-  TaskItemFile,
-  TaskTrigger,
+  ToolActivityGroup,
+  ToolActivityRow,
+  TranscriptReasoning,
 } from '@peri/ui';
 import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
 
@@ -83,212 +76,243 @@ const codeSamples = {
   bash: 'bun run test',
 };
 
-export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
-  const [approvalState, setApprovalState] = createSignal<'approval-requested' | 'approval-responded'>(
-    'approval-requested',
+function ChatFrame(props: { children: unknown }) {
+  return (
+    <div class="chat-column max-w-(--chat-content-max) rounded-lg border border-border-subtle bg-surface-overlay px-16 py-16">
+      {props.children as never}
+    </div>
   );
-  const [approved, setApproved] = createSignal<boolean | undefined>(undefined);
+}
+
+export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
+  const [selectedOption, setSelectedOption] = createSignal('a');
   const [codeLanguage, setCodeLanguage] = createSignal<'typescript' | 'bash'>('typescript');
 
   return (
     <>
       <Show when={showCatalogSection(props.sections, 'suggestion')}>
-      <CatalogDemo id="suggestion" title="Suggestion" description="快捷建议 chips。">
-        <Suggestion>
-          <SuggestionItem suggestion="Summarize this session" onClick={() => undefined} />
-          <SuggestionItem suggestion="Write tests" onClick={() => undefined} />
-          <SuggestionItem suggestion="Explain architecture" onClick={() => undefined} />
-        </Suggestion>
+      <CatalogDemo id="suggestion" title="Suggestion" description="Composer 底部快捷建议；横向滚动 chips。">
+        <ChatFrame>
+          <Suggestion>
+            <SuggestionItem suggestion="Summarize this session" onClick={() => undefined} />
+            <SuggestionItem suggestion="Write tests" onClick={() => undefined} />
+            <SuggestionItem suggestion="Explain architecture" onClick={() => undefined} />
+          </Suggestion>
+        </ChatFrame>
       </CatalogDemo>
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'sources')}>
-      <CatalogDemo id="sources" title="Sources" description="引用来源折叠列表。">
-        <Sources defaultOpen>
-          <SourcesTrigger count={2} />
-          <SourcesContent>
-            <SourceItem href="https://example.com/architecture" title="architecture.md" />
-            <SourceItem href="https://example.com/terminology" title="terminology.md" />
-          </SourcesContent>
-        </Sources>
+      <CatalogDemo id="sources" title="Sources" description="折叠来源列表 + 资源引用卡（blocks ResourceCite）。">
+        <ChatFrame>
+          <div class="flex flex-col gap-16">
+            <Sources defaultOpen>
+              <SourcesTrigger count={2} />
+              <SourcesContent>
+                <SourceItem href="https://example.com/architecture" title="architecture.md" />
+                <SourceItem href="https://example.com/terminology" title="terminology.md" />
+              </SourcesContent>
+            </Sources>
+            <ResourceCite
+              name="Composer component specification"
+              mediaType="text/markdown"
+              resourceId="resource://component-spec"
+            />
+          </div>
+        </ChatFrame>
       </CatalogDemo>
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'citation')}>
       <CatalogDemo id="citation" title="Inline citation" description="行内引用 hover 卡片与轮播来源。">
-        <p class="text-13 text-content-primary">
-          Session recovery uses explicit load
-          <InlineCitation>
-            <InlineCitationText>explicit session/load</InlineCitationText>
-            <InlineCitationCard>
-              <InlineCitationCardTrigger
-                sources={['https://example.com/architecture', 'https://example.com/terminology']}
-              />
-              <InlineCitationCardBody>
-                <InlineCitationCarousel>
-                  <InlineCitationCarouselHeader>
-                    <InlineCitationCarouselPrev />
-                    <InlineCitationCarouselNext />
-                    <InlineCitationCarouselIndex />
-                  </InlineCitationCarouselHeader>
-                  <InlineCitationCarouselContent>
-                    <InlineCitationCarouselItem>
-                      <InlineCitationSource
-                        title="architecture.md"
-                        url="https://example.com/architecture"
-                        description="Server restart does not resurrect old runtime."
-                      />
-                    </InlineCitationCarouselItem>
-                    <InlineCitationCarouselItem>
-                      <InlineCitationQuote>
-                        chat/load rebuilds the view per the control plane contract.
-                      </InlineCitationQuote>
-                    </InlineCitationCarouselItem>
-                  </InlineCitationCarouselContent>
-                </InlineCitationCarousel>
-              </InlineCitationCardBody>
-            </InlineCitationCard>
-          </InlineCitation>
-          per the control plane contract.
-        </p>
+        <ChatFrame>
+          <p class="text-13 text-content-primary">
+            Session recovery uses explicit load
+            <InlineCitation>
+              <InlineCitationText>explicit session/load</InlineCitationText>
+              <InlineCitationCard>
+                <InlineCitationCardTrigger
+                  sources={['https://example.com/architecture', 'https://example.com/terminology']}
+                />
+                <InlineCitationCardBody>
+                  <InlineCitationCarousel>
+                    <InlineCitationCarouselHeader>
+                      <InlineCitationCarouselPrev />
+                      <InlineCitationCarouselNext />
+                      <InlineCitationCarouselIndex />
+                    </InlineCitationCarouselHeader>
+                    <InlineCitationCarouselContent>
+                      <InlineCitationCarouselItem>
+                        <InlineCitationSource
+                          title="architecture.md"
+                          url="https://example.com/architecture"
+                          description="Server restart does not resurrect old runtime."
+                        />
+                      </InlineCitationCarouselItem>
+                      <InlineCitationCarouselItem>
+                        <InlineCitationQuote>
+                          chat/load rebuilds the view per the control plane contract.
+                        </InlineCitationQuote>
+                      </InlineCitationCarouselItem>
+                    </InlineCitationCarouselContent>
+                  </InlineCitationCarousel>
+                </InlineCitationCardBody>
+              </InlineCitationCard>
+            </InlineCitation>
+            per the control plane contract.
+          </p>
+        </ChatFrame>
       </CatalogDemo>
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'plan')}>
-      <CatalogDemo id="plan" title="Plan" description="可折叠计划卡与流式标题。">
-        <Plan defaultOpen isStreaming>
-          <PlanHeader>
-            <div class="min-w-0 flex-1 space-y-4">
-              <PlanTitle>Implementation plan</PlanTitle>
-              <PlanDescription>Align chat primitives with AI Elements before mirroring to web.</PlanDescription>
-            </div>
-            <PlanAction>
-              <PlanTrigger />
-            </PlanAction>
-          </PlanHeader>
-          <PlanContent>
-            <PlanStep status="complete" label="Audit @peri/ui gaps" />
-            <PlanStep status="active" label="Add chat primitives" />
-            <PlanStep status="pending" label="Mirror to web widgets" />
-          </PlanContent>
-        </Plan>
+      <CatalogDemo id="plan" title="Plan" description="决策面风格计划卡：shadow-decision + 流式标题。">
+        <div class="max-w-md">
+          <Plan defaultOpen isStreaming>
+            <PlanHeader>
+              <div class="min-w-0 flex-1 space-y-4">
+                <PlanTitle>Implementation plan</PlanTitle>
+                <PlanDescription>Align chat primitives with blocks before mirroring to web.</PlanDescription>
+              </div>
+              <PlanAction>
+                <PlanTrigger />
+              </PlanAction>
+            </PlanHeader>
+            <PlanContent>
+              <PlanStep status="complete" label="Audit @peri/ui gaps" />
+              <PlanStep status="active" label="Add chat primitives" />
+              <PlanStep status="pending" label="Mirror to web widgets" />
+            </PlanContent>
+          </Plan>
+        </div>
       </CatalogDemo>
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'task')}>
-      <CatalogDemo id="task" title="Task" description="可折叠搜索任务与文件 chip。">
-        <Task defaultOpen>
-          <TaskTrigger title="Searching repository" />
-          <TaskContent>
-            <TaskItem>
-              Read <TaskItemFile>packages/ui/src/components/Task.tsx</TaskItemFile>
-            </TaskItem>
-            <TaskItem>
-              Matched <TaskItemFile>docs/architecture.md</TaskItemFile>
-            </TaskItem>
-          </TaskContent>
-        </Task>
+      <CatalogDemo id="task" title="Task / Tool activity" description="Fenix 风格工具活动行（blocks ToolActivityRow）。">
+        <ChatFrame>
+          <ToolActivityGroup>
+            <ToolActivityRow
+              icon={FileText}
+              title="Opened packages/ui/src/components/Task.tsx"
+              subtitle="Lines 1–97"
+              input="packages/ui/src/components/Task.tsx"
+              output={'{\n  "lines": 97\n}'}
+              status="done"
+              duration="120ms"
+            />
+            <ToolActivityRow
+              icon={Terminal}
+              title="Running $ bun run test"
+              input="bun run test"
+              status="running"
+            />
+            <ToolActivityRow
+              icon={FolderSearch}
+              title={'Matched "docs/**/*.md"'}
+              error="ENOENT: docs missing in sandbox"
+              input="docs/**/*.md"
+              status="failed"
+              duration="1.8s"
+            />
+          </ToolActivityGroup>
+        </ChatFrame>
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'reasoning')}>
+      <CatalogDemo id="reasoning" title="Transcript reasoning" description="Transcript 内推理折叠块（blocks Reasoning）。">
+        <ChatFrame>
+          <TranscriptReasoning>
+            First verify the metadata authority, then check the Registry read-only projection and session/load ordering.
+          </TranscriptReasoning>
+        </ChatFrame>
       </CatalogDemo>
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'confirmation')}>
-      <CatalogDemo id="confirmation" title="Confirmation" description="敏感操作审批与响应态。">
-        <DemoRow>
-          <Confirmation
-            state={approvalState()}
-            approval={{ id: 'delete-session', approved: approved() }}
-          >
-            <ConfirmationRequest>
-              <ConfirmationTitle>Allow deleting session "debug-42"?</ConfirmationTitle>
-              <ConfirmationActions>
-                <ConfirmationAction
-                  variant="primary"
-                  onClick={() => {
-                    setApproved(true);
-                    setApprovalState('approval-responded');
-                  }}
-                >
-                  Approve
-                </ConfirmationAction>
-                <ConfirmationAction
-                  variant="ghost"
-                  onClick={() => {
-                    setApproved(false);
-                    setApprovalState('approval-responded');
-                  }}
-                >
-                  Deny
-                </ConfirmationAction>
-              </ConfirmationActions>
-            </ConfirmationRequest>
-            <ConfirmationAccepted>
-              <ConfirmationTitle>Delete approved.</ConfirmationTitle>
-            </ConfirmationAccepted>
-            <ConfirmationRejected>
-              <ConfirmationTitle>Delete denied.</ConfirmationTitle>
-            </ConfirmationRejected>
-          </Confirmation>
-        </DemoRow>
+      <CatalogDemo id="confirmation" title="Confirmation" description="敏感操作审批；展示 blocks DecisionCard 视觉。">
+        <div class="max-w-md">
+          <DecisionCard
+            title="Permissions"
+            prompt={'Allow deleting session "debug-42"?'}
+            detail="This removes the project session entry and hides it from the sidebar."
+            options={[
+              { id: 'a', key: 'A', label: 'Approve delete' },
+              { id: 'b', key: 'B', label: 'Deny and keep session' },
+            ]}
+            selectedId={selectedOption()}
+            onSelect={setSelectedOption}
+            primaryLabel="Approve"
+            onPrimary={() => undefined}
+            onSkip={() => undefined}
+          />
+        </div>
       </CatalogDemo>
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'queue')}>
-      <CatalogDemo id="queue" title="Queue" description="分段待办队列与完成态。">
-        <Queue>
-          <QueueSection defaultOpen>
-            <QueueSectionTrigger>
-              <QueueSectionLabel count={2} label="tasks" />
-            </QueueSectionTrigger>
-            <QueueSectionContent>
-              <QueueList>
-                <QueueItem>
-                  <div class="flex items-start gap-8">
-                    <QueueItemIndicator completed />
-                    <QueueItemContent completed>Index repository</QueueItemContent>
-                  </div>
-                </QueueItem>
-                <QueueItem>
-                  <div class="flex min-w-0 items-start gap-8">
-                    <QueueItemIndicator />
-                    <div class="min-w-0 flex-1">
-                      <QueueItemContent>Generate summary</QueueItemContent>
-                      <QueueItemDescription>Uses latest chat transcript</QueueItemDescription>
+      <CatalogDemo id="queue" title="Queue" description="分段待办队列；与 transcript 同宽。">
+        <div class="max-w-(--chat-tool-activity-max)">
+          <Queue>
+            <QueueSection defaultOpen>
+              <QueueSectionTrigger>
+                <QueueSectionLabel count={2} label="tasks" />
+              </QueueSectionTrigger>
+              <QueueSectionContent>
+                <QueueList>
+                  <QueueItem>
+                    <div class="flex items-start gap-8">
+                      <QueueItemIndicator completed />
+                      <QueueItemContent completed>Index repository</QueueItemContent>
                     </div>
-                  </div>
-                </QueueItem>
-              </QueueList>
-            </QueueSectionContent>
-          </QueueSection>
-        </Queue>
+                  </QueueItem>
+                  <QueueItem>
+                    <div class="flex min-w-0 items-start gap-8">
+                      <QueueItemIndicator />
+                      <div class="min-w-0 flex-1">
+                        <QueueItemContent>Generate summary</QueueItemContent>
+                        <QueueItemDescription>Uses latest chat transcript</QueueItemDescription>
+                      </div>
+                    </div>
+                  </QueueItem>
+                </QueueList>
+              </QueueSectionContent>
+            </QueueSection>
+          </Queue>
+        </div>
       </CatalogDemo>
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'code-block')}>
-      <CatalogDemo id="code-block" title="Code block" description="Header、语言切换与复制。">
-        <CodeBlock
-          code={codeSamples[codeLanguage()]}
-          language={codeLanguage()}
-          showLineNumbers
-          startLine={1}
-        >
-          <CodeBlockHeader>
-            <CodeBlockTitle>
-              <CodeBlockFilename>demo.{codeLanguage() === 'typescript' ? 'ts' : 'sh'}</CodeBlockFilename>
-            </CodeBlockTitle>
-            <CodeBlockActions>
-              <CodeBlockLanguageSelector
-                aria-label="Language"
-                value={codeLanguage()}
-                onChange={(value) => setCodeLanguage(value as 'typescript' | 'bash')}
-                options={[
-                  { value: 'typescript', label: 'TypeScript' },
-                  { value: 'bash', label: 'Bash' },
-                ]}
-              />
-              <CodeBlockCopyButton />
-            </CodeBlockActions>
-          </CodeBlockHeader>
-        </CodeBlock>
+      <CatalogDemo id="code-block" title="Code block" description="Markdown 代码块视觉（blocks CodeBlock 对齐）。">
+        <ChatFrame>
+          <CodeBlock
+            code={codeSamples[codeLanguage()]}
+            language={codeLanguage()}
+            showLineNumbers
+            startLine={7}
+          >
+            <CodeBlockHeader>
+              <CodeBlockTitle>
+                <strong class="font-medium">{codeLanguage() === 'typescript' ? 'TypeScript' : 'Bash'}</strong>
+                <CodeBlockFilename>recovery.{codeLanguage() === 'typescript' ? 'ts' : 'sh'}</CodeBlockFilename>
+              </CodeBlockTitle>
+              <CodeBlockActions>
+                <CodeBlockLanguageSelector
+                  aria-label="Language"
+                  value={codeLanguage()}
+                  onChange={(value) => setCodeLanguage(value as 'typescript' | 'bash')}
+                  options={[
+                    { value: 'typescript', label: 'TypeScript' },
+                    { value: 'bash', label: 'Bash' },
+                  ]}
+                />
+                <CodeBlockCopyButton />
+              </CodeBlockActions>
+            </CodeBlockHeader>
+          </CodeBlock>
+        </ChatFrame>
       </CatalogDemo>
       </Show>
 
@@ -311,14 +335,16 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
 
       <Show when={showCatalogSection(props.sections, 'typeset')}>
       <CatalogDemo id="typeset" title="Typeset" description="流式 Markdown 排版（typeset.css）。">
-        <div class="typeset typeset-chat max-w-md rounded-8 border border-border-subtle p-16 text-13">
-          <h3>Streaming markdown</h3>
-          <p>Lists and <code>inline code</code> scale from the container.</p>
-          <ul>
-            <li>Anchor turns on new messages</li>
-            <li>Preserve scroll on prepend</li>
-          </ul>
-        </div>
+        <ChatFrame>
+          <div class="typeset typeset-chat text-13">
+            <h3>Streaming markdown</h3>
+            <p>Lists and <code>inline code</code> scale from the container.</p>
+            <ul>
+              <li>Anchor turns on new messages</li>
+              <li>Preserve scroll on prepend</li>
+            </ul>
+          </div>
+        </ChatFrame>
       </CatalogDemo>
       </Show>
 

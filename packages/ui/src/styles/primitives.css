@@ -90,6 +90,10 @@
   transform: rotate(-90deg);
 }
 
+.ui-transcript-reasoning summary::-webkit-details-marker {
+  display: none;
+}
+
 .ui-chain-of-thought-step:last-child .ui-chain-of-thought-connector,
 .ui-plan-step:last-child .ui-plan-step-connector {
   display: none;

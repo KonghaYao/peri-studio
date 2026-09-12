@@ -8,9 +8,23 @@ export function ComponentsAiPage() {
       <TierHeader
         tier="Tier 2 · AI"
         title="AI Elements"
-        description="Vercel AI Elements 对齐组件：Suggestion、Plan、CodeBlock、Typeset 等。"
+        description="AI Elements API + blocks 视觉契约：Tool activity、DecisionCard、ResourceCite、Plan shadow 等。"
       />
-      <ComponentCatalogExtrasG sections={['suggestion', 'sources', 'citation', 'plan', 'task', 'confirmation', 'queue', 'code-block', 'snippet', 'typeset']} />
+      <ComponentCatalogExtrasG
+        sections={[
+          'suggestion',
+          'sources',
+          'citation',
+          'plan',
+          'task',
+          'reasoning',
+          'confirmation',
+          'queue',
+          'code-block',
+          'snippet',
+          'typeset',
+        ]}
+      />
     </div>
   );
 }

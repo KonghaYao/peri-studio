@@ -78,7 +78,7 @@ export const CodeBlockContainer: Component<CodeBlockContainerProps> = (props) =>
       data-slot="code-block-container"
       data-language={local.language}
       class={cn(
-        'group relative w-full overflow-hidden rounded-8 border border-border-subtle bg-surface text-content-primary',
+        'group relative my-16 w-full overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay text-content-primary',
         local.class,
       )}
       style={{
@@ -97,7 +97,7 @@ export const CodeBlockHeader: Component<ComponentProps<'div'>> = (props) => {
     <div
       data-slot="code-block-header"
       class={cn(
-        'flex items-center justify-between border-b border-border-subtle bg-surface-overlay/80 px-12 py-8 text-12 text-content-muted',
+        'flex min-h-36 items-center gap-8 border-b border-border-subtle px-8 py-4 text-12 text-content-muted',
         local.class,
       )}
       {...rest}
@@ -248,7 +248,7 @@ export const CodeBlockBody: Component<CodeBlockBodyProps> = (props) => {
     <pre
       data-slot="code-block-body"
       class={cn(
-        'm-0 overflow-auto bg-surface-sunken p-16 font-mono text-12 leading-relaxed text-content-primary',
+        'm-0 max-h-320 overflow-auto bg-surface-sunken py-12 font-mono text-12 leading-relaxed text-content-primary',
         local.class,
       )}
       {...rest}
@@ -261,13 +261,13 @@ export const CodeBlockBody: Component<CodeBlockBodyProps> = (props) => {
               {(line, index) => (
                 <span
                   class={cn(
-                    'grid min-h-18',
+                    'grid min-h-18 px-14',
                     local.showLineNumbers ? 'grid-cols-code-line' : 'grid-cols-1',
                   )}
                 >
                   <Show when={local.showLineNumbers}>
                     <span
-                      class="mr-16 min-w-32 select-none text-right text-content-faint"
+                      class="mr-14 min-w-20 select-none text-right text-content-faint"
                       aria-hidden="true"
                     >
                       {startLine() + index()}

@@ -692,6 +692,14 @@ describe('Toast', () => {
     showToast('Saved');
     expect(await screen.findByText('Saved')).toBeInTheDocument();
   });
+
+  it('applies toast motion recipe for enter and exit animations', async () => {
+    render(() => <Toaster />);
+    showToast('Animated');
+    const toast = (await screen.findByText('Animated')).closest('li');
+    expect(toast).toHaveClass('ui-toast-motion');
+    expect(toast).toHaveAttribute('data-opened');
+  });
 });
 
 describe('Textarea', () => {

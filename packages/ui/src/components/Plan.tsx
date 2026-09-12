@@ -57,7 +57,14 @@ export const Plan: Component<PlanRootProps> = (props) => {
   return (
     <PlanContext.Provider value={context}>
       <Collapsible open={isOpen()} onOpenChange={setIsOpen}>
-        <Card data-slot="plan" class={cn('mb-8 w-full overflow-hidden shadow-none', local.class)} {...rest}>
+        <Card
+          data-slot="plan"
+          class={cn(
+            'mb-8 w-full overflow-hidden rounded-12 border border-border-subtle bg-surface-overlay shadow-decision',
+            local.class,
+          )}
+          {...rest}
+        >
           {local.children}
         </Card>
       </Collapsible>

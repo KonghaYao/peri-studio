@@ -230,6 +230,110 @@
   --ui-exit-translate-y: calc(var(--motion-slide-sm) * -1);
 }
 
+/* ------------------------------------------------------------------ */
+/* Toast motion (Kobalte data-opened / data-closed + swipe gestures)   */
+/* ------------------------------------------------------------------ */
+
+@keyframes ui-toast-in-from-top {
+  from {
+    opacity: 0;
+    transform: translate3d(0, calc(var(--motion-toast-enter-offset) * -1), 0) scale(0.96);
+  }
+}
+
+@keyframes ui-toast-in-from-right {
+  from {
+    opacity: 0;
+    transform: translate3d(var(--motion-toast-enter-offset), 0, 0) scale(0.96);
+  }
+}
+
+@keyframes ui-toast-out {
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes ui-toast-out-to-top {
+  to {
+    opacity: 0;
+    transform: translate3d(0, calc(var(--motion-toast-enter-offset) * -1), 0) scale(0.96);
+  }
+}
+
+@keyframes ui-toast-out-to-right {
+  to {
+    opacity: 0;
+    transform: translate3d(var(--motion-toast-enter-offset), 0, 0) scale(0.96);
+  }
+}
+
+@keyframes ui-toast-swipe-out {
+  from {
+    transform: translate3d(var(--kb-toast-swipe-end-x, 0), var(--kb-toast-swipe-end-y, 0), 0);
+  }
+
+  to {
+    transform: translate3d(
+      calc(var(--kb-toast-swipe-end-x, 0px) + var(--kb-toast-swipe-exit-x, 0px)),
+      calc(var(--kb-toast-swipe-end-y, 0px) + var(--kb-toast-swipe-exit-y, 0px)),
+      0
+    );
+  }
+}
+
+.ui-toast-motion {
+  animation: ui-toast-out var(--duration-toast-out) var(--ease-overlay-out) forwards;
+}
+
+.ui-toast-motion[data-opened] {
+  animation: ui-toast-in-from-top var(--duration-toast-in) var(--ease-overlay-in) both;
+}
+
+.ui-toast-motion[data-closed] {
+  animation: ui-toast-out-to-top var(--duration-toast-out) var(--ease-overlay-out) both;
+}
+
+@media (min-width: 640px) {
+  .ui-toast-motion[data-opened] {
+    animation-name: ui-toast-in-from-right;
+  }
+
+  .ui-toast-motion[data-closed] {
+    animation-name: ui-toast-out-to-right;
+  }
+}
+
+.ui-toast-motion[data-swipe='move'] {
+  transform: translate3d(var(--kb-toast-swipe-move-x, 0), var(--kb-toast-swipe-move-y, 0), 0);
+}
+
+.ui-toast-motion[data-swipe='cancel'] {
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--duration-toast-swipe-cancel) var(--ease-overlay-out);
+}
+
+.ui-toast-motion[data-swipe='end'] {
+  animation: ui-toast-swipe-out var(--duration-toast-out) var(--ease-overlay-out) forwards;
+}
+
+.ui-toast-motion[data-swipe='end'][data-swipe-direction='right'] {
+  --kb-toast-swipe-exit-x: 100%;
+}
+
+.ui-toast-motion[data-swipe='end'][data-swipe-direction='left'] {
+  --kb-toast-swipe-exit-x: -100%;
+}
+
+.ui-toast-motion[data-swipe='end'][data-swipe-direction='up'] {
+  --kb-toast-swipe-exit-y: -100%;
+}
+
+.ui-toast-motion[data-swipe='end'][data-swipe-direction='down'] {
+  --kb-toast-swipe-exit-y: 100%;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-in,
   .animate-out,
@@ -247,7 +351,15 @@
   .ui-tooltip-motion[data-expanded],
   .ui-disclosure-motion[data-expanded],
   .ui-disclosure-motion[data-closed],
+  .ui-toast-motion,
+  .ui-toast-motion[data-opened],
+  .ui-toast-motion[data-closed],
+  .ui-toast-motion[data-swipe='end'],
   .ui-tooltip-animate {
     animation: none !important;
+  }
+
+  .ui-toast-motion[data-swipe='cancel'] {
+    transition: none !important;
   }
 }

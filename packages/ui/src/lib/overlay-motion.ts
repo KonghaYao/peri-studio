@@ -20,3 +20,6 @@ export const tooltipContentMotion = `ui-tooltip-motion ${motionSafe}`;
 
 /** 可折叠内容区（Reasoning / Tool / ChainOfThought）。 */
 export const disclosureContentMotion = `ui-disclosure-motion ${motionSafe}`;
+
+/** Toast 通知（Kobalte data-opened / data-closed）。 */
+export const toastContentMotion = `ui-toast-motion ${motionSafe}`;

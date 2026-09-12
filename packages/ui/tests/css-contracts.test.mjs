@@ -183,6 +183,7 @@ test('overlay motion recipes are defined', () => {
     'ui-surface-popover-motion',
     'ui-menu-surface-motion',
     'ui-panel-sheet-motion',
+    'ui-toast-motion',
     'animate-in',
     'animate-out',
   ]) {

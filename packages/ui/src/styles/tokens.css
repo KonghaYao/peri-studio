@@ -172,6 +172,9 @@
   --duration-surface-out: 140ms;
   --duration-panel-in: 320ms;
   --duration-panel-out: 240ms;
+  --duration-toast-in: 240ms;
+  --duration-toast-out: 180ms;
+  --duration-toast-swipe-cancel: 200ms;
   --ease-standard: cubic-bezier(0.645, 0.045, 0.355, 1);
   --ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
   --ease-overlay-in: cubic-bezier(0.16, 1, 0.3, 1);
@@ -184,6 +187,14 @@
   --motion-slide-md: var(--space-8);
   --motion-modal-enter-offset: var(--space-8);
   --motion-modal-exit-offset: var(--space-4);
+  --motion-toast-enter-offset: var(--space-12);
+  /* Kobalte Toast swipe 手势运行时写入；exit 偏移由 motion.css 按方向设置 */
+  --kb-toast-swipe-move-x: 0px;
+  --kb-toast-swipe-move-y: 0px;
+  --kb-toast-swipe-end-x: 0px;
+  --kb-toast-swipe-end-y: 0px;
+  --kb-toast-swipe-exit-x: 0px;
+  --kb-toast-swipe-exit-y: 0px;
   /* motion.css 组合动画内部变量（由 enter/exit 类在运行时覆盖） */
   --ui-enter-opacity: 1;
   --ui-exit-opacity: 1;

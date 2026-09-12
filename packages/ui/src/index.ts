@@ -53,7 +53,9 @@ export {
   ConfirmationTitle,
   type ConfirmationApproval,
 } from './components/Confirmation';
+export { DecisionCard, type DecisionOption } from './components/DecisionCard';
 export { Reasoning, ReasoningContent, ReasoningTrigger, useReasoning } from './components/Reasoning';
+export { TranscriptReasoning } from './components/TranscriptReasoning';
 export {
   InlineCitation,
   InlineCitationCard,
@@ -72,6 +74,7 @@ export {
 } from './components/InlineCitation';
 export { Suggestion, SuggestionItem, Suggestions } from './components/Suggestion';
 export { Source, SourceItem, Sources, SourcesContent, SourcesTrigger } from './components/Sources';
+export { ResourceCite } from './components/ResourceCite';
 export {
   Tool,
   ToolContent,
@@ -82,6 +85,7 @@ export {
   type ToolState,
   type ToolType,
 } from './components/Tool';
+export { ToolActivityGroup, ToolActivityRow, type ToolCallStatus } from './components/ToolActivity';
 export { Button, IconButton } from './components/Button';
 export { ButtonGroup, buttonGroupItemClass } from './components/ButtonGroup';
 export { CheckIcon, CodeIcon, CopyIcon, DownloadIcon, ErrorIcon, ExpandIcon, Icon, RefreshIcon } from './components/Icon';
