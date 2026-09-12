@@ -1,39 +1,24 @@
 import { Download } from 'lucide-solid';
-import { createMemo, For, Show, type JSX } from 'solid-js';
-import { CopyButton, IconButton } from '@/lib/catalog-ui';
+import { createMemo, type JSX } from 'solid-js';
+import {
+  CodeBlock,
+  CodeBlockActions,
+  CodeBlockCopyButton,
+  CodeBlockFilename,
+  CodeBlockHeader,
+  CodeBlockTitle,
+} from '@/components/code/CodeBlock';
+import { IconButton } from '@/lib/catalog-ui';
 import { downloadText, safeFilename } from './download';
 import { MathExpression } from './Math';
 import { MermaidBlock } from './MermaidBlock';
+import { markdownCodeFilename, parseMarkdownPreChild } from './parse-pre-child';
 
-type CodeElement = HTMLElement & { props?: Record<string, unknown> };
-
-const LANGUAGE_LABELS: Record<string, string> = {
-  bash: 'Bash', ts: 'TypeScript', typescript: 'TypeScript', tsx: 'TSX', js: 'JavaScript', javascript: 'JavaScript',
-  json: 'JSON', rust: 'Rust', rs: 'Rust', py: 'Python', python: 'Python', sh: 'Shell',
-  mermaid: 'Mermaid', math: 'Math', text: 'Plain text',
-};
-
-const EXTENSIONS: Record<string, string> = { javascript: 'js', typescript: 'ts', python: 'py', rust: 'rs', markdown: 'md' };
-
-function childDetails(child: unknown) {
-  const element = (Array.isArray(child) ? child[0] : child) as CodeElement | undefined;
-  const rawProps = element?.props || {};
-  const text = element instanceof HTMLElement ? element.textContent || '' : String(rawProps.children ?? child ?? '');
-  const className = element instanceof HTMLElement ? element.className : String(rawProps.class ?? '');
-  const language = className.match(/(?:language|lang)-([^\s]+)/)?.[1]?.toLowerCase() || 'text';
-  const attr = (name: string) => (element instanceof HTMLElement ? element.getAttribute(name) : rawProps[name]);
-  const startLine = Math.max(1, Number(attr('startLine') ?? attr('startline') ?? 1) || 1);
-  const lineNumbers = attr('noLineNumbers') == null && attr('nolinenumbers') == null;
-  const filename = String(attr('filename') ?? '').trim();
-  return { text: text.replace(/\n$/, ''), language, startLine, lineNumbers, filename };
-}
-
-export function CodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { streaming?: boolean; incomplete?: boolean }) {
-  const details = createMemo(() => childDetails(props.children));
+export function MarkdownCodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { streaming?: boolean; incomplete?: boolean }) {
+  const details = createMemo(() => parseMarkdownPreChild(props.children));
   const locked = () => props.streaming === true && props.incomplete === true;
-  const lines = () => details().text.split('\n');
-  const label = () => LANGUAGE_LABELS[details().language] || details().language;
-  const extension = () => EXTENSIONS[details().language] || details().language || 'txt';
+  const filename = () => markdownCodeFilename(details());
+  const downloadName = () => safeFilename(filename(), 'snippet.txt');
 
   if (details().language === 'math' && locked()) {
     return (
@@ -52,36 +37,30 @@ export function CodeBlock(props: JSX.HTMLAttributes<HTMLPreElement> & { streamin
   }
 
   return (
-    <div class="my-16 overflow-hidden rounded-lg border border-border-subtle bg-surface-overlay" data-incomplete={props.incomplete ? 'true' : undefined}>
-      <div class="flex min-h-36 items-center gap-8 border-b border-border-subtle px-8 py-4">
-        <span class="mr-auto flex min-w-0 items-center gap-8 text-12 text-content-secondary">
-          <strong class="font-medium">{label()}</strong>
-          <Show when={details().filename}><span class="truncate text-content-muted">{details().filename}</span></Show>
-        </span>
-        <CopyButton text={details().text} label="Copy code" disabled={locked()} />
-        <IconButton
-          size="sm"
-          label="Download code"
-          disabled={locked()}
-          onClick={() => downloadText(details().text, safeFilename(details().filename || `snippet.${extension()}`, 'snippet.txt'))}
-        >
-          <Download size={13} />
-        </IconButton>
-      </div>
-      <pre class="m-0 max-h-320 overflow-auto bg-surface-sunken py-12 font-mono text-12 leading-relaxed text-content-primary">
-        <code class="block min-w-max bg-transparent p-0">
-          <For each={lines()}>
-            {(line, index) => (
-              <span class="grid min-h-18 grid-cols-code-line px-14">
-                <Show when={details().lineNumbers}>
-                  <span class="mr-14 min-w-20 select-none text-right text-content-faint" aria-hidden="true">{details().startLine + index()}</span>
-                </Show>
-                <span class="whitespace-pre">{line}{index() < lines().length - 1 ? '\n' : ''}</span>
-              </span>
-            )}
-          </For>
-        </code>
-      </pre>
-    </div>
+    <CodeBlock
+      code={details().text}
+      language={details().language}
+      filename={filename()}
+      showLineNumbers={details().lineNumbers}
+      startLine={details().startLine}
+      data-incomplete={props.incomplete ? 'true' : undefined}
+    >
+      <CodeBlockHeader>
+        <CodeBlockTitle>
+          <CodeBlockFilename path={filename()} />
+        </CodeBlockTitle>
+        <CodeBlockActions>
+          <CodeBlockCopyButton disabled={locked()} />
+          <IconButton
+            size="sm"
+            label="Download code"
+            disabled={locked()}
+            onClick={() => downloadText(details().text, downloadName())}
+          >
+            <Download size={13} />
+          </IconButton>
+        </CodeBlockActions>
+      </CodeBlockHeader>
+    </CodeBlock>
   );
 }

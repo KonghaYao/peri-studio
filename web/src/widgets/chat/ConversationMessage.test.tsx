@@ -511,8 +511,8 @@ describe('Markdown', () => {
   it('provides highlighted code metadata, line numbers, copy and download controls', async () => {
     render(() => <Markdown source={'```ts startLine=7 filename=answer.ts\nconst answer: number = 42;\nconsole.log(answer);\n```'} />);
 
-    expect(screen.getByText('TypeScript')).toBeInTheDocument();
     expect(screen.getByText('answer.ts')).toBeInTheDocument();
+    expect(document.querySelector('[data-file-icon="typescript"]')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copy code' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Download code' })).toBeInTheDocument();
     expect(screen.getByText('7')).toHaveAttribute('data-testid', 'md-code-line-number');

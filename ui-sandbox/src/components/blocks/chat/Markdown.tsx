@@ -1,6 +1,6 @@
 import { astToJSX, parser, RuleType, type MarkdownToJSX, type SolidOptions, type SolidOverrides } from 'markdown-to-jsx/solid';
 import { createMemo, For, Show, splitProps, type Accessor, type JSX } from 'solid-js';
-import { CodeBlock } from './markdown/CodeBlock';
+import { MarkdownCodeBlock } from './markdown/CodeBlock';
 import { MathExpression } from './markdown/Math';
 import { SafeImage } from './markdown/SafeImage';
 import { endsInsideFence, prepareMarkdownSource } from './markdown/source';
@@ -52,7 +52,7 @@ export function Markdown(props: { source: string | Accessor<string>; class?: str
       a: { component: SafeLink },
       code: { component: (componentProps: JSX.HTMLAttributes<HTMLElement>) => <InlineCode {...componentProps} resolveMath={resolveMath} /> },
       img: { component: SafeImage },
-      pre: { component: (componentProps: JSX.HTMLAttributes<HTMLPreElement>) => <CodeBlock {...componentProps} streaming={props.streaming} incomplete={incomplete()} /> },
+      pre: { component: (componentProps: JSX.HTMLAttributes<HTMLPreElement>) => <MarkdownCodeBlock {...componentProps} streaming={props.streaming} incomplete={incomplete()} /> },
       table: { component: MarkdownTable },
     },
     tagfilter: true,
