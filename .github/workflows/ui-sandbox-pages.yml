@@ -1,0 +1,55 @@
+name: Deploy UI Sandbox to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ui-sandbox/**'
+      - 'packages/ui/**'
+      - 'bun.lock'
+      - 'package.json'
+      - '.github/workflows/ui-sandbox-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-ui-sandbox
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.8
+      - name: Install workspace dependencies
+        run: bun install --frozen-lockfile
+      - name: Typecheck UI sandbox
+        working-directory: ui-sandbox
+        run: bun run typecheck
+      - name: Build UI sandbox for GitHub Pages
+        working-directory: ui-sandbox
+        env:
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+        run: bun run build
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ui-sandbox/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
