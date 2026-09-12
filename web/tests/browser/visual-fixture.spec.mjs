@@ -401,6 +401,13 @@ test('sidebar sessions stay icon-free and quiet unless the selected session is l
   const loading = busyRow.getByTestId('session-loading-wave');
   await expect(loading).toBeVisible();
   await expect(loading.getByTestId('session-loading-wave-core')).toBeVisible();
+  const order = await busyRow.evaluate((row) => {
+    const wave = row.querySelector('[data-testid="session-loading-wave"]')?.getBoundingClientRect();
+    const copy = row.querySelector('[data-testid="session-copy"]')?.getBoundingClientRect();
+    return { waveLeft: wave?.left ?? 0, copyLeft: copy?.left ?? 0 };
+  });
+  expect(order.waveLeft).toBeGreaterThan(0);
+  expect(order.waveLeft).toBeLessThan(order.copyLeft);
 });
 
 test('machines panel lives in the global system dialog without horizontal overflow', async ({ page }) => {

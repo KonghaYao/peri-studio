@@ -5,6 +5,7 @@ import {
   ProjectRowAccessory,
   ProjectSidebarShell,
   SectionHeader,
+  SessionLiveIndicator,
   SessionRowAccessory,
   sidebarMistHintClass,
 } from '@peri/ui';
@@ -128,13 +129,15 @@ function SessionRow(props: {
       <div class="relative flex w-full min-w-0 items-center">
         <button
           type="button"
-          class="flex w-full min-w-0 items-center overflow-hidden rounded-md py-4 pl-5 pr-0 text-left pointer-coarse:py-6"
+          class="flex w-full min-w-0 items-center gap-6 overflow-hidden rounded-md py-4 pl-5 pr-0 text-left pointer-coarse:py-6"
           onClick={props.onClick}
         >
+          <Show when={props.session.live}>
+            <SessionLiveIndicator label="Agent is working" />
+          </Show>
           <span class="block min-w-0 w-full truncate text-13 leading-20 text-content-primary">{props.session.title}</span>
         </button>
         <SessionRowAccessory
-          live={props.session.live}
           unread={props.session.unread}
           pinned={props.session.pinned}
         />

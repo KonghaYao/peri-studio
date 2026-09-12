@@ -7,11 +7,12 @@ import {
   TextField,
   Button,
   cn,
+  SessionLiveIndicator,
+  SessionRowAccessory,
 } from '@peri/ui';
 import { Pencil } from 'lucide-solid';
 import { sessionDisplayTitle } from '@/features/session/recovery-state';
 import { runConfirmedMutation } from '@/features/session/form-mutation';
-import { SessionRowAccessory } from '@peri/ui';
 
 export interface SessionRowState {
   label: string;
@@ -109,7 +110,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
           data-sidebar="menu-button"
           data-active={props.selected ? 'true' : undefined}
           class={cn(
-            'flex w-full min-w-0 items-center overflow-hidden rounded-md bg-transparent py-4 pl-5 pr-0 text-left outline-none pointer-coarse:py-6',
+            'flex w-full min-w-0 items-center gap-6 overflow-hidden rounded-md bg-transparent py-4 pl-5 pr-0 text-left outline-none pointer-coarse:py-6',
             'focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2',
             'disabled:pointer-events-none disabled:opacity-45',
             props.selected && 'font-medium',
@@ -119,11 +120,12 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
           onClick={open}
           disabled={(props.readOnly && !props.session.activeChatId) || props.session.lifecycle !== 'ready' || props.navigationBusy}
         >
+          <Show when={loading()}>
+            <SessionLiveIndicator label={props.state.detail || props.state.label} />
+          </Show>
           <span data-testid="session-copy" class="block min-w-0 w-full truncate text-13 leading-20 text-content-primary">{displayTitle()}</span>
         </button>
         <SessionRowAccessory
-          live={loading()}
-          liveLabel={props.state.detail || props.state.label}
           pinned={props.pinned}
           readOnly={props.readOnly}
           menuOpen={props.menuOpen}

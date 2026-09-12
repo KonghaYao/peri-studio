@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import { showCatalogSection } from '@/catalog/catalog-section';
-import { ProjectRowAccessory, SessionRowAccessory, UserBubble, chatColumnClass } from '@peri/ui';
+import { ProjectRowAccessory, SessionLiveIndicator, SessionRowAccessory, UserBubble, chatColumnClass } from '@peri/ui';
 import { ChatHeader } from '@/components/blocks/chrome';
 import { Folder } from 'lucide-solid';
 import { ChatShellLayout, ChatTranscriptLayout } from '@/layers';
@@ -122,10 +122,11 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
             <SessionRowAccessory pinned actionsVisible />
           </div>
           <div class="group/row relative mt-4 min-h-36 rounded-md bg-sidebar-selected" data-selected="true">
-            <div class="flex min-h-36 items-center px-10">
+            <div class="flex min-h-36 items-center gap-6 px-10">
+              <SessionLiveIndicator label="Agent is working" />
               <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Design workspace state</span>
             </div>
-            <SessionRowAccessory live />
+            <SessionRowAccessory />
           </div>
         </div>
       </CatalogDemo>

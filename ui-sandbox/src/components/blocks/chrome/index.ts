@@ -5,6 +5,7 @@ export {
   ProjectRowActionGroup,
   RowAccessorySlot,
   SectionHeader,
+  SessionLiveIndicator,
   SessionRowAccessory,
   SidebarNavBar,
   type ArchivedBrowserItem,

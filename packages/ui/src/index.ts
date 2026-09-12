@@ -389,6 +389,7 @@ export {
   ProjectRowAccessory,
   ProjectRowActionGroup,
   SectionHeader,
+  SessionLiveIndicator,
   SessionRowAccessory,
   SidebarNavBar,
   type SidebarChromeMenuItem,

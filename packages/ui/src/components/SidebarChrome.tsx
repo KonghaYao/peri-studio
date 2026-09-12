@@ -106,10 +106,31 @@ export function SidebarNavBar(props: {
   );
 }
 
-/** Session 行右侧：live/unread 指示 + Pin / Archive / More 浮动按钮组。 */
+/** 会话忙碌指示：标题左侧呼吸点，不放在右侧 accessory，避免与 Pin/Archive 抢位。 */
+export function SessionLiveIndicator(props: { label?: string }) {
+  return (
+    <span
+      data-testid="session-loading-wave"
+      class="session-loading-wave relative flex size-6 shrink-0"
+      role="status"
+      aria-label={props.label}
+    >
+      <span
+        data-testid="session-loading-wave-halo"
+        class="session-loading-wave__halo absolute inline-flex size-full animate-ping rounded-full bg-success-solid opacity-30 motion-reduce:animate-none"
+        aria-hidden="true"
+      />
+      <span
+        data-testid="session-loading-wave-core"
+        class="session-loading-wave__core relative inline-flex size-6 rounded-full bg-success-solid"
+        aria-hidden="true"
+      />
+    </span>
+  );
+}
+
+/** Session 行右侧：unread 指示 + Pin / Archive / More 浮动按钮组。 */
 export function SessionRowAccessory(props: {
-  live?: boolean;
-  liveLabel?: string;
   unread?: boolean;
   pinned?: boolean;
   readOnly?: boolean;
@@ -180,25 +201,6 @@ export function SessionRowAccessory(props: {
       actionsVisible={actionsVisible()}
       meta={(
         <span class={cn(rowAccessoryMetaClass, 'flex items-center gap-6 pl-4 tabular-nums text-11 text-content-muted')}>
-          <Show when={props.live}>
-            <span
-              data-testid="session-loading-wave"
-              class="session-loading-wave relative flex size-6"
-              role="status"
-              aria-label={props.liveLabel}
-            >
-              <span
-                data-testid="session-loading-wave-halo"
-                class="session-loading-wave__halo absolute inline-flex size-full animate-ping rounded-full bg-success-solid opacity-30 motion-reduce:animate-none"
-                aria-hidden="true"
-              />
-              <span
-                data-testid="session-loading-wave-core"
-                class="session-loading-wave__core relative inline-flex size-6 rounded-full bg-success-solid"
-                aria-hidden="true"
-              />
-            </span>
-          </Show>
           <Show when={props.unread}>
             <span class="size-6 rounded-full bg-accent-solid" aria-label="Unread" />
           </Show>

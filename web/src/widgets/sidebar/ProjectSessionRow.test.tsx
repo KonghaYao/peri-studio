@@ -46,10 +46,13 @@ describe('ProjectSessionRow', () => {
     render(() => <ProjectSessionRow {...props({ state: { label: 'Agent is working', tone: 'busy' } })} />);
 
     const loading = screen.getByTestId('session-loading-wave');
+    const copy = screen.getByTestId('session-copy');
     expect(loading).toHaveAttribute('aria-label', 'Agent is working');
     expect(loading.querySelector('[data-testid="session-loading-wave-halo"]')).toHaveClass('animate-ping', 'motion-reduce:animate-none');
     expect(screen.getByTestId('session-loading-wave-core')).toHaveClass('bg-success-solid');
-    expect(screen.getByRole('button', { name: /^Architecture refactor/ }).querySelector(':scope > svg')).toBeNull();
+    expect(screen.getByRole('button', { name: /^Architecture refactor/ })).toContainElement(loading);
+    expect(loading.compareDocumentPosition(copy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(copy.querySelector(':scope > svg')).toBeNull();
     expect(screen.getByTestId('session-menu')).toBeInTheDocument();
     expect(screen.getByText('Architecture refactor')).toHaveClass('text-13', 'text-content-primary');
   });
