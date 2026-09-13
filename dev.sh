@@ -4,6 +4,36 @@ set -euo pipefail
 cd "$(dirname "$0")"
 ROOT="$(pwd)"
 
+# 从仓库根目录 .env 加载环境变量；不覆盖已在 shell 中导出的键。
+load_dotenv() {
+    local env_file="$1"
+    [ -f "${env_file}" ] || return 0
+
+    local line key value already_set
+    while IFS= read -r line || [ -n "${line}" ]; do
+        case "${line}" in
+            ''|'#'*) continue ;;
+        esac
+        if [[ "${line}" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+            key="${BASH_REMATCH[1]}"
+            value="${BASH_REMATCH[2]}"
+            case "${value}" in
+                \"*\") value="${value:1:${#value}-2}" ;;
+                \'*\') value="${value:1:${#value}-2}" ;;
+            esac
+            eval "already_set=\${${key}+x}"
+            if [ -z "${already_set}" ]; then
+                export "${key}=${value}"
+            fi
+        fi
+    done < "${env_file}"
+}
+
+if [ -f "${ROOT}/.env" ]; then
+    echo "==> 加载 ${ROOT}/.env"
+    load_dotenv "${ROOT}/.env"
+fi
+
 for REQUIRED_COMMAND in bun cargo grep tail lsof; do
     if ! command -v "${REQUIRED_COMMAND}" >/dev/null 2>&1; then
         echo "!! 缺少必需命令: ${REQUIRED_COMMAND}" >&2

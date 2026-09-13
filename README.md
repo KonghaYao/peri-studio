@@ -149,6 +149,8 @@ cargo run -q -p peri-studio -- token revoke <token_id>
 PERI_STUDIO_CONFIG_DIR=/path/to/config PERI_STUDIO_DATA_DIR=/path/to/data ./dev.sh
 ```
 
+也可在项目根目录放置 `.env`（已 gitignore）；`./dev.sh` 会自动加载，shell 里已导出的变量优先。
+
 `PERI_STUDIO_LISTEN_ADDR`/`PERI_STUDIO_LISTEN_PORT` 决定 server listener 和 Web 地址。
 `local` 与 `serve --local` 从实际绑定结果派生 loopback instance URL；`connect <URL>`
 则始终以显式 URL 为准。`https://host` 会规范化为 `wss://host/instance`；
