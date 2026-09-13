@@ -108,7 +108,8 @@ async fn process_exit_sets_terminal() {
         .cast::<yrs::MapRef>()
         .unwrap();
     assert_eq!(
-        sm.get(&txn, "loading").and_then(|value| value.cast::<bool>().ok()),
+        sm.get(&txn, "loading")
+            .and_then(|value| value.cast::<bool>().ok()),
         Some(false),
         "process_exit 必须清掉 Session Doc loading"
     );
