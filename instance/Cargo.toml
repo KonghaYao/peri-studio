@@ -34,7 +34,7 @@ base64 = { workspace = true }
 rand = { workspace = true }
 libc = { workspace = true }
 fs2 = { workspace = true }
-peri-studio-proto = { path = "../proto", version = "0.3.1" }
+peri-studio-proto = { path = "../proto", version = "0.3.2" }
 portable-pty = { workspace = true }
 agent-client-protocol-schema = { workspace = true }
 
