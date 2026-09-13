@@ -90,10 +90,12 @@ pub struct ChatRecord {
 impl ChatRecord {
     /// 归档与侧栏「运行中」权威：必须有存活证据，且不是 Gap。
     ///
-    /// Gap 保留 binding 以便恢复 open（§8.3），但进程已不在，不得阻止归档。
-    /// 未确认的 Accepting（视图重建）同样不算 live。
+    /// Gap / PendingClose 保留 binding 以便恢复或补发 kill（§7.6/§8.3），但进程
+    /// 已不在或正在关闭，不得阻止归档。未确认的 Accepting（视图重建）同样不算 live。
     pub fn has_live_runtime(&self) -> bool {
-        self.runtime_confirmed && !self.state.is_terminal() && self.state != ChatState::Gap
+        self.runtime_confirmed
+            && !self.state.is_terminal()
+            && !matches!(self.state, ChatState::Gap | ChatState::PendingClose)
     }
 }
 

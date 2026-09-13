@@ -153,6 +153,17 @@ export class CommandTracker<
   hasUncertain(commandId: string): boolean { return this.uncertain.has(commandId); }
   uncertainCount(): number { return this.uncertain.size; }
 
+  listUncertainFrames(): Array<{ commandId: string; type: string; payload: Record<string, unknown> }> {
+    return [...this.uncertain.entries()].map(([commandId, request]) => {
+      const frame = request.frame as F & { type?: string; payload?: Record<string, unknown> };
+      return {
+        commandId,
+        type: typeof frame.type === 'string' ? frame.type : '',
+        payload: frame.payload && typeof frame.payload === 'object' ? frame.payload : {},
+      };
+    });
+  }
+
   /** 仅显式声明的命令使用运行时投影进度续租静默窗口。 */
   touch(commandId: string): boolean {
     const tracked = this.pending.get(commandId);

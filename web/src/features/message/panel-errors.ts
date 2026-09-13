@@ -64,6 +64,20 @@ export function dismissPersistentError(id: number): void {
   });
 }
 
+export function dismissPersistentErrorByCommandId(commandId: string): boolean {
+  let removed = false;
+  deps!.setPersistentErrors((items) => {
+    const next = items.filter((item) => {
+      if (item.commandId !== commandId) return true;
+      removed = true;
+      return false;
+    });
+    return next;
+  });
+  if (removed) deps!.forget(commandId);
+  return removed;
+}
+
 export function retainPersistentErrors(items: PersistentError[], next: PersistentError): PersistentError[] {
   const merged = [...items.filter((item) => !next.commandId || item.commandId !== next.commandId), next];
   const protectedErrors = merged.filter((item) => item.retryable || item.retrying);

@@ -432,6 +432,7 @@ describe('ProjectSidebar registry hydration', () => {
       archivedAt: null,
     }]);
     store.selectedSessionId.mockReturnValue('acp-12345678');
+    store.selectedCid.mockReturnValue('chat-live');
     store.chatStatusSignal.mockReturnValue({ 'chat-live': 'accepting' });
     store.turnActive.mockReturnValue(true);
 
@@ -441,6 +442,30 @@ describe('ProjectSidebar registry hydration', () => {
     expect(store.toast).toHaveBeenCalledWith('This session is still loading. Close the running instance before archiving.');
     expect(store.archiveProjectSession).not.toHaveBeenCalled();
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('archives an idle runtime without treating accepting as still loading', () => {
+    store.archiveProjectSession.mockReturnValue(true);
+    store.projectSessions.mockReturnValue([{
+      id: 'acp-12345678',
+      projectId: 'p1',
+      title: 'Architecture refactor',
+      lifecycle: 'ready',
+      updatedAt: '2026-08-13T10:00:00Z',
+      lastOpenedAt: null,
+      activeChatId: 'chat-live',
+      archivedAt: null,
+    }]);
+    store.selectedSessionId.mockReturnValue('acp-12345678');
+    store.selectedCid.mockReturnValue('chat-live');
+    store.chatStatusSignal.mockReturnValue({ 'chat-live': 'accepting' });
+    store.turnActive.mockReturnValue(false);
+
+    render(() => <ProjectSidebar />);
+    fireEvent.click(screen.getByRole('button', { name: 'Archive session' }));
+
+    expect(store.toast).not.toHaveBeenCalled();
+    expect(store.archiveProjectSession).toHaveBeenCalledWith('acp-12345678', expect.any(Function), expect.any(Function));
   });
 
   it('archives a selected session whose leftover turn is stale after the runtime is gone', () => {

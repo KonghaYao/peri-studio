@@ -1,7 +1,7 @@
 // live runtime 状态集：终态（进程已结束）与 gap（§8.3 对账确认无进程
 // 存活证据——会话仍可恢复，但当前不视为运行中）。live 判定用于把会话投影
 // 的 activeChatId（ChatRegistry 运行态）过滤为「确实在运行」的 runtime hint。
-const TERMINAL_RUNTIME = new Set(['ended', 'closed', 'crashed', 'gap']);
+const TERMINAL_RUNTIME = new Set(['ended', 'closed', 'crashed', 'gap', 'pending_close']);
 
 /** Registry chat 是否仍有进程存活证据（与 `retainLiveRuntimeHints` 同一集合）。 */
 export function isLiveRuntimeStatus(status: string | null | undefined): boolean {

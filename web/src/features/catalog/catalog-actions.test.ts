@@ -136,4 +136,16 @@ describe('CatalogActions', () => {
       message: 'session has a running instance; close it before archiving',
     })).toBe(false);
   });
+
+  it('maps an already-archived archive rejection to a sync hint instead of a running-instance warning', () => {
+    const h = harness();
+    h.actions.setSessionArchived('s1', true);
+    const commandId = String(h.sent[0]?.frame.commandId);
+    expect(catalogOwnsArchiveInvalidState({
+      commandId,
+      code: 'INVALID_STATE',
+      message: 'active session not found',
+    })).toBe(true);
+    expect(h.deps.toast).toHaveBeenCalledWith('This session is no longer active. Wait for the sidebar to sync.');
+  });
 });

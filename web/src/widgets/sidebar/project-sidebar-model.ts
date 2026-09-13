@@ -3,6 +3,7 @@ import {
   archiveProject,
   archiveProjectSession,
   chatStatusSignal,
+  chatTurnActiveSignal,
   createProject,
   createProjectSession,
   creatingSessionProjectId,
@@ -23,6 +24,7 @@ import {
   renameProjectSession,
   restoreProject,
   restoreProjectSession,
+  selectedCid,
   selectedSessionId,
   toast,
   turnActive,
@@ -235,7 +237,9 @@ export function createProjectSidebarModel(intent: () => ProjectSidebarIntent | n
       activeChatId: session.activeChatId,
       openingSessionId: openingSessionId(),
       selectedSessionId: selectedSessionId(),
+      selectedChatId: selectedCid(),
       chatStatuses: chatStatusSignal(),
+      chatTurnActive: chatTurnActiveSignal(),
       selectedTurnActive: turnActive(),
     });
     if (loading) {

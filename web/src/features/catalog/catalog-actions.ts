@@ -47,11 +47,22 @@ const committed = (ack: CatalogAck) => ack.status === 'committed' || ack.status 
 const sessionArchiveCommands = new Set<string>();
 let toastArchiveBlock: ((message: string) => void) | null = null;
 
-/** session/archive 被 live runtime 拒绝时由目录模块消化，不进全局错误中心。 */
+function archiveInvalidStateToast(message: string | undefined): string {
+  const normalized = (message || '').toLowerCase();
+  if (normalized.includes('running instance') || normalized.includes('running session')) {
+    return 'Close the running instance before archiving this session.';
+  }
+  if (normalized.includes('not found') || normalized.includes('already archived')) {
+    return 'This session is no longer active. Wait for the sidebar to sync.';
+  }
+  return message?.trim() || 'Cannot archive this session right now.';
+}
+
+/** session/archive 的 INVALID_STATE 由目录模块消化，不进全局错误中心。 */
 export function catalogOwnsArchiveInvalidState(err: ActionError): boolean {
   if (err.code !== 'INVALID_STATE' || !err.commandId || !sessionArchiveCommands.has(err.commandId)) return false;
   sessionArchiveCommands.delete(err.commandId);
-  toastArchiveBlock?.('Close the running instance before archiving this session.');
+  toastArchiveBlock?.(archiveInvalidStateToast(err.message));
   return true;
 }
 

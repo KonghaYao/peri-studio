@@ -37,7 +37,8 @@ import { clearPromptRecoverySelection, requestPromptRecovery } from '@/features/
 import { closeTerminalBeforeTeardown, handleTerminalConnectionLost, installTerminalTransport } from '@/features/terminal/terminal-session';
 import { connectionReady, forgetRememberedSession, installConnection, promptMaxBytes, readRememberedSession, rememberSession, sendFrame } from '@/features/connection/connection';
 import { createRemoteDirectoryBrowsePorts } from '@/features/connection/remote-directory-ports';
-import { persistActionProblem, reportTransportIssue, type PersistentError } from '@/features/message/panel-errors';
+import { reconcileCatalogMutations } from '@/features/catalog/catalog-mutation-reconcile';
+import { dismissPersistentErrorByCommandId, persistActionProblem, reportTransportIssue, type PersistentError } from '@/features/message/panel-errors';
 import { sendMessage, type SessionConfigMutation } from '@/features/message/user-actions';
 import { chatAgentLoading as deriveChatAgentLoading } from '@/features/chat/chat-agent-loading';
 import { installChatSubscription, reconcileCurrentRuntimeControl, selectChat, sendSubscribe } from '@/features/connection/chat-subscription';
@@ -303,6 +304,15 @@ function reconcileSessionNavigation(sessions: ProjectSessionInfo[]): void {
   sessionActivation.reconcileCatalog(sessions);
 }
 
+function reconcileCatalogProjection(projects: ProjectInfo[], sessions: ProjectSessionInfo[]): void {
+  reconcileCatalogMutations(
+    projects,
+    sessions,
+    commands.listUncertainFrames(),
+    dismissPersistentErrorByCommandId,
+  );
+}
+
 installStoreProjection(
   store,
   () => currentCid,
@@ -331,6 +341,7 @@ installStoreProjection(
     const submission = messageSubmissionForChat(chatId);
     if (submission?.chatId === chatId) commands.touch(submission.commandId);
   },
+  reconcileCatalogProjection,
 );
 
 const catalogActions = new CatalogActions({

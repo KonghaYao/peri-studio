@@ -37,6 +37,7 @@ describe('retainLiveRuntimeHints', () => {
   it('treats ended/closed/crashed/gap as non-live runtime statuses', () => {
     expect(isLiveRuntimeStatus('accepting')).toBe(true);
     expect(isLiveRuntimeStatus('gap')).toBe(false);
+    expect(isLiveRuntimeStatus('pending_close')).toBe(false);
     expect(isLiveRuntimeStatus('ended')).toBe(false);
     expect(isLiveRuntimeStatus('closed')).toBe(false);
     expect(isLiveRuntimeStatus('crashed')).toBe(false);

@@ -44,6 +44,7 @@ export function installStoreProjection(
   reconcileSessionNavigation: (sessions: ProjectSessionInfo[]) => void,
   reconcileCurrentRuntimeControl: (control?: ControlView) => void,
   onRuntimeProgress: (chatId: string) => void,
+  onRegistryProjected?: (projects: ProjectInfo[], sessions: ProjectSessionInfo[]) => void,
 ): void {
   const chatProjection = new ChatProjection();
   const registryProjection = new RegistryProjection();
@@ -96,6 +97,7 @@ export function installStoreProjection(
       signals.setImportableSessions(unimportedSessions(registry.sessions, registry.projectSessions));
       signals.setRegistryHydrated(true);
       reconcileSessionNavigation(sessions);
+      onRegistryProjected?.(registry.projects, sessions);
       return;
     }
     const cid = currentCid();
