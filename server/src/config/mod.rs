@@ -34,6 +34,34 @@ pub const ENV_ALLOWLIST_BASE: [&str; 5] = ["PATH", "HOME", "LANG", "SHELL", "PER
 /// 默认配置文件相对路径（`~/.config/peri-studio/config.toml`，§16）。
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 
+/// 可进 Config 的密钥：`Debug` 恒为 `<redacted>`，禁止把真值打进日志。
+#[derive(Clone, PartialEq, Eq)]
+pub struct SecretString(String);
+
+impl SecretString {
+    pub fn new(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::str::FromStr for SecretString {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self::new(s))
+    }
+}
+
+impl std::fmt::Debug for SecretString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("<redacted>")
+    }
+}
+
 /// 配置错误（启动期 fail-fast 面）。
 #[derive(Debug, Error)]
 pub enum ConfigError {
@@ -108,6 +136,21 @@ pub struct CliOverrides {
         help = "ACP command and arguments, split on spaces"
     )]
     pub acp_cmd: Option<String>,
+    /// Realtime voice upstream base URL (http(s) or ws(s))
+    #[arg(
+        long = "realtime-voice-base-url",
+        env = "PERI_REALTIME_VOICE_BASE_URL",
+        help = "Realtime voice base URL"
+    )]
+    pub realtime_voice_base_url: Option<String>,
+    /// Realtime voice API key (Bearer). Never logged.
+    #[arg(
+        long = "realtime-voice-api-key",
+        env = "PERI_REALTIME_VOICE_API_KEY",
+        hide_env_values = true,
+        help = "Realtime voice API key"
+    )]
+    pub realtime_voice_api_key: Option<SecretString>,
 }
 
 /// §16 全表项。字段一律 snake_case（配置文件为内部格式，非线协议，不强制
@@ -170,6 +213,10 @@ pub struct Config {
     // ---- 日志（非 §16 表项，server 本地默认）----
     /// 日志级别，默认 "info"。
     pub log_level: String,
+    /// 实时语音上游 base URL（环境变量 `PERI_REALTIME_VOICE_BASE_URL`）。
+    pub realtime_voice_base_url: Option<String>,
+    /// 实时语音 API key（环境变量 `PERI_REALTIME_VOICE_API_KEY`，不得入日志）。
+    pub realtime_voice_api_key: Option<SecretString>,
 }
 
 impl Config {
@@ -201,7 +248,32 @@ impl Config {
             allow_non_loopback: false,
             acp_cmd: DEFAULT_ACP_CMD.iter().map(|s| s.to_string()).collect(),
             log_level: "info".to_string(),
+            realtime_voice_base_url: None,
+            realtime_voice_api_key: None,
         }
+    }
+
+    pub fn realtime_voice_enabled(&self) -> bool {
+        self.realtime_voice_base_url
+            .as_deref()
+            .is_some_and(|url| !url.trim().is_empty())
+    }
+
+    pub fn realtime_voice_client_config(&self) -> Option<peri_realtime_voice::VoiceConfig> {
+        let url = self.realtime_voice_base_url.as_deref()?.trim();
+        if url.is_empty() {
+            return None;
+        }
+        let mut config = peri_realtime_voice::VoiceConfig::new().with_url(url);
+        if let Some(key) = self
+            .realtime_voice_api_key
+            .as_ref()
+            .map(|key| key.as_str().trim())
+            .filter(|key| !key.is_empty())
+        {
+            config = config.with_token(key);
+        }
+        Some(config)
     }
 
     /// 加载管线：默认 < 配置文件 < env（clap 注入的 `CliOverrides` 值）< CLI 显式。

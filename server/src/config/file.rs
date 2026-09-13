@@ -93,6 +93,8 @@ pub(crate) struct FileConfig {
     pub(crate) allow_non_loopback: Option<bool>,
     pub(crate) acp_cmd: Option<Vec<String>>,
     pub(crate) log_level: Option<String>,
+    pub(crate) realtime_voice_base_url: Option<String>,
+    pub(crate) realtime_voice_api_key: Option<String>,
 }
 
 /// 读取配置文件（不存在 → [`ConfigError::MissingConfig`]；非法 → ParseConfig）。
@@ -189,6 +191,12 @@ impl Config {
         if let Some(v) = &f.log_level {
             self.log_level = v.clone();
         }
+        if let Some(v) = &f.realtime_voice_base_url {
+            self.realtime_voice_base_url = Some(v.clone());
+        }
+        if let Some(v) = &f.realtime_voice_api_key {
+            self.realtime_voice_api_key = Some(crate::config::SecretString::new(v.clone()));
+        }
     }
 
     /// CLI/env 层合并（clap `env` 注入的值已落入 `CliOverrides`，§3.2）。
@@ -211,6 +219,12 @@ impl Config {
         if let Some(v) = &cli.acp_cmd {
             // 空格拆分 argv（验收路径无空格；含空格路径请走 config.toml 数组）。
             self.acp_cmd = v.split_whitespace().map(ToOwned::to_owned).collect();
+        }
+        if let Some(v) = &cli.realtime_voice_base_url {
+            self.realtime_voice_base_url = Some(v.clone());
+        }
+        if let Some(v) = &cli.realtime_voice_api_key {
+            self.realtime_voice_api_key = Some(v.clone());
         }
     }
 }

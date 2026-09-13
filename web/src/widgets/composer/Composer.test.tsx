@@ -92,7 +92,10 @@ function installPrediction(id = 'prediction:1:7', text = 'check failure test') {
   });
 }
 
-afterEach(resetStore);
+afterEach(() => {
+  vi.unstubAllGlobals();
+  resetStore();
+});
 
 describe('Composer', () => {
   it('uses the shared compact composer geometry in the production surface', () => {
@@ -655,5 +658,16 @@ describe('Composer', () => {
     Object.defineProperty(drop, 'stopPropagation', { value: stopPropagation });
     surface.dispatchEvent(drop);
     expect(preventDefault).toHaveBeenCalled();
+  });
+
+  it('shows the dictation control only after health reports realtime voice', async () => {
+    selectReadyChat();
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ realtimeVoice: true }),
+    })));
+    mountComposer();
+    expect(await screen.findByTestId('composer-mic')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Dictate' })).toBeEnabled();
   });
 });

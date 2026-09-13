@@ -789,6 +789,7 @@ export {
 export { SlashMenuListbox, type SlashMenuListboxProps } from './components/composer/SlashMenuListbox';
 export {
   ComposerAttachmentButton,
+  ComposerMicButton,
   ComposerPredictionButton,
   ComposerSendStopAction,
   ComposerSkillsButton,

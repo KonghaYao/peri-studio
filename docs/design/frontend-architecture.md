@@ -57,6 +57,7 @@ web/src/
     session/                # activation, navigator, preferences, sidebar-order
     catalog/                # catalog-actions, project-catalog
     composer/               # slash-menu, composer-slash, prediction, draft, placeholder
+    voice/                  # 同源 /voice 口述：capability、PCM、dictation（无 store）
     message/                # delivery, recovery, follow
     runtime/                # control, permissions, elicitations, rewind
     connection/             # ws-client, connection, command-tracker

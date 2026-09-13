@@ -75,6 +75,9 @@ pub struct HealthSnapshot {
     pub server_version: String,
     #[serde(default)]
     pub machines: Vec<HealthMachineSummary>,
+    /// 已配置实时语音上游（不含 URL / key）。
+    #[serde(default)]
+    pub realtime_voice: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -115,6 +118,7 @@ impl HealthSnapshot {
             protocol_version: PROTOCOL_VERSION,
             server_version: env!("CARGO_PKG_VERSION").to_string(),
             machines: machines.into_iter().collect(),
+            realtime_voice: false,
         }
     }
 }

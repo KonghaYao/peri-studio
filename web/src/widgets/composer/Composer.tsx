@@ -1,11 +1,12 @@
 // 发送窗口（Composer）：输入区 + 底部工具行（ui.md §3.8 / §四.7）。
 // 编排与 store 接线留在此；视觉组件来自 @peri/ui，业务映射在 features。
 
-import { createSignal, Show, type Component, type JSX } from 'solid-js';
+import { createSignal, onCleanup, onMount, Show, type Component, type JSX } from 'solid-js';
 import {
   Button,
   type ComposerAttachmentItem,
   ComposerInputField,
+  ComposerMicButton,
   ComposerPlusMenu,
   ComposerQueue,
   ComposerSendStopAction,
@@ -25,6 +26,8 @@ import { ComposerUploadSurface, openComposerUploadFilePicker } from './ComposerU
 import { ComposerMetaRow } from './ComposerMetaRow';
 import { useComposerState, type ComposerState } from './useComposerState';
 import { selectedSessionId } from '@/store';
+import { fetchVoiceCapability } from '@/features/voice/capability';
+import { startDictation, type DictationSession } from '@/features/voice/dictation';
 
 type ComposerMessageFieldProps = {
   ctx: ComposerShellFieldContext;
@@ -134,10 +137,46 @@ export function Composer(props: {
 }) {
   const centered = () => props.layout === 'centered';
   const [plusOpen, setPlusOpen] = createSignal(false);
+  const [voiceEnabled, setVoiceEnabled] = createSignal(false);
+  const [dictating, setDictating] = createSignal(false);
   let taRef: HTMLTextAreaElement | undefined;
   let composerSurfaceRef: HTMLDivElement | undefined;
+  let dictation: DictationSession | null = null;
   const state = useComposerState(() => taRef);
   const plusCatalogItems = () => filterCommandCatalog(state.commandCatalog(), '', 'all');
+
+  onMount(() => {
+    void fetchVoiceCapability().then((capability) => setVoiceEnabled(capability.enabled));
+  });
+  onCleanup(() => {
+    dictation?.stop();
+    dictation = null;
+  });
+
+  const toggleDictation = () => {
+    if (dictation) {
+      dictation.stop();
+      dictation = null;
+      setDictating(false);
+      return;
+    }
+    void startDictation(
+      {
+        getDraft: () => state.composerDraft(state.draftOwner()),
+        setDraft: (text) => state.setComposerDraft(state.draftOwner(), text),
+      },
+      (sessionState) => setDictating(sessionState !== 'idle'),
+      () => {
+        dictation = null;
+        setDictating(false);
+      },
+    ).then((session) => {
+      dictation = session;
+    }).catch(() => {
+      dictation = null;
+      setDictating(false);
+    });
+  };
 
   const focusInput = () => {
     taRef?.focus();
@@ -255,6 +294,13 @@ export function Composer(props: {
         )}
         compactTrailing={(
           <>
+            <Show when={voiceEnabled()}>
+              <ComposerMicButton
+                listening={dictating()}
+                disabled={state.inputDisabled()}
+                onClick={toggleDictation}
+              />
+            </Show>
             <div class={composerRuntimeSlotClass} title={state.runtimeSummary()}>
               {runtimeMenu()}
             </div>

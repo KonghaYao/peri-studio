@@ -200,8 +200,9 @@ Composer 草稿由独立 IndexedDB store 以 `{principalId, projectId, acpSessio
 | server 角色 | `server/`（库） | 认证、HTTP 面与静态托管、控制面、ACPChannel 规范化、聚合器、DocManager、instance 注册表、SQLite 元数据、【v2.16】`MachineService` | `peri-studio serve`；`--local` 要求同时拉起本地 instance |
 | instance 角色 | `instance/`（库） | outbound 连 server（`/instance`）、收 spawn/kill/forward 指令、管理 ACP 进程树、透明转发 + 断线缓冲 | `peri-studio connect <URL>`；child 进程组 + fingerprint 孤儿清理（§3.3） |
 | Web 面板 | `web/` + `packages/ui/` | SolidJS 分层视图：Yjs 只读投影渲染 + Action/Ack 操作；`@peri/ui` 提供共享 T1/T2 | 构建产物经 Vite 生成 `web/dist`，**不单独部署**；原规划 `peri-studio-tui` 未实现 |
+| realtime-voice | `realtime-voice/`（`peri-realtime-voice`） | typeless JSON + `pcm_s16le` 客户端；server 经 `/voice` 异步代理 | 探测 CLI `realtime-voice` 不进入发布物；Web Composer 口述；契约见 [realtime-voice.md](design/realtime-voice.md) |
 
-共享 crate：`peri-studio-proto`（帧定义、Action/Ack 信封、instance 协议类型、HMAC 原语、Y.Doc schema 的 Rust 类型镜像、schema registry）。`app` 可依赖 server 与 instance；server 与 instance 仍互不依赖，只共享 proto。
+共享 crate：`peri-studio-proto`（帧定义、Action/Ack 信封、instance 协议类型、HMAC 原语、Y.Doc schema 的 Rust 类型镜像、schema registry）。`app` 可依赖 server 与 instance；server 与 instance 仍互不依赖，只共享 proto。server 以 `default-features = false` 依赖 `peri-realtime-voice`（不链麦克风采集）。
 
 > 裁决依据：发布与安装只需一个文件，但 P3 要求 server crash 不中断 agent。因此合并的是**发布物**，不是**故障域**；详见 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)。
 
@@ -1238,7 +1239,7 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 | `AuthGate` + auth-state | `widgets/auth` + `features/auth` | `/api/auth/session` | 浏览器认证门（§3.0） |
 | `ProjectSidebar` + catalog | `widgets/sidebar` + `features/catalog` | Registry Doc + IndexedDB 偏好 | 左栏目录（§3.0） |
 | `ChatView` / `MessageList` / `ConversationMessage` / `ToolCallActivity` | `widgets/chat` + `entities/chat` + `features/chat` | Chat Doc + Control Doc | 投影见 `chat-projection`、`transcript-window`；列表仅复用 `@peri/ui` MessageScroller 外壳（见 [`web-ui-deferrals.md`](design/web-ui-deferrals.md)）；工具卡见 `tool-call-activity.ts`（§3.0） |
-| `Composer` + 投递/草稿 | `widgets/composer/Composer.tsx` + `features/composer` + `features/message` | Chat Doc + command tracker + IndexedDB | 内联 editor/toolbar + `@peri/ui` `SlashMenuListbox`；草稿隔离；session single-flight（§3.0） |
+| `Composer` + 投递/草稿 | `widgets/composer/Composer.tsx` + `features/composer` + `features/message` + `features/voice` | Chat Doc + command tracker + IndexedDB；口述走同源 `/voice` | 内联 editor/toolbar + `@peri/ui` `SlashMenuListbox`；草稿隔离；session single-flight（§3.0）；麦克风仅在 health `realtimeVoice` 为真时出现 |
 | `PermissionQueue` / `ElicitationQueue` | `widgets/chat` + `features/message` | Control Doc | 权限与追问；壳层 `@peri/ui` `QuestionnaireFrame`（§3.0） |
 | `RewindDialog` / `McpPanel` / `TopologyView` 等 | `widgets/chat` | Control Doc / 查询帧 | rewind（§6.2）、MCP、拓扑 |
 | `ErrorCenter` + 连接状态 | `widgets/shell` + `features/connection` | ws 生命周期 | 连接世代、错误中心（§3.0） |
@@ -1297,7 +1298,8 @@ peri-studio/
 │   │                     #   mcp-control* / oauth-control / oauth-command-ledger（§6.2 peri.oauth）、
 │   │                     #   elicitation-response*（一次性投递）、turn-cancellation、
 │   │                     #   relay-event-handler / relay-{events,rpc,permission,disconnect,buffer-sync}（instance 入站）、
-│   │                     #   broadcaster（fan-out+背压）、connection-registry（配额）、terminal-io
+│   │                     #   broadcaster（fan-out+背压）、connection-registry（配额）、terminal-io、
+│   │                     #   voice-proxy（cookie `/voice` → 上游 typeless realtime，不经 command coordinator）
 │   ├── src/control/      # hub（装配）/ chat-registry / chat-{binding,reconcile,turns} / instance-registry /
 │   │                     #   instance-commands / heartbeat / close-codes / project-service（reproject）/ workspace-registry / hub-sink
 │   ├── src/persist/      # metadata*.rs（metadata.sqlite3 唯一落盘，migrations V1–V6）、
@@ -1306,6 +1308,8 @@ peri-studio/
 │   ├── src/web/          # http（loopback HTTP 面）/ auth-http（/api/auth/session）/ static（内嵌资源+缓存策略）/ parse
 │   ├── src/config/       # config.toml + CLI/env 覆盖（§16 默认值）
 │   └── tests/            # contract（auth）/ integration / product-flow / resilience
+├── realtime-voice/        # peri-realtime-voice：typeless realtime 客户端（PCM/ws）；
+│                         #   server 以 default-features=false 接入；探测 CLI 不进入 peri-studio 发布物
 ├── instance/              # instance 运行时库（无独立发布二进制）：child（进程组+fingerprint）/ buffer（断线缓冲+watermark）/
 │                         #   transport（重连循环）/ hub（daemon 主循环）/ auth / router / global；tests/child_test.rs
 ├── web/                   # SolidJS SPA（§10.2）：app / pages / widgets / features / entities / shared / store；
@@ -1352,9 +1356,9 @@ peri-studio/
   重启自行重连。模板不包含 token，也不扩大 loopback listener；凭据文件
   必须由运维者以 `0600` 权限提供。
 - `GET /api/health` 是受 loopback peer + 严格 Host 双门禁保护的无凭据 liveness：所有
-  已运行状态返回 HTTP 200，正文含 `status/ready/protocolVersion/serverVersion` 与
+  已运行状态返回 HTTP 200，正文含 `status/ready/protocolVersion/serverVersion`、
   credential-free `machines[]`（`instanceId`/`displayName`/`phase`/`kind`，来自 Registry
-  投影）；`ready=true` 只对应 `GlobalStatus::Healthy`。`peri-studio status` 探测 liveness，
+  投影）与 `realtimeVoice`（是否已配置上游，不含 URL/key）；`ready=true` 只对应 `GlobalStatus::Healthy`。`peri-studio status` 探测 liveness，
   `status --ready` 为 degraded/restarting 返回非零，`--json` 经同源 health 提供稳定机器输出。
 - 日志继续只写 stderr。systemd 交由 journald 限额；launchd 文件输出可使用
   `deploy/logrotate/peri-studio` 的外部轮转模板，不在应用内删除或重命名活跃日志。
@@ -1437,7 +1441,7 @@ peri-studio/
 
 ## 16. 配置（新增章节）【审查：运维 P1-2】
 
-配置来源优先级：**CLI > 环境变量（`PERI_STUDIO_*` 前缀，如 `PERI_STUDIO_LISTEN_ADDR` / `PERI_STUDIO_LISTEN_PORT` / `PERI_STUDIO_DATA_DIR` / `PERI_STUDIO_CONFIG_DIR` / `PERI_STUDIO_ACP_CMD`）> 配置文件（`~/.config/peri-studio/config.toml`）> 默认值**。远程 instance 的 server 地址由 `connect <URL>` 显式提供，凭据路径可由 `PERI_STUDIO_TOKEN_FILE` 注入；不再存在独立 daemon 的隐式默认远程地址。【v2.7】环境变量由 clap `env` 注入，与 CLI flag 同名映射。
+配置来源优先级：**CLI > 环境变量（`PERI_STUDIO_*` 前缀，如 `PERI_STUDIO_LISTEN_ADDR` / `PERI_STUDIO_LISTEN_PORT` / `PERI_STUDIO_DATA_DIR` / `PERI_STUDIO_CONFIG_DIR` / `PERI_STUDIO_ACP_CMD`；实时语音为 `PERI_REALTIME_VOICE_BASE_URL` / `PERI_REALTIME_VOICE_API_KEY`）> 配置文件（`~/.config/peri-studio/config.toml`）> 默认值**。远程 instance 的 server 地址由 `connect <URL>` 显式提供，凭据路径可由 `PERI_STUDIO_TOKEN_FILE` 注入；不再存在独立 daemon 的隐式默认远程地址。【v2.7】环境变量由 clap `env` 注入，与 CLI flag 同名映射。
 
 | 项 | 默认值 | 说明 |
 |----|--------|------|
@@ -1460,6 +1464,7 @@ peri-studio/
 | 缓冲环形滑窗 | 500 条 | §8.5 |
 | spawn env 白名单 | 空（仅继承基集） | §9.6；键名白名单，白名单外拒绝 |
 | 非回环监听开关 | `allow_non_loopback: false` | §9.5；显式声明才接受非回环连接 |
+| 实时语音上游 | 无（未配置则关闭） | `PERI_REALTIME_VOICE_BASE_URL` / `PERI_REALTIME_VOICE_API_KEY`；API key 不得进日志或 health；见 [realtime-voice.md](design/realtime-voice.md) |
 
 （开放问题 1 由此表解决，删除 v2.0 中「5s/30s 先固定」的表述矛盾。）
 

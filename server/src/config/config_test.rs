@@ -465,3 +465,109 @@ fn xdg_dir_resolution() {
         PathBuf::from("/tmp/xdg-data/peri-studio")
     );
 }
+
+#[test]
+#[serial]
+fn realtime_voice_clap_reads_env() {
+    use crate::config::SecretString;
+    use clap::{Args, Command, FromArgMatches};
+
+    std::env::set_var(
+        "PERI_REALTIME_VOICE_BASE_URL",
+        "https://from-process-env.example/v1",
+    );
+    std::env::set_var("PERI_REALTIME_VOICE_API_KEY", "process-env-secret");
+    let command = <CliOverrides as Args>::augment_args(Command::new("test"));
+    let matches = command.try_get_matches_from(["test"]).unwrap();
+    let cli = CliOverrides::from_arg_matches(&matches).unwrap();
+    std::env::remove_var("PERI_REALTIME_VOICE_BASE_URL");
+    std::env::remove_var("PERI_REALTIME_VOICE_API_KEY");
+
+    let home = tempdir().unwrap();
+    let cfg = Config::load(
+        &CliOverrides {
+            config_dir: Some(home.path().join("config")),
+            data_dir: Some(home.path().join("data")),
+            realtime_voice_base_url: cli.realtime_voice_base_url,
+            realtime_voice_api_key: cli.realtime_voice_api_key,
+            ..Default::default()
+        },
+        None,
+    )
+    .unwrap();
+    let voice = cfg.realtime_voice_client_config().expect("voice config");
+    assert_eq!(
+        voice.endpoint().unwrap(),
+        "wss://from-process-env.example/v1"
+    );
+    assert_eq!(voice.token.as_deref(), Some("process-env-secret"));
+    assert_eq!(
+        format!("{:?}", SecretString::new("process-env-secret")),
+        "<redacted>"
+    );
+}
+
+#[test]
+fn realtime_voice_env_injects_base_url_and_redacts_api_key() {
+    use crate::config::SecretString;
+
+    let home = tempdir().unwrap();
+    let cli = CliOverrides {
+        realtime_voice_base_url: Some("https://voice.example/v1/realtime".into()),
+        realtime_voice_api_key: Some(SecretString::new("super-secret")),
+        ..cli_with_dirs(home.path())
+    };
+    let cfg = Config::load(&cli, None).unwrap();
+    assert!(cfg.realtime_voice_enabled());
+    let voice = cfg.realtime_voice_client_config().expect("voice config");
+    assert_eq!(voice.endpoint().unwrap(), "wss://voice.example/v1/realtime");
+    assert_eq!(voice.token.as_deref(), Some("super-secret"));
+    let leaked = format!("{cfg:?}");
+    assert!(
+        !leaked.contains("super-secret"),
+        "api key must not appear in Debug: {leaked}"
+    );
+    assert_eq!(
+        format!("{:?}", SecretString::new("super-secret")),
+        "<redacted>"
+    );
+}
+
+#[test]
+#[serial]
+fn realtime_voice_file_then_cli_env() {
+    use crate::config::SecretString;
+
+    let home = tempdir().unwrap();
+    let cfg_dir = home.path().join("config");
+    std::fs::create_dir_all(&cfg_dir).unwrap();
+    write_config(
+        &cfg_dir,
+        r#"
+realtime_voice_base_url = "https://from-file.example/v1"
+realtime_voice_api_key = "file-secret"
+"#,
+    );
+    let from_file = Config::load(&cli_with_dirs(home.path()), None).unwrap();
+    assert_eq!(
+        from_file.realtime_voice_base_url.as_deref(),
+        Some("https://from-file.example/v1")
+    );
+    assert_eq!(
+        from_file
+            .realtime_voice_api_key
+            .as_ref()
+            .map(SecretString::as_str),
+        Some("file-secret")
+    );
+
+    let cli = CliOverrides {
+        realtime_voice_base_url: Some("https://from-env.example/v1".into()),
+        realtime_voice_api_key: Some(SecretString::new("env-secret")),
+        ..cli_with_dirs(home.path())
+    };
+    let cfg = Config::load(&cli, None).unwrap();
+    let voice = cfg.realtime_voice_client_config().expect("voice config");
+    assert_eq!(voice.endpoint().unwrap(), "wss://from-env.example/v1");
+    assert_eq!(voice.token.as_deref(), Some("env-secret"));
+}

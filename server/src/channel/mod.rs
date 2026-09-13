@@ -81,6 +81,7 @@ mod session_runtime_operations;
 mod spawn_env;
 mod terminal_io;
 mod turn_cancellation;
+mod voice_proxy;
 mod workspace_compatibility;
 
 /// Default locally attached ACP instance.

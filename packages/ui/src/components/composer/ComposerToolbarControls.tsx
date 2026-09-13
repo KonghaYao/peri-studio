@@ -1,4 +1,4 @@
-import { ArrowUp, Check, Plus, ScanLine, SendHorizontal } from 'lucide-solid';
+import { ArrowUp, Check, Mic, Plus, ScanLine, SendHorizontal } from 'lucide-solid';
 import { Show, splitProps, type Component } from 'solid-js';
 import { cn } from '../../lib/cn';
 import { Button, IconButton } from '../Button';
@@ -9,6 +9,28 @@ const sendActionClass =
 
 const stopActionClass =
   'ui-composer-action ui-composer-action--stop flex w-36 min-h-36 shrink-0 items-center justify-center rounded-8 max-narrow:w-48 max-narrow:min-h-44';
+
+export const ComposerMicButton: Component<{
+  listening?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}> = (props) => (
+  <IconButton
+    data-testid="composer-mic"
+    label={props.listening ? 'Stop dictation' : 'Dictate'}
+    title={props.listening ? 'Stop dictation' : 'Dictate'}
+    disabled={props.disabled}
+    class="shrink-0 border-0 bg-transparent text-content-primary disabled:opacity-55"
+    onClick={props.onClick}
+  >
+    <Mic
+      size={18}
+      strokeWidth={1.7}
+      class={props.listening ? 'text-accent' : undefined}
+      aria-hidden="true"
+    />
+  </IconButton>
+);
 
 export const ComposerAttachmentButton: Component<{
   disabled?: boolean;

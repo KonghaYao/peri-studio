@@ -1,0 +1,34 @@
+[package]
+name = "peri-realtime-voice"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Typeless realtime voice client (PCM over WebSocket)"
+publish = false
+
+[lib]
+name = "peri_realtime_voice"
+path = "src/lib.rs"
+
+[[bin]]
+name = "realtime-voice"
+path = "src/main.rs"
+required-features = ["mic"]
+
+[features]
+default = ["mic"]
+mic = ["dep:cpal"]
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+cpal = { workspace = true, optional = true }
+dirs-next = { workspace = true }
+futures = { workspace = true }
+hound = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-tungstenite = { workspace = true }
+uuid = { workspace = true }

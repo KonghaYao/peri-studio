@@ -25,6 +25,7 @@ Peri Studio 是 ACP agent 的持久 Web 工作台（仓库名 peri-studio，产�
 - `proto/`（peri-studio-proto）：共享协议 crate——ws 帧、HMAC 双向认证、RPC schema、Yjs 同步，三端共用的事实源
 - `server/`（peri-studio-server library）：中心控制面运行时，模块按职责拆分：`auth`（token/审计）、`channel`（命令协调、runtime 生命周期、catalog 同步）、`control`（registry、心跳）、`persist`（SQLite、outbox）、`protocol`（ACP 通道）、`state`、`web`；`build.rs` 编译期内嵌 `web/dist` 产物
 - `instance/`（peri-instance library）：运行 ACP 子进程的宿主运行时；仅测试辅助二进制 `test-child` 独立存在
+- `realtime-voice/`（`peri-realtime-voice`）：厂商无关实时语音客户端；server 经 cookie 认证的 `/voice` 异步代理上游。环境变量 `PERI_REALTIME_VOICE_BASE_URL` / `PERI_REALTIME_VOICE_API_KEY`。权威说明见 `docs/design/realtime-voice.md`
 - `web/`：SolidJS 单页 SPA（**五层目录**：`app` / `pages` / `widgets` / `features` / `entities` / `shared` + `store`；权威规范见 `docs/design/frontend-architecture.md` 与根目录 `AGENTS.md`）。`panel/` 已删除，禁止恢复兼容 shim
 - `packages/ui/`：私有 buildless workspace package `@peri/ui`，统一拥有 T1 token、Tailwind theme、T2 Base UI、T3 复合块与 `cn`（详见 `docs/design/t3-blocks-in-ui-package.md`）
 - `ui-sandbox/`：手写 UI Catalog（Tokens / Components / Blocks / Layers），消费 `@peri/ui`；与 `web/` 构建隔离，**新 UI 须先在此定稿**再镜像生产（见 `docs/design/ui-package-migration.md`）
@@ -66,7 +67,10 @@ cd ../../ui-sandbox && bun run typecheck && bun run build
 cargo test -p peri-studio-proto
 cargo test -p peri-studio-server --lib
 cargo test -p peri-instance
+cargo test -p peri-realtime-voice
 cargo clippy --workspace --all-targets -- -D warnings   # 必须零告警
+# 隔离探测 CLI（不进入 peri-studio 发布物）
+cargo run -q -p peri-realtime-voice -- mic --url wss://voice.example/realtime
 
 # 唯一产品 CLI
 cargo run -q -p peri-studio -- local

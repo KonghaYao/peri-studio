@@ -36,7 +36,7 @@ T3 组件必须：
 | `ComposerAttachmentList` | 附件列表 |
 | `ComposerQueue` | 排队消息条 |
 | `SlashMenu` / `SlashMenuListbox` | Slash 命令菜单 |
-| `ComposerAttachmentButton` / `ComposerPredictionButton` / `ComposerSendStopAction` / `ComposerSkillsButton` | 工具栏控件 |
+| `ComposerAttachmentButton` / `ComposerMicButton` / `ComposerPredictionButton` / `ComposerSendStopAction` / `ComposerSkillsButton` | 工具栏控件 |
 | `UploadAssetTile` | 上传资源 tile |
 | `TokenUsageMeter` | Token 用量指示 |
 

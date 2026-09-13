@@ -18,6 +18,7 @@
 | **`@peri/ui` 设计系统包、移除 `shared/ui`（一步到位）** | **`docs/design/ui-package-migration.md`（权威）** |
 | **T3 复合块清单、T4 装配、Markdown/高亮归属** | **`docs/design/t3-blocks-in-ui-package.md`（权威）** |
 | Web 分层 ADR | `docs/adr/0004-web-frontend-layered-architecture.md` |
+| Realtime voice（`/voice` 代理 + Composer 口述） | `docs/design/realtime-voice.md` |
 | MCP Apps 宿主 | `docs/design/mcp-apps-host.md` |
 
 ---
@@ -210,6 +211,7 @@ web/base.css
 - 副作用与 `commandId` 幂等见 `architecture.md` §3.0；token 不得进代码、日志或 issue。
 - 常用验证：`cargo test -p peri-studio-server --lib`、`cd web && bun run test`；
   `./dev.sh` 仅由用户手动执行。
+- `realtime-voice/`：typeless JSON + PCM。server 只做 `/voice` 异步代理；URL / API key 走 `PERI_REALTIME_VOICE_BASE_URL` / `PERI_REALTIME_VOICE_API_KEY`，不得进日志或 health。契约见 `docs/design/realtime-voice.md`。
 
 ## Commit 与文档
 

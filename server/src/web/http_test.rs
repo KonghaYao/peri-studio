@@ -195,8 +195,9 @@ async fn health_is_credential_free_liveness_with_explicit_readiness() {
             .as_object()
             .unwrap()
             .len(),
-        5
+        6
     );
+    assert!(!snapshot.realtime_voice);
     assert!(snapshot.machines.is_empty());
     assert!(!body.contains("token"));
     assert!(!body.contains("path"));

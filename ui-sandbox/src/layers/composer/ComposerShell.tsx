@@ -1,4 +1,5 @@
 import {
+  ComposerMicButton,
   ComposerPlusMenu,
   ComposerQueue,
   ComposerSendStopAction,
@@ -89,6 +90,7 @@ export function ComposerShell(props: {
               disabled={props.disabled}
             />
           </div>
+          <ComposerMicButton listening={false} disabled={props.disabled} onClick={() => {}} />
           <ComposerSendStopAction
             mode={props.streaming ? 'stop' : 'send'}
             label={props.streaming ? 'Stop' : 'Send'}

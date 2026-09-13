@@ -170,7 +170,10 @@ impl Gateway {
         } else {
             Vec::new()
         };
-        crate::web::HealthSnapshot::from_runtime(self.registry.global_status(), machines)
+        let mut snapshot =
+            crate::web::HealthSnapshot::from_runtime(self.registry.global_status(), machines);
+        snapshot.realtime_voice = self.cfg.realtime_voice_enabled();
+        snapshot
     }
 
     /// accept 循环（hub 装配调用）。
@@ -282,6 +285,8 @@ impl Gateway {
         // 4. ws 握手。
         let cookie_principal = Arc::new(std::sync::Mutex::new(None::<String>));
         let captured = cookie_principal.clone();
+        let request_path = Arc::new(std::sync::Mutex::new(String::new()));
+        let captured_path = request_path.clone();
         let allow_non_loopback = self.cfg.allow_non_loopback;
         // 默认 tungstenite 允许 64 MiB message；这里显式收紧到资源中继契约，
         // 同时保留管理员显式调大的 ACP frame 配置。
@@ -308,6 +313,7 @@ impl Gateway {
                         ),
                     );
                 }
+                *captured_path.lock().unwrap() = req.uri().path().to_string();
                 if let Some(cookie) = req
                     .headers()
                     .get("cookie")
@@ -332,6 +338,7 @@ impl Gateway {
         let (mut ws_sink, mut ws_stream) = ws.split();
 
         let captured_cookie = { cookie_principal.lock().unwrap().clone() };
+        let path = { request_path.lock().unwrap().clone() };
         let cookie_ctx = match captured_cookie {
             Some(sid) => match self.auth.lock().await.validate_browser_session(&sid, peer) {
                 Ok(ctx) => Some((sid, ctx)),
@@ -343,6 +350,20 @@ impl Gateway {
             },
             None => None,
         };
+
+        if path == super::voice_proxy::VOICE_PATH {
+            match cookie_ctx {
+                Some(_) => {
+                    self.handle_voice_connection(conn_id, ws_sink, ws_stream)
+                        .await;
+                }
+                None => {
+                    self.finish_connection(conn_id, &mut ws_sink, 4502, "invalid browser session")
+                        .await;
+                }
+            }
+            return;
+        }
 
         // 5. Cookie-authenticated clients may start directly with subscribe/action.
         let first = match tokio::time::timeout(FIRST_FRAME_TIMEOUT, ws_stream.next()).await {

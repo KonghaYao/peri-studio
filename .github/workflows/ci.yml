@@ -60,6 +60,8 @@ jobs:
           path: web/dist
       - name: Install Rust quality components
         run: rustup component add rustfmt clippy
+      - name: Install ALSA headers for realtime-voice
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
       - name: Check formatting
         run: cargo fmt --all --check
       - name: Build integration test binaries
