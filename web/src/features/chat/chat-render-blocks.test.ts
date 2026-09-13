@@ -109,14 +109,14 @@ describe('chat-render-blocks', () => {
     expect(isTurnTerminalNoticeOwner([chatEntry('callback', null, [text('reply', 'reply')])], 0)).toBe(true);
   });
 
-  it('跨 entry 的空 reasoning 仍使用 activity 空正文规则', () => {
+  it('跨 entry 的空 reasoning 也不再叠在邻接工具行上', () => {
     const entries = [
       chatEntry('reasoning-entry', 'turn-1', [reasoning('r1', '')]),
       chatEntry('tool-entry', 'turn-1', [tool('t1')]),
     ];
     const boundary = activityBoundaryAt(entries, 0);
-    expect(shouldRenderActivityReasoningBlock(entries[0].blocks, 0, false, boundary)).toBe(true);
-    expect(shouldRenderActivityReasoningBlock(entries[0].blocks, 0, true, boundary)).toBe(true);
+    expect(shouldRenderActivityReasoningBlock(entries[0].blocks, 0, false, boundary)).toBe(false);
+    expect(shouldRenderActivityReasoningBlock(entries[0].blocks, 0, true, boundary)).toBe(false);
   });
 
   it('将 thinking-tool-thinking 收敛为单个活动链', () => {
@@ -175,17 +175,17 @@ describe('chat-render-blocks', () => {
     expect(after.at(-1)).toBe('block:answer');
   });
 
-  it('merges consecutive empty reasoning units in the activity track', () => {
+  it('drops empty activity reasoning so it cannot stack on a tool row', () => {
     const blocks = [reasoning('r1', ''), reasoning('r2', ''), tool('t1')];
     const units = buildAssistantLayoutUnits(blocks);
-    expect(units.filter((unit) => unit.kind === 'block')).toHaveLength(1);
+    expect(units.filter((unit) => unit.kind === 'block')).toHaveLength(0);
+    expect(units.filter((unit) => unit.kind === 'tool_group')).toHaveLength(1);
   });
 
-  it('hides completed empty reasoning placeholders in activity density', () => {
+  it('hides empty activity reasoning whether the turn is still streaming', () => {
     const blocks = [reasoning('r1', ''), tool('t1')];
-    expect(shouldRenderActivityReasoningBlock(blocks, 0, false)).toBe(true);
-    expect(shouldRenderActivityReasoningBlock(blocks, 0, true)).toBe(true);
-    expect(shouldRenderActivityReasoningBlock(blocks, 0, false)).toBe(true);
+    expect(shouldRenderActivityReasoningBlock(blocks, 0, false)).toBe(false);
+    expect(shouldRenderActivityReasoningBlock(blocks, 0, true)).toBe(false);
     expect(shouldRenderActivityReasoningBlock([reasoning('r1', 'note'), tool('t1')], 0, false)).toBe(true);
   });
 });

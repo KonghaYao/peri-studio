@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library';
+import { createSignal } from 'solid-js';
 import { describe, expect, it, vi } from 'vitest';
 import { observedDuration } from '@/features/chat/tool-call-activity';
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
@@ -140,6 +141,19 @@ describe('ToolCallActivity', () => {
     unmount();
 
     render(() => <ToolCallActivity toolCall={base} />);
+    expect(summary().closest('.tool-call-row-compact')).not.toHaveClass('is-running');
+  });
+
+  it('replaces running shimmer with the completed status without stacking both', () => {
+    const [tool, setTool] = createSignal({ ...base, status: 'running', completedAt: null as string | null });
+    render(() => <ToolCallActivity toolCall={tool} />);
+    expect(document.querySelector('.tool-call-row-title.ui-ai-shimmer')).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'Running' })).toBeInTheDocument();
+
+    setTool({ ...base, status: 'completed', completedAt: base.completedAt });
+    expect(document.querySelector('.tool-call-row-title.ui-ai-shimmer')).toBeNull();
+    expect(screen.queryByRole('img', { name: 'Running' })).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Done' })).toBeInTheDocument();
     expect(summary().closest('.tool-call-row-compact')).not.toHaveClass('is-running');
   });
 

@@ -383,7 +383,7 @@ describe('MessageList hydration', () => {
     expect(document.querySelector('[data-testid="transcript-window"] [role="listitem"]')).toBeNull();
   });
 
-  it('keeps one generic working state through the gap after completed tool output', () => {
+  it('does not stack generic loading on a completed tool while the turn continues', () => {
     setRuntimeDocsState({ chat: true, control: true });
     setChatEntries([message('assistant-1', 'live', null)]);
     setChatHead({
@@ -410,8 +410,9 @@ describe('MessageList hydration', () => {
       }}],
       toolCalls: [{ toolCallId: 'tool-1', name: 'Bash', kind: 'execute', status: 'completed', arguments: { command: 'pwd' }, result: { stdout: '/repo' }, resultOmitted: false, resultBytes: 5, publicError: null, startedAt: null, completedAt: null }],
     }]);
-    expect(document.querySelector('[data-testid="message-loading"]')?.querySelectorAll('.ui-skeleton')).toHaveLength(3);
-    expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('Peri is working');
+    expect(document.querySelector('[data-testid="message-loading"]')).toBeNull();
+    expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('');
+    expect(screen.getByTestId('tool-activity-row')).toBeInTheDocument();
 
     setChatEntries([{
       ...message('turn-1', 'live', null),
@@ -479,7 +480,8 @@ describe('MessageList hydration', () => {
 
     const completedTool = { ...runningTool, status: 'completed', result: { exitCode: 0 }, completedAt: '2026-08-15T00:00:01Z' };
     setChatEntries([firstText, { ...toolSegment, toolCalls: [completedTool], blocks: [{ kind: 'tool_call', id: 'tool-1', toolCall: completedTool }] }]);
-    expect(document.querySelector('[data-testid="message-loading"]')?.querySelectorAll('.ui-skeleton')).toHaveLength(3);
+    expect(document.querySelector('[data-testid="message-loading"]')).toBeNull();
+    expect(screen.getByRole('img', { name: 'Done' })).toBeInTheDocument();
 
     const finalText = { ...message('segment-final', 'live', null), turnId: 'turn-1', text: 'Final delta', blocks: [{ kind: 'text' as const, id: 'text-2', text: 'Final delta' }] };
     setChatEntries([firstText, { ...toolSegment, toolCalls: [completedTool], blocks: [{ kind: 'tool_call', id: 'tool-1', toolCall: completedTool }] }, finalText]);

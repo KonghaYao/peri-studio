@@ -77,7 +77,7 @@ export function buildAssistantLayoutUnits(
     }
 
     const block = blocks[index];
-    if (skipConsecutiveEmptyActivityReasoning(blocks, units, index, boundary)) {
+    if (skipEmptyActivityReasoning(blocks, index, boundary)) {
       index += 1;
       continue;
     }
@@ -263,33 +263,27 @@ function isEmptyReasoningBlock(block: ChatBlock): boolean {
   return block.kind === 'reasoning' && !block.reasoning.text.trim();
 }
 
-/** 活动轨内 Reasoning 始终保留渲染槽位；空正文由组件渲染为无文案轨道段。 */
+/** 活动轨内空 Reasoning 不再占位：邻接工具行已有 running / done，叠 thinking-gap 会看起来像加载与结束同时出现。 */
 export function shouldRenderActivityReasoningBlock(
   blocks: readonly ChatBlock[],
   blockIndex: number,
-  entryStreaming: boolean,
+  _entryStreaming: boolean,
   boundary: ActivityBoundary = NO_ACTIVITY_BOUNDARY,
 ): boolean {
   const block = blocks[blockIndex];
   if (!block || block.kind !== 'reasoning') return true;
   if (blockActivityDensity(blocks, blockIndex, boundary) !== 'activity') return true;
-  if (!isEmptyReasoningBlock(block)) return true;
-  return entryStreaming || blockActivityDensity(blocks, blockIndex, boundary) === 'activity';
+  return !isEmptyReasoningBlock(block);
 }
 
-function skipConsecutiveEmptyActivityReasoning(
+function skipEmptyActivityReasoning(
   blocks: readonly ChatBlock[],
-  units: AssistantLayoutUnit[],
   index: number,
   boundary: ActivityBoundary,
 ): boolean {
   const block = blocks[index];
   if (!isReasoningBlock(block) || !isEmptyReasoningBlock(block)) return false;
-  if (blockActivityDensity(blocks, index, boundary) !== 'activity') return false;
-  const prev = units[units.length - 1];
-  if (prev?.kind !== 'block') return false;
-  const prevBlock = blocks.find((candidate) => candidate.id === prev.blockId);
-  return Boolean(prevBlock && isReasoningBlock(prevBlock) && isEmptyReasoningBlock(prevBlock));
+  return blockActivityDensity(blocks, index, boundary) === 'activity';
 }
 
 function pushActivityItem(items: ActivitySegmentItem[], item: ActivitySegmentItem) {

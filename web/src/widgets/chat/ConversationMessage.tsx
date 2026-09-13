@@ -135,7 +135,8 @@ function MessageBlock(props: {
     const reasoningStreaming = () => {
       if (!props.streaming()) return false;
       const text = reasoning().text;
-      if (props.reasoningVariant === 'activity' && !text.trim()) return true;
+      // 空活动轨 reasoning 若仍标成 streaming，会在已结束的工具行旁再画一层 thinking-gap。
+      if (props.reasoningVariant === 'activity' && !text.trim()) return false;
       return props.blockIndex() === props.blockIds().length - 1;
     };
     const orderedBlocks = () => props.blockIds().map((id) => props.blocksById().get(id)!);

@@ -1,9 +1,9 @@
 // 消息区：消息列表（自动吸底滚动）。
 //
 // 由 ChatView 拆出（中间区三块之一）；气泡内 reasoning 在前、正文在后，
-// 泛化 thinking gap 用 Skeleton 扫光；工具行和决策面板已经承担可见状态。
+// 泛化 thinking gap 用 Skeleton 扫光；工具行（运行中或已结束）和决策面板已经承担可见状态。
 //
-// F4（ui.md §四.6 / §3.8）：滚动区为 flex-1 + min-h-0 独立滚动，内部为
+// F4：滚动区为 flex-1 + min-h-0 独立滚动，内部为
 // 居中正文列（max-w 860px）；底部隔离空白由 TranscriptViewportShell 的 h-16 spacer
 // 承担，避免末条贴住 in-flow composer。消息按 role/状态呈现八类视觉。消息模型、顺序、Yjs 读取、自动吸底算法与
 // permission decision 值（allow/deny、按钮顺序）由 Composer 上方的决策槽位承载。
@@ -118,10 +118,11 @@ export function MessageList(props: {
     if (visibleElicitations(elicitations()).length > 0) return 'Waiting for your answer';
     const activity = latestTurnActivity();
     if (activity?.kind === 'tool') return `${activity.tool.name?.trim() || 'Tool'} ${activity.tool.status === 'awaiting_permission' || activity.tool.status === 'awaitingPermission' ? 'waiting for permission' : 'running'}`;
-    if (activity?.kind === 'content') return '';
+    // 已结束的工具行仍占据状态面；再叠「Peri is working」会与 Done 同时出现。
+    if (activity?.kind === 'content' || activity?.kind === 'terminal_tool') return '';
     return 'Peri is working';
   });
-  // 泛化 loading 只填补真正的 thinking gap；工具行和决策面板已经承担可见状态，不能重复。
+  // 泛化 loading 只填补真正的 thinking gap；工具行（运行中或已结束）和决策面板已经承担可见状态，不能重复。
   const showChatLoading = () => agentActivityAnnouncement() === 'Peri is working';
 
   // 底部状态区变高会压缩滚动视口。跟随最新消息时重新吸底；用户上滚时

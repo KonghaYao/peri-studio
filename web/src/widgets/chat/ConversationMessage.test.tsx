@@ -231,7 +231,7 @@ describe('ConversationMessage', () => {
     expect(screen.getByTestId('tool-activity-file-link')).toHaveTextContent('main.ts');
   });
 
-  it('shows skeleton thinking gap only while the turn is still streaming', () => {
+  it('does not stack a thinking gap on a completed tool while the turn is still streaming', () => {
     const tool = { ...baseTool('tool-1'), name: 'Bash', arguments: { command: 'pwd' } };
     render(() => <ConversationMessage entry={entry({
       status: 'streaming',
@@ -244,7 +244,8 @@ describe('ConversationMessage', () => {
     })} />);
 
     const message = screen.getByLabelText('Assistant message');
-    expect(message.querySelector('[data-testid="thinking-gap"]')).toHaveClass('thinking-gap', 'relative', 'z-1');
+    expect(message.querySelector('[data-testid="thinking-gap"]')).toBeNull();
+    expect(screen.getByTestId('tool-activity-row')).toBeInTheDocument();
     expect(message.querySelector('.message-reasoning__activity-label')).toBeNull();
   });
 
