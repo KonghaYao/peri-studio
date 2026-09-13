@@ -105,12 +105,12 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
           : 'hover:bg-interaction-hover focus-within:bg-interaction-hover',
       )}
       style={{
-        'padding-left': props.indent ? `calc(5px + ${props.indent}px)` : undefined,
+        'padding-left': props.indent ? `${props.indent}px` : undefined,
       }}
     >
       <div
         data-testid="session-live-gutter"
-        class="flex w-14 shrink-0 items-center justify-center self-stretch"
+        class="flex w-10 shrink-0 items-center justify-center self-stretch"
         aria-hidden={lampTone() ? undefined : 'true'}
       >
         <Show when={lampTone()}>

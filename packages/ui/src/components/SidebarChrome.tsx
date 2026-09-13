@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from './dropdown-menu';
 import { RowAccessorySlot } from './RowAccessorySlot';
-import { rowAccessoryMetaClass } from './sidebar/row-accessory-layout';
 
 export function SectionHeader(props: { title: string; icon?: JSX.Element; children?: JSX.Element }) {
   return (
@@ -174,19 +173,19 @@ export function SessionListLoadingRow(props: { label: string; class?: string; in
       data-testid="session-list-loading-row"
       class={cn('flex min-w-0 items-center rounded-md py-4', props.class)}
       style={{
-        'padding-left': props.indent ? `calc(5px + ${props.indent}px)` : undefined,
+        'padding-left': props.indent ? `${props.indent}px` : undefined,
       }}
       role="status"
       aria-label={props.label}
     >
       <div
         data-testid="session-live-gutter"
-        class="flex w-14 shrink-0 items-center justify-center self-stretch"
+        class="flex w-10 shrink-0 items-center justify-center self-stretch"
         aria-hidden="true"
       >
         <SessionLiveIndicator tone="busy" label={props.label} class="pointer-events-none" />
       </div>
-      <span class="min-w-0 flex-1 truncate pl-5 text-11 text-content-muted">{props.label}</span>
+      <span class="min-w-0 flex-1 truncate pl-2 text-11 text-content-muted">{props.label}</span>
     </div>
   );
 }
