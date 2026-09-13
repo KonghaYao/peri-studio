@@ -7,7 +7,7 @@ date: 2026-09-05
 
 > **本文是产品视觉与交互组件的单一事实源。** T1/T2 实现以 `packages/ui/src/styles/`、`packages/ui/src/components/` 与 package 测试为准；Web 应用例外由 `web/src/styles/` 和 `web/tests/css-contracts.test.mjs` 约束。
 >
-> 关联：[frontend-architecture.md](frontend-architecture.md)（目录分层）、[frontend-rewrite-program.md](frontend-rewrite-program.md)（Phase 6+：只 Tailwind、禁任意值、社区无头、业务等价）、[audit-chat-uiux-2026-08.md](../audit-chat-uiux-2026-08.md)（UX 审计与修复记录）、ADR [0004](../adr/0004-web-frontend-layered-architecture.md)。
+> 关联：[frontend-architecture.md](frontend-architecture.md)（目录分层）、[frontend-rewrite-program.md](frontend-rewrite-program.md)（Phase 6+：只 Tailwind、禁任意值、社区无头、业务等价）、[pwa.md](pwa.md)（可安装 PWA）、[audit-chat-uiux-2026-08.md](../audit-chat-uiux-2026-08.md)（UX 审计与修复记录）、ADR [0004](../adr/0004-web-frontend-layered-architecture.md)。
 
 ---
 
@@ -182,7 +182,7 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 
 | 区域 | Widget 路径 | UI 要点 |
 |------|-------------|---------|
-| 壳层 | `widgets/shell` | AppShell 网格、ErrorCenter、ConnectionProblem、StatusArea |
+| 壳层 | `widgets/shell` | AppShell 网格、`PwaRuntime`、ErrorCenter、ConnectionProblem、StatusArea、Settings About「This browser」 |
 | 侧栏 | `widgets/sidebar` | 28px 行高、选中 `bg-selected`、`For` 稳定 key |
 | 聊天 | `widgets/chat` | Transcript 窗口化、Permission/Elicitation 队列、Markdown、`ToolCallActivity`（`@peri/ui` `ToolActivityRow` + `features/chat/tool-call-activity.ts`） |
 | 输入 | `widgets/composer` | `Composer.tsx` 内联 editor/toolbar；`@peri/ui` `SlashMenuListbox` + `features/composer/slash-menu-catalog.ts`；drop / Add attachment 共用上传队列，ready 后仅插入 `@relative/path` |
@@ -196,6 +196,14 @@ Widget **可以**读 `store`；**不得**直发 WebSocket 帧。复杂逻辑下�
 - **侧栏为全局会话 chrome 的唯一位置**：`ProjectSidebar` 顶部保留 instance/品牌行与 `SidebarNavBar`（New session、Search、More）。**不**把这些动作迁入 AppShell 全局顶栏。
 - **`ChatHeader`**（对话区内）：`ChatView` 内联 `@peri/ui` `ChatHeader`，标题由 `features/chat/chat-header-title.ts` 的 `resolveChatHeaderTitle` 解析；含 ACP session 切换与打开资源入口；不重复侧栏的全局新建/搜索。
 - 调整导航密度时只改 `widgets/sidebar` / `sidebar-parts`，勿并行维护第二套顶栏会话 UI。
+
+### 10.1.1 Standalone / 本机安装
+
+- 已安装窗口使用 `display: standalone`。`theme-color` 与 manifest 画布均为 `#ffffff`（不是 accent）。
+- 安装入口只在 System → About「This browser」：`Install`（Chrome / Edge `beforeinstallprompt`）、`Installed`（standalone）、Safari `Open Share, then Add to Home Screen`。
+- 文案须说明安装的是本机快捷方式（规范入口 `http://127.0.0.1:8456/`）；断开本机 server 后窗口不可用。iOS Home Screen 应用是独立存储，可能要再登录一次。
+- **不**把 Install 放进侧栏 More、AuthGate 登录卡、`ConnectionProblem` 或 Toast。无 Service Worker，因此无 Reload-for-update。
+- standalone 安全区用 T1 `pt-safe` / `pb-safe` / `p-safe`（AuthGate、AppShell、Toast 视口）。Composer 底部复用 `--composer-safe-bottom`。禁止 `pt-[env(...)]`。
 
 ### 10.2 资源工作台浮窗
 
@@ -229,7 +237,8 @@ Widget **可以**读 `store`；**不得**直发 WebSocket 帧。复杂逻辑下�
 
 ## 12. 写作与微文案
 
-- 按钮：**动词开头**（`Open`, `Retry`, `Allow once`）；破坏性用 `danger` variant，文案明确（`Delete`, `Revoke`）。
+- 按钮：**动词开头**（`Open`, `Retry`, `Allow once`, `Install`）；破坏性用 `danger` variant，文案明确（`Delete`, `Revoke`）。
+- 本机安装：`Install` / `Installed` / `Open Share, then Add to Home Screen`；说明快捷方式仍依赖本机 server，iOS 可能要再登录。
 - 错误：说明发生了什么 + 单一主恢复动作；`delivery_unknown` 保留证据 + acknowledge 路径。
 - 空状态：一句说明 + 可选主 CTA；不用俏皮语气。
 - 加载：`Loading…` / `Connecting…` / `Calibrating…` 区分语义；禁止无限 spinner 无文案。thinking gap 用 `Skeleton` 扫光，文案只进 live region。

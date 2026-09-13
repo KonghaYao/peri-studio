@@ -43,6 +43,17 @@ test('the visual fixture is a development-only entry and cannot bypass productio
   assert.doesNotMatch(scenarios, /action:\s*['"]reconnect['"]/);
 });
 
+test('the visual fixture does not import PWA features or register a service worker', () => {
+  const root = join(import.meta.dirname, '..');
+  const fixtureMain = readFileSync(join(root, 'src', 'visual-fixture', 'main.tsx'), 'utf8');
+  const scenarios = readFileSync(join(root, 'src', 'visual-fixture', 'scenarios.ts'), 'utf8');
+  const fixtureHtml = readFileSync(join(root, 'visual-fixture.html'), 'utf8');
+  for (const source of [fixtureMain, scenarios, fixtureHtml]) {
+    assert.doesNotMatch(source, /features\/pwa|PwaRuntime|serviceWorker/);
+    assert.doesNotMatch(source, /rel=["']manifest["']/);
+  }
+});
+
 test('component geometry tokens are declared once and consumed by production widgets', () => {
   const webRoot = join(import.meta.dirname, '..', 'src');
   const read = (...parts) => readFileSync(join(webRoot, ...parts), 'utf8');

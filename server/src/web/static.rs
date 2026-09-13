@@ -90,6 +90,9 @@ pub(crate) fn content_type(name: &str) -> &'static str {
         "image/x-icon"
     } else if name.ends_with(".woff2") {
         "font/woff2"
+    } else if name.ends_with(".webmanifest") {
+        // 必须在 `.json` 之前：Chrome 会拒绝 octet-stream 的 Web App Manifest。
+        "application/manifest+json"
     } else if name.ends_with(".map") || name.ends_with(".json") {
         "application/json"
     } else {

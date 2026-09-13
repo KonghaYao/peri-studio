@@ -2,6 +2,7 @@ import { Show } from 'solid-js';
 import { Terminal } from '@peri/ui';
 import { showCatalogSection } from '@/catalog/catalog-section';
 import { ProjectSidebarLayout } from '@/layers/shell/ProjectSidebarLayout';
+import { SystemAboutLayout } from '@/layers/shell/SystemAboutLayout';
 import { StatusAreaLayout } from '@/layers/status/StatusAreaLayout';
 import { TerminalDockLayout } from '@/layers/terminal/TerminalDockLayout';
 import { CatalogDemo } from '@/pages/shared/DemoSection';
@@ -30,6 +31,16 @@ export function ComponentCatalogExtrasShell(props: { sections?: string[] }) {
       <Show when={showCatalogSection(props.sections, 'terminal-dock')}>
       <CatalogDemo id="terminal-dock" title="Terminal dock">
         <TerminalDockLayout />
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'system-about')}>
+      <CatalogDemo
+        id="system-about"
+        title="System About"
+        description="This browser 安装态：Chrome 可安装、已安装 standalone、Safari 添加到主屏幕。生产镜像到 SettingsDialog About。"
+      >
+        <SystemAboutLayout />
       </CatalogDemo>
       </Show>
     </>

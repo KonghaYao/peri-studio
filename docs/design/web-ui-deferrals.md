@@ -37,3 +37,11 @@ date: 2026-09-12
 - 发布前仍须 `bun run build`（Rust `build.rs` 内嵌 `web/dist`）
 
 **理由**：二次 build 与 dev/prod 模块图漂移的对抗价值已由分层门禁、css-contracts 与 CI 独立 `build` 步骤覆盖；视口矩阵与 Playwright 交互契约重复且维护成本高。
+
+## 4. iOS standalone 键盘：`visualViewport`
+
+**现状**：AuthGate / AppShell / Toast 使用 T1 `--safe-area-*` 与 `pt-safe` / `pb-safe`（`env(safe-area-inset-*)`）。Composer 底部继续用 `--composer-safe-bottom`。`index.html` 已设 `viewport-fit=cover`。
+
+**延后**：不在 v1 PWA 跟踪 iOS Safari `window.visualViewport` 以在键盘升起时抬高 Composer / 登录卡。`env(safe-area-inset-bottom)` 只覆盖 Home Indicator，不覆盖虚拟键盘。
+
+**恢复条件**：standalone 本机 Safari 成为受支持入口，且能在不引入任意 bracket、不改冻结 `web/src/styles/extra.css` 的前提下，用 token 化偏移表达键盘高度。

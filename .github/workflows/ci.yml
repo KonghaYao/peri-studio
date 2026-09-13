@@ -26,6 +26,16 @@ jobs:
       - name: Build embedded Web assets
         working-directory: web
         run: bun run build
+      - name: Assert PWA install assets landed in dist
+        working-directory: web
+        run: |
+          test -f dist/manifest.webmanifest
+          test -f dist/icons/icon.svg
+          test -f dist/icons/icon-192.png
+          test -f dist/icons/icon-512.png
+          test -f dist/icons/icon-512-maskable.png
+          test -f dist/apple-touch-icon.png
+          test -f dist/favicon.svg
       - uses: actions/upload-artifact@v4
         with:
           name: embedded-web

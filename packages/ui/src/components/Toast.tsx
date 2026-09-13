@@ -36,7 +36,7 @@ export function Toaster(props: ToasterProps = {}) {
       <ToastPrimitive.Region>
         <ToastPrimitive.List
           class={cn(
-            'fixed z-50 flex flex-col gap-6 pointer-events-none',
+            'fixed z-50 flex flex-col gap-6 pointer-events-none p-safe',
             placementClasses[placement()],
             local.class,
           )}

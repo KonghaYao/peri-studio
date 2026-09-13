@@ -19,6 +19,7 @@ import { principalId } from '@/features/auth/auth-state';
 import { connState } from '@/features/connection/connection';
 import { TopologyView } from '@/widgets/chat/TopologyView';
 import { MachinePanel } from '@/widgets/resource/MachinePanel';
+import { ThisBrowserBlock } from './ThisBrowserBlock';
 
 type SettingsTab = 'machines' | 'about';
 
@@ -44,6 +45,7 @@ export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
           </TabsContent>
           <TabsContent value="about">
             <p class="mt-14 mb-0 font-mono text-12 text-text-muted">{connState().text}</p>
+            <ThisBrowserBlock />
             <TopologyView />
             <Show when={principalId() && auth?.logout}>
               <div class="mt-16 flex justify-end border-t border-divider pt-16">

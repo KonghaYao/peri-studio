@@ -13,7 +13,11 @@ fn route_resolves_static_assets() {
     let (name, ct, index) = route("/").expect("/ → index.html");
     assert_eq!(name, "index.html");
     assert_eq!(ct, "text/html; charset=utf-8");
-    assert!(String::from_utf8_lossy(index).contains("Peri Studio Web 面板"));
+    assert!(String::from_utf8_lossy(index).contains("Peri Studio"));
+    assert!(
+        !String::from_utf8_lossy(index).contains("Peri Studio Web 面板"),
+        "page title must be the English product name"
+    );
     assert_eq!(route("/index.html").map(|(n, _, _)| n), Some("index.html"));
     assert_eq!(route("/panel.html").map(|(n, _, _)| n), Some("index.html"));
     let (_, _, compat) = route("/panel.html").expect("/panel.html 兼容映射");
@@ -35,6 +39,7 @@ fn route_resolves_static_assets() {
 
     assert_eq!(route("/instance"), None);
     assert_eq!(route("/favicon.ico"), None);
+    assert_eq!(route("/sw.js"), None);
     assert_eq!(route("/visual-fixture.html"), None);
     for asset in ASSETS {
         assert!(
@@ -59,13 +64,27 @@ fn content_type_by_extension() {
     assert_eq!(content_type("icon.png"), "image/png");
     assert_eq!(content_type("favicon.ico"), "image/x-icon");
     assert_eq!(content_type("font.woff2"), "font/woff2");
+    assert_eq!(
+        content_type("manifest.webmanifest"),
+        "application/manifest+json"
+    );
     assert_eq!(content_type("chunk.js.map"), "application/json");
     assert_eq!(content_type("blob.bin"), "application/octet-stream");
 }
 
 #[test]
 fn static_cache_policy_separates_entry_documents_from_hashed_assets() {
-    for path in ["/", "/index.html", "/panel.html", "/missing"] {
+    for path in [
+        "/",
+        "/index.html",
+        "/panel.html",
+        "/missing",
+        "/manifest.webmanifest",
+        "/icons/icon-192.png",
+        "/icons/icon-512-maskable.png",
+        "/apple-touch-icon.png",
+        "/favicon.svg",
+    ] {
         assert_eq!(
             cache_headers_for_static(path, route(path).map(|(name, _, _)| name)),
             vec![("Cache-Control".into(), "no-store".into())],
@@ -202,7 +221,11 @@ async fn serve_returns_index() {
         text.contains("Content-Type: text/html; charset=utf-8"),
         "{text:?}"
     );
-    assert!(text.contains("Peri Studio Web 面板"), "{text:?}");
+    assert!(text.contains("Peri Studio"), "{text:?}");
+    assert!(
+        !text.contains("Peri Studio Web 面板"),
+        "page title must be the English product name: {text:?}"
+    );
     assert!(text.contains("</html>"), "{text:?}");
 }
 
@@ -265,4 +288,138 @@ async fn serve_handles_query() {
     // 响应体与内嵌字节一致（Content-Length 精确匹配）。
     let body_start = text.find("\r\n\r\n").map(|i| i + 4).expect("有头部结束符");
     assert_eq!(&text.as_bytes()[body_start..], js.bytes);
+}
+
+/// PWA 固定名资源必须挂在根路径 / `/icons/`，不得落入 `/assets/`
+///（`icon-512-maskable.png` 的 stem 含 `-`，会被误判为指纹并标成 immutable）。
+#[test]
+fn route_resolves_pwa_install_assets() {
+    assert_eq!(route("/sw.js"), None);
+
+    let cases: &[(&str, &str, &str, Option<&[u8]>)] = &[
+        (
+            "/manifest.webmanifest",
+            "manifest.webmanifest",
+            "application/manifest+json",
+            None,
+        ),
+        ("/icons/icon.svg", "icons/icon.svg", "image/svg+xml", None),
+        (
+            "/icons/icon-192.png",
+            "icons/icon-192.png",
+            "image/png",
+            Some(b"\x89PNG"),
+        ),
+        (
+            "/icons/icon-512.png",
+            "icons/icon-512.png",
+            "image/png",
+            Some(b"\x89PNG"),
+        ),
+        (
+            "/icons/icon-512-maskable.png",
+            "icons/icon-512-maskable.png",
+            "image/png",
+            Some(b"\x89PNG"),
+        ),
+        (
+            "/apple-touch-icon.png",
+            "apple-touch-icon.png",
+            "image/png",
+            Some(b"\x89PNG"),
+        ),
+        ("/favicon.svg", "favicon.svg", "image/svg+xml", None),
+    ];
+    for (path, url, expected_ct, magic) in cases {
+        let (name, ct, bytes) = route(path).unwrap_or_else(|| panic!("missing {path}"));
+        assert_eq!(name, *url);
+        assert_eq!(ct, *expected_ct);
+        assert!(
+            !name.starts_with("assets/"),
+            "PWA 资源不得进入 /assets/: {name}"
+        );
+        assert!(!bytes.is_empty(), "{path} 应为非空");
+        if let Some(prefix) = magic {
+            assert!(bytes.starts_with(prefix), "{path} 应为 PNG");
+        }
+    }
+
+    for asset in ASSETS {
+        assert!(
+            !asset.url.starts_with("assets/icon")
+                && asset.url != "assets/apple-touch-icon.png"
+                && asset.url != "assets/favicon.svg"
+                && asset.url != "assets/manifest.webmanifest",
+            "PWA 固定名资源不得进入 /assets/: {}",
+            asset.url
+        );
+    }
+}
+
+fn assert_pwa_static_headers(response: &str, content_type: &str) {
+    assert!(response.starts_with("HTTP/1.1 200 OK\r\n"), "{response:?}");
+    assert!(
+        response.contains(&format!("Content-Type: {content_type}\r\n")),
+        "{response:?}"
+    );
+    assert!(
+        response.contains("Cache-Control: no-store\r\n"),
+        "{response:?}"
+    );
+    assert!(
+        response.contains("X-Content-Type-Options: nosniff\r\n"),
+        "{response:?}"
+    );
+    assert!(
+        !response
+            .to_ascii_lowercase()
+            .contains("service-worker-allowed"),
+        "must not publish Service-Worker-Allowed: {response:?}"
+    );
+}
+
+/// GET/HEAD `/manifest.webmanifest` 走带安全头的路径（非无 header 的 `serve()`）。
+#[tokio::test]
+async fn pwa_manifest_get_and_head_are_upgrade_safe() {
+    for method in ["GET", "HEAD"] {
+        let response = auth_socket_response(&format!(
+            "{method} /manifest.webmanifest HTTP/1.1\r\nHost: 127.0.0.1:8456\r\n\r\n"
+        ))
+        .await;
+        assert_pwa_static_headers(&response, "application/manifest+json");
+        if method == "HEAD" {
+            assert!(
+                response.ends_with("\r\n\r\n"),
+                "HEAD must not emit a body: {response:?}"
+            );
+        } else {
+            let body_start = response
+                .find("\r\n\r\n")
+                .map(|i| i + 4)
+                .expect("header end");
+            let body = &response[body_start..];
+            assert!(body.contains("\"name\": \"Peri Studio\""), "{body:?}");
+            assert!(body.contains("\"display\": \"standalone\""), "{body:?}");
+        }
+    }
+}
+
+/// 图标与 favicon 命中且 no-store。PNG 体非 UTF-8，socket 只走 HEAD。
+#[tokio::test]
+async fn pwa_icons_and_favicon_are_no_store() {
+    for path in ["/icons/icon-192.png", "/apple-touch-icon.png"] {
+        let response = auth_socket_response(&format!(
+            "HEAD {path} HTTP/1.1\r\nHost: 127.0.0.1:8456\r\n\r\n"
+        ))
+        .await;
+        assert_pwa_static_headers(&response, "image/png");
+        assert!(
+            response.ends_with("\r\n\r\n"),
+            "HEAD must not emit a body: {response:?}"
+        );
+    }
+
+    let favicon =
+        auth_socket_response("GET /favicon.svg HTTP/1.1\r\nHost: 127.0.0.1:8456\r\n\r\n").await;
+    assert_pwa_static_headers(&favicon, "image/svg+xml");
 }

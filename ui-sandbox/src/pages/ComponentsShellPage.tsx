@@ -12,6 +12,7 @@ const SHELL_SECTIONS = [
   'status-area',
   'terminal-xterm',
   'terminal-dock',
+  'system-about',
 ] as const;
 
 /** T4 · 产品壳层：侧栏、会话 chrome、状态区与终端。 */
@@ -21,7 +22,7 @@ export function ComponentsShellPage() {
       <TierHeader
         tier="Comp · Shell"
         title="Shell"
-        description="侧栏、会话 chrome、状态区与终端 dock。"
+        description="侧栏、会话 chrome、状态区、终端 dock 与 System About。"
       />
       <ComponentCatalogExtrasShell sections={[...SHELL_SECTIONS]} />
       <ComponentCatalogExtrasF sections={[...SHELL_SECTIONS]} />

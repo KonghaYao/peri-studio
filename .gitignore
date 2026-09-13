@@ -42,5 +42,6 @@ test-results/
 *.tgz
 *.db
 *.png
+!web/public/**/*.png
 .claude
 **/*.generated.ts

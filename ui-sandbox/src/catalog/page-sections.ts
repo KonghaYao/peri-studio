@@ -350,6 +350,12 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'terminal-dock', label: 'Terminal dock' },
       ],
     },
+    {
+      title: 'System',
+      items: [
+        { id: 'system-about', label: 'System About' },
+      ],
+    },
   ],
   'components-composer': [
     {
@@ -490,6 +496,7 @@ const LEGACY_LAYER_SECTION_ROUTES: Record<string, SandboxRoute> = {
   'chat-shell': 'components-shell',
   'chat-transcript': 'components-shell',
   'terminal-dock': 'components-shell',
+  'system-about': 'components-shell',
   composer: 'components-composer',
   'composer-upload': 'components-composer',
   decision: 'components-ai',

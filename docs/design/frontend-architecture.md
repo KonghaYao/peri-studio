@@ -11,7 +11,8 @@ date: 2026-08-30
 > **UI 规范**：[`ui-specification.md`](ui-specification.md)（色彩、组件、微文案）。
 > **T3 复合块与 T4 装配**：[`t3-blocks-in-ui-package.md`](t3-blocks-in-ui-package.md)。
 > **Phase 6+ 执行（拆 `panel/lib`、CSS/无头约束、业务等价）**：[`frontend-rewrite-program.md`](frontend-rewrite-program.md)。
-> **有意延后项（MessageScroller 外壳、Sidebar 折叠 vs resize、测试边界）**：[`web-ui-deferrals.md`](web-ui-deferrals.md)。
+> **有意延后项（MessageScroller 外壳、Sidebar 折叠 vs resize、测试边界、iOS visualViewport 键盘）**：[`web-ui-deferrals.md`](web-ui-deferrals.md)。
+> **可安装 PWA（无 Service Worker）**：[`pwa.md`](pwa.md)。
 
 ## 1. 问题（迁移前，2026-08）
 
@@ -41,7 +42,7 @@ web/src/
     providers/              # 仅装配，不含业务 UI
 
   pages/                    # 页面：路由级布局，只组合 widgets + 挂 store
-    panel/                  # 主工作台（AppShell、ChatView 装配）
+    panel/                  # 主工作台（PwaRuntime 与 AuthGate 兄弟装配、AppShell）
     auth/                   # 登录页（或 auth widget 的薄包装）
 
   widgets/                  # 业务组合块：有 JSX，可读 store，不直接发 Action
@@ -50,7 +51,7 @@ web/src/
     chat/                   # ChatView, MessageList, ConversationMessage, ToolCallActivity, …
     composer/               # Composer（内联 editor/toolbar + @peri/ui SlashMenuListbox）, QuickStartComposer
     resource/               # ResourceWorkbench, …
-    shell/                  # AppShell, SidebarChrome, ErrorCenter, …
+    shell/                  # AppShell, PwaRuntime, SidebarChrome, ErrorCenter, …
 
   features/                 # 特性模块：领域行为，优先纯 TS；接口稳定、可单测
     auth/                   # auth-hook, auth-state, auth-setup
@@ -58,6 +59,7 @@ web/src/
     catalog/                # catalog-actions, project-catalog
     composer/               # slash-menu, composer-slash, prediction, draft, placeholder
     voice/                  # 同源 /voice 口述：capability、PCM、dictation（无 store）
+    pwa/                    # 可安装 PWA：canInstall / isStandalone / isIosLike（无 store，无 SW）
     message/                # delivery, recovery, follow
     runtime/                # control, permissions, elicitations, rewind
     connection/             # ws-client, connection, command-tracker
@@ -98,7 +100,7 @@ web/src/
 | `app/*` | `pages/*`, `store`, `shared/*` | `features` 直接（经 pages/widgets） |
 | `store/*` | `features/*`, `entities/*`, `shared/*` | `widgets`, `pages` |
 
-**features 不得 import store**：所有 `createSignal` 与 Action 发送由 `store` 注入到 feature 构造函数（现有 `CatalogActions`、`SessionActivation` 模式为准）。
+**features 不得 import store**：所有 `createSignal` 与 Action 发送由 `store` 注入到 feature 构造函数（现有 `CatalogActions`、`SessionActivation` 模式为准）。`features/pwa` 与 `auth-state` 相同：模块级信号，不走 `install*` 构造注入，也不进入 `store/index.ts`。
 
 **widgets 不得调用 `sendFrame` 直接**：经 `store` 导出函数或 feature façade。
 

@@ -152,6 +152,18 @@ test('package CSS does not own application selectors', () => {
   assert.doesNotMatch(css, /\.terminal-workbench-park/);
 });
 
+test('standalone safe-area tokens are the only inset source for named utilities', () => {
+  const tokens = read(join(srcRoot, 'styles', 'tokens.css'));
+  const theme = read(join(srcRoot, 'styles', 'theme.css'));
+  for (const name of ['top', 'right', 'bottom', 'left']) {
+    assert.match(tokens, new RegExp(`--safe-area-${name}:\\s*env\\(safe-area-inset-${name}`));
+  }
+  assert.match(tokens, /--composer-safe-bottom:\s*calc\(var\(--space-20\) \+ var\(--safe-area-bottom\)\)/);
+  for (const utility of ['pt-safe', 'pr-safe', 'pb-safe', 'pl-safe', 'px-safe', 'py-safe', 'p-safe']) {
+    assert.match(theme, new RegExp(`@utility ${utility} \\{`));
+  }
+});
+
 test('package CSS only consumes declared tokens', () => {
   const tokens = read(join(srcRoot, 'styles', 'tokens.css'));
   const defined = new Set([...tokens.matchAll(/(--[\w-]+)\s*:/g)].map((match) => match[1]));
