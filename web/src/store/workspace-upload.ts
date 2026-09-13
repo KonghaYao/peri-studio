@@ -231,6 +231,13 @@ export function retryWorkspaceUpload(itemId: string): void {
   setWorkspaceUploadLiveMessage('Retrying upload…');
 }
 
+/** 从 Composer / QuickStart 草稿区移除已就绪的上传磁贴（不撤销 server 文件）。 */
+export function dismissWorkspaceUpload(itemId: string): void {
+  ensureQueue().dismissReadyItems([itemId]);
+  uploadItemOrigins.delete(itemId);
+  setWorkspaceUploadLiveMessage('');
+}
+
 export function markWorkspaceUploadReferenceInjected(itemId: string): void {
   ensureQueue().markReferenceInjected(itemId);
 }

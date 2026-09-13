@@ -1,7 +1,7 @@
 // 发送窗口（Composer）：输入区 + 底部工具行。
 // 编排与 store 接线留在此；视觉组件来自 @peri/ui，业务映射在 features。
 
-import { createSignal, Show, type Component, type JSX } from 'solid-js';
+import { createMemo, createSignal, Show, type Component, type JSX } from 'solid-js';
 import {
   Button,
   type ComposerAttachmentItem,
@@ -20,12 +20,21 @@ import {
   composerSlashOverlayClass,
 } from '@peri/ui';
 import { composerAssets, removeComposerAsset } from '@/features/composer/composer-assets';
+import { workspaceUploadAttachmentItems } from '@/features/composer/composer-upload-attachments';
 import { agentCommandToSlashMenuItem } from '@/features/composer/slash-menu-catalog';
 import { filterCommandCatalog, slashMenuOptionId } from '@/features/composer/slash-menu';
 import { ComposerUploadSurface, openComposerUploadFilePicker } from './ComposerUploadSurface';
 import { ComposerMetaRow } from './ComposerMetaRow';
 import { useComposerState, type ComposerState } from './useComposerState';
-import { selectedSessionId } from '@/store';
+import {
+  dismissWorkspaceUpload,
+  retryWorkspaceUpload,
+  selectedSessionId,
+  workspaceUploadBatch,
+  workspaceUploadOrigin,
+  workspaceUploadProgressPercent,
+  workspaceUploadTileStatus,
+} from '@/store';
 import { dictationPreviewParts } from '@/features/voice/pcm';
 import { useDictation } from '@/features/voice/use-dictation';
 
@@ -172,6 +181,22 @@ export function Composer(props: {
     onRemove: () => removeComposerAsset(asset.id),
   }));
 
+  const attachmentItems = createMemo(() => [
+    ...workspaceUploadAttachmentItems({
+      batch: workspaceUploadBatch(),
+      projectId: state.draftOwner()?.projectId ?? null,
+      origin: 'composer',
+      resolveOrigin: workspaceUploadOrigin,
+      tileStatus: workspaceUploadTileStatus,
+      progressPercent: workspaceUploadProgressPercent,
+      retry: retryWorkspaceUpload,
+      dismiss: dismissWorkspaceUpload,
+      getDraft: () => state.composerDraft(state.draftOwner()),
+      setDraft: (text) => state.setComposerDraft(state.draftOwner(), text),
+    }),
+    ...stagedAssetItems(),
+  ]);
+
   return (
     <div
       data-testid="composer-wrap"
@@ -195,7 +220,8 @@ export function Composer(props: {
         data-testid="composer-surface"
         aria-busy={state.submissionIsInFlight() || undefined}
         draft={draftText()}
-        attachments={stagedAssetItems()}
+        attachments={attachmentItems()}
+        attachmentLayout={attachmentItems().length > 0 ? 'tile' : 'chip'}
         surfaceRef={(element) => {
           setComposerSurfaceRef(element instanceof HTMLDivElement ? element : undefined);
         }}
@@ -215,7 +241,7 @@ export function Composer(props: {
             projectId={state.draftOwner()?.projectId ?? null}
             disabled={state.readOnly()}
             dropDescId={state.uploadDropDescId}
-            surfaceRef={composerSurfaceRef()}
+            surfaceRef={composerSurfaceRef}
             registerFileInput={(element) => {
               state.setUploadFileInputRef(element);
             }}

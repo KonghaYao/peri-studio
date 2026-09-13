@@ -81,6 +81,17 @@ export function draftContainsReferenceToken(draft: string, relativePath: string)
   return draft.includes(token);
 }
 
+/** 从草稿移除已注入的 `@path` 引用（与 insert 前缀规则对称）。 */
+export function removeFileReferenceToken(draft: string, relativePath: string): string {
+  const token = formatFileReferenceToken(relativePath);
+  for (const pattern of [`\n${token}`, ` ${token}`, token]) {
+    const index = draft.indexOf(pattern);
+    if (index === -1) continue;
+    return draft.slice(0, index) + draft.slice(index + pattern.length);
+  }
+  return draft;
+}
+
 export function referenceInsertionByteCost(
   draft: string,
   selectionStart: number,

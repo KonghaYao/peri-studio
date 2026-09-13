@@ -4,6 +4,7 @@ import {
   draftContainsReferenceToken,
   formatFileReferenceToken,
   insertFileReferenceAtCaret,
+  removeFileReferenceToken,
 } from './composer-file-reference';
 
 describe('composer-file-reference', () => {
@@ -31,5 +32,11 @@ describe('composer-file-reference', () => {
     const draft = 'hello @src/a.ts';
     expect(draftContainsReferenceToken(draft, 'src/a.ts')).toBe(true);
     expect(draftContainsReferenceToken(draft, 'src/b.ts')).toBe(false);
+  });
+
+  it('removes injected reference tokens with the same spacing rules as insert', () => {
+    expect(removeFileReferenceToken('hello \n@src/a.ts', 'src/a.ts')).toBe('hello ');
+    expect(removeFileReferenceToken('hello @src/a.ts', 'src/a.ts')).toBe('hello');
+    expect(removeFileReferenceToken('@src/a.ts more', 'src/a.ts')).toBe(' more');
   });
 });

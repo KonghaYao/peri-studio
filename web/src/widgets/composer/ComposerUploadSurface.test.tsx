@@ -101,14 +101,7 @@ describe('ComposerUploadSurface', () => {
     await waitFor(() => expect(draft()).toBe('Review @notes.txt'));
     expect(mocks.markInjected).toHaveBeenCalledOnce();
     expect(setDraftSpy).toHaveBeenCalledOnce();
-    const tile = screen.getByTestId('upload-asset-tile');
-    expect(tile).toHaveStyle({
-      width: 'var(--composer-upload-tile-width)',
-      height: 'var(--composer-upload-tile-height)',
-    });
-    expect(tile).toHaveClass('size-(--composer-upload-tile-width)', 'shrink-0');
-    expect(tile).toHaveAttribute('title', 'notes.txt');
-    expect(screen.getByText('notes.txt')).toHaveClass('truncate', 'text-center');
+    expect(screen.queryByTestId('upload-asset-tile')).not.toBeInTheDocument();
 
     setBatch((current) => current ? { ...current, items: [...current.items] } : null);
     await Promise.resolve();
@@ -156,13 +149,13 @@ describe('ComposerUploadSurface', () => {
     await waitFor(() => expect(draft()).toBe('@notes.txt'));
   });
 
-  it('does not reference failed files and Retry does not duplicate an existing reference', async () => {
+  it('does not reference failed files and skips duplicate references after retry succeeds', async () => {
     setPromptMaxBytes(65_536);
     const { draft } = renderSurface('Review @notes.txt');
     setBatch({ generation: 1, projectId: 'project-1', items: [item('failed')] });
 
-    await fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
-    expect(mocks.retry).toHaveBeenCalledOnce();
+    await Promise.resolve();
+    expect(mocks.retry).not.toHaveBeenCalled();
     expect(draft()).toBe('Review @notes.txt');
 
     setBatch({ generation: 1, projectId: 'project-1', items: [item('ready')] });

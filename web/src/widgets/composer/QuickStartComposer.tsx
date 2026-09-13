@@ -1,4 +1,4 @@
-import { createEffect, createSignal, createUniqueId, Show, type Component } from 'solid-js';
+import { createEffect, createMemo, createSignal, createUniqueId, Show, type Component } from 'solid-js';
 import {
   Button,
   ComposerInputField,
@@ -9,7 +9,19 @@ import {
   type ComposerShellFieldContext,
   InlineNotice,
 } from '@peri/ui';
-import { createSessionWithFirstMessage, creatingSessionProjectId, retryQuickStart, clearSubmittedWorkspaceUploads } from '@/store';
+import { workspaceUploadAttachmentItems } from '@/features/composer/composer-upload-attachments';
+import {
+  createSessionWithFirstMessage,
+  creatingSessionProjectId,
+  retryQuickStart,
+  clearSubmittedWorkspaceUploads,
+  dismissWorkspaceUpload,
+  retryWorkspaceUpload,
+  workspaceUploadBatch,
+  workspaceUploadOrigin,
+  workspaceUploadProgressPercent,
+  workspaceUploadTileStatus,
+} from '@/store';
 import { readOnly } from '@/features/auth/auth-state';
 import { dismissFailedQuickStart, quickStartSubmission } from '@/features/message/quick-start-delivery';
 import { promptMaxBytes } from '@/features/connection/connection';
@@ -99,6 +111,19 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
     ].filter(Boolean);
     return ids.length > 0 ? ids.join(' ') : undefined;
   };
+  const attachmentItems = createMemo(() => workspaceUploadAttachmentItems({
+    batch: workspaceUploadBatch(),
+    projectId: projectId() || null,
+    origin: 'quickstart',
+    resolveOrigin: workspaceUploadOrigin,
+    tileStatus: workspaceUploadTileStatus,
+    progressPercent: workspaceUploadProgressPercent,
+    retry: retryWorkspaceUpload,
+    dismiss: dismissWorkspaceUpload,
+    getDraft: draft,
+    setDraft,
+  }));
+
   const submit = () => {
     const text = draft().trim();
     const targetProjectId = projectId();
@@ -114,6 +139,8 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
       aria-busy={pendingIsInFlight() || undefined}
       disabled={inputDisabled()}
       draft={draft()}
+      attachments={attachmentItems()}
+      attachmentLayout={attachmentItems().length > 0 ? 'tile' : 'chip'}
       surfaceRef={(element) => {
         setQuickStartSurfaceRef(element instanceof HTMLDivElement ? element : undefined);
       }}
@@ -123,7 +150,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
           projectId={projectId() || null}
           disabled={inputDisabled()}
           dropDescId={uploadDropDescId}
-          surfaceRef={quickStartSurfaceRef()}
+          surfaceRef={quickStartSurfaceRef}
           registerFileInput={(element) => { uploadFileInputRef = element; }}
           getDraft={draft}
           setDraft={setDraft}

@@ -3,6 +3,7 @@
 export {
   clearSubmittedWorkspaceUploads,
   createEmptyExplorerFile,
+  dismissWorkspaceUpload,
   enqueueComposerRootUpload,
   enqueueExplorerUpload,
   enqueueQuickStartRootUpload,

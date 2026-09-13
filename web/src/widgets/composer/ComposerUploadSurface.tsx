@@ -1,4 +1,4 @@
-import { createEffect, createSignal, For, onCleanup, Show, type Accessor } from 'solid-js';
+import { createEffect, createSignal, onCleanup, type Accessor } from 'solid-js';
 import { promptMaxBytes } from '@/features/connection/connection';
 import { parseClipboardImageFiles } from '@/features/composer/composer-clipboard-images';
 import { applyFileReferenceWithBudget, draftContainsReferenceToken } from '@/features/composer/composer-file-reference';
@@ -6,17 +6,14 @@ import {
   enqueueComposerRootUpload,
   enqueueQuickStartRootUpload,
   markWorkspaceUploadReferenceInjected,
-  retryWorkspaceUpload,
   workspaceUploadAvailable,
   workspaceUploadBatch,
   workspaceUploadBlockedMessage,
   workspaceUploadLiveMessage,
   workspaceUploadOrigin,
-  workspaceUploadProgressPercent,
-  workspaceUploadTileStatus,
   type WorkspaceUploadOrigin,
 } from '@/store';
-import { ComposerDropOverlay, UploadAssetTile } from '@peri/ui';
+import { ComposerDropOverlay } from '@peri/ui';
 import { dataTransferHasFiles, parseFileDropTransfer, preventBrowserFileDrop } from './composer-upload-drop';
 
 type ComposerUploadSurfaceProps = {
@@ -40,7 +37,6 @@ function resolveSurfaceRef(ref: ComposerUploadSurfaceProps['surfaceRef']): HTMLE
 /** Composer / QuickStart 共享：drop、粘贴图片、键盘选文件、上传磁贴与引用注入。 */
 export function ComposerUploadSurface(props: ComposerUploadSurfaceProps) {
   const [dropActive, setDropActive] = createSignal(false);
-  const [successBadges, setSuccessBadges] = createSignal<Record<string, boolean>>({});
   let fileInputRef: HTMLInputElement | undefined;
 
   const batchItems = () => {
@@ -157,21 +153,6 @@ export function ComposerUploadSurface(props: ComposerUploadSurfaceProps) {
   });
 
   createEffect(() => {
-    for (const item of batchItems()) {
-      if (item.phase === 'ready' && !successBadges()[item.id]) {
-        setSuccessBadges((current) => ({ ...current, [item.id]: true }));
-        window.setTimeout(() => {
-          setSuccessBadges((current) => {
-            const next = { ...current };
-            delete next[item.id];
-            return next;
-          });
-        }, 1000);
-      }
-    }
-  });
-
-  createEffect(() => {
     const items = batchItems();
     for (const item of items) {
       if (item.phase !== 'ready' || item.referenceInjected || !item.committedPath) continue;
@@ -208,20 +189,6 @@ export function ComposerUploadSurface(props: ComposerUploadSurfaceProps) {
       <p class="sr-only" id={props.dropDescId} aria-live="polite">
         {workspaceUploadLiveMessage() || 'Release to upload files to this project.'}
       </p>
-      <Show when={batchItems().length > 0}>
-        <div class="ui-scrollbar flex gap-7 overflow-x-auto pb-7" aria-label="Uploads">
-          <For each={batchItems()}>{(item) => (
-            <UploadAssetTile
-              name={item.displayName}
-              status={workspaceUploadTileStatus(item)}
-              progress={workspaceUploadProgressPercent(item)}
-              errorMessage={item.error?.message}
-              showSuccessBadge={!!successBadges()[item.id]}
-              onRetry={item.error?.retryable ? () => retryWorkspaceUpload(item.id) : undefined}
-            />
-          )}</For>
-        </div>
-      </Show>
       <input
         ref={(element) => {
           fileInputRef = element;
