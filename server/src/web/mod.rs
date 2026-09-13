@@ -52,7 +52,9 @@ pub(crate) use parse::{
 #[cfg(test)]
 pub(crate) use parse::{is_json_content_type, request_path, valid_loopback_host};
 #[cfg(test)]
-pub(crate) use static_::{cache_headers_for_static, content_type, is_fingerprinted_asset, route, ASSETS};
+pub(crate) use static_::{
+    cache_headers_for_static, content_type, is_fingerprinted_asset, route, ASSETS,
+};
 
 /// Credential-free machine row for `/api/health` and `status --json`.
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

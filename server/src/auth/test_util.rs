@@ -72,7 +72,9 @@ pub(super) const AUDIT_FIELDS: &[&str] = &[
     "auth_failed_total",
 ];
 
-fn capture_subscriber(buf: Arc<Mutex<Vec<u8>>>) -> impl tracing::Subscriber + Send + Sync + 'static {
+fn capture_subscriber(
+    buf: Arc<Mutex<Vec<u8>>>,
+) -> impl tracing::Subscriber + Send + Sync + 'static {
     tracing_subscriber::fmt()
         .json()
         .with_writer(CaptureWriter(buf))
