@@ -16,7 +16,7 @@ export interface ComposerSlashOptions {
   draft: () => string;
   /** 协商到的命令目录（chatHead().agent.commandCatalog）。 */
   catalog: () => AgentCommandInfo[];
-  /** 输入是否可用（inputDisabled 的取反）。 */
+  /** slash 菜单是否可开；输入框本身永不禁用。 */
   enabled: () => boolean;
   /** 是否展示 Skills 浏览入口（协商了 peri.skillNames 且有 skill）。 */
   canBrowseSkills: () => boolean;

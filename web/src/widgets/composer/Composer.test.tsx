@@ -223,12 +223,12 @@ describe('Composer', () => {
     expect(input).toHaveValue('你好');
   });
 
-  it('does not imply that an unselected disabled editor can accept text', () => {
+  it('keeps an unselected editor typable and only locks send', () => {
     setPrincipalRole('full');
     mountComposer();
     const input = screen.getByRole('textbox');
-    expect(input).toBeDisabled();
-    expect(input).toHaveAttribute('placeholder', 'Select or create a session from the left first');
+    expect(input).toBeEnabled();
+    expectEnabledComposerPlaceholder('Select or create a session from the left first');
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
   });
 
@@ -337,7 +337,7 @@ describe('Composer', () => {
     await waitFor(() => expect(screen.getByTestId('composer-prediction')).toHaveTextContent('check failure test'));
   });
 
-  it('hides predictions without exact negotiation or while input is disabled', () => {
+  it('hides predictions without exact negotiation or while the session is not ready', () => {
     selectReadyChat();
     installPrediction();
     setChatHead((current) => current ? {
@@ -496,8 +496,8 @@ describe('Composer', () => {
     selectReadyChat();
     setRuntimeDocsState({ chat: true, control: false });
     mountComposer();
-    expect(screen.getByRole('textbox')).toBeDisabled();
-    expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', 'Loading session…');
+    expect(screen.getByRole('textbox')).toBeEnabled();
+    expectEnabledComposerPlaceholder('Loading session…');
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
   });
 
@@ -549,7 +549,7 @@ describe('Composer', () => {
     markMessageDeliveryUncertain('cmd-1');
     mountComposer();
     await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('preserved draft'));
-    expect(screen.getByRole('textbox')).toBeDisabled();
+    expect(screen.getByRole('textbox')).toBeEnabled();
     expect(screen.getByText('Message result not confirmed')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Confirm with the same request' })).toBeEnabled();
     expect(screen.queryByRole('button', { name: 'Back to edit' })).not.toBeInTheDocument();
@@ -563,7 +563,12 @@ describe('Composer', () => {
     expect(screen.getByTestId('composer-surface')).toHaveAttribute('aria-busy', 'true');
     expect(screen.queryByText('Sending message')).not.toBeInTheDocument();
     expect(screen.queryByText('Message received by the server')).not.toBeInTheDocument();
-    expect(screen.getByRole('textbox')).not.toHaveAccessibleDescription();
+    const input = screen.getByRole('textbox');
+    expect(input).toBeEnabled();
+    expect(input).not.toHaveAccessibleDescription();
+    fireEvent.input(input, { target: { value: 'next draft while sending' } });
+    expect(input).toHaveValue('next draft while sending');
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
   });
 
   it('restores only a definitely failed submission to the current project session draft', async () => {
@@ -585,7 +590,7 @@ describe('Composer', () => {
     mountComposer();
 
     expect(screen.getByText('Message delivery result unknown')).toBeInTheDocument();
-    expect(screen.getByRole('textbox')).toBeDisabled();
+    expect(screen.getByRole('textbox')).toBeEnabled();
     expect(screen.queryByRole('button', { name: 'Confirm with the same request' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Back to edit' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Acknowledge and continue' }));
@@ -671,6 +676,25 @@ describe('Composer', () => {
     Object.defineProperty(drop, 'preventDefault', { value: preventDefault });
     Object.defineProperty(drop, 'stopPropagation', { value: stopPropagation });
     surface.dispatchEvent(drop);
+    expect(preventDefault).toHaveBeenCalled();
+  });
+
+  it('uploads a clipboard image paste from the composer input', () => {
+    selectReadyChat();
+    mountComposer();
+
+    const input = screen.getByRole('textbox', { name: 'Message the agent' });
+    const image = new File([new Uint8Array([137, 80, 78, 71])], 'image.png', { type: 'image/png' });
+    const preventDefault = vi.fn();
+    const paste = new Event('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(paste, 'preventDefault', { value: preventDefault });
+    Object.defineProperty(paste, 'clipboardData', {
+      value: {
+        items: [{ kind: 'file', type: 'image/png', getAsFile: () => image }],
+        files: [image],
+      },
+    });
+    input.dispatchEvent(paste);
     expect(preventDefault).toHaveBeenCalled();
   });
 

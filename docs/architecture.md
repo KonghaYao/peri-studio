@@ -132,7 +132,7 @@ ResourceWorkbench 打开文件或 Git diff 时必须把来源 view 与资源稳�
 
 Resource Web session 为每次 project 激活分配单调 generation；所有 open-view/blob 请求与已接受 view 均绑定精确 `{projectId,generation}`，迟到或孤立结果只可 release。`leaseExpiresAt` 必须是有效 RFC3339；首个 Yjs update 到达前浏览器持有期限 timer，过期即 unsubscribe、release、drop Doc 并显示可恢复错误。首帧到达代表订阅已登记，可取消本地 deadline；后续 update 仍须同时命中当前 generation、project 与已接受 doc/view owner。该边界与 server 的 principal-bound 短租约共同阻止旧 project 污染与无界 DocStore 分配。
 
-文件上传是独立于只读 Resource Web session 的 committed mutation：浏览器只提交 `projectId`、workspace-relative path 与有界文件字节，server 解析可信 instance/cwd。Full principal 先经 `resource/open-upload` 获取 principal/project/path 绑定的 60 秒单次 ticket，再以同源 cookie 执行 ≤8 MiB HTTP PUT，最后用带 `commandId` 的 `fs/write-file` create-only action 提交；instance 必须在可信 root 下重新校验路径并原子发布，冲突不得覆盖原文件。Web 的 Composer、QuickStart 与 Explorer 共用 feature 队列，project generation 切换必须 fence 迟到结果；Composer 仅在 commit 成功后插入 `@relative/path` 且不自动发送，Explorer 在批次完成后显式刷新。v1 拒绝目录与覆盖，不提供大文件流式上传。
+文件上传是独立于只读 Resource Web session 的 committed mutation：浏览器只提交 `projectId`、workspace-relative path 与有界文件字节，server 解析可信 instance/cwd。Full principal 先经 `resource/open-upload` 获取 principal/project/path 绑定的 60 秒单次 ticket，再以同源 cookie 执行 ≤8 MiB HTTP PUT，最后用带 `commandId` 的 `fs/write-file` create-only action 提交；instance 必须在可信 root 下重新校验路径并原子发布，冲突不得覆盖原文件。Web 的 Composer、QuickStart 与 Explorer 共用 feature 队列，project generation 切换必须 fence 迟到结果；Composer 仅在 commit 成功后插入 `@relative/path` 且不自动发送，Explorer 在批次完成后显式刷新。剪贴板粘贴的位图走同一队列：只接受 raster MIME，截图匿名名（空名或 `image.png`）生成 `clipboard-*` 以免 create-only 冲突；纯文本粘贴不得拦截。v1 拒绝目录与覆盖，不提供大文件流式上传。
 
 Web 消息阅读器把滚动/跟随策略与单条消息语义分离：`MessageList` 只拥有文档水合、权限队列、自动吸底与完成播报；`ConversationMessage` 统一拥有 user/system/assistant 角色层级以及 reasoning、Markdown、tool、resource、error、copy 证据层。Chat reader 必须按 server `block_order` 生成稳定 discriminated `blocks[]`，正文、reasoning、tool 与 resource 不得再按类型重排；legacy orphan tool 只能以稳定尾部 block 兼容。用户和流式正文保持纯文本，只有已终态的 assistant 正文进入安全 Markdown 渲染；流式动画对辅助技术隐藏，完成状态由列表级原子播报一次。verified replay 与 inferred replay 必须分别显示“Verified history”与“Unverified history”，不能共用模糊 Recovered 标签。远程图片在用户同意前展示规范化 hostname，且不得提前请求网络。错误证据使用可命名 alert，reasoning 默认折叠，资源只展示 server 投影事实，不推断链接或可执行行为。
 
@@ -150,7 +150,7 @@ Web 组件库以私有 workspace package `packages/ui`（`@peri/ui`）为唯一�
 
 源样式必须在测试中通过 Lightning CSS 的无错误恢复严格解析，并由 PostCSS AST 检查媒体查询结构与设计令牌引用。Composer 与 quick-start 的容器焦点外观只能由一条共享规则拥有：指针焦点保持中性，只有内部输入命中 `:focus-visible` 时才显示高对比键盘焦点环；Feature 样式不得重新引入已淘汰的焦点令牌或失效选择器。
 
-选中 runtime 后，Web 必须分别确认 `chat:{chat_id}` 与 `session:{chat_id}` 两份 server-authoritative Y.Doc 已至少应用一帧，才可以宣称“可输入”并开放 Composer。切换 runtime 会清空该 hydration 证据；断线不会抹掉已渲染历史，但任何新 runtime 都不得把初始空数组误当成空会话。控制文档已经投影出的待决权限高于普通载入文案；两份文档都到齐且消息确认为空后，UI 才显示首次消息引导。
+选中 runtime 后，Web 必须分别确认 `chat:{chat_id}` 与 `session:{chat_id}` 两份 server-authoritative Y.Doc 已至少应用一帧，才可以宣称“可发送”。Composer 文本框永不禁用：发送后、turn 进行中、打开/载入/确认中都继续打草稿，发送由 Stop 或 session 单飞门禁接管。切换 runtime 会清空 hydration 证据；断线不会抹掉已渲染历史，但任何新 runtime 都不得把初始空数组误当成空会话。控制文档已经投影出的待决权限高于普通载入文案；两份文档都到齐且消息确认为空后，UI 才显示首次消息引导。
 
 Composer 草稿由独立 IndexedDB store 以 `{principalId, projectId, acpSessionId}` 复合键持久化（`acpSessionId` 与 wire `sessionId` 同值），而不是跟随临时 `chat_id` 或组件实例。同步内存 signal 提供输入体验，异步 hydration 受 revision fence 保护，晚到旧草稿不得覆盖用户已经输入的新文本。切换会话、项目或 principal 不得串稿，刷新后返回同一复合身份必须恢复；登出或认证失效清空当前浏览器全部草稿与本地 unknown 证据。消息提交状态同时携带 `command_id`、草稿 owner、`acpSessionId` 与 `chat_id`：发送失败或连接结果未知时只把原文恢复到所属会话，其他会话不被阻塞；`uncertain` 状态不可被直接关闭或以新 command 重发。`delivery_unknown` 只能经明确的 acknowledge-and-continue 转为只读证据后释放目标 session 单飞槽，晚到精确投影仍按原 command 清除该证据。
 

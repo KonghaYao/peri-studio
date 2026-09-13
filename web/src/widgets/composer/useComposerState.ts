@@ -158,7 +158,7 @@ export function useComposerState(taRef: () => HTMLTextAreaElement | undefined) {
       turnActive: turnActive(),
       submissionForSession: !!submissionForSession(),
     });
-  const inputDisabled = () => inputState().disabled;
+  const composerReady = () => inputState().composerReady;
   const sendLocked = () => inputState().sendLocked;
   const inputPlaceholder = () => inputState().placeholder;
 
@@ -217,7 +217,7 @@ export function useComposerState(taRef: () => HTMLTextAreaElement | undefined) {
   const slash = useComposerSlash({
     draft: () => composerDraft(draftOwner()),
     catalog: commandCatalog,
-    enabled: () => !inputDisabled(),
+    enabled: () => true,
     canBrowseSkills,
     onInsert: (text, caret) => {
       setComposerDraft(draftOwner(), text);
@@ -235,7 +235,7 @@ export function useComposerState(taRef: () => HTMLTextAreaElement | undefined) {
     agent: () => chatHead()?.agent ?? null,
     draft: () => composerDraft(draftOwner()),
     sessionId: selectedSessionId,
-    inputDisabled,
+    inputDisabled: () => !composerReady(),
     onAccept: (text) => {
       setComposerDraft(draftOwner(), text);
       slash.setCaret(text.length);
@@ -253,7 +253,7 @@ export function useComposerState(taRef: () => HTMLTextAreaElement | undefined) {
       .join(' ') || undefined;
 
   function submit() {
-    if (inputDisabled() || sendLocked()) return;
+    if (sendLocked()) return;
     const owner = draftOwner();
     const text = composerDraft(owner).trim();
     if (!text || !promptFitsBudget(text, promptMaxBytes())) return;
@@ -297,7 +297,7 @@ export function useComposerState(taRef: () => HTMLTextAreaElement | undefined) {
     retryMessageSubmission,
     acknowledgeUnknownMessageDelivery,
     canAcknowledgeUnknownMessageDelivery,
-    inputDisabled,
+    composerReady,
     sendLocked,
     inputPlaceholder,
     draftBytes,

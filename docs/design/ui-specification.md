@@ -186,7 +186,7 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 | 壳层 | `widgets/shell` | AppShell 网格、`PwaRuntime`、ErrorCenter、ConnectionProblem、StatusArea、`AppSettingsPanel`（Appearance）、System About「This browser」 |
 | 侧栏 | `widgets/sidebar` | 28px 行高、选中 `bg-selected`、`For` 稳定 key；整列 `ui-sidebar-frost`（wash + fill，footer/gear 同一表面；`prefers-reduced-transparency` 回退实心 `--sidebar-bg`） |
 | 聊天 | `widgets/chat` | Transcript 窗口化、Permission/Elicitation 队列、Markdown、`ToolCallActivity`（`@peri/ui` `ToolActivityRow` + `features/chat/tool-call-activity.ts`） |
-| 输入 | `widgets/composer` | `Composer.tsx` 内联 editor/toolbar；`@peri/ui` `SlashMenuListbox` + `features/composer/slash-menu-catalog.ts`；drop / Add attachment 共用上传队列，ready 后仅插入 `@relative/path` |
+| 输入 | `widgets/composer` | `Composer.tsx` 内联 editor/toolbar；`@peri/ui` `SlashMenuListbox` + `features/composer/slash-menu-catalog.ts`；drop / Add attachment / 剪贴板粘贴图片共用上传队列，ready 后仅插入 `@relative/path` |
 | 资源 | `widgets/resource` | 右/左 `ResourceFloatingPanel`（Explorer·SCM·Graph / 文件预览）；Explorer folder/root drop target 与批次状态；Git diff 占主区；44px 触控目标 |
 | 认证 | `widgets/auth` | AuthGate 卡片 `--container-auth-card` |
 

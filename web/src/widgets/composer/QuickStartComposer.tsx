@@ -72,7 +72,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
   const [projectId, setProjectId] = createSignal(props.initialProjectId || props.projects[0]?.id || '');
   const [plusOpen, setPlusOpen] = createSignal(false);
   const voice = useDictation(() => ({ getDraft: draft, setDraft }));
-  let quickStartSurfaceRef: HTMLDivElement | undefined;
+  const [quickStartSurfaceRef, setQuickStartSurfaceRef] = createSignal<HTMLDivElement | undefined>();
   let uploadFileInputRef: HTMLInputElement | undefined;
   let textareaRef: HTMLTextAreaElement | undefined;
   const pending = () => quickStartSubmission();
@@ -115,7 +115,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
       disabled={inputDisabled()}
       draft={draft()}
       surfaceRef={(element) => {
-        quickStartSurfaceRef = element;
+        setQuickStartSurfaceRef(element instanceof HTMLDivElement ? element : undefined);
       }}
       innerLeading={(
         <ComposerUploadSurface
@@ -123,7 +123,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
           projectId={projectId() || null}
           disabled={inputDisabled()}
           dropDescId={uploadDropDescId}
-          surfaceRef={quickStartSurfaceRef}
+          surfaceRef={quickStartSurfaceRef()}
           registerFileInput={(element) => { uploadFileInputRef = element; }}
           getDraft={draft}
           setDraft={setDraft}

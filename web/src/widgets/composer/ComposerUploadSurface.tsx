@@ -1,5 +1,6 @@
-import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js';
+import { createEffect, createSignal, For, onCleanup, Show, type Accessor } from 'solid-js';
 import { promptMaxBytes } from '@/features/connection/connection';
+import { parseClipboardImageFiles } from '@/features/composer/composer-clipboard-images';
 import { applyFileReferenceWithBudget, draftContainsReferenceToken } from '@/features/composer/composer-file-reference';
 import {
   enqueueComposerRootUpload,
@@ -23,7 +24,7 @@ type ComposerUploadSurfaceProps = {
   projectId: string | null;
   disabled: boolean;
   dropDescId: string;
-  surfaceRef?: HTMLElement | undefined;
+  surfaceRef?: HTMLElement | Accessor<HTMLElement | undefined>;
   registerFileInput?: (element: HTMLInputElement | undefined) => void;
   getDraft: () => string;
   setDraft: (text: string) => void;
@@ -31,7 +32,12 @@ type ComposerUploadSurfaceProps = {
   readCaret: () => { start: number; end: number };
 };
 
-/** Composer / QuickStart 共享：drop、键盘选文件、上传磁贴与引用注入。 */
+function resolveSurfaceRef(ref: ComposerUploadSurfaceProps['surfaceRef']): HTMLElement | undefined {
+  const value = typeof ref === 'function' ? ref() : ref;
+  return value instanceof HTMLElement ? value : undefined;
+}
+
+/** Composer / QuickStart 共享：drop、粘贴图片、键盘选文件、上传磁贴与引用注入。 */
 export function ComposerUploadSurface(props: ComposerUploadSurfaceProps) {
   const [dropActive, setDropActive] = createSignal(false);
   const [successBadges, setSuccessBadges] = createSignal<Record<string, boolean>>({});
@@ -92,8 +98,20 @@ export function ComposerUploadSurface(props: ComposerUploadSurfaceProps) {
     if (fileInputRef) fileInputRef.value = '';
   };
 
+  const onPaste = (event: ClipboardEvent) => {
+    const files = parseClipboardImageFiles(event.clipboardData);
+    if (!files.length) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (uploadDisabled()) {
+      notifyBlocked(blockedMessage());
+      return;
+    }
+    queueFiles(files);
+  };
+
   createEffect(() => {
-    const node = props.surfaceRef;
+    const node = resolveSurfaceRef(props.surfaceRef);
     if (!node) return;
     const onEnter = (event: DragEvent) => {
       if (!dataTransferHasFiles(event.dataTransfer)) return;
@@ -121,16 +139,18 @@ export function ComposerUploadSurface(props: ComposerUploadSurfaceProps) {
     node.addEventListener('dragover', onOver);
     node.addEventListener('dragleave', onLeave);
     node.addEventListener('drop', onDrop);
+    node.addEventListener('paste', onPaste, true);
     onCleanup(() => {
       node.removeEventListener('dragenter', onEnter);
       node.removeEventListener('dragover', onOver);
       node.removeEventListener('dragleave', onLeave);
       node.removeEventListener('drop', onDrop);
+      node.removeEventListener('paste', onPaste, true);
     });
   });
 
   createEffect(() => {
-    const node = props.surfaceRef;
+    const node = resolveSurfaceRef(props.surfaceRef);
     if (!node) return;
     if (dropActive()) node.setAttribute('data-drop-active', '');
     else node.removeAttribute('data-drop-active');

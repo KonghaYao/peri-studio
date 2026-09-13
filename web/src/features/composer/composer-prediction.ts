@@ -14,7 +14,7 @@ export interface ComposerPredictionOptions {
   draft: () => string;
   /** 当前会话 id（dismiss 键的一部分）。 */
   sessionId: () => string | null;
-  /** 输入是否可用（inputDisabled）。 */
+  /** 会话未就绪时隐藏预测；不表示文本框禁用。 */
   inputDisabled: () => boolean;
   /** 接受预测：写草稿、更新 caret 并聚焦。 */
   onAccept: (text: string) => void;

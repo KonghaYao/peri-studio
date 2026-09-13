@@ -72,7 +72,7 @@ const ComposerMessageField: Component<ComposerMessageFieldProps> = (props) => {
       const parts = dictationPreviewParts(draftText(), preview);
       return { kind: 'dictation' as const, prefix: parts.prefix, text: parts.preview };
     }
-    if (props.state.inputDisabled() || draftText().length > 0) return null;
+    if (draftText().length > 0) return null;
     const prediction = props.state.prediction.activePrediction();
     if (prediction) return { kind: 'prediction' as const, text: prediction.text };
     const placeholder = props.state.inputPlaceholder();
@@ -117,8 +117,7 @@ const ComposerMessageField: Component<ComposerMessageFieldProps> = (props) => {
           props.state.submit();
         }
       }}
-      placeholder={props.state.inputDisabled() ? props.state.inputPlaceholder() : ''}
-      disabled={props.state.inputDisabled()}
+      placeholder=""
       aria-label="Message the agent"
       aria-autocomplete="list"
       aria-expanded={props.state.slash.slashMenuOpen()}
@@ -144,7 +143,7 @@ export function Composer(props: {
   const centered = () => props.layout === 'centered';
   const [plusOpen, setPlusOpen] = createSignal(false);
   let taRef: HTMLTextAreaElement | undefined;
-  let composerSurfaceRef: HTMLDivElement | undefined;
+  const [composerSurfaceRef, setComposerSurfaceRef] = createSignal<HTMLDivElement | undefined>();
   const state = useComposerState(() => taRef);
   const plusCatalogItems = () => filterCommandCatalog(state.commandCatalog(), '', 'all');
   const voice = useDictation(() => ({
@@ -195,12 +194,10 @@ export function Composer(props: {
       <ComposerShell
         data-testid="composer-surface"
         aria-busy={state.submissionIsInFlight() || undefined}
-        aria-disabled={state.inputDisabled()}
-        disabled={state.inputDisabled()}
         draft={draftText()}
         attachments={stagedAssetItems()}
         surfaceRef={(element) => {
-          composerSurfaceRef = element;
+          setComposerSurfaceRef(element instanceof HTMLDivElement ? element : undefined);
         }}
         queue={state.queueItems().length > 0 ? (
           <ComposerQueue
@@ -216,9 +213,9 @@ export function Composer(props: {
           <ComposerUploadSurface
             origin="composer"
             projectId={state.draftOwner()?.projectId ?? null}
-            disabled={state.inputDisabled()}
+            disabled={state.readOnly()}
             dropDescId={state.uploadDropDescId}
-            surfaceRef={composerSurfaceRef}
+            surfaceRef={composerSurfaceRef()}
             registerFileInput={(element) => {
               state.setUploadFileInputRef(element);
             }}
@@ -244,7 +241,7 @@ export function Composer(props: {
           <ComposerPlusMenu
             open={plusOpen()}
             onOpenChange={setPlusOpen}
-            disabled={state.inputDisabled()}
+            disabled={state.readOnly()}
             upload={{
               onClick: () => {
                 openComposerUploadFilePicker(state.uploadFileInputRef);
@@ -274,7 +271,7 @@ export function Composer(props: {
             </div>
             <ComposerMicButton
               listening={voice.listening()}
-              disabled={!voice.available() || (state.inputDisabled() && !voice.listening())}
+              disabled={!voice.available() || (state.readOnly() && !voice.listening())}
               title={voice.available() ? undefined : 'Voice input is not configured'}
               onClick={voice.toggle}
             />
@@ -286,8 +283,7 @@ export function Composer(props: {
                   shape="pill"
                   label="Send"
                   disabled={
-                    state.inputDisabled()
-                    || state.sendLocked()
+                    state.sendLocked()
                     || !draftText().trim()
                     || state.promptOverBudget()
                   }

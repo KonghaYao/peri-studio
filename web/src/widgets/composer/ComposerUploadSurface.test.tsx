@@ -169,4 +169,48 @@ describe('ComposerUploadSurface', () => {
     await waitFor(() => expect(mocks.markInjected).toHaveBeenCalledOnce());
     expect(draft()).toBe('Review @notes.txt');
   });
+
+  it('uploads pasted clipboard images and does not intercept text paste', () => {
+    const surface = document.createElement('div');
+    document.body.append(surface);
+    render(() => <ComposerUploadSurface
+      origin="composer"
+      projectId="project-1"
+      disabled={false}
+      dropDescId="paste-upload-status"
+      surfaceRef={surface}
+      getDraft={() => ''}
+      setDraft={vi.fn()}
+      focusAt={vi.fn()}
+      readCaret={() => ({ start: 0, end: 0 })}
+    />);
+
+    const image = new File([new Uint8Array([137, 80, 78, 71])], 'image.png', { type: 'image/png' });
+    const pasteImage = new Event('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(pasteImage, 'clipboardData', {
+      value: {
+        items: [{ kind: 'file', type: 'image/png', getAsFile: () => image }],
+        files: [image],
+      },
+    });
+    expect(surface.dispatchEvent(pasteImage)).toBe(false);
+    expect(mocks.enqueueComposer).toHaveBeenCalledWith(
+      'project-1',
+      expect.arrayContaining([
+        expect.objectContaining({ name: expect.stringMatching(/^clipboard-\d{8}-\d{6}\.png$/) }),
+      ]),
+    );
+
+    mocks.enqueueComposer.mockClear();
+    const pasteText = new Event('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(pasteText, 'clipboardData', {
+      value: {
+        items: [{ kind: 'string', type: 'text/plain', getAsFile: () => null }],
+        files: [],
+      },
+    });
+    expect(surface.dispatchEvent(pasteText)).toBe(true);
+    expect(mocks.enqueueComposer).not.toHaveBeenCalled();
+    surface.remove();
+  });
 });
