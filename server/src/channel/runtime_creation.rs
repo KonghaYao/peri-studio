@@ -34,9 +34,9 @@ use tracing::{debug, warn};
 use uuid::Uuid;
 
 use crate::channel::command_coordinator::{extract_command_id, ExecCmd};
-use crate::config::Config;
 use crate::channel::relay_event_handler::RelayEventHandler;
 use crate::channel::DEFAULT_INSTANCE_ID;
+use crate::config::Config;
 use crate::control::{ChatRegistry, InstanceRegistry, WorkspaceRegistry};
 use crate::persist::{ChatStore, Store};
 use crate::protocol::{validate_cwd, Translator};

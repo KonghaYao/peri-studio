@@ -178,7 +178,11 @@ pub struct CliOverrides {
     )]
     pub langfuse_secret_key: Option<SecretString>,
     /// Langfuse API host（`LANGFUSE_HOST`）。
-    #[arg(long = "langfuse-host", env = "LANGFUSE_HOST", help = "Langfuse API host")]
+    #[arg(
+        long = "langfuse-host",
+        env = "LANGFUSE_HOST",
+        help = "Langfuse API host"
+    )]
     pub langfuse_host: Option<String>,
     /// Langfuse API base URL（`LANGFUSE_BASE_URL`，优先于 host）。
     #[arg(

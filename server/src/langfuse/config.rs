@@ -48,7 +48,10 @@ pub(crate) fn normalize_base_url(raw: &str) -> Result<Url, String> {
 }
 
 fn is_loopback_api_host(host: Option<&str>) -> bool {
-    matches!(host, Some("127.0.0.1") | Some("localhost") | Some("[::1]") | Some("::1"))
+    matches!(
+        host,
+        Some("127.0.0.1") | Some("localhost") | Some("[::1]") | Some("::1")
+    )
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -118,8 +121,8 @@ mod tests {
 
     #[test]
     fn build_langfuse_config_uses_normalized_base() {
-        let config = build_langfuse_config("pk", "sk", "https://jp.cloud.langfuse.com")
-            .expect("config");
+        let config =
+            build_langfuse_config("pk", "sk", "https://jp.cloud.langfuse.com").expect("config");
         assert_eq!(config.upstream_host_origin(), "jp.cloud.langfuse.com");
     }
 }

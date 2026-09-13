@@ -10,7 +10,7 @@ pub use config::{
     build_langfuse_config, langfuse_env_keys, LangfuseConfig, DEFAULT_LANGFUSE_HOST,
     LANGFUSE_BASE_URL_ENV, LANGFUSE_HOST_ENV, LANGFUSE_PUBLIC_KEY_ENV, LANGFUSE_SECRET_KEY_ENV,
 };
-pub use session_id::{SessionIdError, validate_session_id};
+pub use session_id::{validate_session_id, SessionIdError};
 pub use trace_detail::{fetch_trace_detail, MonitorObservationView, MonitorTraceDetailView};
 pub use trace_id::{validate_trace_id, TraceIdError};
 pub use upstream::{

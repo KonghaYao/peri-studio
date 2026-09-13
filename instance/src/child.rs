@@ -514,7 +514,10 @@ mod allowlist_tests {
             "LANGFUSE_HOST",
             "LANGFUSE_BASE_URL",
         ] {
-            assert!(ENV_BASE_ALLOWLIST.contains(&key), "{key} must be allowlisted");
+            assert!(
+                ENV_BASE_ALLOWLIST.contains(&key),
+                "{key} must be allowlisted"
+            );
         }
     }
 }

@@ -34,12 +34,12 @@ use crate::channel::session_rewind::{SessionRewindExecution, SessionRewindQuerie
 use crate::channel::session_runtime_operations::{SessionRuntimeConfig, SessionRuntimeOperations};
 use crate::channel::turn_cancellation::TurnCancellation;
 use crate::channel::workspace_compatibility::WorkspaceCompatibility;
+use crate::config::Config;
 use crate::control::{
     ChatRegistry, InstanceRegistry, MachineService, ProjectService, StoreSink, WorkspaceRegistry,
 };
 use crate::persist::Store;
 use crate::protocol::Translator;
-use crate::config::Config;
 use crate::state::doc_manager::{BatchConfig, DocManager};
 
 impl CommandCoordinator {

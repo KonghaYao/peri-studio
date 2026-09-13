@@ -18,8 +18,8 @@ use super::test_util::{
 use crate::auth::{AuthService, TokenRole, TokenStore};
 use crate::web::{
     cookie_value, header_end, is_json_content_type, is_ws_upgrade, request_path, serve_http,
-    serve_http_with_resources, valid_loopback_host, valid_ws_host, valid_ws_origin, HttpRouteDeps,
-    BrowserAuthSetup, HealthMachineSummary, HealthSnapshot, HealthStatus,
+    serve_http_with_resources, valid_loopback_host, valid_ws_host, valid_ws_origin,
+    BrowserAuthSetup, HealthMachineSummary, HealthSnapshot, HealthStatus, HttpRouteDeps,
 };
 
 async fn auth_response_with(
@@ -209,6 +209,14 @@ async fn health_is_credential_free_liveness_with_explicit_readiness() {
         "panel CSP must allow exact loopback sandbox origin: {response:?}"
     );
     assert!(
+        response.contains("img-src 'self'"),
+        "panel CSP must allow same-origin CSS/img assets: {response:?}"
+    );
+    assert!(
+        !response.contains("img-src 'self' data:"),
+        "panel CSP must not open data: images: {response:?}"
+    );
+    assert!(
         !body.contains("sshDestination"),
         "health must not expose machine secrets: {body}"
     );
@@ -305,8 +313,8 @@ async fn resource_blob_requires_cookie_and_returns_exact_bytes_with_etag() {
                 config: Arc::new(crate::config::Config::defaults()),
             },
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
     });
     let request = format!(
         "GET {} HTTP/1.1\r\nHost: 127.0.0.1:8456\r\nCookie: peri_studio_session={}\r\nContent-Length: 0\r\n\r\n",

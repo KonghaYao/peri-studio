@@ -9,8 +9,8 @@
 pub mod auth;
 pub mod channel;
 pub mod config;
-pub mod langfuse;
 pub mod control;
+pub mod langfuse;
 pub mod persist;
 pub mod protocol;
 pub mod runtime;

@@ -9,8 +9,8 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::Mutex;
 
 use crate::auth::{AuthService, TokenRole, TokenStore};
-use crate::control::{CatalogSession, SessionCatalog};
 use crate::config::{Config, SecretString};
+use crate::control::{CatalogSession, SessionCatalog};
 use crate::web::{serve_http_with_resources, BrowserAuthSetup, HealthSnapshot, HttpRouteDeps};
 
 async fn monitor_response(
@@ -47,9 +47,7 @@ async fn monitor_response(
             peer,
             auth,
             setup,
-            HealthSnapshot::from_global_status(
-                peri_studio_proto::schema::GlobalStatus::Healthy,
-            ),
+            HealthSnapshot::from_global_status(peri_studio_proto::schema::GlobalStatus::Healthy),
             HttpRouteDeps {
                 resources,
                 session_catalog: catalog,
@@ -67,7 +65,12 @@ async fn monitor_response(
     response
 }
 
-fn auth_fixture() -> (tempfile::TempDir, Arc<Mutex<AuthService>>, String, BrowserAuthSetup) {
+fn auth_fixture() -> (
+    tempfile::TempDir,
+    Arc<Mutex<AuthService>>,
+    String,
+    BrowserAuthSetup,
+) {
     let dir = tempdir().unwrap();
     let mut token_store = TokenStore::load(&dir.path().join("tokens.toml")).unwrap();
     let record = token_store
@@ -211,9 +214,8 @@ async fn monitor_requires_cookie_and_catalog_entry() {
 #[tokio::test]
 #[serial]
 async fn health_langfuse_boolean_tracks_configuration() {
-    let mut health = HealthSnapshot::from_global_status(
-        peri_studio_proto::schema::GlobalStatus::Healthy,
-    );
+    let mut health =
+        HealthSnapshot::from_global_status(peri_studio_proto::schema::GlobalStatus::Healthy);
     health.langfuse = Config::defaults().langfuse_enabled();
     assert!(!health.langfuse);
 

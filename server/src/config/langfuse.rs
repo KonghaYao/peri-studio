@@ -3,8 +3,8 @@
 use std::collections::HashMap;
 
 use crate::langfuse::{
-    build_langfuse_config, DEFAULT_LANGFUSE_HOST, LANGFUSE_BASE_URL_ENV, LANGFUSE_HOST_ENV,
-    LANGFUSE_PUBLIC_KEY_ENV, LANGFUSE_SECRET_KEY_ENV, LangfuseConfig,
+    build_langfuse_config, LangfuseConfig, DEFAULT_LANGFUSE_HOST, LANGFUSE_BASE_URL_ENV,
+    LANGFUSE_HOST_ENV, LANGFUSE_PUBLIC_KEY_ENV, LANGFUSE_SECRET_KEY_ENV,
 };
 
 use super::{CliOverrides, Config, SecretString};
@@ -144,7 +144,10 @@ mod tests {
         cfg.langfuse_secret_key = Some(SecretString::new("sk"));
         cfg.langfuse_host = Some("https://lf.example".into());
         let env = cfg.langfuse_spawn_env();
-        assert_eq!(env.get(LANGFUSE_HOST_ENV), Some(&"https://lf.example".to_string()));
+        assert_eq!(
+            env.get(LANGFUSE_HOST_ENV),
+            Some(&"https://lf.example".to_string())
+        );
         assert!(!env.contains_key(LANGFUSE_BASE_URL_ENV));
         clear_langfuse_env();
     }

@@ -33,8 +33,8 @@ async fn put(
                 config: std::sync::Arc::new(crate::config::Config::defaults()),
             },
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
     });
     let mut client = TcpStream::connect(addr).await.unwrap();
     client.write_all(request.as_bytes()).await.unwrap();

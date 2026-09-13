@@ -40,7 +40,7 @@ Peri acp（spawn 必须带 PERI_MCP_APPS=）──MCP──► MCP Server
 | 协议 | `proto/src/mcp_apps.rs`；帧 `mcp_app_session` / `mcp_app_resource` / `mcp_app_call_result` |
 | 敏感瞬时 | `instance/src/hub/forward.rs`：`peri/mcp/*` + mcp-app MIME / `ui://` |
 | 沙箱 origin | `server/src/web/sandbox.rs`，默认 `LISTEN_PORT+1` 或 `PERI_STUDIO_SANDBOX_PORT` |
-| 面板 CSP | `server/src/web/http.rs` `PANEL_CSP` 的 `frame-src` |
+| 面板 CSP | `server/src/web/http.rs` `panel_csp()`：`frame-src` 精确沙箱 origin；`img-src 'self'`（CSS `url()` 走此指令，磨砂颗粒为同源 `/images/sidebar-frost-grain.svg`，禁止 `data:`） |
 | Web 装配 | `web/src/features/mcp/mcp-apps.ts`、`mcp-app-host.ts`（官方 `AppBridge`）、`widgets/chat/McpAppFrame.tsx`、`web/sandbox.html` |
 | 工具卡入口 | `ConversationMessage` 的 `McpToolBlock`：有 live HTML 才换 iframe |
 
@@ -146,6 +146,12 @@ hostCapabilities: expected object, received undefined
 修复：`frame-src` 只写 `127.0.0.1` / `localhost` 的精确沙箱端口。Chrome 的 `frame-src` **拒绝任何 `[::1]` host-source**（精确端口 `http://[::1]:8457` 和控制台打码的 `<URL>` / `http://[::1]:*` 一样非法）。`frame-ancestors` 同样；沙箱头优先用 query `host=` 的精确面板 origin。`:*` 只留给 `connect-src` 的 v4/localhost。e2e 必须 `http://127.0.0.1`，不要用 `[::1]`。
 
 面板自己的 `X-Frame-Options: DENY` 只禁止**被嵌**，不禁止去嵌别人。
+
+### 5.1.1 面板拦 CSS `data:` 图
+
+现象：控制台 `Loading the image 'data:image/svg+xml,…feTurbulence…' violates CSP "default-src 'self'"`。Chrome 把 CSS `background-image: url(...)` 按 `img-src` 执行；未声明时回落 `default-src`，拦截 `data:`。
+
+修复：侧栏磨砂颗粒用同源 `/images/sidebar-frost-grain.svg`，面板 CSP 显式 `img-src 'self'`，不要给面板放开 `data:`。
 
 改的是 HTTP 响应头，浏览器会缓存旧 CSP：**改完必须重启 server 并强制刷新**。
 

@@ -41,8 +41,14 @@ mod tests {
     fn rejects_missing_empty_and_invalid() {
         assert_eq!(validate_session_id(None), Err(SessionIdError::Missing));
         assert_eq!(validate_session_id(Some("")), Err(SessionIdError::Missing));
-        assert_eq!(validate_session_id(Some("a&b")), Err(SessionIdError::Invalid));
-        assert_eq!(validate_session_id(Some("a#b")), Err(SessionIdError::Invalid));
+        assert_eq!(
+            validate_session_id(Some("a&b")),
+            Err(SessionIdError::Invalid)
+        );
+        assert_eq!(
+            validate_session_id(Some("a#b")),
+            Err(SessionIdError::Invalid)
+        );
         assert_eq!(
             validate_session_id(Some(&"x".repeat(201))),
             Err(SessionIdError::Invalid)

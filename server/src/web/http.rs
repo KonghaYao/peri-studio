@@ -15,7 +15,10 @@ use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 
 use crate::auth::AuthService;
+use crate::config::Config;
+use crate::control::SessionCatalog;
 use crate::web::auth_http::serve_auth_session;
+use crate::web::monitor_http::{serve_monitor_session, serve_monitor_trace};
 #[cfg(test)]
 use crate::web::parse::request_path;
 use crate::web::parse::{
@@ -23,13 +26,10 @@ use crate::web::parse::{
     valid_origin,
 };
 use crate::web::pick_directory_http::serve_pick_directory;
-use crate::web::monitor_http::{serve_monitor_session, serve_monitor_trace};
 use crate::web::resource_upload_http::serve_resource_upload;
 use crate::web::static_::cache_headers_for_static;
 #[cfg(test)]
 use crate::web::static_::route;
-use crate::config::Config;
-use crate::control::SessionCatalog;
 use crate::web::{BrowserAuthSetup, HealthSnapshot};
 
 pub(crate) struct HttpRouteDeps {
@@ -623,10 +623,12 @@ pub(super) fn security_headers() -> Vec<(String, String)> {
 /// 因此只写 `127.0.0.1` / `localhost`；e2e 必须用 `http://127.0.0.1`。
 /// `style-src 'unsafe-inline'`：Solid 运行时 `style` 属性（侧栏/浮窗宽度等）与 xterm.js
 /// 运行时注入样式；脚本禁止 inline。`wasm-unsafe-eval` 供 @xterm/addon-image（SIXEL/QOI 等 WASM 解码）。
+/// `img-src 'self'`：CSS `url()` 与 `<img>` 走此指令；未声明时回落 `default-src`。
+/// 侧栏磨砂颗粒/材质必须是同源 `/images/*`，禁止 `data:`（会触发控制台 CSP 拦截）。
 fn panel_csp() -> String {
     let port = crate::web::sandbox::advertised_sandbox_port();
     format!(
-        "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:* ws://localhost:*; frame-src http://127.0.0.1:{port} http://localhost:{port} https://127.0.0.1:{port} https://localhost:{port}"
+        "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self' ws://127.0.0.1:* ws://localhost:*; frame-src http://127.0.0.1:{port} http://localhost:{port} https://127.0.0.1:{port} https://localhost:{port}"
     )
 }
 

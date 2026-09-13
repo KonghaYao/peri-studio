@@ -142,13 +142,18 @@ impl UpstreamDeadline {
     }
 }
 
-pub(crate) async fn fetch_bounded_get(url: &Url, authorization: &str) -> Result<Vec<u8>, UpstreamError> {
+pub(crate) async fn fetch_bounded_get(
+    url: &Url,
+    authorization: &str,
+) -> Result<Vec<u8>, UpstreamError> {
     fetch_direct(url, authorization).await
 }
 
 async fn fetch_direct(url: &Url, authorization: &str) -> Result<Vec<u8>, UpstreamError> {
     let host = url.host_str().ok_or(UpstreamError::Transport)?;
-    let port = url.port_or_known_default().ok_or(UpstreamError::Transport)?;
+    let port = url
+        .port_or_known_default()
+        .ok_or(UpstreamError::Transport)?;
     let deadline = UpstreamDeadline::new();
     let stream = connect_direct(host, port, &deadline).await?;
     let path = request_target(url);
@@ -250,7 +255,8 @@ fn parse_http_body(response: &[u8]) -> Result<Vec<u8>, UpstreamError> {
         .windows(4)
         .position(|window| window == b"\r\n\r\n")
         .ok_or(UpstreamError::InvalidBody)?;
-    let header = std::str::from_utf8(&response[..header_end]).map_err(|_| UpstreamError::InvalidBody)?;
+    let header =
+        std::str::from_utf8(&response[..header_end]).map_err(|_| UpstreamError::InvalidBody)?;
     let status = header
         .lines()
         .next()
@@ -340,7 +346,12 @@ fn truncate_trace_name(name: String) -> String {
 }
 
 fn map_trace_level(raw: Option<&str>) -> String {
-    match raw.unwrap_or("DEFAULT").trim().to_ascii_uppercase().as_str() {
+    match raw
+        .unwrap_or("DEFAULT")
+        .trim()
+        .to_ascii_uppercase()
+        .as_str()
+    {
         "ERROR" => "ERROR".to_string(),
         _ => "DEFAULT".to_string(),
     }
@@ -362,7 +373,7 @@ fn tls_connector() -> Result<TlsConnector, UpstreamError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::langfuse::config::{DEFAULT_LANGFUSE_HOST, LangfuseConfig};
+    use crate::langfuse::config::{LangfuseConfig, DEFAULT_LANGFUSE_HOST};
     use url::Url;
 
     #[test]
@@ -419,7 +430,8 @@ mod tests {
             let (mut stream, _) = listener.accept().await.unwrap();
             let mut buf = vec![0u8; 4096];
             let _ = stream.read(&mut buf).await;
-            let body = br#"{"data":[{"id":"t1","name":"turn","timestamp":"2026-09-13T08:00:00.000Z"}]}"#;
+            let body =
+                br#"{"data":[{"id":"t1","name":"turn","timestamp":"2026-09-13T08:00:00.000Z"}]}"#;
             let response = format!(
                 "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
                 body.len()
@@ -452,5 +464,4 @@ mod tests {
         assert_eq!(url.path(), "/api/public/traces");
         assert!(url.query().unwrap().contains("sessionId=acp-1"));
     }
-
 }

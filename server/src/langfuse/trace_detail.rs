@@ -153,16 +153,16 @@ fn map_observation_record(record: ObservationRecord) -> FlatObservation {
     let (score_value, score_data_type) = if kind == "SCORE" {
         (
             record.value.as_ref().and_then(format_score_value),
-            record
-                .data_type
-                .filter(|value| !value.trim().is_empty()),
+            record.data_type.filter(|value| !value.trim().is_empty()),
         )
     } else {
         (None, None)
     };
     FlatObservation {
         id: record.id.unwrap_or_default(),
-        name: truncate_observation_name(record.name.unwrap_or_else(|| "Untitled observation".into())),
+        name: truncate_observation_name(
+            record.name.unwrap_or_else(|| "Untitled observation".into()),
+        ),
         kind,
         latency_ms: record
             .latency_ms
@@ -174,21 +174,17 @@ fn map_observation_record(record: ObservationRecord) -> FlatObservation {
             .usage
             .as_ref()
             .and_then(|usage| usage.total_tokens.or(usage.total)),
-        input_tokens: record
-            .usage
-            .as_ref()
-            .and_then(|usage| usage.input_tokens),
-        output_tokens: record
-            .usage
-            .as_ref()
-            .and_then(|usage| usage.output_tokens),
+        input_tokens: record.usage.as_ref().and_then(|usage| usage.input_tokens),
+        output_tokens: record.usage.as_ref().and_then(|usage| usage.output_tokens),
         input_preview,
         output_preview,
         input_truncated: input_truncated.then_some(true),
         output_truncated: output_truncated.then_some(true),
         score_value,
         score_data_type,
-        parent_id: record.parent_observation_id.filter(|value| !value.is_empty()),
+        parent_id: record
+            .parent_observation_id
+            .filter(|value| !value.is_empty()),
     }
 }
 
@@ -213,7 +209,10 @@ struct FlatObservation {
 }
 
 fn build_observation_tree(flat: Vec<FlatObservation>) -> Vec<MonitorObservationView> {
-    let items: Vec<FlatObservation> = flat.into_iter().filter(|item| !item.id.is_empty()).collect();
+    let items: Vec<FlatObservation> = flat
+        .into_iter()
+        .filter(|item| !item.id.is_empty())
+        .collect();
     let ids: std::collections::HashSet<String> = items.iter().map(|item| item.id.clone()).collect();
     items
         .iter()
@@ -226,7 +225,10 @@ fn build_observation_tree(flat: Vec<FlatObservation>) -> Vec<MonitorObservationV
         .collect()
 }
 
-fn build_observation_node(item: &FlatObservation, items: &[FlatObservation]) -> MonitorObservationView {
+fn build_observation_node(
+    item: &FlatObservation,
+    items: &[FlatObservation],
+) -> MonitorObservationView {
     let children = items
         .iter()
         .filter(|child| child.parent_id.as_deref() == Some(item.id.as_str()))
@@ -304,7 +306,12 @@ fn map_observation_kind(raw: Option<&str>) -> String {
 }
 
 fn map_observation_level(raw: Option<&str>) -> String {
-    match raw.unwrap_or("DEFAULT").trim().to_ascii_uppercase().as_str() {
+    match raw
+        .unwrap_or("DEFAULT")
+        .trim()
+        .to_ascii_uppercase()
+        .as_str()
+    {
         "ERROR" => "ERROR".to_string(),
         "WARNING" => "WARNING".to_string(),
         "DEBUG" => "DEBUG".to_string(),
@@ -364,8 +371,14 @@ mod tests {
         assert_eq!(generation.tokens, Some(1200));
         assert_eq!(generation.input_tokens, Some(900));
         assert_eq!(generation.output_tokens, Some(300));
-        assert_eq!(generation.input_preview.as_deref(), Some("{\"prompt\":\"hello\"}"));
-        assert_eq!(generation.output_preview.as_deref(), Some("{\"text\":\"world\"}"));
+        assert_eq!(
+            generation.input_preview.as_deref(),
+            Some("{\"prompt\":\"hello\"}")
+        );
+        assert_eq!(
+            generation.output_preview.as_deref(),
+            Some("{\"text\":\"world\"}")
+        );
         assert_eq!(generation.input_truncated, None);
         let score = &view.observations[0].children[1];
         assert_eq!(score.kind, "SCORE");

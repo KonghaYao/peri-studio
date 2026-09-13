@@ -70,7 +70,7 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 | 画布 | `--app-bg` | `bg-app-bg` | 主内容区 / 聊天背景（`neutral-0` `#ffffff`） |
 | 壳层灰 | `--palette-neutral-25` | `bg-neutral-25` | 侧栏与 Workbench 轨/面板（`#fafafa`） |
 | 侧栏 | `--sidebar-bg` | `bg-sidebar-bg` | 别名 Neutral 25；左栏磨砂 fill 底色 |
-| 侧栏磨砂 | `--sidebar-frost-*` | `.ui-sidebar-frost`（extra.css） | 底层 wash（默认 Clouds `/images/sidebar-frost-wash.png`；Marble / Silk / Linen / Paper 可换）、半透明 fill 默认 50%（`--sidebar-frost-fill`）、blur、颗粒；非 accent。整列含 footer/gear，禁止底部另铺实心 `bg-sidebar-bg` |
+| 侧栏磨砂 | `--sidebar-frost-*` | `.ui-sidebar-frost`（extra.css） | 底层 wash（默认 Clouds `/images/sidebar-frost-wash.png`；Marble / Silk / Linen / Paper 可换）、半透明 fill 默认 50%（`--sidebar-frost-fill`）、blur、颗粒 `/images/sidebar-frost-grain.svg`（同源静态资源，禁止 `data:`，以免面板 CSP `img-src 'self'` 拦截）；非 accent。整列含 footer/gear，禁止底部另铺实心 `bg-sidebar-bg` |
 | 表面 | `--surface` / `--surface-overlay` | `bg-surface` / `bg-surface-overlay` | 卡片、输入框、弹层、气泡（白） |
 | 次级表面 | `--surface-sunken` / `--surface-muted` | `bg-surface-sunken` | 同源 Neutral 25 的凹槽 |
 | 主文字 | `--text-primary` | `text-text-primary` | 标题、正文 |

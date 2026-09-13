@@ -7,8 +7,8 @@ use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 
 use crate::auth::{AuthService, TokenRole};
-use crate::control::SessionCatalog;
 use crate::config::Config;
+use crate::control::SessionCatalog;
 use crate::langfuse::{
     fetch_session_traces, fetch_trace_detail, validate_session_id, validate_trace_id,
     SessionIdError, TraceIdError, UpstreamError,
@@ -66,7 +66,9 @@ pub(crate) async fn serve_monitor_session(
             let body = serde_json::to_vec(&view).expect("monitor view serializes");
             write_http(&mut stream, "200 OK", "application/json", &body, &headers).await
         }
-        Err(error) => write_upstream_error(&mut stream, &session_id, &langfuse, error, &headers).await,
+        Err(error) => {
+            write_upstream_error(&mut stream, &session_id, &langfuse, error, &headers).await
+        }
     }
 }
 
@@ -112,13 +114,8 @@ pub(crate) async fn serve_monitor_trace(
                 .await
         }
         Err(TraceIdError::Invalid) => {
-            return write_json_error(
-                &mut stream,
-                "400 Bad Request",
-                "invalid_trace_id",
-                &headers,
-            )
-            .await
+            return write_json_error(&mut stream, "400 Bad Request", "invalid_trace_id", &headers)
+                .await
         }
     };
     let Some(langfuse) = config.langfuse_client_config() else {
@@ -138,7 +135,9 @@ pub(crate) async fn serve_monitor_trace(
         Err(UpstreamError::HttpStatus(404)) => {
             write_json_error(&mut stream, "404 Not Found", "trace_not_found", &headers).await
         }
-        Err(error) => write_upstream_error(&mut stream, &session_id, &langfuse, error, &headers).await,
+        Err(error) => {
+            write_upstream_error(&mut stream, &session_id, &langfuse, error, &headers).await
+        }
     }
 }
 
@@ -183,7 +182,11 @@ async fn authorize_monitor_get(
         write_json_error(stream, "401 Unauthorized", "unauthorized", headers).await?;
         return Ok(None);
     };
-    let ctx = match auth.lock().await.validate_browser_session(session_cookie, peer) {
+    let ctx = match auth
+        .lock()
+        .await
+        .validate_browser_session(session_cookie, peer)
+    {
         Ok(ctx) => ctx,
         Err(_) => {
             write_json_error(stream, "401 Unauthorized", "unauthorized", headers).await?;
@@ -308,14 +311,7 @@ async fn write_json_error(
     headers: &[(String, String)],
 ) -> std::io::Result<()> {
     let body = format!(r#"{{"error":"{error}"}}"#);
-    write_http(
-        stream,
-        status,
-        "application/json",
-        body.as_bytes(),
-        headers,
-    )
-    .await
+    write_http(stream, status, "application/json", body.as_bytes(), headers).await
 }
 
 #[cfg(test)]

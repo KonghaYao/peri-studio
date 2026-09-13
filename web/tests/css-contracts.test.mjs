@@ -648,6 +648,7 @@ test('standalone shell uses named safe-area utilities without card margin overfl
   assert.doesNotMatch(sidebarChrome, /bg-neutral-25/);
   assert.doesNotMatch(sidebarChrome, /bg-sidebar-bg/);
   const frostImages = [
+    'sidebar-frost-grain.svg',
     'sidebar-frost-wash.png',
     'sidebar-frost-marble.png',
     'sidebar-frost-silk.png',
