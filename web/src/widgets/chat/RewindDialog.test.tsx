@@ -21,9 +21,19 @@ describe('RewindDialog', () => {
     expect(panel).toHaveTextContent('Rewind session');
     expect(screen.getByRole('heading', { name: 'Rewind session', hidden: true })).toHaveClass('sr-only');
     expect(screen.getByRole('button', { name: 'Close rewind panel' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Choose a message to rewind to' })).toBeInTheDocument();
+    expect(screen.getByText(/Messages after it will be removed/)).toBeInTheDocument();
     const target = screen.getByRole('option', { name: /Fix the login flow/ });
     expect(screen.getByRole('listbox', { name: 'Rewind target message' })).toContainElement(target);
     expect(screen.queryByRole('button', { name: 'Rewind session and files' })).not.toBeInTheDocument();
+  });
+
+  it('shows a flat empty state when there are no rewind targets', () => {
+    setRewindFlow({ kind: 'select_target', chatId: 'chat-1', candidates: [] });
+    render(() => <RewindDialog open onClose={() => undefined} />);
+    expect(screen.getByText('No user messages')).toBeInTheDocument();
+    expect(screen.getByText('The current session has no user messages to rewind to.')).toBeInTheDocument();
+    expect(screen.queryByRole('listbox', { name: 'Rewind target message' })).not.toBeInTheDocument();
   });
 
   it('shows normalized file impact only after a fingerprint-bound preview', () => {
@@ -36,6 +46,7 @@ describe('RewindDialog', () => {
     render(() => <RewindDialog open onClose={() => undefined} />);
     expect(screen.getByText('src/main.rs')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Rewind session and files' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Confirm the rewind impact' })).toBeInTheDocument();
   });
 
   it('never offers retry when execution delivery is unknown', () => {

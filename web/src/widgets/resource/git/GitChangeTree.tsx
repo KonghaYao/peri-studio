@@ -20,7 +20,7 @@ export function GitChangeTree(props: {
       fileTreeitem={false}
       onFileSelect={props.onFileSelect}
       getFileDataAttrs={(change) => ({
-        'data-resource-focus-key': `diff:${props.repoId}:${props.groupId}:${change.id}`,
+        'data-resource-focus-key': `file:${change.path}`,
         'data-resource-focus-view': 'scm',
       })}
       fileAriaLabel={(change) => `Open changes for ${change.path}`}

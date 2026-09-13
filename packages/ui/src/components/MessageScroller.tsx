@@ -151,10 +151,7 @@ export const MessageScrollerItem: Component<MessageScrollerItemProps> = (props) 
       data-slot="message-scroller-item"
       data-message-id={local.messageId}
       data-scroll-anchor={local.scrollAnchor ? 'true' : 'false'}
-      class={cn(
-        'min-w-0 shrink-0 [contain-intrinsic-size:auto_10rem] [content-visibility:auto]',
-        local.class,
-      )}
+      class={cn('min-w-0 shrink-0', local.class)}
       {...rest}
     >
       {local.children}
@@ -190,7 +187,7 @@ export const MessageScrollerButton: Component<MessageScrollerButtonProps> = (pro
       inert={!active()}
       tabIndex={active() ? 0 : -1}
       class={cn(
-        'absolute left-1/2 -translate-x-1/2 border border-border-strong bg-surface-overlay text-content-primary transition-[translate,scale,opacity] duration-200 hover:bg-interaction-hover',
+        'absolute left-1/2 z-10 -translate-x-1/2 border border-border-strong bg-surface-overlay text-content-primary transition-[translate,scale,opacity] duration-200 hover:bg-interaction-hover',
         'data-[active=false]:pointer-events-none data-[active=false]:scale-95 data-[active=false]:opacity-0',
         'data-[active=true]:translate-y-0 data-[active=true]:scale-100 data-[active=true]:opacity-100',
         direction() === 'end'

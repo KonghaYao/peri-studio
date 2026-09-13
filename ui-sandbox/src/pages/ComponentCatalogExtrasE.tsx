@@ -1,4 +1,3 @@
-import { FolderOpen } from 'lucide-solid';
 import { createSignal, Show } from 'solid-js';
 import { showCatalogSection } from '@/catalog/catalog-section';
 import {
@@ -13,12 +12,9 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
+  Dialog,
+  DialogContent,
+  DialogTrigger,
   Field,
   FieldDescription,
   FieldError,
@@ -26,7 +22,12 @@ import {
   FieldLabel,
   FieldLegend,
   FieldSet,
+  FormDialogShell,
   Input,
+  Listbox,
+  ListboxItem,
+  ListboxItemLabel,
+  SelectField,
   Switch,
   SwitchControl,
   SwitchInput,
@@ -84,25 +85,40 @@ export function ComponentCatalogExtrasE(props: { sections?: string[] }) {
             </Field>
           </FieldGroup>
         </FieldSet>
+        <DemoRow label="SelectField · Listbox">
+          <SelectField label="Model" class="max-w-xs">
+            <option value="nova">Nova 4.1</option>
+            <option value="gpt">gpt-5.6</option>
+          </SelectField>
+          <Listbox
+            aria-label="Recent sessions"
+            class="max-w-xs rounded-8 border border-border-subtle p-4"
+            options={[
+              { id: 'alpha', label: 'Alpha session' },
+              { id: 'beta', label: 'Beta session' },
+            ]}
+            optionValue="id"
+            optionTextValue="label"
+            renderItem={(item) => (
+              <ListboxItem item={item}>
+                <ListboxItemLabel>{item.rawValue.label}</ListboxItemLabel>
+              </ListboxItem>
+            )}
+          />
+        </DemoRow>
       </CatalogDemo>
       </Show>
 
-      <Show when={showCatalogSection(props.sections, 'empty')}>
-      <CatalogDemo id="empty" title="Empty" description="Compound 空状态：媒体、标题、描述与操作区。">
-        <Empty class="max-w-md">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <FolderOpen class="size-24" />
-            </EmptyMedia>
-            <EmptyTitle>No projects yet</EmptyTitle>
-            <EmptyDescription>
-              You have not created any projects. Get started with your first workspace.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <Button variant="primary" size="sm">New project</Button>
-          </EmptyContent>
-        </Empty>
+      <Show when={showCatalogSection(props.sections, 'form-dialog-shell')}>
+      <CatalogDemo id="form-dialog-shell" title="FormDialogShell" description="带表单槽位的对话框壳层。">
+        <Dialog>
+          <DialogTrigger as={Button} variant="default" size="sm">Open form dialog shell</DialogTrigger>
+          <DialogContent>
+            <FormDialogShell title="Rename project" description="Visible in catalog only.">
+              <p class="text-13 text-content-secondary">Dialog shell with form slot.</p>
+            </FormDialogShell>
+          </DialogContent>
+        </Dialog>
       </CatalogDemo>
       </Show>
 

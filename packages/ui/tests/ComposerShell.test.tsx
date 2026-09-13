@@ -24,4 +24,17 @@ describe('ComposerShell', () => {
     expect(textbox.parentElement).toContainElement(textbox);
     expect(textbox.parentElement).not.toContainElement(modelButton);
   });
+
+  it('renders meta row below the surface with reserved row height', () => {
+    render(() => (
+      <ComposerShell
+        metaRow={<span data-testid="composer-meta-content">main · This Mac</span>}
+      />
+    ));
+
+    const surface = screen.getByTestId('composer-surface');
+    const meta = screen.getByTestId('composer-meta-content');
+    expect(surface.parentElement).toContainElement(meta);
+    expect(surface.parentElement?.querySelector('[class*="min-h-28"]')).toContainElement(meta);
+  });
 });

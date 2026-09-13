@@ -60,12 +60,29 @@ function extractLineRange(rawInput: unknown): string {
   return '';
 }
 
-function compactDetailValue(value: string): string {
-  const normalized = value.replace(/\\/g, '/').replace(/\/+$/, '');
-  if (!normalized) return value;
-  const isPath = normalized.startsWith('/') || /^[A-Za-z]:\//.test(normalized) || normalized.includes('/');
-  if (!isPath) return truncateText(value, 40);
-  return normalized.split('/').pop() || normalized;
+function formatLineRangeSubtitle(range: string): string {
+  if (!range) return '';
+  return `lines ${range.replace(/-/g, '–')}`;
+}
+
+function formatSearchScope(path: string): string {
+  const normalized = path.replace(/\\/g, '/').replace(/\/+$/, '');
+  if (!normalized) return path;
+  if (normalized.length <= 48) return normalized;
+  const parts = normalized.split('/').filter(Boolean);
+  if (parts.length <= 3) return normalized;
+  return `…/${parts.slice(-3).join('/')}`;
+}
+
+function humanizeToolName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return 'tool';
+  const short = trimmed.split(/[/:]/).pop() ?? trimmed;
+  const spaced = short
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .trim();
+  return spaced.toLowerCase();
 }
 
 function findFirstStringValue(rawInput: unknown): string | undefined {
@@ -204,11 +221,11 @@ export function narrateToolCall(
     case 'read-file':
     case 'read-directory': {
       const file = extractFileName(tool.arguments);
-      const verbDone = kind === 'read-directory' ? 'Listed' : 'Opened';
-      const verbRunning = kind === 'read-directory' ? 'Listing' : 'Opening';
+      const verbDone = kind === 'read-directory' ? 'Listed' : 'Read';
+      const verbRunning = kind === 'read-directory' ? 'Listing' : 'Reading';
       title = titlePhrase(verbDone, verbRunning, file, running);
       const range = extractLineRange(tool.arguments);
-      if (range) subtitle = `Lines ${range}`;
+      if (range) subtitle = formatLineRangeSubtitle(range);
       break;
     }
     case 'write': {
@@ -228,10 +245,10 @@ export function narrateToolCall(
     case 'grep': {
       const pattern = String(record?.pattern ?? '');
       const quoted = `"${truncateText(pattern, 40)}"`;
-      title = titlePhrase('Searched', 'Searching', quoted, running);
+      title = titlePhrase('Searched for', 'Searching for', quoted, running);
       const parts: string[] = [];
-      const path = String(record?.path ?? record?.include ?? '');
-      if (path) parts.push(`in ${compactDetailValue(path)}`);
+      const path = String(record?.path ?? record?.include ?? record?.glob ?? '');
+      if (path) parts.push(`in ${formatSearchScope(path)}`);
       if (narrationStatus === 'complete') {
         const count = grepResultCount(tool.result);
         if (count !== undefined) parts.push(`${count} match${count === 1 ? '' : 'es'}`);
@@ -242,7 +259,7 @@ export function narrateToolCall(
     case 'glob': {
       const pattern = String(record?.pattern ?? '');
       const quoted = `"${truncateText(pattern, 40)}"`;
-      title = titlePhrase('Matched', 'Matching', quoted, running);
+      title = titlePhrase('Found files matching', 'Finding files matching', quoted, running);
       break;
     }
     case 'web-fetch': {
@@ -274,23 +291,25 @@ export function narrateToolCall(
       break;
     }
     default: {
-      const name = formatToolDisplayName(tool.name || 'tool');
-      title = titlePhrase('Used', 'Using', name, running);
-      const first = findFirstStringValue(tool.arguments);
-      if (first) subtitle = compactDetailValue(first);
+      const name = humanizeToolName(formatToolDisplayName(tool.name || 'tool'));
+      title = titlePhrase('Ran', 'Running', name, running);
+      const detail = record?.query ?? record?.pattern ?? record?.command ?? record?.name ?? findFirstStringValue(tool.arguments);
+      if (typeof detail === 'string' && detail.trim()) {
+        subtitle = truncateText(detail.trim(), 60);
+      }
     }
   }
 
   if (pathFromArgs && supportsFilePreview(kind) && narrationStatus !== 'waiting_for_confirmation' && !errorDetail) {
-    const verbRunning = kind === 'write' ? 'Writing' : kind === 'edit' ? 'Editing' : 'Opening';
-    const verbDone = kind === 'write' ? 'Wrote' : kind === 'edit' ? 'Edited' : 'Opened';
+    const verbRunning = kind === 'write' ? 'Writing' : kind === 'edit' ? 'Editing' : 'Reading';
+    const verbDone = kind === 'write' ? 'Wrote' : kind === 'edit' ? 'Edited' : 'Read';
     filePreview = {
       prefix: running ? `${verbRunning} ` : `${verbDone} `,
       pathLabel: extractFileName({ file_path: pathFromArgs }),
       path: pathFromArgs,
     };
     const range = extractLineRange(tool.arguments);
-    if (range && !subtitle) subtitle = `Lines ${range}`;
+    if (range && !subtitle) subtitle = formatLineRangeSubtitle(range);
     return { kind, title: '', subtitle, filePreview, errorDetail };
   }
 

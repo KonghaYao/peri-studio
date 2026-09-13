@@ -20,8 +20,8 @@ import {
 } from '@/store';
 import { installPrincipalRole } from '@/features/auth/auth-state';
 import { acquireFixtureClock } from './fixture-clock';
-import { resourceWorkspace, setResourceDiffPreview, setResourceFilePreview, setResourceWorkspace } from '@/features/resource/resource-store';
-import type { ResourceDiffPreviewState, ResourceFilePreviewState } from '@/features/resource/resource-preview';
+import { resourceWorkspace, setResourceFilePreview, setResourceWorkspace } from '@/features/resource/resource-store';
+import type { ResourceFilePreviewState } from '@/features/resource/resource-preview';
 import type { ResourceEntry } from '@/entities/resource/resource-view';
 import { markElicitationResponseUncertain, startElicitationResponse } from '@/features/message/elicitation-delivery';
 import { setComposerAssets } from '@/features/composer/composer-assets';
@@ -50,12 +50,6 @@ export const VISUAL_SCENARIO_IDS = [
 /** Browser acceptance bridge; this module shares the fixture's live store graph. */
 export function setVisualFilePreview(preview: ResourceFilePreviewState): void {
   setResourceFilePreview(preview);
-}
-
-/** 浏览器验收桥：模拟 server 返回 Git diff blob 后的权威预览。 */
-export function setVisualDiffPreview(preview: ResourceDiffPreviewState): void {
-  setResourceFilePreview(null);
-  setResourceDiffPreview(preview);
 }
 
 function normalizeResourcePath(path: string): string {

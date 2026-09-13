@@ -100,6 +100,13 @@ export function Select(props: SelectSingleProps | SelectMultipleProps) {
     return flatOptions().filter((option) => option.label.toLowerCase().includes(term));
   });
 
+  const selectedOptions = createMemo(() => {
+    const values = multiple()
+      ? (Array.isArray(local.value) ? local.value : [])
+      : local.value ? [local.value as string] : [];
+    return flatOptions().filter((option) => values.includes(option.value));
+  });
+
   const virtualWindow = createMemo(() => {
     const options = filteredOptions();
     if (!local.virtualScroll || options.length === 0) {
@@ -127,13 +134,6 @@ export function Select(props: SelectSingleProps | SelectMultipleProps) {
     }
     return undefined;
   };
-
-  const selectedOptions = createMemo(() => {
-    const values = multiple()
-      ? (Array.isArray(local.value) ? local.value : [])
-      : local.value ? [local.value as string] : [];
-    return flatOptions().filter((option) => values.includes(option.value));
-  });
 
   const kobalteValue = createMemo(() => {
     if (multiple()) return selectedOptions();

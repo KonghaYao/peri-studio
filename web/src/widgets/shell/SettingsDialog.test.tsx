@@ -47,11 +47,9 @@ describe('SettingsDialog', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'About' }));
 
     expect(screen.getByRole('tab', { name: 'About' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByText('Server health')).toBeInTheDocument();
-    expect(screen.getByText('Healthy')).toBeInTheDocument();
-    expect(screen.getByText('Registry schema version')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText('Connected')).toBeInTheDocument();
+    expect(screen.getByText('Healthy')).toBeInTheDocument();
+    expect(screen.getByText(/schema 3/)).toBeInTheDocument();
   });
 
   it('invokes onClose via Escape', () => {

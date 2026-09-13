@@ -24,7 +24,8 @@ describe('resource tree widgets', () => {
     ));
 
     const row = screen.getByRole('treeitem', { name: /src/i });
-    expect(row).toHaveClass('h-(--tree-row-height)');
+    expect(row).toHaveClass('pl-6', 'gap-5', 'h-full');
+    expect(row.parentElement).toHaveClass('h-(--tree-row-height)', 'items-center');
     expect(row.querySelector('svg.lucide-chevron-right')).toBeNull();
     expect(row.querySelector('[data-file-icon]')).toBeInTheDocument();
   });

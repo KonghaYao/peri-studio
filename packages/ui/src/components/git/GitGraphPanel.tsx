@@ -3,7 +3,6 @@ import { RefreshCw } from 'lucide-solid';
 import { cn } from '../../lib/cn';
 import {
   GIT_GRAPH_COLORS,
-  GIT_GRAPH_HEADER_HEIGHT,
   GIT_GRAPH_ROW_HEIGHT,
   layoutGitGraph,
   type GitGraphLayoutCommit,
@@ -36,8 +35,6 @@ import {
   gitGraphTdClass,
   gitGraphTdDescColClass,
   gitGraphTdGraphColClass,
-  gitGraphThClass,
-  gitGraphThGraphColClass,
 } from '../git-graph/git-graph-layout';
 import { GitGraphBranchDialog, GitGraphConfirmDialog } from './GitGraphActionDialog';
 import { GitGraphRefBadge } from './GitGraphRefBadge';
@@ -98,7 +95,7 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
   const [branchDialog, setBranchDialog] = createSignal<BranchDialogState | null>(null);
   const [resetConfirm, setResetConfirm] = createSignal<{ commit: GitGraphCommit; mode: 'soft' | 'mixed' | 'hard' } | null>(null);
   const [metrics, setMetrics] = createSignal<TableMetrics>({
-    headerHeight: GIT_GRAPH_HEADER_HEIGHT,
+    headerHeight: 0,
     rowHeight: GIT_GRAPH_ROW_HEIGHT,
     rowCenters: [],
     tableHeight: 0,
@@ -111,11 +108,10 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
     if (!table) return;
 
     const tableBox = table.getBoundingClientRect();
-    const thead = table.tHead;
     const tbody = table.tBodies[0];
-    if (!thead || !tbody) return;
+    if (!tbody) return;
 
-    const headerHeight = thead.getBoundingClientRect().height;
+    const headerHeight = 0;
     const rows = tbody.querySelectorAll('tr');
     const rowCenters: number[] = [];
     let rowHeight = GIT_GRAPH_ROW_HEIGHT;
@@ -260,15 +256,6 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
               <col style={{ width: 'var(--git-graph-author-col-width)' }} />
               <col style={{ width: 'var(--git-graph-commit-col-width)' }} />
             </colgroup>
-            <thead>
-              <tr>
-                <th class={cn(gitGraphThClass, gitGraphThGraphColClass)}>Graph</th>
-                <th class={gitGraphThClass}>Description</th>
-                <th class={cn(gitGraphThClass, gitGraphDateColClass)}>Date</th>
-                <th class={cn(gitGraphThClass, gitGraphAuthorColClass)}>Author</th>
-                <th class={cn(gitGraphThClass, gitGraphCommitColClass)}>Commit</th>
-              </tr>
-            </thead>
             <tbody>
               <For each={props.commits}>
                 {(commit, index) => {

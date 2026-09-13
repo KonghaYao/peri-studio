@@ -1,29 +1,24 @@
 import { createSignal } from 'solid-js';
 import {
-  Badge,
   Button,
   ButtonGroup,
   buttonGroupItemClass,
   Checkbox,
   Dialog,
   DropdownMenu,
-  EmptyState,
   IconButton,
   InlineNotice,
   Input,
   RadioGroup,
   Select,
-  Skeleton,
   Spinner,
-  Status,
   Tabs,
   Textarea,
   Tooltip,
 } from '@/lib/catalog-ui';
-import { ComponentCatalogFeedback } from '@/pages/ComponentCatalogFeedback';
-import { ComponentCatalogGaps } from '@/pages/ComponentCatalogGaps';
+import { CopyButton, LinkButton } from '@peri/ui';
 import { CatalogDemo, DemoRow, TierHeader } from '@/pages/shared/DemoSection';
-import { Bell, Archive, Inbox, Mic, MoreHorizontal, Pencil, Pin, Plus, Search, Send, Settings, Trash2 } from 'lucide-solid';
+import { Bell, Archive, Mic, MoreHorizontal, Pencil, Pin, Plus, Search, Send, Settings, Trash2 } from 'lucide-solid';
 
 /* Tier 2 · Base UI：基础组件的状态矩阵。 */
 
@@ -58,6 +53,10 @@ export function ComponentsPage() {
           <Button variant="primary" busy>Saving</Button>
           <Button variant="default" disabled>Disabled</Button>
           <Button variant="primary" disabled>Disabled</Button>
+        </DemoRow>
+        <DemoRow label="Copy & link">
+          <CopyButton text="peri-studio" />
+          <LinkButton href="#/components" variant="link">Documentation</LinkButton>
         </DemoRow>
       </CatalogDemo>
 
@@ -125,21 +124,6 @@ export function ComponentsPage() {
         />
       </CatalogDemo>
 
-      <CatalogDemo id="badge" title="Badge & Status" description="Badge 文字永远是中性灰，颜色由状态点承载（2026-08-30 定稿）。">
-        <DemoRow label="Badges">
-          <Badge tone="success">Done</Badge>
-          <Badge tone="warning">Running</Badge>
-          <Badge tone="danger">Failed</Badge>
-          <Badge tone="info">Nova 4.1</Badge>
-          <Badge tone="neutral">Queued</Badge>
-        </DemoRow>
-        <DemoRow label="Status">
-          <Status tone="success" label="Connected" live />
-          <Status tone="warning" label="Reconciling" />
-          <Status tone="neutral" label="Idle" />
-        </DemoRow>
-      </CatalogDemo>
-
       <CatalogDemo id="tabs" title="Tabs" description="底部发丝线 + 激活项主色文字与底部指示条。">
         <div class="max-w-md">
           <Tabs
@@ -191,31 +175,14 @@ export function ComponentsPage() {
         </div>
       </CatalogDemo>
 
-      <CatalogDemo id="spinner" title="Spinner, Skeleton & EmptyState">
+      <CatalogDemo id="spinner" title="Spinner" description="加载指示器尺寸与颜色。">
         <DemoRow>
           <Spinner class="text-accent-solid" />
           <Spinner class="text-content-muted" />
           <span class="text-12 text-content-muted">Loading…</span>
         </DemoRow>
-        <DemoRow label="Shimmer">
-          <div class="flex w-300 flex-col gap-8">
-            <Skeleton class="h-12 w-180" />
-            <Skeleton class="h-12 w-240" />
-            <Skeleton class="h-12 w-210" />
-          </div>
-        </DemoRow>
-        <div class="max-w-sm rounded-lg border border-border-subtle">
-          <EmptyState
-            icon={<Inbox size={28} strokeWidth={1.5} />}
-            title="No conversations yet"
-            description="Start a project session to create your first conversation."
-            action={<Button variant="primary" size="sm">New session</Button>}
-          />
-        </div>
       </CatalogDemo>
 
-      <ComponentCatalogFeedback sections={['message', 'button-variants', 'checkbox-radio', 'avatar-scroll-aspect', 'skeleton-loading', 'toggle-kbd-command', 'copy-link-terminal-git']} />
-      <ComponentCatalogGaps sections={['checkbox-radio', 'avatar-scroll-aspect', 'skeleton-loading', 'toggle-kbd-command', 'copy-link-terminal-git']} />
     </div>
   );
 }

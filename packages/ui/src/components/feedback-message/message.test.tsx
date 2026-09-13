@@ -9,7 +9,10 @@ describe('message', () => {
   it('renders success message in host stack', async () => {
     render(() => <MessageHost />);
     message.success('Saved successfully');
-    expect(await screen.findByRole('status')).toHaveTextContent('Saved successfully');
-    expect(screen.getByRole('status')).toHaveAttribute('data-tone', 'success');
+    const status = await screen.findByRole('status');
+    expect(status).toHaveTextContent('Saved successfully');
+    expect(status).toHaveAttribute('data-tone', 'success');
+    expect(status).toHaveAttribute('data-opened');
+    expect(status).toBeVisible();
   });
 });

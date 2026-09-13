@@ -13,18 +13,15 @@ import {
   CommandItem,
   CommandList,
   CommandShortcut,
-  H1,
   InputOTP,
   InputOTPGroup,
   InputOTPSeparator,
   InputOTPSlot,
-  Lead,
   Menubar,
   MenubarContent,
   MenubarItem,
   MenubarMenu,
   MenubarTrigger,
-  Muted,
   NativeSelect,
   NativeSelectOption,
   NavigationMenu,
@@ -33,7 +30,6 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-  P,
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
@@ -139,14 +135,8 @@ export function ComponentCatalogExtrasC(props: { sections?: string[] }) {
       </CatalogDemo>
       </Show>
 
-      <Show when={showCatalogSection(props.sections, 'typography')}>
-      <CatalogDemo id="typography" title="Typography · Native select" description="排版原语与原生下拉。">
-        <div class="flex max-w-lg flex-col gap-8">
-          <H1>Design system catalog</H1>
-          <Lead>Base UI primitives mirror the shadcn component inventory.</Lead>
-          <P>Production widgets compose these tokens without redefining spacing or color.</P>
-          <Muted>Muted helper copy for secondary metadata.</Muted>
-        </div>
+      <Show when={showCatalogSection(props.sections, 'native-select')}>
+      <CatalogDemo id="native-select" title="Native select" description="原生下拉，用于简单选项与模型切换。">
         <div class="max-w-xs">
           <NativeSelect aria-label="Model" value={model()} onChange={(event) => setModel(event.currentTarget.value)}>
             <NativeSelectOption value="nova">Nova 4.1</NativeSelectOption>

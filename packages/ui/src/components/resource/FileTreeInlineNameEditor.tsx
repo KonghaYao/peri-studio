@@ -11,10 +11,8 @@ function rowPadding(depth: number) {
   return { 'padding-left': `${7 + depth * 12}px` };
 }
 
-function errorInset(depth: number, kind: 'file' | 'folder') {
-  const leadingInset = kind === 'file' ? 6 : 0;
-  const gap = kind === 'folder' ? 4 : 5;
-  return `${7 + depth * 12 + leadingInset + 16 + gap}px`;
+function errorInset(depth: number) {
+  return `${7 + depth * 12 + 6 + 16 + 5}px`;
 }
 
 export type FileTreeInlineNameEditorProps = {
@@ -76,12 +74,7 @@ export const FileTreeInlineNameEditor: Component<FileTreeInlineNameEditorProps> 
       )}
       style={rowPadding(local.depth)}
     >
-      <div
-        class={cn(
-          'flex h-full min-w-0 flex-1 items-center rounded-4',
-          local.kind === 'folder' ? 'gap-4' : 'gap-5 pl-6',
-        )}
-      >
+      <div class="flex h-full min-w-0 flex-1 items-center gap-5 rounded-4 pl-6">
         <VSCodeFileIcon
           path={iconPath()}
           directory={local.kind === 'folder'}
@@ -109,7 +102,7 @@ export const FileTreeInlineNameEditor: Component<FileTreeInlineNameEditorProps> 
         <p
           class={fileTreeInlineNameErrorClass}
           role="alert"
-          style={{ 'padding-left': errorInset(local.depth, local.kind) }}
+          style={{ 'padding-left': errorInset(local.depth) }}
         >
           {local.errorMessage}
         </p>

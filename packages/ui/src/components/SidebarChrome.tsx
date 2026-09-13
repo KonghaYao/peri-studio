@@ -260,9 +260,8 @@ export function SessionRowAccessory(props: {
   );
 }
 
-/** 项目行右侧：会话计数 + More / New session 浮动按钮组。 */
+/** 项目行右侧：More / New session 浮动按钮组。 */
 export function ProjectRowAccessory(props: {
-  count?: number;
   actionsVisible?: boolean;
   children?: JSX.Element;
   menuItems?: SidebarChromeMenuItem[];
@@ -317,11 +316,6 @@ export function ProjectRowAccessory(props: {
     <RowAccessorySlot
       group="workspace"
       actionsVisible={props.actionsVisible}
-      meta={(
-        <Show when={(props.count ?? 0) > 0}>
-          <span class={cn(rowAccessoryMetaClass, 'pl-4 tabular-nums text-11 text-content-muted')} aria-hidden="true">{props.count}</span>
-        </Show>
-      )}
       actions={props.children ?? builtInActions()}
     />
   );

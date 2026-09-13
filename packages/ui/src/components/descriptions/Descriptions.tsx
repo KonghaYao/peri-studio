@@ -16,6 +16,14 @@ export type DescriptionsItem = {
   span?: number;
 };
 
+type ItemPlacement = {
+  item: DescriptionsItem;
+  row: number;
+  colStart: number;
+  span: number;
+  isRowEnd: boolean;
+};
+
 const descriptionsVariants = cva('w-full text-13', {
   variants: {
     size: {
@@ -45,9 +53,42 @@ export type DescriptionsProps = ComponentProps<'div'> &
     items?: DescriptionsItem[];
   };
 
-function itemGridClass(span: number, column: number) {
-  const pct = Math.min(span, column) / column;
-  return pct >= 1 ? 'col-span-full' : '';
+/** 将 items 按 column / span 排入网格行，供边框与 grid-column 计算使用。 */
+export function layoutDescriptionItems(
+  items: DescriptionsItem[],
+  columns: number,
+): { placements: ItemPlacement[]; rowCount: number } {
+  const placements: ItemPlacement[] = [];
+  let row = 0;
+  let col = 0;
+
+  for (const item of items) {
+    const span = Math.min(item.span ?? 1, columns);
+    if (col > 0 && col + span > columns) {
+      row += 1;
+      col = 0;
+    }
+    const isRowEnd = col + span >= columns;
+    placements.push({ item, row, colStart: col, span, isRowEnd });
+    col += span;
+    if (col >= columns) {
+      row += 1;
+      col = 0;
+    }
+  }
+
+  const rowCount =
+    placements.length === 0 ? 0 : placements[placements.length - 1].row + 1;
+  return { placements, rowCount };
+}
+
+function borderedCellClass(isRowEnd: boolean, isLastRow: boolean) {
+  return cn(
+    'px-16 py-10',
+    'border-b border-border-subtle',
+    !isRowEnd && 'border-r',
+    isLastRow && 'border-b-0',
+  );
 }
 
 /** Ant Design 风格描述列表：键值对、边框与响应式列。 */
@@ -67,6 +108,7 @@ export const Descriptions: Component<DescriptionsProps> = (props) => {
   const colon = () => local.colon ?? true;
   const layout = () => local.layout ?? 'horizontal';
   const bordered = () => !!local.bordered;
+  const layoutResult = () => layoutDescriptionItems(local.items ?? [], column());
 
   return (
     <div
@@ -86,54 +128,85 @@ export const Descriptions: Component<DescriptionsProps> = (props) => {
             <div class="text-14 font-semibold text-content-primary">{local.title}</div>
           </Show>
           <Show when={local.extra}>
-            <div class="text-12 text-content-muted">{local.extra}</div>
+            <div class="shrink-0 text-12 text-content-muted">{local.extra}</div>
           </Show>
         </div>
       </Show>
       <div
         data-slot="descriptions-view"
-        class={cn(
-          'grid gap-0',
-          bordered() ? '' : 'gap-y-12',
-        )}
-        style={{ 'grid-template-columns': `repeat(${column()}, minmax(0, 1fr))` }}
+        class={cn('grid gap-0', bordered() ? '' : 'gap-y-12')}
+        style={{
+          'grid-template-columns': `repeat(${column()}, auto minmax(0, 1fr))`,
+        }}
       >
-        <For each={local.items ?? []}>
-          {(item) => (
-            <div
-              data-slot="descriptions-item"
-              class={cn(
-                'min-w-0',
-                bordered()
-                  ? 'border-b border-r border-border-subtle px-16 py-10 last:border-b-0'
-                  : '',
-                itemGridClass(item.span ?? 1, column()),
-              )}
-              style={item.span && item.span > 1 ? { 'grid-column': `span ${Math.min(item.span, column())}` } : undefined}
-            >
-              <div
-                class={cn(
-                  layout() === 'vertical' ? 'flex flex-col gap-4' : 'flex gap-8',
-                )}
+        <For each={layoutResult().placements}>
+          {(placement) => {
+            const { item, row, colStart, span, isRowEnd } = placement;
+            const isLastRow = row === layoutResult().rowCount - 1;
+            const labelCol = colStart * 2 + 1;
+            const contentCol = colStart * 2 + 2;
+            const contentSpan = span * 2 - 1;
+            const cellBorder = () =>
+              bordered() ? borderedCellClass(isRowEnd, isLastRow) : 'min-w-0';
+
+            return (
+              <Show
+                when={layout() === 'vertical'}
+                fallback={
+                  <>
+                    <div
+                      data-slot="descriptions-label"
+                      class={cn(
+                        cellBorder(),
+                        'text-content-muted',
+                        layout() === 'horizontal' ? 'text-end' : '',
+                      )}
+                      style={{
+                        'grid-column': String(labelCol),
+                        'grid-row': String(row + 1),
+                      }}
+                    >
+                      {item.label}
+                      <Show when={colon()}>
+                        <span aria-hidden="true">:</span>
+                      </Show>
+                    </div>
+                    <div
+                      data-slot="descriptions-content"
+                      class={cn(cellBorder(), 'min-w-0 text-content-primary')}
+                      style={{
+                        'grid-column': `${contentCol} / span ${contentSpan}`,
+                        'grid-row': String(row + 1),
+                      }}
+                    >
+                      {item.children}
+                    </div>
+                  </>
+                }
               >
-                <span
-                  data-slot="descriptions-label"
-                  class={cn(
-                    'shrink-0 text-content-muted',
-                    layout() === 'horizontal' ? 'min-w-80' : '',
-                  )}
+                <div
+                  data-slot="descriptions-item"
+                  class={cn(cellBorder(), 'min-w-0')}
+                  style={{
+                    'grid-column': `${labelCol} / span ${span * 2}`,
+                    'grid-row': String(row + 1),
+                  }}
                 >
-                  {item.label}
-                  <Show when={colon() && layout() === 'horizontal'}>
-                    <span aria-hidden="true">:</span>
-                  </Show>
-                </span>
-                <span data-slot="descriptions-content" class="min-w-0 text-content-primary">
-                  {item.children}
-                </span>
-              </div>
-            </div>
-          )}
+                  <div class="flex flex-col gap-4">
+                    <span data-slot="descriptions-label" class="text-content-muted">
+                      {item.label}
+                      <Show when={colon()}>
+                        <span aria-hidden="true">:</span>
+                      </Show>
+                    </span>
+                    <span data-slot="descriptions-content" class="text-content-primary">
+                      {item.children}
+                    </span>
+                  </div>
+                </div>
+              </Show>
+            );
+          }}
         </For>
       </div>
     </div>

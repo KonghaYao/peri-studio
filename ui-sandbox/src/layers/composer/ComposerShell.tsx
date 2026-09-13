@@ -5,6 +5,7 @@ import {
   ComposerShell as ComposerShellBase,
   SlashMenu,
   TokenUsageMeter,
+  composerMetaChipClass,
 } from '@peri/ui';
 import { createEffect, createSignal } from 'solid-js';
 import { GitBranch, Laptop } from 'lucide-solid';
@@ -101,11 +102,11 @@ export function ComposerShell(props: {
       onFilesPicked={props.onFilesPicked}
       metaRow={(
         <>
-          <button type="button" class="ui-composer-meta-chip" aria-label="Branch">
+          <button type="button" class={composerMetaChipClass} aria-label="Branch">
             <GitBranch size={12} strokeWidth={1.7} />
             <span class="truncate">{branchLabel()}</span>
           </button>
-          <button type="button" class="ui-composer-meta-chip" aria-label="Runtime location">
+          <button type="button" class={composerMetaChipClass} aria-label="Runtime location">
             <Laptop size={12} strokeWidth={1.7} />
             <span class="truncate">{locationLabel()}</span>
           </button>

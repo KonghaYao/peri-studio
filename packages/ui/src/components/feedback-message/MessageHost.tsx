@@ -44,6 +44,7 @@ export function MessageHost() {
           {(item) => (
             <div
               role="status"
+              data-opened
               data-tone={item.tone}
               class={cn(
                 'pointer-events-auto flex w-max max-w-full items-center gap-8 rounded-8 border px-16 py-10 text-13 shadow-popover',

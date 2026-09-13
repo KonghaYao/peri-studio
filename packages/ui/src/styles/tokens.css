@@ -149,11 +149,17 @@
   --tracking-caps: var(--tracking-6);
   --tracking-wide: var(--tracking-8);
 
-  /* 阴影与层级（sandbox 命名；legacy shadow-* 保留） */
-  --shadow-raised: 0 1px 2px rgb(0 0 0 / 4%), 0 2px 8px rgb(0 0 0 / 6%);
+  /* 阴影与层级 — 从轻到重：sm → md → lg → overlay → dialog */
+  --shadow-sm:
+    0 1px 2px rgb(0 0 0 / 2%), 0 1px 4px rgb(0 0 0 / 2.5%);
+  --shadow-md:
+    0 1px 3px rgb(0 0 0 / 3%), 0 2px 6px rgb(0 0 0 / 3.5%);
+  --shadow-lg:
+    0 2px 6px rgb(0 0 0 / 3.5%), 0 4px 12px rgb(0 0 0 / 4.5%);
   --shadow-overlay:
-    0 6px 16px 0 rgb(0 0 0 / 8%), 0 3px 6px -4px rgb(0 0 0 / 12%),
-    0 9px 28px 8px rgb(0 0 0 / 5%);
+    0 4px 12px rgb(0 0 0 / 4%), 0 8px 20px rgb(0 0 0 / 5%);
+  --shadow-dialog:
+    0 8px 24px rgb(0 0 0 / 5%), 0 16px 40px rgb(0 0 0 / 6%);
   --shadow-focus-ring: 0 0 0 3px var(--accent-ring);
   --shadow-focus-danger: 0 0 0 3px color-mix(in srgb, var(--danger) 25%, transparent);
   --z-sticky: 10;
@@ -317,9 +323,11 @@
   --scrollbar-thumb: rgb(0 0 0 / 18%);
   --scrollbar-thumb-hover: rgb(0 0 0 / 32%);
 
-  /* Elevation */
-  --shadow-popover: var(--shadow-overlay);
-  --shadow-composer-overlay: var(--shadow-raised);
+  /* Elevation（语义别名 → canonical tiers） */
+  --shadow-subtle: var(--shadow-sm);
+  --shadow-raised: var(--shadow-md);
+  --shadow-popover: var(--shadow-lg);
+  --shadow-composer-overlay: var(--shadow-sm);
   --shadow-accent-ring: var(--shadow-focus-ring);
 
   /* Kobalte Progress/Meter fill width (overridden at runtime on fill elements). */
@@ -395,7 +403,6 @@
   /* 组件几何：设计示例和生产模块共用同一组语义尺寸，避免 fixture 漂移。 */
   --control-height-compact: 32px;
   --control-height-default: 38px;
-  --pattern-row-height: 32px;
   --tree-row-height: 28px;
   --asset-tile-size: 68px;
   --status-panel-max-height: 132px;

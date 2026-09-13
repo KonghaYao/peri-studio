@@ -25,7 +25,7 @@ export const Empty: Component<EmptyRootProps> = (props) => {
         <EmptyMedia variant="default">{local.image}</EmptyMedia>
       </Show>
       <Show when={!local.image && local.preset}>
-        <EmptyMedia variant="default">
+        <EmptyMedia variant="illustration">
           {(() => {
             const Preset = presetComponent();
             return Preset ? <Preset /> : null;
@@ -59,6 +59,7 @@ const emptyMediaVariants = cva(
           'flex size-40 shrink-0 items-center justify-center rounded-8 bg-surface-muted text-content-primary',
           "[&_svg:not([class*='size-'])]:size-24",
         ],
+        illustration: 'mb-16 [&_svg]:h-120 [&_svg]:w-auto',
       },
     },
     defaultVariants: {

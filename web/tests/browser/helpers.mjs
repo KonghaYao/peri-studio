@@ -41,31 +41,6 @@ export async function callFixture(page, method, ...args) {
   return result.value;
 }
 
-export async function injectFixtureDiff(page, overrides = {}) {
-  await callFixture(page, 'setDiffPreview', {
-    requestId: 'fixture-diff',
-    repoId: 'repo-1',
-    groupId: 'working_tree',
-    changeId: 'c2',
-    path: 'web/src/widgets/resource/ResourceWorkbench.tsx',
-    status: 'modified',
-    loading: false,
-    text: [
-      'diff --git a/web/src/widgets/resource/ResourceWorkbench.tsx b/web/src/widgets/resource/ResourceWorkbench.tsx',
-      '--- a/web/src/widgets/resource/ResourceWorkbench.tsx',
-      '+++ b/web/src/widgets/resource/ResourceWorkbench.tsx',
-      '@@ -12,3 +12,4 @@ export function ResourceWorkbench() {',
-      "   const [view, setView] = createSignal<WorkbenchView>('explorer');",
-      '-  const width = view() ? 300 : 46;',
-      '+  const width = view() ? 310 : 46;',
-      "+  const label = view() === 'scm' ? 'Source Control' : 'Explorer';",
-      '   return <aside style={{ width: `${width}px` }} />;',
-      '',
-    ].join('\n'),
-    ...overrides,
-  });
-}
-
 export async function injectFilePreview(page, preview) {
   await callFixture(page, 'setFilePreview', preview);
 }

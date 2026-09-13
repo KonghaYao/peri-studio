@@ -19,10 +19,10 @@ export function ComponentsFormsPage() {
       />
       <ComponentCatalogExtras sections={['switch']} />
       <ComponentCatalogExtrasB sections={['input-group']} />
-      <ComponentCatalogExtrasC sections={['combobox', 'typography', 'resizable']} />
+      <ComponentCatalogExtrasC sections={['combobox', 'native-select', 'resizable']} />
       <ComponentCatalogExtrasD sections={['calendar', 'date-picker', 'form']} />
-      <ComponentCatalogExtrasE sections={['field']} />
-      <ComponentCatalogExtrasG sections={['data-table', 'questionnaire-option-row', 'questionnaire']} />
+      <ComponentCatalogExtrasE sections={['field', 'form-dialog-shell']} />
+      <ComponentCatalogExtrasG sections={['table-primitives', 'data-table', 'questionnaire-option-row', 'questionnaire']} />
       <ComponentCatalogExtrasForms2
         sections={[
           'input-variants',

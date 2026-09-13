@@ -68,9 +68,13 @@ describe('TopologyView', () => {
     expect(screen.getByText('Offline')).toBeInTheDocument();
   });
 
-  it('shows the empty state when no instance is connected', () => {
+  it('shows the server card and empty state when no instance is connected', () => {
+    setGlobalStatus('healthy');
+    setSchemaVersion(3);
     render(() => <TopologyView />);
-    expect(screen.getByText('No instance connections')).toBeInTheDocument();
+    expect(screen.getByText('Peri Studio server')).toBeInTheDocument();
+    expect(screen.getByText('Healthy')).toBeInTheDocument();
+    expect(screen.getByText('No instances')).toBeInTheDocument();
   });
 
   it('drops chats whose owning instance is not present', () => {

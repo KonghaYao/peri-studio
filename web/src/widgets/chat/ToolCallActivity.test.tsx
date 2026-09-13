@@ -46,8 +46,8 @@ describe('ToolCallActivity', () => {
     const icon = document.querySelector('[data-tool-kind="grep"]');
     expect(icon).toBeInTheDocument();
     expect(icon?.querySelector('.lucide-search')).toBeInTheDocument();
-    expect(summary()).toHaveTextContent('Searched "ToolCall"');
-    expect(summary()).toHaveTextContent('in src');
+    expect(summary()).toHaveTextContent('Searched for "ToolCall"');
+    expect(summary()).toHaveTextContent('in web/src');
   });
 
   it('shows structured execution facts and honest observed duration', () => {
@@ -171,6 +171,7 @@ describe('ToolCallActivity', () => {
       contentBytes: 5_200,
     }} />);
 
+    expect(screen.getByText('Read')).toBeInTheDocument();
     expect(screen.getByTestId('tool-activity-file-link')).toHaveTextContent('project-sidebar-archive.tsx');
     expect(document.querySelector('[data-testid="tool-activity-row-expand"]')).toBeNull();
     expect(screen.queryByText('Output not loaded')).not.toBeInTheDocument();

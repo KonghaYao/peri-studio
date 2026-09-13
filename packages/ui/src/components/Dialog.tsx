@@ -4,6 +4,7 @@ import * as DialogPrimitive from '@kobalte/core/dialog';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import { cn } from '../lib/cn';
 import { modalDialogMotion, overlayScrimMotion } from '../lib/overlay-motion';
+import { rewindDialogContentClass } from './chat/rewind-panel-layout';
 import { IconButton } from './Button';
 
 export const Dialog = DialogPrimitive.Root;
@@ -49,7 +50,7 @@ export function DialogOverlay<T extends ValidComponent = 'div'>(props: Polymorph
   );
 }
 
-type DialogSize = 'default' | 'search' | 'settings' | 'mcp' | 'resource-compact' | 'fullscreen';
+type DialogSize = 'default' | 'search' | 'settings' | 'mcp' | 'resource-compact' | 'rewind' | 'fullscreen';
 
 type ContentProps<T extends ValidComponent = 'div'> = DialogPrimitive.DialogContentProps<T> & {
   class?: string;
@@ -76,35 +77,40 @@ export function DialogContent<T extends ValidComponent = 'div'>(props: Polymorph
   const dismissible = () => local.dismissible ?? local.maskClosable ?? true;
   const preventWhenLocked = (event: Event) => { if (!dismissible()) event.preventDefault(); };
   const isSheet = () => local.size === 'resource-compact';
+  const isRewind = () => local.size === 'rewind';
+  const isBare = () => isSheet() || isRewind() || local.fullscreen || local.size === 'fullscreen';
   const isFullscreen = () => local.fullscreen || local.size === 'fullscreen';
   const centered = () => local.centered ?? true;
   return <DialogPortal>
     <DialogOverlay class={local.overlayClass} />
     <DialogPrimitive.Content
       class={cn(
-        isSheet()
-          ? cn(
-              'fixed top-0 right-0 bottom-0 left-auto z-61 flex h-auto max-h-none w-(--container-rewind-compact) translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border border-border-subtle border-y-0 border-r-0 bg-surface text-text-primary shadow-popover outline-none p-0',
-              'ui-panel-sheet-motion slide-in-from-right motion-reduce:animate-none',
-            )
-          : cn(
-              'fixed z-61 outline-none',
-              isFullscreen()
-                ? 'inset-0'
-                : centered()
-                  ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'
-                  : 'top-16 left-1/2 -translate-x-1/2',
-            ),
-        !isSheet() && !isFullscreen() && local.class,
+        isRewind()
+          ? cn(rewindDialogContentClass, local.class)
+          : isSheet()
+            ? cn(
+                'fixed top-0 right-0 bottom-0 left-auto z-61 flex h-auto max-h-none w-(--container-rewind-compact) translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border border-border-subtle border-y-0 border-r-0 bg-surface text-text-primary shadow-dialog outline-none p-0',
+                'ui-panel-sheet-motion slide-in-from-right motion-reduce:animate-none',
+                local.class,
+              )
+            : cn(
+                'fixed z-61 outline-none',
+                isFullscreen()
+                  ? 'inset-0'
+                  : centered()
+                    ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'
+                    : 'top-16 left-1/2 -translate-x-1/2',
+                !isFullscreen() && local.class,
+              ),
       )}
       onEscapeKeyDown={preventWhenLocked}
       onPointerDownOutside={preventWhenLocked}
       {...rest}
     >
-      {isSheet() || isFullscreen() ? local.children : (
+      {isBare() ? local.children : (
         <div
           class={cn(
-            'w-(--container-dialog-default) max-h-(--container-dialog-tall) overflow-auto rounded-8 border border-border-subtle bg-surface text-text-primary shadow-popover outline-none',
+            'w-(--container-dialog-default) max-h-(--container-dialog-tall) overflow-auto rounded-8 border border-border-subtle bg-surface text-text-primary shadow-dialog outline-none',
             modalDialogMotion,
             {
               'w-(--container-search)': local.size === 'search',

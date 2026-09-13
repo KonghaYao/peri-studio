@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
+import { cleanup, fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { For } from 'solid-js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -97,6 +97,50 @@ describe('MessageScroller', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Jump' }));
     expect(scrollTo).toHaveBeenCalled();
+  });
+
+  it('scrolls to the maximum scroll top when jumping to end', async () => {
+    let scrollTop = 0;
+
+    render(() => (
+      <MessageScrollerProvider autoScroll={false}>
+        <MessageScroller>
+          <MessageScrollerViewport
+            ref={(node) => {
+              if (!node) return;
+              mockScrollableElement(node, { scrollHeight: 400, clientHeight: 200 });
+              Object.defineProperty(node, 'scrollTop', {
+                configurable: true,
+                get: () => scrollTop,
+                set: (value) => {
+                  scrollTop = value;
+                },
+              });
+            }}
+          >
+            <MessageScrollerContent>
+              <MessageScrollerItem messageId="one">
+                <p>One</p>
+              </MessageScrollerItem>
+            </MessageScrollerContent>
+          </MessageScrollerViewport>
+          <MessageScrollerButton />
+        </MessageScroller>
+      </MessageScrollerProvider>
+    ));
+
+    const viewport = screen.getByRole('region', { name: 'Messages' });
+    Object.defineProperty(viewport, 'scrollTop', {
+      configurable: true,
+      get: () => scrollTop,
+      set: (value) => {
+        scrollTop = value;
+      },
+    });
+    scrollTop = 0;
+
+    fireEvent.click(screen.getByRole('button', { name: 'Scroll to end' }));
+    await waitFor(() => expect(scrollTop).toBe(200));
   });
 
   it('shows scroll button only when not at end', () => {

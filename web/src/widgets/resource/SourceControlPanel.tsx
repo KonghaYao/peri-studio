@@ -1,6 +1,6 @@
 import { For, Show, createSignal } from 'solid-js';
 import { Button, GitBranchBar, GitChangeGroup, GitCommitBar, InlineNotice, LoadingState } from '@peri/ui';
-import { mutateGitResource, openGitDiffPreview, openMoreGitChanges, resourceWorkspace, retryGitRepositoryMutation, retryGitResourceMutation } from '@/store';
+import { mutateGitResource, openFilePreview, openMoreGitChanges, resourceWorkspace, retryGitRepositoryMutation, retryGitResourceMutation } from '@/store';
 import type { RepositoryState } from '@/features/resource/resource-store';
 import { readOnly } from '@/features/auth/auth-state';
 import { ConfirmDialog } from '@/widgets/shell/shared/ConfirmDialog';
@@ -17,6 +17,8 @@ const GROUPS: Array<{ id: GitChangeGroupId; label: string }> = [
 ];
 
 type SourceControlPanelProps = {
+  /** 嵌在 workbench 浮动面板内；标题与关闭由 WorkbenchPanelChrome 负责。 */
+  embedded?: boolean;
   commitMessages?: Record<string, string>;
   onCommitMessageChange?: (repoId: string, message: string) => void;
   onCommitSubmitted?: (repoId: string, requestId: string, message: string) => void;
@@ -25,7 +27,9 @@ type SourceControlPanelProps = {
 
 export function SourceControlPanel(props: SourceControlPanelProps = {}) {
   return <section class="flex min-h-0 flex-1 flex-col" aria-label="Source Control">
-    <ResourceSectionTitle>Source Control</ResourceSectionTitle>
+    <Show when={!props.embedded}>
+      <ResourceSectionTitle>Source Control</ResourceSectionTitle>
+    </Show>
     <div class="ui-scrollbar min-h-0 flex-1 overflow-auto pb-12">
       <Show when={!resourceWorkspace().loading.includes('repositories')} fallback={<LoadingState label="Reading repositories" class="m-8 p-8! text-left!" />}>
         <Show when={resourceWorkspace().repositories.length} fallback={<div class="px-14 py-18 text-12 leading-18 text-content-muted">No Git repository was found in this workspace.</div>}>
@@ -65,9 +69,11 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
     const retried = repoMutation();
     if (retried?.action === 'commit' && retried.pending) props.onCommitSubmitted?.(props.repo.id, retried.requestId, failed.message ?? message().trim());
   };
-  const previewChange = (groupId: GitChangeGroupId, change: GitChange) => {
-    props.onPreviewIntent?.(`diff:${props.repo.id}:${groupId}:${change.id}`);
-    openGitDiffPreview(props.repo.id, groupId, change);
+  const previewChange = (change: GitChange) => {
+    const path = change.path;
+    if (!path) return;
+    props.onPreviewIntent?.(`file:${path}`);
+    openFilePreview(path);
   };
   const toggleStage = (groupId: GitChangeGroupId, change: GitChange) => {
     const action = groupId === 'index' ? 'unstage' : 'stage';
@@ -122,7 +128,7 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
             groupId={group.id}
             readOnly={readOnly()}
             repoBusy={repoBusy()}
-            onFileSelect={(change) => previewChange(group.id, change)}
+            onFileSelect={(change) => previewChange(change)}
             onStageToggle={(change) => toggleStage(group.id, change)}
             onDiscard={(change) => setDiscard(change)}
           />

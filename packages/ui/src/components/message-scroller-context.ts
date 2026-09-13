@@ -74,18 +74,23 @@ function getOrderedItems(content: HTMLElement | undefined) {
   );
 }
 
+function maxScrollTop(viewport: HTMLElement) {
+  return Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+}
+
 function scrollElement(
   viewport: HTMLElement,
   top: number,
   options?: MessageScrollerScrollOptions,
 ) {
+  const clampedTop = Math.max(0, Math.min(top, maxScrollTop(viewport)));
   if (typeof viewport.scrollTo === 'function') {
     viewport.scrollTo({
-      top,
+      top: clampedTop,
       behavior: options?.behavior ?? 'smooth',
     });
   } else {
-    viewport.scrollTop = top;
+    viewport.scrollTop = clampedTop;
   }
   return true;
 }
@@ -112,6 +117,8 @@ export function createMessageScrollerContext(
   let contentHeight = 0;
   let firstMessageId: string | undefined;
   let initialScrollApplied = false;
+  let itemResizeObserver: ResizeObserver | undefined;
+  const observedItems = new Set<HTMLElement>();
 
   const syncScrollState = () => {
     const node = viewport();
@@ -189,7 +196,7 @@ export function createMessageScrollerContext(
     const node = viewport();
     if (!node) return false;
     if (autoScroll()) setIsFollowing(true);
-    return scrollElement(node, node.scrollHeight, options);
+    return scrollElement(node, maxScrollTop(node), options);
   };
 
   const scrollToStart = (options?: MessageScrollerScrollOptions) => {
@@ -237,15 +244,34 @@ export function createMessageScrollerContext(
 
     initialScrollApplied = true;
     const position = props().defaultScrollPosition ?? 'end';
-    if (position === 'start') {
-      scrollToStart({ behavior: 'auto' });
-      return;
-    }
-    if (position === 'last-anchor') {
-      scrollToLastAnchor({ behavior: 'auto' });
-      return;
-    }
-    scrollToEnd({ behavior: 'auto' });
+    requestAnimationFrame(() => {
+      if (position === 'start') {
+        scrollToStart({ behavior: 'auto' });
+        return;
+      }
+      if (position === 'last-anchor') {
+        scrollToLastAnchor({ behavior: 'auto' });
+        return;
+      }
+      scrollToEnd({ behavior: 'auto' });
+    });
+  };
+
+  const ensureItemResizeObserver = () => {
+    if (typeof ResizeObserver === 'undefined') return;
+    itemResizeObserver ??= new ResizeObserver(() => handleContentResize());
+  };
+
+  const observeItem = (element: HTMLElement) => {
+    ensureItemResizeObserver();
+    if (!itemResizeObserver || observedItems.has(element)) return;
+    observedItems.add(element);
+    itemResizeObserver.observe(element);
+  };
+
+  const unobserveItem = (element: HTMLElement) => {
+    itemResizeObserver?.unobserve(element);
+    observedItems.delete(element);
   };
 
   const handleContentResize = () => {
@@ -267,7 +293,7 @@ export function createMessageScrollerContext(
     }
 
     if (isFollowing() || (autoScroll() && isNearBottom(node, scrollEdgeThreshold()))) {
-      scrollToEnd({ behavior: 'auto' });
+      requestAnimationFrame(() => scrollToEnd({ behavior: 'auto' }));
       return;
     }
 
@@ -345,13 +371,19 @@ export function createMessageScrollerContext(
     registerItem(messageId, element, scrollAnchor) {
       const previous = items.get(messageId);
       const isNew = !previous;
+      if (previous?.element && previous.element !== element) {
+        unobserveItem(previous.element);
+      }
       items.set(messageId, { element, scrollAnchor });
+      observeItem(element);
       if (scrollAnchor && isNew && initialScrollApplied) {
         queueMicrotask(() => handleNewAnchor(element));
       }
       ensureVisibilityObserver();
     },
     unregisterItem(messageId) {
+      const previous = items.get(messageId);
+      if (previous) unobserveItem(previous.element);
       items.delete(messageId);
       ensureVisibilityObserver();
     },

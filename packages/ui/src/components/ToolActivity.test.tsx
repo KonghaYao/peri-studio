@@ -67,9 +67,11 @@ describe('ToolActivity', () => {
       </ToolActivityGroup>
     ));
 
+    expect(screen.getByText('Edited')).toBeInTheDocument();
     const link = screen.getByTestId('tool-activity-file-link');
     expect(link).toHaveTextContent('project-sidebar-model.ts');
     expect(link).not.toHaveTextContent('web/src/widgets/sidebar');
+    expect(link).not.toHaveClass('text-link');
     expect(link).toHaveAccessibleName('Edited project-sidebar-model.ts');
     expect(link.querySelector('[data-file-icon]')).toBeTruthy();
     link.click();

@@ -185,7 +185,7 @@ export const ToolActivityRow: Component<ToolActivityRowProps> = (props) => {
     <>
       <div
         class={cn(
-          'tool-call-row-compact min-h-(--pattern-row-height) rounded-6 p-2',
+          'tool-call-row-compact rounded-6 p-2',
           isError() && 'is-error',
           isCanceled() && 'is-cancelled opacity-55',
           isRunning() && 'is-running bg-sidebar-selected hover:bg-sidebar-selected',
@@ -229,11 +229,24 @@ export const ToolActivityRow: Component<ToolActivityRowProps> = (props) => {
                 )}
               >
                 {(preview) => (
-                  <span class="tool-call-row-title inline-flex min-w-0 items-center overflow-hidden text-12 font-normal text-content-muted" title={preview().path}>
+                  <span
+                    class="tool-call-row-title inline-flex min-w-0 items-center gap-4 overflow-hidden text-12 font-normal text-content-muted"
+                    title={`${preview().prefix}${preview().pathLabel}`}
+                  >
+                    <Show when={preview().prefix}>
+                      <Show
+                        when={isRunning()}
+                        fallback={<span class="shrink-0">{preview().prefix}</span>}
+                      >
+                        <Shimmer as="span" duration={1.2} spread={2} class="shrink-0">
+                          {preview().prefix}
+                        </Shimmer>
+                      </Show>
+                    </Show>
                     <button
                       type="button"
                       data-testid="tool-activity-file-link"
-                      class="tool-call-row-file-link inline-flex min-w-0 max-w-full items-center gap-4 text-link hover:underline hover:underline-offset-2"
+                      class="tool-call-row-file-link inline-flex min-w-0 max-w-full items-center gap-4 rounded-4 text-content-primary hover:bg-interaction-hover"
                       aria-label={`${preview().prefix}${preview().pathLabel}`}
                       title={preview().path}
                       onClick={openPath}

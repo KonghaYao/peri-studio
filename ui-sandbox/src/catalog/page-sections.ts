@@ -128,10 +128,10 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
     {
       title: 'Enhanced',
       items: [
-        { id: 'badge-display', label: 'Badge' },
+        { id: 'badge', label: 'Badge & Status' },
         { id: 'avatar-display', label: 'Avatar' },
         { id: 'card-display', label: 'Card' },
-        { id: 'empty-display', label: 'Empty' },
+        { id: 'empty', label: 'Empty & EmptyState' },
         { id: 'skeleton-display', label: 'Skeleton' },
         { id: 'typography-display', label: 'Typography' },
         { id: 'pagination-display', label: 'Pagination' },
@@ -157,18 +157,10 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
     {
       title: 'Feedback',
       items: [
-        { id: 'badge', label: 'Badge & Status' },
         { id: 'tabs', label: 'Tabs' },
         { id: 'dialog', label: 'Dialog & menu' },
         { id: 'inline-notice', label: 'InlineNotice' },
-        { id: 'spinner', label: 'Spinner & empty' },
-        { id: 'message', label: 'Message' },
-        { id: 'button-variants', label: 'Button variants' },
-        { id: 'checkbox-radio', label: 'Checkbox & Radio' },
-        { id: 'avatar-scroll-aspect', label: 'Avatar & scroll' },
-        { id: 'skeleton-loading', label: 'Skeleton & loading' },
-        { id: 'toggle-kbd-command', label: 'Toggle & command' },
-        { id: 'copy-link-terminal-git', label: 'Copy & terminal' },
+        { id: 'spinner', label: 'Spinner' },
       ],
     },
   ],
@@ -184,7 +176,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
     {
       title: 'Structure',
       items: [
-        { id: 'typography', label: 'Typography & select' },
+        { id: 'native-select', label: 'Native select' },
         { id: 'resizable', label: 'Resizable & OTP' },
         { id: 'calendar', label: 'Calendar' },
         { id: 'date-picker', label: 'Date picker' },
@@ -195,8 +187,10 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
     {
       title: 'Data',
       items: [
+        { id: 'table-primitives', label: 'Table' },
         { id: 'data-table', label: 'Data table' },
         { id: 'enhanced-table', label: 'Enhanced table' },
+        { id: 'form-dialog-shell', label: 'FormDialogShell' },
         { id: 'questionnaire-option-row', label: 'Questionnaire option row' },
         { id: 'questionnaire', label: 'Questionnaire (multi-step)' },
       ],
@@ -224,9 +218,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
     {
       title: 'Surfaces',
       items: [
-        { id: 'card', label: 'Card & alert' },
         { id: 'accordion', label: 'Accordion & toggle' },
-        { id: 'empty', label: 'Empty' },
         { id: 'item', label: 'Item' },
       ],
     },
@@ -245,13 +237,8 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'editable-tabs', label: 'Editable tabs' },
         { id: 'dialog-methods', label: 'Dialog methods' },
         { id: 'toast-enhanced', label: 'Toast enhanced' },
-        { id: 'hover-context', label: 'Hover & context' },
-        { id: 'navigation-menu', label: 'Navigation menu' },
-        { id: 'select-primitives', label: 'Select primitives' },
-        { id: 'form-dialog-shell', label: 'FormDialogShell' },
-        { id: 'back-to-top', label: 'BackToTop' },
-        { id: 'ai-primitives', label: 'AI primitives' },
-        { id: 'table-primitives', label: 'Table primitives' },
+        { id: 'message', label: 'Message' },
+        { id: 'button-variants', label: 'Button variants' },
       ],
     },
     {
@@ -266,7 +253,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
     {
       title: 'Navigation',
       items: [
-        { id: 'breadcrumb', label: 'Breadcrumb & pagination' },
+        { id: 'breadcrumb', label: 'Breadcrumb & aspect ratio' },
         { id: 'menubar', label: 'Menubar & nav' },
         { id: 'carousel', label: 'Carousel' },
       ],
@@ -282,6 +269,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'affix', label: 'Affix' },
         { id: 'anchor', label: 'Anchor' },
         { id: 'steps', label: 'Steps' },
+        { id: 'back-to-top', label: 'BackToTop' },
         { id: 'float-button', label: 'FloatButton' },
       ],
     },
@@ -298,22 +286,20 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
       title: 'Chat primitives',
       items: [
         { id: 'conversation', label: 'Conversation' },
-        { id: 'message', label: 'Message branches' },
+        { id: 'message-branches', label: 'Message branches' },
+        { id: 'reasoning', label: 'Reasoning' },
+        { id: 'attachments', label: 'Attachments' },
       ],
     },
     {
       title: 'AI elements',
       items: [
         { id: 'suggestion', label: 'Suggestion' },
-        { id: 'sources', label: 'Sources' },
         { id: 'citation', label: 'Inline citation' },
         { id: 'plan', label: 'Plan' },
         { id: 'task', label: 'Tool activity' },
-        { id: 'decision', label: 'Decision surfaces' },
-        { id: 'confirmation', label: 'Confirmation' },
         { id: 'questionnaire', label: 'AskUserQuestion' },
         { id: 'queue', label: 'Queue' },
-        { id: 'snippet', label: 'Snippet' },
       ],
     },
   ],
@@ -360,6 +346,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
     {
       title: 'Terminal',
       items: [
+        { id: 'terminal-xterm', label: 'Terminal' },
         { id: 'terminal-dock', label: 'Terminal dock' },
       ],
     },
@@ -406,6 +393,7 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'git-commit-bar', label: 'Commit bar' },
         { id: 'git-graph-row', label: 'Graph panel' },
         { id: 'git-diff-panel', label: 'Diff panel' },
+        { id: 'git-badges', label: 'Git badges' },
       ],
     },
   ],
@@ -429,6 +417,37 @@ const LEGACY_MARKDOWN_SECTION_IDS: Record<string, string> = {
 
 const LEGACY_OVERLAYS_SECTION_IDS: Record<string, string> = {
   table: 'popover-toast',
+  'hover-context': 'menus',
+  'navigation-menu': 'menubar',
+};
+
+const LEGACY_OVERLAYS_SECTION_ROUTES: Record<string, { route: SandboxRoute; section: string }> = {
+  card: { route: 'components-display', section: 'card-display' },
+  empty: { route: 'components-display', section: 'empty' },
+  'select-primitives': { route: 'components-forms', section: 'native-select' },
+  'form-dialog-shell': { route: 'components-forms', section: 'form-dialog-shell' },
+  'ai-primitives': { route: 'components-ai', section: 'reasoning' },
+  'table-primitives': { route: 'components-forms', section: 'table-primitives' },
+};
+
+const LEGACY_CORE_SECTION_ROUTES: Record<string, { route: SandboxRoute; section: string }> = {
+  badge: { route: 'components-display', section: 'badge' },
+  message: { route: 'components-overlays', section: 'message' },
+  'button-variants': { route: 'components-overlays', section: 'button-variants' },
+  'checkbox-radio': { route: 'components-forms', section: 'checkbox-radio-switch' },
+  'avatar-scroll-aspect': { route: 'components-display', section: 'avatar-display' },
+  'skeleton-loading': { route: 'components-display', section: 'skeleton-display' },
+  'toggle-kbd-command': { route: 'components-overlays', section: 'accordion' },
+  'copy-link-terminal-git': { route: 'components-shell', section: 'terminal-xterm' },
+};
+
+const LEGACY_DISPLAY_SECTION_IDS: Record<string, string> = {
+  'badge-display': 'badge',
+  'empty-display': 'empty',
+};
+
+const LEGACY_FORMS_SECTION_IDS: Record<string, string> = {
+  typography: 'native-select',
 };
 
 const LEGACY_BLOCKS_SECTION_ROUTES: Record<string, SandboxRoute> = {
@@ -438,6 +457,19 @@ const LEGACY_BLOCKS_SECTION_ROUTES: Record<string, SandboxRoute> = {
   'git-commit-bar': 'components-git',
   'git-graph-row': 'components-git',
   'git-diff-panel': 'components-git',
+};
+
+const LEGACY_AI_SECTION_IDS: Record<string, string> = {
+  'chain-of-thought': 'reasoning',
+  message: 'message-branches',
+  decision: 'questionnaire',
+  confirmation: 'questionnaire',
+  sources: 'citation',
+};
+
+const LEGACY_AI_SECTION_ROUTES: Record<string, { route: SandboxRoute; section: string }> = {
+  'prompt-input': { route: 'components-composer', section: 'composer' },
+  snippet: { route: 'components-composer', section: 'composer' },
 };
 
 /** 原 #/components-ai 下已迁入 Shell 的章节。 */
@@ -488,7 +520,11 @@ export function parseSandboxHash(hash = window.location.hash): { route: SandboxR
 
   if (routePart === LEGACY_LAYERS_ROUTE) {
     const mappedRoute = section ? (LEGACY_LAYER_SECTION_ROUTES[section] ?? 'components-shell') : 'components-shell';
-    return { route: mappedRoute, section: section || undefined };
+    let mappedSection = section || undefined;
+    if (mappedSection && mappedRoute === 'components-ai') {
+      mappedSection = LEGACY_AI_SECTION_IDS[mappedSection] ?? mappedSection;
+    }
+    return { route: mappedRoute, section: mappedSection };
   }
 
   if (routePart === LEGACY_BLOCKS_ROUTE) {
@@ -500,14 +536,35 @@ export function parseSandboxHash(hash = window.location.hash): { route: SandboxR
   if (section && route === 'components-ai' && LEGACY_AI_SHELL_SECTIONS.has(section)) {
     return { route: 'components-shell', section };
   }
+  if (section && route === 'components-ai') {
+    const crossRoute = LEGACY_AI_SECTION_ROUTES[section];
+    if (crossRoute) return crossRoute;
+    const mapped = LEGACY_AI_SECTION_IDS[section];
+    if (mapped) return { route: 'components-ai', section: mapped };
+  }
+  if (section && route === 'components') {
+    const crossRoute = LEGACY_CORE_SECTION_ROUTES[section];
+    if (crossRoute) return crossRoute;
+  }
+  if (section && route === 'components-overlays') {
+    const crossRoute = LEGACY_OVERLAYS_SECTION_ROUTES[section];
+    if (crossRoute) return crossRoute;
+  }
 
   let normalizedSection = section;
   if (section && route === 'components-markdown') {
     normalizedSection = LEGACY_MARKDOWN_SECTION_IDS[section] ?? section;
   } else if (section && route === 'components-overlays') {
     normalizedSection = LEGACY_OVERLAYS_SECTION_IDS[section] ?? section;
+  } else if (section && route === 'components-display') {
+    const mapped = LEGACY_DISPLAY_SECTION_IDS[section];
+    if (mapped) {
+      return { route: 'components-display', section: mapped };
+    }
   } else if (section && route === 'components-explorer') {
     normalizedSection = LEGACY_EXPLORER_SECTION_IDS[section] ?? section;
+  } else if (section && route === 'components-forms') {
+    normalizedSection = LEGACY_FORMS_SECTION_IDS[section] ?? section;
   }
   return { route, section: normalizedSection || undefined };
 }

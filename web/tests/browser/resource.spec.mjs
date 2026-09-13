@@ -6,10 +6,9 @@ import {
   collectBrowserErrors,
   gotoScenario,
   injectFilePreview,
-  injectFixtureDiff,
 } from './helpers.mjs';
 
-test('resource workbench reaches Explorer, Source Control, diff and file preview', async ({ page }) => {
+test('resource workbench reaches Explorer, Source Control, and file preview', async ({ page }) => {
   const browserErrors = collectBrowserErrors(page);
   await gotoScenario(page, 'resources');
 
@@ -21,13 +20,20 @@ test('resource workbench reaches Explorer, Source Control, diff and file preview
   await expect(page.getByText('Untracked Changes')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Unstage server/src/control/resource_service.rs' })).toBeAttached();
   await expect(page.getByRole('button', { name: 'Stage web/src/entities/resource/resource-view.ts' })).toBeAttached();
-  await injectFixtureDiff(page);
-  await expect(page.getByRole('region', { name: 'Git diff: web/src/widgets/resource/ResourceWorkbench.tsx, Index ↔ Working Tree' })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Contents of web/src/widgets/resource/ResourceWorkbench.tsx' })).toBeVisible();
-  await expect(page.getByText('const width = view() ? 300 : 46;')).toBeVisible();
-  await expect(page.getByText('const width = view() ? 310 : 46;')).toBeVisible();
-  await page.getByRole('button', { name: 'Close diff' }).click();
-  await expect(page.getByRole('region', { name: /^Git diff:/ })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Open changes for web/src/widgets/resource/ResourceWorkbench.tsx' }).click();
+  await injectFilePreview(page, {
+    requestId: 'fixture-scm-file',
+    path: 'web/src/widgets/resource/ResourceWorkbench.tsx',
+    loading: false,
+    mode: 'text',
+    contentType: 'text/plain',
+    size: 42,
+    text: 'const width = view() ? 310 : 46;\n',
+  });
+  await expect(page.getByRole('region', { name: 'File preview: web/src/widgets/resource/ResourceWorkbench.tsx' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Contents of web/src/widgets/resource/ResourceWorkbench.tsx' })).toContainText('const width = view() ? 310 : 46;');
+  await page.getByRole('button', { name: 'Close file preview' }).click();
+  await expect(page.getByRole('region', { name: /^File preview:/ })).toHaveCount(0);
 
   await injectFilePreview(page, {
     requestId: 'browser-file',
@@ -121,15 +127,20 @@ test('mobile resource previews restore focus and drafts to their source rows', a
   await gotoScenario(page, 'resources', { viewport: PHONE, resource: 'scm' });
   await page.getByRole('button', { name: 'Open workspace resources' }).click();
   await page.getByRole('textbox', { name: 'Commit message' }).fill('Preserve this draft across preview');
-  const diffOrigin = page.getByRole('button', { name: 'Open changes for web/src/widgets/resource/ResourceWorkbench.tsx' });
-  await diffOrigin.focus();
+  const scmOrigin = page.getByRole('button', { name: 'Open changes for web/src/widgets/resource/ResourceWorkbench.tsx' });
+  await scmOrigin.focus();
   await page.keyboard.press('Enter');
-  await injectFixtureDiff(page, {
-    requestId: 'mobile-diff',
-    text: '--- a/file\n+++ b/file\n@@ -1 +1 @@\n-old\n+new\n',
+  await injectFilePreview(page, {
+    requestId: 'mobile-scm-file',
+    path: 'web/src/widgets/resource/ResourceWorkbench.tsx',
+    loading: false,
+    mode: 'text',
+    contentType: 'text/plain',
+    size: 13,
+    text: 'fn main() {}\n',
   });
 
-  await expect(page.getByRole('region', { name: /^Git diff:/ })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'File preview: web/src/widgets/resource/ResourceWorkbench.tsx' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Workspace resources' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Open changes for web/src/widgets/resource/ResourceWorkbench.tsx' })).toBeFocused();
@@ -210,11 +221,20 @@ test('coarse pointer keeps workspace header actions at least 44px', async ({ pag
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
   await gotoScenario(page, 'resources', { viewport: PHONE });
-  await injectFixtureDiff(page);
-  const diffClose = await page.getByRole('button', { name: 'Close diff' }).boundingBox();
-  expect(diffClose?.width).toBeGreaterThanOrEqual(44);
-  expect(diffClose?.height).toBeGreaterThanOrEqual(44);
-  await page.getByRole('button', { name: 'Close diff' }).click();
+  await injectFilePreview(page, {
+    requestId: 'coarse-scm-file',
+    path: 'web/src/widgets/resource/ResourceWorkbench.tsx',
+    loading: false,
+    mode: 'text',
+    url: '/api/resource-blobs/coarse-scm-file',
+    contentType: 'text/plain',
+    size: 13,
+    text: 'fn main() {}\n',
+  });
+  const previewClose = await page.getByRole('button', { name: 'Close file preview' }).boundingBox();
+  expect(previewClose?.width).toBeGreaterThanOrEqual(44);
+  expect(previewClose?.height).toBeGreaterThanOrEqual(44);
+  await page.getByRole('button', { name: 'Close file preview' }).click();
   await page.getByRole('button', { name: 'Open workspace resources' }).click();
   expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
 

@@ -65,6 +65,7 @@ export function NotificationHost(props: NotificationHostProps) {
           {(item) => (
             <div
               role="status"
+              data-opened
               data-tone={item.tone}
               class={cn(
                 'pointer-events-auto flex w-full gap-10 rounded-12 border bg-surface px-16 py-12 text-13 text-text-primary shadow-popover',

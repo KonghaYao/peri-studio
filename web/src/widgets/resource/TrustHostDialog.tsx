@@ -20,13 +20,12 @@ export function TrustHostDialog(props: TrustHostDialogProps) {
       <Show when={readOnly()} fallback={
         <FormDialogShell
           title="Trust host"
-          description="Verify this fingerprint matches the SSH host you intend to connect to."
+          description="Confirm this matches your SSH host."
         >
           <div class="flex items-start gap-8 rounded-12 border border-border-subtle bg-surface-muted px-12 py-10">
             <code class="min-w-0 flex-1 break-all font-mono text-11 leading-145 text-text-primary">{props.fingerprint}</code>
             <CopyButton text={props.fingerprint} label="Copy fingerprint" copiedLabel="Fingerprint copied" />
           </div>
-          <p class="mt-12 mb-0 text-13 leading-155 text-text-secondary">This fingerprint is stored only for Peri Studio.</p>
           <div class="mt-20 flex justify-end gap-6">
             <Button type="button" variant="secondary" disabled={props.busy} onClick={props.onCancel}>Cancel</Button>
             <Button type="button" variant="primary" busy={props.busy} disabled={locked()} onClick={props.onTrust}>Trust</Button>

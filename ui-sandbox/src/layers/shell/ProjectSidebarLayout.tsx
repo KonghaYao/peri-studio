@@ -254,7 +254,6 @@ export function ProjectSidebarLayout() {
                               </span>
                             </button>
                             <ProjectRowAccessory
-                              count={hasSessions() ? workspace.sessions.length : undefined}
                               menuItems={workspaceMenuItems}
                               onMenuSelect={(id) => {
                                 if (id === 'archived') {

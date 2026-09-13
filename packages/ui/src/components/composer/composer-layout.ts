@@ -51,7 +51,12 @@ export const composerSurfaceFieldExpandedClass =
 export const composerSurfaceToolbarClass =
   'flex min-h-44 shrink-0 items-center gap-8 px-8 pb-8';
 
-export const composerMetaRowClass = 'flex items-center gap-8 px-4';
+export const composerMetaRowClass =
+  'flex min-h-28 shrink-0 items-center gap-8 px-4 text-12 text-content-secondary';
+
+/** Composer 底栏 meta chip（分支 / runtime 等）。 */
+export const composerMetaChipClass =
+  'inline-flex max-w-144 min-h-0 min-w-0 shrink-0 items-center gap-4 border-0 bg-transparent px-4 py-2 text-12 text-content-secondary transition-colors duration-(--duration-fast) hover:text-content-primary';
 
 export const composerAttachmentFloatClass = 'mb-8 flex flex-wrap gap-6';
 

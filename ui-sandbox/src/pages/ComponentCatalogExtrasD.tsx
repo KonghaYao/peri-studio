@@ -1,9 +1,7 @@
+import { Box } from 'lucide-solid';
 import { createSignal, For, Show } from 'solid-js';
 import { showCatalogSection } from '@/catalog/catalog-section';
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
   Button,
   Calendar,
   Card,
@@ -94,10 +92,9 @@ export function ComponentCatalogExtrasD(props: { sections?: string[] }) {
         <ItemGroup class="max-w-md rounded-8 border border-border-subtle">
           <Item>
             <ItemMedia>
-              <Avatar class="size-32">
-                <AvatarImage src="" alt="" />
-                <AvatarFallback>PS</AvatarFallback>
-              </Avatar>
+              <div class="grid size-32 place-items-center rounded-6 bg-surface-sunken text-content-secondary">
+                <Box size={16} aria-hidden="true" />
+              </div>
             </ItemMedia>
             <ItemContent>
               <ItemTitle>Peri Studio</ItemTitle>
@@ -110,9 +107,9 @@ export function ComponentCatalogExtrasD(props: { sections?: string[] }) {
           <ItemSeparator />
           <Item>
             <ItemMedia>
-              <Avatar class="size-32">
-                <AvatarFallback>UI</AvatarFallback>
-              </Avatar>
+              <div class="grid size-32 place-items-center rounded-6 bg-accent-soft text-accent text-12 font-semibold">
+                UI
+              </div>
             </ItemMedia>
             <ItemContent>
               <ItemTitle>@peri/ui</ItemTitle>

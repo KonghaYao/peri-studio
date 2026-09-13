@@ -64,6 +64,25 @@ describe('FileTree', () => {
     expect(mounts.length).toBe(mountedBefore + 1);
   });
 
+  it('aligns folder and file row geometry', () => {
+    render(() => (
+      <div role="tree">
+        <FileTree
+          nodes={demoNodes}
+          expandedPaths={new Set(['src'])}
+          onToggleFolder={() => {}}
+        />
+      </div>
+    ));
+
+    const folderRow = screen.getByRole('treeitem', { name: /^src$/ });
+    const fileRow = screen.getByRole('treeitem', { name: /a\.ts/ });
+    expect(folderRow).toHaveClass('pl-6', 'gap-5', 'h-full');
+    expect(fileRow).toHaveClass('pl-6', 'gap-5', 'h-full');
+    expect(folderRow.parentElement).toHaveClass('h-(--tree-row-height)', 'items-center');
+    expect(fileRow.parentElement).toHaveClass('h-(--tree-row-height)', 'items-center');
+  });
+
   it('updates aria-expanded on the same folder row without remounting it', () => {
     const [expanded, setExpanded] = createSignal(new Set<string>());
     const mounts: string[] = [];

@@ -36,8 +36,8 @@ describe('tool-narration', () => {
   it('narrates files, searches and questions with user-facing verbs', () => {
     expect(narrateToolCall({ ...base, name: 'Read', kind: 'read', arguments: { file_path: '/workspace/src/main.ts', offset: 10, limit: 5 } }, { tone: 'done', statusLabel: 'Done', running: false, terminal: true, projectCwd: '/workspace' })).toMatchObject({
       kind: 'read-file',
-      subtitle: 'Lines 10-14',
-      filePreview: { prefix: 'Opened ', pathLabel: 'main.ts', path: '/workspace/src/main.ts' },
+      subtitle: 'lines 10–14',
+      filePreview: { prefix: 'Read ', pathLabel: 'main.ts', path: '/workspace/src/main.ts' },
     });
     expect(narrateToolCall({ ...base, name: 'WebSearch', kind: 'other', arguments: { query: 'SolidJS signals' } }, { tone: 'running', statusLabel: 'Running', running: true, terminal: false }).title).toBe('Searching SolidJS signals');
     expect(narrateToolCall({ ...base, name: 'AskUserQuestion', kind: 'other', arguments: { questions: [] } }, { tone: 'done', statusLabel: 'Done', running: false, terminal: true }).title).toBe('Asked question');
@@ -53,6 +53,14 @@ describe('tool-narration', () => {
       pathLabel: 'main.ts',
       path: 'src/main.ts',
     });
+  });
+
+  it('humanizes unknown tool names for readable activity rows', () => {
+    const result = narrateToolCall(
+      { ...base, name: 'mcp__sales-dashboard__get_dashboard', kind: 'other', arguments: {} },
+      { tone: 'done', statusLabel: 'Done', running: false, terminal: true },
+    );
+    expect(result.title).toBe('Ran mcp sales dashboard get dashboard');
   });
 
   it('formats elapsed badges without spaces', () => {

@@ -48,7 +48,15 @@ export function EmptyState(props: Props) {
       )}
     >
       <Show when={visual()}>
-        <div class="mb-4 text-text-faint" aria-hidden="true">{visual()}</div>
+        <div
+          class={cn(
+            'mb-4 flex items-center justify-center',
+            local.preset ? '[&_svg]:h-120 [&_svg]:w-auto' : 'text-text-faint',
+          )}
+          aria-hidden="true"
+        >
+          {visual()}
+        </div>
       </Show>
       <h2 class="text-13 font-medium text-text-primary">{local.title}</h2>
       {local.description && (

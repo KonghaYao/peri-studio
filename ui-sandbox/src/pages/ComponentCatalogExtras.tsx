@@ -5,19 +5,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
   Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -85,43 +73,6 @@ export function ComponentCatalogExtras(props: { sections?: string[] }) {
           <p class="text-12 text-content-secondary">Section one</p>
           <Separator class="my-8" />
           <p class="text-12 text-content-secondary">Section two</p>
-        </div>
-      </CatalogDemo>
-      </Show>
-
-      <Show when={showCatalogSection(props.sections, 'card')}>
-      <CatalogDemo id="card" title="Card · Avatar · Alert" description="内容容器、头像与块级提示。">
-        <Card class="max-w-md">
-          <CardHeader>
-            <CardTitle>Session configuration</CardTitle>
-            <CardDescription>Runtime settings apply to the next prompt delivery.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p class="text-13 text-content-secondary">Model routing stays on the server; the browser only renders projections.</p>
-          </CardContent>
-          <CardFooter class="flex justify-end gap-8">
-            <Button variant="default" size="sm">Cancel</Button>
-            <Button variant="primary" size="sm">Save</Button>
-          </CardFooter>
-        </Card>
-        <DemoRow label="Avatar">
-          <Avatar>
-            <AvatarImage src="https://api.dicebear.com/9.x/shapes/svg?seed=peri" alt="Agent avatar" />
-            <AvatarFallback>PS</AvatarFallback>
-          </Avatar>
-          <Avatar>
-            <AvatarFallback>MK</AvatarFallback>
-          </Avatar>
-        </DemoRow>
-        <div class="flex max-w-xl flex-col gap-10">
-          <Alert>
-            <AlertTitle>Heads up</AlertTitle>
-            <AlertDescription>Delivery may still be in flight for the last command.</AlertDescription>
-          </Alert>
-          <Alert variant="destructive">
-            <AlertTitle>Runtime interrupted</AlertTitle>
-            <AlertDescription>The ACP process exited before confirming the last action.</AlertDescription>
-          </Alert>
         </div>
       </CatalogDemo>
       </Show>

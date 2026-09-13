@@ -35,7 +35,7 @@ export const workbenchRailButtonBadgeClass = cn(
 export const workbenchPanelChromeClass = 'flex min-h-0 min-w-0 flex-1 flex-col';
 
 export const workbenchPanelChromeHeaderClass = cn(
-  'flex h-(--control-height-md) shrink-0 items-center gap-8 border-b border-border-subtle px-12',
+  'flex h-(--control-height-md) shrink-0 items-center gap-8 border-b border-border-subtle bg-surface-overlay px-12',
 );
 
 export const workbenchPanelChromeTitleClass = cn(

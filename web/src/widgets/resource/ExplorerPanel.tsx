@@ -53,6 +53,10 @@ type ExplorerMenuTarget =
   | { scope: 'file' | 'folder'; node: FileTreeNode; x: number; y: number };
 
 type ExplorerPanelProps = {
+  /** 嵌在 workbench 浮动面板内；区段标题与关闭由 WorkbenchPanelChrome 负责。 */
+  embedded?: boolean;
+  /** embedded 时把 New File / New Folder 等工具按钮注册到 workbench 头部。 */
+  onEmbeddedToolbarChange?: (toolbar: JSX.Element | undefined) => void;
   expanded?: Set<string>; onExpandedChange?: (expanded: Set<string>) => void;
   activePath?: string; onActivePathChange?: (path: string) => void;
   scrollTop?: number; onScrollTopChange?: (scrollTop: number) => void; onPreviewIntent?: (key: string) => void;
@@ -389,15 +393,32 @@ export function ExplorerPanel(props: ExplorerPanelProps = {}) {
     enqueueExplorerUpload(projectId()!, directoryPath, parsed.files);
   };
 
-  return <section class="flex min-h-0 flex-1 flex-col" aria-label="Explorer">
-    <ResourceSectionTitle>
-      <span>Files</span>
-      <span class="ml-auto flex items-center gap-2">
-        <IconButton label="New File" showTooltip={false} size="compact" disabled={!newFileAvailable()} title={newFileAvailable() ? undefined : newFileBlockedMessage()} onClick={() => startEdit({ mode: 'new-file', parentPath: editParent(selectedNode()) })} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><FilePlus size={14} /></IconButton>
-        <IconButton label="New Folder" showTooltip={false} size="compact" disabled={!mutationAvailability().available} title={mutationAvailability().reason} onClick={() => startEdit({ mode: 'new-folder', parentPath: editParent(selectedNode()) })} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><FolderPlus size={14} /></IconButton>
+  const toolbarActions = (
+    <span class="flex items-center gap-2">
+      <IconButton label="New File" showTooltip={false} size="compact" disabled={!newFileAvailable()} title={newFileAvailable() ? undefined : newFileBlockedMessage()} onClick={() => startEdit({ mode: 'new-file', parentPath: editParent(selectedNode()) })} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><FilePlus size={14} /></IconButton>
+      <IconButton label="New Folder" showTooltip={false} size="compact" disabled={!mutationAvailability().available} title={mutationAvailability().reason} onClick={() => startEdit({ mode: 'new-folder', parentPath: editParent(selectedNode()) })} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><FolderPlus size={14} /></IconButton>
+      <Show when={!props.embedded}>
         <IconButton label="Refresh Explorer" showTooltip={false} size="compact" onClick={refreshResourceProject} class="border-0 bg-transparent text-content-muted hover:text-content-primary"><RefreshIcon /></IconButton>
-      </span>
-    </ResourceSectionTitle>
+      </Show>
+    </span>
+  );
+
+  createEffect(() => {
+    if (!props.embedded) {
+      props.onEmbeddedToolbarChange?.(undefined);
+      return;
+    }
+    props.onEmbeddedToolbarChange?.(toolbarActions);
+  });
+  onCleanup(() => props.onEmbeddedToolbarChange?.(undefined));
+
+  return <section class="flex min-h-0 flex-1 flex-col" aria-label="Explorer">
+    <Show when={!props.embedded}>
+      <ResourceSectionTitle>
+        <span>Files</span>
+        <span class="ml-auto">{toolbarActions}</span>
+      </ResourceSectionTitle>
+    </Show>
     <Show when={fsMutationState().projectId === projectId() && fsMutationState().message}>
       <InlineNotice class="mx-8 mb-8" tone={fsMutationState().phase === 'conflict' || fsMutationState().phase === 'error' ? 'warning' : 'info'} role="status" title="File change">
         <span>{fsMutationState().message}</span>

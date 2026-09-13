@@ -5,7 +5,6 @@ import { ComponentCatalogExtrasC } from '@/pages/ComponentCatalogExtrasC';
 import { ComponentCatalogExtrasD } from '@/pages/ComponentCatalogExtrasD';
 import { ComponentCatalogExtrasE } from '@/pages/ComponentCatalogExtrasE';
 import { ComponentCatalogFeedback } from '@/pages/ComponentCatalogFeedback';
-import { ComponentCatalogGaps } from '@/pages/ComponentCatalogGaps';
 import { TierHeader } from '@/pages/shared/DemoSection';
 
 /** T2 · 表面、浮层与导航：Card、Sheet、菜单、侧栏、轮播等。 */
@@ -17,8 +16,7 @@ export function ComponentsOverlaysPage() {
         title="Surfaces & navigation"
         description="内容容器、浮层、菜单导航与布局原语。"
       />
-      <ComponentCatalogExtras sections={['card', 'accordion']} />
-      <ComponentCatalogExtrasE sections={['empty']} />
+      <ComponentCatalogExtras sections={['accordion']} />
       <ComponentCatalogExtrasD sections={['item']} />
       <ComponentCatalogExtras sections={['progress']} />
       <ComponentCatalogExtrasB sections={['overlay', 'menus']} />
@@ -30,29 +28,22 @@ export function ComponentsOverlaysPage() {
       <ComponentCatalogExtrasE sections={['direction']} />
       <ComponentCatalogExtrasB sections={['sidebar']} />
       <ComponentCatalogExtrasLayout
-        sections={['flex', 'grid', 'layout', 'space', 'masonry', 'affix', 'anchor', 'steps', 'float-button']}
+        sections={['flex', 'grid', 'layout', 'space', 'masonry', 'affix', 'anchor', 'steps', 'back-to-top', 'float-button']}
       />
       <ComponentCatalogFeedback sections={[
+        'message',
         'notification',
         'popconfirm',
         'result',
         'watermark',
         'upload',
         'alert-types',
+        'button-variants',
         'progress-circle',
         'slider-marks',
         'editable-tabs',
         'dialog-methods',
         'toast-enhanced',
-      ]} />
-      <ComponentCatalogGaps sections={[
-        'hover-context',
-        'navigation-menu',
-        'select-primitives',
-        'form-dialog-shell',
-        'back-to-top',
-        'ai-primitives',
-        'table-primitives',
       ]} />
     </div>
   );

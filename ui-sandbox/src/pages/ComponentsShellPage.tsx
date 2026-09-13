@@ -10,6 +10,7 @@ const SHELL_SECTIONS = [
   'chat-shell',
   'chat-transcript',
   'status-area',
+  'terminal-xterm',
   'terminal-dock',
 ] as const;
 

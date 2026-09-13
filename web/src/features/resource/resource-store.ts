@@ -1,21 +1,19 @@
 import { createSignal } from 'solid-js';
 import { DocStore } from '@/shared/yjs/doc-store';
-import { openResourceFile, openResourceGitDiff, openResourceView, releaseResourceView, type GitActionKind, type GitGraphActionPayload, type GitGroupId, type ResourceResultFrame } from './resource-protocol';
+import { openResourceFile, openResourceView, releaseResourceView, type GitActionKind, type GitGraphActionPayload, type ResourceResultFrame } from './resource-protocol';
 import { GitMutationController } from './resource-mutations';
-import { downloadResourceUrl, loadFilePreview, loadGitDiff, type ResourceDiffPreviewState, type ResourceFilePreviewState } from './resource-preview';
+import { downloadResourceUrl, loadFilePreview, type ResourceFilePreviewState } from './resource-preview';
 import { renderResourceView, type ResourceEntry, type ResourceView } from '@/entities/resource/resource-view';
 import { initialResourceWorkspace as initial, reduceResourceView, type ResourceWorkspaceState } from './resource-state';
 export type { DirectoryState, RepositoryState, ResourceWorkspaceState } from './resource-state';
 
 export const [resourceWorkspace, setResourceWorkspace] = createSignal<ResourceWorkspaceState>(initial());
-export const [resourceDiffPreview, setResourceDiffPreview] = createSignal<ResourceDiffPreviewState | null>(null);
 export const [resourceFilePreview, setResourceFilePreview] = createSignal<ResourceFilePreviewState | null>(null);
 const docs = new DocStore();
 interface PendingResourceRequest { key: string; projectId: string; generation: number }
 interface OpenResourceLease { viewId: string; projectId: string; generation: number; expiresAt: number; timer?: number }
 
 const pending = new Map<string, PendingResourceRequest>();
-const pendingDiffs = new Map<string, ResourceDiffPreviewState>();
 const pendingFiles = new Map<string, ResourceFilePreviewState>();
 const ignoredRequests = new Set<string>();
 const gitMutations = new GitMutationController();
@@ -130,7 +128,6 @@ export function openFilePreview(path: string): void {
   const preview: ResourceFilePreviewState = { requestId: frame.requestId, path, loading: true };
   trackRequest(frame.requestId, `preview:${path}`, projectId);
   pendingFiles.set(frame.requestId, preview);
-  setResourceDiffPreview(null);
   setResourceFilePreview(preview);
 }
 
@@ -146,43 +143,6 @@ export function retryResourceFilePreview(): void {
 export function downloadPreviewedFile(): void {
   const preview = resourceFilePreview();
   if (preview) downloadResourceFile(preview.path);
-}
-
-export function openGitDiffPreview(repoId: string, groupId: GitGroupId, change: ResourceEntry): void {
-  const projectId = resourceWorkspace().projectId;
-  const path = typeof change.path === 'string' ? change.path : '';
-  if (!projectId || !path || !transport?.ready()) return;
-  const frame = openResourceGitDiff(projectId, repoId, change.id);
-  if (!transport.send(frame)) return;
-  const preview: ResourceDiffPreviewState = {
-    requestId: frame.requestId,
-    repoId,
-    groupId,
-    changeId: change.id,
-    path,
-    originalPath: typeof change.original_path === 'string' ? change.original_path : undefined,
-    status: typeof change.status === 'string' ? change.status : 'modified',
-    loading: true,
-  };
-  trackRequest(frame.requestId, `diff:${path}`, projectId);
-  pendingDiffs.set(frame.requestId, preview);
-  setResourceFilePreview(null);
-  setResourceDiffPreview(preview);
-}
-
-export function closeResourceDiffPreview(): void {
-  setResourceDiffPreview(null);
-}
-
-export function retryGitDiffPreview(): void {
-  const preview = resourceDiffPreview();
-  if (!preview) return;
-  openGitDiffPreview(preview.repoId, preview.groupId, {
-    id: preview.changeId,
-    path: preview.path,
-    original_path: preview.originalPath,
-    status: preview.status,
-  });
 }
 
 export function mutateGitResource(repoId: string, action: GitActionKind, changeIds: string[] = [], message?: string, graph?: GitGraphActionPayload): boolean {
@@ -227,30 +187,19 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
   const ownerCurrent = owner?.generation === resourceGeneration
     && owner.projectId === resourceWorkspace().projectId;
   const key = ownerCurrent ? owner.key : undefined;
-  const diffRequest = pendingDiffs.get(frame.requestId);
   const fileRequest = pendingFiles.get(frame.requestId);
   const mutationRequest = gitMutations.take(frame.requestId);
   pending.delete(frame.requestId);
-  pendingDiffs.delete(frame.requestId);
   pendingFiles.delete(frame.requestId);
   if (key) setLoading(key, false);
   if (mutationRequest) setLoading(`mutation:${mutationRequest.repoId}`, false);
   // 只有本 session 明确登记过的 request 才能取得 view/blob/mutation 的
   // 所有权。切 project 或 reset 后的迟到 view 立即释放，绝不订阅。
-  if ((!ownerCurrent && (diffRequest || fileRequest)) || (!key && !diffRequest && !fileRequest && !mutationRequest)) {
+  if ((!ownerCurrent && fileRequest) || (!key && !fileRequest && !mutationRequest)) {
     if (frame.result?.kind === 'view') transport?.send(releaseResourceView(frame.result.data.viewId));
     return;
   }
   if (frame.error) {
-    if (diffRequest) {
-      updateDiffPreview(diffRequest.requestId, {
-        loading: false,
-        error: frame.error.message,
-        errorCode: frame.error.code,
-        retryable: frame.error.retryable,
-      });
-      return;
-    }
     if (fileRequest) {
       updateFilePreview(fileRequest.requestId, { loading: false, error: frame.error.message });
       return;
@@ -296,10 +245,6 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
     transport?.send({ t: 'ysync.subscribe', docs: [frame.result.data.docId], clientCapabilities: [] });
     scheduleLeaseDeadline(frame.result.data.docId, lease);
   } else if (frame.result?.kind === 'blob') {
-    if (diffRequest) {
-      void loadGitDiff(frame.result.data.url, diffRequest, updateDiffPreview);
-      return;
-    }
     if (fileRequest) {
       void loadFilePreview(frame.result.data.url, frame.result.data.etag, fileRequest, updateFilePreview);
       return;
@@ -402,7 +347,6 @@ export function resetResourceProject(): void {
   }
   docs.clear();
   pending.clear();
-  pendingDiffs.clear();
   pendingFiles.clear();
   ignoredRequests.clear();
   gitMutations.clear();
@@ -410,13 +354,8 @@ export function resetResourceProject(): void {
   openViewKeys.clear();
   requested.clear();
   activeLogViews.clear();
-  setResourceDiffPreview(null);
   setResourceFilePreview(null);
   setResourceWorkspace(initial());
-}
-
-function updateDiffPreview(requestId: string, patch: Partial<ResourceDiffPreviewState>) {
-  setResourceDiffPreview((current) => current?.requestId === requestId ? { ...current, ...patch } : current);
 }
 
 function updateFilePreview(requestId: string, patch: Partial<ResourceFilePreviewState>) {

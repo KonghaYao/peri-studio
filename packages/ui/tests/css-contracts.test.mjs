@@ -245,6 +245,12 @@ test('composer layout classes live in composer-layout.ts', () => {
   assert.match(composerLayout, /composerEditorHintClass/);
   assert.match(composerLayout, /text-content-muted/);
   assert.match(composerLayout, /placeholder:text-content-muted/);
+  assert.match(composerLayout, /composerMetaRowClass/);
+  assert.match(composerLayout, /min-h-28/);
+  assert.match(composerLayout, /composerMetaChipClass/);
+  assert.match(composerLayout, /text-content-secondary/);
+  assert.match(composerLayout, /max-w-144/);
+  assert.doesNotMatch(extra, /\.ui-composer-meta-chip\s*\{/);
   assert.doesNotMatch(extra, /\.ui-composer-shell\s*\{/);
   assert.doesNotMatch(extra, /\.ui-composer-surface-v2\s*\{/);
   assert.doesNotMatch(extra, /\.ui-queue\s*\{/);
@@ -260,7 +266,7 @@ test('composer layout classes live in composer-layout.ts', () => {
   assert.match(workbenchLayout, /top-\(--workbench-panel-inset-block\)/);
   assert.match(workbenchLayout, /bottom-\(--workbench-panel-inset-bottom\)/);
   assert.match(workbenchLayout, /bg-neutral-25/);
-  assert.doesNotMatch(workbenchLayout, /bg-surface-overlay/);
+  assert.match(workbenchLayout, /workbenchPanelChromeHeaderClass[\s\S]*bg-surface-overlay/);
   assert.doesNotMatch(extra, /\.ui-workbench-floating-panel\s*\{/);
   assert.match(extra, /\.ui-terminal-dock-viewport:focus-within/s);
   assert.match(extra, /\.ui-workbench-rail-button--active-left::before/s);

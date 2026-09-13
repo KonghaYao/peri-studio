@@ -1,20 +1,3 @@
-import type { GitGroupId } from './resource-protocol';
-
-export interface ResourceDiffPreviewState {
-  requestId: string;
-  repoId: string;
-  groupId: GitGroupId;
-  changeId: string;
-  path: string;
-  originalPath?: string;
-  status: string;
-  loading: boolean;
-  text?: string;
-  error?: string;
-  errorCode?: string;
-  retryable?: boolean;
-}
-
 export interface ResourceFilePreviewState {
   requestId: string;
   path: string;
@@ -39,30 +22,6 @@ export function downloadResourceUrl(url: string, filename: string): void {
 }
 
 type Update<T> = (requestId: string, patch: Partial<T>) => void;
-
-export async function loadGitDiff(
-  url: string,
-  request: ResourceDiffPreviewState,
-  update: Update<ResourceDiffPreviewState>,
-): Promise<void> {
-  try {
-    const response = await fetch(url, {
-      method: 'GET', credentials: 'same-origin', cache: 'no-store',
-      headers: { Accept: 'text/x-diff, text/plain;q=0.9' },
-    });
-    if (!response.ok) throw new Error('diff fetch failed');
-    update(request.requestId, {
-      loading: false, text: await response.text(), error: undefined,
-      errorCode: undefined, retryable: undefined,
-    });
-  } catch {
-    update(request.requestId, {
-      loading: false,
-      error: 'Unable to load this diff. Refresh Source Control and try again.',
-      retryable: true,
-    });
-  }
-}
 
 const MAX_TEXT_PREVIEW_BYTES = 4 * 1024 * 1024;
 

@@ -11,14 +11,21 @@ export type QRCodeProps = ComponentProps<'div'> & {
   errorLevel?: 'L' | 'M' | 'Q' | 'H';
 };
 
-/** QR 码展示（轻量本地编码，适合短文本）。 */
+/** QR 码展示（本地编码，适合邀请链接与配对 URL）。 */
 export const QRCode: Component<QRCodeProps> = (props) => {
-  const [local, rest] = splitProps(props, ['class', 'value', 'size', 'color', 'bgColor', 'bordered']);
+  const [local, rest] = splitProps(props, [
+    'class',
+    'value',
+    'size',
+    'color',
+    'bgColor',
+    'bordered',
+    'errorLevel',
+  ]);
   const size = () => local.size ?? 160;
   const svg = createMemo(() => {
-    const matrix = encodeQrMatrix(local.value);
-    const moduleSize = Math.max(2, Math.floor(size() / matrix.length));
-    return qrMatrixToSvg(matrix, moduleSize, 2);
+    const matrix = encodeQrMatrix(local.value, local.errorLevel ?? 'M');
+    return qrMatrixToSvg(matrix);
   });
 
   return (
@@ -27,7 +34,7 @@ export const QRCode: Component<QRCodeProps> = (props) => {
       role="img"
       aria-label={`QR code for ${local.value}`}
       class={cn(
-        'inline-flex items-center justify-center rounded-8 bg-surface p-12 text-content-primary',
+        'inline-flex box-border items-center justify-center rounded-8 bg-surface p-12 text-content-primary',
         local.bordered ? 'border border-border-subtle' : '',
         local.class,
       )}
@@ -38,7 +45,8 @@ export const QRCode: Component<QRCodeProps> = (props) => {
         'background-color': local.bgColor ?? undefined,
       }}
       {...rest}
-      innerHTML={svg()}
-    />
+    >
+      <div class="h-full w-full" innerHTML={svg()} />
+    </div>
   );
 };

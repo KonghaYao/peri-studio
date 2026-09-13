@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Avatar, AvatarFallback, AvatarGroup } from './Avatar';
 import { Badge } from './Badge';
-import { Descriptions } from './descriptions';
+import { Descriptions, layoutDescriptionItems } from './descriptions/Descriptions';
 import { List as DisplayList, ListLoadMore } from './list';
 import { PaginationControls } from './Pagination';
 import { QRCode } from './qr-code';
@@ -28,6 +28,44 @@ describe('Display components', () => {
     ));
     expect(screen.getByText('User Info')).toBeInTheDocument();
     expect(screen.getByText('Peri Studio')).toBeInTheDocument();
+  });
+
+  it('lays out multi-column descriptions as separate label and value cells', () => {
+    const { placements, rowCount } = layoutDescriptionItems(
+      [
+        { label: 'Instance', children: 'local-connect' },
+        { label: 'Protocol', children: 'ACP 1.2' },
+        { label: 'Sessions', children: '12 active', span: 2 },
+      ],
+      2,
+    );
+    expect(rowCount).toBe(2);
+    expect(placements).toHaveLength(3);
+    expect(placements[0]).toMatchObject({ row: 0, colStart: 0, span: 1, isRowEnd: false });
+    expect(placements[1]).toMatchObject({ row: 0, colStart: 1, span: 1, isRowEnd: true });
+    expect(placements[2]).toMatchObject({ row: 1, colStart: 0, span: 2, isRowEnd: true });
+
+    const { container } = render(() => (
+      <Descriptions
+        bordered
+        column={2}
+        items={[
+          { label: 'Instance', children: 'local-connect' },
+          { label: 'Protocol', children: 'ACP 1.2' },
+          { label: 'Sessions', children: '12 active', span: 2 },
+        ]}
+      />
+    ));
+    const labels = container.querySelectorAll('[data-slot="descriptions-label"]');
+    const contents = container.querySelectorAll('[data-slot="descriptions-content"]');
+    expect(labels).toHaveLength(3);
+    expect(contents).toHaveLength(3);
+    expect(labels[0]).toHaveStyle({ 'grid-column': '1' });
+    expect(contents[0]).toHaveStyle({ 'grid-column': '2 / span 1' });
+    expect(labels[1]).toHaveStyle({ 'grid-column': '3' });
+    expect(contents[1]).toHaveStyle({ 'grid-column': '4 / span 1' });
+    expect(labels[2]).toHaveStyle({ 'grid-column': '1' });
+    expect(contents[2]).toHaveStyle({ 'grid-column': '2 / span 3' });
   });
 
   it('renders segmented control and fires onChange', () => {
@@ -94,9 +132,12 @@ describe('Display components', () => {
     expect(screen.getByRole('button', { name: 'Load more' })).toBeInTheDocument();
   });
 
-  it('renders QR code with accessible label', () => {
-    render(() => <QRCode value="peri-studio" />);
-    expect(screen.getByRole('img', { name: /QR code for peri-studio/ })).toBeInTheDocument();
+  it('renders QR code with accessible label and svg payload', () => {
+    render(() => <QRCode value="https://peri.studio/docs" />);
+    const qr = screen.getByRole('img', { name: /QR code for https:\/\/peri\.studio\/docs/ });
+    expect(qr).toBeInTheDocument();
+    expect(qr.querySelector('svg')).toBeTruthy();
+    expect(qr.querySelector('path[fill="currentColor"]')).toBeTruthy();
   });
 
   it('renders badge count with overflow', () => {
@@ -106,6 +147,20 @@ describe('Display components', () => {
       </Badge>
     ));
     expect(screen.getByText('99+')).toBeInTheDocument();
+  });
+
+  it('anchors badge count to the top-right of its child', () => {
+    const { container } = render(() => (
+      <Badge count={5} dot>
+        <button type="button">Inbox</button>
+      </Badge>
+    ));
+    const count = container.querySelector('[data-slot="badge-count"]');
+    expect(count).toHaveStyle({
+      position: 'absolute',
+      top: '0px',
+      right: '0px',
+    });
   });
 
   it('renders avatar group overflow', () => {

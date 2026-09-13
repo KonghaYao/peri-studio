@@ -231,7 +231,7 @@ export function AddComputerDialog(props: AddComputerDialogProps) {
       <Show when={progressMode()} fallback={
         <FormDialogShell
           title="Add computer"
-          description="Paste an ssh command or fill in the fields below. Peri stores destination, port, and identity file only—never passwords or API keys."
+          description="Paste ssh or enter destination. Keys only — no passwords stored."
         >
           <form class="m-0 flex flex-col gap-12" onSubmit={submit}>
             <TextField
@@ -254,17 +254,13 @@ export function AddComputerDialog(props: AddComputerDialogProps) {
             <TextField label="Identity file" value={identityFile()} onInput={(event) => setIdentityFile(event.currentTarget.value)} placeholder="Optional absolute path" disabled={readOnly() || submitting()} />
             <Show when={showAuthSetupCommands()}>
               <div class="flex flex-col gap-10 rounded-12 border border-border-subtle bg-surface-muted px-12 py-10">
-                <p class="m-0 text-13 leading-155 text-text-secondary">
-                  Run this on the Mac that runs Peri Studio before you click Add. If it prompts for a password or API key, enter it in Terminal—Peri cannot store that secret.
-                </p>
+                <p class="m-0 text-12 text-text-secondary">Run on this Mac before adding:</p>
                 <div class="flex items-start gap-8">
                   <code class="min-w-0 flex-1 break-all font-mono text-11 leading-145 text-text-primary">{verifyShellCommand()}</code>
                   <CopyButton text={verifyShellCommand()} label="Copy ssh command" copiedLabel="Command copied" />
                 </div>
                 <Show when={sshAddKeyCommand()}>
-                  <p class="m-0 text-13 leading-155 text-text-secondary">
-                    After login works, load your private key into ssh-agent so Peri can connect without a prompt:
-                  </p>
+                  <p class="m-0 text-12 text-text-secondary">Then add your key to ssh-agent:</p>
                   <div class="flex items-start gap-8">
                     <code class="min-w-0 flex-1 break-all font-mono text-11 leading-145 text-text-primary">{sshAddKeyCommand()}</code>
                     <CopyButton text={sshAddKeyCommand()} label="Copy ssh-add command" copiedLabel="Command copied" />

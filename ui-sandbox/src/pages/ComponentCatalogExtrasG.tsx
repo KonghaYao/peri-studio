@@ -1,7 +1,16 @@
-import { createSignal, Show } from 'solid-js';
+import { createSignal, For, Show } from 'solid-js';
 import { FileText, FolderSearch, Terminal } from 'lucide-solid';
 import { showCatalogSection } from '@/catalog/catalog-section';
 import {
+  Attachment,
+  AttachmentEmpty,
+  AttachmentHoverCard,
+  AttachmentHoverCardContent,
+  AttachmentHoverCardTrigger,
+  AttachmentInfo,
+  AttachmentPreview,
+  AttachmentRemove,
+  Attachments,
   DataTable,
   InlineCitation,
   InlineCitationCard,
@@ -25,31 +34,32 @@ import {
   PlanStep,
   PlanTitle,
   PlanTrigger,
-  Questionnaire,
-  QuestionnaireNavigation,
-  QuestionnaireStep,
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
   ComposerQueue,
-  ResourceCite,
-  Snippet,
-  SnippetAddon,
-  SnippetCopyButton,
-  SnippetInput,
-  SnippetText,
-  SourceItem,
-  Sources,
-  SourcesContent,
-  SourcesTrigger,
   Suggestion,
   SuggestionItem,
   ToolActivityGroup,
   ToolActivityRow,
   chatColumnClass,
+  type AttachmentData,
 } from '@peri/ui';
-import { DecisionSurfacesLayout } from '@/layers';
 import { createPulseStream, StreamingControls } from '@/lib/streaming-demo';
 import { QuestionnaireAskUserDemo } from '@/pages/demos/QuestionnaireAskUserDemo';
 import { QuestionnaireOptionRowDemo } from '@/pages/demos/QuestionnaireOptionRowDemo';
-import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
+import { CatalogDemo } from '@/pages/shared/DemoSection';
+
+const attachmentFiles: AttachmentData[] = [
+  { id: 'a1', name: 'architecture.md', size: 48_200, mediaType: 'text/markdown' },
+  { id: 'a2', name: 'diagram.png', size: 128_000, mediaType: 'image/png', progress: 62 },
+];
 
 const tableRows = [
   { id: 'p1', name: 'peri-studio', sessions: 12, status: 'active' },
@@ -78,27 +88,6 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
             <SuggestionItem suggestion="Write tests" onClick={() => undefined} />
             <SuggestionItem suggestion="Explain architecture" onClick={() => undefined} />
           </Suggestion>
-        </ChatFrame>
-      </CatalogDemo>
-      </Show>
-
-      <Show when={showCatalogSection(props.sections, 'sources')}>
-      <CatalogDemo id="sources" title="Sources" description="折叠来源列表 + ResourceCite 引用卡。">
-        <ChatFrame>
-          <div class="flex flex-col gap-16">
-            <Sources defaultOpen>
-              <SourcesTrigger count={2} />
-              <SourcesContent>
-                <SourceItem href="https://example.com/architecture" title="architecture.md" />
-                <SourceItem href="https://example.com/terminology" title="terminology.md" />
-              </SourcesContent>
-            </Sources>
-            <ResourceCite
-              name="Composer component specification"
-              mediaType="text/markdown"
-              resourceId="resource://component-spec"
-            />
-          </div>
         </ChatFrame>
       </CatalogDemo>
       </Show>
@@ -207,34 +196,6 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </CatalogDemo>
       </Show>
 
-      <Show when={showCatalogSection(props.sections, 'decision')}>
-      <CatalogDemo id="decision" title="Decision surfaces">
-        <DecisionSurfacesLayout />
-      </CatalogDemo>
-      </Show>
-
-      <Show when={showCatalogSection(props.sections, 'confirmation')}>
-      <CatalogDemo id="confirmation" title="Confirmation" description="敏感操作审批（Questionnaire 单步）。">
-        <Questionnaire
-          class="max-w-md"
-          title="Permissions"
-          onSubmit={() => undefined}
-        >
-          <QuestionnaireStep
-            id="confirm"
-            title={'Allow deleting session "debug-42"?'}
-            description="This removes the project session entry and hides it from the sidebar."
-            required
-            choices={[
-              { value: 'approve', label: 'Approve delete' },
-              { value: 'deny', label: 'Deny and keep session' },
-            ]}
-          />
-          <QuestionnaireNavigation submitLabel="Approve" />
-        </Questionnaire>
-      </CatalogDemo>
-      </Show>
-
       <Show when={showCatalogSection(props.sections, 'queue')}>
       <CatalogDemo id="queue" title="Queue" description="Composer 待发消息队列；hover 显示灰底与操作按钮。">
         <div class="max-w-(--composer-launch-max)">
@@ -251,20 +212,77 @@ export function ComponentCatalogExtrasG(props: { sections?: string[] }) {
       </CatalogDemo>
       </Show>
 
-      <Show when={showCatalogSection(props.sections, 'snippet')}>
-      <CatalogDemo id="snippet" title="Snippet" description="安装命令可复制片段。">
-        <DemoRow>
-          <Snippet code="bun run test" prefix="$" />
-          <Snippet code="npx ai-elements add task">
-            <SnippetAddon>
-              <SnippetText>$</SnippetText>
-            </SnippetAddon>
-            <SnippetInput />
-            <SnippetAddon align="inline-end" class="px-4">
-              <SnippetCopyButton />
-            </SnippetAddon>
-          </Snippet>
-        </DemoRow>
+      <Show when={showCatalogSection(props.sections, 'reasoning')}>
+      <CatalogDemo id="reasoning" title="Reasoning" description="折叠式模型推理摘要。">
+        <Reasoning>
+          <ReasoningTrigger>Why this answer</ReasoningTrigger>
+          <ReasoningContent>Model reasoning preview for catalog.</ReasoningContent>
+        </Reasoning>
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'attachments')}>
+      <CatalogDemo id="attachments" title="Attachments" description="grid / inline / list 变体与悬停预览。">
+        <div class="flex max-w-md flex-col gap-16">
+          <Attachments variant="grid">
+            <Attachment
+              data={{ ...attachmentFiles[1], url: 'https://picsum.photos/seed/peri/96/96' }}
+              onRemove={() => undefined}
+            >
+              <AttachmentHoverCard>
+                <AttachmentHoverCardTrigger>
+                  <AttachmentPreview />
+                </AttachmentHoverCardTrigger>
+                <AttachmentHoverCardContent>
+                  <img
+                    src="https://picsum.photos/seed/peri/240/160"
+                    alt="diagram.png preview"
+                    class="max-h-160 rounded-6"
+                  />
+                </AttachmentHoverCardContent>
+              </AttachmentHoverCard>
+              <AttachmentRemove />
+            </Attachment>
+          </Attachments>
+          <Attachments variant="inline">
+            <Attachment data={attachmentFiles[0]} onRemove={() => undefined}>
+              <AttachmentPreview />
+              <AttachmentInfo />
+              <AttachmentRemove />
+            </Attachment>
+          </Attachments>
+          <Attachments variant="list">
+            <For each={attachmentFiles}>
+              {(file) => (
+                <Attachment data={file} onRemove={() => undefined}>
+                  <AttachmentPreview />
+                  <AttachmentInfo showMediaType />
+                  <AttachmentRemove />
+                </Attachment>
+              )}
+            </For>
+          </Attachments>
+          <AttachmentEmpty />
+        </div>
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'table-primitives')}>
+      <CatalogDemo id="table-primitives" title="Table" description="HTML 表格原语（DataTable 的底层）。">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell>Alpha</TableCell>
+              <TableCell>Ready</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </CatalogDemo>
       </Show>
 

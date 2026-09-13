@@ -10,7 +10,7 @@ import {
 } from 'solid-js';
 import { cn } from '../../lib/cn';
 import { IconButton } from '../Button';
-import { Dialog, DialogContent, DialogOverlay, DialogPortal } from '../Dialog';
+import { Dialog, DialogContent, DialogTitle } from '../Dialog';
 
 export type ImageProps = ComponentProps<'img'> & {
   preview?: boolean;
@@ -90,9 +90,9 @@ export const ImagePreview: Component<ImagePreviewProps> = (props) => {
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogPortal>
-        <DialogOverlay class="bg-scrim/90" />
-        <DialogContent class="fixed inset-0 z-70 flex flex-col bg-transparent shadow-none">
+      <DialogContent fullscreen overlayClass="bg-scrim/90">
+        <DialogTitle class="sr-only">Image preview</DialogTitle>
+        <div class="flex h-full min-h-0 flex-col">
           <div class="flex items-center justify-end gap-8 p-12">
             <IconButton label="Zoom out" size="sm" onClick={() => setScale((s) => Math.max(0.5, s - 0.25))}>
               <ZoomOut size={16} />
@@ -104,7 +104,7 @@ export const ImagePreview: Component<ImagePreviewProps> = (props) => {
               <X size={16} />
             </IconButton>
           </div>
-          <div class="relative flex flex-1 items-center justify-center overflow-hidden px-48">
+          <div class="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden px-48">
             <Show when={sources().length > 1}>
               <IconButton
                 label="Previous image"
@@ -117,6 +117,8 @@ export const ImagePreview: Component<ImagePreviewProps> = (props) => {
               </IconButton>
             </Show>
             <img
+              data-slot="image-preview"
+              data-testid="image-preview"
               src={currentSrc()}
               alt={props.alt ?? ''}
               class="max-h-full max-w-full object-contain transition-transform duration-120"
@@ -134,8 +136,8 @@ export const ImagePreview: Component<ImagePreviewProps> = (props) => {
               </IconButton>
             </Show>
           </div>
-        </DialogContent>
-      </DialogPortal>
+        </div>
+      </DialogContent>
     </Dialog>
   );
 };

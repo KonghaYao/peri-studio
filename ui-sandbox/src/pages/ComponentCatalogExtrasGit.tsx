@@ -6,10 +6,12 @@ import {
   GitCommitBar,
   GitDiffPanel,
   GitGraphPanel,
+  GitGraphRefBadge,
+  GitStatusBadge,
 } from '@/components/blocks';
 import { showCatalogSection } from '@/catalog/catalog-section';
 import { GitGraphLayout, SourceControlLayout } from '@/layers';
-import { CatalogDemo } from '@/pages/shared/DemoSection';
+import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
 
 const GIT_FRAME = 'h-(--workbench-frame-height) overflow-hidden rounded-lg border border-border-subtle';
 
@@ -103,6 +105,17 @@ export function ComponentCatalogExtrasGit(props: { sections?: string[] }) {
         <div class="max-w-md rounded-lg border border-border-subtle">
           <GitDiffPanel path="web/src/widgets/resource/SourceControlPanel.tsx" class="min-h-210" />
         </div>
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'git-badges')}>
+      <CatalogDemo id="git-badges" title="Git badges" description="SCM 状态字母徽章与 graph ref 标签。">
+        <DemoRow>
+          <GitStatusBadge status="modified" />
+          <GitStatusBadge status="added" />
+          <GitStatusBadge status="deleted" />
+          <GitGraphRefBadge gitRef={{ label: 'main', tone: 'branch' }} />
+        </DemoRow>
       </CatalogDemo>
       </Show>
     </>

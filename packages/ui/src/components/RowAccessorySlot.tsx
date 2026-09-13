@@ -6,7 +6,7 @@ import { rowAccessoryCoverClass } from './sidebar/row-accessory-layout';
 export type RowAccessorySlotProps = {
   /** Tailwind group 名，例如 group/row、group/workspace。 */
   group: 'row' | 'workspace';
-  meta: JSX.Element;
+  meta?: JSX.Element;
   actions: JSX.Element;
   actionsVisible?: boolean;
   class?: string;
@@ -42,14 +42,16 @@ export const RowAccessorySlot: Component<RowAccessorySlotProps> = (props) => {
         local.class,
       )}
     >
-      <span
-        class={cn(
-          'row-accessory-slot__meta absolute inset-y-0 right-0 flex items-center justify-end pr-4',
-          metaHidden(),
-        )}
-      >
-        {local.meta}
-      </span>
+      {local.meta ? (
+        <span
+          class={cn(
+            'row-accessory-slot__meta absolute inset-y-0 right-0 flex items-center justify-end pr-4',
+            metaHidden(),
+          )}
+        >
+          {local.meta}
+        </span>
+      ) : null}
       <div
         class={cn(
           rowAccessoryCoverClass,

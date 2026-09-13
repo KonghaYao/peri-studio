@@ -4,17 +4,15 @@ import { TierHeader } from '@/pages/shared/DemoSection';
 
 const AI_SECTIONS = [
   'conversation',
-  'message',
+  'message-branches',
+  'reasoning',
+  'attachments',
   'suggestion',
-  'sources',
   'citation',
   'plan',
   'task',
-  'decision',
   'questionnaire',
-  'confirmation',
   'queue',
-  'snippet',
 ] as const;
 
 /** T2 · Chat 原语与 AI Elements。 */

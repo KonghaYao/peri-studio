@@ -1,4 +1,4 @@
-import { Show, createEffect, createMemo, createSignal, untrack } from 'solid-js';
+import { Show, createEffect, createMemo, createSignal, untrack, type JSX } from 'solid-js';
 import {
   Button,
   Dialog,
@@ -74,6 +74,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
     });
   });
   const [commitMessages, setCommitMessages] = createSignal<Record<string, string>>({});
+  const [explorerToolbar, setExplorerToolbar] = createSignal<JSX.Element>();
   const submittedCommits = new Map<string, { projectId: string; repoId: string; requestId: string; message: string }>();
   const view = () => props.view === undefined ? localView() : props.view;
   const setView = (next: WorkbenchView | ((current: WorkbenchView) => WorkbenchView)) => {
@@ -145,12 +146,17 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
     if (!autoCollapse && wasAutoCollapsed && !view()) setView('explorer');
     wasAutoCollapsed = autoCollapse;
   });
+  createEffect(() => {
+    if (view() !== 'explorer') setExplorerToolbar(undefined);
+  });
   const toggle = (next: Exclude<WorkbenchView, null>) => {
     if (props.compact) setView(next);
     else setView((current) => current === next ? null : next);
   };
   const close = () => props.compact ? props.onOpenChange?.(false) : setView(null);
   const panelTitle = () => {
+    if (view() === 'explorer') return 'Explorer';
+    if (view() === 'scm') return 'Source Control';
     if (view() === 'mcp') return 'MCP';
     if (view() === 'graph') return 'Git Graph';
     if (view() === 'terminal') return 'Terminal';
@@ -181,6 +187,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   const terminalParkedClass = terminalDockParkedSurfaceClass;
   const panelHeaderActions = () => (
     <>
+      <Show when={view() === 'explorer'}>{explorerToolbar()}</Show>
       <Show when={view() === 'explorer' || view() === 'scm'}>
         <IconButton label="Refresh resources" size="compact" onClick={refreshResourceProject} class="border-0 bg-transparent text-content-muted hover:text-content-primary">
           <RefreshCw size={14} strokeWidth={1.7} />
@@ -219,8 +226,8 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
                 <Button size="compact" variant="ghost" class="shrink-0 border-0! bg-transparent! px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={refreshResourceProject}>Retry</Button>
               </div>
             </InlineNotice>}</Show>
-            <Show when={view() === 'explorer'}><ExplorerPanel expanded={explorerExpanded()} onExpandedChange={setExplorerExpanded} activePath={explorerActivePath()} onActivePathChange={setExplorerActivePath} scrollTop={explorerScrollTop()} onScrollTopChange={(scrollTop) => { if (!props.compact || props.open) setExplorerScrollTop(scrollTop); }} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'explorer', key })} /></Show>
-            <Show when={view() === 'scm'}><SourceControlPanel commitMessages={visibleCommitMessages()} onCommitMessageChange={setCommitMessage} onCommitSubmitted={recordSubmittedCommit} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'scm', key })} /></Show>
+            <Show when={view() === 'explorer'}><ExplorerPanel embedded onEmbeddedToolbarChange={setExplorerToolbar} expanded={explorerExpanded()} onExpandedChange={setExplorerExpanded} activePath={explorerActivePath()} onActivePathChange={setExplorerActivePath} scrollTop={explorerScrollTop()} onScrollTopChange={(scrollTop) => { if (!props.compact || props.open) setExplorerScrollTop(scrollTop); }} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'explorer', key })} /></Show>
+            <Show when={view() === 'scm'}><SourceControlPanel embedded commitMessages={visibleCommitMessages()} onCommitMessageChange={setCommitMessage} onCommitSubmitted={recordSubmittedCommit} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'scm', key })} /></Show>
           </Show>
         </Show>
       </WorkbenchPanelChrome>

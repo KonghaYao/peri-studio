@@ -609,6 +609,6 @@ describe('Markdown', () => {
     })} />);
     expect(screen.getAllByTitle('MCP App sandbox')).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Open fullscreen' })).toBeInTheDocument();
-    expect(screen.getByText(/Used mcp__sales-dashboard__get_dashboard/)).toBeInTheDocument();
+    expect(screen.getByText(/Ran mcp sales dashboard get dashboard/)).toBeInTheDocument();
   });
 });

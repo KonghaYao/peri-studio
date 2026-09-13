@@ -80,7 +80,7 @@ test('component geometry tokens are declared once and consumed by production wid
 
   const webUi = `${composer}\n${tool}\n${toolActivity}\n${mcpApp}\n${status}\n${questions}\n${permissions}\n${permissionCard}\n${decisionCard}\n${explorer}\n${sourceControl}\n${button}`;
   for (const token of [
-    'control-height-compact', 'pattern-row-height', 'tree-row-height',
+    'control-height-compact', 'tree-row-height',
     'status-panel-max-height', 'composer-pill-radius',
     'decision-radius', 'permission-card-min-height', 'tool-activity-max',
   ]) {

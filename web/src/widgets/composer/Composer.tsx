@@ -22,7 +22,9 @@ import { composerAssets, removeComposerAsset } from '@/features/composer/compose
 import { agentCommandToSlashMenuItem } from '@/features/composer/slash-menu-catalog';
 import { filterCommandCatalog, slashMenuOptionId } from '@/features/composer/slash-menu';
 import { ComposerUploadSurface, openComposerUploadFilePicker } from './ComposerUploadSurface';
+import { ComposerMetaRow } from './ComposerMetaRow';
 import { useComposerState, type ComposerState } from './useComposerState';
+import { selectedSessionId } from '@/store';
 
 type ComposerMessageFieldProps = {
   ctx: ComposerShellFieldContext;
@@ -290,6 +292,7 @@ export function Composer(props: {
             </Show>
           </>
         )}
+        metaRow={selectedSessionId() ? <ComposerMetaRow /> : undefined}
         notices={(
           <>
             <Show when={state.promptOverBudget()}>

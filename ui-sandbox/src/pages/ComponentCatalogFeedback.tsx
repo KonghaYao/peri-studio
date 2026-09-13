@@ -95,8 +95,8 @@ export function ComponentCatalogFeedback(props: { sections?: string[] }) {
 
       <Show when={showCatalogSection(props.sections, 'popconfirm')}>
         <CatalogDemo id="popconfirm" title="Popconfirm" description="触发器上的确认气泡。">
-          <Popconfirm title="Delete session?" description="This cannot be undone." okType="danger" onConfirm={() => { message.success('Deleted'); }}>
-            <Button variant="danger" size="sm">Delete</Button>
+          <Popconfirm title="Delete session?" description="This cannot be undone." variant="danger" size="sm" okType="danger" onConfirm={() => { message.success('Deleted'); }}>
+            Delete
           </Popconfirm>
         </CatalogDemo>
       </Show>
@@ -126,6 +126,8 @@ export function ComponentCatalogFeedback(props: { sections?: string[] }) {
           <div class="flex flex-col gap-8">
             <Alert type="info" closable><AlertTitle>Info</AlertTitle><AlertDescription>Runtime is reconnecting.</AlertDescription></Alert>
             <Alert type="success" banner><AlertTitle>Success banner</AlertTitle></Alert>
+            <Alert type="warning"><AlertTitle>Context almost full</AlertTitle><AlertDescription>182k/200k tokens used in this turn.</AlertDescription></Alert>
+            <Alert type="error"><AlertTitle>Runtime interrupted</AlertTitle><AlertDescription>The ACP process exited before confirming the last action.</AlertDescription></Alert>
           </div>
         </CatalogDemo>
       </Show>

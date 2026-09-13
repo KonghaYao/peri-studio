@@ -120,9 +120,17 @@
   --color-scrollbar-thumb-hover: var(--scrollbar-thumb-hover);
 
   /* Elevation */
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-overlay: var(--shadow-overlay);
+  --shadow-dialog: var(--shadow-dialog);
+  --shadow-subtle: var(--shadow-subtle);
+  --shadow-raised: var(--shadow-raised);
   --shadow-popover: var(--shadow-popover);
   --shadow-composer-overlay: var(--shadow-composer-overlay);
   --shadow-accent-ring: var(--shadow-accent-ring);
+  --shadow-focus-ring: var(--shadow-focus-ring);
   --shadow-focus-danger: var(--shadow-focus-danger);
 
   /* Spacing scale: exact pixel values from tokens (p-16 = 16px, etc.). */
@@ -219,8 +227,16 @@
   --tracking-wide: var(--tracking-wide);
 
   /* Sandbox elevation & motion */
-  --shadow-raised: var(--shadow-raised);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
   --shadow-overlay: var(--shadow-overlay);
+  --shadow-dialog: var(--shadow-dialog);
+  --shadow-subtle: var(--shadow-subtle);
+  --shadow-raised: var(--shadow-raised);
+  --shadow-popover: var(--shadow-popover);
+  --shadow-composer-overlay: var(--shadow-composer-overlay);
+  --shadow-accent-ring: var(--shadow-accent-ring);
   --shadow-focus-ring: var(--shadow-focus-ring);
   --shadow-focus-danger: var(--shadow-focus-danger);
   --z-sticky: var(--z-sticky);

@@ -112,13 +112,11 @@ export function MachinePanel() {
     <ResourceSectionTitle compact>
       <span>Machines</span>
       <span class="ml-auto max-w-(--runtime-label-max) overflow-hidden text-ellipsis whitespace-nowrap font-mono text-9 font-normal normal-case tracking-normal text-text-muted" title={connState().text}>{connState().text}</span>
-    </ResourceSectionTitle>
-    <div class="px-10 py-8">
-      <Button type="button" variant="secondary" size="sm" disabled={readOnly()} onClick={() => setAddOpen(true)}>
+      <Button type="button" variant="secondary" size="sm" class="ml-8 shrink-0" disabled={readOnly()} onClick={() => setAddOpen(true)}>
         <Plus size={14} strokeWidth={1.7} class="mr-4" />
         Add computer
       </Button>
-    </div>
+    </ResourceSectionTitle>
     <ul class="m-0 list-none px-10 pb-10 text-11" aria-label="Computer list">
       <For each={list()}>{(machine) => <MachineRow
         machine={machine}
@@ -154,14 +152,9 @@ export function MachinePanel() {
       />}</For>
     </ul>
     <Show when={sshMachines().length === 0}>
-      <p class="m-0 px-10 pb-8 text-10 text-text-muted">
-        Add a remote computer over SSH to run agents on another computer.
+      <p class="m-0 px-10 pb-10 text-10 text-text-muted">
+        No remote computers. Add one over SSH with ssh-agent or an identity file.
       </p>
-      <footer class="border-t border-border-faint px-10 py-8 text-10 text-text-muted">
-        <p class="m-0 mb-4">You can only add computers from the Mac running Peri Studio.</p>
-        <p class="m-0 mb-4">Use ssh-agent or an identity file on this computer. Passwords cannot be entered here.</p>
-        <p class="m-0">Quitting Peri or disconnecting a tunnel does not stop agents on remote computers.</p>
-      </footer>
     </Show>
     <AddComputerDialog
       open={addOpen()}
@@ -217,10 +210,7 @@ export function MachinePanel() {
     />
     <Dialog open={!!renameTarget()} onOpenChange={(open) => { if (!open && !renameBusy()) setRenameTarget(null); }}>
       <DialogContent dismissible={!renameBusy()}>
-        <FormDialogShell
-          title="Rename computer"
-          description="Updates the sidebar label only. SSH destination and port stay the same."
-        >
+        <FormDialogShell title="Rename computer">
           <form class="m-0 flex flex-col gap-12" onSubmit={(event) => {
             event.preventDefault();
             const target = renameTarget();

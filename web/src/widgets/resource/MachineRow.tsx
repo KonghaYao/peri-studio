@@ -172,7 +172,7 @@ export function MachineRow(props: MachineRowProps) {
         </Show>
         <Show when={props.showOnlineHint}>
           <p class="m-0 mt-8 text-10 text-text-secondary">
-            Agents keep running on that computer if you quit Peri or disconnect the tunnel. Use Stop agents to shut them down.
+            Agents keep running after disconnect. Use Stop agents to shut them down.
           </p>
         </Show>
       </div>

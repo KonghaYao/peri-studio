@@ -9,9 +9,6 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  FieldGroup,
-  FieldSet,
-  FieldTitle,
   Tabs,
   TabsContent,
   TabsList,
@@ -20,8 +17,6 @@ import {
 import { useAuthActions } from '@/features/auth/auth-hook';
 import { principalId } from '@/features/auth/auth-state';
 import { connState } from '@/features/connection/connection';
-import { globalStatus, schemaVersion } from '@/store';
-import { serverStatusLabel } from '@/entities/topology/topology-view';
 import { TopologyView } from '@/widgets/chat/TopologyView';
 import { MachinePanel } from '@/widgets/resource/MachinePanel';
 
@@ -48,20 +43,8 @@ export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
             </div>
           </TabsContent>
           <TabsContent value="about">
-            <FieldSet class="mt-16 rounded-12 border border-divider bg-surface-muted p-15">
-              <FieldGroup class="grid grid-cols-settings-form gap-x-12 gap-y-9">
-                <FieldTitle class="text-12 font-normal text-text-muted">WebSocket connection</FieldTitle>
-                <span class="text-13 text-text-primary">{connState().text}</span>
-                <FieldTitle class="text-12 font-normal text-text-muted">Server health</FieldTitle>
-                <span class="text-13 text-text-primary">{serverStatusLabel(globalStatus())}</span>
-                <FieldTitle class="text-12 font-normal text-text-muted">Registry schema version</FieldTitle>
-                <span class="text-13 text-text-primary">{String(schemaVersion() ?? '—')}</span>
-              </FieldGroup>
-            </FieldSet>
-            <div class="mt-14 min-h-0">
-              <TopologyView />
-            </div>
-            <p class="mt-13 text-text-muted text-12 leading-15">Instance and conversation metadata comes from the hub:registry projection; the topology panel does not issue extra requests to the server.</p>
+            <p class="mt-14 mb-0 font-mono text-12 text-text-muted">{connState().text}</p>
+            <TopologyView />
             <Show when={principalId() && auth?.logout}>
               <div class="mt-16 flex justify-end border-t border-divider pt-16">
                 <Button variant="secondary" size="compact" onClick={() => auth?.logout()}>

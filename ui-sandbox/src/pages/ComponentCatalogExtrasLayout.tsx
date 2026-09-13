@@ -9,6 +9,7 @@ import {
   Col,
   Divider,
   Flex,
+  BackToTop,
   FloatButton,
   FloatButtonBackTop,
   Layout,
@@ -178,6 +179,14 @@ export function ComponentCatalogExtrasLayout(props: { sections?: string[] }) {
               ]}
             />
           </DemoRow>
+        </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'back-to-top')}>
+        <CatalogDemo id="back-to-top" title="BackToTop" description="Chat 受控回到最新消息锚点（非页面级 FloatButton.BackTop）。">
+          <div class="relative h-120 overflow-hidden rounded-8 border border-border-subtle bg-surface-sunken">
+            <BackToTop />
+          </div>
         </CatalogDemo>
       </Show>
 

@@ -40,7 +40,7 @@ const statusToneMap: Record<BadgeStatus, ResolvedBadgeTone> = {
 };
 
 const countVariants = cva(
-  'absolute z-1 flex items-center justify-center rounded-full border-2 border-surface font-medium text-white',
+  'z-1 flex items-center justify-center rounded-full border-2 border-surface font-medium text-white',
   {
     variants: {
       size: {
@@ -113,18 +113,23 @@ export function Badge(props: BadgeProps) {
 
   if (hasCount() && local.children) {
     const offset = local.offset ?? [0, 0];
+    const indicatorStyle = {
+      position: 'absolute',
+      top: '0',
+      right: '0',
+      transform: `translate(calc(50% + ${offset[0]}px), calc(-50% + ${offset[1]}px))`,
+    } as const;
     return (
-      <span data-slot="badge" class={cn('relative inline-flex', local.class)} {...span}>
+      <span data-slot="badge" class={cn('relative inline-block leading-none', local.class)} {...span}>
         {local.children}
         <Show when={showCount()}>
           <span
             data-slot="badge-count"
             class={cn(
               countVariants({ size: local.size, dot: local.dot }),
-              'top-0 right-0 translate-x-1/2 -translate-y-1/2',
               dotClasses[tone()] === 'bg-text-faint' ? 'bg-danger' : dotClasses[tone()],
             )}
-            style={{ transform: `translate(calc(50% + ${offset[0]}px), calc(-50% + ${offset[1]}px))` }}
+            style={indicatorStyle}
           >
             <Show when={!local.dot}>{formatCount(local.count ?? 0, local.overflowCount)}</Show>
           </span>

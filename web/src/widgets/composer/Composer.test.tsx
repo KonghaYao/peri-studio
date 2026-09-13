@@ -1,10 +1,14 @@
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setPromptDeliveryReady, setPromptMaxBytes } from '@/features/connection/connection';
+import { setResourceWorkspace } from '@/features/resource/resource-store';
 import {
   setChatHead,
   setChatStatusSignal,
+  setInstances,
+  setMachines,
   setOpeningSession,
+  setProjects,
   setProjectSessions,
   setRuntimeDocsState,
   setSelectedCid,
@@ -54,6 +58,10 @@ function resetStore() {
   setRuntimeDocsState({ chat: false, control: false });
   resetMessageDelivery();
   setProjectSessions([]);
+  setProjects([]);
+  setInstances([]);
+  setMachines([]);
+  setResourceWorkspace({ projectId: null, directories: {}, repositories: [], loading: [], error: null });
   setPromptDeliveryReady(false);
   setPromptMaxBytes(0);
   resetWorkspaceUploadAssembly();
@@ -111,6 +119,82 @@ describe('Composer', () => {
     expect(screen.getByTestId('composer-runtime')).toHaveTextContent('Nova 4.1');
     expect(screen.getByTestId('composer-runtime')).toHaveClass('text-content-secondary');
     expect(screen.getByRole('button', { name: 'Send' })).toHaveClass(composerSendBtnClass);
+  });
+
+  it('reserves a meta row below the surface for branch, machine, and usage', () => {
+    selectReadyChat();
+    setProjects([{
+      id: 'project-1',
+      name: 'Peri',
+      cwd: '/repo',
+      instanceId: 'local',
+      createdAt: null,
+      updatedAt: null,
+      archivedAt: null,
+    }]);
+    setInstances([{
+      id: 'local',
+      hostname: 'Local instance',
+      status: 'online',
+      tokenId: null,
+      registeredAt: null,
+      lastHeartbeat: null,
+      chatCount: 0,
+    }]);
+    setMachines([{
+      instanceId: 'local',
+      kind: 'local',
+      displayName: 'This computer',
+      sshDestination: null,
+      sshPort: null,
+      phase: 'online',
+      errorCode: null,
+      hasIdentityFile: false,
+      autoReconnect: false,
+      hostKeySha256: null,
+      updatedAt: null,
+      archivedAt: null,
+    }]);
+    setResourceWorkspace({
+      projectId: 'project-1',
+      directories: {},
+      repositories: [{
+        id: 'repo-1',
+        root: '',
+        name: 'peri-studio',
+        headName: 'main',
+        groups: {},
+      }],
+      loading: [],
+      error: null,
+    });
+    setChatHead({
+      chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
+      agent: {
+        instanceId: 'local',
+        sessionId: 'acp-1',
+        status: 'ready',
+        lastActivityAt: null,
+        availableCommands: [],
+        commandCatalog: [],
+        extensions: [],
+        activities: [],
+        inputPrediction: null,
+        latestUsage: null,
+        model: 'Nova 4.1',
+        effort: 'high',
+        contextWindow: 200_000,
+        contextUsed: 42_000,
+      },
+      activeTurn: null,
+      pendingPermissions: [],
+    });
+    mountComposer();
+
+    expect(screen.getByLabelText('Branch')).toHaveTextContent('main');
+    expect(screen.getByLabelText('Runtime location')).toHaveTextContent('This computer');
+    expect(screen.getByTestId('composer-usage')).toBeInTheDocument();
+    expect(screen.getByTestId('composer-surface').parentElement?.querySelector('[class*="min-h-28"]')).toBeTruthy();
   });
 
   it('adds a quoted answer to the current draft without replacing existing text', async () => {
@@ -267,7 +351,7 @@ describe('Composer', () => {
     expect(screen.queryByTestId('composer-prediction')).not.toBeInTheDocument();
   });
 
-  it('does not mount a token meter in the production composer', () => {
+  it('mounts the token meter in the composer meta row when token stats are available', () => {
     selectReadyChat();
     setChatHead({
       chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
@@ -280,8 +364,8 @@ describe('Composer', () => {
       activeTurn: null, pendingPermissions: [],
     });
     mountComposer();
-    expect(screen.queryByTestId('composer-usage')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Context usage/ })).not.toBeInTheDocument();
+    expect(screen.getByTestId('composer-usage')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Context usage 1% · Healthy · Input 1,200 · Output 345 · Cached 900/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Use suggestion/ })).not.toBeInTheDocument();
   });
 

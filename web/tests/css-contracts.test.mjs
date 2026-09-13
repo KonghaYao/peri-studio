@@ -256,7 +256,9 @@ test('Kobalte dialog composes an independently layered portal overlay and conten
   );
   assert.match(dialog, /DialogPrimitive\.Overlay[\s\S]*?data-dialog-overlay[\s\S]*?class=\{cn\('fixed inset-0 z-60 bg-scrim'/);
   assert.match(dialog, /const isSheet = \(\) => local\.size === 'resource-compact'/);
-  assert.match(dialog, /fixed top-1\/2 left-1\/2 z-61 -translate-x-1\/2 -translate-y-1\/2 outline-none/);
+  assert.match(dialog, /const isRewind = \(\) => local\.size === 'rewind'/);
+  assert.match(dialog, /rewindDialogContentClass/);
+  assert.match(dialog, /top-1\/2 left-1\/2 -translate-x-1\/2 -translate-y-1\/2/);
   assert.match(dialog, /'w-\(--container-dialog-default\) max-h-\(--container-dialog-tall\)/);
   assert.match(dialog, /onEscapeKeyDown=\{preventWhenLocked\}/);
   assert.match(dialog, /onPointerDownOutside=\{preventWhenLocked\}/);
@@ -267,7 +269,7 @@ test('dialog size belongs to DialogContent rather than an overflowing child', ()
   const dialogConsumers = listWidgetTsx()
     .map((path) => [path, readFileSync(path, 'utf8')])
     .filter(([, code]) => code.includes('<DialogContent'));
-  assert.match(dialog, /type DialogSize = 'default' \| 'search' \| 'settings' \| 'mcp' \| 'resource-compact'/);
+  assert.match(dialog, /type DialogSize = 'default' \| 'search' \| 'settings' \| 'mcp' \| 'resource-compact' \| 'rewind'/);
   for (const [file, code] of dialogConsumers) {
     assert.doesNotMatch(code, /<DialogContent[\s\S]{0,300}(?:w-|min-w-)\(--container-/, `${file} puts viewport width inside DialogContent`);
   }

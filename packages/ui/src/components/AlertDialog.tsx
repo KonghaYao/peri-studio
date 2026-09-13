@@ -37,7 +37,7 @@ export function AlertDialogContent<T extends ValidComponent = 'div'>(props: Poly
       >
         <div
           class={cn(
-            'grid w-(--container-dialog-default) max-h-(--container-dialog-tall) gap-16 overflow-auto rounded-8 border border-border-subtle bg-surface px-20 py-20 text-text-primary shadow-popover outline-none',
+            'grid w-(--container-dialog-default) max-h-(--container-dialog-tall) gap-16 overflow-auto rounded-8 border border-border-subtle bg-surface px-20 py-20 text-text-primary shadow-dialog outline-none',
             modalDialogMotion,
             local.class,
           )}

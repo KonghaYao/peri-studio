@@ -124,13 +124,18 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 
 ## 7. 阴影与层级
 
-原则：**能不用阴影就不用**；白底产品靠边框分层。
+原则：**能不用阴影就不用**；白底产品靠边框分层。阴影从轻到重分五档 canonical tier，语义别名指向对应档位。
 
-| Token | 用途 |
-|-------|------|
-| `--shadow-popover` | Dropdown、SlashMenuListbox、Popover |
-| `--shadow-composer-overlay` | Composer 上浮层 |
-| `--shadow-accent-ring` | 运行中 activity 光晕 |
+| Tier | Token | 用途 |
+|------|-------|------|
+| sm | `--shadow-sm` | 微抬升（Composer 壳、表格浮动按钮） |
+| md | `--shadow-md` | 卡片、Workbench 侧栏 |
+| lg | `--shadow-lg` | Dropdown、Popover、Toast |
+| overlay | `--shadow-overlay` | Tooltip、FAB、Workbench 浮层 |
+| dialog | `--shadow-dialog` | Dialog、AlertDialog |
+| — | `--shadow-focus-ring` | 焦点环、运行中 activity 光晕 |
+
+语义别名：`--shadow-subtle` / `--shadow-composer-overlay` → sm；`--shadow-raised` → md；`--shadow-popover` → lg；`--shadow-accent-ring` → focus-ring。
 
 `z-index`：模态与 toast 由 Kobalte / 门户管理；业务勿随意叠 `z-50`。
 

@@ -13,6 +13,7 @@ export function ComponentsGitPage() {
           'git-commit-bar',
           'git-graph-row',
           'git-diff-panel',
+          'git-badges',
         ]}
       />
     </div>

@@ -16,11 +16,6 @@ export const gitGraphSvgClass = 'pointer-events-none absolute top-0 left-0 z-2 b
 
 export const gitGraphTableClass = 'w-full border-collapse text-13';
 
-export const gitGraphThClass =
-  'box-border h-36 border-b border-divider bg-surface px-12 py-6 text-left align-middle text-13 font-medium leading-20 text-text-muted';
-
-export const gitGraphThGraphColClass = 'p-0';
-
 export const gitGraphTdClass =
   'box-border h-(--git-graph-row-height) max-h-(--git-graph-row-height) overflow-hidden px-12 align-middle text-13 leading-(--git-graph-row-height)';
 

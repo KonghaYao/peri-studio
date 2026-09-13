@@ -205,7 +205,6 @@
 }
 
 .ui-menu-surface-motion[data-closed],
-.ui-menu-surface-motion:not([data-expanded]),
 [data-closed] > .ui-menu-surface-motion,
 [data-expanded='false'] > .ui-menu-surface-motion {
   animation: ui-content-hide var(--duration-surface-out) var(--ease-surface-out) both;
@@ -288,10 +287,6 @@
   }
 }
 
-.ui-toast-motion {
-  animation: ui-toast-out var(--duration-toast-out) var(--ease-overlay-out) forwards;
-}
-
 .ui-toast-motion[data-opened] {
   animation: ui-toast-in-from-top var(--duration-toast-in) var(--ease-overlay-in) both;
 }
@@ -354,7 +349,6 @@
   [data-closed] > .ui-surface-popover-motion,
   .ui-menu-surface-motion[data-expanded],
   .ui-menu-surface-motion[data-closed],
-  .ui-menu-surface-motion:not([data-expanded]),
   [data-expanded] > .ui-menu-surface-motion,
   [data-closed] > .ui-menu-surface-motion,
   [data-expanded='false'] > .ui-menu-surface-motion,

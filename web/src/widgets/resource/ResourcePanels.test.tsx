@@ -12,7 +12,6 @@ import {
   installResourceStore,
   mutateGitResource,
   replayResourceSubscriptions,
-  resourceDiffPreview,
   resourceFilePreview,
   resourceWorkspace,
   resetResourceProject,
@@ -48,7 +47,8 @@ describe('VS Code-style resource panels', () => {
     render(() => <ExplorerPanel />);
 
     const row = screen.getByRole('treeitem', { name: /src/i });
-    expect(row).toHaveClass('h-(--tree-row-height)', 'bg-selected');
+    expect(row).toHaveClass('pl-6');
+    expect(row.parentElement).toHaveClass('h-(--tree-row-height)', 'bg-selected');
     expect(row.querySelector('span:last-child')).toHaveClass('font-600');
     expect(row.querySelector('[data-file-icon="folder-src"]')).toBeInTheDocument();
   });
@@ -99,7 +99,7 @@ describe('VS Code-style resource panels', () => {
     expect(screen.getByRole('list', { name: 'Computer list' })).toBeInTheDocument();
     expect(screen.getByText('This computer')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add computer' })).toBeInTheDocument();
-    expect(screen.getByText(/Add a remote computer over SSH/)).toBeInTheDocument();
+    expect(screen.getByText(/No remote computers/)).toBeInTheDocument();
   });
 
   it('keeps Source Control reachable from the workbench rail with its change badge', async () => {
@@ -414,12 +414,17 @@ describe('VS Code-style resource panels', () => {
     expect(fetch).toHaveBeenNthCalledWith(2, '/api/resource-blobs/file-blob', expect.objectContaining({ method: 'GET', credentials: 'same-origin' }));
   });
 
-  it('opens a principal-bound Git diff blob from a change row', async () => {
+  it('opens a principal-bound file preview from a change row', async () => {
     const sent: unknown[] = [];
-    const fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      text: async () => '--- a/src/main.ts\n+++ b/src/main.ts\n@@ -1 +1 @@\n-before\n+after\n',
-    });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: { get: (name: string) => (name === 'content-type' ? 'text/plain' : name === 'content-length' ? '12' : null) },
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        arrayBuffer: async () => new TextEncoder().encode('after change').buffer,
+      });
     vi.stubGlobal('fetch', fetch);
     installResourceStore({ send: (frame) => { sent.push(frame); return true; }, ready: () => true, toast: vi.fn() });
     installPrincipalRole('full');
@@ -441,17 +446,16 @@ describe('VS Code-style resource panels', () => {
     await fireEvent.click(screen.getByRole('button', { name: /Open changes for src\/main\.ts/i }));
     expect(sent).toContainEqual(expect.objectContaining({
       t: 'resource_query', type: 'resource/open-blob', projectId: 'project-1',
-      payload: { kind: 'git-diff', repoId: 'repo-1', changeId: 'c1' },
+      payload: { kind: 'file', path: 'src/main.ts' },
     }));
     const open = sent.find((frame) => (frame as { type?: string }).type === 'resource/open-blob') as { requestId: string };
     handleResourceResult({
       t: 'resource_result', requestId: open.requestId,
-      result: { kind: 'blob', data: { blobId: 'blob-1', url: '/api/resource-blobs/blob-1', expiresAt: '2026-08-23T12:00:00Z' } },
+      result: { kind: 'blob', data: { blobId: 'blob-1', url: '/api/resource-blobs/blob-1', expiresAt: '2026-08-23T12:00:00Z', etag: 'file-etag' } },
     });
-    await waitFor(() => expect(resourceDiffPreview()?.text).toContain('+after'));
-    expect(fetch).toHaveBeenCalledWith('/api/resource-blobs/blob-1', expect.objectContaining({
-      method: 'GET', credentials: 'same-origin', cache: 'no-store',
-    }));
+    await waitFor(() => expect(resourceFilePreview()?.text).toBe('after change'));
+    expect(fetch).toHaveBeenNthCalledWith(1, '/api/resource-blobs/blob-1', expect.objectContaining({ method: 'HEAD', credentials: 'same-origin' }));
+    expect(fetch).toHaveBeenNthCalledWith(2, '/api/resource-blobs/blob-1', expect.objectContaining({ method: 'GET', credentials: 'same-origin' }));
     const stage = screen.getByRole('button', { name: 'Stage src/main.ts' });
     fireEvent.click(stage);
     fireEvent.click(stage);

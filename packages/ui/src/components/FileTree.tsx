@@ -190,6 +190,28 @@ function rowPadding(depth: number) {
   return { 'padding-left': `${7 + depth * 12}px` };
 }
 
+/** 文件夹 / 文件行共用内边距与间距，保证图标与标签在同一列对齐。 */
+const fileTreeRowInnerClass =
+  'flex h-full min-w-0 flex-1 items-center gap-5 rounded-4 border-0 bg-transparent pl-6 text-left text-11 text-inherit focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2';
+
+function fileTreeRowOuterClass(options: {
+  selected: boolean;
+  active: boolean;
+  showLine?: boolean;
+  rowClassName?: string;
+  isDropTarget?: boolean;
+  directoryStyle?: boolean;
+}) {
+  return cn(
+    'group/tree-file relative flex h-(--tree-row-height) w-full items-center rounded-4 pr-5 text-11 pointer-coarse:h-44',
+    options.selected || options.active ? 'bg-selected' : 'hover:bg-hover',
+    options.isDropTarget ? fileTreeDropTargetRowClass : '',
+    options.showLine && 'border-l border-border-faint',
+    options.directoryStyle && 'font-600',
+    options.rowClassName,
+  );
+}
+
 function dropAccentLeft(depth: number) {
   return `${Math.max(4, 7 + depth * 12 - 3)}px`;
 }
@@ -227,13 +249,14 @@ function FileTreeFolderRow(props: {
   };
   return (
     <div
-      class={cn(
-        'group/tree-file relative flex h-(--tree-row-height) w-full items-center rounded-4 pr-5 text-11 pointer-coarse:h-44',
-        isDropTarget() ? fileTreeDropTargetRowClass : '',
-        tree.showLine && 'border-l border-border-faint',
-        tree.directoryStyle && 'font-600',
-        props.rowClassName,
-      )}
+      class={fileTreeRowOuterClass({
+        selected: props.selected,
+        active: props.active,
+        showLine: tree.showLine,
+        rowClassName: props.rowClassName,
+        isDropTarget: isDropTarget(),
+        directoryStyle: tree.directoryStyle,
+      })}
       style={rowPadding(props.depth)}
     >
       <Show when={isDropTarget()}>
@@ -255,10 +278,7 @@ function FileTreeFolderRow(props: {
         data-directory="true"
         data-drop-target-path={props.node.path}
         tabIndex={props.active || props.defaultTabIndex ? 0 : -1}
-        class={cn(
-          'file-tree-folder-btn flex h-(--tree-row-height) w-full min-w-0 items-center gap-4 rounded-4 border-0 bg-transparent pr-6 text-left text-11 text-text-primary hover:bg-hover focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2 pointer-coarse:h-44',
-          props.active || props.selected ? 'bg-selected' : '',
-        )}
+        class={cn('file-tree-folder-btn', fileTreeRowInnerClass)}
         draggable={tree.draggable}
         onClick={() => void handleToggle()}
         onFocus={() => props.onActivePathChange?.(props.node.path)}
@@ -281,7 +301,7 @@ function FileTreeFolderRow(props: {
         {props.renderFolderIcon
           ? props.renderFolderIcon(props.node, props.open)
           : <VSCodeFileIcon path={props.node.path} directory open={props.open} size={16} class="size-16" />}
-        <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-600">{props.label}</span>
+        <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap leading-none font-600">{props.label}</span>
       </button>
       <Show when={props.trailing}>
         <div class="shrink-0">{props.trailing}</div>
@@ -314,12 +334,12 @@ function FileTreeFileRow(props: {
   const checked = () => tree.checkedPaths?.has(props.node.path) ?? false;
   return (
     <div
-      class={cn(
-        'group/tree-file flex h-(--tree-row-height) w-full items-center rounded-4 pr-5 text-11 pointer-coarse:h-44',
-        props.selected || props.active ? 'bg-selected' : 'hover:bg-hover',
-        tree.showLine && 'border-l border-border-faint',
-        props.rowClassName,
-      )}
+      class={fileTreeRowOuterClass({
+        selected: !!props.selected,
+        active: props.active,
+        showLine: tree.showLine,
+        rowClassName: props.rowClassName,
+      })}
       style={rowPadding(props.depth)}
     >
       <button
@@ -332,7 +352,7 @@ function FileTreeFileRow(props: {
         data-path={props.node.path}
         data-directory="false"
         tabIndex={props.treeitem && (props.active || props.defaultTabIndex) ? 0 : props.treeitem ? -1 : undefined}
-        class="flex h-full min-w-0 flex-1 items-center gap-5 rounded-4 border-0 bg-transparent pl-6 text-left text-inherit focus-visible:bg-selected focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-neg-2"
+        class={fileTreeRowInnerClass}
         draggable={tree.draggable}
         onClick={() => props.onSelect?.(props.node)}
         onFocus={() => props.treeitem ? props.onActivePathChange?.(props.node.path) : undefined}
@@ -354,7 +374,7 @@ function FileTreeFileRow(props: {
         {props.renderFileIcon
           ? props.renderFileIcon(props.node)
           : <VSCodeFileIcon path={props.node.path} size={16} class="size-16" />}
-        <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{props.label}</span>
+        <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap leading-none">{props.label}</span>
       </button>
       <Show when={props.trailing}>
         <div class="shrink-0">{props.trailing}</div>

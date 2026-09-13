@@ -42,6 +42,17 @@ function SwatchChip(props: { entry: TokenEntry; note?: string; anchor?: boolean 
   );
 }
 
+/** Canonical elevation tiers（从轻到重）；语义别名见 tokens.css legacy 段。 */
+const ELEVATION_TIER_ORDER = [
+  '--shadow-sm',
+  '--shadow-md',
+  '--shadow-lg',
+  '--shadow-overlay',
+  '--shadow-dialog',
+  '--shadow-focus-ring',
+  '--shadow-focus-danger',
+] as const;
+
 const ANCHOR_STEPS: Record<string, string> = {
   'accent-600': 'solid 锚点',
   'success-500': 'solid 锚点',
@@ -129,8 +140,10 @@ export function TokensPage() {
         <ShellChromePreview />
       </Section>
 
-      <Section id="elevation" title="Elevation & motion" description="能不用阴影就不用；浮层离开画布时才使用 overlay 阴影。">
-        <ElevationPreview names={shadows().length > 0 ? shadows() : ['--shadow-raised', '--shadow-overlay', '--shadow-focus-ring']} />
+      <Section id="elevation" title="Elevation & motion" description="能不用阴影就不用；从轻到重 sm → md → lg → overlay → dialog。语义别名（popover / raised / composer-overlay）指向对应档位。">
+        <ElevationPreview
+          names={ELEVATION_TIER_ORDER.filter((name) => shadows().includes(name))}
+        />
         <div class="mt-16 flex flex-wrap gap-24 text-12 text-content-secondary">
           <span>duration <code class="text-11">--duration-fast 120ms · --duration-base 160ms</code></span>
           <span>z-index <code class="text-11">sticky 10 · overlay 40 · modal 50 · toast 60</code></span>

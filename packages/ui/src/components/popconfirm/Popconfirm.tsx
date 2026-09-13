@@ -1,10 +1,15 @@
-import { createSignal, Show, splitProps, type JSX } from 'solid-js';
+import { createSignal, Show, splitProps, type ComponentProps, type JSX } from 'solid-js';
 import { CircleAlert } from 'lucide-solid';
 import { cn } from '../../lib/cn';
 import { Button } from '../Button';
 import { Popover, PopoverContent, PopoverTrigger } from '../Popover';
 
-export type PopconfirmProps = {
+type PopconfirmTriggerProps = Pick<
+  ComponentProps<typeof Button>,
+  'variant' | 'size' | 'leadingIcon' | 'trailingIcon'
+>;
+
+export type PopconfirmProps = PopconfirmTriggerProps & {
   title?: string | JSX.Element;
   description?: string | JSX.Element;
   okText?: string;
@@ -18,13 +23,13 @@ export type PopconfirmProps = {
   onCancel?: () => void;
   placement?: 'top' | 'bottom' | 'left' | 'right' | 'top-start' | 'top-end' | 'bottom-start' | 'bottom-end';
   showArrow?: boolean;
-  children: JSX.Element;
+  children?: JSX.Element;
   class?: string;
 };
 
 /** 触发器上的确认气泡，对齐 Ant Design Popconfirm。 */
 export function Popconfirm(props: PopconfirmProps) {
-  const [local] = splitProps(props, [
+  const [local, trigger] = splitProps(props, [
     'title',
     'description',
     'okText',
@@ -40,7 +45,7 @@ export function Popconfirm(props: PopconfirmProps) {
     'showArrow',
     'children',
     'class',
-  ]);
+  ], ['variant', 'size', 'leadingIcon', 'trailingIcon']);
   const [busy, setBusy] = createSignal(false);
   const [internalOpen, setInternalOpen] = createSignal(local.defaultOpen ?? false);
   const open = () => (local.open !== undefined ? local.open : internalOpen());
@@ -67,10 +72,22 @@ export function Popconfirm(props: PopconfirmProps) {
 
   return (
     <Popover open={open()} onOpenChange={setOpen} placement={local.placement ?? 'top'}>
-      <PopoverTrigger as="span" class={cn('inline-flex', local.class, local.disabled && 'pointer-events-none opacity-45')}>
+      <PopoverTrigger
+        as={Button}
+        variant={trigger.variant ?? 'default'}
+        size={trigger.size ?? 'sm'}
+        leadingIcon={trigger.leadingIcon}
+        trailingIcon={trigger.trailingIcon}
+        disabled={local.disabled}
+        class={cn('w-fit self-start', local.class)}
+      >
         {local.children}
       </PopoverTrigger>
-      <PopoverContent class="w-(--container-popover) p-0">
+      <PopoverContent
+        class="w-(--container-popover) p-0"
+        aria-label={typeof local.title === 'string' ? local.title : 'Confirm action'}
+        showArrow={local.showArrow}
+      >
         <div class="flex gap-10 px-16 py-12">
           <CircleAlert size={18} class="mt-2 shrink-0 text-warning" aria-hidden="true" />
           <div class="min-w-0 flex-1">
@@ -82,8 +99,8 @@ export function Popconfirm(props: PopconfirmProps) {
             </Show>
           </div>
         </div>
-        <div class="flex justify-end gap-8 border-t border-border-subtle px-16 py-10">
-          <Button variant="default" size="sm" onClick={handleCancel}>
+        <div class="flex justify-end gap-8 px-16 py-10">
+          <Button variant="text" size="sm" onClick={handleCancel}>
             {local.cancelText ?? 'Cancel'}
           </Button>
           <Button

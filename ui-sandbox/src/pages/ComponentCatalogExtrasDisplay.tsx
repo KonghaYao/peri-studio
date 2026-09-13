@@ -1,3 +1,4 @@
+import { FolderOpen, Inbox } from 'lucide-solid';
 import { createSignal, Show } from 'solid-js';
 import { showCatalogSection } from '@/catalog/catalog-section';
 import {
@@ -7,12 +8,19 @@ import {
   Badge,
   Button,
   Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
   Descriptions,
   Empty,
   EmptyContent,
   EmptyDescription,
   EmptyHeader,
+  EmptyMedia,
+  EmptyState,
   EmptyTitle,
+  Status,
   Image,
   ImagePreviewGroup,
   DisplayList,
@@ -20,6 +28,8 @@ import {
   PaginationControls,
   QRCode,
   Segmented,
+  LoadingState,
+  Shimmer,
   Skeleton,
   SkeletonAvatar,
   SkeletonButton,
@@ -114,8 +124,32 @@ export function ComponentCatalogExtrasDisplay(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'qr-code')}>
-        <CatalogDemo id="qr-code" title="QRCode" description="Display invite links and device pairing codes.">
-          <QRCode value="https://peri.studio" size={144} bordered />
+        <CatalogDemo
+          id="qr-code"
+          title="QRCode"
+          description="Scannable codes for docs links and remote instance pairing URLs."
+        >
+          <DemoRow label="Open docs">
+            <div class="flex flex-col items-start gap-8">
+              <QRCode value="https://peri.studio/docs" size={160} bordered />
+              <TypographyText class="font-mono text-11 text-content-secondary">
+                https://peri.studio/docs
+              </TypographyText>
+            </div>
+          </DemoRow>
+          <DemoRow label="Pair device">
+            <div class="flex flex-col items-start gap-8">
+              <QRCode
+                value="https://studio.example.com:8456/pair?code=7K3M9P2Q"
+                size={160}
+                bordered
+                errorLevel="M"
+              />
+              <TypographyText class="font-mono text-11 text-content-secondary">
+                https://studio.example.com:8456/pair?code=7K3M9P2Q
+              </TypographyText>
+            </div>
+          </DemoRow>
         </CatalogDemo>
       </Show>
 
@@ -181,12 +215,24 @@ export function ComponentCatalogExtrasDisplay(props: { sections?: string[] }) {
         </CatalogDemo>
       </Show>
 
-      <Show when={showCatalogSection(props.sections, 'badge-display')}>
-        <CatalogDemo id="badge-display" title="Badge variants" description="Count, dot, overflow, and status text.">
-          <DemoRow>
+      <Show when={showCatalogSection(props.sections, 'badge')}>
+        <CatalogDemo id="badge" title="Badge & Status" description="Tone pills、角标计数与 live status（2026-08 定稿）。">
+          <DemoRow label="Tone pills">
+            <Badge tone="success">Done</Badge>
+            <Badge tone="warning">Running</Badge>
+            <Badge tone="danger">Failed</Badge>
+            <Badge tone="info">Nova 4.1</Badge>
+            <Badge tone="neutral">Queued</Badge>
+          </DemoRow>
+          <DemoRow label="Count & dot">
             <Badge count={5}><Button size="sm" variant="default">Inbox</Button></Badge>
             <Badge count={120} overflowCount={99}><Button size="sm" variant="default">Overflow</Button></Badge>
             <Badge dot><Button size="sm" variant="default">Activity</Button></Badge>
+          </DemoRow>
+          <DemoRow label="Status">
+            <Status tone="success" live>Connected</Status>
+            <Status tone="warning">Reconciling</Status>
+            <Status tone="neutral">Idle</Status>
             <Badge status="processing" text="Syncing" />
             <Badge status="success" text="Online" />
             <Badge status="error" text="Offline" />
@@ -209,7 +255,16 @@ export function ComponentCatalogExtrasDisplay(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'card-display')}>
-        <CatalogDemo id="card-display" title="Card" description="Hoverable, cover, tabs, and loading skeleton.">
+        <CatalogDemo id="card-display" title="Card" description="基础容器与 hoverable / cover / tabs / loading 变体。">
+          <Card class="max-w-md">
+            <CardHeader>
+              <CardTitle>Session configuration</CardTitle>
+              <CardDescription>Runtime settings apply to the next prompt delivery.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p class="text-13 text-content-secondary">Model routing stays on the server.</p>
+            </CardContent>
+          </Card>
           <Card
             size="sm"
             hoverable
@@ -223,17 +278,50 @@ export function ComponentCatalogExtrasDisplay(props: { sections?: string[] }) {
         </CatalogDemo>
       </Show>
 
-      <Show when={showCatalogSection(props.sections, 'empty-display')}>
-        <CatalogDemo id="empty-display" title="Empty presets" description="Built-in illustrations for common states.">
-          <Empty preset="noResult">
-            <EmptyHeader>
-              <EmptyTitle>No results</EmptyTitle>
-              <EmptyDescription>Try a different query or clear filters.</EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button size="sm" variant="primary">Clear filters</Button>
-            </EmptyContent>
-          </Empty>
+      <Show when={showCatalogSection(props.sections, 'empty')}>
+        <CatalogDemo id="empty" title="Empty & EmptyState" description="Empty 复合原语、preset 插图与 EmptyState 便捷封装（唯一 demo 入口）。">
+          <DemoRow label="EmptyState · page">
+            <EmptyState
+              class="flex-1"
+              icon={<Inbox size={28} strokeWidth={1.5} />}
+              title="No conversations yet"
+              description="Start a project session to create your first conversation."
+              action={<Button variant="primary" size="sm">New session</Button>}
+            />
+          </DemoRow>
+          <DemoRow label="EmptyState · inline">
+            <EmptyState
+              variant="inline"
+              preset="noData"
+              title="No files in this folder"
+              description="Upload assets or create a new file to get started."
+            />
+          </DemoRow>
+          <DemoRow label="Empty compound">
+            <Empty class="max-w-md">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <FolderOpen class="size-24" />
+                </EmptyMedia>
+                <EmptyTitle>No projects yet</EmptyTitle>
+                <EmptyDescription>You have not created any projects yet.</EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <Button variant="primary" size="sm">New project</Button>
+              </EmptyContent>
+            </Empty>
+          </DemoRow>
+          <DemoRow label="Empty preset">
+            <Empty preset="noResult" class="max-w-md">
+              <EmptyHeader>
+                <EmptyTitle>No results</EmptyTitle>
+                <EmptyDescription>Try a different query or clear filters.</EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <Button size="sm" variant="primary">Clear filters</Button>
+              </EmptyContent>
+            </Empty>
+          </DemoRow>
         </CatalogDemo>
       </Show>
 
@@ -250,6 +338,10 @@ export function ComponentCatalogExtrasDisplay(props: { sections?: string[] }) {
             <SkeletonInput />
             <SkeletonButton />
           </div>
+          <DemoRow label="LoadingState & Shimmer">
+            <LoadingState label="Loading projection" />
+            <Shimmer class="h-32 w-200 rounded-8" />
+          </DemoRow>
         </CatalogDemo>
       </Show>
 

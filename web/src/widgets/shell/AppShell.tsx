@@ -5,9 +5,8 @@ import { ChatView } from '@/widgets/chat/ChatView';
 import { compactViewportQuery, mediumViewportQuery } from '@/shared/lib/breakpoints';
 import { ProjectDrawer } from './shared/ProjectDrawer';
 import { ResourceWorkbench, type ResourcePreviewOrigin, type WorkbenchView } from '@/widgets/resource/ResourceWorkbench';
-import { closeResourceDiffPreview, closeResourceFilePreview, resourceDiffPreview, resourceFilePreview } from '@/store';
+import { closeResourceFilePreview, resourceFilePreview } from '@/store';
 import { resourceWorkbenchRequest } from '@/store';
-import { ResourceDiffEditor } from '@/widgets/resource/ResourceDiffEditor';
 import { ResourceFileEditor } from '@/widgets/resource/ResourceFileEditor';
 import { ResourceFloatingPanel } from '@/widgets/resource/ResourceFloatingPanel';
 
@@ -42,7 +41,6 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
   let main: HTMLElement | undefined;
   let resourceFocusOrigin: ResourcePreviewOrigin | null = null;
   let restoreResourceFocus = false;
-  let resourceViewBeforePreview: Exclude<WorkbenchView, null> | null = null;
 
   const setClampedSidebarWidth = (width: number) => setSidebarWidth(clampShellSidebarWidth(width));
   const stopSidebarResize = () => {
@@ -123,15 +121,14 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
     });
   };
   const overrideDialogFocusRestore = (event: Event) => {
-    if (mobile() && resourceFocusOrigin && (resourceFilePreview() || resourceDiffPreview())) {
+    if (mobile() && resourceFocusOrigin && resourceFilePreview()) {
       // 先阻止默认恢复；微任务再等待 modal 清理完成后让编辑器接管。
       event.preventDefault();
       queueMicrotask(focusPreviewEditor);
     }
   };
-  const closePreview = (kind: 'file' | 'diff') => {
-    if (kind === 'file') closeResourceFilePreview();
-    else closeResourceDiffPreview();
+  const closePreview = () => {
+    closeResourceFilePreview();
     if (!resourceFocusOrigin) return;
     if (mobile()) {
       restoreResourceFocus = true;
@@ -146,22 +143,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
     }
   };
   createEffect(() => {
-    if (mobile() && (resourceFilePreview() || resourceDiffPreview())) setResourcesOpen(false);
-  });
-  createEffect(() => {
-    if (mobile()) return;
-    const diffOpen = !!resourceDiffPreview();
-    const currentView = resourceView();
-    if (diffOpen && currentView) {
-      resourceViewBeforePreview = currentView;
-      setResourceView(null);
-      return;
-    }
-    if (!diffOpen && !currentView && resourceViewBeforePreview) {
-      const restore = resourceViewBeforePreview;
-      resourceViewBeforePreview = null;
-      setResourceView(restore);
-    }
+    if (mobile() && resourceFilePreview()) setResourcesOpen(false);
   });
   const sidebarColumnWidth = () => shellSidebarColumnWidth(sidebarOpen(), sidebarWidth());
   const sidebarGridTemplate = () => mobile()
@@ -207,9 +189,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
       </Show>
       <main ref={main} data-testid="conversation-pane" class="flex min-w-0 min-h-0 flex-col overflow-hidden">
         <div class="min-h-0 flex-1">
-          <Show when={resourceDiffPreview()} fallback={<ChatView onOpenNavigation={openDrawer} onOpenResources={openResources} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />}>
-            <ResourceDiffEditor onClose={() => closePreview('diff')} />
-          </Show>
+          <ChatView onOpenNavigation={openDrawer} onOpenResources={openResources} onCreateProject={() => requestSidebar('create-project')} onImport={(projectId) => requestSidebar('import', projectId)} />
         </div>
       </main>
       <Show when={resourceFilePreview()}>
@@ -219,7 +199,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
           widthProfile="preview"
           data-testid="resource-file-preview-panel"
         >
-          <ResourceFileEditor onClose={() => closePreview('file')} />
+          <ResourceFileEditor onClose={closePreview} />
         </ResourceFloatingPanel>
       </Show>
       <ResourceWorkbench

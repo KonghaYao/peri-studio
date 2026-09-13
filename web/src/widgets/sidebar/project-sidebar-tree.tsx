@@ -89,7 +89,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                       <span class="block min-w-0 w-full truncate text-13 text-content-primary">{project().name}</span>
                     </span>
                   </CollapsibleTrigger>
-                  <ProjectRowAccessory count={hasSessions() ? sessions().length : undefined} actionsVisible={model.projectMenu() === projectId}>
+                  <ProjectRowAccessory actionsVisible={model.projectMenu() === projectId}>
                     <ProjectRowActionGroup>
                       <DropdownMenu open={model.projectMenu() === projectId} onOpenChange={(next) => model.setProjectMenu(next ? projectId : null)} placement="bottom-end">
                         <DropdownMenuTrigger

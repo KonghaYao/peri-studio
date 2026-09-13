@@ -33,31 +33,31 @@ import {
   serverStatusLabel,
 } from '@/entities/topology/topology-view';
 
+function TopologyServerCard() {
+  return (
+    <Card class="rounded-12 border-divider">
+      <CardHeader class="flex-row items-center gap-10 px-14 py-12">
+        <span class="w-9 h-9 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+        <div class="grid min-w-0 flex-1 gap-2">
+          <CardTitle class="overflow-hidden text-ellipsis whitespace-nowrap">Peri Studio server</CardTitle>
+          <CardDescription class="overflow-hidden font-mono text-11 text-text-muted text-ellipsis whitespace-nowrap">
+            hub:registry · schema {String(schemaVersion() ?? '—')}
+          </CardDescription>
+        </div>
+        <Badge tone={topologyServerBadgeTone(globalStatus())}>{serverStatusLabel(globalStatus())}</Badge>
+      </CardHeader>
+    </Card>
+  );
+}
+
 export function TopologyView() {
   const nodes = () => buildTopologyTree(instances(), chatCatalog());
   return (
-    <Show
-      when={nodes().length > 0}
-      fallback={
-        <EmptyState
-          title="No instance connections"
-          description="Peri Studio has not received any instance registrations yet. After starting dev.sh or connecting an instance, the topology of server and instances will appear here."
-        />
-      }
-    >
-      <div class="grid gap-8 mt-14">
-        <Card class="rounded-12 border-divider">
-          <CardHeader class="flex-row items-center gap-10 px-14 py-12">
-            <span class="w-9 h-9 shrink-0 rounded-full bg-accent" aria-hidden="true" />
-            <div class="grid min-w-0 flex-1 gap-2">
-              <CardTitle class="overflow-hidden text-ellipsis whitespace-nowrap">Peri Studio server</CardTitle>
-              <CardDescription class="overflow-hidden font-mono text-11 text-text-muted text-ellipsis whitespace-nowrap">
-                hub:registry · schema {String(schemaVersion() ?? '—')}
-              </CardDescription>
-            </div>
-            <Badge tone={topologyServerBadgeTone(globalStatus())}>{serverStatusLabel(globalStatus())}</Badge>
-          </CardHeader>
-        </Card>
+    <div class="grid gap-8 mt-14">
+      <TopologyServerCard />
+      <Show when={nodes().length > 0} fallback={
+        <EmptyState title="No instances" description="Connect an instance to see it here." />
+      }>
         <For each={nodes()}>{(node) => {
           const registered = () => messageTime(node.registeredAt);
           const heartbeat = () => messageTime(node.lastHeartbeat);
@@ -100,7 +100,7 @@ export function TopologyView() {
             </Card>
           );
         }}</For>
-      </div>
-    </Show>
+      </Show>
+    </div>
   );
 }

@@ -3,7 +3,13 @@ import { showCatalogSection } from '@/catalog/catalog-section';
 import { ProjectRowAccessory, SessionLiveIndicator, SessionRowAccessory, UserBubble, chatColumnClass } from '@peri/ui';
 import { ChatHeader } from '@/components/blocks/chrome';
 import { Folder } from 'lucide-solid';
-import { ChatShellLayout, ChatTranscriptLayout } from '@/layers';
+import {
+  ChatShellLayout,
+  ChatTranscriptLayout,
+  ConversationTranscriptDemo,
+  createConversationTranscriptReveal,
+} from '@/layers';
+import { StreamingControls } from '@/lib/streaming-demo';
 import {
   Avatar,
   AvatarFallback,
@@ -21,36 +27,46 @@ import {
   MessageBranchPrevious,
   MessageBranchSelector,
   MessageContent,
-  MessageScrollerItem,
   MessageToolbar,
 } from '@peri/ui';
 import { CatalogDemo } from '@/pages/shared/DemoSection';
 
 export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
+  const conversationReveal = createConversationTranscriptReveal();
+
   return (
     <>
       <Show when={showCatalogSection(props.sections, 'conversation')}>
       <CatalogDemo
         id="conversation"
         title="Conversation"
-        description="MessageScroller 滚动容器；Transcript 正文复用 UserBubble 与 AI Tool activity。"
+        description="MessageScroller 滚动容器；assistant 超长 Markdown 正文走 MarkdownBody 渲染路径，可流式揭示。"
       >
-        <div class="relative h-320 overflow-hidden rounded-8 border border-border-subtle">
-          <Conversation autoScroll defaultScrollPosition="end" class="h-full">
-            <ConversationContent class="gap-16 px-16 py-16">
-              <MessageScrollerItem messageId="transcript" scrollAnchor>
-                <ChatTranscriptLayout />
-              </MessageScrollerItem>
-            </ConversationContent>
-            <ConversationScrollButton />
-          </Conversation>
+        <div class="flex flex-col gap-12">
+          <StreamingControls
+            playing={conversationReveal.playing()}
+            complete={conversationReveal.complete()}
+            onPlay={() => conversationReveal.play('normal')}
+            onPlayFast={() => conversationReveal.play('fast')}
+            onReset={conversationReveal.reset}
+            playLabel="Stream"
+            fastPlayLabel="Fast stream"
+          />
+          <div class="relative h-320 overflow-hidden rounded-8 border border-border-subtle">
+            <Conversation autoScroll defaultScrollPosition="end" class="h-full">
+              <ConversationContent class="gap-16 px-16 py-16">
+                <ConversationTranscriptDemo reveal={conversationReveal} />
+              </ConversationContent>
+              <ConversationScrollButton />
+            </Conversation>
+          </div>
         </div>
       </CatalogDemo>
       </Show>
 
-      <Show when={showCatalogSection(props.sections, 'message')}>
+      <Show when={showCatalogSection(props.sections, 'message-branches')}>
       <CatalogDemo
-        id="message"
+        id="message-branches"
         title="Message branches"
         description="T2 行布局与分支切换；用户气泡用 Blocks UserBubble，助手为无气泡文流。"
       >
@@ -143,7 +159,7 @@ export function ComponentCatalogExtrasF(props: { sections?: string[] }) {
               <Folder size={15} strokeWidth={1.7} class="shrink-0 text-content-muted" />
               <span class="min-w-0 flex-1 truncate text-13 text-content-primary">peri-studio</span>
             </div>
-            <ProjectRowAccessory count={3} />
+            <ProjectRowAccessory />
           </div>
         </div>
       </CatalogDemo>
