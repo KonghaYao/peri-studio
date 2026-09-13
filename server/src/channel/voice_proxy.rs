@@ -63,7 +63,9 @@ impl Gateway {
         // 立刻下行，避免 DevTools 里看起来只有出站 PCM。
         let _ = sink
             .send(Message::Text(
-                serde_json::json!({"type": "session.started"}).to_string().into(),
+                serde_json::json!({"type": "session.started"})
+                    .to_string()
+                    .into(),
             ))
             .await;
 
@@ -124,9 +126,7 @@ impl Gateway {
         live.finish_audio();
         while let Some(event) = live.recv_event().await {
             if let Some(value) = event_to_json(&event) {
-                let _ = sink
-                    .send(Message::Text(value.to_string().into()))
-                    .await;
+                let _ = sink.send(Message::Text(value.to_string().into())).await;
             }
         }
         if live.join().await.is_err() {
@@ -151,13 +151,9 @@ fn matches_finish(text: &str) -> bool {
     serde_json::from_str::<serde_json::Value>(text)
         .ok()
         .and_then(|value| {
-            value
-                .get("type")
-                .and_then(|t| t.as_str())
-                .map(|t| {
-                    t.eq_ignore_ascii_case("session.finish")
-                        || t.eq_ignore_ascii_case("close_stream")
-                })
+            value.get("type").and_then(|t| t.as_str()).map(|t| {
+                t.eq_ignore_ascii_case("session.finish") || t.eq_ignore_ascii_case("close_stream")
+            })
         })
         .unwrap_or(false)
 }
