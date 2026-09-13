@@ -1644,7 +1644,7 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
 name = "peri-instance"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "agent-client-protocol-schema",
  "anyhow",
@@ -1675,7 +1675,7 @@ dependencies = [
 
 [[package]]
 name = "peri-realtime-voice"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -1693,7 +1693,7 @@ dependencies = [
 
 [[package]]
 name = "peri-studio"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1716,7 +1716,7 @@ dependencies = [
 
 [[package]]
 name = "peri-studio-proto"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "base64 0.23.1",
  "chrono",
@@ -1733,7 +1733,7 @@ dependencies = [
 
 [[package]]
 name = "peri-studio-server"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "agent-client-protocol-schema",
  "anyhow",
