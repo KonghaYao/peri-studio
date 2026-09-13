@@ -129,3 +129,33 @@ pub(super) fn base_config(url: String) -> TransportConfig {
         write_timeout: Duration::from_secs(2),
     }
 }
+
+/// 测试 stub：将 TCP 接收缓冲钉死在给定字节数，使「不读对端」背压场景跨 OS 可复现。
+///
+/// Linux/macOS 默认 `SO_RCVBUF` 差异大（CI Linux ~208KB vs macOS 常数 MB），
+/// 不钉死时「填满缓冲需几帧」断言会 flaky。
+#[cfg(not(unix))]
+pub(super) fn set_tcp_recv_buffer(_stream: &tokio::net::TcpStream, _size: usize) {}
+
+#[cfg(unix)]
+pub(super) fn set_tcp_recv_buffer(stream: &tokio::net::TcpStream, size: usize) {
+    use std::os::unix::io::AsRawFd;
+
+    let fd = stream.as_raw_fd();
+    let bufsize = size as libc::c_int;
+    let ret = unsafe {
+        libc::setsockopt(
+            fd,
+            libc::SOL_SOCKET,
+            libc::SO_RCVBUF,
+            &bufsize as *const _ as *const libc::c_void,
+            std::mem::size_of_val(&bufsize) as libc::socklen_t,
+        )
+    };
+    assert_eq!(
+        ret,
+        0,
+        "setsockopt SO_RCVBUF failed: {}",
+        std::io::Error::last_os_error()
+    );
+}

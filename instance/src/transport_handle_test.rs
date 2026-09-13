@@ -191,8 +191,17 @@ async fn test_write_timeout_disconnects_stalled_peer() {
 
     // stub server：握手完成后**保持连接打开但不再读取**（内核接收缓冲填满 →
     // TCP 窗口 0 → instance writer 卡写 → 超时断线）。
+    //
+    // 钉死 SO_RCVBUF=256KB：Linux 内核常按 2× 生效（~512KB），与 256KB 载荷帧配合
+    // 约 2 帧即触发背压；macOS 默认缓冲更大，不钉死时 sent 可达 4+ 而 CI 仅 2。
+    const STALLED_PEER_RECV_BUF: usize = 256 * 1024;
+    const STALLED_PEER_FRAME_PAD: usize = 256 * 1024;
+    // 256KB SO_RCVBUF + 256KB 帧：至少 2 帧成功后才应因写超时断线。
+    const STALLED_PEER_MIN_SENT_FRAMES: u64 = 2;
+
     tokio::spawn(async move {
         let (stream, _) = listener.accept().await.unwrap();
+        set_tcp_recv_buffer(&stream, STALLED_PEER_RECV_BUF);
         let Ok(mut ws) = tokio_tungstenite::accept_async(stream).await else {
             return;
         };
@@ -239,7 +248,7 @@ async fn test_write_timeout_disconnects_stalled_peer() {
 
     // 循环发送 256KB 帧直至断线：每帧必须在 2s 内返回（核心回归断言——
     // 修复前 send_acked 在背压时无限挂起，主循环与心跳一起停摆）。
-    let payload = serde_json::json!({ "pad": "x".repeat(256 * 1024) });
+    let payload = serde_json::json!({ "pad": "x".repeat(STALLED_PEER_FRAME_PAD) });
     let mut sent: u64 = 0;
     let mut disconnected = false;
     tokio::time::timeout(Duration::from_secs(15), async {
@@ -267,8 +276,9 @@ async fn test_write_timeout_disconnects_stalled_peer() {
     .expect("发送循环必须在限时内收敛（断线回执）");
     assert!(disconnected, "背压超时必须回执 Disconnected");
     assert!(
-        sent >= 4,
-        "应至少发出 4 帧（1MB，确保填满内核接收缓冲触发背压），实际 {sent}"
+        sent >= STALLED_PEER_MIN_SENT_FRAMES,
+        "钉死 SO_RCVBUF={STALLED_PEER_RECV_BUF} + {STALLED_PEER_FRAME_PAD}B 帧应至少成功 \
+         {STALLED_PEER_MIN_SENT_FRAMES} 帧后触发背压，实际 {sent}"
     );
 
     // Disconnected 事件（断线 → 重连已触发）。
