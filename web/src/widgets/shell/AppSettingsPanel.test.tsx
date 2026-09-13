@@ -3,10 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createSignal } from 'solid-js';
 import { resetPwaInstallPromptForTests } from '@/features/pwa/pwa-install-prompt';
 import { resetPwaForTests } from '@/features/pwa/pwa-state';
-import {
-  DEFAULT_APPEARANCE_PREFERENCE,
-  appearanceStorageKey,
-} from '@/features/appearance/appearance-preference';
+import { appearanceStorageKey } from '@/features/appearance/appearance-preference';
 import { renderWithSidebarProvider } from './sidebar-test-shell';
 import { AppSettingsPanel } from './AppSettingsPanel';
 import { SidebarChrome } from './SidebarChrome';
@@ -20,6 +17,7 @@ afterEach(() => {
   document.documentElement.style.removeProperty('--sidebar-frost-fill');
   document.documentElement.style.removeProperty('--sidebar-frost-wash-blur');
   document.documentElement.style.removeProperty('--sidebar-frost-wash-hue');
+  document.documentElement.style.removeProperty('--sidebar-frost-grain-opacity');
 });
 
 beforeEach(() => {
@@ -56,8 +54,8 @@ describe('AppSettingsPanel', () => {
     selectMenuItem('Settings');
     expect(screen.getByTestId('settings-panel')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Appearance' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Linen' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText(`${DEFAULT_APPEARANCE_PREFERENCE.fillPercent}%`)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'None' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByLabelText('Opacity')).not.toBeInTheDocument();
   });
 
   it('persists a material change', async () => {

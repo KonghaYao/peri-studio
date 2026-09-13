@@ -25,14 +25,15 @@ class MemoryStorage {
 }
 
 describe('appearance preference', () => {
-  it('defaults to Linen at 10% fill with light wash blur and hue shift', () => {
+  it('defaults to None at 100% fill with light wash blur and hue shift', () => {
     expect(DEFAULT_APPEARANCE_PREFERENCE).toEqual({
-      materialId: 'linen',
-      fillPercent: 10,
+      materialId: 'none',
+      fillPercent: 100,
       washBlurPx: DEFAULT_WASH_BLUR_PX,
       washHueDeg: DEFAULT_WASH_HUE_DEG,
     });
     expect(APPEARANCE_MATERIALS.map((item) => item.id)).toEqual([
+      'none',
       'clouds',
       'marble',
       'silk',
@@ -48,7 +49,7 @@ describe('appearance preference', () => {
       washBlurPx: 99,
       washHueDeg: 420,
     })).toEqual({
-      materialId: 'linen',
+      materialId: 'none',
       fillPercent: 100,
       washBlurPx: 24,
       washHueDeg: 360,
@@ -80,6 +81,18 @@ describe('appearance preference', () => {
     expect(vars.get('--sidebar-frost-fill')).toBe('32%');
     expect(vars.get('--sidebar-frost-wash-blur')).toBe('8px');
     expect(vars.get('--sidebar-frost-wash-hue')).toBe('120deg');
+    expect(vars.get('--sidebar-frost-grain-opacity')).toBe('0.07');
+  });
+
+  it('applies solid sidebar when None is selected', () => {
+    const vars = new Map<string, string>();
+    applyAppearancePreference(DEFAULT_APPEARANCE_PREFERENCE, {
+      style: { setProperty: (name, value) => { vars.set(name, value); } },
+    });
+    expect(vars.get('--sidebar-frost-wash')).toBe('none');
+    expect(vars.get('--sidebar-frost-fill')).toBe('100%');
+    expect(vars.get('--sidebar-frost-grain-opacity')).toBe('0');
+    expect(vars.has('--sidebar-frost-wash-blur')).toBe(false);
   });
 
   it('uses an origin-level key when no principal is signed in', () => {

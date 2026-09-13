@@ -40,4 +40,26 @@ describe('SettingsAppearancePane', () => {
     expect(screen.getByText('12px')).toBeInTheDocument();
     expect(screen.getByText('0°')).toBeInTheDocument();
   });
+
+  it('hides texture sliders when controls are disabled', () => {
+    render(() => (
+      <SettingsAppearancePane
+        materials={[{ id: 'none', label: 'None' }, ...MATERIALS]}
+        selectedId="none"
+        textureControlsEnabled={false}
+        onSelect={vi.fn()}
+        fillPercent={100}
+        onFillChange={vi.fn()}
+        washBlurPx={1}
+        onWashBlurChange={vi.fn()}
+        washHueDeg={162}
+        onWashHueChange={vi.fn()}
+      />
+    ));
+
+    expect(screen.getByRole('button', { name: 'None' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByLabelText('Opacity')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Blur')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Hue')).not.toBeInTheDocument();
+  });
 });

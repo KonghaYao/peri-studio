@@ -99,7 +99,8 @@
   height: var(--settings-swatch-height);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-8);
-  background-color: var(--surface-sunken);
+  /* None 色板：无 preview 图时露出 Neutral 25（与 --sidebar-bg 一致）。 */
+  background-color: var(--sidebar-bg);
   background-image: var(--settings-swatch-image);
   background-position: center;
   background-size: cover;

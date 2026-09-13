@@ -287,7 +287,7 @@ test('sidebar, transcript, and file-tree layout classes live in layout modules',
   assert.match(tokens, /--sidebar-frost-grain:/);
   assert.match(tokens, /--sidebar-frost-wash:/);
   assert.match(tokens, /--sidebar-frost-wash-size:/);
-  assert.match(tokens, /url\("\/images\/sidebar-frost-linen\.png"\)/);
+  assert.match(tokens, /--sidebar-frost-wash:\s*none/);
   assert.match(extra, /\.ui-sidebar-frost\s*\{/);
   assert.match(extra, /var\(--sidebar-frost-wash\)/);
   assert.match(extra, /var\(--sidebar-frost-wash-blur\)/);

@@ -8,6 +8,7 @@ import {
   MAX_WASH_HUE_DEG,
   MIN_WASH_BLUR_PX,
   MIN_WASH_HUE_DEG,
+  appearanceHasTexture,
   applyAppearancePreference,
   readAppearancePreference,
   writeAppearancePreference,
@@ -40,7 +41,7 @@ export function AppSettingsPanel(props: { open: boolean; onClose: () => void }) 
   const materials = createMemo(() => APPEARANCE_MATERIALS.map((item) => ({
     id: item.id,
     label: item.label,
-    previewSrc: item.washUrl,
+    previewSrc: item.washUrl ?? undefined,
   })));
 
   return (
@@ -55,6 +56,7 @@ export function AppSettingsPanel(props: { open: boolean; onClose: () => void }) 
       <SettingsAppearancePane
         materials={materials()}
         selectedId={preference().materialId}
+        textureControlsEnabled={appearanceHasTexture(preference().materialId)}
         onSelect={(id) => commit({ ...preference(), materialId: id as AppearancePreference['materialId'] })}
         fillPercent={preference().fillPercent}
         onFillChange={(fillPercent) => commit({ ...preference(), fillPercent })}

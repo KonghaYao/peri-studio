@@ -3,6 +3,7 @@ import { Palette } from 'lucide-solid';
 import { Button, SettingsAppearancePane, SettingsPanel } from '@peri/ui';
 
 const MATERIALS = [
+  { id: 'none', label: 'None' },
   { id: 'clouds', label: 'Clouds', previewSrc: '/images/sidebar-frost-wash.png' },
   { id: 'marble', label: 'Marble', previewSrc: '/images/sidebar-frost-marble.png' },
   { id: 'silk', label: 'Silk', previewSrc: '/images/sidebar-frost-silk.png' },
@@ -14,8 +15,8 @@ const MATERIALS = [
 export function SettingsPanelLayout() {
   const [open, setOpen] = createSignal(false);
   const [section, setSection] = createSignal('appearance');
-  const [materialId, setMaterialId] = createSignal('linen');
-  const [fillPercent, setFillPercent] = createSignal(10);
+  const [materialId, setMaterialId] = createSignal('none');
+  const [fillPercent, setFillPercent] = createSignal(100);
   const [washBlurPx, setWashBlurPx] = createSignal(1);
   const [washHueDeg, setWashHueDeg] = createSignal(162);
 
@@ -35,6 +36,7 @@ export function SettingsPanelLayout() {
         <SettingsAppearancePane
           materials={MATERIALS}
           selectedId={materialId()}
+          textureControlsEnabled={materialId() !== 'none'}
           onSelect={setMaterialId}
           fillPercent={fillPercent()}
           onFillChange={setFillPercent}

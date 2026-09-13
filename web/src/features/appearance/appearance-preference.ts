@@ -1,13 +1,14 @@
 // 侧栏 Appearance 偏好：材质 wash + fill 透明度。纯 TS，不 import store。
 
-export const APPEARANCE_MATERIAL_IDS = ['clouds', 'marble', 'silk', 'linen', 'paper'] as const;
+export const APPEARANCE_MATERIAL_IDS = ['none', 'clouds', 'marble', 'silk', 'linen', 'paper'] as const;
 
 export type AppearanceMaterialId = (typeof APPEARANCE_MATERIAL_IDS)[number];
 
 export type AppearanceMaterial = {
   id: AppearanceMaterialId;
   label: string;
-  washUrl: string;
+  /** 无纹理材质（None）为 null。 */
+  washUrl: string | null;
 };
 
 export type AppearancePreference = {
@@ -23,12 +24,17 @@ export interface AppearanceStorage {
 }
 
 export const APPEARANCE_MATERIALS: readonly AppearanceMaterial[] = [
+  { id: 'none', label: 'None', washUrl: null },
   { id: 'clouds', label: 'Clouds', washUrl: '/images/sidebar-frost-wash.png' },
   { id: 'marble', label: 'Marble', washUrl: '/images/sidebar-frost-marble.png' },
   { id: 'silk', label: 'Silk', washUrl: '/images/sidebar-frost-silk.png' },
   { id: 'linen', label: 'Linen', washUrl: '/images/sidebar-frost-linen.png' },
   { id: 'paper', label: 'Paper', washUrl: '/images/sidebar-frost-paper.png' },
 ];
+
+export const DEFAULT_SIDEBAR_FROST_GRAIN_OPACITY = 0.07;
+
+export const appearanceHasTexture = (id: AppearanceMaterialId): boolean => id !== 'none';
 
 export const DEFAULT_WASH_BLUR_PX = 1;
 export const MIN_WASH_BLUR_PX = 0;
@@ -39,8 +45,8 @@ export const MIN_WASH_HUE_DEG = 0;
 export const MAX_WASH_HUE_DEG = 360;
 
 export const DEFAULT_APPEARANCE_PREFERENCE: AppearancePreference = {
-  materialId: 'linen',
-  fillPercent: 10,
+  materialId: 'none',
+  fillPercent: 100,
   washBlurPx: DEFAULT_WASH_BLUR_PX,
   washHueDeg: DEFAULT_WASH_HUE_DEG,
 };
@@ -139,9 +145,16 @@ export const applyAppearancePreference = (
   if (typeof document === 'undefined' && !target) return;
   const root = target ?? document.documentElement;
   const next = normalizeAppearancePreference(preference);
+  if (!appearanceHasTexture(next.materialId)) {
+    root.style.setProperty('--sidebar-frost-wash', 'none');
+    root.style.setProperty('--sidebar-frost-fill', '100%');
+    root.style.setProperty('--sidebar-frost-grain-opacity', '0');
+    return;
+  }
   const material = appearanceMaterialById(next.materialId);
   root.style.setProperty('--sidebar-frost-wash', `url("${material.washUrl}")`);
   root.style.setProperty('--sidebar-frost-fill', `${next.fillPercent}%`);
   root.style.setProperty('--sidebar-frost-wash-blur', `${next.washBlurPx}px`);
   root.style.setProperty('--sidebar-frost-wash-hue', `${next.washHueDeg}deg`);
+  root.style.setProperty('--sidebar-frost-grain-opacity', String(DEFAULT_SIDEBAR_FROST_GRAIN_OPACITY));
 };

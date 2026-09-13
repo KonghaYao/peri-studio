@@ -4,13 +4,16 @@ import { Slider, SliderFill, SliderThumb, SliderTrack } from '../Slider';
 export type SettingsAppearanceMaterial = {
   id: string;
   label: string;
-  previewSrc: string;
+  /** 无纹理（None）时不设 preview，色板为纯色 Neutral 25。 */
+  previewSrc?: string;
 };
 
 export type SettingsAppearancePaneProps = {
   materials: SettingsAppearanceMaterial[];
   selectedId: string;
   onSelect: (id: string) => void;
+  /** 选 None 时为 false，隐藏 Opacity / Blur / Hue。 */
+  textureControlsEnabled?: boolean;
   fillPercent: number;
   onFillChange: (value: number) => void;
   washBlurPx: number;
@@ -25,6 +28,8 @@ export type SettingsAppearancePaneProps = {
 
 /** T3 · Appearance 页：材质色板 + 透明度滑杆，无持久化。 */
 export const SettingsAppearancePane: Component<SettingsAppearancePaneProps> = (props) => {
+  const textureControlsEnabled = () => props.textureControlsEnabled ?? true;
+
   return (
     <div class="flex flex-col gap-20" data-testid="settings-appearance">
       <div class="flex flex-col gap-6">
@@ -44,7 +49,9 @@ export const SettingsAppearancePane: Component<SettingsAppearancePaneProps> = (p
                 aria-pressed={selected()}
                 aria-label={material.label}
                 data-testid={`appearance-material-${material.id}`}
-                style={{ '--settings-swatch-image': `url("${material.previewSrc}")` }}
+                style={{
+                  '--settings-swatch-image': material.previewSrc ? `url("${material.previewSrc}")` : 'none',
+                }}
                 onClick={() => props.onSelect(material.id)}
               >
                 <span class="ui-settings-swatch-preview" aria-hidden="true" />
@@ -54,6 +61,7 @@ export const SettingsAppearancePane: Component<SettingsAppearancePaneProps> = (p
           }}
         </For>
       </div>
+      {textureControlsEnabled() ? (
       <div class="flex flex-col gap-16">
         <div class="flex flex-col gap-10">
           <div class="flex items-center justify-between gap-12">
@@ -119,6 +127,7 @@ export const SettingsAppearancePane: Component<SettingsAppearancePaneProps> = (p
           </Slider>
         </div>
       </div>
+      ) : null}
     </div>
   );
 };
