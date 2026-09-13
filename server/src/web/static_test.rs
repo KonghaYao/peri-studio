@@ -5,7 +5,9 @@ use tokio::io::AsyncReadExt as _;
 use tokio::net::{TcpListener, TcpStream};
 
 use super::test_util::auth_socket_response;
-use crate::web::{cache_headers_for_static, content_type, route, serve, ASSETS};
+use crate::web::{
+    cache_headers_for_static, content_type, is_fingerprinted_asset, route, serve, ASSETS,
+};
 
 #[test]
 fn route_resolves_static_assets() {
@@ -346,14 +348,21 @@ fn route_resolves_pwa_install_assets() {
 
     for asset in ASSETS {
         assert!(
-            !asset.url.starts_with("assets/icon")
+            !asset.url.starts_with("assets/icons/")
+                && !asset.url.starts_with("assets/icon")
                 && asset.url != "assets/apple-touch-icon.png"
                 && asset.url != "assets/favicon.svg"
                 && asset.url != "assets/manifest.webmanifest",
-            "PWA 固定名资源不得进入 /assets/: {}",
+            "PWA 固定名资源不得进入 /assets/ 或 /assets/icons/: {}",
             asset.url
         );
     }
+
+    // stem `icon-512-maskable` 含 `-`，指纹启发式会把它当成 immutable。
+    assert!(
+        is_fingerprinted_asset("assets/icon-512-maskable.png"),
+        "maskable PNG under /assets/ would be misclassified as fingerprinted"
+    );
 }
 
 fn assert_pwa_static_headers(response: &str, content_type: &str) {

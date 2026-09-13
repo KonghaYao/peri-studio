@@ -497,3 +497,9 @@
   padding-bottom: var(--safe-area-bottom);
   padding-left: var(--safe-area-left);
 }
+@utility p-safe-min-24 {
+  padding-top: max(var(--space-24), var(--safe-area-top));
+  padding-right: max(var(--space-24), var(--safe-area-right));
+  padding-bottom: max(var(--space-24), var(--safe-area-bottom));
+  padding-left: max(var(--space-24), var(--safe-area-left));
+}

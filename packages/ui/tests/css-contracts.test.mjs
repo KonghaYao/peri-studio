@@ -159,9 +159,10 @@ test('standalone safe-area tokens are the only inset source for named utilities'
     assert.match(tokens, new RegExp(`--safe-area-${name}:\\s*env\\(safe-area-inset-${name}`));
   }
   assert.match(tokens, /--composer-safe-bottom:\s*calc\(var\(--space-20\) \+ var\(--safe-area-bottom\)\)/);
-  for (const utility of ['pt-safe', 'pr-safe', 'pb-safe', 'pl-safe', 'px-safe', 'py-safe', 'p-safe']) {
+  for (const utility of ['pt-safe', 'pr-safe', 'pb-safe', 'pl-safe', 'px-safe', 'py-safe', 'p-safe', 'p-safe-min-24']) {
     assert.match(theme, new RegExp(`@utility ${utility} \\{`));
   }
+  assert.match(theme, /p-safe-min-24 \{[\s\S]*padding-top:\s*max\(var\(--space-24\),\s*var\(--safe-area-top\)\)/);
 });
 
 test('package CSS only consumes declared tokens', () => {

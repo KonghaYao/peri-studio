@@ -41,6 +41,7 @@ describe('AppShell desktop sidebar', () => {
       expect(source.includes(utility)).toBe(false);
     }
     expect(source).toMatch(/cursor-col-resize/);
+    expect(source).toMatch(/\bp-safe\b/);
   });
 
   it('resizes within accessible keyboard and pointer limits', () => {

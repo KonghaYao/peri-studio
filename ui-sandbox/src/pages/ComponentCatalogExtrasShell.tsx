@@ -38,7 +38,7 @@ export function ComponentCatalogExtrasShell(props: { sections?: string[] }) {
       <CatalogDemo
         id="system-about"
         title="System About"
-        description="This browser 安装态：Chrome 可安装、已安装 standalone、Safari 添加到主屏幕。生产镜像到 SettingsDialog About。"
+        description="This browser 安装态：Chrome 可安装、已安装 standalone、loopback Safari A2HS、Cannot install here。生产镜像到 System About。"
       >
         <SystemAboutLayout />
       </CatalogDemo>

@@ -155,7 +155,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
       data-testid="app-shell"
       open={sidebarOpen()}
       onOpenChange={setSidebarOpen}
-      class="group/sidebar-wrapper relative grid h-dvh grid-rows-fill overflow-hidden bg-app-bg pt-safe px-safe grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide"
+      class="group/sidebar-wrapper relative grid h-dvh grid-rows-fill overflow-hidden bg-app-bg p-safe grid-cols-shell desk:grid-cols-shell-desk wide:grid-cols-shell-wide"
       style={{
         '--sidebar-width': `${sidebarWidth()}px`,
         'grid-template-columns': sidebarGridTemplate(),

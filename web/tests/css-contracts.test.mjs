@@ -626,6 +626,16 @@ test('icon-only actions use one rounded rectangular geometry and never circular 
   }
 });
 
+test('standalone shell uses named safe-area utilities without card margin overflow', () => {
+  const shell = readWidgetTsx('AppShell.tsx');
+  const authGate = readFileSync(join(sourceRoot(), 'widgets', 'auth', 'AuthGate.tsx'), 'utf8');
+  assert.match(shell, /\bp-safe\b/);
+  assert.match(shell, /\bpb-safe\b|\bp-safe\b/);
+  assert.match(authGate, /\bp-safe-min-24\b/);
+  assert.doesNotMatch(authGate, /\bm-24\b/);
+  assert.match(authGate, /w-\(--container-auth-card\)/);
+});
+
 test('responsive navigation uses structural desktop layout and Kobalte modal behavior', () => {
   const shell = readWidgetTsx('AppShell.tsx');
   const drawer = readFileSync(join(sourceRoot(), 'widgets', 'shell', 'shared', 'ProjectDrawer.tsx'), 'utf8');

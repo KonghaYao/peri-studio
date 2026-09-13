@@ -355,7 +355,7 @@ Remove fail-closed：存在非终态 runtime、Stop 未 committed、或无法读
 入口：
 
 1. 侧栏底栏 **可见短标签 Machines**（图标 Monitor）。这是管理，不是帮助。命中白纸「图标被误解则恢复标签」。
-2. Dialog 标题 Machines；页签 Machines | About。About 只放连接/健康/schema。
+2. Dialog 标题 Machines；页签 Machines | About。About 只放连接/健康/schema。例外：System About「This browser」可放本机 PWA 安装（浏览器 chrome，不是用户偏好），见 [pwa.md](pwa.md)。
 3. 等待 Trust、failed、隧道应自动连却 Offline：入口打点。
 4. 左栏空项目 / New project 无 Online 远端时：Add a computer 链到本页。
 5. 窄视口全屏同一 Dialog（loopback 桌面窄窗，**不是**宣称手机远程运维）。

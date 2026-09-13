@@ -8,11 +8,35 @@ export type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 };
 
+export type BrowserInstallKind = 'installed' | 'install' | 'a2hs' | 'cannot-install';
+
 const [canInstall, setCanInstall] = createSignal(false);
 const [isStandalone, setIsStandalone] = createSignal(false);
 const [isIosLike, setIsIosLike] = createSignal(false);
+const [isLoopbackHost, setIsLoopbackHost] = createSignal(false);
+const [isSecureContext, setIsSecureContext] = createSignal(false);
+const [installBusy, setInstallBusy] = createSignal(false);
 
-export { canInstall, isStandalone, isIosLike };
+export { canInstall, isStandalone, isIosLike, isLoopbackHost, isSecureContext, installBusy };
+
+/** iOS A2HS 只在 loopback 安全上下文提示；不得给 LAN HTTP 发明 127.0.0.1 快捷方式。 */
+export function canAddToHomeScreen(): boolean {
+  return isIosLike() && isSecureContext() && isLoopbackHost();
+}
+
+/** 互斥安装态：Installed | Install | iOS A2HS | cannot install。 */
+export function browserInstallKind(): BrowserInstallKind {
+  if (isStandalone()) return 'installed';
+  if (canInstall() || installBusy()) return 'install';
+  if (canAddToHomeScreen()) return 'a2hs';
+  return 'cannot-install';
+}
+
+/** 127.0.0.1 / localhost / ::1（含 `[::1]` 写法）。 */
+export function isLoopbackHostname(hostname: string): boolean {
+  const host = hostname.trim().toLowerCase().replace(/^\[|\]$/g, '');
+  return host === '127.0.0.1' || host === 'localhost' || host === '::1';
+}
 
 let started = false;
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
@@ -32,6 +56,14 @@ function detectIosLike(): boolean {
   const ua = navigator.userAgent ?? '';
   if (/iPad|iPhone|iPod/.test(ua)) return true;
   return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+}
+
+function detectLoopbackHost(): boolean {
+  return typeof location !== 'undefined' && isLoopbackHostname(location.hostname);
+}
+
+function detectSecureContext(): boolean {
+  return typeof globalThis.isSecureContext === 'boolean' && globalThis.isSecureContext;
 }
 
 function syncDisplayMode(): void {
@@ -65,6 +97,8 @@ export function startPwa(): void {
   if (started || typeof window === 'undefined') return;
   started = true;
   setIsIosLike(detectIosLike());
+  setIsLoopbackHost(detectLoopbackHost());
+  setIsSecureContext(detectSecureContext());
   syncDisplayMode();
   window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
   window.addEventListener('appinstalled', onAppInstalled);
@@ -75,10 +109,16 @@ export function startPwa(): void {
 }
 
 export async function promptInstall(): Promise<void> {
-  if (!deferredPrompt) return;
-  await deferredPrompt.prompt();
+  if (installBusy() || !deferredPrompt) return;
+  const event = deferredPrompt;
   deferredPrompt = null;
   setCanInstall(false);
+  setInstallBusy(true);
+  try {
+    await event.prompt();
+  } finally {
+    setInstallBusy(false);
+  }
 }
 
 /** 测试夹具：直接写入信号，不经过浏览器事件。 */
@@ -86,10 +126,16 @@ export function installPwaSignals(next: {
   canInstall?: boolean;
   isStandalone?: boolean;
   isIosLike?: boolean;
+  isLoopbackHost?: boolean;
+  isSecureContext?: boolean;
+  installBusy?: boolean;
 }): void {
   if (next.canInstall !== undefined) setCanInstall(next.canInstall);
   if (next.isStandalone !== undefined) setIsStandalone(next.isStandalone);
   if (next.isIosLike !== undefined) setIsIosLike(next.isIosLike);
+  if (next.isLoopbackHost !== undefined) setIsLoopbackHost(next.isLoopbackHost);
+  if (next.isSecureContext !== undefined) setIsSecureContext(next.isSecureContext);
+  if (next.installBusy !== undefined) setInstallBusy(next.installBusy);
 }
 
 /** 测试夹具：卸掉监听并恢复默认信号。 */
@@ -105,4 +151,7 @@ export function resetPwaForTests(): void {
   setCanInstall(false);
   setIsStandalone(false);
   setIsIosLike(false);
+  setIsLoopbackHost(false);
+  setIsSecureContext(false);
+  setInstallBusy(false);
 }

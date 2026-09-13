@@ -120,7 +120,7 @@ pub(crate) fn cache_headers_for_static(
     )]
 }
 
-fn is_fingerprinted_asset(name: &str) -> bool {
+pub(crate) fn is_fingerprinted_asset(name: &str) -> bool {
     let Some(file_name) = name
         .strip_prefix("assets/")
         .and_then(|path| path.rsplit('/').next())

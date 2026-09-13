@@ -40,7 +40,7 @@ date: 2026-09-12
 
 ## 4. iOS standalone 键盘：`visualViewport`
 
-**现状**：AuthGate / AppShell / Toast 使用 T1 `--safe-area-*` 与 `pt-safe` / `pb-safe`（`env(safe-area-inset-*)`）。Composer 底部继续用 `--composer-safe-bottom`。`index.html` 已设 `viewport-fit=cover`。
+**现状**：AuthGate 登录页用 `p-safe-min-24`；AppShell / Toast 使用 T1 `--safe-area-*` 与 `p-safe`（含 `pb-safe`）。Composer 底部继续用 `--composer-safe-bottom`。`index.html` 已设 `viewport-fit=cover`。
 
 **延后**：不在 v1 PWA 跟踪 iOS Safari `window.visualViewport` 以在键盘升起时抬高 Composer / 登录卡。`env(safe-area-inset-bottom)` 只覆盖 Home Indicator，不覆盖虚拟键盘。
 

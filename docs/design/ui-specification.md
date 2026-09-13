@@ -182,7 +182,7 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 
 | 区域 | Widget 路径 | UI 要点 |
 |------|-------------|---------|
-| 壳层 | `widgets/shell` | AppShell 网格、`PwaRuntime`、ErrorCenter、ConnectionProblem、StatusArea、Settings About「This browser」 |
+| 壳层 | `widgets/shell` | AppShell 网格、`PwaRuntime`、ErrorCenter、ConnectionProblem、StatusArea、System About「This browser」 |
 | 侧栏 | `widgets/sidebar` | 28px 行高、选中 `bg-selected`、`For` 稳定 key |
 | 聊天 | `widgets/chat` | Transcript 窗口化、Permission/Elicitation 队列、Markdown、`ToolCallActivity`（`@peri/ui` `ToolActivityRow` + `features/chat/tool-call-activity.ts`） |
 | 输入 | `widgets/composer` | `Composer.tsx` 内联 editor/toolbar；`@peri/ui` `SlashMenuListbox` + `features/composer/slash-menu-catalog.ts`；drop / Add attachment 共用上传队列，ready 后仅插入 `@relative/path` |
@@ -200,10 +200,10 @@ Widget **可以**读 `store`；**不得**直发 WebSocket 帧。复杂逻辑下�
 ### 10.1.1 Standalone / 本机安装
 
 - 已安装窗口使用 `display: standalone`。`theme-color` 与 manifest 画布均为 `#ffffff`（不是 accent）。
-- 安装入口只在 System → About「This browser」：`Install`（Chrome / Edge `beforeinstallprompt`）、`Installed`（standalone）、Safari `Open Share, then Add to Home Screen`。
-- 文案须说明安装的是本机快捷方式（规范入口 `http://127.0.0.1:8456/`）；断开本机 server 后窗口不可用。iOS Home Screen 应用是独立存储，可能要再登录一次。
+- 安装入口只在 System → About「This browser」（诊断弹窗的浏览器 chrome，不是用户偏好）：互斥展示 `Install`（Chrome / Edge `beforeinstallprompt`）、`Installed`（standalone，`role="status"`）、Safari `Open Share, then Add to Home Screen`（仅 `isIosLike && isSecureContext && isLoopbackHost`）、或 `Cannot install here`。
+- 有安装动作时，文案使用**当前页** `location.origin`（由 widget 注入），并说明这是本机快捷方式：断开本机 server 后窗口不可用。规范 loopback 配方 `http://127.0.0.1:8456/` 只作文档默认入口，不得写成「这次安装」的 origin。iOS Home Screen 应用是独立存储，可能要再登录一次。LAN HTTP 不得提示 Add to Home Screen，也不得发明 127.0.0.1 快捷方式。无动作时隐藏安装说明段。
 - **不**把 Install 放进侧栏 More、AuthGate 登录卡、`ConnectionProblem` 或 Toast。无 Service Worker，因此无 Reload-for-update。
-- standalone 安全区用 T1 `pt-safe` / `pb-safe` / `p-safe`（AuthGate、AppShell、Toast 视口）。Composer 底部复用 `--composer-safe-bottom`。禁止 `pt-[env(...)]`。
+- standalone 安全区用 T1 `pt-safe` / `pb-safe` / `p-safe`（AuthGate 登录页用 `p-safe-min-24`，AppShell / Toast 视口用 `p-safe`）。Composer 底部复用 `--composer-safe-bottom`。禁止 `pt-[env(...)]`。
 
 ### 10.2 资源工作台浮窗
 

@@ -59,7 +59,7 @@ web/src/
     catalog/                # catalog-actions, project-catalog
     composer/               # slash-menu, composer-slash, prediction, draft, placeholder
     voice/                  # 同源 /voice 口述：capability、PCM、dictation（无 store）
-    pwa/                    # 可安装 PWA：canInstall / isStandalone / isIosLike（无 store，无 SW）
+    pwa/                    # 可安装 PWA：canInstall / standalone / iOS A2HS 门控（无 store，无 SW）
     message/                # delivery, recovery, follow
     runtime/                # control, permissions, elicitations, rewind
     connection/             # ws-client, connection, command-tracker

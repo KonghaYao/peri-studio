@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  browserInstallKind,
+  canAddToHomeScreen,
   canInstall,
+  installBusy,
   installPwaSignals,
   isIosLike,
+  isLoopbackHostname,
   isStandalone,
   promptInstall,
   resetPwaForTests,
@@ -60,6 +64,15 @@ beforeEach(() => {
 });
 
 describe('pwa state', () => {
+  it('classifies loopback hostnames only', () => {
+    expect(isLoopbackHostname('127.0.0.1')).toBe(true);
+    expect(isLoopbackHostname('localhost')).toBe(true);
+    expect(isLoopbackHostname('[::1]')).toBe(true);
+    expect(isLoopbackHostname('::1')).toBe(true);
+    expect(isLoopbackHostname('192.168.1.10')).toBe(false);
+    expect(isLoopbackHostname('peri.local')).toBe(false);
+  });
+
   it('detects standalone display mode and iOS-like clients', () => {
     stubMatchMedia(true);
     stubNavigator({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' });
@@ -67,6 +80,7 @@ describe('pwa state', () => {
     expect(isStandalone()).toBe(true);
     expect(isIosLike()).toBe(true);
     expect(canInstall()).toBe(false);
+    expect(browserInstallKind()).toBe('installed');
   });
 
   it('treats iOS navigator.standalone as installed', () => {
@@ -87,6 +101,33 @@ describe('pwa state', () => {
     expect(isStandalone()).toBe(false);
   });
 
+  it('gates A2HS to iOS-like secure loopback only', () => {
+    installPwaSignals({ isIosLike: true, isSecureContext: true, isLoopbackHost: true });
+    expect(canAddToHomeScreen()).toBe(true);
+    expect(browserInstallKind()).toBe('a2hs');
+
+    installPwaSignals({ isLoopbackHost: false });
+    expect(canAddToHomeScreen()).toBe(false);
+    expect(browserInstallKind()).toBe('cannot-install');
+
+    installPwaSignals({ isLoopbackHost: true, isSecureContext: false });
+    expect(canAddToHomeScreen()).toBe(false);
+
+    installPwaSignals({ isIosLike: false, isSecureContext: true, isLoopbackHost: true });
+    expect(canAddToHomeScreen()).toBe(false);
+  });
+
+  it('keeps Install and A2HS exclusive when a prompt is available', () => {
+    installPwaSignals({
+      canInstall: true,
+      isStandalone: false,
+      isIosLike: true,
+      isSecureContext: true,
+      isLoopbackHost: true,
+    });
+    expect(browserInstallKind()).toBe('install');
+  });
+
   it('defers a one-shot beforeinstallprompt until promptInstall', async () => {
     const prompt = vi.fn(async () => undefined);
     startPwa();
@@ -101,6 +142,29 @@ describe('pwa state', () => {
 
     await promptInstall();
     expect(prompt).toHaveBeenCalledOnce();
+  });
+
+  it('nulls the deferred prompt before awaiting overlapping promptInstall calls', async () => {
+    let releasePrompt: (() => void) | undefined;
+    const prompt = vi.fn(() => new Promise<void>((resolve) => {
+      releasePrompt = resolve;
+    }));
+    startPwa();
+    window.dispatchEvent(installPromptEvent({ prompt }));
+    expect(canInstall()).toBe(true);
+
+    const first = promptInstall();
+    const second = promptInstall();
+    expect(canInstall()).toBe(false);
+    expect(installBusy()).toBe(true);
+    expect(browserInstallKind()).toBe('install');
+    expect(prompt).toHaveBeenCalledOnce();
+
+    releasePrompt?.();
+    await Promise.all([first, second]);
+    expect(prompt).toHaveBeenCalledOnce();
+    expect(installBusy()).toBe(false);
+    expect(canInstall()).toBe(false);
   });
 
   it('ignores beforeinstallprompt when already standalone', () => {
@@ -145,5 +209,6 @@ describe('pwa state', () => {
     expect(canInstall()).toBe(true);
     expect(isIosLike()).toBe(true);
     expect(isStandalone()).toBe(false);
+    expect(browserInstallKind()).toBe('install');
   });
 });
