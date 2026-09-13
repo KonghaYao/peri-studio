@@ -495,3 +495,46 @@ body.ui-workbench-panel-resizing * {
   app-region: no-drag;
 }
 
+/* ── Session live · matrix dot loader（侧栏 busy/attention） ───────────── */
+
+.session-matrix-dot-loader {
+  display: grid;
+  grid-template-columns: repeat(3, var(--space-3));
+  gap: var(--space-3);
+  width: calc(3 * var(--space-3) + 2 * var(--space-3));
+  height: calc(3 * var(--space-3) + 2 * var(--space-3));
+}
+
+.session-matrix-dot-loader[data-tone='busy'],
+.session-matrix-dot-loader[data-tone='attention'] {
+  color: var(--content-muted);
+}
+
+.session-matrix-dot-loader__dot {
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: 9999px;
+  background-color: currentColor;
+  opacity: 0.22;
+  animation: session-matrix-dot-loader-pulse 1.35s var(--ease-standard) infinite;
+}
+
+@keyframes session-matrix-dot-loader-pulse {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.85);
+  }
+
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-matrix-dot-loader__dot {
+    animation: none;
+    opacity: 0.75;
+  }
+}

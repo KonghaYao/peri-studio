@@ -19,6 +19,16 @@ describe('SessionNavigator', () => {
     })).toEqual([{ type: 'activate', sessionId: 'ready', chatId: 'chat-live' }]);
   });
 
+  it('reuses a proven live runtime on writable catalog restore without opening', () => {
+    const navigator = new SessionNavigator();
+    expect(navigator.transition({
+      type: 'catalog', ready: true, readOnly: false, preferredId: 'ready', selectedSessionId: null,
+      sessions: [{ id: 'ready', lifecycle: 'ready', activeChatId: 'chat-live' }],
+    })).toEqual([{ type: 'activate', sessionId: 'ready', chatId: 'chat-live' }]);
+    expect(navigator.snapshot().restoringSessionId).toBeNull();
+    expect(navigator.snapshot().opening).toBeNull();
+  });
+
   it('preserves the current selection until the matching terminal acknowledgement', () => {
     const changed = vi.fn();
     const navigator = new SessionNavigator(changed);
@@ -89,5 +99,41 @@ describe('SessionNavigator', () => {
     navigator.transition(catalog);
     navigator.transition({ type: 'connection-lost' });
     expect(navigator.transition(catalog)).toEqual([{ type: 'request-open', sessionId: 'ready' }]);
+  });
+
+  it('releases an in-flight open on local-select so a late ack cannot steal the selection', () => {
+    const navigator = new SessionNavigator();
+    navigator.transition({ type: 'open-started', commandId: 'open-1', sessionId: 'cold', previousSessionId: null, previousChatId: null });
+    expect(navigator.transition({ type: 'local-select', sessionId: 'live', chatId: 'chat-live' }))
+      .toEqual([{ type: 'activate', sessionId: 'live', chatId: 'chat-live' }]);
+    expect(navigator.snapshot().opening).toBeNull();
+    expect(navigator.snapshot().restoringSessionId).toBeNull();
+    expect(navigator.transition({ type: 'open-terminal', commandId: 'open-1', status: 'committed', chatId: 'chat-cold' })).toEqual([]);
+  });
+
+  it('activates a live runtime that appears after restore has already started', () => {
+    const navigator = new SessionNavigator();
+    const catalog = {
+      type: 'catalog' as const, ready: true, readOnly: false, preferredId: 'ready', selectedSessionId: null,
+      sessions: [{ id: 'ready', lifecycle: 'ready' }],
+    };
+    expect(navigator.transition(catalog)).toEqual([{ type: 'request-open', sessionId: 'ready' }]);
+    navigator.transition({ type: 'open-started', commandId: 'restore-1', sessionId: 'ready', previousSessionId: null, previousChatId: null });
+    expect(navigator.transition({
+      ...catalog,
+      sessions: [{ id: 'ready', lifecycle: 'ready', activeChatId: 'chat-live' }],
+    })).toEqual([{ type: 'activate', sessionId: 'ready', chatId: 'chat-live' }]);
+    expect(navigator.snapshot().opening).toBeNull();
+    expect(navigator.transition({ type: 'open-terminal', commandId: 'restore-1', status: 'committed', chatId: 'chat-spawned' })).toEqual([]);
+  });
+
+  it('replaces an in-flight open when a later open starts', () => {
+    const navigator = new SessionNavigator();
+    navigator.transition({ type: 'open-started', commandId: 'open-1', sessionId: 'a', previousSessionId: null, previousChatId: null });
+    navigator.transition({ type: 'open-started', commandId: 'open-2', sessionId: 'b', previousSessionId: null, previousChatId: null });
+    expect(navigator.snapshot().opening?.commandId).toBe('open-2');
+    expect(navigator.transition({ type: 'open-terminal', commandId: 'open-1', status: 'committed', chatId: 'chat-a' })).toEqual([]);
+    expect(navigator.transition({ type: 'open-terminal', commandId: 'open-2', status: 'committed', chatId: 'chat-b' }))
+      .toEqual([{ type: 'activate', sessionId: 'b', chatId: 'chat-b' }]);
   });
 });

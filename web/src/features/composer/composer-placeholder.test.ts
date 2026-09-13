@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { composerInputState, type ComposerPlaceholderInput } from './composer-placeholder';
+import { composerInputState, isOpeningSelectedSession, type ComposerPlaceholderInput } from './composer-placeholder';
 
 function base(overrides: Partial<ComposerPlaceholderInput> = {}): ComposerPlaceholderInput {
   return {
     readOnly: false,
     openingSessionId: null,
+    selectedSessionId: 'session-1',
     selectedCid: 'chat-1',
     runtimeDocsHydrated: true,
     promptDeliveryReady: true,
@@ -14,6 +15,18 @@ function base(overrides: Partial<ComposerPlaceholderInput> = {}): ComposerPlaceh
     ...overrides,
   };
 }
+
+describe('isOpeningSelectedSession', () => {
+  it('treats a launch-time open as current when nothing is selected yet', () => {
+    expect(isOpeningSelectedSession('session-1', null)).toBe(true);
+    expect(isOpeningSelectedSession(null, null)).toBe(false);
+  });
+
+  it('only matches the session that is actually opening', () => {
+    expect(isOpeningSelectedSession('session-1', 'session-1')).toBe(true);
+    expect(isOpeningSelectedSession('session-2', 'session-1')).toBe(false);
+  });
+});
 
 describe('composerInputState', () => {
   it('is disabled and explains missing selection before any chat exists', () => {
@@ -28,8 +41,14 @@ describe('composerInputState', () => {
   });
 
   it('keeps priority order: opening beats missing selection', () => {
-    const state = composerInputState(base({ selectedCid: null, openingSessionId: 'session-1' }));
+    const state = composerInputState(base({ selectedCid: null, selectedSessionId: null, openingSessionId: 'session-1' }));
     expect(state.placeholder).toBe('Opening session…');
+  });
+
+  it('does not lock the selected live session while another session is opening', () => {
+    const state = composerInputState(base({ openingSessionId: 'other-session' }));
+    expect(state.disabled).toBe(false);
+    expect(state.placeholder).toBe('Message the agent, or type / for commands');
   });
 
   it('waits for both runtime documents before accepting input', () => {

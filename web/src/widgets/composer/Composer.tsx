@@ -1,4 +1,4 @@
-// 发送窗口（Composer）：输入区 + 底部工具行（ui.md §3.8 / §四.7）。
+// 发送窗口（Composer）：输入区 + 底部工具行。
 // 编排与 store 接线留在此；视觉组件来自 @peri/ui，业务映射在 features。
 
 import { createSignal, Show, type Component, type JSX } from 'solid-js';

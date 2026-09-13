@@ -150,6 +150,7 @@ export function useComposerState(taRef: () => HTMLTextAreaElement | undefined) {
     composerInputState({
       readOnly: readOnly(),
       openingSessionId: openingSessionId(),
+      selectedSessionId: selectedSessionId(),
       selectedCid: selectedCid(),
       runtimeDocsHydrated: runtimeDocsHydrated(),
       promptDeliveryReady: promptDeliveryReady(),

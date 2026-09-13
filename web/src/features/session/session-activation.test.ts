@@ -215,4 +215,61 @@ describe('SessionActivation', () => {
     expect(subject.sentFrame()?.payload).toEqual({ sessionId: 'old-session' });
     expect(subject.activate).not.toHaveBeenCalled();
   });
+
+  it('does not toast when the same session is already opening', () => {
+    const sessions = [{
+      id: 'acp-logical', projectId: 'project', title: 'title', lifecycle: 'ready',
+      updatedAt: null, lastOpenedAt: null, activeChatId: null,
+    }];
+    const subject = harness({ sessions });
+    expect(subject.activation.navigate('acp-logical')).toBe(true);
+    const commandId = subject.sentFrame()!.commandId;
+    expect(subject.activation.navigate('acp-logical')).toBe(true);
+    expect(subject.sentFrame()!.commandId).toBe(commandId);
+    expect(subject.toast).not.toHaveBeenCalled();
+  });
+
+  it('switches to a live runtime while another session is still opening', () => {
+    const subject = harness({
+      sessions: [
+        {
+          id: 'cold-session', projectId: 'project', title: 'cold', lifecycle: 'ready',
+          updatedAt: null, lastOpenedAt: null, activeChatId: null,
+        },
+        {
+          id: 'live-session', projectId: 'project', title: 'live', lifecycle: 'ready',
+          updatedAt: null, lastOpenedAt: null, activeChatId: 'chat-live',
+        },
+      ],
+      chatStatuses: { 'chat-live': 'accepting' },
+    });
+    expect(subject.activation.navigate('cold-session')).toBe(true);
+    const restoreId = subject.sentFrame()!.commandId;
+    expect(subject.activation.navigate('live-session')).toBe(true);
+    expect(subject.activate).toHaveBeenCalledWith('live-session', 'chat-live');
+    expect(subject.toast).not.toHaveBeenCalled();
+    subject.options()!.cb?.({ commandId: restoreId, status: 'committed', chatId: 'chat-cold' });
+    expect(subject.activate).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets the user open a different session without an opening lock toast', () => {
+    const subject = harness({
+      sessions: [
+        {
+          id: 'cold-a', projectId: 'project', title: 'a', lifecycle: 'ready',
+          updatedAt: null, lastOpenedAt: null, activeChatId: null,
+        },
+        {
+          id: 'cold-b', projectId: 'project', title: 'b', lifecycle: 'ready',
+          updatedAt: null, lastOpenedAt: null, activeChatId: null,
+        },
+      ],
+    });
+    expect(subject.activation.navigate('cold-a')).toBe(true);
+    const firstId = subject.sentFrame()!.commandId;
+    expect(subject.activation.navigate('cold-b')).toBe(true);
+    expect(subject.sentFrame()!.payload).toEqual({ sessionId: 'cold-b' });
+    expect(subject.sentFrame()!.commandId).not.toBe(firstId);
+    expect(subject.toast).not.toHaveBeenCalled();
+  });
 });

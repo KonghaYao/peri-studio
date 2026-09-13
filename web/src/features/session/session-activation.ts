@@ -222,6 +222,7 @@ export class SessionActivation {
   }
 
   private open(sessionId: string, callbacks: OpenSessionCallbacks = {}): boolean {
+    if (this.navigator.snapshot().opening?.sessionId === sessionId) return true;
     const rejection = this.openRejection();
     if (rejection) {
       this.deps.toast(rejection);
@@ -236,7 +237,7 @@ export class SessionActivation {
       previousSessionId: this.deps.selectedSessionId(),
       previousChatId: this.deps.currentChatId(),
     });
-    return this.deps.send(frame, 'session/open', {
+    const sent = this.deps.send(frame, 'session/open', {
       cb: (ack) => {
         const effects = this.navigator.transition({ type: 'open-terminal', commandId: ack.commandId, status: ack.status, chatId: ack.chatId });
         if (!effects.length) return;
@@ -253,6 +254,12 @@ export class SessionActivation {
         callbacks.onUncertain?.();
       },
     });
+    if (!sent) {
+      this.navigator.transition({ type: 'open-failed', commandId: frame.commandId });
+      callbacks.onFailed?.('Connection not ready');
+      return false;
+    }
+    return true;
   }
 
   private mutationRejection(): string | null {
@@ -277,7 +284,6 @@ export class SessionActivation {
   private openRejection(): string | null {
     if (this.deps.isReadOnly()) return 'Read-only mode cannot open running sessions';
     if (!this.deps.isReady()) return 'Connection not ready';
-    if (this.navigator.snapshot().opening) return 'Another session is already opening';
     return null;
   }
 

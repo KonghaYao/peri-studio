@@ -93,6 +93,9 @@ export function selectChat(cid: string): void {
   }
   deps!.setCurrentCid(cid);
   deps!.setSelectedCid(cid);
+  // revive 新身份：曾 drop 过的 chat 再订时，迟到 tombstone 不得挡住快照。
+  deps!.docStore.docFor(H.chatDoc(cid));
+  deps!.docStore.docFor(H.sessionDoc(cid));
   sendSubscribe(); // unsubscribe/subscribe 按 WebSocket 顺序生效，快照到达后渲染
   // Runtime docs switch only after the logical session activation commits.
   deps!.setChatEntries([]);
@@ -115,6 +118,7 @@ export function refreshCurrentControlProjection(): boolean {
   const docId = H.sessionDoc(currentCid);
   deps!.sendFrame(H.unsubscribe([docId]));
   deps!.docStore.drop(docId);
+  deps!.docStore.docFor(docId);
   deps!.setChatHead(null);
   deps!.setPermissions([]);
   deps!.setElicitations([]);

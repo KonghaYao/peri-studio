@@ -388,7 +388,7 @@ describe('ProjectSidebar registry hydration', () => {
     const lamp = screen.getByTestId('session-loading-wave');
     expect(lamp).toHaveAttribute('aria-label', 'Agent is working');
     expect(lamp).toHaveAttribute('data-tone', 'busy');
-    expect(lamp).toHaveClass('absolute', 'left-8');
+    expect(screen.getByTestId('session-live-gutter')).toContainElement(lamp);
   });
 
   it('shows a danger lamp on an unselected crashed runtime', () => {
@@ -511,7 +511,7 @@ describe('ProjectSidebar registry hydration', () => {
 
     render(() => <ProjectSidebar />);
 
-    expect(screen.getByRole('button', { name: /^Session A/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Session A/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /^Session B/ })).toBeEnabled();
   });
 });

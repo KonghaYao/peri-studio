@@ -31,7 +31,7 @@ export function SessionRailActions() {
     }}><History size={17} strokeWidth={1.7} /></ResourceRailButton></Show>
     <Show when={logical() && selectedCid()}>
       <Show when={terminal()} fallback={<ResourceRailButton label="Close running instance" tone="danger" disabled={readOnly() || runtimeControlLocked()} onClick={() => setConfirmClose(true)}><Power size={17} strokeWidth={1.7} /></ResourceRailButton>}>
-        <ResourceRailButton label="Reopen session" disabled={readOnly() || !!openingSessionId()} onClick={() => {
+        <ResourceRailButton label="Reopen session" disabled={readOnly() || openingSessionId() === selectedSessionId()} onClick={() => {
           const id = logical()?.id;
           if (id) navigateProjectSession(id);
         }}><RotateCcw size={17} strokeWidth={1.7} /></ResourceRailButton>

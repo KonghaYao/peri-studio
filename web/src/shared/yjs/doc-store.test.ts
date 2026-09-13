@@ -116,6 +116,23 @@ describe('DocStore', () => {
     expect(onUpdate).toHaveBeenCalledWith('session:1');
   });
 
+  it('ignores late updates for a dropped document until it is revived', () => {
+    const callbacks: FrameRequestCallback[] = [];
+    vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((callback) => {
+      callbacks.push(callback);
+      return callbacks.length;
+    });
+    const leftover = new Y.Doc();
+    leftover.getMap('root').set('stale', true);
+    const store = new DocStore();
+    store.docFor('chat:old');
+    store.drop('chat:old');
+    store.applyUpdateFrame({ doc: 'chat:old', update: bytesToBase64(Y.encodeStateAsUpdate(leftover)) });
+
+    expect(callbacks).toHaveLength(0);
+    expect(store.docFor('chat:old').getMap('root').has('stale')).toBe(false);
+  });
+
   it('fences queued renders from a cleared connection without consuming new work', () => {
     const callbacks: FrameRequestCallback[] = [];
     vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((callback) => {

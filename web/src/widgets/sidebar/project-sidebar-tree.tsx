@@ -12,6 +12,7 @@ import {
   EmptyState,
   IconButton,
   LoadingState,
+  SessionListLoadingRow,
   cn,
   sidebarMistHintClass,
 } from '@peri/ui';
@@ -148,7 +149,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                         Start your first conversation
                       </Button>}
                     >
-                      <LoadingState label="Loading sessions" class="px-2.5 py-4 pl-36 text-left!" />
+                      <SessionListLoadingRow label="Loading sessions" class="px-2.5 text-left!" indent={16} />
                     </Show>}
                   >
                     <For each={sessions().map((item) => item.id)}>

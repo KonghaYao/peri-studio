@@ -5,6 +5,8 @@ import { base64ToBytes } from '@/shared/lib/base64';
 export class DocStore {
   private docs = new Map<string, Y.Doc>();
   private rafPending = new Set<string>();
+  /** drop 后到显式 revive 前，迟到的 ysync.update 不得重建身份。 */
+  private tombstones = new Set<string>();
   private generation = 0;
   private failedCount = 0;
   private removalObservers = new Set<(docId: string | null) => void>();
@@ -21,6 +23,7 @@ export class DocStore {
     this.docs.forEach((doc) => doc.destroy());
     this.docs.clear();
     this.rafPending.clear();
+    this.tombstones.clear();
   }
 
   /**
@@ -36,6 +39,7 @@ export class DocStore {
       this.docs.delete(docId);
     }
     this.rafPending.delete(docId);
+    this.tombstones.add(docId);
   }
 
   /** 注册文档身份释放观察者；null 表示整个身份世代已清空。 */
@@ -45,6 +49,7 @@ export class DocStore {
   }
 
   docFor(docId: string): Y.Doc {
+    this.tombstones.delete(docId);
     let doc = this.docs.get(docId);
     if (!doc) {
       doc = new Y.Doc();
@@ -54,6 +59,8 @@ export class DocStore {
   }
 
   applyUpdateFrame(frame: { doc: string; update: string }): void {
+    // 未 revive 的 drop 身份忽略迟到帧，避免空 doc + 增量拼出半截投影。
+    if (this.tombstones.has(frame.doc)) return;
     const doc = this.docFor(frame.doc);
     try {
       Y.applyUpdate(doc, base64ToBytes(frame.update));

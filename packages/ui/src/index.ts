@@ -496,6 +496,7 @@ export {
   ProjectRowActionGroup,
   SectionHeader,
   SessionLiveIndicator,
+  SessionListLoadingRow,
   SessionRowAccessory,
   SidebarNavBar,
   type SessionLiveIndicatorTone,

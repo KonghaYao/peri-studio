@@ -108,16 +108,22 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
         'padding-left': props.indent ? `calc(5px + ${props.indent}px)` : undefined,
       }}
     >
-      <Show when={lampTone()}>
-        {(tone) => (
-          <SessionLiveIndicator
-            tone={tone()}
-            label={props.state.detail || props.state.label}
-            class="pointer-events-none absolute top-1/2 left-8 -translate-y-1/2"
-          />
-        )}
-      </Show>
-      <div class="relative flex w-full min-w-0 items-center">
+      <div
+        data-testid="session-live-gutter"
+        class="flex w-14 shrink-0 items-center justify-center self-stretch"
+        aria-hidden={lampTone() ? undefined : 'true'}
+      >
+        <Show when={lampTone()}>
+          {(tone) => (
+            <SessionLiveIndicator
+              tone={tone()}
+              label={props.state.detail || props.state.label}
+              class="pointer-events-none"
+            />
+          )}
+        </Show>
+      </div>
+      <div class="relative flex min-w-0 flex-1 items-center">
         <button
           type="button"
           data-sidebar="menu-button"
@@ -131,7 +137,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
           aria-current={props.selected ? 'page' : undefined}
           aria-label={displayTitle()}
           onClick={open}
-          disabled={(props.readOnly && !props.session.activeChatId) || props.session.lifecycle !== 'ready' || props.navigationBusy}
+          disabled={(props.readOnly && !props.session.activeChatId) || props.session.lifecycle !== 'ready'}
         >
           <span data-testid="session-copy" class="block min-w-0 w-full truncate text-13 leading-20 text-content-primary">{displayTitle()}</span>
         </button>

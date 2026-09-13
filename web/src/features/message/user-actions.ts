@@ -63,6 +63,7 @@ import type { QuestionAnswerPayload } from '@/shared/protocol/client';
 import { persistActionProblem, retryPersistentAction } from './panel-errors';
 import type { DispatchResult } from '@/features/connection/command-tracker';
 import type { ComposerDraftOwner } from '@/features/composer/composer-draft';
+import { isOpeningSelectedSession } from '@/features/composer/composer-placeholder';
 
 /** 会话配置修改的运行时状态（SessionConfigDialog 消费）。 */
 export interface SessionConfigMutation {
@@ -101,10 +102,11 @@ export function installUserActions(d: UserActionsDeps): void {
 
 export function sendMessage(text: string, effort?: string): boolean {
   const sessionId = deps!.selectedSessionId();
-  if (!connectionReady() || !promptDeliveryReady() || readOnly() || deps!.openingSessionId() || deps!.turnActive() || messageSubmission(sessionId)) {
+  const openingCurrent = isOpeningSelectedSession(deps!.openingSessionId(), sessionId);
+  if (!connectionReady() || !promptDeliveryReady() || readOnly() || openingCurrent || deps!.turnActive() || messageSubmission(sessionId)) {
     if (!promptDeliveryReady()) { deps!.toast('Secure message delivery is not enabled on the server; refresh or upgrade the server'); return false; }
     if (readOnly()) { deps!.toast('Read-only mode cannot send messages'); return false; }
-    if (deps!.openingSessionId()) { deps!.toast('Session is opening'); return false; }
+    if (openingCurrent) { deps!.toast('Session is opening'); return false; }
     if (deps!.turnActive()) { deps!.toast('Agent is working; stop the current task first'); return false; }
     if (messageSubmission(sessionId)) { deps!.toast('This session message is still being confirmed'); return false; }
     deps!.toast('Connection not ready, try again later');

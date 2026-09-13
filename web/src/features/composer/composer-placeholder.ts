@@ -1,6 +1,6 @@
 // Composer 输入可用性与 placeholder 决策（纯函数，P4 从 Composer 抽离）。
 //
-// 优先级顺序与原组件一致：只读 > 打开中 > 未选择会话 > 载入中 > 升级
+// 优先级顺序与原组件一致：只读 > 打开中（仅当前 session）> 未选择会话 > 载入中 > 升级
 // 提示 > 已结束 > 工作中/确认中 > 默认。工作中与确认中已有明确控件或异常面板，
 // 不再用占位文案重复状态。
 //
@@ -10,12 +10,21 @@
 export interface ComposerPlaceholderInput {
   readOnly: boolean;
   openingSessionId: string | null;
+  selectedSessionId: string | null;
   selectedCid: string | null;
   runtimeDocsHydrated: boolean;
   promptDeliveryReady: boolean;
   terminal: boolean;
   turnActive: boolean;
   submissionForSession: boolean;
+}
+
+/** opening 只锁正在打开的那条 session；旁路 live runtime 必须仍可输入。 */
+export function isOpeningSelectedSession(
+  openingSessionId: string | null,
+  selectedSessionId: string | null,
+): boolean {
+  return !!openingSessionId && (!selectedSessionId || openingSessionId === selectedSessionId);
 }
 
 export interface ComposerInputState {
@@ -27,10 +36,11 @@ export interface ComposerInputState {
 }
 
 export function composerInputState(input: ComposerPlaceholderInput): ComposerInputState {
+  const openingCurrent = isOpeningSelectedSession(input.openingSessionId, input.selectedSessionId);
   const sessionBlocked = !input.selectedCid
     || !input.runtimeDocsHydrated
     || input.terminal
-    || !!input.openingSessionId
+    || openingCurrent
     || input.readOnly
     || !input.promptDeliveryReady;
   const sendLocked = !sessionBlocked && (input.turnActive || input.submissionForSession);
@@ -39,7 +49,7 @@ export function composerInputState(input: ComposerPlaceholderInput): ComposerInp
   let placeholder: string;
   if (input.readOnly) {
     placeholder = '';
-  } else if (input.openingSessionId) {
+  } else if (openingCurrent) {
     placeholder = 'Opening session…';
   } else if (!input.selectedCid) {
     placeholder = 'Select or create a session from the left first';

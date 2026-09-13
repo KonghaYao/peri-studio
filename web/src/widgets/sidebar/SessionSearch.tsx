@@ -46,7 +46,7 @@ export function SessionSearch(props: { open: boolean; onClose: () => void; onSel
             options={results()}
             optionValue="id"
             optionTextValue={(session) => sessionDisplayTitle(session.title, session.id)}
-            optionDisabled={(session) => (readOnly() && !session.activeChatId) || session.lifecycle !== 'ready' || !!openingSessionId()}
+            optionDisabled={(session) => (readOnly() && !session.activeChatId) || session.lifecycle !== 'ready'}
             value={selectedSessionId() ? [selectedSessionId()!] : []}
             onChange={select}
             shouldFocusWrap

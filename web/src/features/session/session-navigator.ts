@@ -59,7 +59,6 @@ export class SessionNavigator {
       case 'catalog':
         return this.reconcileCatalog(event);
       case 'open-started':
-        if (this.state.opening) return [];
         this.update({
           ...this.state,
           opening: {
@@ -68,6 +67,9 @@ export class SessionNavigator {
             previousSessionId: event.previousSessionId,
             previousChatId: event.previousChatId,
           },
+          restoringSessionId: this.state.restoringSessionId === event.sessionId
+            ? this.state.restoringSessionId
+            : null,
         });
         return [];
       case 'open-terminal': {
@@ -83,7 +85,9 @@ export class SessionNavigator {
         this.update({ ...this.state, opening: null, restoringSessionId: null });
         return [];
       case 'local-select':
-        this.update({ ...this.state, restoringSessionId: null });
+        // 切到已证明存活的 runtime 时释放 in-flight open，避免恢复横幅/opening
+        // 锁挡住进入；晚到的 session/open Ack 因 command 不再匹配而不得改选中态。
+        this.update({ ...this.state, opening: null, restoringSessionId: null });
         return [{ type: 'activate', sessionId: event.sessionId, chatId: event.chatId }];
       case 'connection-lost':
         // Allow catalog restore / reconnect re-open after the server drops.
@@ -96,10 +100,24 @@ export class SessionNavigator {
   }
 
   private reconcileCatalog(event: Extract<SessionNavigationEvent, { type: 'catalog' }>): SessionNavigationEffect[] {
-    if (!event.ready || this.state.restoreAttempted || event.selectedSessionId || this.state.opening) return [];
+    if (!event.ready) return [];
     // Registry 首帧可能只有 project；discovery 完成前的空目录不是最终事实，
     // 不能在此时消耗恢复机会或清除记忆中的 session 偏好。
     if (!event.sessions.length) return [];
+
+    // 恢复中途 Registry 补上 live runtime：立刻进入，释放 opening 锁。
+    if (!event.selectedSessionId) {
+      const restoreId = this.state.restoringSessionId ?? (!this.state.restoreAttempted ? event.preferredId : null);
+      const live = restoreId
+        ? event.sessions.find((session) => session.id === restoreId && session.lifecycle === 'ready' && session.activeChatId)
+        : undefined;
+      if (live?.activeChatId) {
+        this.update({ ...this.state, restoreAttempted: true, opening: null, restoringSessionId: null });
+        return [{ type: 'activate', sessionId: live.id, chatId: live.activeChatId }];
+      }
+    }
+
+    if (this.state.restoreAttempted || event.selectedSessionId || this.state.opening) return [];
     const preferred = event.preferredId
       ? event.sessions.find((session) => session.id === event.preferredId && session.lifecycle === 'ready')
       : null;
@@ -109,9 +127,7 @@ export class SessionNavigator {
     }
     if (event.readOnly) {
       this.update({ ...this.state, restoreAttempted: true, restoringSessionId: null });
-      return preferred.activeChatId
-        ? [{ type: 'activate', sessionId: preferred.id, chatId: preferred.activeChatId }]
-        : [];
+      return [];
     }
     this.update({ ...this.state, restoreAttempted: true, restoringSessionId: preferred.id });
     return [{ type: 'request-open', sessionId: preferred.id }];

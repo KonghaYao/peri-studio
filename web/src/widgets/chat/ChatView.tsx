@@ -76,7 +76,7 @@ export function ChatView(props: ChatViewProps) {
     entryCount: chatEntries().length,
     turnActive: turnActive(),
     hasSubmission: !!messageSubmission(selectedSessionId()),
-    restoring: !!restoringSessionId(),
+    restoring: !!restoringSessionId() && restoringSessionId() === selectedSessionId(),
     chatLoading: chatAgentLoading(),
   }));
   const agentPublicErrorNotice = createMemo(() => selectAgentPublicErrorNotice(
@@ -163,7 +163,7 @@ export function ChatView(props: ChatViewProps) {
         <>
           <ConnectionProblem />
           <ErrorCenter />
-          <Show when={restoringSessionId()}>
+          <Show when={restoringSessionId() && restoringSessionId() === selectedSessionId()}>
             <LoadingState label="Restoring last session and ACP context…" class="justify-center mt-12 mx-20 max-narrow:m-10" data-testid="restore-banner" />
           </Show>
         </>

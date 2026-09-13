@@ -501,6 +501,20 @@ describe('Composer', () => {
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
   });
 
+  it('keeps the selected live session typable while another session is opening', () => {
+    selectReadyChat();
+    setOpeningSession({
+      commandId: 'open-other',
+      sessionId: 'session-other',
+      previousSessionId: 'session-1',
+      previousChatId: 'chat-1',
+    });
+    mountComposer();
+    expect(screen.getByRole('textbox')).toBeEnabled();
+    expect(screen.getByRole('textbox')).not.toHaveAttribute('placeholder', 'Opening session…');
+    expect(screen.getByTestId('composer-placeholder-hint')).toHaveTextContent('Message the agent, or type / for commands');
+  });
+
   it('replaces send with an actionable stop control while a turn is active', () => {
     selectReadyChat();
     setChatHead({ chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: 'turn-1', createdAt: null, updatedAt: null }, agent: null, activeTurn: { turnId: 'turn-1', turnStatus: 'running', updatedAt: null }, pendingPermissions: [] });

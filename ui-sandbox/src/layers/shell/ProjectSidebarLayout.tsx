@@ -125,13 +125,16 @@ function SessionRow(props: {
         'padding-left': props.indent ? `calc(5px + ${props.indent}px)` : undefined,
       }}
     >
-      <div class="relative flex w-full min-w-0 items-center">
-        <Show when={props.session.live}>
-          <SessionLiveIndicator
-            label="Agent is working"
-            class="pointer-events-none absolute top-1/2 left-8 -translate-y-1/2"
-          />
-        </Show>
+      <div class="flex min-w-0 w-full items-center">
+        <div
+          class="flex w-14 shrink-0 items-center justify-center self-stretch"
+          aria-hidden={props.session.live ? undefined : 'true'}
+        >
+          <Show when={props.session.live}>
+            <SessionLiveIndicator label="Agent is working" class="pointer-events-none" />
+          </Show>
+        </div>
+        <div class="relative flex min-w-0 flex-1 items-center">
         <button
           type="button"
           class="flex w-full min-w-0 items-center overflow-hidden rounded-md py-4 pl-5 pr-0 text-left pointer-coarse:py-6"
@@ -143,6 +146,7 @@ function SessionRow(props: {
           unread={props.session.unread}
           pinned={props.session.pinned}
         />
+        </div>
       </div>
     </div>
   );

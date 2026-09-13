@@ -114,7 +114,9 @@ const LIVE_INDICATOR_CORE: Record<SessionLiveIndicatorTone, string> = {
   danger: 'bg-danger-solid',
 };
 
-/** 会话状态灯：6px 圆点。T4 以绝对定位叠在标题左槽，不得进入文档流。 */
+const MATRIX_DOT_COUNT = 9;
+
+/** 会话状态灯：busy/attention 为点阵波；danger 为静态圆点。T4 以绝对定位叠在标题左槽，不得进入文档流。 */
 export function SessionLiveIndicator(props: {
   label?: string;
   tone?: SessionLiveIndicatorTone;
@@ -122,30 +124,70 @@ export function SessionLiveIndicator(props: {
 }) {
   const tone = () => props.tone ?? 'busy';
   const core = () => LIVE_INDICATOR_CORE[tone()];
+
   return (
     <span
       data-testid="session-loading-wave"
       data-tone={tone()}
-      class={cn('session-loading-wave relative flex size-6 shrink-0', props.class)}
+      class={cn(
+        'session-loading-wave relative flex shrink-0 items-center justify-center',
+        tone() === 'danger' ? 'size-6' : 'size-12',
+        props.class,
+      )}
       role="status"
       aria-label={props.label}
     >
-      <Show when={tone() !== 'danger'}>
+      <Show
+        when={tone() === 'danger'}
+        fallback={
+          <span
+            data-testid="session-matrix-dot-loader"
+            class="session-matrix-dot-loader"
+            data-tone={tone()}
+            aria-hidden="true"
+          >
+            <For each={Array.from({ length: MATRIX_DOT_COUNT }, (_, i) => i)}>
+              {(index) => (
+                <span
+                  class="session-matrix-dot-loader__dot"
+                  style={{ 'animation-delay': `calc(${index} * 0.08s)` }}
+                />
+              )}
+            </For>
+          </span>
+        }
+      >
         <span
-          data-testid="session-loading-wave-halo"
-          class={cn(
-            'session-loading-wave__halo absolute inline-flex size-full animate-ping rounded-full opacity-30 motion-reduce:animate-none',
-            core(),
-          )}
+          data-testid="session-loading-wave-core"
+          class={cn('session-loading-wave__core inline-flex size-6 rounded-full', core())}
           aria-hidden="true"
         />
       </Show>
-      <span
-        data-testid="session-loading-wave-core"
-        class={cn('session-loading-wave__core relative inline-flex size-6 rounded-full', core())}
-        aria-hidden="true"
-      />
     </span>
+  );
+}
+
+/** 侧栏 session 列表加载行：左槽点阵 + 文案，与 Session 行 gutter 对齐。 */
+export function SessionListLoadingRow(props: { label: string; class?: string; indent?: number }) {
+  return (
+    <div
+      data-testid="session-list-loading-row"
+      class={cn('flex min-w-0 items-center rounded-md py-4', props.class)}
+      style={{
+        'padding-left': props.indent ? `calc(5px + ${props.indent}px)` : undefined,
+      }}
+      role="status"
+      aria-label={props.label}
+    >
+      <div
+        data-testid="session-live-gutter"
+        class="flex w-14 shrink-0 items-center justify-center self-stretch"
+        aria-hidden="true"
+      >
+        <SessionLiveIndicator tone="busy" label={props.label} class="pointer-events-none" />
+      </div>
+      <span class="min-w-0 flex-1 truncate pl-5 text-11 text-content-muted">{props.label}</span>
+    </div>
   );
 }
 
@@ -219,13 +261,7 @@ export function SessionRowAccessory(props: {
     <RowAccessorySlot
       group="row"
       actionsVisible={actionsVisible()}
-      meta={(
-        <span class={cn(rowAccessoryMetaClass, 'flex items-center gap-6 pl-4 tabular-nums text-11 text-content-muted')}>
-          <Show when={props.unread}>
-            <span class="size-6 rounded-full bg-accent-solid" aria-label="Unread" />
-          </Show>
-        </span>
-      )}
+      meta={undefined}
       actions={(
         <ButtonGroup aria-label="Session actions" class="h-full">
           <IconButton

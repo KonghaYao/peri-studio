@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import * as Y from 'yjs';
+import { bytesToBase64 } from '@/shared/lib/base64';
 import { DocStore } from '@/shared/yjs/doc-store';
 import * as H from '@/shared/protocol/client';
 import { installChatSubscription, refreshCurrentControlProjection, selectChat, sendSubscribe } from './chat-subscription';
@@ -97,5 +99,45 @@ describe('chat subscription control refresh', () => {
     expect(liveMcpApp('tool-1')).toBeNull();
     resetMcpAppsState();
     setPrincipalRole(null);
+  });
+
+  it('tombstones the previous runtime docs and prepares empty identities for the next chat', () => {
+    const callbacks: FrameRequestCallback[] = [];
+    vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((callback) => {
+      callbacks.push(callback);
+      return callbacks.length;
+    });
+    let currentCid: string | null = 'chat-1';
+    const store = new DocStore();
+    store.docFor(H.chatDoc('chat-1')).getMap('root').set('stale', true);
+    store.docFor(H.sessionDoc('chat-1'));
+    installChatSubscription({
+      getCurrentCid: () => currentCid,
+      setCurrentCid: (cid) => { currentCid = cid; },
+      docStore: store,
+      sendFrame: vi.fn(() => true),
+      toast: vi.fn(),
+      chatStatusSignal: () => ({}),
+      chatHead: () => null,
+      setSelectedCid: vi.fn(),
+      setChatEntries: vi.fn(),
+      setChatHead: vi.fn(),
+      setPermissions: vi.fn(),
+      setElicitations: vi.fn(),
+      setQuestions: vi.fn(),
+      setRuntimeDocsState: vi.fn(),
+    });
+
+    selectChat('chat-2');
+    const leftover = new Y.Doc();
+    leftover.getMap('root').set('stale', true);
+    store.applyUpdateFrame({
+      doc: H.chatDoc('chat-1'),
+      update: bytesToBase64(Y.encodeStateAsUpdate(leftover)),
+    });
+
+    expect(callbacks).toHaveLength(0);
+    expect(store.docFor(H.chatDoc('chat-2')).getMap('root').size).toBe(0);
+    expect(store.docFor(H.sessionDoc('chat-2')).getMap('root').size).toBe(0);
   });
 });

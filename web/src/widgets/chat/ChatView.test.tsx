@@ -114,12 +114,27 @@ describe('ChatView project directory hydration', () => {
 describe('ChatView feedback', () => {
   it('uses the shared loading live region while restoring a session', () => {
     state.restoringSessionId.mockReturnValue('session-1');
+    state.selectedSessionId.mockReturnValue('session-1');
     render(() => <ChatView />);
 
     const status = screen.getByTestId('restore-banner');
     expect(status).toHaveAttribute('aria-live', 'polite');
     expect(status).toHaveTextContent('Restoring last session and ACP context…');
     expect(status.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
+  });
+
+  it('does not block launch with a restore banner when no session is selected', () => {
+    state.restoringSessionId.mockReturnValue('session-1');
+    state.selectedSessionId.mockReturnValue(null);
+    render(() => <ChatView />);
+    expect(screen.queryByTestId('restore-banner')).not.toBeInTheDocument();
+  });
+
+  it('does not keep the restore banner after the user switches to another session', () => {
+    state.restoringSessionId.mockReturnValue('session-1');
+    state.selectedSessionId.mockReturnValue('session-2');
+    render(() => <ChatView />);
+    expect(screen.queryByTestId('restore-banner')).not.toBeInTheDocument();
   });
 
   it('shows permission, elicitation, and question surfaces in parallel when all are pending', () => {
