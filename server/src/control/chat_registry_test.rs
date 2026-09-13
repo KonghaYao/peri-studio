@@ -136,7 +136,10 @@ async fn pending_close_does_not_block_archive_authority() {
     reg.register("s1", "m1", None, "/", None).await.unwrap();
     reg.bind("s1", "acp-1", true).await.unwrap();
     reg.request_close_offline("s1").await.unwrap();
-    assert_eq!(reg.entry("s1").await.unwrap().state, ChatState::PendingClose);
+    assert_eq!(
+        reg.entry("s1").await.unwrap().state,
+        ChatState::PendingClose
+    );
     assert!(
         !reg.has_live_acp_session("acp-1").await,
         "PendingClose 不得阻止归档：close 已发起且进程不再视为 live"
