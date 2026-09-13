@@ -1,7 +1,7 @@
 // 发送窗口（Composer）：输入区 + 底部工具行（ui.md §3.8 / §四.7）。
 // 编排与 store 接线留在此；视觉组件来自 @peri/ui，业务映射在 features。
 
-import { createSignal, onCleanup, onMount, Show, type Component, type JSX } from 'solid-js';
+import { createSignal, Show, type Component, type JSX } from 'solid-js';
 import {
   Button,
   type ComposerAttachmentItem,
@@ -26,13 +26,14 @@ import { ComposerUploadSurface, openComposerUploadFilePicker } from './ComposerU
 import { ComposerMetaRow } from './ComposerMetaRow';
 import { useComposerState, type ComposerState } from './useComposerState';
 import { selectedSessionId } from '@/store';
-import { fetchVoiceCapability } from '@/features/voice/capability';
-import { startDictation, type DictationSession } from '@/features/voice/dictation';
+import { dictationPreviewParts } from '@/features/voice/pcm';
+import { useDictation } from '@/features/voice/use-dictation';
 
 type ComposerMessageFieldProps = {
   ctx: ComposerShellFieldContext;
   centered: boolean;
   state: ComposerState;
+  voicePreview: () => string;
   onBindTaRef: (element: HTMLTextAreaElement | undefined) => void;
 };
 
@@ -66,6 +67,11 @@ function ComposerSlashCatalog(props: {
 const ComposerMessageField: Component<ComposerMessageFieldProps> = (props) => {
   const draftText = () => props.state.composerDraft(props.state.draftOwner());
   const enabledHint = () => {
+    const preview = props.voicePreview();
+    if (preview) {
+      const parts = dictationPreviewParts(draftText(), preview);
+      return { kind: 'dictation' as const, prefix: parts.prefix, text: parts.preview };
+    }
     if (props.state.inputDisabled() || draftText().length > 0) return null;
     const prediction = props.state.prediction.activePrediction();
     if (prediction) return { kind: 'prediction' as const, text: prediction.text };
@@ -137,46 +143,14 @@ export function Composer(props: {
 }) {
   const centered = () => props.layout === 'centered';
   const [plusOpen, setPlusOpen] = createSignal(false);
-  const [voiceEnabled, setVoiceEnabled] = createSignal(false);
-  const [dictating, setDictating] = createSignal(false);
   let taRef: HTMLTextAreaElement | undefined;
   let composerSurfaceRef: HTMLDivElement | undefined;
-  let dictation: DictationSession | null = null;
   const state = useComposerState(() => taRef);
   const plusCatalogItems = () => filterCommandCatalog(state.commandCatalog(), '', 'all');
-
-  onMount(() => {
-    void fetchVoiceCapability().then((capability) => setVoiceEnabled(capability.enabled));
-  });
-  onCleanup(() => {
-    dictation?.stop();
-    dictation = null;
-  });
-
-  const toggleDictation = () => {
-    if (dictation) {
-      dictation.stop();
-      dictation = null;
-      setDictating(false);
-      return;
-    }
-    void startDictation(
-      {
-        getDraft: () => state.composerDraft(state.draftOwner()),
-        setDraft: (text) => state.setComposerDraft(state.draftOwner(), text),
-      },
-      (sessionState) => setDictating(sessionState !== 'idle'),
-      () => {
-        dictation = null;
-        setDictating(false);
-      },
-    ).then((session) => {
-      dictation = session;
-    }).catch(() => {
-      dictation = null;
-      setDictating(false);
-    });
-  };
+  const voice = useDictation(() => ({
+    getDraft: () => state.composerDraft(state.draftOwner()),
+    setDraft: (text) => state.setComposerDraft(state.draftOwner(), text),
+  }));
 
   const focusInput = () => {
     taRef?.focus();
@@ -261,6 +235,7 @@ export function Composer(props: {
         renderFieldProps={{
           centered: centered(),
           state,
+          voicePreview: () => voice.preview(),
           onBindTaRef: (element: HTMLTextAreaElement | undefined) => {
             taRef = element;
           },
@@ -294,16 +269,15 @@ export function Composer(props: {
         )}
         compactTrailing={(
           <>
-            <Show when={voiceEnabled()}>
-              <ComposerMicButton
-                listening={dictating()}
-                disabled={state.inputDisabled()}
-                onClick={toggleDictation}
-              />
-            </Show>
             <div class={composerRuntimeSlotClass} title={state.runtimeSummary()}>
               {runtimeMenu()}
             </div>
+            <ComposerMicButton
+              listening={voice.listening()}
+              disabled={!voice.available() || (state.inputDisabled() && !voice.listening())}
+              title={voice.available() ? undefined : 'Voice input is not configured'}
+              onClick={voice.toggle}
+            />
             <Show
               when={state.turnActive()}
               fallback={(
@@ -341,6 +315,11 @@ export function Composer(props: {
         metaRow={selectedSessionId() ? <ComposerMetaRow /> : undefined}
         notices={(
           <>
+            <Show when={voice.error()}>
+              <InlineNotice class="mb-8" tone="danger" role="alert" title="Voice input failed">
+                <span>{voice.error()}</span>
+              </InlineNotice>
+            </Show>
             <Show when={state.promptOverBudget()}>
               <InlineNotice id={state.promptBudgetStatusId} class="mb-8" tone="danger" role="alert" title="Message is too large">
                 <span>

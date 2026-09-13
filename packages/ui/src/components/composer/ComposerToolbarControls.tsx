@@ -13,20 +13,22 @@ const stopActionClass =
 export const ComposerMicButton: Component<{
   listening?: boolean;
   disabled?: boolean;
+  title?: string;
   onClick: () => void;
 }> = (props) => (
   <IconButton
     data-testid="composer-mic"
-    label={props.listening ? 'Stop dictation' : 'Dictate'}
-    title={props.listening ? 'Stop dictation' : 'Dictate'}
+    label={props.listening ? 'Stop voice input' : 'Voice input'}
+    title={props.title ?? (props.listening ? 'Stop voice input' : 'Voice input')}
     disabled={props.disabled}
+    aria-pressed={props.listening || undefined}
     class="shrink-0 border-0 bg-transparent text-content-primary disabled:opacity-55"
     onClick={props.onClick}
   >
     <Mic
       size={18}
       strokeWidth={1.7}
-      class={props.listening ? 'text-accent' : undefined}
+      class={props.listening ? 'animate-pulse text-accent' : undefined}
       aria-hidden="true"
     />
   </IconButton>

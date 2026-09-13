@@ -2,6 +2,7 @@ import { createEffect, createSignal, createUniqueId, Show, type Component } from
 import {
   Button,
   ComposerInputField,
+  ComposerMicButton,
   ComposerPlusMenu,
   ComposerSendStopAction,
   ComposerShell,
@@ -13,42 +14,55 @@ import { readOnly } from '@/features/auth/auth-state';
 import { dismissFailedQuickStart, quickStartSubmission } from '@/features/message/quick-start-delivery';
 import { promptMaxBytes } from '@/features/connection/connection';
 import { promptByteLength, promptFitsBudget } from '@/shared/lib/prompt-budget';
+import { dictationPreviewParts } from '@/features/voice/pcm';
+import { useDictation } from '@/features/voice/use-dictation';
 import { ComposerUploadSurface, openComposerUploadFilePicker } from './ComposerUploadSurface';
 
 type QuickStartMessageFieldProps = {
   ctx: ComposerShellFieldContext;
   draft: () => string;
   setDraft: (value: string) => void;
+  voicePreview: () => string;
   inputDisabled: () => boolean;
   inputDescribedBy: () => string | undefined;
   onBindTaRef: (element: HTMLTextAreaElement | undefined) => void;
   onSubmit: () => void;
 };
 
-const QuickStartMessageField: Component<QuickStartMessageFieldProps> = (props) => (
-  <ComposerInputField
-    shell
-    ref={(el) => {
-      props.ctx.bindRef(el);
-      props.onBindTaRef(el);
-    }}
-    fieldClass={props.ctx.fieldClass}
-    maxHeight={props.ctx.maxHeight}
-    value={props.draft()}
-    disabled={props.inputDisabled()}
-    onInput={(event) => props.setDraft(event.currentTarget.value)}
-    onKeyDown={(event) => {
-      if (event.isComposing || event.keyCode === 229) return;
-      if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        props.onSubmit();
-      }
-    }}
-    placeholder="Message the agent, or type / for commands"
-    aria-label="First message"
-    aria-describedby={props.inputDescribedBy()}
-  />
-);
+const QuickStartMessageField: Component<QuickStartMessageFieldProps> = (props) => {
+  const hint = () => {
+    const preview = props.voicePreview();
+    if (!preview) return null;
+    const parts = dictationPreviewParts(props.draft(), preview);
+    return { kind: 'dictation' as const, prefix: parts.prefix, text: parts.preview };
+  };
+
+  return (
+    <ComposerInputField
+      shell
+      hint={hint()}
+      ref={(el) => {
+        props.ctx.bindRef(el);
+        props.onBindTaRef(el);
+      }}
+      fieldClass={props.ctx.fieldClass}
+      maxHeight={props.ctx.maxHeight}
+      value={props.draft()}
+      disabled={props.inputDisabled()}
+      onInput={(event) => props.setDraft(event.currentTarget.value)}
+      onKeyDown={(event) => {
+        if (event.isComposing || event.keyCode === 229) return;
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          props.onSubmit();
+        }
+      }}
+      placeholder="Message the agent, or type / for commands"
+      aria-label="First message"
+      aria-describedby={props.inputDescribedBy()}
+    />
+  );
+};
 
 export function QuickStartComposer(props: { projects: Array<{ id: string; name: string }>; initialProjectId?: string }) {
   const [draft, setDraft] = createSignal('');
@@ -57,6 +71,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
   const uploadDropDescId = `quick-start-upload-drop-${createUniqueId()}`;
   const [projectId, setProjectId] = createSignal(props.initialProjectId || props.projects[0]?.id || '');
   const [plusOpen, setPlusOpen] = createSignal(false);
+  const voice = useDictation(() => ({ getDraft: draft, setDraft }));
   let quickStartSurfaceRef: HTMLDivElement | undefined;
   let uploadFileInputRef: HTMLInputElement | undefined;
   let textareaRef: HTMLTextAreaElement | undefined;
@@ -123,6 +138,7 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
       renderFieldProps={{
         draft,
         setDraft,
+        voicePreview: () => voice.preview(),
         inputDisabled,
         inputDescribedBy,
         onBindTaRef: (element: HTMLTextAreaElement | undefined) => {
@@ -145,23 +161,38 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
         />
       )}
       compactTrailing={(
-        <ComposerSendStopAction
-          mode="send"
-          shape="pill"
-          label="Start session"
-          busy={pending()?.phase === 'creating' || pending()?.phase === 'accepted'}
-          disabled={readOnly() || locked() || !!pending() || !draft().trim() || promptOverBudget()}
-          onClick={submit}
-        />
+        <>
+          <ComposerMicButton
+            listening={voice.listening()}
+            disabled={!voice.available() || (inputDisabled() && !voice.listening())}
+            title={voice.available() ? undefined : 'Voice input is not configured'}
+            onClick={voice.toggle}
+          />
+          <ComposerSendStopAction
+            mode="send"
+            shape="pill"
+            label="Start session"
+            busy={pending()?.phase === 'creating' || pending()?.phase === 'accepted'}
+            disabled={readOnly() || locked() || !!pending() || !draft().trim() || promptOverBudget()}
+            onClick={submit}
+          />
+        </>
       )}
       notices={(
-        <Show when={promptOverBudget()}>
-          <InlineNotice id={budgetId} class="mb-8" tone="danger" role="alert" title="First message is too large">
-            <span>{promptMaxBytes() > 0
-              ? `${draftBytes()} / ${promptMaxBytes()} bytes. Shorten the message before starting a session.`
-              : 'Secure message delivery is not enabled on the server. Refresh or upgrade the server before starting a session.'}</span>
-          </InlineNotice>
-        </Show>
+        <>
+          <Show when={promptOverBudget()}>
+            <InlineNotice id={budgetId} class="mb-8" tone="danger" role="alert" title="First message is too large">
+              <span>{promptMaxBytes() > 0
+                ? `${draftBytes()} / ${promptMaxBytes()} bytes. Shorten the message before starting a session.`
+                : 'Secure message delivery is not enabled on the server. Refresh or upgrade the server before starting a session.'}</span>
+            </InlineNotice>
+          </Show>
+          <Show when={voice.error()}>
+            <InlineNotice class="mb-8" tone="danger" role="alert" title="Voice input failed">
+              <span>{voice.error()}</span>
+            </InlineNotice>
+          </Show>
+        </>
       )}
     />
     <Show when={pendingNeedsAttention() ? pending() : null}>{(submission) => <InlineNotice id={statusId} class="mt-8" tone={submission().phase === 'failed' ? 'danger' : 'warning'} role="alert" title={submission().phase === 'uncertain' ? 'Creation result not confirmed yet' : 'Failed to create session'}>

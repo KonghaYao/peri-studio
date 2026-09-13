@@ -60,14 +60,23 @@ impl Gateway {
             }
         };
 
+        // 立刻下行，避免 DevTools 里看起来只有出站 PCM。
+        let _ = sink
+            .send(Message::Text(
+                serde_json::json!({"type": "session.started"}).to_string().into(),
+            ))
+            .await;
+
+        let mut browser_open = true;
         loop {
             tokio::select! {
-                inbound = stream.next() => {
+                inbound = stream.next(), if browser_open => {
                     match inbound {
                         Some(Ok(Message::Binary(bytes))) => {
                             if let Err(error) = live.push_pcm(bytes.to_vec()) {
                                 debug!(conn_id, error = %error, "voice pcm dropped");
-                                break;
+                                live.finish_audio();
+                                browser_open = false;
                             }
                         }
                         Some(Ok(Message::Text(text))) => {
@@ -81,12 +90,12 @@ impl Gateway {
                         Some(Ok(Message::Pong(_))) | Some(Ok(Message::Frame(_))) => {}
                         Some(Ok(Message::Close(_))) | None => {
                             live.finish_audio();
-                            break;
+                            browser_open = false;
                         }
                         Some(Err(error)) => {
                             debug!(conn_id, error = %error, "voice browser socket error");
                             live.finish_audio();
-                            break;
+                            browser_open = false;
                         }
                     }
                 }
@@ -113,6 +122,13 @@ impl Gateway {
         }
 
         live.finish_audio();
+        while let Some(event) = live.recv_event().await {
+            if let Some(value) = event_to_json(&event) {
+                let _ = sink
+                    .send(Message::Text(value.to_string().into()))
+                    .await;
+            }
+        }
         if live.join().await.is_err() {
             let _ = sink
                 .send(Message::Text(
@@ -138,7 +154,10 @@ fn matches_finish(text: &str) -> bool {
             value
                 .get("type")
                 .and_then(|t| t.as_str())
-                .map(|t| t.eq_ignore_ascii_case("session.finish"))
+                .map(|t| {
+                    t.eq_ignore_ascii_case("session.finish")
+                        || t.eq_ignore_ascii_case("close_stream")
+                })
         })
         .unwrap_or(false)
 }
@@ -150,6 +169,7 @@ mod tests {
     #[test]
     fn finish_alias_is_recognized() {
         assert!(matches_finish(r#"{"type":"session.finish"}"#));
+        assert!(matches_finish(r#"{"type":"close_stream"}"#));
         assert!(!matches_finish(r#"{"type":"session.start"}"#));
         assert!(!matches_finish("not-json"));
     }

@@ -55,12 +55,48 @@ describe('startDictation', () => {
       () => {},
       () => {},
     );
+    socket.emit(JSON.stringify({ type: 'transcript.partial', text: 'wo' }));
+    expect(draft).toBe('hello wo');
     socket.emit(JSON.stringify({ type: 'transcript.partial', text: 'world' }));
     expect(draft).toBe('hello world');
     socket.emit(JSON.stringify({ type: 'transcript.final', text: 'world' }));
     expect(draft).toBe('hello world');
+    socket.emit(JSON.stringify({ type: 'result', result: { transcript: 'world' } }));
+    expect(draft).toBe('hello world');
     session.stop();
     expect(socket.sent).toContain(JSON.stringify({ type: 'session.finish' }));
     expect(stopMic).toHaveBeenCalled();
+    expect(socket.readyState).toBe(1);
+    socket.emit(JSON.stringify({ type: 'result', result: { transcript: 'again' } }));
+    expect(draft).toBe('hello world again');
+    expect(socket.readyState).toBe(3);
+  });
+
+  it('replaces growing partials and commits a lone result once', async () => {
+    let draft = '';
+    const socket = new FakeSocket();
+    const session = await startDictation(
+      {
+        getDraft: () => draft,
+        setDraft: (text) => {
+          draft = text;
+        },
+        socketUrl: 'ws://127.0.0.1/voice',
+        openSocket: () => {
+          queueMicrotask(() => socket.open());
+          return socket as unknown as WebSocket;
+        },
+        capture: async () => ({ stop: () => {} }),
+      },
+      () => {},
+      () => {},
+    );
+    socket.emit(JSON.stringify({ type: 'transcript.partial', text: '你好' }));
+    expect(draft).toBe('你好');
+    socket.emit(JSON.stringify({ type: 'transcript.partial', text: '你好，请问你是豆包嗎？' }));
+    expect(draft).toBe('你好，请问你是豆包嗎？');
+    session.stop();
+    socket.emit(JSON.stringify({ type: 'result', result: { transcript: '你好，请问你是豆包嗎？' } }));
+    expect(draft).toBe('你好，请问你是豆包嗎？');
   });
 });

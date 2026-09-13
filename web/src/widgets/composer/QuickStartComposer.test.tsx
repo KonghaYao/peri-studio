@@ -87,5 +87,6 @@ describe('QuickStartComposer', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('6 / 4 bytes');
     expect(screen.getByRole('button', { name: 'Start session' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Voice input' })).toBeDisabled();
   });
 });

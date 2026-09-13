@@ -101,6 +101,9 @@ export const composerEditorHintClass =
 
 export const composerEditorHintPredictionClass = 'text-content-faint';
 
+export const composerEditorHintDictationClass =
+  'pointer-events-none whitespace-pre-wrap break-words text-content-primary';
+
 export const composerInputClass =
   'relative z-1 min-w-0 leading-normal text-content-primary caret-content-primary placeholder:text-content-muted placeholder:opacity-100';
 

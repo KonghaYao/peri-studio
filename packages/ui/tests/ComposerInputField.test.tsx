@@ -43,4 +43,19 @@ describe('ComposerInputField', () => {
 
     expect(screen.getByTestId('composer-placeholder-hint')).toBeInTheDocument();
   });
+
+  it('shows an in-field dictation preview without a second committed copy', () => {
+    render(() => (
+      <ComposerInputField
+        hint={{ kind: 'dictation', prefix: 'hello ', text: 'world' }}
+        value="hello world"
+        aria-label="Message the agent"
+      />
+    ));
+
+    const preview = screen.getByTestId('composer-dictation-preview');
+    expect(preview).toHaveTextContent('hello world');
+    expect(preview.querySelector('span')).toHaveTextContent('world');
+    expect(screen.getByRole('textbox', { name: 'Message the agent' })).toHaveValue('hello world');
+  });
 });

@@ -660,14 +660,24 @@ describe('Composer', () => {
     expect(preventDefault).toHaveBeenCalled();
   });
 
-  it('shows the dictation control only after health reports realtime voice', async () => {
+  it('keeps the production voice button visible and enables it when health reports realtime voice', async () => {
     selectReadyChat();
+    const idle = mountComposer();
+    const mic = screen.getByRole('button', { name: 'Voice input' });
+    expect(mic).toBeDisabled();
+    expect(mic).toHaveAttribute('aria-description', 'Voice input is not configured');
+    idle.unmount();
+
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
       json: async () => ({ realtimeVoice: true }),
     })));
     mountComposer();
-    expect(await screen.findByTestId('composer-mic')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Dictate' })).toBeEnabled();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Voice input' })).toBeEnabled();
+    });
+    const send = screen.getByRole('button', { name: 'Send' });
+    expect(screen.getByRole('button', { name: 'Voice input' }).compareDocumentPosition(send)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

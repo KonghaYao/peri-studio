@@ -14,7 +14,8 @@ use uuid::Uuid;
 use crate::audio::{split_pcm_frames, PcmFramer};
 use crate::config::VoiceConfig;
 use crate::protocol::{
-    parse_text_frame, session_finish_message, session_start_message, VoiceEvent,
+    close_stream_message, parse_text_frame, session_finish_message, session_start_message,
+    VoiceEvent,
 };
 use crate::{Error, Result};
 
@@ -91,9 +92,7 @@ impl VoiceClient {
                 }
             }
             if !send_finished.load(Ordering::Relaxed) {
-                sink.send(Message::Text(session_finish_message(&send_session).into()))
-                    .await
-                    .map_err(|e| Error::Ws(format!("send session.finish: {e}")))?;
+                send_finish(&mut sink, &send_session).await?;
             }
             Ok::<(), Error>(())
         });
@@ -174,9 +173,7 @@ impl VoiceClient {
                         .await
                         .map_err(|e| Error::Ws(format!("send last audio: {e}")))?;
                 }
-                sink.send(Message::Text(session_finish_message(&send_session).into()))
-                    .await
-                    .map_err(|e| Error::Ws(format!("send session.finish: {e}")))?;
+                send_finish(&mut sink, &send_session).await?;
             }
             Ok::<(), Error>(())
         });
@@ -247,7 +244,7 @@ impl VoiceClient {
         &self,
         ws: &mut WsStream,
         session_id: &str,
-        on_event: &mut F,
+        _on_event: &mut F,
     ) -> Result<()>
     where
         F: FnMut(&VoiceEvent),
@@ -261,38 +258,38 @@ impl VoiceClient {
         ws.send(Message::Text(start.into()))
             .await
             .map_err(|e| Error::Ws(format!("send session.start: {e}")))?;
+        // 不阻塞等 session.started：typeless HTTP 流不会回这条，空等会吃掉
+        // 对端的首包音频超时。后续事件走 recv 循环。
+        Ok(())
+    }
+}
 
-        // 对端可以不回 session.started；超时后仍继续送音频。
-        let handshake = tokio::time::timeout(self.config.connect_timeout, async {
-            loop {
-                match ws.next().await {
-                    Some(Ok(Message::Text(text))) => {
-                        let event = parse_text_frame(&text)?;
-                        if matches!(event, VoiceEvent::Ignored) {
-                            continue;
-                        }
-                        if let VoiceEvent::Error { message, .. } = &event {
-                            return Err(Error::Session(format!("session.start failed: {message}")));
-                        }
-                        on_event(&event);
-                        if matches!(event, VoiceEvent::SessionStarted | VoiceEvent::Unknown(_)) {
-                            return Ok(());
-                        }
-                    }
-                    Some(Ok(Message::Ping(_) | Message::Pong(_))) => continue,
-                    Some(Ok(Message::Close(_))) | None => {
-                        return Err(Error::Ws("socket closed during session.start".into()))
-                    }
-                    Some(Ok(_)) => continue,
-                    Some(Err(e)) => return Err(Error::Ws(format!("recv: {e}"))),
-                }
+async fn send_finish<S>(sink: &mut S, session_id: &str) -> Result<()>
+where
+    S: SinkExt<Message> + Unpin,
+    S::Error: std::fmt::Display,
+{
+    sink.send(Message::Text(session_finish_message(session_id).into()))
+        .await
+        .map_err(|e| Error::Ws(format!("send session.finish: {e}")))?;
+    sink.send(Message::Text(close_stream_message().into()))
+        .await
+        .map_err(|e| Error::Ws(format!("send close_stream: {e}")))
+}
+
+fn dispatch_text(text: &str, tx: &mpsc::UnboundedSender<VoiceEvent>) -> bool {
+    match parse_text_frame(text) {
+        Ok(event) => {
+            let stop = matches!(
+                event,
+                VoiceEvent::Error { .. } | VoiceEvent::SessionFinished
+            );
+            if tx.send(event).is_err() {
+                return true;
             }
-        })
-        .await;
-        match handshake {
-            Ok(result) => result,
-            Err(_) => Ok(()),
+            stop
         }
+        Err(_) => false,
     }
 }
 
@@ -306,21 +303,18 @@ async fn drain_events<S>(
 {
     while !finished.load(Ordering::Relaxed) {
         match stream.next().await {
-            Some(Ok(Message::Text(text))) => match parse_text_frame(&text) {
-                Ok(event) => {
-                    let stop = matches!(
-                        event,
-                        VoiceEvent::Error { .. } | VoiceEvent::SessionFinished
-                    );
-                    if tx.send(event).is_err() {
-                        break;
-                    }
-                    if stop {
+            Some(Ok(Message::Text(text))) => {
+                if dispatch_text(&text, &tx) {
+                    break;
+                }
+            }
+            Some(Ok(Message::Binary(buf))) => {
+                if let Ok(text) = std::str::from_utf8(buf.as_ref()) {
+                    if dispatch_text(text, &tx) {
                         break;
                     }
                 }
-                Err(_) => continue,
-            },
+            }
             Some(Ok(Message::Close(_))) | None => break,
             Some(Ok(_)) => continue,
             Some(Err(_)) => break,

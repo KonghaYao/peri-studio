@@ -39,6 +39,11 @@ pub fn session_finish_message(id: &str) -> String {
     .to_string()
 }
 
+/// Typeless Streaming API 的结束帧；与 `session.finish` 一起发送。
+pub fn close_stream_message() -> String {
+    json!({ "type": "close_stream" }).to_string()
+}
+
 pub fn parse_text_frame(text: &str) -> crate::Result<VoiceEvent> {
     let value: Value = serde_json::from_str(text)?;
     Ok(classify_event(&value))
@@ -68,11 +73,13 @@ pub fn classify_event(value: &Value) -> VoiceEvent {
         .map(normalize_type)
         .unwrap_or_default();
     let text = lookup_text(value);
-    let message = first_str(obj, &["message", "error", "error_msg"])
-        .or_else(|| nested_str(value, &["data", "payload"], &["message", "error"]))
+    let message = first_str(obj, &["message", "error_msg"])
+        .or_else(|| first_str(obj, &["error"]).filter(|value| !value.is_empty()))
+        .or_else(|| nested_str(value, &["data", "payload", "error"], &["message", "error"]))
         .unwrap_or("")
         .to_string();
     let code = first_str(obj, &["code", "error_code"])
+        .or_else(|| nested_str(value, &["error"], &["code", "error_code"]))
         .unwrap_or("")
         .to_string();
 
@@ -160,6 +167,27 @@ mod tests {
         );
         let unknown = serde_json::json!({"type":"vendor.foo","n":1});
         assert!(matches!(classify_event(&unknown), VoiceEvent::Unknown(_)));
+        let typeless = serde_json::json!({
+            "type":"result",
+            "result":{"transcript":"你好"}
+        });
+        assert_eq!(
+            classify_event(&typeless),
+            VoiceEvent::Final {
+                text: "你好".into()
+            }
+        );
+        let typeless_err = serde_json::json!({
+            "type":"error",
+            "error":{"code":"INVALID_REQUEST","message":"model required"}
+        });
+        assert_eq!(
+            classify_event(&typeless_err),
+            VoiceEvent::Error {
+                code: "INVALID_REQUEST".into(),
+                message: "model required".into()
+            }
+        );
     }
 
     #[test]

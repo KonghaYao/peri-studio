@@ -6,7 +6,10 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
-use crate::format::{DEFAULT_CHANNELS, DEFAULT_FRAME_DURATION_MS, DEFAULT_SAMPLE_RATE};
+use crate::format::{
+    DEFAULT_CHANNELS, DEFAULT_FRAME_DURATION_MS, DEFAULT_SAMPLE_RATE, DEFAULT_STREAM_MODEL,
+    DEFAULT_STREAM_PATH,
+};
 use crate::{Error, Result};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -105,23 +108,65 @@ impl VoiceConfig {
 }
 
 /// 把 http(s) base URL 收成 ws(s) 端点；已是 ws(s) 则原样返回。
+///
+/// 只有 origin（`http://127.0.0.1:8000`）时补 typeless `/v1/transcribe/stream`
+/// 与默认 `model` query，避免对端因缺 model 直接 400。
 pub fn endpoint_from_base_url(base: &str) -> Result<String> {
     let trimmed = base.trim();
     if trimmed.is_empty() {
         return Err(Error::MissingUrl);
     }
-    if let Some(rest) = trimmed.strip_prefix("https://") {
-        return Ok(format!("wss://{rest}"));
+    let rewritten = if let Some(rest) = trimmed.strip_prefix("https://") {
+        format!("wss://{rest}")
+    } else if let Some(rest) = trimmed.strip_prefix("http://") {
+        format!("ws://{rest}")
+    } else if trimmed.starts_with("wss://") || trimmed.starts_with("ws://") {
+        trimmed.to_string()
+    } else {
+        return Err(Error::Ws(
+            "realtime voice base url must be http(s) or ws(s)".into(),
+        ));
+    };
+    Ok(ensure_stream_endpoint(&rewritten))
+}
+
+fn ensure_stream_endpoint(ws_url: &str) -> String {
+    let Some((scheme, rest)) = ws_url.split_once("://") else {
+        return ws_url.to_string();
+    };
+    let (authority_and_path, query) = match rest.split_once('?') {
+        Some((left, q)) => (left, Some(q)),
+        None => (rest, None),
+    };
+    let (authority, path) = match authority_and_path.find('/') {
+        Some(index) => (&authority_and_path[..index], &authority_and_path[index..]),
+        None => (authority_and_path, ""),
+    };
+    let path = if path.is_empty() || path == "/" {
+        DEFAULT_STREAM_PATH
+    } else {
+        path
+    };
+    let mut query = query.unwrap_or("").to_string();
+    if path == DEFAULT_STREAM_PATH && !query_has_key(&query, "model") {
+        if !query.is_empty() {
+            query.push('&');
+        }
+        query.push_str(&format!(
+            "model={DEFAULT_STREAM_MODEL}&sample_rate={DEFAULT_SAMPLE_RATE}&channels={DEFAULT_CHANNELS}&encoding=pcm16"
+        ));
     }
-    if let Some(rest) = trimmed.strip_prefix("http://") {
-        return Ok(format!("ws://{rest}"));
+    if query.is_empty() {
+        format!("{scheme}://{authority}{path}")
+    } else {
+        format!("{scheme}://{authority}{path}?{query}")
     }
-    if trimmed.starts_with("wss://") || trimmed.starts_with("ws://") {
-        return Ok(trimmed.to_string());
-    }
-    Err(Error::Ws(
-        "realtime voice base url must be http(s) or ws(s)".into(),
-    ))
+}
+
+fn query_has_key(query: &str, key: &str) -> bool {
+    query
+        .split('&')
+        .any(|pair| pair == key || pair.starts_with(&format!("{key}=")))
 }
 
 fn first_env(keys: &[&str]) -> Option<String> {
@@ -173,6 +218,25 @@ mod tests {
         assert_eq!(
             endpoint_from_base_url("wss://voice.example/v1").unwrap(),
             "wss://voice.example/v1"
+        );
+    }
+
+    #[test]
+    fn http_origin_becomes_typeless_stream() {
+        assert_eq!(
+            endpoint_from_base_url("http://127.0.0.1:8000").unwrap(),
+            "ws://127.0.0.1:8000/v1/transcribe/stream?model=typeless-1.0-pro&sample_rate=16000&channels=1&encoding=pcm16"
+        );
+        assert_eq!(
+            endpoint_from_base_url("http://127.0.0.1:8000/v1/transcribe/stream").unwrap(),
+            "ws://127.0.0.1:8000/v1/transcribe/stream?model=typeless-1.0-pro&sample_rate=16000&channels=1&encoding=pcm16"
+        );
+        assert_eq!(
+            endpoint_from_base_url(
+                "http://127.0.0.1:8000/v1/transcribe/stream?model=typeless-1.0-lite"
+            )
+            .unwrap(),
+            "ws://127.0.0.1:8000/v1/transcribe/stream?model=typeless-1.0-lite"
         );
     }
 

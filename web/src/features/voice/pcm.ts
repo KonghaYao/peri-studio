@@ -44,3 +44,21 @@ export function joinDictation(baseline: string, incoming: string): string {
   if (!baseline.trim()) return next;
   return /[\s\n]$/.test(baseline) ? `${baseline}${next}` : `${baseline} ${next}`;
 }
+
+/** 当前草稿是否已包含同一句终稿，避免 preview 后再把 result 拼进去。 */
+export function utteranceAlreadyCommitted(committed: string, incoming: string): boolean {
+  const next = incoming.trim();
+  if (!next) return true;
+  const base = committed.trimEnd();
+  return base === next || base.endsWith(` ${next}`) || base.endsWith(next);
+}
+
+/** 叠层：已确认前缀 + 中间态后缀（用于输入区内预览，而不是再插一份）。 */
+export function dictationPreviewParts(full: string, preview: string): { prefix: string; preview: string } {
+  const next = preview.trim();
+  if (!next) return { prefix: full, preview: '' };
+  if (full.endsWith(next)) {
+    return { prefix: full.slice(0, full.length - next.length), preview: next };
+  }
+  return { prefix: full, preview: next };
+}

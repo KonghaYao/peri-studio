@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { floatToPcm16le, joinDictation } from './pcm';
+import { dictationPreviewParts, floatToPcm16le, joinDictation, utteranceAlreadyCommitted } from './pcm';
 
 describe('voice pcm', () => {
   it('encodes 16 kHz silence as little-endian frames', () => {
@@ -21,5 +21,22 @@ describe('voice pcm', () => {
     expect(joinDictation('', 'hello')).toBe('hello');
     expect(joinDictation('hello', 'world')).toBe('hello world');
     expect(joinDictation('hello ', 'world')).toBe('hello world');
+  });
+
+  it('treats a matching final as already committed', () => {
+    expect(utteranceAlreadyCommitted('你好，请问你是豆包嗎？', '你好，请问你是豆包嗎？')).toBe(true);
+    expect(utteranceAlreadyCommitted('hello world', 'world')).toBe(true);
+    expect(utteranceAlreadyCommitted('hello', 'world')).toBe(false);
+  });
+
+  it('splits the preview suffix for the in-field overlay', () => {
+    expect(dictationPreviewParts('你好，请问你是豆包嗎？', '你好，请问你是豆包嗎？')).toEqual({
+      prefix: '',
+      preview: '你好，请问你是豆包嗎？',
+    });
+    expect(dictationPreviewParts('hello world', 'world')).toEqual({
+      prefix: 'hello ',
+      preview: 'world',
+    });
   });
 });

@@ -4,15 +4,15 @@ import { Textarea } from '../Textarea';
 import {
   composerEditorClass,
   composerEditorHintClass,
+  composerEditorHintDictationClass,
   composerEditorHintPredictionClass,
   composerEditorLayerClass,
   composerInputClass,
 } from './composer-layout';
 
-export type ComposerInputHint = {
-  kind: 'prediction' | 'placeholder';
-  text: string;
-};
+export type ComposerInputHint =
+  | { kind: 'prediction' | 'placeholder'; text: string }
+  | { kind: 'dictation'; prefix: string; text: string };
 
 export type ComposerInputFieldProps = {
   centered?: boolean;
@@ -38,7 +38,50 @@ function fieldClasses(centered: boolean, shell: boolean, fieldClass?: string) {
   );
 }
 
-/** Composer 输入区视觉壳：placeholder / prediction 叠层 + bare Textarea。 */
+function hintTestId(hint: ComposerInputHint): string {
+  if (hint.kind === 'prediction') return 'composer-prediction';
+  if (hint.kind === 'dictation') return 'composer-dictation-preview';
+  return 'composer-placeholder-hint';
+}
+
+function HintOverlayBody(props: { hint: ComposerInputHint }) {
+  const hint = props.hint;
+  if (hint.kind === 'dictation') {
+    return (
+      <>
+        {hint.prefix}
+        <span class="text-content-muted">{hint.text}</span>
+      </>
+    );
+  }
+  return hint.text;
+}
+
+function HintOverlay(props: { hint: ComposerInputHint; fieldClass: string }) {
+  return (
+    <>
+      <div
+        data-testid={hintTestId(props.hint)}
+        class={cn(
+          composerEditorLayerClass,
+          props.hint.kind === 'dictation' ? composerEditorHintDictationClass : composerEditorHintClass,
+          props.fieldClass,
+          props.hint.kind === 'prediction' && composerEditorHintPredictionClass,
+        )}
+        aria-hidden="true"
+      >
+        <HintOverlayBody hint={props.hint} />
+      </div>
+      <Show when={props.hint.kind === 'prediction'}>
+        <span id="composer-prediction-description" class="sr-only">
+          Peri suggests: {props.hint.text}. Press Tab to use it, or Escape to ignore.
+        </span>
+      </Show>
+    </>
+  );
+}
+
+/** Composer 输入区视觉壳：placeholder / prediction / dictation 叠层 + bare Textarea。 */
 export const ComposerInputField: Component<ComposerInputFieldProps> = (props) => {
   const [local, textarea] = splitProps(props, [
     'centered',
@@ -65,9 +108,14 @@ export const ComposerInputField: Component<ComposerInputFieldProps> = (props) =>
   });
 
   const overlayHint = () => {
-    if (composing() || occupied()) return null;
-    return local.hint ?? null;
+    const hint = local.hint ?? null;
+    if (composing()) return null;
+    if (hint?.kind === 'dictation' && hint.text) return hint;
+    if (occupied()) return null;
+    return hint;
   };
+
+  const dictationPreview = () => overlayHint()?.kind === 'dictation';
 
   const markOccupied = (element: HTMLTextAreaElement) => {
     setOccupied(element.value.length > 0);
@@ -76,27 +124,7 @@ export const ComposerInputField: Component<ComposerInputFieldProps> = (props) =>
   return (
     <div class={composerEditorClass}>
       <Show when={overlayHint()}>
-        {(hint) => (
-          <>
-            <div
-              data-testid={hint().kind === 'prediction' ? 'composer-prediction' : 'composer-placeholder-hint'}
-              class={cn(
-                composerEditorLayerClass,
-                composerEditorHintClass,
-                resolvedFieldClass(),
-                hint().kind === 'prediction' && composerEditorHintPredictionClass,
-              )}
-              aria-hidden="true"
-            >
-              {hint().text}
-            </div>
-            <Show when={hint().kind === 'prediction'}>
-              <span id="composer-prediction-description" class="sr-only">
-                Peri suggests: {hint().text}. Press Tab to use it, or Escape to ignore.
-              </span>
-            </Show>
-          </>
-        )}
+        {(hint) => <HintOverlay hint={hint()} fieldClass={resolvedFieldClass()} />}
       </Show>
       <Textarea
         {...textarea}
@@ -126,6 +154,7 @@ export const ComposerInputField: Component<ComposerInputFieldProps> = (props) =>
           composerInputClass,
           'ui-scrollbar disabled:bg-transparent disabled:text-content-secondary focus-visible:outline-0',
           resolvedFieldClass(),
+          dictationPreview() && 'text-transparent caret-content-primary',
           local.class,
         )}
       />

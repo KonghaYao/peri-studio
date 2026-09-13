@@ -598,6 +598,7 @@ export {
   composerAttachmentListItemClass,
   composerEditorClass,
   composerEditorHintClass,
+  composerEditorHintDictationClass,
   composerEditorHintPredictionClass,
   composerEditorLayerClass,
   composerInputClass,
