@@ -613,10 +613,11 @@ test('icon-only controls receive visible help from the shared Tooltip', () => {
 test('icon-only actions use one rounded rectangular geometry and never circular buttons', () => {
   const sourceRoot = join(import.meta.dirname, '..', 'src');
   const button = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'Button.tsx'), 'utf8');
-  assert.match(button, /rounded-6/);
-  assert.match(button, /sm: 'size-28'/);
-  assert.match(button, /md: 'size-36'/);
-  assert.doesNotMatch(button, /rounded-full/);
+  const iconButtonBlock = button.slice(button.indexOf('const iconButtonVariants'));
+  assert.match(iconButtonBlock, /rounded-6/);
+  assert.match(iconButtonBlock, /sm: 'size-28'/);
+  assert.match(iconButtonBlock, /md: 'size-36'/);
+  assert.doesNotMatch(iconButtonBlock, /rounded-full/);
   for (const file of allFiles(sourceRoot).filter((path) => path.endsWith('.tsx'))) {
     const source = readFileSync(file, 'utf8');
     for (const match of source.matchAll(/<IconButton\b[\s\S]*?(?:\/>|<\/IconButton>)/g)) {

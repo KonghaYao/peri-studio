@@ -170,19 +170,16 @@ DNS rebinding 请求。
 
 1. 固定版本的 cargo-deny 刷新 RustSec 并检查 advisory/license/source/bans；Bun 审计
    committed lock。数据库/网络失败即失败，不降级成“无漏洞”；
-2. 安装 lock 对应的 Chromium，运行五场景/三 viewport 的真实浏览器契约；失败保留
-   trace/screenshot，native build 不启动；
-3. `bun install --frozen-lockfile`，运行 Web 单元/组件测试并生成当前 `web/dist`；
-4. `cargo test --workspace --locked`；
-5. `cargo build --release --locked --bin peri-studio`，将 Web 产物内嵌进唯一产品二进制；
-6. 复制规范化命名的原生二进制，生成 SHA-256 与源码 revision metadata，并在
+2. `bun install --frozen-lockfile`，运行 Web 单元/组件测试并生成当前 `web/dist`；
+3. `cargo test --workspace --locked`；
+4. `cargo build --release --locked --bin peri-studio`，将 Web 产物内嵌进唯一产品二进制；
+5. 复制规范化命名的原生二进制，生成 SHA-256 与源码 revision metadata，并在
    Linux/macOS 重复打包验证字节级可复现。
 
 本地可用同一条产物链验证，不会安装或发布任何内容：
 
 ```bash
 cd web && bun install --frozen-lockfile && bun run test && bun run build && cd ..
-cd web && bunx playwright install chromium && bun run test:browser && cd ..
 cargo deny check advisories licenses bans sources
 cargo test --workspace --locked
 cargo build --release --locked --bin peri-studio

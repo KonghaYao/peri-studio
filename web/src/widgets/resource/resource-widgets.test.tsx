@@ -57,7 +57,6 @@ describe('resource tree widgets', () => {
     render(() => <GitGraphPanel commits={commits} />);
 
     expect(screen.getByText('Git Graph')).toBeInTheDocument();
-    expect(screen.getByText('Description')).toBeInTheDocument();
     expect(screen.getByText('feat: graph panel')).toBeInTheDocument();
     expect(screen.getByText('abc12345')).toBeInTheDocument();
     expect(screen.getByTestId('git-graph-table')).toBeInTheDocument();

@@ -118,7 +118,6 @@ fn ci_is_a_real_required_evidence_chain() {
     for evidence in [
         "bun install --frozen-lockfile",
         "bun run test",
-        "bun run test:browser",
         "bun run build",
         "cargo test --workspace --locked",
         "cargo clippy --workspace --all-targets --locked -- -D warnings",

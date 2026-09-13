@@ -47,7 +47,7 @@ describe('SessionModelMenu', () => {
 
     expect(screen.getAllByRole('option')).toHaveLength(4);
     expect(screen.getByRole('option', { name: /Opus/ })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('listbox').parentElement).toHaveClass('max-w-(--container-model-menu)');
+    expect(screen.getByRole('listbox').parentElement?.parentElement).toHaveClass('max-w-(--container-model-menu)');
     trigger.remove();
   });
 

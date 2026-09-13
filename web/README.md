@@ -38,4 +38,4 @@ bun run test        # 完整 CI 门：tsc --noEmit + node --test tests/*.test.mj
 bun run test:browser # Playwright 浏览器契约（自动拉起 visual dev server，需先 bun install 的浏览器）
 ```
 
-`bun run test` 是提交前的必跑门；`bun run test:browser` 在有浏览器环境（或 CI）时运行。
+`bun run test` 是提交前的必跑门；`bun run test:browser` 为可选本地 Playwright 契约，不在 CI 中运行。

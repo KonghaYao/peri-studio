@@ -1365,14 +1365,12 @@ peri-studio/
   运行角色必须使用同一旧版 `peri-studio`，SQLite 未知更高 schema 继续 fail-fast。
 - 独立 `Peri Studio CI` 是 peri-studio workspace 的 required evidence：固定 cargo-deny 版本并
   刷新 RustSec，执行 advisory/license/source/bans 策略与 Bun audit；任何数据库/网络
-  失败均 fail closed。策略通过后安装 committed Bun lock 对应的 Chromium，执行五个
-  确定性场景 × 三 viewport 以及移动 overlay/recovery 交互契约；失败 trace/screenshot
-  作为短期 artifact。浏览器门禁通过后才测试/构建 Web，再执行 locked Rust
+  失败均 fail closed。策略通过后运行 Web 契约/单测并构建 `web/dist`，再执行 locked Rust
   build/test/Clippy；Linux/macOS 重复生成相同 native binary asset 并比较字节。根 workspace CI 不被
-  误当作 peri-studio 的覆盖证据。
+  误当作 peri-studio 的覆盖证据。Playwright 浏览器契约（`bun run test:browser`）仅保留为可选本地验证，不在 CI 中运行。
 - `peri-studio-v*` tag 只在 tag 版本精确等于 workspace 版本时产出 Linux x86_64 与
   macOS Apple Silicon 的单一原生二进制。native build 必须同时依赖
-  独立 policy 与 browser jobs；每个平台发布同版本 `peri-studio`、SHA-256、源码 revision
+  独立 policy 与 web jobs；每个平台发布同版本 `peri-studio`、SHA-256、源码 revision
   metadata、SPDX SBOM 与 provenance attestation，另发布 shell 安装器。安装器沿用
   Peri 的 `~/.peri` PATH 约定，以独立 `peri-studio-v*` 版本目录避免
   覆盖 Peri；产物排除测试二进制、凭据和运行数据。Windows 尚不具备安全原子 FS mutation

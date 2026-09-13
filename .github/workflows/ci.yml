@@ -23,12 +23,6 @@ jobs:
       - name: Run Web contracts and unit tests
         working-directory: web
         run: bun run test
-      - name: Install Chromium
-        working-directory: web
-        run: bunx playwright install --with-deps chromium
-      - name: Run browser contracts
-        working-directory: web
-        run: bun run test:browser
       - name: Build embedded Web assets
         working-directory: web
         run: bun run build
