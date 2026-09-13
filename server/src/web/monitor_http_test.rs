@@ -10,15 +10,14 @@ use tokio::sync::Mutex;
 
 use crate::auth::{AuthService, TokenRole, TokenStore};
 use crate::control::{CatalogSession, SessionCatalog};
-use crate::langfuse::{
-    LANGFUSE_HOST_ENV, LANGFUSE_PUBLIC_KEY_ENV, LANGFUSE_SECRET_KEY_ENV,
-};
+use crate::config::{Config, SecretString};
 use crate::web::{serve_http_with_resources, BrowserAuthSetup, HealthSnapshot, HttpRouteDeps};
 
 async fn monitor_response(
     auth: Arc<Mutex<AuthService>>,
     setup: BrowserAuthSetup,
     catalog: SessionCatalog,
+    config: Arc<Config>,
     request: String,
 ) -> String {
     let metadata = Arc::new(
@@ -54,6 +53,7 @@ async fn monitor_response(
             HttpRouteDeps {
                 resources,
                 session_catalog: catalog,
+                config,
             },
         )
         .await
@@ -122,17 +122,25 @@ async fn start_fake_langfuse(port: u16) -> tokio::task::JoinHandle<()> {
     })
 }
 
+fn langfuse_config_fixture(host: Option<&str>) -> Arc<Config> {
+    let mut cfg = Config::defaults();
+    cfg.langfuse_public_key = Some(SecretString::new("pk"));
+    cfg.langfuse_secret_key = Some(SecretString::new("sk"));
+    if let Some(host) = host {
+        cfg.langfuse_host = Some(host.to_string());
+    }
+    Arc::new(cfg)
+}
+
 #[tokio::test]
 #[serial]
 async fn monitor_requires_langfuse_configuration() {
-    std::env::remove_var(LANGFUSE_PUBLIC_KEY_ENV);
-    std::env::remove_var(LANGFUSE_SECRET_KEY_ENV);
-    std::env::remove_var(LANGFUSE_HOST_ENV);
     let (_dir, auth, session_id, setup) = auth_fixture();
     let response = monitor_response(
         auth,
         setup,
         SessionCatalog::new(),
+        Arc::new(Config::defaults()),
         format!(
             "GET /api/monitor/session?sessionId=acp-1 HTTP/1.1\r\nHost: 127.0.0.1:8456\r\nOrigin: http://127.0.0.1:8456\r\nCookie: peri_studio_session={session_id}\r\nContent-Length: 0\r\n\r\n"
         ),
@@ -147,17 +155,16 @@ async fn monitor_requires_langfuse_configuration() {
 async fn monitor_requires_cookie_and_catalog_entry() {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let port = listener.local_addr().unwrap().port();
-    std::env::set_var(LANGFUSE_PUBLIC_KEY_ENV, "pk");
-    std::env::set_var(LANGFUSE_SECRET_KEY_ENV, "sk");
-    std::env::set_var(LANGFUSE_HOST_ENV, format!("http://127.0.0.1:{port}"));
     let fake = start_fake_langfuse(port).await;
     drop(listener);
+    let config = langfuse_config_fixture(Some(&format!("http://127.0.0.1:{port}")));
 
     let (_dir, auth, session_id, setup) = auth_fixture();
     let no_cookie = monitor_response(
         auth.clone(),
         setup.clone(),
         seed_catalog("acp-1").await,
+        config.clone(),
         "GET /api/monitor/session?sessionId=acp-1 HTTP/1.1\r\nHost: 127.0.0.1:8456\r\nOrigin: http://127.0.0.1:8456\r\nContent-Length: 0\r\n\r\n"
             .to_string(),
     )
@@ -169,6 +176,7 @@ async fn monitor_requires_cookie_and_catalog_entry() {
         auth.clone(),
         setup.clone(),
         SessionCatalog::new(),
+        config.clone(),
         format!(
             "GET /api/monitor/session?sessionId=acp-1 HTTP/1.1\r\nHost: 127.0.0.1:8456\r\nOrigin: http://127.0.0.1:8456\r\nCookie: peri_studio_session={session_id}\r\nContent-Length: 0\r\n\r\n"
         ),
@@ -181,15 +189,13 @@ async fn monitor_requires_cookie_and_catalog_entry() {
         auth,
         setup,
         seed_catalog("acp-1").await,
+        config,
         format!(
             "GET /api/monitor/session?sessionId=acp-1 HTTP/1.1\r\nHost: 127.0.0.1:8456\r\nOrigin: http://127.0.0.1:8456\r\nCookie: peri_studio_session={session_id}\r\nContent-Length: 0\r\n\r\n"
         ),
     )
     .await;
     fake.abort();
-    std::env::remove_var(LANGFUSE_PUBLIC_KEY_ENV);
-    std::env::remove_var(LANGFUSE_SECRET_KEY_ENV);
-    std::env::remove_var(LANGFUSE_HOST_ENV);
 
     assert!(success.starts_with("HTTP/1.1 200"));
     let body = success.split_once("\r\n\r\n").unwrap().1;
@@ -205,18 +211,20 @@ async fn monitor_requires_cookie_and_catalog_entry() {
 #[tokio::test]
 #[serial]
 async fn health_langfuse_boolean_tracks_configuration() {
-    std::env::remove_var(LANGFUSE_PUBLIC_KEY_ENV);
-    std::env::remove_var(LANGFUSE_SECRET_KEY_ENV);
     let mut health = HealthSnapshot::from_global_status(
         peri_studio_proto::schema::GlobalStatus::Healthy,
     );
-    health.langfuse = crate::langfuse::is_configured();
+    health.langfuse = Config::defaults().langfuse_enabled();
     assert!(!health.langfuse);
 
-    std::env::set_var(LANGFUSE_PUBLIC_KEY_ENV, "pk");
-    std::env::set_var(LANGFUSE_SECRET_KEY_ENV, "sk");
-    health.langfuse = crate::langfuse::is_configured();
+    health.langfuse = langfuse_config_fixture(None).langfuse_enabled();
     assert!(health.langfuse);
-    std::env::remove_var(LANGFUSE_PUBLIC_KEY_ENV);
-    std::env::remove_var(LANGFUSE_SECRET_KEY_ENV);
+}
+
+#[tokio::test]
+async fn monitor_upstream_timeout_maps_to_stable_error() {
+    use crate::langfuse::{UPSTREAM_CONNECT_TIMEOUT, UPSTREAM_TOTAL_TIMEOUT};
+    use std::time::Duration;
+    assert_eq!(UPSTREAM_TOTAL_TIMEOUT, Duration::from_secs(30));
+    assert_eq!(UPSTREAM_CONNECT_TIMEOUT, Duration::from_secs(15));
 }

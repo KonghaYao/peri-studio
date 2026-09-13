@@ -51,7 +51,7 @@
 | `PERI_STUDIO_LISTEN_ADDR` | `127.0.0.1` |
 | `PERI_STUDIO_LISTEN_PORT` | `8456` |
 
-`dev.sh` 会在启动时自动读取仓库根目录的 **`.env`**（若存在），并导出其中的键值供 `peri-studio local` 子进程继承。已在当前 shell 中设置的变量优先级更高，不会被 `.env` 覆盖。典型用途：`PERI_REALTIME_VOICE_BASE_URL` / `PERI_REALTIME_VOICE_API_KEY`、Langfuse 等本地密钥。`.env` 已列入 `.gitignore`，勿提交敏感内容。
+`dev.sh` 与 **`peri-studio` 二进制**均会在启动前尝试加载 **`.env`**（当前工作目录，以及 `~/.config/peri-studio/.env`）；`dev.sh` 另会加载仓库根目录 `.env`。已在当前 shell 中设置的变量优先级更高，不会被 `.env` 覆盖。典型用途：`PERI_REALTIME_VOICE_*`、`LANGFUSE_*` 等本地密钥；亦可写入 `config.toml` 的 `langfuse_*` / `realtime_voice_*` 字段（见 `realtime-voice` / `langfuse-monitor` 设计稿）。`.env` 已列入 `.gitignore`，勿提交敏感内容。
 
 ---
 

@@ -34,6 +34,7 @@ use tracing::{debug, warn};
 use uuid::Uuid;
 
 use crate::channel::command_coordinator::{extract_command_id, ExecCmd};
+use crate::config::Config;
 use crate::channel::relay_event_handler::RelayEventHandler;
 use crate::channel::DEFAULT_INSTANCE_ID;
 use crate::control::{ChatRegistry, InstanceRegistry, WorkspaceRegistry};
@@ -60,6 +61,7 @@ pub(super) struct RuntimeCreation {
     pub(super) spawn_timeout: Duration,
     pub(super) initialize_timeout: Duration,
     pub(super) binding_timeout: Duration,
+    pub(super) server_config: Config,
 }
 
 pub(super) struct RuntimeCreationDeps {
@@ -79,6 +81,7 @@ pub(super) struct RuntimeCreationConfig {
     pub spawn_timeout: Duration,
     pub initialize_timeout: Duration,
     pub binding_timeout: Duration,
+    pub server_config: Config,
 }
 
 #[derive(Clone, Copy)]
@@ -143,6 +146,7 @@ impl RuntimeCreation {
             spawn_timeout: config.spawn_timeout,
             initialize_timeout: config.initialize_timeout,
             binding_timeout: config.binding_timeout,
+            server_config: config.server_config,
         }
     }
 

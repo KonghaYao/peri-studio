@@ -7,13 +7,19 @@ use rustls::pki_types::ServerName;
 use serde::Deserialize;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
-use tokio::time::timeout;
+use tokio::time::{timeout, Instant};
 use tokio_rustls::TlsConnector;
 use url::Url;
 
 use super::config::LangfuseConfig;
 
-pub const UPSTREAM_TIMEOUT: Duration = Duration::from_secs(5);
+/// 单次上游请求总预算（含 DNS、TCP、TLS、读写）。
+pub const UPSTREAM_TOTAL_TIMEOUT: Duration = Duration::from_secs(30);
+/// TCP 握手阶段预算。
+pub const UPSTREAM_CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
+/// 兼容旧引用：等于 [`UPSTREAM_TOTAL_TIMEOUT`]。
+pub const UPSTREAM_TIMEOUT: Duration = UPSTREAM_TOTAL_TIMEOUT;
+
 pub const MAX_UPSTREAM_BODY_BYTES: usize = 512 * 1024;
 const TRACE_NAME_MAX_LEN: usize = 120;
 
@@ -61,8 +67,6 @@ pub struct MonitorSessionView {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub summary: Option<MonitorSummaryView>,
     pub traces: Vec<MonitorTraceRowView>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub langfuse_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -84,8 +88,6 @@ struct TraceRecord {
     #[serde(rename = "calculatedTotalCost")]
     calculated_total_cost: Option<f64>,
     level: Option<String>,
-    #[serde(rename = "projectId")]
-    project_id: Option<String>,
     input: Option<serde_json::Value>,
     output: Option<serde_json::Value>,
     usage: Option<UsageRecord>,
@@ -107,66 +109,131 @@ pub async fn fetch_session_traces(
         .traces_url(session_id)
         .map_err(|_| UpstreamError::Transport)?;
     let body = fetch_bounded_get(&url, &config.basic_authorization()).await?;
-    map_traces_response(session_id, &config.api_base, body)
+    map_traces_response(session_id, body)
 }
 
-async fn fetch_bounded_get(url: &Url, authorization: &str) -> Result<Vec<u8>, UpstreamError> {
+struct UpstreamDeadline {
+    deadline: Instant,
+}
+
+impl UpstreamDeadline {
+    fn new() -> Self {
+        Self {
+            deadline: Instant::now() + UPSTREAM_TOTAL_TIMEOUT,
+        }
+    }
+
+    fn remaining(&self) -> Duration {
+        self.deadline.saturating_duration_since(Instant::now())
+    }
+
+    async fn timeout<F, T>(&self, fut: F) -> Result<T, UpstreamError>
+    where
+        F: std::future::Future<Output = Result<T, std::io::Error>>,
+    {
+        let remaining = self.remaining();
+        if remaining.is_zero() {
+            return Err(UpstreamError::Timeout);
+        }
+        timeout(remaining, fut)
+            .await
+            .map_err(|_| UpstreamError::Timeout)?
+            .map_err(|_| UpstreamError::Transport)
+    }
+}
+
+pub(crate) async fn fetch_bounded_get(url: &Url, authorization: &str) -> Result<Vec<u8>, UpstreamError> {
+    fetch_direct(url, authorization).await
+}
+
+async fn fetch_direct(url: &Url, authorization: &str) -> Result<Vec<u8>, UpstreamError> {
     let host = url.host_str().ok_or(UpstreamError::Transport)?;
     let port = url.port_or_known_default().ok_or(UpstreamError::Transport)?;
-    let addr = format!("{host}:{port}");
-    let connect = timeout(UPSTREAM_TIMEOUT, TcpStream::connect(addr));
-    let stream = connect
-        .await
-        .map_err(|_| UpstreamError::Timeout)?
-        .map_err(|_| UpstreamError::Transport)?;
+    let deadline = UpstreamDeadline::new();
+    let stream = connect_direct(host, port, &deadline).await?;
+    let path = request_target(url);
+    let request = format!(
+        "GET {path} HTTP/1.1\r\nHost: {host}\r\nAuthorization: {authorization}\r\nAccept: application/json\r\nConnection: close\r\n\r\n"
+    );
+    if url.scheme() == "https" {
+        let connector = tls_connector()?;
+        let server_name =
+            ServerName::try_from(host.to_string()).map_err(|_| UpstreamError::Transport)?;
+        let mut stream = deadline
+            .timeout(connector.connect(server_name, stream))
+            .await?;
+        deadline
+            .timeout(stream.write_all(request.as_bytes()))
+            .await?;
+        read_response_body(&mut stream, &deadline).await
+    } else {
+        let mut stream = stream;
+        deadline
+            .timeout(stream.write_all(request.as_bytes()))
+            .await?;
+        read_response_body(&mut stream, &deadline).await
+    }
+}
+
+fn request_target(url: &Url) -> String {
     let path = url
         .path()
         .strip_prefix('/')
         .filter(|value| !value.is_empty())
         .map(|value| format!("/{value}"))
         .unwrap_or_else(|| "/".to_string());
-    let target = if let Some(query) = url.query() {
+    if let Some(query) = url.query() {
         format!("{path}?{query}")
     } else {
         path
-    };
-    let request = format!(
-        "GET {target} HTTP/1.1\r\nHost: {host}\r\nAuthorization: {authorization}\r\nAccept: application/json\r\nConnection: close\r\n\r\n"
-    );
-    if url.scheme() == "https" {
-        let connector = tls_connector()?;
-        let server_name =
-            ServerName::try_from(host.to_string()).map_err(|_| UpstreamError::Transport)?;
-        let mut stream = timeout(UPSTREAM_TIMEOUT, connector.connect(server_name, stream))
-            .await
-            .map_err(|_| UpstreamError::Timeout)?
-            .map_err(|_| UpstreamError::Transport)?;
-        timeout(UPSTREAM_TIMEOUT, stream.write_all(request.as_bytes()))
-            .await
-            .map_err(|_| UpstreamError::Timeout)?
-            .map_err(|_| UpstreamError::Transport)?;
-        read_response_body(&mut stream).await
-    } else {
-        let mut stream = stream;
-        timeout(UPSTREAM_TIMEOUT, stream.write_all(request.as_bytes()))
-            .await
-            .map_err(|_| UpstreamError::Timeout)?
-            .map_err(|_| UpstreamError::Transport)?;
-        read_response_body(&mut stream).await
     }
 }
 
-async fn read_response_body<S>(stream: &mut S) -> Result<Vec<u8>, UpstreamError>
+async fn connect_direct(
+    host: &str,
+    port: u16,
+    deadline: &UpstreamDeadline,
+) -> Result<TcpStream, UpstreamError> {
+    let addrs: Vec<_> = deadline
+        .timeout(tokio::net::lookup_host((host, port)))
+        .await?
+        .collect();
+    if addrs.is_empty() {
+        return Err(UpstreamError::Transport);
+    }
+    let mut last_error = UpstreamError::Transport;
+    let connect_budget = deadline.remaining().min(UPSTREAM_CONNECT_TIMEOUT);
+    if connect_budget.is_zero() {
+        return Err(UpstreamError::Timeout);
+    }
+    for addr in prefer_ipv4_first(addrs) {
+        match timeout(connect_budget, TcpStream::connect(addr)).await {
+            Ok(Ok(stream)) => return Ok(stream),
+            Ok(Err(_)) => last_error = UpstreamError::Transport,
+            Err(_) => return Err(UpstreamError::Timeout),
+        }
+    }
+    Err(last_error)
+}
+
+fn prefer_ipv4_first(
+    addrs: Vec<std::net::SocketAddr>,
+) -> impl Iterator<Item = std::net::SocketAddr> {
+    let (v4, v6): (Vec<_>, Vec<_>) = addrs.into_iter().partition(|addr| addr.is_ipv4());
+    v4.into_iter().chain(v6)
+}
+
+async fn read_response_body<S>(
+    stream: &mut S,
+    deadline: &UpstreamDeadline,
+) -> Result<Vec<u8>, UpstreamError>
 where
     S: AsyncReadExt + Unpin,
 {
     let mut buf = Vec::new();
     let mut chunk = [0u8; 8192];
     loop {
-        let read = timeout(UPSTREAM_TIMEOUT, stream.read(&mut chunk))
-            .await
-            .map_err(|_| UpstreamError::Timeout)?
-            .map_err(|_| UpstreamError::Transport)?;
+        let read = deadline.timeout(stream.read(&mut chunk)).await?;
         if read == 0 {
             break;
         }
@@ -202,7 +269,6 @@ fn parse_http_body(response: &[u8]) -> Result<Vec<u8>, UpstreamError> {
 
 fn map_traces_response(
     session_id: &str,
-    api_base: &Url,
     body: Vec<u8>,
 ) -> Result<MonitorSessionView, UpstreamError> {
     let envelope: TracesEnvelope =
@@ -212,7 +278,6 @@ fn map_traces_response(
     let mut total_cost = 0.0f64;
     let mut has_cost = false;
     let mut last_timestamp: Option<String> = None;
-    let mut project_id: Option<String> = None;
 
     for record in envelope.data {
         let _ = (&record.input, &record.output);
@@ -220,7 +285,6 @@ fn map_traces_response(
         if id.is_empty() {
             continue;
         }
-        project_id = project_id.or(record.project_id.clone());
         let name = truncate_trace_name(record.name.unwrap_or_else(|| "turn".into()));
         let timestamp = record.timestamp.unwrap_or_default();
         if !timestamp.is_empty() {
@@ -265,15 +329,7 @@ fn map_traces_response(
             last_timestamp,
         }),
         traces,
-        langfuse_url: project_id.map(|project_id| build_langfuse_url(api_base, &project_id, session_id)),
     })
-}
-
-fn build_langfuse_url(api_base: &Url, project_id: &str, session_id: &str) -> String {
-    let mut url = api_base.clone();
-    url.set_path(&format!("/project/{project_id}/sessions/{session_id}"));
-    url.set_query(None);
-    url.to_string()
 }
 
 fn truncate_trace_name(name: String) -> String {
@@ -310,6 +366,13 @@ mod tests {
     use url::Url;
 
     #[test]
+    fn upstream_timeout_constants() {
+        assert_eq!(UPSTREAM_TOTAL_TIMEOUT, Duration::from_secs(30));
+        assert_eq!(UPSTREAM_CONNECT_TIMEOUT, Duration::from_secs(15));
+        assert_eq!(UPSTREAM_TIMEOUT, UPSTREAM_TOTAL_TIMEOUT);
+    }
+
+    #[test]
     fn map_traces_response_strips_input_output_and_builds_summary() {
         let body = br#"{
             "data": [
@@ -328,15 +391,12 @@ mod tests {
             ]
         }"#;
         let api_base = Url::parse(DEFAULT_LANGFUSE_HOST).unwrap();
-        let view = map_traces_response("acp-1", &api_base, body.to_vec()).unwrap();
+        let _ = api_base;
+        let view = map_traces_response("acp-1", body.to_vec()).unwrap();
         assert!(view.found);
         assert_eq!(view.traces.len(), 1);
         assert_eq!(view.traces[0].tokens, Some(4100));
         assert_eq!(view.summary.as_ref().unwrap().trace_count, 1);
-        assert_eq!(
-            view.langfuse_url.as_deref(),
-            Some("https://cloud.langfuse.com/project/proj-1/sessions/acp-1")
-        );
         let json = serde_json::to_value(&view).unwrap();
         assert!(json.get("input").is_none());
         assert!(json.get("output").is_none());
@@ -345,8 +405,7 @@ mod tests {
 
     #[test]
     fn empty_traces_returns_found_false() {
-        let api_base = Url::parse(DEFAULT_LANGFUSE_HOST).unwrap();
-        let view = map_traces_response("acp-1", &api_base, br#"{"data":[]}"#.to_vec()).unwrap();
+        let view = map_traces_response("acp-1", br#"{"data":[]}"#.to_vec()).unwrap();
         assert!(!view.found);
         assert!(view.summary.is_none());
         assert!(view.traces.is_empty());
@@ -378,6 +437,11 @@ mod tests {
     }
 
     #[test]
+    fn tls_connector_builds_without_crypto_provider_panic() {
+        tls_connector().expect("tls connector should build with ring provider");
+    }
+
+    #[test]
     fn traces_url_is_fixed_public_path() {
         let config = LangfuseConfig {
             public_key: "pk".into(),
@@ -388,4 +452,5 @@ mod tests {
         assert_eq!(url.path(), "/api/public/traces");
         assert!(url.query().unwrap().contains("sessionId=acp-1"));
     }
+
 }

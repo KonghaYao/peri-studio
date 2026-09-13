@@ -503,5 +503,22 @@ impl AcpProcess {
 }
 
 #[cfg(test)]
+mod allowlist_tests {
+    use super::ENV_BASE_ALLOWLIST;
+
+    #[test]
+    fn env_base_allowlist_includes_langfuse_keys() {
+        for key in [
+            "LANGFUSE_PUBLIC_KEY",
+            "LANGFUSE_SECRET_KEY",
+            "LANGFUSE_HOST",
+            "LANGFUSE_BASE_URL",
+        ] {
+            assert!(ENV_BASE_ALLOWLIST.contains(&key), "{key} must be allowlisted");
+        }
+    }
+}
+
+#[cfg(test)]
 #[path = "child_identity_test.rs"]
 mod child_identity_test;

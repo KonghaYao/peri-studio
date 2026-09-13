@@ -12,6 +12,8 @@ const SHELL_SECTIONS = [
   'status-area',
   'terminal-xterm',
   'terminal-dock',
+  'monitor-panel',
+  'settings-panel',
   'system-about',
 ] as const;
 

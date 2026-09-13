@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   formatMonitorCostUsd,
   formatMonitorLastActivity,
+  formatMonitorObservationDuration,
+  formatMonitorObservationTokens,
   formatMonitorTraceCount,
   formatMonitorTraceMeta,
   monitorSummaryItems,
@@ -34,5 +36,19 @@ describe('monitor format helpers', () => {
   it('formats last activity relative time', () => {
     const now = Date.parse('2026-09-13T10:00:00.000Z');
     expect(formatMonitorLastActivity('2026-09-13T09:30:00.000Z', now)).toBe('Last activity 30m ago');
+  });
+
+  it('formats observation duration and token summary', () => {
+    expect(formatMonitorObservationDuration(6880)).toBe('6.88s');
+    expect(formatMonitorObservationDuration(450)).toBe('450ms');
+    expect(formatMonitorObservationTokens({
+      kind: 'GENERATION',
+      inputTokens: 24538,
+      outputTokens: 70,
+    })).toBe('24,538 → 70 (Σ 24,608)');
+    expect(formatMonitorObservationTokens({
+      kind: 'GENERATION',
+      tokens: 1200,
+    })).toBe('1,200 tok');
   });
 });

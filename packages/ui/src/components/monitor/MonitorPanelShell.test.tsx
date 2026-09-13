@@ -22,7 +22,7 @@ const TRACES: MonitorTraceRowView[] = [
   },
   {
     id: 'trace-2',
-    name: 'turn',
+    name: '',
     timestamp: '2026-09-13T07:55:00.000Z',
     latencyMs: 800,
     tokens: 2200,
@@ -64,23 +64,23 @@ describe('MonitorPanelShell', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  it('renders summary, trace list, and external link', () => {
+  it('renders summary and clickable trace list', async () => {
+    const onTraceSelect = vi.fn();
     render(() => (
       <MonitorPanelShell
         state="ready"
         summary={SUMMARY}
         traces={TRACES}
-        externalUrl="https://cloud.langfuse.com/project/p/sessions/s1"
+        onTraceSelect={onTraceSelect}
       />
     ));
     expect(screen.getByTestId('monitor-summary')).toHaveTextContent('12 traces');
     expect(screen.getByTestId('monitor-summary')).toHaveTextContent('48,200 tokens');
     expect(screen.getByTestId('monitor-trace-trace-1')).toHaveTextContent('turn');
+    expect(screen.getByTestId('monitor-trace-trace-2')).toHaveTextContent('Untitled trace');
     expect(screen.getByTestId('monitor-trace-trace-2')).toHaveTextContent('Error');
-    expect(screen.getByRole('link', { name: /Open in Langfuse/i })).toHaveAttribute(
-      'href',
-      'https://cloud.langfuse.com/project/p/sessions/s1',
-    );
+    await fireEvent.click(screen.getByTestId('monitor-trace-trace-1'));
+    expect(onTraceSelect).toHaveBeenCalledWith(TRACES[0]);
   });
 
   it('applies embedded flex layout', () => {

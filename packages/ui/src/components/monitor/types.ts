@@ -17,9 +17,41 @@ export type MonitorTraceRowView = {
   level: MonitorTraceLevel;
 };
 
+export type MonitorObservationLevel = 'DEFAULT' | 'ERROR' | 'WARNING' | 'DEBUG';
+
+export type MonitorObservationView = {
+  id: string;
+  name: string;
+  kind: string;
+  latencyMs?: number;
+  level: MonitorObservationLevel;
+  model?: string;
+  tokens?: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  /** 详情视图专用：有界 input preview（树列表不渲染）。 */
+  inputPreview?: string;
+  /** 详情视图专用：有界 output preview（树列表不渲染）。 */
+  outputPreview?: string;
+  inputTruncated?: boolean;
+  outputTruncated?: boolean;
+  scoreValue?: string;
+  scoreDataType?: string;
+  children?: MonitorObservationView[];
+};
+
+export type MonitorTraceDetailView = {
+  sessionId: string;
+  traceId: string;
+  name: string;
+  observations: MonitorObservationView[];
+};
+
 export type MonitorPanelState =
   | 'loading'
   | 'empty-session'
   | 'empty-traces'
   | 'error'
   | 'ready';
+
+export type MonitorTraceDetailState = 'loading' | 'error' | 'ready';

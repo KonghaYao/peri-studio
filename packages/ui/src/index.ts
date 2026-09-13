@@ -580,9 +580,25 @@ export {
   MonitorPanelShell,
   type MonitorPanelShellProps,
 } from './components/monitor/MonitorPanelShell';
+export {
+  MonitorTraceDetailShell,
+  type MonitorTraceDetailShellProps,
+} from './components/monitor/MonitorTraceDetailShell';
+export {
+  MonitorObservationTree,
+  type MonitorObservationTreeProps,
+} from './components/monitor/MonitorObservationTree';
+export {
+  MonitorObservationDetailShell,
+  type MonitorObservationDetailShellProps,
+} from './components/monitor/MonitorObservationDetailShell';
 export type {
+  MonitorObservationLevel,
+  MonitorObservationView,
   MonitorPanelState,
   MonitorSummaryView,
+  MonitorTraceDetailState,
+  MonitorTraceDetailView,
   MonitorTraceLevel,
   MonitorTraceRowView,
 } from './components/monitor/types';

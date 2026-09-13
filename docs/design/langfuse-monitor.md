@@ -199,7 +199,8 @@ GET {host}/api/public/traces?sessionId={percent_encoded_id}&limit=50
 Authorization: Basic base64(public_key:secret_key)
 ```
 
-- 超时约 5s；响应体大小上限（如 512 KiB）；超限 → `upstream_payload_too_large`。
+- 总超时 30s（单次请求预算，含 DNS、TCP、TLS、读写）；TCP 阶段 15s；响应体大小上限（如 512 KiB）；超限 → `upstream_payload_too_large`。
+- 出站为直连 TCP+TLS 至 `LANGFUSE_BASE_URL` / `LANGFUSE_HOST`；DNS 解析优先 IPv4；V1 **不**支持 HTTP(S) 转发代理。
 - 失败映射为稳定 `error` 码（如 `langfuse_upstream_timeout`、`langfuse_upstream_error`），**不回传** Langfuse 响应原文。
 - **禁止**通用路径代理或其它 Langfuse 端点（scores、datasets、prompts 等）。
 
@@ -228,8 +229,7 @@ Authorization: Basic base64(public_key:secret_key)
       "costUsd": 0.003,
       "level": "DEFAULT"
     }
-  ],
-  "langfuseUrl": "https://cloud.langfuse.com/project/{projectId}/sessions/{sessionId}"
+  ]
 }
 ```
 
@@ -240,11 +240,77 @@ Authorization: Basic base64(public_key:secret_key)
 | `summary` | 由 traces 列表聚合；`totalCostUsd` 可选（上游缺失时省略） |
 | `traces[].name` | 有界展示；Peri 应使用通用名（如 `turn`），避免路径/工具名泄漏；server 侧 max length 截断 |
 | `traces[].level` | `DEFAULT` \| `ERROR`（映射 Langfuse level） |
-| `langfuseUrl` | 从有界 traces 响应元数据解析 `projectId`；未知时省略；**不得**把 `projectId` 放进 `/api/health` |
 
-Langfuse v1 `GET /api/public/sessions/{id}` 在 v4 将移除；V1 **不**调用。后续若迁移 observations API，单独版本化。
+Langfuse v1 `GET /api/public/sessions/{id}` 在 v4 将移除；V1 **不**调用。V1 drill-in 使用 `GET /api/public/traces/{traceId}`（见 §4.4）。
 
-### 4.4 Health
+### 4.4 `GET /api/monitor/trace`
+
+**Query**
+
+| 参数 | 必填 | 说明 |
+|------|------|------|
+| `sessionId` | 是 | ACP durable `session_id` |
+| `traceId` | 是 | Langfuse `trace.id` |
+
+**认证与授权**：同 §4.2（cookie + Full + loopback + Origin + catalog sessionId）。
+
+**上游调用（有界）**
+
+```
+GET {host}/api/public/traces/{percent_encoded_trace_id}
+Authorization: Basic base64(public_key:secret_key)
+```
+
+- 总超时 / 响应体上限同 §4.2。
+- 上游返回后 **必须**校验 `trace.sessionId === query.sessionId`；不匹配视为 `404 trace_not_found`（防跨 session 探测）。
+- DTO **不得**含 observation / trace 的 `input` / `output`；generation 可保留 `model`、`tokens` 等元数据。
+
+**响应 DTO（camelCase JSON）**
+
+```json
+{
+  "sessionId": "acp-…",
+  "traceId": "trace-uuid",
+  "name": "turn",
+  "observations": [
+    {
+      "id": "obs-root",
+      "name": "agent",
+      "kind": "SPAN",
+      "latencyMs": 900,
+      "level": "DEFAULT",
+      "children": [
+        {
+          "id": "obs-child",
+          "name": "llm",
+          "kind": "GENERATION",
+          "latencyMs": 700,
+          "level": "DEFAULT",
+          "model": "gpt-4",
+          "tokens": 1200,
+          "children": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `observations[]` | 由 `parentObservationId` 映射为嵌套 `children[]`；上限 200 节点 |
+| `observations[].kind` | `SPAN` \| `GENERATION` \| `EVENT` |
+| `observations[].level` | `DEFAULT` \| `ERROR` \| `WARNING` \| `DEBUG` |
+
+**错误码（增量）**
+
+| `error` | HTTP | 含义 |
+|---------|------|------|
+| `trace_required` | 400 | 缺少 `traceId` |
+| `invalid_trace_id` | 400 | `traceId` 格式非法 |
+| `trace_not_found` | 404 | 上游 404 或 sessionId 不匹配 |
+
+### 4.5 Health
 
 `GET /api/health` 增加布尔字段 `langfuse`（camelCase），不含 host / key / project id。判定同 §3.2「已配置」。
 
@@ -265,9 +331,9 @@ Langfuse v1 `GET /api/public/sessions/{id}` 在 v4 将移除；V1 **不**调用�
 
 | 层级 | 路径 | 职责 |
 |------|------|------|
-| T3 | `packages/ui/src/components/monitor/`（新） | 无 store 壳：`MonitorPanelShell`、trace 列表行、summary 区；**body-only**（无重复 header） |
-| T4 | `web/src/widgets/resource/MonitorPanel.tsx` | store 接线、`selectedSessionId()`、Refresh、轮询生命周期 |
-| Feature | `web/src/features/monitor/` | `fetchMonitorCapability`、`fetchSessionTraces`、DTO 解析；`useMonitorCapability()` hook |
+| T3 | `packages/ui/src/components/monitor/` | 无 store 壳：`MonitorPanelShell`（trace 列表）、`MonitorTraceDetailShell` + `MonitorObservationTree`（drill-in）；**body-only** |
+| T4 | `web/src/widgets/resource/MonitorPanel.tsx` | store 接线、`selectedSessionId()`、列表/drill-in 状态、Refresh、轮询生命周期 |
+| Feature | `web/src/features/monitor/` | `fetchMonitorCapability`、`fetchSessionTraces`、`fetchTraceDetail`、DTO 解析；`useMonitorCapability()` hook |
 | Workbench | `ResourceWorkbench.tsx` | `WorkbenchView` 增 `'monitor'`；rail 按钮；`panelTitle` / `panelWidthProfile` |
 
 **依赖方向**：`features/monitor` 不 import `store`；widget 注入 `sessionId`、fetcher 与 `turnActive()`。
@@ -282,7 +348,7 @@ type MonitorPanelShellProps = {
   state: 'loading' | 'empty-session' | 'empty-traces' | 'error' | 'ready';
   errorMessage?: string;
   onRetry?: () => void;
-  externalUrl?: string;
+  onTraceSelect?: (trace: MonitorTraceRowView) => void;
 };
 ```
 
@@ -324,7 +390,9 @@ Monitor 挂载于现有 `PanelBody` / `WorkbenchPanelChrome` 内：
 ### 5.6 数据流与轮询
 
 1. 打开 panel → 读 `selectedSessionId()` → `GET /api/monitor/session?sessionId=…`。
-2. 用户切换 project session → 取消 in-flight、重拉。
+2. 点击 trace 行 → `GET /api/monitor/trace?sessionId=…&traceId=…` → 同 panel 内 drill-in observation 树。
+3. Back → 回到 trace 列表（不关闭 workbench panel）。
+4. 用户切换 project session → 取消 in-flight、清 drill-in、重拉列表。
 3. Refresh 按钮 → 显式重拉。
 4. turn 活跃时（V1 可选）：widget 读 `turnActive()` from `@/store`（同 `SessionRailActions` 门控）；仅当 `view === 'monitor' && panel visible && turnActive()` 时低频轮询（如 15s）；离开 panel 或 turn 结束则 `clearInterval`。
 
@@ -358,7 +426,7 @@ Monitor 挂载于现有 `PanelBody` / `WorkbenchPanelChrome` 内：
 | 认证 | Monitor API：cookie + Full role + loopback + Origin |
 | 目录门控 | `sessionId` 须存在于 server session catalog（M1 非 per-principal） |
 | 有界上游 | 固定 traces 端点、`limit=50`、超时、响应体上限、HTTPS（非 loopback 禁 http） |
-| 日志 | 只记 `sessionId` **长度**、稳定 `error` 码、上游 HTTP status；不记 key、trace IO、Authorization、**完整 query string** |
+| 日志 | 只记 `sessionId` **长度**、稳定 `error` 码、上游 HTTP status、`upstream_host`；不记 key、trace IO、Authorization、**完整 query string** |
 | 元数据 | `traces[].name` 有界；Peri 用通用 trace 名 |
 | 网络 | 遵循现有 loopback HTTP 约束；非回环部署须 TLS |
 | 混淆防范 | `LANG` ≠ `LANGFUSE_*` |
@@ -389,8 +457,12 @@ Monitor 挂载于现有 `PanelBody` / `WorkbenchPanelChrome` 内：
 | No traces yet | No traces yet for this session. |
 | Peri not mapped hint | Traces appear after the agent reports to Langfuse with this session id. |
 | Error generic | Couldn't load traces. |
+| Trace detail loading | Loading trace… |
+| Trace detail error | Couldn't load trace. |
+| Back to traces | Back to traces |
+| Untitled trace | Untitled trace |
+| No observations | No observations for this trace. |
 | Retry | Retry |
-| Open external | Open in Langfuse |
 | Summary: traces | {n} traces |
 | Summary: tokens | {n} tokens |
 | Summary: cost | ${amount} |
@@ -417,7 +489,7 @@ Monitor 挂载于现有 `PanelBody` / `WorkbenchPanelChrome` 内：
 | 可选集成 | `realtimeVoice` health 布尔 | `langfuse` health 布尔 |
 | 密钥 | server only | server（读 + spawn 注入）→ ACP child（写） |
 | 传输 | WebSocket `/voice` | HTTP `GET /api/monitor/session` |
-| 浏览器 | 采麦 + 预览 | 只读列表 + 外链 |
+| 浏览器 | 采麦 + 预览 | 只读列表 + drill-in observation 树 |
 | Yjs | 不写 | 不写 |
 | 配置 env | `PERI_REALTIME_VOICE_*` | `LANGFUSE_*`（与 Peri 共用） |
 
@@ -433,3 +505,6 @@ Monitor 挂载于现有 `PanelBody` / `WorkbenchPanelChrome` 内：
 | `langfuse_upstream_timeout` | 504 | 上游超时 |
 | `langfuse_upstream_error` | 502 | 上游非 2xx |
 | `upstream_payload_too_large` | 502 | 响应体超限 |
+| `trace_required` | 400 | 缺少 `traceId` |
+| `invalid_trace_id` | 400 | `traceId` 格式非法 |
+| `trace_not_found` | 404 | trace 不存在或不属于该 session |

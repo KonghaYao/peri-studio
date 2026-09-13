@@ -15,7 +15,7 @@
 //! 职责边界：本文件只做「驱动与屏障推进」，不持有失败裁决语义（裁决在
 //! cleanup 模块）也不持有会话绑定语义（绑定在 bind 模块）。
 
-use crate::channel::spawn_env::default_acp_spawn_env;
+use crate::channel::spawn_env::acp_spawn_env;
 use chrono::Utc;
 use peri_studio_proto::ack::ErrorCode;
 use peri_studio_proto::action::ActionEnvelope;
@@ -140,7 +140,7 @@ impl RuntimeCreation {
             chat_id: chat_id.clone(),
             cmd: self.acp_cmd.clone(),
             cwd: cwd.clone(),
-            env: default_acp_spawn_env(),
+            env: acp_spawn_env(&self.server_config),
         };
         let spawn_ack = match tokio::time::timeout(
             self.spawn_timeout,

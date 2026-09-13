@@ -28,12 +28,10 @@ describe('monitor session', () => {
           level: 'DEFAULT',
         },
       ],
-      langfuseUrl: 'https://cloud.langfuse.com/project/p/sessions/acp-1',
     });
     expect(dto?.sessionId).toBe('acp-1');
     expect(dto?.traces).toHaveLength(1);
     expect(dto?.summary.traceCount).toBe(2);
-    expect(dto?.langfuseUrl).toContain('langfuse.com');
   });
 
   it('maps stable server error codes', () => {

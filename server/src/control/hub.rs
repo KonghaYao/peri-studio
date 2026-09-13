@@ -183,6 +183,7 @@ impl Hub {
             relay.clone(),
             sink.clone(),
             &batch,
+            cfg,
             cfg.acp_cmd.clone(),
             cfg.spawn_timeout,
             cfg.initialize_timeout,

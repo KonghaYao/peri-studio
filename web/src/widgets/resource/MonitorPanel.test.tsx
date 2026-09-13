@@ -11,13 +11,23 @@ const storeMocks = vi.hoisted(() => ({
 vi.mock('@/store', () => storeMocks);
 
 const fetchSessionTraces = vi.hoisted(() => vi.fn());
+const fetchTraceDetail = vi.hoisted(() => vi.fn());
 
 vi.mock('@/features/monitor/session', () => ({
   fetchSessionTraces: (...args: unknown[]) => fetchSessionTraces(...args),
 }));
 
+vi.mock('@/features/monitor/trace', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/monitor/trace')>();
+  return {
+    ...actual,
+    fetchTraceDetail: (...args: unknown[]) => fetchTraceDetail(...args),
+  };
+});
+
 beforeEach(() => {
   fetchSessionTraces.mockReset();
+  fetchTraceDetail.mockReset();
   storeMocks.selectedSessionId.mockReturnValue('acp-session-1');
   storeMocks.turnActive.mockReturnValue(false);
   vi.stubGlobal('setInterval', (handler: TimerHandler, timeout?: number) => {
@@ -57,7 +67,6 @@ describe('MonitorPanel', () => {
           timestamp: '2026-09-13T08:00:00.000Z',
           level: 'DEFAULT',
         }],
-        langfuseUrl: 'https://cloud.langfuse.com/project/p/sessions/acp-session-1',
       },
     });
     render(() => <MonitorPanel embedded visible />);
@@ -65,6 +74,112 @@ describe('MonitorPanel', () => {
       expect(screen.getByTestId('monitor-trace-trace-1')).toBeInTheDocument();
     });
     expect(fetchSessionTraces).toHaveBeenCalledWith('acp-session-1', expect.any(Object));
+  });
+
+  it('drills into a trace observation tree', async () => {
+    fetchSessionTraces.mockResolvedValue({
+      ok: true,
+      data: {
+        sessionId: 'acp-session-1',
+        configured: true,
+        found: true,
+        summary: { traceCount: 1, totalTokens: 100 },
+        traces: [{
+          id: 'trace-1',
+          name: 'turn',
+          timestamp: '2026-09-13T08:00:00.000Z',
+          level: 'DEFAULT',
+        }],
+      },
+    });
+    fetchTraceDetail.mockResolvedValue({
+      ok: true,
+      data: {
+        sessionId: 'acp-session-1',
+        traceId: 'trace-1',
+        name: 'turn',
+        observations: [{
+          id: 'root',
+          name: 'agent',
+          kind: 'SPAN',
+          level: 'DEFAULT',
+        }],
+      },
+    });
+    render(() => <MonitorPanel embedded visible />);
+    await waitFor(() => {
+      expect(screen.getByTestId('monitor-trace-trace-1')).toBeInTheDocument();
+    });
+    await fireEvent.click(screen.getByTestId('monitor-trace-trace-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('monitor-trace-detail')).toBeInTheDocument();
+      expect(screen.getByTestId('monitor-observation-root')).toBeInTheDocument();
+    });
+    expect(fetchTraceDetail).toHaveBeenCalledWith('acp-session-1', 'trace-1', expect.any(Object));
+    await fireEvent.click(screen.getByRole('button', { name: 'Back to traces' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('monitor-panel')).toBeInTheDocument();
+    });
+  });
+
+  it('drills into observation detail and returns to tree without full prompt in list', async () => {
+    fetchSessionTraces.mockResolvedValue({
+      ok: true,
+      data: {
+        sessionId: 'acp-session-1',
+        configured: true,
+        found: true,
+        summary: { traceCount: 1, totalTokens: 100 },
+        traces: [{
+          id: 'trace-1',
+          name: 'turn',
+          timestamp: '2026-09-13T08:00:00.000Z',
+          level: 'DEFAULT',
+        }],
+      },
+    });
+    fetchTraceDetail.mockResolvedValue({
+      ok: true,
+      data: {
+        sessionId: 'acp-session-1',
+        traceId: 'trace-1',
+        name: 'turn',
+        observations: [{
+          id: 'agent-run',
+          name: 'agent-run',
+          kind: 'SPAN',
+          level: 'DEFAULT',
+          children: [{
+            id: 'step-1',
+            name: 'step-1',
+            kind: 'GENERATION',
+            level: 'DEFAULT',
+            model: 'gpt-4',
+            inputPreview: 'secret prompt body',
+            outputPreview: 'secret output body',
+          }],
+        }],
+      },
+    });
+    render(() => <MonitorPanel embedded visible />);
+    await waitFor(() => {
+      expect(screen.getByTestId('monitor-trace-trace-1')).toBeInTheDocument();
+    });
+    await fireEvent.click(screen.getByTestId('monitor-trace-trace-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('monitor-observation-step-1')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('secret prompt body')).not.toBeInTheDocument();
+    await fireEvent.click(screen.getByTestId('monitor-observation-step-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('monitor-observation-detail')).toBeInTheDocument();
+      expect(screen.getByTestId('monitor-observation-input')).toHaveTextContent('secret prompt body');
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Back to observations' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('monitor-trace-detail')).toBeInTheDocument();
+      expect(screen.queryByText('secret prompt body')).not.toBeInTheDocument();
+    });
   });
 
   it('retries after an error', async () => {
@@ -113,9 +228,12 @@ describe('MonitorPanel', () => {
     await waitFor(() => expect(fetchSessionTraces).toHaveBeenCalledTimes(2));
   });
 
-  it('does not start polling when turn is inactive', async () => {
-    const setIntervalSpy = vi.fn().mockReturnValue(1);
-    vi.stubGlobal('setInterval', setIntervalSpy);
+  it('starts monitor polling only while turn is active', async () => {
+    const intervals: number[] = [];
+    vi.stubGlobal('setInterval', (_handler: TimerHandler, ms?: number) => {
+      intervals.push(ms ?? 0);
+      return 1 as unknown as ReturnType<typeof setInterval>;
+    });
     fetchSessionTraces.mockResolvedValue({
       ok: true,
       data: {
@@ -128,6 +246,10 @@ describe('MonitorPanel', () => {
     });
     render(() => <MonitorPanel embedded visible />);
     await waitFor(() => expect(fetchSessionTraces).toHaveBeenCalledTimes(1));
-    expect(setIntervalSpy).not.toHaveBeenCalled();
+    expect(intervals).not.toContain(15_000);
+
+    storeMocks.turnActive.mockReturnValue(true);
+    render(() => <MonitorPanel embedded visible />);
+    await waitFor(() => expect(intervals).toContain(15_000));
   });
 });

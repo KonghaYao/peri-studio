@@ -1,5 +1,4 @@
 import { For, Show, splitProps, type Component } from 'solid-js';
-import { ExternalLink } from 'lucide-solid';
 import { cn } from '../../lib/cn';
 import { Button } from '../Button';
 import { EmptyState } from '../EmptyState';
@@ -7,19 +6,19 @@ import { InlineNotice } from '../InlineNotice';
 import { LoadingState } from '../LoadingState';
 import {
   formatMonitorTraceMeta,
+  formatMonitorTraceName,
   monitorSummaryItems,
 } from './format';
 import {
-  monitorFooterClass,
   monitorListClass,
   monitorPanelClass,
   monitorStateClass,
   monitorSummaryClass,
   monitorSummaryItemClass,
+  monitorTraceButtonClass,
   monitorTraceErrorClass,
   monitorTraceMetaClass,
   monitorTraceNameClass,
-  monitorTraceRowClass,
 } from './monitor-panel-layout';
 import type {
   MonitorPanelState,
@@ -34,7 +33,7 @@ export type MonitorPanelShellProps = {
   state: MonitorPanelState;
   errorMessage?: string;
   onRetry?: () => void;
-  externalUrl?: string;
+  onTraceSelect?: (trace: MonitorTraceRowView) => void;
   class?: string;
   'data-testid'?: string;
 };
@@ -48,7 +47,7 @@ export const MonitorPanelShell: Component<MonitorPanelShellProps> = (props) => {
     'state',
     'errorMessage',
     'onRetry',
-    'externalUrl',
+    'onTraceSelect',
     'class',
   ]);
 
@@ -125,35 +124,47 @@ export const MonitorPanelShell: Component<MonitorPanelShellProps> = (props) => {
           )}
         </Show>
 
-        <div class={monitorListClass} data-testid="monitor-trace-list">
+        <div class={monitorListClass} data-testid="monitor-trace-list" role="list">
           <For each={local.traces}>
-            {(trace) => (
-              <div class={monitorTraceRowClass} data-testid={`monitor-trace-${trace.id}`}>
-                <span class={monitorTraceNameClass}>{trace.name}</span>
-                <Show when={trace.level === 'ERROR'}>
-                  <span class={monitorTraceErrorClass}>Error</span>
+            {(trace) => {
+              const displayName = () => formatMonitorTraceName(trace.name);
+              const meta = () => formatMonitorTraceMeta(trace);
+              return (
+                <Show
+                  when={local.onTraceSelect}
+                  fallback={(
+                    <div class={monitorTraceButtonClass} data-testid={`monitor-trace-${trace.id}`}>
+                      <span class={monitorTraceNameClass}>{displayName()}</span>
+                      <Show when={trace.level === 'ERROR'}>
+                        <span class={monitorTraceErrorClass}>Error</span>
+                      </Show>
+                      <Show when={meta()}>
+                        {(value) => <span class={monitorTraceMetaClass}>{value()}</span>}
+                      </Show>
+                    </div>
+                  )}
+                >
+                  {(select) => (
+                    <button
+                      type="button"
+                      class={monitorTraceButtonClass}
+                      data-testid={`monitor-trace-${trace.id}`}
+                      onClick={() => select()(trace)}
+                    >
+                      <span class={monitorTraceNameClass}>{displayName()}</span>
+                      <Show when={trace.level === 'ERROR'}>
+                        <span class={monitorTraceErrorClass}>Error</span>
+                      </Show>
+                      <Show when={meta()}>
+                        {(value) => <span class={monitorTraceMetaClass}>{value()}</span>}
+                      </Show>
+                    </button>
+                  )}
                 </Show>
-                <span class={monitorTraceMetaClass}>{formatMonitorTraceMeta(trace)}</span>
-              </div>
-            )}
+              );
+            }}
           </For>
         </div>
-
-        <Show when={local.externalUrl}>
-          {(url) => (
-            <div class={monitorFooterClass}>
-              <a
-                href={url()}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="inline-flex items-center gap-6 rounded-6 px-8 py-4 text-11 text-content-muted transition-colors hover:bg-interaction-hover hover:text-content-primary"
-              >
-                <ExternalLink size={14} strokeWidth={1.7} aria-hidden="true" />
-                Open in Langfuse
-              </a>
-            </div>
-          )}
-        </Show>
       </Show>
     </div>
   );

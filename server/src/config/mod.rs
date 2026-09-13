@@ -161,6 +161,32 @@ pub struct CliOverrides {
         help = "Realtime voice API key"
     )]
     pub realtime_voice_api_key: Option<SecretString>,
+    /// Langfuse public key（`LANGFUSE_PUBLIC_KEY`）。
+    #[arg(
+        long = "langfuse-public-key",
+        env = "LANGFUSE_PUBLIC_KEY",
+        hide_env_values = true,
+        help = "Langfuse public API key"
+    )]
+    pub langfuse_public_key: Option<SecretString>,
+    /// Langfuse secret key（`LANGFUSE_SECRET_KEY`）。
+    #[arg(
+        long = "langfuse-secret-key",
+        env = "LANGFUSE_SECRET_KEY",
+        hide_env_values = true,
+        help = "Langfuse secret API key"
+    )]
+    pub langfuse_secret_key: Option<SecretString>,
+    /// Langfuse API host（`LANGFUSE_HOST`）。
+    #[arg(long = "langfuse-host", env = "LANGFUSE_HOST", help = "Langfuse API host")]
+    pub langfuse_host: Option<String>,
+    /// Langfuse API base URL（`LANGFUSE_BASE_URL`，优先于 host）。
+    #[arg(
+        long = "langfuse-base-url",
+        env = "LANGFUSE_BASE_URL",
+        help = "Langfuse API base URL"
+    )]
+    pub langfuse_base_url: Option<String>,
 }
 
 /// §16 全表项。字段一律 snake_case（配置文件为内部格式，非线协议，不强制
@@ -227,6 +253,14 @@ pub struct Config {
     pub realtime_voice_base_url: Option<String>,
     /// 实时语音 API key（环境变量 `PERI_REALTIME_VOICE_API_KEY`，不得入日志）。
     pub realtime_voice_api_key: Option<SecretString>,
+    /// Langfuse public key（`LANGFUSE_PUBLIC_KEY` / `config.toml`）。
+    pub langfuse_public_key: Option<SecretString>,
+    /// Langfuse secret key（`LANGFUSE_SECRET_KEY` / `config.toml`）。
+    pub langfuse_secret_key: Option<SecretString>,
+    /// Langfuse host（`LANGFUSE_HOST` / `config.toml`）。
+    pub langfuse_host: Option<String>,
+    /// Langfuse base URL（`LANGFUSE_BASE_URL` / `config.toml`，优先于 host）。
+    pub langfuse_base_url: Option<String>,
 }
 
 impl Config {
@@ -260,6 +294,10 @@ impl Config {
             log_level: "info".to_string(),
             realtime_voice_base_url: None,
             realtime_voice_api_key: None,
+            langfuse_public_key: None,
+            langfuse_secret_key: None,
+            langfuse_host: None,
+            langfuse_base_url: None,
         }
     }
 
@@ -296,6 +334,7 @@ impl Config {
         if let Some(v) = &cli.config_dir {
             cfg.config_dir = v.clone();
         }
+        dotenv::load_file_if_present(&cfg.config_dir.join(".env"));
         let file = match config_file {
             Some(p) => Some(load_file(p)?),
             None => {
@@ -389,6 +428,12 @@ impl Config {
 /// 配置文件形态与逐层合并（`file.rs`）。
 mod file;
 use file::load_file;
+
+/// 可选 `.env` 加载（`dev.sh` 与二进制启动共用语义）。
+pub mod dotenv;
+
+/// Langfuse 配置解析（`config.toml` / env 同源）。
+mod langfuse;
 
 /// XDG 语义数据目录（§3.5【决策】）：`XDG_DATA_HOME` 优先，否则
 /// `$HOME/.local/share/peri-studio`。

@@ -39,6 +39,7 @@ use crate::control::{
 };
 use crate::persist::Store;
 use crate::protocol::Translator;
+use crate::config::Config;
 use crate::state::doc_manager::{BatchConfig, DocManager};
 
 impl CommandCoordinator {
@@ -52,7 +53,8 @@ impl CommandCoordinator {
         chats: ChatRegistry,
         relay: Arc<RelayEventHandler>,
         sink: Arc<StoreSink>,
-        cfg: &BatchConfig,
+        batch_cfg: &BatchConfig,
+        server_config: &Config,
         acp_cmd: Vec<String>,
         spawn_timeout: Duration,
         initialize_timeout: Duration,
@@ -65,7 +67,8 @@ impl CommandCoordinator {
             chats,
             relay,
             sink,
-            cfg,
+            batch_cfg,
+            server_config,
             acp_cmd,
             spawn_timeout,
             initialize_timeout,
@@ -83,7 +86,8 @@ impl CommandCoordinator {
         chats: ChatRegistry,
         relay: Arc<RelayEventHandler>,
         sink: Arc<StoreSink>,
-        cfg: &BatchConfig,
+        batch_cfg: &BatchConfig,
+        server_config: &Config,
         acp_cmd: Vec<String>,
         spawn_timeout: Duration,
         initialize_timeout: Duration,
@@ -124,6 +128,7 @@ impl CommandCoordinator {
                 spawn_timeout,
                 initialize_timeout,
                 list_timeout: SESSION_POLL_TIMEOUT,
+                server_config: server_config.clone(),
             },
         );
         let session_catalog = SessionCatalogSync::new(
@@ -224,11 +229,12 @@ impl CommandCoordinator {
             },
             RuntimeCreationConfig {
                 default_cwd: default_cwd.clone(),
-                queue_cap: cfg.chat_queue,
+                queue_cap: batch_cfg.chat_queue,
                 acp_cmd: acp_cmd.clone(),
                 spawn_timeout,
                 initialize_timeout,
                 binding_timeout,
+                server_config: server_config.clone(),
             },
         );
         let outcome_broker = CommandOutcomeBroker::new(store.clone(), chats.clone());
@@ -241,7 +247,7 @@ impl CommandCoordinator {
                 // compatibility owner, while RuntimeCreation uses a clone of
                 // the underlying process-local workspace index.
                 workspace_compatibility,
-                queue_cap: cfg.chat_queue,
+                queue_cap: batch_cfg.chat_queue,
                 executors: RwLock::new(HashMap::new()),
                 session_operations,
                 permission_resolution,

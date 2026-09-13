@@ -23,17 +23,19 @@ use crate::web::parse::{
     valid_origin,
 };
 use crate::web::pick_directory_http::serve_pick_directory;
-use crate::web::monitor_http::serve_monitor_session;
+use crate::web::monitor_http::{serve_monitor_session, serve_monitor_trace};
 use crate::web::resource_upload_http::serve_resource_upload;
 use crate::web::static_::cache_headers_for_static;
 #[cfg(test)]
 use crate::web::static_::route;
+use crate::config::Config;
 use crate::control::SessionCatalog;
 use crate::web::{BrowserAuthSetup, HealthSnapshot};
 
 pub(crate) struct HttpRouteDeps {
     pub resources: Arc<crate::control::ResourceService>,
     pub session_catalog: SessionCatalog,
+    pub config: Arc<Config>,
 }
 
 pub(super) const MAX_HTTP_HEAD: usize = 16 * 1024;
@@ -413,13 +415,41 @@ async fn serve_http_inner(
             stream,
             peer,
             auth,
+            &deps.config,
             &deps.session_catalog,
             method,
             raw_target,
             cookie,
-            host.as_deref(),
-            origin.as_deref(),
-            transfer_encoding.as_deref(),
+            host,
+            origin,
+            transfer_encoding,
+            content_length,
+        )
+        .await;
+    }
+    if path == "/api/monitor/trace" {
+        let Some(deps) = deps.as_ref() else {
+            return write_http(
+                &mut stream,
+                "404 Not Found",
+                "application/json",
+                br#"{"error":"not_found"}"#,
+                &security_headers(),
+            )
+            .await;
+        };
+        return serve_monitor_trace(
+            stream,
+            peer,
+            auth,
+            &deps.config,
+            &deps.session_catalog,
+            method,
+            raw_target,
+            cookie,
+            host,
+            origin,
+            transfer_encoding,
             content_length,
         )
         .await;

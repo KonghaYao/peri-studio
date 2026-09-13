@@ -1,6 +1,11 @@
-import { MonitorPanelShell, type MonitorPanelState, type MonitorSummaryView, type MonitorTraceRowView } from '@peri/ui';
-import { createEffect, createSignal, onCleanup } from 'solid-js';
+import { MonitorPanelShell, MonitorTraceDetailShell, type MonitorObservationView, type MonitorPanelState, type MonitorSummaryView, type MonitorTraceDetailState, type MonitorTraceRowView } from '@peri/ui';
+import { createEffect, createSignal, onCleanup, Show } from 'solid-js';
 import { fetchSessionTraces } from '@/features/monitor/session';
+import {
+  fetchTraceDetail,
+  findObservationById,
+  stripObservationsForTree,
+} from '@/features/monitor/trace';
 import { selectedSessionId, turnActive } from '@/store';
 
 const MONITOR_POLL_INTERVAL_MS = 15_000;
@@ -14,15 +19,21 @@ type MonitorPanelProps = {
   refreshToken?: number;
 };
 
-/** Langfuse Monitor T4：store 接线、拉取与轮询生命周期。 */
+/** Langfuse Monitor T4：store 接线、列表拉取、trace drill-in 与轮询生命周期。 */
 export function MonitorPanel(props: MonitorPanelProps = {}) {
   const [state, setState] = createSignal<MonitorPanelState>('loading');
   const [summary, setSummary] = createSignal<MonitorSummaryView | null>(null);
   const [traces, setTraces] = createSignal<MonitorTraceRowView[]>([]);
   const [errorMessage, setErrorMessage] = createSignal<string | undefined>();
-  const [externalUrl, setExternalUrl] = createSignal<string | undefined>();
+  const [selectedTrace, setSelectedTrace] = createSignal<MonitorTraceRowView | null>(null);
+  const [detailState, setDetailState] = createSignal<MonitorTraceDetailState>('loading');
+  const [detailObservations, setDetailObservations] = createSignal<MonitorObservationView[]>([]);
+  const [detailErrorMessage, setDetailErrorMessage] = createSignal<string | undefined>();
+  const [selectedObservationId, setSelectedObservationId] = createSignal<string | null>(null);
   let requestId = 0;
+  let detailRequestId = 0;
   let abortController: AbortController | null = null;
+  let detailAbortController: AbortController | null = null;
   let pollTimer: ReturnType<typeof setInterval> | undefined;
 
   const panelVisible = () => props.visible ?? true;
@@ -32,6 +43,21 @@ export function MonitorPanel(props: MonitorPanelProps = {}) {
       clearInterval(pollTimer);
       pollTimer = undefined;
     }
+  };
+
+  const clearDetail = () => {
+    detailRequestId += 1;
+    detailAbortController?.abort();
+    setSelectedTrace(null);
+    setDetailObservations([]);
+    setDetailErrorMessage(undefined);
+    setDetailState('loading');
+    setSelectedObservationId(null);
+    setSelectedObservationId(null);
+  };
+
+  const clearObservationDetail = () => {
+    setSelectedObservationId(null);
   };
 
   const load = async (sessionId: string) => {
@@ -48,7 +74,6 @@ export function MonitorPanel(props: MonitorPanelProps = {}) {
       if (!result.ok) {
         setSummary(null);
         setTraces([]);
-        setExternalUrl(undefined);
         setErrorMessage(result.message);
         setState('error');
         return;
@@ -57,30 +82,67 @@ export function MonitorPanel(props: MonitorPanelProps = {}) {
       const data = result.data;
       setSummary(data.summary);
       setTraces(data.traces);
-      setExternalUrl(data.langfuseUrl);
       setState(data.found ? 'ready' : 'empty-traces');
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
       if (currentRequest !== requestId) return;
       setSummary(null);
       setTraces([]);
-      setExternalUrl(undefined);
       setErrorMessage("Couldn't load traces.");
       setState('error');
     }
   };
 
+  const loadTraceDetail = async (sessionId: string, trace: MonitorTraceRowView) => {
+    const currentRequest = ++detailRequestId;
+    detailAbortController?.abort();
+    detailAbortController = new AbortController();
+    setSelectedTrace(trace);
+    setDetailState('loading');
+    setDetailErrorMessage(undefined);
+    setDetailObservations([]);
+    setSelectedObservationId(null);
+
+    try {
+      const result = await fetchTraceDetail(sessionId, trace.id, { signal: detailAbortController.signal });
+      if (currentRequest !== detailRequestId) return;
+
+      if (!result.ok) {
+        setDetailErrorMessage(result.message);
+        setDetailState('error');
+        return;
+      }
+
+      setDetailObservations(result.data.observations);
+      setSelectedTrace((current) => (
+        current ? { ...current, name: result.data.name || current.name } : current
+      ));
+      setDetailState('ready');
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      if (currentRequest !== detailRequestId) return;
+      setDetailErrorMessage("Couldn't load trace.");
+      setDetailState('error');
+    }
+  };
+
   const reload = () => {
+    clearDetail();
     const sessionId = selectedSessionId();
     if (!sessionId) {
       setSummary(null);
       setTraces([]);
-      setExternalUrl(undefined);
       setErrorMessage(undefined);
       setState('empty-session');
       return;
     }
     void load(sessionId);
+  };
+
+  const handleTraceSelect = (trace: MonitorTraceRowView) => {
+    const sessionId = selectedSessionId();
+    if (!sessionId) return;
+    void loadTraceDetail(sessionId, trace);
   };
 
   createEffect(() => {
@@ -92,11 +154,11 @@ export function MonitorPanel(props: MonitorPanelProps = {}) {
 
   createEffect(() => {
     clearPoll();
-    if (!panelVisible() || !turnActive()) return;
+    if (!panelVisible() || !turnActive() || selectedTrace()) return;
     const sessionId = selectedSessionId();
     if (!sessionId) return;
     pollTimer = setInterval(() => {
-      if (!panelVisible() || !turnActive()) return;
+      if (!panelVisible() || !turnActive() || selectedTrace()) return;
       const activeSessionId = selectedSessionId();
       if (!activeSessionId) return;
       void load(activeSessionId);
@@ -105,20 +167,52 @@ export function MonitorPanel(props: MonitorPanelProps = {}) {
 
   onCleanup(() => {
     requestId += 1;
+    detailRequestId += 1;
     abortController?.abort();
+    detailAbortController?.abort();
     clearPoll();
   });
 
   return (
-    <MonitorPanelShell
-      embedded={props.embedded}
-      state={state()}
-      summary={summary()}
-      traces={traces()}
-      errorMessage={errorMessage()}
-      externalUrl={externalUrl()}
-      onRetry={reload}
-      data-testid="monitor-panel"
-    />
+    <Show
+      when={selectedTrace()}
+      fallback={(
+        <MonitorPanelShell
+          embedded={props.embedded}
+          state={state()}
+          summary={summary()}
+          traces={traces()}
+          errorMessage={errorMessage()}
+          onRetry={reload}
+          onTraceSelect={handleTraceSelect}
+          data-testid="monitor-panel"
+        />
+      )}
+    >
+      {(trace) => (
+        <MonitorTraceDetailShell
+          embedded={props.embedded}
+          traceName={trace().name}
+          observations={stripObservationsForTree(detailObservations())}
+          selectedObservation={
+            selectedObservationId()
+              ? findObservationById(detailObservations(), selectedObservationId()!)
+              : null
+          }
+          state={detailState()}
+          errorMessage={detailErrorMessage()}
+          onBack={clearDetail}
+          onClose={clearDetail}
+          onObservationSelect={(observation) => setSelectedObservationId(observation.id)}
+          onObservationBack={clearObservationDetail}
+          onRetry={() => {
+            const sessionId = selectedSessionId();
+            if (!sessionId) return;
+            void loadTraceDetail(sessionId, trace());
+          }}
+          data-testid="monitor-trace-detail"
+        />
+      )}
+    </Show>
   );
 }

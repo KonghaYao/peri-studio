@@ -592,6 +592,7 @@
   --container-slash: min(330px, 42vh);
   --container-slash-tight: min(360px, 48vh);
   --container-placeholder-narrow: clamp(240px, 48vh, 460px);
+  --container-monitor-io-preview-max: min(320px, 40vh);
 }
 
 @media (display-mode: window-controls-overlay) {

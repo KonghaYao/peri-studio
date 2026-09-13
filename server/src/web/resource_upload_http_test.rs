@@ -30,6 +30,7 @@ async fn put(
             HttpRouteDeps {
                 resources,
                 session_catalog: crate::control::SessionCatalog::new(),
+                config: std::sync::Arc::new(crate::config::Config::defaults()),
             },
         )
             .await

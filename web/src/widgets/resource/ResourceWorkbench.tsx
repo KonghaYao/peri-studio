@@ -182,6 +182,11 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
     if (props.compact && !props.open) return false;
     return true;
   };
+  const monitorPanelVisible = () => {
+    if (!showPanel() || view() !== 'monitor') return false;
+    if (props.compact && !props.open) return false;
+    return true;
+  };
   const holdTerminalSurface = () => {
     if (terminalPanelVisible()) return true;
     const phase = terminalSession().phase;
@@ -235,7 +240,7 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
           <GitGraphView embedded />
         </Show>
         <Show when={view() === 'monitor'}>
-          <MonitorPanel embedded visible refreshToken={monitorRefreshToken()} />
+          <MonitorPanel embedded visible={monitorPanelVisible()} refreshToken={monitorRefreshToken()} />
         </Show>
         <Show when={view() === 'explorer' || view() === 'scm'}>
           <Show when={project()} fallback={<div class="p-16 text-12 text-content-muted">Select or create a project to browse its workspace.</div>}>

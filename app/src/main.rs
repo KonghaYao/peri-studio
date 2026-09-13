@@ -30,6 +30,10 @@ use anyhow::Context as _;
 use crate::cli::{Cli, Command, ServerArgs};
 
 fn main() -> anyhow::Result<()> {
+    peri_studio_server::config::dotenv::load_cwd_if_present();
+    peri_studio_server::config::dotenv::load_file_if_present(
+        &peri_studio_server::config::default_config_dir().join(".env"),
+    );
     let cli = Cli::parse();
     match cli.command {
         Some(Command::Token(args)) => token::run(cli.config.as_deref(), cli.json_log, args),

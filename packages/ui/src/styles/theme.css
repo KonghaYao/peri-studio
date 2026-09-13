@@ -369,6 +369,7 @@
   --container-menu-min: var(--container-menu-min);
   --container-model-menu: var(--container-model-menu);
   --container-rewind-compact: var(--container-rewind-compact);
+  --container-monitor-io-preview-max: var(--container-monitor-io-preview-max);
 
   /* Component geometry */
   --max-width-chat-bubble: var(--chat-bubble-max);

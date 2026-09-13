@@ -2,11 +2,18 @@
 
 mod config;
 mod session_id;
+mod trace_detail;
+mod trace_id;
 mod upstream;
 
 pub use config::{
-    inject_spawn_env, is_configured, langfuse_env_keys, LangfuseConfig, DEFAULT_LANGFUSE_HOST,
+    build_langfuse_config, langfuse_env_keys, LangfuseConfig, DEFAULT_LANGFUSE_HOST,
     LANGFUSE_BASE_URL_ENV, LANGFUSE_HOST_ENV, LANGFUSE_PUBLIC_KEY_ENV, LANGFUSE_SECRET_KEY_ENV,
 };
 pub use session_id::{SessionIdError, validate_session_id};
-pub use upstream::{fetch_session_traces, MonitorSessionView, UpstreamError};
+pub use trace_detail::{fetch_trace_detail, MonitorObservationView, MonitorTraceDetailView};
+pub use trace_id::{validate_trace_id, TraceIdError};
+pub use upstream::{
+    fetch_session_traces, MonitorSessionView, UpstreamError, UPSTREAM_CONNECT_TIMEOUT,
+    UPSTREAM_TIMEOUT, UPSTREAM_TOTAL_TIMEOUT,
+};

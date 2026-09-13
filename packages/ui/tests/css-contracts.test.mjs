@@ -336,6 +336,17 @@ test('git graph layout classes live in git-graph-layout.ts', () => {
   assert.doesNotMatch(extra, /\.ui-git-graph-/);
 });
 
+test('monitor layout classes live in monitor-panel-layout.ts', () => {
+  const layout = read(join(srcRoot, 'components', 'monitor', 'monitor-panel-layout.ts'));
+  const shell = read(join(srcRoot, 'components', 'monitor', 'MonitorPanelShell.tsx'));
+  assert.match(layout, /monitorPanelClass/);
+  assert.match(layout, /monitorTraceRowClass/);
+  assert.match(layout, /min-h-32/);
+  assert.match(shell, /from '\.\/monitor-panel-layout'/);
+  const extra = read(join(srcRoot, 'styles', 'extra.css'));
+  assert.doesNotMatch(extra, /\.ui-monitor-/);
+});
+
 test('composer layout classes live in composer-layout.ts', () => {
   const composerLayout = read(join(srcRoot, 'components', 'composer', 'composer-layout.ts'));
   const extra = read(join(srcRoot, 'styles', 'extra.css'));

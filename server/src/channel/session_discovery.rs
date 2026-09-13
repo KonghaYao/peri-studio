@@ -8,7 +8,8 @@ use std::collections::HashSet;
 use std::sync::{Arc, Mutex as StdMutex};
 use std::time::Duration;
 
-use crate::channel::spawn_env::default_acp_spawn_env;
+use crate::channel::spawn_env::acp_spawn_env;
+use crate::config::Config;
 use peri_studio_proto::instance::{InstanceKill, InstanceSpawn};
 use thiserror::Error;
 use tokio::sync::RwLock;
@@ -42,6 +43,7 @@ pub(super) struct SessionDiscovery {
     spawn_timeout: Duration,
     initialize_timeout: Duration,
     list_timeout: Duration,
+    server_config: Config,
     flights: Arc<StdMutex<HashSet<String>>>,
 }
 
@@ -50,6 +52,7 @@ pub(super) struct SessionDiscoveryConfig {
     pub spawn_timeout: Duration,
     pub initialize_timeout: Duration,
     pub list_timeout: Duration,
+    pub server_config: Config,
 }
 
 pub(super) struct SessionDiscoveryRun {
@@ -91,6 +94,7 @@ impl SessionDiscovery {
             spawn_timeout: config.spawn_timeout,
             initialize_timeout: config.initialize_timeout,
             list_timeout: config.list_timeout,
+            server_config: config.server_config,
             flights: Arc::new(StdMutex::new(HashSet::new())),
         }
     }
@@ -179,7 +183,7 @@ impl SessionDiscovery {
             chat_id: chat_id.to_string(),
             cmd: self.acp_cmd.clone(),
             cwd: cwd.to_string(),
-            env: default_acp_spawn_env(),
+            env: acp_spawn_env(&self.server_config),
         };
         match tokio::time::timeout(
             self.spawn_timeout,

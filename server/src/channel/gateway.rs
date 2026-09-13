@@ -176,7 +176,7 @@ impl Gateway {
         let mut snapshot =
             crate::web::HealthSnapshot::from_runtime(self.registry.global_status(), machines);
         snapshot.realtime_voice = self.cfg.realtime_voice_enabled();
-        snapshot.langfuse = crate::langfuse::is_configured();
+        snapshot.langfuse = self.cfg.langfuse_enabled();
         snapshot
     }
 
@@ -261,6 +261,7 @@ impl Gateway {
                 crate::web::HttpRouteDeps {
                     resources: self.resources.clone(),
                     session_catalog: self.session_catalog.clone(),
+                    config: self.cfg.clone(),
                 },
             )
             .await

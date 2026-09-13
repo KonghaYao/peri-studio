@@ -95,6 +95,10 @@ pub(crate) struct FileConfig {
     pub(crate) log_level: Option<String>,
     pub(crate) realtime_voice_base_url: Option<String>,
     pub(crate) realtime_voice_api_key: Option<String>,
+    pub(crate) langfuse_public_key: Option<String>,
+    pub(crate) langfuse_secret_key: Option<String>,
+    pub(crate) langfuse_host: Option<String>,
+    pub(crate) langfuse_base_url: Option<String>,
 }
 
 /// 读取配置文件（不存在 → [`ConfigError::MissingConfig`]；非法 → ParseConfig）。
@@ -197,6 +201,18 @@ impl Config {
         if let Some(v) = &f.realtime_voice_api_key {
             self.realtime_voice_api_key = Some(crate::config::SecretString::new(v.clone()));
         }
+        if let Some(v) = &f.langfuse_public_key {
+            self.langfuse_public_key = Some(crate::config::SecretString::new(v.clone()));
+        }
+        if let Some(v) = &f.langfuse_secret_key {
+            self.langfuse_secret_key = Some(crate::config::SecretString::new(v.clone()));
+        }
+        if let Some(v) = &f.langfuse_host {
+            self.langfuse_host = Some(v.clone());
+        }
+        if let Some(v) = &f.langfuse_base_url {
+            self.langfuse_base_url = Some(v.clone());
+        }
     }
 
     /// CLI/env 层合并（clap `env` 注入的值已落入 `CliOverrides`，§3.2）。
@@ -226,5 +242,6 @@ impl Config {
         if let Some(v) = &cli.realtime_voice_api_key {
             self.realtime_voice_api_key = Some(v.clone());
         }
+        self.merge_langfuse_cli(cli);
     }
 }

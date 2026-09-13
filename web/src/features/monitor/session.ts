@@ -22,7 +22,6 @@ export type MonitorSessionDto = {
   found: boolean;
   summary: MonitorSummaryView;
   traces: MonitorTraceRowView[];
-  langfuseUrl?: string;
 };
 
 export type MonitorSessionResult =
@@ -93,7 +92,6 @@ export function parseMonitorSessionDto(body: unknown): MonitorSessionDto | null 
     found: body.found === true,
     summary: parseSummary(body.summary),
     traces,
-    langfuseUrl: typeof body.langfuseUrl === 'string' && body.langfuseUrl ? body.langfuseUrl : undefined,
   };
 }
 

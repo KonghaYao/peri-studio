@@ -302,6 +302,7 @@ async fn resource_blob_requires_cookie_and_returns_exact_bytes_with_etag() {
             HttpRouteDeps {
                 resources,
                 session_catalog: crate::control::SessionCatalog::new(),
+                config: Arc::new(crate::config::Config::defaults()),
             },
         )
             .await

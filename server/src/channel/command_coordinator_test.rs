@@ -141,6 +141,7 @@ async fn env_with_create_deadlines(spawn_timeout: Duration, instance_ack_timeout
         relay.clone(),
         sink.clone(),
         &BatchConfig::default(),
+        &crate::config::Config::defaults(),
         DEFAULT_ACP_CMD.iter().map(|s| s.to_string()).collect(),
         spawn_timeout,
         Duration::from_millis(500),
