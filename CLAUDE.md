@@ -78,6 +78,7 @@ cargo run -q -p peri-studio -- serve --local
 cargo run -q -p peri-studio -- connect https://peri.example --token-file /secure/instance.token
 cargo run -q -p peri-studio -- token generate --name web --role full
 cargo run -q -p peri-studio -- status --json | --ready
+cargo run -q -p peri-studio -- update
 ```
 
 自定义目录/端口用环境变量：`PERI_STUDIO_CONFIG_DIR`、`PERI_STUDIO_DATA_DIR`、`PERI_STUDIO_LISTEN_ADDR`、`PERI_STUDIO_LISTEN_PORT`；远程 instance 连接地址由 `connect <URL>` 显式提供。

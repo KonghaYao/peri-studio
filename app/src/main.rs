@@ -19,6 +19,7 @@ mod ssh_release_checksums;
 mod status;
 mod telemetry;
 mod token;
+mod update;
 
 use clap::{FromArgMatches as _, Parser as _};
 use peri_studio_server::config::{CliOverrides, Config};
@@ -33,6 +34,7 @@ fn main() -> anyhow::Result<()> {
     match cli.command {
         Some(Command::Token(args)) => token::run(cli.config.as_deref(), cli.json_log, args),
         Some(Command::Status(args)) => status::run(cli.config.as_deref(), args),
+        Some(Command::Update) => update::run(),
         Some(Command::ProtocolVersion) => {
             println!("{}", peri_studio_proto::version::PROTOCOL_VERSION);
             Ok(())
@@ -99,7 +101,10 @@ async fn run_async(
             data_dir,
             token_file,
         }) => run_owner_shutdown(data_dir, token_file).await,
-        Some(Command::Token(_)) | Some(Command::Status(_)) | Some(Command::ProtocolVersion) => {
+        Some(Command::Token(_))
+        | Some(Command::Status(_))
+        | Some(Command::Update)
+        | Some(Command::ProtocolVersion) => {
             unreachable!("handled before runtime")
         }
     }

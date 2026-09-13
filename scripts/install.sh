@@ -6,6 +6,7 @@ export LC_ALL=C
 # Studio-specific names so the two products can coexist.
 #
 # Usage: curl -fsSL https://raw.githubusercontent.com/KonghaYao/peri-studio/main/scripts/install.sh | bash
+#        peri-studio update   # same installer; skips PATH hints by default
 # Options:
 #   PERI_STUDIO_INSTALL_VERSION  Version or tag (0.2.0 / peri-studio-v0.2.0), empty = latest
 #   PERI_STUDIO_INSTALL_DIR      Install directory (default: $HOME/.peri)

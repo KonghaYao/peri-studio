@@ -12,7 +12,7 @@ flowchart TB
         WEB["Web 面板（SolidJS + Vite）"]
     end
 
-    BIN["peri-studio（唯一发布二进制，app/）<br/>默认/local · serve [--local] · connect &lt;URL&gt; · token · status"]
+    BIN["peri-studio（唯一发布二进制，app/）<br/>默认/local · serve [--local] · connect &lt;URL&gt; · token · status · update"]
 
     subgraph SRV["peri-studio server 角色（server/）"]
         MAIN["ServerRuntime<br/>listener 就绪 · 关闭契约"]
@@ -83,7 +83,7 @@ flowchart TB
 
 | 目录 | 角色 | 形态 | 关键职责 | 对外接口 |
 | --- | --- | --- | --- | --- |
-| `app/` | `peri-studio` | **唯一发布二进制** | CLI 角色选择、信号/就绪契约、local 子进程监督、【v2.16】SshBackend | `local`、`serve [--local]`、`connect <URL>`、`token`、`status` |
+| `app/` | `peri-studio` | **唯一发布二进制** | CLI 角色选择、信号/就绪契约、local 子进程监督、【v2.16】SshBackend | `local`、`serve [--local]`、`connect <URL>`、`token`、`status`、`update` |
 | `proto/` | `peri-studio-proto` | 纯协议 crate（无异步依赖） | 帧模型、Action/Ack 信封、instance 协议 9 帧、连接生命周期、y-sync envelope、M1 帧集白名单、HMAC 双向认证原语、Y.Doc schema 类型镜像 | server / instance 编译期共享 |
 | `server/` | server 角色库 | 运行时模块 | 认证/授权、控制面（Hub）、ACPChannel 规范化、Y.Doc 聚合投影、命令协调（mcp/oauth/prompt/rewind）、SQLite project 元数据、ACP 会话 list 缓存、内嵌 Web 面板、【v2.16】MachineService | ws `/`（浏览器）、ws `/instance`（instance）、HTTP `/api/health`、`/api/auth/session` |
 | `instance/` | instance 角色库 | 运行时模块 | outbound 连 server、收 spawn/kill 指令、管理 ACP 进程树（进程组信号）、透明转发 + 断线缓冲 + 补推、心跳 | ws outbound `/instance`；stdio 对接 ACP 进程 |

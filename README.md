@@ -22,6 +22,14 @@ macOS / Linux：
 curl -fsSL https://raw.githubusercontent.com/KonghaYao/peri-studio/main/scripts/install.sh | bash
 ```
 
+已安装后升级到最新 GitHub Release：
+
+```bash
+peri-studio update
+```
+
+`update` 只是重新执行官方 `install.sh`：校验 checksum 后原子替换版本目录与 `~/.peri/peri-studio` 入口，不重启正在运行的 server/instance。指定版本可设置 `PERI_STUDIO_INSTALL_VERSION=0.2.0`；自定义目录可设置 `PERI_STUDIO_INSTALL_DIR`。
+
 默认安装布局：
 
 ```text
@@ -31,7 +39,7 @@ curl -fsSL https://raw.githubusercontent.com/KonghaYao/peri-studio/main/scripts/
   peri-studio-current-version.txt
 ```
 
-脚本从 GitHub Release 选择对应平台资产，强制校验同名 `.sha256` 后才原子安装，并把 `~/.peri` 加入用户 PATH。指定版本可设置 `PERI_STUDIO_INSTALL_VERSION=0.2.0`；自定义目录可设置 `PERI_STUDIO_INSTALL_DIR`。安装脚本和首发二进制尚未签名，macOS Gatekeeper 可能显示来源警告。Windows 尚未纳入当前 GitHub Release 矩阵；如需 Windows 支持，请从源码自行构建。
+脚本从 GitHub Release 选择对应平台资产，强制校验同名 `.sha256` 后才原子安装，并把 `~/.peri` 加入用户 PATH。安装脚本和首发二进制尚未签名，macOS Gatekeeper 可能显示来源警告。Windows 尚未纳入当前 GitHub Release 矩阵；如需 Windows 支持，请从源码自行构建。
 
 安装后直接运行：
 
@@ -127,6 +135,9 @@ cargo run -q -p peri-studio -- connect ws://127.0.0.1:8456/instance \
 cargo run -q -p peri-studio -- status --json
 cargo run -q -p peri-studio -- status --ready
 
+# 重新执行官方 install.sh，替换 ~/.peri 中的当前入口
+cargo run -q -p peri-studio -- update
+
 # 无敏感值地列出 token 记录，或吊销一个 token
 cargo run -q -p peri-studio -- token list
 cargo run -q -p peri-studio -- token revoke <token_id>
@@ -154,6 +165,7 @@ PERI_STUDIO_CONFIG_DIR=/path/to/config PERI_STUDIO_DATA_DIR=/path/to/data ./dev.
 状态为 healthy 时为 true；peer 与 Host 必须同时是 loopback，避免把内部状态暴露给
 DNS rebinding 请求。
 
+交互式升级可运行 `peri-studio update`（等同于再跑一遍 `install.sh`）。
 单二进制升级是原子替换：先替换 `peri-studio`，再重启 server 角色，最后
 重启或滚动更新使用旧进程的 instance 角色。server 停机期间 instance/ACP 不停，
 它们会在 server 恢复后重连。Instance hello 显式携带协议版本；版本不匹配会

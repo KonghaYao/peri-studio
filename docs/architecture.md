@@ -196,7 +196,7 @@ Composer 草稿由独立 IndexedDB store 以 `{principalId, projectId, acpSessio
 
 | 模块 / 角色 | crate / 位置 | 职责 | 备注 |
 |--------|------|------|------|
-| `peri-studio` 应用 | `app/` | 唯一 CLI 与发布入口；选择 `local`/`serve`/`connect`；持有信号、就绪、本地 `connect` 监督与【v2.16】`SshBackend`（OpenSSH 隧道，随 studio 退出） | 每个平台发布一个原生 `peri-studio` 文件（Windows 为 `.exe`）；默认命令 = `local`；server 库禁止 spawn ssh |
+| `peri-studio` 应用 | `app/` | 唯一 CLI 与发布入口；选择 `local`/`serve`/`connect`/`update`；持有信号、就绪、本地 `connect` 监督与【v2.16】`SshBackend`（OpenSSH 隧道，随 studio 退出） | 每个平台发布一个原生 `peri-studio` 文件（Windows 为 `.exe`）；默认命令 = `local`；`update` 只执行官方 `install.sh`；server 库禁止 spawn ssh |
 | server 角色 | `server/`（库） | 认证、HTTP 面与静态托管、控制面、ACPChannel 规范化、聚合器、DocManager、instance 注册表、SQLite 元数据、【v2.16】`MachineService` | `peri-studio serve`；`--local` 要求同时拉起本地 instance |
 | instance 角色 | `instance/`（库） | outbound 连 server（`/instance`）、收 spawn/kill/forward 指令、管理 ACP 进程树、透明转发 + 断线缓冲 | `peri-studio connect <URL>`；child 进程组 + fingerprint 孤儿清理（§3.3） |
 | Web 面板 | `web/` + `packages/ui/` | SolidJS 分层视图：Yjs 只读投影渲染 + Action/Ack 操作；`@peri/ui` 提供共享 T1/T2 | 构建产物经 Vite 生成 `web/dist`，**不单独部署**；原规划 `peri-studio-tui` 未实现 |
@@ -211,6 +211,7 @@ Composer 草稿由独立 IndexedDB store 以 `{principalId, projectId, acpSessio
 - `peri-studio` 与 `peri-studio local` 等价；启动 server，等 listener 实际就绪后拉起同一可执行文件的 `connect` 子进程；
 - `peri-studio serve` 只启动 server；`peri-studio serve --local` 与本地复合模式共享同一监督实现，不另造启动路径；
 - `peri-studio connect <URL>` 只启动 instance 角色，可作为远程机器的前台 daemon；
+- `peri-studio update` 拉取并执行官方 `scripts/install.sh`，原子替换安装入口（默认 `~/.peri`，或 `PERI_STUDIO_INSTALL_DIR` / 当前版本目录推断的根）；不重启正在运行的 server/instance；
 - 本地正常关闭由监督者停止接收新命令后通知 instance 优雅退出；server 异常退出或被 `SIGKILL` 时，不得以 parent-death 或 service cgroup 级联动终止 instance/ACP；
 - server 重启后已存活 instance 先重连。新 local 仅在 owner lock 中的 managed-local token id、server endpoint、凭据摘要、PID 与出生指纹全部匹配时接管；不匹配则明确失败且绝不发信号；
 - 接管把监督责任转移给新 local：持续监听 owner lock，owner 退出后恢复同一 `connect` 的 spawn/backoff；新 local 优雅退出时通过数据目录内的 0600 Unix socket 发送绑定完整 owner 身份的 HMAC 关闭请求，由 instance 自行收尾，supervisor 不向 adopted PID 发信号。server 异常退出则解除监督但保留 instance/ACP；PID 复用、记录损坏、认证失败或探测 I/O 失败都 fail closed。

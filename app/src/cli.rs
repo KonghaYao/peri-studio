@@ -36,6 +36,8 @@ pub enum Command {
     Token(TokenArgs),
     /// Query server health.
     Status(StatusArgs),
+    /// Download and run the official installer to replace this binary.
+    Update,
     /// Hidden: print wire protocol version for remote SSH probe.
     #[command(hide = true)]
     ProtocolVersion,
@@ -146,5 +148,8 @@ mod tests {
         ])
         .unwrap();
         assert!(matches!(connect.command, Some(Command::Connect(_))));
+
+        let update = Cli::try_parse_from(["peri-studio", "update"]).unwrap();
+        assert!(matches!(update.command, Some(Command::Update)));
     }
 }
