@@ -32,7 +32,10 @@ export const ProjectSidebarShell: Component<ProjectSidebarShellProps> = (props) 
   const regions = (
     <>
       <Show when={local.navbar}>
-        <SidebarHeader class="shrink-0 gap-0 border-0 p-0 px-6 pt-8 pb-4">
+        <SidebarHeader
+          data-testid="titlebar-drag-sidebar"
+          class="ui-titlebar-drag ui-titlebar-overlay shrink-0 gap-0 border-0 p-0 pr-6 pt-8 pb-4 pl-titlebar-gutter min-h-titlebar"
+        >
           {local.navbar}
         </SidebarHeader>
       </Show>

@@ -155,14 +155,46 @@ test('package CSS does not own application selectors', () => {
 test('standalone safe-area tokens are the only inset source for named utilities', () => {
   const tokens = read(join(srcRoot, 'styles', 'tokens.css'));
   const theme = read(join(srcRoot, 'styles', 'theme.css'));
+  const extra = read(join(srcRoot, 'styles', 'extra.css'));
   for (const name of ['top', 'right', 'bottom', 'left']) {
     assert.match(tokens, new RegExp(`--safe-area-${name}:\\s*env\\(safe-area-inset-${name}`));
   }
   assert.match(tokens, /--composer-safe-bottom:\s*calc\(var\(--space-20\) \+ var\(--safe-area-bottom\)\)/);
+  for (const name of ['x', 'y', 'width', 'height']) {
+    assert.match(tokens, new RegExp(`--titlebar-area-${name}:\\s*env\\(titlebar-area-${name}`));
+  }
+  assert.match(tokens, /--titlebar-safe-right:\s*0px/);
+  assert.match(tokens, /--titlebar-content-left:\s*0px/);
+  assert.match(tokens, /--titlebar-overlay-bg:\s*color-mix\(in srgb,\s*var\(--sidebar-bg\)/);
+  assert.match(tokens, /--titlebar-overlay-blur:\s*var\(--space-20\)/);
+  assert.match(tokens, /--titlebar-overlay-saturate:/);
+  assert.match(tokens, /@media \(display-mode: window-controls-overlay\)/);
+  assert.doesNotMatch(tokens, /display-mode:\s*fullscreen/);
+  assert.doesNotMatch(tokens, /display-mode:\s*borderless/);
   for (const utility of ['pt-safe', 'pr-safe', 'pb-safe', 'pl-safe', 'px-safe', 'py-safe', 'p-safe', 'p-safe-min-24']) {
     assert.match(theme, new RegExp(`@utility ${utility} \\{`));
   }
-  assert.match(theme, /p-safe-min-24 \{[\s\S]*padding-top:\s*max\(var\(--space-24\),\s*var\(--safe-area-top\)\)/);
+  for (const utility of ['pt-titlebar', 'pl-titlebar', 'pr-titlebar', 'h-titlebar', 'min-h-titlebar', 'w-titlebar', 'inset-titlebar', 'pl-titlebar-gutter', 'pr-titlebar-gutter', 'pt-titlebar-gutter', 'pl-titlebar-content']) {
+    assert.match(theme, new RegExp(`@utility ${utility} \\{`));
+  }
+  assert.match(theme, /p-safe-min-24 \{[\s\S]*padding-top:\s*max\(var\(--space-24\),\s*var\(--safe-area-top\),\s*var\(--titlebar-area-height\)\)/);
+  assert.match(extra, /\.ui-titlebar-drag\s*\{/);
+  assert.match(extra, /-webkit-app-region:\s*drag/);
+  assert.match(extra, /\.ui-titlebar-overlay\s*\{/);
+  assert.match(extra, /backdrop-filter:\s*blur\(var\(--titlebar-overlay-blur\)\)/);
+  assert.match(extra, /forced-colors:\s*active/);
+  assert.match(extra, /prefers-reduced-transparency:\s*reduce/);
+  assert.match(extra, /background-color:\s*Canvas/);
+  assert.match(extra, /html,\s*body,\s*#app/);
+  assert.match(extra, /\.ui-titlebar-no-drag/);
+  assert.match(extra, /\[role='menu'\]/);
+  assert.match(extra, /\[role='dialog'\]/);
+  assert.match(extra, /-webkit-app-region:\s*no-drag/);
+  const chatHeader = read(join(srcRoot, 'components', 'ChatHeader.tsx'));
+  assert.match(chatHeader, /ui-titlebar-drag/);
+  assert.match(chatHeader, /ui-titlebar-overlay/);
+  assert.match(chatHeader, /pl-titlebar-content/);
+  assert.match(chatHeader, /pr-titlebar-gutter/);
 });
 
 test('package CSS only consumes declared tokens', () => {
@@ -252,6 +284,7 @@ test('composer layout classes live in composer-layout.ts', () => {
   assert.match(composerLayout, /composerSurfaceTrailingClass/);
   assert.match(composerLayout, /composerEditorClass/);
   assert.match(composerLayout, /composerShellClass/);
+  assert.match(composerLayout, /ui-titlebar-no-drag/);
   assert.match(composerLayout, /mx-auto/);
   assert.match(composerLayout, /composerPlusBtnClass/);
   assert.match(composerLayout, /bg-transparent/);

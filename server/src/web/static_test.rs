@@ -409,6 +409,12 @@ async fn pwa_manifest_get_and_head_are_upgrade_safe() {
             let body = &response[body_start..];
             assert!(body.contains("\"name\": \"Peri Studio\""), "{body:?}");
             assert!(body.contains("\"display\": \"standalone\""), "{body:?}");
+            assert!(
+                body.contains(
+                    "\"display_override\": [\"window-controls-overlay\", \"standalone\"]"
+                ),
+                "{body:?}"
+            );
         }
     }
 }

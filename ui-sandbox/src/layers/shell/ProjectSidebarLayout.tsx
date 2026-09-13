@@ -23,7 +23,7 @@ import {
   Settings,
   Workflow,
 } from 'lucide-solid';
-import { Dialog, IconButton, Input } from '@/lib/catalog-ui';
+import { Dialog, DropdownMenu, IconButton, Input } from '@/lib/catalog-ui';
 
 const ARCHIVED_DEMO = [
   { id: 'arch-1', title: 'legacy-ws-proto', subtitle: 'Session · peri-studio' },
@@ -298,9 +298,18 @@ export function ProjectSidebarLayout() {
           <>
             <span class="grid size-28 shrink-0 place-items-center rounded-full bg-surface-muted text-11 font-medium text-content-secondary">C</span>
             <span class="min-w-0 flex-1 truncate text-13 text-content-primary">Christopher13</span>
-            <IconButton size="sm" showTooltip={false} label="Settings" class="shrink-0 text-content-muted">
-              <Settings size={16} strokeWidth={1.7} />
-            </IconButton>
+            <DropdownMenu
+              label="Settings"
+              trigger={(
+                <IconButton size="sm" showTooltip={false} label="Settings" class="ui-titlebar-no-drag shrink-0 text-content-muted">
+                  <Settings size={16} strokeWidth={1.7} />
+                </IconButton>
+              )}
+              items={[
+                { id: 'install', label: 'Install' },
+                { id: 'system', label: 'System' },
+              ]}
+            />
           </>
         )}
       />

@@ -2,7 +2,7 @@ import { cn } from '../../lib/cn';
 
 /** Composer 外壳：队列/通知在上，surface 居中限宽。 */
 export const composerShellClass =
-  'relative mx-auto flex w-full min-w-0 max-w-(--container-composer-launch) flex-col gap-10';
+  'ui-titlebar-no-drag relative mx-auto flex w-full min-w-0 max-w-(--container-composer-launch) flex-col gap-10';
 
 /** Composer surface 基础样式（compact / expanded 共用）。 */
 export const composerSurfaceBaseClass =

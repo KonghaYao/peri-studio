@@ -159,6 +159,8 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
       style={{
         '--sidebar-width': `${sidebarWidth()}px`,
         'grid-template-columns': sidebarGridTemplate(),
+        /* 侧栏收起或窄屏时 ChatHeader 需避开 traffic lights；展开时 gutter 由侧栏 navbar 承担。 */
+        '--titlebar-content-left': !mobile() && sidebarOpen() ? '0px' : 'var(--titlebar-area-x)',
       }}
     >
       <ProjectDrawer ref={(element) => { drawer = element; }} open={open()} modal={mobile()} onOpenChange={setOpen}>

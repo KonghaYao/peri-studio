@@ -19,7 +19,7 @@ export const workbenchShellCompactClass = cn(
 
 /** 竖轨容器。 */
 export const workbenchRailClass = cn(
-  'flex w-(--workbench-rail-width) shrink-0 flex-col items-center gap-4 bg-neutral-25 py-8',
+  'flex w-(--workbench-rail-width) shrink-0 flex-col items-center gap-4 bg-neutral-25 pb-8 pt-titlebar-gutter',
 );
 
 /** 保留 extra.css ::before 激活指示条（left）。 */

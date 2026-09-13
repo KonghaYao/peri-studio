@@ -15,11 +15,21 @@ const allFiles = (directory) => readdirSync(directory, { withFileTypes: true }).
 
 const serviceWorkerPattern = /navigator\.serviceWorker\.register|vite-plugin-pwa|workbox|serviceWorker\.register/i;
 
+test('manifest prefers window-controls-overlay and keeps standalone fallback', () => {
+  const manifest = JSON.parse(readFileSync(join(webRoot, 'public', 'manifest.webmanifest'), 'utf8'));
+  assert.equal(manifest.display, 'standalone');
+  assert.deepEqual(manifest.display_override, ['window-controls-overlay', 'standalone']);
+  assert.equal(manifest.display_override.includes('fullscreen'), false);
+  assert.equal(manifest.display_override.includes('borderless'), false);
+  assert.equal(manifest.theme_color, '#fafafa');
+  assert.equal(manifest.background_color, '#ffffff');
+});
+
 test('production index.html is the only PWA install entry', () => {
   const index = readFileSync(join(webRoot, 'index.html'), 'utf8');
   assert.match(index, /<title>Peri Studio<\/title>/);
   assert.match(index, /viewport-fit=cover/);
-  assert.match(index, /name="theme-color"\s+content="#ffffff"/);
+  assert.match(index, /name="theme-color"\s+content="#fafafa"/);
   assert.match(index, /rel="manifest"\s+href="\/manifest\.webmanifest"/);
   assert.match(index, /rel="apple-touch-icon"/);
   assert.match(index, /href="\/favicon\.svg"/);

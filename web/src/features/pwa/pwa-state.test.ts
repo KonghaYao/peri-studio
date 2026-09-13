@@ -27,9 +27,11 @@ function installPromptEvent(init: PromptEventInit = {}) {
   return event;
 }
 
-function stubMatchMedia(standalone: boolean) {
+function stubMatchMedia(standalone: boolean, overlay = false) {
   vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
-    matches: query.includes('display-mode: standalone') ? standalone : false,
+    matches: query.includes('display-mode: window-controls-overlay')
+      ? overlay
+      : query.includes('display-mode: standalone') ? standalone : false,
     media: query,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
@@ -79,6 +81,14 @@ describe('pwa state', () => {
     startPwa();
     expect(isStandalone()).toBe(true);
     expect(isIosLike()).toBe(true);
+    expect(canInstall()).toBe(false);
+    expect(browserInstallKind()).toBe('installed');
+  });
+
+  it('treats window-controls-overlay display mode as installed', () => {
+    stubMatchMedia(false, true);
+    startPwa();
+    expect(isStandalone()).toBe(true);
     expect(canInstall()).toBe(false);
     expect(browserInstallKind()).toBe('installed');
   });

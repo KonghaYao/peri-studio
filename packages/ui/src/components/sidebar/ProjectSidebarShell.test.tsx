@@ -22,6 +22,7 @@ describe('ProjectSidebarShell', () => {
     const shell = screen.getByTestId('project-sidebar');
     expect(shell.tagName).toBe('NAV');
     expect(shell).toHaveClass('ui-project-sidebar-shell', 'project-sidebar');
+    expect(screen.getByTestId('titlebar-drag-sidebar')).toHaveClass('ui-titlebar-drag', 'ui-titlebar-overlay', 'pl-titlebar-gutter');
     expect(screen.getByTestId('navbar')).toBeInTheDocument();
     expect(screen.getByTestId('body')).toBeInTheDocument();
     expect(screen.getByTestId('footer')).toBeInTheDocument();

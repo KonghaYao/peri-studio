@@ -631,8 +631,16 @@ test('standalone shell uses named safe-area utilities without card margin overfl
   const authGate = readFileSync(join(sourceRoot(), 'widgets', 'auth', 'AuthGate.tsx'), 'utf8');
   assert.match(shell, /\bp-safe\b/);
   assert.match(shell, /\bpb-safe\b|\bp-safe\b/);
+  assert.match(shell, /--titlebar-content-left/);
+  assert.doesNotMatch(shell, /pt-\[env\(/);
   assert.match(authGate, /\bp-safe-min-24\b/);
+  assert.match(authGate, /ui-titlebar-drag/);
+  assert.match(authGate, /ui-titlebar-no-drag/);
+  assert.doesNotMatch(authGate, /ui-titlebar-overlay/);
+  const sidebarChrome = readWidgetTsx('SidebarChrome.tsx');
+  assert.match(sidebarChrome, /ui-titlebar-no-drag/);
   assert.doesNotMatch(authGate, /\bm-24\b/);
+  assert.doesNotMatch(authGate, /pt-\[env\(/);
   assert.match(authGate, /w-\(--container-auth-card\)/);
 });
 

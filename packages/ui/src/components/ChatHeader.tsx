@@ -39,7 +39,7 @@ export const ChatHeader: Component<ChatHeaderProps> = (props) => {
   return (
     <header
       class={cn(
-        'relative flex h-52 items-center gap-8 border-b border-border-subtle bg-surface-overlay px-16',
+        'ui-titlebar-drag ui-titlebar-overlay relative flex h-52 min-h-titlebar items-center gap-8 border-b border-border-subtle bg-surface-overlay pl-titlebar-content pr-titlebar-gutter',
         local.launch && 'justify-end',
         local.class,
       )}

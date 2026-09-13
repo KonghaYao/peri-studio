@@ -428,6 +428,19 @@
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
   --composer-safe-bottom: calc(var(--space-20) + var(--safe-area-bottom));
+  /* Desktop PWA Window Controls Overlay。未 overlay 时 env 为 0，可始终应用。 */
+  --titlebar-area-x: env(titlebar-area-x, 0px);
+  --titlebar-area-y: env(titlebar-area-y, 0px);
+  --titlebar-area-width: env(titlebar-area-width, 0px);
+  --titlebar-area-height: env(titlebar-area-height, 0px);
+  /* WCO 未激活时不得用 100vw 反推，否则会得到整窗宽度。 */
+  --titlebar-safe-right: 0px;
+  /* 侧栏收起后由 AppShell 覆盖为 titlebar-area-x，避免 ChatHeader 压住 traffic lights。 */
+  --titlebar-content-left: 0px;
+  /* WCO 拖拽条毛玻璃：侧栏半透明，不是实心白。Chromium 会丢掉 theme_color alpha，见 pwa.md。 */
+  --titlebar-overlay-bg: color-mix(in srgb, var(--sidebar-bg) 52%, transparent);
+  --titlebar-overlay-blur: var(--space-20);
+  --titlebar-overlay-saturate: 1.4;
   --container-popover: min(288px, calc(100vw - 2 * var(--space-16)));
   --container-slash-menu: min(360px, calc(100vw - 2 * var(--space-16)));
   --container-dialog-default: min(400px, calc(100vw - 2 * var(--space-20)));
@@ -561,4 +574,10 @@
   --container-slash: min(330px, 42vh);
   --container-slash-tight: min(360px, 48vh);
   --container-placeholder-narrow: clamp(240px, 48vh, 460px);
+}
+
+@media (display-mode: window-controls-overlay) {
+  :root {
+    --titlebar-safe-right: max(0px, calc(100vw - var(--titlebar-area-x) - var(--titlebar-area-width)));
+  }
 }

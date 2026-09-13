@@ -53,7 +53,8 @@ test('mobile drawer keeps nested search dialogs inert and stacked', async ({ pag
 
 test('system dialog opens without horizontal overflow', async ({ page }) => {
   await gotoScenario(page, 'conversation', { sidebar: 'projects' });
-  await page.getByRole('button', { name: 'System information' }).click();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByRole('menuitem', { name: 'System' }).click();
   const dialog = page.getByRole('dialog', { name: 'System' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('tab', { name: 'Machines' })).toHaveAttribute('aria-selected', 'true');

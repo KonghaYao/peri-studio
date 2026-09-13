@@ -199,11 +199,11 @@ Widget **可以**读 `store`；**不得**直发 WebSocket 帧。复杂逻辑下�
 
 ### 10.1.1 Standalone / 本机安装
 
-- 已安装窗口使用 `display: standalone`。`theme-color` 与 manifest 画布均为 `#ffffff`（不是 accent）。
-- 安装入口只在 System → About「This browser」（诊断弹窗的浏览器 chrome，不是用户偏好）：互斥展示 `Install`（Chrome / Edge `beforeinstallprompt`）、`Installed`（standalone，`role="status"`）、Safari `Open Share, then Add to Home Screen`（仅 `isIosLike && isSecureContext && isLoopbackHost`）、或 `Cannot install here`。
+- 已安装窗口 `display: standalone`，桌面 Chromium 经 `display_override` 优先 `window-controls-overlay`（见 [`pwa.md`](pwa.md) §5）。`theme-color` / manifest `theme_color` 为侧栏灰 `#fafafa`（Chromium 不接受透明 theme）；`background_color` 仍为画布白 `#ffffff`。WCO 拖拽条用 `.ui-titlebar-overlay` 毛玻璃，不是实心白。
+- 安装入口：侧栏齿轮 **Settings** 菜单在可安装时提供 `Install`（`canInstall` 或 loopback iOS A2HS；`standalone` / `window-controls-overlay` 隐藏），`System` 仍打开诊断弹窗。齿轮与其菜单为 `ui-titlebar-no-drag`。首次签入若可安装、尚未询问且不在已安装窗口，用 `@peri/ui` Dialog（`Install Peri Studio?` / `Install` / `Not now`）；iOS 只说明 A2HS，不提供空 Install。System → About「This browser」保留互斥详情：`Install`（Chrome / Edge `beforeinstallprompt`）、`Installed`（standalone / WCO，`role="status"`）、Safari `Open Share, then Add to Home Screen`（仅 `isIosLike && isSecureContext && isLoopbackHost`）、或 `Cannot install here`。
 - 有安装动作时，文案使用**当前页** `location.origin`（由 widget 注入），并说明这是本机快捷方式：断开本机 server 后窗口不可用。规范 loopback 配方 `http://127.0.0.1:8456/` 只作文档默认入口，不得写成「这次安装」的 origin。iOS Home Screen 应用是独立存储，可能要再登录一次。LAN HTTP 不得提示 Add to Home Screen，也不得发明 127.0.0.1 快捷方式。无动作时隐藏安装说明段。
 - **不**把 Install 放进侧栏 More、AuthGate 登录卡、`ConnectionProblem` 或 Toast。无 Service Worker，因此无 Reload-for-update。
-- standalone 安全区用 T1 `pt-safe` / `pb-safe` / `p-safe`（AuthGate 登录页用 `p-safe-min-24`，AppShell / Toast 视口用 `p-safe`）。Composer 底部复用 `--composer-safe-bottom`。禁止 `pt-[env(...)]`。
+- standalone 安全区用 T1 `pt-safe` / `pb-safe` / `p-safe`（AuthGate 登录页用 `p-safe-min-24`，AppShell / Toast 视口用 `p-safe`）。桌面 WCO 标题区用 `--titlebar-area-*` / `pl-titlebar-gutter` / `pr-titlebar-gutter`，侧栏 navbar 与 ChatHeader 为 `ui-titlebar-drag` + `ui-titlebar-overlay`；齿轮 Settings、Composer、菜单与 Dialog 为 `ui-titlebar-no-drag`。Composer 底部复用 `--composer-safe-bottom`。禁止 `pt-[env(...)]`。
 
 ### 10.2 资源工作台浮窗
 

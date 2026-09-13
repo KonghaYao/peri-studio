@@ -38,18 +38,23 @@ export function isLoopbackHostname(hostname: string): boolean {
   return host === '127.0.0.1' || host === 'localhost' || host === '::1';
 }
 
+const INSTALLED_DISPLAY_MODES = ['standalone', 'window-controls-overlay'] as const;
+
 let started = false;
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
-let displayModeQuery: MediaQueryList | null = null;
+let displayModeQueries: MediaQueryList[] = [];
 
 function navigatorStandalone(): boolean {
   return 'standalone' in navigator && (navigator as Navigator & { standalone?: boolean }).standalone === true;
 }
 
+function matchesInstalledDisplayMode(): boolean {
+  if (typeof window.matchMedia !== 'function') return false;
+  return INSTALLED_DISPLAY_MODES.some((mode) => window.matchMedia(`(display-mode: ${mode})`).matches);
+}
+
 function detectStandalone(): boolean {
-  const media = typeof window.matchMedia === 'function'
-    && window.matchMedia('(display-mode: standalone)').matches;
-  return Boolean(media || navigatorStandalone());
+  return Boolean(matchesInstalledDisplayMode() || navigatorStandalone());
 }
 
 function detectIosLike(): boolean {
@@ -103,8 +108,10 @@ export function startPwa(): void {
   window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
   window.addEventListener('appinstalled', onAppInstalled);
   if (typeof window.matchMedia === 'function') {
-    displayModeQuery = window.matchMedia('(display-mode: standalone)');
-    displayModeQuery.addEventListener('change', onDisplayModeChange);
+    displayModeQueries = INSTALLED_DISPLAY_MODES.map((mode) => window.matchMedia(`(display-mode: ${mode})`));
+    for (const query of displayModeQueries) {
+      query.addEventListener('change', onDisplayModeChange);
+    }
   }
 }
 
@@ -143,11 +150,13 @@ export function resetPwaForTests(): void {
   if (typeof window !== 'undefined' && started) {
     window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
     window.removeEventListener('appinstalled', onAppInstalled);
-    displayModeQuery?.removeEventListener('change', onDisplayModeChange);
+    for (const query of displayModeQueries) {
+      query.removeEventListener('change', onDisplayModeChange);
+    }
   }
   started = false;
   deferredPrompt = null;
-  displayModeQuery = null;
+  displayModeQueries = [];
   setCanInstall(false);
   setIsStandalone(false);
   setIsIosLike(false);

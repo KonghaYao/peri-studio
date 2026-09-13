@@ -1209,7 +1209,7 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 
 ## 10. 视图层（Web 面板）
 
-> 【v2.6】原规划的 `peri-studio-tui`（ratatui）**未实现**；视图层由 SolidJS Web 面板承担。【v2.7】构建产物内嵌最终 `peri-studio` 并由 server 角色托管（§3.2）。【v2.18】前端目录已五层化（`app` / `pages` / `widgets` / `features` / `entities` / `shared` + `store`），权威说明见 [frontend-architecture.md](design/frontend-architecture.md) 与根目录 `AGENTS.md`。【v2.19】Web 为可安装、在线优先 PWA（无 Service Worker）；安装 UI 在 System About，不进 store。本节按实现改写；「纯客户端、不上行 update」的裁决（P1/P2 语义）不变。浏览器侧的完整行为契约（认证、目录动作、命令追踪、消息投递恢复、导航、渲染边界）见 §3.0。
+> 【v2.6】原规划的 `peri-studio-tui`（ratatui）**未实现**；视图层由 SolidJS Web 面板承担。【v2.7】构建产物内嵌最终 `peri-studio` 并由 server 角色托管（§3.2）。【v2.18】前端目录已五层化（`app` / `pages` / `widgets` / `features` / `entities` / `shared` + `store`），权威说明见 [frontend-architecture.md](design/frontend-architecture.md) 与根目录 `AGENTS.md`。【v2.19】Web 为可安装、在线优先 PWA（无 Service Worker）；安装 UI 在齿轮 Settings 菜单、首次签入 Dialog 与 System About，不进 store。本节按实现改写；「纯客户端、不上行 update」的裁决（P1/P2 语义）不变。浏览器侧的完整行为契约（认证、目录动作、命令追踪、消息投递恢复、导航、渲染边界）见 §3.0。
 
 ### 10.1 定位
 
@@ -1237,7 +1237,7 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 | 区域 / 模块 | 代码位置（现行） | 数据源 | 说明 |
 |------|--------|------|------|
 | `AuthGate` + auth-state | `widgets/auth` + `features/auth` | `/api/auth/session` | 浏览器认证门（§3.0） |
-| `PwaRuntime` + pwa-state | `widgets/shell` + `features/pwa` | `beforeinstallprompt` / display-mode | 可安装在线工作台；不注册 SW（§3.0 缓存段） |
+| `PwaRuntime` + pwa-state / install-prompt | `widgets/shell` + `features/pwa` | `beforeinstallprompt` / display-mode | 可安装在线工作台；齿轮菜单 + 首次签入 Dialog；WCO/standalone 视为已安装；不注册 SW（§3.0 缓存段） |
 | `ProjectSidebar` + catalog | `widgets/sidebar` + `features/catalog` | Registry Doc + IndexedDB 偏好 | 左栏目录（§3.0） |
 | `ChatView` / `MessageList` / `ConversationMessage` / `ToolCallActivity` | `widgets/chat` + `entities/chat` + `features/chat` | Chat Doc + Control Doc | 投影见 `chat-projection`、`transcript-window`；列表仅复用 `@peri/ui` MessageScroller 外壳（见 [`web-ui-deferrals.md`](design/web-ui-deferrals.md)）；工具卡见 `tool-call-activity.ts`（§3.0） |
 | `Composer` + 投递/草稿 | `widgets/composer/Composer.tsx` + `features/composer` + `features/message` + `features/voice` | Chat Doc + command tracker + IndexedDB；口述走同源 `/voice` | 内联 editor/toolbar + `@peri/ui` `SlashMenuListbox`；草稿隔离；session single-flight（§3.0）；麦克风仅在 health `realtimeVoice` 为真时出现 |

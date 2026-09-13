@@ -44,6 +44,39 @@ function AboutBrowserPreview(props: BrowserPreviewProps) {
   );
 }
 
+function FirstLoginInstallPreview(props: { label: string; kind: 'chrome' | 'a2hs' }) {
+  const chrome = () => props.kind === 'chrome';
+  return (
+    <section class="overflow-hidden rounded-12 border border-divider bg-surface" aria-label={props.label}>
+      <p class="m-0 px-16 pt-12 text-10 font-medium tracking-caps uppercase text-content-faint">{props.label}</p>
+      <header class="mt-8 flex items-center border-b border-border-subtle px-20 py-14">
+        <h3 class="m-0 text-14 font-semibold leading-20 text-text-primary">Install Peri Studio?</h3>
+      </header>
+      <p class="m-0 px-20 py-16 text-13 leading-155 text-text-secondary">
+        <Show
+          when={chrome()}
+          fallback={(
+            <>
+              Open Share, then Add to Home Screen. Add a shortcut on this computer for {DEFAULT_LOOPBACK_RECIPE}.
+              Peri Studio needs this local server. The window is useless if the server is stopped.
+              A Home Screen app uses its own storage and may ask you to sign in again.
+            </>
+          )}
+        >
+          Add a shortcut on this computer for {DEFAULT_LOOPBACK_RECIPE}. Peri Studio needs this local server.
+          The window is useless if the server is stopped.
+        </Show>
+      </p>
+      <footer class="flex justify-end gap-8 border-t border-border-subtle px-20 py-12">
+        <Button variant="secondary" size="compact">Not now</Button>
+        <Show when={chrome()}>
+          <Button variant="primary" size="compact">Install</Button>
+        </Show>
+      </footer>
+    </section>
+  );
+}
+
 /** T4 · System About：mock 互斥安装态，供生产 ThisBrowserBlock 镜像。 */
 export function SystemAboutLayout() {
   return (
@@ -68,6 +101,8 @@ export function SystemAboutLayout() {
         origin={DEFAULT_LOOPBACK_RECIPE}
         kind="cannot-install"
       />
+      <FirstLoginInstallPreview label="First login · Chrome" kind="chrome" />
+      <FirstLoginInstallPreview label="First login · iOS A2HS" kind="a2hs" />
       <p class="m-0 text-11 leading-155 text-text-secondary">
         Default loopback recipe (not this page&apos;s origin): {DEFAULT_LOOPBACK_RECIPE}
       </p>

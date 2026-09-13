@@ -498,8 +498,50 @@
   padding-left: var(--safe-area-left);
 }
 @utility p-safe-min-24 {
-  padding-top: max(var(--space-24), var(--safe-area-top));
-  padding-right: max(var(--space-24), var(--safe-area-right));
+  padding-top: max(var(--space-24), var(--safe-area-top), var(--titlebar-area-height));
+  padding-right: max(var(--space-24), var(--safe-area-right), var(--titlebar-safe-right));
   padding-bottom: max(var(--space-24), var(--safe-area-bottom));
-  padding-left: max(var(--space-24), var(--safe-area-left));
+  padding-left: max(var(--space-24), var(--safe-area-left), var(--titlebar-area-x));
+}
+@utility pt-titlebar {
+  padding-top: var(--titlebar-area-height);
+}
+@utility pl-titlebar {
+  padding-left: var(--titlebar-area-x);
+}
+@utility pr-titlebar {
+  padding-right: var(--titlebar-safe-right);
+}
+@utility h-titlebar {
+  height: var(--titlebar-area-height);
+}
+@utility min-h-titlebar {
+  min-height: var(--titlebar-area-height);
+}
+@utility w-titlebar {
+  width: var(--titlebar-area-width);
+}
+@utility left-titlebar {
+  left: var(--titlebar-area-x);
+}
+@utility top-titlebar {
+  top: var(--titlebar-area-y);
+}
+@utility inset-titlebar {
+  top: var(--titlebar-area-y);
+  left: var(--titlebar-area-x);
+  width: var(--titlebar-area-width);
+  height: var(--titlebar-area-height);
+}
+@utility pl-titlebar-gutter {
+  padding-left: max(var(--space-6), var(--titlebar-area-x));
+}
+@utility pr-titlebar-gutter {
+  padding-right: max(var(--space-16), var(--titlebar-safe-right));
+}
+@utility pt-titlebar-gutter {
+  padding-top: max(var(--space-8), var(--titlebar-area-height));
+}
+@utility pl-titlebar-content {
+  padding-left: max(var(--space-16), var(--titlebar-content-left));
 }

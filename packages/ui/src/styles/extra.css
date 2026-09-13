@@ -296,3 +296,60 @@ body.ui-workbench-panel-resizing * {
   width: 100%;
 }
 
+/* ── Desktop PWA 标题栏拖拽 + WCO 毛玻璃（-webkit-app-region / backdrop-filter） ── */
+
+.ui-titlebar-drag {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+@media (display-mode: window-controls-overlay) {
+  /* 壳层根不另画一条不透明顶栏；内容自己铺到窗沿。 */
+  html,
+  body,
+  #app {
+    background-color: transparent;
+  }
+
+  .ui-titlebar-overlay {
+    background-color: var(--titlebar-overlay-bg);
+    -webkit-backdrop-filter: blur(var(--titlebar-overlay-blur)) saturate(var(--titlebar-overlay-saturate));
+    backdrop-filter: blur(var(--titlebar-overlay-blur)) saturate(var(--titlebar-overlay-saturate));
+  }
+}
+
+@media (display-mode: window-controls-overlay) and (prefers-reduced-transparency: reduce) {
+  .ui-titlebar-overlay {
+    background-color: var(--sidebar-bg);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (display-mode: window-controls-overlay) and (forced-colors: active) {
+  .ui-titlebar-overlay {
+    background-color: Canvas;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+.ui-titlebar-no-drag,
+[role='menu'],
+[role='dialog'],
+.ui-titlebar-drag button,
+.ui-titlebar-drag a,
+.ui-titlebar-drag input,
+.ui-titlebar-drag textarea,
+.ui-titlebar-drag select,
+.ui-titlebar-drag label,
+.ui-titlebar-drag summary,
+.ui-titlebar-drag [role='button'],
+.ui-titlebar-drag [role='textbox'],
+.ui-titlebar-drag [role='combobox'],
+.ui-titlebar-drag [role='menuitem'],
+.ui-titlebar-drag [role='separator'] {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+

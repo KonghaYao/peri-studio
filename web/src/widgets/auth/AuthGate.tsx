@@ -33,8 +33,8 @@ export function AuthGate(props: { children: JSX.Element }) {
 
   return (
     <Show when={auth.state() === 'signed-in'} fallback={
-      <main class="grid min-h-dvh place-items-center bg-sidebar-bg p-safe-min-24">
-        <Card class="w-(--container-auth-card) rounded-16 border-border-subtle p-34 shadow-auth" aria-labelledby="auth-title">
+      <main class="ui-titlebar-drag grid min-h-dvh place-items-center bg-sidebar-bg p-safe-min-24">
+        <Card class="ui-titlebar-no-drag w-(--container-auth-card) rounded-16 border-border-subtle p-34 shadow-auth" aria-labelledby="auth-title">
           <CardHeader class="gap-0 p-0">
             <div class="mb-42 text-14 font-650">Peri Studio</div>
             <h1 id="auth-title" class="text-28 -tracking-35">Continue your work</h1>
