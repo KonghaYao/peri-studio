@@ -15,4 +15,6 @@ export { SourceControlLayout } from './resource/SourceControlLayout';
 export { StatusAreaLayout } from './status/StatusAreaLayout';
 export { TerminalDockLayout } from './terminal/TerminalDockLayout';
 export { ProjectSidebarLayout } from './shell/ProjectSidebarLayout';
+export { SettingsPanelLayout } from './shell/SettingsPanelLayout';
+export { MonitorPanelLayout } from './shell/MonitorPanelLayout';
 export { SystemAboutLayout } from './shell/SystemAboutLayout';

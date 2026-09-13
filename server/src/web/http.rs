@@ -23,11 +23,18 @@ use crate::web::parse::{
     valid_origin,
 };
 use crate::web::pick_directory_http::serve_pick_directory;
+use crate::web::monitor_http::serve_monitor_session;
 use crate::web::resource_upload_http::serve_resource_upload;
 use crate::web::static_::cache_headers_for_static;
 #[cfg(test)]
 use crate::web::static_::route;
+use crate::control::SessionCatalog;
 use crate::web::{BrowserAuthSetup, HealthSnapshot};
+
+pub(crate) struct HttpRouteDeps {
+    pub resources: Arc<crate::control::ResourceService>,
+    pub session_catalog: SessionCatalog,
+}
 
 pub(super) const MAX_HTTP_HEAD: usize = 16 * 1024;
 pub(super) const MAX_HTTP_BODY: usize = 4 * 1024;
@@ -81,9 +88,9 @@ pub(crate) async fn serve_http_with_resources(
     auth: Arc<Mutex<AuthService>>,
     auth_setup: BrowserAuthSetup,
     health: HealthSnapshot,
-    resources: Arc<crate::control::ResourceService>,
+    deps: HttpRouteDeps,
 ) -> std::io::Result<()> {
-    serve_http_inner(stream, peer, auth, auth_setup, health, Some(resources)).await
+    serve_http_inner(stream, peer, auth, auth_setup, health, Some(deps)).await
 }
 
 async fn serve_http_inner(
@@ -92,7 +99,7 @@ async fn serve_http_inner(
     auth: Arc<Mutex<AuthService>>,
     auth_setup: BrowserAuthSetup,
     health: HealthSnapshot,
-    resources: Option<Arc<crate::control::ResourceService>>,
+    deps: Option<HttpRouteDeps>,
 ) -> std::io::Result<()> {
     let deadline = tokio::time::Instant::now() + HTTP_READ_TIMEOUT;
     let mut buf = Vec::with_capacity(2048);
@@ -166,12 +173,8 @@ async fn serve_http_inner(
     let request = lines.next().unwrap_or_default();
     let mut request_parts = request.split_whitespace();
     let method = request_parts.next().unwrap_or_default();
-    let path = request_parts
-        .next()
-        .unwrap_or_default()
-        .split('?')
-        .next()
-        .unwrap_or_default();
+    let raw_target = request_parts.next().unwrap_or_default();
+    let path = raw_target.split('?').next().unwrap_or_default();
     let version = request_parts.next().unwrap_or_default();
     let mut malformed = version != "HTTP/1.1" || request_parts.next().is_some();
     let mut host = None;
@@ -273,7 +276,7 @@ async fn serve_http_inner(
         .await;
     }
     if let Some(upload_id) = path.strip_prefix("/api/resource-uploads/") {
-        let Some(resources) = resources else {
+        let Some(deps) = deps.as_ref() else {
             return write_http(
                 &mut stream,
                 "404 Not Found",
@@ -283,6 +286,7 @@ async fn serve_http_inner(
             )
             .await;
         };
+        let resources = deps.resources.clone();
         if !peer.ip().is_loopback() || !valid_loopback_host(host.unwrap_or_default()) {
             return write_http(
                 &mut stream,
@@ -338,7 +342,7 @@ async fn serve_http_inner(
             )
             .await;
         }
-        let Some(resources) = resources else {
+        let Some(deps) = deps.as_ref() else {
             return write_http(
                 &mut stream,
                 "404 Not Found",
@@ -348,6 +352,7 @@ async fn serve_http_inner(
             )
             .await;
         };
+        let resources = deps.resources.clone();
         let Some(session_id) = cookie.as_deref() else {
             return write_http(
                 &mut stream,
@@ -390,6 +395,32 @@ async fn serve_http_inner(
             blob.bytes.as_slice(),
             &headers,
             method == "GET",
+        )
+        .await;
+    }
+    if path == "/api/monitor/session" {
+        let Some(deps) = deps.as_ref() else {
+            return write_http(
+                &mut stream,
+                "404 Not Found",
+                "application/json",
+                br#"{"error":"not_found"}"#,
+                &security_headers(),
+            )
+            .await;
+        };
+        return serve_monitor_session(
+            stream,
+            peer,
+            auth,
+            &deps.session_catalog,
+            method,
+            raw_target,
+            cookie,
+            host.as_deref(),
+            origin.as_deref(),
+            transfer_encoding.as_deref(),
+            content_length,
         )
         .await;
     }

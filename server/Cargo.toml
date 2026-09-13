@@ -29,6 +29,9 @@ fs2.workspace = true
 chrono = { workspace = true, features = ["serde"] }
 dirs-next = { workspace = true }
 url = { workspace = true }
+tokio-rustls = "0.26"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+webpki-roots = "0.26"
 tokio-tungstenite = { workspace = true }
 yrs = { workspace = true }
 sha2 = { workspace = true }

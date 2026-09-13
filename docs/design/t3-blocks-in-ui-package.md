@@ -59,10 +59,12 @@ T3 组件必须：
 
 | 组件 | 说明 |
 |------|------|
-| `ProjectSidebarShell` | 侧栏 navbar + body + footer 布局壳（mist / scroll）；navbar 为 `ui-titlebar-drag` + `ui-titlebar-sidebar` + `pl-titlebar-gutter`。`html.ui-wco-visible` 时 extra 顶留 `--titlebar-area-height` 空拖条（不再叠左 gutter），不叠 overlay 毛玻璃 |
+| `ProjectSidebarShell` | 侧栏 navbar + body + footer 布局壳（mist / scroll）；列表面为整列 `ui-sidebar-frost`（`--sidebar-frost-*`：底层 wash + 半透明 fill + 颗粒）。footer / gear 行不得另铺 `bg-surface` / `bg-sidebar-bg`，mist 不得收成实心 Neutral 25 板。navbar 为 `ui-titlebar-drag` + `ui-titlebar-sidebar` + `pl-titlebar-gutter`。`html.ui-wco-visible` 时 extra 顶留 `--titlebar-area-height` 空拖条（不再叠左 gutter），不叠 overlay 毛玻璃 |
 | `RowAccessorySlot` | 行浮动 accessory 叠层 |
 | `ArchivedBrowserList` | 归档浏览列表 |
 | `NavAction` / `ProjectRowAccessory` / `ProjectRowActionGroup` / `SectionHeader` / `SessionRowAccessory` / `SidebarNavBar` | 侧栏 chrome 族 |
+| `SettingsPanel` | macOS 式偏好大窗：左导航（icon + label + selected）+ 右详情 slot + 标题；`ui-settings-*`。不替代 System `SettingsDialog` |
+| `SettingsAppearancePane` | Appearance 页：材质色板 + Opacity 滑杆；无持久化 |
 
 ### Terminal
 
@@ -103,6 +105,12 @@ T3 组件必须：
 | `WorkbenchFloatingPanel` | 浮窗容器 |
 | `workbench-panel-layout` | 浮窗宽度常量与持久化 helper |
 
+### Monitor
+
+| 组件 | 说明 |
+|------|------|
+| `MonitorPanelShell` | Langfuse trace 摘要 + 列表内容壳（body-only；header 由 WorkbenchPanelChrome 提供） |
+
 ### Status / Decision
 
 | 组件 | 说明 |
@@ -123,12 +131,14 @@ T3 组件必须：
 | Rewind | `RewindPanelState` / `RewindPanelActions` | `widgets/chat/RewindDialog.tsx` |
 | Chat | `ChatWorkspaceShell` + transcript / message shells | `widgets/chat/ChatView.tsx`, `MessageList.tsx`, `ConversationMessage.tsx` |
 | 侧栏 | `ProjectSidebarShell` + `SidebarChrome` 族 | `widgets/sidebar/*`, `SidebarChrome.tsx` |
+| Settings | `SettingsPanel` + `SettingsAppearancePane` | `widgets/shell/AppSettingsPanel.tsx`；sandbox `#/components-shell` → Settings panel |
 | Terminal | `TerminalDockShell` | `widgets/terminal/TerminalPanel.tsx` |
 | SCM | `GitChangeTree` + git 条 | `widgets/resource/SourceControlPanel.tsx`（mutation busy / focus 键） |
 | Workbench | `WorkbenchShell` 等 | `widgets/resource/ResourceWorkbench.tsx` |
 | Status | `StatusAreaShell` | `widgets/shell/StatusArea.tsx` |
 | Decision | `DecisionQueueShell` | `widgets/chat/*Queue.tsx` |
-| Git graph | `GitGraphPanel` | `widgets/resource/git/GitGraphPanel.tsx`（薄 re-export） |
+| Git graph | `GitGraphPanel` | `widgets/resource/git/GitGraphView.tsx` |
+| Langfuse Monitor | `MonitorPanelShell` | `widgets/resource/MonitorPanel.tsx` |
 
 Sandbox `components/blocks/*`：T3 条 **barrel 重导出** `@peri/ui`；layers 保留 mock 数据与 T4 演示组合。
 

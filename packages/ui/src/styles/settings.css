@@ -1,0 +1,125 @@
+/* Settings 偏好面板（macOS 左导航 + 右详情大窗）。
+ * 子选择器编排与跨子树紧凑断点无法用单层 Tailwind 表达。 */
+
+/* 透明遮罩：露出侧栏 frost 材质/透明度/模糊/hue 实时预览；面板本体仍由 .ui-settings-panel 保持可读。 */
+.ui-settings-overlay {
+  background-color: transparent;
+}
+
+.ui-settings-panel {
+  display: flex;
+  flex-direction: column;
+  width: var(--container-settings-panel);
+  height: var(--container-settings-panel-tall);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-12);
+  background-color: var(--surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-dialog);
+}
+
+.ui-settings-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-16);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ui-settings-body {
+  display: grid;
+  grid-template-columns: var(--grid-cols-settings-panel);
+  min-height: 0;
+  flex: 1;
+}
+
+.ui-settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-12);
+  overflow: auto;
+  border-right: 1px solid var(--border-subtle);
+  background-color: var(--surface-sunken);
+}
+
+.ui-settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--control-height-md);
+  padding: 0 var(--space-10);
+  border: 0;
+  border-radius: var(--radius-6);
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui-settings-nav-item:hover {
+  background-color: var(--interaction-hover);
+}
+
+.ui-settings-nav-item[aria-current='page'] {
+  background-color: var(--sidebar-selected-bg);
+}
+
+.ui-settings-nav-icon {
+  display: grid;
+  flex-shrink: 0;
+  width: var(--space-16);
+  height: var(--space-16);
+  place-items: center;
+  color: var(--content-muted);
+}
+
+.ui-settings-detail {
+  min-width: 0;
+  padding: var(--space-20);
+  overflow: auto;
+}
+
+.ui-settings-swatch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui-settings-swatch-preview {
+  height: var(--settings-swatch-height);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-8);
+  background-color: var(--surface-sunken);
+  background-image: var(--settings-swatch-image);
+  background-position: center;
+  background-size: cover;
+}
+
+.ui-settings-swatch[aria-pressed='true'] .ui-settings-swatch-preview {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 959px) {
+  .ui-settings-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .ui-settings-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+}

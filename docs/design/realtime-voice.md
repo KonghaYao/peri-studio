@@ -42,6 +42,8 @@ Composer mic → getUserMedia → 16 kHz pcm_s16le
 - 未配置上游时 `/voice` 回 `voice_not_configured` 并关闭
 - `app` / `instance` 不直接依赖本 crate；server 以 `default-features = false` 接入（不链 cpal）
 
+同类可选集成模式见 [langfuse-monitor.md](langfuse-monitor.md)：`langfuse` health 布尔、密钥不进浏览器/health/Yjs。
+
 ## 4. 线协议
 
 控制面与事件面都是 UTF-8 JSON 对象；音频面是原始二进制帧。详见 crate `protocol` 模块。浏览器只连 peri-studio，不直连上游。

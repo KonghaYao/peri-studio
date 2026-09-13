@@ -5,7 +5,12 @@ import type { JSX } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../widgets/sidebar/ProjectSidebar', () => ({
-  ProjectSidebar: (props: { onOpenSystem?: () => void }) => <div data-testid="project-sidebar"><button type="button" onClick={props.onOpenSystem}>System information</button></div>,
+  ProjectSidebar: (props: { onOpenSettings?: () => void; onOpenSystem?: () => void }) => (
+    <div data-testid="project-sidebar">
+      <button type="button" onClick={props.onOpenSettings}>Open settings</button>
+      <button type="button" onClick={props.onOpenSystem}>System information</button>
+    </div>
+  ),
 }));
 vi.mock('@/widgets/chat/ChatView', () => ({ ChatView: (props: { onOpenResources?: () => void; onOpenMcp?: () => void }) => <><button type="button" onClick={props.onOpenResources}>Open workspace resources</button><button type="button" onClick={props.onOpenMcp}>Open MCP resources</button></> }));
 vi.mock('./shared/ProjectDrawer', () => ({
@@ -92,6 +97,13 @@ describe('AppShell desktop sidebar', () => {
     await fireEvent.click(screen.getByRole('button', { name: 'System information' }));
     expect(screen.getByRole('dialog', { name: 'System' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Machines' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('opens the Settings panel Appearance page from the sidebar footer entry', async () => {
+    render(() => <AppShell />);
+    await fireEvent.click(screen.getByRole('button', { name: 'Open settings' }));
+    expect(screen.getByRole('dialog', { name: 'Settings' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Appearance' })).toBeInTheDocument();
   });
 
   it('opens only chat-scoped filesystem and MCP resources from the compact chat header', async () => {

@@ -149,3 +149,13 @@ Web 项目模型额外遵守：一个 project → 多个 project session（各�
 命名约束：Control Doc 中 ACP 协商结果使用 `agent.extensions`；命令目录使用
 `agent.available_commands`，结构化目录使用 `agent.command_catalog`。历史
 `agent.capabilities` 只作为兼容投影，不再承载新增协议事实。
+
+## 6. 观测与 Monitor 表面
+
+| 术语 | 定义 | 不是 |
+| --- | --- | --- |
+| **Monitor**（Monitor 面板） | Workbench rail 中的 Langfuse 观测浮窗；按当前打开的 project session 展示 trace 摘要；数据经 server `GET /api/monitor/session` 拉取，不写 Yjs | Settings Dialog；Chat Doc 回放；浏览器直连 Langfuse |
+| **Langfuse sessionId** | Langfuse Public API 的 `sessionId` 查询键；**必须等于** ACP durable `session_id`（即 Web `selectedSessionId()` / wire `sessionId`） | `chat_id`；`project_id`；Langfuse `trace.id` |
+| **Langfuse tracing env** | Hub 从 **server** 进程 `LANGFUSE_*` 经 `instance/spawn.env` 注入 ACP child（与 Monitor 读 API 同源）；spawn 注入优先于 instance daemon inherit 兜底 | 远端 connect 进程 env 为主路径；health / 日志 / Yjs / 浏览器暴露密钥 |
+
+权威契约见 [`docs/design/langfuse-monitor.md`](design/langfuse-monitor.md)。

@@ -327,6 +327,8 @@
   --grid-template-columns-import: var(--grid-cols-import);
   --grid-template-columns-boundary: var(--grid-cols-boundary);
   --grid-template-columns-settings-form: var(--grid-cols-settings-form);
+  --grid-template-columns-settings-panel: var(--grid-cols-settings-panel);
+  --grid-template-columns-settings-swatches: var(--grid-cols-settings-swatches);
   --grid-template-columns-split-auto: var(--grid-cols-split-auto);
   --grid-template-columns-detail-label: var(--grid-cols-detail-label);
   --grid-template-columns-preview-line: var(--grid-cols-preview-line);
@@ -343,6 +345,9 @@
   --container-drawer: var(--container-drawer);
   --container-settings: var(--container-settings);
   --container-settings-tall: var(--container-settings-tall);
+  --container-settings-panel: var(--container-settings-panel);
+  --container-settings-panel-tall: var(--container-settings-panel-tall);
+  --container-settings-nav: var(--container-settings-nav);
   --container-mcp: var(--container-mcp);
   --container-search: var(--container-search);
   --container-search-results: var(--container-search-results);
@@ -396,18 +401,12 @@
 @utility bg-sidebar-scroll-mist {
   background: linear-gradient(
     to top,
-    var(--sidebar-bg) 0%,
-    color-mix(in srgb, var(--sidebar-bg) 72%, transparent) 42%,
+    color-mix(in srgb, var(--sidebar-bg) var(--sidebar-frost-fill), transparent) 0%,
     transparent 100%
   );
 }
 @utility bg-sidebar-mist-divider {
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    color-mix(in srgb, var(--sidebar-bg) 35%, transparent) 38%,
-    var(--sidebar-bg) 100%
-  );
+  background: transparent;
 }
 @utility sidebar-mist-hint {
   color: var(--content-faint);

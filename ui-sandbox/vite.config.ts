@@ -7,6 +7,7 @@ import tailwindcss from '@tailwindcss/vite';
 // GitHub Pages 部署时通过 VITE_BASE_PATH 注入仓库子路径（如 /peri-studio/）。
 export default defineConfig({
   base: process.env.VITE_BASE_PATH ?? '/',
+  publicDir: resolve(import.meta.dirname, '../web/public'),
   resolve: {
     alias: [
       { find: '@', replacement: resolve(import.meta.dirname, 'src') },

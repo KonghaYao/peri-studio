@@ -2,6 +2,8 @@ import { Show } from 'solid-js';
 import { Terminal } from '@peri/ui';
 import { showCatalogSection } from '@/catalog/catalog-section';
 import { ProjectSidebarLayout } from '@/layers/shell/ProjectSidebarLayout';
+import { MonitorPanelLayout } from '@/layers/shell/MonitorPanelLayout';
+import { SettingsPanelLayout } from '@/layers/shell/SettingsPanelLayout';
 import { SystemAboutLayout } from '@/layers/shell/SystemAboutLayout';
 import { StatusAreaLayout } from '@/layers/status/StatusAreaLayout';
 import { TerminalDockLayout } from '@/layers/terminal/TerminalDockLayout';
@@ -31,6 +33,26 @@ export function ComponentCatalogExtrasShell(props: { sections?: string[] }) {
       <Show when={showCatalogSection(props.sections, 'terminal-dock')}>
       <CatalogDemo id="terminal-dock" title="Terminal dock">
         <TerminalDockLayout />
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'monitor-panel')}>
+      <CatalogDemo
+        id="monitor-panel"
+        title="Monitor panel"
+        description="Langfuse trace summary + list (T3 MonitorPanelShell). Workbench rail entry when /api/health.langfuse is true."
+      >
+        <MonitorPanelLayout />
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'settings-panel')}>
+      <CatalogDemo
+        id="settings-panel"
+        title="Settings panel"
+        description="macOS 式左导航 + 右详情大窗（T3 SettingsPanel）。Appearance：材质色板 + Opacity。System 诊断仍是独立 Tabs 弹窗。"
+      >
+        <SettingsPanelLayout />
       </CatalogDemo>
       </Show>
 

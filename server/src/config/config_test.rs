@@ -433,6 +433,9 @@ fn c9_env_allowlist() {
     assert!(!cfg.is_env_key_allowed("peri_model"), "大小写敏感");
     assert!(!cfg.is_env_key_allowed("Path"), "基集大小写敏感");
     assert!(!cfg.is_env_key_allowed("PERI_LD_PRELOAD"));
+    for key in crate::langfuse::langfuse_env_keys() {
+        assert!(cfg.is_env_key_allowed(key), "{key} 应恒允许");
+    }
 }
 
 // ---------------------------------------------------------------------------

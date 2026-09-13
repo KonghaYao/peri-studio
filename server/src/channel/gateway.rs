@@ -56,7 +56,7 @@ use crate::channel::instance_recovery::RecoveryCoordinator;
 use crate::channel::RelayEventHandler;
 use crate::channel::{ChannelDeps, ConnId, ConnectionRegistry};
 use crate::config::Config;
-use crate::control::{ResourceService, StoreSink, TerminalService};
+use crate::control::{ResourceService, SessionCatalog, StoreSink, TerminalService};
 
 use crate::state::doc_manager::DocManager;
 use crate::state::registry::RegistryState;
@@ -92,6 +92,7 @@ pub struct Gateway {
     pub(super) doc: Arc<DocManager>,
     pub(super) sink: Arc<StoreSink>,
     pub(super) resources: Arc<ResourceService>,
+    pub(super) session_catalog: SessionCatalog,
     pub(super) terminals: Arc<TerminalService>,
     pub(super) registry: RegistryState,
     pub(super) recovery: RecoveryCoordinator,
@@ -112,6 +113,7 @@ impl Gateway {
         doc: Arc<DocManager>,
         sink: Arc<StoreSink>,
         resources: Arc<ResourceService>,
+        session_catalog: SessionCatalog,
         terminals: Arc<TerminalService>,
         registry: RegistryState,
         recovery_instances: HashSet<String>,
@@ -134,6 +136,7 @@ impl Gateway {
             doc,
             sink,
             resources,
+            session_catalog,
             terminals,
             registry,
             recovery,
@@ -173,6 +176,7 @@ impl Gateway {
         let mut snapshot =
             crate::web::HealthSnapshot::from_runtime(self.registry.global_status(), machines);
         snapshot.realtime_voice = self.cfg.realtime_voice_enabled();
+        snapshot.langfuse = crate::langfuse::is_configured();
         snapshot
     }
 
@@ -254,7 +258,10 @@ impl Gateway {
                 self.auth.clone(),
                 self.auth_setup.clone(),
                 health,
-                self.resources.clone(),
+                crate::web::HttpRouteDeps {
+                    resources: self.resources.clone(),
+                    session_catalog: self.session_catalog.clone(),
+                },
             )
             .await
             {

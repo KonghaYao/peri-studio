@@ -50,7 +50,7 @@ export function DialogOverlay<T extends ValidComponent = 'div'>(props: Polymorph
   );
 }
 
-type DialogSize = 'default' | 'search' | 'settings' | 'mcp' | 'resource-compact' | 'rewind' | 'fullscreen';
+export type DialogSize = 'default' | 'search' | 'settings' | 'mcp' | 'resource-compact' | 'rewind' | 'preferences' | 'fullscreen';
 
 type ContentProps<T extends ValidComponent = 'div'> = DialogPrimitive.DialogContentProps<T> & {
   class?: string;
@@ -78,7 +78,8 @@ export function DialogContent<T extends ValidComponent = 'div'>(props: Polymorph
   const preventWhenLocked = (event: Event) => { if (!dismissible()) event.preventDefault(); };
   const isSheet = () => local.size === 'resource-compact';
   const isRewind = () => local.size === 'rewind';
-  const isBare = () => isSheet() || isRewind() || local.fullscreen || local.size === 'fullscreen';
+  const isPreferences = () => local.size === 'preferences';
+  const isBare = () => isSheet() || isRewind() || isPreferences() || local.fullscreen || local.size === 'fullscreen';
   const isFullscreen = () => local.fullscreen || local.size === 'fullscreen';
   const centered = () => local.centered ?? true;
   return <DialogPortal>
@@ -87,6 +88,12 @@ export function DialogContent<T extends ValidComponent = 'div'>(props: Polymorph
       class={cn(
         isRewind()
           ? cn(rewindDialogContentClass, local.class)
+          : isPreferences()
+            ? cn(
+                'fixed z-61 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 outline-none',
+                modalDialogMotion,
+                local.class,
+              )
           : isSheet()
             ? cn(
                 'fixed top-0 right-0 bottom-0 left-auto z-61 flex h-auto max-h-none w-(--container-rewind-compact) translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border border-border-subtle border-y-0 border-r-0 bg-surface text-text-primary shadow-dialog outline-none p-0',

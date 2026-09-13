@@ -7,7 +7,7 @@ use tokio::sync::Mutex;
 
 use peri_studio_proto::resource::{OpenResourceUpload, ResourceQuery, ResourceQueryResult};
 
-use super::{serve_http_with_resources, BrowserAuthSetup};
+use super::{serve_http_with_resources, BrowserAuthSetup, HttpRouteDeps};
 use crate::auth::{AuthService, TokenRole, TokenStore};
 use crate::web::test_util::{test_auth_setup, test_health};
 
@@ -21,7 +21,17 @@ async fn put(
     let addr = listener.local_addr().unwrap();
     let server = tokio::spawn(async move {
         let (stream, peer) = listener.accept().await.unwrap();
-        serve_http_with_resources(stream, peer, auth, setup, test_health(), resources)
+        serve_http_with_resources(
+            stream,
+            peer,
+            auth,
+            setup,
+            test_health(),
+            HttpRouteDeps {
+                resources,
+                session_catalog: crate::control::SessionCatalog::new(),
+            },
+        )
             .await
             .unwrap();
     });

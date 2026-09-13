@@ -37,6 +37,25 @@ describe('SidebarChrome settings menu', () => {
       </SidebarChrome>
     ));
     expect(screen.getByRole('button', { name: 'Settings' })).toHaveClass('ui-titlebar-no-drag');
+    expect(screen.getByTestId('project-sidebar')).toHaveClass('ui-sidebar-frost', 'bg-transparent');
+    expect(screen.getByTestId('project-sidebar')).not.toHaveClass('bg-neutral-25');
+    expect(screen.getByTestId('project-sidebar')).not.toHaveClass('bg-sidebar-bg');
+    expect(document.querySelector('.sidebar-footer')).toHaveClass('bg-transparent');
+    expect(document.querySelector('.sidebar-footer')).not.toHaveClass('bg-sidebar-bg');
+    expect(document.querySelector('.sidebar-footer')).not.toHaveClass('bg-surface');
+  });
+
+  it('opens Settings from the gear menu', async () => {
+    const onOpenSettings = vi.fn();
+    renderWithSidebarProvider(() => (
+      <SidebarChrome onOpenSettings={onOpenSettings} onOpenSystem={() => undefined}>
+        <div>sessions</div>
+      </SidebarChrome>
+    ));
+
+    await openSettingsMenu();
+    selectMenuItem('Settings');
+    expect(onOpenSettings).toHaveBeenCalledOnce();
   });
 
   it('hides Install when the window is standalone or cannot install', async () => {

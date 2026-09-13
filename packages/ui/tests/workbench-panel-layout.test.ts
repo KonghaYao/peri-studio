@@ -8,6 +8,10 @@ import {
   WORKBENCH_PANEL_GRAPH_WIDTH_STORAGE_KEY,
   WORKBENCH_PANEL_MAX_WIDTH,
   WORKBENCH_PANEL_MIN_WIDTH,
+  WORKBENCH_PANEL_MONITOR_DEFAULT_WIDTH,
+  WORKBENCH_PANEL_MONITOR_MAX_WIDTH,
+  WORKBENCH_PANEL_MONITOR_MIN_WIDTH,
+  WORKBENCH_PANEL_MONITOR_WIDTH_STORAGE_KEY,
   WORKBENCH_PANEL_PREVIEW_DEFAULT_WIDTH,
   WORKBENCH_PANEL_PREVIEW_WIDTH_STORAGE_KEY,
   WORKBENCH_PANEL_WIDTH_STORAGE_KEY,
@@ -65,5 +69,19 @@ describe('workbench-panel-layout', () => {
     persistWorkbenchPanelWidth(600, 'preview');
     expect(sessionStorage.getItem(WORKBENCH_PANEL_PREVIEW_WIDTH_STORAGE_KEY)).toBe('600');
     expect(readStoredWorkbenchPanelWidth('preview')).toBe(600);
+  });
+
+  it('clamps monitor panel width with terminal-aligned bounds', () => {
+    expect(clampWorkbenchPanelWidth(300, 'monitor')).toBe(WORKBENCH_PANEL_MONITOR_MIN_WIDTH);
+    expect(clampWorkbenchPanelWidth(999, 'monitor')).toBe(WORKBENCH_PANEL_MONITOR_MAX_WIDTH);
+    expect(clampWorkbenchPanelWidth(520, 'monitor')).toBe(520);
+  });
+
+  it('reads and persists monitor panel width separately', () => {
+    expect(readStoredWorkbenchPanelWidth('monitor')).toBe(WORKBENCH_PANEL_MONITOR_DEFAULT_WIDTH);
+    persistWorkbenchPanelWidth(600, 'monitor');
+    expect(sessionStorage.getItem(WORKBENCH_PANEL_MONITOR_WIDTH_STORAGE_KEY)).toBe('600');
+    expect(readStoredWorkbenchPanelWidth('monitor')).toBe(600);
+    expect(readStoredWorkbenchPanelWidth('terminal')).not.toBe(600);
   });
 });

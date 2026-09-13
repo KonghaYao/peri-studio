@@ -11,7 +11,13 @@ import { ResourceFileEditor } from '@/widgets/resource/ResourceFileEditor';
 import { ResourceFloatingPanel } from '@/widgets/resource/ResourceFloatingPanel';
 
 import { workbenchFilePreviewLeftOffset } from '@peri/ui';
+import { AppSettingsPanel } from './AppSettingsPanel';
 import { SettingsDialog } from './SettingsDialog';
+import { principalId } from '@/features/auth/auth-state';
+import {
+  applyAppearancePreference,
+  readAppearancePreference,
+} from '@/features/appearance/appearance-preference';
 import {
   SHELL_SIDEBAR_DEFAULT_WIDTH,
   SHELL_SIDEBAR_KEYBOARD_STEP,
@@ -25,11 +31,15 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
   const [open, setOpen] = createSignal(false);
   const [resourcesOpen, setResourcesOpen] = createSignal(false);
   const [systemOpen, setSystemOpen] = createSignal(false);
+  const [settingsOpen, setSettingsOpen] = createSignal(false);
   const [resourceView, setResourceView] = createSignal<WorkbenchView>(props.initialResourceView ?? null);
   createEffect(() => {
     const request = resourceWorkbenchRequest();
     if (!request) return;
     setResourceView(request.view);
+  });
+  createEffect(() => {
+    applyAppearancePreference(readAppearancePreference(principalId()));
   });
   const [mobile, setMobile] = createSignal(false);
   const [medium, setMedium] = createSignal(false);
@@ -168,6 +178,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
       <ProjectDrawer ref={(element) => { drawer = element; }} open={open()} modal={mobile()} onOpenChange={setOpen}>
         <ProjectSidebar
           onNavigate={() => setOpen(false)}
+          onOpenSettings={() => setSettingsOpen(true)}
           onOpenSystem={() => setSystemOpen(true)}
           intent={sidebarIntent()}
         />
@@ -217,6 +228,7 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
         onCompactOpenAutoFocus={restorePreviewOrigin}
         onCompactCloseAutoFocus={overrideDialogFocusRestore}
       />
+      <AppSettingsPanel open={settingsOpen()} onClose={() => setSettingsOpen(false)} />
       <SettingsDialog open={systemOpen()} onClose={() => setSystemOpen(false)} />
     </SidebarProvider>
   );

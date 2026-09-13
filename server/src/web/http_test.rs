@@ -18,7 +18,7 @@ use super::test_util::{
 use crate::auth::{AuthService, TokenRole, TokenStore};
 use crate::web::{
     cookie_value, header_end, is_json_content_type, is_ws_upgrade, request_path, serve_http,
-    serve_http_with_resources, valid_loopback_host, valid_ws_host, valid_ws_origin,
+    serve_http_with_resources, valid_loopback_host, valid_ws_host, valid_ws_origin, HttpRouteDeps,
     BrowserAuthSetup, HealthMachineSummary, HealthSnapshot, HealthStatus,
 };
 
@@ -195,9 +195,10 @@ async fn health_is_credential_free_liveness_with_explicit_readiness() {
             .as_object()
             .unwrap()
             .len(),
-        6
+        7
     );
     assert!(!snapshot.realtime_voice);
+    assert!(!snapshot.langfuse);
     assert!(snapshot.machines.is_empty());
     assert!(!body.contains("token"));
     assert!(!body.contains("path"));
@@ -292,7 +293,17 @@ async fn resource_blob_requires_cookie_and_returns_exact_bytes_with_etag() {
     let setup = test_auth_setup(dir.path());
     let server = tokio::spawn(async move {
         let (stream, peer) = listener.accept().await.unwrap();
-        serve_http_with_resources(stream, peer, auth, setup, test_health(), resources)
+        serve_http_with_resources(
+            stream,
+            peer,
+            auth,
+            setup,
+            test_health(),
+            HttpRouteDeps {
+                resources,
+                session_catalog: crate::control::SessionCatalog::new(),
+            },
+        )
             .await
             .unwrap();
     });

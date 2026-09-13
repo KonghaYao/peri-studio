@@ -1,9 +1,9 @@
 # Peri Studio 架构设计（权威版）
 
-> 状态：v2.19（可安装在线 PWA，无 Service Worker）
+> 状态：v2.21（Langfuse Monitor：server 经 spawn.env 注入 `LANGFUSE_*`）
 > 日期：2026-09-13
 > 定位：peri-studio 独立项目的架构基准文档。与 peri 的唯一耦合点是 ACP 进程（协议线格式），本设计不依赖 peri 的任何 crate 与部署形态。
-> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界；v2.9 令 Web 权限裁决回传 Control Doc 投影的精确 ACP `optionId`，并在恢复证据与交付边界校验 ID 和 scope；v2.10 增加权限期限的可见倒计时与浏览器 fail-close 门控；v2.11 统一权限与询问队列的领域身份选择和删除回退；v2.12 为一次性 elicitation 回答增加不可重放的刷新与本地隐藏恢复面；v2.13 为移动端 FS/Git 预览增加稳定来源身份与编辑器焦点往返；v2.14 完成有序 Chat blocks、回放信任标签、按 session 消息投递、协商 prompt 字节预算、principal 作用域持久草稿、权限输入证据、资源租约/代际与高对比浏览器矩阵；v2.15 将 ACP 工具 kind、content、locations、raw output 与 content chunk 统一为有界 tri-state patch，允许终态后只补证据但不重开生命周期，并令 turn 终态收敛全部消息分段和非终态工具；**v2.16 将 M2 跨机接入定为 SSH 供应器 + 反向隧道（对抗审查后可开工：SSH 不进全局 Restarting、Disconnect≠Stop、监督在 app/）**（见 §3.1、§8.3 步骤 5a 与 [ssh-machine-mount.md](design/ssh-machine-mount.md)，[ADR-0002](adr/0002-ssh-machine-provisioner.md)）；**v2.17 移除 SQLite `project_sessions` 权威，ACP `session/list` + agent 磁盘为 durable 会话目录唯一事实源，wire `sessionId` 即 ACP id，归档/重命名改浏览器 IndexedDB**（见 §3.0、[ADR-0003](adr/0003-acp-authoritative-session-catalog.md)）；**v2.19 交付可安装、在线优先的 Web PWA：manifest / icons 为固定名 `no-store`，禁止注册会拦截 document 或 `/api/*` 的 Service Worker**（见本节缓存段与 [pwa.md](design/pwa.md)）。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
+> 来源：三轮对抗面试（产品/用户角度）收敛裁决 + 参考实现 `@fenix/chat-channel`（`/Users/konghayao/code/pazhou/remote-control-server/packages/chat-channel`，实现基线 `docs/arch/19-yjs-chat-streaming.md`，ADR `spec/global/adr/2026-08-04-chat-channel-package-design.md`）+ 三视角对抗审查（架构师/高级开发工程师/高级运维工程师，2026-08-07）+ 三轮 advisor 成熟度审查（2026-08-07，opus，第三轮评级：**可开工**）。v2.1 修订项以「【审查】」标注；v2.2 以「【顾问】」；v2.3 以「【顾问2】」；v2.4 以「【顾问3】」；v2.5 补充 Web project session 与浏览器认证契约；v2.6 与视图层和当时 workspace 实现对齐；**v2.7 以唯一 `peri-studio` 发布物取代两个发布二进制，但保留 server/instance 的独立进程与协议隔离**（见 §3.1–§3.3 与 [ADR-0001](adr/0001-single-binary-dual-process-roles.md)）；v2.8 收敛无状态恢复、远程 FS/Git 资源投影和十轮 Chat/UIUX 审计后的可靠浏览器边界；v2.9 令 Web 权限裁决回传 Control Doc 投影的精确 ACP `optionId`，并在恢复证据与交付边界校验 ID 和 scope；v2.10 增加权限期限的可见倒计时与浏览器 fail-close 门控；v2.11 统一权限与询问队列的领域身份选择和删除回退；v2.12 为一次性 elicitation 回答增加不可重放的刷新与本地隐藏恢复面；v2.13 为移动端 FS/Git 预览增加稳定来源身份与编辑器焦点往返；v2.14 完成有序 Chat blocks、回放信任标签、按 session 消息投递、协商 prompt 字节预算、principal 作用域持久草稿、权限输入证据、资源租约/代际与高对比浏览器矩阵；v2.15 将 ACP 工具 kind、content、locations、raw output 与 content chunk 统一为有界 tri-state patch，允许终态后只补证据但不重开生命周期，并令 turn 终态收敛全部消息分段和非终态工具；**v2.16 将 M2 跨机接入定为 SSH 供应器 + 反向隧道（对抗审查后可开工：SSH 不进全局 Restarting、Disconnect≠Stop、监督在 app/）**（见 §3.1、§8.3 步骤 5a 与 [ssh-machine-mount.md](design/ssh-machine-mount.md)，[ADR-0002](adr/0002-ssh-machine-provisioner.md)）；**v2.17 移除 SQLite `project_sessions` 权威，ACP `session/list` + agent 磁盘为 durable 会话目录唯一事实源，wire `sessionId` 即 ACP id，归档/重命名改浏览器 IndexedDB**（见 §3.0、[ADR-0003](adr/0003-acp-authoritative-session-catalog.md)）；**v2.19 交付可安装、在线优先的 Web PWA：manifest / icons 为固定名 `no-store`，禁止注册会拦截 document 或 `/api/*` 的 Service Worker**（见本节缓存段与 [pwa.md](design/pwa.md)）；**v2.20 增加 Langfuse Monitor 设计指针：`/api/health.langfuse` 布尔与 `LANGFUSE_*` 配置源**（见 [langfuse-monitor.md](design/langfuse-monitor.md)）。advisor 关于「删除 HMAC 双向认证」的删减建议**被否决**（§9.2 保留，v2.3 补齐协议级规范，v2.4 补齐线格式精度）。
 > 约定：引用 chat-channel 处标注其文档章节号（如「chat §5.2」），实现时以该仓库为对照基线。协议事实（帧 tag、action 面、schema 版本、默认值）以 `peri-studio-proto` / `server/src/config` 实现为真相来源，本文与实现不一致时以实现为准并回改本文。【v2.16】`machine/*` 在进入 proto+whitelist 之前，以 [ssh-machine-mount.md](design/ssh-machine-mount.md) 为开工契约，禁止只改文档不改白名单。
 
 ---
@@ -1201,7 +1201,7 @@ M1 的授权模型**显式收窄**，避免在设计期承诺多用户能力：
 
 `instance/spawn` 的 `env` 参数（客户端 `chat/create` 可间接传递）**不开放任意键**：
 
-- server 维护 **env 白名单**（默认空 = 仅继承白名单基集，如 `PATH`/`HOME`/`LANG`/`SHELL`；Hub 对 ACP spawn **固定注入** `PERI_MCP_APPS=`（空串启用 MCP Apps relay）；配置可增补键名，§16）；
+- server 维护 **env 白名单**（默认空 = 仅继承白名单基集，如 `PATH`/`HOME`/`LANG`/`SHELL`；Hub 对 ACP spawn **固定注入** `PERI_MCP_APPS=`（空串启用 MCP Apps relay）及已配置的 `LANGFUSE_*`（Langfuse trace 写路径，与 Monitor 读 API 同源 server env；见 [langfuse-monitor.md](design/langfuse-monitor.md)）；配置可增补键名，§16）；
 - 白名单外的键一律拒绝（`INVALID_STATE` 错误，非静默丢弃）——防止经 env 注入 `PERI_*`/`LD_PRELOAD` 等敏感覆盖；
 - 白名单仅约束键名，值仍按 §9.3 不可信输入校验（长度上限、编码）；
 - instance 侧对 spawn 指令携带的 env 再校验一次白名单（双端校验，防 server 配置漂移）。
@@ -1360,7 +1360,7 @@ peri-studio/
 - `GET /api/health` 是受 loopback peer + 严格 Host 双门禁保护的无凭据 liveness：所有
   已运行状态返回 HTTP 200，正文含 `status/ready/protocolVersion/serverVersion`、
   credential-free `machines[]`（`instanceId`/`displayName`/`phase`/`kind`，来自 Registry
-  投影）与 `realtimeVoice`（是否已配置上游，不含 URL/key）；`ready=true` 只对应 `GlobalStatus::Healthy`。`peri-studio status` 探测 liveness，
+  投影）、`realtimeVoice`（是否已配置上游，不含 URL/key）与 `langfuse`（是否已配置 Langfuse 密钥，不含 host/key）；`ready=true` 只对应 `GlobalStatus::Healthy`。`peri-studio status` 探测 liveness，
   `status --ready` 为 degraded/restarting 返回非零，`--json` 经同源 health 提供稳定机器输出。
 - 日志继续只写 stderr。systemd 交由 journald 限额；launchd 文件输出可使用
   `deploy/logrotate/peri-studio` 的外部轮转模板，不在应用内删除或重命名活跃日志。
@@ -1467,6 +1467,7 @@ peri-studio/
 | spawn env 白名单 | 空（仅继承基集） | §9.6；键名白名单，白名单外拒绝 |
 | 非回环监听开关 | `allow_non_loopback: false` | §9.5；显式声明才接受非回环连接 |
 | 实时语音上游 | 无（未配置则关闭） | `PERI_REALTIME_VOICE_BASE_URL` / `PERI_REALTIME_VOICE_API_KEY`；API key 不得进日志或 health；见 [realtime-voice.md](design/realtime-voice.md) |
+| Langfuse Monitor | 无（未配置则隐藏 UI） | `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_HOST`（或 `LANGFUSE_BASE_URL`）；**仅配置 server 进程 env**；Hub 经 spawn.env 注入 ACP child（远程拓扑 V1 接受跨 instance 传输）；Monitor 读 API 同源 server env；密钥不得进 health / 日志 / Yjs / 浏览器；见 [langfuse-monitor.md](design/langfuse-monitor.md) |
 
 （开放问题 1 由此表解决，删除 v2.0 中「5s/30s 先固定」的表述矛盾。）
 

@@ -40,6 +40,7 @@ const cssFiles = () => [
   'styles/motion.css',
   'styles/primitives.css',
   'styles/extra.css',
+  'styles/settings.css',
   'styles/markdown-body.css',
   'styles/utilities.css',
 ].map((file) => join(srcRoot, file));
@@ -261,6 +262,7 @@ test('duplicate component tests and consumer T2 copies are gone', () => {
 test('extra.css imports scroll-fade and shimmer utilities', () => {
   const extra = read(join(srcRoot, 'styles', 'extra.css'));
   assert.match(extra, /@import '\.\/utilities\.css';/);
+  assert.match(extra, /@import '\.\/settings\.css';/);
 });
 
 test('sidebar, transcript, and file-tree layout classes live in layout modules', () => {
@@ -268,12 +270,51 @@ test('sidebar, transcript, and file-tree layout classes live in layout modules',
   const rowAccessoryLayout = read(join(srcRoot, 'components', 'sidebar', 'row-accessory-layout.ts'));
   const transcriptLayout = read(join(srcRoot, 'components', 'transcript', 'transcript-layout.ts'));
   const fileTreeLayout = read(join(srcRoot, 'components', 'resource', 'file-tree-layout.ts'));
-  assert.match(sidebarLayout, /bg-sidebar-scroll-mist/);
+  assert.match(sidebarLayout, /ui-sidebar-scroll-fade/);
   assert.match(rowAccessoryLayout, /row-accessory-fade-cover/);
   assert.match(transcriptLayout, /grid-cols-boundary/);
   assert.match(fileTreeLayout, /fileTreeDropRootClass/);
   const extra = read(join(srcRoot, 'styles', 'extra.css'));
-  assert.doesNotMatch(extra, /\.ui-sidebar-/);
+  const settings = read(join(srcRoot, 'styles', 'settings.css'));
+  const tokens = read(join(srcRoot, 'styles', 'tokens.css'));
+  const sidebarShell = read(join(srcRoot, 'components', 'sidebar', 'ProjectSidebarShell.tsx'));
+  assert.match(tokens, /--sidebar-frost-fill:/);
+  assert.match(tokens, /--sidebar-frost-blur:/);
+  assert.match(tokens, /--sidebar-frost-wash-blur:/);
+  assert.match(tokens, /--sidebar-frost-wash-hue:/);
+  assert.match(tokens, /--sidebar-scroll-fade-size:/);
+  assert.match(tokens, /--sidebar-frost-grain-opacity:/);
+  assert.match(tokens, /--sidebar-frost-grain:/);
+  assert.match(tokens, /--sidebar-frost-wash:/);
+  assert.match(tokens, /--sidebar-frost-wash-size:/);
+  assert.match(tokens, /url\("\/images\/sidebar-frost-linen\.png"\)/);
+  assert.match(extra, /\.ui-sidebar-frost\s*\{/);
+  assert.match(extra, /var\(--sidebar-frost-wash\)/);
+  assert.match(extra, /var\(--sidebar-frost-wash-blur\)/);
+  assert.match(extra, /hue-rotate\(var\(--sidebar-frost-wash-hue\)\)/);
+  assert.match(extra, /background-size:\s*var\(--sidebar-frost-wash-size\)/);
+  assert.match(extra, /filter:\s*blur\(var\(--sidebar-frost-wash-blur\)\)\s+hue-rotate\(var\(--sidebar-frost-wash-hue\)\)/);
+  assert.match(extra, /\.ui-sidebar-scroll-fade\s*\{/);
+  assert.match(extra, /backdrop-filter:\s*blur\(var\(--sidebar-frost-blur\)\)/);
+  assert.match(extra, /prefers-reduced-transparency:\s*reduce/);
+  assert.match(extra, /background-image:\s*none/);
+  assert.match(sidebarShell, /ui-sidebar-frost/);
+  assert.match(sidebarShell, /bg-transparent/);
+  assert.doesNotMatch(sidebarShell, /bg-sidebar-bg/);
+  assert.match(tokens, /--container-settings-panel:/);
+  assert.match(tokens, /--container-settings-nav:/);
+  assert.match(tokens, /--container-settings-panel-tall:/);
+  assert.match(tokens, /--grid-cols-settings-panel:/);
+  assert.match(settings, /\.ui-settings-overlay\s*\{/);
+  assert.match(settings, /background-color:\s*transparent/);
+  assert.match(settings, /\.ui-settings-panel\s*\{/);
+  assert.match(settings, /\.ui-settings-nav\s*\{/);
+  assert.match(settings, /\.ui-settings-detail\s*\{/);
+  assert.match(settings, /\.ui-settings-swatch-preview\s*\{/);
+  assert.doesNotMatch(
+    extra.replace(/\.ui-sidebar-frost\b/g, '').replace(/\.ui-sidebar-scroll-fade\b/g, ''),
+    /\.ui-sidebar-/,
+  );
   assert.doesNotMatch(extra, /\.ui-row-accessory-/);
   assert.doesNotMatch(extra, /\.ui-transcript-scroll\b/);
   assert.doesNotMatch(extra, /\.ui-transcript-history-boundary\b/);

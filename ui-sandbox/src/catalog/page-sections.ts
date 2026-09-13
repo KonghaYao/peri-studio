@@ -348,11 +348,13 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
       items: [
         { id: 'terminal-xterm', label: 'Terminal' },
         { id: 'terminal-dock', label: 'Terminal dock' },
+        { id: 'monitor-panel', label: 'Monitor panel' },
       ],
     },
     {
       title: 'System',
       items: [
+        { id: 'settings-panel', label: 'Settings panel' },
         { id: 'system-about', label: 'System About' },
       ],
     },
@@ -496,6 +498,8 @@ const LEGACY_LAYER_SECTION_ROUTES: Record<string, SandboxRoute> = {
   'chat-shell': 'components-shell',
   'chat-transcript': 'components-shell',
   'terminal-dock': 'components-shell',
+  'monitor-panel': 'components-shell',
+  'settings-panel': 'components-shell',
   'system-about': 'components-shell',
   composer: 'components-composer',
   'composer-upload': 'components-composer',

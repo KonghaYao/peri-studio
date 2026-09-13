@@ -641,6 +641,26 @@ test('standalone shell uses named safe-area utilities without card margin overfl
   assert.doesNotMatch(authGate, /ui-titlebar-overlay/);
   const sidebarChrome = readWidgetTsx('SidebarChrome.tsx');
   assert.match(sidebarChrome, /ui-titlebar-no-drag/);
+  assert.match(sidebarChrome, /ui-sidebar-frost/);
+  assert.match(sidebarChrome, /bg-transparent/);
+  assert.match(sidebarChrome, /onOpenSettings/);
+  assert.match(sidebarChrome, /Settings/);
+  assert.doesNotMatch(sidebarChrome, /bg-neutral-25/);
+  assert.doesNotMatch(sidebarChrome, /bg-sidebar-bg/);
+  const frostImages = [
+    'sidebar-frost-wash.png',
+    'sidebar-frost-marble.png',
+    'sidebar-frost-silk.png',
+    'sidebar-frost-linen.png',
+    'sidebar-frost-paper.png',
+  ];
+  for (const file of frostImages) {
+    assert.equal(
+      existsSync(join(webRoot(), 'public', 'images', file)),
+      true,
+      `web/public/images/${file} must exist for sidebar frost materials`,
+    );
+  }
   assert.doesNotMatch(authGate, /\bm-24\b/);
   assert.doesNotMatch(authGate, /pt-\[env\(/);
   assert.match(authGate, /w-\(--container-auth-card\)/);

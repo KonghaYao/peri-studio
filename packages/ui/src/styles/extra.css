@@ -1,5 +1,6 @@
 @import '@xterm/xterm/css/xterm.css';
 @import './utilities.css';
+@import './settings.css';
 
 /* 无法（或不宜）用 Tailwind token utility 表达的样式例外。
  *
@@ -375,6 +376,103 @@ body.ui-workbench-panel-resizing * {
     background-color: Canvas;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+  }
+}
+
+/* ── 左栏磨砂（底层 wash 图 + 半透明 Neutral 25 + 静态胶片颗粒） ──
+ * Tailwind 无法表达多层 background、::before 颗粒、backdrop-filter 与透明度回退。
+ * 仅挂 .ui-sidebar-frost（Project 侧栏列），不套聊天画布或 Explorer。
+ * 颗粒为静态 SVG，无动画；不用 background-attachment，避免与 WCO 错位。 */
+.ui-sidebar-frost {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--sidebar-bg);
+  background-image:
+    linear-gradient(
+      color-mix(in srgb, var(--sidebar-bg) var(--sidebar-frost-fill), transparent),
+      color-mix(in srgb, var(--sidebar-bg) var(--sidebar-frost-fill), transparent)
+    );
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  -webkit-backdrop-filter: blur(var(--sidebar-frost-blur));
+  backdrop-filter: blur(var(--sidebar-frost-blur));
+}
+
+.ui-sidebar-frost::after {
+  content: '';
+  position: absolute;
+  /* 负 inset 补偿 wash blur 边缘透明化，避免 footer 上方出现浅色接缝。 */
+  inset: calc(-1 * var(--sidebar-frost-wash-blur));
+  z-index: -2;
+  pointer-events: none;
+  background-image: var(--sidebar-frost-wash);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: var(--sidebar-frost-wash-size);
+  -webkit-filter: blur(var(--sidebar-frost-wash-blur)) hue-rotate(var(--sidebar-frost-wash-hue));
+  filter: blur(var(--sidebar-frost-wash-blur)) hue-rotate(var(--sidebar-frost-wash-hue));
+}
+
+/* 滚动区底部仅渐隐内容，不叠 fill 遮罩，避免与 footer 磨砂断层。 */
+.ui-sidebar-scroll-fade {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 calc(100% - var(--sidebar-scroll-fade-size)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 calc(100% - var(--sidebar-scroll-fade-size)),
+    transparent 100%
+  );
+}
+
+.ui-sidebar-frost::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--sidebar-frost-grain-opacity);
+  background-image: var(--sidebar-frost-grain);
+  background-repeat: repeat;
+  background-size: var(--sidebar-frost-grain-size);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .ui-sidebar-frost {
+    background-color: var(--sidebar-bg);
+    background-image: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .ui-sidebar-frost::after {
+    content: none;
+  }
+
+  .ui-sidebar-frost::before {
+    content: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .ui-sidebar-frost {
+    background-color: var(--sidebar-bg);
+    background-image: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .ui-sidebar-frost::after {
+    content: none;
+  }
+
+  .ui-sidebar-frost::before {
+    content: none;
   }
 }
 

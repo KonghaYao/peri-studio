@@ -28,6 +28,7 @@
 mod auth_http;
 mod http;
 mod local_dialog;
+mod monitor_http;
 mod parse;
 mod pick_directory_http;
 mod resource_upload_http;
@@ -46,6 +47,7 @@ pub(crate) use http::serve;
 #[cfg(test)]
 pub(crate) use http::serve_http;
 pub(crate) use http::serve_http_with_resources;
+pub(crate) use http::HttpRouteDeps;
 pub(crate) use parse::{
     cookie_value, header_end, is_ws_upgrade, request_line_path, valid_ws_host, valid_ws_origin,
 };
@@ -80,6 +82,9 @@ pub struct HealthSnapshot {
     /// 已配置实时语音上游（不含 URL / key）。
     #[serde(default)]
     pub realtime_voice: bool,
+    /// 已配置 Langfuse 密钥（不含 host / key）。
+    #[serde(default)]
+    pub langfuse: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -121,6 +126,7 @@ impl HealthSnapshot {
             server_version: env!("CARGO_PKG_VERSION").to_string(),
             machines: machines.into_iter().collect(),
             realtime_voice: false,
+            langfuse: false,
         }
     }
 }

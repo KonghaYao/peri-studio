@@ -98,7 +98,17 @@ const GROUP_POLL_INTERVAL: Duration = Duration::from_millis(50);
 
 /// 白名单基集（§9.6：默认空 = 仅继承白名单基集；hub 侧 `validate_env` 用
 /// 同一常量做双端校验）。值在 spawn 时取自 daemon 环境。
-pub(crate) const ENV_BASE_ALLOWLIST: [&str; 5] = ["PATH", "HOME", "LANG", "SHELL", "PERI_MCP_APPS"];
+pub(crate) const ENV_BASE_ALLOWLIST: [&str; 9] = [
+    "PATH",
+    "HOME",
+    "LANG",
+    "SHELL",
+    "PERI_MCP_APPS",
+    "LANGFUSE_PUBLIC_KEY",
+    "LANGFUSE_SECRET_KEY",
+    "LANGFUSE_HOST",
+    "LANGFUSE_BASE_URL",
+];
 
 /// 内部共享态（spawn 返回的 [`AcpProcess`] 为 Arc 封装）。
 struct AcpInner {

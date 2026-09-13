@@ -51,7 +51,7 @@ web/src/
     chat/                   # ChatView, MessageList, ConversationMessage, ToolCallActivity, …
     composer/               # Composer（内联 editor/toolbar + @peri/ui SlashMenuListbox）, QuickStartComposer
     resource/               # ResourceWorkbench, …
-    shell/                  # AppShell, PwaRuntime, PwaInstallPrompt, SidebarChrome, ErrorCenter, …
+    shell/                  # AppShell, PwaRuntime, PwaInstallPrompt, SidebarChrome, AppSettingsPanel, ErrorCenter, …
 
   features/                 # 特性模块：领域行为，优先纯 TS；接口稳定、可单测
     auth/                   # auth-hook, auth-state, auth-setup
@@ -60,6 +60,7 @@ web/src/
     composer/               # slash-menu, composer-slash, prediction, draft, placeholder
     voice/                  # 同源 /voice 口述：capability、PCM、dictation（无 store）
     pwa/                    # 可安装 PWA：canInstall / standalone / iOS A2HS 门控与首次询问（无 store，无 SW）
+    appearance/             # 侧栏材质 + Opacity 偏好（localStorage，无 store）
     message/                # delivery, recovery, follow
     runtime/                # control, permissions, elicitations, rewind
     connection/             # ws-client, connection, command-tracker

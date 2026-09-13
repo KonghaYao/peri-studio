@@ -291,6 +291,7 @@ impl Hub {
             doc.clone(),
             sink.clone(),
             resources.clone(),
+            projects.catalog().clone(),
             terminals.clone(),
             registry.clone(),
             recovery_instances,

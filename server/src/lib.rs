@@ -9,6 +9,7 @@
 pub mod auth;
 pub mod channel;
 pub mod config;
+pub mod langfuse;
 pub mod control;
 pub mod persist;
 pub mod protocol;

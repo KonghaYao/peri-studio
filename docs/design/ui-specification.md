@@ -27,10 +27,10 @@ date: 2026-09-05
 
 1. **Calm & dense**：开发者工具密度；默认安静，活动态（streaming、权限、错误）才提高对比。
 2. **Server 事实优先**：UI 只渲染投影；不伪造历史、不从标题猜类型、未知协议值 fail closed（见 `architecture.md` §3.0）。
-3. **白画布 + 壳层灰**：聊天画布 `--app-bg` / `--surface-canvas` 为白（`neutral-0`）；侧栏与 Workbench 壳层用 **Neutral 25**（`--palette-neutral-25` / `bg-neutral-25`，`#fafafa`）。`--surface-overlay` 保持白，避免气泡、按钮、菜单被连带改灰。次级凹槽 `--surface-sunken` 同源 Neutral 25。
+3. **白画布 + 壳层灰**：聊天画布 `--app-bg` / `--surface-canvas` 为白（`neutral-0`）；Workbench 轨/面板仍为实心 **Neutral 25**（`--palette-neutral-25` / `bg-neutral-25`，`#fafafa`）。左栏 Project 侧栏在同一 Neutral 25 上做磨砂（`--sidebar-frost-*`：底层 wash 图 + 半透明 fill + 静态胶片颗粒），不是暗色渐变、也不是第二 accent。`--surface-overlay` 保持白，避免气泡、按钮、菜单被连带改灰。次级凹槽 `--surface-sunken` 同源 Neutral 25。
 4. **语义色克制**：accent 仅用于主操作与正向强调；`success` / `warning` / `danger` 仅用于状态与告警，不装饰化。
 5. **英文 UI 文案**：按钮、标签、toast、空状态、错误信息一律英文；文档与代码注释用中文。
-6. **可访问性默认**：焦点环可见、触控目标 ≥ 44px（`pointer-coarse`）、`forced-colors` 安全边界、模态焦点陷阱由 Kobalte 基元保证。
+6. **可访问性默认**：焦点环可见、触控目标 ≥ 44px（`pointer-coarse`）、`forced-colors` 安全边界、模态焦点陷阱由 Kobalte 基元保证。左栏磨砂在 `prefers-reduced-transparency` / `forced-colors` 下回退实心 `--sidebar-bg`、去掉 wash 图、颗粒与 blur。
 7. **组件自给自足**：基础组件在 `@peri/ui` 内具备 default / hover / disabled / focus / error 全套状态，**不得**依赖页面偶然样式才能用。
 
 ### 2.1 Explorer structural mutation
@@ -69,7 +69,8 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 |------|-----------|--------------|------|
 | 画布 | `--app-bg` | `bg-app-bg` | 主内容区 / 聊天背景（`neutral-0` `#ffffff`） |
 | 壳层灰 | `--palette-neutral-25` | `bg-neutral-25` | 侧栏与 Workbench 轨/面板（`#fafafa`） |
-| 侧栏 | `--sidebar-bg` | `bg-sidebar-bg` | 别名 Neutral 25 |
+| 侧栏 | `--sidebar-bg` | `bg-sidebar-bg` | 别名 Neutral 25；左栏磨砂 fill 底色 |
+| 侧栏磨砂 | `--sidebar-frost-*` | `.ui-sidebar-frost`（extra.css） | 底层 wash（默认 Clouds `/images/sidebar-frost-wash.png`；Marble / Silk / Linen / Paper 可换）、半透明 fill 默认 50%（`--sidebar-frost-fill`）、blur、颗粒；非 accent。整列含 footer/gear，禁止底部另铺实心 `bg-sidebar-bg` |
 | 表面 | `--surface` / `--surface-overlay` | `bg-surface` / `bg-surface-overlay` | 卡片、输入框、弹层、气泡（白） |
 | 次级表面 | `--surface-sunken` / `--surface-muted` | `bg-surface-sunken` | 同源 Neutral 25 的凹槽 |
 | 主文字 | `--text-primary` | `text-text-primary` | 标题、正文 |
@@ -182,8 +183,8 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 
 | 区域 | Widget 路径 | UI 要点 |
 |------|-------------|---------|
-| 壳层 | `widgets/shell` | AppShell 网格、`PwaRuntime`、ErrorCenter、ConnectionProblem、StatusArea、System About「This browser」 |
-| 侧栏 | `widgets/sidebar` | 28px 行高、选中 `bg-selected`、`For` 稳定 key |
+| 壳层 | `widgets/shell` | AppShell 网格、`PwaRuntime`、ErrorCenter、ConnectionProblem、StatusArea、`AppSettingsPanel`（Appearance）、System About「This browser」 |
+| 侧栏 | `widgets/sidebar` | 28px 行高、选中 `bg-selected`、`For` 稳定 key；整列 `ui-sidebar-frost`（wash + fill，footer/gear 同一表面；`prefers-reduced-transparency` 回退实心 `--sidebar-bg`） |
 | 聊天 | `widgets/chat` | Transcript 窗口化、Permission/Elicitation 队列、Markdown、`ToolCallActivity`（`@peri/ui` `ToolActivityRow` + `features/chat/tool-call-activity.ts`） |
 | 输入 | `widgets/composer` | `Composer.tsx` 内联 editor/toolbar；`@peri/ui` `SlashMenuListbox` + `features/composer/slash-menu-catalog.ts`；drop / Add attachment 共用上传队列，ready 后仅插入 `@relative/path` |
 | 资源 | `widgets/resource` | 右/左 `ResourceFloatingPanel`（Explorer·SCM·Graph / 文件预览）；Explorer folder/root drop target 与批次状态；Git diff 占主区；44px 触控目标 |
@@ -200,7 +201,7 @@ Widget **可以**读 `store`；**不得**直发 WebSocket 帧。复杂逻辑下�
 ### 10.1.1 Standalone / 本机安装
 
 - 已安装窗口 `display: standalone`，桌面 Chromium 经 `display_override` 优先 `window-controls-overlay`（见 [`pwa.md`](pwa.md) §5）。`theme-color` / manifest `theme_color` 为侧栏灰 `#fafafa`（Chromium 不接受透明 theme，也不阻止 WCO）；`background_color` 仍为画布白 `#ffffff`。WCO 拖拽条是 AppShell 里那一条 `.ui-titlebar` 毛玻璃，只在 `html.ui-wco-visible`（`windowControlsOverlay.visible`）时启用，不是各列实心白。
-- 安装入口：侧栏齿轮 **Settings** 菜单在可安装时提供 `Install`（`canInstall` 或 loopback iOS A2HS；`standalone` / `window-controls-overlay` 隐藏），`System` 仍打开诊断弹窗。齿轮与其菜单为 `ui-titlebar-no-drag`。首次签入若可安装、尚未询问且不在已安装窗口，用 `@peri/ui` Dialog（`Install Peri Studio?` / `Install` / `Not now`）；iOS 只说明 A2HS，不提供空 Install。System → About「This browser」保留互斥详情：`Install`（Chrome / Edge `beforeinstallprompt`）、`Installed`（standalone / WCO，`role="status"`）、Safari `Open Share, then Add to Home Screen`（仅 `isIosLike && isSecureContext && isLoopbackHost`）、或 `Cannot install here`。已安装窗口若 overlay API 在但 `visible === false`，追加 `Reinstall the app to hide the window title bar`（浏览器标签不提示）。
+- 安装入口：侧栏齿轮 **Settings** 菜单在可安装时提供 `Install`（`canInstall` 或 loopback iOS A2HS；`standalone` / `window-controls-overlay` 隐藏），**Settings** 打开 macOS 式偏好大窗（`SettingsPanel` / Appearance），`System` 仍打开诊断弹窗（Machines / About）。齿轮与其菜单为 `ui-titlebar-no-drag`。首次签入若可安装、尚未询问且不在已安装窗口，用 `@peri/ui` Dialog（`Install Peri Studio?` / `Install` / `Not now`）；iOS 只说明 A2HS，不提供空 Install。System → About「This browser」保留互斥详情：`Install`（Chrome / Edge `beforeinstallprompt`）、`Installed`（standalone / WCO，`role="status"`）、Safari `Open Share, then Add to Home Screen`（仅 `isIosLike && isSecureContext && isLoopbackHost`）、或 `Cannot install here`。已安装窗口若 overlay API 在但 `visible === false`，追加 `Reinstall the app to hide the window title bar`（浏览器标签不提示）。
 - 有安装动作时，文案使用**当前页** `location.origin`（由 widget 注入），并说明这是本机快捷方式：断开本机 server 后窗口不可用。规范 loopback 配方 `http://127.0.0.1:8456/` 只作文档默认入口，不得写成「这次安装」的 origin。iOS Home Screen 应用是独立存储，可能要再登录一次。LAN HTTP 不得提示 Add to Home Screen，也不得发明 127.0.0.1 快捷方式。无动作时隐藏安装说明段。
 - **不**把 Install 放进侧栏 More、AuthGate 登录卡、`ConnectionProblem` 或 Toast。无 Service Worker，因此无 Reload-for-update。
 - standalone 安全区用 T1 `pt-safe` / `pb-safe` / `p-safe`（AuthGate 登录页用 `p-safe-min-24`，AppShell / Toast 视口用 `p-safe`）。桌面 WCO 只放一条 `.ui-titlebar`（`titlebar-area` 几何 + 毛玻璃）；侧栏 navbar 在 overlay 可见时顶留 `--titlebar-area-height`（`.ui-titlebar-sidebar`），ChatHeader 始终显示标题并铺进 overlay，不再叠 `min-h-titlebar`。齿轮 Settings、Composer、菜单与 Dialog 为 `ui-titlebar-no-drag`。Composer 底部复用 `--composer-safe-bottom`。禁止 `pt-[env(...)]`。Chrome 右侧 PWA caption 无法在普通 PWA 去掉（`borderless` 仅 IWA）。

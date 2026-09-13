@@ -12,6 +12,7 @@ export type { ProjectSidebarIntent };
 
 interface ProjectSidebarProps {
   onNavigate?: () => void;
+  onOpenSettings?: () => void;
   onOpenSystem?: () => void;
   intent?: ProjectSidebarIntent | null;
 }
@@ -21,6 +22,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
 
   return (
     <SidebarChrome
+      onOpenSettings={props.onOpenSettings}
       onOpenSystem={props.onOpenSystem}
       nav={<ProjectSidebarNav model={model} />}
     >

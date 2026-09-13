@@ -47,7 +47,7 @@ Chrome 桌面 PWA 右侧 caption（三点菜单等）属于浏览器窗控，普
 | `features/pwa` | 模块信号 `canInstall` / `isStandalone` / `isIosLike`（auth-state 模式）；`startPwa()` 捕获一次性 `beforeinstallprompt`；`promptInstall()`；`pwa-install-prompt` 管 origin 级「已问过」与首次登录等待 |
 | `widgets/shell/PwaRuntime.tsx` | `onMount` 调 `startPwa()`；无 UI |
 | `widgets/shell/PwaInstallPrompt.tsx` | 签入后首次 Dialog（与 `AuthGate` 兄弟）；`PwaInstallDialog` 为 Dialog 本体 |
-| `widgets/shell/SidebarChrome.tsx` | 齿轮 Settings 菜单：可安装时 **Install** + **System** |
+| `widgets/shell/SidebarChrome.tsx` | 齿轮 Settings 菜单：可安装时 **Install** + **Settings** + **System** |
 | `pages/panel` | 与 `AuthGate` **兄弟**组装 `PwaRuntime` + `PwaInstallPrompt`，登录页也能抓住 install 事件 |
 | System 弹窗（`SettingsDialog` 文件名保留）About | 「This browser」互斥：Install / Installed / iOS A2HS（仅 loopback 安全上下文）/ Cannot install here |
 

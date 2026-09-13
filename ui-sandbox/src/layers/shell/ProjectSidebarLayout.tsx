@@ -182,7 +182,7 @@ export function ProjectSidebarLayout() {
   return (
     <>
       <ProjectSidebarShell
-        class="h-(--catalog-layer-sidebar-height) w-(--shell-sidebar-width) border border-border-faint bg-neutral-25"
+        class="h-(--catalog-layer-sidebar-height) w-(--shell-sidebar-width) border border-border-faint"
         navbar={(
           <>
             <NavAction icon={<MessageSquarePlus size={16} strokeWidth={1.7} />} label="New session" />
@@ -307,6 +307,7 @@ export function ProjectSidebarLayout() {
               )}
               items={[
                 { id: 'install', label: 'Install' },
+                { id: 'settings', label: 'Settings' },
                 { id: 'system', label: 'System' },
               ]}
             />

@@ -27,14 +27,16 @@ import { SourceControlPanel } from './SourceControlPanel';
 import { McpPanelContent } from '@/widgets/chat/McpPanel';
 import { ResourceRailButton } from './ResourceRailButton';
 import { SessionRailActions } from '@/widgets/shell/SessionRailActions';
-import { Files, GitBranch, GitGraph, PlugZap, RefreshCw, SquareTerminal, X } from 'lucide-solid';
+import { Activity, Files, GitBranch, GitGraph, PlugZap, RefreshCw, SquareTerminal, X } from 'lucide-solid';
 import { TerminalPanel } from '@/widgets/terminal/TerminalPanel';
 import { terminalSession } from '@/features/terminal/terminal-session';
 import { ResourceFloatingPanel } from './ResourceFloatingPanel';
 import { GitGraphView } from './git/GitGraphView';
+import { MonitorPanel } from './MonitorPanel';
+import { useMonitorCapability } from '@/features/monitor/use-monitor-capability';
 import { resourceWorkbenchRequest } from '@/store';
 
-export type WorkbenchView = 'explorer' | 'scm' | 'mcp' | 'graph' | 'terminal' | null;
+export type WorkbenchView = 'explorer' | 'scm' | 'mcp' | 'graph' | 'terminal' | 'monitor' | null;
 export type ResourcePreviewOrigin = {
   view: 'explorer' | 'scm';
   key: string;
@@ -75,6 +77,8 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   });
   const [commitMessages, setCommitMessages] = createSignal<Record<string, string>>({});
   const [explorerToolbar, setExplorerToolbar] = createSignal<JSX.Element>();
+  const [monitorRefreshToken, setMonitorRefreshToken] = createSignal(0);
+  const monitorEnabled = useMonitorCapability();
   const submittedCommits = new Map<string, { projectId: string; repoId: string; requestId: string; message: string }>();
   const view = () => props.view === undefined ? localView() : props.view;
   const setView = (next: WorkbenchView | ((current: WorkbenchView) => WorkbenchView)) => {
@@ -160,11 +164,13 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
     if (view() === 'mcp') return 'MCP';
     if (view() === 'graph') return 'Git Graph';
     if (view() === 'terminal') return 'Terminal';
+    if (view() === 'monitor') return 'Monitor';
     return project()?.name ?? 'Workspace';
   };
   const panelWidthProfile = () => {
     if (view() === 'graph') return 'graph' as const;
     if (view() === 'terminal') return 'terminal' as const;
+    if (view() === 'monitor') return 'monitor' as const;
     return 'workspace' as const;
   };
   const terminalRailBadge = () => {
@@ -206,6 +212,16 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
           <RefreshCw size={14} strokeWidth={1.7} />
         </IconButton>
       </Show>
+      <Show when={view() === 'monitor'}>
+        <IconButton
+          label="Refresh"
+          size="compact"
+          onClick={() => setMonitorRefreshToken((current) => current + 1)}
+          class="border-0 bg-transparent text-content-muted hover:text-content-primary"
+        >
+          <RefreshCw size={14} strokeWidth={1.7} />
+        </IconButton>
+      </Show>
       <IconButton label="Close resource panel" size="compact" onClick={close} class="border-0 bg-transparent text-content-muted hover:text-content-primary">
         <X size={14} strokeWidth={1.7} />
       </IconButton>
@@ -217,6 +233,9 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
         <Show when={view() === 'mcp'}><McpPanelContent embedded /></Show>
         <Show when={view() === 'graph'}>
           <GitGraphView embedded />
+        </Show>
+        <Show when={view() === 'monitor'}>
+          <MonitorPanel embedded visible refreshToken={monitorRefreshToken()} />
         </Show>
         <Show when={view() === 'explorer' || view() === 'scm'}>
           <Show when={project()} fallback={<div class="p-16 text-12 text-content-muted">Select or create a project to browse its workspace.</div>}>
@@ -240,6 +259,9 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
       <ResourceRailButton label="MCP" active={view() === 'mcp'} onClick={() => toggle('mcp')}><PlugZap size={17} strokeWidth={1.7} /></ResourceRailButton>
       <ResourceRailButton label="Git Graph" active={view() === 'graph'} onClick={() => toggle('graph')}><GitGraph size={17} strokeWidth={1.7} /></ResourceRailButton>
       <ResourceRailButton label="Terminal" active={view() === 'terminal'} badge={terminalRailBadge()} onClick={() => toggle('terminal')}><SquareTerminal size={17} strokeWidth={1.7} /></ResourceRailButton>
+      <Show when={monitorEnabled()}>
+        <ResourceRailButton label="Monitor" active={view() === 'monitor'} onClick={() => toggle('monitor')}><Activity size={17} strokeWidth={1.7} /></ResourceRailButton>
+      </Show>
       <SessionRailActions />
     </WorkbenchRail>
   );

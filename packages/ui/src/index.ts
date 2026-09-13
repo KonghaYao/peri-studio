@@ -272,7 +272,7 @@ export { Transfer, type TransferItem, type TransferProps } from './components/Tr
 export { TreeSelect, type TreeSelectNode, type TreeSelectProps } from './components/TreeSelect';
 export { DirectionProvider, useDirection, type Direction, type UseDirectionResult } from './components/Direction';
 export { CopyButton } from './components/CopyButton';
-export { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogPanel, DialogPortal, DialogTitle, DialogTrigger, type DialogPanelProps } from './components/Dialog';
+export { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogPanel, DialogPortal, DialogTitle, DialogTrigger, type DialogPanelProps, type DialogSize } from './components/Dialog';
 export { dialog, type DialogMethodConfig, type DialogMethodType } from './components/dialog-api';
 export { FormDialogShell, type FormDialogShellProps } from './components/FormDialogShell';
 export { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from './components/Empty';
@@ -506,10 +506,19 @@ export {
   type ProjectSidebarShellProps,
 } from './components/sidebar/ProjectSidebarShell';
 export {
-  sidebarMistDividerClass,
+  SettingsPanel,
+  type SettingsPanelItem,
+  type SettingsPanelProps,
+} from './components/settings/SettingsPanel';
+export {
+  SettingsAppearancePane,
+  type SettingsAppearanceMaterial,
+  type SettingsAppearancePaneProps,
+} from './components/settings/SettingsAppearancePane';
+export {
   sidebarMistHintClass,
   sidebarScrollClass,
-  sidebarScrollMistClass,
+  sidebarScrollFadeClass,
   sidebarScrollShellClass,
 } from './components/sidebar/sidebar-layout';
 export {
@@ -567,6 +576,16 @@ export { GitBranchBar, type GitSyncAction } from './components/git/GitBranchBar'
 export { GitCommitBar, type GitCommitShortcut } from './components/git/GitCommitBar';
 export { GitGraphRefBadge, type GitGraphRefBadgeProps } from './components/git/GitGraphRefBadge';
 export { GitGraphPanel, type GitGraphPanelProps } from './components/git/GitGraphPanel';
+export {
+  MonitorPanelShell,
+  type MonitorPanelShellProps,
+} from './components/monitor/MonitorPanelShell';
+export type {
+  MonitorPanelState,
+  MonitorSummaryView,
+  MonitorTraceLevel,
+  MonitorTraceRowView,
+} from './components/monitor/types';
 export { GitGraphBranchDialog, GitGraphConfirmDialog } from './components/git/GitGraphActionDialog';
 export type {
   GitChange,
@@ -687,6 +706,10 @@ export {
   WORKBENCH_PANEL_TERMINAL_MAX_WIDTH,
   WORKBENCH_PANEL_TERMINAL_MIN_WIDTH,
   WORKBENCH_PANEL_TERMINAL_WIDTH_STORAGE_KEY,
+  WORKBENCH_PANEL_MONITOR_DEFAULT_WIDTH,
+  WORKBENCH_PANEL_MONITOR_MAX_WIDTH,
+  WORKBENCH_PANEL_MONITOR_MIN_WIDTH,
+  WORKBENCH_PANEL_MONITOR_WIDTH_STORAGE_KEY,
   WORKBENCH_PANEL_WIDTH_STORAGE_KEY,
   clampWorkbenchPanelWidth,
   persistWorkbenchPanelWidth,

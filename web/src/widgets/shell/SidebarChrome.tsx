@@ -16,6 +16,7 @@ import { canOfferInstall, handleInstallMenuAction } from '@/features/pwa/pwa-ins
 interface SidebarChromeProps {
   children: JSX.Element;
   nav?: JSX.Element;
+  onOpenSettings?: () => void;
   onOpenSystem?: () => void;
   onInstall?: () => void;
 }
@@ -35,7 +36,7 @@ export function SidebarChrome(props: SidebarChromeProps) {
         role="navigation"
         aria-label="Projects and sessions"
         data-testid="project-sidebar"
-        class="project-sidebar relative h-full min-h-0 w-full flex-col border-r border-border-faint bg-neutral-25 text-content-primary"
+        class="ui-sidebar-frost project-sidebar relative h-full min-h-0 w-full flex-col border-r border-border-faint bg-transparent text-content-primary"
       >
         <ProjectSidebarShell
           embedded
@@ -50,7 +51,7 @@ export function SidebarChrome(props: SidebarChromeProps) {
                   size="sm"
                   showTooltip={false}
                   label="Settings"
-                  disabled={!props.onOpenSystem && !offerInstall()}
+                  disabled={!props.onOpenSettings && !props.onOpenSystem && !offerInstall()}
                   class="ui-titlebar-no-drag shrink-0 text-content-muted"
                 >
                   <Settings size={16} strokeWidth={1.7} />
@@ -59,6 +60,9 @@ export function SidebarChrome(props: SidebarChromeProps) {
                   <Show when={offerInstall()}>
                     <DropdownMenuItem onSelect={chooseInstall}>Install</DropdownMenuItem>
                   </Show>
+                  <DropdownMenuItem disabled={!props.onOpenSettings} onSelect={props.onOpenSettings}>
+                    Settings
+                  </DropdownMenuItem>
                   <DropdownMenuItem disabled={!props.onOpenSystem} onSelect={props.onOpenSystem}>
                     System
                   </DropdownMenuItem>
