@@ -78,6 +78,9 @@ jobs:
         run: |
           rustup component add rustfmt clippy
           rustup target add ${{ matrix.target }}
+      - name: Install ALSA headers for realtime-voice
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
       - name: Verify native workspace
         run: |
           cargo fmt --all --check

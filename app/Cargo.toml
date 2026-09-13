@@ -20,9 +20,9 @@ base64 = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
 dirs-next = { workspace = true }
 libc = { workspace = true }
-peri-instance = { path = "../instance", version = "0.3.0" }
-peri-studio-proto = { path = "../proto", version = "0.3.0" }
-peri-studio-server = { path = "../server", version = "0.3.0", default-features = true }
+peri-instance = { path = "../instance", version = "0.3.1" }
+peri-studio-proto = { path = "../proto", version = "0.3.1" }
+peri-studio-server = { path = "../server", version = "0.3.1", default-features = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
