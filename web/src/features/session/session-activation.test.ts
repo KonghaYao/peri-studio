@@ -9,6 +9,7 @@ interface HarnessOverrides {
   messagePending?: boolean;
   creatingProjectId?: string | null;
   sessions?: Array<{ id: string; projectId: string; title: string; lifecycle: string; updatedAt: string | null; lastOpenedAt: string | null; activeChatId: string | null; archivedAt?: string | null }>;
+  chatStatuses?: Record<string, string>;
   maxPromptBytes?: number;
   sendFirstMessage?: boolean;
   preserveFirstMessage?: boolean;
@@ -31,6 +32,7 @@ function harness(overrides: HarnessOverrides = {}) {
     creatingProjectId: () => creatingProjectId,
     setCreatingProjectId: (value) => { creatingProjectId = value; },
     sessions: () => overrides.sessions ?? [],
+    chatStatuses: () => overrides.chatStatuses ?? {},
     selectedSessionId: () => 'old-session',
     currentChatId: () => 'old-chat',
     preferredSessionId: () => null,
@@ -162,13 +164,55 @@ describe('SessionActivation', () => {
     expect(subject.activate).toHaveBeenCalledWith('acp-logical', 'live-chat');
   });
 
+  it('switches to a live writable runtime without sending open', () => {
+    const subject = harness({
+      sessions: [{
+        id: 'acp-logical', projectId: 'project', title: 'title', lifecycle: 'ready',
+        updatedAt: null, lastOpenedAt: null, activeChatId: 'live-chat',
+      }],
+      chatStatuses: { 'live-chat': 'accepting' },
+    });
+    expect(subject.activation.navigate('acp-logical')).toBe(true);
+    expect(subject.sentFrame()).toBeNull();
+    expect(subject.activate).toHaveBeenCalledWith('acp-logical', 'live-chat');
+  });
+
+  it('still opens when the projected runtime is gapped', () => {
+    const subject = harness({
+      sessions: [{
+        id: 'acp-logical', projectId: 'project', title: 'title', lifecycle: 'ready',
+        updatedAt: null, lastOpenedAt: null, activeChatId: 'gapped-chat',
+      }],
+      chatStatuses: { 'gapped-chat': 'gap' },
+    });
+    expect(subject.activation.navigate('acp-logical')).toBe(true);
+    expect(subject.sentFrame()?.type).toBe('session/open');
+    expect(subject.activate).not.toHaveBeenCalled();
+  });
+
+  it('still opens when Registry has not projected the runtime status yet', () => {
+    const subject = harness({
+      sessions: [{
+        id: 'acp-logical', projectId: 'project', title: 'title', lifecycle: 'ready',
+        updatedAt: null, lastOpenedAt: null, activeChatId: 'unknown-chat',
+      }],
+    });
+    expect(subject.activation.navigate('acp-logical')).toBe(true);
+    expect(subject.sentFrame()?.type).toBe('session/open');
+    expect(subject.activate).not.toHaveBeenCalled();
+  });
+
   it('re-opens the selected logical session after reconnect', () => {
-    const subject = harness({ sessions: [{
-      id: 'old-session', projectId: 'project', title: 'title', lifecycle: 'ready',
-      updatedAt: null, lastOpenedAt: null, activeChatId: 'stale-chat',
-    }] });
+    const subject = harness({
+      sessions: [{
+        id: 'old-session', projectId: 'project', title: 'title', lifecycle: 'ready',
+        updatedAt: null, lastOpenedAt: null, activeChatId: 'stale-chat',
+      }],
+      chatStatuses: { 'stale-chat': 'accepting' },
+    });
     subject.activation.reactivateAfterReconnect();
     expect(subject.sentFrame()?.type).toBe('session/open');
     expect(subject.sentFrame()?.payload).toEqual({ sessionId: 'old-session' });
+    expect(subject.activate).not.toHaveBeenCalled();
   });
 });

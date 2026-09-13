@@ -66,6 +66,67 @@ async fn session_open_reuses_confirmed_live_runtime_without_spawn() {
     );
 }
 
+/// session/open：runtime_confirmed 已丢失但 active_turn 仍在 → 复用，不 spawn。
+#[tokio::test]
+async fn session_open_reuses_unconfirmed_runtime_with_active_turn() {
+    let mut env = env().await;
+    env.metadata
+        .create_project("p1", "Demo", env._tmp.path().to_str().unwrap(), "local")
+        .await
+        .unwrap();
+    seed_catalog_session(&env.projects, "p1", "acp-1", "Active").await;
+    env.chats
+        .register(
+            "chat-turning",
+            "local",
+            Some("Active"),
+            env._tmp.path().to_str().unwrap(),
+            Some("p1"),
+        )
+        .await
+        .unwrap();
+    env.chats
+        .bind("chat-turning", "acp-1", false)
+        .await
+        .unwrap();
+    env.chats.set_active_turn("chat-turning", "t-live").await;
+
+    let (tx, mut rx) = mpsc::channel(4);
+    let result = env
+        .coordinator
+        .submit(
+            &ctx("catalog"),
+            ActionEnvelope::PersistedSessionOpen {
+                command_id: uuid::Uuid::new_v4().to_string(),
+                payload: PersistedSessionOpenPayload {
+                    session_id: "acp-1".into(),
+                },
+            },
+            tx,
+        )
+        .await;
+    assert!(matches!(result, SubmitAck::Handled), "{result:?}");
+    let mut committed = false;
+    for _ in 0..2 {
+        match rx.recv().await {
+            Some(OutboundMsg::Frame(Frame::ActionAck(ack))) => {
+                if ack.status == AckStatus::Committed {
+                    committed = true;
+                    assert_eq!(ack.chat_id.as_deref(), Some("chat-turning"));
+                }
+            }
+            other => panic!("unexpected frame {other:?}"),
+        }
+    }
+    assert!(committed, "active_turn 必须挡住 spawn+load");
+    assert!(
+        tokio::time::timeout(Duration::from_millis(200), env.instance_rx.recv())
+            .await
+            .is_err(),
+        "后台 turn 复用不得产生 instance 下行指令"
+    );
+}
+
 /// session/open：无进程存活证据（confirmed=false）→ 走 spawn + `session/load`。
 #[tokio::test]
 async fn session_open_without_confirmed_runtime_spawns_and_loads() {

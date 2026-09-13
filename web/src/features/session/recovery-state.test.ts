@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isLiveRuntimeStatus, retainLiveRuntimeHints } from './recovery-state.ts';
+import { isLiveRuntimeStatus, retainLiveRuntimeHints, sessionProjectedLiveChatId } from './recovery-state.ts';
 
 const chat = (id: string, status: string | null) => ({ id, status });
 
@@ -40,6 +40,13 @@ describe('retainLiveRuntimeHints', () => {
     expect(isLiveRuntimeStatus('ended')).toBe(false);
     expect(isLiveRuntimeStatus('closed')).toBe(false);
     expect(isLiveRuntimeStatus('crashed')).toBe(false);
+  });
+
+  it('requires an explicit Registry status before treating a runtime as switchable live', () => {
+    expect(sessionProjectedLiveChatId(session('chat-live'), { 'chat-live': 'accepting' })).toBe('chat-live');
+    expect(sessionProjectedLiveChatId(session('chat-gap'), { 'chat-gap': 'gap' })).toBeNull();
+    expect(sessionProjectedLiveChatId(session('chat-missing'), {})).toBeNull();
+    expect(sessionProjectedLiveChatId(session(null), { 'chat-live': 'accepting' })).toBeNull();
   });
 
   it('keeps the hint when the chat status is unknown (conservative)', () => {

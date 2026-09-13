@@ -335,8 +335,8 @@ impl MetadataCommandProcessor {
         SubmitAck::Handled
     }
 
-    /// PersistedSessionOpen：复用已确认存活的 runtime（binding resolve）直接
-    /// committed；否则持久化激活（spawn + session/load 恢复）。
+    /// PersistedSessionOpen：复用已确认存活、或仍有 active_turn 的 runtime
+    /// （binding resolve）直接 committed；否则持久化激活（spawn + session/load 恢复）。
     pub(super) async fn submit_session_open<R: MetadataRuntimePort>(
         &self,
         runtime: R,

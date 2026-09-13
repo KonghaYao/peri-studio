@@ -230,16 +230,21 @@ impl MetadataCommandProcessor {
                         false,
                     )));
                 };
+                // 复用条件：同 ACP id、非终态，且进程已确认存活，或仍登记
+                // 着 active_turn。后者覆盖心跳把 runtime_confirmed 打掉但
+                // turn 还在跑的窗口，避免二次 spawn + session/load 打断后台。
                 let live_chat = if let Some(chat) = self.chats.resolve(acp_id).await {
-                    self.chats
-                        .entry(&chat)
-                        .await
-                        .filter(|entry| {
-                            !entry.state.is_terminal()
-                                && entry.runtime_confirmed
+                    match self.chats.entry(&chat).await {
+                        Some(entry)
+                            if !entry.state.is_terminal()
                                 && entry.session_id.as_deref() == Some(acp_id)
-                        })
-                        .map(|_| chat)
+                                && (entry.runtime_confirmed
+                                    || self.chats.active_turn(&chat).await.is_some()) =>
+                        {
+                            Some(chat)
+                        }
+                        _ => None,
+                    }
                 } else {
                     None
                 };

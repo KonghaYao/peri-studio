@@ -13,6 +13,7 @@ import {
   startQuickStart,
 } from '@/features/message/quick-start-delivery';
 import { promptFitsBudget } from '@/shared/lib/prompt-budget';
+import { sessionProjectedLiveChatId } from '@/features/session/recovery-state';
 
 type ActionFrame = ReturnType<typeof H.action>;
 export interface ActivationAck {
@@ -43,6 +44,7 @@ export interface SessionActivationDependencies {
   creatingProjectId: () => string | null;
   setCreatingProjectId: (projectId: string | null) => void;
   sessions: () => ProjectSessionInfo[];
+  chatStatuses: () => Record<string, string>;
   selectedSessionId: () => string | null;
   currentChatId: () => string | null;
   preferredSessionId: () => string | null;
@@ -172,8 +174,14 @@ export class SessionActivation {
         callbacks.onFailed?.('Read-only mode can only open sessions that are already running');
         return false;
       }
-      this.applyEffects(this.navigator.transition({ type: 'local-select', sessionId: session.id, chatId: session.activeChatId }));
-      callbacks.onCommitted?.();
+      this.selectLiveRuntime(session.id, session.activeChatId, callbacks);
+      return true;
+    }
+    // 可写模式：Registry 已证明 runtime 仍活时只切视图。再发 session/open
+    // 可能在 runtime_confirmed 抖动时走 spawn+load，打断后台 turn。
+    const liveChatId = sessionProjectedLiveChatId(session, this.deps.chatStatuses());
+    if (liveChatId) {
+      this.selectLiveRuntime(session.id, liveChatId, callbacks);
       return true;
     }
     return this.open(session.id, callbacks);
@@ -196,7 +204,15 @@ export class SessionActivation {
   reactivateAfterReconnect(): void {
     const sessionId = this.deps.selectedSessionId();
     if (!sessionId) return;
-    this.navigate(sessionId);
+    const session = this.deps.sessions().find((item) => item.id === sessionId);
+    if (!session || session.archivedAt || session.lifecycle !== 'ready') return;
+    if (this.deps.isReadOnly()) {
+      this.navigate(sessionId);
+      return;
+    }
+    // 重连必须 session/open：server 重启后内存 runtime 已丢，浏览器残留的
+    // live hint 不能当成可复用进程。
+    this.open(session.id);
   }
 
   reset(): void {
@@ -251,6 +267,11 @@ export class SessionActivation {
     if (rejection) return rejection;
     if (this.deps.creatingProjectId() || quickStartSubmission()) return 'A session is already being created';
     return null;
+  }
+
+  private selectLiveRuntime(sessionId: string, chatId: string, callbacks: OpenSessionCallbacks): void {
+    this.applyEffects(this.navigator.transition({ type: 'local-select', sessionId, chatId }));
+    callbacks.onCommitted?.();
   }
 
   private openRejection(): string | null {

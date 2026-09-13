@@ -16,6 +16,19 @@ export function sessionHasLiveRuntime(
   return !!chatId && isLiveRuntimeStatus(chatStatuses[chatId]);
 }
 
+/**
+ * Registry 已投影出明确 chat status、且该 runtime 仍非终态/gap 时的 chat id。
+ * 缺 status 键不得当成 live：避免 Registry 未水合时误跳过 session/open。
+ */
+export function sessionProjectedLiveChatId(
+  session: { activeChatId?: string | null },
+  chatStatuses: Record<string, string>,
+): string | null {
+  const chatId = session.activeChatId;
+  if (!chatId || !Object.hasOwn(chatStatuses, chatId)) return null;
+  return isLiveRuntimeStatus(chatStatuses[chatId]) ? chatId : null;
+}
+
 export const retainLiveRuntimeHints = <S extends { id: string; activeChatId: string | null }>(
   sessions: S[],
   chats: Array<{ id: string; status: string | null }>,

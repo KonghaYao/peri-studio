@@ -274,6 +274,7 @@ const sessionActivation = new SessionActivation({
   creatingProjectId: creatingSessionProjectId,
   setCreatingProjectId: setCreatingSessionProjectId,
   sessions: projectSessions,
+  chatStatuses: chatStatusSignal,
   selectedSessionId,
   currentChatId: () => currentCid,
   preferredSessionId: readRememberedSession,
