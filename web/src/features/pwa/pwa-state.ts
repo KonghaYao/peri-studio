@@ -16,8 +16,26 @@ const [isIosLike, setIsIosLike] = createSignal(false);
 const [isLoopbackHost, setIsLoopbackHost] = createSignal(false);
 const [isSecureContext, setIsSecureContext] = createSignal(false);
 const [installBusy, setInstallBusy] = createSignal(false);
+const [wcoApiPresent, setWcoApiPresent] = createSignal(false);
+const [wcoOverlayVisible, setWcoOverlayVisible] = createSignal(false);
 
-export { canInstall, isStandalone, isIosLike, isLoopbackHost, isSecureContext, installBusy };
+export {
+  canInstall,
+  isStandalone,
+  isIosLike,
+  isLoopbackHost,
+  isSecureContext,
+  installBusy,
+  wcoApiPresent,
+  wcoOverlayVisible,
+};
+
+/** `navigator.windowControlsOverlay.visible` 为真时挂到 `<html>`，CSS 不得只凭 display-mode 假设 overlay。 */
+export const WCO_VISIBLE_CLASS = 'ui-wco-visible';
+
+type WindowControlsOverlayLike = EventTarget & {
+  readonly visible: boolean;
+};
 
 /** iOS A2HS 只在 loopback 安全上下文提示；不得给 LAN HTTP 发明 127.0.0.1 快捷方式。 */
 export function canAddToHomeScreen(): boolean {
@@ -32,6 +50,14 @@ export function browserInstallKind(): BrowserInstallKind {
   return 'cannot-install';
 }
 
+/**
+ * 已安装窗口里 WCO API 在、但 overlay 未亮起：这次安装仍是 standalone 标题栏。
+ * 浏览器标签（display-mode: browser）不提示；硬刷新不够，须卸掉再装。
+ */
+export function needsTitlebarReinstall(): boolean {
+  return isStandalone() && wcoApiPresent() && !wcoOverlayVisible();
+}
+
 /** 127.0.0.1 / localhost / ::1（含 `[::1]` 写法）。 */
 export function isLoopbackHostname(hostname: string): boolean {
   const host = hostname.trim().toLowerCase().replace(/^\[|\]$/g, '');
@@ -43,6 +69,25 @@ const INSTALLED_DISPLAY_MODES = ['standalone', 'window-controls-overlay'] as con
 let started = false;
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 let displayModeQueries: MediaQueryList[] = [];
+let overlayTarget: WindowControlsOverlayLike | null = null;
+
+function overlayFromNavigator(): WindowControlsOverlayLike | null {
+  const overlay = (navigator as Navigator & { windowControlsOverlay?: WindowControlsOverlayLike }).windowControlsOverlay;
+  return overlay ?? null;
+}
+
+function applyWcoVisibleClass(visible: boolean): void {
+  if (typeof document === 'undefined') return;
+  document.documentElement.classList.toggle(WCO_VISIBLE_CLASS, visible);
+}
+
+function syncWindowControlsOverlay(): void {
+  const overlay = overlayFromNavigator();
+  const visible = overlay?.visible === true;
+  setWcoApiPresent(overlay != null);
+  setWcoOverlayVisible(visible);
+  applyWcoVisibleClass(visible);
+}
 
 function navigatorStandalone(): boolean {
   return 'standalone' in navigator && (navigator as Navigator & { standalone?: boolean }).standalone === true;
@@ -78,6 +123,11 @@ function syncDisplayMode(): void {
     deferredPrompt = null;
     setCanInstall(false);
   }
+  syncWindowControlsOverlay();
+}
+
+function onWindowControlsOverlayChange(): void {
+  syncWindowControlsOverlay();
 }
 
 function onBeforeInstallPrompt(event: Event): void {
@@ -113,6 +163,8 @@ export function startPwa(): void {
       query.addEventListener('change', onDisplayModeChange);
     }
   }
+  overlayTarget = overlayFromNavigator();
+  overlayTarget?.addEventListener('geometrychange', onWindowControlsOverlayChange);
 }
 
 export async function promptInstall(): Promise<void> {
@@ -136,6 +188,8 @@ export function installPwaSignals(next: {
   isLoopbackHost?: boolean;
   isSecureContext?: boolean;
   installBusy?: boolean;
+  wcoApiPresent?: boolean;
+  wcoOverlayVisible?: boolean;
 }): void {
   if (next.canInstall !== undefined) setCanInstall(next.canInstall);
   if (next.isStandalone !== undefined) setIsStandalone(next.isStandalone);
@@ -143,6 +197,11 @@ export function installPwaSignals(next: {
   if (next.isLoopbackHost !== undefined) setIsLoopbackHost(next.isLoopbackHost);
   if (next.isSecureContext !== undefined) setIsSecureContext(next.isSecureContext);
   if (next.installBusy !== undefined) setInstallBusy(next.installBusy);
+  if (next.wcoApiPresent !== undefined) setWcoApiPresent(next.wcoApiPresent);
+  if (next.wcoOverlayVisible !== undefined) {
+    setWcoOverlayVisible(next.wcoOverlayVisible);
+    applyWcoVisibleClass(next.wcoOverlayVisible);
+  }
 }
 
 /** 测试夹具：卸掉监听并恢复默认信号。 */
@@ -153,14 +212,19 @@ export function resetPwaForTests(): void {
     for (const query of displayModeQueries) {
       query.removeEventListener('change', onDisplayModeChange);
     }
+    overlayTarget?.removeEventListener('geometrychange', onWindowControlsOverlayChange);
   }
   started = false;
   deferredPrompt = null;
   displayModeQueries = [];
+  overlayTarget = null;
   setCanInstall(false);
   setIsStandalone(false);
   setIsIosLike(false);
   setIsLoopbackHost(false);
   setIsSecureContext(false);
   setInstallBusy(false);
+  setWcoApiPresent(false);
+  setWcoOverlayVisible(false);
+  applyWcoVisibleClass(false);
 }

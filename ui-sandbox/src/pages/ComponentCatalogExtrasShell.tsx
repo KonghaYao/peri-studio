@@ -38,7 +38,7 @@ export function ComponentCatalogExtrasShell(props: { sections?: string[] }) {
       <CatalogDemo
         id="system-about"
         title="System About"
-        description="This browser 安装态：Chrome 可安装、已安装 standalone / window-controls-overlay、loopback Safari A2HS、Cannot install here。桌面已安装窗口优先 WCO 隐藏系统标题栏。齿轮 Settings 菜单含 Install + System；首次登录 Dialog 为 Chrome Install / iOS A2HS 说明。"
+        description="This browser 安装态：Chrome 可安装、已安装 standalone / window-controls-overlay、loopback Safari A2HS、Cannot install here。已安装但 WCO 未 overlay 时提示 Reinstall the app to hide the window title bar。齿轮 Settings 菜单含 Install + System；首次登录 Dialog 为 Chrome Install / iOS A2HS 说明。"
       >
         <SystemAboutLayout />
       </CatalogDemo>

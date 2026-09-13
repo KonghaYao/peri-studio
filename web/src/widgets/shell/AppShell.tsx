@@ -163,6 +163,8 @@ export function AppShell(props: { initialResourceView?: WorkbenchView } = {}) {
         '--titlebar-content-left': !mobile() && sidebarOpen() ? '0px' : 'var(--titlebar-area-x)',
       }}
     >
+      {/* 单一 WCO 拖拽条：几何用 titlebar-area，不占文档流，也不给各列再加一层顶 padding。 */}
+      <div class="ui-titlebar ui-titlebar-overlay" data-testid="titlebar-overlay" aria-hidden="true" />
       <ProjectDrawer ref={(element) => { drawer = element; }} open={open()} modal={mobile()} onOpenChange={setOpen}>
         <ProjectSidebar
           onNavigate={() => setOpen(false)}

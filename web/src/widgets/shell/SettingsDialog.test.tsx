@@ -110,6 +110,21 @@ describe('SettingsDialog', () => {
     expect(screen.queryByRole('button', { name: 'Install' })).not.toBeInTheDocument();
     expect(screen.queryByText('Open Share, then Add to Home Screen')).not.toBeInTheDocument();
     expect(screen.queryByText('Cannot install here')).not.toBeInTheDocument();
+    expect(screen.queryByText('Reinstall the app to hide the window title bar')).not.toBeInTheDocument();
+  });
+
+  it('hints reinstall on This browser when overlay exists but is not visible', () => {
+    installPwaSignals({
+      canInstall: false,
+      isStandalone: true,
+      isIosLike: false,
+      wcoApiPresent: true,
+      wcoOverlayVisible: false,
+    });
+    openAbout();
+
+    expect(screen.getByRole('status')).toHaveTextContent('Installed');
+    expect(screen.getByText('Reinstall the app to hide the window title bar')).toBeInTheDocument();
   });
 
   it('shows Safari home-screen steps only on secure loopback iOS', () => {

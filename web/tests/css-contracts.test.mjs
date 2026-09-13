@@ -632,6 +632,8 @@ test('standalone shell uses named safe-area utilities without card margin overfl
   assert.match(shell, /\bp-safe\b/);
   assert.match(shell, /\bpb-safe\b|\bp-safe\b/);
   assert.match(shell, /--titlebar-content-left/);
+  assert.match(shell, /ui-titlebar ui-titlebar-overlay/);
+  assert.match(shell, /data-testid="titlebar-overlay"/);
   assert.doesNotMatch(shell, /pt-\[env\(/);
   assert.match(authGate, /\bp-safe-min-24\b/);
   assert.match(authGate, /ui-titlebar-drag/);

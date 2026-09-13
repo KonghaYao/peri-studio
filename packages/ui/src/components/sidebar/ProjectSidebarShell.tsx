@@ -34,7 +34,7 @@ export const ProjectSidebarShell: Component<ProjectSidebarShellProps> = (props) 
       <Show when={local.navbar}>
         <SidebarHeader
           data-testid="titlebar-drag-sidebar"
-          class="ui-titlebar-drag ui-titlebar-overlay shrink-0 gap-0 border-0 p-0 pr-6 pt-8 pb-4 pl-titlebar-gutter min-h-titlebar"
+          class="ui-titlebar-drag ui-titlebar-sidebar shrink-0 gap-0 border-0 p-0 pr-6 pt-8 pb-4 pl-titlebar-gutter"
         >
           {local.navbar}
         </SidebarHeader>

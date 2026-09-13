@@ -1,4 +1,4 @@
-import { FileText, Menu, PanelRight } from 'lucide-solid';
+import { FileText, Menu } from 'lucide-solid';
 import type { Component, JSX } from 'solid-js';
 import { Show, splitProps } from 'solid-js';
 import { cn } from '../lib/cn';
@@ -38,9 +38,10 @@ export const ChatHeader: Component<ChatHeaderProps> = (props) => {
 
   return (
     <header
+      data-testid="titlebar-drag-chat"
       class={cn(
-        'ui-titlebar-drag ui-titlebar-overlay relative flex h-52 min-h-titlebar items-center gap-8 border-b border-border-subtle bg-surface-overlay pl-titlebar-content pr-titlebar-gutter',
-        local.launch && 'justify-end',
+        /* WCO 几何由单一 .ui-titlebar 承担；本块只铺进 overlay 矩形，不再自增高或铺白底。 */
+        'ui-titlebar-drag relative flex h-52 items-center gap-8 border-b border-border-subtle pl-titlebar-content',
         local.class,
       )}
     >
@@ -66,23 +67,15 @@ export const ChatHeader: Component<ChatHeaderProps> = (props) => {
           <FileText size={16} strokeWidth={1.7} />
         </IconButton>
       </Show>
-      <Show when={!local.launch}>
-        <strong
-          class={cn(
-            'min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-14 font-semibold text-content-primary',
-            local.titleClass,
-          )}
-        >
-          {local.title}
-        </strong>
-      </Show>
-      <Show when={local.launch}>
-        {local.launchTrailing ?? (
-          <IconButton tooltipPlacement="end" label="Toggle side panel" title="Side panel is not connected yet" disabled class="disabled:opacity-100">
-            <PanelRight size={18} strokeWidth={1.7} />
-          </IconButton>
+      <strong
+        class={cn(
+          'ui-titlebar-no-drag min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-14 font-semibold text-content-primary',
+          local.titleClass,
         )}
-      </Show>
+      >
+        {local.title}
+      </strong>
+      <Show when={local.launchTrailing}>{local.launchTrailing}</Show>
     </header>
   );
 };

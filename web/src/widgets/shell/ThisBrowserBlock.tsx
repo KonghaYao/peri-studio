@@ -3,7 +3,7 @@
 
 import { Match, Show, Switch } from 'solid-js';
 import { Button } from '@peri/ui';
-import { browserInstallKind, installBusy, promptInstall } from '@/features/pwa/pwa-state';
+import { browserInstallKind, installBusy, needsTitlebarReinstall, promptInstall } from '@/features/pwa/pwa-state';
 
 export function ThisBrowserBlock(props: { origin: string }) {
   const kind = () => browserInstallKind();
@@ -20,6 +20,11 @@ export function ThisBrowserBlock(props: { origin: string }) {
       <Switch>
         <Match when={kind() === 'installed'}>
           <p class="mt-8 mb-0 text-12 text-text-primary" role="status">Installed</p>
+          <Show when={needsTitlebarReinstall()}>
+            <p class="mt-6 mb-0 text-12 leading-155 text-text-secondary">
+              Reinstall the app to hide the window title bar
+            </p>
+          </Show>
         </Match>
         <Match when={kind() === 'install'}>
           <Button

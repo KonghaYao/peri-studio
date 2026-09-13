@@ -21,6 +21,7 @@ test('manifest prefers window-controls-overlay and keeps standalone fallback', (
   assert.deepEqual(manifest.display_override, ['window-controls-overlay', 'standalone']);
   assert.equal(manifest.display_override.includes('fullscreen'), false);
   assert.equal(manifest.display_override.includes('borderless'), false);
+  assert.equal(manifest.display_override.includes('unframed'), false);
   assert.equal(manifest.theme_color, '#fafafa');
   assert.equal(manifest.background_color, '#ffffff');
 });

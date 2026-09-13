@@ -169,8 +169,10 @@ test('standalone safe-area tokens are the only inset source for named utilities'
   assert.match(tokens, /--titlebar-overlay-blur:\s*var\(--space-20\)/);
   assert.match(tokens, /--titlebar-overlay-saturate:/);
   assert.match(tokens, /@media \(display-mode: window-controls-overlay\)/);
+  assert.match(tokens, /:root\.ui-wco-visible/);
   assert.doesNotMatch(tokens, /display-mode:\s*fullscreen/);
   assert.doesNotMatch(tokens, /display-mode:\s*borderless/);
+  assert.doesNotMatch(tokens, /display-mode:\s*unframed/);
   for (const utility of ['pt-safe', 'pr-safe', 'pb-safe', 'pl-safe', 'px-safe', 'py-safe', 'p-safe', 'p-safe-min-24']) {
     assert.match(theme, new RegExp(`@utility ${utility} \\{`));
   }
@@ -178,6 +180,12 @@ test('standalone safe-area tokens are the only inset source for named utilities'
     assert.match(theme, new RegExp(`@utility ${utility} \\{`));
   }
   assert.match(theme, /p-safe-min-24 \{[\s\S]*padding-top:\s*max\(var\(--space-24\),\s*var\(--safe-area-top\),\s*var\(--titlebar-area-height\)\)/);
+  assert.match(extra, /\.ui-titlebar\s*\{/);
+  assert.match(extra, /position:\s*fixed/);
+  assert.match(extra, /top:\s*var\(--titlebar-area-y\)/);
+  assert.match(extra, /left:\s*var\(--titlebar-area-x\)/);
+  assert.match(extra, /width:\s*var\(--titlebar-area-width\)/);
+  assert.match(extra, /height:\s*var\(--titlebar-area-height\)/);
   assert.match(extra, /\.ui-titlebar-drag\s*\{/);
   assert.match(extra, /-webkit-app-region:\s*drag/);
   assert.match(extra, /\.ui-titlebar-overlay\s*\{/);
@@ -185,16 +193,32 @@ test('standalone safe-area tokens are the only inset source for named utilities'
   assert.match(extra, /forced-colors:\s*active/);
   assert.match(extra, /prefers-reduced-transparency:\s*reduce/);
   assert.match(extra, /background-color:\s*Canvas/);
-  assert.match(extra, /html,\s*body,\s*#app/);
+  assert.match(extra, /html\.ui-wco-visible,\s*html\.ui-wco-visible body,\s*html\.ui-wco-visible #app/);
   assert.match(extra, /\.ui-titlebar-no-drag/);
   assert.match(extra, /\[role='menu'\]/);
   assert.match(extra, /\[role='dialog'\]/);
   assert.match(extra, /-webkit-app-region:\s*no-drag/);
   const chatHeader = read(join(srcRoot, 'components', 'ChatHeader.tsx'));
-  assert.match(chatHeader, /ui-titlebar-drag/);
-  assert.match(chatHeader, /ui-titlebar-overlay/);
+  assert.match(chatHeader, /ui-titlebar-drag relative flex h-52/);
   assert.match(chatHeader, /pl-titlebar-content/);
-  assert.match(chatHeader, /pr-titlebar-gutter/);
+  assert.match(chatHeader, /\{local\.title\}/);
+  assert.doesNotMatch(chatHeader, /['"][^'"]*ui-titlebar-overlay/);
+  assert.doesNotMatch(chatHeader, /['"][^'"]*ui-titlebar-sidebar/);
+  assert.doesNotMatch(chatHeader, /['"][^'"]*min-h-titlebar/);
+  assert.doesNotMatch(chatHeader, /['"][^'"]*pt-titlebar/);
+  assert.doesNotMatch(chatHeader, /['"][^'"]*pr-titlebar-gutter/);
+  assert.doesNotMatch(chatHeader, /['"][^'"]*bg-surface-overlay/);
+  const sidebarShell = read(join(srcRoot, 'components', 'sidebar', 'ProjectSidebarShell.tsx'));
+  assert.match(sidebarShell, /ui-titlebar-sidebar/);
+  assert.match(sidebarShell, /pl-titlebar-gutter/);
+  assert.doesNotMatch(sidebarShell, /['"][^'"]*min-h-titlebar/);
+  assert.doesNotMatch(sidebarShell, /['"][^'"]*ui-titlebar-overlay/);
+  assert.doesNotMatch(sidebarShell, /['"][^'"]*pt-titlebar/);
+  assert.match(extra, /html\.ui-wco-visible \.ui-titlebar-sidebar\s*\{[^}]*padding-top:\s*var\(--titlebar-area-height\)/s);
+  assert.match(extra, /html\.ui-wco-visible \.ui-titlebar-sidebar\s*\{[^}]*padding-left:\s*var\(--space-6\)/s);
+  const workbenchLayout = read(join(srcRoot, 'components', 'workbench', 'workbench-layout.ts'));
+  assert.doesNotMatch(workbenchLayout, /pt-titlebar-gutter/);
+  assert.doesNotMatch(workbenchLayout, /ui-titlebar-sidebar/);
 });
 
 test('package CSS only consumes declared tokens', () => {

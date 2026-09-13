@@ -296,7 +296,22 @@ body.ui-workbench-panel-resizing * {
   width: 100%;
 }
 
-/* ── Desktop PWA 标题栏拖拽 + WCO 毛玻璃（-webkit-app-region / backdrop-filter） ── */
+/* ── Desktop PWA 标题栏拖拽 + WCO 毛玻璃（-webkit-app-region / backdrop-filter） ──
+ * 单一 `.ui-titlebar` 叠在 titlebar-area 矩形上（web.dev WCO 几何）。
+ * overlay 样式必须同时满足 display-mode: window-controls-overlay 与 html.ui-wco-visible
+ * （由 web startPwa 按 windowControlsOverlay.visible 切换）；不得只凭媒体查询假设 overlay。
+ * ChatHeader / 中栏 / Explorer 不得把 titlebar-area-height 加成 padding / min-height，
+ * 否则中间会空出一条 --app-bg。仅左栏 `.ui-titlebar-sidebar` 在 overlay 可见时顶留该高度。 */
+
+.ui-titlebar {
+  position: fixed;
+  top: var(--titlebar-area-y);
+  left: var(--titlebar-area-x);
+  width: var(--titlebar-area-width);
+  height: var(--titlebar-area-height);
+  z-index: var(--z-sticky);
+  pointer-events: none;
+}
 
 .ui-titlebar-drag {
   -webkit-app-region: drag;
@@ -304,22 +319,51 @@ body.ui-workbench-panel-resizing * {
 }
 
 @media (display-mode: window-controls-overlay) {
-  /* 壳层根不另画一条不透明顶栏；内容自己铺到窗沿。 */
-  html,
-  body,
-  #app {
+  /* display-mode 可能先于 overlay 亮起；真实信号是 html.ui-wco-visible（windowControlsOverlay.visible）。 */
+  html.ui-wco-visible,
+  html.ui-wco-visible body,
+  html.ui-wco-visible #app {
     background-color: transparent;
   }
 
-  .ui-titlebar-overlay {
+  html.ui-wco-visible .ui-titlebar {
+    pointer-events: auto;
+    -webkit-app-region: drag;
+    app-region: drag;
+  }
+
+  html.ui-wco-visible .ui-titlebar-overlay {
     background-color: var(--titlebar-overlay-bg);
     -webkit-backdrop-filter: blur(var(--titlebar-overlay-blur)) saturate(var(--titlebar-overlay-saturate));
     backdrop-filter: blur(var(--titlebar-overlay-blur)) saturate(var(--titlebar-overlay-saturate));
   }
+
+  /* 仅左栏 navbar：顶留 titlebar-area 空拖条（继承 ui-titlebar-drag），New session 落到灯下。
+   * 顶 inset 已把控件移出灯区后，左 gutter 回到 space-6，避免再叠 titlebar-area-x 成 L 形空洞。 */
+  html.ui-wco-visible .ui-titlebar-sidebar {
+    padding-top: var(--titlebar-area-height);
+    padding-left: var(--space-6);
+  }
+
+  /* 叠层上的控件抬到拖拽条之上，避免 New session / 标题 / Explorer 被吞掉。 */
+  html.ui-wco-visible .ui-titlebar-no-drag,
+  html.ui-wco-visible .ui-titlebar-drag button,
+  html.ui-wco-visible .ui-titlebar-drag a,
+  html.ui-wco-visible .ui-titlebar-drag input,
+  html.ui-wco-visible .ui-titlebar-drag textarea,
+  html.ui-wco-visible .ui-titlebar-drag select,
+  html.ui-wco-visible .ui-titlebar-drag label,
+  html.ui-wco-visible .ui-titlebar-drag summary,
+  html.ui-wco-visible .ui-titlebar-drag [role='button'],
+  html.ui-wco-visible .ui-titlebar-drag [role='textbox'],
+  html.ui-wco-visible .ui-titlebar-drag [role='combobox'] {
+    position: relative;
+    z-index: calc(var(--z-sticky) + 1);
+  }
 }
 
 @media (display-mode: window-controls-overlay) and (prefers-reduced-transparency: reduce) {
-  .ui-titlebar-overlay {
+  html.ui-wco-visible .ui-titlebar-overlay {
     background-color: var(--sidebar-bg);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -327,7 +371,7 @@ body.ui-workbench-panel-resizing * {
 }
 
 @media (display-mode: window-controls-overlay) and (forced-colors: active) {
-  .ui-titlebar-overlay {
+  html.ui-wco-visible .ui-titlebar-overlay {
     background-color: Canvas;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;

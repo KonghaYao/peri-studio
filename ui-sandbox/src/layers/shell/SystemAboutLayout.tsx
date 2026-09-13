@@ -10,6 +10,7 @@ type BrowserPreviewProps = {
   label: string;
   origin: string;
   kind: BrowserInstallKind;
+  titlebarHint?: boolean;
 };
 
 function AboutBrowserPreview(props: BrowserPreviewProps) {
@@ -26,6 +27,11 @@ function AboutBrowserPreview(props: BrowserPreviewProps) {
       <Switch>
         <Match when={props.kind === 'installed'}>
           <p class="mt-8 mb-0 text-12 text-text-primary" role="status">Installed</p>
+          <Show when={props.titlebarHint}>
+            <p class="mt-6 mb-0 text-12 leading-155 text-text-secondary">
+              Reinstall the app to hide the window title bar
+            </p>
+          </Show>
         </Match>
         <Match when={props.kind === 'install'}>
           <Button variant="secondary" size="compact" class="mt-8">Install</Button>
@@ -90,6 +96,7 @@ export function SystemAboutLayout() {
         label="Standalone window"
         origin={DEFAULT_LOOPBACK_RECIPE}
         kind="installed"
+        titlebarHint
       />
       <AboutBrowserPreview
         label="Safari on loopback iOS"

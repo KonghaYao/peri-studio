@@ -49,7 +49,7 @@ T3 组件必须：
 | `TranscriptViewportShell` / `TranscriptRowShell` | 消息列表滚动视口 + 虚拟化行壳 |
 | `HistoryBoundary` | Verified / Current 历史分隔 |
 | `MessageArticleShell` / `MessageMetaHeader` / `MessageSurfaceShell` / `MessageAssistantActionsShell` | 单条消息布局壳（T4 仍拥有 block 语义） |
-| `ChatHeader` | 会话标题栏；桌面 PWA 与侧栏 navbar 同为 `ui-titlebar-drag` + WCO `ui-titlebar-overlay` |
+| `ChatHeader` | 会话标题栏；始终渲染标题并 `ui-titlebar-drag` 铺进 WCO overlay（仅 `html.ui-wco-visible`）。毛玻璃由 AppShell `.ui-titlebar` 承担，本块不叠 `min-h-titlebar` / 白底 |
 | `RewindPanelState` / `RewindPanelActions` | Rewind 面板状态区与底栏操作行 |
 | `UserBubble` | 用户消息气泡 |
 | `MarkdownTable` | Markdown 表格 |
@@ -59,7 +59,7 @@ T3 组件必须：
 
 | 组件 | 说明 |
 |------|------|
-| `ProjectSidebarShell` | 侧栏 navbar + body + footer 布局壳（mist / scroll）；navbar 为桌面 PWA `ui-titlebar-drag` + WCO `ui-titlebar-overlay` |
+| `ProjectSidebarShell` | 侧栏 navbar + body + footer 布局壳（mist / scroll）；navbar 为 `ui-titlebar-drag` + `ui-titlebar-sidebar` + `pl-titlebar-gutter`。`html.ui-wco-visible` 时 extra 顶留 `--titlebar-area-height` 空拖条（不再叠左 gutter），不叠 overlay 毛玻璃 |
 | `RowAccessorySlot` | 行浮动 accessory 叠层 |
 | `ArchivedBrowserList` | 归档浏览列表 |
 | `NavAction` / `ProjectRowAccessory` / `ProjectRowActionGroup` / `SectionHeader` / `SessionRowAccessory` / `SidebarNavBar` | 侧栏 chrome 族 |

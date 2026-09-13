@@ -577,7 +577,7 @@
 }
 
 @media (display-mode: window-controls-overlay) {
-  :root {
+  :root.ui-wco-visible {
     --titlebar-safe-right: max(0px, calc(100vw - var(--titlebar-area-x) - var(--titlebar-area-width)));
   }
 }

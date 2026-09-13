@@ -19,7 +19,7 @@ export const workbenchShellCompactClass = cn(
 
 /** 竖轨容器。 */
 export const workbenchRailClass = cn(
-  'flex w-(--workbench-rail-width) shrink-0 flex-col items-center gap-4 bg-neutral-25 pb-8 pt-titlebar-gutter',
+  'ui-titlebar-no-drag flex w-(--workbench-rail-width) shrink-0 flex-col items-center gap-4 bg-neutral-25 pb-8 pt-8',
 );
 
 /** 保留 extra.css ::before 激活指示条（left）。 */
@@ -42,7 +42,7 @@ export const workbenchPanelChromeTitleClass = cn(
   'min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-11 font-semibold tracking-35 uppercase text-content-muted',
 );
 
-export const workbenchPanelChromeActionsClass = 'flex shrink-0 items-center gap-4';
+export const workbenchPanelChromeActionsClass = 'ui-titlebar-no-drag flex shrink-0 items-center gap-4';
 
 export const workbenchPanelChromeBodyClass = 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden';
 

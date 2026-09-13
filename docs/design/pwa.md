@@ -26,7 +26,7 @@ v1 **禁止**：`vite-plugin-pwa` / Workbox、注册 `/sw.js` 或 hashed `/asset
 | `/sw.js` | 不发布；`route("/sw.js") == None` |
 | `.gitignore` | 根有 `*.png`，必须有 `!web/public/**/*.png` |
 
-`theme_color` 用侧栏灰 `#fafafa`（`--sidebar-bg`），不是 accent，也不是透明/`#00000000`：Chromium 会丢掉 alpha 并压成不透明，`#00000000` 会变成黑条。`background_color` 仍为画布白 `#ffffff`，避免 splash / 首帧黑闪。`localhost` 与 `127.0.0.1` 是两个 origin（两套 cookie / 两套安装）。已安装窗口要换 theme 须卸掉快捷方式再从齿轮 **Install** 重装。
+`theme_color` 用侧栏灰 `#fafafa`（`--sidebar-bg`），不是 accent，也不是透明/`#00000000`：Chromium 会丢掉 alpha 并压成不透明，`#00000000` 会变成黑条。`background_color` 仍为画布白 `#ffffff`，避免 splash / 首帧黑闪。二者只给 standalone 标题栏 / splash 上色，**不会**阻止 macOS WCO，因此保持现色。`localhost` 与 `127.0.0.1` 是两个 origin（两套 cookie / 两套安装）。loopback HTTP 算安全上下文，Chrome 允许从 `http://127.0.0.1` 安装；换 `display_override` / theme 须卸掉快捷方式再从齿轮 **Install** 重装，硬刷新不够。
 
 ## 3. HTML 与安全区
 
@@ -34,7 +34,11 @@ v1 **禁止**：`vite-plugin-pwa` / Workbox、注册 `/sw.js` 或 hashed `/asset
 
 T1 `--safe-area-*` 映射 `pt-safe` / `pb-safe` / `p-safe` / `p-safe-min-24`。`--composer-safe-bottom` 复用 `--safe-area-bottom`。AuthGate 登录页父级用 `p-safe-min-24`（`max(space-24, safe-area, titlebar-area)`），不得给 `min(440px, 100%)` 卡片加 `m-24`。AppShell 用 `p-safe`（含底栏 `pb-safe`），**不**把 `--titlebar-area-height` 算进整窗 padding，否则会再造一条空白顶栏。Toast 视口用 `p-safe`。禁止 `pt-[env(...)]`。iOS `visualViewport` 键盘推迟见 [`web-ui-deferrals.md`](web-ui-deferrals.md)。
 
-桌面已安装窗口的标题栏几何走 T1 `--titlebar-area-*`（`env(titlebar-area-x|y|width|height)`，未 overlay 时为 0）。`--titlebar-safe-right` 仅在 `display-mode: window-controls-overlay` 下用 `100vw` 反推右侧 caption 区；未激活时保持 `0px`。侧栏 navbar / ChatHeader 是拖拽条（`ui-titlebar-drag` + WCO `ui-titlebar-overlay` 毛玻璃）；按钮、输入、Composer、齿轮 Settings 菜单与 portaled `[role='menu']` / `[role='dialog']` 为 `ui-titlebar-no-drag`，避免 WCO 拖拽吞掉 Install / System。AuthGate 登录底为 drag（不套 overlay）、卡片为 no-drag，避免 traffic lights 压住表单。
+桌面已安装窗口的标题栏几何走 T1 `--titlebar-area-*`（`env(titlebar-area-x|y|width|height)`，未 overlay 时为 0）。`--titlebar-safe-right` 仅在 `display-mode: window-controls-overlay` **且** `html.ui-wco-visible` 下用 `100vw` 反推右侧 caption 区；未激活时保持 `0px`。
+
+WCO 只画**一条** `.ui-titlebar`（AppShell 内 `position: fixed`，`left/top/width/height` 用 `--titlebar-area-*`，`app-region: drag` + `.ui-titlebar-overlay` 毛玻璃）。侧栏 navbar（`.ui-titlebar-sidebar`）在 `html.ui-wco-visible` 下顶留 `--titlebar-area-height` 空拖条，让 New session 落到 traffic lights 下方；顶 inset 已避开灯区后左 gutter 回到 `--space-6`，避免再叠 `titlebar-area-x` 成 L 形空洞。未 overlay 时仍用 `pl-titlebar-gutter`。ChatHeader / Explorer / 中栏始终铺进 overlay 矩形，**不得**再叠 `min-h-titlebar` / `pt-titlebar` / `bg-surface-overlay`，否则中间会空出一条 `--app-bg` 白带。按钮、输入、Composer、齿轮 Settings 菜单与 portaled `[role='menu']` / `[role='dialog']` 为 `ui-titlebar-no-drag`，避免 WCO 拖拽吞掉 Install / System。AuthGate 登录底为 drag（不套 overlay）、卡片为 no-drag，避免 traffic lights 压住表单。
+
+Chrome 桌面 PWA 右侧 caption（三点菜单等）属于浏览器窗控，普通 PWA 无法去掉；`borderless` / `unframed` 仅 Isolated Web Apps，不写入 `display_override`。
 
 ## 4. 前端分层
 
@@ -53,7 +57,7 @@ T1 `--safe-area-*` 映射 `pt-safe` / `pb-safe` / `p-safe` / `p-safe-min-24`。`
 
 不进 `store/index.ts`。不挂 sidebar More、AuthGate 登录卡、`ConnectionProblem`、Toast。无 Reload-for-update。`visual-fixture` 不挂 `PwaRuntime`。不新增 T3 `InstallButton`。
 
-UI 文案英文：`Install`、`Installed`、`Open Share, then Add to Home Screen`、`Cannot install here`。有动作时说明安装的是**当前 origin** 的本机快捷方式；该 server 停止后窗口不可用。iOS A2HS 仅当 `isIosLike && isSecureContext && isLoopbackHost`（`127.0.0.1` / `localhost` / `[::1]`）；LAN HTTP 不得提示 Add to Home Screen。iOS 须提示 Home Screen 应用是独立存储，可能要再登录一次。无安装动作时隐藏安装说明段。
+UI 文案英文：`Install`、`Installed`、`Open Share, then Add to Home Screen`、`Cannot install here`。已安装窗口若 `windowControlsOverlay` 存在且 `visible === false`，This browser 追加 `Reinstall the app to hide the window title bar`；浏览器标签（`display-mode: browser`）不提示。有动作时说明安装的是**当前 origin** 的本机快捷方式；该 server 停止后窗口不可用。iOS A2HS 仅当 `isIosLike && isSecureContext && isLoopbackHost`（`127.0.0.1` / `localhost` / `[::1]`）；LAN HTTP 不得提示 Add to Home Screen。iOS 须提示 Home Screen 应用是独立存储，可能要再登录一次。无安装动作时隐藏安装说明段。
 
 ## 5. 已安装窗口 chrome：`window-controls-overlay`，不用 `borderless`
 
@@ -67,8 +71,17 @@ UI 文案英文：`Install`、`Installed`、`Open Share, then Add to Home Screen
 
 **不**把 `borderless` / `unframed` 放在 override 首位：该模式已收窄为 Isolated Web Apps（ChromeOS / 旗标），不是普通桌面 PWA 的生产能力；浏览器不认识的 override 项会被跳过，但写上去会误导后续维护者。也**不**使用 `display: fullscreen`（会困住用户）。
 
-Chromium 桌面在 WCO 下把原生窗控叠在网页上，并用 `env(titlebar-area-*)` 给出可绘制标题区。不支持 WCO 的引擎忽略 override，继续 `standalone`（保留系统标题栏，窗口仍可拖）。已安装探测必须同时认 `display-mode: standalone` 与 `display-mode: window-controls-overlay`，否则 System About、齿轮 Install 与首次签入 Dialog 会在 WCO 窗口里误显示 Install。
+Chromium 桌面（含 **macOS Chrome，Chrome 105+，无额外 flags**）在 WCO 下把原生窗控叠在网页上，并用 `env(titlebar-area-*)` 给出可绘制标题区。这是普通 PWA 能去掉截图里那条居中 “Peri Studio” 原生标题栏的**唯一**路径。真实信号是 `navigator.windowControlsOverlay.visible`（不是 ChatHeader，也不是空 `document.title`：清空标题伤 a11y，且 macOS 居中标题来自 manifest `name`）。`startPwa()` 听 `geometrychange`，只在 `visible === true` 时给 `<html>` 挂 `ui-wco-visible`；T1 `--titlebar-safe-right` 与 extra 毛玻璃都要求该类，避免 CSS 在 standalone 窗口里假装 overlay。
 
-原生 overlay 底色跟 `theme_color`。Blink 解析后 `WebAppBrowserController` 一类路径会 `SkColorSetA(..., SK_AlphaOPAQUE)`，manifest / `<meta name="theme-color">` 的 alpha 不可靠。因此不用 `#00000000` / `transparent`（会变成黑条），改用 `#fafafa` 贴齐侧栏，避免白条压在 sidebar 上。网页拖拽条另加 T1 `--titlebar-overlay-*` 与 `.ui-titlebar-overlay`（侧栏半透明 + `backdrop-filter`）；`html` / `body` / `#app` 在 WCO 下不另画不透明顶栏。`forced-colors` 回退 `Canvas`，`prefers-reduced-transparency` 回退实心 `--sidebar-bg`。AuthGate 登录底保持 `bg-sidebar-bg`（不套 overlay），卡片仍 `p-safe-min-24` + `ui-titlebar-no-drag`。
+不支持 WCO 的引擎忽略 override，继续 `standalone`（保留系统标题栏，窗口仍可拖）。已安装探测必须同时认 `display-mode: standalone` 与 `display-mode: window-controls-overlay`，否则 System About、齿轮 Install 与首次签入 Dialog 会在 WCO 窗口里误显示 Install。
+
+**硬限制（Chromium，不是本仓库能修的）**
+
+- WCO **不能**去掉 traffic lights 与右侧 Chrome caption（profile / ⋮）。`borderless` / `unframed` 仅 Isolated Web Apps，且 `unframed` 目前只在 ChromeOS + 旗标，**不得**写入 `display_override`。
+- 默认 Stable 仍先开 standalone 全宽标题栏。Intent to Ship 与 Chromium `kDesktopPWAsWindowControlsOverlayWithNoToggle`（**默认关**）要求用户在应用菜单点 **Hide title bar**；页面无法代点。
+- `display_override` 记在安装身份（`id` / `start_url`）上。硬刷新、清页面缓存都不够；可靠做法是卸掉快捷方式再从齿轮 **Install** 重装，然后（若仍见原生条）点 Hide title bar。Chrome 也可以静默更新 override，但有约 24h 节流且须关掉所有应用窗口。
+- 页面无法强制卸载。This browser 只在已安装窗口且 `windowControlsOverlay` 存在、`visible === false` 时提示重装。
+
+原生 overlay 底色跟 `theme_color`。Blink 解析后 `WebAppBrowserController` 一类路径会 `SkColorSetA(..., SK_AlphaOPAQUE)`，manifest / `<meta name="theme-color">` 的 alpha 不可靠。因此不用 `#00000000` / `transparent`（会变成黑条），改用 `#fafafa` 贴齐侧栏，避免白条压在 sidebar 上。网页拖拽条是 AppShell 里那一条 `.ui-titlebar` + T1 `--titlebar-overlay-*` 毛玻璃，不是各列各自画一条实心白。`html` / `body` / `#app` 在 WCO 下不另画不透明顶栏。`forced-colors` 回退 `Canvas`，`prefers-reduced-transparency` 回退实心 `--sidebar-bg`。AuthGate 登录底保持 `bg-sidebar-bg`（不套 overlay），卡片仍 `p-safe-min-24` + `ui-titlebar-no-drag`。
 
 无 Service Worker 的裁决不变。

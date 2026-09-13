@@ -8,9 +8,11 @@ import {
   isIosLike,
   isLoopbackHostname,
   isStandalone,
+  needsTitlebarReinstall,
   promptInstall,
   resetPwaForTests,
   startPwa,
+  WCO_VISIBLE_CLASS,
 } from './pwa-state';
 
 type PromptEventInit = {
@@ -91,6 +93,78 @@ describe('pwa state', () => {
     expect(isStandalone()).toBe(true);
     expect(canInstall()).toBe(false);
     expect(browserInstallKind()).toBe('installed');
+    expect(needsTitlebarReinstall()).toBe(false);
+  });
+
+  it('asks for reinstall only in an installed window when overlay exists but is not visible', () => {
+    stubMatchMedia(true);
+    const overlay = {
+      visible: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+    vi.stubGlobal('navigator', {
+      ...window.navigator,
+      userAgent: 'Mozilla/5.0',
+      platform: 'MacIntel',
+      maxTouchPoints: 0,
+      windowControlsOverlay: overlay,
+    });
+    startPwa();
+    expect(isStandalone()).toBe(true);
+    expect(needsTitlebarReinstall()).toBe(true);
+    expect(document.documentElement.classList.contains(WCO_VISIBLE_CLASS)).toBe(false);
+  });
+
+  it('does not nag a browser tab even when windowControlsOverlay exists', () => {
+    stubMatchMedia(false);
+    vi.stubGlobal('navigator', {
+      ...window.navigator,
+      userAgent: 'Mozilla/5.0',
+      platform: 'MacIntel',
+      maxTouchPoints: 0,
+      windowControlsOverlay: {
+        visible: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      },
+    });
+    startPwa();
+    expect(isStandalone()).toBe(false);
+    expect(needsTitlebarReinstall()).toBe(false);
+    expect(browserInstallKind()).not.toBe('installed');
+  });
+
+  it('toggles html.ui-wco-visible from windowControlsOverlay geometrychange', () => {
+    stubMatchMedia(true);
+    const listeners: Array<() => void> = [];
+    const overlay = {
+      visible: false,
+      addEventListener: vi.fn((_type: string, listener: () => void) => {
+        listeners.push(listener);
+      }),
+      removeEventListener: vi.fn(),
+    };
+    vi.stubGlobal('navigator', {
+      ...window.navigator,
+      userAgent: 'Mozilla/5.0',
+      platform: 'MacIntel',
+      maxTouchPoints: 0,
+      windowControlsOverlay: overlay,
+    });
+    startPwa();
+    expect(overlay.addEventListener).toHaveBeenCalledWith('geometrychange', expect.any(Function));
+    expect(document.documentElement.classList.contains(WCO_VISIBLE_CLASS)).toBe(false);
+
+    overlay.visible = true;
+    for (const listener of listeners) listener();
+    expect(document.documentElement.classList.contains(WCO_VISIBLE_CLASS)).toBe(true);
+    expect(needsTitlebarReinstall()).toBe(false);
+
+    overlay.visible = false;
+    for (const listener of listeners) listener();
+    expect(document.documentElement.classList.contains(WCO_VISIBLE_CLASS)).toBe(false);
+    expect(needsTitlebarReinstall()).toBe(true);
   });
 
   it('treats iOS navigator.standalone as installed', () => {
