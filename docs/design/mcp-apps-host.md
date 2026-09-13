@@ -1,7 +1,7 @@
 # MCP Apps Host 落地经验
 
 > 状态：首期已接通并经本机 e2e 纠偏（2026-08-30）
-> 计划：[mcp-apps.md](./mcp-apps.md)　调研：[research/mcp-apps.md](../research/mcp-apps.md)
+> 调研：[research/mcp-apps.md](../research/mcp-apps.md)
 > Peri 类型源：[`peri-acp-types/src/mcp_apps.rs`](https://github.com/KonghaYao/peri/blob/main/peri-acp-types/src/mcp_apps.rs)
 > Peri e2e：[`side-projects/mcp-apps/check-peri.ts`](https://github.com/KonghaYao/peri/blob/main/side-projects/mcp-apps/check-peri.ts)
 > App Bridge 类型：[`ext-apps/src/spec.types.ts`](https://github.com/modelcontextprotocol/ext-apps/blob/main/src/spec.types.ts)（`McpUiInitializeResult`）

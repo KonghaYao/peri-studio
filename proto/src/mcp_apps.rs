@@ -1,4 +1,4 @@
-//! MCP Apps 瞬时下行帧与 action payload DTO（§4.3 / design/mcp-apps.md）。
+//! MCP Apps 瞬时下行帧与 action payload DTO（§4.3 / design/mcp-apps-host.md）。
 //!
 //! HTML 与 app session 不经 Yjs/SQLite；对标 OAuth 瞬时通道。
 

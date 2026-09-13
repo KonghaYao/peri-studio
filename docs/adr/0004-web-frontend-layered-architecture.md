@@ -21,7 +21,7 @@ date: 2026-08-30
 
 迁移曾采用绞杀者模式：新路径 + 旧路径 re-export，分阶段迁移 Composer、Session/Catalog，最后收口 store 并删除 `panel/` shim。
 
-**Phase 6+ 收口**不再无限期保留 shim，改按 [`frontend-rewrite-program.md`](../design/frontend-rewrite-program.md) 执行：领域代码物理搬家（可观察语义不变）、禁止手写/任意值 CSS、无头行为用社区实现。五层依赖表本身不变。
+**Phase 6+ 收口**不再无限期保留 shim（2026-09 已完成）：领域代码物理搬家（可观察语义不变）、禁止手写/任意值 CSS、无头行为用社区实现。五层依赖表本身不变。
 
 **协作文档**：根目录 [`AGENTS.md`](../AGENTS.md)（Agent 检查清单）；[`CLAUDE.md`](../CLAUDE.md) §Web 前端分层规范。
 

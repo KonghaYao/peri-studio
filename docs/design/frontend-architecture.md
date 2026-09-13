@@ -10,7 +10,6 @@ date: 2026-08-30
 > **Agent 入口**：根目录 [`AGENTS.md`](../../AGENTS.md)（检查清单）；[`CLAUDE.md`](../../CLAUDE.md) §Web 前端分层规范。
 > **UI 规范**：[`ui-specification.md`](ui-specification.md)（色彩、组件、微文案）。
 > **T3 复合块与 T4 装配**：[`t3-blocks-in-ui-package.md`](t3-blocks-in-ui-package.md)。
-> **Phase 6+ 执行（拆 `panel/lib`、CSS/无头约束、业务等价）**：[`frontend-rewrite-program.md`](frontend-rewrite-program.md)。
 > **有意延后项（MessageScroller 外壳、Sidebar 折叠 vs resize、测试边界、iOS visualViewport 键盘）**：[`web-ui-deferrals.md`](web-ui-deferrals.md)。
 > **可安装 PWA（无 Service Worker）**：[`pwa.md`](pwa.md)。
 
@@ -118,6 +117,7 @@ web/src/
 - 无 server 语义：T2/T3 不得持有 session/project/chat 业务状态。
 - T3 通过 **slot / render prop**（`renderField`、`compactLeading`、`metaRow`…）暴露 T4 抓手；不得 import `web/`、`store`、`features`。
 - 唯一公共入口：`@peri/ui`；禁止组件 deep import。
+- 无头行为来自社区基元（默认 Kobalte）：禁止自研 focus trap、菜单键盘或选择器核心；替换底层时整组替换，禁止单文件混两套无头库。
 - T3 清单、Markdown/高亮归属见 [`t3-blocks-in-ui-package.md`](t3-blocks-in-ui-package.md)。
 
 ### 5.2 `entities`（实体投影）
@@ -273,16 +273,16 @@ Playwright 入口是 `visual-fixture.html`。共享 helper 在 `web/tests/browse
 - [x] Phase 2–3 无引用 shim 已删除；`panel/` 目录已删除（原 `panel/store.ts`、`panel/main.tsx` deprecated 重导出已随目录移除）。
 - [x] `bun run test` 通过。
 
-### 后续（Phase 6+）
+### 后续（Phase 6+，已收口）
 
-Phase 1–5 只完成了目录脚手架与部分垂直切片；领域实现已迁入 `features/*`。**停止无限期 shim / 绞杀。** 执行策略、CSS/Tailwind 硬约束、社区无头优先、以及「只迁不改业务逻辑」见 [`frontend-rewrite-program.md`](frontend-rewrite-program.md)。
+Phase 6+ 已于 2026-09 收口：`web/src/panel` 已删除，领域实现迁入 `features/*`；只 Tailwind、零任意值与 `extra.css` 冻结清单由 `css-contracts` 门禁执行，无头行为纪律见 §5.1。
 
-- [x] 按重写纲领包 A–H 物理迁移并删除 `web/src/panel`（2026-09-08：`panel/` 目录已移除；`@/panel/*` shim 已删）。
+- [x] 领域包 A–H 物理迁移并删除 `web/src/panel`（2026-09-08：`panel/` 目录已移除；`@/panel/*` shim 已删）。
 - [x] `entities/*` 去除对 `panel/lib` 的依赖，只认 `@/shared` 与 `entities` 内模块（生产 import 已清零；层边界测试仍保留历史 baseline 描述字符串）。
 - [ ] ESLint import 边界规则强制执行五层依赖表。
 - [x] `css-contracts` 扩展：任意值 bracket、小数 spacing、`@peri/ui` 消费边界、widgets `<style>`、`extra.css` 行数/hash 冻结（WP-BOUND）。
 - [x] `store/index.ts` 继续瘦身（570→**483** 行；新增 `store/catalog-bootstrap.ts`、`store/catalog-machine-api.ts`，经 `index` 再导出）。
 - [x] widgets 统一 `@/features/*` 别名（`LaunchWorkspace`、`SessionImportDialog`、`SessionSearch` 及 `store/reset-session` 相对路径已清零）。
-- [ ] WP-H / WP-CSS / WP-VIS（`extra.css` 相对 435 行基线净减、sandbox 刻度、视觉收敛）。
+- [ ] 收尾项：`extra.css` 相对 435 行基线净减、sandbox 刻度收敛、视觉收敛。
 
 迁移期间 ~~保留 `@/panel/*` shim~~ → **已删除**；新代码仅使用 `@/widgets`、`@/features`、`@/store` 等别名。

@@ -7,7 +7,7 @@ date: 2026-09-05
 
 > **本文是产品视觉与交互组件的单一事实源。** T1/T2 实现以 `packages/ui/src/styles/`、`packages/ui/src/components/` 与 package 测试为准；Web 应用例外由 `web/src/styles/` 和 `web/tests/css-contracts.test.mjs` 约束。
 >
-> 关联：[frontend-architecture.md](frontend-architecture.md)（目录分层）、[frontend-rewrite-program.md](frontend-rewrite-program.md)（Phase 6+：只 Tailwind、禁任意值、社区无头、业务等价）、[pwa.md](pwa.md)（可安装 PWA）、[audit-chat-uiux-2026-08.md](../audit-chat-uiux-2026-08.md)（UX 审计与修复记录）、ADR [0004](../adr/0004-web-frontend-layered-architecture.md)。
+> 关联：[frontend-architecture.md](frontend-architecture.md)（目录分层）、[pwa.md](pwa.md)（可安装 PWA）、ADR [0004](../adr/0004-web-frontend-layered-architecture.md)。
 
 ---
 

@@ -107,7 +107,6 @@ server 会确保名为 `local` 的 instance token 存在，并把本地连接凭
 完整身份模型与安全边界见 [架构契约](docs/architecture.md)，术语见
 [terminology](docs/terminology.md)。当前 UI/UX 工作与验证证据在源码仓库的
 `spec/issues/2026-08-13-acp-hub-uiux-audit.md`；release 归档不携带内部 issue 历史。
-`ui.md` 仅是重构前历史基线，不是当前实现说明。
 
 ## 常用命令
 

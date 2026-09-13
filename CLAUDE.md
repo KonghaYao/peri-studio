@@ -95,7 +95,7 @@ cargo run -q -p peri-studio -- update
 
 ## Web 前端分层规范（必读）
 
-**权威文档**：`docs/design/frontend-architecture.md`（目录、依赖、组件/CSS 规范）；`docs/design/t3-blocks-in-ui-package.md`（**T3 复合块清单与 T4 装配**）；`docs/design/frontend-rewrite-program.md`（**Phase 6+：拆 `panel/`、只 Tailwind、社区无头、业务逻辑只迁不改**）；`docs/design/ui-specification.md`（**视觉、token、组件、微文案**）；`docs/design/ui-package-migration.md`（**`@peri/ui` 包边界与 Catalog 工作流**）；`docs/design/ui-implementation-plan.md`（历史 sandbox → web 落地证据）；`AGENTS.md`（Agent 检查清单与工作流）。ADR：`docs/adr/0004-web-frontend-layered-architecture.md`。
+**权威文档**：`docs/design/frontend-architecture.md`（目录、依赖、组件/CSS 规范）；`docs/design/t3-blocks-in-ui-package.md`（**T3 复合块清单与 T4 装配**）；`docs/design/ui-specification.md`（**视觉、token、组件、微文案**）；`docs/design/ui-package-migration.md`（**`@peri/ui` 包边界与 Catalog 工作流**）；`docs/design/ui-implementation-plan.md`（历史 sandbox → web 落地证据）；`AGENTS.md`（Agent 检查清单与工作流）。ADR：`docs/adr/0004-web-frontend-layered-architecture.md`。
 
 | 层 | 路径 | 职责 |
 |----|------|------|
