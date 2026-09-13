@@ -111,7 +111,6 @@ const MACHINES: MachineItem[] = [
 function SessionRow(props: {
   session: SessionItem;
   selected?: boolean;
-  indent?: number;
   onClick?: () => void;
 }) {
   return (
@@ -121,13 +120,10 @@ function SessionRow(props: {
         props.selected ? 'bg-sidebar-selected' : 'hover:bg-interaction-hover focus-within:bg-interaction-hover',
       )}
       data-selected={props.selected ? 'true' : undefined}
-      style={{
-        'padding-left': props.indent ? `calc(5px + ${props.indent}px)` : undefined,
-      }}
     >
       <div class="flex min-w-0 w-full items-center">
         <div
-          class="flex w-14 shrink-0 items-center justify-center self-stretch"
+          class="ml-13 mr-7 flex w-8 shrink-0 items-center justify-center self-stretch"
           aria-hidden={props.session.live ? undefined : 'true'}
         >
           <Show when={props.session.live}>
@@ -137,7 +133,7 @@ function SessionRow(props: {
         <div class="relative flex min-w-0 flex-1 items-center">
         <button
           type="button"
-          class="flex w-full min-w-0 items-center overflow-hidden rounded-md py-4 pl-5 pr-0 text-left pointer-coarse:py-6"
+          class="flex w-full min-w-0 items-center overflow-hidden rounded-md py-4 pl-2 pr-0 text-left pointer-coarse:py-6"
           onClick={props.onClick}
         >
           <span class="block min-w-0 w-full truncate text-13 leading-20 text-content-primary">{props.session.title}</span>
@@ -203,7 +199,6 @@ export function ProjectSidebarLayout() {
                 {(item) => (
                   <SessionRow
                     session={{ ...item, pinned: true }}
-                    indent={16}
                     selected={selectedId() === item.id}
                     onClick={() => setSelectedId(item.id)}
                   />
@@ -280,7 +275,6 @@ export function ProjectSidebarLayout() {
                                   {(session) => (
                                     <SessionRow
                                       session={session}
-                                      indent={16}
                                       selected={selectedId() === session.id}
                                       onClick={() => setSelectedId(session.id)}
                                     />

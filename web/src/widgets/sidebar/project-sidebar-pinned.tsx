@@ -24,7 +24,7 @@ export function ProjectSidebarPinned(props: ProjectSidebarPinnedProps) {
                 model={model}
                 session={session()}
                 projectId={session().projectId}
-                options={{ pinned: true, indent: 16 }}
+                options={{ pinned: true }}
                 onNavigate={props.onNavigate}
               />
             );

@@ -22,7 +22,7 @@ export interface ProjectSidebarRowProps {
   model: ProjectSidebarModel;
   session: ProjectSessionInfo;
   projectId: string;
-  options?: { pinned?: boolean; indent?: number };
+  options?: { pinned?: boolean };
   onNavigate?: () => void;
 }
 
@@ -58,7 +58,6 @@ export function ProjectSidebarRow(props: ProjectSidebarRowProps) {
       menuOpen={model.sessionMenu() === menuKey}
       replacementBusy={creatingSessionProjectId() === props.projectId}
       pinned={model.isSessionPinned(props.session)}
-      indent={props.options?.indent}
       onNavigate={() => props.onNavigate?.()}
       onOpen={(sessionId, onCommitted) => { navigateProjectSession(sessionId, { onCommitted }); }}
       onSelectRuntime={(id) => { navigateProjectSession(id); }}

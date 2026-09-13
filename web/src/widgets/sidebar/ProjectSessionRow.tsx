@@ -28,7 +28,6 @@ export interface ProjectSessionRowProps {
   menuOpen: boolean;
   replacementBusy: boolean;
   pinned: boolean;
-  indent?: number;
   onNavigate: () => void;
   onOpen: (sessionId: string, onCommitted: () => void) => void;
   onSelectRuntime: (sessionId: string, chatId: string) => void;
@@ -142,7 +141,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
   };
 
   const titleFieldClass = cn(
-    'flex w-full min-w-0 items-center overflow-hidden rounded-md bg-transparent py-4 pl-5 pr-0 pointer-coarse:py-6',
+    'flex w-full min-w-0 items-center overflow-hidden rounded-md bg-transparent py-4 pl-2 pr-0 pointer-coarse:py-6',
     props.selected && 'font-medium',
   );
 
@@ -157,13 +156,10 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
           ? 'bg-sidebar-selected'
           : 'hover:bg-interaction-hover focus-within:bg-interaction-hover',
       )}
-      style={{
-        'padding-left': props.indent ? `${props.indent}px` : undefined,
-      }}
     >
       <div
         data-testid="session-live-gutter"
-        class="flex w-10 shrink-0 items-center justify-center self-stretch"
+        class="ml-13 mr-7 flex w-8 shrink-0 items-center justify-center self-stretch"
         aria-hidden={lampTone() ? undefined : 'true'}
       >
         <Show when={lampTone()}>

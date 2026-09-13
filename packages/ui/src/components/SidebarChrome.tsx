@@ -167,30 +167,27 @@ export function SessionLiveIndicator(props: {
 }
 
 /** 侧栏 session 列表加载行：左槽点阵 + 文案，与 Session 行 gutter 对齐。 */
-export function SessionListLoadingRow(props: { label: string; class?: string; indent?: number }) {
+export function SessionListLoadingRow(props: { label: string; class?: string }) {
   return (
     <div
       data-testid="session-list-loading-row"
       class={cn('flex min-w-0 items-center rounded-md py-4', props.class)}
-      style={{
-        'padding-left': props.indent ? `${props.indent}px` : undefined,
-      }}
       role="status"
       aria-label={props.label}
     >
       <div
         data-testid="session-live-gutter"
-        class="flex w-10 shrink-0 items-center justify-center self-stretch"
+        class="ml-13 mr-7 flex w-8 shrink-0 items-center justify-center self-stretch"
         aria-hidden="true"
       >
         <SessionLiveIndicator tone="busy" label={props.label} class="pointer-events-none" />
       </div>
-      <span class="min-w-0 flex-1 truncate pl-2 text-11 text-content-muted">{props.label}</span>
+      <span class="min-w-0 flex-1 truncate pl-3 text-11 text-content-muted">{props.label}</span>
     </div>
   );
 }
 
-/** Session 行右侧：unread 指示 + Pin / Archive / More 浮动按钮组。 */
+/** Session 行右侧：Pin / Archive / More 浮动按钮组。 */
 export function SessionRowAccessory(props: {
   unread?: boolean;
   pinned?: boolean;

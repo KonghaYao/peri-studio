@@ -149,7 +149,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                         Start your first conversation
                       </Button>}
                     >
-                      <SessionListLoadingRow label="Loading sessions" class="px-2.5 text-left!" indent={16} />
+                      <SessionListLoadingRow label="Loading sessions" class="text-left!" />
                     </Show>}
                   >
                     <For each={sessions().map((item) => item.id)}>
@@ -160,7 +160,6 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                             model={model}
                             session={session()}
                             projectId={projectId}
-                            options={{ indent: 16 }}
                             onNavigate={props.onNavigate}
                           />
                         );
