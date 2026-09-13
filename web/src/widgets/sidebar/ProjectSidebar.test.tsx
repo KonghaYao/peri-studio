@@ -483,6 +483,37 @@ describe('ProjectSidebar registry hydration', () => {
     expect(screen.queryByRole('button', { name: /^Architecture refactor/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Archived sessions/ })).not.toBeInTheDocument();
   });
+
+  it('does not dim unrelated session rows while another session is opening', () => {
+    store.projectSessions.mockReturnValue([
+      {
+        id: 'session-a',
+        projectId: 'p1',
+        title: 'Session A',
+        lifecycle: 'ready',
+        updatedAt: '2026-08-13T10:00:00Z',
+        lastOpenedAt: null,
+        activeChatId: null,
+        archivedAt: null,
+      },
+      {
+        id: 'session-b',
+        projectId: 'p1',
+        title: 'Session B',
+        lifecycle: 'ready',
+        updatedAt: '2026-08-12T10:00:00Z',
+        lastOpenedAt: null,
+        activeChatId: null,
+        archivedAt: null,
+      },
+    ]);
+    store.openingSessionId.mockReturnValue('session-a');
+
+    render(() => <ProjectSidebar />);
+
+    expect(screen.getByRole('button', { name: /^Session A/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Session B/ })).toBeEnabled();
+  });
 });
 
 describe('keyboard labels', () => {

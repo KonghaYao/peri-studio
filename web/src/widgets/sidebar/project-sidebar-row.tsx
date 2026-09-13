@@ -52,7 +52,7 @@ export function ProjectSidebarRow(props: ProjectSidebarRowProps) {
       session={props.session}
       state={state()}
       selected={selected()}
-      navigationBusy={!!openingSessionId()}
+      navigationBusy={openingSessionId() === sessionId}
       readOnly={readOnly()}
       renameOpen={model.editing() === sessionId}
       menuOpen={model.sessionMenu() === menuKey}

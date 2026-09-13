@@ -111,4 +111,30 @@ describe('ProjectSidebar structural identity', () => {
     expect(input).toHaveValue('Unsubmitted draft');
     expect(document.activeElement).toBe(input);
   });
+
+  it('preserves session row DOM nodes when selection changes locally', async () => {
+    setProjectSessions([
+      {
+        id: 'session-1', projectId: 'project-1', acpSessionId: 'acp-1', title: 'Architecture refactor',
+        lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: 'chat-1', archivedAt: null,
+      },
+      {
+        id: 'session-2', projectId: 'project-1', acpSessionId: 'acp-2', title: 'Protocol cleanup',
+        lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: 'chat-2', archivedAt: null,
+      },
+    ]);
+    setSelectedSessionId('session-1');
+    setSelectedCid('chat-1');
+
+    render(() => <ProjectSidebar />);
+    const firstRow = document.querySelector('[data-session-id="session-1"]')!;
+    const secondRow = document.querySelector('[data-session-id="session-2"]')!;
+
+    setSelectedSessionId('session-2');
+    setSelectedCid('chat-2');
+
+    await waitFor(() => expect(document.querySelector('[data-session-id="session-2"]')).toHaveAttribute('data-selected', 'true'));
+    expect(document.querySelector('[data-session-id="session-1"]')).toBe(firstRow);
+    expect(document.querySelector('[data-session-id="session-2"]')).toBe(secondRow);
+  });
 });
