@@ -51,4 +51,21 @@ describe('selectAsyncStatusItems', () => {
     );
     expect(items.map((item) => item.id)).toEqual(['old-1']);
   });
+
+  it('maps Session Doc task_subtype onto the async badge', () => {
+    const items = selectAsyncStatusItems([
+      { ...completedTask, taskId: 'agent-1', taskSubtype: 'agent', title: 'Reviewer' },
+      { ...completedTask, taskId: 'shell-1', kind: 'background', taskSubtype: 'shell', title: 'Compile' },
+      { ...completedTask, taskId: 'flow-1', kind: 'background', taskSubtype: 'workflow', title: 'Pipeline' },
+    ], []);
+    expect(items.map((item) => item.badgeKind)).toEqual(['agent', 'shell', 'workflow']);
+  });
+
+  it('uses activity task_kind when Session Doc has no tasks', () => {
+    const items = selectAsyncStatusItems([], [
+      { ...runningActivity, id: 'bg:1', kind: 'background_task', attributes: { task_kind: 'shell' }, label: 'python job' },
+      { ...runningActivity, id: 'wf:1', kind: 'workflow', attributes: {}, label: 'checks' },
+    ]);
+    expect(items.map((item) => item.badgeKind)).toEqual(['shell', 'workflow']);
+  });
 });

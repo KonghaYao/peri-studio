@@ -1,14 +1,39 @@
-import type { AgentActivityInfo, PeriTaskInfo } from '@/entities/chat/control-view';
+import type { AgentActivityInfo, PeriTaskInfo, PeriTaskSubtype } from '@/entities/chat/control-view';
 
 const ASYNC_ACTIVITY_KINDS = new Set(['subagent', 'background_task', 'workflow']);
+const TASK_SUBTYPES = new Set<PeriTaskSubtype>(['agent', 'shell', 'workflow']);
+
+export type AsyncBadgeKind = PeriTaskSubtype;
 
 export interface AsyncStatusItem {
   id: string;
   kind: string;
   status: string;
   label: string;
-  badgeKind: 'agent' | 'workflow';
+  badgeKind: AsyncBadgeKind;
   toolCount: number | null;
+}
+
+export function asyncBadgeLabel(kind: AsyncBadgeKind): string {
+  if (kind === 'agent') return 'Agent';
+  if (kind === 'shell') return 'Shell';
+  return 'Workflow';
+}
+
+function isTaskSubtype(value: string | undefined): value is PeriTaskSubtype {
+  return !!value && TASK_SUBTYPES.has(value as PeriTaskSubtype);
+}
+
+function badgeFromTask(task: PeriTaskInfo): AsyncBadgeKind {
+  if (task.taskSubtype) return task.taskSubtype;
+  return task.kind === 'subagent' ? 'agent' : 'shell';
+}
+
+function badgeFromActivity(activity: AgentActivityInfo): AsyncBadgeKind {
+  if (isTaskSubtype(activity.attributes.task_kind)) return activity.attributes.task_kind;
+  if (activity.kind === 'subagent') return 'agent';
+  if (activity.kind === 'workflow') return 'workflow';
+  return 'shell';
 }
 
 function isInFlight(status: string) {
@@ -26,7 +51,7 @@ function fromTask(task: PeriTaskInfo): AsyncStatusItem {
     kind: task.kind,
     status: task.status,
     label: task.title || task.summary || 'Background task',
-    badgeKind: task.kind === 'subagent' || task.taskSubtype === 'agent' ? 'agent' : 'workflow',
+    badgeKind: badgeFromTask(task),
     toolCount: null,
   };
 }
@@ -37,7 +62,7 @@ function fromActivity(activity: AgentActivityInfo): AsyncStatusItem {
     kind: activity.kind,
     status: activity.status,
     label: activity.label || 'Background task',
-    badgeKind: activity.kind === 'subagent' ? 'agent' : 'workflow',
+    badgeKind: badgeFromActivity(activity),
     toolCount: Number.isFinite(activity.metrics.tool_count) ? activity.metrics.tool_count : null,
   };
 }

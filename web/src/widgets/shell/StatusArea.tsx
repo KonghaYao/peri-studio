@@ -2,9 +2,9 @@ import { For, Show, createEffect, createMemo, createSignal } from 'solid-js';
 import type { AgentActivityInfo, AgentPlanEntryInfo, PeriTaskInfo } from '@/entities/chat/control-view';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { selectChatFileChanges } from '@/entities/chat/chat-file-changes';
-import { selectAsyncStatusItems } from '@/features/chat/async-status-items';
+import { asyncBadgeLabel, selectAsyncStatusItems, type AsyncBadgeKind } from '@/features/chat/async-status-items';
 import { mapPlanStepStatus } from '@/features/chat/plan-step-status';
-import { Ban, Bot, Check, Circle, CircleAlert, GitBranch, Info, ListTodo, Pause, Workflow, X } from 'lucide-solid';
+import { Ban, Bot, Check, Circle, CircleAlert, GitBranch, Info, ListTodo, Pause, SquareTerminal, Workflow, X } from 'lucide-solid';
 import {
   Badge,
   PlanStep,
@@ -51,6 +51,12 @@ function stateTone(status: string): 'success' | 'info' | 'neutral' | 'warning' |
   if (status === 'failed') return 'danger';
   if (status === 'warning') return 'warning';
   return 'neutral';
+}
+
+function BadgeKindIcon(props: { kind: AsyncBadgeKind }) {
+  if (props.kind === 'agent') return <Bot size={12} strokeWidth={1.8} aria-hidden="true" />;
+  if (props.kind === 'shell') return <SquareTerminal size={12} strokeWidth={1.8} aria-hidden="true" />;
+  return <Workflow size={12} strokeWidth={1.8} aria-hidden="true" />;
 }
 
 function isAsyncInFlight(status: string) {
@@ -187,11 +193,9 @@ export function StatusArea(props: StatusAreaProps) {
                   <li>
                     <TaskItem class={cn(statusAreaRowClass, 'text-12 text-content-primary')}>
                       <span class="grid size-20 shrink-0 place-items-center"><StateIcon status={item.status} /></span>
-                      <span class="inline-flex w-54 shrink-0 items-center gap-4 text-10 font-semibold uppercase tracking-wide text-content-muted">
-                        <Show when={item.badgeKind === 'agent'} fallback={<Workflow size={12} strokeWidth={1.8} aria-hidden="true" />}>
-                          <Bot size={12} strokeWidth={1.8} aria-hidden="true" />
-                        </Show>
-                        {item.badgeKind === 'agent' ? 'Agent' : 'Workflow'}
+                      <span class="inline-flex shrink-0 items-center gap-4 text-10 font-semibold uppercase tracking-wide text-content-muted">
+                        <BadgeKindIcon kind={item.badgeKind} />
+                        {asyncBadgeLabel(item.badgeKind)}
                       </span>
                       <span class="min-w-0 flex-1 truncate">{item.label}</span>
                       <span class="inline-flex shrink-0 items-center gap-6 whitespace-nowrap">

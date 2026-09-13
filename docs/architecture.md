@@ -813,6 +813,8 @@ Peri Task 视图（Session Doc `tasks` / `task_order`）消费 `peri/agent_event
 `peri.unstableEvent` 决定是否发射这些通知；Hub **请求这两项以便收到 started**，
 但它们**不是** `agent.extensions` 协商面——入站只投影有界 title/summary/status，
 禁止把 raw `event_json` / 完整 result 写入 Yjs。Web Async 页优先展示 Task 视图；
+种类徽章必须反映 `task_subtype`（`agent` / `shell` / `workflow`），不得把
+shell 折叠成 workflow；缺省时才回退 activity `task_kind` 或 `subagent`/`workflow`/`background_task`。
 若 Task 已全部终态而 `peri.agentActivity` 仍有 in-flight 子 agent / 后台任务，
 必须并入显示，不得因为历史终态 Task 把正在运行的 activity 藏掉。
 

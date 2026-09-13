@@ -49,6 +49,35 @@ describe('StatusArea', () => {
     expect(screen.getByRole('tabpanel').querySelector('[data-file-icon="typescript"]')).toBeInTheDocument();
   });
 
+  it('labels a failed background shell task as Shell, not Workflow', async () => {
+    render(() => <StatusArea
+      active
+      plan={[]}
+      activities={[]}
+      tasks={[
+        {
+          taskId: 'shell-fail',
+          kind: 'background',
+          taskSubtype: 'shell',
+          title: "cd [REDACTED_PATH] && python3 << 'PY'",
+          summary: null,
+          status: 'failed',
+          isBackground: true,
+          startedAt: null,
+          completedAt: null,
+          updatedAt: null,
+        },
+      ]}
+      entries={[]}
+    />);
+
+    await fireEvent.click(screen.getByRole('tab', { name: /Async/ }));
+    const panel = screen.getByRole('tabpanel');
+    expect(panel).toHaveTextContent('Shell');
+    expect(panel).toHaveTextContent('Failed');
+    expect(panel).not.toHaveTextContent('Workflow');
+  });
+
   it('keeps changed files visible after the turn ends', () => {
     render(() => <StatusArea active={false} plan={[{ id: 'todo-1', content: 'Done', status: 'completed', activeForm: null }]} activities={[]} entries={changedEntries} />);
     expect(screen.getByRole('region', { name: 'Status area' })).toBeInTheDocument();
@@ -122,7 +151,8 @@ describe('StatusArea', () => {
     expect(panel).toHaveTextContent('Reviewer');
     expect(panel).toHaveTextContent('Compile');
     expect(panel).toHaveTextContent('Agent');
-    expect(panel).toHaveTextContent('Workflow');
+    expect(panel).toHaveTextContent('Shell');
+    expect(panel).not.toHaveTextContent('Workflow');
     expect(panel).not.toHaveTextContent('Legacy activity');
   });
 
