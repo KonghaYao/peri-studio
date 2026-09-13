@@ -96,6 +96,27 @@ describe('ProjectSessionRow', () => {
     expect(value.onNavigate).not.toHaveBeenCalled();
   });
 
+  it('opens inline rename on double-click without issuing a second open', () => {
+    const value = props();
+    render(() => <ProjectSessionRow {...value} />);
+    const title = screen.getByRole('button', { name: /^Architecture refactor/ });
+
+    fireEvent.click(title);
+    fireEvent.dblClick(title);
+
+    expect(value.onRenameOpenChange).toHaveBeenCalledWith(true);
+    expect(value.onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores double-click rename in read-only mode', () => {
+    const value = props({ readOnly: true, session: { ...session, activeChatId: 'chat-live' } });
+    render(() => <ProjectSessionRow {...value} />);
+
+    fireEvent.dblClick(screen.getByRole('button', { name: /^Architecture refactor/ }));
+
+    expect(value.onRenameOpenChange).not.toHaveBeenCalled();
+  });
+
   it('lets read-only users select an already running chat locally', () => {
     const value = props({
       readOnly: true,
@@ -110,14 +131,14 @@ describe('ProjectSessionRow', () => {
     expect(value.onOpen).not.toHaveBeenCalled();
   });
 
-  it('uses the shared popover surface for a controlled rename form', () => {
+  it('replaces the title with an inline rename field', () => {
     render(() => <ProjectSessionRow {...props({ renameOpen: true })} />);
-    const renameDialog = screen.getByRole('dialog', { name: 'Rename Architecture refactor' });
-    expect(renameDialog.firstElementChild).toHaveClass('ui-popover');
-    expect(screen.getByTestId('rename-popover')).toBeInTheDocument();
+    expect(screen.getByTestId('session-rename-input')).toBeInTheDocument();
+    expect(screen.queryByTestId('session-copy')).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('submits a trimmed rename and closes only after committed', async () => {
+  it('submits a trimmed rename on Enter and closes only after committed', async () => {
     let commit: (() => void) | undefined;
     const value = props({
       renameOpen: true,
@@ -127,13 +148,26 @@ describe('ProjectSessionRow', () => {
       }),
     });
     render(() => <ProjectSessionRow {...value} />);
+    const input = screen.getByRole('textbox', { name: 'Session name' });
 
-    fireEvent.input(screen.getByRole('textbox', { name: 'Session name' }), { target: { value: '  New name  ' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.input(input, { target: { value: '  New name  ' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
 
     expect(value.onRename).toHaveBeenCalledWith('acp-12345678', 'New name', expect.any(Function), expect.any(Function));
     expect(value.onRenameOpenChange).not.toHaveBeenCalledWith(false);
     commit?.();
+    expect(value.onRenameOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('cancels inline rename on Escape without mutating', () => {
+    const value = props({ renameOpen: true });
+    render(() => <ProjectSessionRow {...value} />);
+    const input = screen.getByRole('textbox', { name: 'Session name' });
+
+    fireEvent.input(input, { target: { value: 'Discarded draft' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+
+    expect(value.onRename).not.toHaveBeenCalled();
     expect(value.onRenameOpenChange).toHaveBeenCalledWith(false);
   });
 
