@@ -39,8 +39,8 @@ rand = { workspace = true }
 crc32fast = { workspace = true }
 toml = { workspace = true }
 sqlx = { workspace = true }
-peri-studio-proto = { path = "../proto", version = "0.3.2" }
-peri-realtime-voice = { path = "../realtime-voice", version = "0.3.2", default-features = false }
+peri-studio-proto = { path = "../proto", version = "0.3.3" }
+peri-realtime-voice = { path = "../realtime-voice", version = "0.3.3", default-features = false }
 agent-client-protocol-schema = { workspace = true }
 
 [dev-dependencies]

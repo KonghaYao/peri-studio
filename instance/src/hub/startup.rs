@@ -64,6 +64,15 @@ impl InstanceOwnerIdentity {
     }
 }
 
+impl Drop for InstanceOwnerLock {
+    fn drop(&mut self) {
+        // 持有锁时清空身份，避免释放窗口内探测方读到陈旧 JSON。
+        let _ = self._file.set_len(0);
+        let _ = self._file.sync_all();
+        let _ = fs2::FileExt::unlock(&self._file);
+    }
+}
+
 impl InstanceOwnerLock {
     fn acquire(config: &InstanceConfig) -> anyhow::Result<Self> {
         let path = config.data_dir.join("instance.owner.lock");
@@ -104,10 +113,6 @@ impl InstanceOwnerLock {
         })
     }
 
-    fn release_descriptor(file: &mut File) {
-        let _ = fs2::FileExt::unlock(file);
-    }
-
     pub(super) fn identity(&self) -> InstanceOwnerIdentity {
         self.identity.clone()
     }
@@ -130,12 +135,12 @@ pub(super) fn current_owner(data_dir: &Path) -> anyhow::Result<Option<InstanceOw
 
     file.rewind()?;
     let identity = read_owner_identity(&mut file)?;
-    release_owner_probe_descriptor(&mut file);
+    // owner 可能在读取期间刚释放锁；再探测一次，避免返回陈旧身份。
+    if fs2::FileExt::try_lock_exclusive(&file).is_ok() {
+        let _ = fs2::FileExt::unlock(&file);
+        return Ok(None);
+    }
     Ok(Some(identity))
-}
-
-fn release_owner_probe_descriptor(file: &mut File) {
-    InstanceOwnerLock::release_descriptor(file);
 }
 
 fn read_owner_identity(file: &mut File) -> anyhow::Result<InstanceOwnerIdentity> {

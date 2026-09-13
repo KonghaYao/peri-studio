@@ -51,7 +51,7 @@ impl Write for CaptureWriter {
         self.0.lock().unwrap().write(buf)
     }
     fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
+        self.0.lock().unwrap().flush()
     }
 }
 
@@ -72,15 +72,33 @@ pub(super) const AUDIT_FIELDS: &[&str] = &[
     "auth_failed_total",
 ];
 
+fn capture_subscriber(buf: Arc<Mutex<Vec<u8>>>) -> impl tracing::Subscriber + Send + Sync + 'static {
+    tracing_subscriber::fmt()
+        .json()
+        .with_writer(CaptureWriter(buf))
+        .with_target(true)
+        .finish()
+}
+
 /// 在捕获 subscriber 下执行闭包，返回 (闭包结果, 捕获的日志文本)。
 pub(super) fn with_capture<T>(f: impl FnOnce() -> T) -> (T, String) {
     let buf = Arc::new(Mutex::new(Vec::new()));
-    let sub = tracing_subscriber::fmt()
-        .json()
-        .with_writer(CaptureWriter(buf.clone()))
-        .with_target(true)
-        .finish();
+    let sub = capture_subscriber(buf.clone());
     let result = tracing::subscriber::with_default(sub, f);
+    let text = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
+    (result, text)
+}
+
+/// 异步测试专用：在 `#[tokio::test]` 内捕获审计日志，避免 `block_on` 嵌套运行时导致事件丢失。
+pub(super) async fn with_capture_async<F, T>(fut: F) -> (T, String)
+where
+    F: std::future::Future<Output = T>,
+{
+    let buf = Arc::new(Mutex::new(Vec::new()));
+    let sub = capture_subscriber(buf.clone());
+    let _guard = tracing::subscriber::set_default(sub);
+    let result = fut.await;
+    drop(_guard);
     let text = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
     (result, text)
 }
