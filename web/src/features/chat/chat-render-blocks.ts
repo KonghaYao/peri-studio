@@ -122,7 +122,8 @@ function isReasoningBlock(block: ChatBlock | undefined): block is Extract<ChatBl
   return block?.kind === 'reasoning';
 }
 
-function entryBlocksForActivity(entry: ChatEntry): ChatBlock[] {
+/** 与活动轨/去重一致：优先 block_order，旧快照回退到 legacy 分组。 */
+export function blocksForChatEntry(entry: ChatEntry): ChatBlock[] {
   if (entry.blocks.length > 0) return entry.blocks;
   return [
     ...entry.reasoning.map((reasoning, index) => ({
@@ -155,7 +156,7 @@ function nearestCrossEntryBlockIsTool(
   for (let index = entryIndex + direction; index >= 0 && index < entries.length; index += direction) {
     const entry = entries[index];
     if (entry.role !== 'assistant' || entry.turnId !== current.turnId) return false;
-    const blocks = entryBlocksForActivity(entry);
+    const blocks = blocksForChatEntry(entry);
     for (
       let blockIndex = direction < 0 ? blocks.length - 1 : 0;
       blockIndex >= 0 && blockIndex < blocks.length;
@@ -189,7 +190,7 @@ function sameAssistantTurn(current: ChatEntry | undefined, neighbor: ChatEntry |
 function entryActivityEdges(entries: readonly ChatEntry[], entryIndex: number) {
   const entry = entries[entryIndex];
   if (!entry) return { first: false, last: false };
-  const groups = buildConversationRowGroups(entryBlocksForActivity(entry), activityBoundaryAt(entries, entryIndex));
+  const groups = buildConversationRowGroups(blocksForChatEntry(entry), activityBoundaryAt(entries, entryIndex));
   return {
     first: groups[0]?.kind === 'activity',
     last: groups.at(-1)?.kind === 'activity',

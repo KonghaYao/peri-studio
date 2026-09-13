@@ -258,6 +258,7 @@ export class ChatProjection {
     const legacy: Array<{ id: string; startedAt: string; map: Y.Map<unknown> }> = [];
     for (const id of this.orphanToolsByTurn.get(entry.turnId) ?? []) {
       if (referenced.has(id)) continue;
+      if (this.ownersByTool.get(id)?.size) continue;
       const map = asMap(toolCalls.get(id));
       if (map) legacy.push({ id, startedAt: this.toolStartedAt.get(id) ?? '', map });
     }

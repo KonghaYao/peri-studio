@@ -231,6 +231,36 @@ describe('ConversationMessage', () => {
     expect(screen.getByTestId('tool-activity-file-link')).toHaveTextContent('main.ts');
   });
 
+  it('keeps only the completed shell row when a stale running duplicate shares the same tool call id', () => {
+    const running = {
+      ...baseTool('tool-1'),
+      name: 'Bash',
+      kind: 'execute' as const,
+      status: 'running',
+      arguments: { command: 'cd web && bun run test' },
+      result: null,
+    };
+    const completed = {
+      ...running,
+      status: 'completed',
+      result: { exitCode: 0 },
+      completedAt: '2026-08-15T00:00:01Z',
+    };
+    render(() => <ConversationMessage entry={entry({
+      toolCalls: [running, completed],
+      blocks: [
+        { kind: 'tool_call', id: 'tool:tool-1', toolCall: running },
+        { kind: 'tool_call', id: 'legacy-tool:tool-1', toolCall: completed },
+      ],
+    })} />);
+
+    const rows = screen.getAllByTestId('tool-activity-row');
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent('Ran $ cd web && bun run test');
+    expect(screen.getByRole('img', { name: 'Done' })).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Running' })).not.toBeInTheDocument();
+  });
+
   it('does not stack a thinking gap on a completed tool while the turn is still streaming', () => {
     const tool = { ...baseTool('tool-1'), name: 'Bash', arguments: { command: 'pwd' } };
     render(() => <ConversationMessage entry={entry({

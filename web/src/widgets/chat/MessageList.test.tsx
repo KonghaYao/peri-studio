@@ -509,6 +509,41 @@ describe('MessageList hydration', () => {
     expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('Bash running');
   });
 
+  it('does not announce a hidden stale running duplicate after dedup keeps the completed row', () => {
+    setRuntimeDocsState({ chat: true, control: true });
+    setChatHead({
+      chat: { chatId: 'chat-1', title: null, status: 'active', activeTurnId: 'turn-1', loading: true, createdAt: null, updatedAt: null },
+      agent: null,
+      activeTurn: { turnId: 'turn-1', turnStatus: 'running', updatedAt: null },
+      pendingPermissions: [],
+    });
+    const running = {
+      toolCallId: 'shared-shell', name: 'Bash', kind: 'execute' as const, status: 'running', arguments: { command: 'pwd' }, result: null,
+      resultOmitted: false, resultBytes: null, publicError: null, startedAt: null, completedAt: null,
+    };
+    const completed = {
+      ...running, status: 'completed', result: { exitCode: 0 }, completedAt: '2026-08-15T00:00:01Z',
+    };
+    setChatEntries([
+      {
+        ...message('segment-stale', 'live', null),
+        turnId: 'turn-1',
+        text: '',
+        status: 'streaming',
+        blocks: [
+          { kind: 'tool_call', id: 'tool:shared-shell', toolCall: running },
+          { kind: 'tool_call', id: 'legacy-tool:shared-shell', toolCall: completed },
+        ],
+        toolCalls: [running, completed],
+      },
+    ]);
+
+    render(() => <MessageList />);
+    expect(screen.getAllByTestId('tool-activity-row')).toHaveLength(1);
+    expect(document.querySelector('[data-testid="message-loading"]')).toBeNull();
+    expect(screen.getByRole('status', { name: 'Agent activity' })).toHaveTextContent('');
+  });
+
   it('keeps pending permissions out of the transcript surface', () => {
     setRuntimeDocsState({ chat: true, control: true });
     setPermissions([

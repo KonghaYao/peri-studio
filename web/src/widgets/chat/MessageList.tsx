@@ -23,6 +23,8 @@ import {
   chatColumnClass,
 } from '@peri/ui';
 import { activityBoundaryAt, activityContinuationAt, isTurnTerminalNoticeOwner } from '@/features/chat/chat-render-blocks';
+import { blocksForChatEntry } from '@/features/chat/chat-render-blocks';
+import { resolveHiddenToolBlocks, visibleToolCallsForEntry } from '@/features/chat/tool-block-dedup';
 import { ConversationMessage } from './ConversationMessage';
 import { PlanSystemEntryRow } from './PlanSystemEntryRow';
 import { isPlanSystemChatEntry } from '@/entities/chat/plan-system-entry';
@@ -87,27 +89,30 @@ export function MessageList(props: {
     return turnId ? chatEntries().filter((item) => item.role === 'assistant' && item.turnId === turnId) : [];
   };
   const isNonterminalTool = (status: string | null) => ['pending', 'running', 'in_progress', 'awaiting_permission', 'awaitingPermission'].includes(status ?? '');
+  const hiddenToolBlocks = createMemo(() => resolveHiddenToolBlocks(chatEntries()));
   const latestTurnActivity = () => {
     const entries = activeTurnEntries();
+    const hidden = hiddenToolBlocks();
+    const visibleBlocks = (entry: ChatEntry) => blocksForChatEntry(entry).filter((block) => {
+      if (block.kind === 'tool_call' && hidden.get(entry.id)?.has(block.id)) return false;
+      return true;
+    });
     // 并行工具可能分散在多个 assistant 分段；任何仍未终结的工具都优先拥有状态面。
     for (let entryIndex = entries.length - 1; entryIndex >= 0; entryIndex -= 1) {
-      const entry = entries[entryIndex];
-      const blockTools = entry.blocks.filter((block) => block.kind === 'tool_call').map((block) => block.toolCall);
-      const tools = blockTools.length ? blockTools : entry.toolCalls;
+      const tools = visibleToolCallsForEntry(entries[entryIndex], hidden);
       for (let toolIndex = tools.length - 1; toolIndex >= 0; toolIndex -= 1) {
         if (isNonterminalTool(tools[toolIndex].status)) return { kind: 'tool', tool: tools[toolIndex] } as const;
       }
     }
     for (let index = entries.length - 1; index >= 0; index -= 1) {
       const entry = entries[index];
-      const lastBlock = entry.blocks.at(-1);
+      const blocks = visibleBlocks(entry);
+      const lastBlock = blocks.at(-1);
       if (lastBlock?.kind === 'tool_call') return { kind: isNonterminalTool(lastBlock.toolCall.status) ? 'tool' : 'terminal_tool', tool: lastBlock.toolCall } as const;
       if (lastBlock) return { kind: 'content' } as const;
 
-      // 旧投影没有块顺序；同一分段内运行工具优先，正文优先于已结束工具。
-      const lastTool = entry.toolCalls.at(-1);
-      if (lastTool && isNonterminalTool(lastTool.status)) return { kind: 'tool', tool: lastTool } as const;
       if (entry.text.trim() || entry.reasoning.length || entry.resources.length || entry.error) return { kind: 'content' } as const;
+      const lastTool = visibleToolCallsForEntry(entry, hidden).at(-1);
       if (lastTool) return { kind: 'terminal_tool', tool: lastTool } as const;
     }
     return null;
@@ -342,6 +347,7 @@ export function MessageList(props: {
                       activityBoundary={() => activityBoundaryAt(chatEntries(), globalIndex())}
                       activityContinuation={() => activityContinuationAt(chatEntries(), globalIndex())}
                       terminalNoticeOwner={() => isTurnTerminalNoticeOwner(chatEntries(), globalIndex())}
+                      hiddenToolBlockIds={() => hiddenToolBlocks().get(entry().id) ?? new Set<string>()}
                     />
                   }>
                     <PlanSystemEntryRow entry={entry()} />

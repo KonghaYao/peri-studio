@@ -8,6 +8,7 @@ import {
   type ActivityBoundary,
   type AssistantLayoutUnit,
 } from '@/features/chat/chat-render-blocks';
+import { resolveHiddenToolBlocks } from '@/features/chat/tool-block-dedup';
 import { messageTime } from '@/shared/lib/message-time';
 import {
   Bubble,
@@ -81,22 +82,13 @@ function MessageBlock(props: {
   reasoningVariant?: 'default' | 'activity';
   toolVariant?: 'default' | 'activity';
   projectCwd: Accessor<string | null>;
+  hiddenToolBlockIds?: Accessor<ReadonlySet<string>>;
 }) {
   const toolCall = () => {
     const current = props.block();
     return current.kind === 'tool_call' ? current.toolCall : null;
   };
-  const duplicateToolBlock = () => {
-    const id = toolCall()?.toolCallId || '';
-    if (!id) return false;
-    const ids = props.blockIds();
-    const byId = props.blocksById();
-    for (let index = 0; index < props.blockIndex(); index += 1) {
-      const previous = byId.get(ids[index]);
-      if (previous?.kind === 'tool_call' && (previous.toolCall.toolCallId || '') === id) return true;
-    }
-    return false;
-  };
+  const duplicateToolBlock = () => props.hiddenToolBlockIds?.().has(props.block().id) ?? false;
 
   return <Show when={props.block().kind === 'reasoning'} fallback={
     <Show when={props.block().kind === 'text'} fallback={
@@ -191,6 +183,7 @@ function AssistantLayoutUnitView(props: {
   toolCallsInBlocks: () => ToolCallInfo[];
   activityBoundary: () => ActivityBoundary;
   projectCwd: Accessor<string | null>;
+  hiddenToolBlockIds?: Accessor<ReadonlySet<string>>;
 }) {
   const unit = () => props.unitsById().get(props.unitId())!;
   const activityVariant = () => {
@@ -219,6 +212,7 @@ function AssistantLayoutUnitView(props: {
           reasoningVariant={activityVariant()}
           toolVariant={activityVariant()}
           projectCwd={props.projectCwd}
+          hiddenToolBlockIds={props.hiddenToolBlockIds}
         />
       )}
     >
@@ -226,19 +220,8 @@ function AssistantLayoutUnitView(props: {
         <For each={(unit() as Extract<AssistantLayoutUnit, { kind: 'tool_group' }>).blockIds}>{(toolBlockIdItem) => {
           const toolId = () => readForItem(toolBlockIdItem);
           const toolBlock = () => props.blocksById().get(toolId())! as Extract<ChatBlock, { kind: 'tool_call' }>;
-          const toolIndex = () => Math.max(0, props.blockIds().indexOf(toolId()));
           const toolCall = () => toolBlock().toolCall;
-          const duplicateToolBlock = () => {
-            const duplicateId = toolCall().toolCallId || '';
-            if (!duplicateId) return false;
-            const ids = props.blockIds();
-            const byId = props.blocksById();
-            for (let index = 0; index < toolIndex(); index += 1) {
-              const previous = byId.get(ids[index]);
-              if (previous?.kind === 'tool_call' && (previous.toolCall.toolCallId || '') === duplicateId) return true;
-            }
-            return false;
-          };
+          const duplicateToolBlock = () => props.hiddenToolBlockIds?.().has(toolId()) ?? false;
           return (
             <McpToolBlock
               toolCall={toolCall}
@@ -261,6 +244,7 @@ export function ConversationMessage(props: {
   activityBoundary?: Accessor<ActivityBoundary>;
   activityContinuation?: Accessor<{ before: boolean; after: boolean }>;
   terminalNoticeOwner?: Accessor<boolean>;
+  hiddenToolBlockIds?: Accessor<ReadonlySet<string>>;
 }) {
   let articleRef: HTMLElement | undefined;
   const [selectionAction, setSelectionAction] = createSignal<{ text: string; left: number; top: number } | null>(null);
@@ -285,6 +269,10 @@ export function ConversationMessage(props: {
   const activityBoundary = () => props.activityBoundary?.() ?? { previousTool: false, nextTool: false };
   const activityContinuation = () => props.activityContinuation?.() ?? { before: false, after: false };
   const terminalNoticeOwner = () => props.terminalNoticeOwner?.() ?? true;
+  const hiddenToolBlockIds = createMemo(() => {
+    if (props.hiddenToolBlockIds) return props.hiddenToolBlockIds();
+    return resolveHiddenToolBlocks([entry()]).get(entry().id) ?? new Set<string>();
+  });
   const layoutUnits = createMemo(() => buildAssistantLayoutUnits(blocks(), activityBoundary()));
   const layoutUnitsById = createMemo(() => new Map(layoutUnits().map((unit) => [unit.id, unit])));
   const rowGroups = createMemo(() => buildConversationRowGroups(blocks(), activityBoundary()));
@@ -368,6 +356,7 @@ export function ConversationMessage(props: {
               toolCallsInBlocks,
               activityBoundary,
               projectCwd,
+              hiddenToolBlockIds,
             };
             return (
               <Show
