@@ -1,4 +1,5 @@
 import { For } from 'solid-js';
+import { asAccessor, type MaybeAccessor } from '../lib/maybe-accessor';
 import { cn } from '../lib/cn';
 import { Button } from './Button';
 
@@ -10,12 +11,15 @@ export type ArchivedBrowserItem = {
 
 /** 归档浏览弹窗列表：紧凑行高、细间距。 */
 export function ArchivedBrowserList(props: {
-  items: ArchivedBrowserItem[];
+  items: MaybeAccessor<ArchivedBrowserItem[]>;
   class?: string;
   onRestore?: (id: string) => void;
-  restoringId?: string | null;
-  readOnly?: boolean;
+  restoringId?: MaybeAccessor<string | null>;
+  readOnly?: MaybeAccessor<boolean>;
 }) {
+  const items = () => asAccessor(props.items)();
+  const restoringId = () => asAccessor(props.restoringId ?? null)();
+  const readOnly = () => asAccessor(props.readOnly ?? false)();
   return (
     <ul
       class={cn(
@@ -24,7 +28,7 @@ export function ArchivedBrowserList(props: {
       )}
       aria-label="Archived items"
     >
-      <For each={props.items}>
+      <For each={items()}>
         {(item) => (
           <li class="archived-browser-row flex min-h-36 items-center gap-8 rounded-md px-10 py-6 hover:bg-interaction-hover pointer-coarse:min-h-44">
             <span class="grid min-w-0 flex-1 gap-1">
@@ -39,8 +43,8 @@ export function ArchivedBrowserList(props: {
               variant="ghost"
               size="sm"
               class="h-28! shrink-0 px-8! text-11! pointer-coarse:min-h-44!"
-              busy={props.restoringId === item.id}
-              disabled={props.readOnly || !!props.restoringId}
+              busy={restoringId() === item.id}
+              disabled={readOnly() || !!restoringId()}
               onClick={() => props.onRestore?.(item.id)}
             >
               Restore

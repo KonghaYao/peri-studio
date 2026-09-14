@@ -1,3 +1,4 @@
+import { read, type MaybeAccessor } from '@/shared/lib/maybe-accessor';
 import { createEffect, createSignal, Show } from 'solid-js';
 import type { ArchivedEntry } from '@/features/catalog/archived-search';
 import { searchArchivedEntries } from '@/features/catalog/archived-search';
@@ -15,35 +16,39 @@ import {
 } from '@peri/ui';
 
 export function ArchivedBrowserDialog(props: {
-  open: boolean;
+  open: MaybeAccessor<boolean>;
   onClose: () => void;
   /** 限定为某 workspace 下已归档会话；省略则显示全部归档项。 */
-  projectId?: string | null;
-  projectName?: string | null;
-  readOnly: boolean;
-  restoringProjectId: string | null;
-  restoringSessionId: string | null;
+  projectId?: MaybeAccessor<string | null>;
+  projectName?: MaybeAccessor<string | null>;
+  readOnly: MaybeAccessor<boolean>;
+  restoringId: MaybeAccessor<string | null>;
   onRestoreProject: (projectId: string) => void;
   onRestoreSession: (sessionId: string) => void;
 }) {
+  const open = () => read(props.open);
+  const projectId = () => read(props.projectId ?? null);
+  const projectName = () => read(props.projectName ?? null);
+  const readOnly = () => read(props.readOnly);
+  const restoringId = () => read(props.restoringId);
   const [query, setQuery] = createSignal('');
   const results = () => searchArchivedEntries(
     query(),
     projects(),
     projectSessions(),
-    props.projectId ? { projectId: props.projectId } : undefined,
+    projectId() ? { projectId: projectId()! } : undefined,
   );
 
   createEffect(() => {
-    if (!props.open) setQuery('');
+    if (!open()) setQuery('');
   });
 
   const titleFor = (entry: ArchivedEntry) => entry.kind === 'session'
     ? sessionDisplayTitle(entry.session.title, entry.session.id)
     : entry.title;
 
-  const dialogTitle = () => props.projectName
-    ? `${props.projectName} · Archived`
+  const dialogTitle = () => projectName()
+    ? `${projectName()} · Archived`
     : 'Archived';
 
   const listItems = () => results().map((entry) => ({
@@ -52,22 +57,20 @@ export function ArchivedBrowserDialog(props: {
     subtitle: `${entry.kind === 'project' ? 'Project' : 'Session'} · ${entry.subtitle}`,
   }));
 
-  const restoringId = () => props.restoringProjectId || props.restoringSessionId;
-
   return (
-    <Dialog open={props.open} onOpenChange={(open) => { if (!open) props.onClose(); }}>
-      <DialogContent size="search" dismissible={!props.restoringProjectId && !props.restoringSessionId}>
+    <Dialog open={open()} onOpenChange={(nextOpen) => { if (!nextOpen) props.onClose(); }}>
+      <DialogContent size="search" dismissible={!restoringId()}>
         <DialogHeader>
           <DialogTitle>{dialogTitle()}</DialogTitle>
         </DialogHeader>
         <div class="grid gap-10 px-16 pb-16">
           <TextField
-            aria-label={props.projectId
+            aria-label={projectId()
               ? 'Search archived sessions'
               : 'Search archived projects and sessions'}
             value={query()}
             onInput={(event) => setQuery(event.currentTarget.value)}
-            placeholder={props.projectId
+            placeholder={projectId()
               ? 'Search session title or ID'
               : 'Search title, project, directory or ID'}
             autofocus
@@ -81,16 +84,16 @@ export function ArchivedBrowserDialog(props: {
                 title={query().trim() ? 'No matching archived items' : 'Nothing archived yet'}
                 description={query().trim()
                   ? 'Try another title or session ID.'
-                  : props.projectId
+                  : projectId()
                     ? 'Archived sessions in this workspace will appear here for restore.'
                     : 'Archived projects and sessions will appear here for restore.'}
               />
             )}
           >
             <ArchivedBrowserList
-              items={listItems()}
-              readOnly={props.readOnly}
-              restoringId={restoringId()}
+              items={listItems}
+              readOnly={readOnly}
+              restoringId={restoringId}
               onRestore={(id) => {
                 const entry = results().find((item) => (
                   item.kind === 'project' ? item.project.id === id : item.session.id === id

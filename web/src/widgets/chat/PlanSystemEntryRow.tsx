@@ -2,6 +2,7 @@ import { For, Show } from 'solid-js';
 import type { ChatEntry } from '@/entities/chat/chat-view';
 import { isPlanSystemChatEntry } from '@/entities/chat/plan-system-entry';
 import { mapPlanStepStatus } from '@/features/chat/plan-step-status';
+import { read, type MaybeAccessor } from '@/shared/lib/maybe-accessor';
 import {
   Plan,
   PlanContent,
@@ -11,10 +12,11 @@ import {
 } from '@peri/ui';
 
 /** Chat timeline row for `plan:{turn|global}` system entries (Control plan stays in StatusArea). */
-export function PlanSystemEntryRow(props: { entry: ChatEntry }) {
-  const entries = () => props.entry.planEntries ?? [];
+export function PlanSystemEntryRow(props: { entry: MaybeAccessor<ChatEntry> }) {
+  const entry = () => read(props.entry);
+  const entries = () => entry().planEntries ?? [];
   return (
-    <Show when={isPlanSystemChatEntry(props.entry) && entries().length > 0}>
+    <Show when={isPlanSystemChatEntry(entry()) && entries().length > 0}>
       <Plan
         class="mx-auto w-full max-w-(--chat-content-max)"
         defaultOpen

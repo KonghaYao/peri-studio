@@ -53,7 +53,6 @@ export function MonitorPanel(props: MonitorPanelProps = {}) {
     setDetailErrorMessage(undefined);
     setDetailState('loading');
     setSelectedObservationId(null);
-    setSelectedObservationId(null);
   };
 
   const clearObservationDetail = () => {
@@ -179,10 +178,10 @@ export function MonitorPanel(props: MonitorPanelProps = {}) {
       fallback={(
         <MonitorPanelShell
           embedded={props.embedded}
-          state={state()}
-          summary={summary()}
-          traces={traces()}
-          errorMessage={errorMessage()}
+          state={state}
+          summary={summary}
+          traces={traces}
+          errorMessage={errorMessage}
           onRetry={reload}
           onTraceSelect={handleTraceSelect}
           data-testid="monitor-panel"
@@ -192,15 +191,15 @@ export function MonitorPanel(props: MonitorPanelProps = {}) {
       {(trace) => (
         <MonitorTraceDetailShell
           embedded={props.embedded}
-          traceName={trace().name}
-          observations={stripObservationsForTree(detailObservations())}
-          selectedObservation={
+          traceName={() => trace().name}
+          observations={() => stripObservationsForTree(detailObservations())}
+          selectedObservation={() => (
             selectedObservationId()
               ? findObservationById(detailObservations(), selectedObservationId()!)
               : null
-          }
-          state={detailState()}
-          errorMessage={detailErrorMessage()}
+          )}
+          state={detailState}
+          errorMessage={detailErrorMessage}
           onBack={clearDetail}
           onClose={clearDetail}
           onObservationSelect={(observation) => setSelectedObservationId(observation.id)}

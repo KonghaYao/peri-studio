@@ -1,4 +1,5 @@
 import { For, Show, splitProps, type Component } from 'solid-js';
+import { asAccessor, type MaybeAccessor } from '../../lib/maybe-accessor';
 import { cn } from '../../lib/cn';
 import { Button } from '../Button';
 import { EmptyState } from '../EmptyState';
@@ -28,10 +29,10 @@ import type {
 
 export type MonitorPanelShellProps = {
   embedded?: boolean;
-  summary?: MonitorSummaryView | null;
-  traces: MonitorTraceRowView[];
-  state: MonitorPanelState;
-  errorMessage?: string;
+  summary?: MaybeAccessor<MonitorSummaryView | null>;
+  traces: MaybeAccessor<MonitorTraceRowView[]>;
+  state: MaybeAccessor<MonitorPanelState>;
+  errorMessage?: MaybeAccessor<string | undefined>;
   onRetry?: () => void;
   onTraceSelect?: (trace: MonitorTraceRowView) => void;
   class?: string;
@@ -57,6 +58,11 @@ export const MonitorPanelShell: Component<MonitorPanelShellProps> = (props) => {
     local.class,
   );
 
+  const state = () => asAccessor(local.state)();
+  const traces = asAccessor(local.traces);
+  const summary = () => (local.summary === undefined ? undefined : asAccessor(local.summary)());
+  const errorMessage = () => (local.errorMessage === undefined ? undefined : asAccessor(local.errorMessage)());
+
   return (
     <div
       {...rest}
@@ -64,13 +70,13 @@ export const MonitorPanelShell: Component<MonitorPanelShellProps> = (props) => {
       class={rootClass()}
       aria-label="Langfuse monitor"
     >
-      <Show when={local.state === 'loading'}>
+      <Show when={state() === 'loading'}>
         <div class={monitorStateClass}>
           <LoadingState label="Loading traces…" class="justify-center" />
         </div>
       </Show>
 
-      <Show when={local.state === 'empty-session'}>
+      <Show when={state() === 'empty-session'}>
         <div class={monitorStateClass}>
           <EmptyState
             variant="inline"
@@ -80,11 +86,11 @@ export const MonitorPanelShell: Component<MonitorPanelShellProps> = (props) => {
         </div>
       </Show>
 
-      <Show when={local.state === 'error'}>
+      <Show when={state() === 'error'}>
         <div class={monitorStateClass}>
           <InlineNotice tone="danger" class="max-w-full items-center gap-6 py-9 text-11 leading-16" role="alert">
             <div class="flex min-w-0 flex-1 flex-col items-center gap-8 text-center">
-              <span class="min-w-0">{local.errorMessage ?? "Couldn't load traces."}</span>
+              <span class="min-w-0">{errorMessage() ?? "Couldn't load traces."}</span>
               <Show when={local.onRetry}>
                 {(retry) => (
                   <Button
@@ -102,7 +108,7 @@ export const MonitorPanelShell: Component<MonitorPanelShellProps> = (props) => {
         </div>
       </Show>
 
-      <Show when={local.state === 'empty-traces'}>
+      <Show when={state() === 'empty-traces'}>
         <div class={monitorStateClass}>
           <EmptyState
             variant="inline"
@@ -113,11 +119,11 @@ export const MonitorPanelShell: Component<MonitorPanelShellProps> = (props) => {
         </div>
       </Show>
 
-      <Show when={local.state === 'ready'}>
-        <Show when={local.summary}>
-          {(summary) => (
+      <Show when={state() === 'ready'}>
+        <Show when={summary()}>
+          {(summaryView) => (
             <div class={monitorSummaryClass} data-testid="monitor-summary">
-              <For each={monitorSummaryItems(summary())}>
+              <For each={monitorSummaryItems(summaryView())}>
                 {(item) => <span class={monitorSummaryItemClass}>{item}</span>}
               </For>
             </div>
@@ -125,7 +131,7 @@ export const MonitorPanelShell: Component<MonitorPanelShellProps> = (props) => {
         </Show>
 
         <div class={monitorListClass} data-testid="monitor-trace-list" role="list">
-          <For each={local.traces}>
+          <For each={traces()}>
             {(trace) => {
               const displayName = () => formatMonitorTraceName(trace.name);
               const meta = () => formatMonitorTraceMeta(trace);

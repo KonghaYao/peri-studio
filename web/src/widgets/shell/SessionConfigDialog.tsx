@@ -1,10 +1,41 @@
-import { Show } from 'solid-js';
+import { createMemo, Show, type Accessor } from 'solid-js';
 import type { SessionConfigOptionInfo } from '@/entities/chat/control-view';
 import { Select } from '@peri/ui';
 import { composerModelLabel } from '@/features/composer/composer-model-label';
 import { readOnly } from '@/features/auth/auth-state';
 import { connState } from '@/features/connection/connection';
 import { chatHead, sessionConfigMutation, setSessionConfig, turnActive } from '@/store';
+
+function SessionModelSelect(props: {
+  model: Accessor<SessionConfigOptionInfo>;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  disabled?: boolean;
+  displayedValue: () => string | undefined;
+  locked: () => boolean;
+  onChoose: (value: string) => void;
+}) {
+  const modelOptions = createMemo(() => props.model().options.map((choice) => ({
+    value: choice.value,
+    label: choice.name,
+    description: choice.description,
+  })));
+
+  return (
+    <Select
+      variant="plain"
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+      data-testid="composer-runtime"
+      aria-label="Choose model"
+      listClass="w-max min-w-0 max-w-(--container-model-menu)"
+      options={modelOptions()}
+      value={props.displayedValue()}
+      onChange={props.onChoose}
+      disabled={props.locked() || props.disabled}
+    />
+  );
+}
 
 export function SessionModelMenu(props: {
   open?: boolean;
@@ -41,21 +72,14 @@ export function SessionModelMenu(props: {
       }
     >
       {(model) => (
-        <Select
-          variant="plain"
+        <SessionModelSelect
+          model={model}
           open={props.open}
           onOpenChange={props.onOpenChange}
-          data-testid="composer-runtime"
-          aria-label="Choose model"
-          listClass="w-max min-w-0 max-w-(--container-model-menu)"
-          options={model().options.map((choice) => ({
-            value: choice.value,
-            label: choice.name,
-            description: choice.description,
-          }))}
-          value={displayedValue()}
-          onChange={choose}
-          disabled={locked() || props.disabled}
+          disabled={props.disabled}
+          displayedValue={displayedValue}
+          locked={locked}
+          onChoose={choose}
         />
       )}
     </Show>

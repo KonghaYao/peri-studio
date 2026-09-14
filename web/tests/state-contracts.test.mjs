@@ -395,8 +395,8 @@ test('session navigation closes only after a server-authoritative open commits',
   assert.match(activation, /export interface OpenSessionCallbacks/);
   assert.match(activation, /callbacks\.onCommitted\?\.\(\)/);
   assert.match(sidebarRow, /onOpen=\{\(sessionId, onCommitted\) => \{ navigateProjectSession\(sessionId, \{ onCommitted \}\); \}\}/);
-  assert.match(sessionRow, /props\.onOpen\(props\.session\.id, props\.onNavigate\)/);
-  assert.doesNotMatch(sessionRow, /props\.onOpen\(props\.session\.id[^;]*;\s*props\.onNavigate\(\)/);
+  assert.match(sessionRow, /props\.onOpen\(session\(\)\.id, props\.onNavigate\)/);
+  assert.doesNotMatch(sessionRow, /props\.onOpen\(session\(\)\.id[^;]*;\s*props\.onNavigate\(\)/);
   assert.match(search, /onCommitted: \(\) => \{ props\.onClose\(\)/);
   assert.match(search, /onUncertain:/);
 });

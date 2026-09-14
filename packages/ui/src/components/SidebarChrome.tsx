@@ -1,6 +1,7 @@
 import type { JSX } from 'solid-js';
 import { For, Show } from 'solid-js';
 import { Archive, MoreHorizontal, Pin, Plus } from 'lucide-solid';
+import { asAccessor, type MaybeAccessor } from '../lib/maybe-accessor';
 import { cn } from '../lib/cn';
 import { ButtonGroup, buttonGroupItemClass } from './ButtonGroup';
 import { IconButton } from './Button';
@@ -190,10 +191,10 @@ export function SessionListLoadingRow(props: { label: string; class?: string }) 
 /** Session 行右侧：Pin / Archive / More 浮动按钮组。 */
 export function SessionRowAccessory(props: {
   unread?: boolean;
-  pinned?: boolean;
-  readOnly?: boolean;
+  pinned?: MaybeAccessor<boolean>;
+  readOnly?: MaybeAccessor<boolean>;
   actionsVisible?: boolean;
-  menuOpen?: boolean;
+  menuOpen?: MaybeAccessor<boolean>;
   onMenuOpenChange?: (open: boolean) => void;
   onTogglePin?: () => void;
   onPin?: () => void;
@@ -204,14 +205,17 @@ export function SessionRowAccessory(props: {
   menuItems?: SidebarChromeMenuItem[];
   onMenuSelect?: (id: string) => void;
 }) {
-  const actionsVisible = () => props.menuOpen ?? props.actionsVisible;
+  const pinned = () => asAccessor(props.pinned ?? false)();
+  const readOnly = () => asAccessor(props.readOnly ?? false)();
+  const menuOpen = () => asAccessor(props.menuOpen ?? false)();
+  const actionsVisible = () => menuOpen() || props.actionsVisible;
   const togglePin = () => props.onTogglePin?.() ?? props.onPin?.();
 
   const moreControl = () => {
     if (props.menuItems) {
       return (
         <DropdownMenu
-          open={props.menuOpen}
+          open={menuOpen()}
           onOpenChange={props.onMenuOpenChange}
           placement="bottom-end"
         >
@@ -263,8 +267,8 @@ export function SessionRowAccessory(props: {
           <IconButton
             size="sm"
             showTooltip={false}
-            label={props.pinned ? 'Unpin session' : 'Pin session'}
-            class={cn(buttonGroupItemClass, props.pinned && 'text-accent-solid')}
+            label={pinned() ? 'Unpin session' : 'Pin session'}
+            class={cn(buttonGroupItemClass, pinned() && 'text-accent-solid')}
             onClick={(event) => {
               event.stopPropagation();
               togglePin();
@@ -276,7 +280,7 @@ export function SessionRowAccessory(props: {
             size="sm"
             showTooltip={false}
             label="Archive session"
-            disabled={props.readOnly}
+            disabled={readOnly()}
             class={cn(buttonGroupItemClass, 'text-content-muted hover:text-danger-solid disabled:opacity-45')}
             onClick={(event) => {
               event.stopPropagation();

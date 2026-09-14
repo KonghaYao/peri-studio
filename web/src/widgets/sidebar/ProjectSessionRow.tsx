@@ -1,5 +1,6 @@
 import { createEffect, createSignal, Show } from 'solid-js';
 import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
+import { read, type MaybeAccessor } from '@/shared/lib/maybe-accessor';
 import {
   Button,
   cn,
@@ -19,15 +20,14 @@ export interface SessionRowState {
 }
 
 export interface ProjectSessionRowProps {
-  session: ProjectSessionInfo;
-  state: SessionRowState;
-  selected: boolean;
-  navigationBusy: boolean;
-  readOnly: boolean;
-  renameOpen: boolean;
-  menuOpen: boolean;
-  replacementBusy: boolean;
-  pinned: boolean;
+  session: MaybeAccessor<ProjectSessionInfo>;
+  state: MaybeAccessor<SessionRowState>;
+  selected: MaybeAccessor<boolean>;
+  readOnly: MaybeAccessor<boolean>;
+  renameOpen: MaybeAccessor<boolean>;
+  menuOpen: MaybeAccessor<boolean>;
+  replacementBusy: MaybeAccessor<boolean>;
+  pinned: MaybeAccessor<boolean>;
   onNavigate: () => void;
   onOpen: (sessionId: string, onCommitted: () => void) => void;
   onSelectRuntime: (sessionId: string, chatId: string) => void;
@@ -47,25 +47,34 @@ export interface ProjectSessionRowProps {
 function RenameIcon() { return <Pencil size={16} strokeWidth={1.7} />; }
 
 export function ProjectSessionRow(props: ProjectSessionRowProps) {
-  const [draft, setDraft] = createSignal(props.session.title);
+  const session = () => read(props.session);
+  const selected = () => read(props.selected);
+  const state = () => read(props.state);
+  const readOnly = () => read(props.readOnly);
+  const renameOpen = () => read(props.renameOpen);
+  const menuOpen = () => read(props.menuOpen);
+  const replacementBusy = () => read(props.replacementBusy);
+  const pinned = () => read(props.pinned);
+
+  const [draft, setDraft] = createSignal(session().title);
   const [submitting, setSubmitting] = createSignal(false);
   let lastTitleClickAt = 0;
   let renameInputRef: HTMLInputElement | undefined;
-  const renameId = () => `rename-session-${props.session.id}`;
+  const renameId = () => `rename-session-${session().id}`;
   const displayTitle = () => sessionDisplayTitle(
-    props.session.title,
-    props.session.id,
+    session().title,
+    session().id,
   );
   const renameValid = () => !!draft().trim();
-  const canRename = () => !props.readOnly && !submitting();
+  const canRename = () => !readOnly() && !submitting();
   const lampTone = (): SessionLiveIndicatorTone | null => {
-    const tone = props.state.tone;
+    const tone = state().tone;
     return tone === 'busy' || tone === 'attention' || tone === 'danger' ? tone : null;
   };
 
   createEffect(() => {
-    if (!props.renameOpen) return;
-    setDraft(props.session.title);
+    if (!renameOpen()) return;
+    setDraft(session().title);
     queueMicrotask(() => {
       renameInputRef?.focus();
       renameInputRef?.select();
@@ -73,12 +82,13 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
   });
 
   const open = () => {
-    if (props.readOnly && props.session.activeChatId) {
-      props.onSelectRuntime(props.session.id, props.session.activeChatId);
+    const activeChatId = session().activeChatId;
+    if (readOnly() && activeChatId) {
+      props.onSelectRuntime(session().id, activeChatId);
       props.onNavigate();
       return;
     }
-    props.onOpen(props.session.id, props.onNavigate);
+    props.onOpen(session().id, props.onNavigate);
   };
 
   const handleTitleClick = () => {
@@ -100,7 +110,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
 
   const cancelRename = () => {
     if (submitting()) return;
-    setDraft(props.session.title);
+    setDraft(session().title);
     props.onRenameOpenChange(false);
   };
 
@@ -111,7 +121,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
       cancelRename();
       return;
     }
-    if (trimmed === props.session.title.trim()) {
+    if (trimmed === session().title.trim()) {
       props.onRenameOpenChange(false);
       return;
     }
@@ -119,7 +129,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
       () => { setSubmitting(true); },
       () => { setSubmitting(false); },
       (committed, failed) => props.onRename(
-        props.session.id,
+        session().id,
         trimmed,
         committed,
         failed,
@@ -140,19 +150,16 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
     }
   };
 
-  const titleFieldClass = cn(
-    'flex w-full min-w-0 items-center overflow-hidden rounded-md bg-transparent py-4 pl-2 pr-0 pointer-coarse:py-6',
-    props.selected && 'font-medium',
-  );
+  const titleFieldBaseClass = 'flex w-full min-w-0 items-center overflow-hidden rounded-md bg-transparent py-4 pl-2 pr-0 pointer-coarse:py-6';
 
   return (
     <div
-      data-session-id={props.session.id}
+      data-session-id={session().id}
       data-testid="session-row"
-      data-selected={props.selected ? 'true' : undefined}
+      data-selected={selected() ? 'true' : undefined}
       class={cn(
         'group/row relative flex min-w-0 items-center rounded-md',
-        props.selected
+        selected()
           ? 'bg-sidebar-selected'
           : 'hover:bg-interaction-hover focus-within:bg-interaction-hover',
       )}
@@ -166,7 +173,7 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
           {(tone) => (
             <SessionLiveIndicator
               tone={tone()}
-              label={props.state.detail || props.state.label}
+              label={state().detail || state().label}
               class="pointer-events-none"
             />
           )}
@@ -174,29 +181,30 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
       </div>
       <div class="relative flex min-w-0 flex-1 items-center">
         <Show
-          when={props.renameOpen}
+          when={renameOpen()}
           fallback={(
             <button
               type="button"
               data-sidebar="menu-button"
-              data-active={props.selected ? 'true' : undefined}
+              data-active={selected() ? 'true' : undefined}
               class={cn(
-                titleFieldClass,
+                titleFieldBaseClass,
+                selected() && 'font-medium',
                 'text-left outline-none',
                 'focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2',
                 'disabled:pointer-events-none disabled:opacity-45',
               )}
-              aria-current={props.selected ? 'page' : undefined}
+              aria-current={selected() ? 'page' : undefined}
               aria-label={displayTitle()}
               onClick={handleTitleClick}
               onDblClick={handleTitleDoubleClick}
-              disabled={(props.readOnly && !props.session.activeChatId) || props.session.lifecycle !== 'ready'}
+              disabled={(readOnly() && !session().activeChatId) || session().lifecycle !== 'ready'}
             >
               <span data-testid="session-copy" class="block min-w-0 w-full truncate text-13 leading-20 text-content-primary">{displayTitle()}</span>
             </button>
           )}
         >
-          <div class={cn(titleFieldClass, 'bg-selected')}>
+          <div class={cn(titleFieldBaseClass, selected() && 'font-medium', 'bg-selected')}>
             <input
               ref={(element) => { renameInputRef = element; }}
               id={renameId()}
@@ -217,12 +225,12 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
           </div>
         </Show>
         <SessionRowAccessory
-          pinned={props.pinned}
-          readOnly={props.readOnly}
-          menuOpen={props.menuOpen}
+          pinned={pinned}
+          readOnly={readOnly}
+          menuOpen={menuOpen}
           onMenuOpenChange={props.onMenuOpenChange}
           onTogglePin={props.onTogglePin}
-          onArchive={() => props.onArchiveRequest(props.session.id)}
+          onArchive={() => props.onArchiveRequest(session().id)}
           menuId={`${renameId()}-menu`}
           menuLabel={`Session actions: ${displayTitle()}`}
           menuItems={[{
@@ -236,10 +244,10 @@ export function ProjectSessionRow(props: ProjectSessionRowProps) {
           }}
         />
       </div>
-      <Show when={props.session.lifecycle === 'failed'}>
-        <div data-testid="session-problem" class="basis-full px-10 pb-4 text-11 text-danger">Failed to open · <Button size="compact" class="cursor-pointer border-0! bg-transparent p-0! text-inherit underline" busy={props.replacementBusy} disabled={props.readOnly || props.replacementBusy} onClick={() => props.onCreateReplacement(props.session.title)}>Create replacement session</Button></div>
+      <Show when={session().lifecycle === 'failed'}>
+        <div data-testid="session-problem" class="basis-full px-10 pb-4 text-11 text-danger">Failed to open · <Button size="compact" class="cursor-pointer border-0! bg-transparent p-0! text-inherit underline" busy={replacementBusy()} disabled={readOnly() || replacementBusy()} onClick={() => props.onCreateReplacement(session().title)}>Create replacement session</Button></div>
       </Show>
-      <Show when={props.session.lifecycle === 'reconciliation_required'}>
+      <Show when={session().lifecycle === 'reconciliation_required'}>
         <div data-testid="session-problem-warn" class="basis-full px-10 pb-4 text-11 text-warning">Server-side reconciliation required, retry not available</div>
       </Show>
     </div>

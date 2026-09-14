@@ -1,5 +1,6 @@
 import { createEffect, createMemo, createSignal, For, onCleanup, Show } from 'solid-js';
 import { RefreshCw } from 'lucide-solid';
+import { asAccessor, type MaybeAccessor } from '../../lib/maybe-accessor';
 import { cn } from '../../lib/cn';
 import {
   GIT_GRAPH_COLORS,
@@ -41,7 +42,7 @@ import { GitGraphRefBadge } from './GitGraphRefBadge';
 import type { GitGraphActionKind, GitGraphActionParams, GitGraphCommit } from './types';
 
 export type GitGraphPanelProps = {
-  commits: GitGraphCommit[];
+  commits: MaybeAccessor<GitGraphCommit[]>;
   /** 外层已有标题栏时隐藏面板内重复的 Git Graph 顶栏。 */
   nested?: boolean;
   onRefresh?: () => void;
@@ -90,6 +91,7 @@ function displayMessage(commit: GitGraphCommit) {
 
 /** VS Code Git Graph 插件风格：HTML table + 绝对定位 SVG 叠加层。 */
 export function GitGraphPanel(props: GitGraphPanelProps) {
+  const commits = () => asAccessor(props.commits)();
   const [hovered, setHovered] = createSignal<number | null>(null);
   const [selected, setSelected] = createSignal(0);
   const [branchDialog, setBranchDialog] = createSignal<BranchDialogState | null>(null);
@@ -133,7 +135,7 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
   };
 
   createEffect(() => {
-    props.commits.length;
+    commits().length;
     queueMicrotask(measureTable);
   });
 
@@ -148,8 +150,8 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
   });
 
   const layout = createMemo(() => layoutGitGraph(
-    toLayoutCommits(props.commits),
-    headHash(props.commits),
+    toLayoutCommits(commits()),
+    headHash(commits()),
     {
       colors: GIT_GRAPH_COLORS,
       bgColor: 'var(--surface-overlay)',
@@ -168,7 +170,7 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
     return node?.cy ?? 0;
   };
 
-  const incompleteDag = createMemo(() => hasIncompleteDag(props.commits));
+  const incompleteDag = createMemo(() => hasIncompleteDag(commits()));
 
   const dispatch = (action: GitGraphActionKind, params: GitGraphActionParams) => {
     props.onGraphAction?.(action, params);
@@ -257,7 +259,7 @@ export function GitGraphPanel(props: GitGraphPanelProps) {
               <col style={{ width: 'var(--git-graph-commit-col-width)' }} />
             </colgroup>
             <tbody>
-              <For each={props.commits}>
+              <For each={commits()}>
                 {(commit, index) => {
                   const colorIndex = () => layout().vertexColors[index()] ?? 0;
                   const isCurrent = () => commit.isHead;

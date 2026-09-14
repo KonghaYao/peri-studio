@@ -1,6 +1,7 @@
 import { Show } from 'solid-js';
 import { Monitor, MoreHorizontal } from 'lucide-solid';
 import type { InstanceInfo, MachineInfo } from '@/entities/registry/registry-view';
+import { asAccessor, read, type MaybeAccessor } from '@/shared/lib/maybe-accessor';
 import {
   canConnectMachine,
   canDisconnectMachine,
@@ -39,9 +40,9 @@ import { cn } from '@peri/ui';
 
 interface MachineRowProps {
   machine: MachineInfo;
-  instances: InstanceInfo[];
-  readOnly: boolean;
-  highlighted?: boolean;
+  instances: MaybeAccessor<InstanceInfo[]>;
+  readOnly: MaybeAccessor<boolean>;
+  highlighted?: MaybeAccessor<boolean>;
   showOnlineHint?: boolean;
   onPrimaryAction: (action: NonNullable<ReturnType<typeof machinePrimaryAction>>) => void;
   onOpenTrust: () => void;
@@ -55,13 +56,16 @@ interface MachineRowProps {
 }
 
 export function MachineRow(props: MachineRowProps) {
+  const instances = () => asAccessor(props.instances)();
+  const readOnly = () => read(props.readOnly);
+  const highlighted = () => read(props.highlighted ?? false);
   const primary = () => machinePrimaryAction(props.machine.phase);
   const error = () => machineErrorCopy(props.machine.errorCode);
   const sshCommand = () => machineSshCommand(props.machine);
 
   const runPrimary = () => {
     const action = primary();
-    if (!action || props.readOnly) return;
+    if (!action || readOnly()) return;
     if (action === 'trust') {
       props.onOpenTrust();
       return;
@@ -72,7 +76,7 @@ export function MachineRow(props: MachineRowProps) {
   return <li
     class={cn(
       'mb-6 rounded-8 border px-10 py-8',
-      props.highlighted ? 'border-accent bg-surface-overlay' : 'border-border-faint',
+      highlighted() ? 'border-accent bg-surface-overlay' : 'border-border-faint',
     )}
     data-instance-id={props.machine.instanceId}
   >
@@ -81,15 +85,15 @@ export function MachineRow(props: MachineRowProps) {
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-8">
           <p class="m-0 min-w-0 flex-1 font-600 text-text-primary">{props.machine.displayName}</p>
-          <Status tone={machineRowStatusTone(props.machine, props.instances)} live={machineRowStatusLive(props.machine)}>
-            {machineRowStatusLabel(props.machine, props.instances)}
+          <Status tone={machineRowStatusTone(props.machine, instances())} live={machineRowStatusLive(props.machine)}>
+            {machineRowStatusLabel(props.machine, instances())}
           </Status>
           <Show when={primary()}>
             <Button
               type="button"
               variant="secondary"
               size="sm"
-              disabled={props.readOnly}
+              disabled={readOnly()}
               onClick={runPrimary}
             >
               {machinePrimaryActionLabel(primary()!)}
@@ -107,31 +111,31 @@ export function MachineRow(props: MachineRowProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent class="ui-menu min-w-180" aria-label={`${props.machine.displayName} actions`}>
               <Show when={isLocalMachine(props.machine)} fallback={<>
-                <DropdownMenuItem disabled={!canRenameMachine(props.machine) || props.readOnly} onSelect={props.onRename}>
+                <DropdownMenuItem disabled={!canRenameMachine(props.machine) || readOnly()} onSelect={props.onRename}>
                   Rename
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  disabled={!canDisconnectMachine(props.machine) || props.readOnly}
+                  disabled={!canDisconnectMachine(props.machine) || readOnly()}
                   onSelect={props.onDisconnect}
                 >
                   Disconnect tunnel
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  disabled={!canConnectMachine(props.machine) || props.readOnly}
+                  disabled={!canConnectMachine(props.machine) || readOnly()}
                   onSelect={props.onConnect}
                 >
                   Connect
                 </DropdownMenuItem>
-                <DropdownMenuItem disabled={!canStopMachine(props.machine) || props.readOnly} onSelect={props.onStop}>
+                <DropdownMenuItem disabled={!canStopMachine(props.machine) || readOnly()} onSelect={props.onStop}>
                   Stop agents
                 </DropdownMenuItem>
-                <DropdownMenuItem disabled={!canRemoveMachine(props.machine) || props.readOnly} onSelect={props.onRemove}>
+                <DropdownMenuItem disabled={!canRemoveMachine(props.machine) || readOnly()} onSelect={props.onRemove}>
                   Remove from Peri
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuCheckboxItem
                   checked={props.machine.autoReconnect}
-                  disabled={!canSetMachineAutoReconnect(props.machine) || props.readOnly}
+                  disabled={!canSetMachineAutoReconnect(props.machine) || readOnly()}
                   onChange={(checked) => props.onToggleAutoReconnect(checked)}
                 >
                   Auto-reconnect
@@ -140,7 +144,7 @@ export function MachineRow(props: MachineRowProps) {
                 <DropdownMenuItem disabled>This is the computer running Peri.</DropdownMenuItem>
               </Show>
               <Show when={canRestoreMachine(props.machine)}>
-                <DropdownMenuItem disabled={props.readOnly} onSelect={props.onRestore}>Restore</DropdownMenuItem>
+                <DropdownMenuItem disabled={readOnly()} onSelect={props.onRestore}>Restore</DropdownMenuItem>
               </Show>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -148,7 +152,7 @@ export function MachineRow(props: MachineRowProps) {
         <p class="m-0 mt-4 text-10 text-text-muted">
           {isLocalMachine(props.machine) ? 'Built-in' : machineDestinationLine(props.machine)}
         </p>
-        <Show when={canTrustMachineHost(props.machine) && props.readOnly}>
+        <Show when={canTrustMachineHost(props.machine) && readOnly()}>
           <p class="m-0 mt-6 text-10 text-text-muted">Waiting for the owner to trust this host.</p>
         </Show>
         <Show when={isMachinePipelinePhase(props.machine.phase) && !canTrustMachineHost(props.machine)}>

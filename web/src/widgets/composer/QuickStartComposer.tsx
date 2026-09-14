@@ -28,6 +28,7 @@ import { promptMaxBytes } from '@/features/connection/connection';
 import { promptByteLength, promptFitsBudget } from '@/shared/lib/prompt-budget';
 import { dictationPreviewParts } from '@/features/voice/pcm';
 import { useDictation } from '@/features/voice/use-dictation';
+import { read, type MaybeAccessor } from '@/shared/lib/maybe-accessor';
 import { ComposerUploadSurface, openComposerUploadFilePicker } from './ComposerUploadSurface';
 
 type QuickStartMessageFieldProps = {
@@ -76,12 +77,17 @@ const QuickStartMessageField: Component<QuickStartMessageFieldProps> = (props) =
   );
 };
 
-export function QuickStartComposer(props: { projects: Array<{ id: string; name: string }>; initialProjectId?: string }) {
+export function QuickStartComposer(props: {
+  projects: MaybeAccessor<Array<{ id: string; name: string }>>;
+  initialProjectId?: MaybeAccessor<string | undefined>;
+}) {
+  const projects = () => read(props.projects);
+  const initialProjectId = () => read(props.initialProjectId);
   const [draft, setDraft] = createSignal('');
   const statusId = `quick-start-status-${createUniqueId()}`;
   const budgetId = `quick-start-budget-${createUniqueId()}`;
   const uploadDropDescId = `quick-start-upload-drop-${createUniqueId()}`;
-  const [projectId, setProjectId] = createSignal(props.initialProjectId || props.projects[0]?.id || '');
+  const [projectId, setProjectId] = createSignal(initialProjectId() || projects()[0]?.id || '');
   const [plusOpen, setPlusOpen] = createSignal(false);
   const voice = useDictation(() => ({ getDraft: draft, setDraft }));
   const [quickStartSurfaceRef, setQuickStartSurfaceRef] = createSignal<HTMLDivElement | undefined>();
@@ -94,9 +100,16 @@ export function QuickStartComposer(props: { projects: Array<{ id: string; name: 
   const promptOverBudget = () => !!draft().trim() && !promptFitsBudget(draft().trim(), promptMaxBytes());
   const locked = () => (!!pending() && pending()!.phase !== 'failed') || !!creatingSessionProjectId();
   const inputDisabled = () => readOnly() || locked();
-  const project = () => props.projects.find((item) => item.id === projectId());
   createEffect(() => {
-    if (!pending() && !project()) setProjectId(props.projects[0]?.id || '');
+    const list = projects();
+    const initial = initialProjectId();
+    if (initial && list.some((item) => item.id === initial)) {
+      setProjectId(initial);
+      return;
+    }
+    if (!pending() && !list.some((item) => item.id === projectId())) {
+      setProjectId(list[0]?.id || '');
+    }
   });
   const focusAt = (caret: number) => {
     queueMicrotask(() => {

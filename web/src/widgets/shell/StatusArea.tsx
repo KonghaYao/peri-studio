@@ -1,3 +1,4 @@
+import { read, type MaybeAccessor } from '@/shared/lib/maybe-accessor';
 import { For, Show, createEffect, createMemo, createSignal } from 'solid-js';
 import type { AgentActivityInfo, AgentPlanEntryInfo, PeriTaskInfo } from '@/entities/chat/control-view';
 import type { ChatEntry } from '@/entities/chat/chat-view';
@@ -25,13 +26,13 @@ import {
 type StatusTab = 'todo' | 'async' | 'changes';
 
 export interface StatusAreaProps {
-  plan: AgentPlanEntryInfo[];
-  activities: AgentActivityInfo[];
+  plan: MaybeAccessor<AgentPlanEntryInfo[]>;
+  activities: MaybeAccessor<AgentActivityInfo[]>;
   /** Session Doc Peri Task 视图；有数据时 Async 页优先用它。 */
-  tasks?: PeriTaskInfo[];
-  entries: ChatEntry[];
-  projectCwd?: string | null;
-  active: boolean;
+  tasks?: MaybeAccessor<PeriTaskInfo[]>;
+  entries: MaybeAccessor<ChatEntry[]>;
+  projectCwd?: MaybeAccessor<string | null>;
+  active: MaybeAccessor<boolean>;
 }
 
 function StateIcon(props: { status: string }) {
@@ -89,19 +90,24 @@ function asyncAutoExpandSignature(items: Array<{ id: string; status: string; lab
 }
 
 export function StatusArea(props: StatusAreaProps) {
+  const plan = () => read(props.plan);
+  const activities = () => read(props.activities);
+  const tasks = () => (props.tasks ? read(props.tasks) : []);
+  const entries = () => read(props.entries);
+  const active = () => read(props.active);
   const [activeTab, setActiveTab] = createSignal<StatusTab>('todo');
   const [panelExpanded, setPanelExpanded] = createSignal(true);
-  const asyncItems = createMemo(() => selectAsyncStatusItems(props.tasks ?? [], props.activities));
-  const changes = createMemo(() => selectChatFileChanges(props.entries));
-  const completedTodos = createMemo(() => props.plan.filter((entry) => entry.status === 'completed').length);
+  const asyncItems = createMemo(() => selectAsyncStatusItems(tasks(), activities()));
+  const changes = createMemo(() => selectChatFileChanges(entries()));
+  const completedTodos = createMemo(() => plan().filter((entry) => entry.status === 'completed').length);
   const showAsyncTab = createMemo(() => {
     const items = asyncItems();
     if (items.length === 0) return false;
-    if (props.active) return true;
+    if (active()) return true;
     return items.some((item) => isAsyncInFlight(item.status));
   });
   const tabs = createMemo(() => [
-    props.active && props.plan.length > 0 ? { id: 'todo' as const, label: 'Todo', count: props.plan.length, icon: ListTodo } : null,
+    active() && plan().length > 0 ? { id: 'todo' as const, label: 'Todo', count: plan().length, icon: ListTodo } : null,
     showAsyncTab() ? { id: 'async' as const, label: 'Async', count: asyncItems().length, icon: Workflow } : null,
     changes().length > 0 ? { id: 'changes' as const, label: 'Changes', count: changes().length, icon: GitBranch } : null,
   ].filter((tab): tab is NonNullable<typeof tab> => tab !== null));
@@ -111,8 +117,8 @@ export function StatusArea(props: StatusAreaProps) {
   let lastAsyncSig: string | undefined;
 
   createEffect(() => {
-    const planSig = props.active && props.plan.length > 0
-      ? planAutoExpandSignature(props.plan)
+    const planSig = active() && plan().length > 0
+      ? planAutoExpandSignature(plan())
       : '';
     const asyncSig = showAsyncTab()
       ? asyncAutoExpandSignature(asyncItems())
@@ -169,7 +175,7 @@ export function StatusArea(props: StatusAreaProps) {
         class={statusAreaPanelClass}
       >
               <div class="flex flex-col gap-2">
-                <For each={props.plan}>{(entry) => (
+                <For each={plan()}>{(entry) => (
                   <PlanStep
                     status={mapPlanStepStatus(entry.status)}
                     label={planEntryLabel(entry)}

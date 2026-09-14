@@ -30,25 +30,24 @@ export interface ProjectSidebarTreeProps {
 }
 
 export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
-  const { model } = props;
   return (
     <Show
-      when={model.registryHydrated()}
+      when={props.model.registryHydrated()}
         fallback={<LoadingState label="Loading projects" class="px-2.5 py-2 text-left!" />}
     >
-      <ProjectSidebarPinned model={model} onNavigate={props.onNavigate} />
+      <ProjectSidebarPinned model={props.model} onNavigate={props.onNavigate} />
 
       <Show
-        when={model.instanceGroups().length > 0}
+        when={props.model.instanceGroups().length > 0}
         fallback={<EmptyState
           variant="inline"
           class="px-2.5 py-2 text-left!"
-          title={model.projects().length ? 'No active projects' : 'No projects yet'}
-          description={model.projects().length ? 'Restore an archived project to continue.' : 'No connected instances or projects are available.'}
+          title={props.model.projects().length ? 'No active projects' : 'No projects yet'}
+          description={props.model.projects().length ? 'Restore an archived project to continue.' : 'No connected instances or projects are available.'}
         />}
       >
-        <For each={model.instanceIds()}>{(instanceId) => {
-          const instance = () => model.instanceGroups().find((item) => item.id === instanceId)!;
+        <For each={props.model.instanceIds()}>{(instanceId) => {
+          const instance = () => props.model.instanceGroups().find((item) => item.id === instanceId)!;
           return <section class="group/instance pb-1">
             <div class="group/instance relative flex min-h-28 items-center gap-8 pl-2.5 pr-4 text-11 text-content-muted">
               <span class="min-w-0 flex-1 truncate">{instance().name}</span>
@@ -64,7 +63,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                 class="pointer-events-none absolute right-4 top-1/2 size-28 -translate-y-1/2 border-0 bg-transparent text-content-muted opacity-0 transition-opacity duration-(--duration-fast) group-hover/instance:pointer-events-auto group-hover/instance:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 pointer-coarse:size-36 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100"
                 label="New project"
                 disabled={readOnly()}
-                onClick={() => model.openCreateProject(instanceId)}
+                onClick={() => props.model.openCreateProject(instanceId)}
               >
                 <PlusIcon />
               </IconButton>
@@ -74,11 +73,11 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
               const sessions = () => projectSessions().filter((s) => s.projectId === projectId && !s.archivedAt);
               const archivedSessions = () => projectSessions().filter((s) => s.projectId === projectId && !!s.archivedAt);
               const sessionsLoading = () => discoveringSessionsProjectId() === projectId || isProjectCatalogBootstrapPending(projectId);
-              const collapsed = () => model.collapsedProjects().has(projectId);
+              const collapsed = () => props.model.collapsedProjects().has(projectId);
               const open = () => !collapsed();
               const hasSessions = () => sessions().length > 0;
               const projectMenuId = `project-menu-${projectId}`;
-              return <Collapsible as="section" class="min-w-0" open={open()} onOpenChange={(next) => model.setProjectCollapsed(projectId, !next)}>
+              return <Collapsible as="section" class="min-w-0" open={open()} onOpenChange={(next) => props.model.setProjectCollapsed(projectId, !next)}>
                 <div class="group/workspace relative min-w-0 rounded-md hover:bg-interaction-hover focus-within:bg-interaction-hover">
                   <CollapsibleTrigger class="relative z-0 flex w-full min-w-0 items-start gap-8 py-4 pl-2.5 pr-0 text-left" aria-label={project().name}>
                     <span class="mt-0.5 shrink-0 text-content-muted">
@@ -90,9 +89,9 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                       <span class="block min-w-0 w-full truncate text-13 text-content-primary">{project().name}</span>
                     </span>
                   </CollapsibleTrigger>
-                  <ProjectRowAccessory actionsVisible={model.projectMenu() === projectId}>
+                  <ProjectRowAccessory actionsVisible={props.model.projectMenu() === projectId}>
                     <ProjectRowActionGroup>
-                      <DropdownMenu open={model.projectMenu() === projectId} onOpenChange={(next) => model.setProjectMenu(next ? projectId : null)} placement="bottom-end">
+                      <DropdownMenu open={props.model.projectMenu() === projectId} onOpenChange={(next) => props.model.setProjectMenu(next ? projectId : null)} placement="bottom-end">
                         <DropdownMenuTrigger
                           as={IconButton}
                           size="sm"
@@ -105,16 +104,16 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                           <MoreIcon />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent id={projectMenuId} aria-label={`${project().name} actions`} class="ui-menu">
-                          <DropdownMenuItem onSelect={() => { model.setProjectNameDraft(project().name); model.setRenamingProject(projectId); }}><RenameIcon />Rename project</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => model.setImportingProject(projectId)}><ImportIcon />Import existing session</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => model.setArchivedBrowserProjectId(projectId)}>
+                          <DropdownMenuItem onSelect={() => { props.model.setProjectNameDraft(project().name); props.model.setRenamingProject(projectId); }}><RenameIcon />Rename project</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => props.model.setImportingProject(projectId)}><ImportIcon />Import existing session</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => props.model.setArchivedBrowserProjectId(projectId)}>
                             <ArchiveIcon />
                             Archived
                             <Show when={archivedSessions().length > 0}>
                               <span class="ml-auto text-11 text-content-muted">{archivedSessions().length}</span>
                             </Show>
                           </DropdownMenuItem>
-                          <DropdownMenuItem class="text-danger focus:text-danger" disabled={model.projectHasRunningSession(projectId)} onSelect={() => model.setArchiveCandidate(projectId)}><ArchiveIcon />Archive project</DropdownMenuItem>
+                          <DropdownMenuItem class="text-danger focus:text-danger" disabled={props.model.projectHasRunningSession(projectId)} onSelect={() => props.model.setArchiveCandidate(projectId)}><ArchiveIcon />Archive project</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                       <IconButton
@@ -157,8 +156,8 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                         const session = () => sessions().find((item) => item.id === sessionId)!;
                         return (
                           <ProjectSidebarRow
-                            model={model}
-                            session={session()}
+                            model={props.model}
+                            session={session}
                             projectId={projectId}
                             onNavigate={props.onNavigate}
                           />

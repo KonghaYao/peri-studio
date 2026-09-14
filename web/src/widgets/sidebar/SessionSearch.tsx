@@ -1,4 +1,5 @@
 import { primaryShortcut } from '@/shared/lib/keyboard';
+import { read, type MaybeAccessor } from '@/shared/lib/maybe-accessor';
 import { createEffect, createSignal, Show } from 'solid-js';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, InlineNotice, Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel, Spinner, TextField } from '@peri/ui';
 import { navigateProjectSession, openingSessionId, projectSessions, projects, selectedSessionId } from '@/store';
@@ -9,7 +10,8 @@ import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
 
 type SearchResult = ProjectSessionInfo & { project: { name: string } | null };
 
-export function SessionSearch(props: { open: boolean; onClose: () => void; onSelected?: () => void }) {
+export function SessionSearch(props: { open: MaybeAccessor<boolean>; onClose: () => void; onSelected?: () => void }) {
+  const open = () => read(props.open);
   const [query, setQuery] = createSignal('');
   const [problem, setProblem] = createSignal<string | null>(null);
   let resultList: HTMLUListElement | undefined;
@@ -18,7 +20,7 @@ export function SessionSearch(props: { open: boolean; onClose: () => void; onSel
     projects().filter((project) => !project.archivedAt),
     projectSessions().filter((session) => !session.archivedAt),
   ) as SearchResult[];
-  createEffect(() => { if (!props.open) { setQuery(''); setProblem(null); } });
+  createEffect(() => { if (!open()) { setQuery(''); setProblem(null); } });
   const choose = (session: ProjectSessionInfo) => {
     setProblem(null);
     navigateProjectSession(session.id, {
@@ -34,7 +36,7 @@ export function SessionSearch(props: { open: boolean; onClose: () => void; onSel
   };
   const focusResults = () => { if (results().length) resultList?.focus(); };
 
-  return <Dialog open={props.open} onOpenChange={(open) => { if (!open && !openingSessionId()) props.onClose(); }}><DialogContent size="search" dismissible={!openingSessionId()}><DialogHeader><DialogTitle>Search sessions</DialogTitle></DialogHeader>
+  return <Dialog open={open()} onOpenChange={(nextOpen) => { if (!nextOpen && !openingSessionId()) props.onClose(); }}><DialogContent size="search" dismissible={!openingSessionId()}><DialogHeader><DialogTitle>Search sessions</DialogTitle></DialogHeader>
     <div class="grid gap-10 px-16 pb-16">
       <TextField aria-label="Search sessions" value={query()} onInput={(event) => setQuery(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === 'ArrowDown') { event.preventDefault(); focusResults(); } }} placeholder="Search title, project, directory or session ID" autofocus />
       <Show when={query().trim()} fallback={<InlineNotice class="px-10 py-20 text-center text-12 text-text-muted"><kbd>{primaryShortcut('K')}</kbd> opens search anytime. Start typing a project name or session title.</InlineNotice>}>

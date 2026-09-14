@@ -126,8 +126,8 @@ function Repository(props: { repo: RepositoryState; commitMessage?: string; onCo
             repoId={props.repo.id}
             changes={state().changes as GitChange[]}
             groupId={group.id}
-            readOnly={readOnly()}
-            repoBusy={repoBusy()}
+            readOnly={readOnly}
+            repoBusy={repoBusy}
             onFileSelect={(change) => previewChange(change)}
             onStageToggle={(change) => toggleStage(group.id, change)}
             onDiscard={(change) => setDiscard(change)}

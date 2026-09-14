@@ -37,30 +37,27 @@ import { ToolCallActivity } from './ToolCallActivity';
 import { McpAppFrame } from './McpAppFrame';
 import { isPrimaryLiveMcpApp, maybeOpenCompletedMcpTool } from '@/features/mcp/mcp-apps';
 import { requestComposerQuote } from '@/features/composer/composer-quote';
+import { read, type MaybeAccessor } from '@/shared/lib/maybe-accessor';
 
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
-
-/** Solid `<For>` 在本项目测试运行时传入的是字符串而非 accessor，统一解包。 */
-function readForItem<T>(item: T | (() => T)): T {
-  return typeof item === 'function' ? (item as () => T)() : item;
-}
 
 function McpToolBlock(props: {
   toolCall: Accessor<ToolCallInfo>;
   origin: Accessor<'live' | 'replay' | null>;
   siblingTools: Accessor<ToolCallInfo[]>;
-  duplicate: boolean;
+  duplicate: MaybeAccessor<boolean>;
   variant?: 'default' | 'activity';
-  projectCwd: Accessor<string | null>;
+  projectCwd: MaybeAccessor<string | null>;
 }) {
+  const duplicate = () => read(props.duplicate);
   createEffect(() => {
-    if (props.duplicate) return;
+    if (duplicate()) return;
     maybeOpenCompletedMcpTool(props.toolCall(), props.origin());
   });
   const toolCallId = () => props.toolCall().toolCallId || '';
   return (
-    <Show when={!props.duplicate}>
-      <Show when={isPrimaryLiveMcpApp(toolCallId(), props.siblingTools())} fallback={<ToolCallActivity toolCall={props.toolCall} variant={props.variant} projectCwd={props.projectCwd()} />}>
+    <Show when={!duplicate()}>
+      <Show when={isPrimaryLiveMcpApp(toolCallId(), props.siblingTools())} fallback={<ToolCallActivity toolCall={props.toolCall} variant={props.variant} projectCwd={props.projectCwd} />}>
         <McpAppFrame toolCallId={toolCallId()} />
       </Show>
     </Show>
@@ -102,7 +99,7 @@ function MessageBlock(props: {
         toolCall={() => toolCall()!}
         origin={() => (props.entry().origin === 'session_replay' ? 'replay' as const : props.entry().origin === 'live' ? 'live' as const : null)}
         siblingTools={props.toolCallsInBlocks}
-        duplicate={duplicateToolBlock()}
+        duplicate={duplicateToolBlock}
         variant={props.toolVariant}
         projectCwd={props.projectCwd}
       /></Show>
@@ -218,7 +215,7 @@ function AssistantLayoutUnitView(props: {
     >
       <ToolActivityGroup variant="activity" showRail={false}>
         <For each={(unit() as Extract<AssistantLayoutUnit, { kind: 'tool_group' }>).blockIds}>{(toolBlockIdItem) => {
-          const toolId = () => readForItem(toolBlockIdItem);
+          const toolId = () => read(toolBlockIdItem);
           const toolBlock = () => props.blocksById().get(toolId())! as Extract<ChatBlock, { kind: 'tool_call' }>;
           const toolCall = () => toolBlock().toolCall;
           const duplicateToolBlock = () => props.hiddenToolBlockIds?.().has(toolId()) ?? false;
@@ -227,7 +224,7 @@ function AssistantLayoutUnitView(props: {
               toolCall={toolCall}
               origin={() => (props.entry().origin === 'session_replay' ? 'replay' as const : props.entry().origin === 'live' ? 'live' as const : null)}
               siblingTools={props.toolCallsInBlocks}
-              duplicate={duplicateToolBlock()}
+              duplicate={duplicateToolBlock}
               variant="activity"
               projectCwd={props.projectCwd}
             />
@@ -341,7 +338,7 @@ export function ConversationMessage(props: {
       <Show when={role() === 'user'} fallback={
         <MessageSurfaceShell from={role() === 'system' ? 'system' : 'assistant'}>
           <For each={rowGroupIds()}>{(groupIdItem, groupIndex) => {
-            const rowGroupId = () => readForItem(groupIdItem);
+            const rowGroupId = () => read(groupIdItem);
             const rowGroup = () => rowGroupsById().get(rowGroupId())!;
             const continuesBefore = () => groupIndex() === 0 && activityContinuation().before;
             const continuesAfter = () => groupIndex() === rowGroupIds().length - 1 && activityContinuation().after;
@@ -363,7 +360,7 @@ export function ConversationMessage(props: {
                 when={rowGroup().kind === 'activity'}
                 fallback={
                   <For each={rowGroup().unitIds}>{(unitIdItem) =>
-                    <AssistantLayoutUnitView unitId={() => readForItem(unitIdItem)} {...unitViewProps} />
+                    <AssistantLayoutUnitView unitId={() => read(unitIdItem)} {...unitViewProps} />
                   }</For>
                 }
               >
@@ -372,7 +369,7 @@ export function ConversationMessage(props: {
                   continuesAfter={continuesAfter()}
                 >
                   <For each={rowGroup().unitIds}>{(unitIdItem) =>
-                    <AssistantLayoutUnitView unitId={() => readForItem(unitIdItem)} {...unitViewProps} />
+                    <AssistantLayoutUnitView unitId={() => read(unitIdItem)} {...unitViewProps} />
                   }</For>
                 </ChatActivityChain>
               </Show>

@@ -350,7 +350,7 @@ export function MessageList(props: {
                       hiddenToolBlockIds={() => hiddenToolBlocks().get(entry().id) ?? new Set<string>()}
                     />
                   }>
-                    <PlanSystemEntryRow entry={entry()} />
+                    <PlanSystemEntryRow entry={entry} />
                   </Show>
                 }</Show>
               </TranscriptRowShell>;

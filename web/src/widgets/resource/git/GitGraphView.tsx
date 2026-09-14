@@ -1,5 +1,5 @@
 import { Button, GitGraphPanel, InlineNotice } from '@peri/ui';
-import { Show, createEffect, createMemo, createSignal, untrack } from 'solid-js';
+import { For, Show, createEffect, createMemo, createSignal, untrack } from 'solid-js';
 import {
   canLoadMoreGitLog,
   gitLogCommits,
@@ -87,19 +87,21 @@ export function GitGraphView(props: GitGraphViewProps = {}) {
         <div class="flex items-center gap-6 border-b border-border-subtle px-10 py-8">
           <span class="text-11 text-content-muted">Repository</span>
           <div class="flex min-w-0 flex-wrap gap-4">
-            {graphRepositories().map((repo) => (
-              <Button
-                size="compact"
-                variant="ghost"
-                class={`rounded-4 border-0! px-8 py-4 text-11 ${activeGraphRepoId() === repo.id ? 'bg-selected text-content-primary' : 'text-content-muted hover:bg-interaction-hover'}`}
-                onClick={() => {
-                  setGraphRepoId(repo.id);
-                  if (!repo.log && repo.generation) openGitLog(repo.id);
-                }}
-              >
-                {repo.name}
-              </Button>
-            ))}
+            <For each={graphRepositories()}>
+              {(repo) => (
+                <Button
+                  size="compact"
+                  variant="ghost"
+                  class={`rounded-4 border-0! px-8 py-4 text-11 ${activeGraphRepoId() === repo.id ? 'bg-selected text-content-primary' : 'text-content-muted hover:bg-interaction-hover'}`}
+                  onClick={() => {
+                    setGraphRepoId(repo.id);
+                    if (!repo.log && repo.generation) openGitLog(repo.id);
+                  }}
+                >
+                  {repo.name}
+                </Button>
+              )}
+            </For>
           </div>
         </div>
       </Show>
@@ -109,7 +111,7 @@ export function GitGraphView(props: GitGraphViewProps = {}) {
           <div class="flex min-h-0 min-w-0 flex-1 flex-col">
             <GitGraphPanel
               nested={props.embedded ?? true}
-              commits={graphCommits()}
+              commits={graphCommits}
               onRefresh={() => refreshGitLog(repoId())}
               onGraphAction={(action, params) => runGraphAction(action, params)}
             />

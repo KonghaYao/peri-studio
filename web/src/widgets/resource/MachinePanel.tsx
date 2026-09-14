@@ -120,9 +120,9 @@ export function MachinePanel() {
     <ul class="m-0 list-none px-10 pb-10 text-11" aria-label="Computer list">
       <For each={list()}>{(machine) => <MachineRow
         machine={machine}
-        instances={instances()}
-        readOnly={readOnly()}
-        highlighted={focusInstanceId() === machine.instanceId}
+        instances={instances}
+        readOnly={readOnly}
+        highlighted={() => focusInstanceId() === machine.instanceId}
         showOnlineHint={showOnlineHint(machine)}
         onPrimaryAction={(action) => {
           if (action === 'cancel') {

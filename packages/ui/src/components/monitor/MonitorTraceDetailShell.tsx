@@ -1,5 +1,6 @@
 import { Show, splitProps, type Component } from 'solid-js';
 import { ArrowLeft, X } from 'lucide-solid';
+import { asAccessor, type MaybeAccessor } from '../../lib/maybe-accessor';
 import { cn } from '../../lib/cn';
 import { Button, IconButton } from '../Button';
 import { EmptyState } from '../EmptyState';
@@ -18,11 +19,11 @@ import type { MonitorObservationView, MonitorTraceDetailState } from './types';
 
 export type MonitorTraceDetailShellProps = {
   embedded?: boolean;
-  traceName: string;
-  observations: MonitorObservationView[];
-  state: MonitorTraceDetailState;
-  errorMessage?: string;
-  selectedObservation?: MonitorObservationView | null;
+  traceName: MaybeAccessor<string>;
+  observations: MaybeAccessor<MonitorObservationView[]>;
+  state: MaybeAccessor<MonitorTraceDetailState>;
+  errorMessage?: MaybeAccessor<string | undefined>;
+  selectedObservation?: MaybeAccessor<MonitorObservationView | null>;
   onBack?: () => void;
   onClose?: () => void;
   onObservationSelect?: (observation: MonitorObservationView) => void;
@@ -55,7 +56,11 @@ export const MonitorTraceDetailShell: Component<MonitorTraceDetailShellProps> = 
     local.class,
   );
 
-  const selectedObservation = () => local.selectedObservation ?? null;
+  const traceName = () => asAccessor(local.traceName)();
+  const observations = () => asAccessor(local.observations)();
+  const state = () => asAccessor(local.state)();
+  const errorMessage = () => (local.errorMessage === undefined ? undefined : asAccessor(local.errorMessage)());
+  const selectedObservation = () => asAccessor(local.selectedObservation ?? null)();
 
   return (
     <Show
@@ -82,7 +87,7 @@ export const MonitorTraceDetailShell: Component<MonitorTraceDetailShellProps> = 
             </IconButton>
           )}
         </Show>
-        <h2 class={monitorDetailTitleClass}>{formatMonitorTraceName(local.traceName)}</h2>
+        <h2 class={monitorDetailTitleClass}>{formatMonitorTraceName(traceName())}</h2>
         <Show when={local.onClose}>
           {(close) => (
             <IconButton
@@ -98,17 +103,17 @@ export const MonitorTraceDetailShell: Component<MonitorTraceDetailShellProps> = 
         </Show>
       </div>
 
-      <Show when={local.state === 'loading'}>
+      <Show when={state() === 'loading'}>
         <div class={monitorStateClass}>
           <LoadingState label="Loading trace…" class="justify-center" />
         </div>
       </Show>
 
-      <Show when={local.state === 'error'}>
+      <Show when={state() === 'error'}>
         <div class={monitorStateClass}>
           <InlineNotice tone="danger" class="max-w-full items-center gap-6 py-9 text-11 leading-16" role="alert">
             <div class="flex min-w-0 flex-1 flex-col items-center gap-8 text-center">
-              <span class="min-w-0">{local.errorMessage ?? "Couldn't load trace."}</span>
+              <span class="min-w-0">{errorMessage() ?? "Couldn't load trace."}</span>
               <Show when={local.onRetry}>
                 {(retry) => (
                   <Button
@@ -126,9 +131,9 @@ export const MonitorTraceDetailShell: Component<MonitorTraceDetailShellProps> = 
         </div>
       </Show>
 
-      <Show when={local.state === 'ready'}>
+      <Show when={state() === 'ready'}>
         <Show
-          when={local.observations.length > 0}
+          when={observations().length > 0}
           fallback={(
             <div class={monitorStateClass}>
               <EmptyState
@@ -140,7 +145,7 @@ export const MonitorTraceDetailShell: Component<MonitorTraceDetailShellProps> = 
           )}
         >
           <MonitorObservationTree
-            observations={local.observations}
+            observations={observations()}
             onSelect={local.onObservationSelect}
           />
         </Show>

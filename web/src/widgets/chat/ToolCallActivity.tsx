@@ -2,6 +2,7 @@ import { createMemo, createSignal, type Accessor } from 'solid-js';
 import { ToolActivityRow } from '@peri/ui';
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
 import { buildToolCallRowProps } from '@/features/chat/tool-call-activity';
+import { read, type MaybeAccessor } from '@/shared/lib/maybe-accessor';
 import { openWorkspaceFromTool } from '@/store';
 
 type ToolCallSource = ToolCallInfo | Accessor<ToolCallInfo>;
@@ -10,13 +11,13 @@ type ToolCallSource = ToolCallInfo | Accessor<ToolCallInfo>;
 export function ToolCallActivity(props: {
   toolCall: ToolCallSource;
   variant?: 'default' | 'activity';
-  projectCwd?: string | null;
+  projectCwd?: MaybeAccessor<string | null>;
 }) {
   const [evidenceLoaded, setEvidenceLoaded] = createSignal(false);
   const tool = () => (typeof props.toolCall === 'function' ? props.toolCall() : props.toolCall);
   const rowProps = createMemo(() => buildToolCallRowProps(tool(), {
     variant: props.variant,
-    projectCwd: props.projectCwd,
+    projectCwd: props.projectCwd === undefined ? undefined : read(props.projectCwd),
     evidenceLoaded: evidenceLoaded(),
     onOpenEvidence: () => setEvidenceLoaded(true),
     onOpenWorkspacePath: openWorkspaceFromTool,

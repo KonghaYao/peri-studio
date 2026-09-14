@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, cleanup } from '@solidjs/testing-library';
+import { createSignal } from 'solid-js';
 import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
 import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
 import { ProjectSessionRow, type ProjectSessionRowProps } from './ProjectSessionRow';
@@ -19,7 +20,6 @@ function props(overrides: Partial<ProjectSessionRowProps> = {}): ProjectSessionR
     session,
     state: { label: 'Not started · session saved', tone: 'idle' },
     selected: false,
-    navigationBusy: false,
     readOnly: false,
     renameOpen: false,
     menuOpen: false,
@@ -208,5 +208,15 @@ describe('ProjectSessionRow', () => {
     expect(archive).toBeEnabled();
     fireEvent.click(archive);
     expect(value.onArchiveRequest).toHaveBeenCalledWith('acp-12345678');
+  });
+
+  it('applies font-medium to the title when selected', () => {
+    const [selected, setSelected] = createSignal(false);
+    render(() => <ProjectSessionRow {...props({ selected })} />);
+    const title = screen.getByRole('button', { name: /^Architecture refactor/ });
+
+    expect(title).not.toHaveClass('font-medium');
+    setSelected(true);
+    expect(title).toHaveClass('font-medium');
   });
 });

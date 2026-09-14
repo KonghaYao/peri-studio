@@ -3,6 +3,7 @@ import type { PendingQuestion, PendingQuestionItem } from '@/entities/chat/contr
 import { createIdentitySelection } from '@/features/message/identity-selection';
 import type { QuestionDeliveryState } from '@/features/message/question-delivery';
 import type { QuestionAnswerPayload } from '@/shared/protocol/client';
+import { read, type MaybeAccessor } from '@/shared/lib/maybe-accessor';
 import { Clock3 } from 'lucide-solid';
 import type { QuestionnaireAnswer } from '@peri/ui';
 import {
@@ -11,9 +12,9 @@ import {
 } from './AskUserQuestionnaire';
 
 interface Props {
-  questions: PendingQuestion[];
-  responses: Record<string, QuestionDeliveryState>;
-  readOnly: boolean;
+  questions: MaybeAccessor<PendingQuestion[]>;
+  responses: MaybeAccessor<Record<string, QuestionDeliveryState>>;
+  readOnly: MaybeAccessor<boolean>;
   onRefreshStatus: () => void;
   onDismissUncertain: (questionId: string) => void;
   onRespond: (questionId: string, answers: QuestionAnswerPayload[]) => void;
@@ -71,16 +72,19 @@ function questionToSteps(questions: PendingQuestionItem[]): AskUserQuestionnaire
 
 /** AskUserQuestion 队列（interactive_question）。 */
 export function QuestionQueue(props: Props) {
+  const questions = () => read(props.questions);
+  const responses = () => read(props.responses);
+  const readOnly = () => read(props.readOnly);
   const [drafts, setDrafts] = createSignal<Record<string, QuestionAnswerPayload[]>>({});
-  const selection = createIdentitySelection(() => props.questions, (item) => item.questionId);
+  const selection = createIdentitySelection(questions, (item) => item.questionId);
   return <Show when={selection.current()?.questionId} keyed>{(questionId) => {
     const item = () => selection.current()!;
     return <QuestionDialog
-      question={item()}
-      delivery={props.responses[questionId]}
-      readOnly={props.readOnly}
-      currentIndex={selection.index()}
-      total={props.questions.length}
+      question={item}
+      delivery={() => responses()[questionId]}
+      readOnly={readOnly}
+      currentIndex={selection.index}
+      total={() => questions().length}
       initialAnswers={drafts()[questionId] ?? []}
       onDraft={(answers) => setDrafts((current) => ({ ...current, [questionId]: answers }))}
       onPrevious={() => selection.select(selection.index() - 1)}
@@ -93,11 +97,11 @@ export function QuestionQueue(props: Props) {
 }
 
 function QuestionDialog(props: {
-  question: PendingQuestion;
-  delivery?: QuestionDeliveryState;
-  readOnly: boolean;
-  currentIndex: number;
-  total: number;
+  question: MaybeAccessor<PendingQuestion>;
+  delivery?: MaybeAccessor<QuestionDeliveryState | undefined>;
+  readOnly: MaybeAccessor<boolean>;
+  currentIndex: MaybeAccessor<number>;
+  total: MaybeAccessor<number>;
   initialAnswers: QuestionAnswerPayload[];
   onDraft: (answers: QuestionAnswerPayload[]) => void;
   onPrevious: () => void;
@@ -106,48 +110,53 @@ function QuestionDialog(props: {
   onDismissUncertain: () => void;
   onRespond: Props['onRespond'];
 }) {
-  const steps = () => questionToSteps(props.question.questions);
+  const question = () => read(props.question);
+  const readOnly = () => read(props.readOnly);
+  const currentIndex = () => read(props.currentIndex);
+  const total = () => read(props.total);
+  const delivery = () => (props.delivery === undefined ? undefined : read(props.delivery));
+  const steps = () => questionToSteps(question().questions);
   const [answers, setAnswers] = createSignal(
-    draftToAnswers(props.initialAnswers, props.question.questions),
+    draftToAnswers(props.initialAnswers, question().questions),
   );
-  const submitting = () => props.delivery?.phase === 'pending';
-  const confirmed = () => props.delivery?.phase === 'confirmed';
-  const uncertain = () => props.delivery?.phase === 'failed'
-    || props.delivery?.phase === 'uncertain'
-    || props.delivery?.phase === 'delivery_unknown';
-  const locked = () => (props.delivery?.phase === 'pending' || props.delivery?.phase === 'confirmed')
-    || props.question.status === 'responding'
-    || props.readOnly;
+  const submitting = () => delivery()?.phase === 'pending';
+  const confirmed = () => delivery()?.phase === 'confirmed';
+  const uncertain = () => delivery()?.phase === 'failed'
+    || delivery()?.phase === 'uncertain'
+    || delivery()?.phase === 'delivery_unknown';
+  const locked = () => (delivery()?.phase === 'pending' || delivery()?.phase === 'confirmed')
+    || question().status === 'responding'
+    || readOnly();
 
   createEffect(() => {
-    setAnswers(draftToAnswers(props.initialAnswers, props.question.questions));
+    setAnswers(draftToAnswers(props.initialAnswers, question().questions));
   });
 
   const syncAnswers = (next: Record<string, QuestionnaireAnswer>) => {
     setAnswers(next);
-    props.onDraft(answersToPayload(next, props.question.questions));
+    props.onDraft(answersToPayload(next, question().questions));
   };
 
   return (
     <AskUserQuestionnaireShell
       shellAriaLabel="Pending questions"
       testId="question-queue-card"
-      steps={steps()}
+      steps={steps}
       answers={answers()}
       onAnswersChange={syncAnswers}
-      onSubmit={(record) => props.onRespond(props.question.questionId, answersToPayload(record, props.question.questions))}
-      queueIndex={props.currentIndex}
-      queueTotal={props.total}
+      onSubmit={(record) => props.onRespond(question().questionId, answersToPayload(record, question().questions))}
+      queueIndex={currentIndex}
+      queueTotal={total}
       onQueuePrevious={props.onPrevious}
       onQueueNext={props.onNext}
-      locked={locked()}
-      submitting={submitting()}
-      confirmed={confirmed()}
-      uncertain={uncertain()}
+      locked={locked}
+      submitting={submitting}
+      confirmed={confirmed}
+      uncertain={uncertain}
       onRefreshStatus={props.onRefreshStatus}
       onDismissUncertain={props.onDismissUncertain}
       headerActions={(
-        <Show when={props.question.expiresAt}>
+        <Show when={question().expiresAt}>
           <span class="inline-flex items-center gap-4 text-10 text-text-muted">
             <Clock3 size={12} aria-hidden="true" />
             Expires soon

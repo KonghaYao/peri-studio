@@ -322,7 +322,7 @@ test('MessageList delegates entry semantics through stable entry-id slots to one
   assert.match(list, /const chatEntryIds = createMemo\(\(\) => chatEntries\(\)\.map\(\(entry\) => entry\.id\)\)/);
   assert.match(list, /<Show when=\{chatEntries\(\)\[globalIndex\(\)\]\}>\{\(entry\) =>/);
   assert.match(list, /<ConversationMessage\s+entry=\{entry\}\s+activityBoundary=\{\(\) => activityBoundaryAt\(chatEntries\(\), globalIndex\(\)\)\}\s+activityContinuation=\{\(\) => activityContinuationAt\(chatEntries\(\), globalIndex\(\)\)\}\s+terminalNoticeOwner=\{\(\) => isTurnTerminalNoticeOwner\(chatEntries\(\), globalIndex\(\)\)\}\s+hiddenToolBlockIds=\{\(\) => hiddenToolBlocks\(\)\.get\(entry\(\)\.id\) \?\? new Set<string>\(\)\}\s+\/>/);
-  assert.match(list, /<PlanSystemEntryRow entry=\{entry\(\)\} \/>/);
+  assert.match(list, /<PlanSystemEntryRow entry=\{entry\} \/>/);
   assert.doesNotMatch(list, /function MessageBubble|<Markdown|<ToolCallActivity/);
   assert.match(message, /<MessageArticleShell[\s\S]*from=\{role\(\)\}/);
   const articleShell = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'chat', 'MessageArticleShell.tsx'), 'utf8');

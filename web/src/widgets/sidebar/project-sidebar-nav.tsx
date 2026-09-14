@@ -4,8 +4,7 @@ import { ArchiveIcon } from './project-sidebar-icons';
 import type { ProjectSidebarModel } from './project-sidebar-model';
 
 export function ProjectSidebarNav(props: { model: ProjectSidebarModel }) {
-  const { model } = props;
-  const archivedCount = () => model.archivedEntryCount();
+  const archivedCount = () => props.model.archivedEntryCount();
   return (
     <SidebarNavBar
       menuItems={[{
@@ -15,11 +14,11 @@ export function ProjectSidebarNav(props: { model: ProjectSidebarModel }) {
         suffix: archivedCount() > 0 ? String(archivedCount()) : undefined,
       }]}
       onMenuSelect={(id) => {
-        if (id === 'archived') model.setArchivedBrowserGlobalOpen(true);
+        if (id === 'archived') props.model.setArchivedBrowserGlobalOpen(true);
       }}
     >
-      <NavAction icon={<MessageSquarePlus size={16} strokeWidth={1.7} />} label="New session" disabled={model.readOnly()} onClick={model.handleNewSession} />
-      <NavAction icon={<Search size={16} strokeWidth={1.7} />} label="Search" onClick={() => model.setSearchOpen(true)} />
+      <NavAction icon={<MessageSquarePlus size={16} strokeWidth={1.7} />} label="New session" disabled={props.model.readOnly()} onClick={props.model.handleNewSession} />
+      <NavAction icon={<Search size={16} strokeWidth={1.7} />} label="Search" onClick={() => props.model.setSearchOpen(true)} />
     </SidebarNavBar>
   );
 }

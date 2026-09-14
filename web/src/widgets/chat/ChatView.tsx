@@ -105,18 +105,18 @@ export function ChatView(props: ChatViewProps) {
     <>
       <Show when={hasPendingPermission()}>
         <PermissionQueue
-          permissions={permissions().filter((permission) => permission.status === 'pending')}
-          decisions={permissionDecisions()}
-          readOnly={readOnly()}
+          permissions={() => permissions().filter((permission) => permission.status === 'pending')}
+          decisions={permissionDecisions}
+          readOnly={readOnly}
           onResolve={resolvePermission}
           onRetry={retryPersistentAction}
         />
       </Show>
       <Show when={hasPendingElicitation()}>
         <ElicitationQueue
-          elicitations={visibleElicitations(elicitations())}
-          responses={elicitationResponses()}
-          readOnly={readOnly()}
+          elicitations={() => visibleElicitations(elicitations())}
+          responses={elicitationResponses}
+          readOnly={readOnly}
           onRefreshStatus={refreshCurrentControlProjection}
           onDismissUncertain={dismissUncertainElicitation}
           onRespond={respondElicitation}
@@ -124,16 +124,23 @@ export function ChatView(props: ChatViewProps) {
       </Show>
       <Show when={hasPendingQuestion()}>
         <QuestionQueue
-          questions={visibleQuestions(questions())}
-          responses={questionResponses()}
-          readOnly={readOnly()}
+          questions={() => visibleQuestions(questions())}
+          responses={questionResponses}
+          readOnly={readOnly}
           onRefreshStatus={refreshCurrentControlProjection}
           onDismissUncertain={dismissUncertainQuestion}
           onRespond={respondQuestion}
         />
       </Show>
       {agentPublicErrorBanner()}
-      <StatusArea active={turnActive()} plan={chatHead()?.agent?.plan ?? []} activities={chatHead()?.agent?.activities ?? []} tasks={chatHead()?.tasks ?? []} entries={chatEntries()} projectCwd={projectCwd()} />
+      <StatusArea
+        active={turnActive}
+        plan={() => chatHead()?.agent?.plan ?? []}
+        activities={() => chatHead()?.agent?.activities ?? []}
+        tasks={() => chatHead()?.tasks ?? []}
+        entries={chatEntries}
+        projectCwd={projectCwd}
+      />
     </>
   );
   onMount(() => {
@@ -150,7 +157,7 @@ export function ChatView(props: ChatViewProps) {
       launch={!selectedSessionId()}
       header={(
         <ChatHeaderBase
-          title={headerTitle()}
+          title={headerTitle}
           launch={!selectedSessionId()}
           navButtonClass="hidden"
           showMobileNav

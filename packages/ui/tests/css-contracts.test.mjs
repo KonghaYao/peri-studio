@@ -202,7 +202,7 @@ test('standalone safe-area tokens are the only inset source for named utilities'
   const chatHeader = read(join(srcRoot, 'components', 'ChatHeader.tsx'));
   assert.match(chatHeader, /ui-titlebar-drag relative flex h-52/);
   assert.match(chatHeader, /pl-titlebar-content/);
-  assert.match(chatHeader, /\{local\.title\}/);
+  assert.match(chatHeader, /\{title\(\)\}/);
   assert.doesNotMatch(chatHeader, /['"][^'"]*ui-titlebar-overlay/);
   assert.doesNotMatch(chatHeader, /['"][^'"]*ui-titlebar-sidebar/);
   assert.doesNotMatch(chatHeader, /['"][^'"]*min-h-titlebar/);

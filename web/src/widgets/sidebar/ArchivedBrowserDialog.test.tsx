@@ -60,8 +60,7 @@ describe('ArchivedBrowserDialog', () => {
         open
         onClose={() => {}}
         readOnly={false}
-        restoringProjectId={null}
-        restoringSessionId={null}
+        restoringId={null}
         onRestoreProject={vi.fn()}
         onRestoreSession={vi.fn()}
       />
@@ -99,8 +98,7 @@ describe('ArchivedBrowserDialog', () => {
         open
         onClose={() => {}}
         readOnly={false}
-        restoringProjectId={null}
-        restoringSessionId={null}
+        restoringId={null}
         onRestoreProject={vi.fn()}
         onRestoreSession={onRestoreSession}
       />
@@ -142,8 +140,7 @@ describe('ArchivedBrowserDialog', () => {
         projectId="p-active"
         projectName="Active"
         readOnly={false}
-        restoringProjectId={null}
-        restoringSessionId={null}
+        restoringId={null}
         onRestoreProject={vi.fn()}
         onRestoreSession={vi.fn()}
       />

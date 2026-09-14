@@ -1,3 +1,4 @@
+import { read, type MaybeAccessor } from '@/shared/lib/maybe-accessor';
 import { createEffect, createSignal, Show } from 'solid-js';
 import { Folder, FolderOpen } from 'lucide-solid';
 import type { ProjectInfo } from '@/entities/registry/registry-view';
@@ -10,13 +11,15 @@ import {
 import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, Listbox, ListboxItem, ListboxItemLabel, LoadingState } from '@peri/ui';
 
 export function RemoteDirectoryDialog(props: {
-  open: boolean;
+  open: MaybeAccessor<boolean>;
   instanceId: string;
-  projects: readonly ProjectInfo[];
+  projects: MaybeAccessor<readonly ProjectInfo[]>;
   browsePorts: RemoteDirectoryBrowseDependencies;
   onClose: () => void;
   onSelect: (absolutePath: string) => void;
 }) {
+  const open = () => read(props.open);
+  const projectList = () => read(props.projects);
   const [snapshot, setSnapshot] = createSignal<RemoteDirectorySnapshot | null>(null);
   let browser: RemoteDirectoryBrowser | null = null;
 
@@ -28,7 +31,7 @@ export function RemoteDirectoryDialog(props: {
   };
 
   createEffect(() => {
-    if (!props.open) {
+    if (!open()) {
       installActiveRemoteDirectoryBrowser(null);
       browser?.close();
       browser = null;
@@ -37,7 +40,7 @@ export function RemoteDirectoryDialog(props: {
     }
     const active = ensureBrowser();
     installActiveRemoteDirectoryBrowser(active);
-    active.open(props.instanceId, props.projects);
+    active.open(props.instanceId, projectList());
   });
 
   const parentRelative = () => {
@@ -55,7 +58,7 @@ export function RemoteDirectoryDialog(props: {
   };
 
   return (
-    <Dialog open={props.open} onOpenChange={(open) => { if (!open) props.onClose(); }}>
+    <Dialog open={open()} onOpenChange={(nextOpen) => { if (!nextOpen) props.onClose(); }}>
       <DialogContent size="search" dismissible>
         <DialogHeader>
           <DialogTitle>Choose folder on remote computer</DialogTitle>
@@ -69,7 +72,7 @@ export function RemoteDirectoryDialog(props: {
               variant="inline"
               title="Could not list remote folders"
               description={snapshot()?.error ?? ''}
-              action={snapshot()?.retryable ? <Button onClick={() => ensureBrowser().open(props.instanceId, props.projects, snapshot()?.relativePath ?? '')}>Retry</Button> : undefined}
+              action={snapshot()?.retryable ? <Button onClick={() => ensureBrowser().open(props.instanceId, projectList(), snapshot()?.relativePath ?? '')}>Retry</Button> : undefined}
             />
           </Show>
           <Show when={!snapshot()?.error}>

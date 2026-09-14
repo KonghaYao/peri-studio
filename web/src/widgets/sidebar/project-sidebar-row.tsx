@@ -1,4 +1,5 @@
 import type { ProjectSessionInfo } from '@/entities/registry/registry-view';
+import { read, type MaybeAccessor } from '@/shared/lib/maybe-accessor';
 import {
   chatStatusSignal,
   chatTurnActiveSignal,
@@ -20,23 +21,23 @@ import type { ProjectSidebarModel } from './project-sidebar-model';
 
 export interface ProjectSidebarRowProps {
   model: ProjectSidebarModel;
-  session: ProjectSessionInfo;
-  projectId: string;
+  session: MaybeAccessor<ProjectSessionInfo>;
+  projectId: MaybeAccessor<string>;
   options?: { pinned?: boolean };
   onNavigate?: () => void;
 }
 
 export function ProjectSidebarRow(props: ProjectSidebarRowProps) {
-  const { model } = props;
-  const sessionId = props.session.id;
-  const menuKey = `${props.options?.pinned ? 'pinned' : 'workspace'}:${sessionId}`;
-  const selected = () => selectedSessionId() === sessionId;
-  const chatId = () => props.session.activeChatId;
-  const liveRuntime = () => sessionHasLiveRuntime(props.session, chatStatusSignal());
+  const session = () => read(props.session);
+  const sessionId = () => session().id;
+  const menuKey = () => `${props.options?.pinned ? 'pinned' : 'workspace'}:${sessionId()}`;
+  const selected = () => selectedSessionId() === sessionId();
+  const chatId = () => session().activeChatId;
+  const liveRuntime = () => sessionHasLiveRuntime(session(), chatStatusSignal());
   const state = () => runtimeState({
     hasSession: true,
-    lifecycle: props.session.lifecycle,
-    isOpening: openingSessionId() === sessionId && !liveRuntime(),
+    lifecycle: session().lifecycle,
+    isOpening: openingSessionId() === sessionId() && !liveRuntime(),
     hasRuntime: !!chatId(),
     isSelected: selected(),
     chatStatus: chatId() ? chatStatusSignal()[chatId()!] ?? null : null,
@@ -49,24 +50,23 @@ export function ProjectSidebarRow(props: ProjectSidebarRowProps) {
 
   return (
     <ProjectSessionRow
-      session={props.session}
-      state={state()}
-      selected={selected()}
-      navigationBusy={openingSessionId() === sessionId}
-      readOnly={readOnly()}
-      renameOpen={model.editing() === sessionId}
-      menuOpen={model.sessionMenu() === menuKey}
-      replacementBusy={creatingSessionProjectId() === props.projectId}
-      pinned={model.isSessionPinned(props.session)}
+      session={session}
+      state={state}
+      selected={selected}
+      readOnly={readOnly}
+      renameOpen={() => props.model.editing() === sessionId()}
+      menuOpen={() => props.model.sessionMenu() === menuKey()}
+      replacementBusy={() => creatingSessionProjectId() === read(props.projectId)}
+      pinned={() => props.model.isSessionPinned(session())}
       onNavigate={() => props.onNavigate?.()}
       onOpen={(sessionId, onCommitted) => { navigateProjectSession(sessionId, { onCommitted }); }}
       onSelectRuntime={(id) => { navigateProjectSession(id); }}
-      onRenameOpenChange={(open) => model.setEditing(open ? sessionId : null)}
-      onMenuOpenChange={(open) => model.setSessionMenu(open ? menuKey : null)}
+      onRenameOpenChange={(open) => props.model.setEditing(open ? sessionId() : null)}
+      onMenuOpenChange={(open) => props.model.setSessionMenu(open ? menuKey() : null)}
       onRename={renameProjectSession}
-      onCreateReplacement={(title) => { createProjectSession(props.projectId, title); }}
-      onArchiveRequest={model.requestArchiveSession}
-      onTogglePin={() => model.toggleSessionPin(sessionId)}
+      onCreateReplacement={(title) => { createProjectSession(read(props.projectId), title); }}
+      onArchiveRequest={props.model.requestArchiveSession}
+      onTogglePin={() => props.model.toggleSessionPin(sessionId())}
     />
   );
 }

@@ -1,11 +1,12 @@
 import { FileText, Menu } from 'lucide-solid';
 import type { Component, JSX } from 'solid-js';
 import { Show, splitProps } from 'solid-js';
+import { asAccessor, type MaybeAccessor } from '../lib/maybe-accessor';
 import { cn } from '../lib/cn';
 import { IconButton } from './Button';
 
 export type ChatHeaderProps = {
-  title: string;
+  title: MaybeAccessor<string>;
   launch?: boolean;
   class?: string;
   titleClass?: string;
@@ -22,6 +23,7 @@ export type ChatHeaderProps = {
 
 /** Chat 顶栏壳层：标题 + 可选移动端导航/资源按钮。 */
 export const ChatHeader: Component<ChatHeaderProps> = (props) => {
+  const title = () => asAccessor(props.title)();
   const [local] = splitProps(props, [
     'title',
     'launch',
@@ -73,7 +75,7 @@ export const ChatHeader: Component<ChatHeaderProps> = (props) => {
           local.titleClass,
         )}
       >
-        {local.title}
+        {title()}
       </strong>
       <Show when={local.launchTrailing}>{local.launchTrailing}</Show>
     </header>
