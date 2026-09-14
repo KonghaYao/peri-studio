@@ -1,0 +1,7 @@
+[
+  "Round 1: inspect this workspace with safe Bash and Read tools, then stream a rich markdown summary.",
+  "Round 2: run another harmless tool sweep and stream a detailed markdown report with headings, lists, code, and tables.",
+  "Round 3: one more safe tool pass, then finish this round with a large streaming markdown response.",
+  "Round 4: continue the benchmark — tools first, markdown summary last.",
+  "Round 5: keep going with Bash/Read only, then stream the final-style markdown for this round."
+]
