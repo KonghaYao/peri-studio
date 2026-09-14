@@ -11,8 +11,8 @@ import type { ProjectInfo, ProjectSessionInfo, SessionSummaryInfo, MachineInfo }
 import type { PersistentError } from '@/features/message/panel-errors';
 import type { SessionConfigMutation } from '@/features/message/user-actions';
 import type { Setter } from 'solid-js';
-import { installPrincipalRole } from '@/features/auth/auth-state';
-import { disconnect, resetConnectionState } from '@/features/connection/connection';
+import { installPrincipalRole, principalId } from '@/features/auth/auth-state';
+import { disconnect, forgetRememberedSession, resetConnectionState } from '@/features/connection/connection';
 import { resetElicitationResponses } from '@/features/message/elicitation-delivery';
 import { resetQuestionResponses } from '@/features/message/question-delivery';
 import { resetMessageDelivery } from '@/features/message/message-delivery';
@@ -62,6 +62,7 @@ export const AUTHENTICATED_SESSION_RESET_STEPS = [
   'resetConnectionState()',
   'clearCurrentCid',
   'setSelectedCid(null)',
+  'forgetRememberedSession()',
   'setSelectedSessionId(null)',
   'setChatEntries([])',
   'setChatHead(null)',
@@ -101,11 +102,13 @@ export function createResetAuthenticatedSession(deps: SessionResetDeps) {
     // Revoke mutation authority before settling callbacks from the old transport.
     // This function is intentionally idempotent: both the invalidation producer
     // and AuthGate consumer call it to make the identity boundary fail closed.
+    const previousPrincipal = principalId();
     installPrincipalRole(null);
     disconnect();
     resetConnectionState();
     deps.setCurrentCid(null);
     deps.setSelectedCid(null);
+    if (!options.preserveLocalDrafts) forgetRememberedSession(previousPrincipal);
     deps.setSelectedSessionId(null);
     deps.setChatEntries([]);
     deps.setChatHead(null);

@@ -13,6 +13,7 @@
 
 import { createSignal } from 'solid-js';
 import * as H from '@/shared/protocol/client';
+import { principalId } from '@/features/auth/auth-state';
 import { WsClient } from './ws-client';
 import type { ConnStatus, ConnDetail, WsProtocolIssue } from './ws-client';
 import { connectionTransition } from '@/features/connection/connection-state';
@@ -34,6 +35,7 @@ export { connectionReady };
 let ws: WsClient | null = null; // 当前 WsClient
 let connectionEpoch = 0; // 隔离被替换连接的延迟 status/frame 回调
 const LAST_SESSION_KEY = 'peri-studio:last-session';
+const LEGACY_LAST_SESSION_KEY = LAST_SESSION_KEY;
 
 interface ConnectionDeps {
   settleConnectionLoss: () => void;
@@ -106,18 +108,38 @@ export function resetConnectionState(): void {
   setConnectionProblem(null);
 }
 
+function lastSessionStorageKey(identity: string | null): string {
+  return identity
+    ? `${LAST_SESSION_KEY}:${encodeURIComponent(identity)}`
+    : LEGACY_LAST_SESSION_KEY;
+}
+
 export function rememberSession(sessionId: string): void {
-  try { window.localStorage.setItem(LAST_SESSION_KEY, sessionId); } catch { /* 浏览器禁用存储时退化为手动选择 */ }
+  try {
+    window.localStorage.setItem(lastSessionStorageKey(principalId()), sessionId);
+    if (principalId()) window.localStorage.removeItem(LEGACY_LAST_SESSION_KEY);
+  } catch { /* 浏览器禁用存储时退化为手动选择 */ }
 }
 
 export function readRememberedSession(): string | null {
-  let preferred: string | null = null;
-  try { preferred = window.localStorage.getItem(LAST_SESSION_KEY); } catch { /* 手动选择兜底 */ }
-  return preferred;
+  const identity = principalId();
+  try {
+    const scoped = window.localStorage.getItem(lastSessionStorageKey(identity));
+    if (scoped) return scoped;
+    if (identity) return window.localStorage.getItem(LEGACY_LAST_SESSION_KEY);
+    return window.localStorage.getItem(LEGACY_LAST_SESSION_KEY);
+  } catch {
+    return null;
+  }
 }
 
-export function forgetRememberedSession(): void {
-  try { window.localStorage.removeItem(LAST_SESSION_KEY); } catch { /* UI preference only */ }
+/** @param forPrincipal 显式 principal；reset 边界须在 installPrincipalRole(null) 前捕获并传入。 */
+export function forgetRememberedSession(forPrincipal?: string | null): void {
+  try {
+    const identity = forPrincipal !== undefined ? forPrincipal : principalId();
+    window.localStorage.removeItem(lastSessionStorageKey(identity));
+    window.localStorage.removeItem(LEGACY_LAST_SESSION_KEY);
+  } catch { /* UI preference only */ }
 }
 
 // ── 连接状态机回调（ws-client）────────────────────────────────────────

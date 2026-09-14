@@ -21,7 +21,8 @@ vi.mock('@/store', async () => {
     projectId: 'project-1',
     repositories: [],
     loading: [],
-    error: null,
+    explorerError: null,
+    graphError: null,
     directories: {
       '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory' }] },
     },
@@ -66,7 +67,8 @@ const { setBatch, setWorkspace, setMutationState, setCreatedFileFocus } = (panel
       projectId: string;
       repositories: never[];
       loading: never[];
-      error: null;
+      explorerError: null;
+      graphError: null;
       directories: Record<string, { generation: string; entries: Array<Record<string, unknown>> }>;
     }) => void;
   };
@@ -137,7 +139,7 @@ describe('Explorer upload interactions', () => {
 
   it('routes inline create and keyboard mutations through store use cases', async () => {
     setWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: {
         '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory', revision: 'rev-dir' }] },
         src: { generation: 'g2', entries: [{ id: 'note', name: 'note.txt', path: 'src/note.txt', kind: 'file', revision: 'rev-file' }] },
@@ -169,7 +171,7 @@ describe('Explorer upload interactions', () => {
 
   it('restores focus when refreshed mutation and new-file targets appear', async () => {
     setWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: {
         '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory', revision: 'rev-dir' }] },
         src: { generation: 'g2', entries: [{ id: 'old', name: 'old.txt', path: 'src/old.txt', kind: 'file', revision: 'rev-file' }] },
@@ -180,7 +182,7 @@ describe('Explorer upload interactions', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 0));
     setWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: {
         '': { generation: 'g3', entries: [
           { id: 'src', name: 'src', path: 'src', kind: 'directory', revision: 'rev-dir' },
@@ -194,7 +196,7 @@ describe('Explorer upload interactions', () => {
     for (const [commandId, path] of [['rename', 'src/renamed.txt'], ['move', 'src/moved.txt']] as const) {
       setMutationState({ projectId: 'project-1', commandId, phase: 'idle', message: null, focusPath: path });
       setWorkspace({
-        projectId: 'project-1', repositories: [], loading: [], error: null,
+        projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
         directories: {
           '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory', revision: 'rev-dir' }] },
           src: { generation: commandId, entries: [{ id: commandId, name: path.split('/').at(-1), path, kind: 'file', revision: commandId }] },
@@ -205,7 +207,7 @@ describe('Explorer upload interactions', () => {
 
     setMutationState({ projectId: 'project-1', commandId: 'delete', phase: 'idle', message: null, focusPath: 'src' });
     setWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: {
         '': { generation: 'g4', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory', revision: 'rev-dir' }] },
         src: { generation: 'g4', entries: [] },
@@ -215,7 +217,7 @@ describe('Explorer upload interactions', () => {
 
     setMutationState({ projectId: 'project-1', commandId: 'root-delete', phase: 'idle', message: null, focusPath: '' });
     setWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: {
         '': { generation: 'g-root', entries: [{ id: 'other', name: 'other.txt', path: 'other.txt', kind: 'file', revision: 'rev-other' }] },
       },
@@ -224,7 +226,7 @@ describe('Explorer upload interactions', () => {
 
     setCreatedFileFocus({ id: 'upload-1', path: 'src/draft.txt' });
     setWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: {
         '': { generation: 'g4', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory', revision: 'rev-dir' }] },
         src: { generation: 'g5', entries: [{ id: 'draft', name: 'draft.txt', path: 'src/draft.txt', kind: 'file', revision: 'rev-draft' }] },
@@ -235,7 +237,7 @@ describe('Explorer upload interactions', () => {
 
   it('deletes an empty directory through the permanent danger confirmation', async () => {
     setWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: {
         '': { generation: 'g1', entries: [{ id: 'empty', name: 'empty', path: 'empty', kind: 'directory', revision: 'rev-empty' }] },
         empty: { generation: 'g2', entries: [] },
@@ -254,7 +256,7 @@ describe('Explorer upload interactions', () => {
 
   it('loads and reveals each collapsed ancestor before focusing a nested target', async () => {
     setWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: {
         '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory', revision: 'rev-src' }] },
       },
@@ -264,7 +266,7 @@ describe('Explorer upload interactions', () => {
 
     await waitFor(() => expect(mocks.openDirectory).toHaveBeenCalledWith('src'));
     setWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: {
         '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory', revision: 'rev-src' }] },
         src: { generation: 'g2', entries: [{ id: 'generated', name: 'generated', path: 'src/generated', kind: 'directory', revision: 'rev-generated' }] },
@@ -272,7 +274,7 @@ describe('Explorer upload interactions', () => {
     });
     await waitFor(() => expect(mocks.openDirectory).toHaveBeenCalledWith('src/generated'));
     setWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: {
         '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory', revision: 'rev-src' }] },
         src: { generation: 'g2', entries: [{ id: 'generated', name: 'generated', path: 'src/generated', kind: 'directory', revision: 'rev-generated' }] },

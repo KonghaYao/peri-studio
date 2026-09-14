@@ -28,7 +28,7 @@ export function ProjectSidebar(props: ProjectSidebarProps) {
     >
       <SessionSearch open={model.searchOpen} onClose={() => model.setSearchOpen(false)} onSelected={props.onNavigate} />
       <ProjectSidebarArchive model={model} />
-      <Show when={readOnly()}><div class="px-2.5 pb-2 text-11 font-semibold text-warning">Read-only mode</div></Show>
+      <Show when={readOnly()}><div class="px-2.5 pb-2 text-11 text-warning">Read-only mode. Session catalog may be incomplete because the server does not allow session discovery for read-only tokens.</div></Show>
       <ProjectSidebarRemoteDir model={model} />
       <ProjectSidebarTree model={model} onNavigate={props.onNavigate} />
     </SidebarChrome>

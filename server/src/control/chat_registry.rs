@@ -116,12 +116,15 @@ pub enum ChatError {
 // 结构拆分：binding 生命周期 / restart 对账 / 活动 turn 为同目录实现段。
 #[path = "chat_binding.rs"]
 mod chat_binding;
+#[path = "chat_orphan_kill.rs"]
+mod chat_orphan_kill;
 #[path = "chat_reconcile.rs"]
 mod chat_reconcile;
 #[path = "chat_turns.rs"]
 mod chat_turns;
 
 pub use chat_reconcile::ReconciliationReport;
+pub(crate) use chat_orphan_kill::{orphan_kill_backoff, ORPHAN_KILL_MAX_ATTEMPTS};
 
 /// 活动 turn 表条目（#3 增量窗口计时：turn 活跃期间的 last_activity 由
 /// relay 事件投递成功（[`ChatRegistry::touch_active_turn`]）续命；
@@ -147,6 +150,10 @@ struct ChatInner {
     bindings: RwLock<HashMap<String, String>>,
     /// pending_close 补发集合（§7.6）。
     pending_close: RwLock<HashSet<String>>,
+    /// orphan kill 失败待重试（S-04：heartbeat 对账补发，§7.5/§7.6）。
+    pending_orphan_kill: RwLock<HashMap<String, chat_orphan_kill::OrphanKillRetry>>,
+    /// 串行化同一 chat 的 orphan kill，避免并发 kill 成功后被晚到失败重新登记 pending。
+    orphan_kill_gates: Mutex<HashMap<String, Weak<Mutex<()>>>>,
     /// 活动 turn 登记（chat → turn 条目；断链清理输入，§7.1「活动 turn →
     /// interrupted」。coordinator 登记、relay touch 续命、断链清理消费；
     /// #3 last_activity 增量窗口计时）。
@@ -175,6 +182,8 @@ impl ChatRegistry {
                 chats: RwLock::new(HashMap::new()),
                 bindings: RwLock::new(HashMap::new()),
                 pending_close: RwLock::new(HashSet::new()),
+                pending_orphan_kill: RwLock::new(HashMap::new()),
+                orphan_kill_gates: Mutex::new(HashMap::new()),
                 active_turns: RwLock::new(HashMap::new()),
                 ephemeral_chats: RwLock::new(HashSet::new()),
                 extensions: RwLock::new(HashMap::new()),

@@ -26,12 +26,16 @@ type SourceControlPanelProps = {
 };
 
 export function SourceControlPanel(props: SourceControlPanelProps = {}) {
+  const awaitingInitialRepositories = () =>
+    resourceWorkspace().loading.includes('repositories')
+    && resourceWorkspace().repositories.length === 0;
+
   return <section class="flex min-h-0 flex-1 flex-col" aria-label="Source Control">
     <Show when={!props.embedded}>
       <ResourceSectionTitle>Source Control</ResourceSectionTitle>
     </Show>
     <div class="ui-scrollbar min-h-0 flex-1 overflow-auto pb-12">
-      <Show when={!resourceWorkspace().loading.includes('repositories')} fallback={<LoadingState label="Reading repositories" class="m-8 p-8! text-left!" />}>
+      <Show when={!awaitingInitialRepositories()} fallback={<LoadingState label="Reading repositories" class="m-8 p-8! text-left!" />}>
         <Show when={resourceWorkspace().repositories.length} fallback={<div class="px-14 py-18 text-12 leading-18 text-content-muted">No Git repository was found in this workspace.</div>}>
           <For each={resourceWorkspace().repositories}>{(repo) => <Repository repo={repo} commitMessage={props.commitMessages?.[repo.id]} onCommitMessageChange={props.onCommitMessageChange} onCommitSubmitted={props.onCommitSubmitted} onPreviewIntent={props.onPreviewIntent} />}</For>
         </Show>

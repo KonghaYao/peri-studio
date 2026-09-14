@@ -234,4 +234,29 @@ describe('remembered session', () => {
     forgetRememberedSession();
     expect(readRememberedSession()).toBeNull();
   });
+
+  it('scopes remembered sessions by principal id', async () => {
+    installTestDeps();
+    const { installPrincipalRole } = await import('@/features/auth/auth-state');
+    installPrincipalRole('full', 'principal-a');
+    rememberSession('session-a');
+    installPrincipalRole('full', 'principal-b');
+    expect(readRememberedSession()).toBeNull();
+    rememberSession('session-b');
+    installPrincipalRole('full', 'principal-a');
+    expect(readRememberedSession()).toBe('session-a');
+    forgetRememberedSession();
+    expect(readRememberedSession()).toBeNull();
+  });
+
+  it('forgets a scoped bucket after principal is cleared', async () => {
+    installTestDeps();
+    const { installPrincipalRole } = await import('@/features/auth/auth-state');
+    installPrincipalRole('full', 'principal-a');
+    rememberSession('session-a');
+    installPrincipalRole(null);
+    forgetRememberedSession('principal-a');
+    installPrincipalRole('full', 'principal-a');
+    expect(readRememberedSession()).toBeNull();
+  });
 });

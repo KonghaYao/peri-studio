@@ -6,9 +6,10 @@
 //! 拆分，行为语义不变）。
 
 use tokio::sync::oneshot;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 use super::*;
+use crate::control::chat_registry::{orphan_kill_backoff, ORPHAN_KILL_MAX_ATTEMPTS};
 
 impl InstanceRegistry {
     /// 目标 instance 是否在线且声明 structural FS mutation 能力。
@@ -298,8 +299,17 @@ impl InstanceRegistry {
         {
             Ok(r) => r,
             Err(e) => {
-                warn!(instance_id, error = ?e, "orphan cleanup reconcile failed");
-                return Vec::new();
+                error!(
+                    instance_id,
+                    error = ?e,
+                    "orphan cleanup reconcile failed; pending orphan kills will retry on next heartbeat"
+                );
+                let pending = self
+                    .inner
+                    .chats
+                    .orphan_kill_retry_ready(instance_id)
+                    .await;
+                return self.kill_chats(instance_id, &pending).await;
             }
         };
         self.kill_chats(instance_id, &report.to_kill).await
@@ -312,7 +322,17 @@ impl InstanceRegistry {
         let report = match self.inner.chats.reconcile_alive(instance_id, alive).await {
             Ok(r) => r,
             Err(e) => {
-                warn!(instance_id, error = ?e, "heartbeat reconciliation failed");
+                error!(
+                    instance_id,
+                    error = ?e,
+                    "heartbeat reconciliation failed; pending orphan kills will retry on next heartbeat"
+                );
+                let pending = self
+                    .inner
+                    .chats
+                    .orphan_kill_retry_ready(instance_id)
+                    .await;
+                self.kill_chats(instance_id, &pending).await;
                 return;
             }
         };
@@ -340,26 +360,29 @@ impl InstanceRegistry {
 
     /// kill 裁决下发（§7.5/§7.6）：对 `to_kill` 逐个补发 `instance/kill`
     /// （幂等，已死成功返回），成功后 chat 置 Closed（「Registry 标记已清理」）。
+    /// S-04：单次调用内有界指数退避重试；仍失败则进入 pending_orphan_kill，
+    /// 由下次 heartbeat 对账补发。
     async fn kill_chats(&self, instance_id: &str, to_kill: &[String]) -> Vec<String> {
         let mut killed = Vec::new();
         for sid in to_kill {
-            let command_id = uuid::Uuid::new_v4().to_string();
-            let cmd = InstanceKill {
-                command_id: command_id.clone(),
-                chat_id: sid.clone(),
-                grace: None,
-            };
-            match self.send_kill(instance_id, cmd).await {
-                Ok(_) => {
-                    killed.push(sid.clone());
-                    // 意外存活/终态清理完成 → chat 置 Closed（§7.5「Registry
-                    // 标记已清理」；pending_close 集合在 transition(Closed)
-                    // 中清除，§7.6）。
-                    if let Ok(()) = self.inner.chats.transition(sid, ChatState::Closed).await {
-                        // noop
-                    }
+            let _gate = self.inner.chats.orphan_kill_gate(sid).await;
+            if !self.inner.chats.orphan_kill_ready(sid).await {
+                continue;
+            }
+            match self.kill_chat_with_bounded_retry(instance_id, sid).await {
+                Ok(()) => killed.push(sid.clone()),
+                Err(e) => {
+                    error!(
+                        instance_id,
+                        chat_id = sid,
+                        error = ?e,
+                        "orphan kill failed after bounded retries"
+                    );
+                    self.inner
+                        .chats
+                        .record_orphan_kill_failure(sid, instance_id)
+                        .await;
                 }
-                Err(e) => warn!(instance_id, chat_id = sid, error = ?e, "orphan kill failed"),
             }
         }
         if !killed.is_empty() {
@@ -370,6 +393,52 @@ impl InstanceRegistry {
             );
         }
         killed
+    }
+
+    /// 对单个 chat 执行有界 orphan kill（指数退避，禁止无界重试）。
+    async fn kill_chat_with_bounded_retry(
+        &self,
+        instance_id: &str,
+        chat_id: &str,
+    ) -> Result<(), InstanceError> {
+        let mut last_err = None;
+        for attempt in 1..=ORPHAN_KILL_MAX_ATTEMPTS {
+            if attempt > 1 {
+                tokio::time::sleep(orphan_kill_backoff(attempt - 1)).await;
+            }
+            let command_id = uuid::Uuid::new_v4().to_string();
+            let cmd = InstanceKill {
+                command_id: command_id.clone(),
+                chat_id: chat_id.to_string(),
+                grace: None,
+            };
+            match self.send_kill(instance_id, cmd).await {
+                Ok(_) => {
+                    self.inner.chats.clear_orphan_kill_pending(chat_id).await;
+                    // 意外存活/终态清理完成 → chat 置 Closed（§7.5「Registry
+                    // 标记已清理」；pending_close 集合在 transition(Closed)
+                    // 中清除，§7.6）。
+                    let _ = self
+                        .inner
+                        .chats
+                        .transition(chat_id, ChatState::Closed)
+                        .await;
+                    return Ok(());
+                }
+                Err(e) => {
+                    warn!(
+                        instance_id,
+                        chat_id,
+                        attempt,
+                        max_attempts = ORPHAN_KILL_MAX_ATTEMPTS,
+                        error = ?e,
+                        "orphan kill attempt failed"
+                    );
+                    last_err = Some(e);
+                }
+            }
+        }
+        Err(last_err.unwrap_or(InstanceError::ConnectionGone))
     }
 
     /// 打开 PTY；完成结果由 `TerminalService::on_instance_opened` 独立消费。

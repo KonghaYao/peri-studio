@@ -4,6 +4,7 @@ import { openResourceFile, openResourceView, releaseResourceView, type GitAction
 import { GitMutationController } from './resource-mutations';
 import { downloadResourceUrl, loadFilePreview, type ResourceFilePreviewState } from './resource-preview';
 import { renderResourceView, type ResourceEntry, type ResourceView } from '@/entities/resource/resource-view';
+import { resourceErrorDomain } from './resource-error-domain';
 import { initialResourceWorkspace as initial, reduceResourceView, type ResourceWorkspaceState } from './resource-state';
 export type { DirectoryState, RepositoryState, ResourceWorkspaceState } from './resource-state';
 
@@ -41,8 +42,13 @@ docs.onUpdate = (docId) => {
 };
 
 export function activateResourceProject(projectId: string): void {
-  if (resourceWorkspace().projectId !== projectId) resetResourceProject();
-  setResourceWorkspace((state) => ({ ...state, projectId, error: null }));
+  const switchedProject = resourceWorkspace().projectId !== projectId;
+  if (switchedProject) resetResourceProject();
+  setResourceWorkspace((state) => ({
+    ...state,
+    projectId,
+    ...(switchedProject ? { explorerError: null, graphError: null, stale: false } : {}),
+  }));
   if (!transport?.ready()) return;
   request(projectId, 'directory:', { kind: 'fs-directory-page', path: '' });
   request(projectId, 'repositories', { kind: 'workspace-repositories-page' });
@@ -174,8 +180,19 @@ export function retryGitRepositoryMutation(repoId: string): boolean {
 export function refreshResourceProject(): void {
   const projectId = resourceWorkspace().projectId;
   if (!projectId) return;
-  resetResourceProject();
-  activateResourceProject(projectId);
+  const snapshot = resourceWorkspace();
+  releaseResourceTransportState();
+  setResourceWorkspace({
+    ...snapshot,
+    projectId,
+    stale: true,
+    explorerError: null,
+    graphError: null,
+    loading: [...new Set([...snapshot.loading, 'directory:', 'repositories'])],
+  });
+  if (!transport?.ready()) return;
+  request(projectId, 'directory:', { kind: 'fs-directory-page', path: '' });
+  request(projectId, 'repositories', { kind: 'workspace-repositories-page' });
 }
 
 export function handleResourceResult(frame: ResourceResultFrame): void {
@@ -224,14 +241,14 @@ export function handleResourceResult(frame: ResourceResultFrame): void {
         return;
       }
     }
-    setResourceWorkspace((state) => ({ ...state, error: frame.error!.message }));
+    setResourceWorkspaceError(key, frame.error!.message);
     return;
   }
   if (frame.result?.kind === 'view') {
     const expiresAt = Date.parse(frame.result.data.leaseExpiresAt);
     if (!Number.isFinite(expiresAt) || expiresAt <= Date.now() || !owner) {
       transport?.send(releaseResourceView(frame.result.data.viewId));
-      setResourceWorkspace((state) => ({ ...state, error: 'Resource view lease expired before it could be opened.' }));
+      setResourceWorkspaceError(key, 'Resource view lease expired before it could be opened.');
       return;
     }
     const lease: OpenResourceLease = {
@@ -337,6 +354,12 @@ export function replayResourceSubscriptions(): void {
 }
 
 export function resetResourceProject(): void {
+  releaseResourceTransportState();
+  setResourceFilePreview(null);
+  setResourceWorkspace(initial());
+}
+
+function releaseResourceTransportState(): void {
   resourceGeneration += 1;
   if (transport) {
     for (const [docId, lease] of openViews) {
@@ -354,8 +377,15 @@ export function resetResourceProject(): void {
   openViewKeys.clear();
   requested.clear();
   activeLogViews.clear();
-  setResourceFilePreview(null);
-  setResourceWorkspace(initial());
+}
+
+function setResourceWorkspaceError(key: string | undefined, message: string): void {
+  const domain = resourceErrorDomain(key);
+  setResourceWorkspace((state) => (
+    domain === 'graph'
+      ? { ...state, graphError: message }
+      : { ...state, explorerError: message }
+  ));
 }
 
 function updateFilePreview(requestId: string, patch: Partial<ResourceFilePreviewState>) {
@@ -393,7 +423,7 @@ function expireLease(docId: string, lease: OpenResourceLease): void {
   if (openViews.get(docId) !== lease) return;
   if (lease.timer !== undefined) window.clearTimeout(lease.timer);
   releaseDocLease(docId);
-  setResourceWorkspace((state) => ({ ...state, error: 'Resource view lease expired before synchronization completed.' }));
+  setResourceWorkspaceError(openViewKeys.get(docId), 'Resource view lease expired before synchronization completed.');
 }
 
 function setLoading(key: string, loading: boolean) {

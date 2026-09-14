@@ -3,6 +3,11 @@
 import { createEffect, createRoot, type Accessor } from 'solid-js';
 import { createSessionCatalogBootstrap } from '@/features/catalog/session-catalog-bootstrap';
 import { selectActiveProjects } from '@/features/catalog/project-catalog';
+import {
+  clearCatalogDiscoverFailure,
+  resetCatalogDiscoverFailures,
+  setCatalogDiscoverFailure,
+} from '@/features/catalog/catalog-discover-state';
 import type { CatalogActions } from '@/features/catalog/catalog-actions';
 import type { ProjectInfo } from '@/entities/registry/registry-view';
 
@@ -18,6 +23,7 @@ export function scheduleSessionCatalogBootstrap(): void {
 
 export function resetSessionCatalogBootstrap(): void {
   sessionCatalogBootstrap?.reset();
+  resetCatalogDiscoverFailures();
 }
 
 export function isProjectCatalogBootstrapPending(projectId: string): boolean {
@@ -30,13 +36,34 @@ export function wireSessionCatalogBootstrap(deps: {
   projects: Accessor<ProjectInfo[]>;
   registryHydrated: () => boolean;
   catalogActions: CatalogActions;
+  toast: (message: string) => void;
 }): void {
   sessionCatalogBootstrap = createSessionCatalogBootstrap({
     isReady: deps.connectionReady,
     isReadOnly: deps.readOnly,
     activeProjectIds: () => selectActiveProjects(deps.projects()).map((project) => project.id),
-    discover: (projectId, onSettled) =>
-      deps.catalogActions.discoverSessions(projectId, onSettled, onSettled),
+    discover: (projectId, onSettled) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        onSettled();
+      };
+      const started = deps.catalogActions.discoverSessions(
+        projectId,
+        () => {
+          clearCatalogDiscoverFailure(projectId);
+          finish();
+        },
+        (message) => {
+          setCatalogDiscoverFailure(projectId, message);
+          deps.toast(message);
+          finish();
+        },
+      );
+      if (!started) finish();
+      return started;
+    },
   });
 
   createRoot(() => {

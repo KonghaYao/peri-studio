@@ -96,6 +96,8 @@ describe('Composer attachments', () => {
     expect(screen.getByTestId('composer-surface')).toHaveAttribute('data-composer-expanded', 'true');
     expect(screen.getByTestId('composer-attachment-upload-1')).toBeInTheDocument();
     expect(screen.queryByTestId('upload-asset-tile')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    expect(screen.getByText('Wait for attachments to finish uploading before sending.')).toBeInTheDocument();
   });
 
   it('shows a remove button for ready uploads', () => {

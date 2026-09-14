@@ -7,7 +7,9 @@ export type ResourceWorkbenchRequest = {
 };
 
 export type OpenWorkspaceFromToolPorts = {
+  projectId: () => string | undefined;
   projectCwd: () => string | undefined;
+  activateResourceProject: (projectId: string) => void;
   requestWorkbench: (request: ResourceWorkbenchRequest) => void;
   openFilePreview: (path: string) => void;
 };
@@ -16,6 +18,9 @@ export type OpenWorkspaceFromToolPorts = {
 export function openWorkspaceFromTool(rawPath: string, ports: OpenWorkspaceFromToolPorts): void {
   const path = normalizeWorkspaceRelativePath(rawPath, ports.projectCwd());
   if (!path) return;
+  const projectId = ports.projectId();
+  if (!projectId) return;
+  ports.activateResourceProject(projectId);
   ports.requestWorkbench({ nonce: Date.now(), view: 'explorer', activePath: path });
   ports.openFilePreview(path);
 }

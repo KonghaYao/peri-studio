@@ -276,16 +276,28 @@ export function createAuthController(deps: AuthControllerDeps) {
   }
 
   async function logout() {
-    requestEpoch += 1;
-    forgetToken();
-    resetRuntime();
-    clearAuthInvalidation();
-    installPrincipalRole(null);
-    setState('signed-out');
+    const epoch = ++requestEpoch;
+    setProblem(null);
     try {
-      await fetch('/api/auth/session', { method: 'DELETE', credentials: 'same-origin' });
+      const res = await fetchAuth('/api/auth/session', { method: 'DELETE', credentials: 'same-origin' });
+      if (epoch !== requestEpoch) return;
+      if (!res.ok) {
+        setProblem(authFeedback(res.status, 'login'));
+        return;
+      }
+      forgetToken();
+      resetRuntime();
+      clearAuthInvalidation();
+      installPrincipalRole(null);
+      setState('signed-out');
     } catch {
-      setProblem({ kind: 'network', message: 'Signed out locally, but the server did not confirm the logout. Re-check your sign-in state after the connection recovers.', retryable: true });
+      if (epoch === requestEpoch) {
+        setProblem({
+          kind: 'network',
+          message: 'Could not sign out because the server did not respond. Your session is still active; try again once the connection recovers.',
+          retryable: true,
+        });
+      }
     }
   }
 

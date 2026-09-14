@@ -8,6 +8,8 @@ const store = vi.hoisted(() => ({
   projects: vi.fn(() => [{ id: 'p1', name: 'Perihelion', cwd: '/repo', archivedAt: null }]),
   readOnly: vi.fn(() => false),
   selectedSessionId: vi.fn(() => null),
+  discoveringSessionsProjectId: vi.fn(() => null as string | null),
+  isProjectCatalogBootstrapPending: vi.fn(() => false),
 }));
 vi.mock('@/store', () => store);
 vi.mock('@/features/auth/auth-state', () => ({ readOnly: store.readOnly }));
@@ -18,6 +20,8 @@ describe('SessionSearch', () => {
   beforeEach(() => {
     store.navigateProjectSession.mockReset();
     store.openingSessionId.mockReturnValue(null);
+    store.discoveringSessionsProjectId.mockReturnValue(null);
+    store.isProjectCatalogBootstrapPending.mockReturnValue(false);
   });
 
   it('keeps the search context until the exact open commits', async () => {
@@ -55,6 +59,14 @@ describe('SessionSearch', () => {
     expect(input).toHaveValue('New conversation');
     expect(screen.getByRole('alert')).toHaveTextContent('Opening is not confirmed yet');
     expect(screen.getByRole('alert')).toHaveTextContent('The current session was not switched');
+  });
+
+  it('shows loading instead of an empty result while catalog bootstrap is pending', async () => {
+    store.isProjectCatalogBootstrapPending.mockReturnValue(true);
+    render(() => <SessionSearch open onClose={() => {}} />);
+    fireEvent.input(screen.getByRole('textbox', { name: 'Search sessions' }), { target: { value: 'New conversation' } });
+    expect(await screen.findByText('Still loading sessions…')).toBeInTheDocument();
+    expect(screen.queryByText('No matching saved sessions')).toBeNull();
   });
 
   it('keeps listbox keyboard navigation semantic while selecting the exact session', async () => {

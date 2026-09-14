@@ -388,7 +388,7 @@ export function installVisualScenario(value: string | null | undefined): { scena
   if (id === 'long-conversation') {
     const longControl = control(true);
     selectConversation(longConversationEntries, { ...longControl, pendingPermissions: [], activeTurn: longControl.activeTurn ? { ...longControl.activeTurn, turnStatus: 'running' } : null });
-    setResourceWorkspace({ projectId: 'project-perihelion', loading: [], error: null, directories: {}, repositories: [{
+    setResourceWorkspace({ projectId: 'project-perihelion', loading: [], explorerError: null, graphError: null, directories: {}, repositories: [{
       id: 'repo-long', root: '', name: 'peri-studio', headName: 'main', generation: 'long-1', ahead: 0, behind: 0,
       groups: {
         index: { count: 1, revision: 'index-long', changes: [{ id: 'long-a', path: 'web/src/widgets/shell/StatusArea.tsx', status: 'modified' }] },
@@ -402,7 +402,8 @@ export function installVisualScenario(value: string | null | undefined): { scena
     setResourceWorkspace({
       projectId: 'project-perihelion',
       loading: [],
-      error: null,
+      explorerError: null,
+      graphError: null,
       directories: {
         '': { generation: 'root-1', entries: [
           { id: 'src', name: 'src', path: 'src', kind: 'directory' },

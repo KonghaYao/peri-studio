@@ -23,6 +23,26 @@ describe('session-catalog-bootstrap', () => {
     expect(pendingSnapshots[0]).toEqual(['p1', 'p2']);
   });
 
+  it('reschedules discover after reset on reconnect', () => {
+    const discover = vi.fn((_id: string, onSettled: () => void) => {
+      onSettled();
+      return true;
+    });
+    const bootstrap = createSessionCatalogBootstrap({
+      isReady: () => true,
+      isReadOnly: () => false,
+      activeProjectIds: () => ['p1'],
+      discover,
+    });
+
+    bootstrap.schedule();
+    bootstrap.schedule();
+    expect(discover).toHaveBeenCalledTimes(1);
+    bootstrap.reset();
+    bootstrap.schedule();
+    expect(discover).toHaveBeenCalledTimes(2);
+  });
+
   it('runs only once until reset', () => {
     const discover = vi.fn((_id: string, onSettled: () => void) => {
       onSettled();

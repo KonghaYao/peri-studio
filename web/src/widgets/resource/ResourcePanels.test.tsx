@@ -41,7 +41,7 @@ describe('VS Code-style resource panels', () => {
   it('uses the shared compact tree geometry for selected files', () => {
     installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
     setResourceWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: { '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory' }] } },
     });
     render(() => <ExplorerPanel />);
@@ -57,7 +57,7 @@ describe('VS Code-style resource panels', () => {
     installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
     installPrincipalRole('full');
     setResourceWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: { '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory' }] } },
     });
     render(() => <ExplorerPanel />);
@@ -108,7 +108,7 @@ describe('VS Code-style resource panels', () => {
     setProjectSessions([{ id: 'session-1', projectId: 'project-1', acpSessionId: 'acp-1', title: 'Work', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: null, archivedAt: null }]);
     setSelectedSessionId('session-1');
     setResourceWorkspace({
-      projectId: 'project-1', directories: {}, loading: [], error: null,
+      projectId: 'project-1', directories: {}, loading: [], explorerError: null, graphError: null,
       repositories: [{ id: 'repo-1', root: '', name: 'peri-studio', generation: 'g1', groups: { working_tree: { count: 2, revision: 'r1', changes: [{ id: 'c1', path: 'a.ts' }, { id: 'c2', path: 'b.ts' }] } } }],
     });
     render(() => <ResourceWorkbench />);
@@ -131,7 +131,7 @@ describe('VS Code-style resource panels', () => {
     setProjectSessions([{ id: 'session-1', projectId: 'project-1', acpSessionId: 'acp-1', title: 'Work', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: null, archivedAt: null }]);
     setSelectedSessionId('session-1');
     setResourceWorkspace({
-      projectId: 'project-1', directories: {}, loading: [], error: null,
+      projectId: 'project-1', directories: {}, loading: [], explorerError: null, graphError: null,
       repositories: [{ id: 'repo-1', root: '', name: 'peri-studio', generation: 'g1', groups: {} }],
     });
     render(() => <ResourceWorkbench />);
@@ -186,7 +186,7 @@ describe('VS Code-style resource panels', () => {
     vi.advanceTimersByTime(1_000);
     expect(sent).toContainEqual({ t: 'ysync.unsubscribe', docs: ['resource:view-lease'] });
     expect(sent).toContainEqual(expect.objectContaining({ type: 'resource/release-view', payload: { viewId: 'view-lease' } }));
-    expect(resourceWorkspace().error).toMatch(/lease expired/i);
+    expect(resourceWorkspace().explorerError).toMatch(/lease expired/i);
     vi.useRealTimers();
   });
 
@@ -215,7 +215,7 @@ describe('VS Code-style resource panels', () => {
   it('keeps existing explorer rows mounted when another folder expands', async () => {
     installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
     setResourceWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: {
         '': {
           generation: 'g1',
@@ -247,7 +247,7 @@ describe('VS Code-style resource panels', () => {
   it('keeps sibling explorer rows mounted when a directory page arrives after expand', async () => {
     installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
     setResourceWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: {
         '': {
           generation: 'g1',
@@ -287,7 +287,7 @@ describe('VS Code-style resource panels', () => {
     setProjectSessions([{ id: 'session-1', projectId: 'project-1', acpSessionId: 'acp-1', title: 'Work', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: null, archivedAt: null }]);
     setSelectedSessionId('session-1');
     setResourceWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: {
         '': {
           generation: 'g1',
@@ -309,7 +309,7 @@ describe('VS Code-style resource panels', () => {
   it('navigates the Explorer as a single-tab-stop ARIA tree', async () => {
     installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
     setResourceWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: {
         '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory' }] },
         src: { generation: 'g2', entries: [{ id: 'main', name: 'main.ts', path: 'src/main.ts', kind: 'file', size: 24 }] },
@@ -356,7 +356,7 @@ describe('VS Code-style resource panels', () => {
     installPrincipalRole('full');
     installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
     setResourceWorkspace({
-      projectId: 'project-1', repositories: [], loading: [], error: null,
+      projectId: 'project-1', repositories: [], loading: [], explorerError: null, graphError: null,
       directories: {
         '': { generation: 'g1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory', revision: 'rev' }] },
         src: { generation: 'g2', entries: [{ id: 'note', name: 'note.txt', path: 'src/note.txt', kind: 'file', revision: 'rev-file' }] },
@@ -385,7 +385,7 @@ describe('VS Code-style resource panels', () => {
         '': { generation: 'g1', nextCursor: 'g1.1', entries: [{ id: 'src', name: 'src', path: 'src', kind: 'directory' }] },
         src: { generation: 'g2', entries: [{ id: 'main', name: 'main.ts', path: 'src/main.ts', kind: 'file', size: 24 }] },
       },
-      repositories: [], loading: [], error: null,
+      repositories: [], loading: [], explorerError: null, graphError: null,
     });
     render(() => <ExplorerPanel />);
     await fireEvent.click(screen.getByRole('treeitem', { name: /src/i }));
@@ -429,7 +429,7 @@ describe('VS Code-style resource panels', () => {
     installResourceStore({ send: (frame) => { sent.push(frame); return true; }, ready: () => true, toast: vi.fn() });
     installPrincipalRole('full');
     setResourceWorkspace({
-      projectId: 'project-1', directories: {}, loading: [], error: null,
+      projectId: 'project-1', directories: {}, loading: [], explorerError: null, graphError: null,
       repositories: [{
         id: 'repo-1', root: '', name: 'peri-studio', headName: 'main', generation: 'g1', groups: {
           working_tree: { count: 1, revision: 'r1', nextCursor: 'g1.1', changes: [{ id: 'c1', path: 'src/main.ts', status: 'modified' }] },
@@ -492,12 +492,12 @@ describe('VS Code-style resource panels', () => {
     setProjectSessions([{ id: 'session-1', projectId: 'project-1', acpSessionId: 'acp-1', title: 'Work', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: null, archivedAt: null }]);
     setSelectedSessionId('session-1');
     setResourceWorkspace({
-      projectId: 'project-1', directories: {}, loading: [], error: null,
+      projectId: 'project-1', directories: {}, loading: [], explorerError: null, graphError: null,
       repositories: [repository],
     });
     const [view, setView] = createSignal<'explorer' | 'scm'>('scm');
     render(() => <ResourceWorkbench view={view()} onViewChange={(next) => { if (next === 'explorer' || next === 'scm') setView(next); }} />);
-    setResourceWorkspace({ projectId: 'project-1', directories: {}, loading: [], error: null, repositories: [repository] });
+    setResourceWorkspace({ projectId: 'project-1', directories: {}, loading: [], explorerError: null, graphError: null, repositories: [repository] });
 
     const message = await screen.findByRole('textbox', { name: 'Commit message' });
     const commit = screen.getByRole('button', { name: 'Commit staged changes' });
@@ -544,7 +544,7 @@ describe('VS Code-style resource panels', () => {
     installResourceStore({ send: (frame) => { sent.push(frame); return true; }, ready: () => true, toast: vi.fn() });
     installPrincipalRole('full');
     setResourceWorkspace({
-      projectId: 'project-1', directories: {}, loading: [], error: null,
+      projectId: 'project-1', directories: {}, loading: [], explorerError: null, graphError: null,
       repositories: [{
         id: 'repo-1', root: '', name: 'peri-studio', headName: 'main', generation: 'g1',
         groups: { working_tree: { count: 1, revision: 'r1', changes: [{ id: 'c1', path: 'src/main.ts', status: 'modified' }] } },
@@ -566,7 +566,7 @@ describe('VS Code-style resource panels', () => {
     installResourceStore({ send: (frame) => { sent.push(frame); return true; }, ready: () => true, toast: vi.fn() });
     installPrincipalRole('full');
     setResourceWorkspace({
-      projectId: 'project-1', directories: {}, loading: [], error: null,
+      projectId: 'project-1', directories: {}, loading: [], explorerError: null, graphError: null,
       repositories: [{ id: 'repo-1', root: '', name: 'peri-studio', headName: 'main', upstream: 'origin/main', generation: 'g1', ahead: 1, behind: 2, groups: {} }],
     });
     render(() => <SourceControlPanel />);
@@ -583,7 +583,7 @@ describe('VS Code-style resource panels', () => {
     const sent: Array<{ type?: string; requestId?: string; payload?: { repoId?: string } }> = [];
     installResourceStore({ send: (frame) => { sent.push(frame as typeof sent[number]); return true; }, ready: () => true, toast: vi.fn() });
     setResourceWorkspace({
-      projectId: 'project-1', directories: {}, loading: [], error: null,
+      projectId: 'project-1', directories: {}, loading: [], explorerError: null, graphError: null,
       repositories: [
         { id: 'repo-1', root: 'one', name: 'one', generation: 'g1', groups: { working_tree: { count: 1, revision: 'r1', changes: [{ id: 'c1', path: 'one.ts' }] } } },
         { id: 'repo-2', root: 'two', name: 'two', generation: 'g2', groups: { working_tree: { count: 1, revision: 'r2', changes: [{ id: 'c2', path: 'two.ts' }] } } },
@@ -606,6 +606,71 @@ describe('VS Code-style resource panels', () => {
       error: { code: 'UNAVAILABLE', message: 'Repository two failed', retryable: true },
     });
     expect(resourceWorkspace().mutations?.c2).toEqual(expect.objectContaining({ pending: false, error: 'Repository two failed' }));
+  });
+
+  it('scopes explorer errors to explorer and scm without polluting graph', async () => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    });
+    installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
+    setProjects([
+      { id: 'project-1', name: 'Peri', cwd: '/workspace/peri', instanceId: 'local', createdAt: null, updatedAt: null, archivedAt: null },
+    ]);
+    setProjectSessions([{ id: 'session-1', projectId: 'project-1', acpSessionId: 'acp-1', title: 'Work', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: null, archivedAt: null }]);
+    setSelectedSessionId('session-1');
+    setResourceWorkspace({
+      projectId: 'project-1',
+      directories: {},
+      repositories: [{ id: 'repo-1', root: '', name: 'peri-studio', generation: 'g1', groups: {} }],
+      loading: [],
+      explorerError: null,
+      graphError: null,
+    });
+    render(() => <ResourceWorkbench />);
+    setResourceWorkspace((state) => ({ ...state, explorerError: 'Explorer failed' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Explorer failed');
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Git Graph' }));
+    expect(screen.queryByText('Explorer failed')).not.toBeInTheDocument();
+  });
+
+  it('refreshes the selected graph repository instead of always using the first repo', async () => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    });
+    const sent: Array<Record<string, unknown>> = [];
+    installResourceStore({ send: (frame) => { sent.push(frame as Record<string, unknown>); return true; }, ready: () => true, toast: vi.fn() });
+    setProjects([{ id: 'project-1', name: 'Peri', cwd: '/workspace/peri', instanceId: 'local', createdAt: null, updatedAt: null, archivedAt: null }]);
+    setProjectSessions([{ id: 'session-1', projectId: 'project-1', acpSessionId: 'acp-1', title: 'Work', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: null, archivedAt: null }]);
+    setSelectedSessionId('session-1');
+    setResourceWorkspace({
+      projectId: 'project-1',
+      directories: {},
+      repositories: [
+        { id: 'repo-a', root: '', name: 'Repo A', generation: 'g1', groups: {} },
+        { id: 'repo-b', root: '', name: 'Repo B', generation: 'g1', groups: {} },
+      ],
+      loading: [],
+      explorerError: null,
+      graphError: null,
+    });
+    render(() => <ResourceWorkbench />);
+    await fireEvent.click(screen.getByRole('button', { name: 'Git Graph' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Repo B' }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Repo B' })).toHaveClass('bg-selected');
+    });
+    sent.length = 0;
+    await fireEvent.click(screen.getByRole('button', { name: 'Refresh graph' }));
+
+    expect(sent).toContainEqual(expect.objectContaining({
+      type: 'resource/open-view',
+      payload: expect.objectContaining({ kind: 'git-repository', repoId: 'repo-b' }),
+    }));
   });
 
   it('reopens short-lived resource views after reconnect instead of replaying stale doc ids', () => {

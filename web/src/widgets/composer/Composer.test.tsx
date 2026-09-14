@@ -17,7 +17,7 @@ import {
 import { setPrincipalRole } from '@/features/auth/auth-state';
 import { composerDraft, setComposerDraft } from '@/features/composer/composer-draft';
 import { acknowledgeUnknownMessageDelivery, blockUnknownMessageDelivery, failMessageDelivery, markMessageDeliveryUncertain, messageSubmission, reconcileMessageProjection, resetMessageDelivery, startMessageDelivery } from '@/features/message/message-delivery';
-import { markRuntimeControlUncertain, resetRuntimeControls, startRuntimeControl } from '@/features/runtime/runtime-control';
+import { failRuntimeControl, markRuntimeControlUncertain, resetRuntimeControls, startRuntimeControl } from '@/features/runtime/runtime-control';
 import {
   composerInputClass,
   composerPlusBtnClass,
@@ -61,7 +61,7 @@ function resetStore() {
   setProjects([]);
   setInstances([]);
   setMachines([]);
-  setResourceWorkspace({ projectId: null, directories: {}, repositories: [], loading: [], error: null });
+  setResourceWorkspace({ projectId: null, directories: {}, repositories: [], loading: [], explorerError: null, graphError: null });
   setPromptDeliveryReady(false);
   setPromptMaxBytes(0);
   resetWorkspaceUploadAssembly();
@@ -169,7 +169,8 @@ describe('Composer', () => {
         groups: {},
       }],
       loading: [],
-      error: null,
+      explorerError: null,
+      graphError: null,
     });
     setChatHead({
       chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: null, createdAt: null, updatedAt: null },
@@ -540,6 +541,19 @@ describe('Composer', () => {
     mountComposer();
     const retry = screen.getByRole('button', { name: 'Confirm stop with original request' });
     expect(retry).toBeEnabled();
+    expect(screen.getByText('Stop result not confirmed')).toBeInTheDocument();
+    expect(screen.queryByText('Stop request failed')).not.toBeInTheDocument();
+  });
+
+  it('surfaces a failed stop request in composer notices', () => {
+    selectReadyChat();
+    setChatHead({ chat: { chatId: 'chat-1', title: 'Chat', status: 'active', activeTurnId: 'turn-1', createdAt: null, updatedAt: null }, agent: null, activeTurn: { turnId: 'turn-1', turnStatus: 'running', updatedAt: null }, pendingPermissions: [] });
+    startRuntimeControl('cancel-failed', 'chat-1', 'cancel');
+    failRuntimeControl('cancel-failed', 'Server rejected the stop request.');
+    mountComposer();
+    expect(screen.getByText('Stop request failed')).toBeInTheDocument();
+    expect(screen.getByText('Server rejected the stop request.')).toBeInTheDocument();
+    expect(screen.queryByText('Stop result not confirmed')).not.toBeInTheDocument();
   });
 
   it('shows a persisted uncertain draft as locked while exposing only same-request confirmation', async () => {

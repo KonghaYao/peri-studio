@@ -188,17 +188,30 @@ export class SessionActivation {
   }
 
   reconcileCatalog(sessions: ProjectSessionInfo[]): void {
+    const chatStatuses = this.deps.chatStatuses();
     this.applyEffects(this.navigator.transition({
       type: 'catalog',
       ready: this.deps.isReady(),
       readOnly: this.deps.isReadOnly(),
       preferredId: this.deps.preferredSessionId(),
       selectedSessionId: this.deps.selectedSessionId(),
-      sessions: sessions.filter((session) => !session.archivedAt),
+      sessions: sessions
+        .filter((session) => !session.archivedAt)
+        .map((session) => ({
+          id: session.id,
+          lifecycle: session.lifecycle,
+          activeChatId: session.activeChatId,
+          hasLiveRuntime: !!sessionProjectedLiveChatId(session, chatStatuses),
+        })),
     }));
   }
 
-  connectionLost(): void { this.applyEffects(this.navigator.transition({ type: 'connection-lost' })); }
+  connectionLost(): void {
+    this.applyEffects(this.navigator.transition({
+      type: 'connection-lost',
+      selectedSessionId: this.deps.selectedSessionId(),
+    }));
+  }
 
   /** Re-bind the current logical session after reconnect (server restart safe). */
   reactivateAfterReconnect(): void {

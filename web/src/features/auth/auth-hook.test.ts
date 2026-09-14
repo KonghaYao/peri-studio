@@ -337,13 +337,38 @@ describe('createAuthController', () => {
     expect(principalRole()).toBeNull();
   });
 
-  it('reports a network problem when logout cannot reach the server', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('offline'); }));
+  it('stays signed in when logout cannot reach the server', async () => {
+    localStorage.setItem('peri_studio_token', 'saved-token');
+    vi.stubGlobal('fetch', vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === 'DELETE') throw new TypeError('offline');
+      return { ok: true, json: async () => ({ role: 'full', principalId: 'principal-full-1' }) };
+    }));
     const auth = makeAuth();
 
+    await auth.submitToken('saved-token');
     await auth.logout();
 
-    expect(auth.state()).toBe('signed-out');
+    expect(auth.state()).toBe('signed-in');
+    expect(localStorage.getItem('peri_studio_token')).toBe('saved-token');
     expect(auth.problem()).toMatchObject({ kind: 'network', retryable: true });
+    expect(transport.resetAuthenticatedSession.mock.calls.length).toBe(1);
+  });
+
+  it('signs out only after the server confirms logout', async () => {
+    localStorage.setItem('peri_studio_token', 'saved-token');
+    const fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === 'DELETE') return { ok: false, status: 503 };
+      return { ok: true, json: async () => ({ role: 'full', principalId: 'principal-full-1' }) };
+    });
+    vi.stubGlobal('fetch', fetch);
+    const auth = makeAuth();
+
+    await auth.submitToken('saved-token');
+    const resetsBeforeLogout = transport.resetAuthenticatedSession.mock.calls.length;
+    await auth.logout();
+
+    expect(auth.state()).toBe('signed-in');
+    expect(localStorage.getItem('peri_studio_token')).toBe('saved-token');
+    expect(transport.resetAuthenticatedSession.mock.calls.length).toBe(resetsBeforeLogout);
   });
 });

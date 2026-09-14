@@ -1,7 +1,7 @@
 import { createSignal } from 'solid-js';
 import { createSingleSlotDelivery, type DeliveryPhase } from './delivery-state';
 
-export type QuickStartPhase = Extract<DeliveryPhase, 'creating' | 'accepted' | 'uncertain' | 'failed'>;
+export type QuickStartPhase = Extract<DeliveryPhase, 'creating' | 'accepted' | 'uncertain' | 'delivery_unknown' | 'failed'>;
 
 export interface QuickStartSubmission {
   commandId: string;
@@ -41,6 +41,16 @@ export function markQuickStartUncertain(commandId: string): void {
     phase: 'uncertain',
     detail: 'Session creation is not confirmed. Reconfirming reuses the same request and will not create a duplicate session.',
     retryable: true,
+  }));
+}
+
+/** 断线后 server 可能已无 outbox，禁止以原 commandId 重放 create。 */
+export function blockUnknownQuickStart(commandId: string, detail?: string): void {
+  delivery.transition(commandId, (current) => ({
+    ...current,
+    phase: 'delivery_unknown',
+    detail: detail || 'Session creation may have already completed. Re-confirming is disabled after reconnect to avoid duplicate sessions.',
+    retryable: false,
   }));
 }
 

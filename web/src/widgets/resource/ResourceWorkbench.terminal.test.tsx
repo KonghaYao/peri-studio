@@ -83,4 +83,37 @@ describe('ResourceWorkbench compact terminal surface', () => {
     expect(screen.getByTestId('terminal-parked-panel')).toBeInTheDocument();
     expect(terminalMocks.closeTerminal).not.toHaveBeenCalled();
   });
+
+  it('closes the terminal and shows a notice when the active project changes', async () => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    });
+    installResourceStore({ send: vi.fn(() => true), ready: () => true, toast: vi.fn() });
+    setProjects([
+      { id: 'project-1', name: 'Peri', cwd: '/workspace/peri', instanceId: 'local', createdAt: null, updatedAt: null, archivedAt: null },
+      { id: 'project-2', name: 'Other', cwd: '/workspace/other', instanceId: 'local', createdAt: null, updatedAt: null, archivedAt: null },
+    ]);
+    setProjectSessions([
+      { id: 'session-1', projectId: 'project-1', acpSessionId: 'acp-1', title: 'Work', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: null, archivedAt: null },
+      { id: 'session-2', projectId: 'project-2', acpSessionId: 'acp-2', title: 'Other', lifecycle: 'ready', updatedAt: null, lastOpenedAt: null, activeChatId: null, archivedAt: null },
+    ]);
+    setSelectedSessionId('session-1');
+    const [view, setView] = createSignal<WorkbenchView>('explorer');
+    render(() => (
+      <ResourceWorkbench
+        compact
+        open
+        view={view()}
+        onViewChange={(next) => setView(next)}
+      />
+    ));
+
+    setSelectedSessionId('session-2');
+    await Promise.resolve();
+
+    expect(terminalMocks.closeTerminal).toHaveBeenCalled();
+    expect(screen.getByText(/Terminal closed because the project changed/i)).toBeInTheDocument();
+  });
 });

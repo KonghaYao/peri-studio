@@ -26,7 +26,12 @@ export interface ResourceWorkspaceState {
   directories: Record<string, DirectoryState>;
   repositories: RepositoryState[];
   loading: string[];
-  error: string | null;
+  /** Explorer / SCM 域错误，不与 Graph 共享横幅。 */
+  explorerError: string | null;
+  /** Git Graph 域错误。 */
+  graphError: string | null;
+  /** refresh 进行中：保留旧数据，避免整表清空闪烁。 */
+  stale?: boolean;
   mutations?: Record<string, import('./resource-mutations').GitMutationState>;
   repoMutations?: Record<string, import('./resource-mutations').GitMutationState>;
 }
@@ -34,7 +39,7 @@ export interface ResourceWorkspaceState {
 export interface ResourceFollowup { key: string; payload: OpenResourceView }
 
 export const initialResourceWorkspace = (): ResourceWorkspaceState => ({
-  projectId: null, directories: {}, repositories: [], loading: [], error: null,
+  projectId: null, directories: {}, repositories: [], loading: [], explorerError: null, graphError: null,
   mutations: {}, repoMutations: {},
 });
 
@@ -46,7 +51,11 @@ export function reduceResourceView(
   if (view.viewType === 'fs_directory_page') {
     const path = view.path ?? '';
     return {
-      state: { ...state, directories: { ...state.directories, [path]: mergeDirectoryPage(state.directories[path], view) } },
+      state: {
+        ...state,
+        stale: path === '' ? false : state.stale,
+        directories: { ...state.directories, [path]: mergeDirectoryPage(state.directories[path], view) },
+      },
       followups: [],
     };
   }
@@ -56,7 +65,7 @@ export function reduceResourceView(
       name: String(entry.name ?? 'Repository'), groups: {},
     }));
     return {
-      state: { ...state, repositories },
+      state: { ...state, stale: false, repositories },
       followups: repositories.map((repo) => ({
         key: `repository:${repo.id}`, payload: { kind: 'git-repository', repoId: repo.id },
       })),

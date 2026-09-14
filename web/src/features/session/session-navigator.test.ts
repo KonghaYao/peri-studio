@@ -97,8 +97,55 @@ describe('SessionNavigator', () => {
       sessions: [{ id: 'ready', lifecycle: 'ready' }],
     };
     navigator.transition(catalog);
-    navigator.transition({ type: 'connection-lost' });
+    navigator.transition({ type: 'connection-lost', selectedSessionId: null });
     expect(navigator.transition(catalog)).toEqual([{ type: 'request-open', sessionId: 'ready' }]);
+  });
+
+  it('re-opens the selected session after reconnect once catalog is ready', () => {
+    const navigator = new SessionNavigator();
+    navigator.transition({ type: 'connection-lost', selectedSessionId: 'selected' });
+    expect(navigator.transition({
+      type: 'catalog',
+      ready: true,
+      readOnly: false,
+      preferredId: null,
+      selectedSessionId: 'selected',
+      sessions: [{ id: 'selected', lifecycle: 'ready', hasLiveRuntime: false }],
+    })).toEqual([{ type: 'request-open', sessionId: 'selected' }]);
+  });
+
+  it('activates a live runtime after reconnect without sending open', () => {
+    const navigator = new SessionNavigator();
+    navigator.transition({ type: 'connection-lost', selectedSessionId: 'selected' });
+    expect(navigator.transition({
+      type: 'catalog',
+      ready: true,
+      readOnly: false,
+      preferredId: null,
+      selectedSessionId: 'selected',
+      sessions: [{ id: 'selected', lifecycle: 'ready', activeChatId: 'chat-live', hasLiveRuntime: true }],
+    })).toEqual([{ type: 'activate', sessionId: 'selected', chatId: 'chat-live' }]);
+  });
+
+  it('clears reconnect reopen intent once an open starts for the same session', () => {
+    const navigator = new SessionNavigator();
+    navigator.transition({ type: 'connection-lost', selectedSessionId: 'selected' });
+    navigator.transition({
+      type: 'open-started',
+      commandId: 'open-1',
+      sessionId: 'selected',
+      previousSessionId: 'selected',
+      previousChatId: 'chat-old',
+    });
+    expect(navigator.snapshot().reconnectReopenSessionId).toBeNull();
+    expect(navigator.transition({
+      type: 'catalog',
+      ready: true,
+      readOnly: false,
+      preferredId: null,
+      selectedSessionId: 'selected',
+      sessions: [{ id: 'selected', lifecycle: 'ready', hasLiveRuntime: false }],
+    })).toEqual([]);
   });
 
   it('releases an in-flight open on local-select so a late ack cannot steal the selection', () => {

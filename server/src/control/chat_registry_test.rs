@@ -296,6 +296,35 @@ async fn reconcile_alive_pending_close_kill() {
     assert!(report.to_kill.contains(&"s1".to_string()));
 }
 
+#[tokio::test]
+async fn reconcile_alive_merges_pending_orphan_kill_retries() {
+    let (reg, _doc) = test_registry().await;
+    let reg = ChatRegistry::new(reg);
+    reg.record_orphan_kill_failure("s1", "m1").await;
+    tokio::time::sleep(Duration::from_millis(120)).await;
+    let report = reg.reconcile_alive("m1", &[]).await.unwrap();
+    assert!(
+        report.to_kill.contains(&"s1".to_string()),
+        "pending orphan kill must be merged into reconcile to_kill"
+    );
+}
+
+#[tokio::test]
+async fn reconcile_alive_skips_pending_orphan_kill_before_backoff() {
+    let (reg, _doc) = test_registry().await;
+    let reg = ChatRegistry::new(reg);
+    reg.record_orphan_kill_failure("s1", "m1").await;
+    let report = reg.reconcile_alive("m1", &[]).await.unwrap();
+    assert!(
+        !report.to_kill.contains(&"s1".to_string()),
+        "pending orphan kill must not merge before backoff window"
+    );
+    assert!(
+        !reg.orphan_kill_ready("s1").await,
+        "orphan kill must stay deferred until backoff expires"
+    );
+}
+
 /// §8.3 对账维护 `runtime_confirmed`：instance 上报存活 → 确认（可复用为
 /// live runtime）；已登记但未上报（missing）→ 清除确认并迁移 **Gap**（不再
 /// 呈现「运行中」；Gap 非终态，打开时走 spawn + `session/load`，不作为

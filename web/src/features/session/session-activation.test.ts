@@ -202,6 +202,22 @@ describe('SessionActivation', () => {
     expect(subject.activate).not.toHaveBeenCalled();
   });
 
+  it('requests open after reconnect when catalog arrives without a live runtime', () => {
+    const subject = harness({
+      sessions: [{
+        id: 'old-session', projectId: 'project', title: 'title', lifecycle: 'ready',
+        updatedAt: null, lastOpenedAt: null, activeChatId: null,
+      }],
+    });
+    subject.activation.connectionLost();
+    subject.activation.reconcileCatalog([{
+      id: 'old-session', projectId: 'project', title: 'title', lifecycle: 'ready',
+      updatedAt: null, lastOpenedAt: null, activeChatId: null,
+    }]);
+    expect(subject.sentFrame()?.type).toBe('session/open');
+    expect(subject.sentFrame()?.payload).toEqual({ sessionId: 'old-session' });
+  });
+
   it('re-opens the selected logical session after reconnect', () => {
     const subject = harness({
       sessions: [{

@@ -349,6 +349,27 @@ export function Composer(props: {
                 </span>
               </InlineNotice>
             </Show>
+            <Show when={state.uploadBlockedNotice()}>
+              {(message) => (
+                <InlineNotice id="composer-upload-blocked" class="mb-8" tone="warning" role="alert" title="Attachments still uploading">
+                  <span>{message()}</span>
+                </InlineNotice>
+              )}
+            </Show>
+            <Show when={state.cancelUncertainNotice()}>
+              {(notice) => (
+                <InlineNotice class="mb-8" tone="warning" role="note" title={notice().title}>
+                  <span>{notice().detail}</span>
+                </InlineNotice>
+              )}
+            </Show>
+            <Show when={state.cancelFailedNotice()}>
+              {(notice) => (
+                <InlineNotice class="mb-8" tone="danger" role="alert" title={notice().title}>
+                  <span>{notice().detail}</span>
+                </InlineNotice>
+              )}
+            </Show>
             <Show when={state.submissionNeedsAttention() ? state.submissionForSession() : null}>
               {(submission) => (
                 <InlineNotice

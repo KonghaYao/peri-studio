@@ -1,4 +1,4 @@
-import { createSignal } from 'solid-js';
+import { createEffect, createRoot, createSignal } from 'solid-js';
 import { canMutate } from '@/features/auth/auth-role';
 import { principalRole } from '@/features/auth/auth-state';
 import { connectionReady, sendFrame } from '@/features/connection/connection';
@@ -105,3 +105,18 @@ export function retryFsMutation(projectId: string) { return controller.retry(pro
 export function clearFsMutation(projectId: string) { controller.clear(projectId); }
 export function forwardFsMutationResourceResult(frame: DeleteConfirmResultFrame) { return controller.handleResourceResult(frame); }
 export type { FsMutationAction };
+
+createRoot(() => {
+  let lastProjectId: string | null = null;
+  createEffect(() => {
+    const projectId = resourceWorkspace().projectId;
+    if (projectId === lastProjectId) return;
+    if (lastProjectId) controller.clear(lastProjectId);
+    lastProjectId = projectId;
+    if (!projectId) {
+      setFsMutationState({
+        projectId: null, commandId: null, kind: null, path: null, phase: 'idle', message: null,
+      });
+    }
+  });
+});

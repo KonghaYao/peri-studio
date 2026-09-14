@@ -110,6 +110,9 @@ impl ChatRegistry {
                 report.to_kill.push(cid.clone());
             }
         }
+        // S-04：orphan kill 失败待重试补发（heartbeat 周期，指数退避）。
+        self.merge_orphan_kill_retries(instance_id, &mut report.to_kill)
+            .await;
         if !confirmed.is_empty() || !unconfirmed.is_empty() {
             let mut chats = self.inner.chats.write().await;
             let now = Utc::now();

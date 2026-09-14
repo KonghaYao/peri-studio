@@ -115,6 +115,19 @@ export function reportTransportIssue(issue: WsProtocolIssue): void {
   });
 }
 
+/** 断线后将高副作用 uncertain 降为不可重放，避免用户一键重复 spawn/prompt。 */
+export function demotePersistentErrorRetry(commandId: string): void {
+  deps!.setPersistentErrors((items) => items.map((item) => item.commandId === commandId
+    ? {
+      ...item,
+      title: 'Delivery outcome unknown',
+      detail: 'The connection dropped before the server confirmed this operation. Wait for the sidebar or conversation to sync; do not re-confirm with the original request.',
+      retryable: false,
+      retrying: false,
+    }
+    : item));
+}
+
 export function retryPersistentAction(commandId: string): boolean {
   if (!deps!.hasUncertain(commandId) || !connectionReady()) {
     deps!.toast(!deps!.hasUncertain(commandId) ? 'This action cannot be safely retried' : 'Connection not ready, cannot re-confirm now');

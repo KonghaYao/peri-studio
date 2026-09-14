@@ -17,7 +17,8 @@ import {
   sidebarMistHintClass,
 } from '@peri/ui';
 import { CloudOff, Folder, FolderOpen } from 'lucide-solid';
-import { createProjectSession, creatingSessionProjectId, discoveringSessionsProjectId, isProjectCatalogBootstrapPending, projectSessions, readOnly } from '@/store';
+import { catalogDiscoverFailure } from '@/features/catalog/catalog-discover-state';
+import { createProjectSession, creatingSessionProjectId, discoverProjectSessions, discoveringSessionsProjectId, isProjectCatalogBootstrapPending, projectSessions, readOnly } from '@/store';
 import { ProjectRowAccessory, ProjectRowActionGroup } from '@peri/ui';
 import { ArchiveIcon, ImportIcon, MoreIcon, PlusIcon, RenameIcon } from './project-sidebar-icons';
 import { ProjectSidebarPinned } from './project-sidebar-pinned';
@@ -73,6 +74,7 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
               const sessions = () => projectSessions().filter((s) => s.projectId === projectId && !s.archivedAt);
               const archivedSessions = () => projectSessions().filter((s) => s.projectId === projectId && !!s.archivedAt);
               const sessionsLoading = () => discoveringSessionsProjectId() === projectId || isProjectCatalogBootstrapPending(projectId);
+              const sessionsDiscoverFailed = () => catalogDiscoverFailure(projectId);
               const collapsed = () => props.model.collapsedProjects().has(projectId);
               const open = () => !collapsed();
               const hasSessions = () => sessions().length > 0;
@@ -134,6 +136,19 @@ export function ProjectSidebarTree(props: ProjectSidebarTreeProps) {
                   </ProjectRowAccessory>
                 </div>
                 <CollapsibleContent id={`project-sessions-${projectId}`} data-testid="session-list" class="flex flex-col gap-2 pb-1">
+                  <Show when={sessionsDiscoverFailed()}>
+                    {(message) => <div class="flex flex-col gap-4 px-2.5 py-4 text-11 text-danger">
+                      <span>Unable to load sessions. {message()}</span>
+                      <Button
+                        size="compact"
+                        variant="secondary"
+                        disabled={readOnly() || sessionsLoading()}
+                        onClick={() => discoverProjectSessions(projectId)}
+                      >
+                        Retry
+                      </Button>
+                    </div>}
+                  </Show>
                   <Show
                     when={hasSessions()}
                     fallback={<Show

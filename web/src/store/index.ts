@@ -38,7 +38,16 @@ import { closeTerminalBeforeTeardown, handleTerminalConnectionLost, installTermi
 import { connectionReady, forgetRememberedSession, installConnection, promptMaxBytes, readRememberedSession, rememberSession, sendFrame } from '@/features/connection/connection';
 import { createRemoteDirectoryBrowsePorts } from '@/features/connection/remote-directory-ports';
 import { reconcileCatalogMutations } from '@/features/catalog/catalog-mutation-reconcile';
-import { dismissPersistentErrorByCommandId, persistActionProblem, reportTransportIssue, type PersistentError } from '@/features/message/panel-errors';
+import {
+  demotePersistentErrorRetry,
+  dismissPersistentErrorByCommandId,
+  persistActionProblem,
+  reportTransportIssue,
+  type PersistentError,
+} from '@/features/message/panel-errors';
+import { quarantineDisconnectSideEffects } from '@/features/connection/side-effect-uncertainty';
+import { blockUnknownMessageDelivery } from '@/features/message/message-delivery';
+import { blockUnknownQuickStart } from '@/features/message/quick-start-delivery';
 import { sendMessage, type SessionConfigMutation } from '@/features/message/user-actions';
 import { chatAgentLoading as deriveChatAgentLoading } from '@/features/chat/chat-agent-loading';
 import { installChatSubscription, reconcileCurrentRuntimeControl, selectChat, sendSubscribe } from '@/features/connection/chat-subscription';
@@ -199,6 +208,11 @@ installResourceWorkbenchPorts({
     const session = projectSessions().find((item) => item.id === sessionId);
     const project = projects().find((item) => item.id === session?.projectId);
     return project?.cwd;
+  },
+  projectId: () => {
+    const sessionId = selectedSessionId();
+    const session = projectSessions().find((item) => item.id === sessionId);
+    return session?.projectId;
   },
 });
 
@@ -377,6 +391,7 @@ wireSessionCatalogBootstrap({
   projects,
   registryHydrated,
   catalogActions,
+  toast,
 });
 
 wireCatalogMachineApi({ catalogActions, machineActions, sessionActivation });
@@ -446,7 +461,18 @@ const onFrame = createOnFrame({
 // 连接装配（P3 拆分）：ws 生命周期与状态回调在 lib/connection，业务
 // 回调经 installConnection 注入回组合根。
 installConnection({
-  settleConnectionLoss: () => commands.settleConnectionLoss(),
+  settleConnectionLoss: () => {
+    commands.settleConnectionLoss();
+    quarantineDisconnectSideEffects(commands.listUncertainFrames(), {
+      forgetCommand: (commandId) => commands.forget(commandId),
+      demotePersistentError: demotePersistentErrorRetry,
+      quarantineQuickStart: blockUnknownQuickStart,
+      quarantineMessageDelivery: (commandId) => blockUnknownMessageDelivery(
+        commandId,
+        'This message may have already executed. Re-confirming is disabled after reconnect to avoid duplicates.',
+      ),
+    });
+  },
   onBeforeDisconnect: closeTerminalBeforeTeardown,
   onConnectionLost: () => {
     resetSessionCatalogBootstrap();
@@ -463,6 +489,7 @@ installConnection({
     // or resume the correct runtime chat instead of accepting prompts on a stale id.
     sessionActivation.reactivateAfterReconnect();
     if (!selectedSessionId() && registryHydrated()) reconcileSessionNavigation(projectSessions());
+    resetSessionCatalogBootstrap();
     scheduleSessionCatalogBootstrap();
     const sessionId = selectedSessionId();
     if (sessionId) requestPromptRecovery(sessionId);

@@ -2,6 +2,8 @@ export interface NavigableSession {
   id: string;
   lifecycle: string;
   activeChatId?: string | null;
+  /** Registry + chat status 已证明 runtime 仍存活时为 true。 */
+  hasLiveRuntime?: boolean;
 }
 
 export interface OpeningSession {
@@ -15,6 +17,8 @@ export interface SessionNavigationSnapshot {
   opening: OpeningSession | null;
   restoringSessionId: string | null;
   restoreAttempted: boolean;
+  /** 断线后待 catalog 就绪时补发 session/open 的逻辑会话。 */
+  reconnectReopenSessionId: string | null;
 }
 
 export type SessionNavigationEvent =
@@ -24,7 +28,7 @@ export type SessionNavigationEvent =
   | { type: 'open-failed'; commandId?: string }
   | { type: 'open-uncertain'; commandId: string }
   | { type: 'local-select'; sessionId: string; chatId: string }
-  | { type: 'connection-lost' }
+  | { type: 'connection-lost'; selectedSessionId: string | null }
   | { type: 'reset' };
 
 export type SessionNavigationEffect =
@@ -46,6 +50,7 @@ export class SessionNavigator {
     opening: null,
     restoringSessionId: null,
     restoreAttempted: false,
+    reconnectReopenSessionId: null,
   };
 
   constructor(private readonly onChange?: (snapshot: SessionNavigationSnapshot) => void) {}
@@ -70,6 +75,9 @@ export class SessionNavigator {
           restoringSessionId: this.state.restoringSessionId === event.sessionId
             ? this.state.restoringSessionId
             : null,
+          reconnectReopenSessionId: this.state.reconnectReopenSessionId === event.sessionId
+            ? null
+            : this.state.reconnectReopenSessionId,
         });
         return [];
       case 'open-terminal': {
@@ -91,10 +99,21 @@ export class SessionNavigator {
         return [{ type: 'activate', sessionId: event.sessionId, chatId: event.chatId }];
       case 'connection-lost':
         // Allow catalog restore / reconnect re-open after the server drops.
-        this.update({ ...this.state, opening: null, restoringSessionId: null, restoreAttempted: false });
+        this.update({
+          ...this.state,
+          opening: null,
+          restoringSessionId: null,
+          restoreAttempted: false,
+          reconnectReopenSessionId: event.selectedSessionId,
+        });
         return [];
       case 'reset':
-        this.update({ opening: null, restoringSessionId: null, restoreAttempted: false });
+        this.update({
+          opening: null,
+          restoringSessionId: null,
+          restoreAttempted: false,
+          reconnectReopenSessionId: null,
+        });
         return [];
     }
   }
@@ -114,6 +133,24 @@ export class SessionNavigator {
       if (live?.activeChatId) {
         this.update({ ...this.state, restoreAttempted: true, opening: null, restoringSessionId: null });
         return [{ type: 'activate', sessionId: live.id, chatId: live.activeChatId }];
+      }
+    }
+
+    const reopenId = this.state.reconnectReopenSessionId;
+    if (
+      reopenId
+      && event.selectedSessionId === reopenId
+      && !event.readOnly
+      && !this.state.opening
+    ) {
+      const selected = event.sessions.find((session) => session.id === reopenId && session.lifecycle === 'ready');
+      if (selected && !selected.hasLiveRuntime) {
+        this.update({ ...this.state, reconnectReopenSessionId: null });
+        return [{ type: 'request-open', sessionId: selected.id }];
+      }
+      if (selected?.hasLiveRuntime && selected.activeChatId) {
+        this.update({ ...this.state, reconnectReopenSessionId: null });
+        return [{ type: 'activate', sessionId: selected.id, chatId: selected.activeChatId }];
       }
     }
 

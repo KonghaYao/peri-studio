@@ -2,7 +2,7 @@ import { primaryShortcut } from '@/shared/lib/keyboard';
 import { read, type MaybeAccessor } from '@/shared/lib/maybe-accessor';
 import { createEffect, createSignal, Show } from 'solid-js';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, InlineNotice, Listbox, ListboxItem, ListboxItemDescription, ListboxItemLabel, Spinner, TextField } from '@peri/ui';
-import { navigateProjectSession, openingSessionId, projectSessions, projects, selectedSessionId } from '@/store';
+import { discoveringSessionsProjectId, isProjectCatalogBootstrapPending, navigateProjectSession, openingSessionId, projectSessions, projects, selectedSessionId } from '@/store';
 import { readOnly } from '@/features/auth/auth-state';
 import { formatRelativeTime, sessionDisplayTitle, shortSessionId } from '@/features/session/recovery-state';
 import { searchProjectSessions } from '@/features/session/session-search';
@@ -20,6 +20,10 @@ export function SessionSearch(props: { open: MaybeAccessor<boolean>; onClose: ()
     projects().filter((project) => !project.archivedAt),
     projectSessions().filter((session) => !session.archivedAt),
   ) as SearchResult[];
+  const catalogStillLoading = () => {
+    if (discoveringSessionsProjectId()) return true;
+    return projects().some((project) => !project.archivedAt && isProjectCatalogBootstrapPending(project.id));
+  };
   createEffect(() => { if (!open()) { setQuery(''); setProblem(null); } });
   const choose = (session: ProjectSessionInfo) => {
     setProblem(null);
@@ -40,7 +44,8 @@ export function SessionSearch(props: { open: MaybeAccessor<boolean>; onClose: ()
     <div class="grid gap-10 px-16 pb-16">
       <TextField aria-label="Search sessions" value={query()} onInput={(event) => setQuery(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === 'ArrowDown') { event.preventDefault(); focusResults(); } }} placeholder="Search title, project, directory or session ID" autofocus />
       <Show when={query().trim()} fallback={<InlineNotice class="px-10 py-20 text-center text-12 text-text-muted"><kbd>{primaryShortcut('K')}</kbd> opens search anytime. Start typing a project name or session title.</InlineNotice>}>
-        <Show when={results().length} fallback={<EmptyState variant="inline" class="px-10 py-20" title="No matching saved sessions" description="Try another title, project, directory, or session ID." />}>
+        <Show when={!catalogStillLoading()} fallback={<InlineNotice class="px-10 py-20 text-center text-12 text-text-muted" role="status"><Spinner label="Loading sessions" /> Still loading sessions…</InlineNotice>}>
+          <Show when={results().length} fallback={<EmptyState variant="inline" class="px-10 py-20" title="No matching saved sessions" description="Try another title, project, directory, or session ID." />}>
           <Listbox
             ref={resultList}
             class="ui-listbox grid max-h-(--container-search-results) gap-1 overflow-auto"
@@ -57,6 +62,7 @@ export function SessionSearch(props: { open: MaybeAccessor<boolean>; onClose: ()
               <Show when={openingSessionId() === item.rawValue.id} fallback={<code class="flex-none text-11 text-content-muted">…{shortSessionId(item.rawValue.id)}</code>}><Spinner label="Opening" /></Show>
             </ListboxItem>}
           />
+          </Show>
         </Show>
       </Show>
       <Show when={problem()}>{(message) => <InlineNotice class="m-0" tone="warning" role="alert">{message()}</InlineNotice>}</Show>

@@ -32,9 +32,10 @@ import {
 } from '@/features/message/message-delivery';
 import { runtimeControlFor } from '@/features/runtime/runtime-control';
 import { composerInputState } from '@/features/composer/composer-placeholder';
+import { composerUploadSendGate } from '@/features/composer/composer-upload-send-gate';
 import { useComposerPrediction } from '@/features/composer/composer-prediction';
 import { useComposerSlash } from '@/features/composer/composer-slash';
-import { clearSubmittedWorkspaceUploads } from '@/store';
+import { clearSubmittedWorkspaceUploads, workspaceUploadBatch, workspaceUploadOrigin } from '@/store';
 import { tokenUsageLabel } from '@peri/ui';
 import { promptByteLength, promptFitsBudget } from '@/shared/lib/prompt-budget';
 import {
@@ -135,7 +136,18 @@ export function useComposerState(taRef: () => HTMLTextAreaElement | undefined) {
     if (phase === 'sending' || phase === 'accepted') return 'Stopping generation';
     if (phase === 'uncertain') return 'Confirm stop with original request';
     if (phase === 'confirmed') return 'Waiting for Agent to stop';
+    if (phase === 'failed') return 'Stop generation';
     return 'Stop generation';
+  };
+  const cancelFailedNotice = () => {
+    const control = cancelControl();
+    if (control?.phase !== 'failed' || !control.detail) return null;
+    return { title: 'Stop request failed', detail: control.detail };
+  };
+  const cancelUncertainNotice = () => {
+    const control = cancelControl();
+    if (control?.phase !== 'uncertain' || !control.detail) return null;
+    return { title: 'Stop result not confirmed', detail: control.detail };
   };
   const requestCancel = () => {
     const control = cancelControl();
@@ -146,6 +158,15 @@ export function useComposerState(taRef: () => HTMLTextAreaElement | undefined) {
     cancelTurn();
   };
 
+  const uploadSendGate = () => {
+    const owner = draftOwner();
+    return composerUploadSendGate(
+      workspaceUploadBatch(),
+      owner?.projectId ?? null,
+      'composer',
+      workspaceUploadOrigin,
+    );
+  };
   const inputState = () =>
     composerInputState({
       readOnly: readOnly(),
@@ -159,7 +180,8 @@ export function useComposerState(taRef: () => HTMLTextAreaElement | undefined) {
       submissionForSession: !!submissionForSession(),
     });
   const composerReady = () => inputState().composerReady;
-  const sendLocked = () => inputState().sendLocked;
+  const sendLocked = () => inputState().sendLocked || uploadSendGate().sendLocked;
+  const uploadBlockedNotice = () => uploadSendGate().notice;
   const inputPlaceholder = () => inputState().placeholder;
 
   const draftBytes = () => promptByteLength(composerDraft(draftOwner()));
@@ -248,6 +270,7 @@ export function useComposerState(taRef: () => HTMLTextAreaElement | undefined) {
       prediction.activePrediction() ? 'composer-prediction-description' : null,
       submissionNeedsAttention() ? submissionStatusId : null,
       promptOverBudget() ? promptBudgetStatusId : null,
+      uploadBlockedNotice() ? 'composer-upload-blocked' : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -316,7 +339,10 @@ export function useComposerState(taRef: () => HTMLTextAreaElement | undefined) {
     cancelControl,
     cancelLocked,
     cancelLabel,
+    cancelFailedNotice,
+    cancelUncertainNotice,
     requestCancel,
+    uploadBlockedNotice,
     canBrowseSkills,
     skillCount,
     inputDescribedBy,

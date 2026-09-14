@@ -362,3 +362,132 @@ async fn cleanup_orphans_kill_decision() {
     assert!(chats.pending_close_chats().await.is_empty());
     let _ = (doc, tmp);
 }
+
+#[tokio::test]
+async fn orphan_kill_failure_records_pending_for_heartbeat_retry() {
+    let tmp = tempfile::tempdir().unwrap();
+    let sink = Arc::new(crate::control::StoreSink::new());
+    let doc = Arc::new(crate::state::doc_manager::DocManager::new(
+        crate::state::doc_manager::BatchConfig::default(),
+        sink,
+    ));
+    let chats = ChatRegistry::new(doc.registry());
+    let reg = InstanceRegistry::new(
+        Duration::from_secs(30),
+        Duration::from_millis(20),
+        chats.clone(),
+    );
+    let (tx, mut rx) = mpsc::channel(8);
+    reg.on_hello("m1", "tok-1", InstanceConn { tx }, &hello("m1"))
+        .await;
+
+    chats.register("s1", "m1", None, "/", None).await.unwrap();
+    chats.transition("s1", ChatState::Closed).await.unwrap();
+
+    let kill_task = tokio::spawn({
+        let reg = reg.clone();
+        async move {
+            reg.reconcile_and_kill("m1", &["s1".to_string()]).await;
+        }
+    });
+    // 不回 ack：有界重试耗尽后进入 pending_orphan_kill。
+    while rx.try_recv().is_ok() {}
+    let _ = tokio::time::timeout(Duration::from_secs(5), kill_task)
+        .await
+        .expect("reconcile should finish")
+        .expect("task join");
+    assert!(
+        chats.pending_orphan_kill_chats().await.contains(&"s1".to_string()),
+        "failed orphan kill must be deferred for heartbeat retry"
+    );
+    let _ = (doc, tmp);
+}
+
+#[tokio::test]
+async fn orphan_kill_pending_retried_after_backoff() {
+    let tmp = tempfile::tempdir().unwrap();
+    let sink = Arc::new(crate::control::StoreSink::new());
+    let doc = Arc::new(crate::state::doc_manager::DocManager::new(
+        crate::state::doc_manager::BatchConfig::default(),
+        sink,
+    ));
+    let chats = ChatRegistry::new(doc.registry());
+    let reg = InstanceRegistry::new(
+        Duration::from_secs(30),
+        Duration::from_millis(20),
+        chats.clone(),
+    );
+    let (tx, mut rx) = mpsc::channel(8);
+    reg.on_hello("m1", "tok-1", InstanceConn { tx }, &hello("m1"))
+        .await;
+
+    chats.register("s1", "m1", None, "/", None).await.unwrap();
+    chats.transition("s1", ChatState::Closed).await.unwrap();
+    chats.record_orphan_kill_failure("s1", "m1").await;
+    tokio::time::sleep(Duration::from_millis(120)).await;
+
+    let retry = tokio::spawn({
+        let reg = reg.clone();
+        async move {
+            reg.reconcile_and_kill("m1", &[]).await;
+        }
+    });
+    let msg = tokio::time::timeout(Duration::from_secs(3), rx.recv())
+        .await
+        .expect("kill frame timeout")
+        .expect("channel alive");
+    match msg {
+        OutboundMsg::Frame(Frame::InstanceKill(k)) => {
+            assert_eq!(k.chat_id, "s1");
+            let ack = InstanceAck::Kill(InstanceKillAck {
+                command_id: k.command_id.clone(),
+                chat_id: k.chat_id.clone(),
+                ok: true,
+            });
+            assert!(reg.on_ack("m1", &k.command_id, ack).await);
+        }
+        other => panic!("expected InstanceKill, got {other:?}"),
+    }
+    retry.await.unwrap();
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    assert!(
+        chats.pending_orphan_kill_chats().await.is_empty(),
+        "successful retry must clear pending orphan kill"
+    );
+    let _ = (doc, tmp);
+}
+
+#[tokio::test]
+async fn orphan_kill_not_retried_before_backoff() {
+    let tmp = tempfile::tempdir().unwrap();
+    let sink = Arc::new(crate::control::StoreSink::new());
+    let doc = Arc::new(crate::state::doc_manager::DocManager::new(
+        crate::state::doc_manager::BatchConfig::default(),
+        sink,
+    ));
+    let chats = ChatRegistry::new(doc.registry());
+    let reg = InstanceRegistry::new(
+        Duration::from_secs(30),
+        Duration::from_millis(20),
+        chats.clone(),
+    );
+    let (tx, mut rx) = mpsc::channel(8);
+    reg.on_hello("m1", "tok-1", InstanceConn { tx }, &hello("m1"))
+        .await;
+
+    chats.register("s1", "m1", None, "/", None).await.unwrap();
+    chats.transition("s1", ChatState::Closed).await.unwrap();
+    chats.record_orphan_kill_failure("s1", "m1").await;
+
+    reg.reconcile_and_kill("m1", &["s1".to_string()]).await;
+
+    assert!(
+        rx.try_recv().is_err(),
+        "orphan kill must not fire before pending backoff expires"
+    );
+    assert!(
+        chats.pending_orphan_kill_chats().await.contains(&"s1".to_string()),
+        "pending orphan kill must remain until backoff expires"
+    );
+    let _ = (doc, tmp);
+}

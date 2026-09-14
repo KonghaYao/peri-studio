@@ -29,7 +29,8 @@ import { ResourceRailButton } from './ResourceRailButton';
 import { SessionRailActions } from '@/widgets/shell/SessionRailActions';
 import { Activity, Files, GitBranch, GitGraph, PlugZap, RefreshCw, SquareTerminal, X } from 'lucide-solid';
 import { TerminalPanel } from '@/widgets/terminal/TerminalPanel';
-import { terminalSession } from '@/features/terminal/terminal-session';
+import { closeTerminal, terminalSession } from '@/features/terminal/terminal-session';
+import { resourceWorkspaceErrorForView } from '@/features/resource/resource-error-domain';
 import { ResourceFloatingPanel } from './ResourceFloatingPanel';
 import { GitGraphView } from './git/GitGraphView';
 import { MonitorPanel } from './MonitorPanel';
@@ -78,6 +79,16 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
   const [commitMessages, setCommitMessages] = createSignal<Record<string, string>>({});
   const [explorerToolbar, setExplorerToolbar] = createSignal<JSX.Element>();
   const [monitorRefreshToken, setMonitorRefreshToken] = createSignal(0);
+  const [graphRepoId, setGraphRepoId] = createSignal<string | null>(null);
+  const activeGraphRepoId = createMemo(() => {
+    const repos = resourceWorkspace().repositories;
+    if (repos.length === 0) return null;
+    const selected = graphRepoId();
+    if (selected && repos.some((repo) => repo.id === selected)) return selected;
+    return repos[0].id;
+  });
+  const [terminalProjectNotice, setTerminalProjectNotice] = createSignal<string | null>(null);
+  let previousWorkbenchProjectId: string | null = null;
   const monitorEnabled = useMonitorCapability();
   const submittedCommits = new Map<string, { projectId: string; repoId: string; requestId: string; message: string }>();
   const view = () => props.view === undefined ? localView() : props.view;
@@ -142,6 +153,24 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
     }
   });
   createEffect(() => {
+    const projectId = project()?.id ?? null;
+    if (projectId === previousWorkbenchProjectId) return;
+    const previousId = previousWorkbenchProjectId;
+    previousWorkbenchProjectId = projectId;
+    setExplorerExpanded(new Set(['']));
+    setExplorerActivePath('');
+    setExplorerScrollTop(0);
+    setGraphRepoId(null);
+    setTerminalProjectNotice(null);
+    if (previousId) {
+      const session = terminalSession();
+      if (session.phase !== 'idle' && session.phase !== 'closed' && session.projectId === previousId) {
+        closeTerminal();
+        setTerminalProjectNotice('Terminal closed because the project changed. Open Terminal again to start a new session.');
+      }
+    }
+  });
+  createEffect(() => {
     if (props.compact && props.open && !view()) setView('explorer');
   });
   createEffect(() => {
@@ -167,6 +196,11 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
     if (view() === 'monitor') return 'Monitor';
     return project()?.name ?? 'Workspace';
   };
+  const explorerPanelError = createMemo(() => {
+    const current = view();
+    if (current !== 'explorer' && current !== 'scm') return null;
+    return resourceWorkspaceErrorForView(resourceWorkspace(), current);
+  });
   const panelWidthProfile = () => {
     if (view() === 'graph') return 'graph' as const;
     if (view() === 'terminal') return 'terminal' as const;
@@ -209,8 +243,8 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
           label="Refresh graph"
           size="compact"
           onClick={() => {
-            const repo = resourceWorkspace().repositories[0];
-            if (repo) refreshGitLog(repo.id);
+            const repoId = activeGraphRepoId();
+            if (repoId) refreshGitLog(repoId);
           }}
           class="border-0 bg-transparent text-content-muted hover:text-content-primary"
         >
@@ -237,19 +271,33 @@ export function ResourceWorkbench(props: ResourceWorkbenchProps = {}) {
       <WorkbenchPanelChrome title={<strong>{panelTitle()}</strong>} actions={panelHeaderActions()}>
         <Show when={view() === 'mcp'}><McpPanelContent embedded /></Show>
         <Show when={view() === 'graph'}>
-          <GitGraphView embedded />
+          <GitGraphView embedded selectedRepoId={graphRepoId()} onSelectedRepoIdChange={setGraphRepoId} />
         </Show>
         <Show when={view() === 'monitor'}>
           <MonitorPanel embedded visible={monitorPanelVisible()} refreshToken={monitorRefreshToken()} />
         </Show>
         <Show when={view() === 'explorer' || view() === 'scm'}>
           <Show when={project()} fallback={<div class="p-16 text-12 text-content-muted">Select or create a project to browse its workspace.</div>}>
-            <Show when={resourceWorkspace().error}>{(message) => <InlineNotice tone="danger" class="m-8 items-center gap-6 py-9 text-11 leading-16" role="alert">
-              <div class="flex min-w-0 flex-1 items-center gap-6">
-                <span class="min-w-0 flex-1">{message()}</span>
-                <Button size="compact" variant="ghost" class="shrink-0 border-0! bg-transparent! px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={refreshResourceProject}>Retry</Button>
-              </div>
-            </InlineNotice>}</Show>
+            <Show when={terminalProjectNotice()}>
+              {(message) => (
+                <InlineNotice tone="warning" class="m-8 items-center gap-6 py-9 text-11 leading-16" role="status" title="Terminal closed">
+                  <span>{message()}</span>
+                </InlineNotice>
+              )}
+            </Show>
+            <Show when={resourceWorkspace().stale}>
+              <InlineNotice tone="warning" class="m-8 items-center gap-6 py-9 text-11 leading-16" role="status" title="Refreshing workspace">
+                <span>Showing the previous snapshot while resources reload.</span>
+              </InlineNotice>
+            </Show>
+            <Show when={explorerPanelError()}>
+              {(message) => <InlineNotice tone="danger" class="m-8 items-center gap-6 py-9 text-11 leading-16" role="alert">
+                <div class="flex min-w-0 flex-1 items-center gap-6">
+                  <span class="min-w-0 flex-1">{message()}</span>
+                  <Button size="compact" variant="ghost" class="shrink-0 border-0! bg-transparent! px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8" onClick={refreshResourceProject}>Retry</Button>
+                </div>
+              </InlineNotice>}
+            </Show>
             <Show when={view() === 'explorer'}><ExplorerPanel embedded onEmbeddedToolbarChange={setExplorerToolbar} expanded={explorerExpanded()} onExpandedChange={setExplorerExpanded} activePath={explorerActivePath()} onActivePathChange={setExplorerActivePath} scrollTop={explorerScrollTop()} onScrollTopChange={(scrollTop) => { if (!props.compact || props.open) setExplorerScrollTop(scrollTop); }} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'explorer', key })} /></Show>
             <Show when={view() === 'scm'}><SourceControlPanel embedded commitMessages={visibleCommitMessages()} onCommitMessageChange={setCommitMessage} onCommitSubmitted={recordSubmittedCommit} onPreviewIntent={(key) => props.onPreviewIntent?.({ view: 'scm', key })} /></Show>
           </Show>

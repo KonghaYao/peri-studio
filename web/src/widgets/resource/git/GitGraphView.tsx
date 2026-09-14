@@ -17,11 +17,18 @@ import type { GitGraphActionKind, GitGraphActionParams } from '@/features/resour
 type GitGraphViewProps = {
   /** 嵌在 workbench 面板内；标题与关闭由 workbench 头部负责。 */
   embedded?: boolean;
+  selectedRepoId?: string | null;
+  onSelectedRepoIdChange?: (repoId: string) => void;
 };
 
 /** Git Graph 内容区，由 ResourceWorkbench 浮动面板承载。 */
 export function GitGraphView(props: GitGraphViewProps = {}) {
-  const [graphRepoId, setGraphRepoId] = createSignal<string | null>(null);
+  const [localGraphRepoId, setLocalGraphRepoId] = createSignal<string | null>(null);
+  const graphRepoId = () => (props.selectedRepoId !== undefined ? props.selectedRepoId : localGraphRepoId());
+  const selectGraphRepo = (repoId: string) => {
+    props.onSelectedRepoIdChange?.(repoId);
+    if (props.selectedRepoId === undefined) setLocalGraphRepoId(repoId);
+  };
 
   const graphRepositories = createMemo(() => resourceWorkspace().repositories);
   const activeGraphRepoId = createMemo(() => {
@@ -62,7 +69,7 @@ export function GitGraphView(props: GitGraphViewProps = {}) {
       class={`flex min-h-0 flex-col bg-neutral-25 ${props.embedded ? 'min-h-0 flex-1' : 'h-full w-full'}`}
       aria-label="Git Graph workspace"
     >
-      <Show when={resourceWorkspace().error}>
+      <Show when={resourceWorkspace().graphError}>
         {(message) => (
           <InlineNotice tone="danger" class="m-8 items-center gap-6 py-9 text-11 leading-16" role="alert">
             <div class="flex min-w-0 flex-1 items-center gap-6">
@@ -94,7 +101,7 @@ export function GitGraphView(props: GitGraphViewProps = {}) {
                   variant="ghost"
                   class={`rounded-4 border-0! px-8 py-4 text-11 ${activeGraphRepoId() === repo.id ? 'bg-selected text-content-primary' : 'text-content-muted hover:bg-interaction-hover'}`}
                   onClick={() => {
-                    setGraphRepoId(repo.id);
+                    selectGraphRepo(repo.id);
                     if (!repo.log && repo.generation) openGitLog(repo.id);
                   }}
                 >

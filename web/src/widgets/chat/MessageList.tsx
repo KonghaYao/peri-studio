@@ -333,6 +333,11 @@ export function MessageList(props: {
             <LoadingState label="Loading session" class="min-h-(--container-placeholder-narrow) flex-col justify-center text-center" />
           </Show>
         </div>
+        <div class="sr-only" aria-live="polite">
+          {chatEntryIds().length > 0
+            ? `${chatEntryIds().length} messages in this conversation. Scroll to read earlier messages.`
+            : ''}
+        </div>
         <div ref={transcriptRef} data-testid="transcript-window" role="list" aria-label="Conversation transcript">
           <div data-testid="transcript-spacer" data-transcript-spacer="before" aria-hidden="true" style={{ height: `${visibleTranscript().beforeHeight}px` }} />
           <For each={visibleTranscript().ids}>

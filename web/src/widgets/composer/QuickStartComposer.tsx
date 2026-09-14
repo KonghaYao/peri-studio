@@ -95,7 +95,9 @@ export function QuickStartComposer(props: {
   let textareaRef: HTMLTextAreaElement | undefined;
   const pending = () => quickStartSubmission();
   const pendingIsInFlight = () => pending()?.phase === 'creating' || pending()?.phase === 'accepted';
-  const pendingNeedsAttention = () => pending()?.phase === 'uncertain' || pending()?.phase === 'failed';
+  const pendingNeedsAttention = () => pending()?.phase === 'uncertain'
+    || pending()?.phase === 'delivery_unknown'
+    || pending()?.phase === 'failed';
   const draftBytes = () => promptByteLength(draft().trim());
   const promptOverBudget = () => !!draft().trim() && !promptFitsBudget(draft().trim(), promptMaxBytes());
   const locked = () => (!!pending() && pending()!.phase !== 'failed') || !!creatingSessionProjectId();
@@ -235,8 +237,12 @@ export function QuickStartComposer(props: {
         </>
       )}
     />
-    <Show when={pendingNeedsAttention() ? pending() : null}>{(submission) => <InlineNotice id={statusId} class="mt-8" tone={submission().phase === 'failed' ? 'danger' : 'warning'} role="alert" title={submission().phase === 'uncertain' ? 'Creation result not confirmed yet' : 'Failed to create session'}>
-      <span>{submission().phase === 'uncertain' ? 'Re-confirming uses the original request and will not create a duplicate project session.' : 'The draft remains local until you choose to start again.'}</span>
+    <Show when={pendingNeedsAttention() ? pending() : null}>{(submission) => <InlineNotice id={statusId} class="mt-8" tone={submission().phase === 'failed' ? 'danger' : 'warning'} role="alert" title={submission().phase === 'uncertain' ? 'Creation result not confirmed yet' : submission().phase === 'delivery_unknown' ? 'Creation outcome unknown' : 'Failed to create session'}>
+      <span>{submission().phase === 'uncertain'
+        ? 'Re-confirming uses the original request and will not create a duplicate project session.'
+        : submission().phase === 'delivery_unknown'
+          ? 'Session creation may have already completed. Wait for the sidebar to sync; re-confirming is disabled after reconnect.'
+          : 'The draft remains local until you choose to start again.'}</span>
       <Show when={submission().detail}><small class="min-w-0">{submission().detail}</small></Show>
       <div class="flex flex-wrap gap-6">
         <Show when={(submission().phase === 'failed' || submission().phase === 'uncertain') && submission().retryable}><Button size="compact" variant="secondary" onClick={retryQuickStart}>Re-confirm with the same request</Button></Show>

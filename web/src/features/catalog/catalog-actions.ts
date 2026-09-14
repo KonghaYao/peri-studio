@@ -179,6 +179,8 @@ export class CatalogActions {
   }
 
   discoverSessions(projectId: string, onCommitted?: () => void, onFailed?: (message: string) => void): boolean {
+    // server chat_channel 对 read-only 仅放行 prompt-status / mcp-list（§9.2.2），
+    // session/discover 会返回 unsupported_frame；Web 不得硬发，侧栏需提示目录可能不完整。
     if (!this.deps.isReady() || this.deps.isReadOnly() || this.deps.discoveringProjectId()) {
       onFailed?.(this.deps.isReadOnly()
         ? 'Read-only mode cannot refresh ACP sessions.'
