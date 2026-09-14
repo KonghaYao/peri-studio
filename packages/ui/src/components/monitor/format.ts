@@ -1,4 +1,28 @@
-import type { MonitorObservationView, MonitorSummaryView } from './types';
+import type { MonitorSummaryView } from './types';
+
+export type FormatDurationMsOptions = {
+  /** 秒单位前是否插入空格（Turn tree `1.24 s` vs 列表 `1.2s`） */
+  space?: boolean;
+  /** 秒级时长的小数位数（列表 1 位、Observation / Turn tree 2 位） */
+  secondsDigits?: number;
+};
+
+/** 毫秒时长单源格式化；调用方负责校验入参。 */
+export function formatDurationMs(ms: number, options: FormatDurationMsOptions = {}): string {
+  const { space = false, secondsDigits = 1 } = options;
+  const unitSep = space ? ' ' : '';
+  if (ms < 1000) return `${ms}${unitSep}ms`;
+  return `${(ms / 1000).toFixed(secondsDigits)}${unitSep}s`;
+}
+
+function formatTokenCount(value: number): string {
+  return value.toLocaleString('en-US');
+}
+
+/** input → output (∑ total) 摘要；Monitor observation 与 TokenUsageBadge 共用。 */
+export function formatTokenUsageLabel(input: number, output: number, total: number): string {
+  return `${formatTokenCount(input)} → ${formatTokenCount(output)} (∑ ${formatTokenCount(total)})`;
+}
 
 export function formatMonitorTraceCount(count: number): string {
   return `${count.toLocaleString()} traces`;
@@ -32,10 +56,10 @@ export function formatMonitorLastActivity(value: string | undefined, now?: numbe
   return relative ? `Last activity ${relative}` : null;
 }
 
+/** Trace / Timeline 列表时长：`1.2s`（1 位小数、无空格）。 */
 export function formatMonitorLatency(latencyMs?: number): string | null {
   if (latencyMs === undefined || !Number.isFinite(latencyMs)) return null;
-  if (latencyMs < 1000) return `${latencyMs}ms`;
-  return `${(latencyMs / 1000).toFixed(1)}s`;
+  return formatDurationMs(latencyMs, { secondsDigits: 1 });
 }
 
 export function formatMonitorTraceMeta(
@@ -73,11 +97,10 @@ export function formatMonitorObservationMeta(
   return parts.join(' · ');
 }
 
-/** Observation 树行内时长（秒保留两位，与 Langfuse 列表一致）。 */
+/** Observation 树行内时长：`6.88s`（2 位小数、无空格，与 Langfuse 列表一致）。 */
 export function formatMonitorObservationDuration(latencyMs?: number): string | null {
   if (latencyMs === undefined || !Number.isFinite(latencyMs)) return null;
-  if (latencyMs < 1000) return `${latencyMs}ms`;
-  return `${(latencyMs / 1000).toFixed(2)}s`;
+  return formatDurationMs(latencyMs, { secondsDigits: 2 });
 }
 
 /** GENERATION 行 token 摘要：`input → output (Σ sum)`。 */
@@ -97,8 +120,7 @@ export function formatMonitorObservationTokens(
     && Number.isFinite(input)
     && Number.isFinite(output)
   ) {
-    const sum = input + output;
-    return `${input.toLocaleString()} → ${output.toLocaleString()} (Σ ${sum.toLocaleString()})`;
+    return formatTokenUsageLabel(input, output, input + output);
   }
   if (
     observation.kind?.toUpperCase() === 'GENERATION'
@@ -108,42 +130,6 @@ export function formatMonitorObservationTokens(
     return `${observation.tokens.toLocaleString()} tok`;
   }
   return null;
-}
-
-export function formatMonitorObservationLevel(level: MonitorObservationView['level']): string {
-  switch (level) {
-    case 'ERROR':
-      return 'Error';
-    case 'WARNING':
-      return 'Warning';
-    case 'DEBUG':
-      return 'Debug';
-    default:
-      return 'Default';
-  }
-}
-
-/** 详情面板 token 行：`input → output (Σ sum)` 或 total。 */
-export function formatMonitorObservationDetailTokens(
-  observation: Pick<MonitorObservationView, 'tokens' | 'inputTokens' | 'outputTokens'>,
-): string | null {
-  const summary = formatMonitorObservationTokens(observation);
-  if (summary) return summary;
-  if (observation.tokens !== undefined && Number.isFinite(observation.tokens)) {
-    return `${observation.tokens.toLocaleString()} tokens`;
-  }
-  return null;
-}
-
-export function hasMonitorObservationDetails(observation: MonitorObservationView): boolean {
-  if (observation.inputPreview || observation.outputPreview) return true;
-  if (observation.scoreValue || observation.scoreDataType) return true;
-  if (observation.model) return true;
-  if (observation.latencyMs !== undefined) return true;
-  if (observation.inputTokens !== undefined || observation.outputTokens !== undefined) return true;
-  if (observation.tokens !== undefined) return true;
-  if (observation.level !== 'DEFAULT') return true;
-  return false;
 }
 
 export function monitorSummaryItems(summary: MonitorSummaryView, now?: number): string[] {

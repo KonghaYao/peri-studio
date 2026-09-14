@@ -640,14 +640,6 @@ export {
   type MonitorPanelShellProps,
 } from './components/monitor/MonitorPanelShell';
 export {
-  MonitorTraceDetailShell,
-  type MonitorTraceDetailShellProps,
-} from './components/monitor/MonitorTraceDetailShell';
-export {
-  MonitorObservationTree,
-  type MonitorObservationTreeProps,
-} from './components/monitor/MonitorObservationTree';
-export {
   MonitorTraceTurnTree,
   type MonitorTraceTurnTreeProps,
 } from './components/monitor/MonitorTraceTurnTree';
@@ -666,10 +658,6 @@ export {
   type MonitorTraceTurnInput,
   type MonitorTraceTurnTreeNode,
 } from './components/monitor/build-trace-turn-tree';
-export {
-  MonitorObservationDetailShell,
-  type MonitorObservationDetailShellProps,
-} from './components/monitor/MonitorObservationDetailShell';
 export {
   MonitorObservationLevelBadge,
   MonitorObservationTypeBadge,
@@ -1150,7 +1138,13 @@ export { Popconfirm, type PopconfirmProps } from './components/popconfirm';
 export { Result, ResultActions, resultPresetActions, type ResultProps, type ResultStatus } from './components/result';
 export { Watermark, type WatermarkProps } from './components/watermark';
 export { Upload, UploadButton, type UploadFile, type UploadFileStatus, type UploadListType, type UploadProps } from './components/upload';
-export { EnhancedDataTable, type DataTableSize, type EnhancedDataTableProps, type ServerPagination } from './components/DataTableFeatures';
+export {
+  EnhancedDataTable,
+  type DataTableSize,
+  type EnhancedDataTableColumn,
+  type EnhancedDataTableProps,
+  type ServerPagination,
+} from './components/DataTableFeatures';
 export {
   DataTableToolbarShell,
   type DataTableToolbarColumnMeta,

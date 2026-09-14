@@ -59,7 +59,7 @@ date: 2026-09-14
 | `auto-refresh-control.tsx` | `AutoRefreshIntervalControl` | Solid 岛 |
 | `command-palette.tsx` | `CommandPaletteShell` + `bindCommandPaletteHotkey` + `dispatchCommandPaletteOpen` / `bindCommandPaletteOpenEvent` | Solid 岛；`items` 由 fuse 路由注入；可选 `footer`；↑↓ wrap 导航 |
 | `shortcuts-dialog.tsx` | `ShortcutsDialogShell` + `bindShortcutsHelpHotkey` | Solid 岛 |
-| `observation-tree.tsx` | `MonitorObservationTree`（已有） | **不搬** `buildTree` / noise；仅详情壳可对齐 |
+| `observation-tree.tsx` | `MonitorTraceTurnTree` + `buildTraceTurnTree` | **不搬** fuse 侧 `buildTree` / noise；studio T3 已落地 TurnTree + IoViewer |
 | `chat-viewer.tsx` / `chat-parts.tsx` | `ChatIoList` / `ChatIoParts` | **已移植**；fuse 消费 `IoViewer` 默认路径即可 |
 | `layout.tsx`、shadcn `ui/*` | — | **短期继续自绘**；勿搬 shadcn 进 studio |
 

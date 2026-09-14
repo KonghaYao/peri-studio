@@ -12,17 +12,21 @@ import {
   MonitorTimelineShell,
   MonitorTraceTurnTree,
   MonitorTraceTurnTreeShell,
+  ScoreListShell,
+  StatChip,
   type MonitorObservationView,
   type MonitorPanelState,
   type MonitorSummaryView,
   type MonitorTraceDetailState,
   type MonitorTraceRowView,
 } from '@peri/ui';
-import { ArrowLeft, X } from 'lucide-solid';
-import { createEffect, createMemo, createSignal, onCleanup, Show } from 'solid-js';
+import { ArrowLeft, Clock, Coins, Cpu, X } from 'lucide-solid';
+import { createEffect, createMemo, createSignal, For, onCleanup, Show } from 'solid-js';
 import {
   buildMonitorTimelineSegments,
   buildObservationMetadata,
+  buildObservationScoreList,
+  buildObservationStatChips,
   flattenMonitorObservations,
   observationIoInput,
   observationIoOutput,
@@ -187,21 +191,58 @@ function MonitorTraceDetailPanel(props: {
                 when={props.selectedObservationId() === null}
                 fallback={(
                   <Show when={selectedObservation()} keyed>
-                    {(observation) => (
-                      <div class="flex flex-col gap-12" data-testid="monitor-observation-detail">
-                        <div class="flex flex-wrap items-center gap-8">
-                          <h4 class="text-14 font-600 text-content-primary">{observation.name}</h4>
-                          <MonitorObservationTypeBadge type={observation.kind} />
+                    {(observation) => {
+                      const statChips = () => buildObservationStatChips(observation);
+                      const scores = () => buildObservationScoreList(observation);
+
+                      return (
+                        <div class="flex flex-col gap-12" data-testid="monitor-observation-detail">
+                          <div class="flex flex-wrap items-center gap-8">
+                            <h4 class="text-14 font-600 text-content-primary">{observation.name}</h4>
+                            <MonitorObservationTypeBadge type={observation.kind} />
+                          </div>
+                          <Show when={statChips().length > 0}>
+                            <div
+                              class="grid grid-cols-2 gap-8"
+                              data-testid="monitor-observation-stats"
+                            >
+                              <For each={statChips()}>
+                                {(chip) => (
+                                  <StatChip
+                                    label={chip.label}
+                                    value={chip.value}
+                                    icon={
+                                      chip.key === 'duration'
+                                        ? <Clock size={14} />
+                                        : chip.key === 'model'
+                                          ? <Cpu size={14} />
+                                          : <Coins size={14} />
+                                    }
+                                    data-testid={`monitor-stat-chip-${chip.key}`}
+                                  />
+                                )}
+                              </For>
+                            </div>
+                          </Show>
+                          <IoTabsShell
+                            renderInput={() => <IoViewer data={observationIoInput(observation)} />}
+                            renderOutput={() => <IoViewer data={observationIoOutput(observation)} />}
+                            renderMetadata={() => (
+                              <JsonTree data={buildObservationMetadata(observation)} defaultCollapsedDepth={1} />
+                            )}
+                          />
+                          <Show when={scores().length > 0}>
+                            <div>
+                              <h3 class="mb-8 text-12 font-600 text-content-primary">Scores</h3>
+                              <ScoreListShell
+                                scores={scores()}
+                                data-testid="monitor-observation-scores"
+                              />
+                            </div>
+                          </Show>
                         </div>
-                        <IoTabsShell
-                          renderInput={() => <IoViewer data={observationIoInput(observation)} />}
-                          renderOutput={() => <IoViewer data={observationIoOutput(observation)} />}
-                          renderMetadata={() => (
-                            <JsonTree data={buildObservationMetadata(observation)} defaultCollapsedDepth={1} />
-                          )}
-                        />
-                      </div>
-                    )}
+                      );
+                    }}
                   </Show>
                 )}
               >

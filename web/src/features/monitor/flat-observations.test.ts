@@ -3,6 +3,8 @@ import type { MonitorObservationView } from '@peri/ui';
 import {
   buildMonitorTimelineSegments,
   buildObservationMetadata,
+  buildObservationScoreList,
+  buildObservationStatChips,
   flattenMonitorObservations,
   observationIoInput,
   observationIoOutput,
@@ -75,5 +77,64 @@ describe('flattenMonitorObservations', () => {
       startMs: 900,
       endMs: 1600,
     });
+  });
+
+  it('builds stat chips only for populated observation fields', () => {
+    const child = NESTED[0].children![0];
+    expect(buildObservationStatChips(child)).toEqual([
+      { key: 'duration', label: 'Duration', value: '700ms' },
+      { key: 'model', label: 'Model', value: 'gpt-4' },
+    ]);
+    expect(buildObservationStatChips({
+      id: 'empty',
+      name: 'empty',
+      kind: 'SPAN',
+      level: 'DEFAULT',
+    })).toEqual([]);
+  });
+
+  it('adapts score observations for ScoreListShell', () => {
+    const parent: MonitorObservationView = {
+      id: 'gen',
+      name: 'step-1',
+      kind: 'GENERATION',
+      level: 'DEFAULT',
+      children: [{
+        id: 'score-1',
+        name: 'accuracy',
+        kind: 'SCORE',
+        level: 'DEFAULT',
+        scoreValue: '0.42',
+        scoreDataType: 'NUMERIC',
+      }, {
+        id: 'score-2',
+        name: 'helpfulness',
+        kind: 'SCORE',
+        level: 'DEFAULT',
+        scoreValue: 'good',
+        scoreDataType: 'CATEGORICAL',
+      }],
+    };
+
+    expect(buildObservationScoreList(parent)).toEqual([
+      {
+        id: 'score-1',
+        name: 'accuracy',
+        source: 'NUMERIC',
+        value: 0.42,
+      },
+      {
+        id: 'score-2',
+        name: 'helpfulness',
+        source: 'CATEGORICAL',
+        textValue: 'good',
+      },
+    ]);
+    expect(buildObservationScoreList({
+      id: 'gen-only',
+      name: 'step-1',
+      kind: 'GENERATION',
+      level: 'DEFAULT',
+    })).toEqual([]);
   });
 });

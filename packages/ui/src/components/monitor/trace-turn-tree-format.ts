@@ -1,4 +1,5 @@
 import type { MonitorTraceObservationFlat } from './build-trace-turn-tree';
+import { formatDurationMs } from './format';
 
 /** fuse `estimateTokens`：字符数 / 4 粗估。 */
 export function estimateMonitorTraceOutputTokens(text: string | null | undefined): number | null {
@@ -17,7 +18,7 @@ export function formatMonitorTraceClockTime(iso: string | null | undefined): str
   }).format(date);
 }
 
-/** fuse `formatDuration`：start/end ISO → `123 ms` / `1.24 s`。 */
+/** Turn tree 节点时长：`123 ms` / `1.24 s`（2 位小数、有空格）。 */
 export function formatMonitorTraceDuration(
   startTime: string | null | undefined,
   endTime: string | null | undefined,
@@ -25,8 +26,7 @@ export function formatMonitorTraceDuration(
   if (!startTime || !endTime) return '—';
   const ms = new Date(endTime).getTime() - new Date(startTime).getTime();
   if (!Number.isFinite(ms) || ms < 0) return '—';
-  if (ms < 1000) return `${ms} ms`;
-  return `${(ms / 1000).toFixed(2)} s`;
+  return formatDurationMs(ms, { space: true, secondsDigits: 2 });
 }
 
 export function formatMonitorTraceCompactTokens(count: number | null | undefined): string {

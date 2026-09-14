@@ -28,7 +28,7 @@ function formatCount(value: number) {
   return value.toLocaleString('en-US');
 }
 
-function formatTokenUsageLabel(input: number, output: number, cached: number) {
+function formatTokenMeterBreakdown(input: number, output: number, cached: number) {
   return `Input ${formatCount(input)} · Output ${formatCount(output)} · Cached ${formatCount(cached)}`;
 }
 
@@ -75,7 +75,7 @@ function resolveCounts(props: TokenUsageMeterProps) {
 
 /** 从 token 快照生成无障碍/标题文案。 */
 export function tokenUsageLabel(usage: TokenUsageSnapshot): string {
-  return formatTokenUsageLabel(
+  return formatTokenMeterBreakdown(
     tokenValue(usage.inputTokens),
     tokenValue(usage.outputTokens),
     tokenValue(usage.cacheReadTokens),
@@ -106,7 +106,7 @@ export const TokenUsageMeter: Component<TokenUsageMeterProps> = (props) => {
   const ratio = () => limit() > 0 ? Math.min(1, used() / limit()) : 0;
   const state = createMemo(() => usageState(ratio()));
   const remaining = () => Math.max(0, limit() - used());
-  const breakdown = () => formatTokenUsageLabel(input(), output(), cached());
+  const breakdown = () => formatTokenMeterBreakdown(input(), output(), cached());
   const ring = createMemo(() => {
     const deg = ratio() * 360;
     const color = RING_COLOR[state()];

@@ -84,7 +84,7 @@ export function ComponentCatalogExtrasForms2(props: { sections?: string[] }) {
   return (
     <>
       <Show when={showCatalogSection(props.sections, 'input-variants')}>
-        <CatalogDemo id="input-variants" title="Input variants" description="Password、Search、allowClear、prefix/suffix、showCount、尺寸与变体。">
+        <CatalogDemo id="input-variants" title="Input variants" description="Password、Search、allowClear、prefix/suffix、showCount、尺寸与变体。Input.Search 即时搜索，勿与 FilterInput 混用。">
           <DemoRow label="Password & Search">
             <Input.Password placeholder="Password" class="max-w-sm" />
             <Input.Search placeholder="Search sessions" class="max-w-sm" enterButton onSearch={(value) => console.log(value)} />

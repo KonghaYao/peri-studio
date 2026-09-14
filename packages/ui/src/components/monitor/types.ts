@@ -29,9 +29,9 @@ export type MonitorObservationView = {
   tokens?: number;
   inputTokens?: number;
   outputTokens?: number;
-  /** 详情视图专用：有界 input preview（树列表不渲染）。 */
+  /** IoViewer / flat adapter：有界 input preview（TurnTree 列表不渲染）。 */
   inputPreview?: string;
-  /** 详情视图专用：有界 output preview（树列表不渲染）。 */
+  /** IoViewer / flat adapter：有界 output preview（TurnTree 列表不渲染）。 */
   outputPreview?: string;
   inputTruncated?: boolean;
   outputTruncated?: boolean;

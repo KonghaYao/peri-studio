@@ -1,5 +1,6 @@
 import { Show, splitProps, type Component, type JSX } from 'solid-js';
 import { cn } from '../lib/cn';
+import { formatTokenUsageLabel } from './monitor/format';
 import { Badge } from './Badge';
 
 export type TokenUsageBadgeProps = {
@@ -11,14 +12,6 @@ export type TokenUsageBadgeProps = {
   class?: string;
   'data-testid'?: string;
 };
-
-function formatCount(value: number): string {
-  return value.toLocaleString('en-US');
-}
-
-function usageLabel(input: number, output: number, total: number): string {
-  return `${formatCount(input)} → ${formatCount(output)} (∑ ${formatCount(total)})`;
-}
 
 /** T2 · 表格行 token 摘要徽章；与 Composer `TokenUsageMeter` 互补。 */
 export const TokenUsageBadge: Component<TokenUsageBadgeProps> = (props) => {
@@ -32,7 +25,7 @@ export const TokenUsageBadge: Component<TokenUsageBadgeProps> = (props) => {
   ]);
 
   const hidden = () => local.inputUsage === 0 && local.outputUsage === 0 && local.totalUsage === 0;
-  const label = () => usageLabel(local.inputUsage, local.outputUsage, local.totalUsage);
+  const label = () => formatTokenUsageLabel(local.inputUsage, local.outputUsage, local.totalUsage);
 
   return (
     <Show when={!hidden()}>

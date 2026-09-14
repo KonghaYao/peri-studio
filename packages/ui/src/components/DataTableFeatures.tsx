@@ -20,6 +20,7 @@ import {
   type DataTableColumn,
   type DataTableSortState,
 } from './DataTable';
+import { DataTableToolbarShell } from './DataTableToolbarShell';
 import { Input } from './Field';
 import { IconButton } from './Button';
 import { PaginationControls } from './Pagination';
@@ -39,9 +40,14 @@ export type ServerPagination = {
   onChange?: (page: number, pageSize: number) => void;
 };
 
+/** EnhancedDataTable 列定义；`hideable` 仅影响 Columns 菜单。 */
+export type EnhancedDataTableColumn<T> = DataTableColumn<T> & {
+  hideable?: boolean;
+};
+
 export type EnhancedDataTableProps<T> = {
   data: T[];
-  columns: DataTableColumn<T>[];
+  columns: EnhancedDataTableColumn<T>[];
   rowKey?: (row: T, index: number) => string;
   rowSelection?: {
     selectedKeys?: string[];
@@ -65,6 +71,13 @@ export type EnhancedDataTableProps<T> = {
   fixedHeader?: boolean;
   fixedColumnStart?: number;
   class?: string;
+  /** 顶栏左侧 slot（筛选、刷新等）；与 `showColumnToggle` 任一为 true 时渲染 toolbar 壳。 */
+  toolbar?: JSX.Element;
+  /** 显示 Columns 可见性菜单；默认 false。 */
+  showColumnToggle?: boolean;
+  /** 列可见性（受控）；未传时内部 signal，默认全部可见。 */
+  columnVisibility?: Record<string, boolean>;
+  onColumnVisibilityChange?: (visibility: Record<string, boolean>) => void;
 };
 
 function stickyColumnClass(index: number, fixedStart: number, isHeader = false) {
@@ -98,14 +111,44 @@ export function EnhancedDataTable<T>(props: EnhancedDataTableProps<T>) {
     'fixedHeader',
     'fixedColumnStart',
     'class',
+    'toolbar',
+    'showColumnToggle',
+    'columnVisibility',
+    'onColumnVisibilityChange',
   ]);
   const [expanded, setExpanded] = createSignal<Set<string>>(new Set());
   const [filters, setFilters] = createSignal<Record<string, string>>(local.columnFilters ?? {});
   const [selected, setSelected] = createSignal<string[]>(local.rowSelection?.selectedKeys ?? []);
   const [internalSort, setInternalSort] = createSignal<DataTableSortState>(local.sort ?? null);
+  const [internalColumnVisibility, setInternalColumnVisibility] = createSignal<Record<string, boolean>>(
+    {},
+  );
 
   const sortState = () => local.sort ?? internalSort();
   const fixedStart = () => local.fixedColumnStart ?? 0;
+  const columnVisibility = () => local.columnVisibility ?? internalColumnVisibility();
+  const showToolbar = () => Boolean(local.showColumnToggle || local.toolbar);
+
+  const visibleColumns = () =>
+    local.columns.filter((column) => columnVisibility()[column.id] !== false);
+
+  const toolbarColumns = () => {
+    if (!local.showColumnToggle) return [];
+    return local.columns.map((column) => ({
+      id: column.id,
+      label: column.header,
+      visible: columnVisibility()[column.id] !== false,
+      hideable: column.hideable ?? true,
+    }));
+  };
+
+  const onColumnVisibilityChange = (columnId: string, visible: boolean) => {
+    const next = { ...columnVisibility(), [columnId]: visible };
+    if (local.columnVisibility === undefined) {
+      setInternalColumnVisibility(next);
+    }
+    local.onColumnVisibilityChange?.(next);
+  };
 
   const getKey = (row: T, index: number) => local.rowKey?.(row, index) ?? String(index);
 
@@ -167,9 +210,17 @@ export function EnhancedDataTable<T>(props: EnhancedDataTableProps<T>) {
 
   return (
     <div class="flex flex-col gap-12">
+      <Show when={showToolbar()}>
+        <DataTableToolbarShell
+          columns={toolbarColumns()}
+          onColumnVisibilityChange={onColumnVisibilityChange}
+          toolbar={local.toolbar}
+          data-testid="enhanced-data-table-toolbar"
+        />
+      </Show>
       <DataTable
         data={visibleData()}
-        columns={local.columns}
+        columns={visibleColumns()}
         getRowKey={getKey}
         sort={local.serverSort ? sortState() : undefined}
         onSortChange={local.serverSort ? onSort : undefined}
@@ -200,7 +251,7 @@ export function EnhancedDataTable<T>(props: EnhancedDataTableProps<T>) {
             <Show when={local.expandable}>
               <DataTableHead class="w-40" />
             </Show>
-            <For each={local.columns}>
+            <For each={visibleColumns()}>
               {(column, index) => (
                 <DataTableHead
                   column={column.id}
@@ -253,7 +304,7 @@ export function EnhancedDataTable<T>(props: EnhancedDataTableProps<T>) {
                         </Show>
                       </DataTableCell>
                     </Show>
-                    <For each={local.columns}>
+                    <For each={visibleColumns()}>
                       {(column, columnIndex) => (
                         <DataTableCell
                           class={cn(
@@ -268,7 +319,7 @@ export function EnhancedDataTable<T>(props: EnhancedDataTableProps<T>) {
                   </DataTableRow>
                   <Show when={local.expandable && expanded().has(key)}>
                     <DataTableRow>
-                      <DataTableCell colSpan={local.columns.length + selectionOffset()}>
+                      <DataTableCell colSpan={visibleColumns().length + selectionOffset()}>
                         {local.expandable?.expandedRowRender(row)}
                       </DataTableCell>
                     </DataTableRow>

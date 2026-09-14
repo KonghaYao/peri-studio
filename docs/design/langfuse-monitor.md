@@ -332,6 +332,8 @@ Authorization: Basic base64(public_key:secret_key)
 | 层级 | 路径 | 职责 |
 |------|------|------|
 | T3 | `packages/ui/src/components/monitor/` | 无 store 壳：`MonitorPanelShell`（trace 列表）、`MonitorTraceTurnTreeShell` + `IoTabsShell` / `IoViewer`（trace drill-in）；**body-only** |
+
+> **Legacy 移除（2026-09-14）**：旧 `MonitorObservationTree` / `MonitorTraceDetailShell` / `MonitorObservationDetailShell` 已由 `MonitorTraceTurnTree` + `IoViewer` 替代；web / ui-sandbox 零引用后自 `@peri/ui` 删除。
 | T4 | `web/src/widgets/resource/MonitorPanel.tsx` | store 接线、`selectedSessionId()`、列表/drill-in 状态、Refresh、轮询生命周期 |
 | Feature | `web/src/features/monitor/` | `fetchMonitorCapability`、`fetchSessionTraces`、`fetchTraceDetail`、DTO 解析、`flattenMonitorObservations` 适配器；`useMonitorCapability()` hook |
 | Workbench | `ResourceWorkbench.tsx` | `WorkbenchView` 增 `'monitor'`；rail 按钮；`panelTitle` / `panelWidthProfile` |

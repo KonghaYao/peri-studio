@@ -27,7 +27,7 @@ peri-studio 已有更完整的 SolidJS `@peri/ui`（含 Monitor T3、DataTable�
 - shadcn 级 T2：Button、Dialog、Tabs、Badge、Table、Select、Tooltip…
 - `DataTable` / `EnhancedDataTable`（studio 版强于 fuse 的 tanstack 壳）
 - `Command` 复合件（fuse 的 command-palette 为 T4 路由装配）
-- Monitor 树/详情：`MonitorObservationTree`、`MonitorTraceDetailShell`（已存在）
+- Monitor trace drill-in：`MonitorTraceTurnTree` / `MonitorTraceTurnTreeShell` + `IoViewer`（旧 `MonitorObservationTree` / `MonitorTraceDetailShell` 已移除）
 - `TokenUsageMeter`（Composer 场景；与 fuse `TokenUsageBadge` 用途不同）
 
 ### 新增
@@ -81,6 +81,21 @@ T4 demo：`ComponentCatalogExtrasTableState.tsx`、`ComponentCatalogExtrasDataTa
 | `CommandPaletteShell` | 可选 `footer`；↑↓ 列表 wrap 导航；`dispatchCommandPaletteOpen` / `bindCommandPaletteOpenEvent` |
 | `MonitorTimelineDialogShell` | T3 弹窗壳（timeline + detail slot）；barrel 已导出；**无独立 sandbox 路由**（T4 在 trace detail 内组合） |
 
+### 互补组件（勿合并）
+
+P1/P2 从 peri-fuse 迁入的 T2/T3 与 studio 既有件 **不是重复**，禁止再抽第三套。完整分级与 T4 边界见 [`t3-blocks-in-ui-package.md`](t3-blocks-in-ui-package.md) §互补组件；选型摘要：
+
+| 对 | 何时用谁 |
+|----|----------|
+| `InputSearch` vs `FilterInput` | 即时搜索 vs Enter 提交的表格筛选 |
+| `Statistic` vs `StatChip` | 大数字指标 vs 详情行 chip |
+| `TokenUsageMeter` vs `TokenUsageBadge` | Composer 限额条 vs 表格摘要 |
+| `ChatIoList` / `IoViewer` vs `ConversationMessage` | 观测 IO vs ACP transcript |
+| `Command` vs `CommandPaletteShell` | 可组合原语 vs 完整 Cmd+K 壳（另一条会改实现去组合） |
+| `LocalIsoDate` / `formatDay` / `formatByPicker` | 表格时间 vs 日期筛选边界 vs DatePicker |
+
+Sandbox catalog 各 demo 的 `description` 已补「勿与 X 混用」一句，便于浏览时对照。
+
 ### 增强
 
 - Monitor 文档与 sandbox：补 `monitor-timeline`（含 type/level badges + timeline band）、`io-viewer` 与 `monitor-io-detail` demo（`#/components-monitor`）
@@ -93,7 +108,7 @@ T4 demo：`ComponentCatalogExtrasTableState.tsx`、`ComponentCatalogExtrasDataTa
 |----------------|------|
 | `layout.tsx`、侧栏 nav、project-switcher | React Router + project store |
 | `data-table.tsx`、各 `features/*` 页面 | API/tRPC/URL 状态 |
-| `observation-tree.tsx` `buildTree` / noise 逻辑 | 领域数据变换；studio 用 `children` 预构建树 |
+| `observation-tree.tsx` `buildTree` / noise 逻辑 | 领域数据变换；studio 用 `buildTraceTurnTree` + `MonitorTraceTurnTree` |
 | `chat-viewer.tsx`、`chat-parts.tsx` | 已移植为 `ChatIoList` / `ChatIoParts`；fuse 可删 React 实现并消费 `IoViewer` |
 | `command-palette.tsx` 内 nav 命令表 | 产品路由；保留为 T4 |
 | Spectra oklch token 全表 | 与 studio T1 视觉契约不同；不合并 |

@@ -111,8 +111,7 @@ T3 组件必须：
 | 组件 | 说明 |
 |------|------|
 | `MonitorPanelShell` | Langfuse trace 摘要 + 列表内容壳（body-only；header 由 WorkbenchPanelChrome 提供） |
-| `MonitorTraceDetailShell` / `MonitorObservationTree` / `MonitorObservationDetailShell` | Trace drill-in + 预构建 observation 树 / 详情 |
-| `MonitorTraceTurnTree` / `MonitorTraceTurnTreeShell` / `buildTraceTurnTree` | Trace 全量扁平 observation 树（noise hoist、turn 分组、选中/键盘）；自 peri-fuse `observation-tree` |
+| `MonitorTraceTurnTree` / `MonitorTraceTurnTreeShell` / `buildTraceTurnTree` | Trace drill-in：全量扁平 observation 树（noise hoist、turn 分组、选中/键盘）；自 peri-fuse `observation-tree` |
 | `MonitorObservationTypeBadge` / `MonitorObservationLevelBadge` / `MonitorObservationTypeIcon` | Observation type / level 视觉（自 peri-fuse `observation-badges`） |
 | `MonitorTimelineShell` / `MonitorTimelineBand` / `MonitorTimelineRuler` | Trace 时长带 + type 分轨（layout 自 peri-fuse `observation-timeline-*`）；running 段斜纹、type row track hover |
 | `MonitorTimelineDialogShell` | 观测时间轴弹窗壳（timeline + detail 双 slot；T4 注入 `MonitorTimelineShell` 或 `MonitorTimelineBand`） |
@@ -192,6 +191,21 @@ Sandbox `components/blocks/*`：T3 条 **barrel 重导出** `@peri/ui`；layers 
 | `ChatHeader` 默认包装 | `ui-sandbox/blocks/chrome/ChatHeader.tsx` | Catalog 默认 props |
 | SCM mutation / preview 接线 | `web/widgets/resource/SourceControlPanel.tsx` | store + features |
 | 消息 block 渲染 / ToolCall / MCP | `ConversationMessage.tsx` 内 `MessageBlock` 等 | Yjs 投影 + 业务语义（壳已 T3，内容仍 T4） |
+
+## 互补组件（勿合并）
+
+以下组件对 **职责互补、视觉相近**，禁止抽第三套或合并实现；选型见「何时用谁」。
+
+| 对 | 何时用谁 |
+|----|----------|
+| `InputSearch` vs `FilterInput` | 即时搜索 vs Enter 提交的表格筛选 |
+| `Statistic` vs `StatChip` | 大数字指标 vs 详情行 chip |
+| `TokenUsageMeter` vs `TokenUsageBadge` | Composer 限额条 vs 表格摘要 |
+| `ChatIoList` / `IoViewer` vs `ConversationMessage` | 观测 IO vs ACP transcript |
+| `Command` vs `CommandPaletteShell` | 可组合原语 vs 完整 Cmd+K 壳（另一条会改实现去组合） |
+| `LocalIsoDate` / `formatDay` / `formatByPicker` | 表格时间 vs 日期筛选边界 vs DatePicker |
+
+peri-fuse 抽取语境与 P1/P2 落地范围见 [`peri-fuse-ui-extraction.md`](peri-fuse-ui-extraction.md) §互补组件。
 
 ## Catalog 去重
 

@@ -2,8 +2,119 @@ import type {
   MonitorObservationView,
   MonitorTimelineSegment,
   MonitorTraceObservationFlat,
+  ScoreListShellItem,
 } from '@peri/ui';
 import { parseMaybeString } from '@peri/ui';
+
+export type ObservationStatChipView = {
+  key: 'duration' | 'model' | 'tokens';
+  label: string;
+  value: string;
+};
+
+function formatObservationDuration(latencyMs: number): string {
+  if (latencyMs < 1000) return `${latencyMs}ms`;
+  return `${(latencyMs / 1000).toFixed(2)}s`;
+}
+
+function formatObservationTokens(observation: MonitorObservationView): string | null {
+  const { inputTokens, outputTokens, tokens, kind } = observation;
+  if (
+    inputTokens !== undefined
+    && outputTokens !== undefined
+    && Number.isFinite(inputTokens)
+    && Number.isFinite(outputTokens)
+  ) {
+    const sum = inputTokens + outputTokens;
+    return `${inputTokens.toLocaleString()} → ${outputTokens.toLocaleString()} (Σ ${sum.toLocaleString()})`;
+  }
+  if (tokens !== undefined && Number.isFinite(tokens)) {
+    if (kind?.toUpperCase() === 'GENERATION') {
+      return `${tokens.toLocaleString()} tok`;
+    }
+    return `${tokens.toLocaleString()} tok`;
+  }
+  return null;
+}
+
+function adaptObservationScoreItem(observation: MonitorObservationView): ScoreListShellItem | null {
+  if (!observation.scoreValue) return null;
+
+  const item: ScoreListShellItem = {
+    id: observation.id,
+    name: observation.name,
+    source: observation.scoreDataType ?? 'SCORE',
+  };
+
+  const numeric = Number(observation.scoreValue);
+  if (observation.scoreDataType?.toUpperCase() === 'NUMERIC' && Number.isFinite(numeric)) {
+    item.value = numeric;
+    return item;
+  }
+  if (Number.isFinite(numeric) && observation.scoreValue.trim() !== '') {
+    item.value = numeric;
+    return item;
+  }
+
+  item.textValue = observation.scoreValue;
+  return item;
+}
+
+/** 详情 StatChip 行：仅返回有值的 duration / model / tokens。 */
+export function buildObservationStatChips(observation: MonitorObservationView): ObservationStatChipView[] {
+  const chips: ObservationStatChipView[] = [];
+
+  if (observation.latencyMs !== undefined && Number.isFinite(observation.latencyMs)) {
+    chips.push({
+      key: 'duration',
+      label: 'Duration',
+      value: formatObservationDuration(observation.latencyMs),
+    });
+  }
+  if (observation.model) {
+    chips.push({
+      key: 'model',
+      label: 'Model',
+      value: observation.model,
+    });
+  }
+
+  const tokens = formatObservationTokens(observation);
+  if (tokens) {
+    chips.push({
+      key: 'tokens',
+      label: 'Tokens',
+      value: tokens,
+    });
+  }
+
+  return chips;
+}
+
+/** 将 observation 自身与子 SCORE 节点适配为 ScoreListShell 项。 */
+export function buildObservationScoreList(observation: MonitorObservationView): ScoreListShellItem[] {
+  const scores: ScoreListShellItem[] = [];
+  const seen = new Set<string>();
+
+  const push = (candidate: MonitorObservationView) => {
+    const item = adaptObservationScoreItem(candidate);
+    if (!item || seen.has(item.id)) return;
+    seen.add(item.id);
+    scores.push(item);
+  };
+
+  if (observation.scoreValue) {
+    push(observation);
+  }
+
+  for (const child of observation.children ?? []) {
+    if (child.kind.toUpperCase() === 'SCORE' || child.scoreValue) {
+      push(child);
+    }
+  }
+
+  return scores;
+}
 
 type FlatObservationDraft = Omit<MonitorTraceObservationFlat, 'startTime' | 'endTime'> & {
   latencyMs?: number;

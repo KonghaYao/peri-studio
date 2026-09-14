@@ -13,6 +13,7 @@ import {
   DialogTrigger,
   EditableTabs,
   EnhancedDataTable,
+  FilterInput,
   LinkButton,
   type DataTableSortState,
   MessageHost,
@@ -41,6 +42,7 @@ export function ComponentCatalogFeedback(props: { sections?: string[] }) {
   const [dialogOpen, setDialogOpen] = createSignal(false);
   const [tablePage, setTablePage] = createSignal(1);
   const [tableSort, setTableSort] = createSignal<DataTableSortState>(null);
+  const [tableQuery, setTableQuery] = createSignal<string | undefined>();
 
   const serverRows = Array.from({ length: 48 }, (_, index) => ({
     name: `User ${index + 1}`,
@@ -180,7 +182,7 @@ export function ComponentCatalogFeedback(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'enhanced-table')}>
-        <CatalogDemo id="enhanced-table" title="Enhanced DataTable" description="服务端排序/分页、固定头列、行选择与可展开行。">
+        <CatalogDemo id="enhanced-table" title="Enhanced DataTable" description="服务端排序/分页、固定头列、行选择与可展开行；toolbar + 列可见性。">
           <EnhancedDataTable
             data={pagedData()}
             bordered
@@ -190,6 +192,16 @@ export function ComponentCatalogFeedback(props: { sections?: string[] }) {
             serverSort
             sort={tableSort()}
             onSortChange={setTableSort}
+            showColumnToggle
+            toolbar={
+              <FilterInput
+                value={tableQuery()}
+                onCommit={setTableQuery}
+                placeholder="Filter users"
+                title="Search users"
+                class="w-(--container-menu-min)"
+              />
+            }
             pagination={{
               current: tablePage(),
               pageSize: 5,

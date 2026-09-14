@@ -170,6 +170,66 @@ describe('MonitorPanel', () => {
     });
   });
 
+  it('renders StatChip when observation has model and hides ScoreList without scores', async () => {
+    fetchSessionTraces.mockResolvedValue({
+      ok: true,
+      data: {
+        sessionId: 'acp-session-1',
+        configured: true,
+        found: true,
+        summary: { traceCount: 1, totalTokens: 100 },
+        traces: [{
+          id: 'trace-1',
+          name: 'turn',
+          timestamp: '2026-09-13T08:00:00.000Z',
+          level: 'DEFAULT',
+        }],
+      },
+    });
+    fetchTraceDetail.mockResolvedValue({
+      ok: true,
+      data: {
+        sessionId: 'acp-session-1',
+        traceId: 'trace-1',
+        name: 'turn',
+        observations: [{
+          id: 'agent-run',
+          name: 'agent-run',
+          kind: 'SPAN',
+          level: 'DEFAULT',
+          children: [{
+            id: 'step-1',
+            name: 'step-1',
+            kind: 'GENERATION',
+            level: 'DEFAULT',
+            model: 'gpt-4.1-mini',
+            latencyMs: 1840,
+            inputTokens: 900,
+            outputTokens: 300,
+            inputPreview: '{"prompt":"hello"}',
+            outputPreview: 'world',
+          }],
+        }],
+      },
+    });
+    render(() => <MonitorPanel embedded visible />);
+    await waitFor(() => {
+      expect(screen.getByTestId('monitor-trace-trace-1')).toBeInTheDocument();
+    });
+    await fireEvent.click(screen.getByTestId('monitor-trace-trace-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('monitor-trace-turn-node-step-1')).toBeInTheDocument();
+    });
+    await fireEvent.click(screen.getByTestId('monitor-trace-turn-node-step-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('monitor-observation-detail')).toBeInTheDocument();
+      expect(screen.getByTestId('monitor-observation-stats')).toBeInTheDocument();
+      expect(screen.getByTestId('monitor-stat-chip-model')).toBeInTheDocument();
+      expect(screen.getByText('gpt-4.1-mini')).toBeInTheDocument();
+      expect(screen.queryByTestId('monitor-observation-scores')).not.toBeInTheDocument();
+    });
+  });
+
   it('drills into observation detail and returns to tree without full prompt in list', async () => {
     fetchSessionTraces.mockResolvedValue({
       ok: true,
@@ -222,7 +282,9 @@ describe('MonitorPanel', () => {
     await waitFor(() => {
       expect(screen.getByTestId('monitor-observation-detail')).toBeInTheDocument();
       expect(screen.getByTestId('io-viewer-shell')).toBeInTheDocument();
+      expect(screen.getByTestId('monitor-stat-chip-model')).toBeInTheDocument();
       expect(screen.getByText('secret prompt body')).toBeInTheDocument();
+      expect(screen.queryByTestId('monitor-observation-scores')).not.toBeInTheDocument();
     });
     await fireEvent.click(screen.getByTestId('monitor-trace-turn-tree-root'));
     await waitFor(() => {

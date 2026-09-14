@@ -172,7 +172,7 @@ export function ComponentCatalogExtrasDisplay(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'statistic')}>
-        <CatalogDemo id="statistic" title="Statistic" description="Metrics with prefix/suffix and countdown.">
+        <CatalogDemo id="statistic" title="Statistic" description="Metrics with prefix/suffix and countdown. 大数字指标，勿与 StatChip 混用。">
           <DemoRow>
             <Statistic title="Tokens used" value={182_400} suffix="/ 200k" />
             <StatisticCountdown title="Maintenance" value={Date.now() + 90_000} />
@@ -381,7 +381,7 @@ export function ComponentCatalogExtrasDisplay(props: { sections?: string[] }) {
       </Show>
 
       <Show when={showCatalogSection(props.sections, 'stat-chip')}>
-        <CatalogDemo id="stat-chip" title="StatChip" description="Metric chip for detail panels（自 peri-fuse observation-detail StatChip）。">
+        <CatalogDemo id="stat-chip" title="StatChip" description="Metric chip for detail panels（自 peri-fuse observation-detail StatChip）。详情行 chip，勿与 Statistic 混用。">
           <StatChip label="Duration" value="1.24s" icon={<ListIcon size={16} />} />
         </CatalogDemo>
       </Show>
@@ -396,7 +396,7 @@ export function ComponentCatalogExtrasDisplay(props: { sections?: string[] }) {
         <CatalogDemo
           id="table-filters"
           title="Table filters"
-          description="FilterInput / FilterSelect / DateFilterInput bar（自 peri-fuse table filters 抽象）。"
+          description="FilterInput / FilterSelect / DateFilterInput bar（自 peri-fuse table filters 抽象）。Enter 提交表格筛选，勿与 InputSearch 混用。"
         >
           <TableFiltersLayout />
         </CatalogDemo>

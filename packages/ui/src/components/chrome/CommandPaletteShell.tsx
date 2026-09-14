@@ -1,22 +1,24 @@
-import { CornerDownLeft, Search } from 'lucide-solid';
 import {
   For,
   Show,
-  createEffect,
-  createMemo,
-  createSignal,
   splitProps,
   type Component,
   type JSX,
 } from 'solid-js';
 import { cn } from '../../lib/cn';
 import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '../Command';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
 } from '../Dialog';
-import { Input } from '../Field';
 
 export type CommandPaletteItem = {
   id: string;
@@ -47,16 +49,9 @@ const DEFAULT_KEYBOARD_HINT = (
   </span>
 );
 
-function wrapIndex(index: number, count: number): number {
-  if (count <= 0) return 0;
-  return ((index % count) + count) % count;
-}
-
-function matchesQuery(item: CommandPaletteItem, query: string): boolean {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return true;
-  const haystack = `${item.label} ${item.hint ?? ''} ${item.keywords ?? ''}`.toLowerCase();
-  return haystack.includes(normalized);
+function itemKeywords(item: CommandPaletteItem): string | undefined {
+  const parts = [item.keywords, item.hint].filter(Boolean);
+  return parts.length > 0 ? parts.join(' ') : undefined;
 }
 
 /** T3 · 无路由绑定的命令面板壳：搜索过滤 + 键盘导航 + item 回调。 */
@@ -72,62 +67,11 @@ export const CommandPaletteShell: Component<CommandPaletteShellProps> = (props) 
     'class',
   ]);
 
-  const [query, setQuery] = createSignal('');
-  const [activeIndex, setActiveIndex] = createSignal(0);
-
-  const filtered = createMemo(() => local.items.filter((item) => matchesQuery(item, query())));
-
-  createEffect(() => {
-    if (!local.open) {
-      setQuery('');
-      setActiveIndex(0);
-      return;
-    }
-    setActiveIndex(0);
-  });
-
-  createEffect(() => {
-    const count = filtered().length;
-    if (activeIndex() >= count) setActiveIndex(Math.max(0, count - 1));
-  });
-
   const selectItem = (item: CommandPaletteItem) => {
     if (item.disabled) return;
     local.onOpenChange(false);
     item.onSelect();
   };
-
-  const onKeyDown = (event: KeyboardEvent) => {
-    const items = filtered();
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      setActiveIndex((index) => wrapIndex(index + 1, items.length));
-      return;
-    }
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      setActiveIndex((index) => wrapIndex(index - 1, items.length));
-      return;
-    }
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      const item = items[activeIndex()];
-      if (item) selectItem(item);
-      return;
-    }
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      local.onOpenChange(false);
-    }
-  };
-
-  let listRef: HTMLDivElement | undefined;
-  createEffect(() => {
-    const node = listRef?.querySelector<HTMLElement>(`[data-command-index="${activeIndex()}"]`);
-    if (node && typeof node.scrollIntoView === 'function') {
-      node.scrollIntoView({ block: 'nearest' });
-    }
-  });
 
   return (
     <Dialog open={local.open} onOpenChange={local.onOpenChange}>
@@ -141,72 +85,54 @@ export const CommandPaletteShell: Component<CommandPaletteShellProps> = (props) 
         <DialogDescription class="sr-only">
           Search commands and navigate with arrow keys.
         </DialogDescription>
-        <div class="flex items-center gap-8 border-b border-border-subtle px-12 py-10">
-          <Search size={16} class="shrink-0 text-content-muted" aria-hidden="true" />
-          <Input
-            autofocus
-            value={query()}
-            onInput={(event) => {
-              setQuery(event.currentTarget.value);
-              setActiveIndex(0);
-            }}
-            onKeyDown={onKeyDown}
-            placeholder={local.placeholder ?? 'Search commands…'}
-            class="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
-            aria-label="Search commands"
-          />
-          <kbd class="hidden rounded-4 border border-border-subtle bg-surface-sunken px-6 py-2 font-mono text-10 text-content-muted desk:inline">
-            Esc
-          </kbd>
-        </div>
-        <div
-          ref={listRef}
-          class="ui-scrollbar max-h-320 overflow-auto p-6"
-          role="listbox"
-          aria-activedescendant={filtered()[activeIndex()]?.id}
+        <Command
+          open={local.open}
+          class="rounded-none border-0 bg-transparent shadow-none"
         >
-          <Show
-            when={filtered().length > 0}
-            fallback={(
-              <p class="px-12 py-24 text-center text-12 text-content-muted">
-                {local.emptyMessage ?? 'No matching commands.'}
-              </p>
-            )}
+          <div class="flex items-center gap-8 border-b border-border-subtle px-12 py-10">
+            <CommandInput
+              autofocus
+              wrapperClass="flex-1 border-0 px-0"
+              class="h-auto px-0 text-12 shadow-none focus-visible:ring-0"
+              placeholder={local.placeholder ?? 'Search commands…'}
+              aria-label="Search commands"
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  event.preventDefault();
+                  local.onOpenChange(false);
+                }
+              }}
+            />
+            <kbd class="hidden rounded-4 border border-border-subtle bg-surface-sunken px-6 py-2 font-mono text-10 text-content-muted desk:inline">
+              Esc
+            </kbd>
+          </div>
+          <CommandList
+            class="ui-scrollbar max-h-320 p-6"
+            shouldFocusWrap
+            navigateDisabledItems
+            autoFocusFirst
           >
-            <For each={filtered()}>
-              {(item, index) => (
-                <button
-                  type="button"
-                  data-command-index={index()}
+            <CommandEmpty class="px-12 py-24 text-12 text-content-muted">
+              {local.emptyMessage ?? 'No matching commands.'}
+            </CommandEmpty>
+            <For each={local.items}>
+              {(item) => (
+                <CommandItem
                   id={item.id}
-                  role="option"
-                  aria-selected={activeIndex() === index()}
+                  value={item.id}
+                  keywords={itemKeywords(item)}
+                  hint={item.hint}
+                  icon={item.icon}
                   disabled={item.disabled}
-                  class={cn(
-                    'flex w-full items-center gap-10 rounded-6 px-10 py-8 text-left text-12 transition-colors',
-                    activeIndex() === index()
-                      ? 'bg-interaction-hover text-content-primary'
-                      : 'text-content-secondary hover:bg-interaction-hover',
-                    item.disabled && 'cursor-not-allowed opacity-45',
-                  )}
-                  onMouseEnter={() => setActiveIndex(index())}
-                  onClick={() => selectItem(item)}
+                  onSelect={() => selectItem(item)}
                 >
-                  <Show when={item.icon}>
-                    <span class="shrink-0 text-content-muted" aria-hidden="true">{item.icon}</span>
-                  </Show>
-                  <span class="min-w-0 flex-1 truncate font-500">{item.label}</span>
-                  <Show when={item.hint}>
-                    <span class="shrink-0 text-11 text-content-muted">{item.hint}</span>
-                  </Show>
-                  <Show when={activeIndex() === index()}>
-                    <CornerDownLeft size={14} class="shrink-0 text-content-muted" aria-hidden="true" />
-                  </Show>
-                </button>
+                  {item.label}
+                </CommandItem>
               )}
             </For>
-          </Show>
-        </div>
+          </CommandList>
+        </Command>
         <Show when={local.footer !== null}>
           <div class="border-t border-border-subtle px-12 py-8">
             {local.footer ?? DEFAULT_KEYBOARD_HINT}
