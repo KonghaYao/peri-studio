@@ -1,7 +1,21 @@
 // MCP Apps 特性装配（对标 lib/mcp.ts）：查询表、瞬时帧、live session 生命周期。
 // 不 import store.ts；依赖由 store 通过 installMcpApps 注入。
+// Host / iframe 壳层见 @peri/ui `mcp-app` 模块。
 
 import { createSignal } from 'solid-js';
+import {
+  MCP_APP_DEFAULT_HEIGHT,
+  MCP_APP_MAX_HEIGHT,
+  MCP_APP_MAX_WIDTH,
+  MCP_APPS_PROTOCOL,
+  MCP_APP_HOST_VERSION,
+  mcpAppInlineMaxHeight,
+  asCallToolResult,
+  asToolInputParams,
+  describeMcpAppPayload,
+  mcpUiInitializeResult,
+  type McpAppHostSessionView,
+} from '@peri/ui';
 import * as H from '@/shared/protocol/client';
 import { readOnly } from '@/features/auth/auth-state';
 import type {
@@ -12,18 +26,25 @@ import type {
 import type { Ack, ActionError, ActionFrame, ActionOptions } from '@/shared/protocol/action-contract';
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
 
-export interface LiveMcpAppSession {
+export interface LiveMcpAppSession extends McpAppHostSessionView {
   chatId: string;
-  toolCallId: string;
-  appSessionId: string;
   serverId: string;
   resourceUri: string;
-  html: string | null;
   mimeType: string | null;
-  csp: string | null;
-  toolInput: unknown;
-  toolResult: unknown;
 }
+
+export {
+  MCP_APP_DEFAULT_HEIGHT,
+  MCP_APP_MAX_HEIGHT,
+  MCP_APP_MAX_WIDTH,
+  MCP_APPS_PROTOCOL,
+  MCP_APP_HOST_VERSION,
+  mcpAppInlineMaxHeight,
+  asCallToolResult,
+  asToolInputParams,
+  describeMcpAppPayload,
+  mcpUiInitializeResult,
+};
 
 const mcpAppsQueries = new Map<string, { kind: 'open' | 'resource' | 'call'; chatId: string; toolCallId?: string; appSessionId?: string }>();
 const [liveApps, setLiveApps] = createSignal<Record<string, LiveMcpAppSession>>({});
@@ -230,97 +251,12 @@ export function callMcpAppTool(
   });
 }
 
-export const MCP_APPS_PROTOCOL = '2026-01-26';
-export const MCP_APP_DEFAULT_HEIGHT = 400;
-export const MCP_APP_MAX_HEIGHT = 720;
-export const MCP_APP_MAX_WIDTH = 720;
-export const MCP_APP_HOST_VERSION = '0.2.0';
-
-export function mcpAppInlineMaxHeight(): number {
-  if (typeof window === 'undefined') return MCP_APP_MAX_HEIGHT;
-  return Math.min(MCP_APP_MAX_HEIGHT, Math.max(MCP_APP_DEFAULT_HEIGHT, Math.round(window.innerHeight * 0.7)));
-}
-
-/** 官方 App Bridge 的 `McpUiInitializeResult`：hostInfo.version 与 hostCapabilities 必填。 */
-export function mcpUiInitializeResult(theme: 'light' | 'dark'): Record<string, unknown> {
-  return {
-    protocolVersion: MCP_APPS_PROTOCOL,
-    hostInfo: { name: 'peri-studio', version: MCP_APP_HOST_VERSION },
-    hostCapabilities: {
-      openLinks: {},
-      serverTools: {},
-    },
-    hostContext: {
-      theme,
-      displayMode: 'inline',
-      platform: 'web',
-      containerDimensions: { maxHeight: mcpAppInlineMaxHeight(), maxWidth: MCP_APP_MAX_WIDTH },
-    },
-  };
-}
-
 export function setMcpAppHeight(toolCallId: string, height: number): void {
   const maxHeight = mcpAppInlineMaxHeight();
   setAppHeights((heights) => ({
     ...heights,
     [toolCallId]: Math.min(Math.max(height, 120), maxHeight),
   }));
-}
-
-/** App Bridge `ui/notifications/tool-input` params：arguments 必须是 object。 */
-export function asToolInputParams(value: unknown): { arguments: Record<string, unknown> } {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return { arguments: value as Record<string, unknown> };
-  }
-  return { arguments: {} };
-}
-
-/** 诊断用：只描述形状与长度，不打印 HTML / TSX / token。 */
-export function describeMcpAppPayload(value: unknown): Record<string, unknown> {
-  if (value == null) return { present: false };
-  if (typeof value !== 'object' || Array.isArray(value)) {
-    return { present: true, kind: Array.isArray(value) ? 'array' : typeof value };
-  }
-  const record = value as Record<string, unknown>;
-  const structured = record.structuredContent;
-  const structuredRecord = structured && typeof structured === 'object' && !Array.isArray(structured)
-    ? structured as Record<string, unknown>
-    : null;
-  const source = structuredRecord && typeof structuredRecord.source === 'string' ? structuredRecord.source : null;
-  const content = Array.isArray(record.content) ? record.content : null;
-  const first = content?.[0];
-  const firstText = first && typeof first === 'object' && !Array.isArray(first) && typeof (first as { text?: unknown }).text === 'string'
-    ? (first as { text: string }).text
-    : '';
-  let jsonChars = -1;
-  try {
-    jsonChars = JSON.stringify(value).length;
-  } catch {
-    jsonChars = -1;
-  }
-  return {
-    present: true,
-    keys: Object.keys(record).slice(0, 16),
-    contentBlocks: content?.length ?? 0,
-    firstTextChars: firstText.length,
-    hasStructuredContent: structuredRecord != null,
-    structuredKeys: structuredRecord ? Object.keys(structuredRecord).slice(0, 16) : [],
-    sourceChars: source?.length ?? 0,
-    jsonChars,
-  };
-}
-
-/** App Bridge `ui/notifications/tool-result` params 必须是 CallToolResult 对象，不能是字符串。 */
-export function asCallToolResult(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    const record = value as Record<string, unknown>;
-    if (Array.isArray(record.content)) return record;
-    return { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value };
-  }
-  if (typeof value === 'string') {
-    return { content: [{ type: 'text', text: value }] };
-  }
-  return { content: [] };
 }
 
 export function handleMcpAppSession(frame: H.DownstreamFrame): void {

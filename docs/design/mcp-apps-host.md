@@ -41,7 +41,7 @@ Peri acp（spawn 必须带 PERI_MCP_APPS=）──MCP──► MCP Server
 | 敏感瞬时 | `instance/src/hub/forward.rs`：`peri/mcp/*` + mcp-app MIME / `ui://` |
 | 沙箱 origin | `server/src/web/sandbox.rs`，默认 `LISTEN_PORT+1` 或 `PERI_STUDIO_SANDBOX_PORT` |
 | 面板 CSP | `server/src/web/http.rs` `panel_csp()`：`frame-src` 精确沙箱 origin；`img-src 'self'`（CSS `url()` 走此指令，磨砂颗粒为同源 `/images/sidebar-frost-grain.svg`，禁止 `data:`） |
-| Web 装配 | `web/src/features/mcp/mcp-apps.ts`、`mcp-app-host.ts`（官方 `AppBridge`）、`widgets/chat/McpAppFrame.tsx`、`web/sandbox.html` |
+| Web 装配 | `web/src/features/mcp/mcp-apps.ts`（协议/live session）、`widgets/chat/McpAppFrame.tsx`（T4 接线）、`@peri/ui` `mcp-app`（`McpAppFrameShell` + `bindMcpAppHost`）、`web/sandbox.html` |
 | 工具卡入口 | `ConversationMessage` 的 `McpToolBlock`：有 live HTML 才换 iframe |
 
 HTML / token / CSP **不进** Yjs、SQLite、ring、日志。刷新或回放只剩 `ToolCallActivity`（`@peri/ui` `ToolActivityRow`）。
@@ -93,7 +93,7 @@ hostInfo.version: expected string, received undefined
 hostCapabilities: expected object, received undefined
 ```
 
-当前 Host 用官方 `AppBridge` 构造器传入同一套 `hostInfo` / `hostCapabilities` / `hostContext`（`mcp-app-host.ts`）；不要再手写 `ui/initialize` 的 JSON-RPC result。`mcpUiInitializeResult()` 仍是该形状的单测锚点。
+当前 Host 用官方 `AppBridge` 构造器传入同一套 `hostInfo` / `hostCapabilities` / `hostContext`（`packages/ui/src/components/mcp-app/mcp-app-host.ts`）；不要再手写 `ui/initialize` 的 JSON-RPC result。`mcpUiInitializeResult()` 仍是该形状的单测锚点。
 
 ```json
 {

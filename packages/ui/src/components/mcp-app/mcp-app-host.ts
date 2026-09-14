@@ -1,17 +1,13 @@
-// 官方 App Bridge Host：null MCP client，tools/call 回 Peri 闸门。
+// 官方 App Bridge Host：null MCP client，tools/call 由 T4 注入回 Hub。
 import { AppBridge, PostMessageTransport } from '@modelcontextprotocol/ext-apps/app-bridge';
 import {
-  asCallToolResult,
-  asToolInputParams,
-  callMcpAppTool,
-  describeMcpAppPayload,
+  MCP_APP_HOST_NAME,
   MCP_APP_HOST_VERSION,
-  mcpAppInlineMaxHeight,
   MCP_APP_MAX_WIDTH,
-  sandboxOrigin,
-  setMcpAppHeight,
-  type LiveMcpAppSession,
-} from './mcp-apps';
+  mcpAppInlineMaxHeight,
+} from './mcp-app-layout';
+import { asCallToolResult, asToolInputParams, describeMcpAppPayload } from './mcp-app-payload';
+import type { McpAppHostBindings, McpAppHostHandle, McpAppHostSession } from './types';
 
 const DEFAULT_CSP = [
   "default-src 'none'",
@@ -24,24 +20,19 @@ const DEFAULT_CSP = [
   "object-src 'none'",
 ].join('; ');
 
-export interface McpAppHostHandle {
-  close(): Promise<void>;
-}
-
-export type McpAppHostSession = () => LiveMcpAppSession | null;
-
 /** 官方顺序：proxy-ready → connect → resource-ready；tool payload 挂在每一次 initialized 上。 */
 export async function bindMcpAppHost(
   iframe: HTMLIFrameElement,
   session: McpAppHostSession,
   signal: AbortSignal,
+  bindings: McpAppHostBindings,
 ): Promise<McpAppHostHandle | null> {
   const initial = session();
   if (!initial?.html) {
     console.warn('[mcp-apps] bind skipped: no html', { hasSession: Boolean(initial) });
     return null;
   }
-  const sandboxTarget = sandboxOrigin();
+  const sandboxTarget = bindings.resolveSandboxOrigin();
   const html = withCspMeta(initial.html, initial.csp);
   console.info('[mcp-apps] bind', {
     toolCallId: initial.toolCallId,
@@ -51,10 +42,12 @@ export async function bindMcpAppHost(
     toolResult: describeMcpAppPayload(initial.toolResult),
   });
 
+  const hostName = bindings.hostName ?? MCP_APP_HOST_NAME;
+  const hostVersion = bindings.hostVersion ?? MCP_APP_HOST_VERSION;
   const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   const bridge = new AppBridge(
     null,
-    { name: 'peri-studio', version: MCP_APP_HOST_VERSION },
+    { name: hostName, version: hostVersion },
     { openLinks: {}, serverTools: {} },
     {
       hostContext: {
@@ -69,7 +62,7 @@ export async function bindMcpAppHost(
   bridge.oncalltool = async (params) => {
     const current = session();
     if (!current) throw new Error('MCP App session gone');
-    const result = await callMcpAppTool(current.appSessionId, {
+    const result = await bindings.onCallTool(current.appSessionId, {
       jsonrpc: '2.0',
       id: crypto.randomUUID(),
       method: 'tools/call',
@@ -80,7 +73,7 @@ export async function bindMcpAppHost(
   bridge.addEventListener('sizechange', ({ height }) => {
     const current = session();
     if (!current || typeof height !== 'number' || !Number.isFinite(height)) return;
-    setMcpAppHeight(current.toolCallId, height);
+    bindings.onHeightChange?.(current.toolCallId, height);
   });
   bridge.onopenlink = async ({ url }) => {
     if (typeof url === 'string' && url.startsWith('https:')) {
@@ -115,12 +108,11 @@ export async function bindMcpAppHost(
       if (!isAbortError(error)) console.warn('[mcp-apps] push failed', { n: initializedCount, error });
     });
   };
-  // 不用 oninitialized setter：会覆盖、会告警。canvas StrictMode 会多次 initialized，
-  // 必须每次都推；bind 本身不等第一次握手结束。
   bridge.addEventListener('initialized', pushToolPayload);
 
   try {
-    await loadSandboxProxy(iframe, sandboxTarget, signal);
+    const panelOrigin = bindings.panelOrigin?.() ?? window.location.origin;
+    await loadSandboxProxy(iframe, sandboxTarget, panelOrigin, signal);
     console.info('[mcp-apps] sandbox-proxy-ready', { origin: sandboxTarget });
     if (signal.aborted || !iframe.contentWindow) {
       await bridge.close();
@@ -151,12 +143,12 @@ function isAbortError(error: unknown): boolean {
 function loadSandboxProxy(
   iframe: HTMLIFrameElement,
   sandboxTarget: string,
+  panelOrigin: string,
   signal: AbortSignal,
 ): Promise<void> {
-  // 官方 basic-host：已有 src 则不重设，避免整页重载 → 反复 sandbox-proxy-ready / loadView。
   if (iframe.getAttribute('src')) return Promise.resolve();
   const ready = waitForProxyReady(iframe, sandboxTarget, signal);
-  iframe.src = `${sandboxTarget}/sandbox.html?host=${encodeURIComponent(window.location.origin)}`;
+  iframe.src = `${sandboxTarget}/sandbox.html?host=${encodeURIComponent(panelOrigin)}`;
   return ready;
 }
 

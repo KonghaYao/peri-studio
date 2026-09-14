@@ -118,6 +118,26 @@ export {
   type ToolActivityRowProps,
   type ToolCallStatus,
 } from './components/ToolActivity';
+export {
+  asCallToolResult,
+  asToolInputParams,
+  bindMcpAppHost,
+  describeMcpAppPayload,
+  MCP_APP_DEFAULT_HEIGHT,
+  MCP_APP_HOST_NAME,
+  MCP_APP_HOST_VERSION,
+  MCP_APP_MAX_HEIGHT,
+  MCP_APP_MAX_WIDTH,
+  MCP_APPS_PROTOCOL,
+  McpAppFrameShell,
+  mcpAppInlineMaxHeight,
+  mcpUiInitializeResult,
+  type McpAppFrameShellProps,
+  type McpAppHostBindings,
+  type McpAppHostHandle,
+  type McpAppHostSession,
+  type McpAppHostSessionView,
+} from './components/mcp-app';
 export { Button, IconButton, LinkButton } from './components/Button';
 export { BackToTop, chatFloatingAnchorClass, type BackToTopProps } from './components/BackToTop';
 export { Flex } from './components/Flex';

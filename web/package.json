@@ -15,7 +15,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@modelcontextprotocol/ext-apps": "^1.7.5",
     "@peri/markdown": "workspace:*",
     "@peri/ui": "workspace:*",
     "katex": "^0.18.4",

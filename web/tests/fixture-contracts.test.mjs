@@ -72,7 +72,7 @@ test('component geometry tokens are declared once and consumed by production wid
     join(import.meta.dirname, '..', '..', 'packages', 'ui', 'src', 'components', 'ToolActivity.tsx'),
     'utf8',
   );
-  const mcpApp = read('widgets', 'chat', 'McpAppFrame.tsx');
+  const mcpApp = pkgUi('components', 'mcp-app', 'McpAppFrameShell.tsx');
   const status = [
     read('widgets', 'shell', 'StatusArea.tsx'),
     pkgUi('components', 'status', 'StatusAreaShell.tsx'),

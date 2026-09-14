@@ -7,6 +7,7 @@
   "description": "Peri Studio design system: T1 tokens and T2 base UI",
   "exports": {
     ".": "./src/index.ts",
+    "./mcp-app": "./src/components/mcp-app/index.ts",
     "./styles.css": "./src/styles/index.css",
     "./tokens.css": "./src/styles/tokens.css"
   },
@@ -20,6 +21,7 @@
     "solid-js": "^1"
   },
   "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.7.5",
     "@iconify-icon/solid": "3.0.3",
     "@iconify-icons/vscode-icons": "2.0.2",
     "@kobalte/core": "^0.13.13",

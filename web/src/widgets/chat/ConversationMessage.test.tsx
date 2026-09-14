@@ -18,10 +18,6 @@ import {
   resetMcpAppsState,
 } from '@/features/mcp/mcp-apps';
 
-vi.mock('@/features/mcp/mcp-app-host', () => ({
-  bindMcpAppHost: vi.fn(async () => ({ close: vi.fn(async () => undefined) })),
-}));
-
 function entry(overrides: Partial<ChatEntry> = {}): ChatEntry {
   return {
     id: 'entry-1', turnId: 'turn-1', kind: 'message', role: 'assistant', status: 'completed', authorUserId: null, sourceCommandId: null,

@@ -54,6 +54,7 @@ T3 组件必须：
 | `UserBubble` | 用户消息气泡 |
 | `MarkdownTable` | Markdown 表格 |
 | `SafeImage` | 远程图片安全渲染 |
+| `McpAppFrameShell` | MCP App 双 iframe 宿主壳（sandbox + 全屏；`bindMcpAppHost` 在 `@peri/ui/mcp-app`） |
 
 ### Chrome / 侧栏
 
@@ -139,8 +140,11 @@ T3 组件必须：
 | Decision | `DecisionQueueShell` | `widgets/chat/*Queue.tsx` |
 | Git graph | `GitGraphPanel` | `widgets/resource/git/GitGraphView.tsx` |
 | Langfuse Monitor | `MonitorPanelShell` | `widgets/resource/MonitorPanel.tsx` |
+| MCP Apps | `McpAppFrameShell` + `bindMcpAppHost` | `widgets/chat/McpAppFrame.tsx`（`features/mcp/mcp-apps.ts` 协议与 live session） |
 
 Sandbox `components/blocks/*`：T3 条 **barrel 重导出** `@peri/ui`；layers 保留 mock 数据与 T4 演示组合。
+
+独立子路径：`import { … } from '@peri/ui/mcp-app'`（Host 桥、payload helper、iframe 壳）。
 
 ## Markdown 与语法高亮
 

@@ -65,7 +65,7 @@ web/src/
     connection/             # ws-client, connection, command-tracker
     registry/               # registry-projection, store-projection（写侧装配）
     resource/               # resource-store, mutations, preview
-    mcp/                    # mcp-apps, mcp-app-host
+    mcp/                    # mcp-apps（协议/live session；Host 壳在 @peri/ui/mcp-app）
 
   entities/                 # 只读投影与视图模型：Yjs → 视图类型，无 mutation
     chat/                   # chat-view, chat-projection, control-view
