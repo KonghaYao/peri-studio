@@ -44,8 +44,12 @@ import {
   TypographyText,
   TypographyTitle,
   useTour,
+  JsonTree,
+  StatChip,
+  TokenUsageBadge,
 } from '@peri/ui';
 import { List as ListIcon, Mail } from 'lucide-solid';
+import { TableFiltersLayout } from '@/layers/shell/TableFiltersLayout';
 import { CatalogDemo, DemoRow } from '@/pages/shared/DemoSection';
 
 export function ComponentCatalogExtrasDisplay(props: { sections?: string[] }) {
@@ -352,6 +356,49 @@ export function ComponentCatalogExtrasDisplay(props: { sections?: string[] }) {
             Long description that truncates after two lines in compact layouts while preserving copy and edit affordances.
           </TypographyParagraph>
           <TypographyText editable={{ onChange: () => undefined }}>Editable label</TypographyText>
+        </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'json-tree')}>
+        <CatalogDemo
+          id="json-tree"
+          title="JsonTree"
+          description="Collapsible JSON viewer for trace IO. Hover a row to copy its value or JSON path; IoViewer-sized payloads virtualize after 500 visible rows."
+        >
+          <div class="flex flex-col gap-16">
+            <JsonTree
+              data={{
+                messages: [{ role: 'user', content: 'Summarize trace latency.' }],
+                model: 'gpt-4.1',
+                usage: { input: 1200, output: 48, streaming: true },
+              }}
+            />
+            <p class="text-11 text-content-muted">
+              Large payloads (for example IoViewer with full expansion) switch to virtual scrolling automatically.
+            </p>
+          </div>
+        </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'stat-chip')}>
+        <CatalogDemo id="stat-chip" title="StatChip" description="Metric chip for detail panels（自 peri-fuse observation-detail StatChip）。">
+          <StatChip label="Duration" value="1.24s" icon={<ListIcon size={16} />} />
+        </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'token-usage-badge')}>
+        <CatalogDemo id="token-usage-badge" title="TokenUsageBadge" description="Table row token summary（自 peri-fuse token-usage-badge）。">
+          <TokenUsageBadge inputUsage={24538} outputUsage={70} totalUsage={24608} />
+        </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'table-filters')}>
+        <CatalogDemo
+          id="table-filters"
+          title="Table filters"
+          description="FilterInput / FilterSelect / DateFilterInput bar（自 peri-fuse table filters 抽象）。"
+        >
+          <TableFiltersLayout />
         </CatalogDemo>
       </Show>
 

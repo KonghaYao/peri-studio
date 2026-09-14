@@ -113,12 +113,60 @@ describe('MonitorPanel', () => {
     await fireEvent.click(screen.getByTestId('monitor-trace-trace-1'));
     await waitFor(() => {
       expect(screen.getByTestId('monitor-trace-detail')).toBeInTheDocument();
-      expect(screen.getByTestId('monitor-observation-root')).toBeInTheDocument();
+      expect(screen.getByTestId('monitor-trace-turn-node-root')).toBeInTheDocument();
     });
     expect(fetchTraceDetail).toHaveBeenCalledWith('acp-session-1', 'trace-1', expect.any(Object));
     await fireEvent.click(screen.getByRole('button', { name: 'Back to traces' }));
     await waitFor(() => {
       expect(screen.getByTestId('monitor-panel')).toBeInTheDocument();
+    });
+  });
+
+  it('renders timeline when observation timestamps are available', async () => {
+    fetchSessionTraces.mockResolvedValue({
+      ok: true,
+      data: {
+        sessionId: 'acp-session-1',
+        configured: true,
+        found: true,
+        summary: { traceCount: 1, totalTokens: 100 },
+        traces: [{
+          id: 'trace-1',
+          name: 'turn',
+          timestamp: '2026-09-13T08:00:00.000Z',
+          level: 'DEFAULT',
+        }],
+      },
+    });
+    fetchTraceDetail.mockResolvedValue({
+      ok: true,
+      data: {
+        sessionId: 'acp-session-1',
+        traceId: 'trace-1',
+        name: 'turn',
+        observations: [{
+          id: 'root',
+          name: 'agent',
+          kind: 'SPAN',
+          level: 'DEFAULT',
+          latencyMs: 900,
+        }],
+      },
+    });
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    });
+    render(() => <MonitorPanel embedded visible />);
+    await waitFor(() => {
+      expect(screen.getByTestId('monitor-trace-trace-1')).toBeInTheDocument();
+    });
+    await fireEvent.click(screen.getByTestId('monitor-trace-trace-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('monitor-trace-timeline')).toBeInTheDocument();
+      expect(screen.getByTestId('monitor-timeline-shell')).toBeInTheDocument();
+      expect(screen.getByTestId('monitor-timeline-block-root')).toBeInTheDocument();
     });
   });
 
@@ -167,17 +215,18 @@ describe('MonitorPanel', () => {
     });
     await fireEvent.click(screen.getByTestId('monitor-trace-trace-1'));
     await waitFor(() => {
-      expect(screen.getByTestId('monitor-observation-step-1')).toBeInTheDocument();
+      expect(screen.getByTestId('monitor-trace-turn-node-agent-run')).toBeInTheDocument();
     });
     expect(screen.queryByText('secret prompt body')).not.toBeInTheDocument();
-    await fireEvent.click(screen.getByTestId('monitor-observation-step-1'));
+    await fireEvent.click(screen.getByTestId('monitor-trace-turn-node-step-1'));
     await waitFor(() => {
       expect(screen.getByTestId('monitor-observation-detail')).toBeInTheDocument();
-      expect(screen.getByTestId('monitor-observation-input')).toHaveTextContent('secret prompt body');
+      expect(screen.getByTestId('io-viewer-shell')).toBeInTheDocument();
+      expect(screen.getByText('secret prompt body')).toBeInTheDocument();
     });
-    await fireEvent.click(screen.getByRole('button', { name: 'Back to observations' }));
+    await fireEvent.click(screen.getByTestId('monitor-trace-turn-tree-root'));
     await waitFor(() => {
-      expect(screen.getByTestId('monitor-trace-detail')).toBeInTheDocument();
+      expect(screen.getByText('Trace root')).toBeInTheDocument();
       expect(screen.queryByText('secret prompt body')).not.toBeInTheDocument();
     });
   });

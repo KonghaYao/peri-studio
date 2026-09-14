@@ -28,7 +28,7 @@ bun run dev   # http://127.0.0.1:5273/
 | **T2 · Overlays** | `#/components-overlays` | `@peri/ui` | 表面、浮层、导航、侧栏 |
 | **T2 · AI** | `#/components-ai` | `@peri/ui` + blocks | Chat 原语与 AI Elements |
 | **T2 · Markdown** | `#/components-markdown` | blocks | 富文本渲染与 CodeBlock |
-| **Comp · Shell / Composer / Explorer / Git** | `#/components-shell` 等 | `src/layers/` + `src/components/blocks/` | 区域组合与域块 |
+| **Comp · Shell / Monitor / Chrome / Composer / Explorer / Git** | `#/components-shell`、`#/components-monitor` 等 | `src/layers/` + `src/components/blocks/` | 区域组合与域块（Langfuse Monitor 见 `#/components-monitor`） |
 
 依赖方向：Comp → T2 → T1（禁止反向）。旧 `#/layers/*`、`#/blocks/*` 自动重定向。
 

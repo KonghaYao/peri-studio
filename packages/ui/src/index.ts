@@ -204,6 +204,19 @@ export { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from './compo
 export { Combobox, ComboboxControl, ComboboxContent, ComboboxInput, ComboboxItem } from './components/Combobox';
 export { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator, CommandShortcut } from './components/Command';
 export { Kbd } from './components/Kbd';
+export { JsonTree, type JsonTreeProps } from './components/JsonTree';
+export { StatChip, type StatChipProps } from './components/StatChip';
+export { TokenUsageBadge, type TokenUsageBadgeProps } from './components/TokenUsageBadge';
+export { TruncatedIdCell, type TruncatedIdCellProps } from './components/TruncatedIdCell';
+export { LevelCountsDisplay, type LevelCount, type LevelCountsDisplayProps } from './components/LevelCountsDisplay';
+export { TableLoadingRows, type TableLoadingRowsProps } from './components/TableLoadingRows';
+export { TableInlineError, type TableInlineErrorProps } from './components/TableInlineError';
+export {
+  LocalIsoDate,
+  formatLocalIsoDate,
+  type LocalIsoDateProps,
+  type LocalIsoDateAccuracy,
+} from './components/LocalIsoDate';
 export {
   Plan,
   PlanAction,
@@ -271,12 +284,37 @@ export {
 } from './components/DatePicker';
 export { DatePickerPanel, type DatePickerPreset } from './components/date-picker-panel';
 export { type DatePickerMode } from './lib/date-picker-format';
+export {
+  contentToText,
+  extractMessages,
+  extractParts,
+  groupConsecutive,
+  isChatPayload,
+  isKnownRole,
+  parseMaybeString,
+  type ChatMessage,
+  type ChatRole,
+  type ContentPart,
+} from './lib/chat-payload';
+export { toLocalDate, toIso, formatDay, type DateFilterBoundary } from './lib/date-filter-boundary';
+export {
+  formatCountLabelAsLevel,
+  formatLevelCountNumber,
+  levelCountsFromRecord,
+  monitorLevelSymbol,
+  MONITOR_LEVEL_SYMBOLS,
+  type LevelCountEntry,
+  type MonitorLevelKey,
+} from './lib/monitor-level-symbols';
 export { AutoComplete, type AutoCompleteOption, type AutoCompleteProps } from './components/AutoComplete';
 export { Cascader, type CascaderOption, type CascaderProps } from './components/Cascader';
 export { ColorPicker, type ColorPickerProps } from './components/ColorPicker';
 export { InputNumber, type InputNumberProps } from './components/InputNumber';
 export { InputPassword, type InputPasswordProps } from './components/InputPassword';
 export { InputSearch, type InputSearchProps } from './components/InputSearch';
+export { FilterInput, type FilterInputHandle, type FilterInputProps } from './components/filter/FilterInput';
+export { FilterSelect, FILTER_SELECT_ALL, type FilterSelectOption, type FilterSelectProps } from './components/filter/FilterSelect';
+export { DateFilterInput, type DateFilterInputProps } from './components/filter/DateFilterInput';
 export { Mentions, type MentionsOption, type MentionsProps } from './components/Mentions';
 export { Rate, type RateProps } from './components/Rate';
 export {
@@ -610,9 +648,127 @@ export {
   type MonitorObservationTreeProps,
 } from './components/monitor/MonitorObservationTree';
 export {
+  MonitorTraceTurnTree,
+  type MonitorTraceTurnTreeProps,
+} from './components/monitor/MonitorTraceTurnTree';
+export {
+  MonitorTraceTurnTreeShell,
+  type MonitorTraceTurnTreeShellProps,
+} from './components/monitor/MonitorTraceTurnTreeShell';
+export {
+  buildTraceTurnSections,
+  buildTraceTurnTree,
+  collectTraceTurnTreeNodeIds,
+  defaultIsNoiseObservation,
+  findTraceTurnTreeNode,
+  type BuildTraceTurnTreeOptions,
+  type MonitorTraceObservationFlat,
+  type MonitorTraceTurnInput,
+  type MonitorTraceTurnTreeNode,
+} from './components/monitor/build-trace-turn-tree';
+export {
   MonitorObservationDetailShell,
   type MonitorObservationDetailShellProps,
 } from './components/monitor/MonitorObservationDetailShell';
+export {
+  MonitorObservationLevelBadge,
+  MonitorObservationTypeBadge,
+  MonitorObservationTypeIcon,
+  monitorObservationTypeStyle,
+  type MonitorObservationLevelBadgeProps,
+  type MonitorObservationTypeBadgeProps,
+  type MonitorObservationTypeIconProps,
+} from './components/monitor/MonitorObservationBadge';
+export {
+  MonitorTimelineBand,
+  MonitorTimelineRuler,
+  type MonitorTimelineBandProps,
+  type MonitorTimelineRulerProps,
+} from './components/monitor/MonitorTimelineBand';
+export {
+  MonitorTimelineShell,
+  type MonitorTimelineShellProps,
+} from './components/monitor/MonitorTimelineShell';
+export {
+  MonitorTimelineDialogShell,
+  type MonitorTimelineDialogShellProps,
+} from './components/monitor/MonitorTimelineDialogShell';
+export {
+  IoViewer,
+  IoViewerShell,
+  type IoViewerChatRenderContext,
+  type IoViewerJsonRenderContext,
+  type IoViewerShellProps,
+  type IoViewerViewMode,
+} from './components/IoViewerShell';
+export {
+  ChatIoList,
+  type ChatIoListProps,
+} from './components/io-viewer/ChatIoList';
+export {
+  ChatIoMessageBody,
+  ChatIoPartView,
+  type ChatIoMessageBodyProps,
+  type ChatIoPartViewProps,
+} from './components/io-viewer/ChatIoParts';
+export {
+  IoViewerJsonView,
+  type IoViewerJsonViewProps,
+} from './components/io-viewer/IoViewerJsonView';
+export {
+  IoPreviewCell,
+  type IoPreviewCellProps,
+  type IoPreviewCellVariant,
+} from './components/monitor/IoPreviewCell';
+export {
+  IoTabsShell,
+  type IoTabKey,
+  type IoTabsShellProps,
+} from './components/monitor/IoTabsShell';
+export {
+  ScoreListShell,
+  type ScoreListShellItem,
+  type ScoreListShellProps,
+} from './components/monitor/ScoreListShell';
+export {
+  MONITOR_TIMELINE_BAR_COLORS,
+  MONITOR_TIMELINE_BAR_FALLBACK,
+  MONITOR_TIMELINE_BLOCK_HEIGHT,
+  MONITOR_TIMELINE_GROUP_GAP,
+  MONITOR_TIMELINE_LABEL_WIDTH,
+  MONITOR_TIMELINE_LANE_HEIGHT,
+  MONITOR_TIMELINE_TICK_TARGET_PX,
+  MONITOR_TIMELINE_TRACE_COLORS,
+  MONITOR_TIMELINE_TYPE_ORDER,
+  buildMonitorTimelineDurationOpacity,
+  formatMonitorTimelineTickLabel,
+  layoutMonitorTimelineLanes,
+  layoutMonitorTimelineTypeLanes,
+  monitorTimelineNiceTickStep,
+  type MonitorTimelineBandSegment,
+  type MonitorTimelineDurationOpacity,
+  type MonitorTimelineSegment,
+  type MonitorTimelineTypeLaneGroup,
+} from './components/monitor/monitor-timeline-layout';
+export {
+  PageHeaderShell,
+  type PageHeaderShellProps,
+} from './components/chrome/PageHeaderShell';
+export {
+  CommandPaletteShell,
+  bindCommandPaletteHotkey,
+  bindCommandPaletteOpenEvent,
+  bindShortcutsHelpHotkey,
+  COMMAND_PALETTE_OPEN_EVENT,
+  dispatchCommandPaletteOpen,
+  type CommandPaletteItem,
+  type CommandPaletteShellProps,
+} from './components/chrome/CommandPaletteShell';
+export {
+  ShortcutsDialogShell,
+  type ShortcutEntry,
+  type ShortcutsDialogShellProps,
+} from './components/chrome/ShortcutsDialogShell';
 export type {
   MonitorObservationLevel,
   MonitorObservationView,
@@ -995,4 +1151,13 @@ export { Result, ResultActions, resultPresetActions, type ResultProps, type Resu
 export { Watermark, type WatermarkProps } from './components/watermark';
 export { Upload, UploadButton, type UploadFile, type UploadFileStatus, type UploadListType, type UploadProps } from './components/upload';
 export { EnhancedDataTable, type DataTableSize, type EnhancedDataTableProps, type ServerPagination } from './components/DataTableFeatures';
+export {
+  DataTableToolbarShell,
+  type DataTableToolbarColumnMeta,
+  type DataTableToolbarShellProps,
+} from './components/DataTableToolbarShell';
+export {
+  AutoRefreshIntervalControl,
+  type AutoRefreshIntervalControlProps,
+} from './components/AutoRefreshIntervalControl';
 export { Tooltip, TooltipContent, TooltipTrigger } from './components/Tooltip';

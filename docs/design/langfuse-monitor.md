@@ -331,9 +331,9 @@ Authorization: Basic base64(public_key:secret_key)
 
 | 层级 | 路径 | 职责 |
 |------|------|------|
-| T3 | `packages/ui/src/components/monitor/` | 无 store 壳：`MonitorPanelShell`（trace 列表）、`MonitorTraceDetailShell` + `MonitorObservationTree`（drill-in）；**body-only** |
+| T3 | `packages/ui/src/components/monitor/` | 无 store 壳：`MonitorPanelShell`（trace 列表）、`MonitorTraceTurnTreeShell` + `IoTabsShell` / `IoViewer`（trace drill-in）；**body-only** |
 | T4 | `web/src/widgets/resource/MonitorPanel.tsx` | store 接线、`selectedSessionId()`、列表/drill-in 状态、Refresh、轮询生命周期 |
-| Feature | `web/src/features/monitor/` | `fetchMonitorCapability`、`fetchSessionTraces`、`fetchTraceDetail`、DTO 解析；`useMonitorCapability()` hook |
+| Feature | `web/src/features/monitor/` | `fetchMonitorCapability`、`fetchSessionTraces`、`fetchTraceDetail`、DTO 解析、`flattenMonitorObservations` 适配器；`useMonitorCapability()` hook |
 | Workbench | `ResourceWorkbench.tsx` | `WorkbenchView` 增 `'monitor'`；rail 按钮；`panelTitle` / `panelWidthProfile` |
 
 **依赖方向**：`features/monitor` 不 import `store`；widget 注入 `sessionId`、fetcher 与 `turnActive()`。
@@ -398,11 +398,10 @@ Monitor 挂载于现有 `PanelBody` / `WorkbenchPanelChrome` 内：
 
 ### 5.7 Sandbox 先行
 
-1. `ui-sandbox/src/layers/shell/MonitorPanelLayout.tsx`（mock traces）。
-2. 导出至 `ui-sandbox/src/layers/index.ts`。
-3. 在 `ui-sandbox/src/catalog/page-sections.ts` 登记 Layers 入口。
-4. `packages/ui` T3 组件 + `bun run test`。
-5. `cd ui-sandbox && bun run typecheck` → 镜像 `web/src/widgets/resource/MonitorPanel.tsx`。
+1. `#/components-monitor`：`MonitorTraceTurnTreeLayout`、`MonitorIoDetailLayout` 等 mock 组合。
+2. 在 `ui-sandbox/src/catalog/page-sections.ts` 登记 `#/components-monitor` 章节（trace 列表面板仍由生产 `MonitorPanelShell` 承载，不在 Shell catalog 重复 demo）。
+3. `packages/ui` T3 组件 + `bun run test`。
+4. `cd ui-sandbox && bun run typecheck` → 镜像 `web/src/widgets/resource/MonitorPanel.tsx`。
 
 ### 5.8 测试落点
 

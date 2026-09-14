@@ -1,10 +1,36 @@
-import { MonitorPanelShell, MonitorTraceDetailShell, type MonitorObservationView, type MonitorPanelState, type MonitorSummaryView, type MonitorTraceDetailState, type MonitorTraceRowView } from '@peri/ui';
-import { createEffect, createSignal, onCleanup, Show } from 'solid-js';
+import {
+  Button,
+  EmptyState,
+  IconButton,
+  InlineNotice,
+  IoTabsShell,
+  IoViewer,
+  JsonTree,
+  LoadingState,
+  MonitorObservationTypeBadge,
+  MonitorPanelShell,
+  MonitorTimelineShell,
+  MonitorTraceTurnTree,
+  MonitorTraceTurnTreeShell,
+  type MonitorObservationView,
+  type MonitorPanelState,
+  type MonitorSummaryView,
+  type MonitorTraceDetailState,
+  type MonitorTraceRowView,
+} from '@peri/ui';
+import { ArrowLeft, X } from 'lucide-solid';
+import { createEffect, createMemo, createSignal, onCleanup, Show } from 'solid-js';
+import {
+  buildMonitorTimelineSegments,
+  buildObservationMetadata,
+  flattenMonitorObservations,
+  observationIoInput,
+  observationIoOutput,
+} from '@/features/monitor/flat-observations';
 import { fetchSessionTraces } from '@/features/monitor/session';
 import {
   fetchTraceDetail,
   findObservationById,
-  stripObservationsForTree,
 } from '@/features/monitor/trace';
 import { selectedSessionId, turnActive } from '@/store';
 
@@ -19,6 +45,193 @@ type MonitorPanelProps = {
   refreshToken?: number;
 };
 
+function MonitorTraceDetailPanel(props: {
+  embedded?: boolean;
+  trace: MonitorTraceRowView;
+  state: () => MonitorTraceDetailState;
+  observations: () => MonitorObservationView[];
+  errorMessage: () => string | undefined;
+  selectedObservationId: () => string | null | undefined;
+  omitNoise: () => boolean;
+  onBack: () => void;
+  onRetry: () => void;
+  onSelectObservation: (id: string) => void;
+  onSelectTraceRoot: () => void;
+  onOmitNoiseChange: (value: boolean) => void;
+}) {
+  const flatObservations = createMemo(() => (
+    flattenMonitorObservations(props.observations(), props.trace.timestamp)
+  ));
+  const timelineSegments = createMemo(() => buildMonitorTimelineSegments(flatObservations()));
+
+  const selectedObservation = () => {
+    const selectedId = props.selectedObservationId();
+    if (typeof selectedId !== 'string') return null;
+    return findObservationById(props.observations(), selectedId);
+  };
+
+  const showDetailPlaceholder = () => props.selectedObservationId() === undefined;
+
+  const rootClass = () => (
+    props.embedded
+      ? 'flex min-h-0 flex-1 flex-col bg-neutral-25'
+      : 'flex h-full w-full flex-col bg-neutral-25'
+  );
+
+  return (
+    <div
+      data-testid="monitor-trace-detail"
+      class={rootClass()}
+      aria-label="Trace detail"
+    >
+      <div class="flex shrink-0 items-center gap-8 border-b border-border-subtle px-8 py-8">
+        <IconButton
+          label="Back to traces"
+          size="compact"
+          variant="ghost"
+          class="border-0 bg-transparent text-content-muted hover:text-content-primary"
+          onClick={props.onBack}
+        >
+          <ArrowLeft size={14} strokeWidth={1.7} />
+        </IconButton>
+        <h2 class="min-w-0 flex-1 truncate text-12 font-600 text-content-primary">{props.trace.name}</h2>
+        <IconButton
+          label="Close trace detail"
+          size="compact"
+          variant="ghost"
+          class="border-0 bg-transparent text-content-muted hover:text-content-primary"
+          onClick={props.onBack}
+        >
+          <X size={14} strokeWidth={1.7} />
+        </IconButton>
+      </div>
+
+      <Show when={props.state() === 'loading'}>
+        <div class="flex min-h-0 flex-1 flex-col items-center justify-center p-16 text-center">
+          <LoadingState label="Loading trace…" class="justify-center" />
+        </div>
+      </Show>
+
+      <Show when={props.state() === 'error'}>
+        <div class="flex min-h-0 flex-1 flex-col items-center justify-center p-16 text-center">
+          <InlineNotice tone="danger" class="max-w-full items-center gap-6 py-9 text-11 leading-16" role="alert">
+            <div class="flex min-w-0 flex-1 flex-col items-center gap-8 text-center">
+              <span class="min-w-0">{props.errorMessage() ?? "Couldn't load trace."}</span>
+              <Button
+                size="compact"
+                variant="ghost"
+                class="shrink-0 border-0! bg-transparent! px-3 font-650 text-danger underline pointer-coarse:min-h-44 pointer-coarse:px-8"
+                onClick={props.onRetry}
+              >
+                Retry
+              </Button>
+            </div>
+          </InlineNotice>
+        </div>
+      </Show>
+
+      <Show when={props.state() === 'ready'}>
+        <Show
+          when={props.observations().length > 0}
+          fallback={(
+            <div class="flex min-h-0 flex-1 flex-col items-center justify-center p-16 text-center">
+              <EmptyState
+                variant="inline"
+                class="border-0 bg-transparent py-24"
+                title="No observations for this trace."
+              />
+            </div>
+          )}
+        >
+          <div class="flex min-h-0 flex-1 flex-col">
+            <Show when={timelineSegments().length > 0}>
+              <div
+                class="shrink-0 border-b border-border-subtle bg-surface p-8"
+                data-testid="monitor-trace-timeline"
+              >
+                <MonitorTimelineShell
+                  class="h-180"
+                  segments={timelineSegments()}
+                  heatmap
+                  selectedId={typeof props.selectedObservationId() === 'string'
+                    ? props.selectedObservationId()
+                    : null}
+                  onSelect={props.onSelectObservation}
+                />
+              </div>
+            </Show>
+            <MonitorTraceTurnTreeShell
+              class="min-h-0 flex-1"
+              showDetailPlaceholder={showDetailPlaceholder()}
+              tree={(
+              <MonitorTraceTurnTree
+                observations={flatObservations()}
+                omitNoise={props.omitNoise()}
+                onOmitNoiseChange={props.onOmitNoiseChange}
+                showOmitNoiseToggle
+                traceRoot={{
+                  name: props.trace.name,
+                  latencyMs: props.trace.latencyMs,
+                }}
+                selectedTraceRoot={props.selectedObservationId() === null}
+                selectedId={typeof props.selectedObservationId() === 'string'
+                  ? props.selectedObservationId()
+                  : null}
+                onTraceRootSelect={props.onSelectTraceRoot}
+                onSelect={props.onSelectObservation}
+                enableKeyboardNav
+              />
+            )}
+            detail={(
+              <Show
+                when={props.selectedObservationId() === null}
+                fallback={(
+                  <Show when={selectedObservation()} keyed>
+                    {(observation) => (
+                      <div class="flex flex-col gap-12" data-testid="monitor-observation-detail">
+                        <div class="flex flex-wrap items-center gap-8">
+                          <h4 class="text-14 font-600 text-content-primary">{observation.name}</h4>
+                          <MonitorObservationTypeBadge type={observation.kind} />
+                        </div>
+                        <IoTabsShell
+                          renderInput={() => <IoViewer data={observationIoInput(observation)} />}
+                          renderOutput={() => <IoViewer data={observationIoOutput(observation)} />}
+                          renderMetadata={() => (
+                            <JsonTree data={buildObservationMetadata(observation)} defaultCollapsedDepth={1} />
+                          )}
+                        />
+                      </div>
+                    )}
+                  </Show>
+                )}
+              >
+                <div class="flex flex-col gap-8">
+                  <h4 class="text-14 font-600 text-content-primary">Trace root</h4>
+                  <p class="text-12 text-content-secondary">
+                    Select an observation in the tree to inspect input and output.
+                  </p>
+                  <JsonTree
+                    data={{
+                      traceId: props.trace.id,
+                      name: props.trace.name,
+                      timestamp: props.trace.timestamp,
+                      latencyMs: props.trace.latencyMs ?? null,
+                      tokens: props.trace.tokens ?? null,
+                      observations: flatObservations().length,
+                    }}
+                    defaultCollapsedDepth={1}
+                  />
+                </div>
+              </Show>
+            )}
+            />
+          </div>
+        </Show>
+      </Show>
+    </div>
+  );
+}
+
 /** Langfuse Monitor T4：store 接线、列表拉取、trace drill-in 与轮询生命周期。 */
 export function MonitorPanel(props: MonitorPanelProps = {}) {
   const [state, setState] = createSignal<MonitorPanelState>('loading');
@@ -29,7 +242,8 @@ export function MonitorPanel(props: MonitorPanelProps = {}) {
   const [detailState, setDetailState] = createSignal<MonitorTraceDetailState>('loading');
   const [detailObservations, setDetailObservations] = createSignal<MonitorObservationView[]>([]);
   const [detailErrorMessage, setDetailErrorMessage] = createSignal<string | undefined>();
-  const [selectedObservationId, setSelectedObservationId] = createSignal<string | null>(null);
+  const [selectedObservationId, setSelectedObservationId] = createSignal<string | null | undefined>(undefined);
+  const [omitNoise, setOmitNoise] = createSignal(true);
   let requestId = 0;
   let detailRequestId = 0;
   let abortController: AbortController | null = null;
@@ -52,11 +266,8 @@ export function MonitorPanel(props: MonitorPanelProps = {}) {
     setDetailObservations([]);
     setDetailErrorMessage(undefined);
     setDetailState('loading');
-    setSelectedObservationId(null);
-  };
-
-  const clearObservationDetail = () => {
-    setSelectedObservationId(null);
+    setSelectedObservationId(undefined);
+    setOmitNoise(true);
   };
 
   const load = async (sessionId: string) => {
@@ -100,7 +311,8 @@ export function MonitorPanel(props: MonitorPanelProps = {}) {
     setDetailState('loading');
     setDetailErrorMessage(undefined);
     setDetailObservations([]);
-    setSelectedObservationId(null);
+    setSelectedObservationId(undefined);
+    setOmitNoise(true);
 
     try {
       const result = await fetchTraceDetail(sessionId, trace.id, { signal: detailAbortController.signal });
@@ -189,27 +401,23 @@ export function MonitorPanel(props: MonitorPanelProps = {}) {
       )}
     >
       {(trace) => (
-        <MonitorTraceDetailShell
+        <MonitorTraceDetailPanel
           embedded={props.embedded}
-          traceName={() => trace().name}
-          observations={() => stripObservationsForTree(detailObservations())}
-          selectedObservation={() => (
-            selectedObservationId()
-              ? findObservationById(detailObservations(), selectedObservationId()!)
-              : null
-          )}
+          trace={trace()}
           state={detailState}
+          observations={detailObservations}
           errorMessage={detailErrorMessage}
+          selectedObservationId={selectedObservationId}
+          omitNoise={omitNoise}
           onBack={clearDetail}
-          onClose={clearDetail}
-          onObservationSelect={(observation) => setSelectedObservationId(observation.id)}
-          onObservationBack={clearObservationDetail}
           onRetry={() => {
             const sessionId = selectedSessionId();
             if (!sessionId) return;
             void loadTraceDetail(sessionId, trace());
           }}
-          data-testid="monitor-trace-detail"
+          onSelectObservation={(id) => setSelectedObservationId(id)}
+          onSelectTraceRoot={() => setSelectedObservationId(null)}
+          onOmitNoiseChange={setOmitNoise}
         />
       )}
     </Show>

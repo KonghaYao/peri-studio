@@ -2,11 +2,15 @@ import { Show } from 'solid-js';
 import { Terminal } from '@peri/ui';
 import { showCatalogSection } from '@/catalog/catalog-section';
 import { ProjectSidebarLayout } from '@/layers/shell/ProjectSidebarLayout';
-import { MonitorPanelLayout } from '@/layers/shell/MonitorPanelLayout';
 import { SettingsPanelLayout } from '@/layers/shell/SettingsPanelLayout';
 import { SystemAboutLayout } from '@/layers/shell/SystemAboutLayout';
 import { StatusAreaLayout } from '@/layers/status/StatusAreaLayout';
 import { TerminalDockLayout } from '@/layers/terminal/TerminalDockLayout';
+import { AppChromeLayout } from '@/layers/shell/AppChromeLayout';
+import { IoViewerLayout } from '@/layers/shell/IoViewerLayout';
+import { MonitorIoDetailLayout } from '@/layers/shell/MonitorIoDetailLayout';
+import { MonitorTimelineLayout } from '@/layers/shell/MonitorTimelineLayout';
+import { MonitorTraceTurnTreeLayout } from '@/layers/shell/MonitorTraceTurnTreeLayout';
 import { CatalogDemo } from '@/pages/shared/DemoSection';
 
 export function ComponentCatalogExtrasShell(props: { sections?: string[] }) {
@@ -36,13 +40,53 @@ export function ComponentCatalogExtrasShell(props: { sections?: string[] }) {
       </CatalogDemo>
       </Show>
 
-      <Show when={showCatalogSection(props.sections, 'monitor-panel')}>
+      <Show when={showCatalogSection(props.sections, 'monitor-timeline')}>
       <CatalogDemo
-        id="monitor-panel"
-        title="Monitor panel"
-        description="Langfuse trace summary + list (T3 MonitorPanelShell). Workbench rail entry when /api/health.langfuse is true."
+        id="monitor-timeline"
+        title="Monitor timeline"
+        description="Trace duration band + type badges（自 peri-fuse observation timeline 抽象）。"
       >
-        <MonitorPanelLayout />
+        <MonitorTimelineLayout />
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'monitor-trace-turn-tree')}>
+      <CatalogDemo
+        id="monitor-trace-turn-tree"
+        title="Monitor trace turn tree"
+        description="Trace 全量 observation 树 + 详情分栏（自 peri-fuse observation-tree / trace-detail-page）。"
+      >
+        <MonitorTraceTurnTreeLayout />
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'io-viewer')}>
+      <CatalogDemo
+        id="io-viewer"
+        title="IO viewer"
+        description="Chat / JSON IO viewer（自 peri-fuse io-viewer 完整移植；默认自绘，slot 可选增强）。"
+      >
+        <IoViewerLayout />
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'monitor-io-detail')}>
+      <CatalogDemo
+        id="monitor-io-detail"
+        title="Monitor IO detail"
+        description="IoPreviewCell table cells + IoTabsShell detail tabs + ScoreListShell（自 peri-fuse observation detail / io-table）。"
+      >
+        <MonitorIoDetailLayout />
+      </CatalogDemo>
+      </Show>
+
+      <Show when={showCatalogSection(props.sections, 'app-chrome')}>
+      <CatalogDemo
+        id="app-chrome"
+        title="App chrome"
+        description="Page header + command palette + shortcuts（自 peri-fuse layout / command-palette 抽象）。"
+      >
+        <AppChromeLayout />
       </CatalogDemo>
       </Show>
 

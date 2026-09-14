@@ -111,6 +111,28 @@ T3 组件必须：
 | 组件 | 说明 |
 |------|------|
 | `MonitorPanelShell` | Langfuse trace 摘要 + 列表内容壳（body-only；header 由 WorkbenchPanelChrome 提供） |
+| `MonitorTraceDetailShell` / `MonitorObservationTree` / `MonitorObservationDetailShell` | Trace drill-in + 预构建 observation 树 / 详情 |
+| `MonitorTraceTurnTree` / `MonitorTraceTurnTreeShell` / `buildTraceTurnTree` | Trace 全量扁平 observation 树（noise hoist、turn 分组、选中/键盘）；自 peri-fuse `observation-tree` |
+| `MonitorObservationTypeBadge` / `MonitorObservationLevelBadge` / `MonitorObservationTypeIcon` | Observation type / level 视觉（自 peri-fuse `observation-badges`） |
+| `MonitorTimelineShell` / `MonitorTimelineBand` / `MonitorTimelineRuler` | Trace 时长带 + type 分轨（layout 自 peri-fuse `observation-timeline-*`）；running 段斜纹、type row track hover |
+| `MonitorTimelineDialogShell` | 观测时间轴弹窗壳（timeline + detail 双 slot；T4 注入 `MonitorTimelineShell` 或 `MonitorTimelineBand`） |
+| `monitor-timeline-layout` | 纯 TS 分轨 / tick / opacity 算法（Solid 无关；fuse 可只复用此模块） |
+| `IoViewerShell` / `IoViewer` | 完整 IO 检视（`ChatIoList` + `IoViewerJsonView` + `chat-payload`）；默认自绘 fuse 等价 UI；`renderChat` / `renderJson` 仅作可选增强（自 peri-fuse `io-viewer` / `chat-viewer` / `chat-parts` / `json-viewer`） |
+| `IoPreviewCell` | 表格 IO 预览单元格 + Dialog 展开 JsonTree（自 peri-fuse `io-table` / observation detail） |
+| `IoTabsShell` | Observation 详情 Preview / Input / Output / Metadata 标签壳（render prop 注入） |
+| `ScoreListShell` | Trace / observation score 列表（数值 / 文本 / 空态） |
+| `DataTableToolbarShell` | 表格 toolbar 行 + 列可见性菜单（toolbar slot 注入） |
+| `AutoRefreshIntervalControl` | 表格自动刷新间隔选择（Off / 15s / 30s / 1m） |
+
+> **T2 新增（peri-fuse）**：`JsonTree`、`StatChip`、`TokenUsageBadge`、`TruncatedIdCell`、`LocalIsoDate`、`LevelCountsDisplay`、`TableLoadingRows`、`TableInlineError`、`FilterInput` / `FilterSelect` / `DateFilterInput` 已从 barrel 导出；配套 lib：`chat-payload`、`date-filter-boundary`、`format-local-iso-date`、`monitor-level-symbols`。分级与 sandbox 见 [`peri-fuse-ui-extraction.md`](peri-fuse-ui-extraction.md)。本清单仅列 T3。
+
+### App chrome（dashboard 类）
+
+| 组件 | 说明 |
+|------|------|
+| `PageHeaderShell` | Sticky 页标题 + description + actions 槽（自 peri-fuse `PageHeader`） |
+| `CommandPaletteShell` + `bindCommandPaletteHotkey` | 命令面板 Dialog + Cmd/Ctrl+K 绑定；可选 `footer`（`null` 隐藏）；↑↓ 列表 **wrap** 导航；`dispatchCommandPaletteOpen` / `bindCommandPaletteOpenEvent` / `COMMAND_PALETTE_OPEN_EVENT` 供 T4 命令式打开 |
+| `ShortcutsDialogShell` + `bindShortcutsHelpHotkey` | 快捷键参考弹窗 + `?` 绑定（`bindShortcutsHelpHotkey` 与 `CommandPaletteShell` 同文件实现，barrel 一并导出） |
 
 ### Status / Decision
 
@@ -139,7 +161,9 @@ T3 组件必须：
 | Status | `StatusAreaShell` | `widgets/shell/StatusArea.tsx` |
 | Decision | `DecisionQueueShell` | `widgets/chat/*Queue.tsx` |
 | Git graph | `GitGraphPanel` | `widgets/resource/git/GitGraphView.tsx` |
-| Langfuse Monitor | `MonitorPanelShell` | `widgets/resource/MonitorPanel.tsx` |
+| Langfuse Monitor | `MonitorPanelShell` + `MonitorTraceTurnTreeShell` / `IoTabsShell` / `IoViewer` / timeline / badges | `widgets/resource/MonitorPanel.tsx`；sandbox `#/components-monitor`（trace turn tree、timeline、IO detail） |
+| Data table chrome | `DataTableToolbarShell` + `AutoRefreshIntervalControl` | peri-fuse traces/sessions 页面 T4 装配；sandbox `#/components-display/data-table-toolbar` |
+| Dashboard chrome | `PageHeaderShell` + `CommandPaletteShell` | peri-fuse 后期 T4 装配；sandbox `#/components-chrome/app-chrome` |
 | MCP Apps | `McpAppFrameShell` + `bindMcpAppHost` | `widgets/chat/McpAppFrame.tsx`（`features/mcp/mcp-apps.ts` 协议与 live session） |
 
 Sandbox `components/blocks/*`：T3 条 **barrel 重导出** `@peri/ui`；layers 保留 mock 数据与 T4 演示组合。

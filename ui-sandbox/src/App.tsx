@@ -9,6 +9,8 @@ import { ComponentsOverlaysPage } from './pages/ComponentsOverlaysPage';
 import { ComponentsAiPage } from './pages/ComponentsAiPage';
 import { ComponentsMarkdownPage } from './pages/ComponentsMarkdownPage';
 import { ComponentsShellPage } from './pages/ComponentsShellPage';
+import { ComponentsMonitorPage } from './pages/ComponentsMonitorPage';
+import { ComponentsChromePage } from './pages/ComponentsChromePage';
 import { ComponentsComposerPage } from './pages/ComponentsComposerPage';
 import { ComponentsExplorerPage } from './pages/ComponentsExplorerPage';
 import { ComponentsGitPage } from './pages/ComponentsGitPage';
@@ -37,6 +39,8 @@ export function App() {
       <Show when={route() === 'components-ai'}><ComponentsAiPage /></Show>
       <Show when={route() === 'components-markdown'}><ComponentsMarkdownPage /></Show>
       <Show when={route() === 'components-shell'}><ComponentsShellPage /></Show>
+      <Show when={route() === 'components-monitor'}><ComponentsMonitorPage /></Show>
+      <Show when={route() === 'components-chrome'}><ComponentsChromePage /></Show>
       <Show when={route() === 'components-composer'}><ComponentsComposerPage /></Show>
       <Show when={route() === 'components-explorer'}><ComponentsExplorerPage /></Show>
       <Show when={route() === 'components-git'}><ComponentsGitPage /></Show>

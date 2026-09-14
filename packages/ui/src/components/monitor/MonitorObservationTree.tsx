@@ -7,8 +7,6 @@ import {
   formatMonitorObservationTokens,
 } from './format';
 import {
-  monitorObservationChildConnectorClass,
-  monitorObservationChildWrapClass,
   monitorObservationChildrenClass,
   monitorObservationChevronClass,
   monitorObservationChipChainClass,
@@ -152,18 +150,13 @@ const MonitorObservationNode: Component<{
         <div class={monitorObservationChildrenClass} role="group">
           <For each={children()}>
             {(child) => (
-              <div class={monitorObservationChildWrapClass}>
-                <div class={monitorObservationChildConnectorClass} aria-hidden="true" />
-                <div class="min-w-0 flex-1">
-                  <MonitorObservationNode
-                    observation={child}
-                    depth={props.depth + 1}
-                    collapsed={props.collapsed}
-                    onToggle={props.onToggle}
-                    onSelect={props.onSelect}
-                  />
-                </div>
-              </div>
+              <MonitorObservationNode
+                observation={child}
+                depth={props.depth + 1}
+                collapsed={props.collapsed}
+                onToggle={props.onToggle}
+                onSelect={props.onSelect}
+              />
             )}
           </For>
         </div>

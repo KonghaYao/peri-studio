@@ -341,12 +341,22 @@ test('git graph layout classes live in git-graph-layout.ts', () => {
 test('monitor layout classes live in monitor-panel-layout.ts', () => {
   const layout = read(join(srcRoot, 'components', 'monitor', 'monitor-panel-layout.ts'));
   const shell = read(join(srcRoot, 'components', 'monitor', 'MonitorPanelShell.tsx'));
+  const band = read(join(srcRoot, 'components', 'monitor', 'MonitorTimelineBand.tsx'));
   assert.match(layout, /monitorPanelClass/);
   assert.match(layout, /monitorTraceRowClass/);
   assert.match(layout, /min-h-32/);
   assert.match(shell, /from '\.\/monitor-panel-layout'/);
   const extra = read(join(srcRoot, 'styles', 'extra.css'));
-  assert.doesNotMatch(extra, /\.ui-monitor-/);
+  assert.match(extra, /\/\* Monitor timeline \(peri-fuse extraction\) \*\//);
+  assert.match(extra, /\.ui-monitor-timeline-running\b/);
+  assert.match(extra, /\.ui-monitor-timeline-track\b/);
+  assert.match(band, /ui-monitor-timeline-type-row/);
+  assert.match(band, /ui-monitor-timeline-running/);
+  const extraWithoutTimeline = extra.replace(
+    /\/\* Monitor timeline \(peri-fuse extraction\) \*\/[\s\S]*/,
+    '',
+  );
+  assert.doesNotMatch(extraWithoutTimeline, /\.ui-monitor-/);
 });
 
 test('composer layout classes live in composer-layout.ts', () => {

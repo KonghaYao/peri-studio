@@ -370,6 +370,14 @@
   --container-model-menu: var(--container-model-menu);
   --container-rewind-compact: var(--container-rewind-compact);
   --container-monitor-io-preview-max: var(--container-monitor-io-preview-max);
+  --container-monitor-trace-tree: var(--container-monitor-trace-tree);
+  --container-monitor-trace-tree-min: var(--container-monitor-trace-tree-min);
+  --container-io-viewer-max: var(--container-io-viewer-max);
+  --container-io-viewer-primitive-max: var(--container-io-viewer-primitive-max);
+  --container-io-viewer-tool-args-max: var(--container-io-viewer-tool-args-max);
+  --container-io-viewer-image-max: var(--container-io-viewer-image-max);
+  --container-io-viewer-bubble-max: var(--container-io-viewer-bubble-max);
+  --container-io-viewer-dialog-max: var(--container-io-viewer-dialog-max);
 
   /* Component geometry */
   --max-width-chat-bubble: var(--chat-bubble-max);

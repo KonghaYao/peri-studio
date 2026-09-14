@@ -538,3 +538,150 @@ body.ui-workbench-panel-resizing * {
     opacity: 0.75;
   }
 }
+
+/* Monitor timeline (peri-fuse extraction) */
+
+.ui-monitor-timeline-type-row .ui-monitor-timeline-track {
+  pointer-events: none;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.ui-monitor-timeline-type-row:hover .ui-monitor-timeline-track,
+.ui-monitor-timeline-type-row:focus-within .ui-monitor-timeline-track {
+  background-color: var(--interaction-hover);
+}
+
+.ui-monitor-timeline-running {
+  overflow: hidden;
+}
+
+.ui-monitor-timeline-running::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent var(--space-4),
+    color-mix(in srgb, var(--surface) 40%, transparent) var(--space-4),
+    color-mix(in srgb, var(--surface) 40%, transparent) var(--space-8)
+  );
+  pointer-events: none;
+}
+
+/* Io viewer（peri-fuse io-viewer / chat-viewer / chat-parts 提取） */
+
+.ui-io-viewer-mode-toggle [role='radio'] {
+  flex: none;
+}
+
+.ui-io-viewer-mode-toggle [role='radio'] span {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.ui-io-viewer-body {
+  max-height: var(--container-io-viewer-max);
+  overflow: auto;
+  border-radius: var(--radius-8);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--surface-sunken);
+  padding: var(--space-8);
+}
+
+.ui-io-viewer-body-default {
+  min-height: 0;
+}
+
+.ui-io-chat-bubble-column {
+  max-width: var(--container-io-viewer-bubble-max);
+}
+
+.ui-io-chat-json-dialog {
+  max-height: var(--container-io-viewer-dialog-max);
+}
+
+.ui-io-chat-json-trigger {
+  border-color: color-mix(in srgb, var(--border-subtle) 70%, transparent);
+  background-color: color-mix(in srgb, var(--surface-sunken) 40%, transparent);
+}
+
+.ui-io-chat-json-trigger:hover {
+  border-color: var(--border-subtle);
+  background-color: var(--surface-sunken);
+  color: var(--content-primary);
+}
+
+.ui-io-chat-role-system {
+  border-color: color-mix(in srgb, var(--feedback-warning-solid) 25%, transparent);
+  background-color: color-mix(in srgb, var(--feedback-warning-solid) 6%, transparent);
+}
+
+.ui-io-chat-icon-system {
+  background-color: color-mix(in srgb, var(--feedback-warning-solid) 15%, transparent);
+  color: var(--feedback-warning-strong);
+}
+
+.ui-io-chat-role-user {
+  border-color: color-mix(in srgb, var(--feedback-info-solid) 25%, transparent);
+  background-color: color-mix(in srgb, var(--feedback-info-solid) 7%, transparent);
+}
+
+.ui-io-chat-icon-user {
+  background-color: color-mix(in srgb, var(--feedback-info-solid) 15%, transparent);
+  color: var(--feedback-info-strong);
+}
+
+.ui-io-chat-role-assistant {
+  border-color: color-mix(in srgb, var(--accent-solid) 25%, transparent);
+  background-color: color-mix(in srgb, var(--accent-solid) 6%, transparent);
+}
+
+.ui-io-chat-icon-assistant {
+  background-color: color-mix(in srgb, var(--accent-solid) 15%, transparent);
+  color: var(--accent-solid);
+}
+
+.ui-io-chat-role-tool {
+  border-color: color-mix(in srgb, var(--feedback-success-solid) 25%, transparent);
+  background-color: color-mix(in srgb, var(--feedback-success-solid) 6%, transparent);
+}
+
+.ui-io-chat-icon-tool {
+  background-color: color-mix(in srgb, var(--feedback-success-solid) 15%, transparent);
+  color: var(--feedback-success-strong);
+}
+
+.ui-io-chat-role-fallback {
+  border-color: var(--border-subtle);
+  background-color: color-mix(in srgb, var(--surface-sunken) 40%, transparent);
+}
+
+.ui-io-chat-icon-fallback {
+  background-color: var(--surface-sunken);
+  color: var(--content-muted);
+}
+
+.ui-io-chat-thinking {
+  border-color: color-mix(in srgb, var(--accent-solid) 20%, transparent);
+  background-color: color-mix(in srgb, var(--accent-solid) 4%, transparent);
+}
+
+.ui-io-chat-thinking > div {
+  border-color: color-mix(in srgb, var(--accent-solid) 15%, transparent);
+}
+
+.ui-io-chat-tool-use {
+  border-color: color-mix(in srgb, var(--feedback-success-solid) 20%, transparent);
+  background-color: color-mix(in srgb, var(--feedback-success-solid) 4%, transparent);
+}
+
+.ui-io-chat-tool-use-body {
+  border-color: color-mix(in srgb, var(--feedback-success-solid) 15%, transparent);
+}
+
+.ui-io-chat-tool-result {
+  border-color: color-mix(in srgb, var(--feedback-success-solid) 15%, transparent);
+}

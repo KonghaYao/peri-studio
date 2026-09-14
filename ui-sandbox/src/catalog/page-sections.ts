@@ -8,6 +8,8 @@ export type SandboxRoute =
   | 'components-ai'
   | 'components-markdown'
   | 'components-shell'
+  | 'components-monitor'
+  | 'components-chrome'
   | 'components-composer'
   | 'components-explorer'
   | 'components-git';
@@ -40,6 +42,8 @@ export const SANDBOX_ROUTES: SandboxRoute[] = [
   'components-ai',
   'components-markdown',
   'components-shell',
+  'components-monitor',
+  'components-chrome',
   'components-composer',
   'components-explorer',
   'components-git',
@@ -55,6 +59,8 @@ export const ROUTE_META: Record<SandboxRoute, { tier: string; label: string }> =
   'components-ai': { tier: 'T2', label: 'AI' },
   'components-markdown': { tier: 'T2', label: 'Markdown' },
   'components-shell': { tier: 'Comp', label: 'Shell' },
+  'components-monitor': { tier: 'Comp', label: 'Monitor' },
+  'components-chrome': { tier: 'Comp', label: 'Chrome' },
   'components-composer': { tier: 'Comp', label: 'Composer' },
   'components-explorer': { tier: 'Comp', label: 'Explorer' },
   'components-git': { tier: 'Comp', label: 'Git' },
@@ -135,6 +141,18 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'skeleton-display', label: 'Skeleton' },
         { id: 'typography-display', label: 'Typography' },
         { id: 'pagination-display', label: 'Pagination' },
+        { id: 'json-tree', label: 'JsonTree' },
+        { id: 'stat-chip', label: 'StatChip' },
+        { id: 'token-usage-badge', label: 'TokenUsageBadge' },
+        { id: 'truncated-id-cell', label: 'TruncatedIdCell' },
+        { id: 'local-iso-date', label: 'LocalIsoDate' },
+        { id: 'table-cells-composed', label: 'Table cells composed' },
+        { id: 'table-filters', label: 'Table filters' },
+        { id: 'level-counts-display', label: 'LevelCountsDisplay' },
+        { id: 'table-loading-rows', label: 'TableLoadingRows' },
+        { id: 'table-inline-error', label: 'TableInlineError' },
+        { id: 'table-state-composed', label: 'Table state composed' },
+        { id: 'data-table-toolbar', label: 'DataTable toolbar' },
       ],
     },
   ],
@@ -348,7 +366,6 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
       items: [
         { id: 'terminal-xterm', label: 'Terminal' },
         { id: 'terminal-dock', label: 'Terminal dock' },
-        { id: 'monitor-panel', label: 'Monitor panel' },
       ],
     },
     {
@@ -357,6 +374,23 @@ export const PAGE_CATALOG: Record<SandboxRoute, CatalogGroup[]> = {
         { id: 'settings-panel', label: 'Settings panel' },
         { id: 'system-about', label: 'System About' },
       ],
+    },
+  ],
+  'components-monitor': [
+    {
+      title: 'Timeline & IO',
+      items: [
+        { id: 'monitor-timeline', label: 'Monitor timeline' },
+        { id: 'monitor-trace-turn-tree', label: 'Monitor trace turn tree' },
+        { id: 'io-viewer', label: 'IO viewer' },
+        { id: 'monitor-io-detail', label: 'Monitor IO detail' },
+      ],
+    },
+  ],
+  'components-chrome': [
+    {
+      title: 'App chrome',
+      items: [{ id: 'app-chrome', label: 'App chrome' }],
     },
   ],
   'components-composer': [
@@ -489,6 +523,16 @@ const LEGACY_AI_SHELL_SECTIONS = new Set([
   'project-row-accessory',
 ]);
 
+/** 原 #/components-shell 下已迁入 Monitor / Chrome 的章节。 */
+const LEGACY_SHELL_SECTION_ROUTES: Record<string, { route: SandboxRoute; section: string }> = {
+  'monitor-panel': { route: 'components-monitor', section: 'monitor-trace-turn-tree' },
+  'monitor-timeline': { route: 'components-monitor', section: 'monitor-timeline' },
+  'monitor-trace-turn-tree': { route: 'components-monitor', section: 'monitor-trace-turn-tree' },
+  'io-viewer': { route: 'components-monitor', section: 'io-viewer' },
+  'monitor-io-detail': { route: 'components-monitor', section: 'monitor-io-detail' },
+  'app-chrome': { route: 'components-chrome', section: 'app-chrome' },
+};
+
 const LEGACY_LAYER_SECTION_ROUTES: Record<string, SandboxRoute> = {
   'project-sidebar': 'components-shell',
   'session-row-accessory': 'components-shell',
@@ -498,7 +542,21 @@ const LEGACY_LAYER_SECTION_ROUTES: Record<string, SandboxRoute> = {
   'chat-shell': 'components-shell',
   'chat-transcript': 'components-shell',
   'terminal-dock': 'components-shell',
-  'monitor-panel': 'components-shell',
+  'monitor-panel': 'components-monitor',
+  'monitor-timeline': 'components-monitor',
+  'monitor-trace-turn-tree': 'components-monitor',
+  'io-viewer': 'components-monitor',
+  'monitor-io-detail': 'components-monitor',
+  'level-counts-display': 'components-display',
+  'table-loading-rows': 'components-display',
+  'table-inline-error': 'components-display',
+  'table-state-composed': 'components-display',
+  'data-table-toolbar': 'components-display',
+  'table-filters': 'components-display',
+  'truncated-id-cell': 'components-display',
+  'local-iso-date': 'components-display',
+  'table-cells-composed': 'components-display',
+  'app-chrome': 'components-chrome',
   'settings-panel': 'components-shell',
   'system-about': 'components-shell',
   composer: 'components-composer',
@@ -526,12 +584,18 @@ function resolveRoute(routePart: string): SandboxRoute {
 }
 
 export function parseSandboxHash(hash = window.location.hash): { route: SandboxRoute; section?: string } {
-  const path = hash.replace(/^#\/?/, '').split('?')[0];
-  const [routePart, section] = path.split('/').filter(Boolean);
+  const raw = hash.replace(/^#\/?/, '');
+  const [pathPart, queryPart] = raw.split('?');
+  const querySection = queryPart ? new URLSearchParams(queryPart).get('section') ?? undefined : undefined;
+  const [routePart, pathSection] = pathPart.split('/').filter(Boolean);
+  const section = pathSection || querySection || undefined;
 
   if (routePart === LEGACY_LAYERS_ROUTE) {
     const mappedRoute = section ? (LEGACY_LAYER_SECTION_ROUTES[section] ?? 'components-shell') : 'components-shell';
     let mappedSection = section || undefined;
+    if (mappedSection === 'monitor-panel') {
+      mappedSection = 'monitor-trace-turn-tree';
+    }
     if (mappedSection && mappedRoute === 'components-ai') {
       mappedSection = LEGACY_AI_SECTION_IDS[mappedSection] ?? mappedSection;
     }
@@ -546,6 +610,10 @@ export function parseSandboxHash(hash = window.location.hash): { route: SandboxR
   const route = resolveRoute(routePart ?? '');
   if (section && route === 'components-ai' && LEGACY_AI_SHELL_SECTIONS.has(section)) {
     return { route: 'components-shell', section };
+  }
+  if (section && route === 'components-shell') {
+    const crossRoute = LEGACY_SHELL_SECTION_ROUTES[section];
+    if (crossRoute) return crossRoute;
   }
   if (section && route === 'components-ai') {
     const crossRoute = LEGACY_AI_SECTION_ROUTES[section];
