@@ -43,5 +43,8 @@ test-results/
 *.db
 *.png
 !web/public/**/*.png
-.claude
+# Claude Code local state (keep project skills tracked)
+.claude/*
+!.claude/skills/
+!.claude/skills/**
 **/*.generated.ts
