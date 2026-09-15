@@ -1,0 +1,17 @@
+/* @peri/ui chart primitives — SVG axis/grid strokes reference semantic tokens. */
+
+.ui-chart-grid-line {
+  stroke: var(--border-subtle);
+  stroke-dasharray: 3 3;
+  stroke-opacity: 0.35;
+}
+
+.ui-chart-axis-label {
+  fill: var(--content-muted);
+  font-size: 11px;
+}
+
+.ui-chart-line {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

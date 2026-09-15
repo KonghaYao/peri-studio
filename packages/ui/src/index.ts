@@ -455,6 +455,40 @@ export {
 export { QRCode, type QRCodeProps } from './components/qr-code';
 export { Segmented, type SegmentedOption, type SegmentedProps } from './components/segmented';
 export { Statistic, StatisticCountdown, type CountdownProps, type StatisticProps } from './components/statistic';
+export {
+  Chart,
+  ChartBars,
+  ChartBarsHorizontal,
+  ChartCartesian,
+  ChartDonut,
+  ChartLegend,
+  ChartLine,
+  ChartPlot,
+  formatChartCompact,
+  ACTIVITY_CHART_HEIGHT,
+  axisTicks,
+  bandSlot,
+  CHART_WIDTH,
+  DEFAULT_CHART_HEIGHT,
+  DEFAULT_CHART_MARGIN,
+  DUAL_AXIS_CHART_MARGIN,
+  HORIZONTAL_BAR_CHART_MARGIN,
+  linearScale,
+  niceMax,
+  polylinePoints,
+  type ChartAxisSide,
+  type ChartBarSeries,
+  type ChartBarsHorizontalProps,
+  type ChartBarsProps,
+  type ChartCartesianProps,
+  type ChartDonutProps,
+  type ChartDonutSegment,
+  type ChartLegendItem,
+  type ChartLegendProps,
+  type ChartLineProps,
+  type ChartLineSeries,
+  type ChartMargin,
+} from './components/chart';
 export { Tag, CheckableTag, type CheckableTagProps, type TagProps } from './components/tag';
 export { Timeline, TimelineItem, type TimelineItemType, type TimelineProps } from './components/timeline';
 export { Tour, useTour, type TourProps, type TourStep } from './components/tour';

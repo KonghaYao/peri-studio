@@ -121,6 +121,14 @@
   --feedback-info-soft: var(--palette-accent-50);
   --feedback-info-border: var(--palette-accent-200);
 
+  /* 图表序列色（Spectra --chart-* 兼容；消费方可在主题层覆盖） */
+  --chart-1: var(--palette-accent-600);
+  --chart-2: var(--palette-success-500);
+  --chart-3: var(--palette-warning-500);
+  --chart-4: #a855f7;
+  --chart-5: #14b8a6;
+  --chart-6: #f97316;
+
   /* 半径语义别名（数值与 legacy --radius-* 对齐） */
   --radius-xs: var(--radius-2);
   --radius-sm: var(--radius-4);
