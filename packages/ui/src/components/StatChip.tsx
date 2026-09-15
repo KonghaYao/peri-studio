@@ -27,9 +27,11 @@ export const StatChip: Component<StatChipProps> = (props) => {
         </div>
       </Show>
       <div class="min-w-0 leading-tight">
-        <div class="whitespace-nowrap text-10 font-600 uppercase tracking-wide text-content-muted">
-          {local.label}
-        </div>
+        <Show when={local.label}>
+          <div class="whitespace-nowrap text-10 font-600 uppercase tracking-wide text-content-muted">
+            {local.label}
+          </div>
+        </Show>
         <div class="text-12 font-600 tabular-nums text-content-primary">{local.value}</div>
       </div>
     </div>
