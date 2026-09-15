@@ -2,9 +2,24 @@ import type { Component, ComponentProps } from "solid-js"
 import { splitProps } from "solid-js"
 import { cn } from "../lib/cn"
 
-const ScrollArea: Component<ComponentProps<"div">> = (props) => {
-  const [, rest] = splitProps(props, ["class"])
-  return <div class={cn("relative overflow-hidden", props.class)} {...rest} />
+type ScrollAreaProps = ComponentProps<"div"> & {
+  /** When true (default), bare children are wrapped in ScrollAreaViewport for scrolling. */
+  autoViewport?: boolean
+}
+
+const ScrollArea: Component<ScrollAreaProps> = (props) => {
+  const [local, rest] = splitProps(props, ["class", "children", "autoViewport"])
+  const autoViewport = () => local.autoViewport ?? true
+
+  return (
+    <div class={cn("relative min-h-0 overflow-hidden", local.class)} {...rest}>
+      {autoViewport() ? (
+        <ScrollAreaViewport class="min-h-0">{local.children}</ScrollAreaViewport>
+      ) : (
+        local.children
+      )}
+    </div>
+  )
 }
 
 const ScrollAreaViewport: Component<ComponentProps<"div">> = (props) => {

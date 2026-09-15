@@ -176,12 +176,30 @@ describe('Display components', () => {
 
   it('renders pagination controls with total', () => {
     const onChange = vi.fn();
-    render(() => (
+    const { container } = render(() => (
       <PaginationControls current={2} pageSize={10} total={45} showTotal onChange={onChange} />
     ));
     expect(screen.getByText('Total 45 items')).toBeInTheDocument();
+    expect(container.querySelector('[data-slot="pagination-controls"]')).toBeTruthy();
     fireEvent.click(screen.getByRole('link', { name: 'Go to next page' }));
     expect(onChange).toHaveBeenCalled();
+  });
+
+  it('uses a compact three-column pagination toolbar layout', () => {
+    const { container } = render(() => (
+      <PaginationControls
+        current={1}
+        pageSize={10}
+        total={128}
+        showTotal
+        showSizeChanger
+        onChange={vi.fn()}
+      />
+    ));
+    const controls = container.querySelector('[data-slot="pagination-controls"]');
+    expect(controls).toHaveClass('grid', 'grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]');
+    const pageSize = screen.getByRole('combobox', { name: 'Page size' });
+    expect(pageSize.closest('.w-100')).toBeTruthy();
   });
 
   it('supports typography copy action', async () => {

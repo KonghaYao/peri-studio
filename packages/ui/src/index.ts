@@ -210,7 +210,20 @@ export { TokenUsageBadge, type TokenUsageBadgeProps } from './components/TokenUs
 export { TruncatedIdCell, type TruncatedIdCellProps } from './components/TruncatedIdCell';
 export { LevelCountsDisplay, type LevelCount, type LevelCountsDisplayProps } from './components/LevelCountsDisplay';
 export { TableLoadingRows, type TableLoadingRowsProps } from './components/TableLoadingRows';
+export { BlockLoadingRows, type BlockLoadingRowsProps } from './components/BlockLoadingRows';
 export { TableInlineError, type TableInlineErrorProps } from './components/TableInlineError';
+export { PanelCard, type PanelCardProps } from './components/PanelCard';
+export { StatusPill, type StatusPillProps } from './components/StatusPill';
+export {
+  QuerySection,
+  type QueryHandle,
+  type QuerySectionProps,
+} from './components/QuerySection';
+export {
+  resolveQueryState,
+  type QuerySectionState,
+  type QuerySnapshot,
+} from './lib/query-section-state';
 export {
   LocalIsoDate,
   formatLocalIsoDate,
@@ -369,6 +382,12 @@ export {
   type FormLayoutProps,
   type FormListProps,
 } from './components/FormLayout';
+export {
+  InlineForm,
+  type InlineFormActionsProps,
+  type InlineFormFieldProps,
+  type InlineFormProps,
+} from './components/InlineForm';
 export { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from './components/InputOTP';
 export {
   Blockquote,

@@ -602,8 +602,9 @@
   --container-slash-tight: min(360px, 48vh);
   --container-placeholder-narrow: clamp(240px, 48vh, 460px);
   --container-monitor-io-preview-max: min(320px, 40vh);
-  --container-monitor-trace-tree: 45%;
-  --container-monitor-trace-tree-min: 320px;
+  --container-monitor-trace-tree: 320px;
+  --container-monitor-trace-tree-min: 260px;
+  --container-monitor-trace-tree-max: 42%;
   --container-io-viewer-max: min(400px, 50vh);
   --container-io-viewer-primitive-max: min(400px, 50vh);
   --container-io-viewer-tool-args-max: 192px;

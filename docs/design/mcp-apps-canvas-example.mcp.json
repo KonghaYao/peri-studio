@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "cursor-canvas": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/absolute/path/to/canvas/packages/mcp-app/dist/main.js", "--stdio"],
+      "env": {
+        "MCPP_LEGACY": "1"
+      }
+    }
+  }
+}

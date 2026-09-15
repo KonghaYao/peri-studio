@@ -41,10 +41,10 @@ Peri acp（spawn 必须带 PERI_MCP_APPS=）──MCP──► MCP Server
 | 敏感瞬时 | `instance/src/hub/forward.rs`：`peri/mcp/*` + mcp-app MIME / `ui://` |
 | 沙箱 origin | `server/src/web/sandbox.rs`，默认 `LISTEN_PORT+1` 或 `PERI_STUDIO_SANDBOX_PORT` |
 | 面板 CSP | `server/src/web/http.rs` `panel_csp()`：`frame-src` 精确沙箱 origin；`img-src 'self'`（CSS `url()` 走此指令，磨砂颗粒为同源 `/images/sidebar-frost-grain.svg`，禁止 `data:`） |
-| Web 装配 | `web/src/features/mcp/mcp-apps.ts`（协议/live session）、`widgets/chat/McpAppFrame.tsx`（T4 接线）、`@peri/ui` `mcp-app`（`McpAppFrameShell` + `bindMcpAppHost`）、`web/sandbox.html` |
-| 工具卡入口 | `ConversationMessage` 的 `McpToolBlock`：有 live HTML 才换 iframe |
+| Web 装配 | `web/src/features/mcp/mcp-apps.ts`（协议/live session）、`features/mcp/mcp-app-display.ts`（历史占位判定）、`widgets/chat/McpAppFrame.tsx`（T4 接线）、`@peri/ui` `mcp-app`（`McpAppFrameShell` + `McpAppHistoricalCard` + `bindMcpAppHost`）、`web/sandbox.html` |
+| 工具卡入口 | `ConversationMessage` 的 `McpToolBlock`：有 live HTML 才换 iframe；`session_replay` 且无 HTML 时换 `McpAppHistoricalCard` |
 
-HTML / token / CSP **不进** Yjs、SQLite、ring、日志。刷新或回放只剩 `ToolCallActivity`（`@peri/ui` `ToolActivityRow`）。
+HTML / token / CSP **不进** Yjs、SQLite、ring、日志。回放后 iframe 不可复活；`McpToolBlock` 仅在 `origin=session_replay` 时对 `mcp__*` 工具展示 `McpAppHistoricalCard`（英文占位文案），不再展开 `ToolCallActivity` 的参数/结果 dump。live / 刷新后无 HTML 仍走 `ToolCallActivity`（pending、policy_denied、重复调用等）。同一 live chat 内较早的重复 App 仍保留 activity 摘要行。
 
 ## 3. Peri 线契约（serde 踩过的）
 
@@ -166,6 +166,7 @@ hostCapabilities: expected object, received undefined
 ## 6. 生命周期与安全
 
 - **自动 open**：当前 chat、非只读、`status=completed`、name 以 `mcp__` 开头、origin 不是 replay、尚未有 live 条目。
+- **历史占位**：仅 `origin=session_replay` 时，`mcp__*` 工具卡走 `McpAppHistoricalCard`；不持久化 HTML/token，也不伪造 iframe。live / 页面刷新后无 HTML 仍保留 `ToolCallActivity`。
 - **拆 iframe**：新 `chat/prompt`（Web 在 `sendMessage` 里先拆）、cancel、close、**切换 chat 时拆 previousCid**（曾经误拆新 chat，旧 iframe 留在内存）。
 - Hub 在 prompt/cancel/close 也会 `tear_down_chat`。lease 已死后再点按钮应 `stale_session` / `policy_denied`，silent，不要 toast。
 - `policy_denied` / `tool_not_app_visible` / `capability_disabled` / `unsupported` / `stale_session`：保持 `ToolCallActivity`，不弹故障。
@@ -183,6 +184,43 @@ hostCapabilities: expected object, received undefined
 6. 发下一条用户消息应拆掉旧 App。
 
 改 CSP / 沙箱路由 / 嵌入的 JS 后都要 **重启二进制 + 强制刷新**。只热更前端不够：面板 JS 是 `build.rs` 编译期内嵌的。
+
+### 7.1 cursor-canvas stdio（外部 MCP App）
+
+画布 MCP server 源码在独立仓库 [`peri-canvas`](https://github.com/KonghaYao/peri-canvas)（本地常见路径 `…/remote/canvas`），包名 `cursor-canvas-mcp`。Studio Host **不需要**为接入 canvas 改 Rust/Web；只需 workspace `.mcp.json` spawn stdio server，并依赖 Hub 已注入的 `PERI_MCP_APPS=`。
+
+**构建**（在 canvas 仓库，非 peri-studio）：
+
+```bash
+npm run build -w cursor-canvas-mcp
+```
+
+**workspace `.mcp.json` 样例**（路径换成本机 `dist/main.js` 绝对路径）：
+
+```json
+{
+  "mcpServers": {
+    "cursor-canvas": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/absolute/path/to/canvas/packages/mcp-app/dist/main.js", "--stdio"],
+      "env": { "MCPP_LEGACY": "1" }
+    }
+  }
+}
+```
+
+| 项 | 值 |
+|----|-----|
+| UI 工具 | `show_canvas`、`show_canvas_demo`（本地名；卡片 title 为 `mcp__cursor-canvas__…`） |
+| Resource URI | `ui://cursor-canvas/mcp-app.html` |
+| MIME | `text/html;profile=mcp-app` |
+| Resource `_meta.ui.csp` | `{ "connectDomains": [], "resourceDomains": [] }` → Host 缺省 restrictive CSP |
+| `structuredContent` | `source`（TSX）+ `compiled`（server 预编译，iframe 无需 `unsafe-eval`） |
+
+**两套协议不要混用**：MCP wire 默认 `2026-07-28`（`legacy: reject`）；Peri ACP stdio 当前仍走 2025-era handshake，server env 需 `MCPP_LEGACY=1` 直到 Peri 在每请求 `_meta` 信封上对齐现代 MCP。App Bridge **UI** 协议仍是 Host 固定的 `2026-01-26`（`ui/initialize` result），与 MCP wire 版本无关。
+
+**Agent 流程**：先读 `skill://cursor-canvas/SKILL.md` → 只从 `"peri/canvas"` import 写 TSX → `show_canvas`。验证 iframe：`show_canvas_demo`。
 
 ## 8. 已知缺口（下次会再碰到）
 

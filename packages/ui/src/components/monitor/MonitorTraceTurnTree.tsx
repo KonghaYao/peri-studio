@@ -292,7 +292,7 @@ export const MonitorTraceTurnTree: Component<MonitorTraceTurnTreeProps> = (props
       class={cn(monitorTraceTurnTreeClass, local.class)}
     >
       <Show when={local.showOmitNoiseToggle && local.onOmitNoiseChange}>
-        <div class="flex shrink-0 items-center justify-end border-b border-border-subtle px-8 py-6">
+        <div class="flex shrink-0 items-center justify-end border-b border-border-subtle px-4 py-4">
           <MonitorTraceTurnOmitNoiseToggle
             omitNoise={local.omitNoise ?? true}
             onChange={(value) => local.onOmitNoiseChange?.(value)}
@@ -308,7 +308,7 @@ export const MonitorTraceTurnTree: Component<MonitorTraceTurnTreeProps> = (props
         <Show
           when={hasContent()}
           fallback={(
-            <div class="px-12 py-16 text-center text-11 text-content-muted">
+            <div class="px-4 py-4 text-center text-11 text-content-muted">
               No observations in this trace.
             </div>
           )}
@@ -349,7 +349,7 @@ export const MonitorTraceTurnTree: Component<MonitorTraceTurnTreeProps> = (props
             {(section) => (
               <div class="flex flex-col">
                 <Show when={section.label}>
-                  <div class="px-8 py-6 text-10 font-600 uppercase tracking-wide text-content-muted">
+                  <div class="px-4 py-4 text-10 font-600 uppercase tracking-wide text-content-muted">
                     {section.label}
                   </div>
                 </Show>

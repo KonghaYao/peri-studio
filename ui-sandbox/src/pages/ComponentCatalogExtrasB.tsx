@@ -118,7 +118,7 @@ export function ComponentCatalogExtrasB(props: { sections?: string[] }) {
             <p class="mt-8 text-12 leading-normal text-content-secondary">Last seen 12s ago on the local connect role.</p>
           </HoverCardContent>
         </HoverCard>
-        <ScrollArea class="h-120 max-w-sm rounded-lg border border-border-subtle">
+        <ScrollArea autoViewport={false} class="h-120 max-w-sm rounded-lg border border-border-subtle">
           <ScrollAreaViewport class="p-12">
             <p class="text-12 text-content-secondary">
               Scroll areas keep long catalog notes readable without stretching the page layout.

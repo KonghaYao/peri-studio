@@ -15,6 +15,11 @@ export {
 } from './mcp-app-payload';
 export { bindMcpAppHost } from './mcp-app-host';
 export { McpAppFrameShell, type McpAppFrameShellProps } from './McpAppFrameShell';
+export {
+  McpAppHistoricalCard,
+  type McpAppHistoricalCardProps,
+  type McpAppHistoricalStatus,
+} from './McpAppHistoricalCard';
 export type {
   McpAppHostBindings,
   McpAppHostHandle,

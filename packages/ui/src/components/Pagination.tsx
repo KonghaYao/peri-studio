@@ -197,84 +197,94 @@ export const PaginationControls: Component<PaginationControlsProps> = (props) =>
   };
 
   return (
-    <div data-slot="pagination-controls" class={cn('flex flex-wrap items-center gap-12', local.class)}>
-      <Show when={totalLabel()}>
-        <span class="text-12 text-content-muted">{totalLabel()}</span>
-      </Show>
-      <Show
-        when={!local.simple}
-        fallback={(
-          <div class="inline-flex items-center gap-8 text-13">
-            <button type="button" class="rounded-6 px-8 py-4 hover:bg-interaction-hover" onClick={() => go(current() - 1)} disabled={current() <= 1}>
-              ‹
-            </button>
-            <span>{current()} / {totalPages()}</span>
-            <button type="button" class="rounded-6 px-8 py-4 hover:bg-interaction-hover" onClick={() => go(current() + 1)} disabled={current() >= totalPages()}>
-              ›
-            </button>
-          </div>
-        )}
-      >
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious href="#" onClick={(event) => { event.preventDefault(); go(current() - 1); }} />
-            </PaginationItem>
-            <For each={pageNumbers(current(), totalPages())}>
-              {(page, index) => {
-                const pages = pageNumbers(current(), totalPages());
-                const prevPage = () => pages[index() - 1];
-                return (
-                  <>
-                    <Show when={index() > 0 && page - prevPage() > 1}>
-                      <PaginationItem><PaginationEllipsis /></PaginationItem>
-                    </Show>
-                    <PaginationItem>
-                      <PaginationLink
-                        href="#"
-                        isActive={page === current()}
-                        onClick={(event) => { event.preventDefault(); go(page); }}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  </>
-                );
-              }}
-            </For>
-            <PaginationItem>
-              <PaginationNext href="#" onClick={(event) => { event.preventDefault(); go(current() + 1); }} />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </Show>
-      <Show when={local.showSizeChanger}>
-        <NativeSelect
-          aria-label="Page size"
-          value={String(pageSize())}
-          onChange={(event) => go(1, Number(event.currentTarget.value))}
+    <div
+      data-slot="pagination-controls"
+      class={cn('grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-8', local.class)}
+    >
+      <div class="justify-self-start">
+        <Show when={totalLabel()}>
+          <span class="whitespace-nowrap text-12 text-content-muted">{totalLabel()}</span>
+        </Show>
+      </div>
+      <div class="justify-self-center">
+        <Show
+          when={!local.simple}
+          fallback={(
+            <div class="inline-flex items-center gap-8 text-13">
+              <button type="button" class="rounded-6 px-8 py-4 hover:bg-interaction-hover" onClick={() => go(current() - 1)} disabled={current() <= 1}>
+                ‹
+              </button>
+              <span>{current()} / {totalPages()}</span>
+              <button type="button" class="rounded-6 px-8 py-4 hover:bg-interaction-hover" onClick={() => go(current() + 1)} disabled={current() >= totalPages()}>
+                ›
+              </button>
+            </div>
+          )}
         >
-          <For each={local.pageSizeOptions ?? [10, 20, 50, 100]}>
-            {(size) => <NativeSelectOption value={String(size)}>{size} / page</NativeSelectOption>}
-          </For>
-        </NativeSelect>
-      </Show>
-      <Show when={local.showQuickJumper}>
-        <div class="flex items-center gap-6 text-12 text-content-muted">
-          <span>Go to</span>
-          <input
-            class="h-32 w-56 rounded-6 border border-border-strong bg-surface px-8 text-13"
-            value={jumpValue()}
-            onInput={(event) => setJumpValue(event.currentTarget.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                const page = Number(jumpValue());
-                if (!Number.isNaN(page)) go(page);
-              }
-            }}
-          />
-        </div>
-      </Show>
+          <Pagination class="mx-0 w-auto">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious href="#" onClick={(event) => { event.preventDefault(); go(current() - 1); }} />
+              </PaginationItem>
+              <For each={pageNumbers(current(), totalPages())}>
+                {(page, index) => {
+                  const pages = pageNumbers(current(), totalPages());
+                  const prevPage = () => pages[index() - 1];
+                  return (
+                    <>
+                      <Show when={index() > 0 && page - prevPage() > 1}>
+                        <PaginationItem><PaginationEllipsis /></PaginationItem>
+                      </Show>
+                      <PaginationItem>
+                        <PaginationLink
+                          href="#"
+                          isActive={page === current()}
+                          onClick={(event) => { event.preventDefault(); go(page); }}
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    </>
+                  );
+                }}
+              </For>
+              <PaginationItem>
+                <PaginationNext href="#" onClick={(event) => { event.preventDefault(); go(current() + 1); }} />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </Show>
+      </div>
+      <div class="flex items-center justify-self-end gap-8">
+        <Show when={local.showSizeChanger}>
+          <NativeSelect
+            aria-label="Page size"
+            containerClass="w-100 shrink-0"
+            value={String(pageSize())}
+            onChange={(event) => go(1, Number(event.currentTarget.value))}
+          >
+            <For each={local.pageSizeOptions ?? [10, 20, 50, 100]}>
+              {(size) => <NativeSelectOption value={String(size)}>{size} / page</NativeSelectOption>}
+            </For>
+          </NativeSelect>
+        </Show>
+        <Show when={local.showQuickJumper}>
+          <div class="flex items-center gap-6 text-12 text-content-muted">
+            <span>Go to</span>
+            <input
+              class="h-32 w-56 rounded-6 border border-border-strong bg-surface px-8 text-13"
+              value={jumpValue()}
+              onInput={(event) => setJumpValue(event.currentTarget.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  const page = Number(jumpValue());
+                  if (!Number.isNaN(page)) go(page);
+                }
+              }}
+            />
+          </div>
+        </Show>
+      </div>
     </div>
   );
 };

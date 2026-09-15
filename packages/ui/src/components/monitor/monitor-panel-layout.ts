@@ -19,7 +19,7 @@ export const monitorDetailHeaderClass =
 
 export const monitorDetailTitleClass = 'min-w-0 flex-1 truncate text-12 font-600 text-content-primary';
 
-export const monitorObservationTreeClass = 'ui-scrollbar min-h-0 flex-1 overflow-y-auto px-8 py-4';
+export const monitorObservationTreeClass = 'ui-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-2';
 
 export const monitorObservationRowClass =
   'group flex min-h-28 w-full items-center gap-8 rounded-4 px-8 py-4 text-left text-11 transition-colors hover:bg-interaction-hover';
@@ -84,14 +84,14 @@ export const monitorTraceErrorClass = 'shrink-0 rounded-4 bg-danger-soft px-6 py
 
 export const monitorStateClass = 'flex min-h-0 flex-1 flex-col items-center justify-center p-16 text-center';
 
-/** fuse observation-tree 行缩进：depth * 16px + 8px。 */
+/** fuse observation-tree 行缩进：depth * 12px + 4px。 */
 const MONITOR_TRACE_TURN_TREE_DEPTH_CLASSES = [
-  'pl-8',
-  'pl-24',
+  'pl-4',
+  'pl-16',
+  'pl-28',
   'pl-40',
-  'pl-56',
-  'pl-72',
-  'pl-88',
+  'pl-52',
+  'pl-64',
 ] as const;
 
 export function monitorTraceTurnTreeDepthClass(depth: number): string {
@@ -99,7 +99,7 @@ export function monitorTraceTurnTreeDepthClass(depth: number): string {
 }
 
 export const monitorTraceTurnTreeRowClass =
-  'group flex w-full items-center gap-6 rounded-4 py-6 pr-8 text-12 transition-colors';
+  'group flex w-full items-center gap-6 rounded-4 py-6 pr-4 text-12 transition-colors';
 
 export const monitorTraceTurnTreeRowInteractiveClass =
   'cursor-pointer text-content-secondary hover:bg-interaction-hover hover:text-content-primary focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-focus-ring';
@@ -108,10 +108,14 @@ export const monitorTraceTurnTreeRowInteractiveClass =
 export const monitorTraceTurnTreeRowSelectedClass =
   'bg-surface-sunken font-500 text-content-primary';
 
-export const monitorTraceTurnTreeClass = 'flex min-h-0 flex-1 flex-col';
+export const monitorTraceTurnTreeClass = 'flex h-full min-h-0 flex-1 flex-col';
+
+/** 单框左右分栏：外圈一次 border/radius，树 pane 仅 border-r 分隔。 */
+export const monitorTraceTurnTreeShellRootClass =
+  'flex h-full min-h-0 flex-1 overflow-hidden rounded-8 border border-border-subtle bg-surface-overlay';
 
 export const monitorTraceTurnTreeShellTreeClass =
-  'flex min-h-0 w-(--container-monitor-trace-tree) min-w-(--container-monitor-trace-tree-min) flex-col overflow-hidden rounded-8 border border-border-subtle bg-surface-base';
+  'flex min-h-0 shrink-0 basis-(--container-monitor-trace-tree) w-(--container-monitor-trace-tree) min-w-(--container-monitor-trace-tree-min) max-w-(--container-monitor-trace-tree-max) flex-col border-r border-border-subtle';
 
 export const monitorTraceTurnTreeShellDetailClass =
-  'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-8 border border-border-subtle bg-surface-base';
+  'flex min-h-0 min-w-0 flex-1 basis-0 flex-col';

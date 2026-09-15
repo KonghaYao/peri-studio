@@ -17,6 +17,15 @@ const columns = [
 afterEach(() => cleanup());
 
 describe('EnhancedDataTable', () => {
+  it('applies scroll viewport classes on the enhanced table shell', () => {
+    render(() => <EnhancedDataTable data={rows} columns={columns} />);
+
+    const root = screen.getByRole('table').closest('.flex.flex-col.gap-12');
+    const scroll = screen.getByRole('table').closest('[data-slot="table-scroll"]');
+    expect(root).toHaveClass('min-h-0', 'flex-1');
+    expect(scroll).toHaveClass('overflow-auto', 'min-h-0', 'flex-1');
+  });
+
   it('renders without toolbar by default', () => {
     render(() => <EnhancedDataTable data={rows} columns={columns} />);
 

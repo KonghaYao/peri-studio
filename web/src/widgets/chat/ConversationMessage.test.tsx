@@ -441,6 +441,27 @@ describe('ConversationMessage', () => {
     })} />);
     expect(screen.getByLabelText('Assistant message').querySelector('time')).toBeNull();
   });
+
+  it('renders restored MCP App tools as historical cards instead of raw tool activity', () => {
+    const tool = {
+      ...baseTool('tool-replay'),
+      name: 'mcp__cursor-canvas__show_canvas',
+      arguments: { source: 'export default function App() { return null; }' },
+      result: { content: [{ type: 'text', text: 'canvas payload' }] },
+    };
+    render(() => <ConversationMessage entry={entry({
+      origin: 'session_replay',
+      replayVerified: true,
+      toolCalls: [tool],
+      blocks: [{ kind: 'tool_call', id: 'tool-replay', toolCall: tool }],
+    })} />);
+
+    expect(screen.getByTestId('mcp-app-historical-card')).toBeInTheDocument();
+    expect(screen.getByText('MCP App · show canvas')).toBeInTheDocument();
+    expect(screen.getByText('This interactive app is not available in restored history.')).toBeInTheDocument();
+    expect(screen.queryByTestId('tool-activity-row')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Ran mcp cursor canvas show canvas/)).not.toBeInTheDocument();
+  });
 });
 
 describe('Markdown', () => {

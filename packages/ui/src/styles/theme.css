@@ -372,6 +372,7 @@
   --container-monitor-io-preview-max: var(--container-monitor-io-preview-max);
   --container-monitor-trace-tree: var(--container-monitor-trace-tree);
   --container-monitor-trace-tree-min: var(--container-monitor-trace-tree-min);
+  --container-monitor-trace-tree-max: var(--container-monitor-trace-tree-max);
   --container-io-viewer-max: var(--container-io-viewer-max);
   --container-io-viewer-primitive-max: var(--container-io-viewer-primitive-max);
   --container-io-viewer-tool-args-max: var(--container-io-viewer-tool-args-max);

@@ -78,6 +78,8 @@ export type EnhancedDataTableProps<T> = {
   /** 列可见性（受控）；未传时内部 signal，默认全部可见。 */
   columnVisibility?: Record<string, boolean>;
   onColumnVisibilityChange?: (visibility: Record<string, boolean>) => void;
+  /** 嵌入 TableView：不渲染 toolbar / pagination，去掉外层 frame。 */
+  embedded?: boolean;
 };
 
 function stickyColumnClass(index: number, fixedStart: number, isHeader = false) {
@@ -115,6 +117,7 @@ export function EnhancedDataTable<T>(props: EnhancedDataTableProps<T>) {
     'showColumnToggle',
     'columnVisibility',
     'onColumnVisibilityChange',
+    'embedded',
   ]);
   const [expanded, setExpanded] = createSignal<Set<string>>(new Set());
   const [filters, setFilters] = createSignal<Record<string, string>>(local.columnFilters ?? {});
@@ -127,7 +130,8 @@ export function EnhancedDataTable<T>(props: EnhancedDataTableProps<T>) {
   const sortState = () => local.sort ?? internalSort();
   const fixedStart = () => local.fixedColumnStart ?? 0;
   const columnVisibility = () => local.columnVisibility ?? internalColumnVisibility();
-  const showToolbar = () => Boolean(local.showColumnToggle || local.toolbar);
+  const showToolbar = () => !local.embedded && Boolean(local.showColumnToggle || local.toolbar);
+  const embedded = () => Boolean(local.embedded);
 
   const visibleColumns = () =>
     local.columns.filter((column) => columnVisibility()[column.id] !== false);
@@ -208,16 +212,9 @@ export function EnhancedDataTable<T>(props: EnhancedDataTableProps<T>) {
 
   const selectionOffset = () => (local.rowSelection ? 1 : 0) + (local.expandable ? 1 : 0);
 
-  return (
-    <div class="flex flex-col gap-12">
-      <Show when={showToolbar()}>
-        <DataTableToolbarShell
-          columns={toolbarColumns()}
-          onColumnVisibilityChange={onColumnVisibilityChange}
-          toolbar={local.toolbar}
-          data-testid="enhanced-data-table-toolbar"
-        />
-      </Show>
+  const useStickyHeader = () => local.fixedHeader ?? true;
+
+  const tableElement = (
       <DataTable
         data={visibleData()}
         columns={visibleColumns()}
@@ -228,12 +225,13 @@ export function EnhancedDataTable<T>(props: EnhancedDataTableProps<T>) {
           sizeClasses[local.size ?? 'md'],
           local.striped && '[&_tbody_tr:nth-child(even)]:bg-surface-sunken',
           local.bordered && '[&_th]:border [&_td]:border [&_th]:border-border-subtle [&_td]:border-border-subtle',
-          local.class,
         )}
         frameClass={cn(
-          local.virtualScroll || local.fixedHeader ? 'max-h-320 overflow-auto' : undefined,
-          local.fixedHeader && '[&_thead]:sticky [&_thead]:top-0 [&_thead]:z-20',
+          embedded() ? 'min-h-0 flex-1 border-0 bg-transparent shadow-none' : 'min-h-0 flex-1',
+          local.virtualScroll && 'max-h-320',
+          useStickyHeader() && '[&_th]:sticky [&_th]:top-0 [&_th]:z-20',
         )}
+        scrollClass="min-h-0 flex-1"
       >
         <DataTableHeader>
           <DataTableRow>
@@ -330,9 +328,31 @@ export function EnhancedDataTable<T>(props: EnhancedDataTableProps<T>) {
           </For>
         </DataTableBody>
       </DataTable>
+  );
+
+  if (embedded()) {
+    return (
+      <div class={cn('flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden', local.class)}>
+        {tableElement}
+      </div>
+    );
+  }
+
+  return (
+    <div class={cn('flex min-h-0 min-w-0 flex-1 flex-col gap-12', local.class)}>
+      <Show when={showToolbar()}>
+        <DataTableToolbarShell
+          columns={toolbarColumns()}
+          onColumnVisibilityChange={onColumnVisibilityChange}
+          toolbar={local.toolbar}
+          data-testid="enhanced-data-table-toolbar"
+        />
+      </Show>
+      {tableElement}
       <Show when={local.pagination}>
         {(pagination) => (
           <PaginationControls
+            class="shrink-0 border-t border-border-subtle px-8 py-8"
             current={pagination().current}
             pageSize={pagination().pageSize}
             total={pagination().total}

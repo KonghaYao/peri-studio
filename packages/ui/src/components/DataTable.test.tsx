@@ -32,7 +32,10 @@ describe('DataTable', () => {
     render(() => <DataTable data={rows} columns={columns} />);
 
     const frame = screen.getByRole('table').closest('[data-slot="data-table"]');
-    expect(frame).toHaveClass('rounded-8', 'border-border-subtle', 'bg-surface');
+    const scroll = screen.getByRole('table').closest('[data-slot="table-scroll"]');
+    expect(frame).toHaveClass('rounded-8', 'border-border-subtle', 'bg-surface', 'min-h-0', 'min-w-0');
+    expect(scroll).toHaveClass('overflow-auto', 'ui-scrollbar');
+    expect(screen.getByRole('table')).toHaveClass('w-max', 'min-w-full');
     expect(screen.getByRole('columnheader', { name: /Name/ })).toHaveAttribute('data-sortable', '');
     expect(screen.getAllByRole('row')).toHaveLength(4);
 

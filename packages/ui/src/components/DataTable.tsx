@@ -117,11 +117,12 @@ type DataTableProps<T> = {
   getRowKey?: (row: T, index: number) => string;
   class?: string;
   frameClass?: string;
+  scrollClass?: string;
   children?: JSX.Element;
 };
 
 const dataTableFrameClass =
-  'overflow-hidden rounded-8 border border-border-subtle bg-surface';
+  'flex min-h-0 min-w-0 flex-col overflow-hidden rounded-8 border border-border-subtle bg-surface';
 
 const dataTableTableClass =
   '[&_tbody_tr:last-child]:border-b-0 [&_th:not(:last-child)]:border-r [&_th:not(:last-child)]:border-border-subtle [&_td:not(:last-child)]:border-r [&_td:not(:last-child)]:border-border-subtle';
@@ -137,6 +138,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
     'getRowKey',
     'class',
     'frameClass',
+    'scrollClass',
     'children',
   ]);
 
@@ -170,7 +172,11 @@ export function DataTable<T>(props: DataTableProps<T>) {
   return (
     <DataTableContext.Provider value={context as DataTableContextValue<unknown>}>
       <div data-slot="data-table" class={cn(dataTableFrameClass, local.frameClass)}>
-        <Table class={cn(dataTableTableClass, local.class)} {...rest}>
+        <Table
+          class={cn(dataTableTableClass, local.class)}
+          wrapperClass={cn('min-h-0 flex-1', local.scrollClass)}
+          {...rest}
+        >
         <Show
           when={hasDeclarativeBody()}
           fallback={local.children}

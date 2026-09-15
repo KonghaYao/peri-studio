@@ -17,7 +17,7 @@ export const StatChip: Component<StatChipProps> = (props) => {
     <div
       {...rest}
       class={cn(
-        'flex items-center gap-8 rounded-6 border border-border-subtle bg-surface-sunken px-12 py-8',
+        'flex min-w-0 shrink-0 items-center gap-8 rounded-6 border border-border-subtle bg-surface-sunken px-12 py-8',
         local.class,
       )}
     >
@@ -27,7 +27,9 @@ export const StatChip: Component<StatChipProps> = (props) => {
         </div>
       </Show>
       <div class="min-w-0 leading-tight">
-        <div class="text-10 font-600 uppercase tracking-wide text-content-muted">{local.label}</div>
+        <div class="whitespace-nowrap text-10 font-600 uppercase tracking-wide text-content-muted">
+          {local.label}
+        </div>
         <div class="text-12 font-600 tabular-nums text-content-primary">{local.value}</div>
       </div>
     </div>

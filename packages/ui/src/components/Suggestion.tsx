@@ -8,6 +8,7 @@ export const Suggestion: Component<ComponentProps<'div'>> = (props) => {
   const [local, rest] = splitProps(props, ['class', 'children']);
   return (
     <ScrollArea
+      autoViewport={false}
       data-slot="suggestion"
       class={cn('w-full overflow-x-auto whitespace-nowrap', local.class)}
       {...rest}

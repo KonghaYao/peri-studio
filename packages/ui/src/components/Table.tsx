@@ -1,11 +1,22 @@
 import { splitProps, type JSX } from 'solid-js';
 import { cn } from '../lib/cn';
 
-export function Table(props: JSX.HTMLAttributes<HTMLTableElement>) {
-  const [local, rest] = splitProps(props, ['class']);
+type TableProps = JSX.HTMLAttributes<HTMLTableElement> & {
+  /** Classes for the scroll viewport wrapping the table element. */
+  wrapperClass?: string;
+};
+
+export function Table(props: TableProps) {
+  const [local, rest] = splitProps(props, ['class', 'wrapperClass']);
   return (
-    <div class="relative w-full overflow-x-auto">
-      <table class={cn('w-full caption-bottom border-collapse text-left text-12', local.class)} {...rest} />
+    <div
+      data-slot="table-scroll"
+      class={cn('relative min-w-0 w-full overflow-auto ui-scrollbar', local.wrapperClass)}
+    >
+      <table
+        class={cn('w-max min-w-full caption-bottom border-collapse text-left text-12', local.class)}
+        {...rest}
+      />
     </div>
   );
 }

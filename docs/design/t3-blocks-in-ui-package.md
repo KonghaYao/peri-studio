@@ -55,6 +55,7 @@ T3 组件必须：
 | `MarkdownTable` | Markdown 表格 |
 | `SafeImage` | 远程图片安全渲染 |
 | `McpAppFrameShell` | MCP App 双 iframe 宿主壳（sandbox + 全屏；`bindMcpAppHost` 在 `@peri/ui/mcp-app`） |
+| `McpAppHistoricalCard` | session replay 无 live HTML 时的 MCP App 占位卡（不展开工具参数/结果） |
 
 ### Chrome / 侧栏
 

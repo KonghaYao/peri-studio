@@ -16,6 +16,7 @@ import {
   ChatActivityChain,
   IconButton,
   InlineNotice,
+  McpAppHistoricalCard,
   MessageArticleShell,
   MessageMetaHeader,
   MessageSurfaceShell,
@@ -36,6 +37,10 @@ import { Markdown } from './Markdown';
 import { ToolCallActivity } from './ToolCallActivity';
 import { McpAppFrame } from './McpAppFrame';
 import { isPrimaryLiveMcpApp, maybeOpenCompletedMcpTool } from '@/features/mcp/mcp-apps';
+import {
+  buildMcpAppHistoricalCardProps,
+  shouldShowMcpAppHistoricalCard,
+} from '@/features/mcp/mcp-app-display';
 import { requestComposerQuote } from '@/features/composer/composer-quote';
 import { read, type MaybeAccessor } from '@/shared/lib/maybe-accessor';
 
@@ -55,9 +60,25 @@ function McpToolBlock(props: {
     maybeOpenCompletedMcpTool(props.toolCall(), props.origin());
   });
   const toolCallId = () => props.toolCall().toolCallId || '';
+  const entryOrigin = () => props.origin();
+  const showHistorical = () => shouldShowMcpAppHistoricalCard(
+    props.toolCall(),
+    entryOrigin(),
+    props.siblingTools(),
+  );
+  const historicalProps = () => buildMcpAppHistoricalCardProps(props.toolCall(), {
+    variant: props.variant,
+    origin: entryOrigin(),
+  });
   return (
     <Show when={!duplicate()}>
-      <Show when={isPrimaryLiveMcpApp(toolCallId(), props.siblingTools())} fallback={<ToolCallActivity toolCall={props.toolCall} variant={props.variant} projectCwd={props.projectCwd} />}>
+      <Show when={isPrimaryLiveMcpApp(toolCallId(), props.siblingTools())} fallback={
+        <Show when={showHistorical()} fallback={
+          <ToolCallActivity toolCall={props.toolCall} variant={props.variant} projectCwd={props.projectCwd} />
+        }>
+          <McpAppHistoricalCard {...historicalProps()} />
+        </Show>
+      }>
         <McpAppFrame toolCallId={toolCallId()} />
       </Show>
     </Show>

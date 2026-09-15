@@ -12,10 +12,12 @@ const nativeSelectControlClasses = (invalid?: boolean, className?: string) => cn
 );
 
 /** 原生 select，边框与焦点样式与 Field Input 对齐。 */
-export function NativeSelect(props: JSX.SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean }) {
-  const [local, select] = splitProps(props, ['class', 'invalid', 'children']);
+export function NativeSelect(
+  props: JSX.SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean; containerClass?: string },
+) {
+  const [local, select] = splitProps(props, ['class', 'invalid', 'children', 'containerClass']);
   return (
-    <div class="relative w-full">
+    <div class={cn('relative w-full', local.containerClass)}>
       <select
         {...select}
         aria-invalid={local.invalid ? 'true' : undefined}
