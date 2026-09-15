@@ -29,9 +29,9 @@ fs2.workspace = true
 chrono = { workspace = true, features = ["serde"] }
 dirs-next = { workspace = true }
 url = { workspace = true }
-# tokio-rustls 默认启用 aws_lc_rs；与下方 rustls/ring 冲突会导致 CryptoProvider 无法自动选择。
-tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "logging", "tls12"] }
-rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
+# tokio-rustls 默认启用 aws_lc_rs；与 workspace rustls/ring 冲突会导致 CryptoProvider 无法自动选择。
+tokio-rustls = { workspace = true }
+rustls = { workspace = true }
 webpki-roots = "0.26"
 tokio-tungstenite = { workspace = true }
 yrs = { workspace = true }
