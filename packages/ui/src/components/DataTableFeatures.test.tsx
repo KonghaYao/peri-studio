@@ -35,6 +35,18 @@ describe('EnhancedDataTable', () => {
     expect(screen.getByRole('columnheader', { name: /Score/ })).toBeInTheDocument();
   });
 
+  it('does not render per-column filter inputs by default', () => {
+    render(() => <EnhancedDataTable data={rows} columns={columns} />);
+
+    expect(screen.queryByPlaceholderText('Filter')).not.toBeInTheDocument();
+  });
+
+  it('renders per-column filter inputs when showColumnFilters is enabled', () => {
+    render(() => <EnhancedDataTable data={rows} columns={columns} showColumnFilters />);
+
+    expect(screen.getAllByPlaceholderText('Filter')).toHaveLength(2);
+  });
+
   it('renders toolbar slot when toolbar is provided', () => {
     render(() => (
       <EnhancedDataTable

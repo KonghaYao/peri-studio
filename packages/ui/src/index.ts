@@ -701,6 +701,10 @@ export {
   type MonitorTraceTurnTreeShellProps,
 } from './components/monitor/MonitorTraceTurnTreeShell';
 export {
+  MonitorTraceTurnTreeSheetShell,
+  type MonitorTraceTurnTreeSheetShellProps,
+} from './components/monitor/MonitorTraceTurnTreeSheetShell';
+export {
   buildTraceTurnSections,
   buildTraceTurnTree,
   collectTraceTurnTreeNodeIds,
@@ -1198,6 +1202,11 @@ export {
   type EnhancedDataTableProps,
   type ServerPagination,
 } from './components/DataTableFeatures';
+export {
+  TableView,
+  type TableViewProps,
+  type TableViewServerTableProps,
+} from './components/TableView';
 export {
   DataTableToolbarShell,
   type DataTableToolbarColumnMeta,

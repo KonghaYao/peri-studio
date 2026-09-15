@@ -53,6 +53,8 @@ export type EnhancedDataTableProps<T> = {
     selectedKeys?: string[];
     onChange?: (keys: string[]) => void;
   };
+  /** 表头下 per-column 筛选输入行；默认 false。 */
+  showColumnFilters?: boolean;
   columnFilters?: Record<string, string>;
   onColumnFiltersChange?: (filters: Record<string, string>) => void;
   expandable?: {
@@ -99,6 +101,7 @@ export function EnhancedDataTable<T>(props: EnhancedDataTableProps<T>) {
     'columns',
     'rowKey',
     'rowSelection',
+    'showColumnFilters',
     'columnFilters',
     'onColumnFiltersChange',
     'expandable',
@@ -258,7 +261,7 @@ export function EnhancedDataTable<T>(props: EnhancedDataTableProps<T>) {
                 >
                   <div class="flex flex-col gap-6">
                     <span>{column.header}</span>
-                    <Show when={!local.serverSort}>
+                    <Show when={local.showColumnFilters}>
                       <Input
                         placeholder="Filter"
                         class="h-28 text-12"

@@ -119,3 +119,10 @@ export const monitorTraceTurnTreeShellTreeClass =
 
 export const monitorTraceTurnTreeShellDetailClass =
   'flex min-h-0 min-w-0 flex-1 basis-0 flex-col';
+
+/** 单栏树 + 右侧 Sheet 详情：外圈一次 border/radius，树区独立滚动。 */
+export const monitorTraceTurnTreeSheetRootClass =
+  'flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-8 border border-border-subtle bg-surface-overlay';
+
+export const monitorTraceTurnTreeSheetTreeBodyClass =
+  'flex min-h-0 flex-1 flex-col overflow-hidden';
