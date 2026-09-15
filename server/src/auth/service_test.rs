@@ -5,6 +5,7 @@
 use std::time::Duration;
 
 use base64::Engine as _;
+use futures::executor::block_on;
 use tempfile::tempdir;
 
 use peri_studio_proto::conn::Auth;
@@ -16,25 +17,19 @@ use crate::auth::{AuthError, AuthService, TokenRole, UNKNOWN_TOKEN_ID};
 
 use super::test_util::*;
 
-#[tokio::test]
-async fn failure_audit_carries_total_snapshot() {
+#[test]
+fn failure_audit_carries_total_snapshot() {
     let dir = tempdir().unwrap();
     let mut svc = AuthService::new(new_store(dir.path()));
-    let (_, log) = with_capture_async(async {
-        svc.authenticate_instance(
-            &make_hello("totally-unknown-token-value", &new_nonce_b64()),
-            peer(),
+    let (_, log) = with_capture(|| {
+        block_on(
+            svc.authenticate_instance(
+                &make_hello("totally-unknown-token-value", &new_nonce_b64()),
+                peer(),
+            ),
         )
-        .await
-    })
-    .await;
-    assert!(
-        log.contains("auth_failed_total"),
-        "失败审计应携带快照: {log}"
-    );
-    let v: serde_json::Value = serde_json::from_str(log.lines().next().unwrap()).unwrap();
-    let fields = v["fields"].as_object().unwrap();
-    assert_eq!(fields["auth_failed_total"].as_u64(), Some(1));
+    });
+    assert_audit_failed_total_snapshot(&log, 1);
 }
 
 // ---------------------------------------------------------------------------
@@ -98,18 +93,18 @@ async fn h1_success_path() {
 // ---------------------------------------------------------------------------
 // H2 错误 token：UnknownToken + 审计 failed + 计数（全局与 <unknown>）
 // ---------------------------------------------------------------------------
-#[tokio::test]
-async fn h2_unknown_token() {
+#[test]
+fn h2_unknown_token() {
     let dir = tempdir().unwrap();
     let mut svc = AuthService::new(new_store(dir.path()));
-    let (result, log) = with_capture_async(async {
-        svc.authenticate_instance(
-            &make_hello("totally-unknown-token-value", &new_nonce_b64()),
-            peer(),
+    let (result, log) = with_capture(|| {
+        block_on(
+            svc.authenticate_instance(
+                &make_hello("totally-unknown-token-value", &new_nonce_b64()),
+                peer(),
+            ),
         )
-        .await
-    })
-    .await;
+    });
     assert!(matches!(result, Err(AuthError::UnknownToken)));
     assert_audit_redacted(&log, &[]);
     assert!(log.contains("auth.instance"), "应有 auth.instance 审计");
@@ -121,23 +116,23 @@ async fn h2_unknown_token() {
 // ---------------------------------------------------------------------------
 // H3 重放：同 nonce 二次 hello → ReplayNonce
 // ---------------------------------------------------------------------------
-#[tokio::test]
-async fn h3_replay_nonce() {
+#[test]
+fn h3_replay_nonce() {
     let dir = tempdir().unwrap();
     let mut svc = AuthService::new(new_store(dir.path()));
     let rec = svc.store_mut().generate(TokenRole::Instance, "m1").unwrap();
     let nonce_b64 = new_nonce_b64();
 
-    assert!(svc
-        .authenticate_instance(&make_hello(&rec.token, &nonce_b64), peer())
-        .await
-        .is_ok());
+    assert!(
+        block_on(
+            svc.authenticate_instance(&make_hello(&rec.token, &nonce_b64), peer()),
+        )
+        .is_ok()
+    );
     // 同 nonce 二次 hello → 重放拒绝（即使 token 正确）
-    let (result, log) = with_capture_async(async {
-        svc.authenticate_instance(&make_hello(&rec.token, &nonce_b64), peer())
-            .await
-    })
-    .await;
+    let (result, log) = with_capture(|| {
+        block_on(svc.authenticate_instance(&make_hello(&rec.token, &nonce_b64), peer()))
+    });
     assert!(matches!(result, Err(AuthError::ReplayNonce)));
     assert_audit_redacted(&log, &[]);
     assert!(log.contains("replay_nonce"));
@@ -218,18 +213,18 @@ async fn h5_bad_nonce_encoding() {
 // ---------------------------------------------------------------------------
 // H6 错误角色
 // ---------------------------------------------------------------------------
-#[tokio::test]
-async fn h6_role_mismatch() {
+#[test]
+fn h6_role_mismatch() {
     let dir = tempdir().unwrap();
     let mut svc = AuthService::new(new_store(dir.path()));
 
     // client token 提交 instance/hello → RoleMismatch
     let client = svc.store_mut().generate(TokenRole::Full, "tui").unwrap();
-    let (result, log) = with_capture_async(async {
-        svc.authenticate_instance(&make_hello(&client.token, &new_nonce_b64()), peer())
-            .await
-    })
-    .await;
+    let (result, log) = with_capture(|| {
+        block_on(
+            svc.authenticate_instance(&make_hello(&client.token, &new_nonce_b64()), peer()),
+        )
+    });
     assert!(matches!(
         result,
         Err(AuthError::RoleMismatch { token_id }) if token_id == client.id
@@ -239,38 +234,31 @@ async fn h6_role_mismatch() {
 
     // instance token 提交 client 认证 → RoleMismatch
     let instance = svc.store_mut().generate(TokenRole::Instance, "m1").unwrap();
-    let result = svc
-        .authenticate_client(
-            &Auth {
-                token: instance.token.clone(),
-            },
-            peer(),
-        )
-        .await;
+    let result = block_on(svc.authenticate_client(
+        &Auth {
+            token: instance.token.clone(),
+        },
+        peer(),
+    ));
     assert!(matches!(
         result,
         Err(AuthError::RoleMismatch { token_id }) if token_id == instance.id
     ));
 
     // full token 通过 client 认证（含 read-only）
-    let ok = svc
-        .authenticate_client(
-            &Auth {
-                token: client.token.clone(),
-            },
-            peer(),
-        )
-        .await
-        .unwrap();
+    let ok = block_on(svc.authenticate_client(
+        &Auth {
+            token: client.token.clone(),
+        },
+        peer(),
+    ))
+    .unwrap();
     assert_eq!(ok.wire_role(), Role::Client);
     let ro = svc
         .store_mut()
         .generate(TokenRole::ReadOnly, "web")
         .unwrap();
-    let ok = svc
-        .authenticate_client(&Auth { token: ro.token }, peer())
-        .await
-        .unwrap();
+    let ok = block_on(svc.authenticate_client(&Auth { token: ro.token }, peer())).unwrap();
     assert_eq!(ok.role, TokenRole::ReadOnly);
     assert!(!ok.can_send_action(), "read-only 不可发 action");
 }
@@ -367,18 +355,18 @@ async fn h7_protocol_version_mismatch_is_explicit_and_does_not_consume_nonce() {
 // ---------------------------------------------------------------------------
 // H8 未知身份（未登记 token）
 // ---------------------------------------------------------------------------
-#[tokio::test]
-async fn h8_unknown_identity() {
+#[test]
+fn h8_unknown_identity() {
     let dir = tempdir().unwrap();
     let mut svc = AuthService::new(new_store(dir.path()));
-    let (result, log) = with_capture_async(async {
-        svc.authenticate_instance(
-            &make_hello("0000000000000000000000000000000000000000", &new_nonce_b64()),
-            peer(),
+    let (result, log) = with_capture(|| {
+        block_on(
+            svc.authenticate_instance(
+                &make_hello("0000000000000000000000000000000000000000", &new_nonce_b64()),
+                peer(),
+            ),
         )
-        .await
-    })
-    .await;
+    });
     assert!(matches!(result, Err(AuthError::UnknownToken)));
     assert_audit_redacted(&log, &[]);
     assert_eq!(svc.stats().failures_for(UNKNOWN_TOKEN_ID), 1);

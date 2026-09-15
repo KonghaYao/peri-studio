@@ -1,6 +1,8 @@
 //! auth 测试共享工具（§6.2/§6.4）：tracing 捕获（`with_capture` +
-//! `CaptureWriter`）、审计脱敏断言（`assert_audit_redacted`）、token store
-//! 与握手辅助构造。
+//! `CaptureWriter`）、审计脱敏/快照断言、token store 与握手辅助构造。
+//!
+//! 审计捕获须在 `#[test]` + `with_capture` 下执行；`#[tokio::test]` 多线程
+//! 运行时与 `set_default` 存在竞态，CI 上可能丢失 `auth_failed_total` 字段。
 
 use std::io::Write;
 use std::net::SocketAddr;
@@ -91,18 +93,23 @@ pub(super) fn with_capture<T>(f: impl FnOnce() -> T) -> (T, String) {
     (result, text)
 }
 
-/// 异步测试专用：在 `#[tokio::test]` 内捕获审计日志，避免 `block_on` 嵌套运行时导致事件丢失。
-pub(super) async fn with_capture_async<F, T>(fut: F) -> (T, String)
-where
-    F: std::future::Future<Output = T>,
-{
-    let buf = Arc::new(Mutex::new(Vec::new()));
-    let sub = capture_subscriber(buf.clone());
-    let _guard = tracing::subscriber::set_default(sub);
-    let result = fut.await;
-    drop(_guard);
-    let text = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
-    (result, text)
+/// 断言失败审计行携带 `auth_failed_total` 快照（§4.8）。
+pub(super) fn assert_audit_failed_total_snapshot(text: &str, expected: u64) {
+    assert!(!text.is_empty(), "应产生审计事件");
+    let line = text
+        .lines()
+        .next()
+        .expect("应至少一行审计 JSON");
+    let v: serde_json::Value =
+        serde_json::from_str(line).unwrap_or_else(|e| panic!("审计行非 JSON: {e}: {line}"));
+    let fields = v["fields"]
+        .as_object()
+        .expect("审计 JSON 应含 fields 对象");
+    assert_eq!(
+        fields.get("auth_failed_total").and_then(|v| v.as_u64()),
+        Some(expected),
+        "失败审计应携带快照: {text}"
+    );
 }
 
 /// 断言捕获日志：每行 JSON 的 fields 键 ⊆ 白名单，且不含 token 本体。
