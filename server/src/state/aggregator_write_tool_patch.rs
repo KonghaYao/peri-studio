@@ -2,9 +2,13 @@
 
 use peri_studio_proto::schema::{ToolCallProjection, ToolCallStatus};
 
+use crate::protocol::parse_mcp_tool_name;
 use crate::state::normalized::{ToolCallPatch, ToolJsonPatch};
 
-use super::{aggregator::TOOL_RESULT_MAX_BYTES, aggregator_write_helpers::advance_tool_status};
+use super::{
+    aggregator::{MCP_APP_ARGUMENTS_MAX_BYTES, TOOL_RESULT_MAX_BYTES},
+    aggregator_write_helpers::advance_tool_status,
+};
 
 pub(super) fn tool_terminal(status: ToolCallStatus) -> bool {
     matches!(
@@ -21,7 +25,7 @@ pub(super) fn apply_projection_patch(
     if let Some(status) = patch.status {
         tc.status = advance_tool_status(tc.status, status, false);
     }
-    apply_arguments_patch(tc, &patch.arguments, was_terminal);
+    apply_arguments_patch(tc, patch, was_terminal);
     apply_content_patch(tc, &patch.content, patch.append_content, was_terminal);
     apply_locations_patch(tc, &patch.locations, was_terminal);
 
@@ -50,8 +54,31 @@ pub(super) fn apply_projection_patch(
     }
 }
 
-fn apply_arguments_patch(tc: &mut ToolCallProjection, patch: &ToolJsonPatch, terminal: bool) {
-    match patch {
+fn is_mcp_app_tool(tc: &ToolCallProjection, patch: &ToolCallPatch) -> bool {
+    if patch.mcp_server_id.is_some() || patch.mcp_tool_name.is_some() {
+        return true;
+    }
+    if tc.mcp_server_id.is_some() || tc.mcp_tool_name.is_some() {
+        return true;
+    }
+    patch
+        .name
+        .as_deref()
+        .is_some_and(|name| parse_mcp_tool_name(name).is_some())
+        || (!tc.name.is_empty() && parse_mcp_tool_name(&tc.name).is_some())
+}
+
+fn tool_arguments_budget(tc: &ToolCallProjection, patch: &ToolCallPatch) -> u64 {
+    if is_mcp_app_tool(tc, patch) {
+        MCP_APP_ARGUMENTS_MAX_BYTES as u64
+    } else {
+        TOOL_RESULT_MAX_BYTES as u64
+    }
+}
+
+fn apply_arguments_patch(tc: &mut ToolCallProjection, patch: &ToolCallPatch, terminal: bool) {
+    let max_bytes = tool_arguments_budget(tc, patch);
+    match &patch.arguments {
         ToolJsonPatch::Unchanged => {}
         ToolJsonPatch::Clear if !terminal => {
             tc.arguments = None;
@@ -60,7 +87,7 @@ fn apply_arguments_patch(tc: &mut ToolCallProjection, patch: &ToolJsonPatch, ter
         }
         ToolJsonPatch::Set { value } if !terminal || tc.arguments.is_none() => {
             let bytes = json_len(value);
-            let omitted = bytes.is_none_or(|size| size > TOOL_RESULT_MAX_BYTES as u64);
+            let omitted = bytes.is_none_or(|size| size > max_bytes);
             tc.arguments = (!omitted).then(|| value.clone());
             tc.arguments_omitted = Some(omitted);
             tc.arguments_bytes = bytes;

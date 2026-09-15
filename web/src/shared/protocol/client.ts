@@ -196,6 +196,14 @@ export const mcpAppResource = (chatId: string, appSessionId: string) =>
 export const mcpAppCall = (chatId: string, appSessionId: string, payload: Record<string, unknown>) =>
   action('mcp/app-call', { chatId, appSessionId, payload });
 
+export const mcpAppInvoke = (
+  chatId: string,
+  sourceToolCallId: string,
+  serverId: string,
+  toolName: string,
+  argumentsValue: Record<string, unknown>,
+) => action('mcp/app-invoke', { chatId, sourceToolCallId, serverId, toolName, arguments: argumentsValue });
+
 /** §8.5 会话切换：在当前对话（其 ACP 进程）内 load 目标历史会话——
  *  不新建对话/进程（会话是进程内实体；点击 SessionList 历史会话即切换）。 */
 export const loadChat = (chatId: string, acpSessionId: string) =>
@@ -275,6 +283,7 @@ export type DownstreamFrame =
   | ({ t: 'mcp_app_session' } & McpAppSessionFrame)
   | ({ t: 'mcp_app_resource' } & McpAppResourceFrame)
   | ({ t: 'mcp_app_call_result' } & McpAppCallResultFrame)
+  | ({ t: 'mcp_app_invoke' } & McpAppInvokeFrame)
   | TerminalOpenedFrame
   | TerminalOutputFrame
   | TerminalExitFrame
@@ -353,6 +362,8 @@ function decodeKnownFrame(frame: Record<string, unknown>): DownstreamFrame | nul
       return null;
     case 'mcp_app_call_result':
       return isMcpAppCallResultFrame(frame) ? frame as DownstreamFrame : null;
+    case 'mcp_app_invoke':
+      return isMcpAppInvokeFrame(frame) ? frame as DownstreamFrame : null;
     case 'terminal_opened':
     case 'terminal_output':
     case 'terminal_exit':
@@ -472,6 +483,14 @@ export interface McpAppCallResultFrame {
   result: unknown;
 }
 
+export interface McpAppInvokeFrame {
+  commandId: string;
+  chatId: string;
+  sourceToolCallId: string;
+  toolCallId: string;
+  serverId: string;
+}
+
 const forbiddenAppsKeys = ['invocationToken', 'ownerSessionId', 'structuredContent'];
 const forbiddenOAuthKeys = ['callbackCode', 'code', 'state', 'rawError', 'headers', 'token'];
 function hasForbiddenOAuthKeys(value: Record<string, unknown>): boolean {
@@ -576,6 +595,15 @@ function isMcpAppCallResultFrame(frame: Record<string, unknown>): boolean {
     && nonEmptyString(frame.chatId)
     && nonEmptyString(frame.appSessionId)
     && 'result' in frame;
+}
+
+function isMcpAppInvokeFrame(frame: Record<string, unknown>): boolean {
+  return !hasForbiddenAppsKeys(frame)
+    && nonEmptyString(frame.commandId)
+    && nonEmptyString(frame.chatId)
+    && nonEmptyString(frame.sourceToolCallId)
+    && nonEmptyString(frame.toolCallId)
+    && nonEmptyString(frame.serverId);
 }
 
 function isPromptStatusItem(value: unknown): value is PromptStatusItem {

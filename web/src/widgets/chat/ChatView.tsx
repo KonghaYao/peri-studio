@@ -22,7 +22,6 @@ import { chatCatalog, chatEntries, chatAgentLoading, chatHead, elicitationRespon
 import { readOnly } from '@/features/auth/auth-state';
 import { selectAgentPublicErrorNotice } from '@/features/chat/agent-public-error-notice';
 import { ConnectionProblem } from '@/widgets/shell/ConnectionProblem';
-import { ErrorCenter } from '@/widgets/shell/ErrorCenter';
 import { LaunchWorkspace } from '@/widgets/shell/LaunchWorkspace';
 import { SessionModelMenu } from '@/widgets/shell/SessionConfigDialog';
 import { StatusArea } from '@/widgets/shell/StatusArea';
@@ -169,7 +168,6 @@ export function ChatView(props: ChatViewProps) {
       banner={(
         <>
           <ConnectionProblem />
-          <ErrorCenter />
           <Show when={restoringSessionId() && restoringSessionId() === selectedSessionId()}>
             <LoadingState label="Restoring last session and ACP context…" class="justify-center mt-12 mx-20 max-narrow:m-10" data-testid="restore-banner" />
           </Show>

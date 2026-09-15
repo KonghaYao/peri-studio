@@ -256,6 +256,7 @@ impl CommandCoordinator {
                 | ActionEnvelope::McpAppOpen { .. }
                 | ActionEnvelope::McpAppResource { .. }
                 | ActionEnvelope::McpAppCall { .. }
+                | ActionEnvelope::McpAppInvoke { .. }
                 | ActionEnvelope::ConfigSet { .. }
                 | ActionEnvelope::Rewind { .. }
                 | ActionEnvelope::RewindCandidates { .. }

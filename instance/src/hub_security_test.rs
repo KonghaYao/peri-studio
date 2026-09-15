@@ -42,6 +42,7 @@ fn test_mcp_apps_frames_are_sensitive_ephemeral() {
         serde_json::json!({"jsonrpc":"2.0","method":"peri/mcp/open","params":{}}),
         serde_json::json!({"jsonrpc":"2.0","method":"peri/mcp/resource","params":{}}),
         serde_json::json!({"jsonrpc":"2.0","method":"peri/mcp/app","params":{}}),
+        serde_json::json!({"jsonrpc":"2.0","method":"peri/mcp/invoke","params":{}}),
         serde_json::json!({"jsonrpc":"2.0","id":1,"result":{"resources":[{"mimeType":"text/html;profile=mcp-app","text":"<html></html>"}]}}),
         serde_json::json!({"jsonrpc":"2.0","id":2,"result":{"resources":[{"uri":"ui://fixture/dashboard","text":"<html></html>"}]}}),
         serde_json::json!({"jsonrpc":"2.0","id":3,"result":{"html":"<html></html>"}}),

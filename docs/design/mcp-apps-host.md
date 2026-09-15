@@ -14,11 +14,11 @@ Studio **不是** MCP client。浏览器不能 `tools/list` / `resources/read` �
 
 ```
 浏览器（双 iframe Host）
-    │  action: mcp/app-open | mcp/app-resource | mcp/app-call
-    │  下行瞬时帧: mcp_app_session / mcp_app_resource / mcp_app_call_result
+    │  action: mcp/app-open | mcp/app-resource | mcp/app-call | mcp/app-invoke
+    │  下行瞬时帧: mcp_app_session / mcp_app_resource / mcp_app_call_result / mcp_app_invoke
     ▼
 Hub（McpAppsControl）
-    │  peri/mcp/open | peri/mcp/resource | peri/mcp/app
+    │  peri/mcp/open | peri/mcp/resource | peri/mcp/app | peri/mcp/invoke（Peri 待实现）
     ▼
 instance（dumb 转发；Apps HTML 不得进 ring）
     ▼
@@ -27,7 +27,7 @@ Peri acp（spawn 必须带 PERI_MCP_APPS=）──MCP──► MCP Server
 
 - 开关只看环境变量 **是否存在**（空串也启用）。**没有** `peri.mcpApps` initialize 能力。
 - `invocationToken` = ACP `toolCallId`；`ownerSessionId` = ACP `sessionId`。浏览器不准自己拼这两项。
-- 工具卡片 title 是 `mcp__{serverId}__{toolName}`；open 用本地 `toolName`（如 `get-time`），不是 `mcp__…`。
+- 工具卡片 title 常见为 `mcp__{serverId}__{toolName}`；**Cursor extra-tool** 会把 ACP `title` 写成 `execute extra tool \`mcp__{serverId}__{toolName}\``。Hub / Web 必须从包装 title 里取出 effective 名。open 用本地 `toolName`（如 `get-time` / `show_canvas`），不是 `mcp__…`。
 - 只在 tool **completed** 且非 `isError`、非 replay 时 open。lease 是一次性的；新 `session/prompt` 会 `begin_session_turn` 作废全部 app session。
 
 ## 2. 实现地图
@@ -42,9 +42,10 @@ Peri acp（spawn 必须带 PERI_MCP_APPS=）──MCP──► MCP Server
 | 沙箱 origin | `server/src/web/sandbox.rs`，默认 `LISTEN_PORT+1` 或 `PERI_STUDIO_SANDBOX_PORT` |
 | 面板 CSP | `server/src/web/http.rs` `panel_csp()`：`frame-src` 精确沙箱 origin；`img-src 'self'`（CSS `url()` 走此指令，磨砂颗粒为同源 `/images/sidebar-frost-grain.svg`，禁止 `data:`） |
 | Web 装配 | `web/src/features/mcp/mcp-apps.ts`（协议/live session）、`features/mcp/mcp-app-display.ts`（历史占位判定）、`widgets/chat/McpAppFrame.tsx`（T4 接线）、`@peri/ui` `mcp-app`（`McpAppFrameShell` + `McpAppHistoricalCard` + `bindMcpAppHost`）、`web/sandbox.html` |
-| 工具卡入口 | `ConversationMessage` 的 `McpToolBlock`：有 live HTML 才换 iframe；`session_replay` 且无 HTML 时换 `McpAppHistoricalCard` |
+| 工具卡入口 | `ConversationMessage` 的 `McpToolBlock`：有 live HTML 才换 iframe；已完成且无 live HTML（replay 或 live open 失败/未跑）换 `McpAppHistoricalCard`（含 **Reopen app**） |
+| Host 重开 | 用户点 **Reopen app** → `mcp/app-invoke` → Peri `peri/mcp/invoke`（新 `tools/call` + 新 lease）；成功后 live 工具卡走现有 `mcp/app-open` 自动 open |
 
-HTML / token / CSP **不进** Yjs、SQLite、ring、日志。回放后 iframe 不可复活；`McpToolBlock` 仅在 `origin=session_replay` 时对 `mcp__*` 工具展示 `McpAppHistoricalCard`（英文占位文案），不再展开 `ToolCallActivity` 的参数/结果 dump。live / 刷新后无 HTML 仍走 `ToolCallActivity`（pending、policy_denied、重复调用等）。同一 live chat 内较早的重复 App 仍保留 activity 摘要行。
+HTML / token / CSP **不进** Yjs、SQLite、ring、日志。持久化层不保存 iframe HTML。已完成且无 live HTML 时展示 `McpAppHistoricalCard`（replay 与 live 均适用；**不会**在 restore 后自动 iframe；须用户点 Reopen 或等 live 会话内新工具完成且 lease 有效）。`mcp/app-open` 仍只消费**当前 turn 已完成的 live toolCallId lease**；对 replay 历史 id 调 open 会得到 `policy_denied`（silent）。Reopen 走 `mcp/app-invoke`，不是对旧 id 再 open。open 进行中仍走 `ToolCallActivity`；拿到 live HTML 后换 iframe。运行中工具仍走 `ToolCallActivity`。同一 live chat 内较早的重复 App 仍保留 activity 摘要行。
 
 ## 3. Peri 线契约（serde 踩过的）
 
@@ -59,6 +60,7 @@ HTML / token / CSP **不进** Yjs、SQLite、ring、日志。回放后 iframe �
 | `peri/mcp/open` | `serverId`, `toolName`, `ownerSessionId`, `invocationToken` |
 | `peri/mcp/resource` | `serverId`, `appSessionId`, `resourceUri` |
 | `peri/mcp/app` | `serverId`, `appSessionId`, `resourceUri`, `payload`（JSON-RPC `tools/call`） |
+| `peri/mcp/invoke`（**Peri 缺口**） | `serverId`, `toolName`, `ownerSessionId`, `arguments` — Host 显式重跑 App 工具，返回新 `toolCallId` 并 `issue()` lease |
 
 `McpAppRequest` 是 `deny_unknown_fields`。漏 `resourceUri` 时按钮 `tools/call` 会被 Peri 整包拒绝。
 
@@ -165,14 +167,15 @@ hostCapabilities: expected object, received undefined
 
 ## 6. 生命周期与安全
 
-- **自动 open**：当前 chat、非只读、`status=completed`、name 以 `mcp__` 开头、origin 不是 replay、尚未有 live 条目。
-- **历史占位**：仅 `origin=session_replay` 时，`mcp__*` 工具卡走 `McpAppHistoricalCard`；不持久化 HTML/token，也不伪造 iframe。live / 页面刷新后无 HTML 仍保留 `ToolCallActivity`。
+- **自动 open**：当前 chat、非只读、`origin=live`、`status=completed`、name 可解析为 `mcp__{serverId}__{toolName}`（含 Cursor `execute extra tool \`mcp__…\`` 包装）、对应 MCP server 已在 `mcp_servers` 列表且 `connectionStatus=connected`、尚无带 HTML / `appSessionId` 的 live 条目。**禁止**对 `session_replay` 自动 open / 自动 invoke。
+- **历史占位 + Reopen**：已完成且无 live HTML 时（含 Cursor extra-tool 包装 title），走 `McpAppHistoricalCard`（英文短句 + **Reopen app**；replay 为 “This app isn't available in restored history.”，live 为 “Not available after reload.”）。按钮 disabled：只读、重开进行中、或缺少 `chatId` / `toolCallId` / 可解析的 `serverId`+`toolName`；**不因** MCP 列表未刷新或未连接而禁用（点击后由 invoke 报错）。`chatId` 取自消息上下文（`selectedCid` / `currentChatId`），不依赖 composer 是否已选 session。点击 → Web `mcp/app-invoke` → Hub `peri/mcp/invoke`（同工具名 + Yjs 里保存的 **tool input arguments**）→ Peri 新 tool call + lease → 新 live 工具完成后现有 auto-open 拉 iframe。Reopen **只依赖入参**（如 `show_canvas.source`），**不**要求 Chat Doc 里保留 `compiled` / HTML / 未截断 **result**。`show_canvas` 从 `params`（或 JSON 字符串 / `extra` / `input`）取出 `source`；仅当完全无法还原 `source` 且 MCP 目录能证明该 server 有 `show_canvas_demo`（toolsCount≥2）时才回退 demo。**禁止**对 `session_replay` 历史 id 自动 `mcp/app-open`。Web 在 `mcp/app-invoke` 前须剥掉 Peri `ExecuteExtraTool` 信封（ACP `rawInput` = `{ "tool_name": "mcp__{server}__{tool}", "params": { ...MCP 入参 } }`；`params` 偶发 JSON 字符串）以及其它 `name`/`arguments`/`rawInput`/`extra` 包装，只发内层 MCP 工具参数（`show_canvas` 含 `source`）。
+- **晚到 MCP（live only）**：runtime 投影先到、MCP stdio 后连上时，仅 **live** completed 工具在 `mcp_servers` 更新后重试 open；replay 占位不变。
 - **拆 iframe**：新 `chat/prompt`（Web 在 `sendMessage` 里先拆）、cancel、close、**切换 chat 时拆 previousCid**（曾经误拆新 chat，旧 iframe 留在内存）。
 - Hub 在 prompt/cancel/close 也会 `tear_down_chat`。lease 已死后再点按钮应 `stale_session` / `policy_denied`，silent，不要 toast。
 - `policy_denied` / `tool_not_app_visible` / `capability_disabled` / `unsupported` / `stale_session`：保持 `ToolCallActivity`，不弹故障。
 - instance 分类必须 **精确**：`session/update` 的 `content.text` **不是** Apps HTML。把任意 JSON 键 `text` 标成 SensitiveEphemeral 会让对话重连无法重放。敏感条件：`peri/mcp/*` 方法，或 result 的 `html`，或 `resources[]`/`contents[]` 带 mcp-app MIME / `ui://`。
 - HTML 上限 1 MiB，超限公开错误，不截断渲染。
-- **首屏 CallToolResult**：ACP `rawOutput` 入站时缓存在 Relay（上限 1 MiB），随 `mcp_app_resource.toolResult` 下发。Chat Doc 仍是 4KB，canvas TSX 不得进 Yjs。chat tear-down / 刷新后缓存与 HTML 一起消失。
+- **首屏 CallToolResult**：ACP `rawOutput` 入站时缓存在 Relay（上限 1 MiB），随 `mcp_app_resource.toolResult` 下发。Chat Doc **result** 仍按 4KB 省略（`compiled` / HTML 不得进 Yjs）；**MCP App 工具入参**（如 `show_canvas.source`）在 Chat Doc 保留至 1 MiB 供 Reopen。chat tear-down / 刷新后缓存与 HTML 一起消失。
 
 ## 7. 本机怎么验
 
@@ -225,6 +228,7 @@ npm run build -w cursor-canvas-mcp
 ## 8. 已知缺口（下次会再碰到）
 
 - Host 用 npm `@modelcontextprotocol/ext-apps/app-bridge`（`AppBridge` + `PostMessageTransport`，`client: null`）。不要引入 React `@mcp-ui/client`。View HTML 仍走官方 `App()`。
+- **`peri/mcp/invoke`（Peri 侧待落地）**：Studio Hub/Web 已发 `mcp/app-invoke` → `peri/mcp/invoke`；当前 Peri 仅实现 open/resource/app，会回 `unsupported_method`。Peri 需：Host 触发 `EffectiveToolDispatcher` 调同名 App 工具、`issue()` 新 lease、经 `session/update` 投影新 tool call，响应带 `toolCallId`。
 - `ui/message`、`ui/update-model-context`、协议级 `ui/request-display-mode`（pip）、任意 `resources/read` 首期不做。Host 侧 iframe 全屏（右上角按钮，不重绑 sandbox）已做。
 - 远程 TLS 下第二 sandbox origin 未做。
 - Chat Doc 不写 live `appSessionId`（刷新不复活）。可选公开字段曾考虑过，已删空 stub，避免假装落盘。
@@ -237,6 +241,6 @@ npm run build -w cursor-canvas-mcp
 | 不声明 `peri.mcpApps` | Peri 已删除该能力；只认 env |
 | 第三帧 `mcp_app_call_result` | 计划只写了 session/resource；iframe 需要把 `tools/call` 结果送回去 |
 | 官方 App Bridge + Solid，不引入 `@mcp-ui/client` | `./app-bridge` 无 React 依赖；React 只是可选 peer。Studio 不是 MCP client，`new AppBridge(null, …)` + `oncalltool` 回 Peri |
-| 首屏 CallToolResult 走 `mcp_app_resource.toolResult` | Chat Doc 4KB 会省略 canvas TSX；瞬时缓存上限 1 MiB，不进 Yjs。帧顶层禁止 `structuredContent`。Peri ACP `rawOutput` 常只有 `content[]` 文本，此时用缓存的 tool **arguments**（如 `source`）合成 `structuredContent`。 |
+| 首屏 CallToolResult 走 `mcp_app_resource.toolResult` | Chat Doc **result** 4KB 省略（`compiled`/HTML 不进 Yjs）；**MCP App 入参**保留至 1 MiB 供 Reopen。瞬时缓存上限 1 MiB。帧顶层禁止 `structuredContent`。Peri ACP `rawOutput` 常只有 `content[]` 文本，此时用缓存的 tool **arguments**（如 `source`）合成 `structuredContent`。 |
 | 沙箱独立最小 HTTP，不走面板 `serve_http` | 绝不能带认证 Cookie / 业务 API |
 | 分类 fail-closed 但禁止扫 `text` 键 | 漏判会把 HTML 写入 ring；误判会毁掉 transcript 重放 |

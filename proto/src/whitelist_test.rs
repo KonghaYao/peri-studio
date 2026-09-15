@@ -49,6 +49,7 @@ fn client_outbound_m1_set() {
         "mcp_app_session",
         "mcp_app_resource",
         "mcp_app_call_result",
+        "mcp_app_invoke",
         "rewind_candidates",
         "rewind_preview",
         "resource_result",
@@ -211,6 +212,7 @@ fn m1_action_type_subset() {
         "mcp/app-open",
         "mcp/app-resource",
         "mcp/app-call",
+        "mcp/app-invoke",
         "machine/add",
         "machine/connect",
         "machine/disconnect",
@@ -232,14 +234,14 @@ fn m1_action_type_subset() {
     for t in ["events/subscribe", "events/unsubscribe"] {
         assert!(!m1_allows_action_type(t), "{t} 应不在 M1");
     }
-    assert_eq!(crate::whitelist::M1_ACTION_TYPES.len(), 51);
+    assert_eq!(crate::whitelist::M1_ACTION_TYPES.len(), 52);
 }
 
-/// 全量注册表：54 个 tag（含 terminal 与 instance/forward 系）。
+/// 全量注册表：55 个 tag（含 terminal 与 instance/forward 系）。
 #[test]
 fn frame_tag_registry_completeness() {
     let tags: Vec<&str> = crate::frame::FRAME_TAGS.iter().map(|t| t.0).collect();
-    assert_eq!(tags.len(), 54);
+    assert_eq!(tags.len(), 55);
     for expected in [
         "action",
         "action_ack",
@@ -274,6 +276,7 @@ fn frame_tag_registry_completeness() {
         "mcp_app_session",
         "mcp_app_resource",
         "mcp_app_call_result",
+        "mcp_app_invoke",
         "rewind_candidates",
         "rewind_preview",
         "resource_query",

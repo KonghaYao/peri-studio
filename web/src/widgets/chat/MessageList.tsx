@@ -9,7 +9,7 @@
 // permission decision 值（allow/deny、按钮顺序）由 Composer 上方的决策槽位承载。
 
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
-import { chatEntries, chatAgentLoading, chatHead, elicitations, permissions, retryMessageSubmission, runtimeDocsHydrated, selectedCid } from '@/store';
+import { chatEntries, chatAgentLoading, chatHead, currentChatId, elicitations, permissions, retryMessageSubmission, runtimeDocsHydrated, selectedCid } from '@/store';
 import { nextFollowState } from '@/features/message/message-follow';
 import { messageTime } from '@/shared/lib/message-time';
 import type { ChatEntry } from '@/entities/chat/chat-view';
@@ -349,6 +349,7 @@ export function MessageList(props: {
                   <Show when={isPlanSystemChatEntry(entry())} fallback={
                     <ConversationMessage
                       entry={entry}
+                      chatId={() => selectedCid() ?? currentChatId()}
                       activityBoundary={() => activityBoundaryAt(chatEntries(), globalIndex())}
                       activityContinuation={() => activityContinuationAt(chatEntries(), globalIndex())}
                       terminalNoticeOwner={() => isTurnTerminalNoticeOwner(chatEntries(), globalIndex())}

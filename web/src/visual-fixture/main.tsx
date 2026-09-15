@@ -3,6 +3,7 @@ import { render } from 'solid-js/web';
 import '../styles.css';
 import './fixture.css';
 import { AppShell } from '@/widgets/shell/AppShell';
+import { ErrorCenter } from '@/widgets/shell/ErrorCenter';
 import { Toasts } from '@/widgets/shell/Toasts';
 import { installResourceStore } from '@/features/resource/resource-store';
 import { appendVisualResourceEntries, DEFAULT_VISUAL_SCENARIO, installVisualScenario, removeVisualResourceEntry, setVisualElicitationUnknown, setVisualFilePreview, setVisualToolAcceptancePhase, setVisualTranscriptCount, visualResourceEntryExists, visualScenarios } from './scenarios';
@@ -59,6 +60,7 @@ function VisualFixture() {
       </div>
     </div>
     <Toasts />
+    <ErrorCenter />
   </>;
 }
 

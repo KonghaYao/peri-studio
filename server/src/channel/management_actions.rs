@@ -64,6 +64,7 @@ impl CommandCoordinator {
                 | ActionEnvelope::McpAppOpen { .. }
                 | ActionEnvelope::McpAppResource { .. }
                 | ActionEnvelope::McpAppCall { .. }
+                | ActionEnvelope::McpAppInvoke { .. }
         ) {
             return self
                 .exec_mcp_control(&action, tx, command_id_str, !ctx.can_send_action())
@@ -241,6 +242,12 @@ impl CommandCoordinator {
                 self.inner
                     .mcp_apps_control
                     .call(command_id, payload, tx, read_only)
+                    .await
+            }
+            ActionEnvelope::McpAppInvoke { payload, .. } => {
+                self.inner
+                    .mcp_apps_control
+                    .invoke(command_id, payload, tx, read_only)
                     .await
             }
             _ => unreachable!("dispatch guarantees MCP control action"),

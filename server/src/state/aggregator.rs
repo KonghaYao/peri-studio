@@ -46,6 +46,9 @@ pub struct Aggregator;
 /// 工具结果截断阈值（§9.5【决策】默认 4KB，对齐 §14 开放问题 2 方向）。
 pub const TOOL_RESULT_MAX_BYTES: usize = 4096;
 
+/// MCP App 工具入参保留上限（Reopen 需完整 `source` 等；与瞬时 HTML/result 缓存同档）。
+pub const MCP_APP_ARGUMENTS_MAX_BYTES: usize = 1024 * 1024;
+
 /// Per-session privacy-safe activity history. This is intentionally small: the
 /// projection is a status surface, not a second event log.
 pub const AGENT_ACTIVITY_LIMIT: u32 = 64;

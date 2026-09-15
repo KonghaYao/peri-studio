@@ -28,6 +28,7 @@ const FEATURE_OWNERS = {
   mcp_app_session: { module: 'features/mcp/mcp-apps.ts', prefix: 'handleMcpAppSession' },
   mcp_app_resource: { module: 'features/mcp/mcp-apps.ts', prefix: 'handleMcpAppResource' },
   mcp_app_call_result: { module: 'features/mcp/mcp-apps.ts', prefix: 'handleMcpAppCallResult' },
+  mcp_app_invoke: { module: 'features/mcp/mcp-apps.ts', prefix: 'handleMcpAppInvoke' },
   resource_result: { module: 'features/resource/resource-store.ts', prefix: 'handleResourceResult' },
   terminal_opened: { module: 'features/terminal/terminal-session.ts', prefix: 'handleTerminalFrame' },
   terminal_output: { module: 'features/terminal/terminal-session.ts', prefix: 'handleTerminalFrame' },

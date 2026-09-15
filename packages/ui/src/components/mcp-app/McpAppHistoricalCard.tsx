@@ -1,5 +1,6 @@
 import { AppWindow, Check, CircleX, Loader2 } from 'lucide-solid';
 import { Show, splitProps, type Component } from 'solid-js';
+import { Button } from '../Button';
 import { cn } from '../../lib/cn';
 
 export type McpAppHistoricalStatus = 'done' | 'running' | 'failed';
@@ -11,6 +12,10 @@ export type McpAppHistoricalCardProps = {
   status?: McpAppHistoricalStatus;
   variant?: 'default' | 'activity';
   class?: string;
+  reopenLabel?: string;
+  reopenDisabled?: boolean;
+  reopenPending?: boolean;
+  onReopen?: () => void;
 };
 
 /** 无 live HTML 时的 MCP App 占位卡：不展开工具参数/结果。 */
@@ -22,9 +27,14 @@ export const McpAppHistoricalCard: Component<McpAppHistoricalCardProps> = (props
     'status',
     'variant',
     'class',
+    'reopenLabel',
+    'reopenDisabled',
+    'reopenPending',
+    'onReopen',
   ]);
   const status = () => local.status ?? 'done';
   const activity = () => local.variant === 'activity';
+  const showReopen = () => Boolean(local.onReopen && local.reopenLabel);
 
   return (
     <div
@@ -39,7 +49,7 @@ export const McpAppHistoricalCard: Component<McpAppHistoricalCardProps> = (props
       <div
         class={cn(
           'ui-mcp-app-historical-shell overflow-hidden rounded-9 border border-divider bg-surface',
-          activity() ? 'rounded-6' : undefined,
+          activity() && 'rounded-6',
         )}
       >
         <div
@@ -74,6 +84,20 @@ export const McpAppHistoricalCard: Component<McpAppHistoricalCardProps> = (props
               {(subtitle) => <span class="truncate text-11 text-content-muted">{subtitle()}</span>}
             </Show>
             <p class="m-0 text-11 leading-normal text-content-secondary">{local.message}</p>
+            <Show when={showReopen()}>
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                class="self-start"
+                disabled={local.reopenDisabled || local.reopenPending}
+                busy={local.reopenPending}
+                onClick={() => local.onReopen?.()}
+                data-testid="mcp-app-reopen-button"
+              >
+                {local.reopenLabel}
+              </Button>
+            </Show>
           </div>
         </div>
       </div>

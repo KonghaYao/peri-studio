@@ -1,4 +1,4 @@
-// 主工作台页面：薄装配层，组合 PWA 运行时、首次安装询问、认证门、应用壳与全局 Toast。
+// 主工作台页面：薄装配层，组合 PWA 运行时、首次安装询问、认证门、应用壳与全局 Toast / Notification。
 
 import { createSignal, onCleanup, onMount } from 'solid-js';
 import { AuthGate } from '@/widgets/auth/AuthGate';
@@ -6,6 +6,7 @@ import { AppShell } from '@/widgets/shell/AppShell';
 import { PwaInstallPrompt } from '@/widgets/shell/PwaInstallPrompt';
 import { PwaRuntime } from '@/widgets/shell/PwaRuntime';
 import { QuitConfirmDialog } from '@/widgets/shell/QuitConfirmDialog';
+import { ErrorCenter } from '@/widgets/shell/ErrorCenter';
 import { Toasts } from '@/widgets/shell/Toasts';
 import {
   chatCatalog,
@@ -87,6 +88,7 @@ export function PanelPage() {
         onStopThenQuit={() => { void stopThenQuit(); }}
       />
       <Toasts />
+      <ErrorCenter />
     </>
   );
 }

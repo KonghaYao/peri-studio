@@ -56,7 +56,13 @@ fn apps_error_maps_agent_unavailable() {
 
 #[test]
 fn gate_open_rejects_non_completed_and_non_mcp_tools() {
-    let completed = tool_projection("mcp__fixture__tool", ToolCallStatus::Completed);
+    let mut completed = tool_projection("mcp__fixture__tool", ToolCallStatus::Completed);
+    assert!(gate_mcp_app_open("cmd", &completed).is_ok());
+
+    completed = tool_projection(
+        "execute extra tool `mcp__cursor-canvas__show_canvas`",
+        ToolCallStatus::Completed,
+    );
     assert!(gate_mcp_app_open("cmd", &completed).is_ok());
 
     let running = tool_projection("mcp__fixture__tool", ToolCallStatus::Running);

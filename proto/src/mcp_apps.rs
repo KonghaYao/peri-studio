@@ -29,6 +29,18 @@ pub struct McpAppCallPayload {
     pub payload: serde_json::Value,
 }
 
+/// `mcp/app-invoke` payload：Host 显式重跑 MCP App 工具（新 lease，非旧 toolCallId open）。
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct McpAppInvokePayload {
+    pub chat_id: String,
+    pub source_tool_call_id: String,
+    pub server_id: String,
+    pub tool_name: String,
+    #[serde(default)]
+    pub arguments: serde_json::Value,
+}
+
 /// `mcp_app_session` 下行帧。
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -58,6 +70,17 @@ pub struct McpAppResourceFrame {
     pub csp: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tool_result: Option<serde_json::Value>,
+}
+
+/// `mcp_app_invoke` 下行帧：`peri/mcp/invoke` 成功时回投新 toolCallId（瞬时）。
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct McpAppInvokeFrame {
+    pub command_id: String,
+    pub chat_id: String,
+    pub source_tool_call_id: String,
+    pub tool_call_id: String,
+    pub server_id: String,
 }
 
 /// `mcp_app_call_result` 下行帧：`peri/mcp/app` 的 raw CallToolResult（瞬时）。

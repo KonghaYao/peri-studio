@@ -256,6 +256,12 @@ pub enum ActionEnvelope {
         command_id: String,
         payload: McpAppCallPayload,
     },
+    /// Host 显式重跑 MCP App 工具（新 lease；转发 Peri `peri/mcp/invoke`）。
+    #[serde(rename = "mcp/app-invoke", rename_all = "camelCase")]
+    McpAppInvoke {
+        command_id: String,
+        payload: McpAppInvokePayload,
+    },
     /// 添加远端计算机（SSH 供应管道；R1 仅校验，不调 OpenSSH）。
     #[serde(rename = "machine/add", rename_all = "camelCase")]
     MachineAdd {
@@ -385,6 +391,7 @@ impl ActionEnvelope {
             ActionEnvelope::McpAppOpen { .. } => "mcp/app-open",
             ActionEnvelope::McpAppResource { .. } => "mcp/app-resource",
             ActionEnvelope::McpAppCall { .. } => "mcp/app-call",
+            ActionEnvelope::McpAppInvoke { .. } => "mcp/app-invoke",
             ActionEnvelope::MachineAdd { .. } => "machine/add",
             ActionEnvelope::MachineConnect { .. } => "machine/connect",
             ActionEnvelope::MachineDisconnect { .. } => "machine/disconnect",
@@ -444,6 +451,7 @@ impl ActionEnvelope {
             | ActionEnvelope::McpAppOpen { command_id, .. }
             | ActionEnvelope::McpAppResource { command_id, .. }
             | ActionEnvelope::McpAppCall { command_id, .. }
+            | ActionEnvelope::McpAppInvoke { command_id, .. }
             | ActionEnvelope::MachineAdd { command_id, .. }
             | ActionEnvelope::MachineConnect { command_id, .. }
             | ActionEnvelope::MachineDisconnect { command_id, .. }

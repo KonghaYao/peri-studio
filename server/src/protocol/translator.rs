@@ -261,7 +261,8 @@ impl Translator {
             | ActionEnvelope::McpOAuthCancel { .. }
             | ActionEnvelope::McpAppOpen { .. }
             | ActionEnvelope::McpAppResource { .. }
-            | ActionEnvelope::McpAppCall { .. } => {
+            | ActionEnvelope::McpAppCall { .. }
+            | ActionEnvelope::McpAppInvoke { .. } => {
                 Err(TranslateError::UnsupportedAction("mcp control-plane"))
             }
             ActionEnvelope::RewindCandidates { .. }

@@ -12,7 +12,7 @@ import { settleLateQuickStart } from '@/features/message/quick-start-delivery';
 import { confirmRuntimeControl } from '@/features/runtime/runtime-control';
 import { promptRecoveryOwnsError } from '@/features/runtime/prompt-recovery-assembly';
 import { rewindOwnsError } from '@/features/runtime/rewind-assembly';
-import { ownsMcpAppsError } from '@/features/mcp/mcp-apps';
+import { handleMcpAppsActionError } from '@/features/mcp/mcp-apps';
 import { catalogOwnsArchiveInvalidState } from '@/features/catalog/catalog-actions';
 import type { PersistentError } from '../message/panel-errors';
 import type { Setter } from 'solid-js';
@@ -46,7 +46,7 @@ export function createConnectionDownstream(deps: ConnectionDownstreamDeps) {
     const uploadOwned = deps.forwardWorkspaceUploadActionError(err as Record<string, unknown>);
     if (promptRecoveryOwnsError(err)) return;
     if (rewindOwnsError(err)) return;
-    if (ownsMcpAppsError(err)) return;
+    if (handleMcpAppsActionError(err)) return;
     if (catalogOwnsArchiveInvalidState(err)) {
       deps.commands.fail(err);
       return;

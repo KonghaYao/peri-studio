@@ -164,6 +164,7 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 | `Tabs` | 设置/面板分区 | 指示器用 accent |
 | `Tooltip` | Icon-only 说明 | `IconButton` 默认内置；侧栏已有可见语义的动作使用 `showTooltip={false}` |
 | `Toast` | 全局短暂反馈 | `showToast` / `dismissToast` |
+| `Notification` | 全局错误/结果通知（title + description） | `notification.error`；`ErrorCenter` 投影持久错误，不占用对话栏 |
 | `Badge` | 紧凑标签 | `neutral` / `ok` / `warn` / `err` |
 | `Status` | 连接/运行点 + 文案 | `live` → `aria-live` |
 | `InlineNotice` | 流内告警条 | `info` / `success` / `warning` / `danger` |
@@ -183,7 +184,7 @@ widgets/*                              ← 业务组合；禁止 @peri/ui deep i
 
 | 区域 | Widget 路径 | UI 要点 |
 |------|-------------|---------|
-| 壳层 | `widgets/shell` | AppShell 网格、`PwaRuntime`、ErrorCenter、ConnectionProblem、StatusArea、`AppSettingsPanel`（Appearance）、System About「This browser」 |
+| 壳层 | `widgets/shell` | AppShell 网格、`PwaRuntime`、全局 `ErrorCenter`（`@peri/ui` Notification）、ConnectionProblem、StatusArea、`AppSettingsPanel`（Appearance）、System About「This browser」 |
 | 侧栏 | `widgets/sidebar` | 28px 行高、选中 `bg-selected`、`For` 稳定 key；整列 `ui-sidebar-frost`（wash + fill，footer/gear 同一表面；`prefers-reduced-transparency` 回退实心 `--sidebar-bg`） |
 | 聊天 | `widgets/chat` | Transcript 窗口化、Permission/Elicitation 队列、Markdown、`ToolCallActivity`（`@peri/ui` `ToolActivityRow` + `features/chat/tool-call-activity.ts`） |
 | 输入 | `widgets/composer` | `Composer.tsx` 内联 editor/toolbar；`@peri/ui` `SlashMenuListbox` + `features/composer/slash-menu-catalog.ts`；drop / Add attachment / 剪贴板粘贴图片共用上传队列，ready 后仅插入 `@relative/path` |

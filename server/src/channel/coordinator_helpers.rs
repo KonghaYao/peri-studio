@@ -93,7 +93,8 @@ pub(crate) fn extract_command_id(action: &ActionEnvelope) -> Option<String> {
         | ActionEnvelope::McpOAuthCancel { command_id, .. }
         | ActionEnvelope::McpAppOpen { command_id, .. }
         | ActionEnvelope::McpAppResource { command_id, .. }
-        | ActionEnvelope::McpAppCall { command_id, .. } => Some(command_id.clone()),
+        | ActionEnvelope::McpAppCall { command_id, .. }
+        | ActionEnvelope::McpAppInvoke { command_id, .. } => Some(command_id.clone()),
         ActionEnvelope::MachineAdd { command_id, .. }
         | ActionEnvelope::MachineConnect { command_id, .. }
         | ActionEnvelope::MachineDisconnect { command_id, .. }
@@ -154,6 +155,7 @@ pub(super) fn extract_chat_id(action: &ActionEnvelope) -> Option<String> {
         ActionEnvelope::McpAppOpen { payload, .. } => Some(payload.chat_id.clone()),
         ActionEnvelope::McpAppResource { payload, .. } => Some(payload.chat_id.clone()),
         ActionEnvelope::McpAppCall { payload, .. } => Some(payload.chat_id.clone()),
+        ActionEnvelope::McpAppInvoke { payload, .. } => Some(payload.chat_id.clone()),
         ActionEnvelope::MachineAdd { .. }
         | ActionEnvelope::MachineConnect { .. }
         | ActionEnvelope::MachineDisconnect { .. }

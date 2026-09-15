@@ -35,7 +35,10 @@ function open(tone: NoticeTone, config: NotificationConfig) {
     placement: config.placement,
     action: config.action,
   };
-  const close = notificationStore.open(record);
+  const close = notificationStore.open({
+    ...record,
+    onClose: config.onClose,
+  });
   return {
     close: () => {
       close();

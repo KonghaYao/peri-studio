@@ -131,6 +131,10 @@ export const [sessionConfigMutation, setSessionConfigMutation] = createSignal<Se
 
 const store = new DocStore(); // docId → Y.Doc
 let currentCid: string | null = null; // 选中对话（重连后恢复订阅）
+/** 当前订阅的 chat id（通常与 selectedCid 一致；重连恢复时可能先于侧栏选中）。 */
+export function currentChatId(): string | null {
+  return currentCid;
+}
 const [uncertainMetadataCount, setUncertainMetadataCount] = createSignal(0);
 
 const commands = new CommandTracker<ActionFrame, Ack, ActionError>({

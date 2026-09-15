@@ -218,6 +218,67 @@ fn oversized_argument_set_is_omitted_from_chat_doc() {
 }
 
 #[test]
+fn mcp_app_oversized_arguments_persist_in_chat_doc() {
+    let mut p = pair();
+    let mut agg = Aggregator;
+    seed_user_msg(&mut p, "t1", "t1:user", "a");
+    let source = "x".repeat(5000);
+    let patched = EventBody::ToolCallPatched {
+        turn_id: String::new(),
+        tool_call_id: "tc-canvas-args".into(),
+        patch: ToolCallPatch {
+            name: Some("mcp__cursor-canvas__show_canvas".into()),
+            status: Some(ToolCallStatus::Completed),
+            arguments: ToolJsonPatch::Set {
+                value: json!({"source": source.clone()}),
+            },
+            mcp_server_id: Some("cursor-canvas".into()),
+            mcp_tool_name: Some("show_canvas".into()),
+            completed_at: Some("2026-08-07T00:00:02Z".into()),
+            ..Default::default()
+        },
+    };
+    assert!(agg.apply(&mut p, &ev("s1", 2, patched)).applied);
+    let tool = tool_call(&p, "tc-canvas-args");
+    assert_eq!(tool.arguments, Some(json!({"source": source})));
+    assert_eq!(tool.arguments_omitted, Some(false));
+    assert!(tool.arguments_bytes.unwrap() > 4096);
+}
+
+#[test]
+fn mcp_app_oversized_results_still_omit_from_chat_doc() {
+    let mut p = pair();
+    let mut agg = Aggregator;
+    seed_user_msg(&mut p, "t1", "t1:user", "a");
+    let patched = EventBody::ToolCallPatched {
+        turn_id: String::new(),
+        tool_call_id: "tc-canvas-result".into(),
+        patch: ToolCallPatch {
+            name: Some("mcp__cursor-canvas__show_canvas".into()),
+            status: Some(ToolCallStatus::Completed),
+            arguments: ToolJsonPatch::Set {
+                value: json!({"source": "export default function App() { return null; }"}),
+            },
+            result: ToolJsonPatch::Set {
+                value: json!({"structuredContent": {"compiled": "x".repeat(5000)}}),
+            },
+            mcp_server_id: Some("cursor-canvas".into()),
+            mcp_tool_name: Some("show_canvas".into()),
+            completed_at: Some("2026-08-07T00:00:02Z".into()),
+            ..Default::default()
+        },
+    };
+    assert!(agg.apply(&mut p, &ev("s1", 2, patched)).applied);
+    let tool = tool_call(&p, "tc-canvas-result");
+    assert_eq!(
+        tool.arguments,
+        Some(json!({"source": "export default function App() { return null; }"}))
+    );
+    assert_eq!(tool.result, None);
+    assert_eq!(tool.result_omitted, Some(true));
+}
+
+#[test]
 fn terminal_turn_settles_running_tool_and_late_terminal_can_fill_missing_output_once() {
     let mut p = pair();
     let mut agg = Aggregator;

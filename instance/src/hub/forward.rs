@@ -54,6 +54,7 @@ fn is_mcp_apps_sensitive(frame: &serde_json::Value) -> bool {
     if matches!(
         method,
         Some("peri/mcp/open") | Some("peri/mcp/resource") | Some("peri/mcp/app")
+        | Some("peri/mcp/invoke")
     ) {
         return true;
     }

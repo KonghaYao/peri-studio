@@ -157,6 +157,17 @@ describe('ToolCallActivity', () => {
     expect(summary().closest('.tool-call-row-compact')).not.toHaveClass('is-running');
   });
 
+  it('narrates Cursor extra-tool titles as generic Ran rows when used directly', () => {
+    render(() => <ToolCallActivity toolCall={{
+      ...base,
+      name: 'execute extra tool `mcp__cursor-canvas__show_canvas`',
+      kind: 'other',
+      arguments: { source: 'export default function App() { return null; }' },
+    }} />);
+    expect(screen.getByTestId('tool-activity-row')).toHaveTextContent(/Ran execute extra tool/);
+    expect(screen.getByTestId('tool-activity-row-summary')).toHaveTextContent(/mcp/);
+  });
+
   it('narrates shell commands in the Fenix-style title row', () => {
     render(() => <ToolCallActivity toolCall={{ ...base, name: 'Bash', arguments: { command: 'pwd && git status' } }} />);
     const row = document.querySelector('[data-testid="tool-activity-row-summary"]')!;

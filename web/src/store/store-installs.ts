@@ -12,7 +12,7 @@
 import type { Setter } from 'solid-js';
 import { installPanelErrors, type PersistentError } from '@/features/message/panel-errors';
 import { installUserActions, type SessionConfigMutation } from '@/features/message/user-actions';
-import { installMcp } from '@/features/mcp/mcp';
+import { installMcp, refreshMcpServers } from '@/features/mcp/mcp';
 import { installMcpApps } from '@/features/mcp/mcp-apps';
 import { installRewind } from '@/features/runtime/rewind-assembly';
 import { installPromptRecovery } from '@/features/runtime/prompt-recovery-assembly';
@@ -84,9 +84,11 @@ export function installStoreWiring(d: StoreWiringDeps): void {
   });
   installMcpApps({
     selectedCid: deps.selectedCid,
+    currentCid: deps.currentCid,
     ready: connectionReady,
     sendAction: deps.sendAction,
     acknowledge: deps.acknowledge,
+    refreshMcpServers,
   });
   installRewind({
     selectedCid: deps.selectedCid,

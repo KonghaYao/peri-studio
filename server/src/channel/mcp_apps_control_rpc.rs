@@ -1,9 +1,9 @@
 //! McpAppsControl 的 Peri RPC 执行与响应分类。
 
 use peri_studio_proto::ack::{ActionError, ErrorCode};
-use peri_studio_proto::action::{McpAppCallPayload, McpAppOpenPayload, McpAppResourcePayload};
+use peri_studio_proto::action::{McpAppCallPayload, McpAppInvokePayload, McpAppOpenPayload, McpAppResourcePayload};
 use peri_studio_proto::frame::Frame;
-use peri_studio_proto::mcp_apps::{McpAppCallResultFrame, McpAppResourceFrame, McpAppSessionFrame};
+use peri_studio_proto::mcp_apps::{McpAppCallResultFrame, McpAppInvokeFrame, McpAppResourceFrame, McpAppSessionFrame};
 use serde::Deserialize;
 
 use super::{
@@ -45,6 +45,12 @@ struct ResourceItem {
     blob: Option<String>,
     #[serde(rename = "_meta", default)]
     meta: Option<serde_json::Value>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct InvokeResult {
+    tool_call_id: String,
 }
 
 impl McpAppsControl {
@@ -291,6 +297,53 @@ impl McpAppsControl {
         }
     }
 
+    pub(super) async fn execute_invoke(
+        &self,
+        target: &Target,
+        command_id: &str,
+        payload: &McpAppInvokePayload,
+        owner_session_id: &str,
+    ) -> Frame {
+        let arguments = payload.arguments.as_object().cloned().unwrap_or_default();
+        let params = serde_json::json!({
+            "envelopeVersion": ENVELOPE_VERSION,
+            "appsProtocolVersion": APPS_PROTOCOL_VERSION,
+            "serverId": payload.server_id,
+            "toolName": payload.tool_name,
+            "ownerSessionId": owner_session_id,
+            "arguments": arguments,
+        });
+        match self.rpc(target, "peri/mcp/invoke", params).await {
+            Ok(value) => match serde_json::from_value::<InvokeResult>(value) {
+                Ok(result) if !result.tool_call_id.trim().is_empty() => {
+                    Frame::McpAppInvoke(McpAppInvokeFrame {
+                        command_id: command_id.to_string(),
+                        chat_id: payload.chat_id.clone(),
+                        source_tool_call_id: payload.source_tool_call_id.clone(),
+                        tool_call_id: result.tool_call_id,
+                        server_id: payload.server_id.clone(),
+                    })
+                }
+                _ => Frame::ActionError(apps_error(
+                    command_id,
+                    ErrorCode::AgentUnavailable,
+                    "agent_unavailable",
+                )),
+            },
+            Err(AppsRpcFailure::Rejected(kind)) => {
+                Frame::ActionError(map_invoke_kind(command_id, kind))
+            }
+            Err(AppsRpcFailure::DeliveryUnknown) => {
+                Frame::ActionError(delivery_unknown(command_id))
+            }
+            Err(AppsRpcFailure::Unavailable) => Frame::ActionError(apps_error(
+                command_id,
+                ErrorCode::AgentUnavailable,
+                "agent_unavailable",
+            )),
+        }
+    }
+
     async fn rpc(
         &self,
         target: &Target,
@@ -319,6 +372,9 @@ impl McpAppsControl {
                 if let Some(kind) = apps_error_kind(&value) {
                     return Err(AppsRpcFailure::Rejected(kind));
                 }
+                if value.get("error").is_some() {
+                    return Err(AppsRpcFailure::Rejected("agent_unavailable"));
+                }
                 value
                     .get("result")
                     .cloned()
@@ -343,12 +399,47 @@ enum AppsRpcFailure {
 }
 
 fn apps_error_kind(value: &serde_json::Value) -> Option<&'static str> {
-    let kind = value
-        .get("error")
-        .and_then(|error| error.get("data"))
-        .and_then(|data| data.get("kind"))
-        .and_then(serde_json::Value::as_str)?;
-    Some(match kind {
+    if let Some(kind) = peri_apps_error_kind(value) {
+        return Some(map_peri_apps_kind(kind));
+    }
+    if jsonrpc_method_not_found(value) {
+        return Some("unsupported");
+    }
+    None
+}
+
+fn peri_apps_error_kind(value: &serde_json::Value) -> Option<&str> {
+    let error = value.get("error")?;
+    if let Some(kind) = error
+        .get("kind")
+        .and_then(serde_json::Value::as_str)
+    {
+        return Some(kind);
+    }
+    let data = error.get("data")?;
+    data.get("kind")
+        .and_then(serde_json::Value::as_str)
+        .or_else(|| data.as_str())
+}
+
+fn jsonrpc_method_not_found(value: &serde_json::Value) -> bool {
+    let Some(error) = value.get("error") else {
+        return false;
+    };
+    if error.get("code").and_then(serde_json::Value::as_i64) == Some(-32601) {
+        return true;
+    }
+    let message = error
+        .get("message")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default();
+    message.eq_ignore_ascii_case("method not found")
+        || message.contains("unsupported_method")
+        || message.contains("unsupported method")
+}
+
+fn map_peri_apps_kind(kind: &str) -> &'static str {
+    match kind {
         "capability_disabled" => "capability_disabled",
         "policy_denied" | "tool_not_app_visible" | "forbidden" | "cancelled" => "policy_denied",
         "stale_server_generation"
@@ -360,7 +451,18 @@ fn apps_error_kind(value: &serde_json::Value) -> Option<&'static str> {
             "unsupported"
         }
         _ => "agent_unavailable",
-    })
+    }
+}
+
+fn map_invoke_kind(command_id: &str, kind: &str) -> ActionError {
+    let message = match kind {
+        "capability_disabled" => "capability_disabled",
+        "policy_denied" => "policy_denied",
+        "unsupported" => "unsupported",
+        "stale_session" => "stale_session",
+        _ => "agent_unavailable",
+    };
+    apps_error(command_id, ErrorCode::InvalidState, message)
 }
 
 fn map_apps_kind(command_id: &str, kind: &str) -> ActionError {

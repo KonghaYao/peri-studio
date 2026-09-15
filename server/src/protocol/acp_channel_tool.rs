@@ -153,11 +153,13 @@ impl AcpChannel {
             self.oversized_tool_arguments
                 .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             // MCP App 首屏需要 arguments（如 canvas source）；Chat Doc 仍由聚合器按 4KB 省略。
+            // Peri ExecuteExtraTool 把 source 放在 params 里，不是 rawInput 顶层。
             let keep = keep_oversized_for_mcp_app
+                || json_contains_canvas_source(value)
                 || value
-                    .get("source")
+                    .get("tool_name")
                     .and_then(Value::as_str)
-                    .is_some_and(|source| !source.is_empty());
+                    .is_some_and(|name| parse_mcp_tool_name(name).is_some());
             if keep && bytes <= 1024 * 1024 {
                 return value_patch(value);
             }
@@ -166,6 +168,37 @@ impl AcpChannel {
             };
         }
         value_patch(value)
+    }
+}
+
+fn json_contains_canvas_source(value: &Value) -> bool {
+    json_contains_canvas_source_inner(value, 0)
+}
+
+fn json_contains_canvas_source_inner(value: &Value, depth: u8) -> bool {
+    if depth > 8 {
+        return false;
+    }
+    match value {
+        Value::String(text) => serde_json::from_str::<Value>(text)
+            .ok()
+            .is_some_and(|parsed| json_contains_canvas_source_inner(&parsed, depth + 1)),
+        Value::Object(map) => {
+            if map
+                .get("source")
+                .and_then(Value::as_str)
+                .is_some_and(|source| !source.is_empty())
+            {
+                return true;
+            }
+            ["params", "arguments", "args", "input", "rawInput", "extra"]
+                .iter()
+                .any(|key| {
+                    map.get(*key)
+                        .is_some_and(|nested| json_contains_canvas_source_inner(nested, depth + 1))
+                })
+        }
+        _ => false,
     }
 }
 

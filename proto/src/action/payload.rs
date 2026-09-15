@@ -346,6 +346,17 @@ pub struct McpAppCallPayload {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct McpAppInvokePayload {
+    pub chat_id: String,
+    pub source_tool_call_id: String,
+    pub server_id: String,
+    pub tool_name: String,
+    #[serde(default)]
+    pub arguments: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct MachineAddPayload {
     pub destination: String,
     pub display_name: Option<String>,

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
 import {
   buildMcpAppHistoricalCardProps,
-  historicalMcpAppMessage,
   hasLiveMcpAppSibling,
   isMcpAppTool,
   parseMcpAppToolName,
@@ -42,6 +41,11 @@ describe('mcp app display helpers', () => {
       toolName: 'show_canvas',
     });
     expect(parseMcpAppToolName('compact')).toBeNull();
+    expect(isMcpAppTool({ name: 'execute extra tool `mcp__cursor-canvas__show_canvas`' })).toBe(true);
+    expect(parseMcpAppToolName('execute extra tool `mcp__cursor-canvas__show_canvas`')).toEqual({
+      serverId: 'cursor-canvas',
+      toolName: 'show_canvas',
+    });
   });
 
   it('builds historical card props with replay-specific copy', () => {
@@ -51,7 +55,7 @@ describe('mcp app display helpers', () => {
     );
     expect(props.title).toBe('MCP App · show canvas');
     expect(props.subtitle).toBe('cursor canvas');
-    expect(props.message).toBe(historicalMcpAppMessage('replay'));
+    expect(props.message).toBe("This app isn't available in restored history.");
     expect(props.variant).toBe('activity');
   });
 
@@ -66,19 +70,51 @@ describe('mcp app display helpers', () => {
     )).toBe(false);
   });
 
-  it('keeps live MCP tools on ToolCallActivity while HTML is pending', () => {
+  it('shows historical card for completed live MCP tools without live HTML', () => {
+    expect(shouldShowMcpAppHistoricalCard(
+      minimalTool({ toolCallId: 'tool-1', name: 'mcp__x__y', status: 'completed' }),
+      'live',
+    )).toBe(true);
+    expect(shouldShowMcpAppHistoricalCard(
+      minimalTool({ toolCallId: 'tool-1', name: 'mcp__x__y', status: 'completed' }),
+      null,
+    )).toBe(true);
+    const liveProps = buildMcpAppHistoricalCardProps(
+      minimalTool({ toolCallId: 'tool-1', name: 'mcp__cursor-canvas__show_canvas', status: 'completed' }),
+      { origin: 'live' },
+    );
+    expect(liveProps.message).toBe('Not available after reload.');
+  });
+
+  it('shows historical card for Cursor execute-extra-tool titles without live HTML', () => {
+    const wrapped = minimalTool({
+      toolCallId: 'tool-1',
+      name: 'execute extra tool `mcp__cursor-canvas__show_canvas`',
+      status: 'completed',
+    });
+    expect(shouldShowMcpAppHistoricalCard(wrapped, 'live')).toBe(true);
+    expect(buildMcpAppHistoricalCardProps(wrapped, { origin: 'live' }).title).toBe('MCP App · show canvas');
+  });
+
+  it('keeps running MCP tools on ToolCallActivity while HTML is pending', () => {
     expect(shouldShowMcpAppHistoricalCard(
       minimalTool({ toolCallId: 'tool-1', name: 'mcp__x__y', status: 'running' }),
       'live',
     )).toBe(false);
+    setPrincipalRole('full');
+    installMcpApps({
+      selectedCid: () => 'chat-1',
+      ready: () => true,
+      sendAction: () => true,
+      acknowledge: () => undefined,
+    });
+    openMcpApp('chat-1', 'tool-1', {}, {});
     expect(shouldShowMcpAppHistoricalCard(
       minimalTool({ toolCallId: 'tool-1', name: 'mcp__x__y', status: 'completed' }),
       'live',
     )).toBe(false);
-    expect(shouldShowMcpAppHistoricalCard(
-      minimalTool({ toolCallId: 'tool-1', name: 'mcp__x__y', status: 'completed' }),
-      null,
-    )).toBe(false);
+    resetMcpAppsState();
+    setPrincipalRole(null);
   });
 
   it('keeps duplicate live MCP tools on ToolCallActivity when another iframe is primary', () => {

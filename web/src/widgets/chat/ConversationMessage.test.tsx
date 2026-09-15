@@ -17,6 +17,8 @@ import {
   openMcpApp,
   resetMcpAppsState,
 } from '@/features/mcp/mcp-apps';
+import { setMcpServers } from '@/features/mcp/mcp';
+import type { ActionFrame } from '@/shared/protocol/action-contract';
 
 function entry(overrides: Partial<ChatEntry> = {}): ChatEntry {
   return {
@@ -442,6 +444,25 @@ describe('ConversationMessage', () => {
     expect(screen.getByLabelText('Assistant message').querySelector('time')).toBeNull();
   });
 
+  it('renders live MCP App tools without HTML as historical cards instead of raw tool activity', () => {
+    const tool = {
+      ...baseTool('tool-live'),
+      name: 'mcp__cursor-canvas__show_canvas',
+      arguments: { source: 'export default function App() { return null; }' },
+      result: { content: [{ type: 'text', text: 'canvas payload' }] },
+    };
+    render(() => <ConversationMessage entry={entry({
+      origin: 'live',
+      toolCalls: [tool],
+      blocks: [{ kind: 'tool_call', id: 'tool-live', toolCall: tool }],
+    })} />);
+
+    expect(screen.getByTestId('mcp-app-historical-card')).toBeInTheDocument();
+    expect(screen.getByText('MCP App · show canvas')).toBeInTheDocument();
+    expect(screen.getByText('Not available after reload.')).toBeInTheDocument();
+    expect(screen.queryByTestId('tool-activity-row')).not.toBeInTheDocument();
+  });
+
   it('renders restored MCP App tools as historical cards instead of raw tool activity', () => {
     const tool = {
       ...baseTool('tool-replay'),
@@ -458,9 +479,209 @@ describe('ConversationMessage', () => {
 
     expect(screen.getByTestId('mcp-app-historical-card')).toBeInTheDocument();
     expect(screen.getByText('MCP App · show canvas')).toBeInTheDocument();
-    expect(screen.getByText('This interactive app is not available in restored history.')).toBeInTheDocument();
+    expect(screen.getByText("This app isn't available in restored history.")).toBeInTheDocument();
     expect(screen.queryByTestId('tool-activity-row')).not.toBeInTheDocument();
     expect(screen.queryByText(/Ran mcp cursor canvas show canvas/)).not.toBeInTheDocument();
+  });
+
+  it('keeps Reopen app enabled when chatId is provided but selectedCid is empty', async () => {
+    setPrincipalRole('full');
+    setSelectedCid(null);
+    installMcpApps({
+      selectedCid: () => null,
+      currentCid: () => null,
+      ready: () => true,
+      sendAction: () => true,
+      acknowledge: () => undefined,
+    });
+    const tool = {
+      ...baseTool('tool-replay'),
+      name: 'mcp__cursor-canvas__show_canvas',
+      arguments: { source: 'export default function App() { return null; }' },
+      result: { content: [{ type: 'text', text: 'canvas payload' }] },
+    };
+    render(() => <ConversationMessage
+      chatId={() => 'chat-1'}
+      entry={entry({
+        origin: 'session_replay',
+        replayVerified: true,
+        toolCalls: [tool],
+        blocks: [{ kind: 'tool_call', id: 'tool-replay', toolCall: tool }],
+      })}
+    />);
+    expect(screen.getByTestId('mcp-app-reopen-button')).toBeEnabled();
+    resetMcpAppsState();
+    setPrincipalRole(null);
+  });
+
+  it('disables Reopen app for read-only principals', () => {
+    setPrincipalRole('read-only');
+    installMcpApps({
+      selectedCid: () => 'chat-1',
+      ready: () => true,
+      sendAction: () => true,
+      acknowledge: () => undefined,
+    });
+    const tool = {
+      ...baseTool('tool-replay'),
+      name: 'mcp__cursor-canvas__show_canvas',
+      arguments: { source: 'export default function App() { return null; }' },
+      result: { content: [{ type: 'text', text: 'canvas payload' }] },
+    };
+    render(() => <ConversationMessage entry={entry({
+      origin: 'session_replay',
+      replayVerified: true,
+      toolCalls: [tool],
+      blocks: [{ kind: 'tool_call', id: 'tool-replay', toolCall: tool }],
+    })} />);
+    expect(screen.getByTestId('mcp-app-reopen-button')).toBeDisabled();
+    resetMcpAppsState();
+    setPrincipalRole(null);
+  });
+
+  it('clicking Reopen app sends mcp/app-invoke for restored MCP App tools', async () => {
+    setPrincipalRole('full');
+    const sentFrames: ActionFrame[] = [];
+    installMcpApps({
+      selectedCid: () => 'chat-1',
+      ready: () => true,
+      sendAction: (frame) => {
+        sentFrames.push(frame);
+        return true;
+      },
+      acknowledge: () => undefined,
+    });
+    setMcpServers([{
+      name: 'cursor-canvas',
+      transport: 'stdio',
+      connectionStatus: 'connected',
+      oauthStatus: 'none',
+      toolsCount: 2,
+      resourcesCount: 1,
+    }]);
+    const tool = {
+      ...baseTool('tool-replay'),
+      name: 'mcp__cursor-canvas__show_canvas',
+      arguments: { source: 'export default function App() { return null; }' },
+      result: { content: [{ type: 'text', text: 'canvas payload' }] },
+    };
+    render(() => <ConversationMessage entry={entry({
+      origin: 'session_replay',
+      replayVerified: true,
+      toolCalls: [tool],
+      blocks: [{ kind: 'tool_call', id: 'tool-replay', toolCall: tool }],
+    })} />);
+    expect(screen.getByTestId('mcp-app-reopen-button')).toBeInTheDocument();
+    screen.getByTestId('mcp-app-reopen-button').click();
+    await waitFor(() => expect(sentFrames[0]?.type).toBe('mcp/app-invoke'));
+    expect((sentFrames[0]?.payload as Record<string, unknown> | undefined)).toMatchObject({
+      chatId: 'chat-1',
+      sourceToolCallId: 'tool-replay',
+      serverId: 'cursor-canvas',
+      toolName: 'show_canvas',
+    });
+    resetMcpAppsState();
+    setMcpServers([]);
+    setPrincipalRole(null);
+  });
+
+  it('replaces Cursor execute-extra-tool activity rows with MCP App historical cards', async () => {
+    setPrincipalRole('full');
+    const sentFrames: ActionFrame[] = [];
+    installMcpApps({
+      selectedCid: () => 'chat-1',
+      ready: () => true,
+      sendAction: (frame) => {
+        sentFrames.push(frame);
+        return true;
+      },
+      acknowledge: () => undefined,
+    });
+    setMcpServers([{
+      name: 'cursor-canvas',
+      transport: 'stdio',
+      connectionStatus: 'connected',
+      oauthStatus: 'none',
+      toolsCount: 2,
+      resourcesCount: 1,
+    }]);
+    const tool = {
+      ...baseTool('tool-canvas'),
+      name: 'execute extra tool `mcp__cursor-canvas__show_canvas`',
+      kind: 'execute' as const,
+      arguments: { source: 'export default function App() { return null; }' },
+      result: { content: [{ type: 'text', text: 'canvas payload' }] },
+    };
+    render(() => <ConversationMessage entry={entry({
+      origin: 'session_replay',
+      replayVerified: true,
+      reasoning: [{ id: 'reasoning-1', text: 'Open the canvas.', visibility: 'visible' }],
+      toolCalls: [tool],
+      blocks: [
+        { kind: 'reasoning', id: 'reasoning-1', reasoning: { id: 'reasoning-1', text: 'Open the canvas.', visibility: 'visible' } },
+        { kind: 'tool_call', id: 'tool-canvas', toolCall: tool },
+      ],
+    })} />);
+    expect(screen.getByTestId('chat-activity-chain')).toBeInTheDocument();
+    expect(screen.getByTestId('mcp-app-historical-card')).toBeInTheDocument();
+    expect(screen.getByText('MCP App · show canvas')).toBeInTheDocument();
+    expect(screen.getByTestId('mcp-app-reopen-button')).toHaveTextContent('Reopen app');
+    expect(screen.queryByText(/Ran execute extra tool/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('tool-activity-row')).not.toBeInTheDocument();
+    screen.getByTestId('mcp-app-reopen-button').click();
+    await waitFor(() => expect(sentFrames[0]?.type).toBe('mcp/app-invoke'));
+    expect(sentFrames[0]?.payload).toMatchObject({
+      toolName: 'show_canvas',
+      serverId: 'cursor-canvas',
+    });
+    resetMcpAppsState();
+    setMcpServers([]);
+    setPrincipalRole(null);
+  });
+
+  it('Reopen app still sends invoke when tool result was omitted from restored history', async () => {
+    setPrincipalRole('full');
+    const sentFrames: ActionFrame[] = [];
+    installMcpApps({
+      selectedCid: () => 'chat-1',
+      ready: () => true,
+      sendAction: (frame) => {
+        sentFrames.push(frame);
+        return true;
+      },
+      acknowledge: () => undefined,
+    });
+    setMcpServers([{
+      name: 'cursor-canvas',
+      transport: 'stdio',
+      connectionStatus: 'connected',
+      oauthStatus: 'none',
+      toolsCount: 2,
+      resourcesCount: 1,
+    }]);
+    const tool = {
+      ...baseTool('tool-replay'),
+      name: 'mcp__cursor-canvas__show_canvas',
+      arguments: { source: 'export default function App() { return null; }' },
+      result: null,
+      resultOmitted: true,
+      resultBytes: 5000,
+    };
+    render(() => <ConversationMessage entry={entry({
+      origin: 'session_replay',
+      replayVerified: true,
+      toolCalls: [tool],
+      blocks: [{ kind: 'tool_call', id: 'tool-replay', toolCall: tool }],
+    })} />);
+    screen.getByTestId('mcp-app-reopen-button').click();
+    await waitFor(() => expect(sentFrames[0]?.type).toBe('mcp/app-invoke'));
+    expect(sentFrames[0]?.payload).toMatchObject({
+      toolName: 'show_canvas',
+      arguments: { source: 'export default function App() { return null; }' },
+    });
+    resetMcpAppsState();
+    setMcpServers([]);
+    setPrincipalRole(null);
   });
 });
 

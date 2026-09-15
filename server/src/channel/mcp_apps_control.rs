@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use peri_studio_proto::ack::{ActionError, ErrorCode};
-use peri_studio_proto::action::{McpAppCallPayload, McpAppOpenPayload, McpAppResourcePayload};
+use peri_studio_proto::action::{McpAppCallPayload, McpAppInvokePayload, McpAppOpenPayload, McpAppResourcePayload};
 use peri_studio_proto::frame::Frame;
 use peri_studio_proto::mcp_apps::McpAppSessionFrame;
 use peri_studio_proto::schema::{ToolCallProjection, ToolCallStatus};
@@ -211,6 +211,57 @@ impl McpAppsControl {
         tokio::spawn(async move {
             let frame = this
                 .execute_call(&target, &command_id_owned, &payload)
+                .await;
+            let _ = tx.send(OutboundMsg::Frame(frame)).await;
+        });
+        Ok(())
+    }
+
+    pub async fn invoke(
+        &self,
+        command_id: &str,
+        payload: &McpAppInvokePayload,
+        tx: mpsc::Sender<OutboundMsg>,
+        read_only: bool,
+    ) -> Result<(), ActionError> {
+        if read_only {
+            return Err(apps_error(
+                command_id,
+                ErrorCode::InvalidState,
+                "policy_denied",
+            ));
+        }
+        if payload.server_id.trim().is_empty() || payload.tool_name.trim().is_empty() {
+            return Err(apps_error(
+                command_id,
+                ErrorCode::InvalidState,
+                "unsupported",
+            ));
+        }
+        let target = self.target(command_id, &payload.chat_id).await?;
+        let owner_session_id = self
+            .chats
+            .session_id(&payload.chat_id)
+            .await
+            .ok_or_else(|| {
+                apps_error(
+                    command_id,
+                    ErrorCode::InvalidState,
+                    "chat has no ACP session",
+                )
+            })?;
+        send_accepted(&tx, command_id).await?;
+        let this = self.clone();
+        let command_id_owned = command_id.to_string();
+        let payload = payload.clone();
+        tokio::spawn(async move {
+            let frame = this
+                .execute_invoke(
+                    &target,
+                    &command_id_owned,
+                    &payload,
+                    &owner_session_id,
+                )
                 .await;
             let _ = tx.send(OutboundMsg::Frame(frame)).await;
         });

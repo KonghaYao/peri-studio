@@ -68,6 +68,63 @@ fn pick_html_resource_synthesizes_csp_from_domain_lists() {
 }
 
 #[test]
+fn invoke_result_deserializes_peri_shape() {
+    let value = serde_json::json!({
+        "envelopeVersion": ENVELOPE_VERSION,
+        "appsProtocolVersion": APPS_PROTOCOL_VERSION,
+        "mcpProtocolVersion": "2025-03-26",
+        "serverId": "cursor-canvas",
+        "toolCallId": "tool-new-1",
+    });
+    let result: InvokeResult = serde_json::from_value(value).unwrap();
+    assert_eq!(result.tool_call_id, "tool-new-1");
+}
+
+#[test]
+fn apps_error_kind_maps_peri_unsupported_method() {
+    let value = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": "rpc-1",
+        "error": {
+            "code": -32000,
+            "message": "unsupported method",
+            "data": { "kind": "unsupported_method" }
+        }
+    });
+    assert_eq!(apps_error_kind(&value), Some("unsupported"));
+}
+
+#[test]
+fn apps_error_kind_maps_jsonrpc_method_not_found() {
+    let value = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": "rpc-1",
+        "error": { "code": -32601, "message": "Method not found" }
+    });
+    assert_eq!(apps_error_kind(&value), Some("unsupported"));
+}
+
+#[test]
+fn apps_error_kind_maps_unsupported_method_message_without_kind() {
+    let value = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": "rpc-1",
+        "error": { "code": -32000, "message": "unsupported_method" }
+    });
+    assert_eq!(apps_error_kind(&value), Some("unsupported"));
+}
+
+#[test]
+fn map_invoke_kind_keeps_unsupported_distinct_from_agent_unavailable() {
+    let err = map_invoke_kind("cmd-1", "unsupported");
+    assert_eq!(err.message, "unsupported");
+    assert_eq!(err.code, peri_studio_proto::ack::ErrorCode::InvalidState);
+
+    let err = map_invoke_kind("cmd-1", "agent_unavailable");
+    assert_eq!(err.message, "agent_unavailable");
+}
+
+#[test]
 fn pick_html_resource_rejects_oversize_payload() {
     let huge = "x".repeat(HTML_MAX_BYTES + 1);
     let resources = vec![ResourceItem {

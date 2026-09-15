@@ -29,7 +29,7 @@ use crate::instance::{
     InstanceHello, InstanceKill, InstanceKillAck, InstanceProcessExit, InstanceSpawn,
     InstanceSpawnAck,
 };
-use crate::mcp_apps::{McpAppCallResultFrame, McpAppResourceFrame, McpAppSessionFrame};
+use crate::mcp_apps::{McpAppCallResultFrame, McpAppInvokeFrame, McpAppResourceFrame, McpAppSessionFrame};
 use crate::oauth::{McpOAuthAuthorizationFrame, McpOAuthFrame, McpServersFrame};
 use crate::resource::{
     InstanceResourceQuery, InstanceResourceResult, ResourceQuery, ResourceResult,
@@ -84,6 +84,7 @@ pub static FRAME_TAGS: &[FrameTag] = &[
     FrameTag("mcp_app_session"),
     FrameTag("mcp_app_resource"),
     FrameTag("mcp_app_call_result"),
+    FrameTag("mcp_app_invoke"),
     FrameTag("rewind_candidates"),
     FrameTag("rewind_preview"),
     FrameTag("resource_query"),
@@ -234,6 +235,9 @@ pub enum Frame {
     /// S→C MCP App `tools/call` 结果（瞬时）。
     #[serde(rename = "mcp_app_call_result")]
     McpAppCallResult(McpAppCallResultFrame),
+    /// S→C MCP App Host 重跑工具结果（新 toolCallId，瞬时）。
+    #[serde(rename = "mcp_app_invoke")]
+    McpAppInvoke(McpAppInvokeFrame),
     /// S→C Peri rewind 目标目录。server 已对每个预览做有界与脱敏处理。
     #[serde(rename = "rewind_candidates")]
     RewindCandidates(RewindCandidatesFrame),
@@ -367,6 +371,7 @@ impl Frame {
             Frame::McpAppSession(_) => FrameTag("mcp_app_session"),
             Frame::McpAppResource(_) => FrameTag("mcp_app_resource"),
             Frame::McpAppCallResult(_) => FrameTag("mcp_app_call_result"),
+            Frame::McpAppInvoke(_) => FrameTag("mcp_app_invoke"),
             Frame::RewindCandidates(_) => FrameTag("rewind_candidates"),
             Frame::RewindPreview(_) => FrameTag("rewind_preview"),
             Frame::ResourceQuery(_) => FrameTag("resource_query"),

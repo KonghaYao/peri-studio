@@ -350,6 +350,101 @@ fn oversized_mcp_app_arguments_with_source_stay_set_for_first_paint() {
         }
         other => panic!("expected Set arguments, got {other:?}"),
     }
+    assert_eq!(patch.mcp_server_id.as_deref(), Some("cursor-canvas"));
+    assert_eq!(patch.mcp_tool_name.as_deref(), Some("show_canvas"));
+}
+
+#[test]
+fn wrapped_cursor_extra_tool_title_still_keeps_oversized_mcp_app_source() {
+    let huge = "x".repeat(5000);
+    let frame = json!({
+        "jsonrpc": "2.0", "method": "session/update",
+        "params": {"sessionId": "acp-1", "update": {
+            "sessionUpdate": "tool_call_update",
+            "toolCallId": "tc-canvas-wrapped",
+            "title": "execute extra tool `mcp__cursor-canvas__show_canvas`",
+            "rawInput": {"source": huge, "canvasId": "c1"}
+        }}
+    });
+    let NormalizeOutcome::Event(event) = norm(frame) else {
+        panic!("expected normalized event");
+    };
+    let EventBody::ToolCallPatched { patch, .. } = event.body else {
+        panic!("expected tool patch");
+    };
+    match patch.arguments {
+        ToolJsonPatch::Set { value } => {
+            assert_eq!(value["source"].as_str().unwrap().len(), 5000);
+        }
+        other => panic!("expected Set arguments, got {other:?}"),
+    }
+    assert_eq!(patch.mcp_server_id.as_deref(), Some("cursor-canvas"));
+    assert_eq!(patch.mcp_tool_name.as_deref(), Some("show_canvas"));
+}
+
+#[test]
+fn peri_execute_extra_tool_params_envelope_keeps_oversized_source() {
+    let huge = "x".repeat(5000);
+    let frame = json!({
+        "jsonrpc": "2.0", "method": "session/update",
+        "params": {"sessionId": "acp-1", "update": {
+            "sessionUpdate": "tool_call_update",
+            "toolCallId": "tc-canvas-extra",
+            "title": "execute extra tool `mcp__cursor-canvas__show_canvas`",
+            "rawInput": {
+                "tool_name": "mcp__cursor-canvas__show_canvas",
+                "params": {
+                    "title": "cursor-canvas hello",
+                    "canvasId": "cursor-canvas-hello",
+                    "source": huge
+                }
+            }
+        }}
+    });
+    let NormalizeOutcome::Event(event) = norm(frame) else {
+        panic!("expected normalized event");
+    };
+    let EventBody::ToolCallPatched { patch, .. } = event.body else {
+        panic!("expected tool patch");
+    };
+    match patch.arguments {
+        ToolJsonPatch::Set { value } => {
+            assert_eq!(value["tool_name"], json!("mcp__cursor-canvas__show_canvas"));
+            assert_eq!(value["params"]["source"].as_str().unwrap().len(), 5000);
+            assert_eq!(value["params"]["canvasId"], json!("cursor-canvas-hello"));
+        }
+        other => panic!("expected Set arguments, got {other:?}"),
+    }
+    assert_eq!(patch.mcp_server_id.as_deref(), Some("cursor-canvas"));
+    assert_eq!(patch.mcp_tool_name.as_deref(), Some("show_canvas"));
+}
+
+#[test]
+fn peri_execute_extra_tool_params_without_title_still_keeps_source() {
+    let huge = "x".repeat(5000);
+    let frame = json!({
+        "jsonrpc": "2.0", "method": "session/update",
+        "params": {"sessionId": "acp-1", "update": {
+            "sessionUpdate": "tool_call_update",
+            "toolCallId": "tc-canvas-params-only",
+            "rawInput": {
+                "tool_name": "mcp__cursor-canvas__show_canvas",
+                "params": { "source": huge, "canvasId": "c1" }
+            }
+        }}
+    });
+    let NormalizeOutcome::Event(event) = norm(frame) else {
+        panic!("expected normalized event");
+    };
+    let EventBody::ToolCallPatched { patch, .. } = event.body else {
+        panic!("expected tool patch");
+    };
+    match patch.arguments {
+        ToolJsonPatch::Set { value } => {
+            assert_eq!(value["params"]["source"].as_str().unwrap().len(), 5000);
+        }
+        other => panic!("expected Set arguments, got {other:?}"),
+    }
 }
 
 #[test]

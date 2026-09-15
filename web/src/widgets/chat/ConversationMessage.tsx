@@ -32,11 +32,19 @@ import {
 } from '@peri/ui';
 import { MessageSquareQuote } from 'lucide-solid';
 import { splitSystemReminders } from '@/shared/lib/system-reminder';
-import { chatCatalog, selectedCid } from '@/store';
+import { chatCatalog, currentChatId, selectedCid } from '@/store';
 import { Markdown } from './Markdown';
 import { ToolCallActivity } from './ToolCallActivity';
 import { McpAppFrame } from './McpAppFrame';
-import { isPrimaryLiveMcpApp, maybeOpenCompletedMcpTool } from '@/features/mcp/mcp-apps';
+import { readOnly } from '@/features/auth/auth-state';
+import {
+  isMcpAppReopenDisabled,
+  isMcpAppReopenPending,
+  isPrimaryLiveMcpApp,
+  maybeOpenCompletedMcpTool,
+  reopenMcpApp,
+} from '@/features/mcp/mcp-apps';
+import { mcpServers } from '@/features/mcp/mcp';
 import {
   buildMcpAppHistoricalCardProps,
   shouldShowMcpAppHistoricalCard,
@@ -46,9 +54,11 @@ import { read, type MaybeAccessor } from '@/shared/lib/maybe-accessor';
 
 import type { ToolCallInfo } from '@/entities/chat/chat-view';
 
+/** 工具行入口：MCP App（含 Cursor extra-tool 包装 title）换 iframe / 历史卡；其余走 ToolCallActivity。 */
 function McpToolBlock(props: {
   toolCall: Accessor<ToolCallInfo>;
   origin: Accessor<'live' | 'replay' | null>;
+  chatId: Accessor<string | null>;
   siblingTools: Accessor<ToolCallInfo[]>;
   duplicate: MaybeAccessor<boolean>;
   variant?: 'default' | 'activity';
@@ -57,7 +67,9 @@ function McpToolBlock(props: {
   const duplicate = () => read(props.duplicate);
   createEffect(() => {
     if (duplicate()) return;
-    maybeOpenCompletedMcpTool(props.toolCall(), props.origin());
+    if (props.origin() === 'replay') return;
+    mcpServers();
+    maybeOpenCompletedMcpTool(props.toolCall(), props.origin(), props.chatId());
   });
   const toolCallId = () => props.toolCall().toolCallId || '';
   const entryOrigin = () => props.origin();
@@ -69,6 +81,12 @@ function McpToolBlock(props: {
   const historicalProps = () => buildMcpAppHistoricalCardProps(props.toolCall(), {
     variant: props.variant,
     origin: entryOrigin(),
+    reopenDisabled: isMcpAppReopenDisabled(props.toolCall(), props.chatId(), {
+      readOnly: readOnly(),
+      reopenPending: isMcpAppReopenPending(toolCallId()),
+    }),
+    reopenPending: isMcpAppReopenPending(toolCallId()),
+    onReopen: () => { reopenMcpApp(props.toolCall(), props.chatId()); },
   });
   return (
     <Show when={!duplicate()}>
@@ -100,6 +118,7 @@ function MessageBlock(props: {
   reasoningVariant?: 'default' | 'activity';
   toolVariant?: 'default' | 'activity';
   projectCwd: Accessor<string | null>;
+  chatId: Accessor<string | null>;
   hiddenToolBlockIds?: Accessor<ReadonlySet<string>>;
 }) {
   const toolCall = () => {
@@ -119,6 +138,7 @@ function MessageBlock(props: {
       }><McpToolBlock
         toolCall={() => toolCall()!}
         origin={() => (props.entry().origin === 'session_replay' ? 'replay' as const : props.entry().origin === 'live' ? 'live' as const : null)}
+        chatId={props.chatId}
         siblingTools={props.toolCallsInBlocks}
         duplicate={duplicateToolBlock}
         variant={props.toolVariant}
@@ -201,6 +221,7 @@ function AssistantLayoutUnitView(props: {
   toolCallsInBlocks: () => ToolCallInfo[];
   activityBoundary: () => ActivityBoundary;
   projectCwd: Accessor<string | null>;
+  chatId: Accessor<string | null>;
   hiddenToolBlockIds?: Accessor<ReadonlySet<string>>;
 }) {
   const unit = () => props.unitsById().get(props.unitId())!;
@@ -230,6 +251,7 @@ function AssistantLayoutUnitView(props: {
           reasoningVariant={activityVariant()}
           toolVariant={activityVariant()}
           projectCwd={props.projectCwd}
+          chatId={props.chatId}
           hiddenToolBlockIds={props.hiddenToolBlockIds}
         />
       )}
@@ -244,6 +266,7 @@ function AssistantLayoutUnitView(props: {
             <McpToolBlock
               toolCall={toolCall}
               origin={() => (props.entry().origin === 'session_replay' ? 'replay' as const : props.entry().origin === 'live' ? 'live' as const : null)}
+              chatId={props.chatId}
               siblingTools={props.toolCallsInBlocks}
               duplicate={duplicateToolBlock}
               variant="activity"
@@ -259,6 +282,7 @@ function AssistantLayoutUnitView(props: {
 /** Owns the visual and semantic hierarchy of one server-projected entry. */
 export function ConversationMessage(props: {
   entry: ChatEntrySource;
+  chatId?: Accessor<string | null>;
   activityBoundary?: Accessor<ActivityBoundary>;
   activityContinuation?: Accessor<{ before: boolean; after: boolean }>;
   terminalNoticeOwner?: Accessor<boolean>;
@@ -267,8 +291,9 @@ export function ConversationMessage(props: {
   let articleRef: HTMLElement | undefined;
   const [selectionAction, setSelectionAction] = createSignal<{ text: string; left: number; top: number } | null>(null);
   const entry = () => typeof props.entry === 'function' ? props.entry() : props.entry;
+  const chatId = () => props.chatId?.() ?? selectedCid() ?? currentChatId();
   const projectCwd = createMemo(() => {
-    const cid = selectedCid();
+    const cid = chatId();
     if (!cid) return null;
     return chatCatalog().find((chat) => chat.id === cid)?.cwd ?? null;
   });
@@ -374,6 +399,7 @@ export function ConversationMessage(props: {
               toolCallsInBlocks,
               activityBoundary,
               projectCwd,
+              chatId,
               hiddenToolBlockIds,
             };
             return (

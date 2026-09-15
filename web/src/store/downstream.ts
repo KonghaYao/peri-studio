@@ -56,6 +56,9 @@ export function createOnFrame(families: StoreDownstreamFamilies): (frame: H.Down
       case 'mcp_app_call_result':
         mcp.handleDownstream(frame);
         break;
+      case 'mcp_app_invoke':
+        mcp.handleDownstream(frame);
+        break;
       case 'terminal_opened':
         terminal.handleDownstream(frame);
         break;

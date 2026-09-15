@@ -11,6 +11,7 @@ export type FloatingNoticeItem = {
   key?: string | number;
   placement?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   action?: JSX.Element;
+  onClose?: () => void;
 };
 
 let idCounter = 0;
@@ -24,35 +25,44 @@ export function createFloatingNoticeStore(prefix: string) {
   const [items, setItems] = createSignal<FloatingNoticeItem[]>([]);
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
-  const dismiss = (id: string) => {
+  const dismiss = (id: string, options?: { silent?: boolean }) => {
     const timer = timers.get(id);
     if (timer) {
       clearTimeout(timer);
       timers.delete(id);
     }
-    setItems((current) => current.filter((item) => item.id !== id));
+    let closed: FloatingNoticeItem | undefined;
+    setItems((current) => {
+      closed = current.find((item) => item.id === id);
+      return current.filter((item) => item.id !== id);
+    });
+    if (!options?.silent) closed?.onClose?.();
   };
 
-  const dismissByKey = (key?: string | number) => {
+  const dismissByKey = (key?: string | number, options?: { silent?: boolean }) => {
     if (key == null) {
       timers.forEach((timer) => clearTimeout(timer));
       timers.clear();
+      const closing = options?.silent ? [] : items();
       setItems([]);
+      closing.forEach((item) => item.onClose?.());
       return;
     }
+    const closing: FloatingNoticeItem[] = [];
     setItems((current) => {
-      const next = current.filter((item) => item.key !== key);
-      current
-        .filter((item) => item.key === key)
-        .forEach((item) => {
-          const timer = timers.get(item.id);
-          if (timer) {
-            clearTimeout(timer);
-            timers.delete(item.id);
-          }
-        });
+      const next = current.filter((item) => {
+        if (item.key !== key) return true;
+        closing.push(item);
+        const timer = timers.get(item.id);
+        if (timer) {
+          clearTimeout(timer);
+          timers.delete(item.id);
+        }
+        return false;
+      });
       return next;
     });
+    if (!options?.silent) closing.forEach((item) => item.onClose?.());
   };
 
   const open = (input: Omit<FloatingNoticeItem, 'id'> & { id?: string }) => {
@@ -62,13 +72,18 @@ export function createFloatingNoticeStore(prefix: string) {
 
     batch(() => {
       setItems((current) => {
-        if (input.key != null) {
-          const existing = current.find((entry) => entry.key === input.key);
-          if (existing) {
-            dismiss(existing.id);
-          }
-        }
-        return [...current, item];
+        const next = input.key == null
+          ? current
+          : current.filter((entry) => {
+            if (entry.key !== input.key) return true;
+            const timer = timers.get(entry.id);
+            if (timer) {
+              clearTimeout(timer);
+              timers.delete(entry.id);
+            }
+            return false;
+          });
+        return [...next, item];
       });
     });
 

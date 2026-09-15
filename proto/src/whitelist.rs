@@ -85,6 +85,7 @@ pub const M1_ACTION_TYPES: &[&str] = &[
     "mcp/app-open",
     "mcp/app-resource",
     "mcp/app-call",
+    "mcp/app-invoke",
     "machine/add",
     "machine/connect",
     "machine/disconnect",
@@ -155,6 +156,7 @@ pub fn m1_check(tag: FrameTag, role: Role, dir: Direction) -> M1Check {
             | "mcp_app_session"
             | "mcp_app_resource"
             | "mcp_app_call_result"
+            | "mcp_app_invoke"
             | "rewind_candidates"
             | "rewind_preview"
             | "resource_query"
@@ -211,6 +213,7 @@ pub fn m1_check(tag: FrameTag, role: Role, dir: Direction) -> M1Check {
                     | "mcp_app_session"
                     | "mcp_app_resource"
                     | "mcp_app_call_result"
+            | "mcp_app_invoke"
                     | "rewind_candidates"
                     | "rewind_preview"
                     | "resource_result"

@@ -43,7 +43,6 @@ vi.mock('@/widgets/shell/ConnectionProblem', () => ({ ConnectionProblem: () => n
 vi.mock('./ElicitationQueue', () => ({ ElicitationQueue: () => <section aria-label="Agent question" /> }));
 vi.mock('./QuestionQueue', () => ({ QuestionQueue: () => <section aria-label="Ask user question" /> }));
 vi.mock('./PermissionQueue', () => ({ PermissionQueue: () => <section aria-label="Permissions" /> }));
-vi.mock('@/widgets/shell/ErrorCenter', () => ({ ErrorCenter: () => null }));
 vi.mock('./MessageList', () => ({ MessageList: () => null }));
 vi.mock('@/widgets/composer/QuickStartComposer', () => ({ QuickStartComposer: () => <section aria-label="Start new session" data-testid="quick-start-docked" /> }));
 
