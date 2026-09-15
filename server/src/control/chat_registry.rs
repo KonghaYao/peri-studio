@@ -330,29 +330,46 @@ impl ChatRegistry {
         self.inner.chats.read().await.get(chat_id).cloned()
     }
 
-    /// Whether a project/workspace still owns any live runtime process.
-    /// Project archival uses this in-memory runtime authority rather than the
-    /// persisted `last_chat_id` hint, which can be stale after close/restart.
-    /// Gap / unconfirmed chats do not count — the process is already gone.
+    /// 项目归档门控：仅当工作区内存在**活动 turn** 的 live runtime 时阻止。
+    /// 空闲 runtime（Accepting + confirmed、无 active_turn）不阻止；Gap /
+    /// PendingClose / 未确认视图重建同理。持久化 `last_chat_id` 仅为 hint。
     pub async fn has_live_workspace(&self, workspace_id: &str) -> bool {
-        self.inner.chats.read().await.values().any(|chat| {
-            chat.workspace_id.as_deref() == Some(workspace_id) && chat.has_live_runtime()
-        })
+        let candidates = self
+            .inner
+            .chats
+            .read()
+            .await
+            .iter()
+            .filter(|(_, chat)| {
+                chat.workspace_id.as_deref() == Some(workspace_id) && chat.has_live_runtime()
+            })
+            .map(|(chat_id, _)| chat_id.clone())
+            .collect::<Vec<_>>();
+        for chat_id in candidates {
+            if self.active_turn(&chat_id).await.is_some() {
+                return true;
+            }
+        }
+        false
     }
 
-    /// Runtime authority for a durable ACP session. Persisted last_chat_id is
-    /// only a hint; archival must inspect the in-memory binding and live
-    /// process evidence (`runtime_confirmed`, not merely non-terminal).
+    /// 会话归档门控：仅当绑定 chat 存在**活动 turn** 的 live runtime 时阻止。
+    /// 空闲 runtime 不得误拦；与 Web `sessionArchiveLooksLoading` 对齐。
     pub async fn has_live_acp_session(&self, session_id: &str) -> bool {
         let Some(chat_id) = self.inner.bindings.read().await.get(session_id).cloned() else {
             return false;
         };
-        self.inner
+        let live = self
+            .inner
             .chats
             .read()
             .await
             .get(&chat_id)
-            .is_some_and(ChatRecord::has_live_runtime)
+            .is_some_and(ChatRecord::has_live_runtime);
+        if !live {
+            return false;
+        }
+        self.active_turn(&chat_id).await.is_some()
     }
 
     /// instance offline 时的 close（§7.6）：返回 pending_close 标记（Registry
