@@ -6,7 +6,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use peri_studio_proto::ack::{ActionError, ErrorCode};
-use peri_studio_proto::action::{McpAppCallPayload, McpAppInvokePayload, McpAppOpenPayload, McpAppResourcePayload};
+use peri_studio_proto::action::{
+    McpAppCallPayload, McpAppInvokePayload, McpAppOpenPayload, McpAppResourcePayload,
+};
 use peri_studio_proto::frame::Frame;
 use peri_studio_proto::mcp_apps::McpAppSessionFrame;
 use peri_studio_proto::schema::{ToolCallProjection, ToolCallStatus};
@@ -256,12 +258,7 @@ impl McpAppsControl {
         let payload = payload.clone();
         tokio::spawn(async move {
             let frame = this
-                .execute_invoke(
-                    &target,
-                    &command_id_owned,
-                    &payload,
-                    &owner_session_id,
-                )
+                .execute_invoke(&target, &command_id_owned, &payload, &owner_session_id)
                 .await;
             let _ = tx.send(OutboundMsg::Frame(frame)).await;
         });

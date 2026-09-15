@@ -53,8 +53,10 @@ fn is_mcp_apps_sensitive(frame: &serde_json::Value) -> bool {
     let method = frame.get("method").and_then(serde_json::Value::as_str);
     if matches!(
         method,
-        Some("peri/mcp/open") | Some("peri/mcp/resource") | Some("peri/mcp/app")
-        | Some("peri/mcp/invoke")
+        Some("peri/mcp/open")
+            | Some("peri/mcp/resource")
+            | Some("peri/mcp/app")
+            | Some("peri/mcp/invoke")
     ) {
         return true;
     }

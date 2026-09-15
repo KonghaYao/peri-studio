@@ -14,9 +14,8 @@ pub struct ParsedMcpToolName {
 /// 兼容 Cursor extra-tool 包装 title。
 pub fn parse_mcp_tool_name(name: &str) -> Option<ParsedMcpToolName> {
     let trimmed = name.trim();
-    parse_mcp_effective_name(trimmed).or_else(|| {
-        extract_mcp_effective_token(trimmed).and_then(parse_mcp_effective_name)
-    })
+    parse_mcp_effective_name(trimmed)
+        .or_else(|| extract_mcp_effective_token(trimmed).and_then(parse_mcp_effective_name))
 }
 
 fn parse_mcp_effective_name(name: &str) -> Option<ParsedMcpToolName> {

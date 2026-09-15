@@ -29,7 +29,9 @@ use crate::instance::{
     InstanceHello, InstanceKill, InstanceKillAck, InstanceProcessExit, InstanceSpawn,
     InstanceSpawnAck,
 };
-use crate::mcp_apps::{McpAppCallResultFrame, McpAppInvokeFrame, McpAppResourceFrame, McpAppSessionFrame};
+use crate::mcp_apps::{
+    McpAppCallResultFrame, McpAppInvokeFrame, McpAppResourceFrame, McpAppSessionFrame,
+};
 use crate::oauth::{McpOAuthAuthorizationFrame, McpOAuthFrame, McpServersFrame};
 use crate::resource::{
     InstanceResourceQuery, InstanceResourceResult, ResourceQuery, ResourceResult,

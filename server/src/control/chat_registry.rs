@@ -123,8 +123,8 @@ mod chat_reconcile;
 #[path = "chat_turns.rs"]
 mod chat_turns;
 
-pub use chat_reconcile::ReconciliationReport;
 pub(crate) use chat_orphan_kill::{orphan_kill_backoff, ORPHAN_KILL_MAX_ATTEMPTS};
+pub use chat_reconcile::ReconciliationReport;
 
 /// 活动 turn 表条目（#3 增量窗口计时：turn 活跃期间的 last_activity 由
 /// relay 事件投递成功（[`ChatRegistry::touch_active_turn`]）续命；

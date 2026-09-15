@@ -304,11 +304,7 @@ impl InstanceRegistry {
                     error = ?e,
                     "orphan cleanup reconcile failed; pending orphan kills will retry on next heartbeat"
                 );
-                let pending = self
-                    .inner
-                    .chats
-                    .orphan_kill_retry_ready(instance_id)
-                    .await;
+                let pending = self.inner.chats.orphan_kill_retry_ready(instance_id).await;
                 return self.kill_chats(instance_id, &pending).await;
             }
         };
@@ -327,11 +323,7 @@ impl InstanceRegistry {
                     error = ?e,
                     "heartbeat reconciliation failed; pending orphan kills will retry on next heartbeat"
                 );
-                let pending = self
-                    .inner
-                    .chats
-                    .orphan_kill_retry_ready(instance_id)
-                    .await;
+                let pending = self.inner.chats.orphan_kill_retry_ready(instance_id).await;
                 self.kill_chats(instance_id, &pending).await;
                 return;
             }

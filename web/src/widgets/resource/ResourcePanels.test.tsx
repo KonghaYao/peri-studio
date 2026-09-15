@@ -109,7 +109,7 @@ describe('VS Code-style resource panels', () => {
     setSelectedSessionId('session-1');
     setResourceWorkspace({
       projectId: 'project-1', directories: {}, loading: [], explorerError: null, graphError: null,
-      repositories: [{ id: 'repo-1', root: '', name: 'peri-studio', generation: 'g1', groups: { working_tree: { count: 2, revision: 'r1', changes: [{ id: 'c1', path: 'a.ts' }, { id: 'c2', path: 'b.ts' }] } } }],
+      repositories: [{ id: 'repo-1', root: '', name: 'peri-studio', generation: 'g1', groups: { working_tree: { count: 2, revision: 'r1', changes: [{ id: 'c1', path: 'a.ts', status: 'modified' }, { id: 'c2', path: 'b.ts', status: 'modified' }] } } }],
     });
     render(() => <ResourceWorkbench />);
 

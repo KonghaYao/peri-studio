@@ -392,12 +392,15 @@ async fn orphan_kill_failure_records_pending_for_heartbeat_retry() {
     });
     // 不回 ack：有界重试耗尽后进入 pending_orphan_kill。
     while rx.try_recv().is_ok() {}
-    let _ = tokio::time::timeout(Duration::from_secs(5), kill_task)
+    tokio::time::timeout(Duration::from_secs(5), kill_task)
         .await
         .expect("reconcile should finish")
         .expect("task join");
     assert!(
-        chats.pending_orphan_kill_chats().await.contains(&"s1".to_string()),
+        chats
+            .pending_orphan_kill_chats()
+            .await
+            .contains(&"s1".to_string()),
         "failed orphan kill must be deferred for heartbeat retry"
     );
     let _ = (doc, tmp);
@@ -486,7 +489,10 @@ async fn orphan_kill_not_retried_before_backoff() {
         "orphan kill must not fire before pending backoff expires"
     );
     assert!(
-        chats.pending_orphan_kill_chats().await.contains(&"s1".to_string()),
+        chats
+            .pending_orphan_kill_chats()
+            .await
+            .contains(&"s1".to_string()),
         "pending orphan kill must remain until backoff expires"
     );
     let _ = (doc, tmp);

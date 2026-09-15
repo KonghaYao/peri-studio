@@ -1,9 +1,13 @@
 //! McpAppsControl 的 Peri RPC 执行与响应分类。
 
 use peri_studio_proto::ack::{ActionError, ErrorCode};
-use peri_studio_proto::action::{McpAppCallPayload, McpAppInvokePayload, McpAppOpenPayload, McpAppResourcePayload};
+use peri_studio_proto::action::{
+    McpAppCallPayload, McpAppInvokePayload, McpAppOpenPayload, McpAppResourcePayload,
+};
 use peri_studio_proto::frame::Frame;
-use peri_studio_proto::mcp_apps::{McpAppCallResultFrame, McpAppInvokeFrame, McpAppResourceFrame, McpAppSessionFrame};
+use peri_studio_proto::mcp_apps::{
+    McpAppCallResultFrame, McpAppInvokeFrame, McpAppResourceFrame, McpAppSessionFrame,
+};
 use serde::Deserialize;
 
 use super::{
@@ -410,10 +414,7 @@ fn apps_error_kind(value: &serde_json::Value) -> Option<&'static str> {
 
 fn peri_apps_error_kind(value: &serde_json::Value) -> Option<&str> {
     let error = value.get("error")?;
-    if let Some(kind) = error
-        .get("kind")
-        .and_then(serde_json::Value::as_str)
-    {
+    if let Some(kind) = error.get("kind").and_then(serde_json::Value::as_str) {
         return Some(kind);
     }
     let data = error.get("data")?;

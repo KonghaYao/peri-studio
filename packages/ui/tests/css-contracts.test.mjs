@@ -86,11 +86,11 @@ const cssSelectors = (source) => {
 
 const read = (file) => readFileSync(file, 'utf8');
 
-test('package stylesheet entry order is tokens → theme → motion → primitives → extra → markdown-body', () => {
+test('package stylesheet entry order is tokens → theme → motion → primitives → extra → chart → markdown-body', () => {
   const entry = read(join(srcRoot, 'styles', 'index.css'));
   assert.match(
     entry,
-    /@import '\.\/tokens\.css';\s*@import '\.\/theme\.css';\s*@import '\.\/motion\.css';\s*@import '\.\/primitives\.css';\s*@import '\.\/extra\.css';\s*@import '\.\/markdown-body\.css';/s,
+    /@import '\.\/tokens\.css';\s*@import '\.\/theme\.css';\s*@import '\.\/motion\.css';\s*@import '\.\/primitives\.css';\s*@import '\.\/extra\.css';\s*@import '\.\/chart\.css';\s*@import '\.\/markdown-body\.css';/s,
   );
 });
 

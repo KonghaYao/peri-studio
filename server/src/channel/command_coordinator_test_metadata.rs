@@ -303,7 +303,7 @@ async fn session_archive_succeeds_with_idle_runtime() {
         .unwrap();
     seed_catalog_session(&env.projects, "p1", "acp-1", "Active").await;
     bound_session(&env, S1, "acp-1").await;
-    assert!(env.chats.has_live_acp_session("acp-1").await == false);
+    assert!(!env.chats.has_live_acp_session("acp-1").await);
 
     let (tx, mut rx) = mpsc::channel(4);
     let result = env
