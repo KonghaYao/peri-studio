@@ -22,12 +22,10 @@ fn failure_audit_carries_total_snapshot() {
     let dir = tempdir().unwrap();
     let mut svc = AuthService::new(new_store(dir.path()));
     let (_, log) = with_capture(|| {
-        block_on(
-            svc.authenticate_instance(
-                &make_hello("totally-unknown-token-value", &new_nonce_b64()),
-                peer(),
-            ),
-        )
+        block_on(svc.authenticate_instance(
+            &make_hello("totally-unknown-token-value", &new_nonce_b64()),
+            peer(),
+        ))
     });
     assert_audit_failed_total_snapshot(&log, 1);
 }
@@ -98,12 +96,10 @@ fn h2_unknown_token() {
     let dir = tempdir().unwrap();
     let mut svc = AuthService::new(new_store(dir.path()));
     let (result, log) = with_capture(|| {
-        block_on(
-            svc.authenticate_instance(
-                &make_hello("totally-unknown-token-value", &new_nonce_b64()),
-                peer(),
-            ),
-        )
+        block_on(svc.authenticate_instance(
+            &make_hello("totally-unknown-token-value", &new_nonce_b64()),
+            peer(),
+        ))
     });
     assert!(matches!(result, Err(AuthError::UnknownToken)));
     assert_audit_redacted(&log, &[]);
@@ -124,10 +120,7 @@ fn h3_replay_nonce() {
     let nonce_b64 = new_nonce_b64();
 
     assert!(
-        block_on(
-            svc.authenticate_instance(&make_hello(&rec.token, &nonce_b64), peer()),
-        )
-        .is_ok()
+        block_on(svc.authenticate_instance(&make_hello(&rec.token, &nonce_b64), peer()),).is_ok()
     );
     // 同 nonce 二次 hello → 重放拒绝（即使 token 正确）
     let (result, log) = with_capture(|| {
@@ -221,9 +214,7 @@ fn h6_role_mismatch() {
     // client token 提交 instance/hello → RoleMismatch
     let client = svc.store_mut().generate(TokenRole::Full, "tui").unwrap();
     let (result, log) = with_capture(|| {
-        block_on(
-            svc.authenticate_instance(&make_hello(&client.token, &new_nonce_b64()), peer()),
-        )
+        block_on(svc.authenticate_instance(&make_hello(&client.token, &new_nonce_b64()), peer()))
     });
     assert!(matches!(
         result,
@@ -360,12 +351,10 @@ fn h8_unknown_identity() {
     let dir = tempdir().unwrap();
     let mut svc = AuthService::new(new_store(dir.path()));
     let (result, log) = with_capture(|| {
-        block_on(
-            svc.authenticate_instance(
-                &make_hello("0000000000000000000000000000000000000000", &new_nonce_b64()),
-                peer(),
-            ),
-        )
+        block_on(svc.authenticate_instance(
+            &make_hello("0000000000000000000000000000000000000000", &new_nonce_b64()),
+            peer(),
+        ))
     });
     assert!(matches!(result, Err(AuthError::UnknownToken)));
     assert_audit_redacted(&log, &[]);

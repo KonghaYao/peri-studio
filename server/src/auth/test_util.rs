@@ -96,15 +96,10 @@ pub(super) fn with_capture<T>(f: impl FnOnce() -> T) -> (T, String) {
 /// 断言失败审计行携带 `auth_failed_total` 快照（§4.8）。
 pub(super) fn assert_audit_failed_total_snapshot(text: &str, expected: u64) {
     assert!(!text.is_empty(), "应产生审计事件");
-    let line = text
-        .lines()
-        .next()
-        .expect("应至少一行审计 JSON");
+    let line = text.lines().next().expect("应至少一行审计 JSON");
     let v: serde_json::Value =
         serde_json::from_str(line).unwrap_or_else(|e| panic!("审计行非 JSON: {e}: {line}"));
-    let fields = v["fields"]
-        .as_object()
-        .expect("审计 JSON 应含 fields 对象");
+    let fields = v["fields"].as_object().expect("审计 JSON 应含 fields 对象");
     assert_eq!(
         fields.get("auth_failed_total").and_then(|v| v.as_u64()),
         Some(expected),
